@@ -1,0 +1,22 @@
+{
+  "name": "v1-performance",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node ./dist/index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "routier": "file://../framework",
+    "routier-core": "file://../core",
+    "routier-plugin-pouchdb": "file://../plugins/pouchdb",
+    "@faker-js/faker": "^9.8.0"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3"
+  }
+}

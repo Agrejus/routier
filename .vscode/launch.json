@@ -1,0 +1,85 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run Testing Grounds",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "/var/home/jdemeuse/.nvm/versions/node/v14.19.1/bin/node",
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register/transpile-only"
+            ],
+            "args": [
+                "framework/playground/index.ts"
+            ],
+            "cwd": "${workspaceRoot}",
+            "internalConsoleOptions": "openOnSessionStart",
+            "skipFiles": [
+                "<node_internals>/**",
+                "node_modules/**"
+            ]
+        },
+        {
+            "name": "Run Example",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "/Users/jdemeuse/.nvm/versions/node/v20.12.0/bin/node",
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register/transpile-only"
+            ],
+            "args": [
+                "src/index.ts"
+            ],
+            "cwd": "${workspaceRoot}/example",
+            "internalConsoleOptions": "openOnSessionStart",
+            "skipFiles": [
+                "<node_internals>/**",
+                "node_modules/**"
+            ]
+        },
+        {
+            "name": "Run v1 Performance",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "/Users/jdemeuse/.nvm/versions/node/v20.12.0/bin/node",
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register/transpile-only"
+            ],
+            "args": [
+                "src/index.ts"
+            ],
+            "cwd": "${workspaceRoot}/v1-performance",
+            "internalConsoleOptions": "openOnSessionStart",
+            "skipFiles": [
+                "<node_internals>/**",
+                "node_modules/**"
+            ]
+        },
+        {
+            "name": "Run v2 Performance",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "/Users/jdemeuse/.nvm/versions/node/v20.12.0/bin/node",
+            "runtimeArgs": [
+                "--nolazy",
+                "-r",
+                "ts-node/register/transpile-only"
+            ],
+            "args": [
+                "src/index.ts"
+            ],
+            "cwd": "${workspaceRoot}/v2-performance",
+            "internalConsoleOptions": "openOnSessionStart",
+            "skipFiles": [
+                "<node_internals>/**",
+                "node_modules/**"
+            ]
+        }
+    ]
+}

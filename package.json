@@ -1,0 +1,16 @@
+{
+  "name": "routier-collection",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "build": "npm run build:core && npm run build:routier",
+    "build:core": "cd core && npm run tsc",
+    "build:routier": "cd routier && npm run tsc"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "ts-node": "^10.9.2"
+  }
+}

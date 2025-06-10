@@ -1,0 +1,49 @@
+{
+  "name": "routier",
+  "version": "0.0.1",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "source": "./src/index.ts",
+  "scripts": {
+    "build:types": "tsc --emitDeclarationOnly",
+    "build:bundle": "rspack build",
+    "build": "npm run build:bundle && npm run build:types",
+    "tsc": "tsc"
+  },
+  "sideEffects": false,
+  "author": "James DeMeuse <james.demeuse@gmail.com>",
+  "license": "MIT",
+  "repository": "Agrejus/routier",
+  "keywords": [
+    "orm",
+    "typescript",
+    "web",
+    "indexeddb",
+    "electron",
+    "data access layer",
+    "entities",
+    "entity framework",
+    "database",
+    "router",
+    "dexie",
+    "chrome",
+    "extension",
+    "local storage"
+  ],
+  "description": "Data abstraction layer that routes all database operations to any ORM or data store",
+  "peerDependencies": {
+    "routier-core": "^0.0.1"
+  },
+  "dependencies": {
+    "routier-plugin-memory": "file://../plugins/memory"
+  },
+  "devDependencies": {
+    "routier-core": "file://../core",
+    "@rspack/cli": "^1.1.8",
+    "@rspack/core": "^1.1.8",
+    "ts-loader": "^9.5.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}

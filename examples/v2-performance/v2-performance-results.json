@@ -1,0 +1,61 @@
+{
+  "timestamp": "2025-06-03T13-52-33-075Z",
+  "testSizes": [
+    1,
+    5,
+    10,
+    100,
+    1000,
+    10000
+  ],
+  "averages": [
+    {
+      "itemCount": 1,
+      "averageAddTime": 0.004702510000001752,
+      "averageSaveTime": 1.0220649800000003,
+      "averageTotalTime": 1.0267674900000021,
+      "averageTimePerItem": 1.0267674900000021,
+      "sampleCount": 100
+    },
+    {
+      "itemCount": 5,
+      "averageAddTime": 0.004596659999996291,
+      "averageSaveTime": 1.0010308700000001,
+      "averageTotalTime": 1.0056275299999964,
+      "averageTimePerItem": 0.20112550599999932,
+      "sampleCount": 100
+    },
+    {
+      "itemCount": 10,
+      "averageAddTime": 0.006740830000008486,
+      "averageSaveTime": 1.1959945999999997,
+      "averageTotalTime": 1.2027354300000082,
+      "averageTimePerItem": 0.12027354300000084,
+      "sampleCount": 100
+    },
+    {
+      "itemCount": 100,
+      "averageAddTime": 0.0276545299999907,
+      "averageSaveTime": 3.358164559999989,
+      "averageTotalTime": 3.3858190899999796,
+      "averageTimePerItem": 0.03385819089999981,
+      "sampleCount": 100
+    },
+    {
+      "itemCount": 1000,
+      "averageAddTime": 0.17492038999999748,
+      "averageSaveTime": 25.88527164999999,
+      "averageTotalTime": 26.06019203999999,
+      "averageTimePerItem": 0.026060192039999996,
+      "sampleCount": 100
+    },
+    {
+      "itemCount": 10000,
+      "averageAddTime": 1.4126066800015906,
+      "averageSaveTime": 309.6418012099999,
+      "averageTotalTime": 311.0544078900015,
+      "averageTimePerItem": 0.031105440789000148,
+      "sampleCount": 100
+    }
+  ]
+}
