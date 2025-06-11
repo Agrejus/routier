@@ -1,5 +1,4 @@
 import { Routier } from 'routier';
-// import { MemoryPlugin } from 'routier-plugin-memory';
 import { user } from '../schemas/user';
 import { product } from '../schemas/product';
 import { inventoryItem } from '../schemas/inventoryItem';
@@ -7,13 +6,12 @@ import { event } from '../schemas/event';
 import { order } from '../schemas/order';
 import { blogPost } from '../schemas/blogPost';
 import { comment } from '../schemas/comments';
-import { uuidv4 } from 'routier-core';
-import { PouchDbPlugin } from 'routier-plugin-pouchdb';
+import { IDbPlugin } from 'routier-core';
 
 export class BasicRoutier extends Routier {
-    constructor(dbname: string) {
-        //super(new MemoryPlugin(dbname))
-        super(new PouchDbPlugin(dbname));
+
+    get pluginName() {
+        return this.dbPlugin.constructor.name
     }
 
     // need to use stateful collections too
@@ -25,8 +23,8 @@ export class BasicRoutier extends Routier {
     blogPosts = this.collection(blogPost).create();
     comments = this.collection(comment).create();
 
-    static create() {
-        return new BasicRoutier(uuidv4());
+    static create(plugin: IDbPlugin) {
+        return new BasicRoutier(plugin);
     }
 
     async [Symbol.asyncDispose]() {

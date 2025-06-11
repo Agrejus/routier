@@ -25,7 +25,7 @@
     "entity framework",
     "database"
   ],
-  "description": "Dexie plugin for db-framework",
+  "description": "Dexie plugin for routier",
   "peerDependencies": {
     "routier-core": "^0.0.1"
   },

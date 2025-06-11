@@ -5,10 +5,10 @@ import { CollectionPipelines, SaveChangesContextStepOne } from './types';
 
 export class Routier implements Disposable {
 
-    private readonly dbPlugin: IDbPlugin;
-    private readonly collections: Map<number, Collection<any>>;
-    private readonly collectionPipelines: CollectionPipelines;
-    private readonly abortController: AbortController;
+    protected readonly dbPlugin: IDbPlugin;
+    protected readonly collections: Map<number, Collection<any>>;
+    protected readonly collectionPipelines: CollectionPipelines;
+    protected readonly abortController: AbortController;
 
     constructor(dbPlugin: IDbPlugin) {
         this.abortController = new AbortController();
@@ -54,9 +54,6 @@ export class Routier implements Disposable {
         return result;
     }
 
-    // Can we borrow from redux and create a way to inject middleware?
-    // use actions?
-    // action.type -> "SaveChanges"
     saveChanges(done: (result: number, error?: any) => void) {
 
         const response = {
@@ -127,7 +124,7 @@ export class Routier implements Disposable {
     }
 
     [Symbol.dispose]() {
-        this.abortController.abort();
+        this.abortController.abort("Routier disposed");
     }
 }
 

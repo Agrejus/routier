@@ -1,5 +1,5 @@
 import { Routier } from "routier";
-import { s, InferType, DbPluginLogging } from "routier-core";
+import { s, InferType, DbPluginLogging, DbPluginReplicator } from "routier-core";
 import { MemoryPlugin } from "routier-plugin-memory";
 import { PouchDbPlugin } from "routier-plugin-pouchdb";
 import { DexiePlugin } from "routier-plugin-dexie";
@@ -100,25 +100,17 @@ const memoryPlugin = new MemoryPlugin();
 const dexiePlugin = new DexiePlugin("test-db");
 const memoryPluginWithLogging = DbPluginLogging.create(memoryPlugin);
 const pouchDbPlugin = new PouchDbPlugin("test-db");
-const pouchDbPluginWithLogging = DbPluginLogging.create(pouchDbPlugin).setHook("onQueryRequest", (data) => {
-    if (data.query.expression != null) {
-
-        // const request = {
-        //     selector: {}
-        // };
-
-        // request.selector = toMango(data.query.expression);
-
-        // setQueryOptions(data.query.options, request);
-
-        // data.query.mango = request;
-    }
-})
+const pouchDbPluginWithLogging = DbPluginLogging.create(pouchDbPlugin);
+const replicationPlugin = DbPluginReplicator.create({
+    replicas: [memoryPluginWithLogging],
+    source: pouchDbPluginWithLogging,
+    read: memoryPluginWithLogging
+});
 
 class Ctx extends Routier {
 
     constructor() {
-        super(pouchDbPluginWithLogging);
+        super(replicationPlugin);
     }
 
     // test = this.collection(model).create();

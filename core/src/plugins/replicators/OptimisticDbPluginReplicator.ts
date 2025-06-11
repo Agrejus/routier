@@ -7,7 +7,7 @@ import { OperationsPayload, PersistPayload } from './types';
 export class OptimisticDbPluginReplicator extends DbPluginReplicator {
 
     /**
-     * Creates a new DbPluginReplicator that coordinates operations between a source database and its replicas.
+     * Creates a new OptimisticDbPluginReplicator that coordinates operations between a source database and its replicas.
      * 
      * @param source The primary database plugin that will receive all operations first
      * @param replicas Additional database plugins that will replicate operations from the source

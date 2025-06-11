@@ -25,6 +25,7 @@
         "routier-core": "file://../core",
         "routier-plugin-memory": "file://../plugins/memory",
         "routier-plugin-pouchdb": "file://../plugins/pouchdb",
+        "routier-plugin-dexie": "file://../plugins/dexie",
         "@rspack/cli": "^1.1.8",
         "@rspack/core": "^1.1.8",
         "@vitest/coverage-v8": "^3.1.3",

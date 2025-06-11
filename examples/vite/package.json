@@ -16,7 +16,7 @@
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
-    "routier": "file://../framework",
+    "routier": "file://../routier",
     "routier-core": "file://../core",
     "routier-plugin-memory": "file://../plugins/memory",
     "routier-plugin-pouchdb": "file://../plugins/pouchdb",

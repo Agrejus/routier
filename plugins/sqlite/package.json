@@ -1,6 +1,6 @@
 {
-  "name": "routier-plugin-memory",
-  "version": "2.0.0-beta.1",
+  "name": "routier-plugin-dexie",
+  "version": "0.0.1",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "source": "./src/index.ts",
@@ -25,14 +25,17 @@
     "entity framework",
     "database"
   ],
-  "description": "Memory plugin for routier",
+  "description": "Dexie plugin for routier",
   "peerDependencies": {
     "routier-core": "^0.0.1"
   },
   "devDependencies": {
-    "routier-core": "file://../../core",
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",
+    "routier-core": "file://../../core",
     "ts-loader": "^9.5.2"
+  },
+  "dependencies": {
+    "sqlite3": "^5.1.7"
   }
 }

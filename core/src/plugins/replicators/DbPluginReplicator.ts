@@ -70,6 +70,7 @@ export class DbPluginReplicator implements IDbPlugin {
         const { plugins, index } = payload;
         const plugin = plugins[index];
 
+
         // move next
         payload.index++;
 

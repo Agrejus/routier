@@ -74,29 +74,55 @@ export type Index = {
     name: string;
 }
 
+/**
+ * Represents a fully compiled schema with all utilities and metadata for an entity type.
+ */
 export type CompiledSchema<TEntity extends {}> = {
+    /** Returns the ID of the given entity. */
     getId: (entity: InferType<TEntity>) => IdType;
+    /** Returns a deep clone of the given entity. */
     clone: (entity: InferType<TEntity>) => InferType<TEntity>;
+    /** Removes unmapped or extraneous properties from the entity. */
     strip: (entity: InferType<TEntity>) => InferType<TEntity>;
+    /** Prepares a new entity for creation, applying defaults and transformations. */
     prepare: (entity: InferCreateType<TEntity>) => InferCreateType<TEntity>;
+    /** Merges the source entity into the destination entity. */
     merge: (destination: InferType<TEntity>, source: InferType<TEntity>) => InferType<TEntity>;
+    /** Indicates if the schema has identity properties. */
     hasIdentities: boolean;
+    /** List of properties that are identity keys. */
     idProperties: PropertyInfo<TEntity>[];
+    /** All property metadata for the schema. */
     properties: PropertyInfo<TEntity>[],
+    /** The hash type used for this schema. */
     hashType: HashType;
+    /** Computes a hash for the given entity. */
     hash: HashFunction<TEntity>;
+    /** Returns the hash type for the given entity. */
     getHashType: GetHashTypeFunction<TEntity>;
+    /** Compares two entities for equality. */
     compare: (a: InferType<TEntity>, fromDb: InferType<TEntity>) => boolean;
+    /** Deserializes an entity from storage format. */
     deserialize: (entity: InferType<TEntity>) => InferType<TEntity>;
+    /** Serializes an entity to storage format. */
     serialize: (entity: InferType<TEntity>) => InferType<TEntity>;
+    /** Unique key for the schema. */
     key: number,
+    /** The name of the collection for this schema. */
     collectionName: string;
+    /** Returns all IDs for the given entity (usually a single-element tuple). */
     getIds: (entity: InferType<TEntity>) => [IdType];
+    /** Enriches the entity with change tracking or other metadata. */
     enrich: (entity: InferType<TEntity>, changeTrackingType: ChangeTrackingType) => InferType<TEntity>;
+    /** Indicates if the schema has identity keys. */
     hasIdentityKeys: boolean;
+    /** Returns a deeply frozen (immutable) version of the entity. */
     freeze: (entity: InferType<TEntity>) => InferType<TEntity>;
+    /** Enables change tracking on the entity. */
     enableChangeTracking: (entity: InferType<TEntity>) => InferType<TEntity>;
+    /** The schema definition object. */
     definition: SchemaDefinition<TEntity>;
+    /** Returns all indexes defined for this schema. */
     getIndexes: () => Index[];
 }
 

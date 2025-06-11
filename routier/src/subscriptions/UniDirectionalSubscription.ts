@@ -15,7 +15,7 @@ export class UniDirectionalSubscription<T extends {}> implements Disposable {
     private _callback: ((changes: InferType<T>[]) => void) | null = null;
 
     constructor(id: number, signal: AbortSignal) {
-        this._channel = new BroadcastChannel(`__db-framework-unidirectional-subscription-channel-${id}`);
+        this._channel = new BroadcastChannel(`__routier-unidirectional-subscription-channel-${id}`);
         this._channel.onmessage = (event: any) => {
             const message = event.data as UniDirectionalSubscriptionPayload<T>;
             if (message.id === this._id) {

@@ -10,7 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "routier": "file://../framework",
+    "routier": "file://../routier",
     "routier-core": "file://../core",
     "routier-plugin-pouchdb": "file://../plugins/pouchdb",
     "@faker-js/faker": "^9.8.0"

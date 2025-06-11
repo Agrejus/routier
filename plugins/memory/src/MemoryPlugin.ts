@@ -1,4 +1,4 @@
-import { IDbPlugin, CompiledSchema, EntityChanges, EntityModificationResult, InferCreateType, DeepPartial, IdType, InferType, IQuery, JsonTranslator, DbPluginBulkOperationsEvent, DbPluginQueryEvent } from "routier-core";
+import { IDbPlugin, CompiledSchema, EntityModificationResult, InferCreateType, DeepPartial, IdType, InferType, JsonTranslator, DbPluginBulkOperationsEvent, DbPluginQueryEvent } from "routier-core";
 import { DbCollection } from "./DbCollection";
 import { MemoryDatabase } from ".";
 
@@ -9,7 +9,7 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
     private readonly dbName: string;
 
     constructor(dbName?: string) {
-        this.dbName = dbName ?? "__dbframework-memory-plugin-db__";
+        this.dbName = dbName ?? "__routier-memory-plugin-db__";
 
         if (dbs[this.dbName] == null) {
             dbs[this.dbName] = {}

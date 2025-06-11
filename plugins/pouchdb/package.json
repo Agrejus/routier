@@ -25,7 +25,7 @@
     "entity framework",
     "database"
   ],
-  "description": "PouchDB plugin for db-framework",
+  "description": "PouchDB plugin for routier",
   "dependencies": {
     "events": "^3.3.0",
     "pouchdb": "^9.0.0"

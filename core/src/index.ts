@@ -34,9 +34,6 @@ export {
     QueryField,
     IQuery,
     QuerySort,
-    DbOperation,
-    ReadOperation,
-    UpsertOperation,
     DbPluginQueryEvent,
     DbPluginBulkOperationsEvent,
     DbPluginEvent

@@ -1,4 +1,4 @@
-import { CompiledSchema, SchemaTarget } from '../schema';
+import { CompiledSchema } from '../schema';
 import { now } from '../utilities/index';
 import { DbPluginBulkOperationsEvent, DbPluginQueryEvent, EntityChanges, EntityModificationResult, IDbPlugin, IQuery } from './types';
 
