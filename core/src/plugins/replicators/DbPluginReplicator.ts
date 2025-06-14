@@ -114,9 +114,12 @@ export class DbPluginReplicator implements IDbPlugin {
 
         plugin.bulkOperations({
             operation: {
-                adds: adds as InferCreateType<TEntity>[], // pass in the resulting additions to get any keys that were set
+                adds: {
+                    entities: adds as InferCreateType<TEntity>[]
+                }, // pass in the resulting additions to get any keys that were set
                 updates: event.operation.updates,
-                removes: event.operation.removes
+                removes: event.operation.removes,
+                tags: event.operation.tags
             },
             parent: event.parent,
             schema: event.schema

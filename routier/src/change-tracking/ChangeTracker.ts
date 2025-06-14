@@ -1,11 +1,11 @@
-import { CompiledSchema, EntityModificationResult, InferCreateType, InferType } from "routier-core";
-import { FetchOptions } from "../data-access/types";
+import { ChangeTrackingType, CompiledSchema, EntityChanges, EntityModificationResult, Expression, InferCreateType, InferType } from "routier-core";
+import { ResolveOptions } from "../data-access/types";
 import { EntityCallbackMany } from "../types";
 import { AdditionsPackage, IChangeTrackerStrategy } from "./types";
 import { IdentityKeyChangeTrackingStrategy } from './strategies/IdentityKeyChangeTrackingStrategy';
 import { NonIdentityKeyChangeTrackingStrategy } from './strategies/NonIdentityKeyChangeTrackingStrategy';
 
-export class ChangeTracker<T extends {}> {
+export class ChangeTracker<T extends {}> implements IChangeTrackerStrategy<T> {
 
     private readonly _strategy: IChangeTrackerStrategy<T>;
 
@@ -13,16 +13,24 @@ export class ChangeTracker<T extends {}> {
         this._strategy = strategy;
     }
 
-    add(entities: InferCreateType<T>[], done: EntityCallbackMany<T>) {
-        return this._strategy.add(entities, done);
+    getAndDestroyTags() {
+        return this._strategy.getAndDestroyTags();
     }
 
-    remove(entities: InferType<T>[], done: EntityCallbackMany<T>) {
-        return this._strategy.remove(entities, done);
+    add(entities: InferCreateType<T>[], tag: unknown | null, done: EntityCallbackMany<T>) {
+        return this._strategy.add(entities, tag, done);
     }
 
-    resolve(entities: InferType<T>[], options?: FetchOptions) {
-        return this._strategy.resolve(entities, options);
+    remove(entities: InferType<T>[], tag: unknown | null, done: EntityCallbackMany<T>) {
+        return this._strategy.remove(entities, tag, done);
+    }
+
+    removeByExpression(expression: Expression, tag: unknown | null, done: (error?: any) => void) {
+        return this._strategy.removeByExpression(expression, tag, done);
+    }
+
+    resolve(entities: InferType<T>[], tag: unknown | null, options?: ResolveOptions) {
+        return this._strategy.resolve(entities, tag, options);
     }
 
     hasChanges(): boolean {
@@ -37,9 +45,12 @@ export class ChangeTracker<T extends {}> {
         return this._strategy.enrich(entities);
     }
 
-    prepareRemovals() {
+    prepareRemovals(): EntityChanges<T>["removes"] {
         if (this.hasChanges() === false) {
-            return [];
+            return {
+                entities: [],
+                expression: null
+            };
         }
 
         return this._strategy.prepareRemovals();
@@ -49,7 +60,7 @@ export class ChangeTracker<T extends {}> {
         return this._strategy.prepareAdditions();
     }
 
-    getAttachmentsChanges() {
+    getAttachmentsChanges(): EntityChanges<T>["updates"] {
         return this._strategy.getAttachmentsChanges();
     }
 
@@ -59,6 +70,14 @@ export class ChangeTracker<T extends {}> {
 
     clearAdditions() {
         this._strategy.clearAdditions();
+    }
+
+    instance(entities: InferCreateType<T>[], changeTrackingType: ChangeTrackingType) {
+        return this._strategy.instance(entities, changeTrackingType);
+    }
+
+    detach(entities: InferType<T>[]) {
+        return this._strategy.detach(entities);
     }
 
     private static _createStrategy<T extends {}>(schema: CompiledSchema<T>) {

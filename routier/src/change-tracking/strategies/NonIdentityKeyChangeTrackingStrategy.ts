@@ -35,8 +35,8 @@ export class NonIdentityKeyChangeTrackingStrategy<TKey extends IdType, TEntity e
         return this.additions.size > 0 || this.removals.length > 0 || this.hasAttachmentsChanges() === true;
     }
 
-    add(entities: InferCreateType<TEntity>[], done: EntityCallbackMany<TEntity>): void {
-        super._add(entities, "entity", done);
+    add(entities: InferCreateType<TEntity>[], tag: unknown | null, done: EntityCallbackMany<TEntity>): void {
+        super._add(entities, tag, "entity", done);
     }
 
     prepareAdditions(): AdditionsPackage<TEntity> {

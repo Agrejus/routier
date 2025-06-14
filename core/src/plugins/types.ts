@@ -1,4 +1,4 @@
-import { CompiledSchema, DeepPartial, Expression, IdType, InferCreateType, InferType } from "..";
+import { CompiledSchema, DeepPartial, Expression, IdType, InferCreateType, InferType, TagCollection } from "..";
 import { Filterable } from "../expressions/types";
 import { SchemaParent } from "../schema";
 
@@ -75,13 +75,27 @@ export type IdbPluginCollection = {
  */
 export type EntityChanges<T extends {}> = {
     /** Entities to add. */
-    adds: InferCreateType<T>[];
+    adds: {
+        entities: InferCreateType<T>[]
+    };
     /** Entities to remove. */
-    removes: InferType<T>[];
+    removes: {
+        entities: InferType<T>[];
+        expression: Expression
+    };
     /**
      * Entities to update, mapped by ID. Each update includes the new doc and a delta of changed fields.
      */
-    updates: Map<IdType, { doc: InferType<T>, delta: { [key: string]: string | number | Date } }>;
+    updates: {
+        entities: Map<IdType, { doc: InferType<T>, delta: { [key: string]: string | number | Date } }>;
+    };
+
+    tags: TagCollection;
+}
+
+export type TaggedEntity<T> = {
+    entity: T;
+    tag?: unknown
 }
 
 /**

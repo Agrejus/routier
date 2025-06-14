@@ -1,3 +1,4 @@
+import { InferType } from "routier-core";
 import { EntityMap } from "../../types";
 import { LimitedQueryable } from "../LimitedQueryable";
 import { OrderedQueryable } from "../OrderedQueryable";

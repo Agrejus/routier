@@ -1,5 +1,5 @@
-import { CollectionOptions, CollectionPipelines, EntityCallbackMany, EntityMap, QueryResult, SaveChangesContextStepFive, SaveChangesContextStepFour, SaveChangesContextStepOne, SaveChangesContextStepSix, SaveChangesContextStepThree, SaveChangesContextStepTwo } from "../types";
-import { IDbPlugin, InferCreateType, InferType, Filter, ParamsFilter, CompiledSchema } from 'routier-core';
+import { CollectionChanges, CollectionOptions, CollectionPipelines, EntityCallbackMany, EntityMap, QueryResult, SaveChangesContextStepFive, SaveChangesContextStepFour, SaveChangesContextStepOne, SaveChangesContextStepSix, SaveChangesContextStepThree, SaveChangesContextStepTwo } from "../types";
+import { IDbPlugin, InferCreateType, InferType, Filter, ParamsFilter, CompiledSchema, Expression } from 'routier-core';
 import { Queryable } from '../query/Queryable';
 import { QueryableAsync } from '../query/QueryableAsync';
 import { ParamsQueryableAsync } from "../query/ParamsQueryableAsync";
@@ -17,6 +17,7 @@ export class Collection<TEntity extends {}> {
     readonly schema: CompiledSchema<TEntity>;
     protected unidirecitonalSubscription: UniDirectionalSubscription<TEntity>;
     private readonly parent: SchemaParent;
+    private _tag: unknown;
 
     constructor(
         dbPlugin: IDbPlugin,
@@ -65,7 +66,9 @@ export class Collection<TEntity extends {}> {
         if (data.hasChanges === false) {
             done({
                 ...data,
-                adds: [],
+                adds: {
+                    entities: []
+                },
                 find: () => undefined as any
             })
             return;
@@ -76,7 +79,9 @@ export class Collection<TEntity extends {}> {
 
             done({
                 ...data,
-                adds,
+                adds: {
+                    entities: adds
+                },
                 find
             });
         } catch (e) {
@@ -114,15 +119,18 @@ export class Collection<TEntity extends {}> {
         if (data.hasChanges === true) {
 
             // we only want to notify of changes when an item that was saved matches the query
-            const updates = [...data.updates].map(w => w[1].doc);
+            const updates = [...data.updates.entities].map(w => w[1].doc);
             const removals = data.removes;
             const adds = data.result.adds;
 
-            const changes: InferType<TEntity>[] = [
-                ...updates,
-                ...removals,
-                ...adds as InferType<TEntity>[]
-            ];
+            const changes: CollectionChanges<TEntity> = {
+                entities: [
+                    ...updates,
+                    ...removals.entities,
+                    ...adds as InferType<TEntity>[]
+                ],
+                expression: removals.expression
+            };
 
             this.unidirecitonalSubscription.send(changes);
         }
@@ -133,7 +141,11 @@ export class Collection<TEntity extends {}> {
     protected prepareUpdates(data: SaveChangesContextStepFour<TEntity>, done: (result: SaveChangesContextStepFive<TEntity>) => void) {
 
         if (data.hasChanges === false) {
-            done({ ...data, updates: new Map() });
+            done({
+                ...data, updates: {
+                    entities: new Map()
+                }
+            });
             return;
         }
 
@@ -150,7 +162,7 @@ export class Collection<TEntity extends {}> {
         }
 
         try {
-            this.changeTracker.mergeChanges(data.result, { find: data.find, adds: data.adds })
+            this.changeTracker.mergeChanges(data.result, { find: data.find, adds: data.adds.entities })
 
             done(data);
         } catch (e) {
@@ -159,6 +171,8 @@ export class Collection<TEntity extends {}> {
     }
 
     protected persist(data: SaveChangesContextStepFive<TEntity>, done: (result: SaveChangesContextStepSix<TEntity>, error?: any) => void) {
+
+        const tags = this.changeTracker.getAndDestroyTags();
 
         if (data.hasChanges === false) {
             done({ ...data, result: null });
@@ -171,7 +185,8 @@ export class Collection<TEntity extends {}> {
                 // with only properties that should be saved and run any serializers
                 adds: data.adds,
                 removes: data.removes,
-                updates: data.updates
+                updates: data.updates,
+                tags
             },
             parent: this.parent,
             schema: this.schema
@@ -181,7 +196,12 @@ export class Collection<TEntity extends {}> {
     protected prepareRemovals(data: SaveChangesContextStepThree<TEntity>, done: (result: SaveChangesContextStepFour<TEntity>, error?: any) => void) {
 
         if (data.hasChanges === false) {
-            done({ ...data, removes: [] });
+            done({
+                ...data, removes: {
+                    entities: [],
+                    expression: null
+                }
+            });
             return;
         }
 
@@ -194,24 +214,81 @@ export class Collection<TEntity extends {}> {
         }
     }
 
+    private getAndDestroyTag() {
+        if (this._tag != null) {
+
+            const tag = this._tag;
+            this._tag = null;
+            return tag;
+        }
+
+        return null;
+    }
+
+    attach(...entities: InferType<TEntity>[]) {
+        const tag = this.getAndDestroyTag()
+        return this.changeTracker.resolve(entities, tag, { merge: true });
+    }
+
+    detach(...entities: InferType<TEntity>[]) {
+        return this.changeTracker.detach(entities);
+    }
+
     add(entities: InferCreateType<TEntity>[], done: EntityCallbackMany<TEntity>) {
-        return this.changeTracker.add(entities, done);
+        const tag = this.getAndDestroyTag()
+        this.changeTracker.add(entities, tag, done);
     }
 
     addAsync(...entities: InferCreateType<TEntity>[]) {
         return new Promise<InferType<TEntity>[]>((resolve, reject) => {
-            this.add(entities as any, (r, e) => this._resolvePromise(r, e, resolve as any, reject));
+            this.add(entities as any, (r, e) => this._resolvePromise({
+                data: r,
+                error: e
+            }, resolve as any, reject));
         });
     }
 
     remove(entities: InferType<TEntity>[], done: EntityCallbackMany<TEntity>) {
-        this.changeTracker.remove(entities, done);
+        const tag = this.getAndDestroyTag()
+        this.changeTracker.remove(entities, tag, done);
     }
 
     removeAsync(...entities: InferType<TEntity>[]) {
         return new Promise<InferType<TEntity>[]>((resolve, reject) => {
-            this.remove(entities, (r, e) => this._resolvePromise(r, e, resolve, reject));
+            this.remove(entities, (r, e) => this._resolvePromise({
+                data: r,
+                error: e
+            }, resolve, reject));
         });
+    }
+
+    removeAll(done: (error?: any) => void) {
+        const tag = this.getAndDestroyTag()
+        this.changeTracker.removeByExpression(Expression.EMPTY, tag, done);
+    }
+
+    removeAllAsync() {
+        return new Promise<void>((resolve, reject) => {
+            this.removeAll((e) => this._resolvePromise({
+                error: e
+            }, resolve, reject));
+        });
+    }
+
+    tag(tag: unknown) {
+        this._tag = tag;
+        return this;
+    }
+
+    instance(...entities: InferCreateType<TEntity>[]) {
+
+        const result: InferType<TEntity>[] = [];
+
+        for (const entity of this.changeTracker.instance(entities, this.changeTrackingType)) {
+            result.push(entity);
+        }
+
+        return result;
     }
 
     subscribe() {
@@ -238,6 +315,7 @@ export class Collection<TEntity extends {}> {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
+
         return queryable.where(selector as ParamsFilter<InferType<TEntity>, P>, params);
     }
 
@@ -392,10 +470,21 @@ export class Collection<TEntity extends {}> {
         return result.everyAsync(expression as any, params);
     }
 
-    private _resolvePromise<R>(data: R, error: any | undefined, resolve: (data: R) => void, reject: (error?: any) => void) {
+    private _resolvePromise<R>(options: {
+        data?: R,
+        error?: any
+    }, resolve: (data?: R) => void, reject: (error?: any) => void) {
+
+        const { data, error } = options;
+
         if (error != null) {
             reject(error);
             return
+        }
+
+        if (data == null) {
+            resolve();
+            return;
         }
 
         resolve(data);

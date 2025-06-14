@@ -28,7 +28,9 @@
     "dexie",
     "chrome",
     "extension",
-    "local storage"
+    "local storage",
+    "data abstraction",
+    "sqlite"
   ],
   "description": "Data abstraction layer that routes all database operations to any ORM or data store",
   "peerDependencies": {

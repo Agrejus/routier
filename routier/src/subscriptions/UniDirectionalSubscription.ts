@@ -1,8 +1,9 @@
 import { uuid, InferType } from "routier-core";
+import { CollectionChanges } from "../types";
 
 type UniDirectionalSubscriptionPayload<T extends {}> = {
     id: string;
-    changes: InferType<T>[];
+    changes: CollectionChanges<T>;
 }
 
 // This is intented to run the "OnMessage" event whenever we "send".  For context
@@ -12,7 +13,7 @@ export class UniDirectionalSubscription<T extends {}> implements Disposable {
 
     private _channel;
     private _id = uuid();
-    private _callback: ((changes: InferType<T>[]) => void) | null = null;
+    private _callback: ((changes: CollectionChanges<T>) => void) | null = null;
 
     constructor(id: number, signal: AbortSignal) {
         this._channel = new BroadcastChannel(`__routier-unidirectional-subscription-channel-${id}`);
@@ -32,7 +33,7 @@ export class UniDirectionalSubscription<T extends {}> implements Disposable {
         }, { once: true });
     }
 
-    send(changes: InferType<T>[]) {
+    send(changes: CollectionChanges<T>) {
         const message: UniDirectionalSubscriptionPayload<T> = {
             id: this._id,
             changes
@@ -40,7 +41,7 @@ export class UniDirectionalSubscription<T extends {}> implements Disposable {
         this._channel.postMessage(message)
     }
 
-    onMessage(callback: (changes: InferType<T>[]) => void) {
+    onMessage(callback: (changes: CollectionChanges<T>) => void) {
         this._callback = callback;
     }
 

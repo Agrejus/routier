@@ -1,4 +1,4 @@
-import { QueryOptions, toExpression, Expression, combineExpressions, QueryField, IQuery, Filterable, Query, CompiledSchema, DbPluginQueryEvent, SchemaParent } from "routier-core";
+import { QueryOptions, toExpression, Expression, combineExpressions, QueryField, IQuery, Filterable, Query, CompiledSchema, DbPluginQueryEvent, SchemaParent, InferType } from "routier-core";
 import { EntityMap } from "../../types";
 import { QueryOrdering } from "../types";
 import { DataBridge } from "../../data-access/DataBridge";
@@ -74,6 +74,34 @@ export abstract class QueryRoot<T extends {}> {
         }
     }
 
+    protected _remove<U>(done: (error?: any) => void) {
+        const expression = this.getExpression();
+
+        // failed to parse expression, fall back to memory filtering
+        if (expression.ok === false) {
+            this.getData<InferType<T>[]>((dataToRemove, dataToRemoveError) => {
+
+                if (dataToRemoveError != null) {
+                    done(dataToRemoveError);
+                    return;
+                }
+
+                this.changeTracker.remove(dataToRemove, null, (_, error) => {
+                    if (error) {
+                        done(error);
+                        return;
+                    }
+
+                    done();
+                });
+            });
+            return;
+        }
+
+        this.changeTracker.removeByExpression(expression.result, null, done);
+        return this.subscribeQuery<T[]>(done) as U;
+    }
+
     protected subscribeQuery<U>(done: (result: U, error?: any) => void) {
 
         if (this.subscribeValue === false) {
@@ -81,12 +109,13 @@ export abstract class QueryRoot<T extends {}> {
         }
 
         const event = this.createEvent();
+        const tags = this.changeTracker.getAndDestroyTags();
 
         return this.dataBridge.subscribe<U, unknown>(event, (r, e) => {
 
             if (event.operation.changeTracking === true) {
                 const enriched = this.changeTracker.enrich(r as any);
-                const resolved = this.changeTracker.resolve(enriched, { mergeResponse: true });
+                const resolved = this.changeTracker.resolve(enriched, tags, { merge: true });
                 done(resolved as U, e);
                 return;
             }
@@ -173,10 +202,13 @@ export abstract class QueryRoot<T extends {}> {
         }
     }
 
-    protected getExpression(): Expression | null {
+    protected getExpression(): { ok: boolean, result: Expression } {
 
         if (this.filters.length === 0) {
-            return null;
+            return {
+                ok: true,
+                result: Expression.EMPTY
+            }; // Select All
         }
 
         const expressions: Expression[] = [];
@@ -186,13 +218,19 @@ export abstract class QueryRoot<T extends {}> {
             const expression = this._convertToExpression(filter);
 
             if (expression == null) {
-                return null; // fall back to memory filtering for everything
+                return {
+                    ok: false,
+                    result: Expression.EMPTY
+                }; // Select All, fall back to memory filtering for everything
             }
 
             expressions.push(expression);
         }
 
-        return combineExpressions(...expressions);
+        return {
+            ok: true,
+            result: combineExpressions(...expressions)
+        };
     }
 
     protected getOrCompileQuery() {
@@ -207,7 +245,7 @@ export abstract class QueryRoot<T extends {}> {
         this._compiledQuery = new Query(
             options,
             this.filters,
-            expression
+            expression.result
         );
 
         return this._compiledQuery;
@@ -221,6 +259,10 @@ export abstract class QueryRoot<T extends {}> {
         }
     }
 
+    protected bulkOperations() {
+
+    }
+
     protected getData<TShape>(done: (result: TShape, error?: any) => void) {
 
         const event = this.createEvent();
@@ -232,10 +274,13 @@ export abstract class QueryRoot<T extends {}> {
                 return;
             }
 
+            const tags = this.changeTracker.getAndDestroyTags();
+
             // if change tracking is true, we will never be shaping the result from .map()
             if (event.operation.changeTracking === true) {
                 const enriched = this.changeTracker.enrich(result as any);
-                const resolved = this.changeTracker.resolve(enriched);
+                const resolved = this.changeTracker.resolve(enriched, tags);
+
                 done(resolved as any);
                 return;
             }

@@ -57,7 +57,7 @@ export class StatefulDataAccessStrategy<T extends {}> extends DataAccessStrategy
         }
 
         if (readPlugin.size === 0) {
-            const queryAll = Query.all<T, InferType<T>[]>();
+            const queryAll = Query.EMPTY<T, InferType<T>[]>();
 
             this.dbPlugin.query<T, InferType<T>[]>({
                 operation: queryAll,
@@ -73,9 +73,17 @@ export class StatefulDataAccessStrategy<T extends {}> extends DataAccessStrategy
                 // Add data to the read plugin
                 readPlugin.bulkOperations({
                     operation: {
-                        adds: r as InferCreateType<T>[],
-                        removes: [],
-                        updates: new Map()
+                        adds: {
+                            entities: r as InferCreateType<T>[]
+                        },
+                        removes: {
+                            entities: [],
+                            expression: null
+                        },
+                        updates: {
+                            entities: new Map()
+                        },
+                        tags: null
                     },
                     parent: event.parent,
                     schema: event.schema

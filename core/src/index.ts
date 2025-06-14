@@ -4,7 +4,7 @@ export {
     Expression,
     ExpressionType,
     OperatorExpression,
-    PropertyPathExpression,
+    PropertyExpression as PropertyPathExpression,
     ValueExpression,
     Filter,
     Operator,
@@ -18,7 +18,7 @@ export {
     combineExpressions
 } from './expressions/parser';
 
-export { getProperties } from './expressions/getProperties';
+export { getProperties } from './expressions/utils';
 
 export {
     DeepPartial,
@@ -36,8 +36,13 @@ export {
     QuerySort,
     DbPluginQueryEvent,
     DbPluginBulkOperationsEvent,
-    DbPluginEvent
+    DbPluginEvent,
+    TaggedEntity
 } from './plugins/types';
+
+export {
+    TagCollection
+} from './tags/TagCollection';
 
 export {
     DataTranslator
@@ -77,7 +82,8 @@ export {
     HashType,
     SchemaParent,
     Index,
-    IndexType
+    IndexType,
+    ChangeTrackingType
 } from './schema';
 
 export {

@@ -21,6 +21,10 @@ export class Queryable<T extends {}, U = void> extends QueryableBase<T, U> {
         this.subscribeValue = true;
         return new Queryable<T, () => void>(this.schema as any, this.parent, { queryable: this });
     }
+
+    remove(done: (error?: any) => void) {
+        return this._remove<U>(done);
+    }
 }
 
 

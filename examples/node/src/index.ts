@@ -165,6 +165,8 @@ const r = async () => {
         const xx = await ctx.nested.sort(w => w.name).sort(w => w.order).firstOrUndefinedAsync(w => w._id === "");
         const xx1 = await ctx.nested.firstOrUndefinedAsync(w => w.name === "");
 
+        // how come we only have async operations after a where!!!
+        ctx.nested.where(x => x._id === "").removeAsync();
         const xx3 = await ctx.nested.firstOrUndefinedAsync(w => w.order >= 100);
         const xx4 = await ctx.nested.sort(w => w.name).sort(w => w.order).firstOrUndefinedAsync(w => w._id !== "");
         console.log(xx, xx1, xx2, xx3, xx4, xx5, xx21);

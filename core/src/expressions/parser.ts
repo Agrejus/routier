@@ -1,86 +1,73 @@
 import { CompiledSchema, SchemaTypes } from "../schema";
-import { Expression, OperatorExpression, ComparatorExpression, Comparator, ValueExpression, PropertyPathExpression, Filter, ParamsFilter } from "./types";
+import { Expression, OperatorExpression, ComparatorExpression, ValueExpression, PropertyExpression, Filter, ParamsFilter, Operator } from "./types";
 
 // need to have negated + strict
 const comparators: Record<string, ComparatorExpression> = {
-    startsWith: {
+    startsWith: new ComparatorExpression({
         comparator: "starts-with",
         negated: false,
-        strict: false,
-        type: "comparator",
-    },
-    endsWith: {
+        strict: false
+    }),
+    endsWith: new ComparatorExpression({
         comparator: "ends-with",
         negated: false,
-        strict: false,
-        type: "comparator",
-    },
-    includes: {
+        strict: false
+    }),
+    includes: new ComparatorExpression({
         comparator: "includes",
         negated: false,
-        strict: false,
-        type: "comparator",
-    },
-    "==": {
+        strict: false
+    }),
+    "==": new ComparatorExpression({
         comparator: "equals",
         negated: false,
-        strict: false,
-        type: "comparator",
-    },
-    "===": {
+        strict: false
+    }),
+    "===": new ComparatorExpression({
         comparator: "equals",
         negated: false,
-        strict: true,
-        type: "comparator",
-    },
-    "!=": {
+        strict: true
+    }),
+    "!=": new ComparatorExpression({
         comparator: "equals",
         negated: true,
-        strict: false,
-        type: "comparator",
-    },
-    "!==": {
+        strict: false
+    }),
+    "!==": new ComparatorExpression({
         comparator: "equals",
         negated: true,
-        strict: true,
-        type: "comparator",
-    },
-    ">=": {
+        strict: true
+    }),
+    ">=": new ComparatorExpression({
         comparator: "greater-than-equals",
         negated: false,
-        strict: false,
-        type: "comparator",
-    },
-    ">==": {
+        strict: false
+    }),
+    ">==": new ComparatorExpression({
         comparator: "greater-than-equals",
         negated: false,
-        strict: true,
-        type: "comparator",
-    },
-    "<=": {
+        strict: true
+    }),
+    "<=": new ComparatorExpression({
         comparator: "less-than-equals",
         negated: false,
-        strict: false,
-        type: "comparator",
-    },
-    "<==": {
+        strict: false
+    }),
+    "<==": new ComparatorExpression({
         comparator: "less-than-equals",
         negated: false,
-        strict: true,
-        type: "comparator",
-    },
-    ">": {
+        strict: true
+    }),
+    ">": new ComparatorExpression({
         comparator: "greater-than",
         negated: false,
-        strict: false,
-        type: "comparator",
-    },
-    "<": {
+        strict: false
+    }),
+    "<": new ComparatorExpression({
         comparator: "less-than",
         negated: false,
-        strict: false,
-        type: "comparator",
-    }
+        strict: false
+    })
 } as const;
 
 export const combineExpressions = (...expressions: Expression[]): Expression => {
@@ -99,12 +86,11 @@ export const combineExpressions = (...expressions: Expression[]): Expression => 
 
     // Loop through remaining expressions and combine them
     for (let i = 1; i < expressions.length; i++) {
-        result = {
-            type: "operator",
+        result = new OperatorExpression({
             operator: "&&",
             left: result,
             right: expressions[i]
-        } as OperatorExpression;
+        });
     }
 
     return result;
@@ -144,7 +130,7 @@ const parseExpressionToTree = <P extends any>(schema: CompiledSchema<any>, expre
         }
 
         // Parse based on the operator precedence
-        let operator: string | null = null, splitIndex = -1, depth = 0;
+        let operator: Operator | null = null, splitIndex = -1, depth = 0;
 
         for (let i = 0; i < exp.length; i++) {
             const char = exp[i];
@@ -166,12 +152,11 @@ const parseExpressionToTree = <P extends any>(schema: CompiledSchema<any>, expre
             const left = exp.slice(0, splitIndex).trim();
             const right = exp.slice(splitIndex + 2).trim();
 
-            return {
+            return new OperatorExpression({
                 operator,
-                type: "operator",
                 left: parse(left),
                 right: parse(right)
-            } as OperatorExpression;
+            });
         }
 
         // If no operator, it's a terminal condition (handles `==` or `startsWith`)
@@ -214,7 +199,7 @@ function assertIsExpression(value: unknown): asserts value is Expression {
     }
 }
 
-function assertIsPropertyPathExpression(value: unknown): asserts value is PropertyPathExpression {
+function assertIsPropertyPathExpression(value: unknown): asserts value is PropertyExpression {
 
     assertIsExpression(value);
 
@@ -308,10 +293,9 @@ const getComparator = (value: string): ComparatorExpression => {
 }
 
 const getValue = <P extends any>(value: string, params: P): ValueExpression => {
-    return {
-        type: "value",
+    return new ValueExpression({
         value: value.startsWith("\'") || value.startsWith("\"") || params == null ? value.replace(/\"|\'/g, "") : getValueFromParams(value, params)
-    };
+    });
 }
 
 const getValueFromParams = <P extends any>(value: string, params: P) => {
@@ -338,7 +322,7 @@ const getValueFromParams = <P extends any>(value: string, params: P) => {
     return result;
 }
 
-const getProperty = (schema: CompiledSchema<any>, value: string): PropertyPathExpression => {
+const getProperty = (schema: CompiledSchema<any>, value: string): PropertyExpression => {
 
     const pathSplit = value.split(/\?\.|\!\.|\./g);
     pathSplit.shift();
@@ -348,10 +332,9 @@ const getProperty = (schema: CompiledSchema<any>, value: string): PropertyPathEx
         throw new Error(`Error parsing query, could not find PropertyInfo for path.  Path: ${value}`)
     }
 
-    return {
-        type: "property",
+    return new PropertyExpression({
         property: found
-    };
+    });
 }
 
 

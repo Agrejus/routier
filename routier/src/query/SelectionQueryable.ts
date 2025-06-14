@@ -1,4 +1,4 @@
-import { Filter, ParamsFilter } from "routier-core";
+import { Filter, InferType, ParamsFilter } from "routier-core";
 import { QueryResult } from "../types";
 import { AggregateQueryableAsync } from "./AggregateQueryableAsync";
 

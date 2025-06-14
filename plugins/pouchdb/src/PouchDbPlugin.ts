@@ -1,5 +1,5 @@
 import PouchDB from 'pouchdb';
-import { assertIsNotNull, ComparatorExpression, DbPluginBulkOperationsEvent, DbPluginQueryEvent, EntityChanges, EntityModificationResult, Expression, getProperties, IDbPlugin, IQuery, PropertyInfo, SyncronousQueue, SyncronousUnitOfWork, toMap } from 'routier-core';
+import { assertIsNotNull, ComparatorExpression, DbPluginBulkOperationsEvent, DbPluginEvent, DbPluginQueryEvent, EntityChanges, EntityModificationResult, Expression, getProperties, IDbPlugin, IdType, IQuery, PropertyInfo, SyncronousQueue, SyncronousUnitOfWork, toMap } from 'routier-core';
 import { PouchDbTranslator } from './PouchDbTranslator';
 
 const queue = new SyncronousQueue();
@@ -45,32 +45,71 @@ export class PouchDbPlugin implements IDbPlugin {
         this._options = options;
     }
 
-    private _identityBulkOperations<T extends {}>(operations: EntityChanges<T>, done: (result: { docs: T[], removesMap: Map<string, T>, updatesMap: Map<string, T> }, error?: any) => void): void {
+    private _identityBulkOperations<T extends {}>(event: DbPluginBulkOperationsEvent<T>, done: (result: { docs: T[], removesMap: Map<string, T>, updatesMap: Map<string, T> }, error?: any) => void): void {
         const errors: any[] = [];
 
         this._doWork((db, d) => {
             try {
 
-                const { adds, removes, updates } = operations;
-                const updatedDocuments = [...updates].map(w => w[1].doc);
-                const removesMap = toMap(removes, w => (w as any)._id);
-                const updatesMap = toMap(updatedDocuments, w => (w as any)._id);
+                const { operation } = event;
+                const { adds, removes, updates } = operation;
 
-                db.bulkDocs([...adds, ...removes.map(w => ({ _id: (w as any)._id, _rev: (w as any)._rev, _deleted: true })), ...updatedDocuments], null, (error, response) => {
+                this._getRemovalsByExpression(event, removes.expression, (r, e) => {
 
-                    if (error) {
-                        errors.push(error);
+                    if (e != null) {
+                        d(e)
+                        return;
                     }
 
-                    d({ docs: response?.map(w => w as T), updatesMap: updatesMap as any, removesMap: removesMap as any }, errors.length > 0 ? errors : null);
-                });
+                    const updatedDocuments = [...updates.entities].map(w => w[1].doc);
+                    const removesMap = toMap([...removes.entities, ...r], w => (w as any)._id);
+                    const updatesMap = toMap(updatedDocuments, w => (w as any)._id);
+
+                    db.bulkDocs([...adds.entities, ...removes.entities.map(w => ({ _id: (w as any)._id, _rev: (w as any)._rev, _deleted: true })), ...updatedDocuments], null, (error, response) => {
+
+                        if (error) {
+                            errors.push(error);
+                        }
+
+                        d({ docs: response?.map(w => w as T), updatesMap: updatesMap as any, removesMap: removesMap as any }, errors.length > 0 ? errors : null);
+                    });
+                })
             } catch (e) {
                 d({ docs: [], updatesMap: new Map(), removesMap: new Map() }, [e, ...errors])
             }
         }, done);
     }
 
-    private _defaultBulkOperations<T extends {}>(operations: EntityChanges<T>, done: (result: EntityModificationResult<T>, error?: any) => void): void {
+    private _getRemovalsByExpression<T extends {}>(event: DbPluginEvent<T>, expression: Expression | null, done: (entities: { _id: IdType, _rev: string, _deleted: true }[], error?: any) => void) {
+
+        if (expression == null) {
+            done([]); // Do nothing, handle null here for readability above
+            return;
+        }
+
+        // Select all items in the expression for removal
+        this._query<T, { _id: IdType, _rev: string, _deleted: true }[]>({
+            parent: event.parent,
+            schema: event.schema,
+            operation: {
+                expression: expression,
+                changeTracking: false,
+                filters: [],
+                options: {
+                    shaper: item => ({ _id: (item as any)._id, _rev: (item as any)._rev, _deleted: true })
+                }
+            }
+        }, (r, e) => {
+            if (e != null) {
+                done([], e);
+                return;
+            }
+
+            done(r);
+        })
+    }
+
+    private _defaultBulkOperations<T extends {}>(event: DbPluginBulkOperationsEvent<T>, done: (result: EntityModificationResult<T>, error?: any) => void): void {
 
         const result: EntityModificationResult<T> = {
             adds: [],
@@ -82,50 +121,59 @@ export class PouchDbPlugin implements IDbPlugin {
         this._doWork((db, d) => {
             try {
 
-                const { adds, removes, updates } = operations;
+                const { operation } = event
+                const { adds, removes, updates } = operation;
 
-                const updatedDocuments = [...updates].map(w => w[1].doc);
-                const removesMap = toMap(removes, w => (w as any)._id);
-                const updatesMap = toMap(updatedDocuments, w => (w as any)._id);
+                this._getRemovalsByExpression(event, removes.expression, (r, e) => {
 
-                db.bulkDocs([...adds, ...removes.map(w => ({ _id: (w as any)._id, _rev: (w as any)._rev, _deleted: true })), ...updatedDocuments], null, (error, response) => {
-
-                    if (error != null) {
-                        errors.push(error)
+                    if (e != null) {
+                        d(e)
+                        return;
                     }
 
-                    response.forEach(item => {
-                        if ("error" in item) {
+                    const updatedDocuments = [...updates.entities].map(w => w[1].doc);
+                    const removesMap = toMap([...removes.entities, ...r], w => (w as any)._id);
+                    const updatesMap = toMap(updatedDocuments, w => (w as any)._id);
 
-                            const reason = item.reason ?? item.error;
+                    db.bulkDocs([...adds.entities, ...removes.entities.map(w => ({ _id: (w as any)._id, _rev: (w as any)._rev, _deleted: true })), ...updatedDocuments], null, (error, response) => {
 
-                            if (reason) {
-                                errors.push(reason.toString())
+                        if (error != null) {
+                            errors.push(error)
+                        }
+
+                        response.forEach(item => {
+                            if ("error" in item) {
+
+                                const reason = item.reason ?? item.error;
+
+                                if (reason) {
+                                    errors.push(reason.toString())
+                                }
+                                return;
                             }
-                            return;
-                        }
 
-                        if (removesMap.has(item.id)) {
-                            result.removedCount += 1;
-                            return;
-                        }
+                            if (removesMap.has(item.id)) {
+                                result.removedCount += 1;
+                                return;
+                            }
 
-                        if (updatesMap.has(item.id)) {
-                            result.updates.push({
+                            if (updatesMap.has(item.id)) {
+                                result.updates.push({
+                                    _id: item.id,
+                                    _rev: item.rev
+                                } as any);
+                                return;
+                            }
+
+                            result.adds.push({
                                 _id: item.id,
                                 _rev: item.rev
                             } as any);
-                            return;
-                        }
+                        })
 
-                        result.adds.push({
-                            _id: item.id,
-                            _rev: item.rev
-                        } as any);
-                    })
+                        d(result, errors.length > 0 ? errors : null)
 
-                    d(result, errors.length > 0 ? errors : null)
-
+                    });
                 });
             } catch (e) {
                 d(result, [e, ...errors])
@@ -303,7 +351,7 @@ export class PouchDbPlugin implements IDbPlugin {
         }
 
         if (event.schema.hasIdentityKeys === true) {
-            this._identityBulkOperations<TEntity>(event.operation, (r, e) => {
+            this._identityBulkOperations<TEntity>(event, (r, e) => {
 
                 if (e) {
                     done(null, e);
@@ -373,7 +421,7 @@ export class PouchDbPlugin implements IDbPlugin {
             return;
         }
 
-        this._defaultBulkOperations<TEntity>(event.operation, done);
+        this._defaultBulkOperations<TEntity>(event, done);
     }
 
     private _doWork<TResult, TEntity>(work: (db: PouchDB.Database<TEntity>, done: (result: TResult, error?: any) => void) => void, done: (result: TResult, error?: any) => void, shouldClose: boolean = false) {

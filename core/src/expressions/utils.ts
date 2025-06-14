@@ -1,4 +1,4 @@
-import { Expression, PropertyPathExpression } from "./types";
+import { Expression, PropertyExpression } from "./types";
 import { PropertyInfo } from "../common/PropertyInfo";
 
 /**
@@ -12,7 +12,7 @@ export function getProperties(expression: Expression): PropertyInfo<any>[] {
     function traverse(expr: Expression) {
         // If this is a property expression, add it to our collection
         if (expr.type === "property") {
-            properties.push((expr as PropertyPathExpression).property);
+            properties.push((expr as PropertyExpression).property);
         }
 
         // Traverse left and right expressions if they exist
@@ -26,4 +26,4 @@ export function getProperties(expression: Expression): PropertyInfo<any>[] {
 
     traverse(expression);
     return properties;
-} 
+}

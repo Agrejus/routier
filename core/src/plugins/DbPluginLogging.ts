@@ -434,7 +434,7 @@ export class DbPluginLogging implements IDbPlugin {
         // Add operation count to the header
         let operationCount = '';
         if (!error && result) {
-            const totalRequested = operations.adds.length + operations.removes.length + operations.updates.size;
+            const totalRequested = operations.adds.entities.length + operations.removes.entities.length + operations.updates.entities.size;
             const totalCompleted = result.adds.length + result.removedCount + result.updates.length;
             operationCount = ` (${totalRequested} → ${totalCompleted})`;
         }
@@ -455,58 +455,65 @@ export class DbPluginLogging implements IDbPlugin {
         console.log('Summary:');
         console.table({
             'Operations': {
-                adds: operations.adds.length,
-                removes: operations.removes.length,
-                updates: operations.updates.size,
-                total: operations.adds.length + operations.removes.length + operations.updates.size
+                adds: {
+                    count: operations.adds.entities.length
+                },
+                removes: {
+                    count: operations.removes.entities.length,
+                    expression: operations.removes.expression
+                },
+                updates: {
+                    count: operations.updates.entities.size
+                },
+                total: operations.adds.entities.length + operations.removes.entities.length + operations.updates.entities.size
             }
         });
 
         // Show operations in a structured format
-        if (operations.adds.length > 0) {
-            console.groupCollapsed(`Adds (${operations.adds.length}):`);
+        if (operations.adds.entities.length > 0) {
+            console.groupCollapsed(`Adds (${operations.adds.entities.length}):`);
 
-            if (operations.adds.length <= 5) {
+            if (operations.adds.entities.length <= 5) {
                 // Show all if there are just a few
-                operations.adds.forEach((item, i) => {
+                operations.adds.entities.forEach((item, i) => {
                     console.log(`[${i}]:`, item);
                 });
             } else {
                 // Show sample of first 3 if there are many
-                console.log(`Showing first 3 of ${operations.adds.length}:`);
-                operations.adds.slice(0, 3).forEach((item, i) => {
+                console.log(`Showing first 3 of ${operations.adds.entities.length}:`);
+                operations.adds.entities.slice(0, 3).forEach((item, i) => {
                     console.log(`[${i}]:`, item);
                 });
-                console.log(`... and ${operations.adds.length - 3} more`);
+                console.log(`... and ${operations.adds.entities.length - 3} more`);
             }
 
             console.groupEnd();
         }
 
-        if (operations.removes.length > 0) {
-            console.groupCollapsed(`Removes (${operations.removes.length}):`);
+        if (operations.removes.entities.length > 0) {
+            console.groupCollapsed(`Removes (${operations.removes.entities.length}):`);
 
-            if (operations.removes.length <= 5) {
+            if (operations.removes.entities.length <= 5) {
                 // Show all if there are just a few
-                operations.removes.forEach((item, i) => {
+                operations.removes.entities.forEach((item, i) => {
                     console.log(`[${i}]:`, item);
                 });
             } else {
                 // Show sample of first 3 if there are many
-                console.log(`Showing first 3 of ${operations.removes.length}:`);
-                operations.removes.slice(0, 3).forEach((item, i) => {
+                console.log(`Showing first 3 of ${operations.removes.entities.length}:`);
+                operations.removes.entities.slice(0, 3).forEach((item, i) => {
                     console.log(`[${i}]:`, item);
                 });
-                console.log(`... and ${operations.removes.length - 3} more`);
+                console.log(`... and ${operations.removes.entities.length - 3} more`);
             }
 
             console.groupEnd();
         }
 
-        if (operations.updates.size > 0) {
-            console.groupCollapsed(`Updates (${operations.updates.size}):`);
+        if (operations.updates.entities.size > 0) {
+            console.groupCollapsed(`Updates (${operations.updates.entities.size}):`);
 
-            const updates = Array.from(operations.updates.entries());
+            const updates = Array.from(operations.updates.entities.entries());
 
             if (updates.length <= 5) {
                 // Show all if there are just a few
@@ -546,11 +553,24 @@ export class DbPluginLogging implements IDbPlugin {
             // Summary information formatted as a table with before/after comparison
             console.log('Summary:');
             console.table({
-                'Adds': { requested: operations.adds.length, completed: result.adds.length },
-                'Removes': { requested: operations.removes.length, completed: result.removedCount },
-                'Updates': { requested: operations.updates.size, completed: result.updates.length },
+                'Adds': {
+                    requested: {
+                        count: operations.adds.entities.length
+                    }, completed: result.adds.length
+                },
+                'Removes': {
+                    requested: {
+                        count: operations.removes.entities.length,
+                        expression: operations.removes.expression
+                    }, completed: result.removedCount
+                },
+                'Updates': {
+                    requested: {
+                        count: operations.updates.entities.size
+                    }, completed: result.updates.length
+                },
                 'Total': {
-                    requested: operations.adds.length + operations.removes.length + operations.updates.size,
+                    requested: operations.adds.entities.length + operations.removes.entities.length + operations.updates.entities.size,
                     completed: result.adds.length + result.removedCount + result.updates.length
                 }
             });

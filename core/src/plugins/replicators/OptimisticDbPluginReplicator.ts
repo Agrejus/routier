@@ -72,10 +72,11 @@ export class OptimisticDbPluginReplicator extends DbPluginReplicator {
             operation: {
                 adds: event.operation.adds, // pass in the resulting additions to get any keys that were set
                 updates: event.operation.updates,
-                removes: event.operation.removes
+                removes: event.operation.removes,
+                tags: event.operation.tags
             },
             parent: event.parent,
-            schema: event.schema
+            schema: event.schema,
         }, (_, e) => {
 
             if (e != null) {
@@ -104,7 +105,8 @@ export class OptimisticDbPluginReplicator extends DbPluginReplicator {
                 operation: {
                     adds: event.operation.adds, // pass in the resulting additions to get any keys that were set
                     updates: event.operation.updates,
-                    removes: event.operation.removes
+                    removes: event.operation.removes,
+                    tags: event.operation.tags
                 },
                 parent: event.parent,
                 schema: event.schema
@@ -127,7 +129,10 @@ export class OptimisticDbPluginReplicator extends DbPluginReplicator {
                         operation: {
                             updates: event.operation.updates,
                             removes: event.operation.removes,
-                            adds: r.adds as InferCreateType<TEntity>[] // pass in the new adds with the keys set
+                            adds: {
+                                entities: r.adds as InferCreateType<TEntity>[] // pass in the new adds with the keys set
+                            },
+                            tags: event.operation.tags
                         },
                         parent: event.parent,
                         schema: event.schema

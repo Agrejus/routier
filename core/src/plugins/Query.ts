@@ -35,7 +35,11 @@ export class Query<TEntity extends {}, TShape extends any = TEntity> implements 
         return true;
     }
 
-    static all<T extends {}, TShape extends any = T>() {
+    static EMPTY<T extends {}, TShape extends any = T>() {
         return new Query<T, TShape>({}, []);
+    }
+
+    static isEmpty<T extends {}, TShape extends any = T>(query: IQuery<T, TShape>) {
+        return Object.keys(query.options).length === 0 && query.expression == null && query.filters.length === 0;
     }
 }

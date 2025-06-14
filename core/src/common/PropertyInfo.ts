@@ -85,7 +85,7 @@ export class PropertyInfo<T extends {}> {
      *
      * The root property has a level of 0. Each child property increases the level by 1.
      * Traverses up the parent chain, incrementing the level for each parent until the root is reached.
-     *
+     * 
      * @returns {number} The number of parent properties above this property (0 for root).
      */
     get level() {

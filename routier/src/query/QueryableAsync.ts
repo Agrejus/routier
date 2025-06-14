@@ -2,6 +2,7 @@ import { Filter, ParamsFilter } from "routier-core";
 import { QueryableBaseAsync } from "./base/QueryableBaseAsync";
 import { ParamsQueryableAsync } from "./ParamsQueryableAsync";
 import { Queryable } from "./Queryable";
+import { createPromise } from "../utilities";
 
 export class QueryableAsync<T extends {}> extends QueryableBaseAsync<T> {
 
@@ -16,6 +17,10 @@ export class QueryableAsync<T extends {}> extends QueryableBaseAsync<T> {
         this.filters.push({ filter: selector as ParamsFilter<T, P>, params });
 
         return new ParamsQueryableAsync<T>(this.schema as any, this.parent, { queryable: this });
+    }
+
+    removeAsync(): Promise<T[]> {
+        return createPromise<T[]>(w => this._remove(w));
     }
 
     subscribe() {

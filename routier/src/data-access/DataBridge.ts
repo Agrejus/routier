@@ -46,15 +46,23 @@ export class DataBridge<T extends {}> {
         const subscription = new UniDirectionalSubscription<T>(schema.key, this.signal);
         subscription.onMessage((changes) => {
 
+
+            if (changes.expression != null) {
+                // If the expression is not null, that means we are trying to remove by an expression
+                // we need to run the query because we do not know about any overlap
+                this.query(event, done);
+                return;
+            }
+
             // Make sure something in the subscribed query changed, 
             // if it has, we need to requery so we can send all changes
-            if (changes.length > 0) {
+            if (changes.entities.length > 0) {
 
                 // create a new plugin where we can quickly persist the changes and then query them
                 const ephemeralPlugin = new MemoryPlugin(uuidv4());
 
                 // seed the db, we don't care about bulk operations here, we just want to query the data
-                ephemeralPlugin.seed(schema, changes);
+                ephemeralPlugin.seed(schema, changes.entities);
 
                 // query the temp db to check and see if items match the query
                 ephemeralPlugin.query(event, (r, e) => {
