@@ -32,7 +32,7 @@ export class NonIdentityKeyChangeTrackingStrategy<TKey extends IdType, TEntity e
     }
 
     hasChanges(): boolean {
-        return this.additions.size > 0 || this.removals.length > 0 || this.hasAttachmentsChanges() === true;
+        return this.additions.size > 0 || this.removals.length > 0 || this.hasAttachmentsChanges() === true || this.removalExpressions.length > 0;
     }
 
     add(entities: InferCreateType<TEntity>[], tag: unknown | null, done: EntityCallbackMany<TEntity>): void {

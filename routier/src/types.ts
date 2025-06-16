@@ -110,5 +110,5 @@ export type CollectionPipelines = {
 
 export type CollectionChanges<T extends {}> = {
     entities: InferType<T>[];
-    expression: Expression;
+    expressions: Expression[];
 }

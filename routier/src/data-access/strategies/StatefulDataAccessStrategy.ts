@@ -78,7 +78,7 @@ export class StatefulDataAccessStrategy<T extends {}> extends DataAccessStrategy
                         },
                         removes: {
                             entities: [],
-                            expression: null
+                            expressions: null
                         },
                         updates: {
                             entities: new Map()

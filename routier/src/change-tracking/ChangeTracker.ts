@@ -49,7 +49,7 @@ export class ChangeTracker<T extends {}> implements IChangeTrackerStrategy<T> {
         if (this.hasChanges() === false) {
             return {
                 entities: [],
-                expression: null
+                expressions: null
             };
         }
 

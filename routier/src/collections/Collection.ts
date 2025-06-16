@@ -129,7 +129,7 @@ export class Collection<TEntity extends {}> {
                     ...removals.entities,
                     ...adds as InferType<TEntity>[]
                 ],
-                expression: removals.expression
+                expressions: removals.expressions
             };
 
             this.unidirecitonalSubscription.send(changes);
@@ -199,7 +199,7 @@ export class Collection<TEntity extends {}> {
             done({
                 ...data, removes: {
                     entities: [],
-                    expression: null
+                    expressions: null
                 }
             });
             return;

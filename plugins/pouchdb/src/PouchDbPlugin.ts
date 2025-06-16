@@ -1,5 +1,5 @@
 import PouchDB from 'pouchdb';
-import { assertIsNotNull, ComparatorExpression, DbPluginBulkOperationsEvent, DbPluginEvent, DbPluginQueryEvent, EntityChanges, EntityModificationResult, Expression, getProperties, IDbPlugin, IdType, IQuery, PropertyInfo, SyncronousQueue, SyncronousUnitOfWork, toMap } from 'routier-core';
+import { assertIsArray, assertIsNotNull, ComparatorExpression, DbPluginBulkOperationsEvent, DbPluginEvent, DbPluginQueryEvent, EntityChanges, EntityModificationResult, Expression, getProperties, IDbPlugin, IdType, IQuery, PropertyInfo, SyncronousQueue, SyncronousUnitOfWork, toMap, TrampolinePipeline } from 'routier-core';
 import { PouchDbTranslator } from './PouchDbTranslator';
 
 const queue = new SyncronousQueue();
@@ -8,6 +8,12 @@ const cache: Record<string, unknown> = {};
 
 type PouchDBPluginOptions = PouchDB.Configuration.DatabaseConfiguration & {
     queryType?: "default" | "memory-optimized" | "experimental"
+}
+
+type ForEachPayload<TEntity extends {}, TShape extends unknown = TEntity> = {
+    event: DbPluginQueryEvent<TEntity, TShape>,
+    results: TShape,
+    error?: any
 }
 
 export type PouchDbDesignDoc = {
@@ -54,18 +60,21 @@ export class PouchDbPlugin implements IDbPlugin {
                 const { operation } = event;
                 const { adds, removes, updates } = operation;
 
-                this._getRemovalsByExpression(event, removes.expression, (r, e) => {
+                this._getRemovalsByExpressions(event, removes.expressions, (r, e) => {
 
                     if (e != null) {
                         d(e)
                         return;
                     }
 
+                    const removals = [...removes.entities, ...r];
                     const updatedDocuments = [...updates.entities].map(w => w[1].doc);
-                    const removesMap = toMap([...removes.entities, ...r], w => (w as any)._id);
+                    const removesMap = toMap(removals, w => (w as any)._id);
                     const updatesMap = toMap(updatedDocuments, w => (w as any)._id);
 
-                    db.bulkDocs([...adds.entities, ...removes.entities.map(w => ({ _id: (w as any)._id, _rev: (w as any)._rev, _deleted: true })), ...updatedDocuments], null, (error, response) => {
+
+                    // the reponse is weird!
+                    db.bulkDocs([...adds.entities, ...removals.map(w => ({ _id: (w as any)._id, _rev: (w as any)._rev, _deleted: true })), ...updatedDocuments], null, (error, response) => {
 
                         if (error) {
                             errors.push(error);
@@ -80,27 +89,42 @@ export class PouchDbPlugin implements IDbPlugin {
         }, done);
     }
 
-    private _getRemovalsByExpression<T extends {}>(event: DbPluginEvent<T>, expression: Expression | null, done: (entities: { _id: IdType, _rev: string, _deleted: true }[], error?: any) => void) {
+    private _getRemovalsByExpressions<T extends {}>(event: DbPluginEvent<T>, expressions: Expression[], done: (entities: { _id: IdType, _rev: string, _deleted: true }[], error?: any) => void) {
 
-        if (expression == null) {
+        if (expressions.length === 0) {
             done([]); // Do nothing, handle null here for readability above
             return;
         }
 
-        // Select all items in the expression for removal
-        this._query<T, { _id: IdType, _rev: string, _deleted: true }[]>({
-            parent: event.parent,
-            schema: event.schema,
-            operation: {
-                expression: expression,
-                changeTracking: false,
-                filters: [],
-                options: {
-                    shaper: item => ({ _id: (item as any)._id, _rev: (item as any)._rev, _deleted: true })
+        const pipeline = new TrampolinePipeline<ForEachPayload<T, { _id: IdType; _rev: string; _deleted: true; }[]>>();
+
+        for (let i = 0, length = expressions.length; i < length; i++) {
+            const expression = expressions[i];
+            const queryEvent: DbPluginQueryEvent<T, { _id: IdType; _rev: string; _deleted: true; }[]> = {
+                parent: event.parent,
+                schema: event.schema,
+                operation: {
+                    expression: expression,
+                    changeTracking: false,
+                    filters: [],
+                    options: {
+                        shaper: item => ({ _id: (item as any)._id, _rev: (item as any)._rev, _deleted: true })
+                    }
                 }
             }
+
+            pipeline.pipe((payload, done) => this._pipelineQuery({
+                event: queryEvent,
+                results: payload.results
+            }, done));
+        }
+
+        pipeline.filter<{ _id: IdType; _rev: string; _deleted: true; }[]>({
+            event: null,
+            results: []
         }, (r, e) => {
-            if (e != null) {
+
+            if (e) {
                 done([], e);
                 return;
             }
@@ -124,18 +148,19 @@ export class PouchDbPlugin implements IDbPlugin {
                 const { operation } = event
                 const { adds, removes, updates } = operation;
 
-                this._getRemovalsByExpression(event, removes.expression, (r, e) => {
+                this._getRemovalsByExpressions(event, removes.expressions, (r, e) => {
 
                     if (e != null) {
                         d(e)
                         return;
                     }
 
+                    const removals = [...removes.entities, ...r];
                     const updatedDocuments = [...updates.entities].map(w => w[1].doc);
-                    const removesMap = toMap([...removes.entities, ...r], w => (w as any)._id);
+                    const removesMap = toMap(removals, w => (w as any)._id);
                     const updatesMap = toMap(updatedDocuments, w => (w as any)._id);
 
-                    db.bulkDocs([...adds.entities, ...removes.entities.map(w => ({ _id: (w as any)._id, _rev: (w as any)._rev, _deleted: true })), ...updatedDocuments], null, (error, response) => {
+                    db.bulkDocs([...adds.entities, ...removals.map(w => ({ _id: (w as any)._id, _rev: (w as any)._rev, _deleted: true })), ...updatedDocuments], null, (error, response) => {
 
                         if (error != null) {
                             errors.push(error)
@@ -265,7 +290,7 @@ export class PouchDbPlugin implements IDbPlugin {
                 const matchingIndex = response.rows.find(x => x.id === `_design/${INDEX_NAME}`);
 
                 // make sure we have the correct index created
-                if (matchingIndex === null) {
+                if (matchingIndex == null) {
                     db.put(ddoc as any, {}, (e) => {
                         if (e) {
                             d(null, e);
@@ -554,7 +579,7 @@ export class PouchDbPlugin implements IDbPlugin {
     private _queryNoIndex<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (result: TShape, error?: any) => void) {
         const jsonTranslator = new PouchDbTranslator<TEntity, TShape>(event.operation, event.schema);
         this._doWork((w, d) => {
-            w.query((doc, emit) => {
+            w.query<{}, any>((doc, emit) => {
                 if (typeof doc === "object" && "_id" in doc && jsonTranslator.satisfies(doc)) {
                     emit(doc._id, doc);
                 }
@@ -579,7 +604,7 @@ export class PouchDbPlugin implements IDbPlugin {
                 return;
             }
 
-            if (ddoc == null || event.operation.expression == null) {
+            if (ddoc == null || event.operation.expression == null || (event.operation.expression != null && Expression.isEmpty(event.operation.expression))) {
                 this._queryNoIndex(event, done);
                 return;
             }
@@ -593,5 +618,25 @@ export class PouchDbPlugin implements IDbPlugin {
 
             this._queryIndex(event, matchingIndex, done);
         });
+    }
+
+    private _pipelineQuery<TEntity extends {}, TShape extends unknown = TEntity>(payload: ForEachPayload<TEntity, TShape>, done: (results: TShape, error?: any) => void): void {
+
+        const { event, results } = payload;
+        this._query(event, (result, error) => {
+
+            if (error) {
+                // any error will terminate the pipeline
+                done(results, error);
+                return;
+            }
+
+            assertIsArray(result);
+            assertIsArray(results);
+
+            results.push(...result);
+
+            done(results);
+        })
     }
 }

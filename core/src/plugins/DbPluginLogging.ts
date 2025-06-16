@@ -460,7 +460,7 @@ export class DbPluginLogging implements IDbPlugin {
                 },
                 removes: {
                     count: operations.removes.entities.length,
-                    expression: operations.removes.expression
+                    expression: operations.removes.expressions
                 },
                 updates: {
                     count: operations.updates.entities.size
@@ -561,7 +561,7 @@ export class DbPluginLogging implements IDbPlugin {
                 'Removes': {
                     requested: {
                         count: operations.removes.entities.length,
-                        expression: operations.removes.expression
+                        expression: operations.removes.expressions
                     }, completed: result.removedCount
                 },
                 'Updates': {

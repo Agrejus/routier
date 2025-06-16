@@ -110,7 +110,7 @@ const replicationPlugin = DbPluginReplicator.create({
 class Ctx extends Routier {
 
     constructor() {
-        super(replicationPlugin);
+        super(pouchDbPlugin);
     }
 
     // test = this.collection(model).create();
@@ -152,9 +152,13 @@ const r = async () => {
         //     order: Math.floor(Math.random() * 10000)
         // })));
 
+        // await ctx.saveChangesAsync();
+
+        // how come we only have async operations after a where!!!
+        ctx.nested.where(x => x._id === "").removeAsync();
+
         await ctx.saveChangesAsync();
 
-        // First query is slow, what can we do about it
         const xx2 = await ctx.nested.firstOrUndefinedAsync(w => w.name === "James");
         debugger;
         const xx21 = await ctx.nested.firstOrUndefinedAsync(w => w.two === "two");
@@ -165,8 +169,6 @@ const r = async () => {
         const xx = await ctx.nested.sort(w => w.name).sort(w => w.order).firstOrUndefinedAsync(w => w._id === "");
         const xx1 = await ctx.nested.firstOrUndefinedAsync(w => w.name === "");
 
-        // how come we only have async operations after a where!!!
-        ctx.nested.where(x => x._id === "").removeAsync();
         const xx3 = await ctx.nested.firstOrUndefinedAsync(w => w.order >= 100);
         const xx4 = await ctx.nested.sort(w => w.name).sort(w => w.order).firstOrUndefinedAsync(w => w._id !== "");
         console.log(xx, xx1, xx2, xx3, xx4, xx5, xx21);

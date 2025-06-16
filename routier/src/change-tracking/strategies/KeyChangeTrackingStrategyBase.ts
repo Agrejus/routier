@@ -84,7 +84,7 @@ export abstract class KeyChangeTrackingStrategyBase<TKey extends IdType, TEntity
         }
         return {
             entities,
-            expression: null
+            expressions: this.removalExpressions
         };
     }
 
