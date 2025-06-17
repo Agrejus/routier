@@ -1,5 +1,6 @@
 import { DataTranslator } from "./DataTranslator";
-import { isDate } from "../../utilities/index";
+import { assertIsArray, assertIsNotNull, isDate } from "../../utilities/index";
+import { QueryField, QuerySort } from "../types";
 
 export class JsonTranslator<TEntity extends {}, TShape> extends DataTranslator<TEntity, TShape> {
 
@@ -10,7 +11,8 @@ export class JsonTranslator<TEntity extends {}, TShape> extends DataTranslator<T
 
     map<T>(data: unknown): T {
 
-        if (this.query.options.shaper == null) {
+        const map = this.query.options.getValue<(item: TEntity) => unknown>("map")
+        if (map == null) {
             throw new Error("Cannot find internal map function");
         }
 
@@ -21,7 +23,7 @@ export class JsonTranslator<TEntity extends {}, TShape> extends DataTranslator<T
         const response = [];
 
         for (let i = 0, length = data.length; i < length; i++) {
-            response.push(this.query.options.shaper(data[i]));
+            response.push(map(data[i]));
         }
 
         return response as T;
@@ -46,15 +48,18 @@ export class JsonTranslator<TEntity extends {}, TShape> extends DataTranslator<T
     }
 
     sort<T>(data: unknown): T {
-        if (Array.isArray(data) && this.query.options.sort != null) {
 
-            for (const sort of this.query.options.sort) {
+        const sort = this.query.options.getValue<QuerySort[]>("sort");
+
+        if (Array.isArray(data) && sort != null) {
+
+            for (const item of sort) {
                 data.sort((a, b) => {
-                    if (sort.direction === "asc") {
-                        return (sort.selector(a) as any) - (sort.selector(b) as any);
+                    if (item.direction === "asc") {
+                        return (item.selector(a) as any) - (item.selector(b) as any);
                     }
 
-                    return (sort.selector(b) as any) - (sort.selector(a) as any);
+                    return (item.selector(b) as any) - (item.selector(a) as any);
                 })
             }
         }
@@ -62,15 +67,21 @@ export class JsonTranslator<TEntity extends {}, TShape> extends DataTranslator<T
         return data as T;
     }
 
+    private _formatMissingMapError(functionName: string) {
+        return `${functionName}() operation can only be performed when one field is mapped for a result.  Ex.  myset.map(x => x.someNumber).${functionName}()`
+    }
+
+    private _formatDataNotArrayError(functionName: string) {
+        return `Cannot sum resulting data, it must be an array.  Please return array of data for function: ${functionName}()`
+    }
+
     sum<T extends number>(data: unknown): T {
 
-        if (Array.isArray(data) === false) {
-            throw new Error("Cannot sum resulting data, it must be an array.  Please return array of data for function: sum()");
-        }
+        assertIsArray(data, this._formatDataNotArrayError("sum"));
 
-        if (this.query.options.shaper == null) {
-            throw new Error(`sum() operation can only be performed when one field is mapped for a result.  Ex.  myset.map(x => x.someNumber).sum()`)
-        }
+        const map = this.query.options.getValue("map");
+
+        assertIsNotNull(map, this._formatMissingMapError("sum"));
 
         let sum = 0;
         const field = this._getSelectionField("sum");
@@ -90,13 +101,11 @@ export class JsonTranslator<TEntity extends {}, TShape> extends DataTranslator<T
 
     distinct<T>(data: unknown): T {
 
-        if (Array.isArray(data) === false) {
-            throw new Error("Cannot perform distinct on resulting data, it must be an array.  Please return array of data (string, number, or Date) for function: distinct()");
-        }
+        assertIsArray(data, this._formatDataNotArrayError("distinct"));
 
-        if (this.query.options.shaper == null) {
-            throw new Error(`distinct() operation can only be performed when one field is mapped for a result.  Ex.  myset.map(x => x.someNumberOrDateOrString).distinct()`)
-        }
+        const map = this.query.options.getValue("map");
+
+        assertIsNotNull(map, this._formatMissingMapError("distinct"));
 
         const result = new Set<string | number | Date>();
         // would be nice to have property info here for type detection
@@ -132,13 +141,15 @@ export class JsonTranslator<TEntity extends {}, TShape> extends DataTranslator<T
     skip<T>(data: unknown): T {
         if (Array.isArray(data)) {
 
-            if (this.query.options.skip != null && this.query.options.skip > 0) {
+            const skip = this.query.options.getValue<number>("skip");
 
-                if (data.length < this.query.options.skip) {
+            if (skip != null && skip > 0) {
+
+                if (data.length < skip) {
                     return data as T;
                 }
 
-                return data.slice(this.query.options.skip) as T;
+                return data.slice(skip) as T;
             }
 
             return data as T;
@@ -150,13 +161,15 @@ export class JsonTranslator<TEntity extends {}, TShape> extends DataTranslator<T
     take<T>(data: unknown): T {
         if (Array.isArray(data)) {
 
-            if (this.query.options.take != null && this.query.options.take > 0) {
+            const take = this.query.options.getValue<number>("take");
 
-                if (data.length < this.query.options.take) {
+            if (take != null && take > 0) {
+
+                if (data.length < take) {
                     return data as T;
                 }
 
-                return data.slice(0, this.query.options.take) as T;
+                return data.slice(0, take) as T;
             }
 
             return data as T;
@@ -166,23 +179,25 @@ export class JsonTranslator<TEntity extends {}, TShape> extends DataTranslator<T
     }
 
     private _getSelectionField(name: string) {
-        if (this.query.options.fields == null ||
-            this.query.options.fields.length === 0 ||
-            this.query.options.fields.length > 1) {
+
+        const fields = this.query.options.getValue<QueryField[]>("fields");
+
+        if (fields == null ||
+            fields.length === 0 ||
+            fields.length > 1) {
             throw new Error(`${name}() operation can only be performed when one field is mapped for a result.  Ex.  myset.map(x => x.someNumberOrDateOrString).${name}()`)
         }
 
-        return this.query.options.fields[0];
+        return fields[0];
     }
 
     private _minMax<T extends string | number | Date>(data: unknown, name: string, sort: (a: any, b: any) => any): T {
-        if (Array.isArray(data) === false) {
-            throw new Error(`Cannot find ${name} from resulting data, it must be an array.  Please return array of data for function: ${name}()`)
-        }
 
-        if (this.query.options.shaper == null) {
-            throw new Error(`${name}() operation can only be performed when one field is mapped for a result.  Ex.  myset.map(x => x.someNumberOrDateOrString).${name}()`)
-        }
+        assertIsArray(data, this._formatDataNotArrayError(name));
+
+        const map = this.query.options.getValue("map");
+
+        assertIsNotNull(map, this._formatMissingMapError(name));
 
         data.sort(sort);
 

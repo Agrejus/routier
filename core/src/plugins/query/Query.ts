@@ -1,15 +1,16 @@
 
-import { Expression, Filterable } from '../expressions/types';
-import { IQuery, QueryOptions } from './types';
+import { Expression, Filterable } from '../../expressions/types';
+import { IQuery } from '../types';
+import { QueryOptionsCollection } from './QueryOptionsCollection';
 
 export class Query<TEntity extends {}, TShape extends any = TEntity> implements IQuery<TEntity, TShape> {
 
-    readonly options: QueryOptions;
+    readonly options: QueryOptionsCollection;
     readonly filters: Filterable<TShape, any>[];
     readonly expression?: Expression;
 
     constructor(
-        options: QueryOptions,
+        options: QueryOptionsCollection,
         filters: Filterable<TShape, any>[],
         expression?: Expression
     ) {
@@ -21,14 +22,20 @@ export class Query<TEntity extends {}, TShape extends any = TEntity> implements 
     // boolean value whether or not change tracking can be enabled on the query result
     get changeTracking(): boolean {
 
-        if (this.options.fields?.length != null && this.options.fields.length > 0) {
+        const fields = this.options.getValue<[]>("fields");
+        const count = this.options.getValue<boolean>("count");
+        const max = this.options.getValue<boolean>("max");
+        const min = this.options.getValue<boolean>("min");
+        const sum = this.options.getValue<boolean>("sum");
+
+        if (fields?.length != null && fields.length > 0) {
             return false
         }
 
-        if (this.options.count === true ||
-            this.options.max === true ||
-            this.options.min === true ||
-            this.options.sum === true) {
+        if (count === true ||
+            max === true ||
+            min === true ||
+            sum === true) {
             return false
         }
 
@@ -36,7 +43,7 @@ export class Query<TEntity extends {}, TShape extends any = TEntity> implements 
     }
 
     static EMPTY<T extends {}, TShape extends any = T>() {
-        return new Query<T, TShape>({}, []);
+        return new Query<T, TShape>(QueryOptionsCollection.EMPTY, []);
     }
 
     static isEmpty<T extends {}, TShape extends any = T>(query: IQuery<T, TShape>) {

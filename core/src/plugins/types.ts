@@ -1,4 +1,4 @@
-import { CompiledSchema, DeepPartial, Expression, IdType, InferCreateType, InferType, TagCollection } from "..";
+import { CompiledSchema, DeepPartial, Expression, IdType, InferCreateType, InferType, QueryOptionsCollection, TagCollection } from "..";
 import { Filterable } from "../expressions/types";
 import { SchemaParent } from "../schema";
 
@@ -111,22 +111,6 @@ export type EntityModificationResult<T extends {}> = {
 }
 
 /**
- * Options for customizing a query operation.
- */
-export type QueryOptions = {
-    skip?: number;
-    take?: number;
-    sort?: QuerySort[],
-    min?: boolean;
-    max?: boolean;
-    count?: boolean;
-    sum?: boolean;
-    distinct?: boolean;
-    fields?: QueryField[];
-    shaper?: (item: unknown) => unknown;
-}
-
-/**
  * Sort specification for a query.
  */
 export type QuerySort = { key: string, selector: (item: unknown) => unknown, direction: "asc" | "desc" };
@@ -138,7 +122,7 @@ export type IQuery<TEntity extends {}, TShape extends any = TEntity> = {
     /** The filter expression for the query. */
     expression?: Expression;
     /** Query options (sort, skip, take, etc.). */
-    options: QueryOptions;
+    options: QueryOptionsCollection;
     /** Additional filters to apply to the result. */
     filters: Filterable<TShape, any>[];
     /**

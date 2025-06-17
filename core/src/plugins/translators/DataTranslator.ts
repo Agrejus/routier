@@ -85,40 +85,54 @@ export abstract class DataTranslator<T extends {}, TShape> {
 
     translate(data: unknown): TShape {
 
-        if (this.query.options.sort != null && this.query.options.sort.length > 0) {
+        const sort = this.query.options.get<[]>("sort");
+        const map = this.query.options.get("map");
+        const skip = this.query.options.get<number>("skip");
+        const take = this.query.options.get<number>("take");
+        const count = this.query.options.get<boolean>("count");
+
+        if (sort != null && sort.value.length > 0) {
             // don't return, we are sorting in place
             this.sort(data);
         }
 
-        if (this.query.options.shaper != null) {
+        if (map?.value != null) {
             data = this.map(data) as TShape;
         }
 
-        if (this.query.options.skip != null && this.query.options.skip > 0) {
+        if (skip?.value != null && skip.value > 0) {
             data = this.skip(data) as TShape;
         }
 
-        if (this.query.options.take != null && this.query.options.take > 0) {
+        if (take?.value != null && take.value > 0) {
             data = this.take(data) as TShape;
         }
 
-        if (this.query.options.count === true) {
+        if (count?.value === true) {
             return this.count(data) as TShape;
         }
 
-        if (this.query.options.distinct === true) {
+        const distinct = this.query.options.get<boolean>("distinct");
+
+        if (distinct?.value === true) {
             return this.distinct(data) as TShape;
         }
 
-        if (this.query.options.max === true) {
+        const max = this.query.options.get<boolean>("max");
+
+        if (max?.value === true) {
             return this.max(data) as TShape;
         }
 
-        if (this.query.options.min === true) {
+        const min = this.query.options.get<boolean>("min");
+
+        if (min?.value === true) {
             return this.min(data) as TShape;
         }
 
-        if (this.query.options.sum === true) {
+        const sum = this.query.options.get<boolean>("sum");
+
+        if (sum?.value === true) {
             return this.sum(data) as TShape;
         }
 

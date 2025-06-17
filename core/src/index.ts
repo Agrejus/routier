@@ -18,6 +18,17 @@ export {
     combineExpressions
 } from './expressions/parser';
 
+export {
+    QueryOption,
+    QueryOptionName,
+    QueryOptionTarget,
+    QueryOrdering
+} from './plugins/query/types';
+
+export {
+    QueryOptionsCollection
+} from './plugins/query/QueryOptionsCollection';
+
 export { getProperties } from './expressions/utils';
 
 export {
@@ -30,7 +41,6 @@ export {
     IDbPlugin,
     EntityChanges,
     EntityModificationResult,
-    QueryOptions,
     QueryField,
     IQuery,
     QuerySort,
@@ -58,7 +68,7 @@ export {
 
 export { DbPluginLogging } from './plugins/DbPluginLogging';
 
-export { Query } from './plugins/Query';
+export { Query } from './plugins/query/Query';
 
 export {
     toMap,

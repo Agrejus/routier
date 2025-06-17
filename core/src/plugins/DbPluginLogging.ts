@@ -240,17 +240,19 @@ export class DbPluginLogging implements IDbPlugin {
         if (query.options) {
             console.groupCollapsed('Options:');
 
+            const fields = query.options.getValue<[]>("fields");
+
             // Clean up options for display
             const options = {
-                skip: query.options.skip,
-                take: query.options.take,
-                sort: query.options.sort,
-                min: query.options.min,
-                max: query.options.max,
-                count: query.options.count,
-                sum: query.options.sum,
-                distinct: query.options.distinct,
-                fields: query.options.fields?.length ? query.options.fields : undefined
+                skip: query.options.getValue("skip"),
+                take: query.options.getValue("take"),
+                sort: query.options.getValue("sort"),
+                min: query.options.getValue("min"),
+                max: query.options.getValue("max"),
+                count: query.options.getValue("count"),
+                sum: query.options.getValue("sum"),
+                distinct: query.options.getValue("distinct"),
+                fields: fields != null ? fields : undefined
             };
 
             // Display as a table if possible

@@ -31,6 +31,7 @@ collection
     FilterableQueryable:
         .where()
 
+    // These along with .where are the only chainable items
     map() : ProjectedQueryable -> inhert from .where()
         skip() : SkippedQueryable ->  inhert from .where()
         take() : LimitedQueryable ->  inhert from .where()
