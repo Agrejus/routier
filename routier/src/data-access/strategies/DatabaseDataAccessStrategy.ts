@@ -10,7 +10,7 @@ export class DatabaseDataAccessStrategy<T extends {}> extends DataAccessStrategy
         super._bulkOperations(event, done);
     }
 
-    query<TShape>(_: CollectionOptions, event: DbPluginQueryEvent<T, TShape>, done: (response: TShape, error?: any) => void) {
+    query<TShape>(_: CollectionOptions, event: DbPluginQueryEvent<T>, done: (response: TShape, error?: any) => void) {
         this.dbPlugin.query<T, TShape>(event, done);
     }
 }

@@ -21,13 +21,25 @@ export abstract class Expression {
         return new EmptyExpression();
     }
 
+    static get NOT_PARSABLE() {
+        return new NotParsableExpression();
+    }
+
     static isEmpty(expression: Expression) {
         return expression.type === "empty" || expression instanceof EmptyExpression;
+    }
+
+    static isNotParsable(expression: Expression) {
+        return expression.type === "not-parsable" || expression instanceof NotParsableExpression;
     }
 }
 
 export class EmptyExpression extends Expression {
     readonly type = "empty" as const;
+}
+
+export class NotParsableExpression extends Expression {
+    readonly type = "not-parsable" as const;
 }
 
 /**
@@ -109,7 +121,7 @@ export class ValueExpression extends Expression {
 /**
  * The set of possible expression types.
  */
-export type ExpressionType = "operator" | "comparator" | "property" | "value" | "empty";
+export type ExpressionType = "operator" | "comparator" | "property" | "value" | "empty" | "not-parsable";
 
 /**
  * Supported comparator operations for expressions.

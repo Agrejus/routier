@@ -1,34 +1,27 @@
 
-import { Expression, Filterable } from '../../expressions/types';
 import { IQuery } from '../types';
 import { QueryOptionsCollection } from './QueryOptionsCollection';
 
-export class Query<TEntity extends {}, TShape extends any = TEntity> implements IQuery<TEntity, TShape> {
+export class Query<TEntity extends {}> implements IQuery<TEntity> {
 
-    readonly options: QueryOptionsCollection;
-    readonly filters: Filterable<TShape, any>[];
-    readonly expression?: Expression;
+    readonly options: QueryOptionsCollection<TEntity>;
 
     constructor(
-        options: QueryOptionsCollection,
-        filters: Filterable<TShape, any>[],
-        expression?: Expression
+        options: QueryOptionsCollection<TEntity>
     ) {
         this.options = options;
-        this.filters = filters;
-        this.expression = expression;
     }
 
     // boolean value whether or not change tracking can be enabled on the query result
     get changeTracking(): boolean {
 
-        const fields = this.options.getValue<[]>("fields");
-        const count = this.options.getValue<boolean>("count");
-        const max = this.options.getValue<boolean>("max");
-        const min = this.options.getValue<boolean>("min");
-        const sum = this.options.getValue<boolean>("sum");
+        const map = this.options.getValues("map");
+        const count = this.options.has("count");
+        const max = this.options.has("max");
+        const min = this.options.has("min");
+        const sum = this.options.has("sum");
 
-        if (fields?.length != null && fields.length > 0) {
+        if (map.some(x => x.fields.length > 0)) {
             return false
         }
 
@@ -42,11 +35,11 @@ export class Query<TEntity extends {}, TShape extends any = TEntity> implements 
         return true;
     }
 
-    static EMPTY<T extends {}, TShape extends any = T>() {
-        return new Query<T, TShape>(QueryOptionsCollection.EMPTY, []);
+    static EMPTY<T extends {}>() {
+        return new Query<T>(QueryOptionsCollection.EMPTY<T>());
     }
 
-    static isEmpty<T extends {}, TShape extends any = T>(query: IQuery<T, TShape>) {
-        return Object.keys(query.options).length === 0 && query.expression == null && query.filters.length === 0;
+    static isEmpty<T extends {}>(query: IQuery<T>) {
+        return QueryOptionsCollection.isEmpty(query.options);
     }
 }

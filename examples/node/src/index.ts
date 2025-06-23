@@ -129,6 +129,14 @@ const r = async () => {
         debugger;
         const ctx = new Ctx();
 
+        const found = await ctx.nested.where(
+            ([x, p]) => x.name.startsWith(p.name),
+            { name: "James" }
+        ).sort(w => w._id)
+            .map(w => ({ name: w.name, _id: w._id }))
+            .toArrayAsync();
+
+        console.log(found)
 
         // await ctx.nested.addAsync({
         //     cool: "cool",
@@ -138,7 +146,16 @@ const r = async () => {
         //         one: "one",
         //         two: "two"
         //     },
-        //     order: 1000
+        //     order: 1
+        // }, {
+        //     cool: "cool",
+        //     two: "two",
+        //     name: "James",
+        //     more: {
+        //         one: "one",
+        //         two: "two"
+        //     },
+        //     order: 2
         // });
 
         // await ctx.nested.addAsync(...Array.from({ length: 5000 }, () => ({
@@ -155,9 +172,9 @@ const r = async () => {
         // await ctx.saveChangesAsync();
 
         // how come we only have async operations after a where!!!
-        ctx.nested.where(x => x._id === "").removeAsync();
+        // ctx.nested.where(x => x._id === "").removeAsync();
 
-        await ctx.saveChangesAsync();
+        // await ctx.saveChangesAsync();
 
         const xx2 = await ctx.nested.firstOrUndefinedAsync(w => w.name === "James");
         debugger;
@@ -188,7 +205,7 @@ const r = async () => {
         //const r3 = await ctx.nested.where(w => w.name == "James").map(w => w.name).firstOrUndefinedAsync();
 
         // why is this not working? we are falling back to non expression querying, we should be using it!
-        const r4 = await ctx.nested.where(w => w.order === 100).map(w => w.order).sumAsync();
+        const r4 = await ctx.nested.where(w => w.order === 100).sumAsync(w => w.order);
         console.log(r4);
 
         const r1 = await ctx.nested.where(w => w.name == "James").firstOrUndefinedAsync();
@@ -208,7 +225,7 @@ const r = async () => {
         //     console.log('DONE 2', performance.now() - s2, r, e)
         // });
 
-        ctx.nested.where(w => w.name == "James").subscribe().map(w => w.order).sum((r, e) => {
+        ctx.nested.where(w => w.name == "James").subscribe().sum(w => w.order, (r, e) => {
             console.log('SUBSCRIBED', r, e)
         });
 
@@ -293,18 +310,6 @@ const r = async () => {
         const s = await ctx.nested.someAsync(([w, p]) => w.name === p.name, { name: "James6" });
 
         const foundOne = await ctx.nested.firstOrUndefinedAsync(w => w._id == "test");
-
-
-
-
-
-        const found = await ctx.nested.where(([w, p]) => w.name.startsWith(p.name), { name: "James" })
-            .sort(w => w._id)
-            .map(w => ({ name: w.name, _id: w._id }))
-            .toArrayAsync();
-
-        console.log(found)
-
 
 
 

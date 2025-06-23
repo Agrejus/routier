@@ -1,9 +1,8 @@
-import { Filter, GenericFunction, InferType, ParamsFilter } from "routier-core";
-import { NumberKeys } from "./types";
+import { Filter, GenericFunction, ParamsFilter } from "routier-core";
 import { SelectionQueryable } from "./SelectionQueryable";
 import { createPromise } from "../utilities";
 
-export class SelectionQueryableAsync<T extends {}, U> extends SelectionQueryable<T, U> {
+export class SelectionQueryableAsync<T extends {}, TResult> extends SelectionQueryable<T, TResult, void> {
 
     toArrayAsync(): Promise<T[]> {
         return createPromise<T[]>(w => this.toArray(w));
@@ -83,19 +82,19 @@ export class SelectionQueryableAsync<T extends {}, U> extends SelectionQueryable
         });
     }
 
-    minAsync<K extends NumberKeys<T>>(selector: GenericFunction<T, K>): Promise<number> {
+    minAsync(selector: GenericFunction<T, number>): Promise<number> {
         return createPromise<number>(w => {
             this.min(selector, w);
         });
     }
 
-    maxAsync<K extends NumberKeys<T>>(selector: GenericFunction<T, K>): Promise<number> {
+    maxAsync(selector: GenericFunction<T, number>): Promise<number> {
         return createPromise<number>(w => {
             this.max(selector, w);
         });
     }
 
-    sumAsync<K extends NumberKeys<T>>(selector: GenericFunction<T, K>): Promise<number> {
+    sumAsync(selector: GenericFunction<T, number>): Promise<number> {
         return createPromise<number>(w => {
             this.sum(selector, w);
         });

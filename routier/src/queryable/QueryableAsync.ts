@@ -1,52 +1,50 @@
 import { Filter, GenericFunction, ParamsFilter, QueryOrdering } from "routier-core";
-import { TakeQueryable } from "./TakeQueryable";
-import { SkippedQueryable } from "./SkippedQueryable";
 import { SelectionQueryableAsync } from "./SelectionQueryableAsync";
 import { Queryable } from "./Queryable";
 import { SkippedQueryableAsync } from "./SkippedQueryableAsync";
 import { TakeQueryableAsync } from "./TakeQueryableAsync";
 
-export class QueryableAsync<T extends {}, U> extends SelectionQueryableAsync<T, U> {
+export class QueryableAsync<T extends {}, TResult> extends SelectionQueryableAsync<T, TResult> {
 
-    where(expression: Filter<T>): QueryableAsync<T, U>;
-    where<P extends {}>(selector: ParamsFilter<T, P>, params: P): QueryableAsync<T, U>;
+    where(expression: Filter<T>): QueryableAsync<T, TResult>;
+    where<P extends {}>(selector: ParamsFilter<T, P>, params: P): QueryableAsync<T, TResult>;
     where<P extends {} = never>(selector: ParamsFilter<T, P> | Filter<T>, params?: P) {
         this.setFiltersQueryOption(selector, params);
         // We don't need a params queryable.  Params are localized to the where clause and do not
         // matter to the rest of the query
-        return this.create(QueryableAsync<T, U>);
+        return this.create(QueryableAsync<T, TResult>);
     }
 
     map<R extends T[keyof T] | Partial<T>>(expression: GenericFunction<T, R>) {
 
         this.setMapQueryOption(expression);
-        return this.create(QueryableAsync<R, U>);
+        return this.create(QueryableAsync<T, R>);
     }
 
     skip(amount: number) {
         this.setSkipQueryOption(amount);
-        return this.create(SkippedQueryableAsync<T, U>);
+        return this.create(SkippedQueryableAsync<T, TResult>);
     }
 
     // cannot to a skip after a take
     take(amount: number) {
         this.setTakeQueryOption(amount);
-        return this.create(TakeQueryableAsync<T, U>);
+        return this.create(TakeQueryableAsync<T, TResult>);
     }
 
     sort(expression: GenericFunction<T, T[keyof T]>) {
         this.setSortQueryOption(expression, QueryOrdering.Ascending);
-        return this.create(QueryableAsync<T, U>);
+        return this.create(QueryableAsync<T, TResult>);
     }
 
     sortDescending(expression: GenericFunction<T, T[keyof T]>) {
         this.setSortQueryOption(expression, QueryOrdering.Descending);
-        return this.create(QueryableAsync<T, U>);
+        return this.create(QueryableAsync<T, TResult>);
     }
 
     // does not allow for async functions due to the subscription
     subscribe() {
         this.isSubScribed = true;
-        return this.create(Queryable<T, () => void>);
+        return this.create(Queryable<T, TResult, () => void>);
     }
 }

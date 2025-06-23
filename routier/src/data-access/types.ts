@@ -6,5 +6,5 @@ export type ResolveOptions = { merge?: boolean }
 
 export interface IDataAccessStrategy<T extends {}> {
     bulkOperations(collectionOptions: CollectionOptions, event: DbPluginBulkOperationsEvent<T>, done: (result: EntityModificationResult<T>, error?: any) => void): void;
-    query<TShape>(collectionOptions: CollectionOptions, event: DbPluginQueryEvent<T, TShape>, done: (response: TShape, error?: any) => void): void;
+    query<TShape>(collectionOptions: CollectionOptions, event: DbPluginQueryEvent<T>, done: (response: TShape, error?: any) => void): void;
 }

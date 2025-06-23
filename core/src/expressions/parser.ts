@@ -96,19 +96,40 @@ export const combineExpressions = (...expressions: Expression[]): Expression => 
     return result;
 };
 
-export const toExpression = <T extends any, P extends any>(schema: CompiledSchema<any>, fn: Filter<T> | ParamsFilter<T, P>, params: P) => {
-    const stringifiedFunction = fn.toString();
+export const toExpression = <T extends any, P extends any>(schema: CompiledSchema<any>, fn: Filter<T> | ParamsFilter<T, P>, params?: P) => {
+    try {
 
-    const [_, expression, ...rest] = stringifiedFunction.split("=>").map(w => w.trim());
+        const stringifiedFunction = fn.toString();
 
-    if (rest.length > 0) {
-        throw new Error("Invalid Function")
+        const [parameterNames, expression, ...rest] = stringifiedFunction.split("=>").map(w => w.trim());
+
+        if (rest.length > 0) {
+            throw new Error("Invalid Function")
+        }
+
+        let parameterData: { name: string, data: P } | undefined = undefined;
+
+        if (params != null) {
+
+            let name: string;
+            if (parameterNames.includes("[") && parameterNames.includes("]")) {
+                name = parameterNames.split(",")[1].replace(")", "").replace("]", "").trim()
+            }
+
+            parameterData = {
+                name,
+                data: params
+            }
+        }
+
+        return parseExpressionToTree(schema, expression, parameterData);
+    } catch (e) {
+        console.warn("Error parsing expression", e);
+        return Expression.NOT_PARSABLE
     }
-
-    return parseExpressionToTree(schema, expression, params);
 }
 
-const parseExpressionToTree = <P extends any>(schema: CompiledSchema<any>, expression: string, params: P) => {
+const parseExpressionToTree = <P extends any>(schema: CompiledSchema<any>, expression: string, params?: { name: string, data: P }) => {
 
     const parse = (exp: string): Expression => {
         // Remove any wrapping parentheses
@@ -217,7 +238,7 @@ function assertIsValueExpression(value: unknown): asserts value is ValueExpressi
     }
 }
 
-const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: string, params: P): ComparatorExpression => {
+const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: string, params?: { name: string, data: P }): ComparatorExpression => {
 
     // Remove any leading/trailing whitespace
     expression = expression.trim();
@@ -292,19 +313,36 @@ const getComparator = (value: string): ComparatorExpression => {
     return comparator
 }
 
-const getValue = <P extends any>(value: string, params: P): ValueExpression => {
-    return new ValueExpression({
-        value: value.startsWith("\'") || value.startsWith("\"") || params == null ? value.replace(/\"|\'/g, "") : getValueFromParams(value, params)
-    });
+const getValue = <P extends any>(value: string, params?: { name: string, data: P }): ValueExpression => {
+
+    if (value.startsWith("\'") || value.startsWith("\"") || params == null) {
+        return new ValueExpression({
+            value: value.replace(/\"|\'/g, "")
+        });
+    }
+
+    if (params != null && value.startsWith(params.name)) {
+        return new ValueExpression({
+            value: getValueFromParams(value, params)
+        });
+    }
+
+    if (Number.isFinite(Number(value))) {
+        return new ValueExpression({
+            value
+        });
+    }
+
+    throw new Error(`Cannot parse value from selector.  Value: ${value}`);
 }
 
-const getValueFromParams = <P extends any>(value: string, params: P) => {
+const getValueFromParams = <P extends any>(value: string, params: { name: string, data: P }) => {
 
     const split = value.split('.');
-    let result = params as any;
+    let result = params.data as any;
 
     if (split.length === 1) {
-        throw new Error(`Cannot find path in params for .where(). Make sure parameters are not used inline.\r\nPath: ${value}, Params: ${JSON.stringify(params)}`)
+        throw new Error(`Cannot find path in params for .where(). Make sure parameters are not used inline.\r\nPath: ${value}, Params: ${JSON.stringify(params.data)}`)
     }
 
     // For nested params
@@ -316,7 +354,7 @@ const getValueFromParams = <P extends any>(value: string, params: P) => {
             continue;
         }
 
-        throw new Error(`Cannot find path in params for .where(). Make sure parameters are not used inline.\r\nPath: ${value}, Params: ${JSON.stringify(params)}`)
+        throw new Error(`Cannot find path in params for .where(). Make sure parameters are not used inline.\r\nPath: ${value}, Params: ${JSON.stringify(params.data)}`)
     }
 
     return result;

@@ -1,5 +1,4 @@
 import { CompiledSchema, DeepPartial, Expression, IdType, InferCreateType, InferType, QueryOptionsCollection, TagCollection } from "..";
-import { Filterable } from "../expressions/types";
 import { SchemaParent } from "../schema";
 
 /**
@@ -11,7 +10,7 @@ export interface IDbPlugin {
      * @param event The query event containing schema, parent, and query operation.
      * @param done Callback with the result or error.
      */
-    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (result: TShape, error?: any) => void): void;
+    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity>, done: (result: TShape, error?: any) => void): void;
     /**
      * Destroys or cleans up the plugin, closing connections or freeing resources.
      * @param done Callback with an optional error.
@@ -28,7 +27,7 @@ export interface IDbPlugin {
 /**
  * Event for a query operation, including schema, parent, and the query operation.
  */
-export type DbPluginQueryEvent<TEntity extends {}, TShape extends any = TEntity> = DbPluginOperationEvent<TEntity, IQuery<TEntity, TShape>>;
+export type DbPluginQueryEvent<TEntity extends {}> = DbPluginOperationEvent<TEntity, IQuery<TEntity>>;
 
 /**
  * Event for bulk operations, including schema, parent, and the entity changes.
@@ -111,32 +110,16 @@ export type EntityModificationResult<T extends {}> = {
 }
 
 /**
- * Sort specification for a query.
- */
-export type QuerySort = { key: string, selector: (item: unknown) => unknown, direction: "asc" | "desc" };
-
-/**
  * Interface for a query operation, including expression, options, filters, and change tracking.
  */
-export type IQuery<TEntity extends {}, TShape extends any = TEntity> = {
-    /** The filter expression for the query. */
-    expression?: Expression;
+export type IQuery<TEntity extends {}> = {
+
     /** Query options (sort, skip, take, etc.). */
-    options: QueryOptionsCollection;
-    /** Additional filters to apply to the result. */
-    filters: Filterable<TShape, any>[];
+    options: QueryOptionsCollection<TEntity>;
+
     /**
      * Whether change tracking is enabled for the query result.
      * Only enabled when the response is not reduced/aggregated/mapped.
      */
     get changeTracking(): boolean;
-};
-
-/**
- * Field mapping for a query result, including source and destination names and a getter function.
- */
-export type QueryField = {
-    sourceName: string,
-    destinationName: string,
-    getter: <T>(data: Record<string, unknown>) => T;
 };

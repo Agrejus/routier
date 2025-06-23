@@ -1,10 +1,8 @@
-import { Filter, GenericFunction, InferType, ParamsFilter, QueryOptionName } from "routier-core";
+import { Filter, GenericFunction, ParamsFilter, QueryOptionName, toExpression } from "routier-core";
 import { QuerySource } from "./QuerySource";
 import { QueryResult } from "../types";
-import { NumberKeys } from "./types";
 
-
-export class SelectionQueryable<T extends {}, U> extends QuerySource<T> {
+export class SelectionQueryable<T extends {}, TResult, U> extends QuerySource<T> {
 
     toArray(done: QueryResult<T[]>): U {
         this.getData(done);
@@ -27,7 +25,7 @@ export class SelectionQueryable<T extends {}, U> extends QuerySource<T> {
         }
 
         this._query({
-            doneOrExpression,
+            doneOrSelector: doneOrExpression,
             done,
             paramsOrDone
         }, (d, r, e) => {
@@ -60,7 +58,7 @@ export class SelectionQueryable<T extends {}, U> extends QuerySource<T> {
         this.queryOptions.add("take", 1); // ensure we only select 1 record
 
         this._query<P, T>({
-            doneOrExpression,
+            doneOrSelector: doneOrExpression,
             done,
             paramsOrDone
         }, (d, r, e) => {
@@ -93,7 +91,7 @@ export class SelectionQueryable<T extends {}, U> extends QuerySource<T> {
         const shaper = (r: T[]) => r.length > 0;
 
         this._query({
-            doneOrExpression,
+            doneOrSelector: doneOrExpression,
             done,
             paramsOrDone
         }, (d, r, e) => d(shaper(r), e));
@@ -109,7 +107,7 @@ export class SelectionQueryable<T extends {}, U> extends QuerySource<T> {
         // Need to select everything
         const coalescedDone = done != null ? done : (paramsOrDone as QueryResult<boolean>);
         return this._query({
-            doneOrExpression: coalescedDone
+            doneOrSelector: coalescedDone
         }, (d, r, e) => {
 
             if (done != null) {
@@ -130,15 +128,15 @@ export class SelectionQueryable<T extends {}, U> extends QuerySource<T> {
         }) as U;
     }
 
-    min<K extends NumberKeys<T>>(selector: GenericFunction<T, K>, done: QueryResult<number>): U {
+    min(selector: GenericFunction<T, number>, done: QueryResult<number>): U {
         return this._aggregateFunction(selector, "min", done);
     }
 
-    max<K extends NumberKeys<T>>(selector: GenericFunction<T, K>, done: QueryResult<number>): U {
+    max(selector: GenericFunction<T, number>, done: QueryResult<number>): U {
         return this._aggregateFunction(selector, "max", done);
     }
 
-    sum<K extends NumberKeys<T>>(selector: GenericFunction<T, K>, done: QueryResult<number>): U {
+    sum(selector: GenericFunction<T, number>, done: QueryResult<number>): U {
         return this._aggregateFunction(selector, "sum", done);
     }
 
@@ -188,12 +186,12 @@ export class SelectionQueryable<T extends {}, U> extends QuerySource<T> {
     }
 
     private _query<P extends {}, R extends {}>(options: {
-        doneOrExpression: Filter<T> | ParamsFilter<T, P> | QueryResult<R>,
+        doneOrSelector: Filter<T> | ParamsFilter<T, P> | QueryResult<R>,
         paramsOrDone?: P | QueryResult<R>,
         done?: QueryResult<R>
     }, resolve: (done: QueryResult<R>, data: T[], error?: any) => void) {
 
-        const { doneOrExpression, done, paramsOrDone } = options;
+        const { doneOrSelector: doneOrExpression, done, paramsOrDone } = options;
 
         if (done == null && paramsOrDone == null) {
             // empty query
@@ -210,7 +208,12 @@ export class SelectionQueryable<T extends {}, U> extends QuerySource<T> {
 
         if (done != null) {
             // params query
-            this.queryOptions.add("filters", { filter: doneOrExpression, params: paramsOrDone });
+            const selector = doneOrExpression as Filter<T> | ParamsFilter<T, {}>;
+            const params = paramsOrDone as P;
+            const expression = toExpression(this.schema, selector, params);
+
+            this.queryOptions.add("filter", { filter: selector, expression, params });
+
             this.getData<T[]>((r, e) => {
                 if (!e) {
                     resolve(done, r, e);
@@ -223,7 +226,10 @@ export class SelectionQueryable<T extends {}, U> extends QuerySource<T> {
 
         // regular query
         const d = paramsOrDone as QueryResult<R>;
-        this.queryOptions.add("filters", { filter: doneOrExpression });
+        const selector = doneOrExpression as Filter<T>;
+        const expression = toExpression(this.schema, selector);
+
+        this.queryOptions.add("filter", { filter: selector, expression });
         this.getData<T[]>((r, e) => {
             if (!e) {
                 resolve(d, r, e);
@@ -233,8 +239,9 @@ export class SelectionQueryable<T extends {}, U> extends QuerySource<T> {
         });
     }
 
-    private _aggregateFunction<K extends NumberKeys<T>>(selector: GenericFunction<T, K>, name: QueryOptionName, done: QueryResult<number>) {
-        this.queryOptions.add("map", selector);
+    private _aggregateFunction(selector: GenericFunction<T, number>, name: QueryOptionName, done: QueryResult<number>) {
+        const fields = this.getFields(selector);
+        this.queryOptions.add("map", { selector, fields });
         this.queryOptions.add(name, true);
 
         this.getData<number>((r, e) => {

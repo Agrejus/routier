@@ -9,7 +9,7 @@ const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE
 export type LogHook<T> = (data: T & Record<string, unknown>) => void;
 
 export type QueryLogContext<TEntity extends {}, TShape extends any = TEntity> = {
-    query: IQuery<TEntity, TShape> & Record<string, unknown>;
+    query: IQuery<TEntity> & Record<string, unknown>;
     schema: CompiledSchema<TEntity>;
     result?: TShape;
     error?: any;
@@ -78,7 +78,7 @@ export class DbPluginLogging implements IDbPlugin {
         return this; // For chaining
     }
 
-    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (result: TShape, error?: any) => void): void {
+    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity>, done: (result: TShape, error?: any) => void): void {
         const { operation, schema } = event;
         const start = now();
 
@@ -101,7 +101,7 @@ export class DbPluginLogging implements IDbPlugin {
                 const duration = end - start;
 
                 // Update context with result information
-                context.result = result;
+                context.result = result as any;
                 context.error = error;
                 context.duration = duration;
                 context.isCriticalError = false;
@@ -115,7 +115,7 @@ export class DbPluginLogging implements IDbPlugin {
                 }
 
                 // Call the original callback
-                done(result, error);
+                done(result as any, error);
             });
         } catch (e: any) {
             const end = now();
@@ -228,9 +228,10 @@ export class DbPluginLogging implements IDbPlugin {
         }
 
         // Filters
-        if (query.filters && query.filters.length > 0) {
+        const filters = query.options.getValues("filter");
+        if (filters.length > 0) {
             console.groupCollapsed('Filters:');
-            query.filters.forEach((filter, index) => {
+            filters.forEach((filter, index) => {
                 console.log(`Filter ${index + 1}:`, filter);
             });
             console.groupEnd();
@@ -240,19 +241,17 @@ export class DbPluginLogging implements IDbPlugin {
         if (query.options) {
             console.groupCollapsed('Options:');
 
-            const fields = query.options.getValue<[]>("fields");
-
             // Clean up options for display
             const options = {
-                skip: query.options.getValue("skip"),
-                take: query.options.getValue("take"),
-                sort: query.options.getValue("sort"),
-                min: query.options.getValue("min"),
-                max: query.options.getValue("max"),
-                count: query.options.getValue("count"),
-                sum: query.options.getValue("sum"),
-                distinct: query.options.getValue("distinct"),
-                fields: fields != null ? fields : undefined
+                skip: query.options.getValues("skip"),
+                take: query.options.getValues("take"),
+                sort: query.options.getValues("sort"),
+                min: query.options.getValues("min"),
+                max: query.options.getValues("max"),
+                count: query.options.getValues("count"),
+                sum: query.options.getValues("sum"),
+                distinct: query.options.getValues("distinct"),
+                map: query.options.getValues("map")
             };
 
             // Display as a table if possible

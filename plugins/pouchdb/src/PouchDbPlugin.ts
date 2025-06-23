@@ -1,5 +1,5 @@
 import PouchDB from 'pouchdb';
-import { assertIsArray, assertIsNotNull, ComparatorExpression, DbPluginBulkOperationsEvent, DbPluginEvent, DbPluginQueryEvent, EntityChanges, EntityModificationResult, Expression, getProperties, IDbPlugin, IdType, IQuery, PropertyInfo, SyncronousQueue, SyncronousUnitOfWork, toMap, TrampolinePipeline } from 'routier-core';
+import { assertIsArray, assertIsNotNull, combineExpressions, ComparatorExpression, DbPluginBulkOperationsEvent, DbPluginEvent, DbPluginQueryEvent, EntityChanges, EntityModificationResult, Expression, getProperties, IDbPlugin, IdType, IQuery, PropertyInfo, QueryOptionsCollection, SyncronousQueue, SyncronousUnitOfWork, toMap, TrampolinePipeline } from 'routier-core';
 import { PouchDbTranslator } from './PouchDbTranslator';
 
 const queue = new SyncronousQueue();
@@ -11,7 +11,7 @@ type PouchDBPluginOptions = PouchDB.Configuration.DatabaseConfiguration & {
 }
 
 type ForEachPayload<TEntity extends {}, TShape extends unknown = TEntity> = {
-    event: DbPluginQueryEvent<TEntity, TShape>,
+    event: DbPluginQueryEvent<TEntity>,
     results: TShape,
     error?: any
 }
@@ -100,16 +100,17 @@ export class PouchDbPlugin implements IDbPlugin {
 
         for (let i = 0, length = expressions.length; i < length; i++) {
             const expression = expressions[i];
-            const queryEvent: DbPluginQueryEvent<T, { _id: IdType; _rev: string; _deleted: true; }[]> = {
+            const queryEvent: DbPluginQueryEvent<T> = {
                 parent: event.parent,
                 schema: event.schema,
                 operation: {
-                    expression: expression,
+                    // expression: expression,
                     changeTracking: false,
-                    filters: [],
-                    options: {
-                        shaper: item => ({ _id: (item as any)._id, _rev: (item as any)._rev, _deleted: true })
-                    }
+                    // filters: [],
+                    // options: {
+                    //     shaper: item => ({ _id: (item as any)._id, _rev: (item as any)._rev, _deleted: true })
+                    // }
+                    options: new QueryOptionsCollection()
                 }
             }
 
@@ -219,7 +220,7 @@ export class PouchDbPlugin implements IDbPlugin {
         }
     }
 
-    private resolveIndexes<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (ddoc: PouchDbDesignDoc | null, error?: any) => void) {
+    private resolveIndexes<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity>, done: (ddoc: PouchDbDesignDoc | null, error?: any) => void) {
 
         const indexes = event.schema.getIndexes();
 
@@ -482,7 +483,7 @@ export class PouchDbPlugin implements IDbPlugin {
         queue.enqueue(unitOfWork.bind(this));
     }
 
-    query<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (result: TShape, error?: any) => void): void {
+    query<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity>, done: (result: TShape, error?: any) => void): void {
         const unitOfWork: SyncronousUnitOfWork = (d) => this._query<TEntity, TShape>(event, (r, e) => {
             d();
             done(r, e)
@@ -491,7 +492,7 @@ export class PouchDbPlugin implements IDbPlugin {
         queue.enqueue(unitOfWork.bind(this));
     }
 
-    protected onGetIndex<TEntity extends {}, TShape extends unknown = TEntity>(_: IQuery<TEntity, TShape>, __: PouchDB.Find.FindRequest<unknown>, done: (result: null | string | [string, string]) => void) {
+    protected onGetIndex<TEntity extends {}, TShape extends unknown = TEntity>(_: IQuery<TEntity>, __: PouchDB.Find.FindRequest<unknown>, done: (result: null | string | [string, string]) => void) {
         done(null);
     }
 
@@ -555,7 +556,7 @@ export class PouchDbPlugin implements IDbPlugin {
         };
     }
 
-    private _queryIndex<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, matchingIndex: MatchingIndex, done: (result: TShape, error?: any) => void) {
+    private _queryIndex<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity>, matchingIndex: MatchingIndex, done: (result: TShape, error?: any) => void) {
         const jsonTranslator = new PouchDbTranslator<TEntity, TShape>(event.operation, event.schema);
         this._doWork((w, d) => {
 
@@ -576,11 +577,11 @@ export class PouchDbPlugin implements IDbPlugin {
         }, done);
     }
 
-    private _queryNoIndex<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (result: TShape, error?: any) => void) {
+    private _queryNoIndex<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity>, done: (result: TShape, error?: any) => void) {
         const jsonTranslator = new PouchDbTranslator<TEntity, TShape>(event.operation, event.schema);
         this._doWork((w, d) => {
             w.query<{}, any>((doc, emit) => {
-                if (typeof doc === "object" && "_id" in doc && jsonTranslator.satisfies(doc)) {
+                if (typeof doc === "object" && "_id" in doc && jsonTranslator.matches(doc)) {
                     emit(doc._id, doc);
                 }
             }, (error, response) => {
@@ -596,7 +597,7 @@ export class PouchDbPlugin implements IDbPlugin {
         }, done);
     }
 
-    private _query<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (result: TShape, error?: any) => void): void {
+    private _query<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity>, done: (result: TShape, error?: any) => void): void {
         this.resolveIndexes(event, (ddoc, e) => {
 
             if (e) {
@@ -604,12 +605,14 @@ export class PouchDbPlugin implements IDbPlugin {
                 return;
             }
 
-            if (ddoc == null || event.operation.expression == null || (event.operation.expression != null && Expression.isEmpty(event.operation.expression))) {
+            const expression = this._getExpression(event);
+
+            if (ddoc == null || Expression.isEmpty(expression)) {
                 this._queryNoIndex(event, done);
                 return;
             }
 
-            const matchingIndex = this._findMatchingIndex(ddoc, event.operation.expression);
+            const matchingIndex = this._findMatchingIndex(ddoc, expression);
 
             if (matchingIndex == null) {
                 this._queryNoIndex(event, done);
@@ -618,6 +621,20 @@ export class PouchDbPlugin implements IDbPlugin {
 
             this._queryIndex(event, matchingIndex, done);
         });
+    }
+
+    private _getExpression<TEntity extends {}>(event: DbPluginQueryEvent<TEntity>) {
+        const filters = event.operation.options.get("filter");
+
+        const databaseFilters = filters.filter(x => x.option.target === "database");
+
+        if (databaseFilters.length === 0) {
+            return Expression.EMPTY;
+        }
+
+        const expressions = databaseFilters.map(x => x.option.value.expression);
+
+        return combineExpressions(...expressions);
     }
 
     private _pipelineQuery<TEntity extends {}, TShape extends unknown = TEntity>(payload: ForEachPayload<TEntity, TShape>, done: (results: TShape, error?: any) => void): void {

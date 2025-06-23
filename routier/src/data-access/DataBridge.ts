@@ -1,4 +1,4 @@
-import { EntityModificationResult, IDbPlugin, Query, uuidv4 } from "routier-core";
+import { EntityModificationResult, IDbPlugin, uuidv4 } from "routier-core";
 import { CollectionOptions } from "../types";
 import { StatefulDataAccessStrategy } from "./strategies/StatefulDataAccessStrategy";
 import { DatabaseDataAccessStrategy } from "./strategies/DatabaseDataAccessStrategy";
@@ -37,11 +37,11 @@ export class DataBridge<T extends {}> {
         this.strategy.bulkOperations(this.options, event, done);
     }
 
-    query<TShape>(event: DbPluginQueryEvent<T, TShape>, done: (response: TShape, error?: any) => void) {
+    query<TShape>(event: DbPluginQueryEvent<T>, done: (response: TShape, error?: any) => void) {
         this.strategy.query(this.options, event, done);
     }
 
-    subscribe<TShape, U>(event: DbPluginQueryEvent<T, TShape>, done: (result: TShape, error?: any) => void) {
+    subscribe<TShape, U>(event: DbPluginQueryEvent<T>, done: (result: TShape, error?: any) => void) {
         const { schema } = event
         const subscription = new UniDirectionalSubscription<T>(schema.key, this.signal);
         subscription.onMessage((changes) => {

@@ -1,45 +1,45 @@
+import { QueryOption } from "../query/types";
 import { DataTranslator } from "./DataTranslator";
 
 export class SqlTranslator<TEntity extends {}, TShape> extends DataTranslator<TEntity, TShape> {
 
-    // data should be the result we are looking for 
-    count<T extends number>(data: unknown): T {
-        return data as T;
+    count<TResult extends number>(data: unknown, _: QueryOption<TEntity, "count">): TResult {
+        return data as TResult;
     }
 
-    min<T extends string | number | Date>(data: unknown): T {
-        return data as T;
+    min<TResult extends string | number | Date>(data: unknown, _: QueryOption<TEntity, "min">): TResult {
+        return data as TResult;
     }
 
-    max<T extends string | number | Date>(data: unknown): T {
-        return data as T;
+    max<TResult extends string | number | Date>(data: unknown, _: QueryOption<TEntity, "max">): TResult {
+        return data as TResult;
     }
 
-    sum<T extends number>(data: unknown): T {
-        return data as T;
+    sum<TResult extends number>(data: unknown, _: QueryOption<TEntity, "sum">): TResult {
+        return data as TResult;
     }
 
-    distinct<T>(data: unknown): T {
-        return data as T;
+    distinct<TResult>(data: unknown, _: QueryOption<TEntity, "distinct">): TResult {
+        return data as TResult;
     }
 
-    default<T>(data: unknown): T {
-        return data as T
+    filter<TResult>(data: unknown, _: QueryOption<TEntity, "filter">): TResult {
+        return data as TResult;
     }
 
-    skip<T>(data: unknown): T {
-        return data as T
+    skip(data: unknown, _: QueryOption<TEntity, "skip">): TEntity {
+        return data as TEntity;
     }
 
-    take<T>(data: unknown): T {
-        return data as T
+    take(data: unknown, _: QueryOption<TEntity, "take">): TEntity {
+        return data as TEntity;
     }
 
-    sort<T>(data: unknown): T {
-        return data as T
+    sort(data: unknown, _: QueryOption<TEntity, "sort">): TEntity {
+        return data as TEntity;
     }
 
-    map<T>(data: unknown): T {
-        return data as T
+    map(data: unknown, _: QueryOption<TEntity, "map">): TEntity {
+        return data as TEntity;
     }
 }

@@ -4,7 +4,7 @@ export {
     Expression,
     ExpressionType,
     OperatorExpression,
-    PropertyExpression as PropertyPathExpression,
+    PropertyExpression,
     ValueExpression,
     Filter,
     Operator,
@@ -21,12 +21,17 @@ export {
 export {
     QueryOption,
     QueryOptionName,
-    QueryOptionTarget,
-    QueryOrdering
+    QueryOptionExecutionTarget,
+    QueryOrdering,
+    QueryField,
+    QueryOptionValueMap,
+    QuerySort,
+
 } from './plugins/query/types';
 
 export {
-    QueryOptionsCollection
+    QueryOptionsCollection,
+    QueryCollectionItem
 } from './plugins/query/QueryOptionsCollection';
 
 export { getProperties } from './expressions/utils';
@@ -41,9 +46,7 @@ export {
     IDbPlugin,
     EntityChanges,
     EntityModificationResult,
-    QueryField,
     IQuery,
-    QuerySort,
     DbPluginQueryEvent,
     DbPluginBulkOperationsEvent,
     DbPluginEvent,
