@@ -47,7 +47,7 @@ export class DataBridge<T extends {}> {
         subscription.onMessage((changes) => {
 
 
-            if (changes.expressions != null) {
+            if (changes.queries.length > 0) {
                 // If the expression is not null, that means we are trying to remove by an expression
                 // we need to run the query because we do not know about any overlap
                 this.query(event, done);

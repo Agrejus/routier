@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, afterAll } from 'vitest';
-import { BasicRoutier } from '../contexts/BasicRoutier';
+import { BasicDataStore } from '../contexts/BasicDataStore';
 import { product } from '../schemas/product';
 import { generateData } from '../data/generator';
-import { fa, faker } from '@faker-js/faker';
-import { BasicContextFactory } from '../contexts/BasicRoutierFactory';
+import { faker } from '@faker-js/faker';
+import { BasicDataStoreFactory } from '../contexts/BasicDataStoreFactory';
 
 // we can solve this by having a common interface each schema adheres to
 // Then we can create a schema for each database to ensure we test everything
@@ -23,7 +23,7 @@ const wait = (ms: number) => new Promise<void>((resolve) => {
     run();
 });
 
-const seedData = async (routier: BasicRoutier, count: number = 2) => {
+const seedData = async (routier: BasicDataStore, count: number = 2) => {
 
     const generatedData = generateData(product, count);
 
@@ -33,12 +33,12 @@ const seedData = async (routier: BasicRoutier, count: number = 2) => {
 
 describe('saveChanges', () => {
 
-    const factory = BasicContextFactory.create();
+    const factory = BasicDataStoreFactory.create();
     afterAll(async () => {
         await factory.cleanup();
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :Can save changes when there are no changes', async () => {
             await routier.saveChangesAsync();
         });
@@ -46,13 +46,13 @@ describe('saveChanges', () => {
 });
 
 describe('add', () => {
-    const factory = BasicContextFactory.create();
+    const factory = BasicDataStoreFactory.create();
 
     afterAll(async () => {
         await factory.cleanup();
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :Can add a basic product', async () => {
             // Arrange
             const [item] = generateData(product, 1);
@@ -72,7 +72,7 @@ describe('add', () => {
         });
     })
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :Can add multiple products', async () => {
             // Arrange
             const items = generateData(product, 2);
@@ -97,11 +97,11 @@ describe('add', () => {
 });
 
 describe('remove', () => {
-    const factory = BasicContextFactory.create();
+    const factory = BasicDataStoreFactory.create();
     afterAll(async () => {
         await factory.cleanup();
     });
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :removeOne', async () => {
             // Arrange
             await seedData(routier, 2);
@@ -119,12 +119,12 @@ describe('remove', () => {
 });
 
 describe('update', () => {
-    const factory = BasicContextFactory.create();
+    const factory = BasicDataStoreFactory.create();
     afterAll(async () => {
         await factory.cleanup();
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :updateOne', async () => {
             // Arrange
             await seedData(routier, 2);
@@ -142,12 +142,12 @@ describe('update', () => {
 });
 
 describe('toArray', () => {
-    const factory = BasicContextFactory.create();
+    const factory = BasicDataStoreFactory.create();
     afterAll(async () => {
         await factory.cleanup();
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :all records', async () => {
             // Arrange
             await seedData(routier);
@@ -160,7 +160,7 @@ describe('toArray', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :toArrayAsync with no seed data', async () => {
 
             // Act
@@ -171,7 +171,7 @@ describe('toArray', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :where + skip + toArrayAsync', async () => {
             // Arrange
             await seedData(routier, 100);
@@ -184,7 +184,7 @@ describe('toArray', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :where + skip + toArrayAsync', async () => {
             // Arrange
             await seedData(routier, 2);
@@ -197,7 +197,7 @@ describe('toArray', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :where + toArrayAsync', async () => {
             // Arrange
             await seedData(routier);
@@ -210,7 +210,7 @@ describe('toArray', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :map + toArrayAsync + one property', async () => {
             // Arrange
             await seedData(routier, 100);
@@ -225,7 +225,7 @@ describe('toArray', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :sort', async () => {
             // Arrange
             await seedData(routier, 200);
@@ -246,7 +246,7 @@ describe('toArray', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :sort descending', async () => {
             // Arrange
             await seedData(routier, 200);
@@ -267,7 +267,7 @@ describe('toArray', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :where + where', async () => {
             // Arrange
             await seedData(routier, 200);
@@ -284,7 +284,7 @@ describe('toArray', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :where + sort + toArrayAsync', async () => {
             // Arrange
             await seedData(routier, 200);
@@ -307,12 +307,12 @@ describe('toArray', () => {
 });
 
 describe('first', () => {
-    const factory = BasicContextFactory.create();
+    const factory = BasicDataStoreFactory.create();
     afterAll(async () => {
         await factory.cleanup();
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :firstAsync with result', async () => {
             // Arrange
             await seedData(routier);
@@ -325,14 +325,14 @@ describe('first', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :firstAsync with no result', async () => {
             // Act
             expect(routier.products.firstAsync(w => w._id === "SomeMissingId")).rejects.toThrow();
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :where + firstAsync with no result found', async () => {
             // Arrange
             await seedData(routier);
@@ -342,7 +342,7 @@ describe('first', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :where + firstAsync', async () => {
             // Arrange
             await seedData(routier);
@@ -355,7 +355,7 @@ describe('first', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :throws: where + firstAsync', async () => {
             // Arrange
             await seedData(routier);
@@ -367,12 +367,12 @@ describe('first', () => {
 });
 
 describe('firstOrUndefined', () => {
-    const factory = BasicContextFactory.create();
+    const factory = BasicDataStoreFactory.create();
     afterAll(async () => {
         await factory.cleanup();
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :firstOrUndefinedAsync with result', async () => {
             // Arrange
             await seedData(routier);
@@ -385,7 +385,7 @@ describe('firstOrUndefined', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :firstOrUndefinedAsync with no result', async () => {
 
             // Act
@@ -396,7 +396,7 @@ describe('firstOrUndefined', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :where + firstOrUndefinedAsync', async () => {
             // Arrange
             await seedData(routier);
@@ -409,7 +409,7 @@ describe('firstOrUndefined', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :map + firstOrUndefinedAsync + one property', async () => {
             // Arrange
             await seedData(routier, 100);
@@ -423,7 +423,7 @@ describe('firstOrUndefined', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :map + firstOrUndefinedAsync + two properties', async () => {
             // Arrange
             await seedData(routier, 100);
@@ -440,12 +440,12 @@ describe('firstOrUndefined', () => {
 });
 
 describe("subscribe", () => {
-    const factory = BasicContextFactory.create();
+    const factory = BasicDataStoreFactory.create();
     afterAll(async () => {
         await factory.cleanup();
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :not subscribed should not fire when data changes + firstOrUndefined has query', async () => {
 
             const callback = vi.fn();
@@ -467,7 +467,7 @@ describe("subscribe", () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :subscribe should fire when data changes + firstOrUndefined has query', async () => {
 
             const callback = vi.fn();
@@ -492,7 +492,7 @@ describe("subscribe", () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :not subscribed should not fire when data changes + firstOrUndefined has query', async () => {
 
             const callback = vi.fn();
@@ -514,7 +514,7 @@ describe("subscribe", () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :subscribe should fire when data changes + firstOrUndefined has no query', async () => {
 
             const callback = vi.fn();
@@ -539,7 +539,7 @@ describe("subscribe", () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :subscribe should fire when data changes + toArray', async () => {
 
             const callback = vi.fn();
@@ -564,7 +564,7 @@ describe("subscribe", () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :subscribe should fire when data changes + sum', async () => {
 
             const callback = vi.fn();
@@ -591,7 +591,7 @@ describe("subscribe", () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :subscribe should fire when data changes + count', async () => {
 
             const callback = vi.fn();
@@ -618,7 +618,7 @@ describe("subscribe", () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :subscribe should fire when data changes + max', async () => {
 
             const callback = vi.fn();
@@ -645,7 +645,7 @@ describe("subscribe", () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :subscribe should fire when data changes + min', async () => {
 
             const callback = vi.fn();
@@ -672,7 +672,7 @@ describe("subscribe", () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :subscribe should fire when data changes + distinct', async () => {
 
             const callback = vi.fn();
@@ -699,12 +699,12 @@ describe("subscribe", () => {
 });
 
 describe('every', () => {
-    const factory = BasicContextFactory.create();
+    const factory = BasicDataStoreFactory.create();
     afterAll(async () => {
         await factory.cleanup();
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :everyAsync = true', async () => {
             // Arrange
             await seedData(routier);
@@ -717,7 +717,7 @@ describe('every', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :everyAsync = false', async () => {
             // Arrange
             await seedData(routier);
@@ -732,12 +732,12 @@ describe('every', () => {
 });
 
 describe('some', () => {
-    const factory = BasicContextFactory.create();
+    const factory = BasicDataStoreFactory.create();
     afterAll(async () => {
         await factory.cleanup();
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :someAsync = true', async () => {
             // Arrange
             await seedData(routier);
@@ -750,7 +750,7 @@ describe('some', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :someAsync = false', async () => {
             // Arrange
             await seedData(routier);
@@ -763,7 +763,7 @@ describe('some', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :where + someAsync', async () => {
             // Arrange
             await seedData(routier);
@@ -778,12 +778,12 @@ describe('some', () => {
 });
 
 describe('count', () => {
-    const factory = BasicContextFactory.create();
+    const factory = BasicDataStoreFactory.create();
     afterAll(async () => {
         await factory.cleanup();
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :countAsync', async () => {
             // Arrange
             await seedData(routier, 200);
@@ -795,7 +795,7 @@ describe('count', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :where + countAsync', async () => {
             // Arrange
             await seedData(routier);
@@ -808,7 +808,7 @@ describe('count', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :where + countAsync with no data', async () => {
             // Act
             const found = await routier.products.where(w => w._id != "").countAsync();
@@ -820,18 +820,18 @@ describe('count', () => {
 });
 
 describe('max', () => {
-    const factory = BasicContextFactory.create();
+    const factory = BasicDataStoreFactory.create();
     afterAll(async () => {
         await factory.cleanup();
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :max', async () => {
             // Arrange
             await seedData(routier, 200);
 
             const all = await routier.products.toArrayAsync();
-            const max = await routier.products.map(w => w.price).maxAsync();
+            const max = await routier.products.maxAsync(w => w.price);
 
             all.sort((a, b) => b.price - a.price);
 
@@ -841,12 +841,12 @@ describe('max', () => {
 });
 
 describe('min', () => {
-    const factory = BasicContextFactory.create();
+    const factory = BasicDataStoreFactory.create();
     afterAll(async () => {
         await factory.cleanup();
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :min', async () => {
             // Arrange
             await seedData(routier, 200);
@@ -860,7 +860,7 @@ describe('min', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :where + min', async () => {
             // Arrange
             await seedData(routier, 200);
@@ -877,12 +877,12 @@ describe('min', () => {
 });
 
 describe('sum', () => {
-    const factory = BasicContextFactory.create();
+    const factory = BasicDataStoreFactory.create();
     afterAll(async () => {
         await factory.cleanup();
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :sumAsync', async () => {
             // Arrange
             await seedData(routier, 200);
@@ -894,13 +894,13 @@ describe('sum', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :where + sumAsync', async () => {
             // Arrange
             await seedData(routier, 200);
 
             const all = await routier.products.toArrayAsync();
-            const count = await routier.products.where(w => w.price > 100).map(w => w.price).sumAsync();
+            const count = await routier.products.where(w => w.price > 100).sumAsync(w => w.price);
 
             const expectedSum = all.filter(w => w.price > 100).reduce((a, v) => a + v.price, 0);
             expect(expectedSum).toBe(count);
@@ -909,12 +909,12 @@ describe('sum', () => {
 });
 
 describe('distinct', () => {
-    const factory = BasicContextFactory.create();
+    const factory = BasicDataStoreFactory.create();
     afterAll(async () => {
         await factory.cleanup();
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :distinctAsync numbers', async () => {
             // Arrange
             await seedData(routier, 200);
@@ -928,7 +928,7 @@ describe('distinct', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :where + distinctAsync numbers', async () => {
             // Arrange
             await seedData(routier, 200);
@@ -942,7 +942,7 @@ describe('distinct', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :distinctAsync strings', async () => {
             // Arrange
             await seedData(routier, 200);
@@ -956,7 +956,7 @@ describe('distinct', () => {
         });
     });
 
-    factory.createRoutiers().forEach(routier => {
+    factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :distinctAsync dates', async () => {
             // Arrange
             await seedData(routier, 200);

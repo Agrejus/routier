@@ -151,7 +151,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
         return result;
     }
 
-    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (result: TShape, error?: any) => void): void {
+    query<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity>, done: (result: TShape, error?: any) => void): void {
         this._doWork(event, (db, d) => {
             const { operation, schema } = event;
             const { collectionName } = schema;

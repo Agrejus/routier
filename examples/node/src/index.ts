@@ -1,4 +1,4 @@
-import { Routier } from "routier";
+import { DataStore } from "routier";
 import { s, InferType, DbPluginLogging, DbPluginReplicator } from "routier-core";
 import { MemoryPlugin } from "routier-plugin-memory";
 import { PouchDbPlugin } from "routier-plugin-pouchdb";
@@ -107,10 +107,10 @@ const replicationPlugin = DbPluginReplicator.create({
     read: memoryPluginWithLogging
 });
 
-class Ctx extends Routier {
+class Ctx extends DataStore {
 
     constructor() {
-        super(pouchDbPlugin);
+        super(pouchDbPluginWithLogging);
     }
 
     // test = this.collection(model).create();
@@ -129,9 +129,10 @@ const r = async () => {
         debugger;
         const ctx = new Ctx();
 
+        const d = await ctx.nested.map(w => w.order).distinctAsync();
         const found = await ctx.nested.where(
             ([x, p]) => x.name.startsWith(p.name),
-            { name: "James" }
+            { name: "J" }
         ).sort(w => w._id)
             .map(w => ({ name: w.name, _id: w._id }))
             .toArrayAsync();
@@ -172,7 +173,7 @@ const r = async () => {
         // await ctx.saveChangesAsync();
 
         // how come we only have async operations after a where!!!
-        // ctx.nested.where(x => x._id === "").removeAsync();
+        ctx.nested.where(x => x._id === "").removeAsync();
 
         // await ctx.saveChangesAsync();
 

@@ -80,7 +80,7 @@ export type EntityChanges<T extends {}> = {
     /** Entities to remove. */
     removes: {
         entities: InferType<T>[];
-        expressions: Expression[];
+        queries: IQuery<T>[];
     };
     /**
      * Entities to update, mapped by ID. Each update includes the new doc and a delta of changed fields.

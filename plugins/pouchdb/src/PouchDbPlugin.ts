@@ -60,7 +60,7 @@ export class PouchDbPlugin implements IDbPlugin {
                 const { operation } = event;
                 const { adds, removes, updates } = operation;
 
-                this._getRemovalsByExpressions(event, removes.expressions, (r, e) => {
+                this._getRemovalsByQueries(event, removes.queries, (r, e) => {
 
                     if (e != null) {
                         d(e)
@@ -89,29 +89,21 @@ export class PouchDbPlugin implements IDbPlugin {
         }, done);
     }
 
-    private _getRemovalsByExpressions<T extends {}>(event: DbPluginEvent<T>, expressions: Expression[], done: (entities: { _id: IdType, _rev: string, _deleted: true }[], error?: any) => void) {
+    private _getRemovalsByQueries<T extends {}>(event: DbPluginEvent<T>, queries: IQuery<T>[], done: (entities: { _id: IdType, _rev: string, _deleted: true }[], error?: any) => void) {
 
-        if (expressions.length === 0) {
+        if (queries.length === 0) {
             done([]); // Do nothing, handle null here for readability above
             return;
         }
 
         const pipeline = new TrampolinePipeline<ForEachPayload<T, { _id: IdType; _rev: string; _deleted: true; }[]>>();
 
-        for (let i = 0, length = expressions.length; i < length; i++) {
-            const expression = expressions[i];
+        for (let i = 0, length = queries.length; i < length; i++) {
+            const query = queries[i];
             const queryEvent: DbPluginQueryEvent<T> = {
                 parent: event.parent,
                 schema: event.schema,
-                operation: {
-                    // expression: expression,
-                    changeTracking: false,
-                    // filters: [],
-                    // options: {
-                    //     shaper: item => ({ _id: (item as any)._id, _rev: (item as any)._rev, _deleted: true })
-                    // }
-                    options: new QueryOptionsCollection()
-                }
+                operation: query
             }
 
             pipeline.pipe((payload, done) => this._pipelineQuery({
@@ -149,7 +141,7 @@ export class PouchDbPlugin implements IDbPlugin {
                 const { operation } = event
                 const { adds, removes, updates } = operation;
 
-                this._getRemovalsByExpressions(event, removes.expressions, (r, e) => {
+                this._getRemovalsByQueries(event, removes.queries, (r, e) => {
 
                     if (e != null) {
                         d(e)
@@ -591,7 +583,8 @@ export class PouchDbPlugin implements IDbPlugin {
                     return;
                 }
 
-                const translated = jsonTranslator.translate(response.rows.map(w => w.value));
+                const data = response.rows.map(w => w.value);
+                const translated = jsonTranslator.translate(data);
                 d(translated);
             });
         }, done);

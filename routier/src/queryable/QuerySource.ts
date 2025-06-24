@@ -1,4 +1,4 @@
-import { toExpression, QueryField, CompiledSchema, DbPluginQueryEvent, SchemaParent, InferType, GenericFunction, QueryOptionsCollection, Filter, ParamsFilter, QueryOrdering, Query } from "routier-core";
+import { toExpression, QueryField, CompiledSchema, DbPluginQueryEvent, SchemaParent, InferType, GenericFunction, QueryOptionsCollection, Filter, ParamsFilter, QueryOrdering, Query, combineExpressions, Expression, IQuery } from "routier-core";
 import { DataBridge } from "../data-access/DataBridge";
 import { ChangeTracker } from "../change-tracking/ChangeTracker";
 
@@ -39,30 +39,11 @@ export abstract class QuerySource<T extends {}> {
     }
 
     protected _remove<U>(done: (error?: any) => void) {
-        // const expression = this.getExpression();
 
-        // // failed to parse expression, fall back to memory filtering
-        // if (expression.ok === false) {
-        //     this.getData<InferType<T>[]>((dataToRemove, dataToRemoveError) => {
+        const query = new Query<T>(this.queryOptions, false);
 
-        //         if (dataToRemoveError != null) {
-        //             done(dataToRemoveError);
-        //             return;
-        //         }
+        this.changeTracker.removeByQuery(query, null, done);
 
-        //         this.changeTracker.remove(dataToRemove, null, (_, error) => {
-        //             if (error) {
-        //                 done(error);
-        //                 return;
-        //             }
-
-        //             done();
-        //         });
-        //     });
-        //     return;
-        // }
-
-        // this.changeTracker.removeByExpression(expression.result, null, done);
         return this.subscribeQuery<T[]>(done) as U;
     }
 

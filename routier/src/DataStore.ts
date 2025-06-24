@@ -8,7 +8,7 @@ import { CollectionPipelines, SaveChangesContextStepOne } from './types';
  *
  * @implements Disposable
  */
-export class Routier implements Disposable {
+export class DataStore implements Disposable {
 
     /** The underlying database plugin used for persistence. */
     protected readonly dbPlugin: IDbPlugin;

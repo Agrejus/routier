@@ -1,4 +1,4 @@
-import { EntityChanges, EntityModificationResult, Expression, GenericFunction, IdType, InferCreateType, InferType, TagCollection, TrampolinePipeline } from "routier-core";
+import { EntityChanges, EntityModificationResult, Expression, GenericFunction, IdType, InferCreateType, InferType, IQuery, TagCollection, TrampolinePipeline } from "routier-core";
 
 export type QueryResult<T> = (value: T, error?: any) => void;
 export type EntityMap<T extends {}, R> = GenericFunction<T, R>;
@@ -110,5 +110,5 @@ export type CollectionPipelines = {
 
 export type CollectionChanges<T extends {}> = {
     entities: InferType<T>[];
-    expressions: Expression[];
+    queries: IQuery<T>[];
 }

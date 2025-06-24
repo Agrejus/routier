@@ -1,8 +1,32 @@
 import { Filter, GenericFunction, ParamsFilter } from "routier-core";
 import { SelectionQueryable } from "./SelectionQueryable";
-import { createPromise } from "../utilities";
+import { createPromise, createVoidPromise } from "../utilities";
 
 export class SelectionQueryableAsync<T extends {}, TResult> extends SelectionQueryable<T, TResult, void> {
+
+    removeAsync(expression: Filter<T>): Promise<void>;
+    removeAsync<P extends {}>(expression: ParamsFilter<T, P>, params: P): Promise<void>;
+    removeAsync(): Promise<void>;
+    removeAsync<P extends {} = never>(doneOrExpression?: Filter<T> | ParamsFilter<T, P>, params?: P): Promise<void> {
+
+        if (params != null) {
+            const paramsFilter = doneOrExpression as ParamsFilter<T, P>;
+            return createVoidPromise(w => {
+                this.remove(paramsFilter, params, w);
+            });
+        }
+
+        if (doneOrExpression != null) {
+            const paramsFilter = doneOrExpression as Filter<T>;
+            return createVoidPromise(w => {
+                this.remove(paramsFilter, w);
+            });
+        }
+
+        return createVoidPromise(w => {
+            this.remove(w);
+        });
+    }
 
     toArrayAsync(): Promise<T[]> {
         return createPromise<T[]>(w => this.toArray(w));

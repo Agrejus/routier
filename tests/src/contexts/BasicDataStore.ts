@@ -1,4 +1,4 @@
-import { Routier } from 'routier';
+import { DataStore } from 'routier';
 import { user } from '../schemas/user';
 import { product } from '../schemas/product';
 import { inventoryItem } from '../schemas/inventoryItem';
@@ -8,7 +8,7 @@ import { blogPost } from '../schemas/blogPost';
 import { comment } from '../schemas/comments';
 import { IDbPlugin } from 'routier-core';
 
-export class BasicRoutier extends Routier {
+export class BasicDataStore extends DataStore {
 
     get pluginName() {
         return this.dbPlugin.constructor.name
@@ -24,7 +24,7 @@ export class BasicRoutier extends Routier {
     comments = this.collection(comment).create();
 
     static create(plugin: IDbPlugin) {
-        return new BasicRoutier(plugin);
+        return new BasicDataStore(plugin);
     }
 
     async [Symbol.asyncDispose]() {

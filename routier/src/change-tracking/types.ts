@@ -1,4 +1,4 @@
-import { EntityModificationResult, IdType, InferCreateType, InferType, Query, ChangeTrackingType, TagCollection, EntityChanges, Expression } from "routier-core";
+import { EntityModificationResult, IdType, InferCreateType, InferType, Query, ChangeTrackingType, TagCollection, EntityChanges, Expression, IQuery } from "routier-core";
 import { EntityCallbackMany } from '../types'
 import { ResolveOptions } from "../data-access/types";
 
@@ -13,7 +13,7 @@ export interface IChangeTrackerStrategy<T extends {}> {
     enrich(entities: InferType<T>[]): InferType<T>[];
     add(entities: InferCreateType<T>[], tag: unknown | null, done: EntityCallbackMany<T>): void;
     remove(entities: InferType<T>[], tag: unknown | null, done: EntityCallbackMany<T>): void;
-    removeByExpression(expression: Expression, tag: unknown | null, done: (error?: any) => void): void;
+    removeByQuery(query: IQuery<T>, tag: unknown | null, done: (error?: any) => void): void;
     resolve(entities: InferType<T>[], tag: unknown | null, options?: ResolveOptions): InferType<T>[];
     hasChanges(): boolean;
     replace(existingEntity: InferType<T> | InferCreateType<T>, newEntity: InferType<T> | InferCreateType<T>): void;

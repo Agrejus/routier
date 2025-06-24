@@ -1,5 +1,5 @@
 import { CollectionChanges, CollectionOptions, CollectionPipelines, EntityCallbackMany, EntityMap, QueryResult, SaveChangesContextStepFive, SaveChangesContextStepFour, SaveChangesContextStepOne, SaveChangesContextStepSix, SaveChangesContextStepThree, SaveChangesContextStepTwo } from "../types";
-import { IDbPlugin, InferCreateType, InferType, Filter, ParamsFilter, CompiledSchema, Expression } from 'routier-core';
+import { IDbPlugin, InferCreateType, InferType, Filter, ParamsFilter, CompiledSchema, Expression, Query } from 'routier-core';
 import { ChangeTracker } from '../change-tracking/ChangeTracker';
 import { DataBridge } from '../data-access/DataBridge';
 import { UniDirectionalSubscription } from '../subscriptions/UniDirectionalSubscription';
@@ -128,7 +128,7 @@ export class Collection<TEntity extends {}> {
                     ...removals.entities,
                     ...adds as InferType<TEntity>[]
                 ],
-                expressions: removals.expressions
+                queries: removals.queries
             };
 
             this.unidirecitonalSubscription.send(changes);
@@ -198,7 +198,7 @@ export class Collection<TEntity extends {}> {
             done({
                 ...data, removes: {
                     entities: [],
-                    expressions: null
+                    queries: []
                 }
             });
             return;
@@ -263,7 +263,7 @@ export class Collection<TEntity extends {}> {
 
     removeAll(done: (error?: any) => void) {
         const tag = this.getAndDestroyTag()
-        this.changeTracker.removeByExpression(Expression.EMPTY, tag, done);
+        this.changeTracker.removeByQuery(Query.EMPTY<TEntity>(), tag, done);
     }
 
     removeAllAsync() {

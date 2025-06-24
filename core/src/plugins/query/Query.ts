@@ -5,15 +5,22 @@ import { QueryOptionsCollection } from './QueryOptionsCollection';
 export class Query<TEntity extends {}> implements IQuery<TEntity> {
 
     readonly options: QueryOptionsCollection<TEntity>;
+    private enableChangeTrackingOverride?: boolean
 
     constructor(
-        options: QueryOptionsCollection<TEntity>
+        options: QueryOptionsCollection<TEntity>,
+        enableChangeTrackingOverride?: boolean
     ) {
         this.options = options;
+        this.enableChangeTrackingOverride = enableChangeTrackingOverride;
     }
 
     // boolean value whether or not change tracking can be enabled on the query result
     get changeTracking(): boolean {
+
+        if (this.enableChangeTrackingOverride != null) {
+            return this.enableChangeTrackingOverride;
+        }
 
         const map = this.options.getValues("map");
         const count = this.options.has("count");

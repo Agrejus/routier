@@ -1,15 +1,15 @@
 import { IDbPlugin, uuidv4 } from "routier-core";
-import { BasicRoutier } from "./BasicRoutier";
+import { BasicDataStore } from "./BasicDataStore";
 import { MemoryPlugin } from 'routier-plugin-memory';
 import { PouchDbPlugin } from 'routier-plugin-pouchdb';
 import { DexiePlugin } from 'routier-plugin-dexie';
 
 type PluginCreator = () => IDbPlugin;
 
-export class BasicContextFactory {
+export class BasicDataStoreFactory {
 
     private creators: PluginCreator[] = [];
-    private routiers: BasicRoutier[] = [];
+    private routiers: BasicDataStore[] = [];
 
     private constructor(...pluginCreators: PluginCreator[]) {
         for (const creator of pluginCreators) {
@@ -17,11 +17,11 @@ export class BasicContextFactory {
         }
     }
 
-    createRoutiers() {
-        const result: BasicRoutier[] = [];
+    createDataStores() {
+        const result: BasicDataStore[] = [];
 
         for (const creator of this.creators) {
-            const routier = new BasicRoutier(creator());
+            const routier = new BasicDataStore(creator());
             result.push(routier);
             this.routiers.push(routier);
         }
@@ -30,10 +30,10 @@ export class BasicContextFactory {
     }
 
     static create() {
-        return new BasicContextFactory(
+        return new BasicDataStoreFactory(
             () => new PouchDbPlugin(uuidv4()),
             () => new MemoryPlugin(uuidv4()),
-            () => new DexiePlugin(uuidv4())
+            //() => new DexiePlugin(uuidv4())
         );
     }
 

@@ -12,3 +12,17 @@ export function createPromise<T>(fn: (callback: QueryResult<T>) => void) {
         })
     });
 }
+
+export function createVoidPromise(fn: (callback: (error?: any) => void) => void) {
+    return new Promise<void>((resolve, reject) => {
+        fn((e) => {
+            if (!e) {
+                resolve();
+                return;
+            }
+
+            reject(e);
+        })
+    });
+}
+

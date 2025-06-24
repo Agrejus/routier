@@ -98,10 +98,6 @@ export class JsonTranslator<TEntity extends {}, TShape> extends DataTranslator<T
 
         assertIsArray(data, this._formatDataNotArrayError("distinct"));
 
-        const map = this.query.options.getLast("map");
-
-        assertIsNotNull(map, this._formatMissingMapError("distinct"));
-
         const result = new Set<string | number | Date>();
 
         // would be nice to have property info here for type detection

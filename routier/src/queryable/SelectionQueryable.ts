@@ -4,6 +4,34 @@ import { QueryResult } from "../types";
 
 export class SelectionQueryable<T extends {}, TResult, U> extends QuerySource<T> {
 
+    remove(expression: Filter<T>, done: (error?: any) => void): void;
+    remove<P extends {}>(expression: ParamsFilter<T, P>, params: P, done: (error?: any) => void): void;
+    remove(done: (error?: any) => void): void;
+    remove<P extends {} = never>(doneOrExpression: Filter<T> | ParamsFilter<T, P> | ((error?: any) => void), paramsOrDone?: P | ((error?: any) => void), done?: (error?: any) => void): void {
+
+        if (done != null) {
+            // params expression
+            const paramsFilter = doneOrExpression as ParamsFilter<T, P>;
+            const paramsData = paramsOrDone as P;
+            this.setFiltersQueryOption(paramsFilter, paramsData);
+            this._remove(done);
+            return;
+        }
+
+        if (paramsOrDone != null) {
+            // generic expression
+            const d = paramsOrDone as (error?: any) => void
+            const genericFilter = doneOrExpression as Filter<T>;
+            this.setFiltersQueryOption(genericFilter);
+            this._remove(d);
+            return
+        }
+
+        // no expression, just remove
+        const d = doneOrExpression as (error?: any) => void;
+        this._remove(d);
+    }
+
     toArray(done: QueryResult<T[]>): U {
         this.getData(done);
         return this.subscribeQuery<T[]>(done) as U;

@@ -1,11 +1,11 @@
-import { IDbPlugin, CompiledSchema, EntityModificationResult, InferCreateType, DeepPartial, IdType, InferType, JsonTranslator, DbPluginBulkOperationsEvent, DbPluginQueryEvent, EntityChanges, assertIsArray, DbPluginEvent, Expression, TrampolinePipeline } from "routier-core";
+import { IDbPlugin, CompiledSchema, EntityModificationResult, InferCreateType, DeepPartial, IdType, InferType, JsonTranslator, DbPluginBulkOperationsEvent, DbPluginQueryEvent, EntityChanges, assertIsArray, DbPluginEvent, Expression, TrampolinePipeline, IQuery } from "routier-core";
 import { DbCollection } from "./DbCollection";
 import { MemoryDatabase } from ".";
 
 const dbs: Record<string, MemoryDatabase> = {}
 
 type ForEachPayload<TEntity extends {}, TShape extends unknown = TEntity> = {
-    event: DbPluginQueryEvent<TEntity, TShape>,
+    event: DbPluginQueryEvent<TEntity>,
     results: TShape,
     error?: any
 }
@@ -119,7 +119,7 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
     private _processRemovals<TEntity extends {}>(event: DbPluginBulkOperationsEvent<TEntity>, removes: EntityChanges<TEntity>["removes"], done: (removed: number, error?: any) => void) {
         const collection = this.resolveCollection(event.schema);
 
-        this._getRemovalsByExpressions(event, removes.expressions, (r, e) => {
+        this._getRemovalsByQueries(event, removes.queries, (r, e) => {
 
             try {
                 const removals = [...removes.entities, ...r];
@@ -135,7 +135,7 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
         })
     }
 
-    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (result: TShape, error?: any) => void): void {
+    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity>, done: (result: TShape, error?: any) => void): void {
 
         try {
             const { operation, schema } = event;
@@ -172,26 +172,21 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
     }
 
     // we need a plugin base!
-    private _getRemovalsByExpressions<T extends {}>(event: DbPluginEvent<T>, expressions: Expression[], done: (entities: T[], error?: any) => void) {
+    private _getRemovalsByQueries<T extends {}>(event: DbPluginEvent<T>, queries: IQuery<T>[], done: (entities: T[], error?: any) => void) {
 
-        if (expressions.length === 0) {
+        if (queries.length === 0) {
             done([]); // Do nothing, handle null here for readability above
             return;
         }
 
         const pipeline = new TrampolinePipeline<ForEachPayload<T, T[]>>();
 
-        for (let i = 0, length = expressions.length; i < length; i++) {
-            const expression = expressions[i];
-            const queryEvent: DbPluginQueryEvent<T, T[]> = {
+        for (let i = 0, length = queries.length; i < length; i++) {
+            const query = queries[i];
+            const queryEvent: DbPluginQueryEvent<T> = {
                 parent: event.parent,
                 schema: event.schema,
-                operation: {
-                    expression: expression,
-                    changeTracking: false,
-                    filters: [],
-                    options: {}
-                }
+                operation: query
             }
 
             pipeline.pipe((payload, done) => this._pipelineQuery({

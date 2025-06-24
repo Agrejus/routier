@@ -29,7 +29,7 @@ export class IdentityKeyChangeTrackingStrategy<TKey extends IdType, TEntity exte
     }
 
     hasChanges(): boolean {
-        return this.additions.length > 0 || this.removals.length > 0 || this.hasAttachmentsChanges() === true || this.removalExpressions.length > 0;
+        return this.additions.length > 0 || this.removals.length > 0 || this.hasAttachmentsChanges() === true || this.removalQueries.length > 0;
     }
 
     add(entities: InferCreateType<TEntity>[], tag: unknown | null, done: EntityCallbackMany<TEntity>): void {

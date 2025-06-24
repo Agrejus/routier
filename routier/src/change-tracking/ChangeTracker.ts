@@ -1,4 +1,4 @@
-import { ChangeTrackingType, CompiledSchema, EntityChanges, EntityModificationResult, Expression, InferCreateType, InferType } from "routier-core";
+import { ChangeTrackingType, CompiledSchema, EntityChanges, EntityModificationResult, Expression, InferCreateType, InferType, IQuery } from "routier-core";
 import { ResolveOptions } from "../data-access/types";
 import { EntityCallbackMany } from "../types";
 import { AdditionsPackage, IChangeTrackerStrategy } from "./types";
@@ -25,8 +25,8 @@ export class ChangeTracker<T extends {}> implements IChangeTrackerStrategy<T> {
         return this._strategy.remove(entities, tag, done);
     }
 
-    removeByExpression(expression: Expression, tag: unknown | null, done: (error?: any) => void) {
-        return this._strategy.removeByExpression(expression, tag, done);
+    removeByQuery(query: IQuery<T>, tag: unknown | null, done: (error?: any) => void) {
+        return this._strategy.removeByQuery(query, tag, done);
     }
 
     resolve(entities: InferType<T>[], tag: unknown | null, options?: ResolveOptions) {
@@ -49,7 +49,7 @@ export class ChangeTracker<T extends {}> implements IChangeTrackerStrategy<T> {
         if (this.hasChanges() === false) {
             return {
                 entities: [],
-                expressions: null
+                queries: []
             };
         }
 

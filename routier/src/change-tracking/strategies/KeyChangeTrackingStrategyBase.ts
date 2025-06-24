@@ -1,4 +1,4 @@
-import { CompiledSchema, EntityModificationResult, IdType, InferCreateType, InferType, ChangeTrackingType, TagCollection, EntityChanges, Expression } from "routier-core";
+import { CompiledSchema, EntityModificationResult, IdType, InferCreateType, InferType, ChangeTrackingType, TagCollection, EntityChanges, Expression, IQuery } from "routier-core";
 import { ChangeTrackedEntity, EntityCallbackMany } from "../../types";
 import { ResolveOptions } from "../../data-access/types";
 import { AdditionsPackage } from "../types";
@@ -6,7 +6,7 @@ import { AdditionsPackage } from "../types";
 export abstract class KeyChangeTrackingStrategyBase<TKey extends IdType, TEntity extends {}> {
 
     protected removals: InferType<TEntity>[] = [];
-    protected removalExpressions: Expression[] = [];
+    protected removalQueries: IQuery<TEntity>[] = [];
     protected attachments: Map<TKey, InferType<TEntity>> = new Map<TKey, InferType<TEntity>>();
     protected schema: CompiledSchema<TEntity>;
     protected abstract setAddition(enriched: InferCreateType<TEntity>): void;
@@ -84,7 +84,7 @@ export abstract class KeyChangeTrackingStrategyBase<TKey extends IdType, TEntity
         }
         return {
             entities,
-            expressions: this.removalExpressions
+            queries: this.removalQueries
         };
     }
 
@@ -153,13 +153,13 @@ export abstract class KeyChangeTrackingStrategyBase<TKey extends IdType, TEntity
         done(entities);
     }
 
-    removeByExpression(expression: Expression, tag: unknown | null, done: (error?: any) => void) {
+    removeByQuery(query: IQuery<TEntity>, tag: unknown | null, done: (error?: any) => void) {
         try {
-            this.removalExpressions.push(expression);
+            this.removalQueries.push(query);
 
             if (tag != null) {
                 const tagCollection = this.resolveTagCollection();
-                tagCollection.set(expression, tag);
+                tagCollection.set(query, tag);
             }
 
             done();

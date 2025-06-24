@@ -1,2 +1,2 @@
-export { Routier } from './Routier';
+export { DataStore } from './DataStore';
 export { Collection } from './collections/Collection';

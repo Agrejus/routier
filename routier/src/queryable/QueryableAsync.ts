@@ -3,6 +3,7 @@ import { SelectionQueryableAsync } from "./SelectionQueryableAsync";
 import { Queryable } from "./Queryable";
 import { SkippedQueryableAsync } from "./SkippedQueryableAsync";
 import { TakeQueryableAsync } from "./TakeQueryableAsync";
+import { createPromise } from "../utilities";
 
 export class QueryableAsync<T extends {}, TResult> extends SelectionQueryableAsync<T, TResult> {
 
