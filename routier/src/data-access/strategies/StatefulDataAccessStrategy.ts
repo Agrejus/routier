@@ -36,7 +36,7 @@ export class StatefulDataAccessStrategy<T extends {}> extends DataAccessStrategy
         getReplicator(this.dbPlugin, optimistic).bulkOperations(event, done);
     }
 
-    query<TShape>(_: CollectionOptions, event: DbPluginQueryEvent<T>, done: (response: TShape, error?: any) => void) {
+    query<TShape>(_: CollectionOptions, event: DbPluginQueryEvent<T, TShape>, done: (response: TShape, error?: any) => void) {
 
         const replicator = getReplicator(this.dbPlugin);
 
@@ -57,9 +57,9 @@ export class StatefulDataAccessStrategy<T extends {}> extends DataAccessStrategy
         }
 
         if (readPlugin.size === 0) {
-            const queryAll = Query.EMPTY<T>();
+            const queryAll = Query.EMPTY<T, TShape>();
 
-            this.dbPlugin.query<T, InferType<T>[]>({
+            this.dbPlugin.query<T, TShape>({
                 operation: queryAll,
                 parent: event.parent,
                 schema: event.schema

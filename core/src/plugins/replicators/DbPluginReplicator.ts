@@ -25,7 +25,7 @@ export class DbPluginReplicator implements IDbPlugin {
     /**
      * Will query the read plugin if there is one, otherwise the source plugin will be queried
     */
-    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity>, done: (result: TShape, error?: any) => void): void {
+    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (result: TShape, error?: any) => void): void {
         try {
 
             const plugin = this.plugins.read != null ? this.plugins.read : this.plugins.source;

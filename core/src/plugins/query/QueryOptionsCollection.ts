@@ -2,7 +2,7 @@ import { QueryOption, QueryOptionName, QueryOptionExecutionTarget, QueryOptionVa
 
 export type QueryCollectionItem<T, K extends QueryOptionName> = { index: number, option: QueryOption<T, K> };
 
-export class QueryOptionsCollection<T extends {}> {
+export class QueryOptionsCollection<T> {
 
     private options: Map<QueryOptionName, QueryCollectionItem<any, any>[]> = new Map<QueryOptionName, QueryCollectionItem<any, any>[]>();
     private nextExecutionTarget: QueryOptionExecutionTarget = "database";
@@ -13,11 +13,11 @@ export class QueryOptionsCollection<T extends {}> {
         return this.options;
     }
 
-    static EMPTY<R extends {}>() {
+    static EMPTY<R>() {
         return new QueryOptionsCollection<R>();
     }
 
-    static isEmpty<T extends {}>(options: QueryOptionsCollection<T>) {
+    static isEmpty<T>(options: QueryOptionsCollection<T>) {
         return options.items.size === 0;
     }
 
@@ -62,7 +62,7 @@ export class QueryOptionsCollection<T extends {}> {
     getLast<K extends QueryOptionName>(name: K): QueryOption<T, K> | null {
         this.resolveEnumeration();
 
-        for (let i = this.enumeratedItems.length; i >= 0; i--) {
+        for (let i = this.enumeratedItems.length - 1; i >= 0; i--) {
             const item = this.enumeratedItems[i];
 
             if (item.option.name === name) {

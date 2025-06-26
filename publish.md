@@ -59,3 +59,11 @@ Docs
         Why
         Getting Started
         Code Pens
+
+    TODO
+        min -> string/number/Date
+        max -> string/number/Date
+        sum -> number
+        count -> any
+        distinct -> any
+            ^^^^ all need work, how are the API's looking?  Do we want to have min/max/sum have a more narrow selector expression?  Support string/number/Dates?

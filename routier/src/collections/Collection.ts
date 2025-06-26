@@ -1,5 +1,5 @@
 import { CollectionChanges, CollectionOptions, CollectionPipelines, EntityCallbackMany, EntityMap, QueryResult, SaveChangesContextStepFive, SaveChangesContextStepFour, SaveChangesContextStepOne, SaveChangesContextStepSix, SaveChangesContextStepThree, SaveChangesContextStepTwo } from "../types";
-import { IDbPlugin, InferCreateType, InferType, Filter, ParamsFilter, CompiledSchema, Expression, Query } from 'routier-core';
+import { IDbPlugin, InferCreateType, InferType, Filter, ParamsFilter, CompiledSchema, Expression, Query, GenericFunction } from 'routier-core';
 import { ChangeTracker } from '../change-tracking/ChangeTracker';
 import { DataBridge } from '../data-access/DataBridge';
 import { UniDirectionalSubscription } from '../subscriptions/UniDirectionalSubscription';
@@ -263,7 +263,7 @@ export class Collection<TEntity extends {}> {
 
     removeAll(done: (error?: any) => void) {
         const tag = this.getAndDestroyTag()
-        this.changeTracker.removeByQuery(Query.EMPTY<TEntity>(), tag, done);
+        this.changeTracker.removeByQuery(Query.EMPTY<TEntity, TEntity>(), tag, done);
     }
 
     removeAllAsync() {
@@ -335,8 +335,8 @@ export class Collection<TEntity extends {}> {
         return result.sortDescending(selector);
     }
 
-    map<R extends TEntity[keyof TEntity] | {}>(expression: EntityMap<TEntity, R>) {
-        const result = new QueryableAsync<TEntity, TEntity>(this.schema as any, this.parent, {
+    map<R extends InferType<TEntity>[keyof InferType<TEntity>] | {}>(expression: EntityMap<InferType<TEntity>, R>) {
+        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.parent, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -467,6 +467,96 @@ export class Collection<TEntity extends {}> {
         });
 
         return result.everyAsync(expression as any, params);
+    }
+
+    min(selector: GenericFunction<InferType<TEntity>, number>, done: QueryResult<number>): void {
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.parent, {
+            dataBridge: this.dataBridge as any,
+            changeTracker: this.changeTracker as any
+        });
+
+        return result.min(selector as any, done);
+    }
+
+    minAsync(selector: GenericFunction<InferType<TEntity>, number>): Promise<number> {
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.parent, {
+            dataBridge: this.dataBridge as any,
+            changeTracker: this.changeTracker as any
+        });
+
+        return result.minAsync(selector as any);
+    }
+
+    max(selector: GenericFunction<InferType<TEntity>, number>, done: QueryResult<number>): void {
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.parent, {
+            dataBridge: this.dataBridge as any,
+            changeTracker: this.changeTracker as any
+        });
+
+        return result.max(selector as any, done);
+    }
+
+    maxAsync(selector: GenericFunction<InferType<TEntity>, number>): Promise<number> {
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.parent, {
+            dataBridge: this.dataBridge as any,
+            changeTracker: this.changeTracker as any
+        });
+
+        return result.maxAsync(selector as any);
+    }
+
+    sum(selector: GenericFunction<InferType<TEntity>, number>, done: QueryResult<number>): void {
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.parent, {
+            dataBridge: this.dataBridge as any,
+            changeTracker: this.changeTracker as any
+        });
+
+        return result.sum(selector as any, done);
+    }
+
+    sumAsync(selector: GenericFunction<InferType<TEntity>, number>): Promise<number> {
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.parent, {
+            dataBridge: this.dataBridge as any,
+            changeTracker: this.changeTracker as any
+        });
+
+        return result.sumAsync(selector as any);
+    }
+
+    count(done: QueryResult<number>): void {
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.parent, {
+            dataBridge: this.dataBridge as any,
+            changeTracker: this.changeTracker as any
+        });
+
+        return result.count(done);
+    }
+
+    countAsync(): Promise<number> {
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.parent, {
+            dataBridge: this.dataBridge as any,
+            changeTracker: this.changeTracker as any
+        });
+
+        return result.countAsync();
+    }
+
+    distinct(done: QueryResult<InferType<TEntity>[]>): void {
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.parent, {
+            dataBridge: this.dataBridge as any,
+            changeTracker: this.changeTracker as any
+        });
+
+        return result.distinct(done);
+    }
+
+    distinctAsync(): Promise<InferType<TEntity>[]> {
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.parent, {
+            dataBridge: this.dataBridge as any,
+            changeTracker: this.changeTracker as any
+        });
+
+        return result.distinctAsync();
     }
 
     private _resolvePromise<R>(options: {

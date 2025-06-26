@@ -1,17 +1,18 @@
-import { toExpression, QueryField, CompiledSchema, DbPluginQueryEvent, SchemaParent, InferType, GenericFunction, QueryOptionsCollection, Filter, ParamsFilter, QueryOrdering, Query, combineExpressions, Expression, IQuery } from "routier-core";
+import { toExpression, QueryField, CompiledSchema, DbPluginQueryEvent, SchemaParent, GenericFunction, QueryOptionsCollection, Filter, ParamsFilter, QueryOrdering, Query } from "routier-core";
 import { DataBridge } from "../data-access/DataBridge";
 import { ChangeTracker } from "../change-tracking/ChangeTracker";
 
-export abstract class QuerySource<T extends {}> {
+export abstract class QuerySource<TRoot extends {}, TShape> {
 
-    protected readonly dataBridge: DataBridge<T>;
-    protected readonly changeTracker: ChangeTracker<T>;
-    protected readonly queryOptions: QueryOptionsCollection<T>;
+    protected readonly dataBridge: DataBridge<TRoot>;
+    protected readonly changeTracker: ChangeTracker<TRoot>;
+    protected readonly queryOptions: QueryOptionsCollection<TShape>;
     protected isSubScribed: boolean = false;
-    protected schema: CompiledSchema<T>;
+    protected schema: CompiledSchema<TRoot>;
     protected parent: SchemaParent;
+    root: TRoot;
 
-    constructor(schema: CompiledSchema<T>, parent: SchemaParent, options: { queryable?: QuerySource<T>, dataBridge?: DataBridge<T>, changeTracker?: ChangeTracker<T> }) {
+    constructor(schema: CompiledSchema<TRoot>, parent: SchemaParent, options: { queryable?: QuerySource<TRoot, TShape>, dataBridge?: DataBridge<TRoot>, changeTracker?: ChangeTracker<TRoot> }) {
 
         this.schema = schema;
         this.parent = parent;
@@ -30,21 +31,21 @@ export abstract class QuerySource<T extends {}> {
             this.dataBridge = options.queryable.dataBridge;
             this.changeTracker = options.queryable.changeTracker;
         } else {
-            this.queryOptions = new QueryOptionsCollection<T>();
+            this.queryOptions = new QueryOptionsCollection<TShape>();
         }
     }
 
-    protected create<R extends {}, TInstance extends QuerySource<R>>(Instance: new (schema: CompiledSchema<R>, parent: SchemaParent, options: { queryable?: QuerySource<R>, dataBridge?: DataBridge<R>, changeTracker?: ChangeTracker<R> }) => TInstance) {
+    protected create<Root extends {}, Shape, TInstance extends QuerySource<Root, Shape>>(Instance: new (schema: CompiledSchema<Root>, parent: SchemaParent, options: { queryable?: QuerySource<Root, Shape>, dataBridge?: DataBridge<Root>, changeTracker?: ChangeTracker<Root> }) => TInstance) {
         return new Instance(this.schema as any, this.parent, { queryable: this as any });
     }
 
     protected _remove<U>(done: (error?: any) => void) {
 
-        const query = new Query<T>(this.queryOptions, false);
+        const query = new Query<TRoot, TRoot>(this.queryOptions as any, false);
 
         this.changeTracker.removeByQuery(query, null, done);
 
-        return this.subscribeQuery<T[]>(done) as U;
+        return this.subscribeQuery<TShape[]>(done) as U;
     }
 
     protected subscribeQuery<U>(done: (result: U, error?: any) => void) {
@@ -53,7 +54,7 @@ export abstract class QuerySource<T extends {}> {
             return () => { };
         }
 
-        const event = this.createEvent();
+        const event = this.createEvent<U>();
         const tags = this.changeTracker.getAndDestroyTags();
 
         return this.dataBridge.subscribe<U, unknown>(event, (r, e) => {
@@ -69,7 +70,7 @@ export abstract class QuerySource<T extends {}> {
         });
     }
 
-    protected getSortPropertyName(selector: GenericFunction<T, T[keyof T]>) {
+    protected getSortPropertyName(selector: GenericFunction<TShape, TShape[keyof TShape]>) {
         const stringified = selector.toString();
 
         if (stringified.includes("=>") === false) {
@@ -81,7 +82,7 @@ export abstract class QuerySource<T extends {}> {
         return this._extractPropertyName(body);
     }
 
-    protected getFields<T, R>(selector: GenericFunction<T, R>): QueryField[] {
+    protected getFields<TRoot, R>(selector: GenericFunction<TRoot, R>): QueryField[] {
 
         const stringified = selector.toString();
 
@@ -125,9 +126,9 @@ export abstract class QuerySource<T extends {}> {
     }
 
 
-    protected createEvent(): DbPluginQueryEvent<T> {
+    protected createEvent<Shape>(): DbPluginQueryEvent<TRoot, Shape> {
         return {
-            operation: new Query(this.queryOptions),
+            operation: new Query(this.queryOptions as any),
             parent: this.parent,
             schema: this.schema
         }
@@ -135,7 +136,7 @@ export abstract class QuerySource<T extends {}> {
 
     protected getData<TShape>(done: (result: TShape, error?: any) => void) {
 
-        const event = this.createEvent();
+        const event = this.createEvent<TShape>();
 
         this.dataBridge.query<TShape>(event, (result, error) => {
 
@@ -159,11 +160,11 @@ export abstract class QuerySource<T extends {}> {
         });
     }
 
-    protected setFiltersQueryOption<P extends {}>(selector: ParamsFilter<T, P> | Filter<T>, params?: P) {
+    protected setFiltersQueryOption<P extends {}>(selector: ParamsFilter<TShape, P> | Filter<TShape>, params?: P) {
 
         const expression = toExpression(this.schema, selector, params);
 
-        this.queryOptions.add("filter", { filter: selector as Filter<T> | ParamsFilter<T, {}>, expression, params });
+        this.queryOptions.add("filter", { filter: selector as Filter<TShape> | ParamsFilter<TShape, {}>, expression, params });
     }
 
     protected setMapQueryOption<K, R>(selector: GenericFunction<K, R>) {
@@ -172,7 +173,7 @@ export abstract class QuerySource<T extends {}> {
         this.queryOptions.add("map", { selector: selector as GenericFunction<any, any>, fields });
     }
 
-    protected setSortQueryOption(selector: GenericFunction<T, T[keyof T]>, direction: QueryOrdering) {
+    protected setSortQueryOption(selector: GenericFunction<TShape, TShape[keyof TShape]>, direction: QueryOrdering) {
         const propertyName = this.getSortPropertyName(selector);
 
         this.queryOptions.add("sort", { selector, direction, propertyName });

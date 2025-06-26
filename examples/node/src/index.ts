@@ -129,7 +129,9 @@ const r = async () => {
         debugger;
         const ctx = new Ctx();
 
+        const r = await ctx.nested.where(x => x.order === 1).map(x => x.order).toArrayAsync();
         const d = await ctx.nested.map(w => w.order).distinctAsync();
+
         const found = await ctx.nested.where(
             ([x, p]) => x.name.startsWith(p.name),
             { name: "J" }

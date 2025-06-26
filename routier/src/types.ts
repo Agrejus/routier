@@ -110,5 +110,5 @@ export type CollectionPipelines = {
 
 export type CollectionChanges<T extends {}> = {
     entities: InferType<T>[];
-    queries: IQuery<T>[];
+    queries: IQuery<T, T>[];
 }

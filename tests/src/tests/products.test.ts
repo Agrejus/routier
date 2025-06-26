@@ -572,7 +572,7 @@ describe("subscribe", () => {
             await seedData(routier);
 
             // Act
-            routier.products.subscribe().where(w => w._id != "").map(w => w.price).sum(callback);
+            routier.products.subscribe().where(w => w._id != "").sum(w => w.price, callback);
 
             await routier.products.addAsync(...generateData(product, 1));
             await routier.saveChangesAsync();
@@ -626,7 +626,7 @@ describe("subscribe", () => {
             await seedData(routier);
 
             // Act
-            routier.products.subscribe().where(w => w._id != "").map(w => w.price).max(callback);
+            routier.products.subscribe().where(w => w._id != "").max(w => w.price, callback);
 
             await routier.products.addAsync(...generateData(product, 1));
             await routier.saveChangesAsync();
@@ -653,7 +653,7 @@ describe("subscribe", () => {
             await seedData(routier);
 
             // Act
-            routier.products.subscribe().where(w => w._id != "").map(w => w.price).min(callback);
+            routier.products.subscribe().where(w => w._id != "").min(w => w.price, callback);
 
             await routier.products.addAsync(...generateData(product, 1));
             await routier.saveChangesAsync();
@@ -852,7 +852,7 @@ describe('min', () => {
             await seedData(routier, 200);
 
             const all = await routier.products.toArrayAsync();
-            const min = await routier.products.map(w => w.price).minAsync();
+            const min = await routier.products.minAsync(w => w.price);
 
             all.sort((a, b) => a.price - b.price);
 
@@ -866,7 +866,7 @@ describe('min', () => {
             await seedData(routier, 200);
 
             const all = await routier.products.toArrayAsync();
-            const min = await routier.products.where(w => w.price > 100).map(w => w.price).minAsync();
+            const min = await routier.products.where(w => w.price > 100).minAsync(w => w.price);
 
             const filtered = all.filter(w => w.price > 100);
             filtered.sort((a, b) => a.price - b.price);
@@ -888,7 +888,7 @@ describe('sum', () => {
             await seedData(routier, 200);
 
             const all = await routier.products.toArrayAsync();
-            const sum = await routier.products.map(w => w.price).sumAsync();
+            const sum = await routier.products.sumAsync(w => w.price);
 
             expect(all.reduce((a, v) => a + v.price, 0)).toBe(sum);
         });

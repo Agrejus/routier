@@ -3,32 +3,32 @@ import { SelectionQueryable } from "./SelectionQueryable";
 
 // cannot skip or take here, this class is returned after a take
 // and a skip cannot occur after a take
-export class TakeQueryable<T extends {}, TResult, U> extends SelectionQueryable<T, TResult, U> {
+export class TakeQueryable<Root extends {}, Shape, U> extends SelectionQueryable<Root, Shape, U> {
 
-    where(expression: Filter<T>): TakeQueryable<T, TResult, U>;
-    where<P extends {}>(selector: ParamsFilter<T, P>, params: P): TakeQueryable<T, TResult, U>;
-    where<P extends {} = never>(selector: ParamsFilter<T, P> | Filter<T>, params?: P) {
+    where(expression: Filter<Shape>): TakeQueryable<Root, Shape, U>;
+    where<P extends {}>(selector: ParamsFilter<Shape, P>, params: P): TakeQueryable<Root, Shape, U>;
+    where<P extends {} = never>(selector: ParamsFilter<Shape, P> | Filter<Shape>, params?: P) {
         this.setFiltersQueryOption(selector, params);
-        return this.create(TakeQueryable<T, TResult, U>);
+        return this.create(TakeQueryable<Root, Shape, U>);
     }
 
-    map<R extends T[keyof T] | Partial<T>>(expression: GenericFunction<T, R>) {
+    map<R extends Shape[keyof Shape] | Partial<Shape>>(expression: GenericFunction<Shape, R>) {
         this.setMapQueryOption(expression);
-        return this.create(TakeQueryable<T, R, U>);
+        return this.create(TakeQueryable<Root, R, U>);
     }
 
-    sort(expression: GenericFunction<T, T[keyof T]>) {
+    sort(expression: GenericFunction<Shape, Shape[keyof Shape]>) {
         this.setSortQueryOption(expression, QueryOrdering.Ascending);
-        return this.create(TakeQueryable<T, TResult, U>);
+        return this.create(TakeQueryable<Root, Shape, U>);
     }
 
-    sortDescending(expression: GenericFunction<T, T[keyof T]>) {
+    sortDescending(expression: GenericFunction<Shape, Shape[keyof Shape]>) {
         this.setSortQueryOption(expression, QueryOrdering.Descending);
-        return this.create(TakeQueryable<T, TResult, U>);
+        return this.create(TakeQueryable<Root, Shape, U>);
     }
 
     subscribe() {
         this.isSubScribed = true;
-        return this.create(TakeQueryable<T, TResult, () => void>);
+        return this.create(TakeQueryable<Root, Shape, () => void>);
     }
 }

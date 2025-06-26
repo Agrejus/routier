@@ -10,7 +10,7 @@ export interface IDbPlugin {
      * @param event The query event containing schema, parent, and query operation.
      * @param done Callback with the result or error.
      */
-    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity>, done: (result: TShape, error?: any) => void): void;
+    query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: (result: TShape, error?: any) => void): void;
     /**
      * Destroys or cleans up the plugin, closing connections or freeing resources.
      * @param done Callback with an optional error.
@@ -21,13 +21,13 @@ export interface IDbPlugin {
      * @param event The bulk operations event containing schema, parent, and changes.
      * @param done Callback with the result or error.
      */
-    bulkOperations<TEntity extends {}>(event: DbPluginBulkOperationsEvent<TEntity>, done: (result: EntityModificationResult<TEntity>, error?: any) => void): void;
+    bulkOperations<TRoot extends {}>(event: DbPluginBulkOperationsEvent<TRoot>, done: (result: EntityModificationResult<TRoot>, error?: any) => void): void;
 }
 
 /**
  * Event for a query operation, including schema, parent, and the query operation.
  */
-export type DbPluginQueryEvent<TEntity extends {}> = DbPluginOperationEvent<TEntity, IQuery<TEntity>>;
+export type DbPluginQueryEvent<TRoot extends {}, TShape> = DbPluginOperationEvent<TRoot, IQuery<TRoot, TShape>>;
 
 /**
  * Event for bulk operations, including schema, parent, and the entity changes.
@@ -80,7 +80,7 @@ export type EntityChanges<T extends {}> = {
     /** Entities to remove. */
     removes: {
         entities: InferType<T>[];
-        queries: IQuery<T>[];
+        queries: IQuery<T, T>[];
     };
     /**
      * Entities to update, mapped by ID. Each update includes the new doc and a delta of changed fields.
@@ -112,10 +112,10 @@ export type EntityModificationResult<T extends {}> = {
 /**
  * Interface for a query operation, including expression, options, filters, and change tracking.
  */
-export type IQuery<TEntity extends {}> = {
+export type IQuery<TRoot extends {}, TShape> = {
 
     /** Query options (sort, skip, take, etc.). */
-    options: QueryOptionsCollection<TEntity>;
+    options: QueryOptionsCollection<TShape>;
 
     /**
      * Whether change tracking is enabled for the query result.

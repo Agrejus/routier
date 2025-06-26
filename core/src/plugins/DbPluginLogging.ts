@@ -9,7 +9,7 @@ const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE
 export type LogHook<T> = (data: T & Record<string, unknown>) => void;
 
 export type QueryLogContext<TEntity extends {}, TShape extends any = TEntity> = {
-    query: IQuery<TEntity> & Record<string, unknown>;
+    query: IQuery<TEntity, TShape> & Record<string, unknown>;
     schema: CompiledSchema<TEntity>;
     result?: TShape;
     error?: any;
@@ -78,7 +78,7 @@ export class DbPluginLogging implements IDbPlugin {
         return this; // For chaining
     }
 
-    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity>, done: (result: TShape, error?: any) => void): void {
+    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (result: TShape, error?: any) => void): void {
         const { operation, schema } = event;
         const start = now();
 

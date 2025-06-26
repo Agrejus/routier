@@ -6,7 +6,7 @@ import { AdditionsPackage } from "../types";
 export abstract class KeyChangeTrackingStrategyBase<TKey extends IdType, TEntity extends {}> {
 
     protected removals: InferType<TEntity>[] = [];
-    protected removalQueries: IQuery<TEntity>[] = [];
+    protected removalQueries: IQuery<TEntity, TEntity>[] = [];
     protected attachments: Map<TKey, InferType<TEntity>> = new Map<TKey, InferType<TEntity>>();
     protected schema: CompiledSchema<TEntity>;
     protected abstract setAddition(enriched: InferCreateType<TEntity>): void;
@@ -153,7 +153,7 @@ export abstract class KeyChangeTrackingStrategyBase<TKey extends IdType, TEntity
         done(entities);
     }
 
-    removeByQuery(query: IQuery<TEntity>, tag: unknown | null, done: (error?: any) => void) {
+    removeByQuery(query: IQuery<TEntity, TEntity>, tag: unknown | null, done: (error?: any) => void) {
         try {
             this.removalQueries.push(query);
 

@@ -25,7 +25,7 @@ export class ChangeTracker<T extends {}> implements IChangeTrackerStrategy<T> {
         return this._strategy.remove(entities, tag, done);
     }
 
-    removeByQuery(query: IQuery<T>, tag: unknown | null, done: (error?: any) => void) {
+    removeByQuery(query: IQuery<T, T>, tag: unknown | null, done: (error?: any) => void) {
         return this._strategy.removeByQuery(query, tag, done);
     }
 

@@ -2,16 +2,16 @@ import { Filter, GenericFunction, ParamsFilter, QueryOptionName, toExpression } 
 import { QuerySource } from "./QuerySource";
 import { QueryResult } from "../types";
 
-export class SelectionQueryable<T extends {}, TResult, U> extends QuerySource<T> {
+export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<Root, Shape> {
 
-    remove(expression: Filter<T>, done: (error?: any) => void): void;
-    remove<P extends {}>(expression: ParamsFilter<T, P>, params: P, done: (error?: any) => void): void;
+    remove(expression: Filter<Shape>, done: (error?: any) => void): void;
+    remove<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: (error?: any) => void): void;
     remove(done: (error?: any) => void): void;
-    remove<P extends {} = never>(doneOrExpression: Filter<T> | ParamsFilter<T, P> | ((error?: any) => void), paramsOrDone?: P | ((error?: any) => void), done?: (error?: any) => void): void {
+    remove<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | ((error?: any) => void), paramsOrDone?: P | ((error?: any) => void), done?: (error?: any) => void): void {
 
         if (done != null) {
             // params expression
-            const paramsFilter = doneOrExpression as ParamsFilter<T, P>;
+            const paramsFilter = doneOrExpression as ParamsFilter<Shape, P>;
             const paramsData = paramsOrDone as P;
             this.setFiltersQueryOption(paramsFilter, paramsData);
             this._remove(done);
@@ -21,7 +21,7 @@ export class SelectionQueryable<T extends {}, TResult, U> extends QuerySource<T>
         if (paramsOrDone != null) {
             // generic expression
             const d = paramsOrDone as (error?: any) => void
-            const genericFilter = doneOrExpression as Filter<T>;
+            const genericFilter = doneOrExpression as Filter<Shape>;
             this.setFiltersQueryOption(genericFilter);
             this._remove(d);
             return
@@ -32,19 +32,19 @@ export class SelectionQueryable<T extends {}, TResult, U> extends QuerySource<T>
         this._remove(d);
     }
 
-    toArray(done: QueryResult<T[]>): U {
+    toArray(done: QueryResult<Shape[]>): U {
         this.getData(done);
-        return this.subscribeQuery<T[]>(done) as U;
+        return this.subscribeQuery<Shape[]>(done) as U;
     }
 
-    first(expression: Filter<T>, done: QueryResult<T>): U;
-    first<P extends {}>(expression: ParamsFilter<T, P>, params: P, done: QueryResult<T>): U;
-    first(done: QueryResult<T>): U;
-    first<P extends {} = never>(doneOrExpression: Filter<T> | ParamsFilter<T, P> | QueryResult<T>, paramsOrDone?: P | QueryResult<T>, done?: QueryResult<T>): U {
+    first(expression: Filter<Shape>, done: QueryResult<Shape>): U;
+    first<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: QueryResult<Shape>): U;
+    first(done: QueryResult<Shape>): U;
+    first<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | QueryResult<Shape>, paramsOrDone?: P | QueryResult<Shape>, done?: QueryResult<Shape>): U {
 
         this.queryOptions.add("take", 1); // ensure we only select 1 record
 
-        const shaper = (r: T[]) => {
+        const shaper = (r: Shape[]) => {
             if (r.length === 0) {
                 return undefined
             }
@@ -60,17 +60,17 @@ export class SelectionQueryable<T extends {}, TResult, U> extends QuerySource<T>
             const result = shaper(r);
 
             if (result == null) {
-                d(undefined as unknown as T, new Error("Could not find entity in query"))
+                d(undefined as unknown as Shape, new Error("Could not find entity in query"))
                 return;
             }
 
             d(result, e)
         });
 
-        const d = done != null ? done : paramsOrDone != null ? paramsOrDone as QueryResult<T> : doneOrExpression as QueryResult<T>;
-        return this.subscribeQuery<T>((r, e) => {
+        const d = done != null ? done : paramsOrDone != null ? paramsOrDone as QueryResult<Shape> : doneOrExpression as QueryResult<Shape>;
+        return this.subscribeQuery<Shape>((r, e) => {
             if (r == null) {
-                d(undefined as unknown as T, new Error("Could not find entity in query"))
+                d(undefined as unknown as Shape, new Error("Could not find entity in query"))
                 return;
             }
 
@@ -78,31 +78,31 @@ export class SelectionQueryable<T extends {}, TResult, U> extends QuerySource<T>
         }) as U;
     }
 
-    firstOrUndefined(expression: Filter<T>, done: QueryResult<T | undefined>): U;
-    firstOrUndefined<P extends {}>(expression: ParamsFilter<T, P>, params: P, done: QueryResult<T | undefined>): U;
-    firstOrUndefined(done: QueryResult<T | undefined>): U;
-    firstOrUndefined<P extends {} = never>(doneOrExpression: Filter<T> | ParamsFilter<T, P> | QueryResult<T | undefined>, paramsOrDone?: P | QueryResult<T | undefined>, done?: QueryResult<T | undefined>): U {
+    firstOrUndefined(expression: Filter<Shape>, done: QueryResult<Shape | undefined>): U;
+    firstOrUndefined<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: QueryResult<Shape | undefined>): U;
+    firstOrUndefined(done: QueryResult<Shape | undefined>): U;
+    firstOrUndefined<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | QueryResult<Shape | undefined>, paramsOrDone?: P | QueryResult<Shape | undefined>, done?: QueryResult<Shape | undefined>): U {
 
         this.queryOptions.add("take", 1); // ensure we only select 1 record
 
-        this._query<P, T>({
+        this._query<P, Shape>({
             doneOrSelector: doneOrExpression,
             done,
             paramsOrDone
         }, (d, r, e) => {
 
             if (r.length === 0) {
-                d(undefined as unknown as T, e)
+                d(undefined as unknown as Shape, e)
                 return;
             }
 
             d(r[0], e)
         });
 
-        const d = done != null ? done : paramsOrDone != null ? paramsOrDone as QueryResult<T> : doneOrExpression as QueryResult<T>;
-        return this.subscribeQuery<T>((r, e) => {
+        const d = done != null ? done : paramsOrDone != null ? paramsOrDone as QueryResult<Shape> : doneOrExpression as QueryResult<Shape>;
+        return this.subscribeQuery<Shape>((r, e) => {
             if (r == null) {
-                d(undefined as unknown as T, e)
+                d(undefined as unknown as Shape, e)
                 return;
             }
 
@@ -110,13 +110,13 @@ export class SelectionQueryable<T extends {}, TResult, U> extends QuerySource<T>
         }) as U;
     }
 
-    some(expression: Filter<T>, done: QueryResult<boolean>): U;
-    some<P extends {}>(expression: ParamsFilter<T, P>, params: P, done: QueryResult<boolean>): U;
+    some(expression: Filter<Shape>, done: QueryResult<boolean>): U;
+    some<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: QueryResult<boolean>): U;
     some(done: QueryResult<boolean>): U;
-    some<P extends {} = never>(doneOrExpression: Filter<T> | ParamsFilter<T, P> | QueryResult<boolean>, paramsOrDone?: P | QueryResult<boolean>, done?: QueryResult<boolean>): U {
+    some<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | QueryResult<boolean>, paramsOrDone?: P | QueryResult<boolean>, done?: QueryResult<boolean>): U {
         this.queryOptions.add("take", 1); // ensure we only select 1 record
 
-        const shaper = (r: T[]) => r.length > 0;
+        const shaper = (r: Shape[]) => r.length > 0;
 
         this._query({
             doneOrSelector: doneOrExpression,
@@ -128,9 +128,9 @@ export class SelectionQueryable<T extends {}, TResult, U> extends QuerySource<T>
         return this.subscribeQuery<boolean>(d) as U;
     }
 
-    every(expression: Filter<T>, done: QueryResult<boolean>): U;
-    every<P extends {}>(expression: ParamsFilter<T, P>, params: P, done: QueryResult<boolean>): U;
-    every<P extends {} = never>(expression: Filter<T> | ParamsFilter<T, P> | QueryResult<boolean>, paramsOrDone?: P | QueryResult<boolean>, done?: QueryResult<boolean>): U {
+    every(expression: Filter<Shape>, done: QueryResult<boolean>): U;
+    every<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: QueryResult<boolean>): U;
+    every<P extends {} = never>(expression: Filter<Shape> | ParamsFilter<Shape, P> | QueryResult<boolean>, paramsOrDone?: P | QueryResult<boolean>, done?: QueryResult<boolean>): U {
 
         // Need to select everything
         const coalescedDone = done != null ? done : (paramsOrDone as QueryResult<boolean>);
@@ -141,7 +141,7 @@ export class SelectionQueryable<T extends {}, TResult, U> extends QuerySource<T>
             if (done != null) {
                 // params query
                 const params = paramsOrDone as P
-                const paramsExpression = expression as ParamsFilter<T, P>;
+                const paramsExpression = expression as ParamsFilter<Shape, P>;
                 const result = r.filter(w => paramsExpression([w, params]));
 
                 d(result.length === r.length, e);
@@ -149,22 +149,22 @@ export class SelectionQueryable<T extends {}, TResult, U> extends QuerySource<T>
             }
 
             // regular query
-            const regularExpression = expression as Filter<T>;
+            const regularExpression = expression as Filter<Shape>;
             const result = r.filter(regularExpression);
 
             d(result.length === r.length, e);
         }) as U;
     }
 
-    min(selector: GenericFunction<T, number>, done: QueryResult<number>): U {
+    min(selector: GenericFunction<Shape, number>, done: QueryResult<number>): U {
         return this._aggregateFunction(selector, "min", done);
     }
 
-    max(selector: GenericFunction<T, number>, done: QueryResult<number>): U {
+    max(selector: GenericFunction<Shape, number>, done: QueryResult<number>): U {
         return this._aggregateFunction(selector, "max", done);
     }
 
-    sum(selector: GenericFunction<T, number>, done: QueryResult<number>): U {
+    sum(selector: GenericFunction<Shape, number>, done: QueryResult<number>): U {
         return this._aggregateFunction(selector, "sum", done);
     }
 
@@ -191,21 +191,21 @@ export class SelectionQueryable<T extends {}, TResult, U> extends QuerySource<T>
         }) as U;
     }
 
-    distinct(done: QueryResult<T[]>): U {
+    distinct(done: QueryResult<Shape[]>): U {
         this.queryOptions.add("distinct", true);
 
-        this.getData<T[]>((r, e) => {
+        this.getData<Shape[]>((r, e) => {
             if (e) {
-                done(undefined as unknown as T[], e);
+                done(undefined as unknown as Shape[], e);
                 return;
             };
 
             done(r)
         });
 
-        return this.subscribeQuery<T[]>((r, e) => {
+        return this.subscribeQuery<Shape[]>((r, e) => {
             if (r == null) {
-                done(undefined as unknown as T[], new Error("Could not find entity in query"))
+                done(undefined as unknown as Shape[], new Error("Could not find entity in query"))
                 return;
             }
 
@@ -214,17 +214,17 @@ export class SelectionQueryable<T extends {}, TResult, U> extends QuerySource<T>
     }
 
     private _query<P extends {}, R extends {}>(options: {
-        doneOrSelector: Filter<T> | ParamsFilter<T, P> | QueryResult<R>,
+        doneOrSelector: Filter<Shape> | ParamsFilter<Shape, P> | QueryResult<R>,
         paramsOrDone?: P | QueryResult<R>,
         done?: QueryResult<R>
-    }, resolve: (done: QueryResult<R>, data: T[], error?: any) => void) {
+    }, resolve: (done: QueryResult<R>, data: Shape[], error?: any) => void) {
 
         const { doneOrSelector: doneOrExpression, done, paramsOrDone } = options;
 
         if (done == null && paramsOrDone == null) {
             // empty query
             const d = doneOrExpression as QueryResult<R>;
-            this.getData<T[]>((r, e) => {
+            this.getData<Shape[]>((r, e) => {
                 if (!e) {
                     resolve(d, r, e);
                     return;
@@ -236,13 +236,13 @@ export class SelectionQueryable<T extends {}, TResult, U> extends QuerySource<T>
 
         if (done != null) {
             // params query
-            const selector = doneOrExpression as Filter<T> | ParamsFilter<T, {}>;
+            const selector = doneOrExpression as Filter<Shape> | ParamsFilter<Shape, {}>;
             const params = paramsOrDone as P;
             const expression = toExpression(this.schema, selector, params);
 
             this.queryOptions.add("filter", { filter: selector, expression, params });
 
-            this.getData<T[]>((r, e) => {
+            this.getData<Shape[]>((r, e) => {
                 if (!e) {
                     resolve(done, r, e);
                     return;
@@ -254,11 +254,11 @@ export class SelectionQueryable<T extends {}, TResult, U> extends QuerySource<T>
 
         // regular query
         const d = paramsOrDone as QueryResult<R>;
-        const selector = doneOrExpression as Filter<T>;
+        const selector = doneOrExpression as Filter<Shape>;
         const expression = toExpression(this.schema, selector);
 
         this.queryOptions.add("filter", { filter: selector, expression });
-        this.getData<T[]>((r, e) => {
+        this.getData<Shape[]>((r, e) => {
             if (!e) {
                 resolve(d, r, e);
                 return;
@@ -267,7 +267,7 @@ export class SelectionQueryable<T extends {}, TResult, U> extends QuerySource<T>
         });
     }
 
-    private _aggregateFunction(selector: GenericFunction<T, number>, name: QueryOptionName, done: QueryResult<number>) {
+    private _aggregateFunction(selector: GenericFunction<Shape, number>, name: QueryOptionName, done: QueryResult<number>) {
         const fields = this.getFields(selector);
         this.queryOptions.add("map", { selector, fields });
         this.queryOptions.add(name, true);

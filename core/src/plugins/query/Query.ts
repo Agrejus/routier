@@ -2,13 +2,13 @@
 import { IQuery } from '../types';
 import { QueryOptionsCollection } from './QueryOptionsCollection';
 
-export class Query<TEntity extends {}> implements IQuery<TEntity> {
+export class Query<TRoot extends {}, TShape> implements IQuery<TRoot, TShape> {
 
-    readonly options: QueryOptionsCollection<TEntity>;
+    readonly options: QueryOptionsCollection<TShape>;
     private enableChangeTrackingOverride?: boolean
 
     constructor(
-        options: QueryOptionsCollection<TEntity>,
+        options: QueryOptionsCollection<TShape>,
         enableChangeTrackingOverride?: boolean
     ) {
         this.options = options;
@@ -42,11 +42,11 @@ export class Query<TEntity extends {}> implements IQuery<TEntity> {
         return true;
     }
 
-    static EMPTY<T extends {}>() {
-        return new Query<T>(QueryOptionsCollection.EMPTY<T>());
+    static EMPTY<T extends {}, S>() {
+        return new Query<T, S>(QueryOptionsCollection.EMPTY<S>());
     }
 
-    static isEmpty<T extends {}>(query: IQuery<T>) {
+    static isEmpty<T extends {}, S>(query: IQuery<T, S>) {
         return QueryOptionsCollection.isEmpty(query.options);
     }
 }

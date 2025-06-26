@@ -4,7 +4,7 @@ import { ResolveOptions } from "../data-access/types";
 
 export type QuerySubscription<TEntity extends {}, U> = {
     id: string,
-    query: Query<TEntity>;
+    query: Query<TEntity, U>;
     shape: (data: TEntity[]) => U;
     done: (result: U, error?: any) => void;
 };
@@ -13,7 +13,7 @@ export interface IChangeTrackerStrategy<T extends {}> {
     enrich(entities: InferType<T>[]): InferType<T>[];
     add(entities: InferCreateType<T>[], tag: unknown | null, done: EntityCallbackMany<T>): void;
     remove(entities: InferType<T>[], tag: unknown | null, done: EntityCallbackMany<T>): void;
-    removeByQuery(query: IQuery<T>, tag: unknown | null, done: (error?: any) => void): void;
+    removeByQuery(query: IQuery<T, T>, tag: unknown | null, done: (error?: any) => void): void;
     resolve(entities: InferType<T>[], tag: unknown | null, options?: ResolveOptions): InferType<T>[];
     hasChanges(): boolean;
     replace(existingEntity: InferType<T> | InferCreateType<T>, newEntity: InferType<T> | InferCreateType<T>): void;

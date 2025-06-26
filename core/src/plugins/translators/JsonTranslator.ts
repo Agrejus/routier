@@ -1,11 +1,11 @@
 import { DataTranslator } from "./DataTranslator";
-import { assertIsArray, assertIsNotNull, isDate } from "../../utilities/index";
+import { assertIsArray, isDate } from "../../utilities/index";
 import { QueryOption } from "../query/types";
 import { ParamsFilter } from "../../expressions/types";
 
-export class JsonTranslator<TEntity extends {}, TShape> extends DataTranslator<TEntity, TShape> {
+export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRoot, TShape> {
 
-    override filter<TResult>(data: unknown, option: QueryOption<TEntity, "filter">): TResult {
+    override filter<TResult>(data: unknown, option: QueryOption<TShape, "filter">): TResult {
 
         assertIsArray(data);
 
@@ -39,7 +39,7 @@ export class JsonTranslator<TEntity extends {}, TShape> extends DataTranslator<T
         return response as T;
     }
 
-    override count<TResult extends number>(data: unknown, _: QueryOption<TEntity, "count">): TResult {
+    override count<TResult extends number>(data: unknown, _: QueryOption<TShape, "count">): TResult {
 
         if (Array.isArray(data)) {
             return data.length as TResult;
@@ -48,15 +48,15 @@ export class JsonTranslator<TEntity extends {}, TShape> extends DataTranslator<T
         throw new Error("Cannot count resulting data, it must be an array.  Please return array of data for function: count()");
     }
 
-    override min<TResult extends string | number | Date>(data: unknown, _: QueryOption<TEntity, "min">): TResult {
+    override min<TResult extends string | number | Date>(data: unknown, _: QueryOption<TShape, "min">): TResult {
         return this._minMax(data, "min", (a: any, b: any) => a - b);
     }
 
-    override max<TResult extends string | number | Date>(data: unknown, _: QueryOption<TEntity, "max">): TResult {
+    override max<TResult extends string | number | Date>(data: unknown, _: QueryOption<TShape, "max">): TResult {
         return this._minMax(data, "max", (a: any, b: any) => b - a);
     }
 
-    override sort<TResult>(data: unknown, option: QueryOption<TEntity, "sort">): TResult {
+    override sort<TResult>(data: unknown, option: QueryOption<TShape, "sort">): TResult {
 
         if (Array.isArray(data)) {
 
@@ -72,10 +72,10 @@ export class JsonTranslator<TEntity extends {}, TShape> extends DataTranslator<T
         return data as TResult;
     }
 
-    override sum<TResult extends number>(data: unknown, _: QueryOption<TEntity, "sum">): TResult {
+    override sum<TResult extends number>(data: unknown, _: QueryOption<TShape, "sum">): TResult {
 
         assertIsArray(data, this._formatDataNotArrayError("sum"));
-
+        debugger;
         const map = this.query.options.getLast("map");
 
         let sum = 0;
@@ -94,7 +94,7 @@ export class JsonTranslator<TEntity extends {}, TShape> extends DataTranslator<T
         return sum as TResult;
     }
 
-    override distinct<TResult>(data: unknown, _: QueryOption<TEntity, "distinct">): TResult {
+    override distinct<TResult>(data: unknown, _: QueryOption<TShape, "distinct">): TResult {
 
         assertIsArray(data, this._formatDataNotArrayError("distinct"));
 
@@ -126,7 +126,7 @@ export class JsonTranslator<TEntity extends {}, TShape> extends DataTranslator<T
         return [...result] as TResult
     }
 
-    override skip<TResult>(data: unknown, option: QueryOption<TEntity, "skip">): TResult {
+    override skip<TResult>(data: unknown, option: QueryOption<TShape, "skip">): TResult {
 
         if (Array.isArray(data)) {
 
@@ -145,7 +145,7 @@ export class JsonTranslator<TEntity extends {}, TShape> extends DataTranslator<T
         return data as TResult;
     }
 
-    override take<TResult>(data: unknown, option: QueryOption<TEntity, "take">): TResult {
+    override take<TResult>(data: unknown, option: QueryOption<TShape, "take">): TResult {
         if (Array.isArray(data)) {
 
             if (option.value > 0) {
@@ -163,7 +163,7 @@ export class JsonTranslator<TEntity extends {}, TShape> extends DataTranslator<T
         return data as TResult;
     }
 
-    private _getSelectionField(name: string, mapOption: QueryOption<TEntity, "map"> | null) {
+    private _getSelectionField(name: string, mapOption: QueryOption<TShape, "map"> | null) {
 
         if (mapOption == null ||
             mapOption.value.fields.length === 0 ||
