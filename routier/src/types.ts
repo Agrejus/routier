@@ -107,8 +107,3 @@ export type CollectionPipelines = {
     save: TrampolinePipeline<SaveChangesContextStepOne>;
     hasChanges: TrampolinePipeline<{ hasChanges: boolean }>
 }
-
-export type CollectionChanges<T extends {}> = {
-    entities: InferType<T>[];
-    queries: IQuery<T, T>[];
-}

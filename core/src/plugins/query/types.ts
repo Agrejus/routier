@@ -1,3 +1,4 @@
+import { PropertyInfo } from "../../common/PropertyInfo";
 import { Expression, Filter, ParamsFilter } from "../../expressions/types";
 import { GenericFunction } from "../../types";
 
@@ -13,6 +14,7 @@ export type QueryField = {
     sourceName: string,
     destinationName: string,
     isRename: boolean;
+    property?: PropertyInfo<unknown>;
     getter: <T>(data: Record<string, unknown>) => T;
 };
 

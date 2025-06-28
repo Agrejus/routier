@@ -74,6 +74,8 @@ const nested = s.define("products", {
         one: s.string(),
         two: s.string()
     }),
+    startTime: s.date().default(() => new Date()),
+    endTime: s.date().optional(),
     _rev: s.string().identity(),
     order: s.number().index().default((d) => d.test, { test: 1 }),
     name: s.string().index(),
@@ -129,8 +131,25 @@ const r = async () => {
         debugger;
         const ctx = new Ctx();
 
+        // await ctx.nested.addAsync(...Array.from({ length: 5000 }, () => ({
+        //     cool: `cool${Math.floor(Math.random() * 10000)}`,
+        //     two: `two${Math.floor(Math.random() * 10000)}`,
+        //     name: `Name${Math.floor(Math.random() * 10000)}`,
+        //     more: {
+        //         one: `one${Math.floor(Math.random() * 10000)}`,
+        //         two: `two${Math.floor(Math.random() * 10000)}`
+        //     },
+        //     order: Math.floor(Math.random() * 10000)
+        // })));
+
+        // await ctx.saveChangesAsync();
+
         const r = await ctx.nested.where(x => x.order === 1).map(x => x.order).toArrayAsync();
-        const d = await ctx.nested.map(w => w.order).distinctAsync();
+        const xxxxx = await ctx.nested.toArrayAsync();
+        const d = await ctx.nested.sort(x => x.order).map(w => w.order).distinctAsync();
+
+        console.log(r, d, xxxxx);
+        debugger;
 
         const found = await ctx.nested.where(
             ([x, p]) => x.name.startsWith(p.name),
@@ -160,19 +179,6 @@ const r = async () => {
         //     },
         //     order: 2
         // });
-
-        // await ctx.nested.addAsync(...Array.from({ length: 5000 }, () => ({
-        //     cool: `cool${Math.floor(Math.random() * 10000)}`,
-        //     two: `two${Math.floor(Math.random() * 10000)}`,
-        //     name: `Name${Math.floor(Math.random() * 10000)}`,
-        //     more: {
-        //         one: `one${Math.floor(Math.random() * 10000)}`,
-        //         two: `two${Math.floor(Math.random() * 10000)}`
-        //     },
-        //     order: Math.floor(Math.random() * 10000)
-        // })));
-
-        // await ctx.saveChangesAsync();
 
         // how come we only have async operations after a where!!!
         ctx.nested.where(x => x._id === "").removeAsync();

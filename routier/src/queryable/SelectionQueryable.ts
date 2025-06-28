@@ -68,13 +68,15 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
         });
 
         const d = done != null ? done : paramsOrDone != null ? paramsOrDone as QueryResult<Shape> : doneOrExpression as QueryResult<Shape>;
-        return this.subscribeQuery<Shape>((r, e) => {
-            if (r == null) {
+        return this.subscribeQuery<Shape[]>((r, e) => {
+            const result = shaper(r);
+
+            if (result == null) {
                 d(undefined as unknown as Shape, new Error("Could not find entity in query"))
                 return;
             }
 
-            d(r, e);
+            d(result, e)
         }) as U;
     }
 
@@ -100,13 +102,13 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
         });
 
         const d = done != null ? done : paramsOrDone != null ? paramsOrDone as QueryResult<Shape> : doneOrExpression as QueryResult<Shape>;
-        return this.subscribeQuery<Shape>((r, e) => {
-            if (r == null) {
+        return this.subscribeQuery<Shape[]>((r, e) => {
+            if (r.length === 0) {
                 d(undefined as unknown as Shape, e)
                 return;
             }
 
-            d(r, e);
+            d(r[0], e)
         }) as U;
     }
 

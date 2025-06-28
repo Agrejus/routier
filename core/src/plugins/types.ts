@@ -86,10 +86,16 @@ export type EntityChanges<T extends {}> = {
      * Entities to update, mapped by ID. Each update includes the new doc and a delta of changed fields.
      */
     updates: {
-        entities: Map<IdType, { doc: InferType<T>, delta: { [key: string]: string | number | Date } }>;
+        entities: Map<IdType, EntityUpdateInfo<T>>;
     };
 
     tags: TagCollection;
+}
+
+export type EntityUpdateInfo<T extends {}> = {
+    doc: InferType<T>,
+    changeType: EntityChangeType;
+    delta: { [key: string]: string | number | Date }
 }
 
 export type TaggedEntity<T> = {
@@ -123,3 +129,5 @@ export type IQuery<TRoot extends {}, TShape> = {
      */
     get changeTracking(): boolean;
 };
+
+export type EntityChangeType = "propertiesChanged" | "markedDirty" | "notModified";

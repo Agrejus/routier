@@ -1,6 +1,5 @@
-import { EntityModificationResult, IdType, InferCreateType, InferType, Query, ChangeTrackingType, TagCollection, EntityChanges, Expression, IQuery } from "routier-core";
+import { EntityModificationResult, IdType, InferCreateType, InferType, Query, ChangeTrackingType, TagCollection, EntityChanges, Expression, IQuery, GenericFunction, EntityChangeType } from "routier-core";
 import { EntityCallbackMany } from '../types'
-import { ResolveOptions } from "../data-access/types";
 
 export type QuerySubscription<TEntity extends {}, U> = {
     id: string,
@@ -14,7 +13,7 @@ export interface IChangeTrackerStrategy<T extends {}> {
     add(entities: InferCreateType<T>[], tag: unknown | null, done: EntityCallbackMany<T>): void;
     remove(entities: InferType<T>[], tag: unknown | null, done: EntityCallbackMany<T>): void;
     removeByQuery(query: IQuery<T, T>, tag: unknown | null, done: (error?: any) => void): void;
-    resolve(entities: InferType<T>[], tag: unknown | null, options?: ResolveOptions): InferType<T>[];
+    resolve(entities: InferType<T>[], tag: unknown | null, options?: { merge?: boolean }): InferType<T>[];
     hasChanges(): boolean;
     replace(existingEntity: InferType<T> | InferCreateType<T>, newEntity: InferType<T> | InferCreateType<T>): void;
     prepareRemovals(): EntityChanges<T>["removes"];
@@ -25,6 +24,10 @@ export interface IChangeTrackerStrategy<T extends {}> {
     instance(entities: InferCreateType<T>[], changeTrackingType: ChangeTrackingType): Generator<InferType<T>, void, unknown>;
     getAndDestroyTags(): TagCollection;
     detach(entities: InferType<T>[]): InferType<T>[];
+    markDirty(entities: InferType<T>[]): void;
+    isAttached(entity: InferType<T>): boolean;
+    filterAttached(selector: GenericFunction<InferType<T>, boolean>): InferType<T> | undefined;
+    getAttached(entity: InferType<T>): { doc: InferType<T>, changeType: EntityChangeType } | undefined;
 }
 
 export type UpdatesPackage<T extends {}> = Map<IdType, {

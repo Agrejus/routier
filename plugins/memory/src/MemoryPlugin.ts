@@ -1,11 +1,11 @@
-import { IDbPlugin, CompiledSchema, EntityModificationResult, InferCreateType, DeepPartial, IdType, InferType, JsonTranslator, DbPluginBulkOperationsEvent, DbPluginQueryEvent, EntityChanges, assertIsArray, DbPluginEvent, Expression, TrampolinePipeline, IQuery } from "routier-core";
+import { IDbPlugin, CompiledSchema, EntityModificationResult, InferCreateType, DeepPartial, InferType, JsonTranslator, DbPluginBulkOperationsEvent, DbPluginQueryEvent, EntityChanges, assertIsArray, DbPluginEvent, TrampolinePipeline, IQuery } from "routier-core";
 import { DbCollection } from "./DbCollection";
 import { MemoryDatabase } from ".";
 
 const dbs: Record<string, MemoryDatabase> = {}
 
 type ForEachPayload<TEntity extends {}, TShape extends unknown = TEntity> = {
-    event: DbPluginQueryEvent<TEntity>,
+    event: DbPluginQueryEvent<TEntity, TShape>,
     results: TShape,
     error?: any
 }
@@ -135,7 +135,7 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
         })
     }
 
-    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity>, done: (result: TShape, error?: any) => void): void {
+    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (result: TShape, error?: any) => void): void {
 
         try {
             const { operation, schema } = event;
@@ -172,24 +172,24 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
     }
 
     // we need a plugin base!
-    private _getRemovalsByQueries<T extends {}>(event: DbPluginEvent<T>, queries: IQuery<T>[], done: (entities: T[], error?: any) => void) {
+    private _getRemovalsByQueries<T extends {}>(event: DbPluginEvent<T>, queries: IQuery<T, T>[], done: (entities: T[], error?: any) => void) {
 
         if (queries.length === 0) {
             done([]); // Do nothing, handle null here for readability above
             return;
         }
 
-        const pipeline = new TrampolinePipeline<ForEachPayload<T, T[]>>();
+        const pipeline = new TrampolinePipeline<ForEachPayload<T, T>>();
 
         for (let i = 0, length = queries.length; i < length; i++) {
             const query = queries[i];
-            const queryEvent: DbPluginQueryEvent<T> = {
+            const queryEvent: DbPluginQueryEvent<T, T> = {
                 parent: event.parent,
                 schema: event.schema,
                 operation: query
             }
 
-            pipeline.pipe((payload, done) => this._pipelineQuery({
+            pipeline.pipe((payload, done) => this._pipelineQuery<T, T>({
                 event: queryEvent,
                 results: payload.results
             }, done));
@@ -197,7 +197,7 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
 
         pipeline.filter<T[]>({
             event: null,
-            results: []
+            results: null
         }, (r, e) => {
 
             if (e) {

@@ -1,7 +1,8 @@
 import { s } from 'routier-core';
 
 export const comment = s.define("comments", {
-    postId: s.string().key().identity(),
+    _id: s.string().key().identity(),
+    _rev: s.string().identity(),
     author: s.object({
         id: s.string(),
         username: s.string()

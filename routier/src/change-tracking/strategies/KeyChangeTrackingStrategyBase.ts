@@ -1,13 +1,12 @@
-import { CompiledSchema, EntityModificationResult, IdType, InferCreateType, InferType, ChangeTrackingType, TagCollection, EntityChanges, Expression, IQuery } from "routier-core";
+import { CompiledSchema, EntityModificationResult, IdType, InferCreateType, InferType, ChangeTrackingType, TagCollection, EntityChanges, IQuery, EntityUpdateInfo, EntityChangeType, GenericFunction } from "routier-core";
 import { ChangeTrackedEntity, EntityCallbackMany } from "../../types";
-import { ResolveOptions } from "../../data-access/types";
 import { AdditionsPackage } from "../types";
 
 export abstract class KeyChangeTrackingStrategyBase<TKey extends IdType, TEntity extends {}> {
 
     protected removals: InferType<TEntity>[] = [];
     protected removalQueries: IQuery<TEntity, TEntity>[] = [];
-    protected attachments: Map<TKey, InferType<TEntity>> = new Map<TKey, InferType<TEntity>>();
+    protected attachments: Map<TKey, { doc: InferType<TEntity>, changeType: EntityChangeType }> = new Map<TKey, { doc: InferType<TEntity>, changeType: EntityChangeType }>();
     protected schema: CompiledSchema<TEntity>;
     protected abstract setAddition(enriched: InferCreateType<TEntity>): void;
     protected _tagCollection: TagCollection | null = null;
@@ -30,9 +29,9 @@ export abstract class KeyChangeTrackingStrategyBase<TKey extends IdType, TEntity
 
         let hasChanges = false;
 
-        for (const [, doc] of this.attachments) {
+        for (const [, attachment] of this.attachments) {
 
-            const changeTrackedDoc: ChangeTrackedEntity<{}> = doc as any;
+            const changeTrackedDoc: ChangeTrackedEntity<{}> = attachment.doc as any;
 
             if (changeTrackedDoc.__tracking__?.isDirty === true) {
                 hasChanges = true;
@@ -65,15 +64,20 @@ export abstract class KeyChangeTrackingStrategyBase<TKey extends IdType, TEntity
         });
 
         adds.forEach(add => {
-            const found = addPackge.find(add as any);
+            const found = addPackge.find(add as InferType<TEntity>);
+            // need to deserialize the add in case there are any dates on it
+            const deserializedAdd = this.schema.deserialize(add as InferType<TEntity>);
 
             // Let's only map Ids and identities
-            this.schema.merge(found as any, add as any); // merge needs to map children appropriately
+            this.schema.merge(found as InferType<TEntity>, deserializedAdd as InferType<TEntity>); // merge needs to map children appropriately
 
-            const id = this.schema.getId(add as any) as TKey;
+            const id = this.schema.getId(add as InferType<TEntity>) as TKey;
 
             // Set here, if we never save we should never attach
-            this.attachments.set(id, found as any)
+            this.attachments.set(id, {
+                doc: found as InferType<TEntity>,
+                changeType: "notModified" // since we just added it, mark it as not modified
+            })
         });
     }
 
@@ -88,18 +92,30 @@ export abstract class KeyChangeTrackingStrategyBase<TKey extends IdType, TEntity
         };
     }
 
-    getAttachmentsChanges() {
-        const entities = new Map<IdType, { doc: InferType<TEntity>, delta: { [key: string]: string | number | Date } }>();
+    getAttachmentsChanges(): EntityChanges<TEntity>["updates"] {
+        const entities = new Map<IdType, EntityUpdateInfo<TEntity>>();
 
-        for (const [, doc] of this.attachments) {
-            const changeTrackedDoc: ChangeTrackedEntity<{}> = doc as any;
+        for (const [, attachment] of this.attachments) {
+            const changeTrackedDoc: ChangeTrackedEntity<{}> = attachment.doc as any;
 
-            if (!changeTrackedDoc.__tracking__?.isDirty) {
+            let changeType: EntityChangeType = "notModified";
+
+            if (attachment.changeType === "markedDirty") {
+                changeType = "markedDirty"
+            }
+
+            // property changes are marked as not modified, we need to make
+            // sure we check before we look at the change type
+            if (changeTrackedDoc.__tracking__?.isDirty === true) {
+                changeType = "propertiesChanged"
+            }
+
+            if (changeType === "notModified") {
                 continue;
             }
 
-            const id = this.schema.getId(doc);
-            entities.set(id, { doc: this.schema.prepare(doc as any) as any, delta: changeTrackedDoc.__tracking__.changes });
+            const id = this.schema.getId(attachment.doc);
+            entities.set(id, { doc: this.schema.prepare(attachment.doc as any) as any, delta: changeTrackedDoc.__tracking__.changes, changeType });
         }
 
         return {
@@ -107,8 +123,39 @@ export abstract class KeyChangeTrackingStrategyBase<TKey extends IdType, TEntity
         };
     }
 
+    markDirty(entities: InferType<TEntity>[]) {
+        for (let i = 0, length = entities.length; i < length; ++i) {
+            const entity = entities[i];
+            const key = this.schema.getId(entity) as TKey;
+            const existing = this.attachments.get(key);
+
+            existing.changeType = "markedDirty";
+        }
+    }
+
+    isAttached(entity: InferType<TEntity>) {
+        const key = this.schema.getId(entity) as TKey;
+        return this.attachments.has(key);
+    }
+
+    getAttached(entity: InferType<TEntity>) {
+        const key = this.schema.getId(entity) as TKey;
+        return this.attachments.get(key);
+    }
+
+    filterAttached(selector: GenericFunction<InferType<TEntity>, boolean>) {
+        for (const [, attachment] of this.attachments) {
+            const document = attachment.doc;
+            if (selector(document)) {
+                return document;
+            }
+        }
+
+        return undefined;
+    }
+
     // Checks to see if the item is already attached, if so we merge, if not we attach and return each result
-    resolve(entities: InferType<TEntity>[], tag: unknown | null, options?: ResolveOptions) {
+    resolve(entities: InferType<TEntity>[], tag: unknown | null, options?: { merge?: boolean }) {
 
         const result: InferType<TEntity>[] = [];
         for (let i = 0, length = entities.length; i < length; ++i) {
@@ -118,10 +165,10 @@ export abstract class KeyChangeTrackingStrategyBase<TKey extends IdType, TEntity
 
             if (existing != null) {
                 if (options?.merge === true) {
-                    this.schema.merge(existing, entity); // merge needs to map children appropriately
+                    this.schema.merge(existing.doc, entity); // merge needs to map children appropriately
                 }
 
-                result.push(existing);
+                result.push(existing.doc);
 
                 if (tag != null) {
                     const tagCollection = this.resolveTagCollection();
@@ -130,7 +177,7 @@ export abstract class KeyChangeTrackingStrategyBase<TKey extends IdType, TEntity
                 continue;
             }
 
-            this.attachments.set(key, entity);
+            this.attachments.set(key, { doc: entity, changeType: "propertiesChanged" });
             result.push(entity);
 
             if (tag != null) {
@@ -171,8 +218,11 @@ export abstract class KeyChangeTrackingStrategyBase<TKey extends IdType, TEntity
     replaceAttachment(existingEntity: InferType<TEntity> | InferCreateType<TEntity>, newEntity: InferType<TEntity> | InferCreateType<TEntity>) {
         for (const [key, document] of this.attachments) {
 
-            if (document === existingEntity) {
-                this.attachments.set(key, newEntity as InferType<TEntity>);
+            if (document.doc === existingEntity) {
+                this.attachments.set(key, {
+                    doc: newEntity as InferType<TEntity>,
+                    changeType: document.changeType
+                });
                 return;
             }
         }
@@ -233,7 +283,8 @@ export abstract class KeyChangeTrackingStrategyBase<TKey extends IdType, TEntity
                 continue;
             }
 
-            result.push(this.attachments.get(id));
+            const found = this.attachments.get(id);
+            result.push(found.doc);
         }
 
         return result;

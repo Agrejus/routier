@@ -3,7 +3,6 @@ import { CollectionOptions } from "../types";
 import { StatefulDataAccessStrategy } from "./strategies/StatefulDataAccessStrategy";
 import { DatabaseDataAccessStrategy } from "./strategies/DatabaseDataAccessStrategy";
 import { IDataAccessStrategy } from "./types";
-import { UniDirectionalSubscription } from "../subscriptions/UniDirectionalSubscription";
 import { MemoryPlugin } from "routier-plugin-memory";
 import { DbPluginBulkOperationsEvent, DbPluginQueryEvent } from "routier-core/dist/plugins/types";
 
@@ -43,31 +42,38 @@ export class DataBridge<T extends {}> {
 
     subscribe<TShape, U>(event: DbPluginQueryEvent<T, TShape>, done: (result: TShape, error?: any) => void) {
         const { schema } = event
-        const subscription = new UniDirectionalSubscription<T>(schema.key, this.signal);
+        const subscription = event.schema.createSubscription(this.signal);
         subscription.onMessage((changes) => {
-
-
-            if (changes.queries.length > 0) {
+            debugger;
+            if (changes.removalQueries.length > 0) {
                 // If the expression is not null, that means we are trying to remove by an expression
                 // we need to run the query because we do not know about any overlap
                 this.query(event, done);
                 return;
             }
 
+            const filters = event.operation.options.get("filter")
+
+            // subscription has no filter, automatically run the query
+            if (filters.length === 0) {
+                this.query(event, done);
+                return;
+            }
+
             // Make sure something in the subscribed query changed, 
             // if it has, we need to requery so we can send all changes
-            if (changes.entities.length > 0) {
+            if (changes.adds.length > 0 || changes.updates.length > 0 || changes.removals.length > 0) {
 
-                // create a new plugin where we can quickly persist the changes and then query them
+                // create a new plugin where we can quickly seed the changes and then query them
                 const ephemeralPlugin = new MemoryPlugin(uuidv4());
 
                 // seed the db, we don't care about bulk operations here, we just want to query the data
-                ephemeralPlugin.seed(schema, changes.entities);
+                ephemeralPlugin.seed(schema, [...changes.adds, ...changes.updates, ...changes.removals]);
 
                 // query the temp db to check and see if items match the query
                 ephemeralPlugin.query(event, (r, e) => {
 
-                    ephemeralPlugin.destroy(() => { });
+                    ephemeralPlugin.destroy(() => { /* noop */ });
 
                     if (e != null) {
                         done(null, e);

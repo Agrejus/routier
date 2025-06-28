@@ -1,9 +1,12 @@
-import { CodeBuilder, ObjectBuilder } from "../../common/CodeBlock";
+import { CodeBuilder, ObjectBuilder, ContainerBlock } from "../../common/CodeBlock";
 import { PropertyInfo } from "../../common/PropertyInfo";
 import { SlotPath } from "../../common/SlotPath";
 import { SchemaTypes } from "../../schema";
 import { PropertyInfoHandler } from "../types";
 
+/**
+ * Handles converting a string value from a database to a Date value
+ */
 export class DeserializeDateHandler extends PropertyInfoHandler {
 
     override handle(property: PropertyInfo<any>, builder: CodeBuilder): CodeBuilder | null {
@@ -11,17 +14,29 @@ export class DeserializeDateHandler extends PropertyInfoHandler {
         if (property.type === SchemaTypes.Date) {
             const slotPath = new SlotPath("result.variable.object");
             let objectBuilder = builder.get<ObjectBuilder>(slotPath.get());
-            const assignment = `${property.name} instanceof Date ? ${property.name}.toISOString() : ${property.name}`
+            const entitySelectorPath = property.getSelectrorPath({ parent: "entity" });
+            const entityAssignmentPath = property.getAssignmentPath({ parent: "result" });
+            const assignment = `${property.name}: typeof ${entitySelectorPath} === "string" ? new Date(${entitySelectorPath}) : ${entitySelectorPath}`;
 
+            // if it is nullable or optional, assign in an if block, otherwise we 
+            // could unintentionally assign null/undefined to a property that does not exist
+            if (property.isOptional || property.isNullable) {
+                const ifAssignment = `${entityAssignmentPath} = typeof ${entitySelectorPath} === "string" ? new Date(${entitySelectorPath}) : ${entitySelectorPath}`;
+                const rootPath = new SlotPath("if");
+                builder.get<ContainerBlock>(rootPath.get()).if(`${entitySelectorPath} != null`).appendBody(ifAssignment);
+                return;
+            }
+
+            // A date cannot be a nested object, just do the assignment
             if (property.parent == null) {
-                objectBuilder.nested(property.name, assignment)
+                objectBuilder.property(assignment);
 
                 return builder;
             }
 
             slotPath.push(...property.getParentPathArray());
             const nestedObjectBuilder = builder.get<ObjectBuilder>(slotPath.get());
-            nestedObjectBuilder.nested(property.name, assignment)
+            nestedObjectBuilder.property(assignment)
 
             return builder;
         }

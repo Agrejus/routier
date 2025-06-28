@@ -5,7 +5,7 @@ export class PouchDbTranslator<TEntity extends {}, TShape extends unknown = TEnt
     private schema: CompiledSchema<TEntity>;
     private cachedMatches: ((item: unknown) => boolean) | null = null;
 
-    constructor(query: IQuery<TEntity>, schema: CompiledSchema<TEntity>) {
+    constructor(query: IQuery<TEntity, TShape>, schema: CompiledSchema<TEntity>) {
         super(query);
         this.schema = schema;
     }
@@ -33,7 +33,7 @@ export class PouchDbTranslator<TEntity extends {}, TShape extends unknown = TEnt
         return this.cachedMatches;
     }
 
-    private buildFilterChain(filters: QueryCollectionItem<TEntity, "filter">[], index: number): (item: unknown) => boolean {
+    private buildFilterChain(filters: QueryCollectionItem<TShape, "filter">[], index: number): (item: unknown) => boolean {
         // Base case: no more filters, return true
         if (index >= filters.length) {
             return () => true;
@@ -54,7 +54,7 @@ export class PouchDbTranslator<TEntity extends {}, TShape extends unknown = TEnt
         };
     }
 
-    private evaluateFilter(filter: QueryOption<TEntity, "filter">): (item: unknown) => boolean {
+    private evaluateFilter(filter: QueryOption<TShape, "filter">): (item: unknown) => boolean {
         if (filter.value.params == null) {
             const selector = filter.value.filter as Filter<unknown>;
             return (item: unknown) => selector(item) !== false;
@@ -68,10 +68,26 @@ export class PouchDbTranslator<TEntity extends {}, TShape extends unknown = TEnt
     override translate(data: unknown): TShape {
         assertIsArray(data);
 
-        // PouchDB converts a Date to a string when it is saved, we need to convert it back when it's selected
-        const deserializedData = data.map(x => this.schema.serialize(x as InferType<TEntity>))
+        const result: unknown[] = [];
 
-        return super.translate(deserializedData);
+        for (let i = 0, length = data.length; i < length; i++) {
+            const entity: any = data[i];
+
+            // design docs can be included in the result, ignore them
+            if ("_id" in entity && typeof entity._id === "string" && entity._id.startsWith("_design")) {
+                continue;
+            }
+
+            try {
+                // PouchDB converts a Date to a string when it is saved, we need to convert it back when it's selected
+                result.push(this.schema.deserialize(entity as InferType<TEntity>));
+                data[i] = null;
+            } catch (e) {
+                throw new Error(`Error deserializing entity from db.  Message: ${e.message}, Entity: ${JSON.stringify(entity, null, 2)}`)
+            }
+        }
+
+        return super.translate(result);
     }
 
 }

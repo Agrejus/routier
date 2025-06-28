@@ -1,8 +1,9 @@
 import { s } from 'routier-core';
 
 export const event = s.define("events", {
-    id: s.string().key().identity(),
-    name: s.string(),
+    _id: s.string().key().identity(),
+    _rev: s.string().identity(),
+    name: s.string().default(x => x.name, { name: "James" }),
     location: s.string().optional(),
     startTime: s.date(),
     endTime: s.date().optional(),

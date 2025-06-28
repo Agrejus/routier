@@ -8,7 +8,7 @@ import { SchemaObject } from "./property/types/Object";
 import { SchemaString } from "./property/types/String";
 import { IdType } from "../types";
 import { PropertyInfo } from "../common/PropertyInfo";
-import { SchemaIdentity } from "./property/modifiers/Identity";
+import { IQuery } from "../plugins/types";
 
 export enum SchemaTypes {
     Array = "Array",
@@ -75,9 +75,41 @@ export type Index = {
 }
 
 /**
+ * Represents changes to subscriptions, categorizing them by modifications to
+ * entities (additions, updates, removals) or query-driven removals.
+ * @template T - The type of the entities in the subscription.
+ */
+export type SubscriptionChanges<T extends {}> = {
+    /**
+     * Entities that have been added to the subscription.
+     */
+    adds: InferType<T>[];
+    /**
+     * Entities that have been updated within the subscription.
+     */
+    updates: InferType<T>[];
+    /**
+     * Entities that have been removed from the subscription.
+     */
+    removals: InferType<T>[];
+    /**
+     * Queries that have resulted in entities being removed from the subscription.
+     */
+    removalQueries: IQuery<T, T>[];
+}
+
+export interface ICollectionSubscription<T extends {}> extends Disposable {
+    send(changes: SubscriptionChanges<T>): void;
+    onMessage(callback: (changes: SubscriptionChanges<T>) => void): void;
+}
+
+/**
  * Represents a fully compiled schema with all utilities and metadata for an entity type.
  */
 export type CompiledSchema<TEntity extends {}> = {
+    createSubscription: (abortSignal?: AbortSignal) => ICollectionSubscription<TEntity>;
+    /** Returns the property info for a given id (full path) */
+    getProperty: (id: string) => PropertyInfo<TEntity>;
     /** Returns the ID of the given entity. */
     getId: (entity: InferType<TEntity>) => IdType;
     /** Returns a deep clone of the given entity. */

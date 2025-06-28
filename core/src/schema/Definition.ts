@@ -1,4 +1,4 @@
-import { CompiledSchema, GetHashTypeFunction, HashFunction, HashType, Index, IndexType, InferCreateType, InferType, SchemaTypes } from ".";
+import { CompiledSchema, GetHashTypeFunction, HashFunction, HashType, ICollectionSubscription, Index, InferCreateType, InferType, SchemaTypes, SubscriptionChanges } from ".";
 import { SchemaFunction } from './table/Function';
 import { SchemaComputed } from './table/Computed';
 import { SchemaBase } from "./property/base/Base";
@@ -20,6 +20,62 @@ import { FreezeHanderBuilder } from '../handlers/FreezeHandlerBuilder';
 import { IdType } from "../types";
 import { SchemaError } from '../errors/SchemaError';
 import { SerializeHandlerBuilder } from "../handlers/SerializeHandlerBuilder";
+import { uuid } from "../utilities/uuid";
+
+type UniDirectionalSubscriptionPayload<T extends {}> = {
+    id: string;
+    changes: SubscriptionChanges<T>;
+}
+
+// This is intented to run the "OnMessage" event whenever we "send".  For context
+// when we make a change, we query to see if we have any changes.  We need to run a fetch because we could have 
+// many db sets
+class CollectionSubscription<T extends {}> implements ICollectionSubscription<T> {
+
+    private _channel;
+    private _id = uuid();
+    private _callback: ((changes: SubscriptionChanges<T>) => void) | null = null;
+
+    constructor(id: number, signal?: AbortSignal) {
+        // The id is the computed id from the collection.  We need a static id so we can communicate across different
+        // instances of a data store
+        this._channel = new BroadcastChannel(`__routier-unidirectional-subscription-channel-${id}`);
+        this._channel.onmessage = (event: any) => {
+            const message = event.data as UniDirectionalSubscriptionPayload<T>;
+            if (message.id === this._id) {
+                return;
+            }
+
+            if (this._callback != null) {
+                this._callback(message.changes);
+            }
+        };
+
+        if (signal) {
+            signal.addEventListener("abort", () => {
+                this[Symbol.dispose]();
+            }, { once: true });
+        }
+    }
+
+    send(changes: SubscriptionChanges<T>) {
+        const message: UniDirectionalSubscriptionPayload<T> = {
+            id: this._id,
+            changes
+        }
+        this._channel.postMessage(message)
+    }
+
+    onMessage(callback: (changes: SubscriptionChanges<T>) => void) {
+        this._callback = callback;
+    }
+
+    [Symbol.dispose](): void {
+        this._channel.onmessage = null;
+        this._channel.close();
+        this._channel = null;
+    }
+}
 
 export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
@@ -234,6 +290,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
             const schema = this;
             const properties: PropertyInfo<T>[] = [];
+            const propertyMap: Map<string, PropertyInfo<T>> = new Map<string, PropertyInfo<T>>();
 
             const enrichmentHandlerBuilder = new EnrichmentHandlerBuilder();
             const mergeHandlerFactory = new MergeHandlerBuilder();
@@ -328,10 +385,12 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
             const deserializeCodeBuilder = new CodeBuilder();
             deserializeCodeBuilder.slot("result");
+            deserializeCodeBuilder.slot("if");
             deserializeCodeBuilder.slot("return").raw(`     return result;`);
 
             const serializeCodeBuilder = new CodeBuilder();
             serializeCodeBuilder.slot("result");
+            serializeCodeBuilder.slot("if");
             serializeCodeBuilder.slot("return").raw(`     return result;`);
 
             const idSelectorCodeBuilder = new CodeBuilder();
@@ -379,6 +438,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             this._iterate(schema, (property) => {
 
                 properties.push(property);
+                propertyMap.set(property.id, property);
                 allPropertyNamesAndPaths.push(property.getSelectrorPath({ parent: "entity" }));
 
                 // Check if the property or any parent is nullable/optional
@@ -463,8 +523,13 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                 return getIdsFunction(entity as any)[0] as IdType;
             }
 
+            const getProperty = (id: string) => propertyMap.get(id);
+            const key = hash([...allPropertyNamesAndPaths, this.collectionName].join(","));
+
             return {
+                createSubscription: (signal?: AbortSignal) => new CollectionSubscription(key, signal),
                 getId,
+                getProperty,
                 properties,
                 idProperties,
                 hasIdentities,
@@ -478,7 +543,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                 compare: compareFunction,
                 strip: stripFunction,
                 hash: hashFunction,
-                key: hash([...allPropertyNamesAndPaths, this.collectionName].join(",")),
+                key,
                 getIds: getIdsFunction,
                 enrich: enricherFunction,
                 collectionName: this.collectionName,

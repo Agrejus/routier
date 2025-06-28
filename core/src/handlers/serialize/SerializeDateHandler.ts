@@ -1,32 +1,43 @@
-import { CodeBuilder, ObjectBuilder, SlotBlock } from "../../common/CodeBlock";
+import { CodeBuilder, ObjectBuilder, ContainerBlock } from "../../common/CodeBlock";
 import { PropertyInfo } from "../../common/PropertyInfo";
 import { SlotPath } from "../../common/SlotPath";
 import { SchemaTypes } from "../../schema";
 import { PropertyInfoHandler } from "../types";
 
+/**
+ * Handles converting a Date value from JavaScript to a string value
+ */
 export class SerializeDateHandler extends PropertyInfoHandler {
 
     override handle(property: PropertyInfo<any>, builder: CodeBuilder): CodeBuilder | null {
 
         if (property.type === SchemaTypes.Date) {
-            let objectBuilder = builder.getOrDefault<ObjectBuilder>("result.variable.object");
-            const entitySelectorPath = property.getAssignmentPath({ parent: "entity" });
-            const assignment = `new Date(${entitySelectorPath})`
+            const slotPath = new SlotPath("result.variable.object");
+            let objectBuilder = builder.get<ObjectBuilder>(slotPath.get());
+            const entitySelectorPath = property.getSelectrorPath({ parent: "entity" });
+            const entityAssignmentPath = property.getAssignmentPath({ parent: "result" });
+            const assignment = `${property.name}: ${entitySelectorPath} instanceof Date ? ${entitySelectorPath}.toISOString() : ${entitySelectorPath}`;
 
-            if (objectBuilder == null) {
-                objectBuilder = builder.get<SlotBlock>("result")
-                    .assign("const result", { name: "variable" })
-                    .object({ name: "object" });
+            // if it is nullable or optional, assign in an if block, otherwise we 
+            // could unintentionally assign null/undefined to a property that does not exist
+            if (property.isOptional || property.isNullable) {
+                const ifAssignment = `${entityAssignmentPath} = ${entitySelectorPath} instanceof Date ? ${entitySelectorPath}.toISOString() : ${entitySelectorPath}`;
+                const rootPath = new SlotPath("if");
+                builder.get<ContainerBlock>(rootPath.get()).if(`${entitySelectorPath} != null`).appendBody(ifAssignment);
+                return;
             }
 
+            // A date cannot be a nested object, just do the assignment
             if (property.parent == null) {
-                objectBuilder.property(`${property.name}: ${assignment}`);
+                objectBuilder.property(assignment);
+
                 return builder;
             }
 
-            const slotPath = new SlotPath(...property.getParentPathArray());
-            objectBuilder = objectBuilder.get<ObjectBuilder>(slotPath.get());
-            objectBuilder.property(`${property.name}: ${assignment}`);
+            slotPath.push(...property.getParentPathArray());
+            const nestedObjectBuilder = builder.get<ObjectBuilder>(slotPath.get());
+            nestedObjectBuilder.property(assignment)
+
             return builder;
         }
 

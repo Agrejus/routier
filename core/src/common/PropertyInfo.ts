@@ -8,6 +8,10 @@ import { DefaultValue, FunctionBody } from '../types';
  */
 export class PropertyInfo<T extends {}> {
 
+    get id() {
+        return this.getPathArray().join(".");
+    }
+
     /** The name of the property. */
     readonly name: string;
     /** The schema type of the property. */

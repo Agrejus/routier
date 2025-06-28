@@ -4,6 +4,10 @@ import { product } from '../schemas/product';
 import { generateData } from '../data/generator';
 import { faker } from '@faker-js/faker';
 import { BasicDataStoreFactory } from '../contexts/BasicDataStoreFactory';
+import { comment } from '../schemas/comments';
+import { event } from '../schemas/event';
+import { MemoryPlugin } from 'routier-plugin-memory';
+import { uuidv4 } from 'routier-core';
 
 // we can solve this by having a common interface each schema adheres to
 // Then we can create a schema for each database to ensure we test everything
@@ -40,9 +44,10 @@ describe('saveChanges', () => {
 
     factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :Can save changes when there are no changes', async () => {
-            await routier.saveChangesAsync();
+            const result = await routier.saveChangesAsync();
+            expect(result).toBe(0);
         });
-    })
+    });
 });
 
 describe('add', () => {
@@ -70,7 +75,60 @@ describe('add', () => {
             expect(added.price).toBe(item.price);
             expect(added.tags).toEqual(item.tags);
         });
-    })
+    });
+
+    factory.createDataStores().forEach(routier => {
+        it(routier.pluginName + ' :Can add item with default', async () => {
+            // Arrange
+            const [item] = generateData(comment, 1);
+
+            // Act
+            const [added] = await routier.comments.addAsync(item);
+            const response = await routier.saveChangesAsync();
+
+            // Assert
+            expect(response).toBe(1);
+            expect(added._id).toStrictEqual(expect.any(String));
+            expect(added.author).toStrictEqual(item.author);
+            expect(added.content).toBe(item.content);
+            expect(added.replies).toStrictEqual(item.replies);
+            expect(added.createdAt).toBe(item.createdAt);
+            expect(added.createdAt).toBeDefined()
+        });
+    });
+
+    factory.createDataStores().forEach(routier => {
+        it(routier.pluginName + ' :Can add item with default date', async () => {
+            // Arrange
+            const [item] = generateData(event, 1);
+
+            // Act
+            const [added] = await routier.events.addAsync(item);
+            debugger;
+            const response = await routier.saveChangesAsync();
+            debugger;
+            // Assert
+            expect(response).toBe(1);
+            expect(added.endTime?.toISOString()).toBe(item.endTime?.toISOString());
+        });
+    });
+
+    factory.createDataStores().forEach(routier => {
+        it(routier.pluginName + ' :Can add item with default static value', async () => {
+            // Arrange
+            const [item] = generateData(event, 1);
+
+            // Act
+            const [added] = await routier.events.addAsync(item);
+            debugger;
+            const response = await routier.saveChangesAsync();
+            debugger;
+            // Assert
+            expect(response).toBe(1);
+            expect(added.name).toBe(item.name);
+            expect(added.name).toBe("James");
+        });
+    });
 
     factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :Can add multiple products', async () => {
@@ -453,7 +511,12 @@ describe("subscribe", () => {
             await seedData(routier);
 
             // Act
-            routier.products.where(w => w._id != "").firstOrUndefined(w => w._id !== "", callback);
+            routier.products.where(w => w._id != "").firstOrUndefined((r, e) => {
+                debugger;
+                callback(r);
+            });
+
+            await wait(500);
 
             await routier.products.addAsync(...generateData(product, 1));
             await routier.saveChangesAsync();
@@ -468,14 +531,14 @@ describe("subscribe", () => {
     });
 
     factory.createDataStores().forEach(routier => {
-        it(routier.pluginName + ' :subscribe should fire when data changes + firstOrUndefined has query', async () => {
+        it(routier.pluginName + ' :subscribe should fire when there are additions + firstOrUndefined has query', async () => {
 
             const callback = vi.fn();
             // Arrange
             await seedData(routier);
 
             // Act
-            routier.products.subscribe().where(w => w._id != "").firstOrUndefined(w => w._id !== "", callback);
+            routier.products.subscribe().where(w => w._id != "").firstOrUndefined(callback);
 
             await routier.products.addAsync(...generateData(product, 1));
             await routier.saveChangesAsync();
@@ -492,6 +555,103 @@ describe("subscribe", () => {
         });
     });
 
+    it('Subscribe should fire when there are additions + firstOrUndefined has query across data stores', async () => {
+
+        const firstStoreCallback = vi.fn();
+        const secondStoreCallback = vi.fn();
+
+        const plugin = new MemoryPlugin(uuidv4());
+        const firstStore = BasicDataStore.create(plugin);
+        const secondStore = BasicDataStore.create(plugin);
+
+        await seedData(firstStore);
+
+        firstStore.products.subscribe().where(w => w._id != "").firstOrUndefined(firstStoreCallback);
+        secondStore.products.subscribe().where(w => w._id != "").firstOrUndefined(secondStoreCallback);
+
+        await firstStore.products.addAsync(...generateData(product, 1));
+        await firstStore.saveChangesAsync();
+
+        await wait(500);
+
+        // Assert
+        expect(firstStoreCallback).toHaveBeenCalledTimes(2);
+        expect(firstStoreCallback.mock.calls[0][0]).toBeDefined();
+        expect(firstStoreCallback.mock.calls[0][1]).toBeUndefined();
+
+        expect(firstStoreCallback.mock.calls[1][0]).toBeDefined();
+        expect(firstStoreCallback.mock.calls[1][1]).toBeUndefined();
+
+        // Assert
+        expect(secondStoreCallback).toHaveBeenCalledTimes(2);
+        expect(secondStoreCallback.mock.calls[0][0]).toBeDefined();
+        expect(secondStoreCallback.mock.calls[0][1]).toBeUndefined();
+
+        expect(secondStoreCallback.mock.calls[1][0]).toBeDefined();
+        expect(secondStoreCallback.mock.calls[1][1]).toBeUndefined();
+    });
+
+    factory.createDataStores().forEach(async routier => {
+        it(routier.pluginName + ' :subscribe should fire when there are updates', async () => {
+
+            const callback = vi.fn();
+            // Arrange
+            await seedData(routier);
+
+            // Act
+            routier.products.subscribe().where(w => w._id != "").firstOrUndefined(r => {
+                debugger;
+                callback(r);
+            });
+
+            await wait(500);
+
+            const found = await routier.products.firstAsync(x => x._id != "");
+
+            found.category = "some-new-category"
+
+            await routier.saveChangesAsync();
+
+            await wait(500);
+
+            // Assert
+            expect(callback).toHaveBeenCalledTimes(2);
+            expect(callback.mock.calls[0][0]).toBeDefined();
+            expect(callback.mock.calls[0][1]).toBeUndefined();
+
+            expect(callback.mock.calls[1][0]).toBeDefined();
+            expect(callback.mock.calls[1][1]).toBeUndefined();
+        });
+    });
+
+    factory.createDataStores().forEach(async routier => {
+        it(routier.pluginName + ' :subscribe should fire when there are removals', async () => {
+
+            const callback = vi.fn();
+            // Arrange
+            await seedData(routier, 1);
+
+            // Act
+            routier.products.subscribe().where(w => w._id != "").firstOrUndefined(callback);
+
+            const found = await routier.products.firstAsync(x => x._id != "");
+
+            await routier.products.removeAsync(found);
+
+            await routier.saveChangesAsync();
+
+            await wait(500);
+
+            // Assert
+            expect(callback).toHaveBeenCalledTimes(2);
+            expect(callback.mock.calls[0][0]).toBeDefined();
+            expect(callback.mock.calls[0][1]).toBeUndefined();
+
+            expect(callback.mock.calls[1][0]).toBeUndefined();
+            expect(callback.mock.calls[1][1]).toBeUndefined();
+        });
+    });
+
     factory.createDataStores().forEach(routier => {
         it(routier.pluginName + ' :not subscribed should not fire when data changes + firstOrUndefined has query', async () => {
 
@@ -500,7 +660,7 @@ describe("subscribe", () => {
             await seedData(routier);
 
             // Act
-            routier.products.where(w => w._id != "").firstOrUndefined(w => w._id !== "", callback);
+            routier.products.where(w => w._id != "").firstOrUndefined(callback);
 
             await routier.products.addAsync(...generateData(product, 1));
             await routier.saveChangesAsync();
@@ -535,6 +695,34 @@ describe("subscribe", () => {
             expect(callback.mock.calls[0][1]).toBeUndefined();
 
             expect(callback.mock.calls[1][0]).toBeDefined();
+            expect(callback.mock.calls[1][1]).toBeUndefined();
+        });
+    });
+
+    factory.createDataStores().forEach(routier => {
+        it(routier.pluginName + ' :subscribe should fire when data changes + no query and toArray', async () => {
+
+            const callback = vi.fn();
+            // Arrange
+            await seedData(routier);
+
+            // Act
+            routier.products.subscribe().toArray((r) => {
+                expect(r.length).toBeGreaterThan(0);
+                callback(r);
+            });
+
+            await routier.products.addAsync(...generateData(product, 1));
+            await routier.saveChangesAsync();
+
+            await wait(500);
+
+            // Assert
+            expect(callback).toHaveBeenCalledTimes(2);
+            expect(Array.isArray(callback.mock.calls[0][0])).toBe(true);
+            expect(callback.mock.calls[0][1]).toBeUndefined();
+
+            expect(Array.isArray(callback.mock.calls[1][0])).toBe(true);
             expect(callback.mock.calls[1][1]).toBeUndefined();
         });
     });
@@ -971,3 +1159,7 @@ describe('distinct', () => {
         });
     });
 });
+
+describe('attachments', () => {
+
+})

@@ -15,12 +15,12 @@ export class BasicDataStore extends DataStore {
     }
 
     // need to use stateful collections too
-    users = this.collection(user).create();
+    // users = this.collection(user).create();
     products = this.collection(product).create();
-    inventoryItems = this.collection(inventoryItem).create();
+    // inventoryItems = this.collection(inventoryItem).create();
     events = this.collection(event).create();
-    orders = this.collection(order).create();
-    blogPosts = this.collection(blogPost).create();
+    // orders = this.collection(order).create();
+    // blogPosts = this.collection(blogPost).create();
     comments = this.collection(comment).create();
 
     static create(plugin: IDbPlugin) {

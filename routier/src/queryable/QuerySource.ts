@@ -10,7 +10,6 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
     protected isSubScribed: boolean = false;
     protected schema: CompiledSchema<TRoot>;
     protected parent: SchemaParent;
-    root: TRoot;
 
     constructor(schema: CompiledSchema<TRoot>, parent: SchemaParent, options: { queryable?: QuerySource<TRoot, TShape>, dataBridge?: DataBridge<TRoot>, changeTracker?: ChangeTracker<TRoot> }) {
 
@@ -35,8 +34,9 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
         }
     }
 
-    protected create<Root extends {}, Shape, TInstance extends QuerySource<Root, Shape>>(Instance: new (schema: CompiledSchema<Root>, parent: SchemaParent, options: { queryable?: QuerySource<Root, Shape>, dataBridge?: DataBridge<Root>, changeTracker?: ChangeTracker<Root> }) => TInstance) {
-        return new Instance(this.schema as any, this.parent, { queryable: this as any });
+    // Cannot change the root type, it comes from the collection type, only the resulting type (shape)
+    protected create<Shape, TInstance extends QuerySource<TRoot, Shape>>(Instance: new (schema: CompiledSchema<TRoot>, parent: SchemaParent, options: { queryable?: QuerySource<TRoot, Shape>, dataBridge?: DataBridge<TRoot>, changeTracker?: ChangeTracker<TRoot> }) => TInstance) {
+        return new Instance(this.schema, this.parent, { queryable: this as any });
     }
 
     protected _remove<U>(done: (error?: any) => void) {
@@ -92,28 +92,31 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
         const [, body] = stringified.split("=>").map(w => w.trim());
 
+
         if (body.includes("{")) {
-            const properties = body.replace(/{|}|\(|\)/g, "").split(",").map(w => w.trim());
-            return properties.map(property => {
-                const [destinationName, sourcePathAndName] = property.split(":").map(w => w.trim());
+            const propertyPaths = body.replace(/{|}|\(|\)/g, "").split(",").map(w => w.trim());
+            return propertyPaths.map(propertyPath => {
+                const [destinationName, sourcePathAndName] = propertyPath.split(":").map(w => w.trim());
                 const sourceName = this._extractPropertyName(sourcePathAndName);
+                const property = this.schema.getProperty(sourcePathAndName);
 
                 return {
                     sourceName,
                     destinationName,
                     isRename: sourceName === destinationName,
-                    getter: () => { throw new Error('Not implemented') }
+                    property
                 } as QueryField;
             })
         }
 
         const field = this._extractPropertyName(body);
+        const property = this.schema.getProperty(field);
 
         return [{
             destinationName: field,
             sourceName: field,
             isRename: false,
-            getter: () => { throw new Error('Not implemented') }
+            property
         } as QueryField];
     }
 

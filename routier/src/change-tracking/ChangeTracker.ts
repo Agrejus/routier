@@ -1,5 +1,4 @@
-import { ChangeTrackingType, CompiledSchema, EntityChanges, EntityModificationResult, Expression, InferCreateType, InferType, IQuery } from "routier-core";
-import { ResolveOptions } from "../data-access/types";
+import { ChangeTrackingType, CompiledSchema, EntityChanges, EntityModificationResult, GenericFunction, InferCreateType, InferType, IQuery } from "routier-core";
 import { EntityCallbackMany } from "../types";
 import { AdditionsPackage, IChangeTrackerStrategy } from "./types";
 import { IdentityKeyChangeTrackingStrategy } from './strategies/IdentityKeyChangeTrackingStrategy';
@@ -17,6 +16,21 @@ export class ChangeTracker<T extends {}> implements IChangeTrackerStrategy<T> {
         return this._strategy.getAndDestroyTags();
     }
 
+    markDirty(entities: InferType<T>[]) {
+        this._strategy.markDirty(entities);
+    }
+
+    isAttached(entity: InferType<T>) {
+        return this._strategy.isAttached(entity);
+    }
+
+    filterAttached(selector: GenericFunction<InferType<T>, boolean>) {
+        return this._strategy.filterAttached(selector);
+    }
+    getAttached(entity: InferType<T>) {
+        return this._strategy.getAttached(entity);
+    }
+
     add(entities: InferCreateType<T>[], tag: unknown | null, done: EntityCallbackMany<T>) {
         return this._strategy.add(entities, tag, done);
     }
@@ -29,7 +43,7 @@ export class ChangeTracker<T extends {}> implements IChangeTrackerStrategy<T> {
         return this._strategy.removeByQuery(query, tag, done);
     }
 
-    resolve(entities: InferType<T>[], tag: unknown | null, options?: ResolveOptions) {
+    resolve(entities: InferType<T>[], tag: unknown | null, options?: { merge?: boolean }) {
         return this._strategy.resolve(entities, tag, options);
     }
 

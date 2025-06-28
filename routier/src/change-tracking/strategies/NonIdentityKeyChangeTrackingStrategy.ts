@@ -9,8 +9,8 @@ export class NonIdentityKeyChangeTrackingStrategy<TKey extends IdType, TEntity e
     protected additions: Map<TKey, InferCreateType<TEntity>> = new Map<TKey, InferCreateType<TEntity>>();
 
     protected setAddition(item: InferCreateType<TEntity>) {
-        const id = this.schema.getId(item as any) as TKey;
-        this.additions.set(id, item as any);
+        const id = this.schema.getId(item as InferType<TEntity>) as TKey;
+        this.additions.set(id, item);
     }
 
     replace(existingEntity: InferType<TEntity> | InferCreateType<TEntity>, newEntity: InferType<TEntity> | InferCreateType<TEntity>) {

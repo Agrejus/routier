@@ -50,7 +50,9 @@ export {
     DbPluginQueryEvent,
     DbPluginBulkOperationsEvent,
     DbPluginEvent,
-    TaggedEntity
+    TaggedEntity,
+    EntityUpdateInfo,
+    EntityChangeType
 } from './plugins/types';
 
 export {
@@ -96,7 +98,9 @@ export {
     SchemaParent,
     Index,
     IndexType,
-    ChangeTrackingType
+    ChangeTrackingType,
+    SubscriptionChanges,
+    ICollectionSubscription
 } from './schema';
 
 export {
