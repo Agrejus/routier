@@ -1,4 +1,4 @@
-import { CompiledSchema, DeepPartial, Expression, IdType, InferCreateType, InferType, QueryOptionsCollection, TagCollection } from "..";
+import { CallbackResult, CompiledSchema, DeepPartial, IdType, InferCreateType, InferType, QueryOptionsCollection, TagCollection } from "..";
 import { SchemaParent } from "../schema";
 
 /**
@@ -10,18 +10,18 @@ export interface IDbPlugin {
      * @param event The query event containing schema, parent, and query operation.
      * @param done Callback with the result or error.
      */
-    query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: (result: TShape, error?: any) => void): void;
+    query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: CallbackResult<TShape>): void;
     /**
      * Destroys or cleans up the plugin, closing connections or freeing resources.
      * @param done Callback with an optional error.
      */
-    destroy(done: (error?: any) => void): void;
+    destroy(done: CallbackResult<never>): void;
     /**
      * Executes bulk operations (add, update, remove) on the database.
      * @param event The bulk operations event containing schema, parent, and changes.
      * @param done Callback with the result or error.
      */
-    bulkOperations<TRoot extends {}>(event: DbPluginBulkOperationsEvent<TRoot>, done: (result: EntityModificationResult<TRoot>, error?: any) => void): void;
+    bulkOperations<TRoot extends {}>(event: DbPluginBulkOperationsEvent<TRoot>, done: CallbackResult<EntityModificationResult<TRoot>>): void;
 }
 
 /**
@@ -73,27 +73,14 @@ export type IdbPluginCollection = {
  * Represents a set of changes to entities: additions, removals, and updates.
  */
 export type EntityChanges<T extends {}> = {
-    /** Entities to add. */
-    adds: {
-        entities: InferCreateType<T>[]
-    };
-    /** Entities to remove. */
-    removes: {
-        entities: InferType<T>[];
-        queries: IQuery<T, T>[];
-    };
-    /**
-     * Entities to update, mapped by ID. Each update includes the new doc and a delta of changed fields.
-     */
-    updates: {
-        entities: Map<IdType, EntityUpdateInfo<T>>;
-    };
-
+    adds: { entities: InferCreateType<T>[] };
+    updates: { changes: EntityUpdateInfo<T>[] };
+    removes: { entities: InferType<T>[], queries: IQuery<T, T>[] };
     tags: TagCollection;
 }
 
 export type EntityUpdateInfo<T extends {}> = {
-    doc: InferType<T>,
+    entity: InferType<T>,
     changeType: EntityChangeType;
     delta: { [key: string]: string | number | Date }
 }
@@ -108,11 +95,11 @@ export type TaggedEntity<T> = {
  */
 export type EntityModificationResult<T extends {}> = {
     /** Entities that were added (may be partial). */
-    adds: DeepPartial<InferCreateType<T>>[];
+    adds: { entities: DeepPartial<InferCreateType<T>>[] };
     /** Number of entities removed. */
-    removedCount: number;
+    removed: { count: number };
     /** Entities that were updated. */
-    updates: InferType<T>[];
+    updates: { entities: InferType<T>[]; };
 }
 
 /**

@@ -1,7 +1,7 @@
-import { CompiledSchema, IDbPlugin, TrampolinePipeline } from 'routier-core';
+import { CallbackResult, CompiledSchema, EntityChanges, IDbPlugin, Result, ResultType, SchemaId, TrampolinePipeline } from 'routier-core';
 import { Collection } from './collections/Collection';
 import { CollectionBuilder } from './collection-builder/CollectionBuilder';
-import { CollectionPipelines, SaveChangesContextStepOne } from './types';
+import { CollectionPipelines, PreviewChangesPayload, SaveChangesPayload } from './types';
 
 /**
  * The main Routier class, providing collection management, change tracking, and persistence for entities.
@@ -13,7 +13,7 @@ export class DataStore implements Disposable {
     /** The underlying database plugin used for persistence. */
     protected readonly dbPlugin: IDbPlugin;
     /** Map of schema key to collection instances. */
-    protected readonly collections: Map<number, Collection<any>>;
+    protected readonly collections: Map<SchemaId, Collection<any>>;
     /** Pipelines for save and hasChanges operations. */
     protected readonly collectionPipelines: CollectionPipelines;
     /** AbortController for managing cancellation and disposal. */
@@ -26,10 +26,10 @@ export class DataStore implements Disposable {
     constructor(dbPlugin: IDbPlugin) {
         this.abortController = new AbortController();
         this.dbPlugin = dbPlugin;
-        this.collections = new Map<number, Collection<any>>();
+        this.collections = new Map<SchemaId, Collection<any>>();
         this.collectionPipelines = {
-            save: new TrampolinePipeline<SaveChangesContextStepOne>(),
-            hasChanges: new TrampolinePipeline<{ hasChanges: boolean }>()
+            saveChanges: new TrampolinePipeline<SaveChangesPayload<unknown>>(),
+            previewChanges: new TrampolinePipeline<PreviewChangesPayload<unknown>>()
         };
     }
 
@@ -40,7 +40,7 @@ export class DataStore implements Disposable {
      */
     protected collection<TEntity extends {}>(schema: CompiledSchema<TEntity>) {
         const onCreated = (collection: Collection<TEntity>) => {
-            this.collections.set(schema.key, collection)
+            this.collections.set(schema.id, collection)
         };
         return new CollectionBuilder<TEntity, Collection<TEntity>>({
             dbPlugin: this.dbPlugin,
@@ -73,11 +73,30 @@ export class DataStore implements Disposable {
      * @param done Callback with the number of changes saved or an error.
      */
     saveChanges(done: (result: number, error?: any) => void) {
-        const response = {
+        this.collectionPipelines.saveChanges.filter<SaveChangesPayload<unknown>>({
             count: 0,
-            allSchemas: this.getAllSchemas.bind(this)
-        };
-        this.collectionPipelines.save.filter<SaveChangesContextStepOne>(response, (result, error) => {
+            adds: {
+                entities: []
+            },
+            updates: {
+                changes: []
+            },
+            removes: {
+                entities: [],
+                queries: []
+            },
+            result: {
+                adds: {
+                    entities: []
+                },
+                removed: {
+                    count: 0
+                },
+                updates: {
+                    entities: []
+                }
+            }
+        }, (result, error) => {
             done(result.count, error);
         });
     }
@@ -99,32 +118,33 @@ export class DataStore implements Disposable {
     }
 
     /**
-     * Previews changes (not yet implemented).
+     * Computes and returns the pending changes that would be sent to the database plugin's bulkOperations method.
+     * This method allows inspection of changes before they are actually persisted.
+     * @param done Callback with the entity changes or an error.
      */
-    previewChanges() {
-
+    previewChanges(done: (result: EntityChanges<unknown>, error?: any) => void) {
+        this.collectionPipelines.previewChanges.filter<EntityChanges<unknown>>({
+            adds: {
+                entities: []
+            },
+            updates: {
+                changes: []
+            },
+            removes: {
+                entities: [],
+                queries: []
+            }
+        }, done);
     }
 
     /**
-     * Checks if there are any unsaved changes in the collections.
-     * @param done Callback with the result (true if there are changes) or an error.
+     * Computes and returns the pending changes that would be sent to the database plugin's bulkOperations method asynchronously.
+     * This method allows inspection of changes before they are actually persisted.
+     * @returns A promise resolving to the entity changes.
      */
-    hasChanges(done: (result: boolean, error?: any) => void) {
-        const payload = {
-            hasChanges: false
-        }
-        this.collectionPipelines.hasChanges.filter<{ hasChanges: false }>(payload, (r, e) => {
-            done(r.hasChanges, e);
-        })
-    }
-
-    /**
-     * Checks asynchronously if there are any unsaved changes in the collections.
-     * @returns A promise resolving to true if there are changes, false otherwise.
-     */
-    hasChangesAsync() {
-        return new Promise<boolean>((resolve, reject) => {
-            this.hasChanges((r, e) => {
+    previewChangesAsync(): Promise<EntityChanges<unknown>> {
+        return new Promise<EntityChanges<unknown>>((resolve, reject) => {
+            this.previewChanges((r, e) => {
                 if (e != null) {
                     reject(e);
                     return;
@@ -135,10 +155,56 @@ export class DataStore implements Disposable {
     }
 
     /**
+     * Checks if there are any unsaved changes in the collections.
+     * @param done Callback with the result (true if there are changes) or an error.
+     */
+    hasChanges(done: (result: ResultType<boolean>) => void) {
+        try {
+            for (const [, collection] of this.collections) {
+                if (collection.hasChanges()) {
+                    done({
+                        ok: true,
+                        data: true
+                    });
+                    return;
+                }
+            }
+
+            done({
+                ok: true,
+                data: false
+            });
+        } catch (error) {
+            done({
+                ok: false,
+                error
+            });
+        }
+    }
+
+    /**
+     * Checks asynchronously if there are any unsaved changes in the collections.
+     * @returns A promise resolving to true if there are changes, false otherwise.
+     */
+    hasChangesAsync() {
+        return new Promise<boolean>((resolve, reject) => {
+            this.hasChanges((r) => {
+
+                if (r.ok === false) {
+                    reject(r.error);
+                    return;
+                }
+
+                resolve(r.data);
+            })
+        });
+    }
+
+    /**
      * Destroys the Routier instance and underlying database plugin.
      * @param done Callback with an optional error.
      */
-    destroy(done: (error?: any) => void) {
+    destroy(done: CallbackResult<never>) {
         this.dbPlugin.destroy(done);
     }
 
@@ -148,13 +214,7 @@ export class DataStore implements Disposable {
      */
     destroyAsync() {
         return new Promise<void>((resolve, reject) => {
-            this.destroy((e) => {
-                if (e != null) {
-                    reject(e);
-                    return;
-                }
-                resolve();
-            })
+            this.destroy((r) => Result.resolve(r, resolve, reject))
         });
     }
 
@@ -162,6 +222,6 @@ export class DataStore implements Disposable {
      * Disposes the Routier instance, aborting any ongoing operations and subscriptions.
      */
     [Symbol.dispose]() {
-        this.abortController.abort("Routier disposed");
+        this.abortController.abort("Data Store disposed");
     }
 }

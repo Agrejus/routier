@@ -3,10 +3,40 @@ description:
 globs: *.test.*
 alwaysApply: false
 ---
-- Always use arrange/act/assert for a test
-- Always assert your expectations
-- Please refer to the @schemas folder to find all schemas
-- Types are all infered from the schema
-- If types are needed, use the exported CompiledSchema and infer it's type.  See @blogPost.ts for how a schema is constructed.  Use `InferType<typeof blogPost>` to get the infered type.
-- If the key of a schema is a string always verify the type, not the value.  `expect(myModel.id).toStrictEqua(expect.any(String))`
-- Refer to the @schema folder for all of the different options avalable to a schema
+When generating tests, follow these best practices to ensure they are comprehensive, readable, and maintainable:
+
+### Comprehensive Coverage:
+- Tests must cover both typical cases and edge cases, including invalid inputs and error conditions.
+- Consider all possible scenarios for each method or behavior and ensure they are tested.
+
+### Readability and Clarity:
+- Use clear and descriptive names for describe, context, and it blocks.
+- Prefer the expect syntax for assertions to improve readability.
+- Keep test code concise; avoid unnecessary complexity or duplication.
+- Please do not use any comments, especially arrage/act/assert comments
+
+### Structure:
+- Organize tests logically using describe for classes/modules and context for different scenarios.
+- Ensure test file paths mirror the structure of the files being tested (e.g., app/models/user.ts → app/models/user.test.ts).
+- Ensure tests clean up side-effects (e.g. restore mocks, clear mocks)
+- Follow the Arrange-Act-Assert (AAA) pattern in every test
+- Ensure every test has at least one expect()
+
+## Test Data Management:
+- Prefer factories (e.g., FactoryBot) over fixtures for creating test data.
+- Please search the codebase for any existing factories that can be used
+
+## Independence and Isolation:
+- Ensure each test is independent; avoid shared state between tests.
+- Use mocks to simulate calls to external services (APIs, databases) and stubs to return predefined values for specific methods. Isolate the unit being tested, but avoid over-mocking; test real behavior when possible.
+
+## Avoid Repetition:
+- Use shared examples for common behaviors across different contexts.
+- Refactor repetitive test code into helpers or custom matchers if necessary.
+
+## Testing Method
+- If the test does not pass, do not write it to pass, please confirm that the logic is correct
+- Write one test, confirm it is correct before doing the rest of the tests
+- Please verify all tests pass before finishing
+
+

@@ -1,5 +1,4 @@
-import { EntityModificationResult, IDbPlugin } from "routier-core";
-import { DbPluginBulkOperationsEvent } from "routier-core/dist/plugins/types";
+import { CallbackResult, DbPluginBulkOperationsEvent, EntityModificationResult, IDbPlugin } from "routier-core";
 
 export class DataAccessStrategyBase<T extends {}> {
 
@@ -9,7 +8,7 @@ export class DataAccessStrategyBase<T extends {}> {
         this.dbPlugin = dbPlugin;
     }
 
-    protected _bulkOperations(event: DbPluginBulkOperationsEvent<T>, done: (result: EntityModificationResult<T>, error?: any) => void) {
+    protected _bulkOperations(event: DbPluginBulkOperationsEvent<T>, done: CallbackResult<EntityModificationResult<T>>) {
         this.dbPlugin.bulkOperations(event, done);
     }
 }

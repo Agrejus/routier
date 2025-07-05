@@ -1,5 +1,5 @@
 import PouchDB from 'pouchdb';
-import { assertIsArray, assertIsNotNull, combineExpressions, ComparatorExpression, DbPluginBulkOperationsEvent, DbPluginEvent, DbPluginQueryEvent, EntityChanges, EntityModificationResult, Expression, getProperties, IDbPlugin, IdType, IQuery, PropertyInfo, QueryOptionsCollection, SyncronousQueue, SyncronousUnitOfWork, toMap, TrampolinePipeline } from 'routier-core';
+import { assertIsArray, assertIsNotNull, combineExpressions, ComparatorExpression, DbPluginBulkOperationsEvent, DbPluginEvent, DbPluginQueryEvent, EntityModificationResult, Expression, getProperties, IDbPlugin, IdType, IQuery, PropertyInfo, SyncronousQueue, SyncronousUnitOfWork, toMap, TrampolinePipeline } from 'routier-core';
 import { PouchDbTranslator } from './PouchDbTranslator';
 
 const queue = new SyncronousQueue();

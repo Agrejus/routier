@@ -524,10 +524,10 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             }
 
             const getProperty = (id: string) => propertyMap.get(id);
-            const key = hash([...allPropertyNamesAndPaths, this.collectionName].join(","));
+            const id = hash([...allPropertyNamesAndPaths, this.collectionName].join(","));
 
             return {
-                createSubscription: (signal?: AbortSignal) => new CollectionSubscription(key, signal),
+                createSubscription: (signal?: AbortSignal) => new CollectionSubscription(id, signal),
                 getId,
                 getProperty,
                 properties,
@@ -543,7 +543,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                 compare: compareFunction,
                 strip: stripFunction,
                 hash: hashFunction,
-                key,
+                id,
                 getIds: getIdsFunction,
                 enrich: enricherFunction,
                 collectionName: this.collectionName,

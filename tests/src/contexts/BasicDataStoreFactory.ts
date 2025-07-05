@@ -2,7 +2,6 @@ import { IDbPlugin, uuidv4 } from "routier-core";
 import { BasicDataStore } from "./BasicDataStore";
 import { MemoryPlugin } from 'routier-plugin-memory';
 import { PouchDbPlugin } from 'routier-plugin-pouchdb';
-import { DexiePlugin } from 'routier-plugin-dexie';
 
 type PluginCreator = () => IDbPlugin;
 
@@ -27,6 +26,12 @@ export class BasicDataStoreFactory {
         }
 
         return result
+    }
+
+    createDataStore(test: (dataStore: BasicDataStore) => Promise<void>) {
+        const dataStore = new BasicDataStore(new MemoryPlugin(uuidv4()));
+
+        return () => test(dataStore).then(() => dataStore.destroyAsync());
     }
 
     static create() {

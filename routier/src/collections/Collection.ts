@@ -1,5 +1,5 @@
-import { CollectionOptions, CollectionPipelines, EntityCallbackMany, EntityMap, QueryResult, SaveChangesContextStepFive, SaveChangesContextStepFour, SaveChangesContextStepOne, SaveChangesContextStepSix, SaveChangesContextStepThree, SaveChangesContextStepTwo } from "../types";
-import { IDbPlugin, InferCreateType, InferType, Filter, ParamsFilter, CompiledSchema, Expression, Query, GenericFunction, ICollectionSubscription, SchemaParent, ChangeTrackingType, SubscriptionChanges } from 'routier-core';
+import { CollectionOptions, CollectionPipelines, EntityMap, SaveChangesPayload } from "../types";
+import { IDbPlugin, InferCreateType, InferType, Filter, ParamsFilter, CompiledSchema, Query, GenericFunction, ICollectionSubscription, SchemaParent, ChangeTrackingType, SubscriptionChanges, EntityChanges, CallbackResult, Result } from 'routier-core';
 import { ChangeTracker } from '../change-tracking/ChangeTracker';
 import { DataBridge } from '../data-access/DataBridge';
 import { Queryable } from '../queryable/Queryable';
@@ -12,7 +12,7 @@ export class Collection<TEntity extends {}> {
     protected readonly changeTracker: ChangeTracker<TEntity>;
     protected readonly dataBridge: DataBridge<TEntity>;
     readonly schema: CompiledSchema<TEntity>;
-    protected unidirecitonalSubscription: ICollectionSubscription<TEntity>;
+    protected subscription: ICollectionSubscription<TEntity>;
     private readonly parent: SchemaParent;
     private _tag: unknown;
 
@@ -24,140 +24,50 @@ export class Collection<TEntity extends {}> {
         parent: SchemaParent
     ) {
 
-        this.unidirecitonalSubscription = schema.createSubscription(options.signal);
+        this.subscription = schema.createSubscription(options.signal);
         this.schema = schema;
-        this.changeTracker = ChangeTracker.create<TEntity>(schema);
+        this.changeTracker = new ChangeTracker(schema);
         this.dataBridge = DataBridge.create<TEntity>(dbPlugin, options);
         this.parent = parent;
 
-        pipelines.save.pipe(this.checkForChangesStep.bind(this))
+        pipelines.saveChanges
+            .check(() => this.changeTracker.hasChanges())
+            .pipe(this.resetPipeline.bind(this))
             .pipe(this.prepareAdditions.bind(this))
             .pipe(this.prepareRemovals.bind(this))
             .pipe(this.prepareUpdates.bind(this))
-            .pipe(this.persist.bind(this))
-            .pipe(this.postOps.bind(this))
-            .pipe(this.notifySubscribers.bind(this))
-            .pipe(this.cleanup.bind(this));
+            .pipe(this.persist.bind(this));
 
-        pipelines.hasChanges.pipe(this.hasChanges.bind(this))
+        pipelines.previewChanges
+            .check(() => this.changeTracker.hasChanges())
+            .pipe(this.prepareAdditions.bind(this))
+            .pipe(this.prepareUpdates.bind(this))
+            .pipe(this.prepareRemovals.bind(this));
     }
 
     protected get changeTrackingType(): ChangeTrackingType {
         return "entity";
     }
 
-    protected hasChanges(payload: { hasChanges: boolean }, done: (payload: { hasChanges: boolean }) => void) {
+    // We save in the persist operation, we need to reset the items we are sending in so we do not double save
+    protected resetPipeline(data: SaveChangesPayload<TEntity>, done: (result: SaveChangesPayload<TEntity>, error?: any) => void) {
 
-        if (payload.hasChanges === true) {
-            done(payload);
-            return;
-        }
-
-        done({
-            hasChanges: this.changeTracker.hasChanges()
-        });
-    }
-
-    protected prepareAdditions(data: SaveChangesContextStepTwo, done: (result: SaveChangesContextStepThree<TEntity>, error?: any) => void) {
-
-        if (data.hasChanges === false) {
-            done({
-                ...data,
-                adds: {
-                    entities: []
-                },
-                find: () => undefined as any
-            })
-            return;
-        }
-
-        try {
-            const { adds, find } = this.changeTracker.prepareAdditions();
-
-            done({
-                ...data,
-                adds: {
-                    entities: adds
-                },
-                find
-            });
-        } catch (e) {
-            done(null, e);
-        }
-    }
-
-    protected checkForChangesStep(data: SaveChangesContextStepOne, done: (result: SaveChangesContextStepTwo) => void) {
-
-        const hasChanges = this.changeTracker.hasChanges();
-        debugger;
-        // only carry data.count over
-        done({
-            count: data.count,
-            hasChanges
-        });
-    }
-
-    protected cleanup(data: SaveChangesContextStepSix<TEntity>, done: (result: SaveChangesContextStepOne, error?: any) => void) {
-
-        this.changeTracker.clearAdditions();
-
-        if (data.result == null) {
-            done({ count: data.count });
-            return;
-        }
-
-        data.count += data.result.adds.length + data.result.removedCount + data.result.updates.length;
-
-        done({ count: data.count });
-    }
-
-    protected notifySubscribers(data: SaveChangesContextStepSix<TEntity>, done: (result: SaveChangesContextStepSix<TEntity>) => void) {
-
-        if (data.hasChanges === true) {
-
-            // we only want to notify of changes when an item that was saved matches the query
-            const updates = [...data.updates.entities].map(w => w[1].doc);
-            const removals = data.removes;
-            const adds = data.result.adds;
-
-            const changes: SubscriptionChanges<TEntity> = {
-                updates,
-                adds: adds as InferType<TEntity>[],
-                removals: removals.entities,
-                removalQueries: removals.queries
-            };
-
-            this.unidirecitonalSubscription.send(changes);
-        }
+        data.adds.entities = [];
+        data.updates.changes = []
+        data.removes.entities = [];
+        data.removes.queries = [];
 
         done(data);
     }
 
-    protected prepareUpdates(data: SaveChangesContextStepFour<TEntity>, done: (result: SaveChangesContextStepFive<TEntity>) => void) {
-
-        if (data.hasChanges === false) {
-            done({
-                ...data, updates: {
-                    entities: new Map()
-                }
-            });
-            return;
-        }
-
-        const updates = this.changeTracker.getAttachmentsChanges();
-
-        done({ ...data, updates });
-    }
-
-    protected postOps(data: SaveChangesContextStepSix<TEntity>, done: (result: SaveChangesContextStepSix<TEntity>, error?: any) => void) {
-
-        if (data.result == null) {
-            done(data)
-            return;
-        }
+    protected prepareAdditions(data: { adds: EntityChanges<TEntity>["adds"] }, done: (result: { adds: EntityChanges<TEntity>["adds"] }, error?: any) => void) {
 
         try {
-            this.changeTracker.mergeChanges(data.result, { find: data.find, adds: data.adds.entities })
+            const entities = this.changeTracker.prepareAdditions();
+
+            if (entities.length > 0) {
+                data.adds.entities.push(...entities);
+            }
 
             done(data);
         } catch (e) {
@@ -165,14 +75,39 @@ export class Collection<TEntity extends {}> {
         }
     }
 
-    protected persist(data: SaveChangesContextStepFive<TEntity>, done: (result: SaveChangesContextStepSix<TEntity>, error?: any) => void) {
+    protected prepareUpdates(data: { updates: EntityChanges<TEntity>["updates"] }, done: (result: { updates: EntityChanges<TEntity>["updates"] }) => void) {
+
+        const changes = this.changeTracker.getAttachmentsChanges();
+
+        if (changes.length > 0) {
+            data.updates.changes.push(...changes);
+        }
+
+        done(data);
+    }
+
+    protected prepareRemovals(data: { removes: EntityChanges<TEntity>["removes"] }, done: (result: { removes: EntityChanges<TEntity>["removes"] }, error?: any) => void) {
+
+        try {
+            const removes = this.changeTracker.prepareRemovals();
+
+            if (removes.entities.length > 0) {
+                data.removes.entities.push(...removes.entities);
+            }
+
+            if (removes.queries.length > 0) {
+                data.removes.queries.push(...removes.queries);
+            }
+
+            done(data);
+        } catch (e) {
+            done(null, e);
+        }
+    }
+
+    protected persist(data: SaveChangesPayload<TEntity>, done: (result: SaveChangesPayload<TEntity>, error?: any) => void) {
 
         const tags = this.changeTracker.getAndDestroyTags();
-
-        if (data.hasChanges === false) {
-            done({ ...data, result: null });
-            return;
-        }
 
         this.dataBridge.bulkOperations({
             operation: {
@@ -185,28 +120,42 @@ export class Collection<TEntity extends {}> {
             },
             parent: this.parent,
             schema: this.schema
-        }, (result, error) => done({ ...data, result }, error));
-    }
+        }, (result) => {
 
-    protected prepareRemovals(data: SaveChangesContextStepThree<TEntity>, done: (result: SaveChangesContextStepFour<TEntity>, error?: any) => void) {
+            this.changeTracker.clearAdditions();
 
-        if (data.hasChanges === false) {
-            done({
-                ...data, removes: {
-                    entities: [],
-                    queries: []
-                }
-            });
-            return;
-        }
+            if (result.ok === false) {
+                done(data);
+                return;
+            }
 
-        try {
-            const removes = this.changeTracker.prepareRemovals();
+            // merge only the changes from the collections persist operation
+            this.changeTracker.mergeChanges(result.data);
 
-            done({ ...data, removes });
-        } catch (e) {
-            done(null, e);
-        }
+            // we only want to notify of changes when an item that was saved matches the query
+            // these get reset each time
+            // send in the resulting adds because properties might have been set from the db operation
+            const updates = data.updates.changes.map(w => w.entity);
+            const removals = data.removes;
+            const adds = result.data.adds;
+
+            const changes: SubscriptionChanges<TEntity> = {
+                updates,
+                adds: adds.entities as InferType<TEntity>[],
+                removals: removals.entities,
+                removalQueries: removals.queries
+            };
+
+            this.subscription.send(changes);
+
+            // build the result
+            data.result.adds.entities.push(...result.data.adds.entities);
+            data.result.updates.entities.push(...result.data.updates.entities);
+            data.result.removed.count += result.data.removed.count;
+            data.count = data.result.adds.entities.length + data.result.removed.count + data.result.updates.entities.length;
+
+            done(data);
+        });
     }
 
     private getAndDestroyTag() {
@@ -244,6 +193,12 @@ export class Collection<TEntity extends {}> {
         filter: (selector: GenericFunction<InferType<TEntity>, boolean>) => {
             return this.changeTracker.filterAttached(selector);
         },
+
+        /** Finds attached entity using a selector function, returning first entity that matches the criteria */
+        find: (selector: GenericFunction<InferType<TEntity>, boolean>) => {
+            return this.changeTracker.findAttached(selector);
+        },
+
         /** Marks entities as dirty, forcing them to be included in the next save operation regardless of actual property changes */
         markDirty: (...entities: InferType<TEntity>[]) => {
             return this.changeTracker.markDirty(entities);
@@ -260,12 +215,17 @@ export class Collection<TEntity extends {}> {
         }
     }
 
+
+    hasChanges() {
+        return this.changeTracker.hasChanges();
+    }
+
     /**
      * Adds entities to the collection and persists them to the database.
      * @param entities Array of entities to add to the collection
      * @param done Callback function called with the added entities or error
      */
-    add(entities: InferCreateType<TEntity>[], done: EntityCallbackMany<TEntity>) {
+    add(entities: InferCreateType<TEntity>[], done: CallbackResult<InferType<TEntity>[]>) {
         const tag = this.getAndDestroyTag()
         this.changeTracker.add(entities, tag, done);
     }
@@ -276,12 +236,7 @@ export class Collection<TEntity extends {}> {
      * @returns Promise that resolves with the added entities or rejects with an error
      */
     addAsync(...entities: InferCreateType<TEntity>[]) {
-        return new Promise<InferType<TEntity>[]>((resolve, reject) => {
-            this.add(entities as any, (r, e) => this._resolvePromise({
-                data: r,
-                error: e
-            }, resolve as any, reject));
-        });
+        return new Promise<InferType<TEntity>[]>((resolve, reject) => this.add(entities, (r) => Result.resolve(r, resolve, reject)));
     }
 
     /**
@@ -289,7 +244,7 @@ export class Collection<TEntity extends {}> {
      * @param entities Array of entities to remove from the collection
      * @param done Callback function called with the removed entities or error
      */
-    remove(entities: InferType<TEntity>[], done: EntityCallbackMany<TEntity>) {
+    remove(entities: InferType<TEntity>[], done: CallbackResult<InferType<TEntity>[]>) {
         const tag = this.getAndDestroyTag()
         this.changeTracker.remove(entities, tag, done);
     }
@@ -301,10 +256,7 @@ export class Collection<TEntity extends {}> {
      */
     removeAsync(...entities: InferType<TEntity>[]) {
         return new Promise<InferType<TEntity>[]>((resolve, reject) => {
-            this.remove(entities, (r, e) => this._resolvePromise({
-                data: r,
-                error: e
-            }, resolve, reject));
+            this.remove(entities, (r) => Result.resolve(r, resolve, reject));
         });
     }
 
@@ -322,11 +274,7 @@ export class Collection<TEntity extends {}> {
      * @returns Promise that resolves when the operation completes or rejects with an error
      */
     removeAllAsync() {
-        return new Promise<void>((resolve, reject) => {
-            this.removeAll((e) => this._resolvePromise({
-                error: e
-            }, resolve, reject));
-        });
+        return new Promise<void>((resolve, reject) => this.removeAll((r) => Result.resolve(r, resolve, reject)));
     }
 
     /**
@@ -468,7 +416,7 @@ export class Collection<TEntity extends {}> {
      * Executes the query and returns all results as an array.
      * @param done Callback function called with the array of entities or error
      */
-    toArray(done: QueryResult<InferType<TEntity>[]>) {
+    toArray(done: CallbackResult<InferType<TEntity>[]>) {
         const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.parent, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
@@ -493,20 +441,20 @@ export class Collection<TEntity extends {}> {
      * @param expression Filter expression to apply
      * @param done Callback function called with the first matching entity or error
      */
-    first(expression: Filter<InferType<TEntity>>, done: QueryResult<InferType<TEntity>>): void;
+    first(expression: Filter<InferType<TEntity>>, done: CallbackResult<InferType<TEntity>>): void;
     /**
      * Returns the first entity that matches the parameterized filter.
      * @param selector Parameterized filter function
      * @param params Parameters to pass to the filter function
      * @param done Callback function called with the first matching entity or error
      */
-    first<P extends {}>(expression: ParamsFilter<TEntity, P>, params: P, done: QueryResult<InferType<TEntity>>): void;
+    first<P extends {}>(expression: ParamsFilter<TEntity, P>, params: P, done: CallbackResult<InferType<TEntity>>): void;
     /**
      * Returns the first entity in the collection.
      * @param done Callback function called with the first entity or error
      */
-    first(done: QueryResult<InferType<TEntity>>): void;
-    first<P extends {} = never>(doneOrExpression: Filter<InferType<TEntity>> | ParamsFilter<TEntity, P> | QueryResult<InferType<TEntity>>, paramsOrDone?: P | QueryResult<InferType<TEntity>>, done?: QueryResult<InferType<TEntity>>) {
+    first(done: CallbackResult<InferType<TEntity>>): void;
+    first<P extends {} = never>(doneOrExpression: Filter<InferType<TEntity>> | ParamsFilter<TEntity, P> | CallbackResult<InferType<TEntity>>, paramsOrDone?: P | CallbackResult<InferType<TEntity>>, done?: CallbackResult<InferType<TEntity>>) {
         const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.parent, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
@@ -547,20 +495,20 @@ export class Collection<TEntity extends {}> {
      * @param expression Filter expression to apply
      * @param done Callback function called with the first matching entity, undefined, or error
      */
-    firstOrUndefined(expression: Filter<InferType<TEntity>>, done: QueryResult<InferType<TEntity> | undefined>): void;
+    firstOrUndefined(expression: Filter<InferType<TEntity>>, done: CallbackResult<InferType<TEntity> | undefined>): void;
     /**
      * Returns the first entity that matches the parameterized filter, or undefined if none found.
      * @param selector Parameterized filter function
      * @param params Parameters to pass to the filter function
      * @param done Callback function called with the first matching entity, undefined, or error
      */
-    firstOrUndefined<P extends {}>(expression: ParamsFilter<TEntity, P>, params: P, done: QueryResult<InferType<TEntity> | undefined>): void;
+    firstOrUndefined<P extends {}>(expression: ParamsFilter<TEntity, P>, params: P, done: CallbackResult<InferType<TEntity> | undefined>): void;
     /**
      * Returns the first entity in the collection, or undefined if empty.
      * @param done Callback function called with the first entity, undefined, or error
      */
-    firstOrUndefined(done: QueryResult<InferType<TEntity> | undefined>): void;
-    firstOrUndefined<P extends {} = never>(doneOrExpression: Filter<InferType<TEntity>> | ParamsFilter<TEntity, P> | QueryResult<InferType<TEntity> | undefined>, paramsOrDone?: P | QueryResult<InferType<TEntity> | undefined>, done?: QueryResult<InferType<TEntity> | undefined>) {
+    firstOrUndefined(done: CallbackResult<InferType<TEntity> | undefined>): void;
+    firstOrUndefined<P extends {} = never>(doneOrExpression: Filter<InferType<TEntity>> | ParamsFilter<TEntity, P> | CallbackResult<InferType<TEntity> | undefined>, paramsOrDone?: P | CallbackResult<InferType<TEntity> | undefined>, done?: CallbackResult<InferType<TEntity> | undefined>) {
         const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.parent, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
@@ -601,20 +549,20 @@ export class Collection<TEntity extends {}> {
      * @param expression Filter expression to apply
      * @param done Callback function called with true if any entity matches, false otherwise, or error
      */
-    some(expression: Filter<InferType<TEntity>>, done: QueryResult<boolean>): void;
+    some(expression: Filter<InferType<TEntity>>, done: CallbackResult<boolean>): void;
     /**
      * Checks if any entity matches the parameterized filter.
      * @param selector Parameterized filter function
      * @param params Parameters to pass to the filter function
      * @param done Callback function called with true if any entity matches, false otherwise, or error
      */
-    some<P extends {}>(expression: ParamsFilter<TEntity, P>, params: P, done: QueryResult<boolean>): void;
+    some<P extends {}>(expression: ParamsFilter<TEntity, P>, params: P, done: CallbackResult<boolean>): void;
     /**
      * Checks if the collection has any entities.
      * @param done Callback function called with true if collection has entities, false otherwise, or error
      */
-    some(done: QueryResult<boolean>): void;
-    some<P extends {} = never>(doneOrExpression: Filter<InferType<TEntity>> | ParamsFilter<TEntity, P> | QueryResult<boolean>, paramsOrDone?: P | QueryResult<boolean>, done?: QueryResult<boolean>) {
+    some(done: CallbackResult<boolean>): void;
+    some<P extends {} = never>(doneOrExpression: Filter<InferType<TEntity>> | ParamsFilter<TEntity, P> | CallbackResult<boolean>, paramsOrDone?: P | CallbackResult<boolean>, done?: CallbackResult<boolean>) {
         const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.parent, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
@@ -655,15 +603,15 @@ export class Collection<TEntity extends {}> {
      * @param expression Filter expression to apply
      * @param done Callback function called with true if all entities match, false otherwise, or error
      */
-    every(expression: Filter<InferType<TEntity>>, done: QueryResult<boolean>): void;
+    every(expression: Filter<InferType<TEntity>>, done: CallbackResult<boolean>): void;
     /**
      * Checks if all entities match the parameterized filter.
      * @param selector Parameterized filter function
      * @param params Parameters to pass to the filter function
      * @param done Callback function called with true if all entities match, false otherwise, or error
      */
-    every<P extends {}>(expression: ParamsFilter<TEntity, P>, params: P, done: QueryResult<boolean>): void;
-    every<P extends {} = never>(expression: Filter<InferType<TEntity>> | ParamsFilter<TEntity, P> | QueryResult<boolean>, paramsOrDone?: P | QueryResult<boolean>, done?: QueryResult<boolean>) {
+    every<P extends {}>(expression: ParamsFilter<TEntity, P>, params: P, done: CallbackResult<boolean>): void;
+    every<P extends {} = never>(expression: Filter<InferType<TEntity>> | ParamsFilter<TEntity, P> | CallbackResult<boolean>, paramsOrDone?: P | CallbackResult<boolean>, done?: CallbackResult<boolean>) {
         const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.parent, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
@@ -699,7 +647,7 @@ export class Collection<TEntity extends {}> {
      * @param selector Function that selects the numeric property to find the minimum of
      * @param done Callback function called with the minimum value or error
      */
-    min(selector: GenericFunction<InferType<TEntity>, number>, done: QueryResult<number>): void {
+    min(selector: GenericFunction<InferType<TEntity>, number>, done: CallbackResult<number>): void {
         const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.parent, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
@@ -727,7 +675,7 @@ export class Collection<TEntity extends {}> {
      * @param selector Function that selects the numeric property to find the maximum of
      * @param done Callback function called with the maximum value or error
      */
-    max(selector: GenericFunction<InferType<TEntity>, number>, done: QueryResult<number>): void {
+    max(selector: GenericFunction<InferType<TEntity>, number>, done: CallbackResult<number>): void {
         const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.parent, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
@@ -755,7 +703,7 @@ export class Collection<TEntity extends {}> {
      * @param selector Function that selects the numeric property to sum
      * @param done Callback function called with the sum or error
      */
-    sum(selector: GenericFunction<InferType<TEntity>, number>, done: QueryResult<number>): void {
+    sum(selector: GenericFunction<InferType<TEntity>, number>, done: CallbackResult<number>): void {
         const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.parent, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
@@ -782,7 +730,7 @@ export class Collection<TEntity extends {}> {
      * Counts the number of entities in the collection.
      * @param done Callback function called with the count or error
      */
-    count(done: QueryResult<number>): void {
+    count(done: CallbackResult<number>): void {
         const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.parent, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
@@ -808,7 +756,7 @@ export class Collection<TEntity extends {}> {
      * Returns distinct entities from the collection, removing duplicates.
      * @param done Callback function called with the distinct entities or error
      */
-    distinct(done: QueryResult<InferType<TEntity>[]>): void {
+    distinct(done: CallbackResult<InferType<TEntity>[]>): void {
         const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.parent, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
@@ -828,25 +776,5 @@ export class Collection<TEntity extends {}> {
         });
 
         return result.distinctAsync();
-    }
-
-    private _resolvePromise<R>(options: {
-        data?: R,
-        error?: any
-    }, resolve: (data?: R) => void, reject: (error?: any) => void) {
-
-        const { data, error } = options;
-
-        if (error != null) {
-            reject(error);
-            return
-        }
-
-        if (data == null) {
-            resolve();
-            return;
-        }
-
-        resolve(data);
     }
 }

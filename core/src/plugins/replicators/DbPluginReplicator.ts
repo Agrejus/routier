@@ -1,5 +1,7 @@
+import { Result } from '../../common/Result';
 import { TrampolinePipeline } from '../../common/TrampolinePipeline';
 import { InferCreateType } from '../../schema';
+import { CallbackResult } from '../../types';
 import { DbPluginBulkOperationsEvent, DbPluginQueryEvent, EntityModificationResult, IDbPlugin, IdbPluginCollection } from '../types';
 import { OperationsPayload, PersistPayload } from './types';
 
@@ -25,18 +27,18 @@ export class DbPluginReplicator implements IDbPlugin {
     /**
      * Will query the read plugin if there is one, otherwise the source plugin will be queried
     */
-    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (result: TShape, error?: any) => void): void {
+    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<TShape>): void {
         try {
 
             const plugin = this.plugins.read != null ? this.plugins.read : this.plugins.source;
 
             plugin.query(event, done);
         } catch (e: any) {
-            done(null, e);
+            done(Result.error(e));
         }
     }
 
-    destroy(done: (error?: any) => void): void {
+    destroy(done: CallbackResult<never>): void {
         try {
 
             const pipeline = new TrampolinePipeline<OperationsPayload>();
@@ -54,19 +56,19 @@ export class DbPluginReplicator implements IDbPlugin {
             pipeline.filter<OperationsPayload>(data, (result) => {
 
                 if (result.errors.length > 0) {
-                    done(result.errors);
+                    done(Result.error(result.errors));
                     return;
                 }
 
-                done();
+                done(Result.success());
             });
 
         } catch (e: any) {
-            done(e);
+            done(Result.error(e));
         }
     }
 
-    protected destroyDbs(payload: OperationsPayload, done: (payload: OperationsPayload) => void) {
+    protected destroyDbs(payload: OperationsPayload, done: CallbackResult<OperationsPayload>) {
         const { plugins, index } = payload;
         const plugin = plugins[index];
 
@@ -74,14 +76,7 @@ export class DbPluginReplicator implements IDbPlugin {
         // move next
         payload.index++;
 
-        plugin.destroy((e) => {
-            if (e != null) {
-                payload.errors.push(e);
-                return;
-            }
-
-            done(payload);
-        });
+        plugin.destroy(done);
     }
 
     private _persist<TEntity extends {}>(payload: PersistPayload<TEntity>, done: (payload: PersistPayload<TEntity>) => void) {
@@ -93,12 +88,14 @@ export class DbPluginReplicator implements IDbPlugin {
 
         // source is first
         if (payload.index === 1) {
-            plugin.bulkOperations(event, (r, e) => {
-                payload.result = r;
+            plugin.bulkOperations(event, (r) => {
 
-                if (e != null) {
-                    payload.errors.push(e);
+                if (r.ok === false) {
+                    payload.errors.push(r.error);
+                    return;
                 }
+
+                payload.result = r.data;
 
                 done(payload);
             });
@@ -115,7 +112,7 @@ export class DbPluginReplicator implements IDbPlugin {
         plugin.bulkOperations({
             operation: {
                 adds: {
-                    entities: adds as InferCreateType<TEntity>[]
+                    entities: adds.entities as InferCreateType<TEntity>[]
                 }, // pass in the resulting additions to get any keys that were set
                 updates: event.operation.updates,
                 removes: event.operation.removes,
@@ -123,17 +120,18 @@ export class DbPluginReplicator implements IDbPlugin {
             },
             parent: event.parent,
             schema: event.schema
-        }, (_, e) => {
+        }, (r) => {
 
-            if (e != null) {
-                payload.errors.push(e);
+            if (r.ok === false) {
+                payload.errors.push(r.error);
+                return;
             }
 
             done(payload);
         });
     }
 
-    bulkOperations<TEntity extends {}>(event: DbPluginBulkOperationsEvent<TEntity>, done: (result: EntityModificationResult<TEntity>, error?: any) => void): void {
+    bulkOperations<TEntity extends {}>(event: DbPluginBulkOperationsEvent<TEntity>, done: CallbackResult<EntityModificationResult<TEntity>>): void {
         try {
             // insert into the source first to generate any ids, then take the result and persist that into the replicas
             const pipeline = new TrampolinePipeline<OperationsPayload>();
@@ -156,35 +154,16 @@ export class DbPluginReplicator implements IDbPlugin {
 
             pipeline.filter<PersistPayload<TEntity>>(data, (result) => {
 
-                if (result.errors.length > 0) {
-
-                    if (result.result != null) {
-                        done(result.result, result.errors);
-                        return;
-                    }
-
-                    done({
-                        adds: [],
-                        removedCount: 0,
-                        updates: []
-                    }, result.errors);
+                if (result.errors.length > 0 || result.result == null) {
+                    done(Result.error(result.errors));
                     return;
                 }
 
-                if (result.result == null) {
-                    done({
-                        adds: [],
-                        removedCount: 0,
-                        updates: []
-                    });
-                    return;
-                }
-
-                done(result.result);
+                done(Result.success(result.result));
             });
 
         } catch (e: any) {
-            done(null, e);
+            done(Result.error(e));
         }
     }
 }

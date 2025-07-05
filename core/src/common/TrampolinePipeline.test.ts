@@ -1,199 +1,419 @@
-// import { describe, it, expect, vi } from 'vitest';
-// import { TrampolinePipeline, Processor } from './TrampolinePipeline'; // Adjust path based on actual file name
+import { describe, it, expect } from 'vitest';
+import { TrampolinePipeline } from './TrampolinePipeline';
 
-// describe('TrampolinePipeline', () => {
+describe('TrampolinePipeline', () => {
+    describe('empty pipeline', () => {
+        it('should immediately call done with initial data when no processors are added', async () => {
+            const pipeline = new TrampolinePipeline<number>();
+            const testData = 42;
 
-//     it('should execute a single synchronous step', () => {
-//         return new Promise<void>((resolve) => {
-//             const pipeline = new TrampolinePipeline<number>()
-//                 .add<number>( (data, cb) => cb(data + 1) );
+            const result = await new Promise<number>((resolve, reject) => {
+                pipeline.filter(testData, (result: any, error?: any) => {
+                    if (error) reject(error);
+                    else resolve(result);
+                });
+            });
 
-//             pipeline.execute(10, (result, error) => {
-//                 expect(error).toBeUndefined();
-//                 expect(result).toBe(11);
-//                 resolve();
-//             });
-//         });
-//     });
+            expect(result).toBe(testData);
+        });
+    });
 
-//     it('should execute multiple synchronous steps', () => {
-//         return new Promise<void>((resolve) => {
-//             const pipeline = new TrampolinePipeline<number>()
-//                 .add<number>( (data, cb) => cb(data + 1) )
-//                 .add<string>( (data, cb) => cb(`Result: ${data}`) )
-//                 .add<string>( (data, cb) => cb(`${data}!`));
+    describe('single processor', () => {
+        it('should process data through a single synchronous processor', async () => {
+            const pipeline = new TrampolinePipeline<number, number>();
+            const processor = (data: number, callback: (result: number) => void) => {
+                callback(data * 2);
+            };
 
-//             pipeline.execute(10, (result, error) => {
-//                 expect(error).toBeUndefined();
-//                 expect(result).toBe('Result: 11!');
-//                 resolve();
-//             });
-//         });
-//     });
+            const result = await new Promise<number>((resolve, reject) => {
+                pipeline.pipe(processor).filter(5, (result: any, error?: any) => {
+                    if (error) reject(error);
+                    else resolve(result);
+                });
+            });
 
-//     it('should execute a single asynchronous step', () => {
-//         vi.useFakeTimers();
-//         return new Promise<void>(async (resolve) => {
-//             const pipeline = new TrampolinePipeline<string>()
-//                 .add<string>((data, cb) => {
-//                     setTimeout(() => cb(`${data} world`), 100);
-//                 });
+            expect(result).toBe(10);
+        });
 
-//             pipeline.execute('hello', (result, error) => {
-//                 expect(error).toBeUndefined();
-//                 expect(result).toBe('hello world');
-//                 resolve();
-//             });
+        it('should process data through a single asynchronous processor', async () => {
+            const pipeline = new TrampolinePipeline<number, number>();
+            const processor = (data: number, callback: (result: number) => void) => {
+                setTimeout(() => callback(data * 2), 10);
+            };
 
-//             await vi.advanceTimersByTimeAsync(100);
-//             vi.useRealTimers(); // Restore real timers
-//         });
-//     });
+            const result = await new Promise<number>((resolve, reject) => {
+                pipeline.pipe(processor).filter(5, (result: any, error?: any) => {
+                    if (error) reject(error);
+                    else resolve(result);
+                });
+            });
 
-//     it('should execute multiple asynchronous steps', () => {
-//         vi.useFakeTimers();
-//         return new Promise<void>(async (resolve) => {
-//             const pipeline = new TrampolinePipeline<number>()
-//                 .add<number>((data, cb) => setTimeout(() => cb(data * 2), 50))
-//                 .add<number>((data, cb) => setTimeout(() => cb(data + 5), 50));
+            expect(result).toBe(10);
+        });
 
-//             pipeline.execute(10, (result, error) => {
-//                 expect(error).toBeUndefined();
-//                 expect(result).toBe(25);
-//                 resolve();
-//             });
+        it('should handle errors from a single processor', async () => {
+            const pipeline = new TrampolinePipeline<number, number>();
+            const error = new Error('Test error');
+            const processor = (data: number, callback: (result: number, error?: any) => void) => {
+                callback(data, error);
+            };
 
-//             await vi.advanceTimersByTimeAsync(50); // First timeout
-//             await vi.advanceTimersByTimeAsync(50); // Second timeout
-//             vi.useRealTimers();
-//         });
-//     });
+            const result = await new Promise<{ result: number; error: any }>((resolve) => {
+                pipeline.pipe(processor).filter(5, (result: any, error?: any) => {
+                    resolve({ result, error });
+                });
+            });
 
-//     it('should execute mixed synchronous and asynchronous steps', () => {
-//         vi.useFakeTimers();
-//         return new Promise<void>(async (resolve) => {
-//             const pipeline = new TrampolinePipeline<string>()
-//                 .add<string>((data, cb) => cb(`${data} sync1`)) // Sync
-//                 .add<string>((data, cb) => setTimeout(() => cb(`${data} async1`), 50)) // Async
-//                 .add<string>((data, cb) => cb(`${data} sync2`)) // Sync
-//                 .add<string>((data, cb) => setTimeout(() => cb(`${data} async2`), 50)); // Async
+            expect(result.error).toBe(error);
+            expect(result.result).toBe(5);
+        });
 
-//             pipeline.execute('start', (result, error) => {
-//                 expect(error).toBeUndefined();
-//                 expect(result).toBe('start sync1 async1 sync2 async2');
-//                 resolve();
-//             });
+        it('should handle thrown errors from a single processor', async () => {
+            const pipeline = new TrampolinePipeline<number, number>();
+            const error = new Error('Test error');
+            const processor = (data: number, callback: (result: number) => void) => {
+                throw error;
+            };
 
-//             await vi.advanceTimersByTimeAsync(50);
-//             await vi.advanceTimersByTimeAsync(50);
-//             vi.useRealTimers();
-//         });
-//     });
+            const result = await new Promise<{ result: number; error: any }>((resolve) => {
+                pipeline.pipe(processor).filter(5, (result: any, error?: any) => {
+                    resolve({ result, error });
+                });
+            });
 
-//     it('should handle an empty pipeline correctly', () => {
-//         return new Promise<void>((resolve) => {
-//             const pipeline = new TrampolinePipeline<{ val: string }>();
-//             const initial = { val: 'test' };
+            expect(result.error).toBe(error);
+            expect(result.result).toBe(5);
+        });
+    });
 
-//             pipeline.execute(initial, (result, error) => {
-//                 expect(error).toBeUndefined();
-//                 expect(result).toBe(initial); // Should return initial data
-//                 resolve();
-//             });
-//         });
-//     });
+    describe('multiple processors', () => {
+        it('should process data through multiple synchronous processors', async () => {
+            const pipeline = new TrampolinePipeline<number, number>();
+            const processor1 = (data: number, callback: (result: number) => void) => {
+                callback(data * 2);
+            };
+            const processor2 = (data: number, callback: (result: number) => void) => {
+                callback(data + 3);
+            };
+            const processor3 = (data: number, callback: (result: number) => void) => {
+                callback(data * 4);
+            };
 
-//     it('should handle errors passed via callback', () => {
-//         return new Promise<void>((resolve) => {
-//             const pipeline = new TrampolinePipeline<number>()
-//                 .add<number>((data, cb) => cb(data + 1))
-//                 .add<number>((data, cb) => cb(0, new Error('Something went wrong')))
-//                 .add<number>((data, cb) => cb(data * 10)); // This step should not run
+            const result = await new Promise<number>((resolve, reject) => {
+                pipeline
+                    .pipe(processor1)
+                    .pipe(processor2)
+                    .pipe(processor3)
+                    .filter(5, (result: any, error?: any) => {
+                        if (error) reject(error);
+                        else resolve(result);
+                    });
+            });
 
-//             const finalCallback = vi.fn((result, error) => {
-//                 expect(error).toBeInstanceOf(Error);
-//                 expect(error.message).toBe('Something went wrong');
-//                 // Result might be intermediate, depending on when error occurred
-//                 // For simplicity, just check the error here.
-//                 resolve();
-//             });
+            expect(result).toBe(52); // (5 * 2 + 3) * 4 = 52
+        });
 
-//             pipeline.execute(5, finalCallback);
-//         });
-//     });
+        it('should process data through multiple asynchronous processors', async () => {
+            const pipeline = new TrampolinePipeline<number, number>();
+            const processor1 = (data: number, callback: (result: number) => void) => {
+                setTimeout(() => callback(data * 2), 10);
+            };
+            const processor2 = (data: number, callback: (result: number) => void) => {
+                setTimeout(() => callback(data + 3), 10);
+            };
+            const processor3 = (data: number, callback: (result: number) => void) => {
+                setTimeout(() => callback(data * 4), 10);
+            };
 
-//     it('should handle errors thrown synchronously by a processor', () => {
-//         return new Promise<void>((resolve) => {
-//             const pipeline = new TrampolinePipeline<string>()
-//                 .add<string>((data, cb) => cb(data.toUpperCase()))
-//                 .add<string>((data, cb) => {
-//                     if (data === 'HELLO') {
-//                         throw new Error('Sync throw error');
-//                     }
-//                     cb(data);
-//                 })
-//                 .add<string>((data, cb) => cb(`${data}!!!`)); // Should not run
+            const result = await new Promise<number>((resolve, reject) => {
+                pipeline
+                    .pipe(processor1)
+                    .pipe(processor2)
+                    .pipe(processor3)
+                    .filter(5, (result: any, error?: any) => {
+                        if (error) reject(error);
+                        else resolve(result);
+                    });
+            });
 
-//             const finalCallback = vi.fn((result, error) => {
-//                 expect(error).toBeInstanceOf(Error);
-//                 expect(error.message).toBe('Sync throw error');
-//                 resolve();
-//             });
+            expect(result).toBe(52);
+        });
 
-//             pipeline.execute('hello', finalCallback);
-//         });
-//     });
+        it('should process data through mixed synchronous and asynchronous processors', async () => {
+            const pipeline = new TrampolinePipeline<number, number>();
+            const processor1 = (data: number, callback: (result: number) => void) => {
+                callback(data * 2);
+            };
+            const processor2 = (data: number, callback: (result: number) => void) => {
+                setTimeout(() => callback(data + 3), 10);
+            };
+            const processor3 = (data: number, callback: (result: number) => void) => {
+                callback(data * 4);
+            };
 
-//      it('should not cause stack overflow with many synchronous steps', () => {
-//         return new Promise<void>((resolve) => {
-//             let pipeline = new TrampolinePipeline<number>();
-//             const steps = 5000; // Number of synchronous steps
+            const result = await new Promise<number>((resolve, reject) => {
+                pipeline
+                    .pipe(processor1)
+                    .pipe(processor2)
+                    .pipe(processor3)
+                    .filter(5, (result: any, error?: any) => {
+                        if (error) reject(error);
+                        else resolve(result);
+                    });
+            });
 
-//             for (let i = 0; i < steps; i++) {
-//                 pipeline = pipeline.add<number>((data, cb) => cb(data + 1));
-//             }
+            expect(result).toBe(52);
+        });
 
-//             pipeline.execute(0, (result, error) => {
-//                 expect(error).toBeUndefined();
-//                 expect(result).toBe(steps);
-//                 resolve();
-//             });
-//         });
-//     });
+        it('should handle errors from middle processor and stop processing', async () => {
+            const pipeline = new TrampolinePipeline<number, number>();
+            const processor1 = (data: number, callback: (result: number) => void) => {
+                callback(data * 2);
+            };
+            const processor2 = (data: number, callback: (result: number, error?: any) => void) => {
+                callback(data, new Error('Middle processor error'));
+            };
+            const processor3 = (data: number, callback: (result: number) => void) => {
+                callback(data * 4);
+            };
 
-//     it('should allow multiple executions with correct state reset', () => {
-//         return new Promise<void>(async (resolve) => {
-//             vi.useFakeTimers();
-//             const pipeline = new TrampolinePipeline<number>()
-//                 .add<number>((data, cb) => setTimeout(() => cb(data + 1), 50))
-//                 .add<number>((data, cb) => cb(data * 2));
+            const result = await new Promise<{ result: number; error: any }>((resolve) => {
+                pipeline
+                    .pipe(processor1)
+                    .pipe(processor2)
+                    .pipe(processor3)
+                    .filter(5, (result: any, error?: any) => {
+                        resolve({ result, error });
+                    });
+            });
 
-//             // First execution
-//             let result1: number | undefined;
-//             let error1: any;
-//             pipeline.execute<number>(10, (res, err) => {
-//                 result1 = res;
-//                 error1 = err;
-//             });
-//             await vi.advanceTimersByTimeAsync(50);
-//             expect(error1).toBeUndefined();
-//             expect(result1).toBe(22); // (10 + 1) * 2
+            expect(result.error.message).toBe('Middle processor error');
+            expect(result.result).toBe(10); // Should be result from processor1
+        });
 
-//             // Second execution
-//             let result2: number | undefined;
-//             let error2: any;
-//             pipeline.execute<number>(5, (res, err) => {
-//                 result2 = res;
-//                 error2 = err;
-//             });
-//             await vi.advanceTimersByTimeAsync(50);
-//             expect(error2).toBeUndefined();
-//             expect(result2).toBe(12); // (5 + 1) * 2
+        it('should handle thrown errors from middle processor and stop processing', async () => {
+            const pipeline = new TrampolinePipeline<number, number>();
+            const processor1 = (data: number, callback: (result: number) => void) => {
+                callback(data * 2);
+            };
+            const processor2 = (data: number, callback: (result: number) => void) => {
+                throw new Error('Middle processor thrown error');
+            };
+            const processor3 = (data: number, callback: (result: number) => void) => {
+                callback(data * 4);
+            };
 
-//             vi.useRealTimers();
-//             resolve();
-//         });
-//     });
+            const result = await new Promise<{ result: number; error: any }>((resolve) => {
+                pipeline
+                    .pipe(processor1)
+                    .pipe(processor2)
+                    .pipe(processor3)
+                    .filter(5, (result: any, error?: any) => {
+                        resolve({ result, error });
+                    });
+            });
 
-//     // Add more tests as needed, e.g., complex data types, edge cases
-// }); 
+            expect(result.error.message).toBe('Middle processor thrown error');
+            expect(result.result).toBe(10);
+        });
+    });
+
+    describe('type transformations', () => {
+        it('should transform data types through the pipeline', async () => {
+            const pipeline = new TrampolinePipeline<string, number>();
+            const processor1 = (data: string, callback: (result: number) => void) => {
+                callback(parseInt(data));
+            };
+            const processor2 = (data: number, callback: (result: string) => void) => {
+                callback(data.toString());
+            };
+            const processor3 = (data: string, callback: (result: number) => void) => {
+                callback(data.length);
+            };
+
+            const result = await new Promise<number>((resolve, reject) => {
+                (pipeline as any)
+                    .pipe(processor1)
+                    .pipe(processor2)
+                    .pipe(processor3)
+                    .filter('42', (result: any, error?: any) => {
+                        if (error) reject(error);
+                        else resolve(result);
+                    });
+            });
+
+            expect(result).toBe(2); // "42" -> 42 -> "42" -> 2
+        });
+
+        it('should handle complex object transformations', async () => {
+            const pipeline = new TrampolinePipeline<{ name: string }, { count: number }>();
+            const processor1 = (data: { name: string }, callback: (result: string) => void) => {
+                callback(data.name.toUpperCase());
+            };
+            const processor2 = (data: string, callback: (result: { count: number }) => void) => {
+                callback({ count: data.length });
+            };
+
+            const result = await new Promise<{ count: number }>((resolve, reject) => {
+                (pipeline as any)
+                    .pipe(processor1)
+                    .pipe(processor2)
+                    .filter({ name: 'test' }, (result: any, error?: any) => {
+                        if (error) reject(error);
+                        else resolve(result);
+                    });
+            });
+
+            expect(result).toEqual({ count: 4 });
+        });
+    });
+
+    describe('error handling edge cases', () => {
+        it('should not call done multiple times when multiple errors occur', async () => {
+            const pipeline = new TrampolinePipeline<number, number>();
+            const processor1 = (data: number, callback: (result: number, error?: any) => void) => {
+                callback(data, new Error('First error'));
+            };
+            const processor2 = (data: number, callback: (result: number, error?: any) => void) => {
+                callback(data, new Error('Second error'));
+            };
+
+            let doneCallCount = 0;
+            const result = await new Promise<{ result: number; error: any }>((resolve) => {
+                pipeline
+                    .pipe(processor1)
+                    .pipe(processor2)
+                    .filter(5, (result: any, error?: any) => {
+                        doneCallCount++;
+                        resolve({ result, error });
+                    });
+            });
+
+            expect(doneCallCount).toBe(1);
+            expect(result.error.message).toBe('First error');
+            expect(result.result).toBe(5);
+        });
+
+        it('should handle errors in the final processor', async () => {
+            const pipeline = new TrampolinePipeline<number, number>();
+            const processor1 = (data: number, callback: (result: number) => void) => {
+                callback(data * 2);
+            };
+            const processor2 = (data: number, callback: (result: number, error?: any) => void) => {
+                callback(data, new Error('Final processor error'));
+            };
+
+            const result = await new Promise<{ result: number; error: any }>((resolve) => {
+                pipeline
+                    .pipe(processor1)
+                    .pipe(processor2)
+                    .filter(5, (result: any, error?: any) => {
+                        resolve({ result, error });
+                    });
+            });
+
+            expect(result.error.message).toBe('Final processor error');
+            expect(result.result).toBe(10);
+        });
+
+        it('should handle thrown errors in the final processor', async () => {
+            const pipeline = new TrampolinePipeline<number, number>();
+            const processor1 = (data: number, callback: (result: number) => void) => {
+                callback(data * 2);
+            };
+            const processor2 = (data: number, callback: (result: number) => void) => {
+                throw new Error('Final processor thrown error');
+            };
+
+            const result = await new Promise<{ result: number; error: any }>((resolve) => {
+                pipeline
+                    .pipe(processor1)
+                    .pipe(processor2)
+                    .filter(5, (result: any, error?: any) => {
+                        resolve({ result, error });
+                    });
+            });
+
+            expect(result.error.message).toBe('Final processor thrown error');
+            expect(result.result).toBe(10);
+        });
+    });
+
+    describe('concurrent execution protection', () => {
+        it('should prevent overlapping trampoline calls', async () => {
+            const pipeline = new TrampolinePipeline<number, number>();
+            const processor = (data: number, callback: (result: number) => void) => {
+                setTimeout(() => callback(data * 2), 10);
+            };
+
+            let executionCount = 0;
+            const result = await new Promise<number>((resolve, reject) => {
+                const doneCallback = (result: any, error?: any) => {
+                    executionCount++;
+                    if (error) reject(error);
+                    else resolve(result);
+                };
+
+                pipeline.pipe(processor).filter(5, doneCallback);
+            });
+
+            expect(executionCount).toBe(1);
+            expect(result).toBe(10);
+        });
+    });
+
+    describe('complex scenarios', () => {
+        it('should handle a long chain of processors with mixed sync/async', async () => {
+            const pipeline = new TrampolinePipeline<number, string>();
+
+            const processors = [
+                (data: number, callback: (result: number) => void) => callback(data * 2),
+                (data: number, callback: (result: number) => void) => setTimeout(() => callback(data + 1), 5),
+                (data: number, callback: (result: number) => void) => callback(data * 3),
+                (data: number, callback: (result: number) => void) => setTimeout(() => callback(data - 5), 5),
+                (data: number, callback: (result: string) => void) => callback(`Result: ${data}`),
+            ];
+
+            let currentPipeline = pipeline as any;
+            processors.forEach(processor => {
+                currentPipeline = currentPipeline.pipe(processor);
+            });
+
+            const result = await new Promise<string>((resolve, reject) => {
+                currentPipeline.filter(10, (result: any, error?: any) => {
+                    if (error) reject(error);
+                    else resolve(result);
+                });
+            });
+
+            expect(result).toBe('Result: 61'); // ((10 * 2 + 1) * 3 - 5) = 61
+        });
+
+        it('should handle processors that return the same data type', async () => {
+            const pipeline = new TrampolinePipeline<number, number>();
+
+            const processor1 = (data: number, callback: (result: number) => void) => {
+                callback(data + 1);
+            };
+            const processor2 = (data: number, callback: (result: number) => void) => {
+                callback(data + 1);
+            };
+            const processor3 = (data: number, callback: (result: number) => void) => {
+                callback(data + 1);
+            };
+
+            const result = await new Promise<number>((resolve, reject) => {
+                pipeline
+                    .pipe(processor1)
+                    .pipe(processor2)
+                    .pipe(processor3)
+                    .filter(0, (result: any, error?: any) => {
+                        if (error) reject(error);
+                        else resolve(result);
+                    });
+            });
+
+            expect(result).toBe(3);
+        });
+    });
+});

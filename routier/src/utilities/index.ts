@@ -1,28 +1,18 @@
-import { QueryResult } from "../types";
+import { CallbackResult } from "routier-core";
 
-export function createPromise<T>(fn: (callback: QueryResult<T>) => void) {
+export function createPromise<T>(fn: (callback: CallbackResult<T>) => void) {
     return new Promise<T>((resolve, reject) => {
-        fn((r, e) => {
-            if (!e) {
-                resolve(r);
+        fn((r) => {
+            if (r.ok === false) {
+                reject(r.error);
                 return;
             }
 
-            reject(e);
-        })
+            resolve(r.data);
+        });
     });
 }
 
-export function createVoidPromise(fn: (callback: (error?: any) => void) => void) {
-    return new Promise<void>((resolve, reject) => {
-        fn((e) => {
-            if (!e) {
-                resolve();
-                return;
-            }
-
-            reject(e);
-        })
-    });
+export function clone<T extends {}>(data: T): T {
+    return JSON.parse(JSON.stringify(data)) as T;
 }
-

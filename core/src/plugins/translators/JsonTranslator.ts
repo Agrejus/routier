@@ -180,11 +180,11 @@ export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRo
 
         data.sort(sort);
 
-        return data[0] as T;
-    }
+        if (data.length === 0) {
+            throw new Error("Cannot perform operation on empty array, result query contains no data")
+        }
 
-    private _formatMissingMapError(functionName: string) {
-        return `${functionName}() operation can only be performed when one field is mapped for a result.  Ex.  myset.map(x => x.someNumber).${functionName}()`
+        return data[0] as T;
     }
 
     private _formatDataNotArrayError(functionName: string) {

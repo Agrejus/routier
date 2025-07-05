@@ -1,6 +1,6 @@
 import { Filter, GenericFunction, ParamsFilter } from "routier-core";
 import { SelectionQueryable } from "./SelectionQueryable";
-import { createPromise, createVoidPromise } from "../utilities";
+import { createPromise } from "../utilities";
 
 export class SelectionQueryableAsync<Root extends {}, Shape> extends SelectionQueryable<Root, Shape, void> {
 
@@ -11,19 +11,19 @@ export class SelectionQueryableAsync<Root extends {}, Shape> extends SelectionQu
 
         if (params != null) {
             const paramsFilter = doneOrExpression as ParamsFilter<Shape, P>;
-            return createVoidPromise(w => {
+            return createPromise(w => {
                 this.remove(paramsFilter, params, w);
             });
         }
 
         if (doneOrExpression != null) {
             const paramsFilter = doneOrExpression as Filter<Shape>;
-            return createVoidPromise(w => {
+            return createPromise(w => {
                 this.remove(paramsFilter, w);
             });
         }
 
-        return createVoidPromise(w => {
+        return createPromise(w => {
             this.remove(w);
         });
     }

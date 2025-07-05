@@ -1,10 +1,9 @@
-import { EntityModificationResult, IDbPlugin, uuidv4 } from "routier-core";
+import { CallbackResult, DbPluginBulkOperationsEvent, DbPluginQueryEvent, EntityModificationResult, IDbPlugin, uuidv4 } from "routier-core";
 import { CollectionOptions } from "../types";
 import { StatefulDataAccessStrategy } from "./strategies/StatefulDataAccessStrategy";
 import { DatabaseDataAccessStrategy } from "./strategies/DatabaseDataAccessStrategy";
 import { IDataAccessStrategy } from "./types";
 import { MemoryPlugin } from "routier-plugin-memory";
-import { DbPluginBulkOperationsEvent, DbPluginQueryEvent } from "routier-core/dist/plugins/types";
 
 export class DataBridge<T extends {}> {
 
@@ -32,15 +31,15 @@ export class DataBridge<T extends {}> {
         return new DataBridge<T>(strategy, options);
     }
 
-    bulkOperations(event: DbPluginBulkOperationsEvent<T>, done: (result: EntityModificationResult<T>, error?: any) => void) {
+    bulkOperations(event: DbPluginBulkOperationsEvent<T>, done: CallbackResult<EntityModificationResult<T>>) {
         this.strategy.bulkOperations(this.options, event, done);
     }
 
-    query<TShape>(event: DbPluginQueryEvent<T, TShape>, done: (response: TShape, error?: any) => void) {
+    query<TShape>(event: DbPluginQueryEvent<T, TShape>, done: CallbackResult<TShape>) {
         this.strategy.query(this.options, event, done);
     }
 
-    subscribe<TShape, U>(event: DbPluginQueryEvent<T, TShape>, done: (result: TShape, error?: any) => void) {
+    subscribe<TShape, U>(event: DbPluginQueryEvent<T, TShape>, done: CallbackResult<TShape>) {
         const { schema } = event
         const subscription = event.schema.createSubscription(this.signal);
         subscription.onMessage((changes) => {
@@ -71,12 +70,12 @@ export class DataBridge<T extends {}> {
                 ephemeralPlugin.seed(schema, [...changes.adds, ...changes.updates, ...changes.removals]);
 
                 // query the temp db to check and see if items match the query
-                ephemeralPlugin.query(event, (r, e) => {
+                ephemeralPlugin.query(event, (r) => {
 
                     ephemeralPlugin.destroy(() => { /* noop */ });
 
-                    if (e != null) {
-                        done(null, e);
+                    if (r.ok === false) {
+                        done(r);
                         return;
                     }
 

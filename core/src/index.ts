@@ -39,7 +39,9 @@ export { getProperties } from './expressions/utils';
 export {
     DeepPartial,
     IdType,
-    GenericFunction
+    GenericFunction,
+    ResultType,
+    CallbackResult
 } from './types';
 
 export {
@@ -100,7 +102,8 @@ export {
     IndexType,
     ChangeTrackingType,
     SubscriptionChanges,
-    ICollectionSubscription
+    ICollectionSubscription,
+    SchemaId
 } from './schema';
 
 export {
@@ -131,3 +134,7 @@ export { IDbPluginReplicator } from './plugins/replicators/types';
 export {
     PropertyInfo
 } from './common/PropertyInfo';
+
+export {
+    Result
+} from './common/Result';

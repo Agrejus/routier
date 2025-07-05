@@ -1,9 +1,8 @@
-import { EntityModificationResult, InferType, Query, assertIsNotNull, InferCreateType, DbPluginLogging, IDbPluginReplicator, OptimisticDbPluginReplicator, assertInstanceOfDbPluginLogging, IDbPlugin, DbPluginReplicator } from "routier-core";
+import { EntityModificationResult, Query, assertIsNotNull, InferCreateType, DbPluginLogging, IDbPluginReplicator, OptimisticDbPluginReplicator, assertInstanceOfDbPluginLogging, IDbPlugin, DbPluginReplicator, DbPluginBulkOperationsEvent, DbPluginQueryEvent, CallbackResult } from "routier-core";
 import { IDataAccessStrategy } from "../types";
 import { DataAccessStrategyBase } from "./DataAccessStrategyBase";
 import { assertIsMemoryPlugin, MemoryPlugin } from "routier-plugin-memory";
 import { CollectionOptions, StatefulCollectionOptions } from "../../types";
-import { DbPluginBulkOperationsEvent, DbPluginQueryEvent } from "routier-core/dist/plugins/types";
 
 let dbPluginReplicator: IDbPluginReplicator;
 
@@ -31,12 +30,12 @@ const getReplicator = (dbPlugin: IDbPlugin, optimistic?: boolean) => {
 
 export class StatefulDataAccessStrategy<T extends {}> extends DataAccessStrategyBase<T> implements IDataAccessStrategy<T> {
 
-    bulkOperations(collectionOptions: CollectionOptions, event: DbPluginBulkOperationsEvent<T>, done: (result: EntityModificationResult<T>, error?: any) => void) {
+    bulkOperations(collectionOptions: CollectionOptions, event: DbPluginBulkOperationsEvent<T>, done: CallbackResult<EntityModificationResult<T>>) {
         const optimistic = (collectionOptions as StatefulCollectionOptions).optimistic;
         getReplicator(this.dbPlugin, optimistic).bulkOperations(event, done);
     }
 
-    query<TShape>(_: CollectionOptions, event: DbPluginQueryEvent<T, TShape>, done: (response: TShape, error?: any) => void) {
+    query<TShape>(_: CollectionOptions, event: DbPluginQueryEvent<T, TShape>, done: CallbackResult<TShape>) {
 
         const replicator = getReplicator(this.dbPlugin);
 
@@ -63,10 +62,10 @@ export class StatefulDataAccessStrategy<T extends {}> extends DataAccessStrategy
                 operation: queryAll,
                 parent: event.parent,
                 schema: event.schema
-            }, (r, e) => {
+            }, (r) => {
 
-                if (e != null) {
-                    done(null, e);
+                if (r.ok === false) {
+                    done(r);
                     return;
                 }
 
@@ -74,23 +73,23 @@ export class StatefulDataAccessStrategy<T extends {}> extends DataAccessStrategy
                 readPlugin.bulkOperations({
                     operation: {
                         adds: {
-                            entities: r as InferCreateType<T>[]
+                            entities: r.data as InferCreateType<T>[]
                         },
                         removes: {
                             entities: [],
                             queries: []
                         },
                         updates: {
-                            entities: new Map()
+                            changes: []
                         },
                         tags: null
                     },
                     parent: event.parent,
                     schema: event.schema
-                }, (_, bulkOperationsError) => {
+                }, (bulkOperationsResult) => {
 
-                    if (bulkOperationsError != null) {
-                        done(null, bulkOperationsError);
+                    if (bulkOperationsResult.ok === false) {
+                        done(bulkOperationsResult);
                         return;
                     }
 

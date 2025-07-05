@@ -131,18 +131,21 @@ const r = async () => {
         debugger;
         const ctx = new Ctx();
 
-        // await ctx.nested.addAsync(...Array.from({ length: 5000 }, () => ({
-        //     cool: `cool${Math.floor(Math.random() * 10000)}`,
-        //     two: `two${Math.floor(Math.random() * 10000)}`,
-        //     name: `Name${Math.floor(Math.random() * 10000)}`,
-        //     more: {
-        //         one: `one${Math.floor(Math.random() * 10000)}`,
-        //         two: `two${Math.floor(Math.random() * 10000)}`
-        //     },
-        //     order: Math.floor(Math.random() * 10000)
-        // })));
+        const a = await ctx.nested.addAsync(...Array.from({ length: 10 }, () => ({
+            cool: `cool${Math.floor(Math.random() * 10000)}`,
+            two: `two${Math.floor(Math.random() * 10000)}`,
+            name: `Name${Math.floor(Math.random() * 10000)}`,
+            more: {
+                one: `one${Math.floor(Math.random() * 10000)}`,
+                two: `two${Math.floor(Math.random() * 10000)}`
+            },
+            order: Math.floor(Math.random() * 10000)
+        })));
 
-        // await ctx.saveChangesAsync();
+        const changes = await ctx.previewChangesAsync();
+        await ctx.saveChangesAsync();
+        debugger;
+        console.log(changes, a)
 
         const r = await ctx.nested.where(x => x.order === 1).map(x => x.order).toArrayAsync();
         const xxxxx = await ctx.nested.toArrayAsync();
@@ -217,7 +220,7 @@ const r = async () => {
         const r4 = await ctx.nested.where(w => w.order === 100).sumAsync(w => w.order);
         console.log(r4);
 
-        const r1 = await ctx.nested.where(w => w.name == "James").firstOrUndefinedAsync();
+        const r1 = await ctx.nested.where(w => w.name == "James").firstOrUndefinedAsync(w => w.name === "");
         const r2 = await ctx.nested.where(([w, d]) => w.name == d.name, { name: "James" }).firstOrUndefinedAsync();
 
 

@@ -53,16 +53,16 @@ export class DexiePlugin implements IDbPlugin, Disposable {
     private async _persistIdentity<TEntity extends {}>(event: DbPluginBulkOperationsEvent<TEntity>, db: Dexie) {
         const { adds, removes, updates } = event.operation;
 
-        const updatedDocuments = [...updates].map(w => w[1].doc);
+        const updatedDocuments = [...updates.entities].map(w => w[1].doc);
 
         const collection = db.table(event.schema.collectionName);
 
         await collection.bulkPut(updatedDocuments);
 
-        const ids = removes.map(x => event.schema.getIds(x));
+        const ids = removes.entities.map(x => event.schema.getIds(x));
         await collection.bulkDelete(ids)
 
-        return await db.transaction('rw', collection, async () => Promise.all(adds.map(async x => {
+        return await db.transaction('rw', collection, async () => Promise.all(adds.entities.map(async x => {
 
             const id = await collection.add(x);
 
@@ -75,16 +75,16 @@ export class DexiePlugin implements IDbPlugin, Disposable {
     private async _persistDefault<TEntity extends {}>(event: DbPluginBulkOperationsEvent<TEntity>, db: Dexie) {
         const { adds, removes, updates } = event.operation;
 
-        const updatedDocuments = [...updates].map(w => w[1].doc);
+        const updatedDocuments = [...updates.entities].map(w => w[1].doc);
 
         const collection = db.table(event.schema.collectionName);
 
         await collection.bulkPut(updatedDocuments);
 
-        const ids = removes.map(x => event.schema.getIds(x));
+        const ids = removes.entities.map(x => event.schema.getIds(x));
         await collection.bulkDelete(ids)
 
-        await collection.bulkAdd(adds);
+        await collection.bulkAdd(adds.entities);
     }
 
     private identityBulkOperations<TEntity extends {}>(
@@ -98,7 +98,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                 this._persistIdentity(event, db).then(x => {
                     d({
                         adds: x as DeepPartial<InferCreateType<TEntity>>[],
-                        removedCount: removes.length, // If there are no errors, we assume this succeeds
+                        removedCount: removes.entities.length, // If there are no errors, we assume this succeeds
                         updates: []
                     })
                 }).catch(e => {
@@ -118,10 +118,10 @@ export class DexiePlugin implements IDbPlugin, Disposable {
 
                 const { removes, adds } = event.operation;
 
-                this._persistDefault(event, db).then(x => {
+                this._persistDefault(event, db).then(() => {
                     d({
-                        adds: adds as DeepPartial<InferCreateType<TEntity>>[],
-                        removedCount: removes.length, // If there are no errors, we assume this succeeds
+                        adds: adds.entities as DeepPartial<InferCreateType<TEntity>>[],
+                        removedCount: removes.entities.length, // If there are no errors, we assume this succeeds
                         updates: []
                     })
                 }).catch(e => {
@@ -151,7 +151,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
         return result;
     }
 
-    query<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity>, done: (result: TShape, error?: any) => void): void {
+    query<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (result: TShape, error?: any) => void): void {
         this._doWork(event, (db, d) => {
             const { operation, schema } = event;
             const { collectionName } = schema;
@@ -161,27 +161,32 @@ export class DexiePlugin implements IDbPlugin, Disposable {
             // Start with the base collection
             let collection = db.table(collectionName).toCollection();
 
-            // Apply filters if any
-            if (operation.filters?.length > 0) {
-                for (const filter of operation.filters) {
-                    collection = collection.filter(filter.filter);
+            options.forEach(option => {
+
+                if (option.target !== "database") {
+                    return;
                 }
-            }
 
-            // Apply skip
-            if (options.skip) {
-                collection = collection.offset(options.skip);
-            }
+                if (option.name === "filter") {
+                    collection = collection.filter(option.value);
+                    return;
+                }
 
-            // Apply take
-            if (options.take) {
-                collection = collection.limit(options.take);
-            }
+                if (option.name === "skip") {
+                    collection = collection.offset(option.value);
+                    return
+                }
 
-            // Apply distinct
-            if (options.distinct) {
-                collection = collection.distinct();
-            }
+                if (option.name === "take") {
+                    collection = collection.limit(option.value);
+                    return
+                }
+
+                if (option.name === "distinct") {
+                    collection = collection.distinct();
+                    return
+                }
+            });
 
             // Get the data first
             collection.toArray().then(data => {

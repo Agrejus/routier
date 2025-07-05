@@ -17,16 +17,17 @@ export interface IChangeTrackerStrategy<T extends {}> {
     hasChanges(): boolean;
     replace(existingEntity: InferType<T> | InferCreateType<T>, newEntity: InferType<T> | InferCreateType<T>): void;
     prepareRemovals(): EntityChanges<T>["removes"];
-    prepareAdditions(): AdditionsPackage<T>;
+    prepareAdditions(): EntityChanges<T>["adds"];
     getAttachmentsChanges(): EntityChanges<T>["updates"];
-    mergeChanges(changes: EntityModificationResult<T>, addPackge: AdditionsPackage<T>): void;
+    mergeChanges(changes: EntityModificationResult<T>): void;
     clearAdditions(): void;
     instance(entities: InferCreateType<T>[], changeTrackingType: ChangeTrackingType): Generator<InferType<T>, void, unknown>;
     getAndDestroyTags(): TagCollection;
     detach(entities: InferType<T>[]): InferType<T>[];
     markDirty(entities: InferType<T>[]): void;
     isAttached(entity: InferType<T>): boolean;
-    filterAttached(selector: GenericFunction<InferType<T>, boolean>): InferType<T> | undefined;
+    filterAttached(selector: GenericFunction<InferType<T>, boolean>): InferType<T>[];
+    findAttached(selector: GenericFunction<InferType<T>, boolean>): InferType<T> | undefined;
     getAttached(entity: InferType<T>): { doc: InferType<T>, changeType: EntityChangeType } | undefined;
 }
 
@@ -36,8 +37,3 @@ export type UpdatesPackage<T extends {}> = Map<IdType, {
         [key: string]: string | number | Date;
     };
 }>;
-
-export type AdditionsPackage<T extends {}> = {
-    adds: InferCreateType<T>[],
-    find: (entity: InferType<T>) => InferCreateType<T> | undefined
-};

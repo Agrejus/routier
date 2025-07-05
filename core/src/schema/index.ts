@@ -138,8 +138,8 @@ export type CompiledSchema<TEntity extends {}> = {
     deserialize: (entity: InferType<TEntity>) => InferType<TEntity>;
     /** Serializes an entity to storage format. */
     serialize: (entity: InferType<TEntity>) => InferType<TEntity>;
-    /** Unique key for the schema. */
-    key: number,
+    /** Unique id for the schema. */
+    id: SchemaId,
     /** The name of the collection for this schema. */
     collectionName: string;
     /** Returns all IDs for the given entity (usually a single-element tuple). */
@@ -181,6 +181,8 @@ export { SchemaString } from "./property/types/String";
 export { SchemaKey } from "./property/modifiers/Key";
 export { SchemaReadonly } from "./property/modifiers/Readonly";
 export { SchemaIdentity } from "./property/modifiers/Identity";
+
+export type SchemaId = number
 
 export type SchemaModifiers = "default" | "deserialize" |
     "identity" | "key" |

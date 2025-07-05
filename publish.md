@@ -47,20 +47,31 @@ Reference PDB EF and DB EF
     Demos
 
     Missing
+        Errors should terminate the operation, do not continue
+        What about partial results?
+            PartialResultType<T>
+            Should we have transactions/retries
+            Event Driven?
+        Need to send in all changes at once vs by collection
+            If we are dealing with a NoSql scenario where everything is stored as a key/value pair, there is no concept of tables/collections,
+            we can just save everything in one shot.  Likewise, we can send the entire change package to the plugin and it can decide what to do with it
+        Need unit testing
         history tracking ----> Replication
         context tracking
-        how are we going to handle removes for subscriptions?
-            If something is removed, we just rerun the subscription again which should not return the removed items thus making them removed
-                example: x => x.id == 1 is your filter, if you remove the item with the id of 1, just rerun the subscription, which will return nothing making it removed.
-                    We only want to rerun with nothing on removals, otherwise we will be spamming our subscriptions for no reason
-                    See this page for how it should operate: https://dexie.org/docs/liveQuery()
-        will this work with syncing?
-            How can we optionally push data to a subscription from syncing?
-            Need a sync engine we can give data and it can decide what to do
-                Operations
-                    add, update, remove
-                        these all need to use the sync engine
+        Event store
+        Can we move callbacks over to result pattern?
+            {
+                ok: true,
+                result; T
+            }
 
+            {
+                ok: false,
+                error: any
+            }
+
+        entity changes -> updates does not need to be a map, why?
+            does previewChanges need to divide out by schemaid?  Nah, just return all items
 
     Video's
         Why

@@ -1,4 +1,4 @@
-import { IDbPlugin, CompiledSchema, EntityModificationResult, InferCreateType, DeepPartial, InferType, JsonTranslator, DbPluginBulkOperationsEvent, DbPluginQueryEvent, EntityChanges, assertIsArray, DbPluginEvent, TrampolinePipeline, IQuery } from "routier-core";
+import { IDbPlugin, CompiledSchema, EntityModificationResult, InferCreateType, DeepPartial, InferType, JsonTranslator, DbPluginBulkOperationsEvent, DbPluginQueryEvent, EntityChanges, assertIsArray, DbPluginEvent, TrampolinePipeline, IQuery, CallbackResult, Result } from "routier-core";
 import { DbCollection } from "./DbCollection";
 import { MemoryDatabase } from ".";
 
@@ -57,7 +57,7 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
 
     bulkOperations<TEntity extends {}>(
         event: DbPluginBulkOperationsEvent<TEntity>,
-        done: (result: EntityModificationResult<TEntity>, error?: any) => void) {
+        done: CallbackResult<EntityModificationResult<TEntity>>) {
 
         const { operation, } = event;
         const { adds, removes, updates } = operation;
@@ -65,30 +65,37 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
         try {
             const processedAdditions = this._processAdds(event, adds);
             const processUpdates = this._processUpdates(event, updates);
-            this._processRemovals(event, removes, (r, e) => {
+            this._processRemovals(event, removes, (r) => {
 
-                if (e != null) {
-                    done({
-                        adds: processedAdditions,
-                        removedCount: 0,
-                        updates: processUpdates
-                    }, e)
+                if (r.ok === false) {
+                    done(Result.success({
+                        adds: {
+                            entities: processedAdditions
+                        },
+                        removed: {
+                            count: 0
+                        },
+                        updates: {
+                            entities: processUpdates
+                        }
+                    }));
                     return;
                 }
 
-                done({
-                    adds: processedAdditions,
-                    removedCount: r,
-                    updates: processUpdates
-
-                });
+                done(Result.success({
+                    adds: {
+                        entities: processedAdditions
+                    },
+                    removed: {
+                        count: r.data
+                    },
+                    updates: {
+                        entities: processUpdates
+                    }
+                }));
             });
         } catch (e: any) {
-            done({
-                adds: [],
-                removedCount: 0,
-                updates: []
-            }, e)
+            done(Result.error(e))
         }
     }
 
@@ -108,15 +115,15 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
         const result: InferType<TEntity>[] = [];
         const collection = this.resolveCollection(event.schema);
 
-        for (const [, { doc }] of updates.entities) {
-            collection.update(doc);
-            result.push(doc);
+        for (const change of updates.changes) {
+            collection.update(change.entity);
+            result.push(change.entity);
         }
 
         return result;
     }
 
-    private _processRemovals<TEntity extends {}>(event: DbPluginBulkOperationsEvent<TEntity>, removes: EntityChanges<TEntity>["removes"], done: (removed: number, error?: any) => void) {
+    private _processRemovals<TEntity extends {}>(event: DbPluginBulkOperationsEvent<TEntity>, removes: EntityChanges<TEntity>["removes"], done: CallbackResult<number>) {
         const collection = this.resolveCollection(event.schema);
 
         this._getRemovalsByQueries(event, removes.queries, (r, e) => {
@@ -128,14 +135,14 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
                     collection.remove(removals[i]);
                 }
 
-                done(removals.length);
+                done(Result.success(removals.length));
             } catch (e) {
-                done(0, e);
+                done(Result.error(e));
             }
         })
     }
 
-    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (result: TShape, error?: any) => void): void {
+    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<TShape>): void {
 
         try {
             const { operation, schema } = event;
@@ -144,34 +151,33 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
             // translate if we are doing any operations like count/sum/min/max/skip/take
             const translated = translator.translate(collection.records);
 
-            done(translated);
+            done(Result.success(translated));
 
         } catch (e) {
-            done(null, e);
+            done(Result.error(e));
         }
     }
 
-    private _pipelineQuery<TEntity extends {}, TShape extends unknown = TEntity>(payload: ForEachPayload<TEntity, TShape>, done: (results: TShape, error?: any) => void): void {
+    private _pipelineQuery<TEntity extends {}, TShape extends unknown = TEntity>(payload: ForEachPayload<TEntity, TShape>, done: CallbackResult<TShape>): void {
 
         const { event, results } = payload;
-        this.query(event, (result, error) => {
+        this.query(event, (result) => {
 
-            if (error) {
+            if (result.ok === false) {
                 // any error will terminate the pipeline
-                done(results, error);
+                done(result);
                 return;
             }
 
-            assertIsArray(result);
+            assertIsArray(result.data);
             assertIsArray(results);
 
             results.push(result);
 
-            done(results);
+            done(Result.success(results));
         })
     }
 
-    // we need a plugin base!
     private _getRemovalsByQueries<T extends {}>(event: DbPluginEvent<T>, queries: IQuery<T, T>[], done: (entities: T[], error?: any) => void) {
 
         if (queries.length === 0) {

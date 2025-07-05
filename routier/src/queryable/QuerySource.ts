@@ -1,4 +1,4 @@
-import { toExpression, QueryField, CompiledSchema, DbPluginQueryEvent, SchemaParent, GenericFunction, QueryOptionsCollection, Filter, ParamsFilter, QueryOrdering, Query } from "routier-core";
+import { toExpression, QueryField, CompiledSchema, DbPluginQueryEvent, SchemaParent, GenericFunction, QueryOptionsCollection, Filter, ParamsFilter, QueryOrdering, Query, CallbackResult, InferType, Result } from "routier-core";
 import { DataBridge } from "../data-access/DataBridge";
 import { ChangeTracker } from "../change-tracking/ChangeTracker";
 
@@ -48,7 +48,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
         return this.subscribeQuery<TShape[]>(done) as U;
     }
 
-    protected subscribeQuery<U>(done: (result: U, error?: any) => void) {
+    protected subscribeQuery<U>(done: CallbackResult<U>) {
 
         if (this.isSubScribed === false) {
             return () => { };
@@ -57,16 +57,21 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
         const event = this.createEvent<U>();
         const tags = this.changeTracker.getAndDestroyTags();
 
-        return this.dataBridge.subscribe<U, unknown>(event, (r, e) => {
+        return this.dataBridge.subscribe<U, unknown>(event, (r) => {
 
-            if (event.operation.changeTracking === true) {
-                const enriched = this.changeTracker.enrich(r as any);
-                const resolved = this.changeTracker.resolve(enriched, tags, { merge: true });
-                done(resolved as U, e);
+            if (r.ok === false) {
+                done(r);
                 return;
             }
 
-            done(r, e);
+            if (event.operation.changeTracking === true) {
+                const enriched = this.changeTracker.enrich(r.data as InferType<TRoot>[]);
+                const resolved = this.changeTracker.resolve(enriched, tags, { merge: true });
+                done(Result.success(resolved as U));
+                return;
+            }
+
+            done(r);
         });
     }
 
@@ -137,14 +142,14 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
         }
     }
 
-    protected getData<TShape>(done: (result: TShape, error?: any) => void) {
+    protected getData<TShape>(done: CallbackResult<TShape>) {
 
         const event = this.createEvent<TShape>();
 
-        this.dataBridge.query<TShape>(event, (result, error) => {
+        this.dataBridge.query<TShape>(event, (result) => {
 
-            if (error != null) {
-                done(result, error)
+            if (result.ok === false) {
+                done(result);
                 return;
             }
 

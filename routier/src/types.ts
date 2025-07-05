@@ -1,4 +1,4 @@
-import { EntityChanges, EntityModificationResult, Expression, GenericFunction, IdType, InferCreateType, InferType, IQuery, TagCollection, TrampolinePipeline } from "routier-core";
+import { EntityChanges, EntityModificationResult, GenericFunction, IdType, InferType, TrampolinePipeline } from "routier-core";
 
 export type QueryResult<T> = (value: T, error?: any) => void;
 export type EntityMap<T extends {}, R> = GenericFunction<T, R>;
@@ -78,32 +78,18 @@ export type StatefulCollectionOptions = CollectionOptions & {
     optimistic: boolean
 }
 
-export type SaveChangesContextStepOne = {
+export type SaveChangesPayload<T> = PreviewChangesPayload<T> & {
     count: number;
-}
-
-export type SaveChangesContextStepTwo = SaveChangesContextStepOne & {
-    hasChanges: boolean;
-}
-
-export type SaveChangesContextStepThree<T> = SaveChangesContextStepTwo & {
-    adds: EntityChanges<T>["adds"];
-    find: (entity: InferType<T>) => InferCreateType<T> | undefined;
-}
-
-export type SaveChangesContextStepFour<T> = SaveChangesContextStepThree<T> & {
-    removes: EntityChanges<T>["removes"];
-}
-
-export type SaveChangesContextStepFive<T> = SaveChangesContextStepFour<T> & {
-    updates: EntityChanges<T>["updates"];
-}
-
-export type SaveChangesContextStepSix<T> = SaveChangesContextStepFive<T> & {
     result: EntityModificationResult<T> | null;
 }
 
+export type PreviewChangesPayload<T> = {
+    adds: EntityChanges<T>["adds"];
+    updates: EntityChanges<T>["updates"];
+    removes: EntityChanges<T>["removes"];
+}
+
 export type CollectionPipelines = {
-    save: TrampolinePipeline<SaveChangesContextStepOne>;
-    hasChanges: TrampolinePipeline<{ hasChanges: boolean }>
+    saveChanges: TrampolinePipeline<SaveChangesPayload<unknown>>;
+    previewChanges: TrampolinePipeline<PreviewChangesPayload<unknown>>;
 }

@@ -1,5 +1,3 @@
-import { InferCreateType, InferType } from "../schema";
-
 export class TagCollection {
 
     private data: WeakMap<Object, unknown> = new WeakMap<Object, unknown>();

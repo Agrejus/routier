@@ -1,4 +1,6 @@
-import { CompiledSchema } from '../schema';
+import { Result } from '../common/Result';
+import { CompiledSchema, InferType } from '../schema';
+import { CallbackResult, DeepPartial } from '../types';
 import { now } from '../utilities/index';
 import { DbPluginBulkOperationsEvent, DbPluginQueryEvent, EntityChanges, EntityModificationResult, IDbPlugin, IQuery } from './types';
 
@@ -36,6 +38,122 @@ export type LoggingHookOptions<TEntity extends {}, TShape> = {
     onQueryResponse?: LogHook<QueryLogContext<TEntity, TShape>>;
     onBulkOperationsRequest?: LogHook<BulkOperationsLogContext<TEntity>>;
     onBulkOperationsResponse?: LogHook<BulkOperationsLogContext<TEntity>>;
+}
+
+// Helper functions to reduce code duplication
+const logEntities = (data: { entities: any[] }, count: number) => {
+    let loggedCount = 0;
+    // Show all if there are just a few
+    data.entities.forEach((item, i) => {
+        if (loggedCount >= count) {
+            return;
+        }
+
+        console.log(`[${i}]:`, item);
+        loggedCount++;
+    });
+}
+
+const logEntitiesWithLimit = (data: { entities: any[] }, totalCount: number, maxShow: number = 5) => {
+    if (totalCount <= maxShow) {
+        logEntities(data, maxShow);
+    } else {
+        console.log(`Showing first 3 of ${totalCount}:`);
+        logEntities(data, 3);
+        console.log(`... and ${totalCount - 3} more`);
+    }
+}
+
+const logArrayWithLimit = <T>(items: T[], totalCount: number, maxShow: number = 5, logFn: (item: T, index: number) => void) => {
+    if (totalCount <= maxShow) {
+        items.forEach(logFn);
+    } else {
+        console.log(`Showing first 3 of ${totalCount}:`);
+        items.slice(0, 3).forEach(logFn);
+        console.log(`... and ${totalCount - 3} more`);
+    }
+}
+
+const getSpeedInfo = (duration: number) => {
+    if (duration > 1000) {
+        return {
+            emoji: '🐢',
+            color: '#F44336',
+            text: 'SLOW'
+        };
+    } else if (duration > 300) {
+        return {
+            emoji: '⏱️',
+            color: '#FF9800',
+            text: 'MEDIUM'
+        };
+    } else {
+        return {
+            emoji: '⚡',
+            color: '#4CAF50',
+            text: 'FAST'
+        };
+    }
+}
+
+const formatResult = <T extends {}>(result: EntityModificationResult<T>) => {
+    const entities = {
+        adds: result.adds,
+        updates: result.updates,
+    }
+
+    const counts = {
+        adds: entities.adds.entities.length,
+        updates: entities.updates.entities.length,
+        removes: result.removed.count,
+        total: 0
+    }
+
+    counts.total = counts.adds + counts.updates + counts.removes
+
+    return {
+        entities,
+        counts
+    }
+}
+
+const formatRequest = <T extends {}>(operations: EntityChanges<T>) => {
+    const entities = {
+        adds: operations.adds,
+        updates: operations.updates,
+        removes: operations.removes
+    }
+
+    const counts = {
+        adds: entities.adds.entities.length,
+        updates: entities.updates.changes.length,
+        removes: entities.removes.entities.length,
+        total: 0
+    }
+
+    counts.total = counts.adds + counts.updates + counts.removes
+
+    return {
+        entities,
+        counts
+    }
+}
+
+const logErrorSection = (error: any, isCriticalError: boolean) => {
+    console.groupCollapsed(`Error:`, 'color: #F44336;');
+    if (isCriticalError) {
+        console.log('Exception thrown during operation execution:');
+    }
+    console.error(error);
+    console.groupEnd();
+}
+
+const logDuration = (duration: number, headerColor: string, speedText: string) => {
+    console.log(
+        `%cDuration:`,
+        `color: ${headerColor};`,
+        `${duration.toFixed(2)}ms (${speedText})`
+    );
 }
 
 export class DbPluginLogging implements IDbPlugin {
@@ -78,7 +196,7 @@ export class DbPluginLogging implements IDbPlugin {
         return this; // For chaining
     }
 
-    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (result: TShape, error?: any) => void): void {
+    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<TShape>): void {
         const { operation, schema } = event;
         const start = now();
 
@@ -96,13 +214,18 @@ export class DbPluginLogging implements IDbPlugin {
 
         try {
             // Wrap the callback to measure and log the execution time
-            this.plugin.query(event, (result, error) => {
+            this.plugin.query(event, (result) => {
                 const end = now();
                 const duration = end - start;
 
+                if (result.ok === true) {
+                    context.result = result.data;
+
+                } else {
+                    context.error = result.error;
+                }
+
                 // Update context with result information
-                context.result = result as any;
-                context.error = error;
                 context.duration = duration;
                 context.isCriticalError = false;
 
@@ -115,7 +238,7 @@ export class DbPluginLogging implements IDbPlugin {
                 }
 
                 // Call the original callback
-                done(result as any, error);
+                done(result);
             });
         } catch (e: any) {
             const end = now();
@@ -135,7 +258,7 @@ export class DbPluginLogging implements IDbPlugin {
             }
 
             // Since we can't return null for TShape, we need to cast it
-            done(null as unknown as TShape, e);
+            done(Result.error(e));
         }
     }
 
@@ -159,25 +282,12 @@ export class DbPluginLogging implements IDbPlugin {
             return;
         }
 
-        // Determine speed category and set appropriate styling
-        let speedEmoji = '⚡'; // Fast
-        let headerColor = '#4CAF50'; // Green for fast
-        let speedText = 'FAST';
-
-        if (duration > 1000) {
-            speedEmoji = '🐢'; // Slow
-            headerColor = '#F44336'; // Red for slow
-            speedText = 'SLOW';
-        } else if (duration > 300) {
-            speedEmoji = '⏱️'; // Medium
-            headerColor = '#FF9800'; // Orange for medium
-            speedText = 'MEDIUM';
-        }
+        const speedInfo = getSpeedInfo(duration);
 
         // Create appropriate header based on success/error
         const headerStyle = error
             ? `color: ${isCriticalError ? '#D50000' : '#F44336'}; font-weight: bold;`
-            : `color: ${headerColor}; font-weight: bold;`;
+            : `color: ${speedInfo.color}; font-weight: bold;`;
 
         // Add result count to the header
         let resultCount = '';
@@ -191,7 +301,7 @@ export class DbPluginLogging implements IDbPlugin {
 
         const headerTitle = error
             ? `${isCriticalError ? '💀' : '❌'}${pluginName} QUERY ERROR: ${schemaName}`
-            : `${speedEmoji}${pluginName} QUERY: ${schemaName}${resultCount}`;
+            : `${speedInfo.emoji}${pluginName} QUERY: ${schemaName}${resultCount}`;
 
         console.groupCollapsed(`%c ${headerTitle}`, headerStyle);
 
@@ -277,12 +387,7 @@ export class DbPluginLogging implements IDbPlugin {
 
         // RESULT SECTION
         if (error) {
-            console.groupCollapsed(`Error:`, 'color: #F44336;');
-            if (isCriticalError) {
-                console.log('Exception thrown during query execution:');
-            }
-            console.error(error);
-            console.groupEnd();
+            logErrorSection(error, isCriticalError);
         } else {
             // Display the result with improved formatting
             const isArray = Array.isArray(result);
@@ -314,12 +419,7 @@ export class DbPluginLogging implements IDbPlugin {
             console.groupEnd();
         }
 
-        // Show duration with color based on speed
-        console.log(
-            `%cDuration:`,
-            `color: ${headerColor};`,
-            `${duration.toFixed(2)}ms (${speedText})`
-        );
+        logDuration(duration, speedInfo.color, speedInfo.text);
 
         console.groupEnd(); // End main group
     }
@@ -332,7 +432,7 @@ export class DbPluginLogging implements IDbPlugin {
         }
     }
 
-    bulkOperations<TEntity extends {}>(event: DbPluginBulkOperationsEvent<TEntity>, done: (result: EntityModificationResult<TEntity>, error?: any) => void): void {
+    bulkOperations<TEntity extends {}>(event: DbPluginBulkOperationsEvent<TEntity>, done: CallbackResult<EntityModificationResult<TEntity>>): void {
         const { operation, schema } = event;
         const start = now();
         const operationId = Math.random().toString(36).substring(2, 8);
@@ -351,13 +451,17 @@ export class DbPluginLogging implements IDbPlugin {
         }
 
         try {
-            this.plugin.bulkOperations(event, (result, error) => {
+            this.plugin.bulkOperations(event, (result) => {
                 const end = now();
                 const duration = end - start;
 
                 // Update context with result information
-                context.result = result;
-                context.error = error;
+                if (result.ok === true) {
+                    context.result = result.data;
+                } else {
+                    context.error = result.error;
+                }
+
                 context.duration = duration;
                 context.isCriticalError = false;
 
@@ -369,7 +473,7 @@ export class DbPluginLogging implements IDbPlugin {
                     this._hooks.onBulkOperationsResponse(context);
                 }
 
-                done(result, error);
+                done(result);
             });
         } catch (e: any) {
             const end = now();
@@ -388,7 +492,7 @@ export class DbPluginLogging implements IDbPlugin {
                 this._hooks.onBulkOperationsResponse(context);
             }
 
-            done(null as unknown as EntityModificationResult<TEntity>, e);
+            done(Result.error(e));
         }
     }
 
@@ -412,37 +516,25 @@ export class DbPluginLogging implements IDbPlugin {
         }
 
         const pluginName = "constructor" in this.plugin ? ` [${this.plugin.constructor.name}]` : "";
-        // Determine speed category and set appropriate styling
-        let speedEmoji = '⚡'; // Fast
-        let headerColor = '#4CAF50'; // Green for fast
-        let speedText = 'FAST';
-
-        if (duration > 1000) {
-            speedEmoji = '🐢'; // Slow
-            headerColor = '#F44336'; // Red for slow
-            speedText = 'SLOW';
-        } else if (duration > 300) {
-            speedEmoji = '⏱️'; // Medium
-            headerColor = '#FF9800'; // Orange for medium
-            speedText = 'MEDIUM';
-        }
+        const speedInfo = getSpeedInfo(duration);
 
         // Create appropriate header based on success/error
         const headerStyle = error
             ? `color: ${isCriticalError ? '#D50000' : '#F44336'}; font-weight: bold;`
-            : `color: ${headerColor}; font-weight: bold;`;
+            : `color: ${speedInfo.color}; font-weight: bold;`;
 
         // Add operation count to the header
         let operationCount = '';
+        const formattedResult = result ? formatResult(result) : null;
+        const formattedRequest = formatRequest(operations);
+
         if (!error && result) {
-            const totalRequested = operations.adds.entities.length + operations.removes.entities.length + operations.updates.entities.size;
-            const totalCompleted = result.adds.length + result.removedCount + result.updates.length;
-            operationCount = ` (${totalRequested} → ${totalCompleted})`;
+            operationCount = ` (${formattedRequest.counts.total} → ${formattedResult!.counts.total})`;
         }
 
         const headerTitle = error
             ? `${isCriticalError ? '💀' : '❌'}${pluginName} BULK OPERATIONS ERROR: ${schemaName}`
-            : `${speedEmoji}${pluginName} BULK OPERATIONS: ${schemaName}${operationCount}`;
+            : `${speedInfo.emoji}${pluginName} BULK OPERATIONS: ${schemaName}${operationCount}`;
 
         console.groupCollapsed(`%c ${headerTitle}`, headerStyle);
 
@@ -457,82 +549,48 @@ export class DbPluginLogging implements IDbPlugin {
         console.table({
             'Operations': {
                 adds: {
-                    count: operations.adds.entities.length
+                    count: formattedRequest.counts.adds
                 },
                 removes: {
-                    count: operations.removes.entities.length,
-                    queries: operations.removes.queries
+                    count: formattedRequest.counts.removes
                 },
                 updates: {
-                    count: operations.updates.entities.size
+                    count: formattedRequest.counts.updates
                 },
-                total: operations.adds.entities.length + operations.removes.entities.length + operations.updates.entities.size
+                total: formattedRequest.counts.total
             }
         });
 
         // Show operations in a structured format
-        if (operations.adds.entities.length > 0) {
-            console.groupCollapsed(`Adds (${operations.adds.entities.length}):`);
-
-            if (operations.adds.entities.length <= 5) {
-                // Show all if there are just a few
-                operations.adds.entities.forEach((item, i) => {
-                    console.log(`[${i}]:`, item);
-                });
-            } else {
-                // Show sample of first 3 if there are many
-                console.log(`Showing first 3 of ${operations.adds.entities.length}:`);
-                operations.adds.entities.slice(0, 3).forEach((item, i) => {
-                    console.log(`[${i}]:`, item);
-                });
-                console.log(`... and ${operations.adds.entities.length - 3} more`);
-            }
-
+        if (formattedRequest.counts.adds > 0) {
+            console.groupCollapsed(`Adds (${formattedRequest.counts.adds}):`);
+            logEntitiesWithLimit(operations.adds, formattedRequest.counts.adds);
             console.groupEnd();
         }
 
-        if (operations.removes.entities.length > 0) {
-            console.groupCollapsed(`Removes (${operations.removes.entities.length}):`);
-
-            if (operations.removes.entities.length <= 5) {
-                // Show all if there are just a few
-                operations.removes.entities.forEach((item, i) => {
-                    console.log(`[${i}]:`, item);
-                });
-            } else {
-                // Show sample of first 3 if there are many
-                console.log(`Showing first 3 of ${operations.removes.entities.length}:`);
-                operations.removes.entities.slice(0, 3).forEach((item, i) => {
-                    console.log(`[${i}]:`, item);
-                });
-                console.log(`... and ${operations.removes.entities.length - 3} more`);
-            }
-
+        if (formattedRequest.counts.removes > 0) {
+            console.groupCollapsed(`Removes (${formattedRequest.counts.removes}):`);
+            logEntitiesWithLimit(operations.removes, formattedRequest.counts.removes);
             console.groupEnd();
         }
 
-        if (operations.updates.entities.size > 0) {
-            console.groupCollapsed(`Updates (${operations.updates.entities.size}):`);
+        if (formattedRequest.counts.updates > 0) {
+            console.groupCollapsed(`Updates (${formattedRequest.counts.updates}):`);
 
-            const updates = Array.from(operations.updates.entities.entries());
+            const entities: DeepPartial<InferType<any>>[] = [];
+            for (const item of operations.updates.changes) {
+                entities.push(item.delta);
 
-            if (updates.length <= 5) {
-                // Show all if there are just a few
-                updates.forEach(([id, data], i) => {
-                    console.groupCollapsed(`[${i}] ID: ${id}`);
-                    console.log('Delta:', data.delta);
-                    console.groupEnd();
-                });
-            } else {
-                // Show sample of first 3 if there are many
-                console.log(`Showing first 3 of ${updates.length}:`);
-                updates.slice(0, 3).forEach(([id, data], i) => {
-                    console.groupCollapsed(`[${i}] ID: ${id}`);
-                    console.log('Delta:', data.delta);
-                    console.groupEnd();
-                });
-                console.log(`... and ${updates.length - 3} more`);
+                if (entities.length >= 5) {
+                    break;
+                }
             }
+
+            logArrayWithLimit(entities, formattedRequest.counts.updates, 5, (entity: DeepPartial<InferType<any>>, i: number) => {
+                console.groupCollapsed(`[${i}] Update`);
+                console.log('Delta:', entity);
+                console.groupEnd();
+            });
 
             console.groupEnd();
         }
@@ -541,13 +599,8 @@ export class DbPluginLogging implements IDbPlugin {
 
         // RESULT SECTION
         if (error) {
-            console.groupCollapsed(`Error:`, 'color: #F44336;');
-            if (isCriticalError) {
-                console.log('Exception thrown during operation execution:');
-            }
-            console.error(error);
-            console.groupEnd();
-        } else if (result) {
+            logErrorSection(error, isCriticalError);
+        } else if (result && formattedResult) {
             // Display the results in a structured format
             console.groupCollapsed('Response:');
 
@@ -555,81 +608,48 @@ export class DbPluginLogging implements IDbPlugin {
             console.log('Summary:');
             console.table({
                 'Adds': {
-                    requested: {
-                        count: operations.adds.entities.length
-                    }, completed: result.adds.length
+                    requested: formattedRequest.counts.adds,
+                    completed: formattedResult.counts.adds
                 },
                 'Removes': {
-                    requested: {
-                        count: operations.removes.entities.length,
-                        queries: operations.removes.queries
-                    }, completed: result.removedCount
+                    requested: formattedRequest.counts.removes,
+                    completed: formattedResult.counts.removes
                 },
                 'Updates': {
-                    requested: {
-                        count: operations.updates.entities.size
-                    }, completed: result.updates.length
+                    requested: formattedRequest.counts.updates,
+                    completed: formattedResult.counts.updates
                 },
                 'Total': {
-                    requested: operations.adds.entities.length + operations.removes.entities.length + operations.updates.entities.size,
-                    completed: result.adds.length + result.removedCount + result.updates.length
+                    requested: formattedRequest.counts.total,
+                    completed: formattedResult.counts.total
                 }
             });
 
             // Show result details
-            if (result.adds.length > 0) {
-                console.groupCollapsed(`Add Results (${result.adds.length}):`);
-
-                if (result.adds.length <= 5) {
-                    // Show all if there are just a few
-                    result.adds.forEach((item, i) => {
-                        console.log(`[${i}]:`, item);
-                    });
-                } else {
-                    // Show sample of first 3 if there are many
-                    console.log(`Showing first 3 of ${result.adds.length}:`);
-                    result.adds.slice(0, 3).forEach((item, i) => {
-                        console.log(`[${i}]:`, item);
-                    });
-                    console.log(`... and ${result.adds.length - 3} more`);
-                }
-
+            if (formattedResult.counts.adds > 0) {
+                console.groupCollapsed(`Add Results (${formattedResult.counts.adds}):`);
+                logArrayWithLimit(formattedResult.entities.adds.entities, formattedResult.counts.adds, 5, (item: any, i: number) => {
+                    console.log(`[${i}]:`, item);
+                });
                 console.groupEnd();
             }
 
-            if (result.updates.length > 0) {
-                console.groupCollapsed(`Update Results (${result.updates.length}):`);
-
-                if (result.updates.length <= 5) {
-                    // Show all if there are just a few
-                    result.updates.forEach((item, i) => {
-                        console.log(`[${i}]:`, item);
-                    });
-                } else {
-                    // Show sample of first 3 if there are many
-                    console.log(`Showing first 3 of ${result.updates.length}:`);
-                    result.updates.slice(0, 3).forEach((item, i) => {
-                        console.log(`[${i}]:`, item);
-                    });
-                    console.log(`... and ${result.updates.length - 3} more`);
-                }
-
+            if (formattedResult.counts.updates > 0) {
+                console.groupCollapsed(`Update Results (${formattedResult.counts.updates}):`);
+                logArrayWithLimit(Array.from(result.updates.entities), formattedResult.counts.updates, 5, (item: any, i: number) => {
+                    console.log(`[${i}]:`, item);
+                });
                 console.groupEnd();
             }
 
-            if (result.removedCount > 0) {
-                console.log(`Removed Count: ${result.removedCount}`);
+            if (formattedResult.counts.removes > 0) {
+                console.log(`Removed Count: ${formattedResult.counts.removes}`);
             }
 
             console.groupEnd(); // End results group
         }
 
-        // Show duration with color based on speed
-        console.log(
-            `%cDuration:`,
-            `color: ${headerColor};`,
-            `${duration.toFixed(2)}ms (${speedText})`
-        );
+        logDuration(duration, speedInfo.color, speedInfo.text);
 
         console.groupEnd(); // End main group
     }

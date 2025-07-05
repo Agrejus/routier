@@ -1,5 +1,7 @@
+import { Result } from '../../common/Result';
 import { TrampolinePipeline } from '../../common/TrampolinePipeline';
 import { InferCreateType } from '../../schema';
+import { CallbackResult } from '../../types';
 import { DbPluginBulkOperationsEvent, DbPluginQueryEvent, EntityModificationResult, IdbPluginCollection } from '../types';
 import { DbPluginReplicator } from './DbPluginReplicator';
 import { OperationsPayload, PersistPayload } from './types';
@@ -20,14 +22,14 @@ export class OptimisticDbPluginReplicator extends DbPluginReplicator {
     /**
      * Will query the read plugin if there is one, otherwise the source plugin will be queried
     */
-    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (result: TShape, error?: any) => void): void {
+    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<TShape>): void {
         try {
 
             const plugin = this.plugins.read != null ? this.plugins.read : this.plugins.source;
 
             plugin.query(event, done);
         } catch (e: any) {
-            done(null, e);
+            done(Result.error(e));
         }
     }
 
@@ -77,17 +79,17 @@ export class OptimisticDbPluginReplicator extends DbPluginReplicator {
             },
             parent: event.parent,
             schema: event.schema,
-        }, (_, e) => {
+        }, (r) => {
 
-            if (e != null) {
-                payload.errors.push(e);
+            if (r.ok === false) {
+                payload.errors.push(r.error);
             }
 
             done(payload);
         });
     }
 
-    bulkOperations<TEntity extends {}>(event: DbPluginBulkOperationsEvent<TEntity>, done: (result: EntityModificationResult<TEntity>, error?: any) => void): void {
+    bulkOperations<TEntity extends {}>(event: DbPluginBulkOperationsEvent<TEntity>, done: CallbackResult<EntityModificationResult<TEntity>>): void {
         try {
 
             const deferredPipeline = new TrampolinePipeline<OperationsPayload>();
@@ -110,10 +112,10 @@ export class OptimisticDbPluginReplicator extends DbPluginReplicator {
                 },
                 parent: event.parent,
                 schema: event.schema
-            }, (r, e) => {
+            }, (r) => {
 
-                if (e != null) {
-                    done(null, e);
+                if (r.ok === false) {
+                    done(r);
                     return;
                 }
 
@@ -130,7 +132,7 @@ export class OptimisticDbPluginReplicator extends DbPluginReplicator {
                             updates: event.operation.updates,
                             removes: event.operation.removes,
                             adds: {
-                                entities: r.adds as InferCreateType<TEntity>[] // pass in the new adds with the keys set
+                                entities: r.data.adds.entities as InferCreateType<TEntity>[]
                             },
                             tags: event.operation.tags
                         },
@@ -148,7 +150,7 @@ export class OptimisticDbPluginReplicator extends DbPluginReplicator {
             });
 
         } catch (e: any) {
-            done(null, e);
+            done(Result.error(e));
         }
     }
 }

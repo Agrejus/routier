@@ -1,8 +1,7 @@
-import { EntityModificationResult } from "routier-core";
+import { CallbackResult, DbPluginBulkOperationsEvent, DbPluginQueryEvent, EntityModificationResult } from "routier-core";
 import { CollectionOptions } from "../types";
-import { DbPluginBulkOperationsEvent, DbPluginQueryEvent } from "routier-core/dist/plugins/types";
 
 export interface IDataAccessStrategy<T extends {}> {
-    bulkOperations(collectionOptions: CollectionOptions, event: DbPluginBulkOperationsEvent<T>, done: (result: EntityModificationResult<T>, error?: any) => void): void;
-    query<TShape>(collectionOptions: CollectionOptions, event: DbPluginQueryEvent<T, TShape>, done: (response: TShape, error?: any) => void): void;
+    bulkOperations(collectionOptions: CollectionOptions, event: DbPluginBulkOperationsEvent<T>, done: CallbackResult<EntityModificationResult<T>>): void;
+    query<TShape>(collectionOptions: CollectionOptions, event: DbPluginQueryEvent<T, TShape>, done: CallbackResult<TShape>): void;
 }
