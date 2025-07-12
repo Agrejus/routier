@@ -1,8 +1,8 @@
 import { Result } from '../common/Result';
-import { CompiledSchema, InferType } from '../schema';
+import { CompiledSchema, InferType, SchemaId } from '../schema';
 import { CallbackResult, DeepPartial } from '../types';
 import { now } from '../utilities/index';
-import { DbPluginBulkOperationsEvent, DbPluginQueryEvent, EntityChanges, EntityModificationResult, IDbPlugin, IQuery } from './types';
+import { CollectionChanges, CollectionChangesResult, DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin, IQuery } from './types';
 
 // Check if we're in development environment
 const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined;
@@ -20,9 +20,9 @@ export type QueryLogContext<TEntity extends {}, TShape extends any = TEntity> = 
 };
 
 export type BulkOperationsLogContext<TEntity extends {}> = {
-    schema: CompiledSchema<TEntity>;
-    operations: EntityChanges<TEntity>;
-    result?: EntityModificationResult<TEntity>;
+    schemas: Map<SchemaId, CompiledSchema<TEntity>>;
+    operations: CollectionChanges<TEntity>;
+    result?: CollectionChangesResult<TEntity>;
     error?: any;
     duration: number;
     operationId: string;
@@ -96,7 +96,7 @@ const getSpeedInfo = (duration: number) => {
     }
 }
 
-const formatResult = <T extends {}>(result: EntityModificationResult<T>) => {
+const formatResult = <T extends {}>(result: CollectionChangesResult<T>) => {
     const entities = {
         adds: result.adds,
         updates: result.updates,
@@ -117,7 +117,7 @@ const formatResult = <T extends {}>(result: EntityModificationResult<T>) => {
     }
 }
 
-const formatRequest = <T extends {}>(operations: EntityChanges<T>) => {
+const formatRequest = <T extends {}>(operations: CollectionChanges<T>) => {
     const entities = {
         adds: operations.adds,
         updates: operations.updates,
@@ -197,14 +197,14 @@ export class DbPluginLogging implements IDbPlugin {
     }
 
     query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<TShape>): void {
-        const { operation, schema } = event;
+        const { operation, schemas } = event;
         const start = now();
 
         // Create context for hooks and logging
         const context: QueryLogContext<TEntity, TShape> = {
             query: operation,
             duration: 0,
-            schema
+            schema: operation.schema
         };
 
         // Call the request hook if defined
@@ -218,7 +218,7 @@ export class DbPluginLogging implements IDbPlugin {
                 const end = now();
                 const duration = end - start;
 
-                if (result.ok === true) {
+                if (result.ok === Result.SUCCESS) {
                     context.result = result.data;
 
                 } else {
@@ -432,14 +432,14 @@ export class DbPluginLogging implements IDbPlugin {
         }
     }
 
-    bulkOperations<TEntity extends {}>(event: DbPluginBulkOperationsEvent<TEntity>, done: CallbackResult<EntityModificationResult<TEntity>>): void {
-        const { operation, schema } = event;
+    bulkPersist<TEntity extends {}>(event: DbPluginBulkPersistEvent<TEntity>, done: CallbackResult<Map<SchemaId, CollectionChangesResult<TEntity>>>): void {
+        const { operation, schemas } = event;
         const start = now();
         const operationId = Math.random().toString(36).substring(2, 8);
 
         // Create context for hooks and logging
         const context: BulkOperationsLogContext<TEntity> = {
-            schema,
+            schemas,
             operations: operation,
             duration: 0,
             operationId
@@ -451,12 +451,12 @@ export class DbPluginLogging implements IDbPlugin {
         }
 
         try {
-            this.plugin.bulkOperations(event, (result) => {
+            this.plugin.bulkPersist(event, (result) => {
                 const end = now();
                 const duration = end - start;
 
                 // Update context with result information
-                if (result.ok === true) {
+                if (result.ok === Result.SUCCESS) {
                     context.result = result.data;
                 } else {
                     context.error = result.error;
@@ -473,7 +473,11 @@ export class DbPluginLogging implements IDbPlugin {
                     this._hooks.onBulkOperationsResponse(context);
                 }
 
-                done(result);
+                if (result.ok === Result.SUCCESS) {
+                    done(result);
+                } else {
+                    done(Result.error(result.error));
+                }
             });
         } catch (e: any) {
             const end = now();
@@ -503,14 +507,13 @@ export class DbPluginLogging implements IDbPlugin {
         if (!this._shouldLog) return;
 
         const { schema, operations, result, error, duration, isCriticalError } = context;
-        const schemaName = schema.collectionName;
 
         if (this._logStyle === 'minimal') {
             if (error) {
                 const errorType = isCriticalError ? 'CRITICAL ERROR' : 'Error';
-                console.error(`${isCriticalError ? '💀' : '❌'} Bulk Operations ${errorType} [${schemaName}]:`, error);
+                console.error(`${isCriticalError ? '💀' : '❌'} Bulk Operations ${errorType}:`, error);
             } else {
-                console.log(`✅ Bulk Operations [${schemaName}] completed in ${duration.toFixed(2)}ms`);
+                console.log(`✅ Bulk Operations completed in ${duration.toFixed(2)}ms`);
             }
             return;
         }
@@ -533,8 +536,8 @@ export class DbPluginLogging implements IDbPlugin {
         }
 
         const headerTitle = error
-            ? `${isCriticalError ? '💀' : '❌'}${pluginName} BULK OPERATIONS ERROR: ${schemaName}`
-            : `${speedInfo.emoji}${pluginName} BULK OPERATIONS: ${schemaName}${operationCount}`;
+            ? `${isCriticalError ? '💀' : '❌'}${pluginName} BULK OPERATIONS ERROR:`
+            : `${speedInfo.emoji}${pluginName} BULK OPERATIONS: ${operationCount}`;
 
         console.groupCollapsed(`%c ${headerTitle}`, headerStyle);
 
@@ -542,7 +545,7 @@ export class DbPluginLogging implements IDbPlugin {
         console.groupCollapsed('Request:');
 
         // Show collection and summary
-        console.log('Collection:', schemaName);
+        // console.log('Collection:', schemaName);
 
         // Display summary as a table
         console.log('Summary:');

@@ -3,10 +3,10 @@ import { QuerySource } from "./QuerySource";
 
 export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<Root, Shape> {
 
-    remove(expression: Filter<Shape>, done: (error?: any) => void): void;
-    remove<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: (error?: any) => void): void;
-    remove(done: (error?: any) => void): void;
-    remove<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | ((error?: any) => void), paramsOrDone?: P | ((error?: any) => void), done?: (error?: any) => void): void {
+    remove(expression: Filter<Shape>, done: CallbackResult<never>): void;
+    remove<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<never>): void;
+    remove(done: CallbackResult<never>): void;
+    remove<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<never>, paramsOrDone?: P | CallbackResult<never>, done?: CallbackResult<never>): void {
 
         if (done != null) {
             // params expression
@@ -19,7 +19,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
 
         if (paramsOrDone != null) {
             // generic expression
-            const d = paramsOrDone as (error?: any) => void
+            const d = paramsOrDone as CallbackResult<never>;
             const genericFilter = doneOrExpression as Filter<Shape>;
             this.setFiltersQueryOption(genericFilter);
             this._remove(d);
@@ -27,7 +27,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
         }
 
         // no expression, just remove
-        const d = doneOrExpression as (error?: any) => void;
+        const d = doneOrExpression as CallbackResult<never>;
         this._remove(d);
     }
 
@@ -57,7 +57,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
             paramsOrDone
         }, (d, r) => {
 
-            if (r.ok === false) {
+            if (r.ok === Result.ERROR) {
                 d(r);
                 return;
             }
@@ -70,7 +70,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
         const d = done != null ? done : paramsOrDone != null ? paramsOrDone as CallbackResult<Shape> : doneOrExpression as CallbackResult<Shape>;
         return this.subscribeQuery<Shape[]>((r) => {
 
-            if (r.ok === false) {
+            if (r.ok === Result.ERROR) {
                 d(r);
                 return;
             }
@@ -94,7 +94,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
             paramsOrDone
         }, (d, r) => {
 
-            if (r.ok === false) {
+            if (r.ok === Result.ERROR) {
                 d(r);
                 return;
             }
@@ -110,7 +110,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
 
         const d = done != null ? done : paramsOrDone != null ? paramsOrDone as CallbackResult<Shape> : doneOrExpression as CallbackResult<Shape>;
         return this.subscribeQuery<Shape[]>((r) => {
-            if (r.ok === false) {
+            if (r.ok === Result.ERROR) {
                 d(r);
                 return;
             }
@@ -138,7 +138,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
             paramsOrDone
         }, (d, r) => {
 
-            if (r.ok === false) {
+            if (r.ok === Result.ERROR) {
                 d(r);
                 return;
             }
@@ -160,7 +160,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
             doneOrSelector: coalescedDone
         }, (d, r) => {
 
-            if (r.ok === false) {
+            if (r.ok === Result.ERROR) {
                 d(r);
                 return;
             }

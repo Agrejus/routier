@@ -1,4 +1,4 @@
-import { CallbackResult, ChangeTrackingType, CompiledSchema, EntityChangeType, EntityModificationResult, EntityUpdateInfo, GenericFunction, IdType, InferCreateType, InferType, IQuery, Result, TagCollection } from "routier-core";
+import { CallbackResult, ChangeTrackingType, CollectionChangesResult, CompiledSchema, EntityChangeType, EntityUpdateInfo, GenericFunction, IdType, InferCreateType, InferType, IQuery, Result, TagCollection } from "routier-core";
 import { ChangeTrackedEntity } from "../types";
 import { KnownKeyAdditions } from "./additions/KnownKeyAdditions";
 import { IAdditions } from "./additions/types";
@@ -25,12 +25,9 @@ export class ChangeTracker<TEntity extends {}> {
         this.additions = new KnownKeyAdditions<TEntity>(this.schema);
     }
 
-    getAndDestroyTags() {
-        const tagCollection = this._tagCollection;
-
-        this._tagCollection = null;
-
-        return tagCollection;
+    tags = {
+        get: () => this._tagCollection,
+        destroy: () => { this._tagCollection = null; }
     }
 
     protected hasAttachmentsChanges() {
@@ -59,7 +56,7 @@ export class ChangeTracker<TEntity extends {}> {
         return this._tagCollection;
     }
 
-    mergeChanges(changes: EntityModificationResult<TEntity>) {
+    mergeChanges(changes: CollectionChangesResult<TEntity>) {
 
         const { updates, adds } = changes;
 
@@ -232,7 +229,7 @@ export class ChangeTracker<TEntity extends {}> {
         }
     }
 
-    removeByQuery(query: IQuery<TEntity, TEntity>, tag: unknown | null, done: (error?: any) => void) {
+    removeByQuery(query: IQuery<TEntity, TEntity>, tag: unknown | null, done: CallbackResult<never>) {
         try {
             this.removalQueries.push(query);
 
@@ -241,9 +238,9 @@ export class ChangeTracker<TEntity extends {}> {
                 tagCollection.set(query, tag);
             }
 
-            done();
+            done(Result.success());
         } catch (e) {
-            done(e)
+            done(Result.error(e));
         }
     }
 

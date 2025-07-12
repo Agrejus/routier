@@ -41,16 +41,22 @@ export {
     IdType,
     GenericFunction,
     ResultType,
-    CallbackResult
+    CallbackResult,
+    CallbackPartialResult,
+    DefaultValue,
+    FunctionBody,
+    PartialResultType
 } from './types';
 
 export {
     IDbPlugin,
-    EntityChanges,
-    EntityModificationResult,
+    CollectionChanges,
+    CollectionChangesResult,
+    DbPluginOperationEvent,
+    IdbPluginCollection,
     IQuery,
     DbPluginQueryEvent,
-    DbPluginBulkOperationsEvent,
+    DbPluginBulkPersistEvent,
     DbPluginEvent,
     TaggedEntity,
     EntityUpdateInfo,
@@ -97,7 +103,6 @@ export {
     SchemaModifiers,
     s,
     HashType,
-    SchemaParent,
     Index,
     IndexType,
     ChangeTrackingType,

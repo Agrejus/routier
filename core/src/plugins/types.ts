@@ -1,5 +1,6 @@
 import { CallbackResult, CompiledSchema, DeepPartial, IdType, InferCreateType, InferType, QueryOptionsCollection, TagCollection } from "..";
-import { SchemaParent } from "../schema";
+import { SchemaId } from "../schema";
+import { CallbackPartialResult } from "../types";
 
 /**
  * Interface for a database plugin, which provides query, destroy, and bulk operations.
@@ -21,7 +22,7 @@ export interface IDbPlugin {
      * @param event The bulk operations event containing schema, parent, and changes.
      * @param done Callback with the result or error.
      */
-    bulkOperations<TRoot extends {}>(event: DbPluginBulkOperationsEvent<TRoot>, done: CallbackResult<EntityModificationResult<TRoot>>): void;
+    bulkPersist<TRoot extends {}>(event: DbPluginBulkPersistEvent<TRoot>, done: CallbackPartialResult<Map<SchemaId, CollectionChangesResult<TRoot>>>): void;
 }
 
 /**
@@ -32,16 +33,14 @@ export type DbPluginQueryEvent<TRoot extends {}, TShape> = DbPluginOperationEven
 /**
  * Event for bulk operations, including schema, parent, and the entity changes.
  */
-export type DbPluginBulkOperationsEvent<TEntity extends {}> = DbPluginOperationEvent<TEntity, EntityChanges<TEntity>>;
+export type DbPluginBulkPersistEvent<TEntity extends {}> = DbPluginOperationEvent<TEntity, Map<SchemaId, CollectionChanges<TEntity>>>;
 
 /**
  * Base event for all plugin operations, containing the schema and parent.
  */
 export type DbPluginEvent<TEntity extends {}> = {
     /** The compiled schema for the entity. */
-    schema: CompiledSchema<TEntity>;
-    /** The parent schema context. */
-    parent: SchemaParent;
+    schemas: Map<SchemaId, CompiledSchema<TEntity>>;
 }
 
 /**
@@ -72,11 +71,12 @@ export type IdbPluginCollection = {
 /**
  * Represents a set of changes to entities: additions, removals, and updates.
  */
-export type EntityChanges<T extends {}> = {
+export type CollectionChanges<T extends {}> = {
     adds: { entities: InferCreateType<T>[] };
     updates: { changes: EntityUpdateInfo<T>[] };
     removes: { entities: InferType<T>[], queries: IQuery<T, T>[] };
     tags: TagCollection;
+    hasChanges: boolean;
 }
 
 export type EntityUpdateInfo<T extends {}> = {
@@ -93,7 +93,7 @@ export type TaggedEntity<T> = {
 /**
  * The result of entity modifications: added, removed, and updated entities.
  */
-export type EntityModificationResult<T extends {}> = {
+export type CollectionChangesResult<T extends {}> = {
     /** Entities that were added (may be partial). */
     adds: { entities: DeepPartial<InferCreateType<T>>[] };
     /** Number of entities removed. */
@@ -110,6 +110,7 @@ export type IQuery<TRoot extends {}, TShape> = {
     /** Query options (sort, skip, take, etc.). */
     options: QueryOptionsCollection<TShape>;
 
+    schema: CompiledSchema<TRoot>;
     /**
      * Whether change tracking is enabled for the query result.
      * Only enabled when the response is not reduced/aggregated/mapped.

@@ -1,9 +1,10 @@
-import { CallbackResult, DbPluginBulkOperationsEvent, DbPluginQueryEvent, EntityModificationResult, IDbPlugin, uuidv4 } from "routier-core";
+import { CallbackResult, CollectionChangesResult, DbPluginQueryEvent, IDbPlugin, Result, SchemaId, uuidv4 } from "routier-core";
 import { CollectionOptions } from "../types";
 import { StatefulDataAccessStrategy } from "./strategies/StatefulDataAccessStrategy";
 import { DatabaseDataAccessStrategy } from "./strategies/DatabaseDataAccessStrategy";
 import { IDataAccessStrategy } from "./types";
 import { MemoryPlugin } from "routier-plugin-memory";
+import { DbPluginBulkPersistEvent } from "routier-core";
 
 export class DataBridge<T extends {}> {
 
@@ -31,8 +32,8 @@ export class DataBridge<T extends {}> {
         return new DataBridge<T>(strategy, options);
     }
 
-    bulkOperations(event: DbPluginBulkOperationsEvent<T>, done: CallbackResult<EntityModificationResult<T>>) {
-        this.strategy.bulkOperations(this.options, event, done);
+    bulkPersist(event: DbPluginBulkPersistEvent<T>, done: CallbackResult<Map<SchemaId, CollectionChangesResult<T>>>) {
+        this.strategy.bulkPersist(this.options, event, done);
     }
 
     query<TShape>(event: DbPluginQueryEvent<T, TShape>, done: CallbackResult<TShape>) {
@@ -40,8 +41,7 @@ export class DataBridge<T extends {}> {
     }
 
     subscribe<TShape, U>(event: DbPluginQueryEvent<T, TShape>, done: CallbackResult<TShape>) {
-        const { schema } = event
-        const subscription = event.schema.createSubscription(this.signal);
+        const subscription = event.operation.schema.createSubscription(this.signal);
         subscription.onMessage((changes) => {
             debugger;
             if (changes.removalQueries.length > 0) {
@@ -67,14 +67,14 @@ export class DataBridge<T extends {}> {
                 const ephemeralPlugin = new MemoryPlugin(uuidv4());
 
                 // seed the db, we don't care about bulk operations here, we just want to query the data
-                ephemeralPlugin.seed(schema, [...changes.adds, ...changes.updates, ...changes.removals]);
+                ephemeralPlugin.seed(event.operation.schema, [...changes.adds, ...changes.updates, ...changes.removals]);
 
                 // query the temp db to check and see if items match the query
                 ephemeralPlugin.query(event, (r) => {
 
                     ephemeralPlugin.destroy(() => { /* noop */ });
 
-                    if (r.ok === false) {
+                    if (r.ok === Result.ERROR) {
                         done(r);
                         return;
                     }

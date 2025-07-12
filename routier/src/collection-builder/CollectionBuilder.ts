@@ -1,4 +1,4 @@
-import { CompiledSchema, IDbPlugin, SchemaParent } from 'routier-core';
+import { CompiledSchema, IDbPlugin, SchemaId } from 'routier-core';
 import { Collection } from '../collections/Collection';
 import { CollectionOptions, CollectionPipelines, StatefulCollectionOptions } from '../types';
 import { CollectionInstanceCreator } from './types';
@@ -13,7 +13,7 @@ type CollectionBuilderProps<TEntity extends {}, TCollecition extends Collection<
     pipelines: CollectionPipelines;
     signal: AbortSignal;
     stateful?: { optimistic: boolean }
-    parent: SchemaParent;
+    schemas: Map<SchemaId, CompiledSchema<any>>;
 }
 
 export class CollectionBuilder<TEntity extends {}, TCollection extends Collection<TEntity>> {
@@ -26,7 +26,7 @@ export class CollectionBuilder<TEntity extends {}, TCollection extends Collectio
     private _pipelines: CollectionPipelines;
     private _signal: AbortSignal;
     private _statefulProps?: { optimistic: boolean }
-    private parent: SchemaParent;
+    private schemas: Map<SchemaId, CompiledSchema<any>>;
 
     constructor(props: CollectionBuilderProps<TEntity, TCollection>) {
         this._pipelines = props.pipelines;
@@ -37,7 +37,7 @@ export class CollectionBuilder<TEntity extends {}, TCollection extends Collectio
         this._instanceCreator = props.instanceCreator;
         this._signal = props.signal;
         this._statefulProps = props.stateful;
-        this.parent = props.parent;
+        this.schemas = props.schemas;
     }
 
     /**
@@ -58,13 +58,13 @@ export class CollectionBuilder<TEntity extends {}, TCollection extends Collectio
             stateful: {
                 optimistic: options?.optimistic ?? false
             },
-            parent: this.parent
+            schemas: this.schemas
         });
     }
 
     create(): TCollection;
-    create<TExtension extends TCollection>(extend: (i: CollectionInstanceCreator<TEntity, TCollection>, dbPlugin: IDbPlugin, schema: CompiledSchema<TEntity>, options: CollectionOptions, pipelines: CollectionPipelines, parent: SchemaParent) => TExtension): TExtension;
-    create<TExtension extends TCollection = never>(extend?: (i: CollectionInstanceCreator<TEntity, TCollection>, dbPlugin: IDbPlugin, schema: CompiledSchema<TEntity>, options: CollectionOptions, pipelines: CollectionPipelines, parent: SchemaParent) => TExtension) {
+    create<TExtension extends TCollection>(extend: (i: CollectionInstanceCreator<TEntity, TCollection>, dbPlugin: IDbPlugin, schema: CompiledSchema<TEntity>, options: CollectionOptions, pipelines: CollectionPipelines, schemas: Map<SchemaId, CompiledSchema<any>>) => TExtension): TExtension;
+    create<TExtension extends TCollection = never>(extend?: (i: CollectionInstanceCreator<TEntity, TCollection>, dbPlugin: IDbPlugin, schema: CompiledSchema<TEntity>, options: CollectionOptions, pipelines: CollectionPipelines, schemas: Map<SchemaId, CompiledSchema<any>>) => TExtension) {
 
         const options: CollectionOptions = {
             stateful: this._isStateful,
@@ -77,7 +77,7 @@ export class CollectionBuilder<TEntity extends {}, TCollection extends Collectio
 
         if (extend == null) {
             const Instance = this._instanceCreator;
-            const result = new Instance(this._dbPlugin, this._schema, options, this._pipelines, this.parent);
+            const result = new Instance(this._dbPlugin, this._schema, options, this._pipelines, this.schemas);
 
             this._onCollectionCreated(result);
 
@@ -85,7 +85,7 @@ export class CollectionBuilder<TEntity extends {}, TCollection extends Collectio
         }
 
         const Instance = this._instanceCreator;
-        const extendedResult = extend(Instance, this._dbPlugin, this._schema, options, this._pipelines, this.parent);
+        const extendedResult = extend(Instance, this._dbPlugin, this._schema, options, this._pipelines, this.schemas);
 
         this._onCollectionCreated(extendedResult);
 

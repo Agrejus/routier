@@ -1,4 +1,4 @@
-import { EntityChanges, EntityModificationResult, GenericFunction, IdType, InferType, TrampolinePipeline } from "routier-core";
+import { CollectionChanges, CollectionChangesResult, GenericFunction, IdType, InferType, PartialResultType, SchemaId, TrampolinePipeline } from "routier-core";
 
 export type QueryResult<T> = (value: T, error?: any) => void;
 export type EntityMap<T extends {}, R> = GenericFunction<T, R>;
@@ -78,18 +78,7 @@ export type StatefulCollectionOptions = CollectionOptions & {
     optimistic: boolean
 }
 
-export type SaveChangesPayload<T> = PreviewChangesPayload<T> & {
-    count: number;
-    result: EntityModificationResult<T> | null;
-}
-
-export type PreviewChangesPayload<T> = {
-    adds: EntityChanges<T>["adds"];
-    updates: EntityChanges<T>["updates"];
-    removes: EntityChanges<T>["removes"];
-}
-
 export type CollectionPipelines = {
-    saveChanges: TrampolinePipeline<SaveChangesPayload<unknown>>;
-    previewChanges: TrampolinePipeline<PreviewChangesPayload<unknown>>;
+    prepareChanges: TrampolinePipeline<PartialResultType<Map<SchemaId, { changes: CollectionChanges<any> }>>>;
+    afterPersist: TrampolinePipeline<PartialResultType<Map<SchemaId, { changes: CollectionChanges<any>, result: CollectionChangesResult<any> }>>>;
 }

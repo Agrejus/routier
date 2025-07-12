@@ -1,14 +1,14 @@
-import { DbPluginBulkOperationsEvent, EntityModificationResult, IDbPlugin, IdbPluginCollection } from '../types';
+import { SchemaId } from '../../schema';
+import { CollectionChangesResult, DbPluginBulkPersistEvent, IDbPlugin, IdbPluginCollection } from '../types';
 
 export type OperationsPayload = {
     plugins: IDbPlugin[];
     index: number;
-    errors: any[];
 }
 
 export type PersistPayload<TEntity extends {}> = OperationsPayload & {
-    event: DbPluginBulkOperationsEvent<TEntity>;
-    result?: EntityModificationResult<TEntity>;
+    event: DbPluginBulkPersistEvent<TEntity>;
+    result?: Map<SchemaId, CollectionChangesResult<TEntity>>;
 }
 
 export type IDbPluginReplicator = IDbPlugin & {

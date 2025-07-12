@@ -1,8 +1,8 @@
 import { Result } from '../../common/Result';
 import { TrampolinePipeline } from '../../common/TrampolinePipeline';
-import { InferCreateType } from '../../schema';
-import { CallbackResult } from '../../types';
-import { DbPluginBulkOperationsEvent, DbPluginQueryEvent, EntityModificationResult, IDbPlugin, IdbPluginCollection } from '../types';
+import { InferCreateType, SchemaId } from '../../schema';
+import { CallbackPartialResult, CallbackResult, PartialResultType, ResultType } from '../../types';
+import { CollectionChangesResult, DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin, IdbPluginCollection } from '../types';
 import { OperationsPayload, PersistPayload } from './types';
 
 export class DbPluginReplicator implements IDbPlugin {
@@ -41,22 +41,24 @@ export class DbPluginReplicator implements IDbPlugin {
     destroy(done: CallbackResult<never>): void {
         try {
 
-            const pipeline = new TrampolinePipeline<OperationsPayload>();
+            const pipeline = new TrampolinePipeline<ResultType<OperationsPayload>>();
             const plugins = [this.plugins.source, ...this.plugins.replicas];
             const data: OperationsPayload = {
                 plugins,
-                index: 0,
-                errors: []
+                index: 0
             };
 
             for (let i = 0, length = plugins.length; i < length; i++) {
                 pipeline.pipe<OperationsPayload>(this.destroyDbs.bind(this))
             }
 
-            pipeline.filter<OperationsPayload>(data, (result) => {
+            pipeline.filter<ResultType<OperationsPayload>>({
+                data,
+                ok: Result.SUCCESS
+            }, (result) => {
 
-                if (result.errors.length > 0) {
-                    done(Result.error(result.errors));
+                if (result.ok === Result.ERROR) {
+                    done(result);
                     return;
                 }
 
@@ -68,34 +70,53 @@ export class DbPluginReplicator implements IDbPlugin {
         }
     }
 
-    protected destroyDbs(payload: OperationsPayload, done: CallbackResult<OperationsPayload>) {
-        const { plugins, index } = payload;
+    protected destroyDbs(payload: ResultType<OperationsPayload>, done: CallbackResult<OperationsPayload>) {
+
+        if (payload.ok === Result.ERROR) {
+            done(payload);
+            return;
+        }
+
+        const { plugins, index } = payload.data;
         const plugin = plugins[index];
 
-
         // move next
-        payload.index++;
+        payload.data.index++;
 
         plugin.destroy(done);
     }
 
-    private _persist<TEntity extends {}>(payload: PersistPayload<TEntity>, done: (payload: PersistPayload<TEntity>) => void) {
-        const { plugins, index, event, result } = payload;
+    private _persist<TEntity extends {}>(payload: PartialResultType<PersistPayload<TEntity>>, done: CallbackPartialResult<PersistPayload<TEntity>>) {
+
+        if (payload.ok === Result.ERROR) {
+            done(payload)
+            return;
+        }
+
+        const { plugins, index, event, result } = payload.data;
         const plugin = plugins[index];
 
         // move next
-        payload.index++;
+        payload.data.index++;
 
         // source is first
-        if (payload.index === 1) {
-            plugin.bulkOperations(event, (r) => {
+        if (payload.data.index === 1) {
+            plugin.bulkPersist(event, (r) => {
 
-                if (r.ok === false) {
-                    payload.errors.push(r.error);
+                if (r.ok === Result.ERROR) {
+                    done(r)
                     return;
                 }
 
-                payload.result = r.data;
+                // make sure we swap the adds here, that way we can make sure other persist events
+                // don't take their additions and try to change subsequent calls
+                for (const [schemaId, changes] of r.data) {
+                    const schemaOperations = payload.data.event.operation.get(schemaId);
+
+                    // replace additions on the event with the saved changes so 
+                    // the rest of the plugins will get any additons who's id's have been set
+                    schemaOperations.adds.entities = changes.adds.entities as InferCreateType<TEntity>[];
+                }
 
                 done(payload);
             });
@@ -107,23 +128,10 @@ export class DbPluginReplicator implements IDbPlugin {
             return;
         }
 
-        const { adds } = result;
+        plugin.bulkPersist(event, (r) => {
 
-        plugin.bulkOperations({
-            operation: {
-                adds: {
-                    entities: adds.entities as InferCreateType<TEntity>[]
-                }, // pass in the resulting additions to get any keys that were set
-                updates: event.operation.updates,
-                removes: event.operation.removes,
-                tags: event.operation.tags
-            },
-            parent: event.parent,
-            schema: event.schema
-        }, (r) => {
-
-            if (r.ok === false) {
-                payload.errors.push(r.error);
+            if (r.ok === Result.ERROR) {
+                done(r)
                 return;
             }
 
@@ -131,10 +139,10 @@ export class DbPluginReplicator implements IDbPlugin {
         });
     }
 
-    bulkOperations<TEntity extends {}>(event: DbPluginBulkOperationsEvent<TEntity>, done: CallbackResult<EntityModificationResult<TEntity>>): void {
+    bulkPersist<TEntity extends {}>(event: DbPluginBulkPersistEvent<TEntity>, done: CallbackPartialResult<Map<SchemaId, CollectionChangesResult<TEntity>>>): void {
         try {
             // insert into the source first to generate any ids, then take the result and persist that into the replicas
-            const pipeline = new TrampolinePipeline<OperationsPayload>();
+            const pipeline = new TrampolinePipeline<ResultType<OperationsPayload>>();
             const plugins = [this.plugins.source, ...this.plugins.replicas];
 
             if (this.plugins.read != null) {
@@ -144,7 +152,6 @@ export class DbPluginReplicator implements IDbPlugin {
             const data: PersistPayload<TEntity> = {
                 plugins,
                 index: 0,
-                errors: [],
                 event
             };
 
@@ -152,14 +159,22 @@ export class DbPluginReplicator implements IDbPlugin {
                 pipeline.pipe<PersistPayload<TEntity>>(this._persist.bind(this))
             }
 
-            pipeline.filter<PersistPayload<TEntity>>(data, (result) => {
+            pipeline.filter<PartialResultType<PersistPayload<TEntity>>>({
+                data,
+                ok: Result.SUCCESS
+            }, (result) => {
 
-                if (result.errors.length > 0 || result.result == null) {
-                    done(Result.error(result.errors));
+                if (result.ok === Result.ERROR) {
+                    done(Result.error(result.error));
                     return;
                 }
 
-                done(Result.success(result.result));
+                if (result.ok === Result.PARTIAL) {
+                    done(Result.partial(result.data.result, result.error));
+                    return;
+                }
+
+                done(Result.success(result.data.result));
             });
 
         } catch (e: any) {

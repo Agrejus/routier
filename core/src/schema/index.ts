@@ -158,15 +158,6 @@ export type CompiledSchema<TEntity extends {}> = {
     getIndexes: () => Index[];
 }
 
-export type SchemaParent = {
-    allSchemas: () => CompiledSchema<any>[]
-}
-
-export type SchemaTarget<TEntity extends {}> = {
-    target: CompiledSchema<TEntity>;
-    parent: SchemaParent;
-}
-
 export type PropertySerializer<T extends any> = (value: T) => string | number;
 export type PropertyDeserializer<T extends any> = (value: string | number) => T;
 

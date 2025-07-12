@@ -1,9 +1,9 @@
-import { CallbackResult } from "routier-core";
+import { CallbackResult, Result } from "routier-core";
 
 export function createPromise<T>(fn: (callback: CallbackResult<T>) => void) {
     return new Promise<T>((resolve, reject) => {
         fn((r) => {
-            if (r.ok === false) {
+            if (r.ok === Result.ERROR) {
                 reject(r.error);
                 return;
             }

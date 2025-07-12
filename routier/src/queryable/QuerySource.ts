@@ -1,4 +1,4 @@
-import { toExpression, QueryField, CompiledSchema, DbPluginQueryEvent, SchemaParent, GenericFunction, QueryOptionsCollection, Filter, ParamsFilter, QueryOrdering, Query, CallbackResult, InferType, Result } from "routier-core";
+import { toExpression, QueryField, CompiledSchema, DbPluginQueryEvent, GenericFunction, QueryOptionsCollection, Filter, ParamsFilter, QueryOrdering, Query, CallbackResult, InferType, Result, SchemaId, IQuery } from "routier-core";
 import { DataBridge } from "../data-access/DataBridge";
 import { ChangeTracker } from "../change-tracking/ChangeTracker";
 
@@ -9,12 +9,12 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
     protected readonly queryOptions: QueryOptionsCollection<TShape>;
     protected isSubScribed: boolean = false;
     protected schema: CompiledSchema<TRoot>;
-    protected parent: SchemaParent;
+    protected schemas: Map<SchemaId, CompiledSchema<any>>;
 
-    constructor(schema: CompiledSchema<TRoot>, parent: SchemaParent, options: { queryable?: QuerySource<TRoot, TShape>, dataBridge?: DataBridge<TRoot>, changeTracker?: ChangeTracker<TRoot> }) {
+    constructor(schema: CompiledSchema<TRoot>, schemas: Map<SchemaId, CompiledSchema<any>>, options: { queryable?: QuerySource<TRoot, TShape>, dataBridge?: DataBridge<TRoot>, changeTracker?: ChangeTracker<TRoot> }) {
 
         this.schema = schema;
-        this.parent = parent;
+        this.schemas = schemas;
 
         if (options?.dataBridge != null) {
             this.dataBridge = options.dataBridge;
@@ -35,13 +35,13 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
     }
 
     // Cannot change the root type, it comes from the collection type, only the resulting type (shape)
-    protected create<Shape, TInstance extends QuerySource<TRoot, Shape>>(Instance: new (schema: CompiledSchema<TRoot>, parent: SchemaParent, options: { queryable?: QuerySource<TRoot, Shape>, dataBridge?: DataBridge<TRoot>, changeTracker?: ChangeTracker<TRoot> }) => TInstance) {
-        return new Instance(this.schema, this.parent, { queryable: this as any });
+    protected create<Shape, TInstance extends QuerySource<TRoot, Shape>>(Instance: new (schema: CompiledSchema<TRoot>, schemas: Map<SchemaId, CompiledSchema<any>>, options: { queryable?: QuerySource<TRoot, Shape>, dataBridge?: DataBridge<TRoot>, changeTracker?: ChangeTracker<TRoot> }) => TInstance) {
+        return new Instance(this.schema, this.schemas, { queryable: this as any });
     }
 
-    protected _remove<U>(done: (error?: any) => void) {
+    protected _remove<U>(done: CallbackResult<never>) {
 
-        const query = new Query<TRoot, TRoot>(this.queryOptions as any, false);
+        const query = new Query<TRoot, TRoot>(this.queryOptions as any, this.schema, false);
 
         this.changeTracker.removeByQuery(query, null, done);
 
@@ -55,11 +55,13 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
         }
 
         const event = this.createEvent<U>();
-        const tags = this.changeTracker.getAndDestroyTags();
+        const tags = this.changeTracker.tags.get();
+
+        this.changeTracker.tags.destroy()
 
         return this.dataBridge.subscribe<U, unknown>(event, (r) => {
 
-            if (r.ok === false) {
+            if (r.ok === Result.ERROR) {
                 done(r);
                 return;
             }
@@ -136,9 +138,8 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
     protected createEvent<Shape>(): DbPluginQueryEvent<TRoot, Shape> {
         return {
-            operation: new Query(this.queryOptions as any),
-            parent: this.parent,
-            schema: this.schema
+            operation: new Query<TRoot, Shape>(this.queryOptions as any, this.schema),
+            schemas: this.schemas,
         }
     }
 
@@ -148,12 +149,14 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
         this.dataBridge.query<TShape>(event, (result) => {
 
-            if (result.ok === false) {
+            if (result.ok === Result.ERROR) {
                 done(result);
                 return;
             }
 
-            const tags = this.changeTracker.getAndDestroyTags();
+            const tags = this.changeTracker.tags.get();
+
+            this.changeTracker.tags.destroy();
 
             // if change tracking is true, we will never be shaping the result from .map()
             if (event.operation.changeTracking === true) {

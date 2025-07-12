@@ -1,16 +1,20 @@
 
+import { CompiledSchema } from '../../schema';
 import { IQuery } from '../types';
 import { QueryOptionsCollection } from './QueryOptionsCollection';
 
 export class Query<TRoot extends {}, TShape> implements IQuery<TRoot, TShape> {
 
     readonly options: QueryOptionsCollection<TShape>;
+    readonly schema: CompiledSchema<TRoot>;
     private enableChangeTrackingOverride?: boolean
 
     constructor(
         options: QueryOptionsCollection<TShape>,
-        enableChangeTrackingOverride?: boolean
+        schema: CompiledSchema<TRoot>,
+        enableChangeTrackingOverride?: boolean,
     ) {
+        this.schema = schema;
         this.options = options;
         this.enableChangeTrackingOverride = enableChangeTrackingOverride;
     }
@@ -43,7 +47,7 @@ export class Query<TRoot extends {}, TShape> implements IQuery<TRoot, TShape> {
     }
 
     static EMPTY<T extends {}, S>() {
-        return new Query<T, S>(QueryOptionsCollection.EMPTY<S>());
+        return new Query<T, S>(QueryOptionsCollection.EMPTY<S>(), {} as any);
     }
 
     static isEmpty<T extends {}, S>(query: IQuery<T, S>) {

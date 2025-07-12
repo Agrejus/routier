@@ -1,4 +1,4 @@
-import { EntityModificationResult, Query, assertIsNotNull, InferCreateType, DbPluginLogging, IDbPluginReplicator, OptimisticDbPluginReplicator, assertInstanceOfDbPluginLogging, IDbPlugin, DbPluginReplicator, DbPluginBulkOperationsEvent, DbPluginQueryEvent, CallbackResult } from "routier-core";
+import { Query, assertIsNotNull, InferCreateType, DbPluginLogging, IDbPluginReplicator, OptimisticDbPluginReplicator, assertInstanceOfDbPluginLogging, IDbPlugin, DbPluginReplicator, CollectionChangesResult, DbPluginBulkPersistEvent, DbPluginQueryEvent, CallbackResult, Result, SchemaId } from "routier-core";
 import { IDataAccessStrategy } from "../types";
 import { DataAccessStrategyBase } from "./DataAccessStrategyBase";
 import { assertIsMemoryPlugin, MemoryPlugin } from "routier-plugin-memory";
@@ -30,9 +30,9 @@ const getReplicator = (dbPlugin: IDbPlugin, optimistic?: boolean) => {
 
 export class StatefulDataAccessStrategy<T extends {}> extends DataAccessStrategyBase<T> implements IDataAccessStrategy<T> {
 
-    bulkOperations(collectionOptions: CollectionOptions, event: DbPluginBulkOperationsEvent<T>, done: CallbackResult<EntityModificationResult<T>>) {
+    bulkPersist(collectionOptions: CollectionOptions, event: DbPluginBulkPersistEvent<T>, done: CallbackResult<Map<SchemaId, CollectionChangesResult<T>>>) {
         const optimistic = (collectionOptions as StatefulCollectionOptions).optimistic;
-        getReplicator(this.dbPlugin, optimistic).bulkOperations(event, done);
+        getReplicator(this.dbPlugin, optimistic).bulkPersist(event, done);
     }
 
     query<TShape>(_: CollectionOptions, event: DbPluginQueryEvent<T, TShape>, done: CallbackResult<TShape>) {
@@ -56,7 +56,7 @@ export class StatefulDataAccessStrategy<T extends {}> extends DataAccessStrategy
         }
 
         if (readPlugin.size === 0) {
-            const queryAll = Query.EMPTY<T, TShape>();
+            const queryAll = Query.EMPTY<T, TShape>(event.operation.schema);
 
             this.dbPlugin.query<T, TShape>({
                 operation: queryAll,
@@ -64,7 +64,7 @@ export class StatefulDataAccessStrategy<T extends {}> extends DataAccessStrategy
                 schema: event.schema
             }, (r) => {
 
-                if (r.ok === false) {
+                if (r.ok === Result.ERROR) {
                     done(r);
                     return;
                 }
@@ -88,7 +88,7 @@ export class StatefulDataAccessStrategy<T extends {}> extends DataAccessStrategy
                     schema: event.schema
                 }, (bulkOperationsResult) => {
 
-                    if (bulkOperationsResult.ok === false) {
+                    if (bulkOperationsResult.ok === Result.ERROR) {
                         done(bulkOperationsResult);
                         return;
                     }

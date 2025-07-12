@@ -1,12 +1,13 @@
-import { CallbackResult, DbPluginBulkOperationsEvent, DbPluginQueryEvent, EntityModificationResult } from "routier-core";
+import { CallbackResult, DbPluginBulkPersistEvent, DbPluginQueryEvent, SchemaId } from "routier-core";
 import { IDataAccessStrategy } from "../types";
 import { DataAccessStrategyBase } from "./DataAccessStrategyBase";
 import { CollectionOptions } from "../../types";
+import { CollectionChangesResult } from "routier-core/dist/plugins/types";
 
 export class DatabaseDataAccessStrategy<T extends {}> extends DataAccessStrategyBase<T> implements IDataAccessStrategy<T> {
 
-    bulkOperations(_: CollectionOptions, event: DbPluginBulkOperationsEvent<T>, done: CallbackResult<EntityModificationResult<T>>) {
-        super._bulkOperations(event, done);
+    bulkPersist(_: CollectionOptions, event: DbPluginBulkPersistEvent<T>, done: CallbackResult<Map<SchemaId, CollectionChangesResult<T>>>) {
+        super._bulkPersist(event, done);
     }
 
     query<TShape>(_: CollectionOptions, event: DbPluginQueryEvent<T, TShape>, done: CallbackResult<TShape>) {
