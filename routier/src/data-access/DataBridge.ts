@@ -1,4 +1,4 @@
-import { CallbackResult, CollectionChangesResult, DbPluginQueryEvent, IDbPlugin, Result, SchemaId, uuidv4 } from "routier-core";
+import { CallbackResult, CollectionChanges, CollectionChangesResult, DbPluginQueryEvent, IDbPlugin, ResolvedChanges, Result, SchemaId, uuidv4 } from "routier-core";
 import { CollectionOptions } from "../types";
 import { StatefulDataAccessStrategy } from "./strategies/StatefulDataAccessStrategy";
 import { DatabaseDataAccessStrategy } from "./strategies/DatabaseDataAccessStrategy";
@@ -32,7 +32,7 @@ export class DataBridge<T extends {}> {
         return new DataBridge<T>(strategy, options);
     }
 
-    bulkPersist(event: DbPluginBulkPersistEvent<T>, done: CallbackResult<Map<SchemaId, CollectionChangesResult<T>>>) {
+    bulkPersist(event: DbPluginBulkPersistEvent<T>, done: CallbackResult<ResolvedChanges<T>>) {
         this.strategy.bulkPersist(this.options, event, done);
     }
 

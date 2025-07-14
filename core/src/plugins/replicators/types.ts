@@ -1,5 +1,4 @@
-import { SchemaId } from '../../schema';
-import { CollectionChangesResult, DbPluginBulkPersistEvent, IDbPlugin, IdbPluginCollection } from '../types';
+import { DbPluginBulkPersistEvent, IDbPlugin, IdbPluginCollection, ResolvedChanges } from '../types';
 
 export type OperationsPayload = {
     plugins: IDbPlugin[];
@@ -8,7 +7,7 @@ export type OperationsPayload = {
 
 export type PersistPayload<TEntity extends {}> = OperationsPayload & {
     event: DbPluginBulkPersistEvent<TEntity>;
-    result?: Map<SchemaId, CollectionChangesResult<TEntity>>;
+    result: ResolvedChanges<TEntity>;
 }
 
 export type IDbPluginReplicator = IDbPlugin & {

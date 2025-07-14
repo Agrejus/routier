@@ -1,4 +1,4 @@
-import { IDbPlugin, CompiledSchema, EntityModificationResult, InferCreateType, DeepPartial, InferType, JsonTranslator, DbPluginBulkOperationsEvent, DbPluginQueryEvent, EntityChanges, assertIsArray, DbPluginEvent, TrampolinePipeline, IQuery, CallbackResult, Result } from "routier-core";
+import { IDbPlugin, CompiledSchema, InferCreateType, DeepPartial, InferType, JsonTranslator, DbPluginQueryEvent, assertIsArray, DbPluginEvent, TrampolinePipeline, IQuery, CallbackResult, Result, CallbackPartialResult, ResolvedChanges, DbPluginBulkPersistEvent, CollectionChanges, SchemaId, CollectionChangesResult, PartialResultType } from "routier-core";
 import { DbCollection } from "./DbCollection";
 import { MemoryDatabase } from ".";
 
@@ -55,99 +55,129 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
         done();
     }
 
-    bulkOperations<TEntity extends {}>(
-        event: DbPluginBulkOperationsEvent<TEntity>,
-        done: CallbackResult<EntityModificationResult<TEntity>>) {
-
-        const { operation, } = event;
-        const { adds, removes, updates } = operation;
+    private _persist<TRoot extends {}>(payload: PartialResultType<{ schemaIds: number[], schemas: Map<SchemaId, CompiledSchema<TRoot>>, index: number, resolvedChanges: ResolvedChanges<TRoot> }>, done: CallbackPartialResult<{ schemaIds: number[], schemas: Map<SchemaId, CompiledSchema<TRoot>>, index: number, resolvedChanges: ResolvedChanges<TRoot> }>) {
 
         try {
-            const processedAdditions = this._processAdds(event, adds);
-            const processUpdates = this._processUpdates(event, updates);
-            this._processRemovals(event, removes, (r) => {
 
-                if (r.ok === false) {
-                    done(Result.success({
-                        adds: {
-                            entities: processedAdditions
-                        },
-                        removed: {
-                            count: 0
-                        },
-                        updates: {
-                            entities: processUpdates
-                        }
-                    }));
+            if (payload.ok !== Result.SUCCESS) {
+                done(payload);
+                return;
+            }
+
+            const { index, resolvedChanges, schemaIds, schemas } = payload.data;
+            const schemaId = schemaIds[index];
+            const schema = schemas.get(schemaId);
+            const result: CollectionChangesResult<TRoot> = {
+                adds: {
+                    entities: []
+                },
+                removed: {
+                    count: 0
+                },
+                updates: {
+                    entities: []
+                }
+            };
+            const changeSet = resolvedChanges.get(schemaId);
+            const { adds, hasChanges, removes, updates } = changeSet.changes;
+            changeSet.result = result;
+
+            if (hasChanges === false) {
+                done(payload);
+                return;
+            }
+
+            const collection = this.resolveCollection(schema);
+
+            for (let i = 0, length = adds.entities.length; i < length; i++) {
+                collection.add(adds.entities[i]);
+                result.adds.entities.push(adds.entities[i] as DeepPartial<InferCreateType<TRoot>>);
+            }
+
+            for (const change of updates.changes) {
+                collection.update(change.entity);
+                result.updates.entities.push(change.entity);
+            }
+
+            for (const removal of removes.entities) {
+                collection.remove(removal);
+                result.removed.count += 1;
+            }
+
+            this._getRemovalsByQueries(schemas, removes.queries, (r, e) => {
+
+                try {
+
+                    payload.data.index++; // Move Next
+
+                    const removals = [...removes.entities, ...r];
+
+                    for (let i = 0, length = removals.length; i < length; i++) {
+                        collection.remove(removals[i]);
+                    }
+
+                    result.removed.count += removals.length;
+
+                    done(payload);
+                } catch (e) {
+                    done(Result.error(e));
+                }
+            });
+        } catch (e) {
+            done(Result.error(e));
+        }
+    }
+
+    bulkPersist<TRoot extends {}>(event: DbPluginBulkPersistEvent<TRoot>, done: CallbackPartialResult<ResolvedChanges<TRoot>>) {
+
+        const { schemas } = event;
+
+        try {
+            const schemaIds = [...event.operation].map(x => x[0])
+            const pipeline = new TrampolinePipeline<PartialResultType<{ schemaIds: number[], schemas: Map<SchemaId, CompiledSchema<TRoot>>, index: number, resolvedChanges: ResolvedChanges<TRoot> }>>();
+
+            for (let i = 0, length = schemaIds.length; i < length; i++) {
+                pipeline.pipe(this._persist.bind(this))
+            }
+
+            pipeline.filter<PartialResultType<{ schemaIds: number[], schemas: Map<SchemaId, CompiledSchema<TRoot>>, index: number, resolvedChanges: ResolvedChanges<TRoot> }>>({
+                data: {
+                    index: 0,
+                    resolvedChanges: event.operation as ResolvedChanges<TRoot>, // send in the pending changes and let's add to the map
+                    schemaIds,
+                    schemas
+                },
+                ok: Result.SUCCESS
+            }, (r, e) => {
+                if (e != null) {
+                    done(Result.error(e));
                     return;
                 }
 
-                done(Result.success({
-                    adds: {
-                        entities: processedAdditions
-                    },
-                    removed: {
-                        count: r.data
-                    },
-                    updates: {
-                        entities: processUpdates
-                    }
-                }));
-            });
+                if (r.ok === Result.ERROR) {
+                    done(Result.error(r.error));
+                    return;
+                }
+
+                if (r.ok === Result.PARTIAL) {
+                    done(Result.partial(r.data.resolvedChanges, r.error));
+                    return;
+                }
+
+                done(Result.success(r.data.resolvedChanges))
+            })
+
         } catch (e: any) {
             done(Result.error(e))
         }
     }
 
-    private _processAdds<TEntity extends {}>(event: DbPluginBulkOperationsEvent<TEntity>, adds: EntityChanges<TEntity>["adds"]) {
-        const result: DeepPartial<InferCreateType<TEntity>>[] = [];
-        const collection = this.resolveCollection(event.schema);
-
-        for (let i = 0, length = adds.entities.length; i < length; i++) {
-            collection.add(adds.entities[i]);
-            result.push(adds.entities[i] as DeepPartial<InferCreateType<TEntity>>);
-        }
-
-        return result;
-    }
-
-    private _processUpdates<TEntity extends {}>(event: DbPluginBulkOperationsEvent<TEntity>, updates: EntityChanges<TEntity>["updates"]) {
-        const result: InferType<TEntity>[] = [];
-        const collection = this.resolveCollection(event.schema);
-
-        for (const change of updates.changes) {
-            collection.update(change.entity);
-            result.push(change.entity);
-        }
-
-        return result;
-    }
-
-    private _processRemovals<TEntity extends {}>(event: DbPluginBulkOperationsEvent<TEntity>, removes: EntityChanges<TEntity>["removes"], done: CallbackResult<number>) {
-        const collection = this.resolveCollection(event.schema);
-
-        this._getRemovalsByQueries(event, removes.queries, (r, e) => {
-
-            try {
-                const removals = [...removes.entities, ...r];
-
-                for (let i = 0, length = removals.length; i < length; i++) {
-                    collection.remove(removals[i]);
-                }
-
-                done(Result.success(removals.length));
-            } catch (e) {
-                done(Result.error(e));
-            }
-        })
-    }
-
     query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<TShape>): void {
 
         try {
-            const { operation, schema } = event;
+            const { operation } = event;
             const translator = new JsonTranslator<TEntity, TShape>(operation);
-            const collection = this.resolveCollection(schema);
+            const collection = this.resolveCollection(operation.schema);
             // translate if we are doing any operations like count/sum/min/max/skip/take
             const translated = translator.translate(collection.records);
 
@@ -163,7 +193,7 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
         const { event, results } = payload;
         this.query(event, (result) => {
 
-            if (result.ok === false) {
+            if (result.ok === Result.ERROR) {
                 // any error will terminate the pipeline
                 done(result);
                 return;
@@ -178,7 +208,7 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
         })
     }
 
-    private _getRemovalsByQueries<T extends {}>(event: DbPluginEvent<T>, queries: IQuery<T, T>[], done: (entities: T[], error?: any) => void) {
+    private _getRemovalsByQueries<T extends {}>(schemas: Map<SchemaId, CompiledSchema<T>>, queries: IQuery<T, T>[], done: (entities: T[], error?: any) => void) {
 
         if (queries.length === 0) {
             done([]); // Do nothing, handle null here for readability above
@@ -190,8 +220,7 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
         for (let i = 0, length = queries.length; i < length; i++) {
             const query = queries[i];
             const queryEvent: DbPluginQueryEvent<T, T> = {
-                parent: event.parent,
-                schema: event.schema,
+                schemas,
                 operation: query
             }
 

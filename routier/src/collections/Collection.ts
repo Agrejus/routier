@@ -39,10 +39,10 @@ export class Collection<TEntity extends {}> {
     }
 
     protected afterPersist(data: PartialResultType<Map<SchemaId, { changes: CollectionChanges<TEntity>, result: CollectionChangesResult<TEntity> }>>, done: CallbackPartialResult<Map<SchemaId, { changes: CollectionChanges<TEntity>, result: CollectionChangesResult<TEntity> }>>) {
+        debugger;
         try {
-            this.changeTracker.clearAdditions();
-
             if (data.ok === Result.ERROR) {
+                this.changeTracker.clearAdditions();
                 done(data);
                 return;
             }
@@ -51,6 +51,9 @@ export class Collection<TEntity extends {}> {
             const { changes, result } = data.data.get(this.schema.id);
 
             this.changeTracker.mergeChanges(result);
+
+            // clear after we merge changes
+            this.changeTracker.clearAdditions();
 
             // we only want to notify of changes when an item that was saved matches the query
             // these get reset each time
@@ -152,6 +155,7 @@ export class Collection<TEntity extends {}> {
         }
     }
 
+    // This is a mediator so we can access underlying attached entities
     attachments = {
         /** Detaches entities from change tracking, removing them from the collection's managed set */
         remove: (...entities: InferType<TEntity>[]) => {
@@ -248,7 +252,7 @@ export class Collection<TEntity extends {}> {
      */
     removeAll(done: (error?: any) => void) {
         const tag = this.getAndDestroyTag()
-        this.changeTracker.removeByQuery(Query.EMPTY<TEntity, TEntity>(), tag, done);
+        this.changeTracker.removeByQuery(Query.EMPTY<TEntity, TEntity>(this.schema), tag, done);
     }
 
     /**

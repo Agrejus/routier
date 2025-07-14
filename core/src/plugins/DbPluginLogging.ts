@@ -1,8 +1,8 @@
 import { Result } from '../common/Result';
 import { CompiledSchema, InferType, SchemaId } from '../schema';
-import { CallbackResult, DeepPartial } from '../types';
+import { CallbackResult, CallbackPartialResult, DeepPartial } from '../types';
 import { now } from '../utilities/index';
-import { CollectionChanges, CollectionChangesResult, DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin, IQuery } from './types';
+import { CollectionChanges, CollectionChangesResult, DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin, IQuery, ResolvedChanges } from './types';
 
 // Check if we're in development environment
 const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined;
@@ -21,8 +21,8 @@ export type QueryLogContext<TEntity extends {}, TShape extends any = TEntity> = 
 
 export type BulkOperationsLogContext<TEntity extends {}> = {
     schemas: Map<SchemaId, CompiledSchema<TEntity>>;
-    operations: CollectionChanges<TEntity>;
-    result?: CollectionChangesResult<TEntity>;
+    operations: Map<SchemaId, { changes: CollectionChanges<TEntity> }>;
+    result?: Map<SchemaId, CollectionChangesResult<TEntity>>;
     error?: any;
     duration: number;
     operationId: string;
@@ -432,7 +432,7 @@ export class DbPluginLogging implements IDbPlugin {
         }
     }
 
-    bulkPersist<TEntity extends {}>(event: DbPluginBulkPersistEvent<TEntity>, done: CallbackResult<Map<SchemaId, CollectionChangesResult<TEntity>>>): void {
+    bulkPersist<TEntity extends {}>(event: DbPluginBulkPersistEvent<TEntity>, done: CallbackPartialResult<ResolvedChanges<TEntity>>): void {
         const { operation, schemas } = event;
         const start = now();
         const operationId = Math.random().toString(36).substring(2, 8);
@@ -457,7 +457,12 @@ export class DbPluginLogging implements IDbPlugin {
 
                 // Update context with result information
                 if (result.ok === Result.SUCCESS) {
-                    context.result = result.data;
+                    // Extract just the result part from the combined changes/result object
+                    const resultMap = new Map<SchemaId, CollectionChangesResult<TEntity>>();
+                    for (const [schemaId, combinedData] of result.data) {
+                        resultMap.set(schemaId, combinedData.result);
+                    }
+                    context.result = resultMap;
                 } else {
                     context.error = result.error;
                 }
@@ -473,11 +478,8 @@ export class DbPluginLogging implements IDbPlugin {
                     this._hooks.onBulkOperationsResponse(context);
                 }
 
-                if (result.ok === Result.SUCCESS) {
-                    done(result);
-                } else {
-                    done(Result.error(result.error));
-                }
+                // Pass through the original result
+                done(result);
             });
         } catch (e: any) {
             const end = now();
@@ -506,7 +508,7 @@ export class DbPluginLogging implements IDbPlugin {
         // Skip logging if not in development environment
         if (!this._shouldLog) return;
 
-        const { schema, operations, result, error, duration, isCriticalError } = context;
+        const { schemas, operations, result, error, duration, isCriticalError } = context;
 
         if (this._logStyle === 'minimal') {
             if (error) {
@@ -526,13 +528,30 @@ export class DbPluginLogging implements IDbPlugin {
             ? `color: ${isCriticalError ? '#D50000' : '#F44336'}; font-weight: bold;`
             : `color: ${speedInfo.color}; font-weight: bold;`;
 
+        // Calculate totals across all schemas
+        let totalRequested = 0;
+        let totalCompleted = 0;
+
+        if (!error) {
+            // Sum up requested operations across all schemas
+            for (const [schemaId, operation] of operations) {
+                const formattedRequest = formatRequest(operation.changes);
+                totalRequested += formattedRequest.counts.total;
+            }
+
+            // Sum up completed operations across all schemas
+            if (result) {
+                for (const [schemaId, operationResult] of result) {
+                    const formattedResult = formatResult(operationResult);
+                    totalCompleted += formattedResult.counts.total;
+                }
+            }
+        }
+
         // Add operation count to the header
         let operationCount = '';
-        const formattedResult = result ? formatResult(result) : null;
-        const formattedRequest = formatRequest(operations);
-
         if (!error && result) {
-            operationCount = ` (${formattedRequest.counts.total} → ${formattedResult!.counts.total})`;
+            operationCount = ` (${totalRequested} → ${totalCompleted})`;
         }
 
         const headerTitle = error
@@ -544,58 +563,66 @@ export class DbPluginLogging implements IDbPlugin {
         // OPERATIONS INFORMATION SECTION
         console.groupCollapsed('Request:');
 
-        // Show collection and summary
-        // console.log('Collection:', schemaName);
-
         // Display summary as a table
         console.log('Summary:');
         console.table({
             'Operations': {
                 adds: {
-                    count: formattedRequest.counts.adds
+                    count: totalRequested
                 },
                 removes: {
-                    count: formattedRequest.counts.removes
+                    count: totalRequested
                 },
                 updates: {
-                    count: formattedRequest.counts.updates
+                    count: totalRequested
                 },
-                total: formattedRequest.counts.total
+                total: totalRequested
             }
         });
 
-        // Show operations in a structured format
-        if (formattedRequest.counts.adds > 0) {
-            console.groupCollapsed(`Adds (${formattedRequest.counts.adds}):`);
-            logEntitiesWithLimit(operations.adds, formattedRequest.counts.adds);
-            console.groupEnd();
-        }
+        // Show operations for each schema
+        for (const [schemaId, operation] of operations) {
+            const schema = schemas.get(schemaId);
+            const schemaName = schema?.collectionName || `Schema ${schemaId}`;
+            const formattedRequest = formatRequest(operation.changes);
 
-        if (formattedRequest.counts.removes > 0) {
-            console.groupCollapsed(`Removes (${formattedRequest.counts.removes}):`);
-            logEntitiesWithLimit(operations.removes, formattedRequest.counts.removes);
-            console.groupEnd();
-        }
+            console.groupCollapsed(`${schemaName} (${formattedRequest.counts.total} operations):`);
 
-        if (formattedRequest.counts.updates > 0) {
-            console.groupCollapsed(`Updates (${formattedRequest.counts.updates}):`);
-
-            const entities: DeepPartial<InferType<any>>[] = [];
-            for (const item of operations.updates.changes) {
-                entities.push(item.delta);
-
-                if (entities.length >= 5) {
-                    break;
-                }
+            // Show operations in a structured format
+            if (formattedRequest.counts.adds > 0) {
+                console.groupCollapsed(`Adds (${formattedRequest.counts.adds}):`);
+                logEntitiesWithLimit(operation.changes.adds, formattedRequest.counts.adds);
+                console.groupEnd();
             }
 
-            logArrayWithLimit(entities, formattedRequest.counts.updates, 5, (entity: DeepPartial<InferType<any>>, i: number) => {
-                console.groupCollapsed(`[${i}] Update`);
-                console.log('Delta:', entity);
+            if (formattedRequest.counts.removes > 0) {
+                console.groupCollapsed(`Removes (${formattedRequest.counts.removes}):`);
+                logEntitiesWithLimit(operation.changes.removes, formattedRequest.counts.removes);
                 console.groupEnd();
-            });
+            }
 
-            console.groupEnd();
+            if (formattedRequest.counts.updates > 0) {
+                console.groupCollapsed(`Updates (${formattedRequest.counts.updates}):`);
+
+                const entities: DeepPartial<InferType<any>>[] = [];
+                for (const item of operation.changes.updates.changes) {
+                    entities.push(item.delta);
+
+                    if (entities.length >= 5) {
+                        break;
+                    }
+                }
+
+                logArrayWithLimit(entities, formattedRequest.counts.updates, 5, (entity: DeepPartial<InferType<any>>, i: number) => {
+                    console.groupCollapsed(`[${i}] Update`);
+                    console.log('Delta:', entity);
+                    console.groupEnd();
+                });
+
+                console.groupEnd();
+            }
+
+            console.groupEnd(); // End schema group
         }
 
         console.groupEnd(); // End operations details
@@ -603,50 +630,49 @@ export class DbPluginLogging implements IDbPlugin {
         // RESULT SECTION
         if (error) {
             logErrorSection(error, isCriticalError);
-        } else if (result && formattedResult) {
+        } else if (result) {
             // Display the results in a structured format
             console.groupCollapsed('Response:');
 
             // Summary information formatted as a table with before/after comparison
             console.log('Summary:');
             console.table({
-                'Adds': {
-                    requested: formattedRequest.counts.adds,
-                    completed: formattedResult.counts.adds
-                },
-                'Removes': {
-                    requested: formattedRequest.counts.removes,
-                    completed: formattedResult.counts.removes
-                },
-                'Updates': {
-                    requested: formattedRequest.counts.updates,
-                    completed: formattedResult.counts.updates
-                },
                 'Total': {
-                    requested: formattedRequest.counts.total,
-                    completed: formattedResult.counts.total
+                    requested: totalRequested,
+                    completed: totalCompleted
                 }
             });
 
-            // Show result details
-            if (formattedResult.counts.adds > 0) {
-                console.groupCollapsed(`Add Results (${formattedResult.counts.adds}):`);
-                logArrayWithLimit(formattedResult.entities.adds.entities, formattedResult.counts.adds, 5, (item: any, i: number) => {
-                    console.log(`[${i}]:`, item);
-                });
-                console.groupEnd();
-            }
+            // Show result details for each schema
+            for (const [schemaId, operationResult] of result) {
+                const schema = schemas.get(schemaId);
+                const schemaName = schema?.collectionName || `Schema ${schemaId}`;
+                const formattedResult = formatResult(operationResult);
 
-            if (formattedResult.counts.updates > 0) {
-                console.groupCollapsed(`Update Results (${formattedResult.counts.updates}):`);
-                logArrayWithLimit(Array.from(result.updates.entities), formattedResult.counts.updates, 5, (item: any, i: number) => {
-                    console.log(`[${i}]:`, item);
-                });
-                console.groupEnd();
-            }
+                console.groupCollapsed(`${schemaName} Results (${formattedResult.counts.total}):`);
 
-            if (formattedResult.counts.removes > 0) {
-                console.log(`Removed Count: ${formattedResult.counts.removes}`);
+                // Show result details
+                if (formattedResult.counts.adds > 0) {
+                    console.groupCollapsed(`Add Results (${formattedResult.counts.adds}):`);
+                    logArrayWithLimit(formattedResult.entities.adds.entities, formattedResult.counts.adds, 5, (item: any, i: number) => {
+                        console.log(`[${i}]:`, item);
+                    });
+                    console.groupEnd();
+                }
+
+                if (formattedResult.counts.updates > 0) {
+                    console.groupCollapsed(`Update Results (${formattedResult.counts.updates}):`);
+                    logArrayWithLimit(Array.from(operationResult.updates.entities), formattedResult.counts.updates, 5, (item: any, i: number) => {
+                        console.log(`[${i}]:`, item);
+                    });
+                    console.groupEnd();
+                }
+
+                if (formattedResult.counts.removes > 0) {
+                    console.log(`Removed Count: ${formattedResult.counts.removes}`);
+                }
+
+                console.groupEnd(); // End schema results group
             }
 
             console.groupEnd(); // End results group

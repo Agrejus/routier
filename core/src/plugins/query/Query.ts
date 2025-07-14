@@ -46,8 +46,8 @@ export class Query<TRoot extends {}, TShape> implements IQuery<TRoot, TShape> {
         return true;
     }
 
-    static EMPTY<T extends {}, S>() {
-        return new Query<T, S>(QueryOptionsCollection.EMPTY<S>(), {} as any);
+    static EMPTY<T extends {}, S>(schema: CompiledSchema<T>) {
+        return new Query<T, S>(QueryOptionsCollection.EMPTY<S>(), schema);
     }
 
     static isEmpty<T extends {}, S>(query: IQuery<T, S>) {

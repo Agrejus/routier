@@ -60,7 +60,9 @@ export {
     DbPluginEvent,
     TaggedEntity,
     EntityUpdateInfo,
-    EntityChangeType
+    EntityChangeType,
+    PendingChanges,
+    ResolvedChanges
 } from './plugins/types';
 
 export {

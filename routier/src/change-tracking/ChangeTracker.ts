@@ -20,9 +20,9 @@ export class ChangeTracker<TEntity extends {}> {
 
         if (schema.hasIdentityKeys === true) {
             this.additions = new UnknownKeyAdditions<TEntity>(this.schema);
+        } else {
+            this.additions = new KnownKeyAdditions<TEntity>(this.schema);
         }
-
-        this.additions = new KnownKeyAdditions<TEntity>(this.schema);
     }
 
     tags = {

@@ -7,7 +7,6 @@ export class MergeDefaultValueHandler extends PropertyInfoHandler {
     override handle(property: PropertyInfo<any>, builder: CodeBuilder): CodeBuilder | null {
 
         if (property.defaultValue != null && typeof property.defaultValue !== "function") {
-          debugger;
             this.setEnrichedProperty(property, builder);
 
             return builder;

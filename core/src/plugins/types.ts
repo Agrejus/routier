@@ -1,6 +1,10 @@
-import { CallbackResult, CompiledSchema, DeepPartial, IdType, InferCreateType, InferType, QueryOptionsCollection, TagCollection } from "..";
+import { CallbackResult, CompiledSchema, DeepPartial, InferCreateType, InferType, QueryOptionsCollection, TagCollection } from "..";
 import { SchemaId } from "../schema";
 import { CallbackPartialResult } from "../types";
+
+export type PendingChanges<TEntity extends {}> = Map<SchemaId, { changes: CollectionChanges<TEntity> }>;
+
+export type ResolvedChanges<TEntity extends {}> = Map<SchemaId, { changes: CollectionChanges<TEntity>, result: CollectionChangesResult<TEntity> }>;
 
 /**
  * Interface for a database plugin, which provides query, destroy, and bulk operations.
@@ -22,7 +26,7 @@ export interface IDbPlugin {
      * @param event The bulk operations event containing schema, parent, and changes.
      * @param done Callback with the result or error.
      */
-    bulkPersist<TRoot extends {}>(event: DbPluginBulkPersistEvent<TRoot>, done: CallbackPartialResult<Map<SchemaId, CollectionChangesResult<TRoot>>>): void;
+    bulkPersist<TRoot extends {}>(event: DbPluginBulkPersistEvent<TRoot>, done: CallbackPartialResult<ResolvedChanges<TRoot>>): void;
 }
 
 /**
@@ -33,7 +37,7 @@ export type DbPluginQueryEvent<TRoot extends {}, TShape> = DbPluginOperationEven
 /**
  * Event for bulk operations, including schema, parent, and the entity changes.
  */
-export type DbPluginBulkPersistEvent<TEntity extends {}> = DbPluginOperationEvent<TEntity, Map<SchemaId, CollectionChanges<TEntity>>>;
+export type DbPluginBulkPersistEvent<TEntity extends {}> = DbPluginOperationEvent<TEntity, PendingChanges<TEntity>>;
 
 /**
  * Base event for all plugin operations, containing the schema and parent.

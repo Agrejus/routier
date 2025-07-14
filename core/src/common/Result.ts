@@ -6,8 +6,8 @@ export class Result {
     static SUCCESS = "success" as const;
     static PARTIAL = "partial" as const;
 
-    static success<T>(data: T): ResultType<T> | PartialResultType<T>
-    static success<T>(): ResultType<never>
+    static success<T>(data: T): ResultType<T>;
+    static success<T>(): ResultType<never>;
     static success<T>(data?: T): ResultType<T> {
         return {
             ok: Result.SUCCESS,
@@ -22,9 +22,17 @@ export class Result {
         }
     }
 
-    static resolve<T>(result: ResultType<T>, resolve: (data: T) => void, reject: (error?: any) => void) {
+    static resolve<T>(result: ResultType<T> | PartialResultType<T>, resolve: (data: T) => void, reject: (error?: any) => void) {
         if (result.ok === Result.SUCCESS) {
             resolve(result.data);
+            return;
+        }
+
+        if (result.ok === Result.PARTIAL) {
+            reject({
+                partial: result.data,
+                error: result.error
+            });
             return;
         }
 

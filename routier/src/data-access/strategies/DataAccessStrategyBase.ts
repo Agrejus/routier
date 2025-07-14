@@ -1,4 +1,4 @@
-import { CallbackResult, DbPluginBulkPersistEvent, IDbPlugin, SchemaId, CollectionChangesResult } from "routier-core";
+import { CallbackResult, DbPluginBulkPersistEvent, IDbPlugin, ResolvedChanges } from "routier-core";
 export class DataAccessStrategyBase<T extends {}> {
 
     protected readonly dbPlugin: IDbPlugin;
@@ -7,7 +7,7 @@ export class DataAccessStrategyBase<T extends {}> {
         this.dbPlugin = dbPlugin;
     }
 
-    protected _bulkPersist(event: DbPluginBulkPersistEvent<T>, done: CallbackResult<Map<SchemaId, CollectionChangesResult<T>>>) {
+    protected _bulkPersist(event: DbPluginBulkPersistEvent<T>, done: CallbackResult<ResolvedChanges<T>>) {
         this.dbPlugin.bulkPersist(event, done);
     }
 }

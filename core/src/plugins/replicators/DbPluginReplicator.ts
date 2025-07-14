@@ -2,7 +2,7 @@ import { Result } from '../../common/Result';
 import { TrampolinePipeline } from '../../common/TrampolinePipeline';
 import { InferCreateType, SchemaId } from '../../schema';
 import { CallbackPartialResult, CallbackResult, PartialResultType, ResultType } from '../../types';
-import { CollectionChangesResult, DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin, IdbPluginCollection } from '../types';
+import { CollectionChanges, CollectionChangesResult, DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin, IdbPluginCollection, ResolvedChanges } from '../types';
 import { OperationsPayload, PersistPayload } from './types';
 
 export class DbPluginReplicator implements IDbPlugin {
@@ -110,12 +110,12 @@ export class DbPluginReplicator implements IDbPlugin {
 
                 // make sure we swap the adds here, that way we can make sure other persist events
                 // don't take their additions and try to change subsequent calls
-                for (const [schemaId, changes] of r.data) {
+                for (const [schemaId, item] of r.data) {
                     const schemaOperations = payload.data.event.operation.get(schemaId);
 
                     // replace additions on the event with the saved changes so 
                     // the rest of the plugins will get any additons who's id's have been set
-                    schemaOperations.adds.entities = changes.adds.entities as InferCreateType<TEntity>[];
+                    schemaOperations.changes.adds.entities = item.result.adds.entities as InferCreateType<TEntity>[];
                 }
 
                 done(payload);
@@ -139,20 +139,40 @@ export class DbPluginReplicator implements IDbPlugin {
         });
     }
 
-    bulkPersist<TEntity extends {}>(event: DbPluginBulkPersistEvent<TEntity>, done: CallbackPartialResult<Map<SchemaId, CollectionChangesResult<TEntity>>>): void {
+    bulkPersist<TEntity extends {}>(event: DbPluginBulkPersistEvent<TEntity>, done: CallbackPartialResult<ResolvedChanges<TEntity>>): void {
         try {
             // insert into the source first to generate any ids, then take the result and persist that into the replicas
-            const pipeline = new TrampolinePipeline<ResultType<OperationsPayload>>();
+            const pipeline = new TrampolinePipeline<PartialResultType<PersistPayload<TEntity>>>();
             const plugins = [this.plugins.source, ...this.plugins.replicas];
 
             if (this.plugins.read != null) {
                 plugins.push(this.plugins.read);
             }
 
+            const result = new Map<SchemaId, { changes: CollectionChanges<TEntity>, result: CollectionChangesResult<TEntity> }>();
+
+            for (const [schemaId, changeSet] of event.operation) {
+                result.set(schemaId, {
+                    changes: changeSet.changes,
+                    result: {
+                        adds: {
+                            entities: []
+                        },
+                        removed: {
+                            count: 0
+                        },
+                        updates: {
+                            entities: []
+                        }
+                    }
+                })
+            }
+
             const data: PersistPayload<TEntity> = {
                 plugins,
                 index: 0,
-                event
+                event,
+                result
             };
 
             for (let i = 0, length = plugins.length; i < length; i++) {

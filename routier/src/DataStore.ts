@@ -2,7 +2,7 @@ import { CallbackPartialResult, CallbackResult, CompiledSchema, IDbPlugin, Parti
 import { Collection } from './collections/Collection';
 import { CollectionBuilder } from './collection-builder/CollectionBuilder';
 import { CollectionPipelines } from './types';
-import { CollectionChanges, CollectionChangesResult } from 'routier-core/dist/plugins/types';
+import { CollectionChanges, CollectionChangesResult, PendingChanges, ResolvedChanges } from 'routier-core/dist/plugins/types';
 
 /**
  * The main Routier class, providing collection management, change tracking, and persistence for entities.
@@ -29,6 +29,7 @@ export class DataStore implements Disposable {
         this.abortController = new AbortController();
         this.dbPlugin = dbPlugin;
         this.collections = new Map<SchemaId, Collection<any>>();
+        this.schemas = new Map<SchemaId, CompiledSchema<any>>();
         this.collectionPipelines = {
             prepareChanges: new TrampolinePipeline<PartialResultType<Map<SchemaId, { changes: CollectionChanges<any> }>>>(),
             afterPersist: new TrampolinePipeline<PartialResultType<Map<SchemaId, { changes: CollectionChanges<any>, result: CollectionChangesResult<any> }>>>(),
@@ -67,11 +68,17 @@ export class DataStore implements Disposable {
      * Saves all changes in all collections.
      * @param done Callback with the number of changes saved or an error.
      */
-    saveChanges(done: CallbackPartialResult<Map<SchemaId, { changes: CollectionChanges<any>, result: CollectionChangesResult<any>, }>>) {
-        this.collectionPipelines.prepareChanges.filter<PartialResultType<Map<SchemaId, { changes: CollectionChanges<any> }>>>({
-            data: new Map<SchemaId, { changes: CollectionChanges<any> }>(),
+    saveChanges(done: CallbackPartialResult<ResolvedChanges<any>>) {
+        this.collectionPipelines.prepareChanges.filter<PartialResultType<ResolvedChanges<any>>>({
+            data: new Map<SchemaId, { changes: CollectionChanges<any>, result: CollectionChangesResult<any> }>(),
             ok: Result.SUCCESS
-        }, (result) => {
+        }, (result, e) => {
+
+            // fatal error
+            if (e != null) {
+                done(Result.error(e));
+                return;
+            }
 
             if (result.ok === Result.ERROR) {
                 done(result);
@@ -90,17 +97,22 @@ export class DataStore implements Disposable {
                     }
 
                     if (r.ok === Result.PARTIAL) {
-                        // for (const [schemaId] of r.data) {
-                        //     const collection = this.collections.get(schemaId);
-
-                        //     // destroy tags on even on failure
-                        //     collection.tags.destroy();
-                        // }
-                        done(r);
+                        done(Result.partial(r.data, r.error));
                         return;
                     }
 
+                    this.collectionPipelines.afterPersist.filter<PartialResultType<Map<SchemaId, { changes: CollectionChanges<any>, result: CollectionChangesResult<any> }>>>({
+                        data: r.data,
+                        ok: Result.SUCCESS
+                    }, (afterPersistResult, afterPersistError) => {
 
+                        if (afterPersistError != null) {
+                            done(Result.error(afterPersistError));
+                            return;
+                        }
+
+                        done(afterPersistResult);
+                    });
                 });
             } catch (e) {
                 done(Result.error(e))
@@ -113,7 +125,7 @@ export class DataStore implements Disposable {
      * @returns A promise resolving to the number of changes saved.
      */
     saveChangesAsync() {
-        return new Promise<Map<SchemaId, { changes: CollectionChanges<any>, result: CollectionChangesResult<any> }>>((resolve, reject) => {
+        return new Promise<ResolvedChanges<any>>((resolve, reject) => {
             this.saveChanges((r) => Result.resolve(r, resolve, reject));
         });
     }
@@ -123,8 +135,8 @@ export class DataStore implements Disposable {
      * This method allows inspection of changes before they are actually persisted.
      * @param done Callback with the entity changes or an error.
      */
-    previewChanges(done: CallbackResult<Map<SchemaId, { changes: CollectionChanges<any> }>>) {
-        this.collectionPipelines.prepareChanges.filter<Map<SchemaId, { changes: CollectionChanges<any> }>>({
+    previewChanges(done: CallbackResult<PendingChanges<any>>) {
+        this.collectionPipelines.prepareChanges.filter<PendingChanges<any>>({
             data: new Map<SchemaId, { changes: CollectionChanges<any> }>(),
             ok: Result.SUCCESS
         }, (r, e) => {
@@ -216,6 +228,7 @@ export class DataStore implements Disposable {
      * Disposes the Routier instance, aborting any ongoing operations and subscriptions.
      */
     [Symbol.dispose]() {
+        // should clear and detach everything in the change tracker?
         this.abortController.abort("Data Store disposed");
     }
 }

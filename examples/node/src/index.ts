@@ -112,7 +112,7 @@ const replicationPlugin = DbPluginReplicator.create({
 class Ctx extends DataStore {
 
     constructor() {
-        super(pouchDbPluginWithLogging);
+        super(memoryPlugin);
     }
 
     // test = this.collection(model).create();
@@ -143,9 +143,9 @@ const r = async () => {
         })));
 
         const changes = await ctx.previewChangesAsync();
-        await ctx.saveChangesAsync();
+        const result = await ctx.saveChangesAsync();
         debugger;
-        console.log(changes, a)
+        console.log(changes, a, result)
 
         const r = await ctx.nested.where(x => x.order === 1).map(x => x.order).toArrayAsync();
         const xxxxx = await ctx.nested.toArrayAsync();

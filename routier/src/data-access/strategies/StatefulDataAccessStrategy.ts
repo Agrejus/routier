@@ -1,4 +1,4 @@
-import { Query, assertIsNotNull, InferCreateType, DbPluginLogging, IDbPluginReplicator, OptimisticDbPluginReplicator, assertInstanceOfDbPluginLogging, IDbPlugin, DbPluginReplicator, CollectionChangesResult, DbPluginBulkPersistEvent, DbPluginQueryEvent, CallbackResult, Result, SchemaId } from "routier-core";
+import { Query, assertIsNotNull, InferCreateType, DbPluginLogging, IDbPluginReplicator, OptimisticDbPluginReplicator, assertInstanceOfDbPluginLogging, IDbPlugin, DbPluginReplicator, CollectionChangesResult, DbPluginBulkPersistEvent, DbPluginQueryEvent, CallbackResult, Result, SchemaId, CollectionChanges, ResolvedChanges, TagCollection } from "routier-core";
 import { IDataAccessStrategy } from "../types";
 import { DataAccessStrategyBase } from "./DataAccessStrategyBase";
 import { assertIsMemoryPlugin, MemoryPlugin } from "routier-plugin-memory";
@@ -30,7 +30,7 @@ const getReplicator = (dbPlugin: IDbPlugin, optimistic?: boolean) => {
 
 export class StatefulDataAccessStrategy<T extends {}> extends DataAccessStrategyBase<T> implements IDataAccessStrategy<T> {
 
-    bulkPersist(collectionOptions: CollectionOptions, event: DbPluginBulkPersistEvent<T>, done: CallbackResult<Map<SchemaId, CollectionChangesResult<T>>>) {
+    bulkPersist(collectionOptions: CollectionOptions, event: DbPluginBulkPersistEvent<T>, done: CallbackResult<ResolvedChanges<T>>) {
         const optimistic = (collectionOptions as StatefulCollectionOptions).optimistic;
         getReplicator(this.dbPlugin, optimistic).bulkPersist(event, done);
     }
@@ -60,8 +60,7 @@ export class StatefulDataAccessStrategy<T extends {}> extends DataAccessStrategy
 
             this.dbPlugin.query<T, TShape>({
                 operation: queryAll,
-                parent: event.parent,
-                schema: event.schema
+                schemas: event.schemas
             }, (r) => {
 
                 if (r.ok === Result.ERROR) {
@@ -69,9 +68,11 @@ export class StatefulDataAccessStrategy<T extends {}> extends DataAccessStrategy
                     return;
                 }
 
-                // Add data to the read plugin
-                readPlugin.bulkOperations({
-                    operation: {
+                const operation = new Map<SchemaId, { changes: CollectionChanges<T> }>();
+
+                // only send in one schema at a time since we are technically in the scope of the schema
+                operation.set(event.operation.schema.id, {
+                    changes: {
                         adds: {
                             entities: r.data as InferCreateType<T>[]
                         },
@@ -79,13 +80,18 @@ export class StatefulDataAccessStrategy<T extends {}> extends DataAccessStrategy
                             entities: [],
                             queries: []
                         },
+                        hasChanges: typeof r.data === "object" && "length" in r.data && typeof r.data.length === "number" && r.data.length > 0,
+                        tags: new TagCollection(),
                         updates: {
                             changes: []
-                        },
-                        tags: null
-                    },
-                    parent: event.parent,
-                    schema: event.schema
+                        }
+                    }
+                })
+
+                // Add data to the read plugin
+                readPlugin.bulkPersist({
+                    operation,
+                    schemas: event.schemas
                 }, (bulkOperationsResult) => {
 
                     if (bulkOperationsResult.ok === Result.ERROR) {

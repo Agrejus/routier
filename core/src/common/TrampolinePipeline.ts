@@ -11,13 +11,7 @@ type TrampolineStep<TData> = () => StepResult<TData>;
 
 export class TrampolinePipeline<TInitial, TCurrent = TInitial> {
     private _list: Processor<any, any>[] = [];
-    private _check: ((data: TInitial) => boolean) | null = null;
     private _hasErrored: boolean = false; // Flag to prevent calling done on error
-
-    check(checkFn: (data: TInitial) => boolean) {
-        this._check = checkFn;
-        return this;
-    }
 
     pipe<TNext>(processor: Processor<TCurrent, TNext>) {
         this._list.push(processor);
@@ -27,12 +21,6 @@ export class TrampolinePipeline<TInitial, TCurrent = TInitial> {
     filter<TFinal>(initialData: TInitial, done: (data: TFinal, error?: any) => void) {
 
         this._hasErrored = false; // Reset error flag on new execution
-
-        // Run check function first if it exists
-        if (this._check && !this._check(initialData)) {
-            queueMicrotask(() => done(initialData as any as TFinal));
-            return;
-        }
 
         if (this._list.length === 0) {
             queueMicrotask(() => done(initialData as any as TFinal));
