@@ -1,4 +1,4 @@
-import { Query, assertIsNotNull, InferCreateType, DbPluginLogging, IDbPluginReplicator, OptimisticDbPluginReplicator, assertInstanceOfDbPluginLogging, IDbPlugin, DbPluginReplicator, CollectionChangesResult, DbPluginBulkPersistEvent, DbPluginQueryEvent, CallbackResult, Result, SchemaId, CollectionChanges, ResolvedChanges, TagCollection } from "routier-core";
+import { Query, assertIsNotNull, InferCreateType, DbPluginLogging, IDbPluginReplicator, OptimisticDbPluginReplicator, assertInstanceOfDbPluginLogging, IDbPlugin, DbPluginReplicator, CollectionChangesResult, DbPluginBulkPersistEvent, DbPluginQueryEvent, CallbackResult, Result, SchemaId, CollectionChanges, ResolvedChanges, TagCollection, PendingChanges } from "routier-core";
 import { IDataAccessStrategy } from "../types";
 import { DataAccessStrategyBase } from "./DataAccessStrategyBase";
 import { assertIsMemoryPlugin, MemoryPlugin } from "routier-plugin-memory";
@@ -68,25 +68,23 @@ export class StatefulDataAccessStrategy<T extends {}> extends DataAccessStrategy
                     return;
                 }
 
-                const operation = new Map<SchemaId, { changes: CollectionChanges<T> }>();
+                const operation = new PendingChanges<T>();
 
                 // only send in one schema at a time since we are technically in the scope of the schema
-                operation.set(event.operation.schema.id, {
-                    changes: {
-                        adds: {
-                            entities: r.data as InferCreateType<T>[]
-                        },
-                        removes: {
-                            entities: [],
-                            queries: []
-                        },
-                        hasChanges: typeof r.data === "object" && "length" in r.data && typeof r.data.length === "number" && r.data.length > 0,
-                        tags: new TagCollection(),
-                        updates: {
-                            changes: []
-                        }
+                operation.changes.set(event.operation.schema.id, {
+                    adds: {
+                        entities: r.data as InferCreateType<T>[]
+                    },
+                    removes: {
+                        entities: [],
+                        queries: []
+                    },
+                    hasChanges: typeof r.data === "object" && "length" in r.data && typeof r.data.length === "number" && r.data.length > 0,
+                    tags: new TagCollection(),
+                    updates: {
+                        changes: []
                     }
-                })
+                });
 
                 // Add data to the read plugin
                 readPlugin.bulkPersist({

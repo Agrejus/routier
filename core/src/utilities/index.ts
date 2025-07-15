@@ -1,4 +1,7 @@
+import { PendingChanges, ResolvedChanges } from "../common/collections/Changes";
 import { DbPluginLogging } from "../plugins/DbPluginLogging";
+import { CollectionChanges, CollectionChangesResult } from "../plugins/types";
+import { SchemaId } from "../schema";
 
 export const toMap = <T extends {}>(data: T[], keySelector: (item: T) => T[keyof T] | string) => {
 

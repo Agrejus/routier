@@ -61,13 +61,17 @@ export {
     TaggedEntity,
     EntityUpdateInfo,
     EntityChangeType,
-    PendingChanges,
-    ResolvedChanges
 } from './plugins/types';
 
 export {
+    PendingChanges,
+    ResolvedChanges
+} from './common/collections/Changes';
+
+export {
     TagCollection
-} from './tags/TagCollection';
+} from './common/collections/TagCollection';
+
 
 export {
     DataTranslator

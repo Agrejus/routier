@@ -64,7 +64,7 @@ describe('add', () => {
         const response = await dataStore.saveChangesAsync();
 
         // Assert
-        expect(response).toBe(1);
+        expect(response.result.count()).toBe(1);
         expect(added._id).toStrictEqual(expect.any(String));
         expect(added.category).toBe(item.category);
         expect(added.name).toBe(item.name);

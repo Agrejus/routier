@@ -36,7 +36,7 @@ export class BasicDataStoreFactory {
 
     static create() {
         return new BasicDataStoreFactory(
-            () => new PouchDbPlugin(uuidv4()),
+            //() => new PouchDbPlugin(uuidv4()),
             () => new MemoryPlugin(uuidv4()),
             //() => new DexiePlugin(uuidv4())
         );

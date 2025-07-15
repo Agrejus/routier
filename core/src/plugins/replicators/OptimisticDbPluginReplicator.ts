@@ -1,8 +1,9 @@
+import { ResolvedChanges } from '../../common/collections/Changes';
 import { Result } from '../../common/Result';
 import { TrampolinePipeline } from '../../common/TrampolinePipeline';
-import { InferCreateType, SchemaId } from '../../schema';
+import { InferCreateType } from '../../schema';
 import { CallbackPartialResult, CallbackResult, PartialResultType, ResultType } from '../../types';
-import { CollectionChanges, CollectionChangesResult, DbPluginBulkPersistEvent, DbPluginQueryEvent, IdbPluginCollection, ResolvedChanges } from '../types';
+import { DbPluginBulkPersistEvent, DbPluginQueryEvent, IdbPluginCollection } from '../types';
 import { DbPluginReplicator } from './DbPluginReplicator';
 import { OperationsPayload, PersistPayload } from './types';
 
@@ -121,12 +122,12 @@ export class OptimisticDbPluginReplicator extends DbPluginReplicator {
 
                 // make sure we swap the adds here, that way we can make sure other persist events
                 // don't take their additions and try to change subsequent calls
-                for (const [schemaId, changes] of r.data) {
-                    const schemaOperations = event.operation.get(schemaId);
+                for (const [schemaId, changes] of r.data.result.entries()) {
+                    const schemaOperations = event.operation.changes.get(schemaId);
 
                     // replace additions on the event with the saved changes so 
                     // the rest of the plugins will get any additons who's id's have been set
-                    schemaOperations.changes.adds.entities = changes.result.adds.entities as InferCreateType<TEntity>[];
+                    schemaOperations.adds.entities = changes.result.adds.entities as InferCreateType<TEntity>[];
                 }
 
                 const data: PersistPayload<TEntity> = {
@@ -136,7 +137,7 @@ export class OptimisticDbPluginReplicator extends DbPluginReplicator {
                         operation: event.operation,
                         schemas: event.schemas
                     },
-                    result: new Map()
+                    result: new ResolvedChanges()
                 };
 
                 setTimeout(() => {

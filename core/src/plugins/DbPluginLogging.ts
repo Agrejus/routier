@@ -1,8 +1,9 @@
+import { PendingChanges, ResolvedChanges } from '../common/collections/Changes';
 import { Result } from '../common/Result';
 import { CompiledSchema, InferType, SchemaId } from '../schema';
 import { CallbackResult, CallbackPartialResult, DeepPartial } from '../types';
 import { now } from '../utilities/index';
-import { CollectionChanges, CollectionChangesResult, DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin, IQuery, ResolvedChanges } from './types';
+import { CollectionChanges, CollectionChangesResult, DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin, IQuery } from './types';
 
 // Check if we're in development environment
 const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined;
@@ -21,8 +22,8 @@ export type QueryLogContext<TEntity extends {}, TShape extends any = TEntity> = 
 
 export type BulkOperationsLogContext<TEntity extends {}> = {
     schemas: Map<SchemaId, CompiledSchema<TEntity>>;
-    operations: Map<SchemaId, { changes: CollectionChanges<TEntity> }>;
-    result?: Map<SchemaId, CollectionChangesResult<TEntity>>;
+    operations: PendingChanges<TEntity>;
+    result?: ResolvedChanges<TEntity>;
     error?: any;
     duration: number;
     operationId: string;
@@ -440,7 +441,7 @@ export class DbPluginLogging implements IDbPlugin {
         // Create context for hooks and logging
         const context: BulkOperationsLogContext<TEntity> = {
             schemas,
-            operations: operation,
+            operations: operation.toResult(),
             duration: 0,
             operationId
         };
@@ -458,11 +459,7 @@ export class DbPluginLogging implements IDbPlugin {
                 // Update context with result information
                 if (result.ok === Result.SUCCESS) {
                     // Extract just the result part from the combined changes/result object
-                    const resultMap = new Map<SchemaId, CollectionChangesResult<TEntity>>();
-                    for (const [schemaId, combinedData] of result.data) {
-                        resultMap.set(schemaId, combinedData.result);
-                    }
-                    context.result = resultMap;
+                    context.result = result.data;
                 } else {
                     context.error = result.error;
                 }
@@ -534,18 +531,10 @@ export class DbPluginLogging implements IDbPlugin {
 
         if (!error) {
             // Sum up requested operations across all schemas
-            for (const [schemaId, operation] of operations) {
-                const formattedRequest = formatRequest(operation.changes);
-                totalRequested += formattedRequest.counts.total;
-            }
+            totalRequested += operations.changes.count();
 
             // Sum up completed operations across all schemas
-            if (result) {
-                for (const [schemaId, operationResult] of result) {
-                    const formattedResult = formatResult(operationResult);
-                    totalCompleted += formattedResult.counts.total;
-                }
-            }
+            totalCompleted += result.result.count();
         }
 
         // Add operation count to the header
@@ -581,7 +570,7 @@ export class DbPluginLogging implements IDbPlugin {
         });
 
         // Show operations for each schema
-        for (const [schemaId, operation] of operations) {
+        for (const [schemaId, operation] of operations.changes.entries()) {
             const schema = schemas.get(schemaId);
             const schemaName = schema?.collectionName || `Schema ${schemaId}`;
             const formattedRequest = formatRequest(operation.changes);
@@ -644,10 +633,10 @@ export class DbPluginLogging implements IDbPlugin {
             });
 
             // Show result details for each schema
-            for (const [schemaId, operationResult] of result) {
+            for (const [schemaId, operationResult] of result.result.entries()) {
                 const schema = schemas.get(schemaId);
                 const schemaName = schema?.collectionName || `Schema ${schemaId}`;
-                const formattedResult = formatResult(operationResult);
+                const formattedResult = formatResult(operationResult.result);
 
                 console.groupCollapsed(`${schemaName} Results (${formattedResult.counts.total}):`);
 
@@ -662,7 +651,7 @@ export class DbPluginLogging implements IDbPlugin {
 
                 if (formattedResult.counts.updates > 0) {
                     console.groupCollapsed(`Update Results (${formattedResult.counts.updates}):`);
-                    logArrayWithLimit(Array.from(operationResult.updates.entities), formattedResult.counts.updates, 5, (item: any, i: number) => {
+                    logArrayWithLimit(Array.from(operationResult.result.updates.entities), formattedResult.counts.updates, 5, (item: any, i: number) => {
                         console.log(`[${i}]:`, item);
                     });
                     console.groupEnd();

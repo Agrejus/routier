@@ -47,7 +47,7 @@ export class CollectionBase<TEntity extends {}> {
     }
 
     protected afterPersist(data: PartialResultType<Map<SchemaId, { changes: CollectionChanges<TEntity>, result: CollectionChangesResult<TEntity> }>>, done: CallbackPartialResult<Map<SchemaId, { changes: CollectionChanges<TEntity>, result: CollectionChangesResult<TEntity> }>>) {
-        debugger;
+
         try {
             if (data.ok === Result.ERROR) {
                 this.changeTracker.clearAdditions();
@@ -61,6 +61,11 @@ export class CollectionBase<TEntity extends {}> {
             assertIsNotNull(resolvedChanges, "Could not find resolved changes during afterPersist operation");
 
             const { changes, result } = resolvedChanges;
+
+            if (changes.hasChanges === false) {
+                done(data);
+                return;
+            }
 
             this.changeTracker.mergeChanges(result);
 
@@ -99,15 +104,7 @@ export class CollectionBase<TEntity extends {}> {
                 return;
             }
 
-            if (this.changeTracker.hasChanges() === false) {
-                done(data);
-                return
-            }
-
             const tags = this.changeTracker.tags.get();
-
-            assertIsNotNull(tags, "Could not find tag collection during prepare operation");
-
             const changes: CollectionChanges<TEntity> = {
                 adds: {
                     entities: []
@@ -122,6 +119,15 @@ export class CollectionBase<TEntity extends {}> {
                 },
                 hasChanges: false
             }
+
+            if (this.changeTracker.hasChanges() === false) {
+                data.data.set(this.schema.id, { changes });
+                done(data);
+                return
+            }
+
+            assertIsNotNull(tags, "Could not find tag collection during prepare operation");
+
             const adds = this.changeTracker.prepareAdditions();
 
             if (adds.length > 0) {
@@ -151,7 +157,7 @@ export class CollectionBase<TEntity extends {}> {
         }
     }
 
-    private getAndDestroyTag() {
+    protected getAndDestroyTag() {
         if (this._tag != null) {
 
             const tag = this._tag;

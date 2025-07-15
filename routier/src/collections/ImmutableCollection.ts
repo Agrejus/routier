@@ -14,10 +14,6 @@ export class ImmutableCollection<TEntity extends {}> extends RemovableCollection
         super(dbPlugin, schema, options, pipelines, schemas);
     }
 
-    hasChanges() {
-        return this.changeTracker.hasChanges();
-    }
-
     mutate() {
 
     }

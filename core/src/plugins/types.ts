@@ -1,10 +1,8 @@
 import { CallbackResult, CompiledSchema, DeepPartial, InferCreateType, InferType, QueryOptionsCollection, TagCollection } from "..";
+import { PendingChanges, ResolvedChanges } from "../common/collections/Changes";
 import { SchemaId } from "../schema";
 import { CallbackPartialResult } from "../types";
 
-export type PendingChanges<TEntity extends {}> = Map<SchemaId, { changes: CollectionChanges<TEntity> }>;
-
-export type ResolvedChanges<TEntity extends {}> = Map<SchemaId, { changes: CollectionChanges<TEntity>, result: CollectionChangesResult<TEntity> }>;
 
 /**
  * Interface for a database plugin, which provides query, destroy, and bulk operations.

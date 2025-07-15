@@ -20,8 +20,7 @@ export class RemovableCollection<TEntity extends {}> extends CollectionBase<TEnt
      * @param done Callback function called with the removed entities or error
      */
     remove(entities: InferType<TEntity>[], done: CallbackResult<InferType<TEntity>[]>) {
-        const tag = this.tags.get();
-        this.tags.destroy();
+        const tag = this.getAndDestroyTag();
         this.changeTracker.remove(entities, tag, done);
     }
 
@@ -41,8 +40,7 @@ export class RemovableCollection<TEntity extends {}> extends CollectionBase<TEnt
      * @param done Callback function called when the operation completes or with an error
      */
     removeAll(done: (error?: any) => void) {
-        const tag = this.tags.get();
-        this.tags.destroy();
+        const tag = this.getAndDestroyTag();
         this.changeTracker.removeByQuery(Query.EMPTY<TEntity, TEntity>(this.schema), tag, done);
     }
 

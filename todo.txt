@@ -79,6 +79,8 @@ Reference PDB EF and DB EF
         Code Pens
 
     TODO
+        Moved PendingChanges/ResolvedChanges to classes so we can add more operations,
+            we have some failures here in our tests
         Remove Proxies, change over to context tracking
             benefits?
         Make sure errors are reported correctly

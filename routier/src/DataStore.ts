@@ -1,8 +1,8 @@
-import { CallbackPartialResult, CallbackResult, CompiledSchema, IDbPlugin, PartialResultType, Result, SchemaId, TrampolinePipeline } from 'routier-core';
+import { CallbackPartialResult, CallbackResult, CompiledSchema, IDbPlugin, PartialResultType, PendingChanges, ResolvedChanges, Result, SchemaId, TrampolinePipeline } from 'routier-core';
 import { Collection } from './collections/Collection';
 import { CollectionBuilder } from './collection-builder/CollectionBuilder';
 import { CollectionPipelines } from './types';
-import { CollectionChanges, CollectionChangesResult, PendingChanges, ResolvedChanges } from 'routier-core/dist/plugins/types';
+import { CollectionChanges, CollectionChangesResult } from 'routier-core/dist/plugins/types';
 
 /**
  * The main Routier class, providing collection management, change tracking, and persistence for entities.
@@ -31,8 +31,8 @@ export class DataStore implements Disposable {
         this.collections = new Map<SchemaId, Collection<any>>();
         this.schemas = new Map<SchemaId, CompiledSchema<any>>();
         this.collectionPipelines = {
-            prepareChanges: new TrampolinePipeline<PartialResultType<Map<SchemaId, { changes: CollectionChanges<any> }>>>(),
-            afterPersist: new TrampolinePipeline<PartialResultType<Map<SchemaId, { changes: CollectionChanges<any>, result: CollectionChangesResult<any> }>>>(),
+            prepareChanges: new TrampolinePipeline<PartialResultType<PendingChanges<any>>>(),
+            afterPersist: new TrampolinePipeline<PartialResultType<ResolvedChanges<any>>>(),
         };
     }
 
@@ -70,7 +70,7 @@ export class DataStore implements Disposable {
      */
     saveChanges(done: CallbackPartialResult<ResolvedChanges<any>>) {
         this.collectionPipelines.prepareChanges.filter<PartialResultType<ResolvedChanges<any>>>({
-            data: new Map<SchemaId, { changes: CollectionChanges<any>, result: CollectionChangesResult<any> }>(),
+            data: new ResolvedChanges<any>(),
             ok: Result.SUCCESS
         }, (result, e) => {
 
@@ -101,7 +101,7 @@ export class DataStore implements Disposable {
                         return;
                     }
 
-                    this.collectionPipelines.afterPersist.filter<PartialResultType<Map<SchemaId, { changes: CollectionChanges<any>, result: CollectionChangesResult<any> }>>>({
+                    this.collectionPipelines.afterPersist.filter<PartialResultType<ResolvedChanges<any>>>({
                         data: r.data,
                         ok: Result.SUCCESS
                     }, (afterPersistResult, afterPersistError) => {
@@ -137,7 +137,7 @@ export class DataStore implements Disposable {
      */
     previewChanges(done: CallbackResult<PendingChanges<any>>) {
         this.collectionPipelines.prepareChanges.filter<PendingChanges<any>>({
-            data: new Map<SchemaId, { changes: CollectionChanges<any> }>(),
+            data: new PendingChanges<any>(),
             ok: Result.SUCCESS
         }, (r, e) => {
             if (e != null) {
@@ -155,7 +155,7 @@ export class DataStore implements Disposable {
      * @returns A promise resolving to the entity changes.
      */
     previewChangesAsync() {
-        return new Promise<Map<SchemaId, { changes: CollectionChanges<any> }>>((resolve, reject) => {
+        return new Promise<PendingChanges<any>>((resolve, reject) => {
             this.previewChanges((r) => Result.resolve(r, resolve, reject));
         });
     }

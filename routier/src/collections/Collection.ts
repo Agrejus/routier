@@ -14,18 +14,13 @@ export class Collection<TEntity extends {}> extends RemovableCollection<TEntity>
         super(dbPlugin, schema, options, pipelines, schemas);
     }
 
-    hasChanges() {
-        return this.changeTracker.hasChanges();
-    }
-
     /**
      * Adds entities to the collection and persists them to the database.
      * @param entities Array of entities to add to the collection
      * @param done Callback function called with the added entities or error
      */
     add(entities: InferCreateType<TEntity>[], done: CallbackResult<InferType<TEntity>[]>) {
-        const tag = this.tags.get();
-        this.tags.destroy();
+        const tag = this.getAndDestroyTag();
         this.changeTracker.add(entities, tag, done);
     }
 

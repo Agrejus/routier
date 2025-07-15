@@ -1,4 +1,4 @@
-import { IDbPlugin, CompiledSchema, InferCreateType, DeepPartial, InferType, JsonTranslator, DbPluginQueryEvent, assertIsArray, DbPluginEvent, TrampolinePipeline, IQuery, CallbackResult, Result, CallbackPartialResult, ResolvedChanges, DbPluginBulkPersistEvent, CollectionChanges, SchemaId, CollectionChangesResult, PartialResultType } from "routier-core";
+import { IDbPlugin, CompiledSchema, InferCreateType, DeepPartial, JsonTranslator, DbPluginQueryEvent, assertIsArray, TrampolinePipeline, IQuery, CallbackResult, Result, CallbackPartialResult, ResolvedChanges, DbPluginBulkPersistEvent, SchemaId, PartialResultType } from "routier-core";
 import { DbCollection } from "./DbCollection";
 import { MemoryDatabase } from ".";
 
@@ -67,20 +67,11 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
             const { index, resolvedChanges, schemaIds, schemas } = payload.data;
             const schemaId = schemaIds[index];
             const schema = schemas.get(schemaId);
-            const result: CollectionChangesResult<TRoot> = {
-                adds: {
-                    entities: []
-                },
-                removed: {
-                    count: 0
-                },
-                updates: {
-                    entities: []
-                }
-            };
-            const changeSet = resolvedChanges.get(schemaId);
-            const { adds, hasChanges, removes, updates } = changeSet.changes;
-            changeSet.result = result;
+
+            const result = resolvedChanges.toResult();
+            const changes = resolvedChanges.changes.get(schemaId);
+            const schemaResult = result.result.get(schemaId);
+            const { adds, hasChanges, removes, updates } = changes;
 
             if (hasChanges === false) {
                 done(payload);
@@ -91,17 +82,17 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
 
             for (let i = 0, length = adds.entities.length; i < length; i++) {
                 collection.add(adds.entities[i]);
-                result.adds.entities.push(adds.entities[i] as DeepPartial<InferCreateType<TRoot>>);
+                schemaResult.adds.entities.push(adds.entities[i] as DeepPartial<InferCreateType<TRoot>>);
             }
 
             for (const change of updates.changes) {
                 collection.update(change.entity);
-                result.updates.entities.push(change.entity);
+                schemaResult.updates.entities.push(change.entity);
             }
 
             for (const removal of removes.entities) {
                 collection.remove(removal);
-                result.removed.count += 1;
+                schemaResult.removed.count += 1;
             }
 
             this._getRemovalsByQueries(schemas, removes.queries, (r, e) => {
@@ -116,7 +107,7 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
                         collection.remove(removals[i]);
                     }
 
-                    result.removed.count += removals.length;
+                    schemaResult.removed.count += removals.length;
 
                     done(payload);
                 } catch (e) {
@@ -133,7 +124,7 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
         const { schemas } = event;
 
         try {
-            const schemaIds = [...event.operation].map(x => x[0])
+            const schemaIds = [...event.operation.changes.entries()].map(x => x[0])
             const pipeline = new TrampolinePipeline<PartialResultType<{ schemaIds: number[], schemas: Map<SchemaId, CompiledSchema<TRoot>>, index: number, resolvedChanges: ResolvedChanges<TRoot> }>>();
 
             for (let i = 0, length = schemaIds.length; i < length; i++) {
