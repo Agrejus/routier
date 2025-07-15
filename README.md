@@ -17,11 +17,10 @@ where(w => w).map(w => ({ test:w.test })).firstOrUndefined();
 Can we do CDC so we can create history tables?
 Can we apply a TTL to documents?
 
-TODO:
-\_rev is not being set correctly in the example scenario
+# TODO:
+
 Remove Proxies, change over to context tracking
 Make sure errors are reported correctly
-
 History Records? How can we use the replicator for this?
 DbReplicator -> Inherit and override query and bulkOperations
 Filter for your collection

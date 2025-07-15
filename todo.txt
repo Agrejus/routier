@@ -59,17 +59,6 @@ Reference PDB EF and DB EF
         history tracking ----> Replication
         context tracking
         Event store
-        Can we move callbacks over to result pattern?
-            {
-                ok: true,
-                result; T
-            }
-
-            {
-                ok: false,
-                error: any
-            }
-
         entity changes -> updates does not need to be a map, why?
             does previewChanges need to divide out by schemaid?  Nah, just return all items
 
@@ -90,7 +79,6 @@ Reference PDB EF and DB EF
         Code Pens
 
     TODO
-        _rev is not being set correctly in the example scenario
         Remove Proxies, change over to context tracking
             benefits?
         Make sure errors are reported correctly

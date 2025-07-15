@@ -26,7 +26,7 @@ export class ChangeTracker<TEntity extends {}> {
     }
 
     tags = {
-        get: () => this._tagCollection,
+        get: () => this.resolveTagCollection(),
         destroy: () => { this._tagCollection = null; }
     }
 

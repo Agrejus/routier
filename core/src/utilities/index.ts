@@ -115,7 +115,7 @@ export const now = (): number => {
     return Date.now();
 }
 
-export function assertIsNotNull<T extends unknown>(data: T, message?: string): asserts data is T {
+export function assertIsNotNull<T>(data: T | null | undefined, message?: string): asserts data is NonNullable<T> {
     if (data == null) {
         throw new TypeError(message ?? 'Assertion failed, data is null');
     }
