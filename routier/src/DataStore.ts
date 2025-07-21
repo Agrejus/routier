@@ -59,12 +59,6 @@ export class DataStore implements Disposable {
     }
 
     /**
-     * SaveChangesTransaction
-     * adds: {
-     * }
-     */
-
-    /**
      * Saves all changes in all collections.
      * @param done Callback with the number of changes saved or an error.
      */
@@ -135,8 +129,8 @@ export class DataStore implements Disposable {
      * This method allows inspection of changes before they are actually persisted.
      * @param done Callback with the entity changes or an error.
      */
-    previewChanges(done: CallbackResult<PendingChanges<any>>) {
-        this.collectionPipelines.prepareChanges.filter<PendingChanges<any>>({
+    previewChanges(done: CallbackPartialResult<PendingChanges<any>>) {
+        this.collectionPipelines.prepareChanges.filter<PartialResultType<PendingChanges<any>>>({
             data: new PendingChanges<any>(),
             ok: Result.SUCCESS
         }, (r, e) => {
@@ -145,7 +139,7 @@ export class DataStore implements Disposable {
                 return;
             }
 
-            done(Result.success(r));
+            done(r);
         });
     }
 

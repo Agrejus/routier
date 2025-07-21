@@ -79,8 +79,10 @@ Reference PDB EF and DB EF
         Code Pens
 
     TODO
-        Moved PendingChanges/ResolvedChanges to classes so we can add more operations,
-            we have some failures here in our tests
+        Error with remove response, cannot find entity
+            How do we enforce correct response?
+                base class or interface?
+        Fix failing tests, currently working on adds (first batch)
         Remove Proxies, change over to context tracking
             benefits?
         Make sure errors are reported correctly

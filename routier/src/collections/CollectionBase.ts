@@ -5,7 +5,7 @@ import { Queryable } from '../queryable/Queryable';
 import { QueryableAsync } from '../queryable/QueryableAsync';
 import { SelectionQueryable } from "../queryable/SelectionQueryable";
 import { SelectionQueryableAsync } from "../queryable/SelectionQueryableAsync";
-import { CompiledSchema, SchemaId, ICollectionSubscription, IDbPlugin, ChangeTrackingType, CollectionChanges, CollectionChangesResult, SubscriptionChanges, InferType, GenericFunction, InferCreateType, CallbackResult, Result, Query, Filter, ParamsFilter, PartialResultType, CallbackPartialResult, assertIsNotNull } from "routier-core";
+import { CompiledSchema, SchemaId, ICollectionSubscription, IDbPlugin, ChangeTrackingType, CollectionChanges, CollectionChangesResult, SubscriptionChanges, InferType, GenericFunction, InferCreateType, CallbackResult, Result, Query, Filter, ParamsFilter, PartialResultType, CallbackPartialResult, assertIsNotNull, PendingChanges, ResolvedChanges } from "routier-core";
 
 export class CollectionBase<TEntity extends {}> {
 
@@ -39,6 +39,11 @@ export class CollectionBase<TEntity extends {}> {
     }
 
     private cloneMany(items: InferType<TEntity>[]) {
+
+        if (this.changeTrackingType !== "entity") {
+            return items;
+        }
+
         const result: InferType<TEntity>[] = []
         for (let i = 0, length = items.length; i < length; i++) {
             result.push(this.schema.clone(items[i]));
@@ -46,9 +51,10 @@ export class CollectionBase<TEntity extends {}> {
         return result;
     }
 
-    protected afterPersist(data: PartialResultType<Map<SchemaId, { changes: CollectionChanges<TEntity>, result: CollectionChangesResult<TEntity> }>>, done: CallbackPartialResult<Map<SchemaId, { changes: CollectionChanges<TEntity>, result: CollectionChangesResult<TEntity> }>>) {
+    protected afterPersist(data: PartialResultType<ResolvedChanges<TEntity>>, done: CallbackPartialResult<ResolvedChanges<TEntity>>) {
 
         try {
+            debugger;
             if (data.ok === Result.ERROR) {
                 this.changeTracker.clearAdditions();
                 done(data);
@@ -56,18 +62,19 @@ export class CollectionBase<TEntity extends {}> {
             }
 
             // merge only the changes from the collections persist operation
-            const resolvedChanges = data.data.get(this.schema.id);
+            const resolvedChanges = data.data.result.get(this.schema.id);
+            const changes = data.data.changes.get(this.schema.id);
 
             assertIsNotNull(resolvedChanges, "Could not find resolved changes during afterPersist operation");
-
-            const { changes, result } = resolvedChanges;
 
             if (changes.hasChanges === false) {
                 done(data);
                 return;
             }
 
-            this.changeTracker.mergeChanges(result);
+            // Merge changes will unpause any change tracking that was paused previously
+            // We should be more declarative about this 
+            this.changeTracker.mergeChanges(resolvedChanges);
 
             // clear after we merge changes
             this.changeTracker.clearAdditions();
@@ -75,16 +82,16 @@ export class CollectionBase<TEntity extends {}> {
             // we only want to notify of changes when an item that was saved matches the query
             // these get reset each time
             // send in the resulting adds because properties might have been set from the db operation
-            const updates = this.cloneMany(result.updates.entities);
+            const updates = this.cloneMany(resolvedChanges.updates.entities);
             const removals = changes.removes;
-            const adds = this.cloneMany(result.adds.entities as InferType<TEntity>[]);
+            const adds = this.cloneMany(resolvedChanges.adds.entities as InferType<TEntity>[]);
             const removedEntities = this.cloneMany(removals.entities)
 
             const subscriptionChanges: SubscriptionChanges<TEntity> = {
                 updates,
                 adds,
                 removals: removedEntities,
-                removalQueries: removals.queries
+                removalQueries: removals.queries.map(x => Query.toString(x))
             };
 
             this.subscription.send(subscriptionChanges);
@@ -95,10 +102,9 @@ export class CollectionBase<TEntity extends {}> {
         }
     }
 
-    protected prepare(data: PartialResultType<Map<SchemaId, { changes: CollectionChanges<TEntity> }>>, done: CallbackPartialResult<Map<SchemaId, { changes: CollectionChanges<TEntity> }>>) {
+    protected prepare(data: PartialResultType<PendingChanges<TEntity>>, done: CallbackPartialResult<PendingChanges<TEntity>>) {
 
         try {
-
             if (data.ok === Result.ERROR) {
                 done(data);
                 return;
@@ -121,7 +127,7 @@ export class CollectionBase<TEntity extends {}> {
             }
 
             if (this.changeTracker.hasChanges() === false) {
-                data.data.set(this.schema.id, { changes });
+                data.data.changes.set(this.schema.id, changes);
                 done(data);
                 return
             }
@@ -149,7 +155,7 @@ export class CollectionBase<TEntity extends {}> {
                 changes.removes = removes;
             }
 
-            data.data.set(this.schema.id, { changes });
+            data.data.changes.set(this.schema.id, changes);
 
             done(data);
         } catch (e) {

@@ -50,9 +50,9 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
         collection.seed(data);
     }
 
-    destroy(done: (error?: any) => void): void {
+    destroy(done: CallbackResult<never>): void {
         dbs[this.dbName] = {};
-        done();
+        done(Result.success());
     }
 
     private _persist<TRoot extends {}>(payload: PartialResultType<{ schemaIds: number[], schemas: Map<SchemaId, CompiledSchema<TRoot>>, index: number, resolvedChanges: ResolvedChanges<TRoot> }>, done: CallbackPartialResult<{ schemaIds: number[], schemas: Map<SchemaId, CompiledSchema<TRoot>>, index: number, resolvedChanges: ResolvedChanges<TRoot> }>) {
@@ -68,12 +68,12 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
             const schemaId = schemaIds[index];
             const schema = schemas.get(schemaId);
 
-            const result = resolvedChanges.toResult();
             const changes = resolvedChanges.changes.get(schemaId);
-            const schemaResult = result.result.get(schemaId);
+            const schemaResult = resolvedChanges.result.get(schemaId);
             const { adds, hasChanges, removes, updates } = changes;
 
             if (hasChanges === false) {
+                payload.data.index++; // Move Next
                 done(payload);
                 return;
             }
@@ -88,11 +88,6 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
             for (const change of updates.changes) {
                 collection.update(change.entity);
                 schemaResult.updates.entities.push(change.entity);
-            }
-
-            for (const removal of removes.entities) {
-                collection.remove(removal);
-                schemaResult.removed.count += 1;
             }
 
             this._getRemovalsByQueries(schemas, removes.queries, (r, e) => {
@@ -134,7 +129,7 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
             pipeline.filter<PartialResultType<{ schemaIds: number[], schemas: Map<SchemaId, CompiledSchema<TRoot>>, index: number, resolvedChanges: ResolvedChanges<TRoot> }>>({
                 data: {
                     index: 0,
-                    resolvedChanges: event.operation as ResolvedChanges<TRoot>, // send in the pending changes and let's add to the map
+                    resolvedChanges: event.operation.toResult(), // send in the pending changes and let's add to the map
                     schemaIds,
                     schemas
                 },
@@ -179,23 +174,32 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
         }
     }
 
-    private _pipelineQuery<TEntity extends {}, TShape extends unknown = TEntity>(payload: ForEachPayload<TEntity, TShape>, done: CallbackResult<TShape>): void {
+    private _pipelineQuery<TEntity extends {}, TShape extends unknown = TEntity>(payload: ForEachPayload<TEntity, TShape>, done: (data: ForEachPayload<TEntity, TShape>, error?: any) => void): void {
 
         const { event, results } = payload;
         this.query(event, (result) => {
 
             if (result.ok === Result.ERROR) {
                 // any error will terminate the pipeline
-                done(result);
+                done(payload, result.error);
                 return;
             }
 
             assertIsArray(result.data);
             assertIsArray(results);
 
-            results.push(result);
+            if (result.data == null) {
+                done(payload);
+                return;
+            }
 
-            done(Result.success(results));
+            if (Array.isArray(result.data)) {
+                results.push(...result.data);
+            } else {
+                results.push(result.data);
+            }
+
+            done(payload);
         })
     }
 
@@ -220,10 +224,10 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
                 results: payload.results
             }, done));
         }
-
-        pipeline.filter<T[]>({
+        debugger;
+        pipeline.filter<ForEachPayload<T, T[]>>({
             event: null,
-            results: null
+            results: [] as any
         }, (r, e) => {
 
             if (e) {
@@ -231,7 +235,7 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
                 return;
             }
 
-            done(r);
+            done(r.results);
         })
     }
 

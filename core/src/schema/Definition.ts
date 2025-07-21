@@ -349,13 +349,17 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const mergeFunctionRoot = mergeCodeBuilder.factory("factory", { name: "factory" }).parameters({ name: "collectionName", value: this.collectionName });
             const mergeFunctionBody = mergeFunctionRoot.function(undefined, { name: "function" }).parameters("destination", "source").return();
 
-            mergeFunctionBody.function("pause")
-                .appendBody("// initiate change tracking if needed")
-                .if("destination.__tracking__ == null")
-                .appendBody("destination.__tracking__ = {};")
-                .appendBody("destination.__tracking__.isPaused = true;");
+            const pauseFunctionBody = mergeFunctionBody.function("pause")
+                .appendBody("// initiate change tracking if needed");
+
+            pauseFunctionBody.if("destination.__tracking__ == null")
+                .appendBody("destination.__tracking__ = {};");
+
+            pauseFunctionBody.appendBody("destination.__tracking__.isPaused = true;");
 
             mergeFunctionBody.function("unpause")
+                .appendBody("// unpause change tracking if needed")
+                .if("destination.__tracking__ != null")
                 .appendBody("destination.__tracking__.isPaused  = false;");
 
             mergeFunctionBody.slot("header").raw(`pause()`);

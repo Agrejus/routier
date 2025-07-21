@@ -160,10 +160,10 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
             // if change tracking is true, we will never be shaping the result from .map()
             if (event.operation.changeTracking === true) {
-                const enriched = this.changeTracker.enrich(result as any);
+                const enriched = this.changeTracker.enrich(result.data as InferType<TRoot>[]);
                 const resolved = this.changeTracker.resolve(enriched, tags);
 
-                done(resolved as any);
+                done(Result.success(resolved as TShape));
                 return;
             }
 

@@ -128,7 +128,7 @@ export class ChangeTracker<TEntity extends {}> {
                 continue;
             }
 
-            changes.push({ entity: this.schema.prepare(attachment.doc as InferCreateType<TEntity>) as InferType<TEntity>, delta: changeTrackedDoc.__tracking__.changes, changeType })
+            changes.push({ entity: this.schema.prepare(changeTrackedDoc as InferCreateType<TEntity>) as InferType<TEntity>, delta: changeTrackedDoc.__tracking__.changes, changeType })
         }
 
         return changes
@@ -179,6 +179,16 @@ export class ChangeTracker<TEntity extends {}> {
         return result;
     }
 
+    private resolveChangeType(entity: InferType<TEntity>): EntityChangeType {
+        const changeTrackedDoc: ChangeTrackedEntity<{}> = entity as any;
+
+        if (changeTrackedDoc.__tracking__?.isDirty === true) {
+            return "propertiesChanged"
+        }
+
+        return "notModified";
+    }
+
     // Checks to see if the item is already attached, if so we merge, if not we attach and return each result
     resolve(entities: InferType<TEntity>[], tag: unknown | null, options?: { merge?: boolean }) {
 
@@ -202,7 +212,9 @@ export class ChangeTracker<TEntity extends {}> {
                 continue;
             }
 
-            this.attachments.set(key, { doc: entity, changeType: "propertiesChanged" });
+
+            const changeType = this.resolveChangeType(entity);
+            this.attachments.set(key, { doc: entity, changeType });
             result.push(entity);
 
             if (tag != null) {
@@ -317,6 +329,7 @@ export class ChangeTracker<TEntity extends {}> {
             }
 
             const found = this.attachments.get(id);
+            this.attachments.delete(id);
             result.push(found.doc);
         }
 
@@ -329,7 +342,17 @@ export class ChangeTracker<TEntity extends {}> {
             return [];
         }
 
-        return [...this.additions.values()] as InferCreateType<TEntity>[];
+        const result: InferCreateType<TEntity>[] = [];
+
+        // prepare the items for saving,
+        // this will remove any change tracking.  We do
+        // not want to send any change tracked items to the plugin
+        // because then they will need to worry about lifecycle management
+        for (const item of this.additions.values()) {
+            result.push(this.schema.prepare(item as any));
+        }
+
+        return result;
     }
 
     clearAdditions() {

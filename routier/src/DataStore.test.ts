@@ -7,7 +7,7 @@ describe('DataStore', () => {
         const mockPipeline = { filter: vi.fn() };
         const store = new DataStore(dbPlugin as any);
         // @ts-expect-error override for test
-        store.collectionPipelines.prepareChanges = mockPipeline;
+        store.collectionPipelines.preparePreviewChanges = mockPipeline;
         const done = vi.fn();
         store.saveChanges(done);
         expect(mockPipeline.filter).toHaveBeenCalledWith(

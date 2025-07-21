@@ -7,7 +7,7 @@ import { BasicDataStoreFactory } from '../contexts/BasicDataStoreFactory';
 import { comment } from '../schemas/comments';
 import { event } from '../schemas/event';
 import { MemoryPlugin } from 'routier-plugin-memory';
-import { uuidv4 } from 'routier-core';
+import { assertIsNotNull, Result, uuidv4 } from 'routier-core';
 
 // we can solve this by having a common interface each schema adheres to
 // Then we can create a schema for each database to ensure we test everything
@@ -44,7 +44,7 @@ describe('saveChanges', () => {
 
     it('Can save changes when there are no changes', factory.createDataStore(async (dataStore) => {
         const result = await dataStore.saveChangesAsync();
-        expect(result).toBe(0);
+        expect(result.result.count()).toBe(0);
     }));
 });
 
@@ -82,7 +82,7 @@ describe('add', () => {
         const response = await dataStore.saveChangesAsync();
 
         // Assert
-        expect(response).toBe(1);
+        expect(response.result.count()).toBe(1);
         expect(added._id).toStrictEqual(expect.any(String));
         expect(added.author).toStrictEqual(item.author);
         expect(added.content).toBe(item.content);
@@ -99,7 +99,7 @@ describe('add', () => {
         const [added] = await dataStore.events.addAsync(item);
         const response = await dataStore.saveChangesAsync();
         // Assert
-        expect(response).toBe(1);
+        expect(response.result.count()).toBe(1);
         expect(added.endTime?.toISOString()).toBe(item.endTime?.toISOString());
     }));
 
@@ -111,7 +111,7 @@ describe('add', () => {
         const [added] = await dataStore.events.addAsync(item);
         const response = await dataStore.saveChangesAsync();
         // Assert
-        expect(response).toBe(1);
+        expect(response.result.count()).toBe(1);
         expect(added.name).toBe(item.name);
         expect(added.name).toBe("James");
     }));
@@ -125,7 +125,7 @@ describe('add', () => {
         const response = await dataStore.saveChangesAsync();
 
         // Assert
-        expect(response).toBe(2);
+        expect(response.result.count()).toBe(2);
         expect(added).toHaveLength(2);
         added.forEach((product, index) => {
             expect(product._id).toStrictEqual(expect.any(String));
@@ -151,7 +151,7 @@ describe('remove', () => {
         const found = await dataStore.products.firstAsync();
         await dataStore.products.removeAsync(found);
         const response = await dataStore.saveChangesAsync();
-        expect(response).toBe(1);
+        expect(response.result.count()).toBe(1);
         const all = await dataStore.products.toArrayAsync();
         // Assert
         expect(all.length).toBe(1);
@@ -172,7 +172,7 @@ describe('update', () => {
         const word = faker.lorem.word();
         found.name = word;
         const response = await dataStore.saveChangesAsync();
-        expect(response).toBe(1);
+        expect(response.changes.count()).toBe(1);
         const foundAfterSave = await dataStore.products.firstAsync(w => w._id === found._id);
         // Assert
         expect(foundAfterSave.name).toBe(word);
@@ -562,7 +562,10 @@ describe("subscribe", () => {
         await seedData(dataStore, 1);
 
         // Act
-        dataStore.products.subscribe().where(w => w._id != "").firstOrUndefined(callback);
+        dataStore.products.subscribe().where(w => w._id != "").firstOrUndefined(r => {
+            debugger;
+            callback(r)
+        });
 
         const found = await dataStore.products.firstAsync(x => x._id != "");
 
@@ -574,11 +577,10 @@ describe("subscribe", () => {
 
         // Assert
         expect(callback).toHaveBeenCalledTimes(2);
-        expect(callback.mock.calls[0][0]).toBeDefined();
-        expect(callback.mock.calls[0][1]).toBeUndefined();
-
-        expect(callback.mock.calls[1][0]).toBeUndefined();
-        expect(callback.mock.calls[1][1]).toBeUndefined();
+        expect(callback.mock.calls[0][0].data).toBeDefined();
+        expect(callback.mock.calls[0][0].ok).toBe(Result.SUCCESS);
+        expect(callback.mock.calls[1][0].data).toBeUndefined();
+        expect(callback.mock.calls[1][0].ok).toBe(Result.SUCCESS);
     }));
 
     it('Not subscribed should not fire when data changes + firstOrUndefined has query', factory.createDataStore(async (dataStore) => {
@@ -598,7 +600,6 @@ describe("subscribe", () => {
         // Assert
         expect(callback).toHaveBeenCalledTimes(1);
         expect(callback.mock.calls[0][0]).toBeDefined();
-        expect(callback.mock.calls[0][1]).toBeUndefined();
     }));
 
     it('Subscribe should fire when data changes + firstOrUndefined has no query', factory.createDataStore(async (dataStore) => {
@@ -617,11 +618,10 @@ describe("subscribe", () => {
 
         // Assert
         expect(callback).toHaveBeenCalledTimes(2);
-        expect(callback.mock.calls[0][0]).toBeDefined();
-        expect(callback.mock.calls[0][1]).toBeUndefined();
-
-        expect(callback.mock.calls[1][0]).toBeDefined();
-        expect(callback.mock.calls[1][1]).toBeUndefined();
+        expect(callback.mock.calls[0][0].ok).toBe(Result.SUCCESS);
+        expect(callback.mock.calls[0][0].data).toBeDefined();
+        expect(callback.mock.calls[1][0].ok).toBe(Result.SUCCESS);
+        expect(callback.mock.calls[1][0].data).toBeDefined();
     }));
 
     it('Subscribe should fire when data changes + no query and toArray', factory.createDataStore(async (dataStore) => {
@@ -632,7 +632,13 @@ describe("subscribe", () => {
 
         // Act
         dataStore.products.subscribe().toArray((r) => {
-            expect(r.length).toBeGreaterThan(0);
+            expect(r.ok).toBe(Result.SUCCESS);
+            if (r.ok === Result.SUCCESS) {
+                expect(r.data.length).toBeGreaterThan(0);
+            } else {
+                expect(false).toBe(true);
+            }
+
             callback(r);
         });
 
@@ -643,11 +649,9 @@ describe("subscribe", () => {
 
         // Assert
         expect(callback).toHaveBeenCalledTimes(2);
-        expect(Array.isArray(callback.mock.calls[0][0])).toBe(true);
-        expect(callback.mock.calls[0][1]).toBeUndefined();
+        expect(Array.isArray(callback.mock.calls[0][0].data)).toBe(true);
 
-        expect(Array.isArray(callback.mock.calls[1][0])).toBe(true);
-        expect(callback.mock.calls[1][1]).toBeUndefined();
+        expect(Array.isArray(callback.mock.calls[1][0].data)).toBe(true);
     }));
 
     it('Subscribe should fire when data changes + toArray', factory.createDataStore(async (dataStore) => {
@@ -666,11 +670,9 @@ describe("subscribe", () => {
 
         // Assert
         expect(callback).toHaveBeenCalledTimes(2);
-        expect(Array.isArray(callback.mock.calls[0][0])).toBe(true);
-        expect(callback.mock.calls[0][1]).toBeUndefined();
+        expect(Array.isArray(callback.mock.calls[0][0].data)).toBe(true);
 
-        expect(Array.isArray(callback.mock.calls[1][0])).toBe(true);
-        expect(callback.mock.calls[1][1]).toBeUndefined();
+        expect(Array.isArray(callback.mock.calls[1][0].data)).toBe(true);
     }));
 
     it('Subscribe should fire when data changes + sum', factory.createDataStore(async (dataStore) => {
@@ -689,13 +691,11 @@ describe("subscribe", () => {
 
         // Assert
         expect(callback).toHaveBeenCalledTimes(2);
-        expect(callback.mock.calls[0][0]).toBeTypeOf("number");
-        expect(callback.mock.calls[0][0]).toBeGreaterThan(0);
-        expect(callback.mock.calls[0][1]).toBeUndefined();
+        expect(callback.mock.calls[0][0].data).toBeTypeOf("number");
+        expect(callback.mock.calls[0][0].data).toBeGreaterThan(0);
 
-        expect(callback.mock.calls[1][0]).toBeTypeOf("number");
-        expect(callback.mock.calls[1][0]).toBeGreaterThan(0);
-        expect(callback.mock.calls[1][1]).toBeUndefined();
+        expect(callback.mock.calls[1][0].data).toBeTypeOf("number");
+        expect(callback.mock.calls[1][0].data).toBeGreaterThan(0);
     }));
 
     it('Subscribe should fire when data changes + count', factory.createDataStore(async (dataStore) => {
@@ -714,13 +714,11 @@ describe("subscribe", () => {
 
         // Assert
         expect(callback).toHaveBeenCalledTimes(2);
-        expect(callback.mock.calls[0][0]).toBeTypeOf("number");
-        expect(callback.mock.calls[0][0]).toBe(2);
-        expect(callback.mock.calls[0][1]).toBeUndefined();
+        expect(callback.mock.calls[0][0].data).toBeTypeOf("number");
+        expect(callback.mock.calls[0][0].data).toBe(2);
 
-        expect(callback.mock.calls[1][0]).toBeTypeOf("number");
-        expect(callback.mock.calls[1][0]).toBe(3);
-        expect(callback.mock.calls[1][1]).toBeUndefined();
+        expect(callback.mock.calls[1][0].data).toBeTypeOf("number");
+        expect(callback.mock.calls[1][0].data).toBe(3);
     }));
 
     it('Subscribe should fire when data changes + max', factory.createDataStore(async (dataStore) => {
@@ -739,13 +737,11 @@ describe("subscribe", () => {
 
         // Assert
         expect(callback).toHaveBeenCalledTimes(2);
-        expect(callback.mock.calls[0][0]).toBeTypeOf("number");
-        expect(callback.mock.calls[0][0]).toBeGreaterThan(0);
-        expect(callback.mock.calls[0][1]).toBeUndefined();
+        expect(callback.mock.calls[0][0].data).toBeTypeOf("number");
+        expect(callback.mock.calls[0][0].data).toBeGreaterThan(0);
 
-        expect(callback.mock.calls[1][0]).toBeTypeOf("number");
-        expect(callback.mock.calls[1][0]).toBeGreaterThan(0);
-        expect(callback.mock.calls[1][1]).toBeUndefined();
+        expect(callback.mock.calls[1][0].data).toBeTypeOf("number");
+        expect(callback.mock.calls[1][0].data).toBeGreaterThan(0);
     }));
 
     it('Subscribe should fire when data changes + min', factory.createDataStore(async (dataStore) => {
@@ -764,13 +760,11 @@ describe("subscribe", () => {
 
         // Assert
         expect(callback).toHaveBeenCalledTimes(2);
-        expect(callback.mock.calls[0][0]).toBeTypeOf("number");
-        expect(callback.mock.calls[0][0]).toBeGreaterThan(0);
-        expect(callback.mock.calls[0][1]).toBeUndefined();
+        expect(callback.mock.calls[0][0].data).toBeTypeOf("number");
+        expect(callback.mock.calls[0][0].data).toBeGreaterThan(0);
 
-        expect(callback.mock.calls[1][0]).toBeTypeOf("number");
-        expect(callback.mock.calls[1][0]).toBeGreaterThan(0);
-        expect(callback.mock.calls[1][1]).toBeUndefined();
+        expect(callback.mock.calls[1][0].data).toBeTypeOf("number");
+        expect(callback.mock.calls[1][0].data).toBeGreaterThan(0);
     }));
 
     it('Subscribe should fire when data changes + distinct', factory.createDataStore(async (dataStore) => {
@@ -788,11 +782,9 @@ describe("subscribe", () => {
 
         // Assert
         expect(callback).toHaveBeenCalledTimes(2);
-        expect(Array.isArray(callback.mock.calls[0][0])).toBe(true);
-        expect(callback.mock.calls[0][1]).toBeUndefined();
+        expect(Array.isArray(callback.mock.calls[0][0].data)).toBe(true);
 
-        expect(Array.isArray(callback.mock.calls[1][0])).toBe(true);
-        expect(callback.mock.calls[1][1]).toBeUndefined();
+        expect(Array.isArray(callback.mock.calls[1][0].data)).toBe(true);
     }));
 });
 
@@ -1129,8 +1121,7 @@ describe('attachments', () => {
 
     it('Should return undefined for change type of unattached entity', factory.createDataStore(async (dataStore) => {
         const generatedData = generateData(product, 1);
-        const [added] = await dataStore.products.addAsync(...generatedData);
-        await dataStore.saveChangesAsync();
+        const [added] = dataStore.products.instance(...generatedData);
 
         const changeType = dataStore.products.attachments.getChangeType(added);
         expect(changeType).toBeUndefined();
@@ -1145,9 +1136,9 @@ describe('DataStore methods', () => {
 
     it('Should preview changes when no changes exist', factory.createDataStore(async (dataStore) => {
         const changes = await dataStore.previewChangesAsync();
-        expect(changes.adds.entities).toHaveLength(0);
-        expect(changes.removes.entities).toHaveLength(0);
-        expect(changes.updates.entities.size).toBe(0);
+        expect(changes.changes.adds().count()).toBe(0);
+        expect(changes.changes.removes().count()).toBe(0);
+        expect(changes.changes.count()).toBe(0);
     }));
 
     it('Should preview changes when entities are added', factory.createDataStore(async (dataStore) => {
@@ -1155,9 +1146,9 @@ describe('DataStore methods', () => {
         await dataStore.products.addAsync(...generatedData);
 
         const changes = await dataStore.previewChangesAsync();
-        expect(changes.adds.entities).toHaveLength(2);
-        expect(changes.removes.entities).toHaveLength(0);
-        expect(changes.updates.entities.size).toBe(0);
+        expect(changes.changes.adds().count()).toBe(2);
+        expect(changes.changes.removes().count()).toBe(0);
+        expect(changes.changes.updates().count()).toBe(0);
     }));
 
     it('Should preview changes when entities are updated', factory.createDataStore(async (dataStore) => {
@@ -1166,9 +1157,9 @@ describe('DataStore methods', () => {
 
         added.name = "Updated Name";
         const changes = await dataStore.previewChangesAsync();
-        expect(changes.adds.entities).toHaveLength(0);
-        expect(changes.removes.entities).toHaveLength(0);
-        expect(changes.updates.entities.size).toBe(1);
+        expect(changes.changes.adds().count()).toBe(0);
+        expect(changes.changes.removes().count()).toBe(0);
+        expect(changes.changes.updates().count()).toBe(1);
     }));
 
     it('Should preview changes when entities are removed', factory.createDataStore(async (dataStore) => {
@@ -1177,9 +1168,9 @@ describe('DataStore methods', () => {
 
         await dataStore.products.removeAsync(added);
         const changes = await dataStore.previewChangesAsync();
-        expect(changes.adds.entities).toHaveLength(0);
-        expect(changes.removes.entities).toHaveLength(1);
-        expect(changes.updates.entities.size).toBe(0);
+        expect(changes.changes.adds().count()).toBe(0);
+        expect(changes.changes.removes().count()).toBe(1);
+        expect(changes.changes.updates().count()).toBe(0);
     }));
 
     it('Should check hasChanges when no changes exist', factory.createDataStore(async (dataStore) => {
@@ -1225,7 +1216,7 @@ describe('removeAll', () => {
 
         await dataStore.products.removeAllAsync();
         const response = await dataStore.saveChangesAsync();
-        expect(response).toBe(10);
+        expect(response.result.adds).toBe(10);
 
         const finalCount = await dataStore.products.countAsync();
         expect(finalCount).toBe(0);

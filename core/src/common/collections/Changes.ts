@@ -1,5 +1,5 @@
 import { CollectionChanges, CollectionChangesResult } from "../../plugins/types";
-import { SchemaId } from "../../schema";
+import { InferCreateType, InferType, SchemaId } from "../../schema";
 import { assertIsNotNull } from "../../utilities";
 
 export class ChangesBase<T extends {}, TData extends { changes: CollectionChanges<T> }> {
@@ -12,6 +12,23 @@ export class ChangesBase<T extends {}, TData extends { changes: CollectionChange
         } else {
             this.data = new Map<SchemaId, TData>();
         }
+    }
+}
+
+export class ReadonlyChangeCollection<T> {
+
+    private data: Map<SchemaId, T[]>;
+
+    constructor(data: [SchemaId, T[]][]) {
+        this.data = new Map(data);
+    }
+
+    count() {
+        return this.data.values().reduce((a, v) => a + v.length, 0);
+    }
+
+    [Symbol.iterator]() {
+        return this.data[Symbol.iterator];
     }
 }
 
@@ -39,6 +56,33 @@ export class PendingChanges<T extends {}, TData extends { changes: CollectionCha
             }
 
             return found.changes.adds.entities.length + found.changes.updates.changes.length + found.changes.removes.entities.length;
+        },
+        adds: () => {
+            const data: [SchemaId, InferCreateType<T>[]][] = [];
+
+            for (const [schemaId, item] of this.changes.entries()) {
+                data.push([schemaId, item.changes.adds.entities])
+            }
+
+            return new ReadonlyChangeCollection<InferCreateType<T>>(data)
+        },
+        updates: () => {
+            const data: [SchemaId, InferType<T>[]][] = [];
+
+            for (const [schemaId, item] of this.changes.entries()) {
+                data.push([schemaId, item.changes.updates.changes.map(x => x.entity)])
+            }
+
+            return new ReadonlyChangeCollection<InferType<T>>(data)
+        },
+        removes: () => {
+            const data: [SchemaId, InferType<T>[]][] = [];
+
+            for (const [schemaId, item] of this.changes.entries()) {
+                data.push([schemaId, item.changes.removes.entities])
+            }
+
+            return new ReadonlyChangeCollection<InferType<T>>(data)
         },
         entries: () => {
             return this.data.entries()
@@ -97,6 +141,24 @@ export class ResolvedChanges<T extends {}> extends PendingChanges<T, { changes: 
             }
 
             return found.result.adds.entities.length + found.result.updates.entities.length + found.result.removed.count;
+        },
+        adds: () => {
+            const data: [SchemaId, InferType<T>[]][] = [];
+
+            for (const [schemaId, item] of this.result.entries()) {
+                data.push([schemaId, item.result.adds.entities as InferType<T>[]])
+            }
+
+            return new ReadonlyChangeCollection<InferType<T>>(data)
+        },
+        updates: () => {
+            const data: [SchemaId, InferType<T>[]][] = [];
+
+            for (const [schemaId, item] of this.result.entries()) {
+                data.push([schemaId, item.result.updates.entities])
+            }
+
+            return new ReadonlyChangeCollection<InferType<T>>(data)
         },
         entries: () => {
             return this.data.entries()

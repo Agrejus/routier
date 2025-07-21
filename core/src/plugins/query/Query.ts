@@ -53,4 +53,15 @@ export class Query<TRoot extends {}, TShape> implements IQuery<TRoot, TShape> {
     static isEmpty<T extends {}, S>(query: IQuery<T, S>) {
         return QueryOptionsCollection.isEmpty(query.options);
     }
+
+    static toString<TRoot extends {}, TShape>(query: IQuery<TRoot, TShape>) {
+        return JSON.stringify({
+            options: query.options.items,
+            schema: {
+                id: query.schema.id,
+                collectionName: query.schema.collectionName
+            },
+            changeTracking: query.changeTracking
+        })
+    }
 }

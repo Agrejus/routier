@@ -95,7 +95,7 @@ export type SubscriptionChanges<T extends {}> = {
     /**
      * Queries that have resulted in entities being removed from the subscription.
      */
-    removalQueries: IQuery<T, T>[];
+    removalQueries: string[];
 }
 
 export interface ICollectionSubscription<T extends {}> extends Disposable {
