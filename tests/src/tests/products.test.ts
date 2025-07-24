@@ -1216,7 +1216,7 @@ describe('removeAll', () => {
 
         await dataStore.products.removeAllAsync();
         const response = await dataStore.saveChangesAsync();
-        expect(response.result.adds).toBe(10);
+        expect(response.result.removes().count()).toBe(10);
 
         const finalCount = await dataStore.products.countAsync();
         expect(finalCount).toBe(0);
@@ -1228,7 +1228,7 @@ describe('removeAll', () => {
 
         await dataStore.products.removeAllAsync();
         const response = await dataStore.saveChangesAsync();
-        expect(response).toBe(0);
+        expect(response.result.removes().count()).toBe(0);
 
         const finalCount = await dataStore.products.countAsync();
         expect(finalCount).toBe(0);

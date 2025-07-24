@@ -122,12 +122,20 @@ export class OptimisticDbPluginReplicator extends DbPluginReplicator {
 
                 // make sure we swap the adds here, that way we can make sure other persist events
                 // don't take their additions and try to change subsequent calls
-                for (const [schemaId, changes] of r.data.result.entries()) {
+                const adds = r.data.result.adds();
+                const schemaIds = new Set(adds.data.map(x => x[0]));
+
+                for (const schemaId of schemaIds) {
+                    const schemaOperations = event.operation.changes.get(schemaId);
+                    schemaOperations.adds.entities = [];
+                }
+
+                for (const [schemaId, item] of adds.data) {
                     const schemaOperations = event.operation.changes.get(schemaId);
 
                     // replace additions on the event with the saved changes so 
-                    // the rest of the plugins will get any additons who's id's have been set
-                    schemaOperations.adds.entities = changes.result.adds.entities as InferCreateType<TEntity>[];
+                    // the rest of the plugins will get any additons who's id's have been set                   
+                    schemaOperations.adds.entities.push(item as InferCreateType<TEntity>);
                 }
 
                 const data: PersistPayload<TEntity> = {

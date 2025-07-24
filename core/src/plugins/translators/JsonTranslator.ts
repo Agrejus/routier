@@ -133,7 +133,8 @@ export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRo
             if (option.value > 0) {
 
                 if (data.length < option.value) {
-                    return data as TResult;
+                    // We don't have enough data to skip, return an empty array
+                    return [] as TResult;
                 }
 
                 return data.slice(option.value) as TResult;

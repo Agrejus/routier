@@ -92,10 +92,6 @@ export type SubscriptionChanges<T extends {}> = {
      * Entities that have been removed from the subscription.
      */
     removals: InferType<T>[];
-    /**
-     * Queries that have resulted in entities being removed from the subscription.
-     */
-    removalQueries: string[];
 }
 
 export interface ICollectionSubscription<T extends {}> extends Disposable {

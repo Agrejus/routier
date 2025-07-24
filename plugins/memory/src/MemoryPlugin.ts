@@ -1,18 +1,13 @@
-import { IDbPlugin, CompiledSchema, InferCreateType, DeepPartial, JsonTranslator, DbPluginQueryEvent, assertIsArray, TrampolinePipeline, IQuery, CallbackResult, Result, CallbackPartialResult, ResolvedChanges, DbPluginBulkPersistEvent, SchemaId, PartialResultType } from "routier-core";
+import { IDbPlugin, CompiledSchema, InferCreateType, DeepPartial, JsonTranslator, DbPluginQueryEvent, assertIsArray, TrampolinePipeline, IQuery, CallbackResult, Result, CallbackPartialResult, ResolvedChanges, DbPluginBulkPersistEvent, SchemaId, PartialResultType, DbPluginHelper } from "routier-core";
 import { DbCollection } from "./DbCollection";
 import { MemoryDatabase } from ".";
 
 const dbs: Record<string, MemoryDatabase> = {}
 
-type ForEachPayload<TEntity extends {}, TShape extends unknown = TEntity> = {
-    event: DbPluginQueryEvent<TEntity, TShape>,
-    results: TShape,
-    error?: any
-}
-
 export class MemoryPlugin implements IDbPlugin, Disposable {
 
     private readonly dbName: string;
+    private readonly helpers: DbPluginHelper;
 
     constructor(dbName?: string) {
         this.dbName = dbName ?? "__routier-memory-plugin-db__";
@@ -20,6 +15,8 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
         if (dbs[this.dbName] == null) {
             dbs[this.dbName] = {}
         }
+
+        this.helpers = new DbPluginHelper(this);
     }
 
     get size() {
@@ -55,7 +52,7 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
         done(Result.success());
     }
 
-    private _persist<TRoot extends {}>(payload: PartialResultType<{ schemaIds: number[], schemas: Map<SchemaId, CompiledSchema<TRoot>>, index: number, resolvedChanges: ResolvedChanges<TRoot> }>, done: CallbackPartialResult<{ schemaIds: number[], schemas: Map<SchemaId, CompiledSchema<TRoot>>, index: number, resolvedChanges: ResolvedChanges<TRoot> }>) {
+    private _persist<TRoot extends {}>(payload: PartialResultType<{ schema: CompiledSchema<TRoot>, schemas: Map<SchemaId, CompiledSchema<TRoot>>, resolvedChanges: ResolvedChanges<TRoot> }>, done: CallbackPartialResult<{ schema: CompiledSchema<TRoot>, schemas: Map<SchemaId, CompiledSchema<TRoot>>, resolvedChanges: ResolvedChanges<TRoot> }>) {
 
         try {
 
@@ -64,16 +61,13 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
                 return;
             }
 
-            const { index, resolvedChanges, schemaIds, schemas } = payload.data;
-            const schemaId = schemaIds[index];
-            const schema = schemas.get(schemaId);
+            const { resolvedChanges, schema, schemas } = payload.data;
 
-            const changes = resolvedChanges.changes.get(schemaId);
-            const schemaResult = resolvedChanges.result.get(schemaId);
-            const { adds, hasChanges, removes, updates } = changes;
+            const schemaChanges = resolvedChanges.changes.get(schema.id);
+            const schemaResult = resolvedChanges.result.get(schema.id);
+            const { adds, hasChanges, removes, updates } = schemaChanges;
 
             if (hasChanges === false) {
-                payload.data.index++; // Move Next
                 done(payload);
                 return;
             }
@@ -90,19 +84,22 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
                 schemaResult.updates.entities.push(change.entity);
             }
 
-            this._getRemovalsByQueries(schemas, removes.queries, (r, e) => {
+            this.helpers.resolveRemovalQueries(schemas, removes.queries, (r) => {
 
                 try {
 
-                    payload.data.index++; // Move Next
+                    if (r.ok === Result.ERROR) {
+                        done(Result.error(r.error))
+                        return;
+                    }
 
-                    const removals = [...removes.entities, ...r];
+                    const removals = [...removes.entities, ...r.data];
 
                     for (let i = 0, length = removals.length; i < length; i++) {
                         collection.remove(removals[i]);
                     }
 
-                    schemaResult.removed.count += removals.length;
+                    schemaResult.removes.count += removals.length;
 
                     done(payload);
                 } catch (e) {
@@ -120,18 +117,21 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
 
         try {
             const schemaIds = [...event.operation.changes.entries()].map(x => x[0])
-            const pipeline = new TrampolinePipeline<PartialResultType<{ schemaIds: number[], schemas: Map<SchemaId, CompiledSchema<TRoot>>, index: number, resolvedChanges: ResolvedChanges<TRoot> }>>();
+            const pipeline = new TrampolinePipeline<PartialResultType<{ schema: CompiledSchema<TRoot>, schemas: Map<SchemaId, CompiledSchema<TRoot>>, resolvedChanges: ResolvedChanges<TRoot> }>>();
 
             for (let i = 0, length = schemaIds.length; i < length; i++) {
-                pipeline.pipe(this._persist.bind(this))
+                // Need an easier way to do this!
+                pipeline.pipe((payload, done) => this._persist({
+                    ...payload,
+                    schema: 
+                }, done))
             }
 
-            pipeline.filter<PartialResultType<{ schemaIds: number[], schemas: Map<SchemaId, CompiledSchema<TRoot>>, index: number, resolvedChanges: ResolvedChanges<TRoot> }>>({
+            pipeline.filter<PartialResultType<{ schema: CompiledSchema<TRoot>, schemas: Map<SchemaId, CompiledSchema<TRoot>>, resolvedChanges: ResolvedChanges<TRoot> }>>({
                 data: {
-                    index: 0,
                     resolvedChanges: event.operation.toResult(), // send in the pending changes and let's add to the map
-                    schemaIds,
-                    schemas
+                    schemas,
+                    schema: null as any // we send this in above
                 },
                 ok: Result.SUCCESS
             }, (r, e) => {
@@ -172,71 +172,6 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
         } catch (e) {
             done(Result.error(e));
         }
-    }
-
-    private _pipelineQuery<TEntity extends {}, TShape extends unknown = TEntity>(payload: ForEachPayload<TEntity, TShape>, done: (data: ForEachPayload<TEntity, TShape>, error?: any) => void): void {
-
-        const { event, results } = payload;
-        this.query(event, (result) => {
-
-            if (result.ok === Result.ERROR) {
-                // any error will terminate the pipeline
-                done(payload, result.error);
-                return;
-            }
-
-            assertIsArray(result.data);
-            assertIsArray(results);
-
-            if (result.data == null) {
-                done(payload);
-                return;
-            }
-
-            if (Array.isArray(result.data)) {
-                results.push(...result.data);
-            } else {
-                results.push(result.data);
-            }
-
-            done(payload);
-        })
-    }
-
-    private _getRemovalsByQueries<T extends {}>(schemas: Map<SchemaId, CompiledSchema<T>>, queries: IQuery<T, T>[], done: (entities: T[], error?: any) => void) {
-
-        if (queries.length === 0) {
-            done([]); // Do nothing, handle null here for readability above
-            return;
-        }
-
-        const pipeline = new TrampolinePipeline<ForEachPayload<T, T>>();
-
-        for (let i = 0, length = queries.length; i < length; i++) {
-            const query = queries[i];
-            const queryEvent: DbPluginQueryEvent<T, T> = {
-                schemas,
-                operation: query
-            }
-
-            pipeline.pipe((payload, done) => this._pipelineQuery<T, T>({
-                event: queryEvent,
-                results: payload.results
-            }, done));
-        }
-        debugger;
-        pipeline.filter<ForEachPayload<T, T[]>>({
-            event: null,
-            results: [] as any
-        }, (r, e) => {
-
-            if (e) {
-                done([], e);
-                return;
-            }
-
-            done(r.results);
-        })
     }
 
     [Symbol.dispose](): void {

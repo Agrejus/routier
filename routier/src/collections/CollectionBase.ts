@@ -54,7 +54,7 @@ export class CollectionBase<TEntity extends {}> {
     protected afterPersist(data: PartialResultType<ResolvedChanges<TEntity>>, done: CallbackPartialResult<ResolvedChanges<TEntity>>) {
 
         try {
-            debugger;
+
             if (data.ok === Result.ERROR) {
                 this.changeTracker.clearAdditions();
                 done(data);
@@ -91,7 +91,6 @@ export class CollectionBase<TEntity extends {}> {
                 updates,
                 adds,
                 removals: removedEntities,
-                removalQueries: removals.queries.map(x => Query.toString(x))
             };
 
             this.subscription.send(subscriptionChanges);
@@ -116,8 +115,7 @@ export class CollectionBase<TEntity extends {}> {
                     entities: []
                 },
                 removes: {
-                    entities: [],
-                    queries: []
+                    entities: []
                 },
                 tags,
                 updates: {

@@ -1,5 +1,5 @@
 import PouchDB from 'pouchdb';
-import { assertIsArray, assertIsNotNull, combineExpressions, ComparatorExpression, DbPluginBulkOperationsEvent, DbPluginEvent, DbPluginQueryEvent, EntityModificationResult, Expression, getProperties, IDbPlugin, IdType, IQuery, PropertyInfo, SyncronousQueue, SyncronousUnitOfWork, toMap, TrampolinePipeline } from 'routier-core';
+import { assertIsArray, assertIsNotNull, CallbackPartialResult, CallbackResult, combineExpressions, ComparatorExpression, CompiledSchema, DbPluginBulkPersistEvent, DbPluginEvent, DbPluginHelper, DbPluginQueryEvent, Expression, getProperties, IDbPlugin, IdType, InferType, IQuery, PropertyInfo, ResolvedChanges, Result, SchemaId, SyncronousQueue, SyncronousUnitOfWork, toMap, TrampolinePipeline } from 'routier-core';
 import { PouchDbTranslator } from './PouchDbTranslator';
 
 const queue = new SyncronousQueue();
@@ -41,24 +41,38 @@ type MatchingIndex = {
     }[]
 }
 
+type RemovalQueryPayload<T extends {}> = {
+    queries: IQuery<T, T>[];
+    index: number;
+    entities: InferType<T>[];
+    schemas: Map<SchemaId, CompiledSchema<T>>;
+}
+
 export class PouchDbPlugin implements IDbPlugin {
 
     private readonly _name: string;
     private readonly _options?: PouchDBPluginOptions;
+    private readonly helpers: DbPluginHelper;
 
     constructor(name: string, options?: PouchDBPluginOptions) {
         this._name = name;
         this._options = options;
+
+        this.helpers = new DbPluginHelper(this);
     }
 
-    private _identityBulkOperations<T extends {}>(event: DbPluginBulkOperationsEvent<T>, done: (result: { docs: T[], removesMap: Map<string, T>, updatesMap: Map<string, T> }, error?: any) => void): void {
+    private _identityBulkOperations<T extends {}>(event: DbPluginBulkPersistEvent<T>, done: (result: { docs: T[], removesMap: Map<string, T>, updatesMap: Map<string, T> }, error?: any) => void): void {
         const errors: any[] = [];
 
         this._doWork((db, d) => {
             try {
 
                 const { operation } = event;
-                const { adds, removes, updates } = operation;
+                const entitiesTuple = operation.changes.all();
+
+                const x = this.helpers.resolveRemovalQueries(event.schemas, event.operation.changes.removes(), () => {
+
+                })
 
                 this._getRemovalsByQueries(event, removes.queries, (r, e) => {
 
@@ -126,7 +140,7 @@ export class PouchDbPlugin implements IDbPlugin {
         })
     }
 
-    private _defaultBulkOperations<T extends {}>(event: DbPluginBulkOperationsEvent<T>, done: (result: EntityModificationResult<T>, error?: any) => void): void {
+    private _defaultBulkOperations<T extends {}>(event: DbPluginBulkPersistEvent<T>, done: (result: EntityModificationResult<T>, error?: any) => void): void {
 
         const result: EntityModificationResult<T> = {
             adds: [],
@@ -360,16 +374,76 @@ export class PouchDbPlugin implements IDbPlugin {
         }, done);
     }
 
-    private _bulkOperations<TEntity extends {}>(
-        event: DbPluginBulkOperationsEvent<TEntity>,
-        done: (result: EntityModificationResult<TEntity>, error?: any) => void) {
+    private _validateSchemas<TRoot extends {}>(event: DbPluginBulkPersistEvent<TRoot>) {
+        for (const [, schema] of event.schemas) {
+            if (schema.idProperties.length > 1) {
+                throw new Error("PouchDB cannot have more than one key per document.  Only '_id' is allowed to be the key")
+            }
+        }
+    }
 
-        if (event.schema.idProperties.length > 1) {
-            throw new Error("PouchDB cannot have more than one key per document.  Only '_id' is allowed to be the key")
+    private _groupChanges<TRoot extends {}>(event: DbPluginBulkPersistEvent<TRoot>) {
+        const identityChanges = [];
+        const nonIdentityChanges = [];
+
+        const pipeline = new TrampolinePipeline<RemovalQueryPayload<TRoot>, RemovalQueryPayload<TRoot>>();
+        const queries: IQuery<TRoot, TRoot>[] = [];
+
+        for (const [, entry] of event.operation.changes.entries()) {
+            for (const query of entry.changes.removes.queries) {
+                pipeline.pipe(this._queryRemovals.bind(this));
+                queries.push(query);
+            }
         }
 
+        pipeline.filter<RemovalQueryPayload<TRoot>>({
+            entities: [],
+            index: 0,
+            queries,
+            schemas: event.schemas
+        }, (data, error) => {
+
+        })
+    }
+
+    private _queryRemovals<TRoot extends {}>(payload: RemovalQueryPayload<TRoot>, done: (data: RemovalQueryPayload<TRoot>) => void) {
+
+        const { index, queries, schemas } = payload;
+        const operation = queries[index];
+
+        this.query<TRoot>({
+            operation,
+            schemas
+        }, (r) => {
+            if (r.ok === Result.ERROR) {
+                throw r.error
+            }
+
+            payload.index++; // move next
+
+            if (r.data == null) {
+                done(payload);
+                return;
+            }
+
+            if (Array.isArray(r.data)) {
+                payload.entities.push(...r.data);
+            } else {
+                payload.entities.push(r.data as InferType<TRoot>);
+            }
+
+            done(payload);
+        })
+    }
+
+    private _bulkPersist<TRoot extends {}>(
+        event: DbPluginBulkPersistEvent<TRoot>,
+        done: CallbackPartialResult<ResolvedChanges<TRoot>>) {
+
+        this._validateSchemas(event);
+
         if (event.schema.hasIdentityKeys === true) {
-            this._identityBulkOperations<TEntity>(event, (r, e) => {
+            this._identityBulkOperations<TRoot>(event, (r, e) => {
 
                 if (e) {
                     done(null, e);
@@ -463,11 +537,11 @@ export class PouchDbPlugin implements IDbPlugin {
     }
 
 
-    bulkOperations<TEntity extends {}>(
-        event: DbPluginBulkOperationsEvent<TEntity>,
-        done: (result: EntityModificationResult<TEntity>, error?: any) => void) {
+    bulkPersist<TRoot extends {}>(
+        event: DbPluginBulkPersistEvent<TRoot>,
+        done: CallbackPartialResult<ResolvedChanges<TRoot>>) {
 
-        const unitOfWork: SyncronousUnitOfWork = (d) => this._bulkOperations(event, (r, e) => {
+        const unitOfWork: SyncronousUnitOfWork = (d) => this._bulkPersist(event, (r, e) => {
             d();
             done(r, e)
         })
@@ -475,8 +549,8 @@ export class PouchDbPlugin implements IDbPlugin {
         queue.enqueue(unitOfWork.bind(this));
     }
 
-    query<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (result: TShape, error?: any) => void): void {
-        const unitOfWork: SyncronousUnitOfWork = (d) => this._query<TEntity, TShape>(event, (r, e) => {
+    query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: CallbackResult<TShape>): void {
+        const unitOfWork: SyncronousUnitOfWork = (d) => this._query<TRoot, TShape>(event, (r, e) => {
             d();
             done(r, e)
         })

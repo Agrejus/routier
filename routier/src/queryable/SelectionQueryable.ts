@@ -64,6 +64,11 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
 
             const result = shaper(r.data);
 
+            if (result == null) {
+                d(Result.error(new Error("No items found in data source")));
+                return;
+            }
+
             d(Result.success(result));
         });
 

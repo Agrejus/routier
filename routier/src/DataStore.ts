@@ -2,7 +2,6 @@ import { CallbackPartialResult, CallbackResult, CompiledSchema, IDbPlugin, Parti
 import { Collection } from './collections/Collection';
 import { CollectionBuilder } from './collection-builder/CollectionBuilder';
 import { CollectionPipelines } from './types';
-import { CollectionChanges, CollectionChangesResult } from 'routier-core/dist/plugins/types';
 
 /**
  * The main Routier class, providing collection management, change tracking, and persistence for entities.

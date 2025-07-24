@@ -106,7 +106,7 @@ const formatResult = <T extends {}>(result: CollectionChangesResult<T>) => {
     const counts = {
         adds: entities.adds.entities.length,
         updates: entities.updates.entities.length,
-        removes: result.removed.count,
+        removes: result.removes.entities.length,
         total: 0
     }
 
@@ -531,10 +531,10 @@ export class DbPluginLogging implements IDbPlugin {
 
         if (!error) {
             // Sum up requested operations across all schemas
-            totalRequested += operations.changes.count();
+            totalRequested += operations.changes.all().data.length;
 
             // Sum up completed operations across all schemas
-            totalCompleted += result.result.count();
+            totalCompleted += result.result.all().data.length;
         }
 
         // Add operation count to the header
@@ -570,48 +570,22 @@ export class DbPluginLogging implements IDbPlugin {
         });
 
         // Show operations for each schema
-        for (const [schemaId, operation] of operations.changes.entries()) {
+        for (const [schemaId, operation] of operations.changes.all().data) {
             const schema = schemas.get(schemaId);
             const schemaName = schema?.collectionName || `Schema ${schemaId}`;
-            const formattedRequest = formatRequest(operation.changes);
 
-            console.groupCollapsed(`${schemaName} (${formattedRequest.counts.total} operations):`);
-
-            // Show operations in a structured format
-            if (formattedRequest.counts.adds > 0) {
-                console.groupCollapsed(`Adds (${formattedRequest.counts.adds}):`);
-                logEntitiesWithLimit(operation.changes.adds, formattedRequest.counts.adds);
+            // Handle ChangePackage union type properly
+            if ('entity' in operation) {
+                // This is a single entity operation
+                console.groupCollapsed(`${schemaName} (1 operation):`);
+                console.log('Entity:', operation.entity);
+                console.groupEnd();
+            } else {
+                // This is an update operation with changes
+                console.groupCollapsed(`${schemaName} (1 update operation):`);
+                console.log('Update Changes:', operation.changes);
                 console.groupEnd();
             }
-
-            if (formattedRequest.counts.removes > 0) {
-                console.groupCollapsed(`Removes (${formattedRequest.counts.removes}):`);
-                logEntitiesWithLimit(operation.changes.removes, formattedRequest.counts.removes);
-                console.groupEnd();
-            }
-
-            if (formattedRequest.counts.updates > 0) {
-                console.groupCollapsed(`Updates (${formattedRequest.counts.updates}):`);
-
-                const entities: DeepPartial<InferType<any>>[] = [];
-                for (const item of operation.changes.updates.changes) {
-                    entities.push(item.delta);
-
-                    if (entities.length >= 5) {
-                        break;
-                    }
-                }
-
-                logArrayWithLimit(entities, formattedRequest.counts.updates, 5, (entity: DeepPartial<InferType<any>>, i: number) => {
-                    console.groupCollapsed(`[${i}] Update`);
-                    console.log('Delta:', entity);
-                    console.groupEnd();
-                });
-
-                console.groupEnd();
-            }
-
-            console.groupEnd(); // End schema group
         }
 
         console.groupEnd(); // End operations details
@@ -633,35 +607,22 @@ export class DbPluginLogging implements IDbPlugin {
             });
 
             // Show result details for each schema
-            for (const [schemaId, operationResult] of result.result.entries()) {
+            for (const [schemaId, operationResult] of result.result.all().data) {
                 const schema = schemas.get(schemaId);
                 const schemaName = schema?.collectionName || `Schema ${schemaId}`;
-                const formattedResult = formatResult(operationResult.result);
 
-                console.groupCollapsed(`${schemaName} Results (${formattedResult.counts.total}):`);
-
-                // Show result details
-                if (formattedResult.counts.adds > 0) {
-                    console.groupCollapsed(`Add Results (${formattedResult.counts.adds}):`);
-                    logArrayWithLimit(formattedResult.entities.adds.entities, formattedResult.counts.adds, 5, (item: any, i: number) => {
-                        console.log(`[${i}]:`, item);
-                    });
+                // Handle ChangePackage union type properly for results
+                if ('entity' in operationResult) {
+                    // This is a single entity result
+                    console.groupCollapsed(`${schemaName} Results (1):`);
+                    console.log('Entity:', operationResult.entity);
+                    console.groupEnd();
+                } else {
+                    // This should be a changes result, but we need to handle it differently
+                    console.groupCollapsed(`${schemaName} Results:`);
+                    console.log('Changes:', operationResult);
                     console.groupEnd();
                 }
-
-                if (formattedResult.counts.updates > 0) {
-                    console.groupCollapsed(`Update Results (${formattedResult.counts.updates}):`);
-                    logArrayWithLimit(Array.from(operationResult.result.updates.entities), formattedResult.counts.updates, 5, (item: any, i: number) => {
-                        console.log(`[${i}]:`, item);
-                    });
-                    console.groupEnd();
-                }
-
-                if (formattedResult.counts.removes > 0) {
-                    console.log(`Removed Count: ${formattedResult.counts.removes}`);
-                }
-
-                console.groupEnd(); // End schema results group
             }
 
             console.groupEnd(); // End results group

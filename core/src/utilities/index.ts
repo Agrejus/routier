@@ -1,7 +1,8 @@
-import { PendingChanges, ResolvedChanges } from "../common/collections/Changes";
+import { ChangePackage, PendingChanges, ResolvedChanges } from "../common/collections/Changes";
 import { DbPluginLogging } from "../plugins/DbPluginLogging";
 import { CollectionChanges, CollectionChangesResult } from "../plugins/types";
-import { SchemaId } from "../schema";
+import { InferCreateType, InferType, SchemaId } from "../schema";
+import { DeepPartial } from "../types";
 
 export const toMap = <T extends {}>(data: T[], keySelector: (item: T) => T[keyof T] | string) => {
 
@@ -154,6 +155,14 @@ export const assertInstanceOfDbPluginLogging = (value: unknown): asserts value i
     }
 
     throw new TypeError(`Value is not instance of DbPluginLogging`);
+}
+
+export function assertChangePackageIsEntity<T extends {}>(data: ChangePackage<T>, message?: string): asserts data is {
+    entity: InferType<T> | InferCreateType<T> | DeepPartial<InferCreateType<T>>;
+} {
+    if (!("entity" in data)) {
+        throw new TypeError(message ?? 'Assertion failed, wrong type');
+    }
 }
 
 export const isNodeRuntime = () => typeof process !== 'undefined' &&

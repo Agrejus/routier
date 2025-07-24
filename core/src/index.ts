@@ -89,6 +89,8 @@ export { DbPluginLogging } from './plugins/DbPluginLogging';
 
 export { Query } from './plugins/query/Query';
 
+export { DbPluginHelper } from './plugins/DbPluginHelper';
+
 export {
     toMap,
     isDate,

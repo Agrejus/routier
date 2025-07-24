@@ -76,7 +76,7 @@ export type IdbPluginCollection = {
 export type CollectionChanges<T extends {}> = {
     adds: { entities: InferCreateType<T>[] };
     updates: { changes: EntityUpdateInfo<T>[] };
-    removes: { entities: InferType<T>[], queries: IQuery<T, T>[] };
+    removes: { entities: InferType<T>[] }; // Do not pass in the query, we want more visibility into what is going on
     tags: TagCollection;
     hasChanges: boolean;
 }
@@ -98,8 +98,8 @@ export type TaggedEntity<T> = {
 export type CollectionChangesResult<T extends {}> = {
     /** Entities that were added (may be partial). */
     adds: { entities: DeepPartial<InferCreateType<T>>[] };
-    /** Number of entities removed. */
-    removed: { count: number };
+    /** Entities that were removed. */
+    removes: { entities: InferType<T>[]; };
     /** Entities that were updated. */
     updates: { entities: InferType<T>[]; };
 }
