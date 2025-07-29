@@ -1,5 +1,5 @@
 import PouchDB from 'pouchdb';
-import { assertIsArray, assertIsNotNull, CallbackPartialResult, CallbackResult, combineExpressions, ComparatorExpression, CompiledSchema, DbPluginBulkPersistEvent, DbPluginEvent, DbPluginHelper, DbPluginQueryEvent, Expression, getProperties, IDbPlugin, IdType, InferType, IQuery, PropertyInfo, ResolvedChanges, Result, SchemaId, SyncronousQueue, SyncronousUnitOfWork, toMap, TrampolinePipeline } from 'routier-core';
+import { assertIsNotNull, AsyncPipeline, CallbackPartialResult, CallbackResult, combineExpressions, ComparatorExpression, DbPluginBulkPersistEvent, DbPluginQueryEvent, Expression, getProperties, IDbPlugin, InferCreateType, InferType, IQuery, PropertyInfo, ResolvedChanges, Result, SchemaId, SyncronousQueue, SyncronousUnitOfWork } from 'routier-core';
 import { PouchDbTranslator } from './PouchDbTranslator';
 
 const queue = new SyncronousQueue();
@@ -10,11 +10,7 @@ type PouchDBPluginOptions = PouchDB.Configuration.DatabaseConfiguration & {
     queryType?: "default" | "memory-optimized" | "experimental"
 }
 
-type ForEachPayload<TEntity extends {}, TShape extends unknown = TEntity> = {
-    event: DbPluginQueryEvent<TEntity, TShape>,
-    results: TShape,
-    error?: any
-}
+type PouchDbDoc<T extends {}> = { _id: string, _rev?: string } & T;
 
 export type PouchDbDesignDoc = {
     _id: string;
@@ -41,174 +37,244 @@ type MatchingIndex = {
     }[]
 }
 
-type RemovalQueryPayload<T extends {}> = {
-    queries: IQuery<T, T>[];
-    index: number;
-    entities: InferType<T>[];
-    schemas: Map<SchemaId, CompiledSchema<T>>;
-}
-
 export class PouchDbPlugin implements IDbPlugin {
 
     private readonly _name: string;
     private readonly _options?: PouchDBPluginOptions;
-    private readonly helpers: DbPluginHelper;
 
     constructor(name: string, options?: PouchDBPluginOptions) {
         this._name = name;
         this._options = options;
-
-        this.helpers = new DbPluginHelper(this);
     }
 
-    private _identityBulkOperations<T extends {}>(event: DbPluginBulkPersistEvent<T>, done: (result: { docs: T[], removesMap: Map<string, T>, updatesMap: Map<string, T> }, error?: any) => void): void {
-        const errors: any[] = [];
+    private _identityBulkOperations<T extends {}>(schemaIds: SchemaId[], resolvedChanges: ResolvedChanges<T>, done: CallbackResult<never>): void {
+
+        const { data: updates } = resolvedChanges.changes.updates(schemaIds);
+        const { data: removes } = resolvedChanges.changes.removes(schemaIds);
+        const { data: adds } = resolvedChanges.changes.adds(schemaIds);
+        // Do adds separate.  Updates/Removes already have an id that we can reference
+        // Default can do the same as updates/removes below since it has an id
+
+        if (updates.length === 0 && removes.length === 0 && adds.length === 0) {
+            done(Result.success())
+            return;
+        }
 
         this._doWork((db, d) => {
             try {
 
-                const { operation } = event;
-                const entitiesTuple = operation.changes.all();
+                const removals = removes.map(x => x[1] as PouchDbDoc<InferType<T>>);
+                const updatedDocuments = updates.map(w => w[1].entity as PouchDbDoc<InferType<T>>);
 
-                const x = this.helpers.resolveRemovalQueries(event.schemas, event.operation.changes.removes(), () => {
+                db.bulkDocs([...removals.map(w => ({ _id: w._id, _rev: w._rev, _deleted: true })), ...updatedDocuments], null, (error, response) => {
 
-                })
-
-                this._getRemovalsByQueries(event, removes.queries, (r, e) => {
-
-                    if (e != null) {
-                        d(e)
+                    if (error) {
+                        d(Result.error(error));
                         return;
                     }
 
-                    const removals = [...removes.entities, ...r];
-                    const updatedDocuments = [...updates.entities].map(w => w[1].doc);
-                    const removesMap = toMap(removals, w => (w as any)._id);
-                    const updatesMap = toMap(updatedDocuments, w => (w as any)._id);
+                    for (let i = 0, length = response.length; i < length; i++) {
+                        const doc = response[i];
 
+                        if ("id" in doc && "ok" in doc) {
+                            const updatesIndex = updates.findIndex(x => (x[1].entity as PouchDbDoc<InferType<T>>)._id === doc.id);
 
-                    // the reponse is weird!
-                    db.bulkDocs([...adds.entities, ...removals.map(w => ({ _id: (w as any)._id, _rev: (w as any)._rev, _deleted: true })), ...updatedDocuments], null, (error, response) => {
+                            if (updatesIndex !== -1) {
+                                // Optimistically assume that the update worked as expected
+                                const [schemaId, changes] = updates[updatesIndex];
 
-                        if (error) {
-                            errors.push(error);
+                                const changesResult = resolvedChanges.result.get(schemaId);
+
+                                changesResult.updates.entities.push(changes.entity);
+                                continue;
+                            }
+
+                            const removesIndex = removes.findIndex(x => (x[1] as PouchDbDoc<InferType<T>>)._id === doc.id);
+
+                            if (removesIndex !== -1) {
+
+                                const [schemaId, entity] = removes[removesIndex];
+
+                                const changesResult = resolvedChanges.result.get(schemaId);
+
+                                changesResult.removes.entities.push(entity);
+                            }
+                        }
+                    }
+
+                    const addsMap = new Map<SchemaId, InferCreateType<T>[]>();
+
+                    // Group adds by schemaId
+                    for (const [schemaId, item] of adds) {
+                        if (!addsMap.has(schemaId)) {
+                            addsMap.set(schemaId, []);
                         }
 
-                        d({ docs: response?.map(w => w as T), updatesMap: updatesMap as any, removesMap: removesMap as any }, errors.length > 0 ? errors : null);
+                        const items = addsMap.get(schemaId);
+
+                        assertIsNotNull(items);
+
+                        items.push(item);
+                    }
+
+                    const pipeline = new AsyncPipeline<SchemaId, Map<SchemaId, void>>();
+                    pipeline.pipeEach(schemaIds, (schemaId, d) => {
+                        const schemaAdds = addsMap.get(schemaId);
+                        const schemaResult = resolvedChanges.result.get(schemaId);
+
+                        assertIsNotNull(schemaResult);
+                        assertIsNotNull(schemaAdds);
+
+                        db.bulkDocs([...schemaAdds], null, (error, response) => {
+
+                            if (error) {
+                                d(Result.error(error));
+                                return;
+                            }
+
+                            const ids = response.map(x => x.id);
+
+                            for (let i = 0, length = response.length; i < length; i++) {
+
+                                const doc = response[i];
+
+                                if ("error" in doc) {
+
+                                    const reason = doc.reason ?? doc.error;
+
+                                    d(Result.error(reason));
+                                    return;
+                                }
+
+                                if ("id" in doc && "ok" in doc) {
+                                    ids.push(doc.id);
+                                } else {
+                                    d(Result.error(doc.error));
+                                    return;
+                                }
+                            }
+
+                            this._bulkGetAdditions(ids, (bulkGetResponse) => {
+
+                                if (bulkGetResponse.ok !== Result.SUCCESS) {
+                                    d(Result.error(bulkGetResponse));
+                                    return;
+                                }
+
+                                for (let i = 0, length = bulkGetResponse.data.results.length; i < length; i++) {
+                                    const docs = bulkGetResponse.data.results[i].docs;
+
+                                    if (docs.length === 1) {
+                                        const doc = docs[0];
+
+                                        if ("ok" in doc) {
+                                            schemaResult.adds.entities.push(doc.ok as any);
+                                        }
+                                    }
+                                }
+
+                                d(Result.success());
+                            });
+                        });
+
                     });
-                })
+
+                    pipeline.filter((r) => {
+                        if (r.ok !== Result.SUCCESS) {
+                            d(r);
+                            return;
+                        }
+
+                        d(Result.success());
+                    });
+                });
             } catch (e) {
-                d({ docs: [], updatesMap: new Map(), removesMap: new Map() }, [e, ...errors])
+                d(Result.error(e));
             }
         }, done);
     }
 
-    private _getRemovalsByQueries<T extends {}>(event: DbPluginEvent<T>, queries: IQuery<T, T>[], done: (entities: { _id: IdType, _rev: string, _deleted: true }[], error?: any) => void) {
+    private _defaultBulkOperations<T extends {}>(schemaIds: SchemaId[], resolvedChanges: ResolvedChanges<T>, done: CallbackResult<never>): void {
 
-        if (queries.length === 0) {
-            done([]); // Do nothing, handle null here for readability above
+        const { data: updates } = resolvedChanges.changes.updates(schemaIds);
+        const { data: removes } = resolvedChanges.changes.removes(schemaIds);
+        const { data: adds } = resolvedChanges.changes.adds(schemaIds);
+
+        if (updates.length === 0 && removes.length === 0 && adds.length === 0) {
+            done(Result.success())
             return;
         }
-
-        const pipeline = new TrampolinePipeline<ForEachPayload<T, { _id: IdType; _rev: string; _deleted: true; }[]>>();
-
-        for (let i = 0, length = queries.length; i < length; i++) {
-            const query = queries[i];
-            const queryEvent: DbPluginQueryEvent<T, T> = {
-                parent: event.parent,
-                schema: event.schema,
-                operation: query
-            }
-
-            pipeline.pipe((payload, done) => this._pipelineQuery<T, T>({
-                event: queryEvent,
-                results: payload.results as any
-            }, done));
-        }
-
-        pipeline.filter<{ _id: IdType; _rev: string; _deleted: true; }[]>({
-            event: null,
-            results: []
-        }, (r, e) => {
-
-            if (e) {
-                done([], e);
-                return;
-            }
-
-            done(r);
-        })
-    }
-
-    private _defaultBulkOperations<T extends {}>(event: DbPluginBulkPersistEvent<T>, done: (result: EntityModificationResult<T>, error?: any) => void): void {
-
-        const result: EntityModificationResult<T> = {
-            adds: [],
-            removedCount: 0,
-            updates: []
-        }
-        const errors: any[] = [];
 
         this._doWork((db, d) => {
             try {
 
-                const { operation } = event
-                const { adds, removes, updates } = operation;
+                db.bulkDocs([
+                    ...adds.map(x => x[1]),
+                    ...removes.map(w => ({ _id: (w[1] as any)._id, _rev: (w[1] as any)._rev, _deleted: true })),
+                    ...updates.map(x => x[1].entity)
+                ], null, (error, response) => {
 
-                this._getRemovalsByQueries(event, removes.queries, (r, e) => {
+                    if (error != null) {
+                        d(Result.error(error));
+                        return;
+                    }
+                    debugger;
+                    for (let i = 0, length = response.length; i < length; i++) {
+                        const doc = response[i];
 
-                    if (e != null) {
-                        d(e)
+                        if ("error" in doc) {
+
+                            const reason = doc.reason ?? doc.error;
+
+                            d(Result.error(reason));
+                            return;
+                        }
+
+                        const removesIndex = removes.findIndex(x => (x[1] as PouchDbDoc<InferType<T>>)._id === doc.id);
+
+                        if (removesIndex !== -1) {
+                            const [schemaId] = removes[removesIndex]
+                            const schemaResult = resolvedChanges.result.get(schemaId);
+
+                            assertIsNotNull(schemaResult);
+
+                            schemaResult.removes.entities.push(doc as any);
+                            continue;
+                        }
+
+                        const updatesIndex = updates.findIndex(x => (x[1].entity as PouchDbDoc<InferType<T>>)._id === doc.id);
+
+                        if (updatesIndex !== -1) {
+                            const [schemaId] = updates[updatesIndex];
+                            const schemaResult = resolvedChanges.result.get(schemaId);
+
+                            assertIsNotNull(schemaResult);
+
+                            schemaResult.updates.entities.push(doc as any);
+                            continue;
+                        }
+
+                        const addsIndex = adds.findIndex(x => (x[1] as PouchDbDoc<InferType<T>>)._id === doc.id);
+
+                        if (addsIndex !== -1) {
+                            const [schemaId] = adds[addsIndex];
+                            const schemaResult = resolvedChanges.result.get(schemaId);
+
+                            assertIsNotNull(schemaResult);
+
+                            schemaResult.adds.entities.push(doc as any);
+                            continue;
+                        }
+
+                        d(Result.error(new Error("Cannot classify resulting doc")));
                         return;
                     }
 
-                    const removals = [...removes.entities, ...r];
-                    const updatedDocuments = [...updates.entities].map(w => w[1].doc);
-                    const removesMap = toMap(removals, w => (w as any)._id);
-                    const updatesMap = toMap(updatedDocuments, w => (w as any)._id);
+                    d(Result.success());
 
-                    db.bulkDocs([...adds.entities, ...removals.map(w => ({ _id: (w as any)._id, _rev: (w as any)._rev, _deleted: true })), ...updatedDocuments], null, (error, response) => {
-
-                        if (error != null) {
-                            errors.push(error)
-                        }
-
-                        response.forEach(item => {
-                            if ("error" in item) {
-
-                                const reason = item.reason ?? item.error;
-
-                                if (reason) {
-                                    errors.push(reason.toString())
-                                }
-                                return;
-                            }
-
-                            if (removesMap.has(item.id)) {
-                                result.removedCount += 1;
-                                return;
-                            }
-
-                            if (updatesMap.has(item.id)) {
-                                result.updates.push({
-                                    _id: item.id,
-                                    _rev: item.rev
-                                } as any);
-                                return;
-                            }
-
-                            result.adds.push({
-                                _id: item.id,
-                                _rev: item.rev
-                            } as any);
-                        })
-
-                        d(result, errors.length > 0 ? errors : null)
-
-                    });
                 });
             } catch (e) {
-                d(result, [e, ...errors])
+                d(Result.error(e));
             }
         }, done);
     }
@@ -226,9 +292,9 @@ export class PouchDbPlugin implements IDbPlugin {
         }
     }
 
-    private resolveIndexes<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (ddoc: PouchDbDesignDoc | null, error?: any) => void) {
+    private resolveIndexes<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<PouchDbDesignDoc | null>) {
 
-        const indexes = event.schema.getIndexes();
+        const indexes = event.operation.schema.getIndexes();
 
         if (indexes.length === 0) {
             done(null);
@@ -236,7 +302,7 @@ export class PouchDbPlugin implements IDbPlugin {
         }
 
         if (cache["indexes"]) {
-            done(cache["indexes"] as PouchDbDesignDoc);
+            done(Result.success(cache["indexes"] as PouchDbDesignDoc));
             return; // Already built
         }
 
@@ -283,13 +349,13 @@ export class PouchDbPlugin implements IDbPlugin {
                 if (response.rows.length === 0) {
                     db.put(ddoc as any, {}, (e) => {
                         if (e) {
-                            d(null, e);
+                            d(Result.error(e));
                             return;
                         }
 
                         cache["indexes"] = ddoc;
 
-                        d(ddoc);
+                        d(Result.success(ddoc));
                     });
                     return;
                 }
@@ -300,13 +366,13 @@ export class PouchDbPlugin implements IDbPlugin {
                 if (matchingIndex == null) {
                     db.put(ddoc as any, {}, (e) => {
                         if (e) {
-                            d(null, e);
+                            d(Result.error(e));
                             return;
                         }
 
                         cache["indexes"] = ddoc;
 
-                        d(ddoc);
+                        d(Result.success(ddoc));
                     });
                     return;
                 }
@@ -323,7 +389,7 @@ export class PouchDbPlugin implements IDbPlugin {
                     db.get(ddoc._id, {}, (e, result) => {
 
                         if (e != null) {
-                            d(null, e);
+                            d(Result.error(e));
                             return;
                         }
 
@@ -332,30 +398,30 @@ export class PouchDbPlugin implements IDbPlugin {
                         db.put(result as any, {}, (e) => {
 
                             if (e) {
-                                d(null, e);
+                                d(Result.error(e));
                                 return;
                             }
 
                             cache["indexes"] = ddoc;
 
-                            d(ddoc);
+                            d(Result.success(ddoc));
                         });
                     })
                     return;
                 }
 
-                d(ddoc);
+                d(Result.success(ddoc));
             }).catch(e => {
-                d(null, e);
+                d(Result.error(e));
             });
         }, done)
     }
 
     // id should be a string here because this is only run on identity inserts
-    private _bulkGetAdditions<TEntity extends {}>(ids: string[], done: (response: PouchDB.Core.BulkGetResponse<TEntity>, error?: any) => void) {
+    private _bulkGetAdditions<TEntity extends {}>(ids: string[], done: CallbackResult<PouchDB.Core.BulkGetResponse<TEntity>>) {
 
         if (ids.length === 0) {
-            done({ results: [] });
+            done(Result.success({ results: [] }));
             return;
         }
 
@@ -365,11 +431,11 @@ export class PouchDbPlugin implements IDbPlugin {
             }, (error, response) => {
 
                 if (error) {
-                    d({ results: [] }, error);
+                    d(Result.error(error));
                     return
                 }
 
-                d(response);
+                d(Result.success(response));
             });
         }, done);
     }
@@ -382,157 +448,70 @@ export class PouchDbPlugin implements IDbPlugin {
         }
     }
 
-    private _groupChanges<TRoot extends {}>(event: DbPluginBulkPersistEvent<TRoot>) {
-        const identityChanges = [];
-        const nonIdentityChanges = [];
-
-        const pipeline = new TrampolinePipeline<RemovalQueryPayload<TRoot>, RemovalQueryPayload<TRoot>>();
-        const queries: IQuery<TRoot, TRoot>[] = [];
-
-        for (const [, entry] of event.operation.changes.entries()) {
-            for (const query of entry.changes.removes.queries) {
-                pipeline.pipe(this._queryRemovals.bind(this));
-                queries.push(query);
-            }
-        }
-
-        pipeline.filter<RemovalQueryPayload<TRoot>>({
-            entities: [],
-            index: 0,
-            queries,
-            schemas: event.schemas
-        }, (data, error) => {
-
-        })
-    }
-
-    private _queryRemovals<TRoot extends {}>(payload: RemovalQueryPayload<TRoot>, done: (data: RemovalQueryPayload<TRoot>) => void) {
-
-        const { index, queries, schemas } = payload;
-        const operation = queries[index];
-
-        this.query<TRoot>({
-            operation,
-            schemas
-        }, (r) => {
-            if (r.ok === Result.ERROR) {
-                throw r.error
-            }
-
-            payload.index++; // move next
-
-            if (r.data == null) {
-                done(payload);
-                return;
-            }
-
-            if (Array.isArray(r.data)) {
-                payload.entities.push(...r.data);
-            } else {
-                payload.entities.push(r.data as InferType<TRoot>);
-            }
-
-            done(payload);
-        })
-    }
-
     private _bulkPersist<TRoot extends {}>(
         event: DbPluginBulkPersistEvent<TRoot>,
         done: CallbackPartialResult<ResolvedChanges<TRoot>>) {
 
         this._validateSchemas(event);
 
-        if (event.schema.hasIdentityKeys === true) {
-            this._identityBulkOperations<TRoot>(event, (r, e) => {
+        const resolvedChanges = event.operation.toResult();
+        const identitySchemaIds: SchemaId[] = [];
+        const defaultSchemaIds: SchemaId[] = [];
 
-                if (e) {
-                    done(null, e);
-                    return;
-                }
+        for (const [schemaId, schema] of event.schemas) {
 
-                const ids: string[] = [];
-                const result: EntityModificationResult<TEntity> = {
-                    adds: [],
-                    removedCount: 0,
-                    updates: []
-                }
-                const errors: any[] = [];
-
-                if (e) {
-                    errors.push(e);
-                    done(null, errors);
-                    return;
-                }
-
-                for (let i = 0, length = r.docs.length; i < length; i++) {
-                    const doc = r.docs[i];
-
-                    if ("id" in doc && "ok" in doc) {
-                        if (r.updatesMap.has(doc.id as string)) {
-                            // Optimistically assume that the update worked as expected
-                            const update = r.updatesMap.get(doc.id as string);
-
-                            // Update the new rev
-                            (update as any)._rev = (doc as any).rev;
-
-                            result.updates.push(update as any);
-                            continue;
-                        }
-
-                        if (r.removesMap.has(doc.id as string)) {
-                            result.removedCount += 1;
-                            continue;
-                        }
-
-                        ids.push(doc.id as string);
-                    }
-                }
-
-                this._bulkGetAdditions(ids, (bulkGetResponse, error) => {
-
-                    if (error) {
-                        done(result, error);
-                        return;
-                    }
-
-                    for (let i = 0, length = bulkGetResponse.results.length; i < length; i++) {
-                        const docs = bulkGetResponse.results[i].docs;
-
-                        if (docs.length === 1) {
-                            const doc = docs[0];
-
-                            if ("ok" in doc) {
-                                result.adds.push(doc.ok as any);
-                            }
-                        }
-                    }
-
-                    done(result);
-                });
-            });
-            return;
-        }
-
-        this._defaultBulkOperations<TEntity>(event, done);
-    }
-
-    private _doWork<TResult, TEntity>(work: (db: PouchDB.Database<TEntity>, done: (result: TResult, error?: any) => void) => void, done: (result: TResult, error?: any) => void, shouldClose: boolean = false) {
-        const db = new PouchDB<TEntity>(this._name, this._options);
-
-        work(db, (result, error) => {
-
-            if (shouldClose) {
-                db.close(() => done(result, error));
+            if (schema.hasIdentityKeys) {
+                identitySchemaIds.push(schemaId);
+                continue;
             }
 
-            done(result, error);
+            defaultSchemaIds.push(schemaId);
+        }
+
+        this._identityBulkOperations<TRoot>(identitySchemaIds, resolvedChanges, (identityResult) => {
+
+            if (identityResult.ok !== Result.SUCCESS) {
+                done(Result.error(identityResult.error))
+                return;
+            }
+
+            this._defaultBulkOperations<TRoot>(defaultSchemaIds, resolvedChanges, (defaultResult) => {
+
+                if (defaultResult.ok !== Result.SUCCESS) {
+                    done(Result.error(defaultResult.error))
+                    return;
+                }
+
+                done(Result.success(resolvedChanges))
+            });
+
+        });
+    }
+
+    private _doWork<TResult, TEntity>(work: (db: PouchDB.Database<TEntity>, done: CallbackResult<TResult>) => void, done: CallbackResult<TResult>, shouldClose: boolean = false) {
+        const db = new PouchDB<TEntity>(this._name, this._options);
+
+        work(db, (result) => {
+
+            if (shouldClose) {
+                db.close(() => done(result));
+            }
+
+            done(result);
         })
     }
 
     destroy(done: (error?: any) => void): void {
         // this needs to be queued too
         this._doWork((w, d) => {
-            w.destroy(null, d);
+            w.destroy(null, (e) => {
+                if (e) {
+                    d(Result.error(e))
+                    return;
+                }
+
+                d(Result.success());
+            });
         }, done, false);
     }
 
@@ -541,18 +520,18 @@ export class PouchDbPlugin implements IDbPlugin {
         event: DbPluginBulkPersistEvent<TRoot>,
         done: CallbackPartialResult<ResolvedChanges<TRoot>>) {
 
-        const unitOfWork: SyncronousUnitOfWork = (d) => this._bulkPersist(event, (r, e) => {
+        const unitOfWork: SyncronousUnitOfWork = (d) => this._bulkPersist(event, (r) => {
             d();
-            done(r, e)
+            done(r)
         })
 
         queue.enqueue(unitOfWork.bind(this));
     }
 
     query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: CallbackResult<TShape>): void {
-        const unitOfWork: SyncronousUnitOfWork = (d) => this._query<TRoot, TShape>(event, (r, e) => {
+        const unitOfWork: SyncronousUnitOfWork = (d) => this._query<TRoot, TShape>(event, (r) => {
             d();
-            done(r, e)
+            done(r)
         })
 
         queue.enqueue(unitOfWork.bind(this));
@@ -622,8 +601,8 @@ export class PouchDbPlugin implements IDbPlugin {
         };
     }
 
-    private _queryIndex<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, matchingIndex: MatchingIndex, done: (result: TShape, error?: any) => void) {
-        const jsonTranslator = new PouchDbTranslator<TEntity, TShape>(event.operation, event.schema);
+    private _queryIndex<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, matchingIndex: MatchingIndex, done: CallbackResult<TShape>) {
+        const jsonTranslator = new PouchDbTranslator<TEntity, TShape>(event.operation);
         this._doWork((w, d) => {
 
             const options: PouchDB.Query.Options<any, any> = {
@@ -644,17 +623,17 @@ export class PouchDbPlugin implements IDbPlugin {
             w.query(`${INDEX_NAME}/${matchingIndex.viewName}`, options, (error, response) => {
 
                 if (error != null) {
-                    d(null, error);
+                    d(Result.error(error));
                     return;
                 }
 
                 const translated = jsonTranslator.translate(response.rows.map(w => w.doc));
-                d(translated);
+                d(Result.success(translated));
             });
         }, done);
     }
 
-    private _queryNoIndex<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (result: TShape, error?: any) => void) {
+    private _queryNoIndex<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<TShape>) {
         const filters = event.operation.options.get("filter")
         if (filters.length === 0) {
             this._queryWithNoFilters(event, done);
@@ -664,23 +643,23 @@ export class PouchDbPlugin implements IDbPlugin {
         this._queryWithFilters(event, done);
     }
 
-    private _queryWithNoFilters<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (result: TShape, error?: any) => void) {
-        const jsonTranslator = new PouchDbTranslator<TEntity, TShape>(event.operation, event.schema);
+    private _queryWithNoFilters<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<TShape>) {
+        const jsonTranslator = new PouchDbTranslator<TEntity, TShape>(event.operation);
         this._doWork((w, d) => {
             w.allDocs({
                 include_docs: true
             }).then(response => {
                 const data = response.rows.map(w => w.doc);
                 const translated = jsonTranslator.translate(data);
-                d(translated);
+                d(Result.success(translated));
             }).catch(error => {
-                d(null, error);
+                d(Result.error(error));
             });
         }, done);
     }
 
-    private _queryWithFilters<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (result: TShape, error?: any) => void) {
-        const jsonTranslator = new PouchDbTranslator<TEntity, TShape>(event.operation, event.schema);
+    private _queryWithFilters<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<TShape>) {
+        const jsonTranslator = new PouchDbTranslator<TEntity, TShape>(event.operation);
         this._doWork((w, d) => {
             w.query<{}, any>((doc, emit) => {
                 if (typeof doc === "object" && "_id" in doc && jsonTranslator.matches(doc)) {
@@ -689,24 +668,26 @@ export class PouchDbPlugin implements IDbPlugin {
             }, (error, response) => {
 
                 if (error != null) {
-                    d(null, error);
+                    d(Result.error(error));
                     return;
                 }
 
                 const data = response.rows.map(w => w.value);
                 const translated = jsonTranslator.translate(data);
-                d(translated);
+                d(Result.success(translated));
             });
         }, done);
     }
 
-    private _query<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (result: TShape, error?: any) => void): void {
-        this.resolveIndexes(event, (ddoc, e) => {
+    private _query<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<TShape>): void {
+        this.resolveIndexes(event, (r) => {
 
-            if (e) {
-                done(null, e);
+            if (r.ok !== Result.SUCCESS) {
+                done(r)
                 return;
             }
+
+            const ddoc = r.data;
 
             if (ddoc == null) {
                 this._queryNoIndex(event, done);
@@ -787,25 +768,5 @@ export class PouchDbPlugin implements IDbPlugin {
             viewName,
             properties: [{ property, value: null }]
         }
-    }
-
-    private _pipelineQuery<TEntity extends {}, TShape>(payload: ForEachPayload<TEntity, TShape>, done: (results: TShape, error?: any) => void): void {
-
-        const { event, results } = payload;
-        this._query(event, (result, error) => {
-
-            if (error) {
-                // any error will terminate the pipeline
-                done(results, error);
-                return;
-            }
-
-            assertIsArray(result);
-            assertIsArray(results);
-
-            results.push(...result);
-
-            done(results);
-        })
     }
 }

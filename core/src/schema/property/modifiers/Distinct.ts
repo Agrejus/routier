@@ -1,4 +1,4 @@
-import { SchemaModifiers } from "../..";
+import { SchemaModifiers } from "../../types";
 import { SchemaBase } from "../base/Base";
 
 export class SchemaDistinct<T extends any, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {

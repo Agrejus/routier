@@ -5,7 +5,7 @@ import { Queryable } from '../queryable/Queryable';
 import { QueryableAsync } from '../queryable/QueryableAsync';
 import { SelectionQueryable } from "../queryable/SelectionQueryable";
 import { SelectionQueryableAsync } from "../queryable/SelectionQueryableAsync";
-import { CompiledSchema, SchemaId, ICollectionSubscription, IDbPlugin, ChangeTrackingType, CollectionChanges, CollectionChangesResult, SubscriptionChanges, InferType, GenericFunction, InferCreateType, CallbackResult, Result, Query, Filter, ParamsFilter, PartialResultType, CallbackPartialResult, assertIsNotNull, PendingChanges, ResolvedChanges } from "routier-core";
+import { CompiledSchema, SchemaId, ICollectionSubscription, IDbPlugin, ChangeTrackingType, CollectionChanges, SubscriptionChanges, InferType, GenericFunction, InferCreateType, CallbackResult, Result, Filter, ParamsFilter, PartialResultType, CallbackPartialResult, assertIsNotNull, PendingChanges, ResolvedChanges, IQuery, AsyncPipeline, ResultType } from "routier-core";
 
 export class CollectionBase<TEntity extends {}> {
 
@@ -65,6 +65,9 @@ export class CollectionBase<TEntity extends {}> {
             const resolvedChanges = data.data.result.get(this.schema.id);
             const changes = data.data.changes.get(this.schema.id);
 
+            // destroy tags and let go of the references
+            changes.tags[Symbol.dispose]();
+
             assertIsNotNull(resolvedChanges, "Could not find resolved changes during afterPersist operation");
 
             if (changes.hasChanges === false) {
@@ -101,6 +104,43 @@ export class CollectionBase<TEntity extends {}> {
         }
     }
 
+    protected resolveRemovalQueries(queries: IQuery<TEntity, TEntity>[], done: CallbackResult<TEntity[]>) {
+
+        if (queries.length === 0) {
+            done(Result.success([]));
+            return;
+        }
+
+        const pipeline = new AsyncPipeline<IQuery<TEntity, TEntity>, TEntity[]>();
+
+        pipeline.pipeEach(queries, (operation, done) => {
+            try {
+                this.dataBridge.query({
+                    operation,
+                    schemas: this.schemas
+                }, (r) => {
+                    done(r as ResultType<TEntity[]>);
+                })
+            } catch (e) {
+                done(Result.error(e));
+            }
+        });
+
+        pipeline.filter((result) => {
+            if (result.ok !== Result.SUCCESS) {
+                done(Result.error(result.error));
+                return;
+            }
+
+            const data: TEntity[] = [];
+            for (let i = 0, length = result.data.length; i < length; i++) {
+                data.push(...result.data[i]);
+            }
+
+            done(Result.success(data));
+        });
+    }
+
     protected prepare(data: PartialResultType<PendingChanges<TEntity>>, done: CallbackPartialResult<PendingChanges<TEntity>>) {
 
         try {
@@ -110,22 +150,10 @@ export class CollectionBase<TEntity extends {}> {
             }
 
             const tags = this.changeTracker.tags.get();
-            const changes: CollectionChanges<TEntity> = {
-                adds: {
-                    entities: []
-                },
-                removes: {
-                    entities: []
-                },
-                tags,
-                updates: {
-                    changes: []
-                },
-                hasChanges: false
-            }
+            const changes = CollectionChanges.EMPTY<TEntity>();
+            data.data.changes.set(this.schema.id, changes);
 
             if (this.changeTracker.hasChanges() === false) {
-                data.data.changes.set(this.schema.id, changes);
                 done(data);
                 return
             }
@@ -135,27 +163,30 @@ export class CollectionBase<TEntity extends {}> {
             const adds = this.changeTracker.prepareAdditions();
 
             if (adds.length > 0) {
-                changes.hasChanges = true;
                 changes.adds.entities = adds;
             }
 
             const updates = this.changeTracker.getAttachmentsChanges();
 
             if (updates.length > 0) {
-                changes.hasChanges = true;
                 changes.updates.changes = updates;
             }
 
             const removes = this.changeTracker.prepareRemovals();
 
-            if (removes.entities.length > 0 || removes.queries.length > 0) {
-                changes.hasChanges = true;
-                changes.removes = removes;
-            }
+            this.resolveRemovalQueries(removes.queries, r => {
 
-            data.data.changes.set(this.schema.id, changes);
+                if (r.ok !== Result.SUCCESS) {
+                    done(Result.error(r.error));
+                    return;
+                }
 
-            done(data);
+                if (removes.entities.length > 0 || r.data.length > 0) {
+                    changes.removes.entities = [...removes.entities, ...r.data as InferType<TEntity>[]];
+                }
+
+                done(data);
+            });
         } catch (e) {
             done(Result.error(e));
         }

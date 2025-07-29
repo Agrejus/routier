@@ -112,7 +112,7 @@ const replicationPlugin = DbPluginReplicator.create({
 class Ctx extends DataStore {
 
     constructor() {
-        super(memoryPlugin);
+        super(pouchDbPlugin);
     }
 
     // test = this.collection(model).create();
@@ -139,7 +139,7 @@ const r = async () => {
                 one: `one${Math.floor(Math.random() * 10000)}`,
                 two: `two${Math.floor(Math.random() * 10000)}`
             },
-            order: Math.floor(Math.random() * 10000)
+            order: 1
         })));
 
         const changes = await ctx.previewChangesAsync();

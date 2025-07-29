@@ -1,5 +1,4 @@
-import { PropertyInfo } from "../common/PropertyInfo";
-import { GenericFunction } from "../types";
+import { PropertyInfo } from "@core/schema";
 
 /**
  * The base class for all expression types.
@@ -144,7 +143,7 @@ export type Operator = "&&" | "||";
 /**
  * A function that filters a value of type T and returns a boolean.
  */
-export type Filter<T extends any> = GenericFunction<T, boolean>;
+export type Filter<T extends any> = (value: T) => boolean;
 
 /**
  * A function that filters a value of type T with additional parameters P.

@@ -1,5 +1,5 @@
+import { PropertyInfo } from "@core/schema";
 import { Expression, PropertyExpression } from "./types";
-import { PropertyInfo } from "../common/PropertyInfo";
 
 /**
  * Extracts all properties referenced in an expression

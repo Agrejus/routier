@@ -1,9 +1,10 @@
-import { SchemaArray, SchemaIdentity, SchemaModifiers, SchemaTypes } from "../..";
-import { DefaultValue } from "../../../types";
+import { DefaultValue, SchemaModifiers, SchemaTypes } from "../../types";
 import { SchemaBase } from "../base/Base";
 import { SchemaDefault } from "../modifiers/Default";
+import { SchemaIdentity } from "../modifiers/Identity";
 import { SchemaNullable } from "../modifiers/Nullable";
 import { SchemaOptional } from "../modifiers/Optional";
+import { SchemaArray } from "./Array";
 
 export class SchemaObject<T extends {}, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {
 

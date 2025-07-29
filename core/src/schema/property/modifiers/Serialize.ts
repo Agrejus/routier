@@ -1,4 +1,4 @@
-import { PropertyDeserializer, PropertySerializer, SchemaModifiers } from "../..";
+import { PropertyDeserializer, PropertySerializer, SchemaModifiers } from "../../types";
 import { SchemaBase } from "../base/Base";
 import { SchemaDeserialize } from "./Deserialize";
 

@@ -1,4 +1,4 @@
-import { toExpression, QueryField, CompiledSchema, DbPluginQueryEvent, GenericFunction, QueryOptionsCollection, Filter, ParamsFilter, QueryOrdering, Query, CallbackResult, InferType, Result, SchemaId, IQuery } from "routier-core";
+import { toExpression, QueryField, CompiledSchema, DbPluginQueryEvent, GenericFunction, QueryOptionsCollection, Filter, ParamsFilter, QueryOrdering, Query, CallbackResult, InferType, Result, SchemaId } from "routier-core";
 import { DataBridge } from "../data-access/DataBridge";
 import { ChangeTracker } from "../change-tracking/ChangeTracker";
 

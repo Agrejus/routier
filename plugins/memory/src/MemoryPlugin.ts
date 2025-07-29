@@ -1,4 +1,4 @@
-import { IDbPlugin, CompiledSchema, InferCreateType, DeepPartial, JsonTranslator, DbPluginQueryEvent, assertIsArray, TrampolinePipeline, IQuery, CallbackResult, Result, CallbackPartialResult, ResolvedChanges, DbPluginBulkPersistEvent, SchemaId, PartialResultType, DbPluginHelper } from "routier-core";
+import { IDbPlugin, CompiledSchema, InferCreateType, DeepPartial, JsonTranslator, DbPluginQueryEvent, CallbackResult, Result, CallbackPartialResult, ResolvedChanges, DbPluginBulkPersistEvent, SchemaId, AsyncPipeline, CollectionChanges, CollectionChangesResult } from "routier-core";
 import { DbCollection } from "./DbCollection";
 import { MemoryDatabase } from ".";
 
@@ -7,7 +7,6 @@ const dbs: Record<string, MemoryDatabase> = {}
 export class MemoryPlugin implements IDbPlugin, Disposable {
 
     private readonly dbName: string;
-    private readonly helpers: DbPluginHelper;
 
     constructor(dbName?: string) {
         this.dbName = dbName ?? "__routier-memory-plugin-db__";
@@ -15,8 +14,6 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
         if (dbs[this.dbName] == null) {
             dbs[this.dbName] = {}
         }
-
-        this.helpers = new DbPluginHelper(this);
     }
 
     get size() {
@@ -52,107 +49,63 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
         done(Result.success());
     }
 
-    private _persist<TRoot extends {}>(payload: PartialResultType<{ schema: CompiledSchema<TRoot>, schemas: Map<SchemaId, CompiledSchema<TRoot>>, resolvedChanges: ResolvedChanges<TRoot> }>, done: CallbackPartialResult<{ schema: CompiledSchema<TRoot>, schemas: Map<SchemaId, CompiledSchema<TRoot>>, resolvedChanges: ResolvedChanges<TRoot> }>) {
-
-        try {
-
-            if (payload.ok !== Result.SUCCESS) {
-                done(payload);
-                return;
-            }
-
-            const { resolvedChanges, schema, schemas } = payload.data;
-
-            const schemaChanges = resolvedChanges.changes.get(schema.id);
-            const schemaResult = resolvedChanges.result.get(schema.id);
-            const { adds, hasChanges, removes, updates } = schemaChanges;
-
-            if (hasChanges === false) {
-                done(payload);
-                return;
-            }
-
-            const collection = this.resolveCollection(schema);
-
-            for (let i = 0, length = adds.entities.length; i < length; i++) {
-                collection.add(adds.entities[i]);
-                schemaResult.adds.entities.push(adds.entities[i] as DeepPartial<InferCreateType<TRoot>>);
-            }
-
-            for (const change of updates.changes) {
-                collection.update(change.entity);
-                schemaResult.updates.entities.push(change.entity);
-            }
-
-            this.helpers.resolveRemovalQueries(schemas, removes.queries, (r) => {
-
-                try {
-
-                    if (r.ok === Result.ERROR) {
-                        done(Result.error(r.error))
-                        return;
-                    }
-
-                    const removals = [...removes.entities, ...r.data];
-
-                    for (let i = 0, length = removals.length; i < length; i++) {
-                        collection.remove(removals[i]);
-                    }
-
-                    schemaResult.removes.count += removals.length;
-
-                    done(payload);
-                } catch (e) {
-                    done(Result.error(e));
-                }
-            });
-        } catch (e) {
-            done(Result.error(e));
-        }
-    }
-
     bulkPersist<TRoot extends {}>(event: DbPluginBulkPersistEvent<TRoot>, done: CallbackPartialResult<ResolvedChanges<TRoot>>) {
-
-        const { schemas } = event;
-
         try {
-            const schemaIds = [...event.operation.changes.entries()].map(x => x[0])
-            const pipeline = new TrampolinePipeline<PartialResultType<{ schema: CompiledSchema<TRoot>, schemas: Map<SchemaId, CompiledSchema<TRoot>>, resolvedChanges: ResolvedChanges<TRoot> }>>();
+            const pipeline = new AsyncPipeline<CollectionChanges<TRoot>, [SchemaId, CollectionChangesResult<TRoot>]>();
 
-            for (let i = 0, length = schemaIds.length; i < length; i++) {
-                // Need an easier way to do this!
-                pipeline.pipe((payload, done) => this._persist({
-                    ...payload,
-                    schema: 
-                }, done))
+            for (const schemaId of event.operation.changes.schemaIds) {
+                const changes = event.operation.changes.get(schemaId);
+                pipeline.pipe(changes, (r, d) => {
+                    try {
+
+                        const { adds, hasChanges, removes, updates } = r;
+                        const result = CollectionChangesResult.EMPTY<TRoot>();
+
+                        if (hasChanges === false) {
+                            d(Result.success([schemaId, result]));
+                            return;
+                        }
+
+                        const schema = event.schemas.get(schemaId);
+                        const collection = this.resolveCollection(schema);
+
+                        for (let i = 0, length = adds.entities.length; i < length; i++) {
+                            collection.add(adds.entities[i]);
+                            result.adds.entities.push(adds.entities[i] as DeepPartial<InferCreateType<TRoot>>);
+                        }
+
+                        for (let i = 0, length = updates.changes.length; i < length; i++) {
+                            collection.update(updates.changes[i].entity);
+                            result.updates.entities.push(updates.changes[i].entity);
+                        }
+
+                        for (let i = 0, length = removes.entities.length; i < length; i++) {
+                            collection.remove(removes.entities[i]);
+                            result.removes.entities.push(removes.entities[i]);
+                        }
+
+                        d(Result.success([schemaId, result]));
+                    } catch (e) {
+                        d(Result.error(e));
+                    }
+                });
             }
 
-            pipeline.filter<PartialResultType<{ schema: CompiledSchema<TRoot>, schemas: Map<SchemaId, CompiledSchema<TRoot>>, resolvedChanges: ResolvedChanges<TRoot> }>>({
-                data: {
-                    resolvedChanges: event.operation.toResult(), // send in the pending changes and let's add to the map
-                    schemas,
-                    schema: null as any // we send this in above
-                },
-                ok: Result.SUCCESS
-            }, (r, e) => {
-                if (e != null) {
-                    done(Result.error(e));
+            pipeline.filter((asyncResult) => {
+
+                if (asyncResult.ok !== Result.SUCCESS) {
+                    done(Result.error(asyncResult.error))
                     return;
                 }
 
-                if (r.ok === Result.ERROR) {
-                    done(Result.error(r.error));
-                    return;
+                const result = event.operation.toResult();
+
+                for (const [schemaId, item] of asyncResult.data) {
+                    result.result.set(schemaId, item)
                 }
 
-                if (r.ok === Result.PARTIAL) {
-                    done(Result.partial(r.data.resolvedChanges, r.error));
-                    return;
-                }
-
-                done(Result.success(r.data.resolvedChanges))
-            })
-
+                done(Result.success(result));
+            });
         } catch (e: any) {
             done(Result.error(e))
         }

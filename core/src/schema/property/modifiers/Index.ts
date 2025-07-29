@@ -1,12 +1,12 @@
-import { PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaReadonly } from "../..";
-import { DefaultValue } from "../../../types";
-import { uuidv4 } from "../../../utilities/uuid";
+import { uuidv4 } from "@core/utilities";
+import { DefaultValue, PropertyDeserializer, PropertySerializer, SchemaModifiers } from "../../types";
 import { SchemaBase } from "../base/Base";
 import { SchemaDefault } from "./Default";
 import { SchemaDeserialize } from "./Deserialize";
 import { SchemaDistinct } from "./Distinct";
 import { SchemaNullable } from "./Nullable";
 import { SchemaOptional } from "./Optional";
+import { SchemaReadonly } from "./Readonly";
 import { SchemaSerialize } from "./Serialize";
 
 export class SchemaIndex<T extends any, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {

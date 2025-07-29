@@ -1,4 +1,4 @@
-import { CompiledSchema, SchemaTypes } from "../schema";
+import { CompiledSchema, SchemaTypes } from "@core/schema";
 import { Expression, OperatorExpression, ComparatorExpression, ValueExpression, PropertyExpression, Filter, ParamsFilter, Operator } from "./types";
 
 // need to have negated + strict

@@ -1,6 +1,4 @@
-import { PropertyDeserializer, PropertySerializer, SchemaArray, SchemaModifiers, SchemaTypes } from "../..";
-import { DefaultValue } from "../../../types";
-import { uuidv4 } from "../../../utilities/uuid";
+import { DefaultValue, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes } from "../../types";
 import { SchemaBase } from "../base/Base";
 import { SchemaDefault } from "../modifiers/Default";
 import { SchemaDeserialize } from "../modifiers/Deserialize";
@@ -10,6 +8,7 @@ import { SchemaNullable } from "../modifiers/Nullable";
 import { SchemaOptional } from "../modifiers/Optional";
 import { SchemaReadonly } from "../modifiers/Readonly";
 import { SchemaSerialize } from "../modifiers/Serialize";
+import { SchemaArray } from "./Array";
 
 export class SchemaDate<T extends Date, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {
 

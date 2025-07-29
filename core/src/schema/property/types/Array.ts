@@ -1,13 +1,11 @@
-import { PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes } from "../..";
 import { SchemaBase } from "../base/Base";
 import { SchemaDefault } from "../modifiers/Default";
 import { SchemaNullable } from "../modifiers/Nullable";
 import { SchemaOptional } from "../modifiers/Optional";
 import { SchemaDeserialize } from '../modifiers/Deserialize';
 import { SchemaSerialize } from '../modifiers/Serialize';
-import { DefaultValue } from "../../../types";
-import { uuidv4 } from "../../../utilities/uuid";
 import { SchemaIndex } from "../modifiers/Index";
+import { DefaultValue, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes } from "../../types";
 
 export class SchemaArray<T extends any, TModifiers extends SchemaModifiers> extends SchemaBase<T[], TModifiers> {
 

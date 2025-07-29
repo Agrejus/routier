@@ -1,5 +1,4 @@
-import { PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes } from "../..";
-import { DefaultValue, FunctionBody } from "../../../types";
+import { DefaultValue, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes } from "../../types";
 
 export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifiers> {
 

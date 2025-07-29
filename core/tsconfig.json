@@ -1,5 +1,6 @@
 {
     "compilerOptions": {
+        "baseUrl": ".",
         "allowJs": true,
         "allowSyntheticDefaultImports": true,
         "module": "ESNext",
@@ -14,7 +15,39 @@
         "moduleResolution": "node",
         "esModuleInterop": true,
         "skipLibCheck": true,
-        "resolveJsonModule": true
+        "resolveJsonModule": true,
+        "paths": {
+            "@core/*": [
+                "./src/*"
+            ],
+            "@core/utilities": [
+                "./src/utilities"
+            ],
+            "@core/results": [
+                "./src/results"
+            ],
+            "@core/schema": [
+                "./src/schema"
+            ],
+            "@core/pipeline": [
+                "./src/pipeline"
+            ],
+            "@core/collections": [
+                "./src/collections"
+            ],
+            "@core/plugins": [
+                "./src/plugins"
+            ],
+            "@core/expressions": [
+                "./src/expressions"
+            ],
+            "@core/errors": [
+                "./src/errors"
+            ],
+            "@core/performance": [
+                "./src/performance"
+            ]
+        }
     },
     "include": [
         "./src/**/*"

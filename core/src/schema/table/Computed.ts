@@ -1,6 +1,6 @@
-import { SchemaModifiers, SchemaTypes } from "..";
 import { SchemaBase } from "../property/base/Base";
 import { SchemaTracked } from '../property/modifiers/Tracked';
+import { SchemaModifiers, SchemaTypes } from "../types";
 
 export class SchemaComputed<T extends any, I, TModifiers extends SchemaModifiers = "computed"> extends SchemaBase<T, TModifiers> {
     instance: T;

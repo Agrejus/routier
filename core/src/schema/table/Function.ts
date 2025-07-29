@@ -1,5 +1,5 @@
-import { SchemaModifiers, SchemaTypes } from "..";
 import { SchemaBase } from "../property/base/Base";
+import { SchemaModifiers, SchemaTypes } from "../types";
 
 export class SchemaFunction<T extends any, I, TModifiers extends SchemaModifiers = "unmapped"> extends SchemaBase<() => T, TModifiers> {
     instance: () => T;

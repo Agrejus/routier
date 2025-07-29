@@ -1,4 +1,4 @@
-import { SchemaModifiers } from "../..";
+import { SchemaModifiers } from "../../types";
 import { SchemaBase } from "../base/Base";
 import { SchemaOptional } from "./Optional";
 

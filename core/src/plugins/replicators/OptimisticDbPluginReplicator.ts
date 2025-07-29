@@ -1,6 +1,6 @@
-import { ResolvedChanges } from '../../common/collections/Changes';
-import { Result } from '../../common/Result';
-import { TrampolinePipeline } from '../../common/TrampolinePipeline';
+import { ResolvedChanges } from '../../collections/Changes';
+import { Result } from '../../results';
+import { TrampolinePipeline } from '../../pipeline/TrampolinePipeline';
 import { InferCreateType } from '../../schema';
 import { CallbackPartialResult, CallbackResult, PartialResultType, ResultType } from '../../types';
 import { DbPluginBulkPersistEvent, DbPluginQueryEvent, IdbPluginCollection } from '../types';

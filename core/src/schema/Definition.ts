@@ -1,26 +1,24 @@
-import { CompiledSchema, GetHashTypeFunction, HashFunction, HashType, ICollectionSubscription, Index, InferCreateType, InferType, SchemaTypes, SubscriptionChanges } from ".";
 import { SchemaFunction } from './table/Function';
 import { SchemaComputed } from './table/Computed';
 import { SchemaBase } from "./property/base/Base";
-import { hash } from "../utilities/index";
-import { PropertyInfo } from '../common/PropertyInfo';
-import { CodeBuilder } from '../common/CodeBlock';
-import { EnrichmentHandlerBuilder } from '../handlers/EnrichmentHandlerBuilder';
-import { MergeHandlerBuilder } from '../handlers/MergeHandlerBuilder';
-import { PrepareHandlerBuilder } from '../handlers/PrepareHandlerBuilder';
-import { StripHandlerBuilder } from '../handlers/StripHandlerBuilder';
-import { CloneHandlerBuilder } from '../handlers/CloneHandlerBuilder';
-import { CompareHandlerBuilder } from '../handlers/CompareHandlerBuilder';
-import { DeserializeHandlerBuilder } from '../handlers/DeserializeHandlerBuilder';
-import { HashTypeHandlerBuilder } from '../handlers/HashTypeHandlerBuilder';
-import { IdSelectorHandlerBuilder } from '../handlers/IdSelectorHandlerBuilder';
-import { HashHandlerBuilder } from '../handlers/HashHandlerBuilder';
-import { EnableChangeTrackingHandlerBuilder } from '../handlers/EnableChangeTrackingHandlerBuilder';
-import { FreezeHanderBuilder } from '../handlers/FreezeHandlerBuilder';
-import { IdType } from "../types";
+import { PropertyInfo } from './PropertyInfo';
+import { CodeBuilder } from '../codegen';
+import { EnrichmentHandlerBuilder } from '../codegen/handlers/EnrichmentHandlerBuilder';
+import { MergeHandlerBuilder } from '../codegen/handlers/MergeHandlerBuilder';
+import { PrepareHandlerBuilder } from '../codegen/handlers/PrepareHandlerBuilder';
+import { StripHandlerBuilder } from '../codegen/handlers/StripHandlerBuilder';
+import { CloneHandlerBuilder } from '../codegen/handlers/CloneHandlerBuilder';
+import { CompareHandlerBuilder } from '../codegen/handlers/CompareHandlerBuilder';
+import { DeserializeHandlerBuilder } from '../codegen/handlers/DeserializeHandlerBuilder';
+import { HashTypeHandlerBuilder } from '../codegen/handlers/HashTypeHandlerBuilder';
+import { IdSelectorHandlerBuilder } from '../codegen/handlers/IdSelectorHandlerBuilder';
+import { HashHandlerBuilder } from '../codegen/handlers/HashHandlerBuilder';
+import { EnableChangeTrackingHandlerBuilder } from '../codegen/handlers/EnableChangeTrackingHandlerBuilder';
+import { FreezeHandlerBuilder } from '../codegen/handlers/FreezeHandlerBuilder';
 import { SchemaError } from '../errors/SchemaError';
-import { SerializeHandlerBuilder } from "../handlers/SerializeHandlerBuilder";
-import { uuid } from "../utilities/uuid";
+import { SerializeHandlerBuilder } from "../codegen/handlers/SerializeHandlerBuilder";
+import { uuid, hash } from "@core/utilities";
+import { CompiledSchema, GetHashTypeFunction, HashFunction, HashType, ICollectionSubscription, IdType, Index, InferCreateType, InferType, SchemaTypes, SubscriptionChanges } from './types';
 
 type UniDirectionalSubscriptionPayload<T extends {}> = {
     id: string;
@@ -303,7 +301,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const idSelectorHandlerBuilder = new IdSelectorHandlerBuilder();
             const hashHandlerBuilder = new HashHandlerBuilder();
             const enableChangeTrackingHandlerBuilder = new EnableChangeTrackingHandlerBuilder();
-            const freezeHandlerBuilder = new FreezeHanderBuilder();
+            const freezeHandlerBuilder = new FreezeHandlerBuilder();
             const serializeHandlerBuilder = new SerializeHandlerBuilder();
 
             const enricher = enrichmentHandlerBuilder.build();

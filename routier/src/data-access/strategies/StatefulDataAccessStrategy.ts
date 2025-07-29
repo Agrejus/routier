@@ -69,22 +69,14 @@ export class StatefulDataAccessStrategy<T extends {}> extends DataAccessStrategy
                 }
 
                 const operation = new PendingChanges<T>();
-
-                // only send in one schema at a time since we are technically in the scope of the schema
-                operation.changes.set(event.operation.schema.id, {
+                const changes = new CollectionChanges<T>({
                     adds: {
                         entities: r.data as InferCreateType<T>[]
-                    },
-                    removes: {
-                        entities: [],
-                        queries: []
-                    },
-                    hasChanges: typeof r.data === "object" && "length" in r.data && typeof r.data.length === "number" && r.data.length > 0,
-                    tags: new TagCollection(),
-                    updates: {
-                        changes: []
                     }
                 });
+
+                // only send in one schema at a time since we are technically in the scope of the schema
+                operation.changes.set(event.operation.schema.id, changes);
 
                 // Add data to the read plugin
                 readPlugin.bulkPersist({

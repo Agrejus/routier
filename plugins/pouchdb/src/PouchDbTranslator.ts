@@ -5,9 +5,9 @@ export class PouchDbTranslator<TEntity extends {}, TShape extends unknown = TEnt
     private schema: CompiledSchema<TEntity>;
     private cachedMatches: ((item: unknown) => boolean) | null = null;
 
-    constructor(query: IQuery<TEntity, TShape>, schema: CompiledSchema<TEntity>) {
+    constructor(query: IQuery<TEntity, TShape>) {
         super(query);
-        this.schema = schema;
+        this.schema = query.schema;
     }
 
     matches(item: unknown) {

@@ -1,5 +1,4 @@
-import { PropertyDeserializer, PropertySerializer, SchemaModifiers } from "../..";
-import { DefaultValue } from "../../../types";
+import { DefaultValue, PropertyDeserializer, PropertySerializer, SchemaModifiers } from "../../types";
 import { SchemaBase } from "../base/Base";
 import { SchemaDeserialize } from "./Deserialize";
 import { SchemaSerialize } from "./Serialize";

@@ -1,4 +1,4 @@
-import { PropertyInfo } from "../../common/PropertyInfo";
+import { PropertyInfo } from "../../schema/PropertyInfo";
 import { Expression, Filter, ParamsFilter } from "../../expressions/types";
 import { GenericFunction } from "../../types";
 

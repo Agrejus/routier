@@ -43,13 +43,6 @@ export class DataBridge<T extends {}> {
     subscribe<TShape, U>(event: DbPluginQueryEvent<T, TShape>, done: CallbackResult<TShape>) {
         const subscription = event.operation.schema.createSubscription(this.signal);
         subscription.onMessage((changes) => {
-            debugger;
-            if (changes.removalQueries.length > 0) {
-                // If the expression is not null, that means we are trying to remove by an expression
-                // we need to run the query because we do not know about any overlap
-                this.query(event, done);
-                return;
-            }
 
             const filters = event.operation.options.get("filter")
 

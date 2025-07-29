@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { getProperties } from './utils';
 import { Expression, ComparatorExpression, OperatorExpression, PropertyExpression, ValueExpression } from './types';
-import { PropertyInfo } from '../common/PropertyInfo';
+import { PropertyInfo } from '../schema/PropertyInfo';
 import { SchemaTypes } from '../schema';
 
 describe('Utils', () => {

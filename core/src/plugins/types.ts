@@ -1,5 +1,5 @@
 import { CallbackResult, CompiledSchema, DeepPartial, InferCreateType, InferType, QueryOptionsCollection, TagCollection } from "..";
-import { PendingChanges, ResolvedChanges } from "../common/collections/Changes";
+import { PendingChanges, ResolvedChanges } from "../collections/Changes";
 import { SchemaId } from "../schema";
 import { CallbackPartialResult } from "../types";
 
@@ -70,16 +70,6 @@ export type IdbPluginCollection = {
     read?: IDbPlugin;
 }
 
-/**
- * Represents a set of changes to entities: additions, removals, and updates.
- */
-export type CollectionChanges<T extends {}> = {
-    adds: { entities: InferCreateType<T>[] };
-    updates: { changes: EntityUpdateInfo<T>[] };
-    removes: { entities: InferType<T>[] }; // Do not pass in the query, we want more visibility into what is going on
-    tags: TagCollection;
-    hasChanges: boolean;
-}
 
 export type EntityUpdateInfo<T extends {}> = {
     entity: InferType<T>,
@@ -90,18 +80,6 @@ export type EntityUpdateInfo<T extends {}> = {
 export type TaggedEntity<T> = {
     entity: T;
     tag?: unknown
-}
-
-/**
- * The result of entity modifications: added, removed, and updated entities.
- */
-export type CollectionChangesResult<T extends {}> = {
-    /** Entities that were added (may be partial). */
-    adds: { entities: DeepPartial<InferCreateType<T>>[] };
-    /** Entities that were removed. */
-    removes: { entities: InferType<T>[]; };
-    /** Entities that were updated. */
-    updates: { entities: InferType<T>[]; };
 }
 
 /**

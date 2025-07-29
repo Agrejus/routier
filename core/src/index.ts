@@ -50,8 +50,6 @@ export {
 
 export {
     IDbPlugin,
-    CollectionChanges,
-    CollectionChangesResult,
     DbPluginOperationEvent,
     IdbPluginCollection,
     IQuery,
@@ -65,12 +63,14 @@ export {
 
 export {
     PendingChanges,
-    ResolvedChanges
-} from './common/collections/Changes';
+    ResolvedChanges,
+    CollectionChanges,
+    CollectionChangesResult,
+} from './collections/Changes';
 
 export {
     TagCollection
-} from './common/collections/TagCollection';
+} from './collections/TagCollection';
 
 
 export {
@@ -85,11 +85,9 @@ export {
     SqlTranslator
 } from './plugins/translators/SqlTranslator';
 
-export { DbPluginLogging } from './plugins/DbPluginLogging';
+export { DbPluginLogging } from './plugins/logging/DbPluginLogging';
 
 export { Query } from './plugins/query/Query';
-
-export { DbPluginHelper } from './plugins/DbPluginHelper';
 
 export {
     toMap,
@@ -99,8 +97,11 @@ export {
     assertInstanceOfDbPluginLogging,
     isNodeRuntime,
     assertString,
-    assertIsArray
+    assertIsArray,
+    cast
 } from './utilities/index';
+
+export { measure } from './performance';
 
 export {
     CompiledSchema,
@@ -127,12 +128,14 @@ export {
 export {
     SyncronousQueue,
     SyncronousUnitOfWork
-} from './common/SyncronousQueue';
+} from './pipeline/SyncronousQueue';
 
 export {
     TrampolinePipeline,
-    Processor
-} from './common/TrampolinePipeline';
+    Processor,
+    AsyncPipeline,
+    UnitOfWork
+} from './pipeline/TrampolinePipeline';
 
 export {
     DbPluginReplicator
@@ -146,8 +149,8 @@ export { IDbPluginReplicator } from './plugins/replicators/types';
 
 export {
     PropertyInfo
-} from './common/PropertyInfo';
+} from './schema/PropertyInfo';
 
 export {
     Result
-} from './common/Result';
+} from './results';
