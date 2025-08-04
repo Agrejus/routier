@@ -36,6 +36,6 @@
     "ts-loader": "^9.5.2"
   },
   "dependencies": {
-    "dexie": "^4.0.11"
+    "routier-plugin-memory": "file://../memory"
   }
 }

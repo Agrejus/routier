@@ -1,7 +1,7 @@
 import { CodeBuilder, ObjectBuilder } from '../../blocks';
 import { SlotPath } from '../../SlotPath';
 import { PropertyInfoHandler } from "../types";
-import { PropertyInfo, SchemaTypes } from "@core/schema";
+import { PropertyInfo, SchemaTypes } from "../../../schema";
 export class SerializeObjectHandler extends PropertyInfoHandler {
 
     override handle(property: PropertyInfo<any>, builder: CodeBuilder): CodeBuilder | null {

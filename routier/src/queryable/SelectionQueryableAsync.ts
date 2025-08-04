@@ -1,6 +1,7 @@
-import { Filter, GenericFunction, ParamsFilter } from "routier-core";
+import { toPromise } from "routier-core";
 import { SelectionQueryable } from "./SelectionQueryable";
-import { createPromise } from "../utilities";
+import { Filter, ParamsFilter } from "routier-core/expressions";
+import { GenericFunction } from "routier-core/types";
 
 export class SelectionQueryableAsync<Root extends {}, Shape> extends SelectionQueryable<Root, Shape, void> {
 
@@ -11,32 +12,32 @@ export class SelectionQueryableAsync<Root extends {}, Shape> extends SelectionQu
 
         if (params != null) {
             const paramsFilter = doneOrExpression as ParamsFilter<Shape, P>;
-            return createPromise(w => {
+            return toPromise(w => {
                 this.remove(paramsFilter, params, w);
             });
         }
 
         if (doneOrExpression != null) {
             const paramsFilter = doneOrExpression as Filter<Shape>;
-            return createPromise(w => {
+            return toPromise(w => {
                 this.remove(paramsFilter, w);
             });
         }
 
-        return createPromise(w => {
+        return toPromise(w => {
             this.remove(w);
         });
     }
 
     toArrayAsync(): Promise<Shape[]> {
-        return createPromise<Shape[]>(w => this.toArray(w));
+        return toPromise<Shape[]>(w => this.toArray(w));
     }
 
     firstAsync(expression: Filter<Shape>): Promise<Shape>;
     firstAsync<P extends {}>(expression: ParamsFilter<Shape, P>, params: P): Promise<Shape>;
     firstAsync(): Promise<Shape>;
     firstAsync<P extends {} = never>(expression?: Filter<Shape> | ParamsFilter<Shape, P>, params?: P): Promise<Shape> {
-        return createPromise<Shape>(w => {
+        return toPromise<Shape>(w => {
 
             if (params == null && expression == null) {
                 this.first(w);
@@ -56,7 +57,7 @@ export class SelectionQueryableAsync<Root extends {}, Shape> extends SelectionQu
     firstOrUndefinedAsync<P extends {}>(expression: ParamsFilter<Shape, P>, params: P): Promise<Shape | undefined>;
     firstOrUndefinedAsync(): Promise<Shape | undefined>;
     firstOrUndefinedAsync<P extends {} = never>(expression?: Filter<Shape> | ParamsFilter<Shape, P>, params?: P): Promise<Shape | undefined> {
-        return createPromise<Shape | undefined>(w => {
+        return toPromise<Shape | undefined>(w => {
 
             if (params == null && expression == null) {
                 this.firstOrUndefined(w);
@@ -76,7 +77,7 @@ export class SelectionQueryableAsync<Root extends {}, Shape> extends SelectionQu
     someAsync<P extends {}>(expression: ParamsFilter<Shape, P>, params: P): Promise<boolean>;
     someAsync(): Promise<boolean>;
     someAsync<P extends {} = never>(expression?: Filter<Shape> | ParamsFilter<Shape, P>, params?: P): Promise<boolean> {
-        return createPromise<boolean>(w => {
+        return toPromise<boolean>(w => {
 
             if (params == null && expression == null) {
                 this.some(w);
@@ -95,7 +96,7 @@ export class SelectionQueryableAsync<Root extends {}, Shape> extends SelectionQu
     everyAsync(expression: Filter<Shape>): Promise<boolean>;
     everyAsync<P extends {}>(expression: ParamsFilter<Shape, P>, params: P): Promise<boolean>;
     everyAsync<P extends {} = never>(expression?: Filter<Shape> | ParamsFilter<Shape, P>, params?: P): Promise<boolean> {
-        return createPromise<boolean>(w => {
+        return toPromise<boolean>(w => {
 
             if (params != null) {
                 this.every(expression as ParamsFilter<Shape, P>, params, w);
@@ -107,31 +108,31 @@ export class SelectionQueryableAsync<Root extends {}, Shape> extends SelectionQu
     }
 
     minAsync(selector: GenericFunction<Shape, number>): Promise<number> {
-        return createPromise<number>(w => {
+        return toPromise<number>(w => {
             this.min(selector, w);
         });
     }
 
     maxAsync(selector: GenericFunction<Shape, number>): Promise<number> {
-        return createPromise<number>(w => {
+        return toPromise<number>(w => {
             this.max(selector, w);
         });
     }
 
     sumAsync(selector: GenericFunction<Shape, number>): Promise<number> {
-        return createPromise<number>(w => {
+        return toPromise<number>(w => {
             this.sum(selector, w);
         });
     }
 
     countAsync(): Promise<number> {
-        return createPromise<number>(w => {
+        return toPromise<number>(w => {
             this.count(w);
         });
     }
 
     distinctAsync(): Promise<Shape[]> {
-        return createPromise<Shape[]>(w => {
+        return toPromise<Shape[]>(w => {
             this.distinct(w);
         });
     }

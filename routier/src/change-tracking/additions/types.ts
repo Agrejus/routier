@@ -1,4 +1,4 @@
-import { InferType } from "routier-core";
+import { InferType } from "routier-core/schema";
 
 export interface IAdditions<T extends {}> {
     get(entity: InferType<T>): InferType<T> | undefined;

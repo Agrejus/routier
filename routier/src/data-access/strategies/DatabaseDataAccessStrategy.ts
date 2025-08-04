@@ -1,7 +1,9 @@
-import { CallbackResult, DbPluginBulkPersistEvent, DbPluginQueryEvent, ResolvedChanges } from "routier-core";
 import { IDataAccessStrategy } from "../types";
 import { DataAccessStrategyBase } from "./DataAccessStrategyBase";
 import { CollectionOptions } from "../../types";
+import { DbPluginBulkPersistEvent, DbPluginQueryEvent } from "routier-core/plugins";
+import { CallbackResult } from "routier-core/results";
+import { ResolvedChanges } from "routier-core/collections";
 
 export class DatabaseDataAccessStrategy<T extends {}> extends DataAccessStrategyBase<T> implements IDataAccessStrategy<T> {
 

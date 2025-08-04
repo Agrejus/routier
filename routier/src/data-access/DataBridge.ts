@@ -1,10 +1,12 @@
-import { CallbackResult, CollectionChanges, CollectionChangesResult, DbPluginQueryEvent, IDbPlugin, ResolvedChanges, Result, SchemaId, uuidv4 } from "routier-core";
 import { CollectionOptions } from "../types";
 import { StatefulDataAccessStrategy } from "./strategies/StatefulDataAccessStrategy";
 import { DatabaseDataAccessStrategy } from "./strategies/DatabaseDataAccessStrategy";
 import { IDataAccessStrategy } from "./types";
 import { MemoryPlugin } from "routier-plugin-memory";
-import { DbPluginBulkPersistEvent } from "routier-core";
+import { DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin } from "routier-core/plugins";
+import { CallbackResult, Result } from "routier-core/results";
+import { ResolvedChanges } from "routier-core/collections";
+import { uuidv4 } from "routier-core/utilities";
 
 export class DataBridge<T extends {}> {
 

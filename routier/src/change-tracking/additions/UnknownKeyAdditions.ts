@@ -1,4 +1,4 @@
-import { CompiledSchema, IdType, InferType, InferCreateType, HashType } from "routier-core";
+import { CompiledSchema, IdType, InferType, InferCreateType, HashType } from "routier-core/schema";
 import { IAdditions } from "./types";
 
 export class UnknownKeyAdditions<T extends {}> implements IAdditions<T> {

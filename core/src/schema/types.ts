@@ -1,7 +1,7 @@
-import { SchemaDefinition } from "./Definition";
-import { SchemaBase } from "./property/base/Base";
-import { SchemaArray } from "./property/types/Array";
-import { SchemaObject } from "./property/types/Object";
+import { SchemaDefinition } from "./SchemaDefinition";
+import { SchemaBase } from "./property/base/SchemaBase";
+import { SchemaArray } from "./property/types/SchemaArray";
+import { SchemaObject } from "./property/types/SchemaObject";
 import { PropertyInfo } from "./PropertyInfo";
 
 export type DefaultValue<T, I = never> = T | ((injected: I) => T);

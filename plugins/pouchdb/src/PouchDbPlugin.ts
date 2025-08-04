@@ -1,6 +1,12 @@
 import PouchDB from 'pouchdb';
-import { assertIsNotNull, AsyncPipeline, CallbackPartialResult, CallbackResult, combineExpressions, ComparatorExpression, DbPluginBulkPersistEvent, DbPluginQueryEvent, Expression, getProperties, IDbPlugin, InferCreateType, InferType, IQuery, PropertyInfo, ResolvedChanges, Result, SchemaId, SyncronousQueue, SyncronousUnitOfWork } from 'routier-core';
 import { PouchDbTranslator } from './PouchDbTranslator';
+import { AsyncPipeline, SyncronousQueue, SyncronousUnitOfWork } from 'routier-core/pipeline';
+import { InferCreateType, InferType, PropertyInfo, SchemaId } from 'routier-core/schema';
+import { DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin, IQuery } from 'routier-core/plugins';
+import { ResolvedChanges } from 'routier-core/collections';
+import { CallbackPartialResult, CallbackResult, Result } from 'routier-core/results';
+import { assertIsNotNull } from 'routier-core/assertions';
+import { combineExpressions, ComparatorExpression, Expression, getProperties } from 'routier-core/expressions';
 
 const queue = new SyncronousQueue();
 const INDEX_NAME = "routier_pdb_indexes"

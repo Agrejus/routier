@@ -5,10 +5,23 @@ import { defineConfig } from "@rspack/cli";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-    entry: "./src/index.ts", // Entry point for your library
+    entry: {
+        index: "./src/index.ts",
+        "utilities/index": "./src/utilities/index.ts",
+        "results/index": "./src/results/index.ts",
+        "schema/index": "./src/schema/index.ts",
+        "pipeline/index": "./src/pipeline/index.ts",
+        "collections/index": "./src/collections/index.ts",
+        "assertions/index": "./src/assertions/index.ts",
+        "plugins/index": "./src/plugins/index.ts",
+        "expressions/index": "./src/expressions/index.ts",
+        "errors/index": "./src/errors/index.ts",
+        "performance/index": "./src/performance/index.ts",
+        "types/index": "./src/types/index.ts"
+    },
     output: {
         path: resolve(__dirname, "dist"),
-        filename: "index.js", // Default output file name
+        filename: "[name].js",
         library: {
             type: "module"
         },

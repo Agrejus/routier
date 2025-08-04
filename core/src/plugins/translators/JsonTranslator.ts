@@ -1,7 +1,8 @@
 import { DataTranslator } from "./DataTranslator";
-import { assertIsArray, isDate } from "../../utilities/index";
 import { QueryOption } from "../query/types";
-import { ParamsFilter } from "../../expressions/types";
+import { assertIsArray } from "../../assertions";
+import { ParamsFilter } from "../../expressions";
+import { isDate } from "../../utilities";
 
 export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRoot, TShape> {
 

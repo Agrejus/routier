@@ -1,10 +1,10 @@
-import { SchemaBase } from "../base/Base";
-import { SchemaDefault } from "../modifiers/Default";
-import { SchemaNullable } from "../modifiers/Nullable";
-import { SchemaOptional } from "../modifiers/Optional";
-import { SchemaDeserialize } from '../modifiers/Deserialize';
-import { SchemaSerialize } from '../modifiers/Serialize';
-import { SchemaIndex } from "../modifiers/Index";
+import { SchemaBase } from "../base/SchemaBase";
+import { SchemaDefault } from "../modifiers/SchemaDefault";
+import { SchemaNullable } from "../modifiers/SchemaNullable";
+import { SchemaOptional } from "../modifiers/SchemaOptional";
+import { SchemaDeserialize } from '../modifiers/SchemaDeserialize';
+import { SchemaSerialize } from '../modifiers/SchemaSerialize';
+import { SchemaIndex } from "../modifiers/SchemaIndex";
 import { DefaultValue, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes } from "../../types";
 
 export class SchemaArray<T extends any, TModifiers extends SchemaModifiers> extends SchemaBase<T[], TModifiers> {

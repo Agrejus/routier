@@ -1,4 +1,7 @@
-import { assertIsArray, CompiledSchema, Filter, InferType, IQuery, JsonTranslator, ParamsFilter, QueryCollectionItem, QueryOption } from "routier-core";
+import { assertIsArray } from "routier-core/assertions";
+import { Filter, ParamsFilter } from "routier-core/expressions";
+import { IQuery, JsonTranslator, QueryCollectionItem, QueryOption } from "routier-core/plugins";
+import { CompiledSchema, InferType } from "routier-core/schema";
 
 export class PouchDbTranslator<TEntity extends {}, TShape extends unknown = TEntity> extends JsonTranslator<TEntity, TShape> {
 

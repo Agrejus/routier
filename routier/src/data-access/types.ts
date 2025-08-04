@@ -1,5 +1,7 @@
-import { CallbackResult, DbPluginBulkPersistEvent, DbPluginQueryEvent, ResolvedChanges } from "routier-core";
+import { DbPluginBulkPersistEvent, DbPluginQueryEvent } from "routier-core/plugins";
 import { CollectionOptions } from "../types";
+import { CallbackResult } from "routier-core/results";
+import { ResolvedChanges } from "routier-core/collections";
 
 export interface IDataAccessStrategy<T extends {}> {
     bulkPersist(collectionOptions: CollectionOptions, event: DbPluginBulkPersistEvent<T>, done: CallbackResult<ResolvedChanges<T>>): void;

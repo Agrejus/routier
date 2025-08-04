@@ -1,4 +1,6 @@
-import { IdType, CompiledSchema, SchemaTypes, uuidv4, InferType, PropertyInfo } from "routier-core";
+import { CompiledSchema, IdType, InferType, PropertyInfo, SchemaTypes } from "routier-core/schema";
+import { uuidv4 } from "routier-core/utilities";
+
 
 export class DbCollection {
     private nextNumericalId: number;

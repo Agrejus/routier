@@ -1,7 +1,9 @@
-import { Filter, ParamsFilter, GenericFunction, QueryOrdering } from "routier-core";
+import { Filter, ParamsFilter } from "routier-core/expressions";
 import { SelectionQueryableAsync } from "./SelectionQueryableAsync";
 import { SkippedQueryable } from "./SkippedQueryable";
 import { TakeQueryableAsync } from "./TakeQueryableAsync";
+import { GenericFunction } from "routier-core/types";
+import { QueryOrdering } from "routier-core/plugins";
 
 export class SkippedQueryableAsync<Root extends {}, Shape> extends SelectionQueryableAsync<Root, Shape> {
 

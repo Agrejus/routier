@@ -1,4 +1,4 @@
-import { PropertyInfo } from "@core/schema";
+import { PropertyInfo } from "../schema";
 import { Expression, PropertyExpression } from "./types";
 
 /**

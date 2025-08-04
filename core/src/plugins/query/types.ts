@@ -1,5 +1,5 @@
-import { PropertyInfo } from "../../schema/PropertyInfo";
-import { Expression, Filter, ParamsFilter } from "../../expressions/types";
+import { Expression, Filter, ParamsFilter } from "../../expressions";
+import { PropertyInfo } from "../../schema";
 import { GenericFunction } from "../../types";
 
 export enum QueryOrdering {

@@ -1,9 +1,8 @@
-import { PendingChanges, ResolvedChanges } from '../../collections/Changes';
-import { Result } from '../../results';
 import { CompiledSchema, SchemaId } from '../../schema';
-import { CallbackResult, CallbackPartialResult } from '../../types';
-import { now } from '../../performance';
 import { DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin, IQuery } from '../types';
+import { PendingChanges, ResolvedChanges } from '../../collections';
+import { CallbackPartialResult, CallbackResult, Result } from '../../results';
+import { now } from '../../performance';
 
 // Check if we're in development environment
 const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined;

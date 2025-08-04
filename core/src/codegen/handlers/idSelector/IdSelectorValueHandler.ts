@@ -1,6 +1,6 @@
 import { ArrayBuilder, CodeBuilder, SlotBlock } from '../../blocks';
 import { PropertyInfoHandler } from "../types";
-import { PropertyInfo } from "@core/schema";
+import { PropertyInfo } from "../../../schema";
 
 export class IdSelectorValueHandler extends PropertyInfoHandler {
 

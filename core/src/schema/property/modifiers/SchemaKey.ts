@@ -1,6 +1,6 @@
-import { SchemaBase } from "../base/Base";
-import { SchemaIdentity } from "./Identity";
-import { SchemaDefault } from "./Default";
+import { SchemaBase } from "../base/SchemaBase";
+import { SchemaIdentity } from "./SchemaIdentity";
+import { SchemaDefault } from "./SchemaDefault";
 import { DefaultValue, IdType, SchemaModifiers } from "../../types";
 
 export class SchemaKey<T extends IdType, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {

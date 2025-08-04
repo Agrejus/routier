@@ -1,5 +1,8 @@
-import { CallbackResult, Filter, GenericFunction, ParamsFilter, QueryOptionName, Result, ResultType, toExpression } from "routier-core";
+import { CallbackResult, Result, ResultType } from "routier-core/results";
 import { QuerySource } from "./QuerySource";
+import { Filter, ParamsFilter, toExpression } from "routier-core/expressions";
+import { GenericFunction } from "routier-core/types";
+import { QueryOptionName } from "routier-core/plugins";
 
 export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<Root, Shape> {
 

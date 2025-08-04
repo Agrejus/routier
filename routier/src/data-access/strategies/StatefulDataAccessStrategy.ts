@@ -1,8 +1,12 @@
-import { Query, assertIsNotNull, InferCreateType, DbPluginLogging, IDbPluginReplicator, OptimisticDbPluginReplicator, assertInstanceOfDbPluginLogging, IDbPlugin, DbPluginReplicator, CollectionChangesResult, DbPluginBulkPersistEvent, DbPluginQueryEvent, CallbackResult, Result, SchemaId, CollectionChanges, ResolvedChanges, TagCollection, PendingChanges } from "routier-core";
 import { IDataAccessStrategy } from "../types";
 import { DataAccessStrategyBase } from "./DataAccessStrategyBase";
 import { assertIsMemoryPlugin, MemoryPlugin } from "routier-plugin-memory";
 import { CollectionOptions, StatefulCollectionOptions } from "../../types";
+import { DbPluginBulkPersistEvent, DbPluginLogging, DbPluginQueryEvent, DbPluginReplicator, IDbPlugin, IDbPluginReplicator, OptimisticDbPluginReplicator, Query } from "routier-core/plugins";
+import { CallbackResult, Result } from "routier-core/results";
+import { CollectionChanges, PendingChanges, ResolvedChanges } from "routier-core/collections";
+import { assertInstanceOfDbPluginLogging, assertIsNotNull } from "routier-core/assertions";
+import { InferCreateType } from "routier-core/schema";
 
 let dbPluginReplicator: IDbPluginReplicator;
 

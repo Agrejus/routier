@@ -1,20 +1,22 @@
 import { DefaultValue, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes } from "../../types";
-import { SchemaBase } from "../base/Base";
-import { SchemaDefault } from "../modifiers/Default";
-import { SchemaDeserialize } from "../modifiers/Deserialize";
-import { SchemaDistinct } from "../modifiers/Distinct";
-import { SchemaIndex } from "../modifiers/Index";
-import { SchemaNullable } from "../modifiers/Nullable";
-import { SchemaOptional } from "../modifiers/Optional";
-import { SchemaReadonly } from "../modifiers/Readonly";
-import { SchemaSerialize } from "../modifiers/Serialize";
-import { SchemaArray } from "./Array";
+import { SchemaBase } from "../base/SchemaBase";
+import { SchemaDefault } from "../modifiers/SchemaDefault";
+import { SchemaDeserialize } from "../modifiers/SchemaDeserialize";
+import { SchemaDistinct } from "../modifiers/SchemaDistinct";
+import { SchemaIdentity } from "../modifiers/SchemaIdentity";
+import { SchemaIndex } from "../modifiers/SchemaIndex";
+import { SchemaKey } from "../modifiers/SchemaKey";
+import { SchemaNullable } from "../modifiers/SchemaNullable";
+import { SchemaOptional } from "../modifiers/SchemaOptional";
+import { SchemaReadonly } from "../modifiers/SchemaReadonly";
+import { SchemaSerialize } from "../modifiers/SchemaSerialize";
+import { SchemaArray } from "./SchemaArray";
 
-export class SchemaBoolean<T extends boolean, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {
+export class SchemaNumber<T extends number, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {
 
     instance: T;
-    type = SchemaTypes.Boolean;
-    private _schemaBoolean = true;
+    type = SchemaTypes.Number;
+    private _schemaNumber = true;
 
     optional() {
         return new SchemaOptional<T, TModifiers | "optional">(this);
@@ -22,6 +24,10 @@ export class SchemaBoolean<T extends boolean, TModifiers extends SchemaModifiers
 
     nullable() {
         return new SchemaNullable<T, TModifiers | "nullable">(this);
+    }
+
+    key() {
+        return new SchemaKey<T, TModifiers | "key" | "readonly">(this);
     }
 
     default<I = never>(value: DefaultValue<T, I>, injected?: I) {
@@ -38,6 +44,10 @@ export class SchemaBoolean<T extends boolean, TModifiers extends SchemaModifiers
 
     serialize(serializer: PropertySerializer<T>) {
         return new SchemaSerialize<T, TModifiers | "serialize">(serializer, this);
+    }
+
+    identity() {
+        return new SchemaIdentity<T, TModifiers | "identity">(this);
     }
 
     array() {

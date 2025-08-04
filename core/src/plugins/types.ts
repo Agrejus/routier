@@ -1,8 +1,7 @@
-import { CallbackResult, CompiledSchema, DeepPartial, InferCreateType, InferType, QueryOptionsCollection, TagCollection } from "..";
-import { PendingChanges, ResolvedChanges } from "../collections/Changes";
-import { SchemaId } from "../schema";
-import { CallbackPartialResult } from "../types";
-
+import { PendingChanges, ResolvedChanges } from "../collections";
+import { CallbackPartialResult, CallbackResult } from "../results";
+import { QueryOptionsCollection } from "./query/QueryOptionsCollection";
+import { CompiledSchema, SchemaId, InferType } from '../schema';
 
 /**
  * Interface for a database plugin, which provides query, destroy, and bulk operations.

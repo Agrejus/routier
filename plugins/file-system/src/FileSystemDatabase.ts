@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { MemoryDatabase } from 'routier-plugin-memory';
 
-export class FileSystemDatabase {
+export class FileSystemDatabase implements MemoryDatabase {
 
     private path: string;
     private name: string;

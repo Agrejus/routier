@@ -1,4 +1,4 @@
-import { CallbackResult, Result, ResultType } from "@core/results";
+import { CallbackResult, Result, ResultType } from "../results";
 
 /**
  * Type definition for an asynchronous function that takes data and a callback.

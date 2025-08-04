@@ -1,6 +1,8 @@
-import { Filter, ParamsFilter, GenericFunction, QueryOrdering } from "routier-core";
 import { TakeQueryable } from "./TakeQueryable";
 import { SelectionQueryable } from "./SelectionQueryable";
+import { Filter, ParamsFilter } from "routier-core/expressions";
+import { GenericFunction } from "routier-core/types";
+import { QueryOrdering } from "routier-core/plugins";
 
 // Cannot perform another skip
 export class SkippedQueryable<Root extends {}, Shape, U> extends SelectionQueryable<Root, Shape, U> {

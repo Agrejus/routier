@@ -1,22 +1,22 @@
 import { DefaultValue, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes } from "../../types";
-import { SchemaBase } from "../base/Base";
-import { SchemaDefault } from "../modifiers/Default";
-import { SchemaDeserialize } from "../modifiers/Deserialize";
-import { SchemaDistinct } from "../modifiers/Distinct";
-import { SchemaIdentity } from "../modifiers/Identity";
-import { SchemaIndex } from "../modifiers/Index";
-import { SchemaKey } from "../modifiers/Key";
-import { SchemaNullable } from "../modifiers/Nullable";
-import { SchemaOptional } from "../modifiers/Optional";
-import { SchemaReadonly } from "../modifiers/Readonly";
-import { SchemaSerialize } from "../modifiers/Serialize";
-import { SchemaArray } from "./Array";
+import { SchemaBase } from "../base/SchemaBase";
+import { SchemaDefault } from "../modifiers/SchemaDefault";
+import { SchemaDeserialize } from "../modifiers/SchemaDeserialize";
+import { SchemaDistinct } from "../modifiers/SchemaDistinct";
+import { SchemaIdentity } from "../modifiers/SchemaIdentity";
+import { SchemaIndex } from "../modifiers/SchemaIndex";
+import { SchemaKey } from "../modifiers/SchemaKey";
+import { SchemaNullable } from "../modifiers/SchemaNullable";
+import { SchemaOptional } from "../modifiers/SchemaOptional";
+import { SchemaReadonly } from "../modifiers/SchemaReadonly";
+import { SchemaSerialize } from "../modifiers/SchemaSerialize";
+import { SchemaArray } from "./SchemaArray";
 
-export class SchemaNumber<T extends number, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {
+export class SchemaString<T extends string, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {
 
     instance: T;
-    type = SchemaTypes.Number;
-    private _schemaNumber = true;
+    type = SchemaTypes.String;
+    private _schemaString = true;
 
     optional() {
         return new SchemaOptional<T, TModifiers | "optional">(this);

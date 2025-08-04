@@ -1,6 +1,6 @@
 import { PropertyDeserializer, PropertySerializer, SchemaModifiers } from "../../types";
-import { SchemaBase } from "../base/Base";
-import { SchemaSerialize } from "./Serialize";
+import { SchemaBase } from "../base/SchemaBase";
+import { SchemaSerialize } from "./SchemaSerialize";
 
 export class SchemaDeserialize<T extends any, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {
     instance: T;

@@ -12,7 +12,7 @@
         "noImplicitAny": true,
         "sourceMap": true,
         "outDir": "./dist",
-        "moduleResolution": "node",
+        "moduleResolution": "bundler",
         "esModuleInterop": true,
         "skipLibCheck": true,
         "baseUrl": "dist",

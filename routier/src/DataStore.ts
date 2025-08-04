@@ -1,7 +1,11 @@
-import { CallbackPartialResult, CallbackResult, CompiledSchema, IDbPlugin, PartialResultType, PendingChanges, ResolvedChanges, Result, SchemaId, TrampolinePipeline } from 'routier-core';
 import { Collection } from './collections/Collection';
 import { CollectionBuilder } from './collection-builder/CollectionBuilder';
 import { CollectionPipelines } from './types';
+import { IDbPlugin } from 'routier-core/plugins';
+import { CompiledSchema, SchemaId } from 'routier-core/schema';
+import { TrampolinePipeline } from 'routier-core/pipeline';
+import { CallbackPartialResult, CallbackResult, PartialResultType, Result } from 'routier-core/results';
+import { PendingChanges, ResolvedChanges } from 'routier-core/collections';
 
 /**
  * The main Routier class, providing collection management, change tracking, and persistence for entities.

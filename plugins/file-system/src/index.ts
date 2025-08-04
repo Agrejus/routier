@@ -1,25 +1,16 @@
-import { DbPluginBulkOperationsEvent, DbPluginQueryEvent, EntityModificationResult, IDbPlugin } from 'routier-core';
+import { MemoryPlugin } from "routier-plugin-memory";
 
-export class FileSystemPlugin implements IDbPlugin {
+export class FileSystemPlugin extends MemoryPlugin {
 
     private path: string;
     private name: string;
 
     constructor(path: string, name: string) {
+        super(name);
         this.path = path;
-        this.name = name;
     }
 
-    query<TRoot extends {}, TShape extends unknown = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: (result: TShape, error?: any) => void): void {
-
+    [Symbol.dispose](): void {
+        throw new Error("Method not implemented.");
     }
-
-    destroy(done: (error?: any) => void): void {
-
-    }
-
-    bulkOperations<TRoot extends {}>(event: DbPluginBulkOperationsEvent<TRoot>, done: (result: EntityModificationResult<TRoot>, error?: any) => void): void {
-
-    }
-
 }

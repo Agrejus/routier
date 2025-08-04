@@ -1,6 +1,6 @@
 import { CodeBuilder } from '../../blocks';
 import { PropertyInfoHandler } from "../types";
-import { PropertyInfo } from "@core/schema";
+import { PropertyInfo } from "../../../schema";
 
 export class StripIdentityHandler extends PropertyInfoHandler {
 

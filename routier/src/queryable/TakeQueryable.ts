@@ -1,5 +1,7 @@
-import { Filter, ParamsFilter, GenericFunction, QueryOrdering } from "routier-core";
+import { Filter, ParamsFilter } from "routier-core/expressions";
 import { SelectionQueryable } from "./SelectionQueryable";
+import { GenericFunction } from "routier-core/types";
+import { QueryOrdering } from "routier-core/plugins";
 
 // cannot skip or take here, this class is returned after a take
 // and a skip cannot occur after a take

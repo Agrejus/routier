@@ -1,6 +1,8 @@
+import { IDbPlugin, Query } from "routier-core/plugins";
 import { CollectionOptions, CollectionPipelines } from "../types";
 import { CollectionBase } from './CollectionBase';
-import { CompiledSchema, SchemaId, IDbPlugin, InferType, CallbackResult, Result, Query } from "routier-core";
+import { CompiledSchema, InferType, SchemaId } from "routier-core/schema";
+import { CallbackResult, Result } from "routier-core/results";
 
 export class RemovableCollection<TEntity extends {}> extends CollectionBase<TEntity> {
 

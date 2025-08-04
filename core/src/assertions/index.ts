@@ -2,7 +2,7 @@ import { ChangePackage } from "../collections/Changes";
 import { DbPluginLogging } from "../plugins/logging/DbPluginLogging";
 import { InferCreateType, InferType } from "../schema/types";
 import { DeepPartial } from "../types";
-import { isDate } from "@core/utilities";
+import { isDate } from "../utilities";
 
 export function assertDate(data: unknown): asserts data is Date {
     if (isDate(data) === false) {

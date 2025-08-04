@@ -1,4 +1,4 @@
-import { uuid } from "@core/utilities";
+import { uuid } from "../utilities";
 import { CreateBlockOptions } from "./types";
 
 type Line = string | Block;

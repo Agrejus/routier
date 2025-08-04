@@ -1,7 +1,7 @@
 import { CodeBuilder, ObjectBuilder } from '../../blocks';
 import { SlotPath } from '../../SlotPath';
 import { PropertyInfoHandler } from "../types";
-import { PropertyInfo, SchemaTypes } from "@core/schema";
+import { PropertyInfo, SchemaTypes } from "../../../schema";
 
 export class CloneObjectHandler extends PropertyInfoHandler {
 

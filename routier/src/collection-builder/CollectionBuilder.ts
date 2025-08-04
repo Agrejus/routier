@@ -1,8 +1,9 @@
-import { CompiledSchema, IDbPlugin, SchemaId } from 'routier-core';
+import { CompiledSchema, SchemaId } from 'routier-core/schema';
 import { Collection } from '../collections/Collection';
 import { CollectionOptions, CollectionPipelines, StatefulCollectionOptions } from '../types';
 import { CollectionInstanceCreator } from './types';
 import { StatefulCollection } from '../collections/StatefulCollection';
+import { IDbPlugin } from 'routier-core/plugins';
 
 type CollectionBuilderProps<TEntity extends {}, TCollecition extends Collection<TEntity>> = {
     onCollectionCreated: (collection: Collection<TEntity>) => void;

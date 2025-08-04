@@ -1,4 +1,4 @@
-import { PropertyInfo } from "@core/schema";
+import { PropertyInfo } from "../schema";
 
 /**
  * The base class for all expression types.

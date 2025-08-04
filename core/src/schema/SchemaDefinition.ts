@@ -1,6 +1,6 @@
-import { SchemaFunction } from './table/Function';
-import { SchemaComputed } from './table/Computed';
-import { SchemaBase } from "./property/base/Base";
+import { SchemaFunction } from './table/SchemaFunction';
+import { SchemaComputed } from './table/SchemaComputed';
+import { SchemaBase } from "./property/base/SchemaBase";
 import { PropertyInfo } from './PropertyInfo';
 import { CodeBuilder } from '../codegen';
 import { EnrichmentHandlerBuilder } from '../codegen/handlers/EnrichmentHandlerBuilder';
@@ -17,7 +17,7 @@ import { EnableChangeTrackingHandlerBuilder } from '../codegen/handlers/EnableCh
 import { FreezeHandlerBuilder } from '../codegen/handlers/FreezeHandlerBuilder';
 import { SchemaError } from '../errors/SchemaError';
 import { SerializeHandlerBuilder } from "../codegen/handlers/SerializeHandlerBuilder";
-import { uuid, hash } from "@core/utilities";
+import { uuid, hash } from "../utilities";
 import { CompiledSchema, GetHashTypeFunction, HashFunction, HashType, ICollectionSubscription, IdType, Index, InferCreateType, InferType, SchemaTypes, SubscriptionChanges } from './types';
 
 type UniDirectionalSubscriptionPayload<T extends {}> = {

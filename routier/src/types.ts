@@ -1,4 +1,8 @@
-import { CollectionChanges, CollectionChangesResult, GenericFunction, IdType, InferType, PartialResultType, PendingChanges, ResolvedChanges, SchemaId, TrampolinePipeline } from "routier-core";
+import { PendingChanges, ResolvedChanges } from "routier-core/collections";
+import { TrampolinePipeline } from "routier-core/pipeline";
+import { PartialResultType } from "routier-core/results";
+import { IdType, InferType } from "routier-core/schema";
+import { GenericFunction } from "routier-core/types";
 
 export type QueryResult<T> = (value: T, error?: any) => void;
 export type EntityMap<T extends {}, R> = GenericFunction<T, R>;

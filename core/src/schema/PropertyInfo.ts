@@ -1,5 +1,5 @@
-import { SchemaBase } from './property/base/Base';
-import { SchemaArray } from './property/types/Array';
+import { SchemaBase } from './property/base/SchemaBase';
+import { SchemaArray } from './property/types/SchemaArray';
 import { DefaultValue, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaTypes } from './types';
 
 /**

@@ -1,6 +1,6 @@
 import { SchemaModifiers } from "../../types";
-import { SchemaBase } from "../base/Base";
-import { SchemaOptional } from "./Optional";
+import { SchemaBase } from "../base/SchemaBase";
+import { SchemaOptional } from "./SchemaOptional";
 
 export class SchemaNullable<T extends any, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {
     instance: T;

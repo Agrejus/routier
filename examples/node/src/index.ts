@@ -1,11 +1,12 @@
 import { DataStore } from "routier";
-import { s, InferType, DbPluginLogging, DbPluginReplicator } from "routier-core";
 import { MemoryPlugin } from "routier-plugin-memory";
 import { PouchDbPlugin } from "routier-plugin-pouchdb";
 import { DexiePlugin } from "routier-plugin-dexie";
 import { performance } from 'perf_hooks'
 import { faker } from '@faker-js/faker';
 import PouchDB from 'pouchdb';
+import { InferType, s } from "routier-core/schema";
+import { DbPluginLogging, DbPluginReplicator } from "routier-core/plugins";
 
 // ADDITIONS
 // .distinct()
@@ -237,8 +238,8 @@ const r = async () => {
         //     console.log('DONE 2', performance.now() - s2, r, e)
         // });
 
-        ctx.nested.where(w => w.name == "James").subscribe().sum(w => w.order, (r, e) => {
-            console.log('SUBSCRIBED', r, e)
+        ctx.nested.where(w => w.name == "James").subscribe().sum(w => w.order, (r) => {
+            console.log('SUBSCRIBED', r)
         });
 
         // const [result] = await ctx.nested.addAsync({

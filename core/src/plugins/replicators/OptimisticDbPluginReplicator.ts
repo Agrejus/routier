@@ -1,12 +1,10 @@
-import { ResolvedChanges } from '../../collections/Changes';
-import { Result } from '../../results';
-import { TrampolinePipeline } from '../../pipeline/TrampolinePipeline';
-import { InferCreateType } from '../../schema';
-import { CallbackPartialResult, CallbackResult, PartialResultType, ResultType } from '../../types';
+import { CallbackPartialResult, CallbackResult, PartialResultType, Result, ResultType } from '../../results';
 import { DbPluginBulkPersistEvent, DbPluginQueryEvent, IdbPluginCollection } from '../types';
-import { DbPluginReplicator } from './DbPluginReplicator';
 import { OperationsPayload, PersistPayload } from './types';
-
+import { TrampolinePipeline } from '../../pipeline';
+import { ResolvedChanges } from '../../collections';
+import { InferCreateType } from '../../schema';
+import { DbPluginReplicator } from './DbPluginReplicator';
 export class OptimisticDbPluginReplicator extends DbPluginReplicator {
 
     /**

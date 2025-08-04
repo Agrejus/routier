@@ -1,7 +1,7 @@
 import { CodeBuilder, ContainerBlock, ObjectBuilder } from '../../blocks';
 import { SlotPath } from '../../SlotPath';
 import { PropertyInfoHandler } from "../types";
-import { PropertyInfo, SchemaTypes } from "@core/schema";
+import { PropertyInfo, SchemaTypes } from "../../../schema";
 
 /**
  * Handles converting a string value from a database to a Date value

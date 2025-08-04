@@ -1,8 +1,8 @@
 import { DefaultValue, PropertyDeserializer, PropertySerializer, SchemaModifiers } from "../../types";
-import { SchemaBase } from "../base/Base";
-import { SchemaDefault } from "./Default";
-import { SchemaDeserialize } from "./Deserialize";
-import { SchemaSerialize } from "./Serialize";
+import { SchemaBase } from "../base/SchemaBase";
+import { SchemaDefault } from "./SchemaDefault";
+import { SchemaDeserialize } from "./SchemaDeserialize";
+import { SchemaSerialize } from "./SchemaSerialize";
 
 export class SchemaReadonly<T extends any, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {
 

@@ -1,8 +1,13 @@
-import { CallbackResult, ChangeTrackingType, CollectionChangesResult, CompiledSchema, EntityChangeType, EntityUpdateInfo, GenericFunction, IdType, InferCreateType, InferType, IQuery, Result, TagCollection } from "routier-core";
+import { ChangeTrackingType, CompiledSchema, IdType, InferCreateType, InferType } from "routier-core/schema";
 import { ChangeTrackedEntity } from "../types";
 import { KnownKeyAdditions } from "./additions/KnownKeyAdditions";
 import { IAdditions } from "./additions/types";
 import { UnknownKeyAdditions } from "./additions/UnknownKeyAdditions";
+import { EntityChangeType, EntityUpdateInfo, IQuery } from "routier-core/plugins";
+import { CollectionChangesResult, TagCollection } from "routier-core/collections";
+import { GenericFunction } from "routier-core/types";
+import { CallbackResult, Result } from "routier-core/results";
+
 
 export class ChangeTracker<TEntity extends {}> {
 

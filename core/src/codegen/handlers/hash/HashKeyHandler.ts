@@ -1,6 +1,6 @@
 import { CodeBuilder, SlotBlock, StringBuilder } from '../../blocks';
 import { PropertyInfoHandler } from "../types";
-import { PropertyInfo } from "@core/schema";
+import { PropertyInfo } from "../../../schema";
 
 export class HashKeyHandler extends PropertyInfoHandler {
 

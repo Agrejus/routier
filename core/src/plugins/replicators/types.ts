@@ -1,4 +1,4 @@
-import { ResolvedChanges } from '../../collections/Changes';
+import { ResolvedChanges } from '../../collections';
 import { DbPluginBulkPersistEvent, IDbPlugin, IdbPluginCollection } from '../types';
 
 export type OperationsPayload = {

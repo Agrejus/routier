@@ -1,4 +1,4 @@
-import { PropertyInfo, SchemaTypes } from "@core/schema";
+import { PropertyInfo, SchemaTypes } from "../../../schema";
 import { PropertyInfoHandler } from "../types";
 import { CodeBuilder, ObjectBuilder, SlotBlock } from '../../blocks';
 import { SlotPath } from '../../SlotPath';

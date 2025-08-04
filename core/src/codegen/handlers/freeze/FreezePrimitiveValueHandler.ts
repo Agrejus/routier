@@ -1,6 +1,6 @@
 import { CodeBuilder } from '../../blocks';
 import { PropertyInfoHandler } from "../types";
-import { PropertyInfo, SchemaTypes } from "@core/schema";
+import { PropertyInfo, SchemaTypes } from "../../../schema";
 
 export class FreezePrimitiveValueHandler extends PropertyInfoHandler {
 

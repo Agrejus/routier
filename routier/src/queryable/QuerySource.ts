@@ -1,6 +1,10 @@
-import { toExpression, QueryField, CompiledSchema, DbPluginQueryEvent, GenericFunction, QueryOptionsCollection, Filter, ParamsFilter, QueryOrdering, Query, CallbackResult, InferType, Result, SchemaId } from "routier-core";
 import { DataBridge } from "../data-access/DataBridge";
 import { ChangeTracker } from "../change-tracking/ChangeTracker";
+import { DbPluginQueryEvent, Query, QueryField, QueryOptionsCollection, QueryOrdering } from "routier-core/plugins";
+import { CompiledSchema, InferType, SchemaId } from "routier-core/schema";
+import { CallbackResult, Result } from "routier-core/results";
+import { GenericFunction } from "routier-core/types";
+import { Filter, ParamsFilter, toExpression } from "routier-core/expressions";
 
 export abstract class QuerySource<TRoot extends {}, TShape> {
 
