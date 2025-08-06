@@ -2,6 +2,8 @@ import { DataStore } from "routier";
 import { MemoryPlugin } from "routier-plugin-memory";
 import { PouchDbPlugin } from "routier-plugin-pouchdb";
 import { DexiePlugin } from "routier-plugin-dexie";
+import { FileSystemPlugin } from "routier-plugin-file-system";
+
 import { performance } from 'perf_hooks'
 import { faker } from '@faker-js/faker';
 import PouchDB from 'pouchdb';
@@ -99,6 +101,7 @@ type Test = InferType<typeof nested>;
 //     documentType: w.computed((_, t) => t).tracked()
 // })).compile();
 
+const fileSystemPlugin = new FileSystemPlugin(__dirname, "test");
 const memoryPlugin = new MemoryPlugin();
 const dexiePlugin = new DexiePlugin("test-db");
 const memoryPluginWithLogging = DbPluginLogging.create(memoryPlugin);
@@ -113,7 +116,7 @@ const replicationPlugin = DbPluginReplicator.create({
 class Ctx extends DataStore {
 
     constructor() {
-        super(pouchDbPlugin);
+        super(fileSystemPlugin);
     }
 
     // test = this.collection(model).create();

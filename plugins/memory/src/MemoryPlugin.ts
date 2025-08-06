@@ -106,7 +106,7 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
                 const result = event.operation.toResult();
 
                 for (const [schemaId, item] of asyncResult.data) {
-                    result.result.set(schemaId, item)
+                    result.result.set(schemaId, item);
                 }
 
                 done(Result.success(result));

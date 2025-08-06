@@ -93,6 +93,8 @@ export class PropertyExpression extends Expression {
     readonly type = "property" as const;
     /** The property info for the path. */
     property: PropertyInfo<any>;
+    transformer: Transformer | null = null;
+    locale: string | null = null;
 
     constructor(options: { property: PropertyInfo<any> }) {
         super();
@@ -109,6 +111,9 @@ export class ValueExpression extends Expression {
     /** The literal value. */
     value: unknown;
 
+    transformer: Transformer | null = null;
+    locale: string | null = null;
+
     constructor(options: {
         value: unknown
     }) {
@@ -117,10 +122,16 @@ export class ValueExpression extends Expression {
     }
 }
 
+
 /**
  * The set of possible expression types.
  */
 export type ExpressionType = "operator" | "comparator" | "property" | "value" | "empty" | "not-parsable";
+
+/**
+ * Supported value transformations that can be applied to values.
+ */
+export type Transformer = "to-lower-case" | "to-upper-case";
 
 /**
  * Supported comparator operations for expressions.

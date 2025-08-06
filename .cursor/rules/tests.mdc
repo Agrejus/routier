@@ -21,6 +21,7 @@ When generating tests, follow these best practices to ensure they are comprehens
 - Ensure tests clean up side-effects (e.g. restore mocks, clear mocks)
 - Follow the Arrange-Act-Assert (AAA) pattern in every test
 - Ensure every test has at least one expect()
+- Test files should go next to the file being tested
 
 ## Test Data Management:
 - Prefer factories (e.g., FactoryBot) over fixtures for creating test data.
@@ -29,6 +30,7 @@ When generating tests, follow these best practices to ensure they are comprehens
 ## Independence and Isolation:
 - Ensure each test is independent; avoid shared state between tests.
 - Use mocks to simulate calls to external services (APIs, databases) and stubs to return predefined values for specific methods. Isolate the unit being tested, but avoid over-mocking; test real behavior when possible.
+- Prefer jest.mocked over jest.mock
 
 ## Avoid Repetition:
 - Use shared examples for common behaviors across different contexts.
@@ -37,6 +39,6 @@ When generating tests, follow these best practices to ensure they are comprehens
 ## Testing Method
 - If the test does not pass, do not write it to pass, please confirm that the logic is correct
 - Write one test, confirm it is correct before doing the rest of the tests
-- Please verify all tests pass before finishing
+- Please run added/changed tests to ensure they pass
 
 

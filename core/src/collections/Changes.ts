@@ -115,7 +115,9 @@ class ResultSet<T extends {}, TData extends { changes: CollectionChanges<T>, res
     set(schemaId: SchemaId, result: TData["result"]) {
         // changes must exist before a result
         this.schemaIds.add(schemaId);
-        this.data.set(schemaId, { result } as TData);
+
+        const data = this.data.get(schemaId);
+        data.result = result;
     }
 
     get(schemaId: SchemaId): TData["result"] | undefined {

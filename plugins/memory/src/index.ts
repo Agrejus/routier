@@ -11,4 +11,4 @@ export const assertIsMemoryPlugin = (value: unknown): asserts value is MemoryPlu
     throw new TypeError(`Value is not instance of type MemoryPlugin`);
 }
 
-export { MemoryPlugin } 
+export { MemoryPlugin, DbCollection } 

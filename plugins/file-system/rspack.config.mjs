@@ -10,13 +10,10 @@ export default defineConfig({
         path: resolve(__dirname, "dist"),
         filename: "index.js", // Default output file name
         library: {
-            type: "module"
+            type: "commonjs2"
         },
         globalObject: "this", // Ensures compatibility with both browser and Node.js
         clean: true, // Cleans the output directory before each build
-    },
-    experiments: {
-        outputModule: true
     },
     module: {
         rules: [
@@ -35,10 +32,12 @@ export default defineConfig({
     resolve: {
         extensions: [".ts", ".js"], // Resolve TypeScript and JavaScript files
         fallback: {
-            "perf_hooks": false
+            "perf_hooks": false,
+            "fs": false,
+            "path": false
         }
     },
-    target: "web", // Compile for both browser and Node.js
+    target: "node", // Changed from "web" to "node" since this plugin uses Node.js APIs
     mode: "development", // Set production mode
     devtool: "source-map"
 });

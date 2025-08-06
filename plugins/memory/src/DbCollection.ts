@@ -3,9 +3,9 @@ import { uuidv4 } from "routier-core/utilities";
 
 
 export class DbCollection {
-    private nextNumericalId: number;
-    private readonly data: Map<IdType, Record<string, unknown>>;
-    private readonly schema: CompiledSchema<any>;
+    protected nextNumericalId: number;
+    protected readonly data: Map<IdType, Record<string, unknown>>;
+    protected readonly schema: CompiledSchema<any>;
 
     get size() {
         return this.data.size;

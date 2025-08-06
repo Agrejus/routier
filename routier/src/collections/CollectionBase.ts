@@ -93,14 +93,13 @@ export class CollectionBase<TEntity extends {}> {
             // these get reset each time
             // send in the resulting adds because properties might have been set from the db operation
             const updates = this.cloneMany(resolvedChanges.updates.entities);
-            const removals = changes.removes;
             const adds = this.cloneMany(resolvedChanges.adds.entities as InferType<TEntity>[]);
-            const removedEntities = this.cloneMany(removals.entities)
+            const removals = this.cloneMany(changes.removes.entities);
 
             const subscriptionChanges: SubscriptionChanges<TEntity> = {
                 updates,
                 adds,
-                removals: removedEntities,
+                removals,
             };
 
             this.subscription.send(subscriptionChanges);

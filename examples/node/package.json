@@ -15,6 +15,7 @@
     "routier-plugin-memory": "file://../../plugins/memory",
     "routier-plugin-pouchdb": "file://../../plugins/pouchdb",
     "routier-plugin-dexie": "file://../../plugins/dexie",
+    "routier-plugin-file-system": "file://../../plugins/file-system",
     "@faker-js/faker": "^9.8.0"
   },
   "devDependencies": {
