@@ -284,8 +284,6 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
     compile(): CompiledSchema<T> {
 
         try {
-
-
             const schema = this;
             const properties: PropertyInfo<T>[] = [];
             const propertyMap: Map<string, PropertyInfo<T>> = new Map<string, PropertyInfo<T>>();
@@ -428,9 +426,6 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             hashCodeBuilder.slot("hash-object-return");
             hashCodeBuilder.raw(`   return result;`)
 
-            const stringifier = new CodeBuilder();
-            const returnObject = stringifier.object();
-
             const idProperties: PropertyInfo<any>[] = [];
             const allPropertyNamesAndPaths: string[] = [];
             let hashType: HashType = HashType.Ids;
@@ -442,14 +437,6 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                 properties.push(property);
                 propertyMap.set(property.id, property);
                 allPropertyNamesAndPaths.push(property.getSelectrorPath({ parent: "entity" }));
-
-                // Check if the property or any parent is nullable/optional
-                const isParentNullableOrOptional = property.hasNullableParents;
-                const isPropertyNullableOrOptional = property.isNullable || property.isOptional || isParentNullableOrOptional;
-
-                // Construct the selector path with or without null-safe operators
-                const selectorPath = property.getSelectrorPath({ parent: "entity" });
-                const name = property.name;
 
                 if (property.isIdentity === true) {
                     hasIdentities = true;
@@ -477,18 +464,6 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                 enableChangeTrackingHandler.handle(property, changeTrackingCodeBuilder);
                 freezeHandler.handle(property, freezeCodeBuilder);
             });
-
-            // console.log(prepareCodeBuilder.toString());
-            // console.log(stripCodeBuilder.toString());
-            // console.log(cloneCodeBuilder.toString());
-            // console.log(compareCodeBuilder.toString());
-            // console.log(deserializeCodeBuilder.toString());
-            // console.log(hashTypeCodeBuilder.toString());
-            // console.log(idSelectorCodeBuilder.toString());
-            // console.log(enricherCodeBuilder.toString());
-            // console.log(mergeCodeBuilder.toString());
-            // console.log(changeTrackingCodeBuilder.toString());
-            // console.log(freezeCodeBuilder.toString());
 
             if (idProperties.length === 0) {
                 throw new Error(`Schema must have a key.  Use .key() to mark a property as a key.  Collection Name: ${this.collectionName}`)

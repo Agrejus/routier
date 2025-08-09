@@ -1,10 +1,10 @@
-import { DbCollection } from "routier-plugin-memory";
 import fs from 'node:fs';
 import path from 'node:path';
 import { CompiledSchema } from "routier-core/schema";
 import { CallbackResult, Result } from "routier-core/results";
+import { MemoryCollection } from 'routier-core/collections';
 
-export class FileSystemDbCollection extends DbCollection {
+export class FileSystemDbCollection extends MemoryCollection {
 
     private path: string;
 
@@ -28,7 +28,7 @@ export class FileSystemDbCollection extends DbCollection {
         try {
 
             if (fs.existsSync(this.fileNameAndPath) === false) {
-                done(Result.success());
+                super.destroy(done)
                 return;
             }
 
@@ -38,7 +38,7 @@ export class FileSystemDbCollection extends DbCollection {
                     return;
                 }
 
-                done(Result.success());
+                super.destroy(done)
             });
         } catch (e: any) {
             done(Result.error(e));

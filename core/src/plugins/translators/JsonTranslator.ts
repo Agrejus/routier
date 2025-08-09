@@ -76,7 +76,7 @@ export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRo
     override sum<TResult extends number>(data: unknown, _: QueryOption<TShape, "sum">): TResult {
 
         assertIsArray(data, this._formatDataNotArrayError("sum"));
-        debugger;
+
         const map = this.query.options.getLast("map");
 
         let sum = 0;

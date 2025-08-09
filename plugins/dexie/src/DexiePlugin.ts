@@ -1,6 +1,10 @@
-import { IDbPlugin, EntityModificationResult, DbPluginQueryEvent, DbPluginBulkOperationsEvent, DbPluginEvent, InferCreateType, DeepPartial, JsonTranslator } from "routier-core";
 import Dexie from 'dexie';
 import { convertToDexieSchema } from "./utils";
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, JsonTranslator } from 'routier-core/plugins';
+import { CallbackPartialResult, CallbackResult, Result } from 'routier-core/results';
+import { ResolvedChanges } from 'routier-core/collections';
+import { DeepPartial } from 'routier-core/types';
+import { InferCreateType } from 'routier-core/schema';
 
 const cache = new Map<string, Record<string, string>>();
 
@@ -38,97 +42,76 @@ export class DexiePlugin implements IDbPlugin, Disposable {
         db.delete().then(done).catch(done);
     }
 
-    bulkOperations<TEntity extends {}>(
-        event: DbPluginBulkOperationsEvent<TEntity>,
-        done: (result: EntityModificationResult<TEntity>, error?: any) => void) {
+    bulkPersist<TRoot extends {}>(event: DbPluginBulkPersistEvent<TRoot>, done: CallbackPartialResult<ResolvedChanges<TRoot>>) {
 
-        if (event.schema.hasIdentityKeys === true) {
-            this.identityBulkOperations(event, done);
-            return;
-        }
-
-        this.defaultBulkOperations(event, done);
-    }
-
-    private async _persistIdentity<TEntity extends {}>(event: DbPluginBulkOperationsEvent<TEntity>, db: Dexie) {
-        const { adds, removes, updates } = event.operation;
-
-        const updatedDocuments = [...updates.entities].map(w => w[1].doc);
-
-        const collection = db.table(event.schema.collectionName);
-
-        await collection.bulkPut(updatedDocuments);
-
-        const ids = removes.entities.map(x => event.schema.getIds(x));
-        await collection.bulkDelete(ids)
-
-        return await db.transaction('rw', collection, async () => Promise.all(adds.entities.map(async x => {
-
-            const id = await collection.add(x);
-
-            event.schema.idProperties[0].setValue(x, id);
-
-            return x;
-        })));
-    }
-
-    private async _persistDefault<TEntity extends {}>(event: DbPluginBulkOperationsEvent<TEntity>, db: Dexie) {
-        const { adds, removes, updates } = event.operation;
-
-        const updatedDocuments = [...updates.entities].map(w => w[1].doc);
-
-        const collection = db.table(event.schema.collectionName);
-
-        await collection.bulkPut(updatedDocuments);
-
-        const ids = removes.entities.map(x => event.schema.getIds(x));
-        await collection.bulkDelete(ids)
-
-        await collection.bulkAdd(adds.entities);
-    }
-
-    private identityBulkOperations<TEntity extends {}>(
-        event: DbPluginBulkOperationsEvent<TEntity>,
-        done: (result: EntityModificationResult<TEntity>, error?: any) => void) {
-        this._doWork(event, (db, d) => {
+        this._doWork(event, async (db, d) => {
+            const jobs: Promise<any>[] = [];
+            const operationResult = event.operation.toResult();
             try {
+                for (const [schemaId, schema] of event.schemas) {
+                    const changes = event.operation.changes.get(schemaId);
+                    const schemaSpecificResult = operationResult.result.get(schemaId);
 
-                const { removes } = event.operation;
+                    if (changes.hasChanges === false) {
+                        continue;
+                    }
 
-                this._persistIdentity(event, db).then(x => {
-                    d({
-                        adds: x as DeepPartial<InferCreateType<TEntity>>[],
-                        removedCount: removes.entities.length, // If there are no errors, we assume this succeeds
-                        updates: []
-                    })
-                }).catch(e => {
-                    d(null, e);
-                });
+                    const collection = db.table(schema.collectionName);
+
+                    if (changes.removes.entities.length > 0) {
+                        const ids = changes.removes.entities.map(x => schema.getIds(x));
+                        const remove = async () => {
+
+                            await collection.bulkDelete(ids);
+
+                            // Assume everything succeeds
+                            schemaSpecificResult.removes.entities.push(...changes.removes.entities);
+                        }
+                        jobs.push(remove());
+                    }
+
+                    if (changes.updates.changes.length > 0) {
+                        const updatedDocuments = changes.updates.changes.map(x => x.entity);
+                        const update = async () => {
+
+                            await collection.bulkPut(updatedDocuments);
+
+                            // Assume everything succeeds
+                            schemaSpecificResult.updates.entities.push(...updatedDocuments);
+                        }
+                        jobs.push(update());
+                    }
+
+                    if (changes.adds.entities.length > 0) {
+                        if (schema.hasIdentities === true) {
+                            jobs.push(db.transaction('rw', collection, async () => Promise.all(changes.adds.entities.map(async x => {
+
+                                const id = await collection.add(x);
+
+                                schema.idProperties[0].setValue(x, id);
+
+                                schemaSpecificResult.adds.entities.push(x as DeepPartial<InferCreateType<TRoot>>);
+
+                                return x;
+                            }))));
+                        } else {
+
+                            const add = async () => {
+
+                                await collection.bulkAdd(changes.adds.entities);
+
+                                // Assume everything succeeds
+                                schemaSpecificResult.adds.entities.push(...changes.adds.entities as DeepPartial<InferCreateType<TRoot>>[]);
+                            }
+                            jobs.push(add());
+                        }
+                    }
+                }
+
+                await Promise.all(jobs);
+                d(Result.success(operationResult));
             } catch (e) {
-                d(null, e);
-            }
-        }, done);
-    }
-
-    private defaultBulkOperations<TEntity extends {}>(
-        event: DbPluginBulkOperationsEvent<TEntity>,
-        done: (result: EntityModificationResult<TEntity>, error?: any) => void) {
-        this._doWork(event, (db, d) => {
-            try {
-
-                const { removes, adds } = event.operation;
-
-                this._persistDefault(event, db).then(() => {
-                    d({
-                        adds: adds.entities as DeepPartial<InferCreateType<TEntity>>[],
-                        removedCount: removes.entities.length, // If there are no errors, we assume this succeeds
-                        updates: []
-                    })
-                }).catch(e => {
-                    d(null, e);
-                });
-            } catch (e) {
-                d(null, e);
+                d(Result.error(e));
             }
         }, done);
     }
@@ -138,11 +121,9 @@ export class DexiePlugin implements IDbPlugin, Disposable {
             return cache.get(this.dbName);
         }
 
-        const { parent } = event;
-        const schemas = parent.allSchemas();
         const result: Record<string, string> = {};
 
-        for (const schema of schemas) {
+        for (const [, schema] of event.schemas) {
             result[schema.collectionName] = convertToDexieSchema(schema)
         }
 
@@ -151,12 +132,12 @@ export class DexiePlugin implements IDbPlugin, Disposable {
         return result;
     }
 
-    query<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (result: TShape, error?: any) => void): void {
+    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<TShape>): void {
         this._doWork(event, (db, d) => {
-            const { operation, schema } = event;
-            const { collectionName } = schema;
-            const { options } = operation;
-            const translator = new JsonTranslator<TEntity, TShape>(operation);
+
+            const { collectionName } = event.operation.schema;
+            const { options } = event.operation;
+            const translator = new JsonTranslator<TEntity, TShape>(event.operation);
 
             // Start with the base collection
             let collection = db.table(collectionName).toCollection();
@@ -168,7 +149,8 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                 }
 
                 if (option.name === "filter") {
-                    collection = collection.filter(option.value);
+                    debugger;
+                    collection = collection.filter(option.value.filter);
                     return;
                 }
 
@@ -192,8 +174,8 @@ export class DexiePlugin implements IDbPlugin, Disposable {
             collection.toArray().then(data => {
                 const result = translator.translate(data);
 
-                d(result);
-            }).catch(e => d(null, e));
+                d(Result.success(result));
+            }).catch(e => d(Result.error(e)));
         }, done);
     }
 

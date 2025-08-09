@@ -224,7 +224,7 @@ export class PouchDbPlugin implements IDbPlugin {
                         d(Result.error(error));
                         return;
                     }
-                    debugger;
+
                     for (let i = 0, length = response.length; i < length; i++) {
                         const doc = response[i];
 

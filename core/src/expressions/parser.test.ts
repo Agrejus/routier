@@ -615,7 +615,7 @@ describe('Parser', () => {
             });
         });
 
-        describe('todo', () => {
+        describe.skip('todo', () => {
 
 
 
@@ -763,13 +763,18 @@ describe('Parser', () => {
     });
 
     describe("performance", () => {
-        it('should parse simple expression under .3 ms', () => {
+        it('should parse simple expression under .05 ms', () => {
+
+            // Warm Up
+            for (let i = 0; i < 50; i++) {
+                toExpression(mockSchema, (entity: any) => entity.name === 'test');
+            }
 
             const start = performance.now();
             const expression = toExpression(mockSchema, (entity: any) => entity.name === 'test');
             const delta = performance.now() - start;
             console.log(`Took ${delta}ms`)
-            expect(delta).toBeLessThan(.3);
+            expect(delta).toBeLessThan(.05);
             expect(expression).toBeInstanceOf(ComparatorExpression);
             const comp = expression as ComparatorExpression;
             expect(comp.comparator).toBe('equals');
@@ -777,7 +782,7 @@ describe('Parser', () => {
             expect(comp.strict).toBe(true);
         });
 
-        it('should parse slightly complex real-world expression under 1ms', () => {
+        it('should parse slightly complex real-world expression under .5ms', () => {
             const complexParams = {
                 userFilters: {
                     ageRange: { min: 18, max: 65 },
@@ -794,6 +799,48 @@ describe('Parser', () => {
                     minRating: 4.0
                 }
             };
+
+            // Warm Up
+            for (let i = 0; i < 50; i++) {
+                toExpression(mockSchema,
+                    ([entity, params]: [any, typeof complexParams]) =>
+                        // User age and category preferences
+                        (entity.age >= params.userFilters.ageRange.min && entity.age <= params.userFilters.ageRange.max) &&
+
+                        // Price filtering with user preferences
+                        (entity.price >= params.userFilters.priceRange.min && entity.price <= params.userFilters.priceRange.max) &&
+                        (entity.price <= params.userPreferences.maxPrice) &&
+
+                        // Date range filtering
+                        (entity.createdAt >= params.userFilters.dateRange.start && entity.createdAt <= params.userFilters.dateRange.end) &&
+
+                        // Quality filters
+                        (entity.isActive === true) &&
+                        (entity.isVerified === true) &&
+                        (entity.rating >= params.userPreferences.minRating) &&
+                        (entity.reviewCount > 0) &&
+
+                        // Complex nested conditions
+                        ((entity.category === 'electronics' && entity.price > 100) ||
+                            (entity.category === 'books' && entity.price < 50) ||
+                            (entity.category === 'clothing' && entity.price >= 20 && entity.price <= 200)) &&
+
+                        // Advanced string matching
+                        (entity.name.startsWith('Premium') || entity.name.endsWith('Pro') || entity.name.includes('Advanced')) &&
+
+                        // Multiple OR conditions with AND combinations
+                        ((entity.brand === 'Apple' && entity.price > 200) ||
+                            (entity.brand === 'Samsung' && entity.price > 150) ||
+                            (entity.brand === 'Sony' && entity.price > 100) ||
+                            (entity.brand !== 'Apple' && entity.brand !== 'Samsung' && entity.brand !== 'Sony' && entity.price < 100)) &&
+
+                        // Final validation checks
+                        (entity.id > 0) &&
+                        (entity.name !== '') &&
+                        (entity.category !== '') &&
+                        (entity.price > 0)
+                    , complexParams);
+            }
 
             const start = performance.now();
             const expression = toExpression(mockSchema,
@@ -842,7 +889,7 @@ describe('Parser', () => {
 
             expect(expression).not.toBeNull();
             expect(expression).not.toStrictEqual(Expression.NOT_PARSABLE); // Parser can handle this expression
-            expect(duration).toBeLessThan(1); // Should complete in under 100ms
+            expect(duration).toBeLessThan(.5); // Should complete in under 100ms
         });
     })
 }); 

@@ -36,7 +36,7 @@ function App() {
 
 		const response = await contextRef.current.saveChangesAsync();
 
-		setCount(w => w + response)
+		setCount(w => w + response.result.count())
 	}
 
 	return (

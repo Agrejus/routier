@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { assertIsNotNull } from 'routier-core';
+import { assertIsNotNull } from 'routier-core/assertions';
 import { CollectionChanges, CollectionChangesResult, ResolvedChanges } from 'routier-core/collections';
 import { AsyncPipeline } from 'routier-core/pipeline';
 import { DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin, JsonTranslator } from 'routier-core/plugins';

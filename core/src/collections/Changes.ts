@@ -24,6 +24,10 @@ class ChangeSetBase<TData> {
 
     protected data: Map<SchemaId, TData>;
 
+    get schemaIds(): Set<SchemaId> {
+        return new Set<SchemaId>(this.data.keys());
+    }
+
     constructor(data: Map<SchemaId, TData>) {
         this.data = data;
     }
@@ -110,11 +114,21 @@ class ChangeSetBase<TData> {
 
 class ResultSet<T extends {}, TData extends { changes: CollectionChanges<T>, result: CollectionChangesResult<T> }> extends ChangeSetBase<TData> {
 
-    schemaIds: Set<SchemaId> = new Set<SchemaId>();
+    count() {
+        let total = 0;
+        for (const schemaId of this.schemaIds) {
+            const found = this.data.get(schemaId);
+
+            total += (found?.result.adds.entities.length ?? 0) +
+                (found?.result.updates.entities.length ?? 0) +
+                (found?.result.removes.entities.length ?? 0);
+        }
+
+        return total;
+    }
 
     set(schemaId: SchemaId, result: TData["result"]) {
         // changes must exist before a result
-        this.schemaIds.add(schemaId);
 
         const data = this.data.get(schemaId);
         data.result = result;
@@ -126,34 +140,43 @@ class ResultSet<T extends {}, TData extends { changes: CollectionChanges<T>, res
         return found?.result;
     }
 
-    adds(): { data: [SchemaId, DeepPartial<InferCreateType<T>>][] };
-    adds(schemaId: SchemaId): { data: DeepPartial<InferCreateType<T>>[] };
-    adds(schemaIds: SchemaId[]): { data: [SchemaId, DeepPartial<InferCreateType<T>>][] };
+    adds(): { data: [SchemaId, DeepPartial<InferCreateType<T>>][], count: () => number };
+    adds(schemaId: SchemaId): { data: DeepPartial<InferCreateType<T>>[], count: () => number };
+    adds(schemaIds: SchemaId[]): { data: [SchemaId, DeepPartial<InferCreateType<T>>][], count: () => number };
     adds(schemaIdsOrId?: SchemaId | SchemaId[]): any {
 
         const { data } = this.resolveData(item => item.result.adds.entities, schemaIdsOrId);
 
-        return { data }
+        return {
+            data,
+            count: () => data.length
+        }
     }
 
-    removes(): { data: [SchemaId, InferType<T>][] };
-    removes(schemaId: SchemaId): { data: InferType<T>[] };
-    removes(schemaIds: SchemaId[]): { data: [SchemaId, InferType<T>][] };
+    removes(): { data: [SchemaId, InferType<T>][], count: () => number };
+    removes(schemaId: SchemaId): { data: InferType<T>[], count: () => number };
+    removes(schemaIds: SchemaId[]): { data: [SchemaId, InferType<T>][], count: () => number };
     removes(schemaIdsOrId?: SchemaId | SchemaId[]): any {
 
         const { data } = this.resolveData(item => item.result.removes.entities, schemaIdsOrId);
 
-        return { data }
+        return {
+            data,
+            count: () => data.length
+        }
     }
 
-    updates(): { data: [SchemaId, InferType<T>][] };
-    updates(schemaId: SchemaId): { data: InferType<T>[] };
-    updates(schemaIds: SchemaId[]): { data: [SchemaId, InferType<T>][] };
+    updates(): { data: [SchemaId, InferType<T>][], count: () => number };
+    updates(schemaId: SchemaId): { data: InferType<T>[], count: () => number };
+    updates(schemaIds: SchemaId[]): { data: [SchemaId, InferType<T>][], count: () => number };
     updates(schemaIdsOrId?: SchemaId | SchemaId[]): any {
 
         const { data } = this.resolveData(item => item.result.updates.entities, schemaIdsOrId);
 
-        return { data }
+        return {
+            data,
+            count: () => data.length
+        }
     }
 
     private getAllChangesForSchema(
@@ -216,14 +239,24 @@ class ResultSet<T extends {}, TData extends { changes: CollectionChanges<T>, res
 
 class ChangeSet<T extends {}, TData extends { changes: CollectionChanges<T> }> extends ChangeSetBase<TData> {
 
-    schemaIds: Set<SchemaId> = new Set<SchemaId>();
-
     private _getTags(schemaId: SchemaId) {
         return this.data.get(schemaId)?.changes?.tags;
     }
 
+    count() {
+        let total = 0;
+        for (const schemaId of this.schemaIds) {
+            const found = this.data.get(schemaId);
+
+            total += (found?.changes.adds.entities.length ?? 0) +
+                (found?.changes.updates.changes.length ?? 0) +
+                (found?.changes.removes.entities.length ?? 0);
+        }
+
+        return total;
+    }
+
     set(schemaId: SchemaId, changes: TData["changes"]) {
-        this.schemaIds.add(schemaId);
         // changes must exist before a result
         this.data.set(schemaId, { changes } as TData);
     }
@@ -234,9 +267,9 @@ class ChangeSet<T extends {}, TData extends { changes: CollectionChanges<T> }> e
         return found?.changes;
     }
 
-    adds(): { data: [SchemaId, InferCreateType<T>][], getTags: (schemaId: SchemaId) => TagCollection | undefined };
-    adds(schemaId: SchemaId): { data: InferCreateType<T>[], getTags: () => TagCollection | undefined };
-    adds(schemaIds: SchemaId[]): { data: [SchemaId, InferCreateType<T>][], getTags: (schemaId: SchemaId) => TagCollection | undefined };
+    adds(): { data: [SchemaId, InferCreateType<T>][], count: () => number, getTags: (schemaId: SchemaId) => TagCollection | undefined };
+    adds(schemaId: SchemaId): { data: InferCreateType<T>[], count: () => number, getTags: () => TagCollection | undefined };
+    adds(schemaIds: SchemaId[]): { data: [SchemaId, InferCreateType<T>][], count: () => number, getTags: (schemaId: SchemaId) => TagCollection | undefined };
     adds(schemaIdsOrId?: SchemaId | SchemaId[]): any {
 
         const { data } = this.resolveData(item => item.changes.adds.entities, schemaIdsOrId);
@@ -244,18 +277,18 @@ class ChangeSet<T extends {}, TData extends { changes: CollectionChanges<T> }> e
         return this.formatResponse(data);
     }
 
-    removes(): { data: [SchemaId, InferType<T>][], getTags: (schemaId: SchemaId) => TagCollection | undefined };
-    removes(schemaId: SchemaId): { data: InferType<T>[], getTags: () => TagCollection | undefined };
-    removes(schemaIds: SchemaId[]): { data: [SchemaId, InferType<T>][], getTags: (schemaId: SchemaId) => TagCollection | undefined };
+    removes(): { data: [SchemaId, InferType<T>][], count: () => number, getTags: (schemaId: SchemaId) => TagCollection | undefined };
+    removes(schemaId: SchemaId): { data: InferType<T>[], count: () => number, getTags: () => TagCollection | undefined };
+    removes(schemaIds: SchemaId[]): { data: [SchemaId, InferType<T>][], count: () => number, getTags: (schemaId: SchemaId) => TagCollection | undefined };
     removes(schemaIdsOrId?: SchemaId | SchemaId[]): any {
         const { data } = this.resolveData(item => item.changes.removes.entities, schemaIdsOrId);
 
         return this.formatResponse(data);
     }
 
-    updates(): { data: [SchemaId, EntityUpdateInfo<T>][], getTags: (schemaId: SchemaId) => TagCollection | undefined };
-    updates(schemaId: SchemaId): { data: EntityUpdateInfo<T>[], getTags: () => TagCollection | undefined };
-    updates(schemaIds: SchemaId[]): { data: [SchemaId, EntityUpdateInfo<T>][], getTags: (schemaId: SchemaId) => TagCollection | undefined };
+    updates(): { data: [SchemaId, EntityUpdateInfo<T>][], count: () => number, getTags: (schemaId: SchemaId) => TagCollection | undefined };
+    updates(schemaId: SchemaId): { data: EntityUpdateInfo<T>[], count: () => number, getTags: () => TagCollection | undefined };
+    updates(schemaIds: SchemaId[]): { data: [SchemaId, EntityUpdateInfo<T>][], count: () => number, getTags: (schemaId: SchemaId) => TagCollection | undefined };
     updates(schemaIdsOrId?: SchemaId | SchemaId[]): any {
         const { data } = this.resolveData(item => item.changes.updates.changes, schemaIdsOrId);
 
@@ -267,12 +300,14 @@ class ChangeSet<T extends {}, TData extends { changes: CollectionChanges<T> }> e
         if (schemaId) {
             return {
                 data,
+                count: () => Array.isArray(data) ? data.length : 0,
                 getTags: () => this._getTags(schemaId)
             }
         }
 
         return {
             data,
+            count: () => Array.isArray(data) ? data.length : 0,
             getTags: (schemaId: SchemaId) => this._getTags(schemaId)
         }
     }

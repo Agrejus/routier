@@ -7,10 +7,16 @@ import { BasicDataStoreFactory } from '../contexts/BasicDataStoreFactory';
 import { comment } from '../schemas/comments';
 import { event } from '../schemas/event';
 import { MemoryPlugin } from 'routier-plugin-memory';
-import { assertIsNotNull, Result, uuidv4 } from 'routier-core';
+import { Result, uuidv4 } from 'routier-core';
 
 // we can solve this by having a common interface each schema adheres to
 // Then we can create a schema for each database to ensure we test everything
+
+class DataStoreTestCases {
+
+
+
+}
 
 const wait = (ms: number) => new Promise<void>((resolve) => {
 

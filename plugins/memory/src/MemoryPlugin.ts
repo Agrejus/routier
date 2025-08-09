@@ -1,9 +1,8 @@
-import { DbCollection } from "./DbCollection";
 import { MemoryDatabase } from ".";
 import { DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin, JsonTranslator } from "routier-core/plugins";
-import { CompiledSchema, InferCreateType, SchemaId } from "routier-core/schema";
+import { CompiledSchema, InferCreateType } from "routier-core/schema";
 import { CallbackPartialResult, CallbackResult, Result } from "routier-core/results";
-import { CollectionChanges, CollectionChangesResult, ResolvedChanges } from "routier-core/collections";
+import { CollectionChanges, MemoryCollection, ResolvedChanges } from "routier-core/collections";
 import { AsyncPipeline } from "routier-core/pipeline";
 import { DeepPartial } from "routier-core/types";
 
@@ -38,7 +37,7 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
     private resolveCollection<TEntity extends {}>(schema: CompiledSchema<TEntity>) {
 
         if (dbs[this.dbName][schema.collectionName] == null) {
-            dbs[this.dbName][schema.collectionName] = new DbCollection(schema);
+            dbs[this.dbName][schema.collectionName] = new MemoryCollection(schema);
         }
 
         return dbs[this.dbName][schema.collectionName];
@@ -56,18 +55,20 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
 
     bulkPersist<TRoot extends {}>(event: DbPluginBulkPersistEvent<TRoot>, done: CallbackPartialResult<ResolvedChanges<TRoot>>) {
         try {
-            const pipeline = new AsyncPipeline<CollectionChanges<TRoot>, [SchemaId, CollectionChangesResult<TRoot>]>();
+            const pipeline = new AsyncPipeline<CollectionChanges<TRoot>, void>();
+            const operationResult = event.operation.toResult();
 
             for (const schemaId of event.operation.changes.schemaIds) {
                 const changes = event.operation.changes.get(schemaId);
+                const schemaResult = operationResult.result.get(schemaId);
+
                 pipeline.pipe(changes, (r, d) => {
                     try {
 
                         const { adds, hasChanges, removes, updates } = r;
-                        const result = CollectionChangesResult.EMPTY<TRoot>();
 
                         if (hasChanges === false) {
-                            d(Result.success([schemaId, result]));
+                            d(Result.success());
                             return;
                         }
 
@@ -76,20 +77,20 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
 
                         for (let i = 0, length = adds.entities.length; i < length; i++) {
                             collection.add(adds.entities[i]);
-                            result.adds.entities.push(adds.entities[i] as DeepPartial<InferCreateType<TRoot>>);
+                            schemaResult.adds.entities.push(adds.entities[i] as DeepPartial<InferCreateType<TRoot>>);
                         }
 
                         for (let i = 0, length = updates.changes.length; i < length; i++) {
                             collection.update(updates.changes[i].entity);
-                            result.updates.entities.push(updates.changes[i].entity);
+                            schemaResult.updates.entities.push(updates.changes[i].entity);
                         }
 
                         for (let i = 0, length = removes.entities.length; i < length; i++) {
                             collection.remove(removes.entities[i]);
-                            result.removes.entities.push(removes.entities[i]);
+                            schemaResult.removes.entities.push(removes.entities[i]);
                         }
 
-                        d(Result.success([schemaId, result]));
+                        d(Result.success());
                     } catch (e) {
                         d(Result.error(e));
                     }
@@ -103,13 +104,7 @@ export class MemoryPlugin implements IDbPlugin, Disposable {
                     return;
                 }
 
-                const result = event.operation.toResult();
-
-                for (const [schemaId, item] of asyncResult.data) {
-                    result.result.set(schemaId, item);
-                }
-
-                done(Result.success(result));
+                done(Result.success(operationResult));
             });
         } catch (e: any) {
             done(Result.error(e))

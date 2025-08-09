@@ -8,7 +8,11 @@ import { DefaultValue, FunctionBody, PropertyDeserializer, PropertySerializer, S
 export class PropertyInfo<T extends {}> {
 
     get id() {
-        return this.getPathArray().join(".");
+        if (this._idCache) {
+            return this._idCache;
+        }
+        this._idCache = this.getPathArray().join(".");
+        return this._idCache;
     }
 
     /** The name of the property. */
@@ -55,6 +59,14 @@ export class PropertyInfo<T extends {}> {
     /** The parent property, if any. */
     readonly parent?: PropertyInfo<T>;
 
+    // Cached computed values for performance
+    private _propertyChainCache?: PropertyInfo<T>[];
+    private _pathArrayCache?: string[];
+    private _parentPathArrayCache?: string[];
+    private _idCache?: string;
+    private _levelCache?: number;
+    private _hasNullableParentsCache?: boolean;
+
     constructor(schema: SchemaBase<T, any>, name: string, parent?: PropertyInfo<T> | null) {
         this.schema = schema;
         this.name = name;
@@ -92,12 +104,16 @@ export class PropertyInfo<T extends {}> {
      * @returns {number} The number of parent properties above this property (0 for root).
      */
     get level() {
+        if (this._levelCache !== undefined) {
+            return this._levelCache;
+        }
+
         let level = 0;
         let current: PropertyInfo<T> | undefined = this;
 
         while (current) {
-
             if (current.parent == null) {
+                this._levelCache = level;
                 return level;
             }
 
@@ -105,10 +121,15 @@ export class PropertyInfo<T extends {}> {
             level++;
         }
 
+        this._levelCache = level;
         return level;
     }
 
     private _getPropertyChain(): PropertyInfo<T>[] {
+        if (this._propertyChainCache) {
+            return this._propertyChainCache;
+        }
+
         const chain: PropertyInfo<T>[] = [];
         let current: PropertyInfo<T> | undefined = this;
 
@@ -117,6 +138,7 @@ export class PropertyInfo<T extends {}> {
             current = current.parent;
         }
 
+        this._propertyChainCache = chain;
         return chain;
     }
 
@@ -132,10 +154,10 @@ export class PropertyInfo<T extends {}> {
         root?: string,
         assignmentType?: AssignmentType
     }) {
-        const path: string[] = options?.root ? [options.root] : [];
         const propertyChain = this._getPropertyChain();
+        const hasRoot = options?.root != null;
+        const path: string[] = hasRoot ? [options!.root!] : [];
 
-        // Process each property in the chain
         for (const prop of propertyChain) {
             const accessor = this._needsOptionalChaining(prop, options?.assignmentType) ? '?.' : '.';
             path.push(accessor, prop.name);
@@ -150,14 +172,18 @@ export class PropertyInfo<T extends {}> {
      * @returns {string[]} The property path as an array of names.
      */
     getPathArray() {
+        if (this._pathArrayCache) {
+            return this._pathArrayCache;
+        }
+
         const path: string[] = [];
         const propertyChain = this._getPropertyChain();
 
-        // Process each property in the chain
         for (const prop of propertyChain) {
             path.push(prop.name);
         }
 
+        this._pathArrayCache = path;
         return path;
     }
 
@@ -167,6 +193,10 @@ export class PropertyInfo<T extends {}> {
      * @returns {string[]} The property path as an array of names, excluding this property.
      */
     getParentPathArray() {
+        if (this._parentPathArrayCache) {
+            return this._parentPathArrayCache;
+        }
+
         const path: string[] = [];
         const propertyChain = this._getPropertyChain();
 
@@ -175,6 +205,7 @@ export class PropertyInfo<T extends {}> {
             path.push(prop.name);
         }
 
+        this._parentPathArrayCache = path;
         return path;
     }
 
@@ -184,13 +215,20 @@ export class PropertyInfo<T extends {}> {
      * @returns {boolean} True if any parent is nullable or optional, false otherwise.
      */
     get hasNullableParents() {
+        if (this._hasNullableParentsCache !== undefined) {
+            return this._hasNullableParentsCache;
+        }
+
         let parent = this.parent;
         while (parent != null) {
             if (parent.isNullable || parent.isOptional) {
+                this._hasNullableParentsCache = true;
                 return true;
             }
             parent = parent.parent;
         }
+
+        this._hasNullableParentsCache = false;
         return false;
     }
 
@@ -294,11 +332,11 @@ export class PropertyInfo<T extends {}> {
             root: options?.parent,
             assignmentType: "ASSIGNMENT"
         });
-        // if there is no parent the first item in the parts list is a .
+
         if (options?.parent == null) {
-            parts.shift();
-            return parts.join("");
+            return parts.slice(1).join("");
         }
+
         return parts.join("");
     }
 }

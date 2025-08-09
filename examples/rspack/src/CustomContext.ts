@@ -1,16 +1,16 @@
-import { DataContext } from "../../../routeer/dist"
 import { DbPluginLogging } from "routier-core";
 import { product } from "./schemas/product";
 import { DexiePlugin } from "routier-plugin-dexie";
+import { DataStore } from 'routier';
 
 const plugin = new DexiePlugin("dexie-db");
 const pluginWithLogging = DbPluginLogging.create(plugin);
 
 
-export class CustomContext extends DataContext {
+export class CustomContext extends DataStore {
 
     constructor() {
-        super(pluginWithLogging);
+        super(plugin);
     }
 
     // constructor() {

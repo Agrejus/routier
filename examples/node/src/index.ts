@@ -70,6 +70,16 @@ import { DbPluginLogging, DbPluginReplicator } from "routier-core/plugins";
 
 // console.log(performance.now() - s1);
 
+export const commentsSchema = s.define("comments", {
+    _id: s.string().key().identity(),
+    _rev: s.string().identity(),
+    author: s.string(),
+    content: s.string(),
+    replies: s.number().default(0),
+    createdAt: s.date().default(() => new Date()).deserialize(x => (typeof x === "object" && (x as unknown) instanceof Date) ? x : new Date(x))
+}).compile();
+
+
 
 const nested = s.define("products", {
     _id: s.string().key().identity(),
@@ -121,7 +131,7 @@ class Ctx extends DataStore {
 
     // test = this.collection(model).create();
     nested = this.collection(nested).create();
-    // date = this.collection(modelWithDate).create();
+    comments = this.collection(commentsSchema).create();
 }
 
 // HOW CAN WE PUSH UPDATES TO THE COLLECTION FROM THE PLUGIN?
@@ -134,7 +144,7 @@ const r = async () => {
 
         debugger;
         const ctx = new Ctx();
-
+        const start = performance.now();
         const a = await ctx.nested.addAsync(...Array.from({ length: 10 }, () => ({
             cool: `cool${Math.floor(Math.random() * 10000)}`,
             two: `two${Math.floor(Math.random() * 10000)}`,
@@ -148,7 +158,7 @@ const r = async () => {
 
         const changes = await ctx.previewChangesAsync();
         const result = await ctx.saveChangesAsync();
-        debugger;
+
         console.log(changes, a, result)
 
         const r = await ctx.nested.where(x => x.order === 1).map(x => x.order).toArrayAsync();
