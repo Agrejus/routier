@@ -41,7 +41,10 @@ export default defineConfig({
                         transpileOnly: false, // Ensure type-checking is performed
                     },
                 },
-                exclude: /node_modules/,
+                exclude: [
+                    /node_modules/,
+                    /\.test\.ts$/, // Exclude test files
+                ],
             },
         ],
     },
