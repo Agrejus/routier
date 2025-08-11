@@ -1,12 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
 import { CommentsTestSuite, EventsTestSuite, ProductTestSuite } from 'routier-plugin-testing';
 import { DexiePlugin } from './DexiePlugin';
-import { uuid } from 'routier-core';
+import { uuidv4 } from 'routier-core';
 
 const testSections = [
-    new ProductTestSuite(new DexiePlugin(uuid()), { expect: expect as any, fn: vi.fn }),
-    new EventsTestSuite(new DexiePlugin(uuid()), { expect: expect as any, fn: vi.fn }),
-    new CommentsTestSuite(new DexiePlugin(uuid()), { expect: expect as any, fn: vi.fn })
+    new ProductTestSuite(new DexiePlugin(uuidv4()), { expect: expect as any, fn: vi.fn, debugTestNames: ["Should handle complex sorting and mapping"] }),
+    new EventsTestSuite(new DexiePlugin(uuidv4()), { expect: expect as any, fn: vi.fn }),
+    new CommentsTestSuite(new DexiePlugin(uuidv4()), { expect: expect as any, fn: vi.fn })
 ];
 
 describe('Dexie Plugin Tests', () => {

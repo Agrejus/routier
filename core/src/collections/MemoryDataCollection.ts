@@ -1,9 +1,10 @@
 import { CompiledSchema, IdType, InferType, PropertyInfo, SchemaTypes } from "../schema";
-import { uuidv4 } from "../utilities";
-import { IdSet } from "../collections";
 import { CallbackResult, Result } from "../results";
+import { uuidv4 } from "../utilities";
+import { IdSet } from "./IdSet";
 
-export class MemoryCollection {
+export class MemoryDataCollection {
+
     protected readonly nextNumericalIds: Map<string, number>;
     protected readonly data: Map<string, Record<string, unknown>>;
     protected readonly schema: CompiledSchema<any>;
@@ -121,5 +122,13 @@ export class MemoryCollection {
         this.nextNumericalIds.clear();
         this.data.clear();
         done(Result.success());
+    }
+
+    load(done: CallbackResult<never>) {
+        done(Result.success())
+    }
+
+    save(done: CallbackResult<never>) {
+        done(Result.success())
     }
 }

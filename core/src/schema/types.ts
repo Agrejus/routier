@@ -3,6 +3,7 @@ import { SchemaBase } from "./property/base/SchemaBase";
 import { SchemaArray } from "./property/types/SchemaArray";
 import { SchemaObject } from "./property/types/SchemaObject";
 import { PropertyInfo } from "./PropertyInfo";
+import { DeepPartial } from "src/types";
 
 export type DefaultValue<T, I = never> = T | ((injected: I) => T);
 export type FunctionBody<TEntity, TResult> = (entity: TEntity, collectionName: string) => TResult;
@@ -91,6 +92,9 @@ export interface ICollectionSubscription<T extends {}> extends Disposable {
  * Represents a fully compiled schema with all utilities and metadata for an entity type.
  */
 export type CompiledSchema<TEntity extends {}> = {
+
+    deserializePartial: (item: Record<string, unknown>, properties: PropertyInfo<TEntity>[]) => DeepPartial<InferType<TEntity>>;
+
     createSubscription: (abortSignal?: AbortSignal) => ICollectionSubscription<TEntity>;
     /** Returns the property info for a given id (full path) */
     getProperty: (id: string) => PropertyInfo<TEntity>;

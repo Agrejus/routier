@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { MemoryCollection } from './MemoryCollection';
+import { MemoryDataCollection } from './MemoryDataCollection';
 import { CompiledSchema, SchemaTypes } from '../schema';
 import { PropertyInfo } from '../schema/PropertyInfo';
 import { Result } from '../results';
@@ -8,10 +8,10 @@ vi.mock('../utilities/uuid', () => ({
     uuidv4: vi.fn(() => 'mock-uuid-123')
 }));
 
-describe('MemoryCollection', () => {
+describe('EphemeralDataCollection', () => {
     let mockSchema: CompiledSchema<any>;
     let mockIdProperty: PropertyInfo<any>;
-    let collection: MemoryCollection;
+    let collection: MemoryDataCollection;
 
     beforeEach(() => {
         mockIdProperty = {
@@ -77,12 +77,12 @@ describe('MemoryCollection', () => {
             merge: vi.fn()
         } as any;
 
-        collection = new MemoryCollection(mockSchema);
+        collection = new MemoryDataCollection(mockSchema);
     });
 
     describe('constructor', () => {
         it('should initialize with empty data and numerical ids', () => {
-            const newCollection = new MemoryCollection(mockSchema);
+            const newCollection = new MemoryDataCollection(mockSchema);
 
             expect(newCollection.size).toBe(0);
             expect(newCollection.records).toEqual([]);
@@ -190,7 +190,7 @@ describe('MemoryCollection', () => {
                 ...mockSchema,
                 idProperties: [numericalIdProperty]
             } as any;
-            const numericalCollection = new MemoryCollection(numericalSchema);
+            const numericalCollection = new MemoryDataCollection(numericalSchema);
             const item = { name: 'test' } as any;
 
             numericalCollection.add(item);
@@ -208,7 +208,7 @@ describe('MemoryCollection', () => {
                 ...mockSchema,
                 idProperties: [unsupportedIdProperty]
             } as any;
-            const unsupportedCollection = new MemoryCollection(unsupportedSchema);
+            const unsupportedCollection = new MemoryDataCollection(unsupportedSchema);
             const item = { name: 'test' } as any;
 
             expect(() => unsupportedCollection.add(item)).toThrow(
@@ -223,7 +223,7 @@ describe('MemoryCollection', () => {
                 ...mockSchema,
                 idProperties: [idProperty1, idProperty2]
             } as any;
-            const multiIdCollection = new MemoryCollection(multiIdSchema);
+            const multiIdCollection = new MemoryDataCollection(multiIdSchema);
             const item = { name: 'test' } as any;
 
             multiIdCollection.add(item);
@@ -276,7 +276,7 @@ describe('MemoryCollection', () => {
                 idProperties: [idProperty1, idProperty2],
                 hasIdentityKeys: false
             } as any;
-            const multiIdCollection = new MemoryCollection(multiIdSchema);
+            const multiIdCollection = new MemoryDataCollection(multiIdSchema);
             const item = { id1: '1', id2: '2', name: 'test' };
 
             multiIdCollection.add(item);
@@ -349,7 +349,7 @@ describe('MemoryCollection', () => {
                 ...mockSchema,
                 idProperties: [numericalIdProperty]
             } as any;
-            const numericalCollection = new MemoryCollection(numericalSchema);
+            const numericalCollection = new MemoryDataCollection(numericalSchema);
 
             const item1 = { name: 'test1' } as any;
             const item2 = { name: 'test2' } as any;
@@ -373,7 +373,7 @@ describe('MemoryCollection', () => {
                 ...mockSchema,
                 idProperties: [numericalIdProperty]
             } as any;
-            const numericalCollection = new MemoryCollection(numericalSchema);
+            const numericalCollection = new MemoryDataCollection(numericalSchema);
 
             const item1 = { id: 5, name: 'test1' };
             const item2 = { name: 'test2' } as any;
@@ -392,7 +392,7 @@ describe('MemoryCollection', () => {
                 ...mockSchema,
                 hasIdentityKeys: false
             } as any;
-            const nonIdentityCollection = new MemoryCollection(nonIdentitySchema);
+            const nonIdentityCollection = new MemoryDataCollection(nonIdentitySchema);
             const item = { id: 'existing-id', name: 'test' };
 
             nonIdentityCollection.add(item);

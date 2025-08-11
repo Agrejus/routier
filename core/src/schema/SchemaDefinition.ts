@@ -19,6 +19,7 @@ import { SchemaError } from '../errors/SchemaError';
 import { SerializeHandlerBuilder } from "../codegen/handlers/SerializeHandlerBuilder";
 import { uuid, hash } from "../utilities";
 import { CompiledSchema, GetHashTypeFunction, HashFunction, HashType, ICollectionSubscription, IdType, Index, InferCreateType, InferType, SchemaTypes, SubscriptionChanges } from './types';
+import { DeepPartial } from '../types';
 
 type UniDirectionalSubscriptionPayload<T extends {}> = {
     id: string;
@@ -502,6 +503,26 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
             const getProperty = (id: string) => propertyMap.get(id);
             const id = hash([...allPropertyNamesAndPaths, this.collectionName].join(","));
+            const paths = new Set(properties.map(x => x.getAssignmentPath()));
+
+            // memoize this by the validProperties
+            // TODO: See if we can generate a function to do this and eliminate loops
+            const deserializePartial = (item: Record<string, unknown>, properties: PropertyInfo<T>[]) => {
+
+                for (let i = 0, length = properties.length; i < length; i++) {
+                    const property = properties[i];
+                    const value = property.getValue(item);
+
+                    if (value == null) {
+                        continue;
+                    }
+
+                    const deserialized = property.deserialize(value);
+                    property.setValue(item, deserialized);
+                }
+
+                return item as DeepPartial<InferType<T>>;
+            }
 
             return {
                 createSubscription: (signal?: AbortSignal) => new CollectionSubscription(id, signal),
@@ -515,6 +536,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                 merge: mergeFunction,
                 prepare: prepareFunction,
                 clone: cloneFunction,
+                deserializePartial,
                 deserialize: deserializeFunction,
                 serialize: serializeFunction,
                 compare: compareFunction,

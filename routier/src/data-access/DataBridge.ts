@@ -67,7 +67,9 @@ export class DataBridge<T extends {}> {
                 // query the temp db to check and see if items match the query
                 ephemeralPlugin.query(event, (r) => {
 
-                    ephemeralPlugin.destroy(() => { /* noop */ });
+                    ephemeralPlugin.destroy({
+                        schemas: event.schemas
+                    }, () => { /* noop */ });
 
                     if (r.ok === Result.ERROR) {
                         done(r);

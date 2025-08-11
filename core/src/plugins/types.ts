@@ -17,7 +17,7 @@ export interface IDbPlugin {
      * Destroys or cleans up the plugin, closing connections or freeing resources.
      * @param done Callback with an optional error.
      */
-    destroy(done: CallbackResult<never>): void;
+    destroy<TRoot extends {}>(event: DbPluginEvent<TRoot>, done: CallbackResult<never>): void;
     /**
      * Executes bulk operations (add, update, remove) on the database.
      * @param event The bulk operations event containing schema, parent, and changes.

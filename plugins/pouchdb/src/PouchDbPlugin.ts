@@ -2,7 +2,7 @@ import PouchDB from 'pouchdb';
 import { PouchDbTranslator } from './PouchDbTranslator';
 import { AsyncPipeline, SyncronousQueue, SyncronousUnitOfWork } from 'routier-core/pipeline';
 import { InferCreateType, InferType, PropertyInfo, SchemaId } from 'routier-core/schema';
-import { DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin, IQuery } from 'routier-core/plugins';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, IQuery } from 'routier-core/plugins';
 import { ResolvedChanges } from 'routier-core/collections';
 import { CallbackPartialResult, CallbackResult, Result } from 'routier-core/results';
 import { assertIsNotNull } from 'routier-core/assertions';
@@ -507,7 +507,7 @@ export class PouchDbPlugin implements IDbPlugin {
         })
     }
 
-    destroy(done: (error?: any) => void): void {
+    destroy<TEntity extends {}>(_: DbPluginEvent<TEntity>, done: (error?: any) => void): void {
         // this needs to be queued too
         this._doWork((w, d) => {
             w.destroy(null, (e) => {

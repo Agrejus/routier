@@ -14,7 +14,7 @@ function App() {
 		console.log(result);
 		debugger;
 
-		await contextRef.current.products.addAsync({
+		const [first] = await contextRef.current.products.addAsync({
 			cool: "cool2",
 			two: "two2",
 			name: "James1",
@@ -35,6 +35,15 @@ function App() {
 		});
 
 		const response = await contextRef.current.saveChangesAsync();
+
+		await contextRef.current.products.removeAsync(first);
+
+		await contextRef.current.saveChangesAsync();
+
+		const items = await contextRef.current.products.toArrayAsync();
+
+		debugger
+		console.log(items);
 
 		setCount(w => w + response.result.count())
 	}

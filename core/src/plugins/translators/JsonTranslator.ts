@@ -33,7 +33,23 @@ export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRo
 
         const response = [];
 
+        // We want deserialization to flow through mappings
+        // TODO: Speed this up!
+        // Generate a function on the fly?
         for (let i = 0, length = data.length; i < length; i++) {
+
+            for (let j = 0, l = option.value.fields.length; j < l; j++) {
+                const field = option.value.fields[j];
+
+                if (field.property != null) {
+                    const value = field.property.getValue(data[i]);
+
+                    if (value != null) {
+                        field.property.setValue(data[i], field.property.deserialize(value));
+                    }
+                }
+            }
+
             response.push(option.value.selector(data[i]));
         }
 

@@ -1,3 +1,7 @@
+## What is Routier
+
+Universal ORM abstraction that lets you easily use or switch between different ORM frameworks and data stores.
+
 Can we put TTL on some of the records? We can check every N times for TTLs and purge them
 
 Are these needed?

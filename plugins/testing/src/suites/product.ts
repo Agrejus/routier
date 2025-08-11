@@ -128,9 +128,11 @@ export class ProductTestSuite extends TestSuiteBase {
                         await seedData(dataStore, () => dataStore.products, 100);
 
                         // Act
-                        const found = await dataStore.products.where(w => w._id != "").skip(1).toArrayAsync();
+                        const total = await dataStore.products.toArrayAsync();
+                        const found = await dataStore.products.where(w => w._id != "_________").skip(1).toArrayAsync();
 
                         // Assert
+                        expect(total.length).toBe(100);
                         expect(found.length).toBe(99);
                     }),
                     this.createTestCase("where + skip + toArrayAsync with sort and take", (factory) => async () => {

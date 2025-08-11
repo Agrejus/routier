@@ -1,5 +1,5 @@
 import { CompiledSchema, SchemaId } from '../../schema';
-import { DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin, IQuery } from '../types';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, IQuery } from '../types';
 import { PendingChanges, ResolvedChanges } from '../../collections';
 import { CallbackPartialResult, CallbackResult, Result } from '../../results';
 import { now } from '../../performance';
@@ -381,9 +381,9 @@ export class DbPluginLogging implements IDbPlugin {
         console.groupEnd(); // End main group
     }
 
-    destroy(done: (error?: any) => void): void {
+    destroy<TEntity extends {}>(event: DbPluginEvent<TEntity>, done: (error?: any) => void): void {
         try {
-            this.plugin.destroy(done);
+            this.plugin.destroy(event, done);
         } catch (e: any) {
             done(e);
         }

@@ -1,10 +1,13 @@
 import Dexie from 'dexie';
 import { convertToDexieSchema } from "./utils";
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, JsonTranslator } from 'routier-core/plugins';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin } from 'routier-core/plugins';
 import { CallbackPartialResult, CallbackResult, Result } from 'routier-core/results';
 import { ResolvedChanges } from 'routier-core/collections';
 import { DeepPartial } from 'routier-core/types';
-import { InferCreateType } from 'routier-core/schema';
+import { InferCreateType, SchemaTypes } from 'routier-core/schema';
+import { uuidv4 } from 'routier-core';
+import { ParamsFilter } from 'routier-core/expressions';
+import { DexieTranslator } from './DexieTranslator';
 
 const cache = new Map<string, Record<string, string>>();
 
@@ -37,9 +40,9 @@ export class DexiePlugin implements IDbPlugin, Disposable {
         }
     }
 
-    destroy(done: (error?: any) => void): void {
+    destroy<TEntity extends {}>(_: DbPluginEvent<TEntity>, done: CallbackResult<never>): void {
         const db = new Dexie(this.dbName);
-        db.delete().then(done).catch(done);
+        db.delete().then(() => done(Result.success())).catch(e => done(Result.error(e)));
     }
 
     bulkPersist<TRoot extends {}>(event: DbPluginBulkPersistEvent<TRoot>, done: CallbackPartialResult<ResolvedChanges<TRoot>>) {
@@ -59,9 +62,17 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                     const collection = db.table(schema.collectionName);
 
                     if (changes.removes.entities.length > 0) {
-                        const ids = changes.removes.entities.map(x => schema.getIds(x));
-                        const remove = async () => {
+                        const ids = changes.removes.entities.map(x => {
 
+                            if (schema.idProperties.length === 1) {
+                                // Handle single key, return the value
+                                return schema.getIds(x)[0];
+                            }
+
+                            // Handle composite keys, should return a tuple
+                            return schema.getIds(x);
+                        });
+                        const remove = async () => {
                             await collection.bulkDelete(ids);
 
                             // Assume everything succeeds
@@ -84,16 +95,43 @@ export class DexiePlugin implements IDbPlugin, Disposable {
 
                     if (changes.adds.entities.length > 0) {
                         if (schema.hasIdentities === true) {
-                            jobs.push(db.transaction('rw', collection, async () => Promise.all(changes.adds.entities.map(async x => {
 
-                                const id = await collection.add(x);
+                            // generate UUID's, Dexie does not generate them
+                            const stringIds = schema.idProperties.filter(x => x.type === SchemaTypes.String);
+                            const hasAllStringIds = schema.idProperties.length === stringIds.length;
 
-                                schema.idProperties[0].setValue(x, id);
+                            for (let i = 0, length = changes.adds.entities.length; i < length; i++) {
+                                const add = changes.adds.entities[i];
 
-                                schemaSpecificResult.adds.entities.push(x as DeepPartial<InferCreateType<TRoot>>);
+                                if (stringIds.length === 1) {
+                                    const stringId = stringIds[0];
+                                    stringId.setValue(add, uuidv4());
+                                } else {
+                                    for (let j = 0, length = stringIds.length; j < length; j++) {
+                                        const stringId = stringIds[j];
 
-                                return x;
-                            }))));
+                                        stringId.setValue(add, uuidv4());
+                                    }
+                                }
+                            }
+
+                            if (hasAllStringIds === true) {
+                                await collection.bulkAdd(changes.adds.entities);
+
+                                // Assume everything succeeds
+                                schemaSpecificResult.adds.entities.push(...changes.adds.entities as DeepPartial<InferCreateType<TRoot>>[]);
+                            } else {
+                                jobs.push(db.transaction('rw', collection, async () => Promise.all(changes.adds.entities.map(async x => {
+
+                                    const id = await collection.add(x);
+
+                                    schema.idProperties[0].setValue(x, id);
+
+                                    schemaSpecificResult.adds.entities.push(x as DeepPartial<InferCreateType<TRoot>>);
+
+                                    return x;
+                                }))));
+                            }
                         } else {
 
                             const add = async () => {
@@ -132,12 +170,26 @@ export class DexiePlugin implements IDbPlugin, Disposable {
         return result;
     }
 
+    private getSelectedProperties<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>) {
+
+        const { options } = event.operation;
+
+        const map = options.getLast("map");
+
+        if (map != null) {
+
+            return map.value.fields.map(x => x.property!);
+        }
+
+        return event.operation.schema.properties;
+    }
+
     query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<TShape>): void {
         this._doWork(event, (db, d) => {
 
             const { collectionName } = event.operation.schema;
             const { options } = event.operation;
-            const translator = new JsonTranslator<TEntity, TShape>(event.operation);
+            const translator = new DexieTranslator<TEntity, TShape>(event.operation);
 
             // Start with the base collection
             let collection = db.table(collectionName).toCollection();
@@ -145,12 +197,22 @@ export class DexiePlugin implements IDbPlugin, Disposable {
             options.forEach(option => {
 
                 if (option.target !== "database") {
+
+                    // tell translator to use the base functionality
+                    // need to handle memory operations properly,
+                    // take is happening in memory and the translator is ignoring it
                     return;
                 }
 
                 if (option.name === "filter") {
-                    debugger;
-                    collection = collection.filter(option.value.filter);
+                    if (option.value.params == null) {
+                        // standard filtering
+                        collection = collection.filter(option.value.filter);
+                    } else {
+                        // params filtering
+                        const selector = option.value.filter as ParamsFilter<unknown, {}>
+                        collection = collection.filter(item => selector([item, option.value.params]));
+                    }
                     return;
                 }
 
@@ -165,7 +227,16 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                 }
 
                 if (option.name === "distinct") {
-                    collection = collection.distinct();
+
+                    const selectedProperties = this.getSelectedProperties(event);
+
+                    // distinct only works on properties that have an index,
+                    // convert database operation to memory operation
+                    if (selectedProperties.some(x => x.indexes.length === 0)) {
+                        translator.options.useTranslatorDistinct = true;
+                    } else {
+                        collection = collection.distinct();
+                    }
                     return
                 }
             });

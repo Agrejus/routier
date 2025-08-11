@@ -339,6 +339,30 @@ export class PropertyInfo<T extends {}> {
 
         return parts.join("");
     }
+
+    deserialize(value: string | number) {
+        if (this.valueDeserializer != null) {
+            return this.valueDeserializer(value);
+        }
+
+        if (this.type === SchemaTypes.Date) {
+            return new Date(value);
+        }
+
+        if (this.type === SchemaTypes.String) {
+            return String(value);
+        }
+
+        if (this.type === SchemaTypes.Number) {
+            return Number(value);
+        }
+
+        if (this.type === SchemaTypes.Boolean) {
+            return Boolean(value);
+        }
+
+        throw new Error(`Unsupported deserialization for type.  Type: ${this.type}`);
+    }
 }
 
 type AssignmentType = "FORCE_NULLABLE_OR_OPTIONAL" | "ASSIGNMENT";

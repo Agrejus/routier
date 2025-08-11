@@ -1,4 +1,4 @@
 export * from './Changes';
 export * from './TagCollection';
 export * from './IdSet';
-export * from './MemoryCollection';
+export * from './MemoryDataCollection';

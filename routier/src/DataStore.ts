@@ -208,7 +208,9 @@ export class DataStore implements Disposable {
      * @param done Callback with an optional error.
      */
     destroy(done: CallbackResult<never>) {
-        this.dbPlugin.destroy(done);
+        this.dbPlugin.destroy({
+            schemas: this.schemas
+        }, done);
     }
 
     /**

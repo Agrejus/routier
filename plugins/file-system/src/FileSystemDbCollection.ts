@@ -2,9 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { CompiledSchema } from "routier-core/schema";
 import { CallbackResult, Result } from "routier-core/results";
-import { MemoryCollection } from 'routier-core/collections';
+import { MemoryDataCollection } from 'routier-core/collections';
 
-export class FileSystemDbCollection extends MemoryCollection {
+export class FileSystemDbCollection extends MemoryDataCollection {
 
     private path: string;
 
@@ -24,7 +24,7 @@ export class FileSystemDbCollection extends MemoryCollection {
         }
     }
 
-    destroy(done: CallbackResult<never>) {
+    override destroy(done: CallbackResult<never>) {
         try {
 
             if (fs.existsSync(this.fileNameAndPath) === false) {
@@ -45,7 +45,7 @@ export class FileSystemDbCollection extends MemoryCollection {
         }
     }
 
-    load(done: CallbackResult<never>) {
+    override load(done: CallbackResult<never>) {
 
         if (fs.existsSync(this.fileNameAndPath) === false) {
             done(Result.success());
@@ -66,12 +66,12 @@ export class FileSystemDbCollection extends MemoryCollection {
 
                 done(Result.success());
             } catch (parseError: any) {
-                done(Result.error(error));
+                done(Result.error(parseError));
             }
         });
     }
 
-    save(done: CallbackResult<never>) {
+    override save(done: CallbackResult<never>) {
         const stringifiedData = JSON.stringify(this.records, null, 2);
         const dir = path.dirname(this.fileNameAndPath);
 

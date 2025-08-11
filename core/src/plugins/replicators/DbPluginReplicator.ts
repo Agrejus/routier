@@ -1,7 +1,7 @@
 import { CallbackPartialResult, CallbackResult, PartialResultType, Result, ResultType } from '../../results';
-import { DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin, IdbPluginCollection } from '../types';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, IdbPluginCollection } from '../types';
 import { OperationsPayload, PersistPayload } from './types';
-import { TrampolinePipeline } from '../../pipeline';
+import { AsyncPipeline, TrampolinePipeline } from '../../pipeline';
 import { ResolvedChanges } from '../../collections';
 import { InferCreateType } from '../../schema';
 
@@ -38,24 +38,17 @@ export class DbPluginReplicator implements IDbPlugin {
         }
     }
 
-    destroy(done: CallbackResult<never>): void {
+    destroy<TEntity extends {}>(event: DbPluginEvent<TEntity>, done: CallbackResult<never>): void {
         try {
 
-            const pipeline = new TrampolinePipeline<ResultType<OperationsPayload>>();
+            const pipeline = new AsyncPipeline<IDbPlugin, never>();
             const plugins = [this.plugins.source, ...this.plugins.replicas];
-            const data: OperationsPayload = {
-                plugins,
-                index: 0
-            };
 
             for (let i = 0, length = plugins.length; i < length; i++) {
-                pipeline.pipe<OperationsPayload>(this.destroyDbs.bind(this))
+                pipeline.pipe(plugins[i], (plugin, done) => plugin.destroy(event, done));
             }
 
-            pipeline.filter<ResultType<OperationsPayload>>({
-                data,
-                ok: Result.SUCCESS
-            }, (result) => {
+            pipeline.filter((result) => {
 
                 if (result.ok === Result.ERROR) {
                     done(result);
@@ -68,22 +61,6 @@ export class DbPluginReplicator implements IDbPlugin {
         } catch (e: any) {
             done(Result.error(e));
         }
-    }
-
-    protected destroyDbs(payload: ResultType<OperationsPayload>, done: CallbackResult<OperationsPayload>) {
-
-        if (payload.ok === Result.ERROR) {
-            done(payload);
-            return;
-        }
-
-        const { plugins, index } = payload.data;
-        const plugin = plugins[index];
-
-        // move next
-        payload.data.index++;
-
-        plugin.destroy(done);
     }
 
     private _persist<TEntity extends {}>(payload: PartialResultType<PersistPayload<TEntity>>, done: CallbackPartialResult<PersistPayload<TEntity>>) {
