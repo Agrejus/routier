@@ -19,3 +19,7 @@ export class CustomContext extends DataStore {
 
     products = this.collection(product).create();
 }
+
+export const useDataStore = () => {
+    return new CustomContext();
+}

@@ -1,4 +1,4 @@
-import { DataStore } from "routier";
+import { Collection, DataStore } from "routier";
 import { MemoryPlugin } from "routier-plugin-memory";
 import { PouchDbPlugin } from "routier-plugin-pouchdb";
 import { DexiePlugin } from "routier-plugin-dexie";
@@ -9,6 +9,7 @@ import { faker } from '@faker-js/faker';
 import PouchDB from 'pouchdb';
 import { InferType, s } from "routier-core/schema";
 import { DbPluginLogging, DbPluginReplicator } from "routier-core/plugins";
+import { Result } from "routier-core";
 
 // ADDITIONS
 // .distinct()
@@ -126,7 +127,7 @@ const replicationPlugin = DbPluginReplicator.create({
 class Ctx extends DataStore {
 
     constructor() {
-        super(fileSystemPlugin);
+        super(memoryPlugin);
     }
 
     // test = this.collection(model).create();
@@ -458,3 +459,29 @@ r();
 
 // Run the profiler with the desired number of iterations
 // profileExecution(1000);
+
+const hook = (ctx: Ctx) => {
+    const [updatedState, setUpdatedState] = useState([]);
+    ctx.comments.first((result) => {
+        if (result.ok === Result.SUCCESS) {
+            setUpdatedState(result.data);
+        }
+    })
+
+    return updatedState
+}
+
+
+
+export const createQueryHook = <T extends DataStore>(dataStore: T) => <TEntity extends {}>(query: (dataStore: T) => Collection<TEntity>, deps: unknown[] = []) => {
+
+
+}
+
+export const useLiveQuery = () => {
+
+}
+
+const hook = createQueryHook(new Ctx());
+
+const x = hook(x => x.comments, []);

@@ -4,8 +4,26 @@ import { SelectionQueryable } from "./SelectionQueryable";
 import { Filter, ParamsFilter } from "routier-core/expressions";
 import { GenericFunction } from "routier-core/types";
 import { QueryOrdering } from "routier-core/plugins";
+import { CompiledSchema, SchemaId } from "routier-core/schema";
+import { QuerySource } from "./QuerySource";
+import { DataBridge } from "../data-access/DataBridge";
+import { ChangeTracker } from "../change-tracking/ChangeTracker";
 
 export class Queryable<Root extends {}, Shape, U> extends SelectionQueryable<Root, Shape, U> {
+
+    constructor(schema: CompiledSchema<Root>, schemas: Map<SchemaId, CompiledSchema<any>>, options: { queryable?: QuerySource<Root, Shape>, dataBridge?: DataBridge<Root>, changeTracker?: ChangeTracker<Root> }) {
+        super(schema, schemas, options);
+
+        // Bind all methods to preserve 'this' context
+        this.where = this.where.bind(this);
+        this.map = this.map.bind(this);
+        this.skip = this.skip.bind(this);
+        this.take = this.take.bind(this);
+        this.sort = this.sort.bind(this);
+        this.sortDescending = this.sortDescending.bind(this);
+        this.subscribe = this.subscribe.bind(this);
+    }
+
 
     where(expression: Filter<Shape>): Queryable<Root, Shape, U>;
     where<P extends {}>(selector: ParamsFilter<Shape, P>, params: P): Queryable<Root, Shape, U>;

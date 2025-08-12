@@ -3,8 +3,27 @@ import { QuerySource } from "./QuerySource";
 import { Filter, ParamsFilter, toExpression } from "routier-core/expressions";
 import { GenericFunction } from "routier-core/types";
 import { QueryOptionName } from "routier-core/plugins";
-
+import { CompiledSchema, SchemaId } from "routier-core/schema";
+import { DataBridge } from "../data-access/DataBridge";
+import { ChangeTracker } from "../change-tracking/ChangeTracker";
 export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<Root, Shape> {
+
+    constructor(schema: CompiledSchema<Root>, schemas: Map<SchemaId, CompiledSchema<any>>, options: { queryable?: QuerySource<Root, Shape>, dataBridge?: DataBridge<Root>, changeTracker?: ChangeTracker<Root> }) {
+        super(schema, schemas, options);
+
+        // Bind all methods to preserve 'this' context
+        this.remove = this.remove.bind(this);
+        this.toArray = this.toArray.bind(this);
+        this.first = this.first.bind(this);
+        this.firstOrUndefined = this.firstOrUndefined.bind(this);
+        this.some = this.some.bind(this);
+        this.every = this.every.bind(this);
+        this.min = this.min.bind(this);
+        this.max = this.max.bind(this);
+        this.sum = this.sum.bind(this);
+        this.count = this.count.bind(this);
+        this.distinct = this.distinct.bind(this);
+    }
 
     remove(expression: Filter<Shape>, done: CallbackResult<never>): void;
     remove<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<never>): void;

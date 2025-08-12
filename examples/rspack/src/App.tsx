@@ -1,10 +1,13 @@
 import { useRef, useState } from "react";
 import reactLogo from "./assets/react.svg";
 import "./App.css";
-import { CustomContext } from './CustomContext';
+import { CustomContext, useDataStore } from './CustomContext';
+import { useQuery } from "./useQuery";
 
 function App() {
 	const [count, setCount] = useState(0);
+	const dataStore = useDataStore();
+	const productCount = useQuery<number>(c => dataStore.products.count(c), []);
 	const contextRef = useRef(new CustomContext());
 
 	const onClick = async () => {
@@ -45,7 +48,7 @@ function App() {
 		debugger
 		console.log(items);
 
-		setCount(w => w + response.result.count())
+		setCount(items.length)
 	}
 
 	return (
@@ -67,6 +70,7 @@ function App() {
 			<p className="read-the-docs">
 				Click on the Rspack and React logos to learn more
 			</p>
+			{productCount.status === 'success' ? productCount.data : 0}
 		</div>
 	);
 }
