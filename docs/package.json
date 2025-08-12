@@ -1,0 +1,21 @@
+{
+  "name": "routier-docs",
+  "version": "1.0.0",
+  "description": "Documentation for the Routier framework",
+  "scripts": {
+    "docs:dev": "npx @11ty/eleventy --serve",
+    "docs:build": "npx @11ty/eleventy",
+    "docs:watch": "npx @11ty/eleventy --watch"
+  },
+  "devDependencies": {
+    "@11ty/eleventy": "^2.0.0"
+  },
+  "keywords": [
+    "routier",
+    "documentation",
+    "data-management",
+    "framework"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}

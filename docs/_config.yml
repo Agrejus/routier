@@ -1,0 +1,52 @@
+# GitHub Pages configuration for Routier documentation
+title: Routier Framework Documentation
+description: Modern, flexible data management framework for building scalable applications
+url: https://your-username.github.io/routier
+baseurl: /routier
+
+# Navigation
+nav:
+  - title: Quick Start
+    url: /quick-start/
+  - title: Core Concepts
+    url: /core-concepts/
+  - title: Plugins
+    url: /plugins/
+  - title: Data Operations
+    url: /data-operations/
+  - title: React Integration
+    url: /react-integration/
+  - title: Advanced Features
+    url: /advanced-features/
+  - title: Guides & Examples
+    url: /guides-examples/
+  - title: Reference
+    url: /reference/
+  - title: Examples
+    url: /examples/
+  - title: Demos
+    url: /demos/
+
+# Theme and styling
+theme: jekyll-theme-cayman
+markdown: kramdown
+highlighter: rouge
+
+# Plugins
+plugins:
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# Collections
+collections:
+  docs:
+    output: true
+    permalink: /:collection/:name/
+
+# Defaults
+defaults:
+  - scope:
+      path: ""
+      type: "docs"
+    values:
+      layout: "page"

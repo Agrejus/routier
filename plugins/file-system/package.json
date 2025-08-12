@@ -8,7 +8,9 @@
     "build:types": "tsc --emitDeclarationOnly",
     "build:bundle": "rspack build",
     "build": "npm run build:bundle && npm run build:types",
-    "tsc": "tsc"
+    "tsc": "tsc",    "test": "vitest --run",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage"
   },
   "sideEffects": false,
   "author": "James DeMeuse <james.demeuse@gmail.com>",
@@ -33,7 +35,9 @@
     "routier-core": "file://../../core",
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",
-    "ts-loader": "^9.5.2"
+    "routier-plugin-testing": "file://../testing",
+    "ts-loader": "^9.5.2",
+    "vitest": "^3.1.3"
   },
   "dependencies": {
 

@@ -4,7 +4,7 @@ import { BrowserStoragePlugin } from './BrowserStoragePlugin';
 import { uuidv4 } from 'routier-core';
 
 const testSections = [
-    new ProductTestSuite(new BrowserStoragePlugin(uuidv4(), window.localStorage), { expect: expect as any, fn: vi.fn, debugTestNames: ["DistinctAsync dates"] }),
+    new ProductTestSuite(new BrowserStoragePlugin(uuidv4(), window.localStorage), { expect: expect as any, fn: vi.fn }),
     new EventsTestSuite(new BrowserStoragePlugin(uuidv4(), window.localStorage), { expect: expect as any, fn: vi.fn }),
     new CommentsTestSuite(new BrowserStoragePlugin(uuidv4(), window.localStorage), { expect: expect as any, fn: vi.fn }),
 

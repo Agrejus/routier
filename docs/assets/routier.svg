@@ -1,0 +1,51 @@
+<svg
+  width="128"
+  height="128"
+  viewBox="0 0 128 128"
+  fill="none"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <!-- Database body -->
+  <ellipse cx="64" cy="32" rx="28" ry="10" fill="#00BFA6" />
+  <path
+    d="M36 32v32c0 5.5 12.5 10 28 10s28-4.5 28-10V32"
+    fill="#00BFA6"
+  />
+  <ellipse cx="64" cy="64" rx="28" ry="10" fill="#00BFA6" />
+  <path
+    d="M36 64v32c0 5.5 12.5 10 28 10s28-4.5 28-10V64"
+    fill="#00BFA6"
+  />
+  <ellipse cx="64" cy="96" rx="28" ry="10" fill="#00BFA6" />
+
+  <!-- Swap arrows -->
+  <!-- Top arrow -->
+  <path
+    d="M92 20c10 8 16 20 16 32"
+    stroke="#4A5568"
+    stroke-width="4"
+    fill="none"
+    stroke-linecap="round"
+  />
+  <!-- Adjusted arrowhead position -->
+  <polygon
+    points="108,48 112,40 104,40"
+    fill="#4A5568"
+    transform="translate(0,10)"
+  />
+
+  <!-- Bottom arrow -->
+  <path
+    d="M36 108c-10-8-16-20-16-32"
+    stroke="#4A5568"
+    stroke-width="4"
+    fill="none"
+    stroke-linecap="round"
+  />
+  <!-- Adjusted arrowhead position -->
+  <polygon
+    points="20,80 16,88 24,88"
+    fill="#4A5568"
+    transform="translate(0,-10)"
+  />
+</svg>

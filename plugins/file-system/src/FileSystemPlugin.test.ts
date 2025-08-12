@@ -1,15 +1,15 @@
 import { describe, it, expect, vi } from 'vitest';
 import { CommentsTestSuite, EventsTestSuite, ProductTestSuite } from 'routier-plugin-testing';
-import { MemoryPlugin } from './MemoryPlugin';
+import { FileSystemPlugin } from './FileSystemPlugin';
 import { uuidv4 } from 'routier-core';
 
 const testSections = [
-    new ProductTestSuite(new MemoryPlugin(uuidv4()), { expect: expect as any, fn: vi.fn }),
-    new EventsTestSuite(new MemoryPlugin(uuidv4()), { expect: expect as any, fn: vi.fn }),
-    new CommentsTestSuite(new MemoryPlugin(uuidv4()), { expect: expect as any, fn: vi.fn })
+    new ProductTestSuite(new FileSystemPlugin(__dirname, uuidv4()), { expect: expect as any, fn: vi.fn }),
+    new EventsTestSuite(new FileSystemPlugin(__dirname, uuidv4()), { expect: expect as any, fn: vi.fn }),
+    new CommentsTestSuite(new FileSystemPlugin(__dirname, uuidv4()), { expect: expect as any, fn: vi.fn }),
 ];
 
-describe('Memory Plugin Tests', () => {
+describe('Filesystem Plugin Tests', () => {
     for (const section of testSections) {
         for (const suite of section.getTestSuites()) {
             describe(suite.name, () => {
