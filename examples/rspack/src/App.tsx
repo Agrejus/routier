@@ -1,77 +1,37 @@
-import { useRef, useState } from "react";
-import reactLogo from "./assets/react.svg";
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import routierLogo from "../../../docs/assets/routier.svg";
 import "./App.css";
-import { CustomContext, useDataStore } from './CustomContext';
-import { useQuery } from "./useQuery";
+import { ProductForm } from './ProductForm';
+import { GridDemo } from './GridDemo';
+import { ReactiveDemo } from './ReactiveDemo';
 
 function App() {
-	const [count, setCount] = useState(0);
-	const dataStore = useDataStore();
-	const productCount = useQuery<number>(c => dataStore.products.count(c), []);
-	const contextRef = useRef(new CustomContext());
-
-	const onClick = async () => {
-
-		const result = await contextRef.current.products.where(x => x.name === "James").firstOrUndefinedAsync();
-
-		console.log(result);
-		debugger;
-
-		const [first] = await contextRef.current.products.addAsync({
-			cool: "cool2",
-			two: "two2",
-			name: "James1",
-			more: {
-				one: "one",
-				two: "two"
-			},
-			order: 1000
-		}, {
-			cool: "cool1",
-			two: "two1",
-			name: "James",
-			more: {
-				one: "one",
-				two: "two"
-			},
-			order: 10
-		});
-
-		const response = await contextRef.current.saveChangesAsync();
-
-		await contextRef.current.products.removeAsync(first);
-
-		await contextRef.current.saveChangesAsync();
-
-		const items = await contextRef.current.products.toArrayAsync();
-
-		debugger
-		console.log(items);
-
-		setCount(items.length)
-	}
-
 	return (
-		<div className="App">
-			<div>
-				<a href="https://reactjs.org" target="_blank" rel="noreferrer">
-					<img src={reactLogo} className="logo react" alt="React logo" />
-				</a>
+		<Router>
+			<div className="App">
+				<header className="app-header">
+					<div className="logo-container">
+						<img src={routierLogo} className="logo routier" alt="Routier logo" />
+						<h1>Routier Demo</h1>
+					</div>
+					<p className="subtitle">Universal ORM abstraction that lets you easily switch between different ORM frameworks and data stores</p>
+					
+					<nav className="app-navigation">
+						<Link to="/" className="nav-link">Product Form</Link>
+						<Link to="/grid" className="nav-link">Grid Demo</Link>
+						<Link to="/reactive" className="nav-link">Reactive vs Non-Reactive</Link>
+					</nav>
+				</header>
+
+				<main className="app-main">
+					<Routes>
+						<Route path="/" element={<ProductForm />} />
+						<Route path="/grid" element={<GridDemo />} />
+						<Route path="/reactive" element={<ReactiveDemo />} />
+					</Routes>
+				</main>
 			</div>
-			<h1>Rspack + React + TypeScript</h1>
-			<div className="card">
-				<button type="button" onClick={onClick}>
-					count is {count}
-				</button>
-				<p>
-					Edit <code>src/App.tsx</code> and save to test HMR
-				</p>
-			</div>
-			<p className="read-the-docs">
-				Click on the Rspack and React logos to learn more
-			</p>
-			{productCount.status === 'success' ? productCount.data : 0}
-		</div>
+		</Router>
 	);
 }
 

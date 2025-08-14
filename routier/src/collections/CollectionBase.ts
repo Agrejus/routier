@@ -35,38 +35,10 @@ export class CollectionBase<TEntity extends {}> {
         this.schema = schema;
         this.schemas = schemas;
         this.changeTracker = new ChangeTracker(schema);
-        this.dataBridge = DataBridge.create<TEntity>(dbPlugin, options);
+        this.dataBridge = DataBridge.create<TEntity>(dbPlugin, schema, options);
 
         pipelines.prepareChanges.pipe(this.prepare.bind(this));
         pipelines.afterPersist.pipe(this.afterPersist.bind(this));
-
-        // Bind all public methods to preserve 'this' context
-        this.subscribe = this.subscribe.bind(this);
-        this.where = this.where.bind(this);
-        this.sort = this.sort.bind(this);
-        this.map = this.map.bind(this);
-        this.skip = this.skip.bind(this);
-        this.take = this.take.bind(this);
-        this.toArray = this.toArray.bind(this);
-        this.toArrayAsync = this.toArrayAsync.bind(this);
-        this.first = this.first.bind(this);
-        this.firstAsync = this.firstAsync.bind(this);
-        this.firstOrUndefined = this.firstOrUndefined.bind(this);
-        this.firstOrUndefinedAsync = this.firstOrUndefinedAsync.bind(this);
-        this.some = this.some.bind(this);
-        this.someAsync = this.someAsync.bind(this);
-        this.every = this.every.bind(this);
-        this.everyAsync = this.everyAsync.bind(this);
-        this.min = this.min.bind(this);
-        this.minAsync = this.minAsync.bind(this);
-        this.max = this.max.bind(this);
-        this.maxAsync = this.maxAsync.bind(this);
-        this.sum = this.sum.bind(this);
-        this.sumAsync = this.sumAsync.bind(this);
-        this.count = this.count.bind(this);
-        this.countAsync = this.countAsync.bind(this);
-        this.distinct = this.distinct.bind(this);
-        this.distinctAsync = this.distinctAsync.bind(this);
     }
 
     protected get changeTrackingType(): ChangeTrackingType {
@@ -332,7 +304,7 @@ export class CollectionBase<TEntity extends {}> {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
-        return queryable.subscribe.bind(queryable)();
+        return queryable.subscribe();
     }
 
     /**

@@ -1,5 +1,5 @@
 import { ResolvedChanges } from '../../collections';
-import { DbPluginBulkPersistEvent, IDbPlugin, IdbPluginCollection } from '../types';
+import { DbPluginBulkPersistEvent, IDbPlugin, ReplicationPluginOptions, OptimisticReplicationPluginOptions } from '../types';
 
 export type OperationsPayload = {
     plugins: IDbPlugin[];
@@ -12,5 +12,5 @@ export type PersistPayload<TEntity extends {}> = OperationsPayload & {
 }
 
 export type IDbPluginReplicator = IDbPlugin & {
-    plugins: IdbPluginCollection;
+    plugins: ReplicationPluginOptions | OptimisticReplicationPluginOptions;
 }

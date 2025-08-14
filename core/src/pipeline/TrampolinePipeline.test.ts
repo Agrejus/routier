@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { TrampolinePipeline, AsyncPipeline, Processor, UnitOfWork } from './TrampolinePipeline';
+import { TrampolinePipeline, AsyncPipeline, Processor, AsyncUnitOfWork } from './TrampolinePipeline';
 import { Result } from '../results';
 
 describe('TrampolinePipeline', () => {
@@ -251,7 +251,7 @@ describe('AsyncPipeline', () => {
 
         it('should process single unit of work', async () => {
             const pipeline = new AsyncPipeline<string, string>();
-            const unitOfWork: UnitOfWork<string, string> = vi.fn((payload, done) => {
+            const unitOfWork: AsyncUnitOfWork<string, string> = vi.fn((payload, done) => {
                 expect(payload).toBe('test');
                 done(Result.success('result'));
             });
@@ -274,12 +274,12 @@ describe('AsyncPipeline', () => {
             const pipeline = new AsyncPipeline<string, string>();
             const executionOrder: number[] = [];
 
-            const unitOfWork1: UnitOfWork<string, string> = vi.fn((payload, done) => {
+            const unitOfWork1: AsyncUnitOfWork<string, string> = vi.fn((payload, done) => {
                 executionOrder.push(1);
                 done(Result.success(`result1-${payload}`));
             });
 
-            const unitOfWork2: UnitOfWork<string, string> = vi.fn((payload, done) => {
+            const unitOfWork2: AsyncUnitOfWork<string, string> = vi.fn((payload, done) => {
                 executionOrder.push(2);
                 done(Result.success(`result2-${payload}`));
             });
@@ -305,7 +305,7 @@ describe('AsyncPipeline', () => {
     describe('pipe', () => {
         it('should add unit of work to the list', async () => {
             const pipeline = new AsyncPipeline<string, string>();
-            const unitOfWork: UnitOfWork<string, string> = vi.fn((payload, done) => {
+            const unitOfWork: AsyncUnitOfWork<string, string> = vi.fn((payload, done) => {
                 done(Result.success(payload));
             });
 
@@ -330,7 +330,7 @@ describe('AsyncPipeline', () => {
             const items = ['a', 'b', 'c'];
             const processedItems: string[] = [];
 
-            const unitOfWork: UnitOfWork<string, string> = vi.fn((payload, done) => {
+            const unitOfWork: AsyncUnitOfWork<string, string> = vi.fn((payload, done) => {
                 processedItems.push(payload);
                 done(Result.success(payload.toUpperCase()));
             });
@@ -352,7 +352,7 @@ describe('AsyncPipeline', () => {
 
         it('should handle empty array in pipeEach', async () => {
             const pipeline = new AsyncPipeline<string, string>();
-            const unitOfWork: UnitOfWork<string, string> = vi.fn((payload, done) => {
+            const unitOfWork: AsyncUnitOfWork<string, string> = vi.fn((payload, done) => {
                 done(Result.success(payload));
             });
 

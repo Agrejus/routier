@@ -1,8 +1,9 @@
 import { CompiledSchema, SchemaId } from '../../schema';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, IQuery } from '../types';
 import { PendingChanges, ResolvedChanges } from '../../collections';
-import { CallbackPartialResult, CallbackResult, Result } from '../../results';
+import { CallbackPartialResult, CallbackResult, Result, ResultType } from '../../results';
 import { now } from '../../performance';
+import { uuid } from '../../utilities';
 
 // Check if we're in development environment
 const isDevelopment = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined;
@@ -17,6 +18,8 @@ export type QueryLogContext<TEntity extends {}, TShape extends any = TEntity> = 
     error?: any;
     duration: number;
     isCriticalError?: boolean;
+    timestamp: number;
+    id: string;
 };
 
 export type BulkOperationsLogContext<TEntity extends {}> = {
@@ -27,10 +30,12 @@ export type BulkOperationsLogContext<TEntity extends {}> = {
     duration: number;
     operationId: string;
     isCriticalError?: boolean;
+    timestamp: number;
 } & Record<string, unknown>;
 
 export type LoggingOptions<TEntity extends {}, TShape> = LoggingHookOptions<TEntity, TShape> & {
-    logStyle?: 'minimal' | 'detailed';
+    logStyle?: 'minimal' | 'detailed' | 'redux';
+    maxLogEntries?: number;
 };
 
 export type LoggingHookOptions<TEntity extends {}, TShape> = {
@@ -40,107 +45,700 @@ export type LoggingHookOptions<TEntity extends {}, TShape> = {
     onBulkOperationsResponse?: LogHook<BulkOperationsLogContext<TEntity>>;
 }
 
-// Helper functions to reduce code duplication
-const logEntities = (data: { entities: any[] }, count: number) => {
-    let loggedCount = 0;
-    // Show all if there are just a few
-    data.entities.forEach((item, i) => {
-        if (loggedCount >= count) {
-            return;
-        }
-
-        console.log(`[${i}]:`, item);
-        loggedCount++;
-    });
-}
-
-const logEntitiesWithLimit = (data: { entities: any[] }, totalCount: number, maxShow: number = 5) => {
-    if (totalCount <= maxShow) {
-        logEntities(data, maxShow);
-    } else {
-        console.log(`Showing first 3 of ${totalCount}:`);
-        logEntities(data, 3);
-        console.log(`... and ${totalCount - 3} more`);
-    }
-}
-
-const logArrayWithLimit = <T>(items: T[], totalCount: number, maxShow: number = 5, logFn: (item: T, index: number) => void) => {
-    if (totalCount <= maxShow) {
-        items.forEach(logFn);
-    } else {
-        console.log(`Showing first 3 of ${totalCount}:`);
-        items.slice(0, 3).forEach(logFn);
-        console.log(`... and ${totalCount - 3} more`);
-    }
-}
-
-const getSpeedInfo = (duration: number) => {
+// Performance indicators
+const getPerformanceIndicator = (duration: number) => {
     if (duration > 1000) {
-        return {
-            emoji: '🐢',
-            color: '#F44336',
-            text: 'SLOW'
-        };
-    } else if (duration > 300) {
-        return {
-            emoji: '⏱️',
-            color: '#FF9800',
-            text: 'MEDIUM'
-        };
-    } else {
-        return {
-            emoji: '⚡',
-            color: '#4CAF50',
-            text: 'FAST'
-        };
+        return { emoji: '🐌', color: '#ef4444', label: 'SLOW', level: 'error' };
     }
-}
 
-const logErrorSection = (error: any, isCriticalError: boolean) => {
-    console.groupCollapsed(`Error:`, 'color: #F44336;');
-    if (isCriticalError) {
-        console.log('Exception thrown during operation execution:');
+    if (duration > 500) {
+        return { emoji: '🐢', color: '#f97316', label: 'MEDIUM', level: 'warning' };
     }
-    console.error(error);
-    console.groupEnd();
-}
 
-const logDuration = (duration: number, headerColor: string, speedText: string) => {
-    console.log(
-        `%cDuration:`,
-        `color: ${headerColor};`,
-        `${duration.toFixed(2)}ms (${speedText})`
+    if (duration > 100) {
+        return { emoji: '⚡', color: '#eab308', label: 'FAST', level: 'info' };
+    }
+
+    return { emoji: '🚀', color: '#22c55e', label: 'INSTANT', level: 'success' };
+};
+
+// Generate unique operation IDs
+const generateOperationId = () => uuid(8);
+
+// Redux-style action logging
+const logReduxAction = (action: string, payload: any, meta?: any) => {
+    const timestamp = new Date().toISOString();
+    const actionId = generateOperationId();
+
+    console.groupCollapsed(
+        `%c${action} %c@ ${timestamp}`,
+        'color: #3b82f6; font-weight: bold; font-size: 14px;',
+        'color: #6b7280; font-size: 12px;'
     );
-}
+
+    console.group('Action');
+    console.log('Type:', action);
+    console.log('ID:', actionId);
+    console.log('Timestamp:', timestamp);
+    console.groupEnd();
+
+    if (payload) {
+        console.group('Payload');
+        console.log(payload);
+        console.groupEnd();
+    }
+
+    if (meta) {
+        console.group('Meta');
+        console.log(meta);
+        console.groupEnd();
+    }
+
+    console.groupEnd();
+};
+
+// Enhanced error logging
+const logError = (error: any, context: string, isCritical: boolean = false) => {
+    const errorStyle = isCritical
+        ? 'color: #dc2626; font-weight: bold; background: #fef2f2; padding: 4px 8px; border-radius: 4px;'
+        : 'color: #ea580c; font-weight: bold; background: #fff7ed; padding: 4px 8px; border-radius: 4px;';
+
+    console.groupCollapsed(`%c${isCritical ? '💀 CRITICAL ERROR' : '❌ ERROR'} in ${context}`, errorStyle);
+
+    if (isCritical) {
+        console.log('%cThis error occurred during operation execution and may indicate a system failure.', 'color: #dc2626; font-weight: bold;');
+    }
+
+    console.error('Error Details:', error);
+
+    if (error.stack) {
+        console.group('Stack Trace');
+        console.log(error.stack);
+        console.groupEnd();
+    }
+
+    if (error.message) {
+        console.log('Error Message:', error.message);
+    }
+
+    console.groupEnd();
+};
+
+// Enhanced duration logging
+const logDuration = (duration: number, performance: ReturnType<typeof getPerformanceIndicator>) => {
+    console.log(
+        `%c⏱️ Duration: ${duration.toFixed(2)}ms %c(${performance.label})`,
+        `color: ${performance.color}; font-weight: bold; font-size: 13px;`,
+        `color: #6b7280; font-size: 12px;`
+    );
+};
 
 export class DbPluginLogging implements IDbPlugin {
-    plugin: IDbPlugin;
-    private _logStyle: 'minimal' | 'detailed';
-    private _hooks: Omit<LoggingOptions<any, any>, "logStyle">;
+    private plugin: IDbPlugin;
+    private _logStyle: 'minimal' | 'detailed' | 'redux';
+    private _hooks: Omit<LoggingOptions<any, any>, "logStyle" | "maxLogEntries" | "enableTimeline">;
     private _shouldLog: boolean;
+    private _maxLogEntries: number;
+    private _logHistory: Array<{ type: string; timestamp: number; data: any }> = [];
 
     private constructor(plugin: IDbPlugin, options?: LoggingOptions<any, any>) {
         this.plugin = plugin;
-        this._logStyle = options?.logStyle ?? 'detailed';
+        this._logStyle = options?.logStyle ?? 'redux';
+        this._maxLogEntries = options?.maxLogEntries ?? 100;
         this._hooks = {
             onQueryRequest: options?.onQueryRequest,
             onQueryResponse: options?.onQueryResponse,
             onBulkOperationsRequest: options?.onBulkOperationsRequest,
             onBulkOperationsResponse: options?.onBulkOperationsResponse
         };
-        // Only log in development mode by default
         this._shouldLog = isDevelopment;
     }
 
     /**
-     * Creates a new DbPluginLogging that wraps a database plugin with logging functionality.
+     * Creates a new DbPluginLogging that wraps a database plugin with Redux-style logging functionality.
      * 
-     * @param plugin The database plugin to wrap with logging
-     * @param options Configuration options for the logger
-     * @returns A new DbPluginLogging instance
+     * @param config Configuration object with Instance, options, and optional args
+     * @returns A new LoggingPlugin instance that extends the provided class
      */
-    static create(plugin: IDbPlugin, options?: LoggingOptions<any, any>) {
-        return new DbPluginLogging(plugin, options);
+    static wrap<T extends IDbPlugin, A extends any[]>({
+        Instance,
+        options
+    }: {
+        Instance: new (...args: A) => T;
+        args: A;
+        options?: LoggingOptions<any, any>
+    }) {
+
+        // Create a new class that extends the provided Instance
+        class LoggingPlugin extends (Instance as any) {
+            _logStyle: 'minimal' | 'detailed' | 'redux';
+            _hooks: Omit<LoggingOptions<any, any>, "logStyle" | "maxLogEntries" | "enableTimeline">;
+            _shouldLog: boolean;
+            _maxLogEntries: number;
+            _logHistory: Array<{ type: string; timestamp: number; data: any }> = [];
+
+            constructor(...args: ConstructorParameters<typeof Instance>) {
+                super(...args);
+                this._logStyle = options?.logStyle ?? 'redux';
+                this._maxLogEntries = options?.maxLogEntries ?? 100;
+                this._hooks = {
+                    onQueryRequest: options?.onQueryRequest,
+                    onQueryResponse: options?.onQueryResponse,
+                    onBulkOperationsRequest: options?.onBulkOperationsRequest,
+                    onBulkOperationsResponse: options?.onBulkOperationsResponse
+                };
+                this._shouldLog = isDevelopment;
+            }
+
+            addToHistory(type: string, data: any) {
+                this._logHistory.push({
+                    type,
+                    timestamp: Date.now(),
+                    data
+                });
+
+                // Keep only the last N entries
+                if (this._logHistory.length > this._maxLogEntries) {
+                    this._logHistory = this._logHistory.slice(-this._maxLogEntries);
+                }
+            }
+
+            _logQueryRequest<TRoot extends {}, TShape extends unknown = TRoot>(
+                context: QueryLogContext<TRoot, TShape>
+            ): void {
+                const { query, schema, id, timestamp } = context;
+
+                if (this._logStyle === 'redux') {
+                    logReduxAction(
+                        'QUERY_REQUEST',
+                        {
+                            collection: schema.collectionName,
+                            schemaId: schema.id,
+                            changeTracking: query.changeTracking
+                        },
+                        {
+                            operationId: id,
+                            timestamp: new Date(timestamp).toISOString(),
+                            options: this._extractQueryOptions(query)
+                        }
+                    );
+                } else if (this._logStyle === 'detailed') {
+                    console.groupCollapsed(`🔍 Query Request [${schema.collectionName}]`);
+                    console.log('Operation ID:', id);
+                    console.log('Schema:', schema.collectionName);
+                    console.log('Change Tracking:', query.changeTracking);
+                    console.log('Options:', this._extractQueryOptions(query));
+                    console.groupEnd();
+                } else {
+                    console.log(`🔍 Query [${schema.collectionName}] started`);
+                }
+
+                this.addToHistory('QUERY_REQUEST', context);
+            }
+
+            _logQueryResult<TRoot extends {}, TShape extends unknown = TRoot>(
+                context: QueryLogContext<TRoot, TShape>
+            ): void {
+                const { result, error, duration, isCriticalError, schema, id, timestamp } = context;
+                const performance = getPerformanceIndicator(duration);
+
+                if (this._logStyle === 'redux') {
+                    if (error) {
+                        logReduxAction(
+                            'QUERY_ERROR',
+                            {
+                                collection: schema.collectionName,
+                                error: error.message || error,
+                                isCritical: isCriticalError
+                            },
+                            {
+                                operationId: id,
+                                duration,
+                                timestamp: new Date(timestamp).toISOString(),
+                                performance: performance.label
+                            }
+                        );
+                        logError(error, `Query [${schema.collectionName}]`, isCriticalError);
+                    } else {
+                        logReduxAction(
+                            'QUERY_SUCCESS',
+                            {
+                                collection: schema.collectionName,
+                                resultCount: this._getResultCount(result),
+                                resultType: this._getResultType(result)
+                            },
+                            {
+                                operationId: id,
+                                duration,
+                                timestamp: new Date(timestamp).toISOString(),
+                                performance: performance.label
+                            }
+                        );
+
+                        // Log detailed result information
+                        this._logQueryResultDetails(context, performance);
+                    }
+                } else if (this._logStyle === 'detailed') {
+                    this._logDetailedQueryResult(context, performance);
+                } else {
+                    // Minimal logging
+                    if (error) {
+                        const errorType = isCriticalError ? 'CRITICAL ERROR' : 'Error';
+                        console.error(`${isCriticalError ? '💀' : '❌'} Query ${errorType} [${schema.collectionName}]:`, error);
+                    } else {
+                        console.log(`✅ Query [${schema.collectionName}] completed in ${duration.toFixed(2)}ms`);
+                    }
+                }
+
+                this.addToHistory('QUERY_RESULT', context);
+            }
+
+            _logQueryResultDetails<TRoot extends {}, TShape extends unknown = TRoot>(
+                context: QueryLogContext<TRoot, TShape>,
+                performance: ReturnType<typeof getPerformanceIndicator>
+            ): void {
+                const { result, schema } = context;
+
+                console.group('Result Details');
+
+                if (Array.isArray(result)) {
+                    console.log(`📊 Array Result: ${result.length} items`);
+
+                    if (result.length > 0) {
+                        if (result.length <= 5) {
+                            console.table(result);
+                        } else {
+                            console.log('First 3 items:');
+                            console.table(result.slice(0, 3));
+                            console.log(`... and ${result.length - 3} more items`);
+                        }
+                    }
+                } else if (result !== null && typeof result === 'object') {
+                    console.log('📊 Object Result:');
+                    console.log(result);
+                } else {
+                    console.log('📊 Primitive Result:', result);
+                }
+
+                console.groupEnd();
+
+                logDuration(context.duration, performance);
+            }
+
+            _logDetailedQueryResult<TRoot extends {}, TShape extends unknown = TRoot>(
+                context: QueryLogContext<TRoot, TShape>,
+                performance: ReturnType<typeof getPerformanceIndicator>
+            ): void {
+                const { query, result, error, duration, isCriticalError, schema } = context;
+
+                const headerTitle = error
+                    ? `${isCriticalError ? '💀' : '❌'} Query Error [${schema.collectionName}]`
+                    : `${performance.emoji} Query Success [${schema.collectionName}]`;
+
+                const headerStyle = error
+                    ? `color: ${isCriticalError ? '#dc2626' : '#ea580c'}; font-weight: bold;`
+                    : `color: ${performance.color}; font-weight: bold;`;
+
+                console.groupCollapsed(`%c${headerTitle}`, headerStyle);
+
+                if (error) {
+                    logError(error, `Query [${schema.collectionName}]`, isCriticalError);
+                } else {
+                    this._logQueryResultDetails(context, performance);
+                }
+
+                console.groupEnd();
+            }
+
+            _extractQueryOptions(query: IQuery<any, any>) {
+                const options: Record<string, any> = {};
+
+                if (query.options) {
+                    const optionTypes = ['skip', 'take', 'sort', 'filter', 'map', 'distinct', 'count', 'sum', 'min', 'max'] as const;
+
+                    optionTypes.forEach(type => {
+                        try {
+                            const values = query.options.getValues(type);
+                            if (values.length > 0) {
+                                options[type] = values;
+                            }
+                        } catch (e) {
+                            // Skip if option type is not supported
+                        }
+                    });
+                }
+
+                return options;
+            }
+
+            _getResultCount(result: any): string {
+                if (Array.isArray(result)) {
+                    return `${result.length} items`;
+                } else if (result !== null && typeof result === 'object') {
+                    return '1 object';
+                } else {
+                    return '1 primitive';
+                }
+            }
+
+            _getResultType(result: any): string {
+                if (Array.isArray(result)) {
+                    return 'array';
+                } else if (result !== null && typeof result === 'object') {
+                    return 'object';
+                } else {
+                    return typeof result;
+                }
+            }
+
+            _logBulkOperationsRequest<TRoot extends {}>(
+                context: BulkOperationsLogContext<TRoot>
+            ): void {
+                const { schemas, operations, operationId, timestamp } = context;
+                const totalOperations = this._countTotalOperations(operations);
+
+                if (this._logStyle === 'redux') {
+                    logReduxAction(
+                        'BULK_OPERATIONS_REQUEST',
+                        {
+                            totalOperations,
+                            schemaCount: schemas.size,
+                            operations: this._extractBulkOperations(operations)
+                        },
+                        {
+                            operationId,
+                            timestamp: new Date(timestamp).toISOString()
+                        }
+                    );
+                } else if (this._logStyle === 'detailed') {
+                    console.groupCollapsed(`🔄 Bulk Operations Request [${totalOperations} operations]`);
+                    console.log('Operation ID:', operationId);
+                    console.log('Total Operations:', totalOperations);
+                    console.log('Schemas:', schemas.size);
+                    console.log('Operations:', this._extractBulkOperations(operations));
+                    console.groupEnd();
+                } else {
+                    console.log(`🔄 Bulk Operations [${totalOperations} operations] started`);
+                }
+
+                this.addToHistory('BULK_OPERATIONS_REQUEST', context);
+            }
+
+            _logBulkOperationsResult<TRoot extends {}>(
+                context: BulkOperationsLogContext<TRoot>
+            ): void {
+                const { schemas, operations, result, error, duration, isCriticalError, operationId, timestamp } = context;
+                const performance = getPerformanceIndicator(duration);
+                const totalOperations = this._countTotalOperations(operations);
+
+                if (this._logStyle === 'redux') {
+                    if (error) {
+                        logReduxAction(
+                            'BULK_OPERATIONS_ERROR',
+                            {
+                                totalOperations,
+                                error: error.message || error,
+                                isCritical: isCriticalError
+                            },
+                            {
+                                operationId,
+                                duration,
+                                timestamp: new Date(timestamp).toISOString(),
+                                performance: performance.label
+                            }
+                        );
+                        logError(error, 'Bulk Operations', isCriticalError);
+                    } else {
+                        logReduxAction(
+                            'BULK_OPERATIONS_SUCCESS',
+                            {
+                                totalOperations,
+                                completedOperations: this._countCompletedOperations(result),
+                                schemaCount: schemas.size
+                            },
+                            {
+                                operationId,
+                                duration,
+                                timestamp: new Date(timestamp).toISOString(),
+                                performance: performance.label
+                            }
+                        );
+
+                        // Log detailed result information
+                        this._logBulkOperationsResultDetails(context, performance);
+                    }
+                } else if (this._logStyle === 'detailed') {
+                    this._logDetailedBulkOperationsResult(context, performance);
+                } else {
+                    // Minimal logging
+                    if (error) {
+                        const errorType = isCriticalError ? 'CRITICAL ERROR' : 'Error';
+                        console.error(`${isCriticalError ? '💀' : '❌'} Bulk Operations ${errorType}:`, error);
+                    } else {
+                        console.log(`✅ Bulk Operations [${totalOperations} operations] completed in ${duration.toFixed(2)}ms`);
+                    }
+                }
+
+                this.addToHistory('BULK_OPERATIONS_RESULT', context);
+            }
+
+            _logBulkOperationsResultDetails<TRoot extends {}>(
+                context: BulkOperationsLogContext<TRoot>,
+                performance: ReturnType<typeof getPerformanceIndicator>
+            ): void {
+                const { result, schemas } = context;
+
+                console.group('Result Details');
+
+                if (result) {
+                    const completedCount = this._countCompletedOperations(result);
+                    console.log(`📊 Completed: ${completedCount} operations`);
+
+                    // Show results by schema
+                    for (const [schemaId, operationResult] of result.result.all().data) {
+                        const schema = schemas.get(schemaId);
+                        const schemaName = schema?.collectionName || `Schema ${schemaId}`;
+
+                        console.groupCollapsed(`${schemaName} Results`);
+                        console.log(operationResult);
+                        console.groupEnd();
+                    }
+                }
+
+                console.groupEnd();
+
+                logDuration(context.duration, performance);
+            }
+
+            _logDetailedBulkOperationsResult<TRoot extends {}>(
+                context: BulkOperationsLogContext<TRoot>,
+                performance: ReturnType<typeof getPerformanceIndicator>
+            ): void {
+                const { error, isCriticalError } = context;
+                const totalOperations = this._countTotalOperations(context.operations);
+
+                const headerTitle = error
+                    ? `${isCriticalError ? '💀' : '❌'} Bulk Operations Error`
+                    : `${performance.emoji} Bulk Operations Success [${totalOperations} operations]`;
+
+                const headerStyle = error
+                    ? `color: ${isCriticalError ? '#dc2626' : '#ea580c'}; font-weight: bold;`
+                    : `color: ${performance.color}; font-weight: bold;`;
+
+                console.groupCollapsed(`%c${headerTitle}`, headerStyle);
+
+                if (error) {
+                    logError(error, 'Bulk Operations', isCriticalError);
+                } else {
+                    this._logBulkOperationsResultDetails(context, performance);
+                }
+
+                console.groupEnd();
+            }
+
+            _countTotalOperations(operations: PendingChanges<any>): number {
+                return operations.changes.all().data.length;
+            }
+
+            _countCompletedOperations(result: ResolvedChanges<any> | undefined): number {
+                if (!result) {
+                    return 0;
+                }
+
+                return result.result.all().data.length;
+            }
+
+            _extractBulkOperations(operations: PendingChanges<any>) {
+                const summary: Record<string, number> = {};
+
+                for (const [_, operation] of operations.changes.all().data) {
+                    if ('entity' in operation) {
+                        summary.single = (summary.single || 0) + 1;
+                    } else {
+                        summary.update = (summary.update || 0) + 1;
+                    }
+                }
+
+                return summary;
+            }
+
+            bulkPersist<TRoot extends {}>(event: DbPluginBulkPersistEvent<TRoot>, done: CallbackPartialResult<ResolvedChanges<TRoot>>): void {
+                const { operation, schemas } = event;
+                const start = now();
+                const operationId = generateOperationId();
+                const timestamp = Date.now();
+
+                // Create context for hooks and logging
+                const context: BulkOperationsLogContext<TRoot> = {
+                    schemas,
+                    operations: operation.toResult(),
+                    duration: 0,
+                    operationId,
+                    timestamp
+                };
+
+                // Log the bulk operations request
+                if (this._shouldLog) {
+                    this._logBulkOperationsRequest(context);
+                }
+
+                // Call the request hook if defined
+                if (this._hooks.onBulkOperationsRequest) {
+                    this._hooks.onBulkOperationsRequest(context);
+                }
+
+                try {
+                    super.bulkPersist(event, (result: ResultType<ResolvedChanges<TRoot>>) => {
+                        const end = now();
+                        const duration = end - start;
+
+                        // Update context with result information
+                        if (result.ok === Result.SUCCESS) {
+                            context.result = result.data;
+                        } else {
+                            context.error = result.error;
+                        }
+
+                        context.duration = duration;
+                        context.isCriticalError = false;
+
+                        // Log bulk operations result
+                        if (this._shouldLog) {
+                            this._logBulkOperationsResult(context);
+                        }
+
+                        // Call the response hook if defined
+                        if (this._hooks.onBulkOperationsResponse) {
+                            this._hooks.onBulkOperationsResponse(context);
+                        }
+
+                        // Pass through the original result
+                        done(result);
+                    });
+                } catch (e: any) {
+                    const end = now();
+                    const duration = end - start;
+
+                    // Update context with error information
+                    context.error = e;
+                    context.duration = duration;
+                    context.isCriticalError = true;
+
+                    // Log the error
+                    if (this._shouldLog) {
+                        this._logBulkOperationsResult(context);
+                    }
+
+                    // Call the response hook if defined
+                    if (this._hooks.onBulkOperationsResponse) {
+                        this._hooks.onBulkOperationsResponse(context);
+                    }
+
+                    done(Result.error(e));
+                }
+            }
+
+            destroy<TRoot extends {}>(event: DbPluginEvent<TRoot>, done: CallbackResult<never>): void {
+                try {
+                    super.destroy(event, done);
+                } catch (e: any) {
+                    done(e);
+                }
+            }
+
+            query<TRoot extends {}, TShape extends unknown = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: CallbackResult<TShape>): void {
+                const { operation, schemas } = event;
+                const start = now();
+                const operationId = generateOperationId();
+                const timestamp = Date.now();
+
+                // Create context for hooks and logging
+                const context: QueryLogContext<TRoot, TShape> = {
+                    query: operation,
+                    duration: 0,
+                    schema: operation.schema,
+                    timestamp,
+                    id: operationId
+                };
+
+                // Log the query request
+                if (this._shouldLog) {
+                    this._logQueryRequest(context);
+                }
+
+                // Call the request hook if defined
+                if (this._hooks.onQueryRequest) {
+                    this._hooks.onQueryRequest(context);
+                }
+
+                try {
+                    // Wrap the callback to measure and log the execution time
+                    super.query(event, (result: ResultType<TShape>) => {
+                        const end = now();
+                        const duration = end - start;
+
+                        if (result.ok === Result.SUCCESS) {
+                            context.result = result.data;
+                        } else {
+                            context.error = result.error;
+                        }
+
+                        // Update context with result information
+                        context.duration = duration;
+                        context.isCriticalError = false;
+
+                        // Log the query result
+                        if (this._shouldLog) {
+                            this._logQueryResult(context);
+                        }
+
+                        // Call the response hook if defined
+                        if (this._hooks.onQueryResponse) {
+                            this._hooks.onQueryResponse(context);
+                        }
+
+                        // Call the original callback
+                        done(result);
+                    });
+                } catch (e: any) {
+                    const end = now();
+                    const duration = end - start;
+
+                    // Update context with error information
+                    context.error = e;
+                    context.duration = duration;
+                    context.isCriticalError = true;
+
+                    // Log the error
+                    if (this._shouldLog) {
+                        this._logQueryResult(context);
+                    }
+
+                    // Call the response hook if defined
+                    if (this._hooks.onQueryResponse) {
+                        this._hooks.onQueryResponse(context);
+                    }
+
+                    done(Result.error(e));
+                }
+            }
+
+            /**
+             * Get the log history for debugging purposes
+             */
+            getLogHistory() {
+                return [...this._logHistory];
+            }
+
+            /**
+             * Clear the log history
+             */
+            clearLogHistory() {
+                this._logHistory = [];
+            }
+        };
+
+        return LoggingPlugin;
     }
 
     /**
@@ -150,19 +748,55 @@ export class DbPluginLogging implements IDbPlugin {
      */
     setHook<N extends keyof LoggingHookOptions<unknown, unknown>>(hookName: N, hookFn: LoggingHookOptions<unknown, unknown>[N]) {
         this._hooks[hookName] = hookFn;
-        return this; // For chaining
+        return this;
+    }
+
+    /**
+     * Get the log history for debugging purposes
+     */
+    getLogHistory() {
+        return [...this._logHistory];
+    }
+
+    /**
+     * Clear the log history
+     */
+    clearLogHistory() {
+        this._logHistory = [];
+    }
+
+    private addToHistory(type: string, data: any) {
+        this._logHistory.push({
+            type,
+            timestamp: Date.now(),
+            data
+        });
+
+        // Keep only the last N entries
+        if (this._logHistory.length > this._maxLogEntries) {
+            this._logHistory = this._logHistory.slice(-this._maxLogEntries);
+        }
     }
 
     query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<TShape>): void {
         const { operation, schemas } = event;
         const start = now();
+        const operationId = generateOperationId();
+        const timestamp = Date.now();
 
         // Create context for hooks and logging
         const context: QueryLogContext<TEntity, TShape> = {
             query: operation,
             duration: 0,
-            schema: operation.schema
+            schema: operation.schema,
+            timestamp,
+            id: operationId
         };
+
+        // Log the query request
+        if (this._shouldLog) {
+            this._logQueryRequest(context);
+        }
 
         // Call the request hook if defined
         if (this._hooks.onQueryRequest) {
@@ -177,7 +811,6 @@ export class DbPluginLogging implements IDbPlugin {
 
                 if (result.ok === Result.SUCCESS) {
                     context.result = result.data;
-
                 } else {
                     context.error = result.error;
                 }
@@ -187,7 +820,9 @@ export class DbPluginLogging implements IDbPlugin {
                 context.isCriticalError = false;
 
                 // Log the query result
-                this._logQueryResult(context);
+                if (this._shouldLog) {
+                    this._logQueryResult(context);
+                }
 
                 // Call the response hook if defined
                 if (this._hooks.onQueryResponse) {
@@ -207,178 +842,205 @@ export class DbPluginLogging implements IDbPlugin {
             context.isCriticalError = true;
 
             // Log the error
-            this._logQueryResult(context);
+            if (this._shouldLog) {
+                this._logQueryResult(context);
+            }
 
             // Call the response hook if defined
             if (this._hooks.onQueryResponse) {
                 this._hooks.onQueryResponse(context);
             }
 
-            // Since we can't return null for TShape, we need to cast it
             done(Result.error(e));
         }
+    }
+
+    private _logQueryRequest<TEntity extends {}, TShape extends any = TEntity>(
+        context: QueryLogContext<TEntity, TShape>
+    ): void {
+        const { query, schema, id, timestamp } = context;
+
+        if (this._logStyle === 'redux') {
+            logReduxAction(
+                'QUERY_REQUEST',
+                {
+                    collection: schema.collectionName,
+                    schemaId: schema.id,
+                    changeTracking: query.changeTracking
+                },
+                {
+                    operationId: id,
+                    timestamp: new Date(timestamp).toISOString(),
+                    options: this._extractQueryOptions(query)
+                }
+            );
+        } else if (this._logStyle === 'detailed') {
+            console.groupCollapsed(`🔍 Query Request [${schema.collectionName}]`);
+            console.log('Operation ID:', id);
+            console.log('Schema:', schema.collectionName);
+            console.log('Change Tracking:', query.changeTracking);
+            console.log('Options:', this._extractQueryOptions(query));
+            console.groupEnd();
+        } else {
+            console.log(`🔍 Query [${schema.collectionName}] started`);
+        }
+
+        this.addToHistory('QUERY_REQUEST', context);
     }
 
     private _logQueryResult<TEntity extends {}, TShape extends any = TEntity>(
         context: QueryLogContext<TEntity, TShape>
     ): void {
-        // Skip logging if not in development environment
-        if (!this._shouldLog) return;
+        const { result, error, duration, isCriticalError, schema, id, timestamp } = context;
+        const performance = getPerformanceIndicator(duration);
 
-        const { query, result, error, duration, isCriticalError, schema } = context;
-        const pluginName = "constructor" in this.plugin ? ` [${this.plugin.constructor.name}]` : "";
-        const schemaName = schema.collectionName;
+        if (this._logStyle === 'redux') {
+            if (error) {
+                logReduxAction(
+                    'QUERY_ERROR',
+                    {
+                        collection: schema.collectionName,
+                        error: error.message || error,
+                        isCritical: isCriticalError
+                    },
+                    {
+                        operationId: id,
+                        duration,
+                        timestamp: new Date(timestamp).toISOString(),
+                        performance: performance.label
+                    }
+                );
+                logError(error, `Query [${schema.collectionName}]`, isCriticalError);
+            } else {
+                logReduxAction(
+                    'QUERY_SUCCESS',
+                    {
+                        collection: schema.collectionName,
+                        resultCount: this._getResultCount(result),
+                        resultType: this._getResultType(result)
+                    },
+                    {
+                        operationId: id,
+                        duration,
+                        timestamp: new Date(timestamp).toISOString(),
+                        performance: performance.label
+                    }
+                );
 
-        if (this._logStyle === 'minimal') {
+                // Log detailed result information
+                this._logQueryResultDetails(context, performance);
+            }
+        } else if (this._logStyle === 'detailed') {
+            this._logDetailedQueryResult(context, performance);
+        } else {
+            // Minimal logging
             if (error) {
                 const errorType = isCriticalError ? 'CRITICAL ERROR' : 'Error';
-                console.error(`${isCriticalError ? '💀' : '❌'} Query ${errorType} [${schemaName}]:`, error);
+                console.error(`${isCriticalError ? '💀' : '❌'} Query ${errorType} [${schema.collectionName}]:`, error);
             } else {
-                console.log(`✅ Query [${schemaName}] completed in ${duration.toFixed(2)}ms`);
-            }
-            return;
-        }
-
-        const speedInfo = getSpeedInfo(duration);
-
-        // Create appropriate header based on success/error
-        const headerStyle = error
-            ? `color: ${isCriticalError ? '#D50000' : '#F44336'}; font-weight: bold;`
-            : `color: ${speedInfo.color}; font-weight: bold;`;
-
-        // Add result count to the header
-        let resultCount = '';
-        if (!error && result != null) {
-            if (Array.isArray(result)) {
-                resultCount = ` (${result.length} items)`;
-            } else if (typeof result === 'object' && result !== null) {
-                resultCount = ' (1 item)';
+                console.log(`✅ Query [${schema.collectionName}] completed in ${duration.toFixed(2)}ms`);
             }
         }
+
+        this.addToHistory('QUERY_RESULT', context);
+    }
+
+    private _logQueryResultDetails<TEntity extends {}, TShape extends any = TEntity>(
+        context: QueryLogContext<TEntity, TShape>,
+        performance: ReturnType<typeof getPerformanceIndicator>
+    ): void {
+        const { result, schema } = context;
+
+        console.group('Result Details');
+
+        if (Array.isArray(result)) {
+            console.log(`📊 Array Result: ${result.length} items`);
+
+            if (result.length > 0) {
+                if (result.length <= 5) {
+                    console.table(result);
+                } else {
+                    console.log('First 3 items:');
+                    console.table(result.slice(0, 3));
+                    console.log(`... and ${result.length - 3} more items`);
+                }
+            }
+        } else if (result !== null && typeof result === 'object') {
+            console.log('📊 Object Result:');
+            console.log(result);
+        } else {
+            console.log('📊 Primitive Result:', result);
+        }
+
+        console.groupEnd();
+
+        logDuration(context.duration, performance);
+    }
+
+    private _logDetailedQueryResult<TEntity extends {}, TShape extends any = TEntity>(
+        context: QueryLogContext<TEntity, TShape>,
+        performance: ReturnType<typeof getPerformanceIndicator>
+    ): void {
+        const { query, result, error, duration, isCriticalError, schema } = context;
 
         const headerTitle = error
-            ? `${isCriticalError ? '💀' : '❌'}${pluginName} QUERY ERROR: ${schemaName}`
-            : `${speedInfo.emoji}${pluginName} QUERY: ${schemaName}${resultCount}`;
+            ? `${isCriticalError ? '💀' : '❌'} Query Error [${schema.collectionName}]`
+            : `${performance.emoji} Query Success [${schema.collectionName}]`;
 
-        console.groupCollapsed(`%c ${headerTitle}`, headerStyle);
+        const headerStyle = error
+            ? `color: ${isCriticalError ? '#dc2626' : '#ea580c'}; font-weight: bold;`
+            : `color: ${performance.color}; font-weight: bold;`;
 
-        // QUERY INFORMATION SECTION
-        console.groupCollapsed('Request:');
+        console.groupCollapsed(`%c${headerTitle}`, headerStyle);
 
-        // Collection
-        console.log('Collection:', schemaName);
-
-        // Expression
-        const builtIns = [
-            "schema",
-            "expression",
-            "options",
-            "filters",
-            "filter",
-            "changeTracking"
-        ];
-
-        for (const key in query) {
-            if (builtIns.includes(key)) {
-                continue;
-            }
-
-            console.groupCollapsed(`__${key}__`);
-            console.log((query as any)[key]);
-            console.groupEnd();
-        }
-
-        if (query.expression) {
-            console.groupCollapsed('Expression:');
-            console.log(query.expression);
-            console.groupEnd();
-        }
-
-        // Filters
-        const filters = query.options.getValues("filter");
-        if (filters.length > 0) {
-            console.groupCollapsed('Filters:');
-            filters.forEach((filter, index) => {
-                console.log(`Filter ${index + 1}:`, filter);
-            });
-            console.groupEnd();
-        }
-
-        // Options
-        if (query.options) {
-            console.groupCollapsed('Options:');
-
-            // Clean up options for display
-            const options = {
-                skip: query.options.getValues("skip"),
-                take: query.options.getValues("take"),
-                sort: query.options.getValues("sort"),
-                min: query.options.getValues("min"),
-                max: query.options.getValues("max"),
-                count: query.options.getValues("count"),
-                sum: query.options.getValues("sum"),
-                distinct: query.options.getValues("distinct"),
-                map: query.options.getValues("map")
-            };
-
-            // Display as a table if possible
-            console.table(
-                Object.entries(options)
-                    .filter(([_, value]) => value !== undefined)
-                    .reduce((acc, [key, value]) => {
-                        acc[key] = value;
-                        return acc;
-                    }, {} as any)
-            );
-            console.groupEnd();
-        }
-
-        // Change tracking
-        const isTracking = query.changeTracking;
-        console.log(
-            `${isTracking ? '✓' : '✗'} Change Tracking:`,
-            isTracking
-        );
-
-        console.groupEnd(); // End query details
-
-        // RESULT SECTION
         if (error) {
-            logErrorSection(error, isCriticalError);
+            logError(error, `Query [${schema.collectionName}]`, isCriticalError);
         } else {
-            // Display the result with improved formatting
-            const isArray = Array.isArray(result);
-
-            console.groupCollapsed('Response:');
-
-            if (isArray) {
-                console.log(`Total Items: ${(result as any[]).length}`);
-
-                if ((result as any[]).length > 0) {
-                    // Show summary structure for large arrays
-                    if ((result as any[]).length > 10) {
-                        console.log('First 3 items:');
-                        (result as any[]).slice(0, 3).forEach((item, i) => {
-                            console.log(`Item ${i}:`, item);
-                        });
-                        console.log(`... and ${(result as any[]).length - 3} more items`);
-                    } else {
-                        // Show all items for smaller arrays
-                        console.table(result);
-                    }
-                } else {
-                    console.log('Empty result array');
-                }
-            } else {
-                console.log(result);
-            }
-
-            console.groupEnd();
+            this._logQueryResultDetails(context, performance);
         }
 
-        logDuration(duration, speedInfo.color, speedInfo.text);
+        console.groupEnd();
+    }
 
-        console.groupEnd(); // End main group
+    private _extractQueryOptions(query: IQuery<any, any>) {
+        const options: Record<string, any> = {};
+
+        if (query.options) {
+            const optionTypes = ['skip', 'take', 'sort', 'filter', 'map', 'distinct', 'count', 'sum', 'min', 'max'] as const;
+
+            optionTypes.forEach(type => {
+                try {
+                    const values = query.options.getValues(type);
+                    if (values.length > 0) {
+                        options[type] = values;
+                    }
+                } catch (e) {
+                    // Skip if option type is not supported
+                }
+            });
+        }
+
+        return options;
+    }
+
+    private _getResultCount(result: any): string {
+        if (Array.isArray(result)) {
+            return `${result.length} items`;
+        } else if (result !== null && typeof result === 'object') {
+            return '1 object';
+        } else {
+            return '1 primitive';
+        }
+    }
+
+    private _getResultType(result: any): string {
+        if (Array.isArray(result)) {
+            return 'array';
+        } else if (result !== null && typeof result === 'object') {
+            return 'object';
+        } else {
+            return typeof result;
+        }
     }
 
     destroy<TEntity extends {}>(event: DbPluginEvent<TEntity>, done: (error?: any) => void): void {
@@ -392,15 +1054,22 @@ export class DbPluginLogging implements IDbPlugin {
     bulkPersist<TEntity extends {}>(event: DbPluginBulkPersistEvent<TEntity>, done: CallbackPartialResult<ResolvedChanges<TEntity>>): void {
         const { operation, schemas } = event;
         const start = now();
-        const operationId = Math.random().toString(36).substring(2, 8);
+        const operationId = generateOperationId();
+        const timestamp = Date.now();
 
         // Create context for hooks and logging
         const context: BulkOperationsLogContext<TEntity> = {
             schemas,
             operations: operation.toResult(),
             duration: 0,
-            operationId
+            operationId,
+            timestamp
         };
+
+        // Log the bulk operations request
+        if (this._shouldLog) {
+            this._logBulkOperationsRequest(context);
+        }
 
         // Call the request hook if defined
         if (this._hooks.onBulkOperationsRequest) {
@@ -414,7 +1083,6 @@ export class DbPluginLogging implements IDbPlugin {
 
                 // Update context with result information
                 if (result.ok === Result.SUCCESS) {
-                    // Extract just the result part from the combined changes/result object
                     context.result = result.data;
                 } else {
                     context.error = result.error;
@@ -424,7 +1092,9 @@ export class DbPluginLogging implements IDbPlugin {
                 context.isCriticalError = false;
 
                 // Log bulk operations result
-                this._logBulkOperationsResult(context);
+                if (this._shouldLog) {
+                    this._logBulkOperationsResult(context);
+                }
 
                 // Call the response hook if defined
                 if (this._hooks.onBulkOperationsResponse) {
@@ -444,7 +1114,9 @@ export class DbPluginLogging implements IDbPlugin {
             context.isCriticalError = true;
 
             // Log the error
-            this._logBulkOperationsResult(context);
+            if (this._shouldLog) {
+                this._logBulkOperationsResult(context);
+            }
 
             // Call the response hook if defined
             if (this._hooks.onBulkOperationsResponse) {
@@ -455,137 +1127,175 @@ export class DbPluginLogging implements IDbPlugin {
         }
     }
 
+    private _logBulkOperationsRequest<TEntity extends {}>(
+        context: BulkOperationsLogContext<TEntity>
+    ): void {
+        const { schemas, operations, operationId, timestamp } = context;
+        const totalOperations = this._countTotalOperations(operations);
+
+        if (this._logStyle === 'redux') {
+            logReduxAction(
+                'BULK_OPERATIONS_REQUEST',
+                {
+                    totalOperations,
+                    schemaCount: schemas.size,
+                    operations: this._extractBulkOperations(operations)
+                },
+                {
+                    operationId,
+                    timestamp: new Date(timestamp).toISOString()
+                }
+            );
+        } else if (this._logStyle === 'detailed') {
+            console.groupCollapsed(`🔄 Bulk Operations Request [${totalOperations} operations]`);
+            console.log('Operation ID:', operationId);
+            console.log('Total Operations:', totalOperations);
+            console.log('Schemas:', schemas.size);
+            console.log('Operations:', this._extractBulkOperations(operations));
+            console.groupEnd();
+        } else {
+            console.log(`🔄 Bulk Operations [${totalOperations} operations] started`);
+        }
+
+        this.addToHistory('BULK_OPERATIONS_REQUEST', context);
+    }
+
     private _logBulkOperationsResult<TEntity extends {}>(
         context: BulkOperationsLogContext<TEntity>
     ): void {
-        // Skip logging if not in development environment
-        if (!this._shouldLog) return;
+        const { schemas, operations, result, error, duration, isCriticalError, operationId, timestamp } = context;
+        const performance = getPerformanceIndicator(duration);
+        const totalOperations = this._countTotalOperations(operations);
 
-        const { schemas, operations, result, error, duration, isCriticalError } = context;
+        if (this._logStyle === 'redux') {
+            if (error) {
+                logReduxAction(
+                    'BULK_OPERATIONS_ERROR',
+                    {
+                        totalOperations,
+                        error: error.message || error,
+                        isCritical: isCriticalError
+                    },
+                    {
+                        operationId,
+                        duration,
+                        timestamp: new Date(timestamp).toISOString(),
+                        performance: performance.label
+                    }
+                );
+                logError(error, 'Bulk Operations', isCriticalError);
+            } else {
+                logReduxAction(
+                    'BULK_OPERATIONS_SUCCESS',
+                    {
+                        totalOperations,
+                        completedOperations: this._countCompletedOperations(result),
+                        schemaCount: schemas.size
+                    },
+                    {
+                        operationId,
+                        duration,
+                        timestamp: new Date(timestamp).toISOString(),
+                        performance: performance.label
+                    }
+                );
 
-        if (this._logStyle === 'minimal') {
+                // Log detailed result information
+                this._logBulkOperationsResultDetails(context, performance);
+            }
+        } else if (this._logStyle === 'detailed') {
+            this._logDetailedBulkOperationsResult(context, performance);
+        } else {
+            // Minimal logging
             if (error) {
                 const errorType = isCriticalError ? 'CRITICAL ERROR' : 'Error';
                 console.error(`${isCriticalError ? '💀' : '❌'} Bulk Operations ${errorType}:`, error);
             } else {
-                console.log(`✅ Bulk Operations completed in ${duration.toFixed(2)}ms`);
-            }
-            return;
-        }
-
-        const pluginName = "constructor" in this.plugin ? ` [${this.plugin.constructor.name}]` : "";
-        const speedInfo = getSpeedInfo(duration);
-
-        // Create appropriate header based on success/error
-        const headerStyle = error
-            ? `color: ${isCriticalError ? '#D50000' : '#F44336'}; font-weight: bold;`
-            : `color: ${speedInfo.color}; font-weight: bold;`;
-
-        // Calculate totals across all schemas
-        let totalRequested = 0;
-        let totalCompleted = 0;
-
-        if (!error) {
-            // Sum up requested operations across all schemas
-            totalRequested += operations.changes.all().data.length;
-
-            // Sum up completed operations across all schemas
-            totalCompleted += result.result.all().data.length;
-        }
-
-        // Add operation count to the header
-        let operationCount = '';
-        if (!error && result) {
-            operationCount = ` (${totalRequested} → ${totalCompleted})`;
-        }
-
-        const headerTitle = error
-            ? `${isCriticalError ? '💀' : '❌'}${pluginName} BULK OPERATIONS ERROR:`
-            : `${speedInfo.emoji}${pluginName} BULK OPERATIONS: ${operationCount}`;
-
-        console.groupCollapsed(`%c ${headerTitle}`, headerStyle);
-
-        // OPERATIONS INFORMATION SECTION
-        console.groupCollapsed('Request:');
-
-        // Display summary as a table
-        console.log('Summary:');
-        console.table({
-            'Operations': {
-                adds: {
-                    count: totalRequested
-                },
-                removes: {
-                    count: totalRequested
-                },
-                updates: {
-                    count: totalRequested
-                },
-                total: totalRequested
-            }
-        });
-
-        // Show operations for each schema
-        for (const [schemaId, operation] of operations.changes.all().data) {
-            const schema = schemas.get(schemaId);
-            const schemaName = schema?.collectionName || `Schema ${schemaId}`;
-
-            // Handle ChangePackage union type properly
-            if ('entity' in operation) {
-                // This is a single entity operation
-                console.groupCollapsed(`${schemaName} (1 operation):`);
-                console.log('Entity:', operation.entity);
-                console.groupEnd();
-            } else {
-                // This is an update operation with changes
-                console.groupCollapsed(`${schemaName} (1 update operation):`);
-                console.log('Update Changes:', operation.changes);
-                console.groupEnd();
+                console.log(`✅ Bulk Operations [${totalOperations} operations] completed in ${duration.toFixed(2)}ms`);
             }
         }
 
-        console.groupEnd(); // End operations details
+        this.addToHistory('BULK_OPERATIONS_RESULT', context);
+    }
 
-        // RESULT SECTION
-        if (error) {
-            logErrorSection(error, isCriticalError);
-        } else if (result) {
-            // Display the results in a structured format
-            console.groupCollapsed('Response:');
+    private _logBulkOperationsResultDetails<TEntity extends {}>(
+        context: BulkOperationsLogContext<TEntity>,
+        performance: ReturnType<typeof getPerformanceIndicator>
+    ): void {
+        const { result, schemas } = context;
 
-            // Summary information formatted as a table with before/after comparison
-            console.log('Summary:');
-            console.table({
-                'Total': {
-                    requested: totalRequested,
-                    completed: totalCompleted
-                }
-            });
+        console.group('Result Details');
 
-            // Show result details for each schema
+        if (result) {
+            const completedCount = this._countCompletedOperations(result);
+            console.log(`📊 Completed: ${completedCount} operations`);
+
+            // Show results by schema
             for (const [schemaId, operationResult] of result.result.all().data) {
                 const schema = schemas.get(schemaId);
                 const schemaName = schema?.collectionName || `Schema ${schemaId}`;
 
-                // Handle ChangePackage union type properly for results
-                if ('entity' in operationResult) {
-                    // This is a single entity result
-                    console.groupCollapsed(`${schemaName} Results (1):`);
-                    console.log('Entity:', operationResult.entity);
-                    console.groupEnd();
-                } else {
-                    // This should be a changes result, but we need to handle it differently
-                    console.groupCollapsed(`${schemaName} Results:`);
-                    console.log('Changes:', operationResult);
-                    console.groupEnd();
-                }
+                console.groupCollapsed(`${schemaName} Results`);
+                console.log(operationResult);
+                console.groupEnd();
             }
-
-            console.groupEnd(); // End results group
         }
 
-        logDuration(duration, speedInfo.color, speedInfo.text);
+        console.groupEnd();
 
-        console.groupEnd(); // End main group
+        logDuration(context.duration, performance);
+    }
+
+    private _logDetailedBulkOperationsResult<TEntity extends {}>(
+        context: BulkOperationsLogContext<TEntity>,
+        performance: ReturnType<typeof getPerformanceIndicator>
+    ): void {
+        const { error, isCriticalError } = context;
+        const totalOperations = this._countTotalOperations(context.operations);
+
+        const headerTitle = error
+            ? `${isCriticalError ? '💀' : '❌'} Bulk Operations Error`
+            : `${performance.emoji} Bulk Operations Success [${totalOperations} operations]`;
+
+        const headerStyle = error
+            ? `color: ${isCriticalError ? '#dc2626' : '#ea580c'}; font-weight: bold;`
+            : `color: ${performance.color}; font-weight: bold;`;
+
+        console.groupCollapsed(`%c${headerTitle}`, headerStyle);
+
+        if (error) {
+            logError(error, 'Bulk Operations', isCriticalError);
+        } else {
+            this._logBulkOperationsResultDetails(context, performance);
+        }
+
+        console.groupEnd();
+    }
+
+    private _countTotalOperations(operations: PendingChanges<any>): number {
+        return operations.changes.all().data.length;
+    }
+
+    private _countCompletedOperations(result: ResolvedChanges<any> | undefined): number {
+        if (!result) {
+            return 0;
+
+        }
+
+        return result.result.all().data.length;
+    }
+
+    private _extractBulkOperations(operations: PendingChanges<any>) {
+        const summary: Record<string, number> = {};
+
+        for (const [_, operation] of operations.changes.all().data) {
+            if ('entity' in operation) {
+                summary.single = (summary.single || 0) + 1;
+            } else {
+                summary.update = (summary.update || 0) + 1;
+            }
+        }
+
+        return summary;
     }
 }

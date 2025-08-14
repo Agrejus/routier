@@ -1,15 +1,15 @@
-import { CallbackPartialResult, CallbackResult, PartialResultType, Result, ResultType } from '../../results';
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, IdbPluginCollection } from '../types';
-import { OperationsPayload, PersistPayload } from './types';
+import { CallbackPartialResult, CallbackResult, PartialResultType, Result } from '../../results';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ReplicationPluginOptions } from '../types';
+import { PersistPayload } from './types';
 import { AsyncPipeline, TrampolinePipeline } from '../../pipeline';
 import { ResolvedChanges } from '../../collections';
 import { InferCreateType } from '../../schema';
 
 export class DbPluginReplicator implements IDbPlugin {
 
-    plugins: IdbPluginCollection;
+    plugins: ReplicationPluginOptions;
 
-    protected constructor(plugins: IdbPluginCollection) {
+    protected constructor(plugins: ReplicationPluginOptions) {
         this.plugins = plugins;
     }
 
@@ -20,7 +20,7 @@ export class DbPluginReplicator implements IDbPlugin {
      * @param replicas Additional database plugins that will replicate operations from the source
      * @returns A new DbPluginReplicator instance that manages the source-replica relationship
      */
-    static create(plugins: IdbPluginCollection) {
+    static create(plugins: ReplicationPluginOptions) {
         return new DbPluginReplicator(plugins);
     }
 

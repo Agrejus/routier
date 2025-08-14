@@ -56,7 +56,7 @@ export type DbPluginOperationEvent<TEntity extends {}, TOperation> = DbPluginEve
  * Represents a collection of database plugins with a primary source and optional replicas.
  * Used for implementing read/write separation and high availability.
  */
-export type IdbPluginCollection = {
+export type ReplicationPluginOptions = {
     /** The primary database plugin that handles all write operations, do not include in the list of replicas. */
     source: IDbPlugin;
     /** Array of replica database plugins that can be used for read operations. */
@@ -67,6 +67,17 @@ export type IdbPluginCollection = {
      * read data. Typically this is a MemoryPlugin. Should not be included in the list of replicas.
      */
     read?: IDbPlugin;
+}
+
+export type OptimisticReplicationPluginOptions = {
+    /** The primary database plugin that handles all write operations, do not include in the list of replicas. */
+    source: IDbPlugin;
+
+    /** Array of replica database plugins that can be used for read operations. */
+    replicas: IDbPlugin[];
+
+    /** Must be a MemoryPlugin */
+    read: IDbPlugin;
 }
 
 

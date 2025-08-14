@@ -4,7 +4,7 @@ import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin 
 import { CallbackPartialResult, CallbackResult, Result } from 'routier-core/results';
 import { ResolvedChanges } from 'routier-core/collections';
 import { DeepPartial } from 'routier-core/types';
-import { InferCreateType, SchemaTypes } from 'routier-core/schema';
+import { InferCreateType, PropertyInfo, SchemaTypes } from 'routier-core/schema';
 import { uuidv4 } from 'routier-core';
 import { ParamsFilter } from 'routier-core/expressions';
 import { DexieTranslator } from './DexieTranslator';
@@ -43,6 +43,15 @@ export class DexiePlugin implements IDbPlugin, Disposable {
     destroy<TEntity extends {}>(_: DbPluginEvent<TEntity>, done: CallbackResult<never>): void {
         const db = new Dexie(this.dbName);
         db.delete().then(() => done(Result.success())).catch(e => done(Result.error(e)));
+    }
+
+    private trySetId<TRoot extends {}>(instance: InferCreateType<TRoot>, stringProperty: PropertyInfo<TRoot>) {
+        const value = stringProperty.getValue(instance);
+
+        // If we are using optimistic inserts, the id will already be set, ignore it
+        if (value == null) {
+            stringProperty.setValue(instance, uuidv4());
+        }
     }
 
     bulkPersist<TRoot extends {}>(event: DbPluginBulkPersistEvent<TRoot>, done: CallbackPartialResult<ResolvedChanges<TRoot>>) {
@@ -105,12 +114,12 @@ export class DexiePlugin implements IDbPlugin, Disposable {
 
                                 if (stringIds.length === 1) {
                                     const stringId = stringIds[0];
-                                    stringId.setValue(add, uuidv4());
+                                    this.trySetId(add, stringId);
                                 } else {
                                     for (let j = 0, length = stringIds.length; j < length; j++) {
                                         const stringId = stringIds[j];
 
-                                        stringId.setValue(add, uuidv4());
+                                        this.trySetId(add, stringId);
                                     }
                                 }
                             }

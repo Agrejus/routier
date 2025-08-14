@@ -3,42 +3,60 @@ description:
 globs: *.test.*
 alwaysApply: false
 ---
-When generating tests, follow these best practices to ensure they are comprehensive, readable, and maintainable:
 
-### Comprehensive Coverage:
-- Tests must cover both typical cases and edge cases, including invalid inputs and error conditions.
-- Consider all possible scenarios for each method or behavior and ensure they are tested.
+# Test Generation Rules
 
-### Readability and Clarity:
-- Use clear and descriptive names for describe, context, and it blocks.
-- Prefer the expect syntax for assertions to improve readability.
-- Keep test code concise; avoid unnecessary complexity or duplication.
-- Please do not use any comments, especially arrage/act/assert comments
+## Core Requirements
 
-### Structure:
-- Organize tests logically using describe for classes/modules and context for different scenarios.
-- Ensure test file paths mirror the structure of the files being tested (e.g., app/models/user.ts → app/models/user.test.ts).
-- Ensure tests clean up side-effects (e.g. restore mocks, clear mocks)
-- Follow the Arrange-Act-Assert (AAA) pattern in every test
-- Ensure every test has at least one expect()
-- Test files should go next to the file being tested
+- **Generate comprehensive tests** covering typical cases, edge cases, and error conditions
+- **Test file location**: Place test files next to the source files (e.g., `user.ts` → `user.test.ts`)
+- **File naming**: Use `.test.ts` extension for test files
 
-## Test Data Management:
-- Prefer factories (e.g., FactoryBot) over fixtures for creating test data.
-- Please search the codebase for any existing factories that can be used
+## Test Structure & Organization
 
-## Independence and Isolation:
-- Ensure each test is independent; avoid shared state between tests.
-- Use mocks to simulate calls to external services (APIs, databases) and stubs to return predefined values for specific methods. Isolate the unit being tested, but avoid over-mocking; test real behavior when possible.
-- Prefer jest.mocked over jest.mock
+- Use `describe` blocks for classes/modules
+- Use `context` blocks for different scenarios
+- Use `it` blocks for individual test cases
+- Follow AAA pattern (Arrange-Act-Assert) in every test
+- Ensure every test has at least one `expect()` statement
 
-## Avoid Repetition:
-- Use shared examples for common behaviors across different contexts.
-- Refactor repetitive test code into helpers or custom matchers if necessary.
+## Test Content Guidelines
 
-## Testing Method
-- If the test does not pass, do not write it to pass, please confirm that the logic is correct
-- Write one test, confirm it is correct before doing the rest of the tests
-- Please run added/changed tests to ensure they pass
+- **No comments** - especially avoid arrange/act/assert comments
+- **Clear naming**: Use descriptive names for describe/context/it blocks
+- **Prefer `expect` syntax** over other assertion methods
+- **Test independence**: Each test must be isolated with no shared state
+- **Cleanup**: Restore mocks, clear mocks, clean up side-effects
 
+## Mocking Strategy
 
+- When using `jest.mock(...)`, if applicable, wrap mocked imports with `jest.mocked(...)` for proper type safety
+  - Example:
+  ```
+  jest.mock('./api');
+  import { fetchData } from './api';
+  const mockedFetchData = jest.mocked(fetchData);
+  ```
+- **Mock external services** (APIs, databases) to isolate units
+- **Avoid over-mocking** - test real behavior when possible
+- **Use stubs** for predefined return values
+
+## Test Data
+
+- **Search codebase first** for existing factories
+- **Prefer factories** over fixtures for test data creation
+- **Avoid repetition** - use shared examples and helpers
+
+## Development Process
+
+1. **Write one test first** and confirm it's correct
+2. **Run tests** to ensure they pass before proceeding
+3. **Don't write tests to pass** - confirm logic is correct first
+4. **If test fails**, verify the underlying logic before fixing the test
+
+## Quality Standards
+
+- Tests must be **comprehensive** (cover all scenarios)
+- Tests must be **readable** (clear, descriptive names)
+- Tests must be **maintainable** (no duplication, logical organization)
+- Tests must be **independent** (no shared state between tests)

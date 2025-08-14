@@ -1,11 +1,27 @@
-import { CallbackPartialResult, CallbackResult, PartialResultType, Result, ResultType } from '../../results';
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, IdbPluginCollection } from '../types';
-import { OperationsPayload, PersistPayload } from './types';
-import { AsyncPipeline, TrampolinePipeline } from '../../pipeline';
-import { ResolvedChanges } from '../../collections';
-import { InferCreateType } from '../../schema';
-import { DbPluginReplicator } from './DbPluginReplicator';
-export class OptimisticDbPluginReplicator extends DbPluginReplicator {
+import { CallbackPartialResult, CallbackResult, Result, SuccessType } from '../../results';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, OptimisticReplicationPluginOptions } from '../types';
+import { WorkPipeline } from '../../pipeline';
+import { CollectionChanges, PendingChanges, ResolvedChanges } from '../../collections';
+import { CompiledSchema, InferCreateType, SchemaId } from '../../schema';
+import { assertIsNotNull } from '../../assertions';
+import { Query } from '../query';
+
+const getMemoryPluginCollectionSize = <T extends {}>(plugin: IDbPlugin, schema: CompiledSchema<T>): number => {
+
+    if ("getCollectionSize" in plugin && typeof plugin.getCollectionSize === "function") {
+        return plugin.getCollectionSize(schema.collectionName) as number;
+    }
+
+    throw new Error("Cannot get size of collection for MemoryPlugin, not an instance of MemoryPlugin")
+}
+
+export class OptimisticDbPluginReplicator {
+
+    protected plugins: OptimisticReplicationPluginOptions;
+
+    protected constructor(plugins: OptimisticReplicationPluginOptions) {
+        this.plugins = plugins;
+    }
 
     /**
      * Creates a new OptimisticDbPluginReplicator that coordinates operations between a source database and its replicas.
@@ -14,7 +30,7 @@ export class OptimisticDbPluginReplicator extends DbPluginReplicator {
      * @param replicas Additional database plugins that will replicate operations from the source
      * @returns A new DbPluginReplicator instance that manages the source-replica relationship
      */
-    static create(plugins: Required<IdbPluginCollection>) {
+    static create(plugins: OptimisticReplicationPluginOptions) {
         return new OptimisticDbPluginReplicator(plugins);
     }
 
@@ -24,9 +40,73 @@ export class OptimisticDbPluginReplicator extends DbPluginReplicator {
     query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<TShape>): void {
         try {
 
-            const plugin = this.plugins.read != null ? this.plugins.read : this.plugins.source;
+            const readPlugin = this.plugins.read;
+            const sourcePlugin = this.plugins.source;
+            const collectionSize = getMemoryPluginCollectionSize(this.plugins.read, event.operation.schema);
 
-            plugin.query(event, done);
+            if (collectionSize === 0) {
+                // nothing is hydrated, let's try and hydrate before querying
+                // Memory plugin might not be hydrated, lets hydrate it for the targeted schema only,
+                // Other queries will do the same and hydrate if needed
+                // We want to select all data here
+                sourcePlugin.query<TEntity, TShape>({
+                    schemas: event.schemas,
+
+                    // Select All Data
+                    operation: Query.EMPTY<TEntity, TShape>(event.operation.schema)
+                }, (sourceResult) => {
+
+                    if (sourceResult.ok === Result.ERROR) {
+                        done(sourceResult);
+                        return;
+                    }
+
+                    if (sourceResult == null || (Array.isArray(sourceResult.data) && sourceResult.data.length === 0)) {
+                        done(sourceResult);
+                        return;
+                    }
+
+                    if (Array.isArray(sourceResult.data) === false) {
+                        done(Result.error("Query result is not an array"));
+                        return;
+                    }
+
+                    const changesCollection = new PendingChanges<TEntity>();
+                    const changes = new CollectionChanges<TEntity>()
+
+                    changes.adds.entities = sourceResult.data;
+
+                    changesCollection.changes.set(event.operation.schema.id, changes);
+
+                    readPlugin.bulkPersist({
+                        schemas: event.schemas,
+                        operation: changesCollection
+                    }, (readPersistResult) => {
+
+                        if (readPersistResult.ok === Result.ERROR) {
+                            done(readPersistResult);
+                            return;
+                        }
+
+                        // requery the read plugin
+                        readPlugin.query(event, done);
+                    });
+                });
+                return;
+            }
+
+            // Collection is hydrated for the targeted collection and should be in sync
+            readPlugin.query(event, (readResult) => {
+
+                if (readResult.ok === Result.ERROR) {
+                    done(readResult);
+                    return;
+                }
+
+                done(readResult);
+                return;
+
+            });
         } catch (e: any) {
             done(Result.error(e));
         }
@@ -35,14 +115,14 @@ export class OptimisticDbPluginReplicator extends DbPluginReplicator {
     destroy<TEntity extends {}>(event: DbPluginEvent<TEntity>, done: CallbackResult<never>): void {
         try {
 
-            const pipeline = new AsyncPipeline<IDbPlugin, never>();
+            const workPipeline = new WorkPipeline();
             const plugins = [this.plugins.source, ...this.plugins.replicas];
 
             for (let i = 0, length = plugins.length; i < length; i++) {
-                pipeline.pipe(plugins[i], (plugin, done) => plugin.destroy(event, done));
+                workPipeline.pipe((done) => plugins[i].destroy(event, done));
             }
 
-            pipeline.filter((result) => {
+            workPipeline.filter((result) => {
 
                 if (result.ok === Result.ERROR) {
                     done(result);
@@ -57,46 +137,15 @@ export class OptimisticDbPluginReplicator extends DbPluginReplicator {
         }
     }
 
-    private _optimisticPersist<TEntity extends {}>(payload: PartialResultType<PersistPayload<TEntity>>, done: CallbackPartialResult<PersistPayload<TEntity>>) {
-
-        if (payload.ok === Result.ERROR) {
-            done(payload);
-            return;
-        }
-        const { plugins, index, event } = payload.data;
-        const plugin = plugins[index];
-
-        // move next
-        payload.data.index++;
-
-        plugin.bulkPersist({
-            operation: event.operation,
-            schemas: event.schemas
-        }, (r) => {
-
-            if (r.ok === Result.ERROR) {
-                done(r);
-                return;
-            }
-
-            done(payload);
-        });
-    }
-
     bulkPersist<TEntity extends {}>(event: DbPluginBulkPersistEvent<TEntity>, done: CallbackPartialResult<ResolvedChanges<TEntity>>): void {
         try {
 
-            const deferredPipeline = new TrampolinePipeline<ResultType<OperationsPayload>>();
+            const workPipeline = new WorkPipeline();
             const deferredPlugins = [this.plugins.source, ... this.plugins.replicas];
 
-            if (this.plugins.read == null) {
-                throw new Error("Read plugin cannot be null or undefined for optimistic updates");
-            }
+            assertIsNotNull(this.plugins.read, "Read plugin cannot be null or undefined for optimistic updates");
 
-            for (let i = 0, length = deferredPlugins.length; i < length; i++) {
-                deferredPipeline.pipe<PersistPayload<TEntity>>(this._optimisticPersist.bind(this))
-            }
-
+            // since we are doing optimistic, we insert into the read plugin first and assume later plugins will succeed
             this.plugins.read.bulkPersist({
                 operation: event.operation,
                 schemas: event.schemas
@@ -129,23 +178,29 @@ export class OptimisticDbPluginReplicator extends DbPluginReplicator {
                     schemaOperations.adds.entities.push(item as InferCreateType<TEntity>);
                 }
 
-                const data: PersistPayload<TEntity> = {
-                    plugins: deferredPlugins,
-                    index: 0,
-                    event: {
-                        operation: event.operation,
-                        schemas: event.schemas
-                    },
-                    result: new ResolvedChanges()
-                };
+                for (let i = 0, length = deferredPlugins.length; i < length; i++) {
+                    workPipeline.pipe((d) => {
+
+                        const plugin = deferredPlugins[i];
+
+                        plugin.bulkPersist({
+                            operation: event.operation,
+                            schemas: event.schemas
+                        }, (r) => {
+
+                            if (r.ok === Result.ERROR) {
+                                d(r);
+                                return;
+                            }
+
+                            d(Result.success());
+                        });
+                    });
+                }
 
                 setTimeout(() => {
-                    deferredPipeline.filter<ResultType<PersistPayload<TEntity>>>({
-                        data,
-                        ok: Result.SUCCESS
-                    }, (_) => {
+                    workPipeline.filter((_) => {
                         // no-op for now, maybe implement retries?
-                        console.log('I AM DONE!');
                     });
                 }, 5);
             });

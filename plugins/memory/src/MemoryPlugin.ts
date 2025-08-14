@@ -39,6 +39,15 @@ export class MemoryPlugin extends EphemeralDataPlugin {
         return dbs[this.databaseName][schema.collectionName];
     }
 
+    getCollectionSize(collectionName: string) {
+
+        if (!this.database[collectionName]) {
+            return 0;
+        }
+
+        return this.database[collectionName].size;
+    }
+
     seed<TEntity extends {}>(schema: CompiledSchema<TEntity>, data: Record<string, unknown>[]) {
         const collection = this.resolveCollection(schema);
         collection.seed(data);

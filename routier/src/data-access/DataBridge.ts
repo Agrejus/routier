@@ -7,7 +7,10 @@ import { DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin } from "routier
 import { CallbackResult, Result } from "routier-core/results";
 import { ResolvedChanges } from "routier-core/collections";
 import { uuidv4 } from "routier-core/utilities";
+import { CompiledSchema } from "routier-core/schema";
 
+// Use a data bridge so we can abstract away some of the stuff
+// a new collection should not need to worry about
 export class DataBridge<T extends {}> {
 
     private readonly signal: AbortSignal;
@@ -20,16 +23,16 @@ export class DataBridge<T extends {}> {
         this.options = options;
     }
 
-    private static createStrategy<T extends {}>(dbPlugin: IDbPlugin, options: CollectionOptions) {
+    private static createStrategy<T extends {}>(dbPlugin: IDbPlugin, schema: CompiledSchema<T>, options: CollectionOptions) {
         if (options.stateful === true) {
-            return new StatefulDataAccessStrategy<T>(dbPlugin);
+            return new StatefulDataAccessStrategy<T>(dbPlugin, schema);
         }
 
-        return new DatabaseDataAccessStrategy<T>(dbPlugin);
+        return new DatabaseDataAccessStrategy<T>(dbPlugin, schema);
     }
 
-    static create<T extends {}>(dbPlugin: IDbPlugin, options: CollectionOptions) {
-        const strategy = DataBridge.createStrategy<T>(dbPlugin, options);
+    static create<T extends {}>(dbPlugin: IDbPlugin, schema: CompiledSchema<T>, options: CollectionOptions) {
+        const strategy = DataBridge.createStrategy<T>(dbPlugin, schema, options);
 
         return new DataBridge<T>(strategy, options);
     }
