@@ -114,6 +114,10 @@ class ChangeSetBase<TData> {
 
 class ResultSet<T extends {}, TData extends { changes: CollectionChanges<T>, result: CollectionChangesResult<T> }> extends ChangeSetBase<TData> {
 
+    private _getTags(schemaId: SchemaId) {
+        return this.data.get(schemaId)?.changes?.tags;
+    }
+
     count() {
         let total = 0;
         for (const schemaId of this.schemaIds) {
@@ -204,7 +208,11 @@ class ResultSet<T extends {}, TData extends { changes: CollectionChanges<T>, res
                     data.push(entity);
                 }
             }
-            return data;
+
+            return {
+                data,
+                getTags: () => this._getTags(schemaId)
+            };
         }
 
         const data: [SchemaId, InferCreateType<T> | DeepPartial<InferCreateType<T>> | InferType<T>][] = [];
@@ -227,13 +235,35 @@ class ResultSet<T extends {}, TData extends { changes: CollectionChanges<T>, res
             data.push([id, entity]);
         }
 
-        return data;
+        return {
+            data,
+            getTags: (schemaId: SchemaId) => this._getTags(schemaId)
+        };
     }
 
     all(): { data: [SchemaId, ChangePackage<T>][], getTags: (schemaId: SchemaId) => TagCollection | undefined };
     all(schemaId: SchemaId): { data: ChangePackage<T>[], getTags: () => TagCollection | undefined };
     all(schemaId?: SchemaId): any {
-        return this.getAllChangesForSchema(schemaId);
+        const { data } = this.getAllChangesForSchema(schemaId);
+
+        return this.formatResponse(data);
+    }
+
+    private formatResponse<T>(data: T, schemaId?: SchemaId) {
+
+        if (schemaId) {
+            return {
+                data,
+                count: () => Array.isArray(data) ? data.length : 0,
+                getTags: () => this._getTags(schemaId)
+            }
+        }
+
+        return {
+            data,
+            count: () => Array.isArray(data) ? data.length : 0,
+            getTags: (schemaId: SchemaId) => this._getTags(schemaId)
+        }
     }
 }
 

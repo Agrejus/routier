@@ -1,10 +1,11 @@
-import { CallbackPartialResult, CallbackResult, Result, SuccessType } from '../../results';
+import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '../../results';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, OptimisticReplicationPluginOptions } from '../types';
 import { WorkPipeline } from '../../pipeline';
 import { CollectionChanges, PendingChanges, ResolvedChanges } from '../../collections';
-import { CompiledSchema, InferCreateType, SchemaId } from '../../schema';
+import { CompiledSchema, InferCreateType } from '../../schema';
 import { assertIsNotNull } from '../../assertions';
 import { Query } from '../query';
+import { uuid } from '../../utilities';
 
 const getMemoryPluginCollectionSize = <T extends {}>(plugin: IDbPlugin, schema: CompiledSchema<T>): number => {
 
@@ -15,7 +16,7 @@ const getMemoryPluginCollectionSize = <T extends {}>(plugin: IDbPlugin, schema: 
     throw new Error("Cannot get size of collection for MemoryPlugin, not an instance of MemoryPlugin")
 }
 
-export class OptimisticDbPluginReplicator {
+export class OptimisticReplicationDbPlugin implements IDbPlugin {
 
     protected plugins: OptimisticReplicationPluginOptions;
 
@@ -31,13 +32,13 @@ export class OptimisticDbPluginReplicator {
      * @returns A new DbPluginReplicator instance that manages the source-replica relationship
      */
     static create(plugins: OptimisticReplicationPluginOptions) {
-        return new OptimisticDbPluginReplicator(plugins);
+        return new OptimisticReplicationDbPlugin(plugins);
     }
 
     /**
      * Will query the read plugin if there is one, otherwise the source plugin will be queried
     */
-    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<TShape>): void {
+    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<TShape>): void {
         try {
 
             const readPlugin = this.plugins.read;
@@ -50,6 +51,7 @@ export class OptimisticDbPluginReplicator {
                 // Other queries will do the same and hydrate if needed
                 // We want to select all data here
                 sourcePlugin.query<TEntity, TShape>({
+                    id: uuid(8),
                     schemas: event.schemas,
 
                     // Select All Data
@@ -67,7 +69,7 @@ export class OptimisticDbPluginReplicator {
                     }
 
                     if (Array.isArray(sourceResult.data) === false) {
-                        done(Result.error("Query result is not an array"));
+                        done(PluginEventResult.error(event.id, "Query result is not an array"));
                         return;
                     }
 
@@ -79,6 +81,7 @@ export class OptimisticDbPluginReplicator {
                     changesCollection.changes.set(event.operation.schema.id, changes);
 
                     readPlugin.bulkPersist({
+                        id: uuid(8),
                         schemas: event.schemas,
                         operation: changesCollection
                     }, (readPersistResult) => {
@@ -108,11 +111,11 @@ export class OptimisticDbPluginReplicator {
 
             });
         } catch (e: any) {
-            done(Result.error(e));
+            done(PluginEventResult.error(event.id, e));
         }
     }
 
-    destroy<TEntity extends {}>(event: DbPluginEvent<TEntity>, done: CallbackResult<never>): void {
+    destroy<TEntity extends {}>(event: DbPluginEvent<TEntity>, done: PluginEventCallbackResult<never>): void {
         try {
 
             const workPipeline = new WorkPipeline();
@@ -125,19 +128,19 @@ export class OptimisticDbPluginReplicator {
             workPipeline.filter((result) => {
 
                 if (result.ok === Result.ERROR) {
-                    done(result);
+                    done(PluginEventResult.error(event.id, result.error));
                     return;
                 }
 
-                done(Result.success());
+                done(PluginEventResult.success(event.id));
             });
 
         } catch (e: any) {
-            done(Result.error(e));
+            done(PluginEventResult.error(event.id, e));
         }
     }
 
-    bulkPersist<TEntity extends {}>(event: DbPluginBulkPersistEvent<TEntity>, done: CallbackPartialResult<ResolvedChanges<TEntity>>): void {
+    bulkPersist<TEntity extends {}>(event: DbPluginBulkPersistEvent<TEntity>, done: PluginEventCallbackPartialResult<ResolvedChanges<TEntity>>): void {
         try {
 
             const workPipeline = new WorkPipeline();
@@ -147,6 +150,7 @@ export class OptimisticDbPluginReplicator {
 
             // since we are doing optimistic, we insert into the read plugin first and assume later plugins will succeed
             this.plugins.read.bulkPersist({
+                id: uuid(8),
                 operation: event.operation,
                 schemas: event.schemas
             }, (r) => {
@@ -184,6 +188,7 @@ export class OptimisticDbPluginReplicator {
                         const plugin = deferredPlugins[i];
 
                         plugin.bulkPersist({
+                            id: uuid(8),
                             operation: event.operation,
                             schemas: event.schemas
                         }, (r) => {
@@ -206,7 +211,7 @@ export class OptimisticDbPluginReplicator {
             });
 
         } catch (e: any) {
-            done(Result.error(e));
+            done(PluginEventResult.error(event.id, e));
         }
     }
 }

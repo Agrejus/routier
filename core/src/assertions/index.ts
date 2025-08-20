@@ -1,5 +1,4 @@
 import { ChangePackage } from "../collections/Changes";
-import { DbPluginLogging } from "../plugins/logging/DbPluginLogging";
 import { InferCreateType, InferType } from "../schema/types";
 import { DeepPartial } from "../types";
 import { isDate } from "../utilities";
@@ -38,14 +37,6 @@ export function assertInstanceOf<T extends new (...args: any[]) => any>(value: u
     }
 
     throw new TypeError(`Value is not instance of type`);
-}
-
-export function assertInstanceOfDbPluginLogging(value: unknown): asserts value is DbPluginLogging {
-    if (value instanceof DbPluginLogging) {
-        return;
-    }
-
-    throw new TypeError(`Value is not instance of DbPluginLogging`);
 }
 
 export function assertChangePackageIsEntity<T extends {}>(data: ChangePackage<T>, message?: string): asserts data is {

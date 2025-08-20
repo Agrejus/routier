@@ -1,4 +1,4 @@
-import { InferType, s } from 'routier-core';
+import { InferType, s } from 'routier-core/schema';
 
 export const product = s.define("products", {
     id: s.string().key().identity(),

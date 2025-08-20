@@ -1,5 +1,5 @@
 import { PendingChanges, ResolvedChanges } from "../collections";
-import { CallbackPartialResult, CallbackResult } from "../results";
+import { PluginEventCallbackPartialResult, PluginEventCallbackResult } from "../results";
 import { QueryOptionsCollection } from "./query/QueryOptionsCollection";
 import { CompiledSchema, SchemaId, InferType } from '../schema';
 
@@ -12,18 +12,18 @@ export interface IDbPlugin {
      * @param event The query event containing schema, parent, and query operation.
      * @param done Callback with the result or error.
      */
-    query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: CallbackResult<TShape>): void;
+    query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<TShape>): void;
     /**
      * Destroys or cleans up the plugin, closing connections or freeing resources.
      * @param done Callback with an optional error.
      */
-    destroy<TRoot extends {}>(event: DbPluginEvent<TRoot>, done: CallbackResult<never>): void;
+    destroy<TRoot extends {}>(event: DbPluginEvent<TRoot>, done: PluginEventCallbackResult<never>): void;
     /**
      * Executes bulk operations (add, update, remove) on the database.
      * @param event The bulk operations event containing schema, parent, and changes.
      * @param done Callback with the result or error.
      */
-    bulkPersist<TRoot extends {}>(event: DbPluginBulkPersistEvent<TRoot>, done: CallbackPartialResult<ResolvedChanges<TRoot>>): void;
+    bulkPersist<TRoot extends {}>(event: DbPluginBulkPersistEvent<TRoot>, done: PluginEventCallbackPartialResult<ResolvedChanges<TRoot>>): void;
 }
 
 /**
@@ -42,6 +42,9 @@ export type DbPluginBulkPersistEvent<TEntity extends {}> = DbPluginOperationEven
 export type DbPluginEvent<TEntity extends {}> = {
     /** The compiled schema for the entity. */
     schemas: Map<SchemaId, CompiledSchema<TEntity>>;
+
+    /** Unique id of the event. */
+    id: string;
 }
 
 /**

@@ -1,12 +1,11 @@
 import { CollectionOptions } from "../types";
-import { StatefulDataAccessStrategy } from "./strategies/StatefulDataAccessStrategy";
 import { DatabaseDataAccessStrategy } from "./strategies/DatabaseDataAccessStrategy";
 import { IDataAccessStrategy } from "./types";
 import { MemoryPlugin } from "routier-plugin-memory";
 import { DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin } from "routier-core/plugins";
 import { CallbackResult, Result } from "routier-core/results";
 import { ResolvedChanges } from "routier-core/collections";
-import { uuidv4 } from "routier-core/utilities";
+import { uuid, uuidv4 } from "routier-core/utilities";
 import { CompiledSchema } from "routier-core/schema";
 
 // Use a data bridge so we can abstract away some of the stuff
@@ -24,10 +23,6 @@ export class DataBridge<T extends {}> {
     }
 
     private static createStrategy<T extends {}>(dbPlugin: IDbPlugin, schema: CompiledSchema<T>, options: CollectionOptions) {
-        if (options.stateful === true) {
-            return new StatefulDataAccessStrategy<T>(dbPlugin, schema);
-        }
-
         return new DatabaseDataAccessStrategy<T>(dbPlugin, schema);
     }
 
@@ -71,6 +66,7 @@ export class DataBridge<T extends {}> {
                 ephemeralPlugin.query(event, (r) => {
 
                     ephemeralPlugin.destroy({
+                        id: uuid(8),
                         schemas: event.schemas
                     }, () => { /* noop */ });
 

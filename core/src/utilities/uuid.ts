@@ -1,9 +1,10 @@
 export const uuid = (length: number = 16): string => {
-    const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'; // Base64 character set
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const charLength = chars.length;
     let result = '';
+
     for (let i = 0; i < length; i++) {
-        const randomIndex = Math.floor(Math.random() * characters.length);
-        result += characters[randomIndex];
+        result += chars[Math.random() * charLength | 0];
     }
     return result;
 }

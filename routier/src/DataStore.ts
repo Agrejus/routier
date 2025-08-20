@@ -6,6 +6,7 @@ import { CompiledSchema, SchemaId } from 'routier-core/schema';
 import { TrampolinePipeline } from 'routier-core/pipeline';
 import { CallbackPartialResult, CallbackResult, PartialResultType, Result } from 'routier-core/results';
 import { PendingChanges, ResolvedChanges } from 'routier-core/collections';
+import { uuid } from 'routier-core/utilities';
 
 /**
  * The main Routier class, providing collection management, change tracking, and persistence for entities.
@@ -52,7 +53,6 @@ export class DataStore implements Disposable {
         return new CollectionBuilder<TEntity, Collection<TEntity>>({
             dbPlugin: this.dbPlugin,
             instanceCreator: Collection<TEntity>,
-            isStateful: false,
             onCollectionCreated: onCreated.bind(this),
             schema,
             pipelines: this.collectionPipelines,
@@ -84,6 +84,7 @@ export class DataStore implements Disposable {
 
             try {
                 this.dbPlugin.bulkPersist({
+                    id: uuid(8),
                     operation: result.data,
                     schemas: this.schemas
                 }, (r) => {
@@ -209,6 +210,7 @@ export class DataStore implements Disposable {
      */
     destroy(done: CallbackResult<never>) {
         this.dbPlugin.destroy({
+            id: uuid(8),
             schemas: this.schemas
         }, done);
     }

@@ -1,20 +1,20 @@
 import { product } from "./schemas/product";
 import { DexiePlugin } from "routier-plugin-dexie";
 import { DataStore } from 'routier';
-import { DbPluginLogging, OptimisticDbPluginReplicator } from "routier-core";
-import { MemoryPlugin } from "../../../plugins/memory/dist";
+import { MemoryPlugin } from "routier-plugin-memory";
+import { DbPluginLoggingCapability, OptimisticReplicationDbPlugin } from "routier-core/plugins";
 
 const plugin = new DexiePlugin("my-db");
+const memory = new MemoryPlugin();
+const loggingCapability = new DbPluginLoggingCapability();
+
+loggingCapability.apply(plugin);
+loggingCapability.apply(memory);
 
 // We should inherit from/mixin the class, not wrap
-const optimisticPlugin = OptimisticDbPluginReplicator.create({
-    source: DbPluginLogging.wrap({
-        Instance: DexiePlugin,
-        args: "mydb"
-    }),
-    read: DbPluginLogging.wrap({
-        Instance: MemoryPlugin
-    }),
+const optimisticPlugin = OptimisticReplicationDbPlugin.create({
+    source: plugin,
+    read: memory,
     replicas: []
 });
 

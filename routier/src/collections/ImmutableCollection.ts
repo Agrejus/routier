@@ -1,7 +1,7 @@
-import { IDbPlugin, Query } from "routier-core/plugins";
+import { IDbPlugin } from "routier-core/plugins";
 import { CollectionOptions, CollectionPipelines } from "../types";
 import { RemovableCollection } from './RemovableCollection';
-import { CompiledSchema, InferCreateType, InferType, SchemaId } from "routier-core/schema";
+import { ChangeTrackingType, CompiledSchema, InferCreateType, InferType, SchemaId } from "routier-core/schema";
 import { CallbackResult, Result } from "routier-core/results";
 
 export class ImmutableCollection<TEntity extends {}> extends RemovableCollection<TEntity> {
@@ -18,6 +18,10 @@ export class ImmutableCollection<TEntity extends {}> extends RemovableCollection
 
     mutate() {
 
+    }
+
+    protected override get changeTrackingType(): ChangeTrackingType {
+        return "immutable";
     }
 
     /**
@@ -38,45 +42,5 @@ export class ImmutableCollection<TEntity extends {}> extends RemovableCollection
      */
     addAsync(...entities: InferCreateType<TEntity>[]) {
         return new Promise<InferType<TEntity>[]>((resolve, reject) => this.add(entities, (r) => Result.resolve(r, resolve, reject)));
-    }
-
-    /**
-     * Removes entities from the collection and persists the changes to the database.
-     * @param entities Array of entities to remove from the collection
-     * @param done Callback function called with the removed entities or error
-     */
-    remove(entities: InferType<TEntity>[], done: CallbackResult<InferType<TEntity>[]>) {
-        const tag = this.tags.get();
-        this.tags.destroy();
-        this.changeTracker.remove(entities, tag, done);
-    }
-
-    /**
-     * Removes entities from the collection asynchronously and returns a Promise.
-     * @param entities Entities to remove from the collection
-     * @returns Promise that resolves with the removed entities or rejects with an error
-     */
-    removeAsync(...entities: InferType<TEntity>[]) {
-        return new Promise<InferType<TEntity>[]>((resolve, reject) => {
-            this.remove(entities, (r) => Result.resolve(r, resolve, reject));
-        });
-    }
-
-    /**
-     * Removes all entities from the collection and persists the changes to the database.
-     * @param done Callback function called when the operation completes or with an error
-     */
-    removeAll(done: (error?: any) => void) {
-        const tag = this.tags.get();
-        this.tags.destroy();
-        this.changeTracker.removeByQuery(Query.EMPTY<TEntity, TEntity>(this.schema), tag, done);
-    }
-
-    /**
-     * Removes all entities from the collection asynchronously and returns a Promise.
-     * @returns Promise that resolves when the operation completes or rejects with an error
-     */
-    removeAllAsync() {
-        return new Promise<void>((resolve, reject) => this.removeAll((r) => Result.resolve(r, resolve, reject)));
     }
 }

@@ -14,6 +14,12 @@ export class RemovableCollection<TEntity extends {}> extends CollectionBase<TEnt
         schemas: Map<SchemaId, CompiledSchema<TEntity>>
     ) {
         super(dbPlugin, schema, options, pipelines, schemas);
+
+        // Bind all public methods to ensure 'this' context is preserved
+        this.remove = this.remove.bind(this);
+        this.removeAsync = this.removeAsync.bind(this);
+        this.removeAll = this.removeAll.bind(this);
+        this.removeAllAsync = this.removeAllAsync.bind(this);
     }
 
     /**

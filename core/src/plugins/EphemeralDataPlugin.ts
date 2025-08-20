@@ -1,9 +1,9 @@
 import { assertIsNotNull } from '../assertions';
-import { CollectionChanges, CollectionChangesResult, ResolvedChanges } from '../collections';
-import { AsyncPipeline } from '../pipeline';
+import { ResolvedChanges } from '../collections';
+import { WorkPipeline } from '../pipeline';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, JsonTranslator } from '.';
-import { CallbackPartialResult, CallbackResult, Result } from '../results';
-import { CompiledSchema, InferCreateType, SchemaId } from '../schema';
+import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '../results';
+import { CompiledSchema, InferCreateType } from '../schema';
 import { DeepPartial } from '../types';
 import { MemoryDataCollection } from '../collections/MemoryDataCollection';
 
@@ -17,23 +17,23 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
 
     protected abstract resolveCollection<TEntity extends {}>(schema: CompiledSchema<TEntity>): MemoryDataCollection;
 
-    bulkPersist<TRoot extends {}>(event: DbPluginBulkPersistEvent<TRoot>, done: CallbackPartialResult<ResolvedChanges<TRoot>>) {
+    bulkPersist<TRoot extends {}>(event: DbPluginBulkPersistEvent<TRoot>, done: PluginEventCallbackPartialResult<ResolvedChanges<TRoot>>) {
         try {
-            const pipeline = new AsyncPipeline<CollectionChanges<TRoot>, [SchemaId, CollectionChangesResult<TRoot>]>();
+            const pipeline = new WorkPipeline();
+            const operationResult = event.operation.toResult();
 
             for (const schemaId of event.operation.changes.schemaIds) {
                 const changes = event.operation.changes.get(schemaId);
 
                 assertIsNotNull(changes);
 
-                pipeline.pipe(changes, (r, d) => {
+                pipeline.pipe((d) => {
                     try {
 
-                        const { adds, hasChanges, removes, updates } = r;
-                        const result = CollectionChangesResult.EMPTY<TRoot>();
+                        const { adds, hasChanges, removes, updates } = changes;
 
                         if (hasChanges === false) {
-                            d(Result.success([schemaId, result]));
+                            d(Result.success());
                             return;
                         }
 
@@ -48,6 +48,8 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                                 d(readResult);
                                 return;
                             }
+
+                            const result = operationResult.result.get(schemaId);
 
                             for (let i = 0, length = adds.entities.length; i < length; i++) {
                                 collection.add(adds.entities[i]);
@@ -71,7 +73,7 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                                     return;
                                 }
 
-                                d(Result.success([schemaId, result]));
+                                d(Result.success());
                             });
                         })
 
@@ -81,27 +83,31 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                 });
             }
 
+            let successCount = 0;
+
             pipeline.filter((asyncResult) => {
 
-                if (asyncResult.ok !== Result.SUCCESS) {
-                    done(Result.error(asyncResult.error))
+                if (asyncResult.ok !== PluginEventResult.SUCCESS) {
+
+                    if (successCount === 0) {
+                        done(PluginEventResult.error(event.id, asyncResult.error))
+                        return;
+                    }
+
+                    done(PluginEventResult.partial(event.id, operationResult, asyncResult.error))
                     return;
                 }
 
-                const result = event.operation.toResult();
+                successCount++;
 
-                for (const [schemaId, item] of asyncResult.data) {
-                    result.result.set(schemaId, item)
-                }
-
-                done(Result.success(result));
+                done(PluginEventResult.success(event.id, operationResult));
             });
         } catch (e: any) {
-            done(Result.error(e))
+            done(PluginEventResult.error(event.id, e))
         }
     }
 
-    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<TShape>): void {
+    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<TShape>): void {
 
         try {
             const { operation } = event;
@@ -112,18 +118,18 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
             collection.load(r => {
 
                 if (r.ok === Result.ERROR) {
-                    done(r);
+                    done(PluginEventResult.error(event.id, r.error));
                     return;
                 }
 
                 const translated = translator.translate(collection.records);
 
-                done(Result.success(translated));
+                done(PluginEventResult.success(event.id, translated));
             })
         } catch (e) {
-            done(Result.error(e));
+            done(PluginEventResult.error(event.id, e));
         }
     }
 
-    abstract destroy<TEntity extends {}>(event: DbPluginEvent<TEntity>, done: CallbackResult<never>): void;
+    abstract destroy<TEntity extends {}>(event: DbPluginEvent<TEntity>, done: PluginEventCallbackResult<never>): void;
 }

@@ -1,7 +1,7 @@
 import { PendingChanges, ResolvedChanges } from "routier-core/collections";
 import { TrampolinePipeline } from "routier-core/pipeline";
 import { PartialResultType } from "routier-core/results";
-import { CompiledSchema, IdType, InferType } from "routier-core/schema";
+import { IdType, InferType } from "routier-core/schema";
 import { GenericFunction } from "routier-core/types";
 
 export type QueryResult<T> = (value: T, error?: any) => void;
@@ -74,12 +74,7 @@ export type DeepOptional<T> = {
 };
 
 export type CollectionOptions = {
-    stateful: boolean;
     signal: AbortSignal
-}
-
-export type StatefulCollectionOptions = CollectionOptions & {
-    optimistic: boolean
 }
 
 export type CollectionPipelines = {

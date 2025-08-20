@@ -13,6 +13,7 @@ import { assertIsNotNull } from "routier-core/assertions";
 import { AsyncPipeline } from "routier-core/pipeline";
 import { GenericFunction } from "routier-core/types";
 import { Filter, ParamsFilter } from "routier-core/expressions";
+import { uuid } from "routier-core/utilities";
 
 export class CollectionBase<TEntity extends {}> {
 
@@ -39,6 +40,51 @@ export class CollectionBase<TEntity extends {}> {
 
         pipelines.prepareChanges.pipe(this.prepare.bind(this));
         pipelines.afterPersist.pipe(this.afterPersist.bind(this));
+
+        // Bind all methods in tags object
+        this.tags.get = this.tags.get.bind(this);
+        this.tags.destroy = this.tags.destroy.bind(this);
+
+        // Bind all methods in attachments object
+        this.attachments.remove = this.attachments.remove.bind(this);
+        this.attachments.set = this.attachments.set.bind(this);
+        this.attachments.has = this.attachments.has.bind(this);
+        this.attachments.get = this.attachments.get.bind(this);
+        this.attachments.filter = this.attachments.filter.bind(this);
+        this.attachments.find = this.attachments.find.bind(this);
+        this.attachments.markDirty = this.attachments.markDirty.bind(this);
+        this.attachments.getChangeType = this.attachments.getChangeType.bind(this);
+
+        // Bind all public methods to ensure 'this' context is preserved
+        this.hasChanges = this.hasChanges.bind(this);
+        this.tag = this.tag.bind(this);
+        this.instance = this.instance.bind(this);
+        this.subscribe = this.subscribe.bind(this);
+        this.where = this.where.bind(this);
+        this.sort = this.sort.bind(this);
+        this.sortDescending = this.sortDescending.bind(this);
+        this.skip = this.skip.bind(this);
+        this.take = this.take.bind(this);
+        this.toArray = this.toArray.bind(this);
+        this.toArrayAsync = this.toArrayAsync.bind(this);
+        this.first = this.first.bind(this);
+        this.firstAsync = this.firstAsync.bind(this);
+        this.firstOrUndefined = this.firstOrUndefined.bind(this);
+        this.firstOrUndefinedAsync = this.firstOrUndefinedAsync.bind(this);
+        this.some = this.some.bind(this);
+        this.someAsync = this.someAsync.bind(this);
+        this.every = this.every.bind(this);
+        this.everyAsync = this.everyAsync.bind(this);
+        this.min = this.min.bind(this);
+        this.minAsync = this.minAsync.bind(this);
+        this.max = this.max.bind(this);
+        this.maxAsync = this.maxAsync.bind(this);
+        this.sum = this.sum.bind(this);
+        this.sumAsync = this.sumAsync.bind(this);
+        this.count = this.count.bind(this);
+        this.countAsync = this.countAsync.bind(this);
+        this.distinct = this.distinct.bind(this);
+        this.distinctAsync = this.distinctAsync.bind(this);
     }
 
     protected get changeTrackingType(): ChangeTrackingType {
@@ -122,6 +168,7 @@ export class CollectionBase<TEntity extends {}> {
         pipeline.pipeEach(queries, (operation, done) => {
             try {
                 this.dataBridge.query({
+                    id: uuid(8),
                     operation,
                     schemas: this.schemas
                 }, (r) => {
