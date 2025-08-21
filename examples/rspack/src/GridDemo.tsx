@@ -35,7 +35,7 @@ export function GridDemo() {
 			.skip(skip)
 			.take(itemsPerPage)
 			.toArray(c),
-		[skip, itemsPerPage] // Dependencies for useQuery
+		[skip, itemsPerPage]
 	);
 
 	// Query to get total count for pagination

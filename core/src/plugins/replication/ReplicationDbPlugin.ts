@@ -96,7 +96,7 @@ export class ReplicationDbPlugin implements IDbPlugin {
                             const schemaIds = new Set(adds.data.map(x => x[0]));
 
                             for (const schemaId of schemaIds) {
-                                debugger;
+                                // Set the result on the response
                                 const persistResult = r.data.result.get(schemaId);
                                 result.result.set(schemaId, persistResult);
 
@@ -129,17 +129,22 @@ export class ReplicationDbPlugin implements IDbPlugin {
                 })
             }
 
-            pipeline.filter((result) => {
+            let successCount = 0;
 
-                if (result.ok === Result.ERROR) {
-                    done(PluginEventResult.error(event.id, result.error));
+            pipeline.filter((r) => {
+
+                if (r.ok === Result.ERROR) {
+
+                    if (successCount > 0) {
+                        done(PluginEventResult.partial(event.id, result, r.error));
+                        return;
+                    }
+
+                    done(PluginEventResult.error(event.id, r.error));
                     return;
                 }
 
-                // if (result.ok === Result.PARTIAL) {
-                //     done(PluginEventResult.partial(event.id, result.data.result, result.error));
-                //     return;
-                // }
+                successCount++;
 
                 done(PluginEventResult.success(event.id, result));
             });

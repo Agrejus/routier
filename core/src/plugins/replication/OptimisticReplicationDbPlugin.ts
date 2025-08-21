@@ -146,9 +146,8 @@ export class OptimisticReplicationDbPlugin implements IDbPlugin {
             const workPipeline = new WorkPipeline();
             const deferredPlugins = [this.plugins.source, ... this.plugins.replicas];
 
-            assertIsNotNull(this.plugins.read, "Read plugin cannot be null or undefined for optimistic updates");
-
-            // since we are doing optimistic, we insert into the read plugin first and assume later plugins will succeed
+            // Since we are doing optimistic, we insert into the read plugin first and assume later plugins will succeed
+            // This means the read plugin will generate ids for the source plugin
             this.plugins.read.bulkPersist({
                 id: uuid(8),
                 operation: event.operation,

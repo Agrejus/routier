@@ -1,5 +1,5 @@
 import { ResolvedChanges } from "../../collections";
-import { PartialResultType, ResultType } from "../../results";
+import { PluginEventPartialResultType, PluginEventResultType } from "../../results";
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin } from "../types";
 
 export type DbPluginCapabilityEvent = "queryStart" | "queryComplete" | "destroyStart" | "destroyComplete" | "bulkPersistStart" | "bulkPersistComplete";
@@ -18,11 +18,11 @@ export class DbPluginCapability {
     private events: Record<string, { before?: Function, after?: Function }> = {};
 
     add<TRoot extends {}, TShape extends any = TRoot>(name: "queryStart", callback: (event: DbPluginQueryEvent<TRoot, TShape>) => void): DbPluginCapability;
-    add<TRoot extends {}, TShape extends any = TRoot>(name: "queryComplete", callback: (event: ResultType<TShape>) => void): DbPluginCapability;
+    add<TRoot extends {}, TShape extends any = TRoot>(name: "queryComplete", callback: (event: PluginEventResultType<TShape>) => void): DbPluginCapability;
     add<TRoot extends {}, TShape extends any = TRoot>(name: "destroyStart", callback: (event: DbPluginEvent<TRoot>) => void): DbPluginCapability;
-    add<TRoot extends {}, TShape extends any = TRoot>(name: "destroyComplete", callback: (event: ResultType<never>) => void): DbPluginCapability;
+    add<TRoot extends {}, TShape extends any = TRoot>(name: "destroyComplete", callback: (event: PluginEventResultType<never>) => void): DbPluginCapability;
     add<TRoot extends {}, TShape extends any = TRoot>(name: "bulkPersistStart", callback: (event: DbPluginBulkPersistEvent<TRoot>) => void): DbPluginCapability;
-    add<TRoot extends {}, TShape extends any = TRoot>(name: "bulkPersistComplete", callback: (event: PartialResultType<ResolvedChanges<TRoot>>) => void): DbPluginCapability;
+    add<TRoot extends {}, TShape extends any = TRoot>(name: "bulkPersistComplete", callback: (event: PluginEventPartialResultType<ResolvedChanges<TRoot>>) => void): DbPluginCapability;
     add<TRoot extends {}, TShape extends any = TRoot>(name: DbPluginCapabilityEvent, callback: Function): DbPluginCapability {
 
         this.resolve(name);

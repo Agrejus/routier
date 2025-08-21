@@ -4,16 +4,16 @@ import { DataStore } from 'routier';
 import { MemoryPlugin } from "routier-plugin-memory";
 import { DbPluginLoggingCapability, OptimisticReplicationDbPlugin } from "routier-core/plugins";
 
-const plugin = new DexiePlugin("my-db");
+const dexie = new DexiePlugin("my-db");
 const memory = new MemoryPlugin();
 const loggingCapability = new DbPluginLoggingCapability();
 
-loggingCapability.apply(plugin);
+loggingCapability.apply(dexie);
 loggingCapability.apply(memory);
 
 // We should inherit from/mixin the class, not wrap
 const optimisticPlugin = OptimisticReplicationDbPlugin.create({
-    source: plugin,
+    source: dexie,
     read: memory,
     replicas: []
 });

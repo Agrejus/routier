@@ -4,7 +4,7 @@ import { AsyncPipeline, SyncronousQueue, SyncronousUnitOfWork } from 'routier-co
 import { InferCreateType, InferType, PropertyInfo, SchemaId } from 'routier-core/schema';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, IQuery } from 'routier-core/plugins';
 import { ResolvedChanges } from 'routier-core/collections';
-import { CallbackPartialResult, CallbackResult, Result } from 'routier-core/results';
+import { CallbackPartialResult, CallbackResult, PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from 'routier-core/results';
 import { assertIsNotNull } from 'routier-core/assertions';
 import { combineExpressions, ComparatorExpression, Expression, getProperties } from 'routier-core/expressions';
 
@@ -456,7 +456,7 @@ export class PouchDbPlugin implements IDbPlugin {
 
     private _bulkPersist<TRoot extends {}>(
         event: DbPluginBulkPersistEvent<TRoot>,
-        done: CallbackPartialResult<ResolvedChanges<TRoot>>) {
+        done: PluginEventCallbackPartialResult<ResolvedChanges<TRoot>>) {
 
         this._validateSchemas(event);
 
@@ -477,18 +477,18 @@ export class PouchDbPlugin implements IDbPlugin {
         this._identityBulkOperations<TRoot>(identitySchemaIds, resolvedChanges, (identityResult) => {
 
             if (identityResult.ok !== Result.SUCCESS) {
-                done(Result.error(identityResult.error))
+                done(PluginEventResult.error(event.id, identityResult.error))
                 return;
             }
 
             this._defaultBulkOperations<TRoot>(defaultSchemaIds, resolvedChanges, (defaultResult) => {
 
                 if (defaultResult.ok !== Result.SUCCESS) {
-                    done(Result.error(defaultResult.error))
+                    done(PluginEventResult.error(event.id, defaultResult.error))
                     return;
                 }
 
-                done(Result.success(resolvedChanges))
+                done(PluginEventResult.success(event.id, resolvedChanges))
             });
 
         });
@@ -524,7 +524,7 @@ export class PouchDbPlugin implements IDbPlugin {
 
     bulkPersist<TRoot extends {}>(
         event: DbPluginBulkPersistEvent<TRoot>,
-        done: CallbackPartialResult<ResolvedChanges<TRoot>>) {
+        done: PluginEventCallbackPartialResult<ResolvedChanges<TRoot>>) {
 
         const unitOfWork: SyncronousUnitOfWork = (d) => this._bulkPersist(event, (r) => {
             d();
@@ -534,7 +534,7 @@ export class PouchDbPlugin implements IDbPlugin {
         queue.enqueue(unitOfWork.bind(this));
     }
 
-    query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: CallbackResult<TShape>): void {
+    query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<TShape>): void {
         const unitOfWork: SyncronousUnitOfWork = (d) => this._query<TRoot, TShape>(event, (r) => {
             d();
             done(r)
@@ -685,11 +685,11 @@ export class PouchDbPlugin implements IDbPlugin {
         }, done);
     }
 
-    private _query<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<TShape>): void {
+    private _query<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<TShape>): void {
         this.resolveIndexes(event, (r) => {
 
             if (r.ok !== Result.SUCCESS) {
-                done(r)
+                done(PluginEventResult.error(event.id, r.error))
                 return;
             }
 

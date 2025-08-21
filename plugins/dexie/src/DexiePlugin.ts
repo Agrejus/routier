@@ -1,7 +1,7 @@
 import Dexie from 'dexie';
 import { convertToDexieSchema } from "./utils";
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin } from 'routier-core/plugins';
-import { CallbackPartialResult, CallbackResult, Result } from 'routier-core/results';
+import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from 'routier-core/results';
 import { ResolvedChanges } from 'routier-core/collections';
 import { DeepPartial } from 'routier-core/types';
 import { InferCreateType, PropertyInfo, SchemaTypes } from 'routier-core/schema';
@@ -40,9 +40,9 @@ export class DexiePlugin implements IDbPlugin, Disposable {
         }
     }
 
-    destroy<TEntity extends {}>(_: DbPluginEvent<TEntity>, done: CallbackResult<never>): void {
+    destroy<TEntity extends {}>(event: DbPluginEvent<TEntity>, done: PluginEventCallbackResult<never>): void {
         const db = new Dexie(this.dbName);
-        db.delete().then(() => done(Result.success())).catch(e => done(Result.error(e)));
+        db.delete().then(() => done(PluginEventResult.success(event.id))).catch(e => done(PluginEventResult.error(event.id, event)));
     }
 
     private trySetId<TRoot extends {}>(instance: InferCreateType<TRoot>, stringProperty: PropertyInfo<TRoot>) {
@@ -54,7 +54,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
         }
     }
 
-    bulkPersist<TRoot extends {}>(event: DbPluginBulkPersistEvent<TRoot>, done: CallbackPartialResult<ResolvedChanges<TRoot>>) {
+    bulkPersist<TRoot extends {}>(event: DbPluginBulkPersistEvent<TRoot>, done: PluginEventCallbackPartialResult<ResolvedChanges<TRoot>>) {
 
         this._doWork(event, async (db, d) => {
             const jobs: Promise<any>[] = [];
@@ -156,9 +156,9 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                 }
 
                 await Promise.all(jobs);
-                d(Result.success(operationResult));
+                d(PluginEventResult.success(event.id, operationResult));
             } catch (e) {
-                d(Result.error(e));
+                d(PluginEventResult.error(event.id, e));
             }
         }, done);
     }
@@ -193,7 +193,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
         return event.operation.schema.properties;
     }
 
-    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<TShape>): void {
+    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<TShape>): void {
         this._doWork(event, (db, d) => {
 
             const { collectionName } = event.operation.schema;
@@ -254,8 +254,8 @@ export class DexiePlugin implements IDbPlugin, Disposable {
             collection.toArray().then(data => {
                 const result = translator.translate(data);
 
-                d(Result.success(result));
-            }).catch(e => d(Result.error(e)));
+                d(PluginEventResult.success(event.id, result));
+            }).catch(e => d(PluginEventResult.error(event.id, e)));
         }, done);
     }
 

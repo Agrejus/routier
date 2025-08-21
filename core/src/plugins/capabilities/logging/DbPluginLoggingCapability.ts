@@ -1,6 +1,6 @@
 import { IDbPlugin, DbPluginQueryEvent, DbPluginBulkPersistEvent, DbPluginEvent } from "../../../plugins/types";
 import { DbPluginCapability, IDbPluginCapability } from "../DbPluginCapability";
-import { ResultType, PartialResultType } from "../../../results";
+import { PluginEventResultType, PluginEventPartialResultType } from "../../../results";
 import { ResolvedChanges } from "../../../collections";
 import { now } from "../../../performance";
 
@@ -8,6 +8,7 @@ export class DbPluginLoggingCapability implements IDbPluginCapability {
     private logStyle: 'minimal' | 'detailed' | 'redux' = 'redux';
     private maxLogEntries: number = 100;
     private logHistory: Array<{ type: string; timestamp: number; data: any }> = [];
+    private queryPerformance: Map<string, number> = new Map<string, number>();
 
     constructor(options?: { logStyle?: 'minimal' | 'detailed' | 'redux'; maxLogEntries?: number }) {
         this.logStyle = options?.logStyle ?? 'redux';
@@ -22,7 +23,7 @@ export class DbPluginLoggingCapability implements IDbPluginCapability {
         // Query logging
         baseCapability
             .add("queryStart", (event: DbPluginQueryEvent<any, any>) => {
-                this.logReduxAction('QUERY_REQUEST', {
+                this.logReduxAction('QUERY_REQUEST', event.id, {
                     plugin: pluginName,
                     collection: event.operation.schema.collectionName,
                     schemaId: event.operation.schema.id,
@@ -32,13 +33,17 @@ export class DbPluginLoggingCapability implements IDbPluginCapability {
                     options: this.extractQueryOptions(event.operation)
                 });
                 this.addToHistory('QUERY_REQUEST', event);
+                this.queryPerformance.set(event.id, now());
             })
-            .add("queryComplete", (result: ResultType<any>) => {
-                const duration = this.getOperationDuration();
+            .add("queryComplete", (result: PluginEventResultType<any>) => {
+                const start = this.queryPerformance.get(result.id);
+                this.queryPerformance.delete(result.id)
+                const end = now();
+                const duration = start == null ? -1 : end - start;
                 const performance = this.getPerformanceIndicator(duration);
 
                 if (result.ok === 'success') {
-                    this.logReduxAction('QUERY_SUCCESS', {
+                    this.logReduxAction('QUERY_SUCCESS', result.id, {
                         plugin: pluginName,
                         resultCount: this.getResultCount(result.data),
                         resultType: this.getResultType(result.data)
@@ -48,7 +53,7 @@ export class DbPluginLoggingCapability implements IDbPluginCapability {
                         timestamp: new Date().toISOString()
                     });
                 } else {
-                    this.logReduxAction('QUERY_ERROR', {
+                    this.logReduxAction('QUERY_ERROR', result.id, {
                         plugin: pluginName,
                         error: result.error?.message || result.error,
                         isCritical: false
@@ -65,7 +70,7 @@ export class DbPluginLoggingCapability implements IDbPluginCapability {
         baseCapability
             .add("bulkPersistStart", (event: DbPluginBulkPersistEvent<any>) => {
                 const totalOperations = event.operation.changes.all().data.length;
-                this.logReduxAction('BULK_OPERATIONS_REQUEST', {
+                this.logReduxAction('BULK_OPERATIONS_REQUEST', event.id, {
                     plugin: pluginName,
                     totalOperations,
                     schemaCount: event.schemas.size,
@@ -74,13 +79,17 @@ export class DbPluginLoggingCapability implements IDbPluginCapability {
                     timestamp: new Date().toISOString()
                 });
                 this.addToHistory('BULK_OPERATIONS_REQUEST', event);
+                this.queryPerformance.set(event.id, now());
             })
-            .add("bulkPersistComplete", (result: PartialResultType<ResolvedChanges<any>>) => {
-                const duration = this.getOperationDuration();
+            .add("bulkPersistComplete", (result: PluginEventPartialResultType<ResolvedChanges<any>>) => {
+                const start = this.queryPerformance.get(result.id);
+                this.queryPerformance.delete(result.id)
+                const end = now();
+                const duration = start == null ? -1 : end - start;
                 const performance = this.getPerformanceIndicator(duration);
 
                 if (result.ok === 'success') {
-                    this.logReduxAction('BULK_OPERATIONS_SUCCESS', {
+                    this.logReduxAction('BULK_OPERATIONS_SUCCESS', result.id, {
                         plugin: pluginName,
                         completedOperations: this.countCompletedOperations(result.data),
                         schemaCount: result.data?.result.all().data.length || 0
@@ -90,7 +99,7 @@ export class DbPluginLoggingCapability implements IDbPluginCapability {
                         timestamp: new Date().toISOString()
                     });
                 } else {
-                    this.logReduxAction('BULK_OPERATIONS_ERROR', {
+                    this.logReduxAction('BULK_OPERATIONS_ERROR', result.id, {
                         plugin: pluginName,
                         error: result.error?.message || result.error,
                         isCritical: false
@@ -106,20 +115,24 @@ export class DbPluginLoggingCapability implements IDbPluginCapability {
         // Destroy logging
         baseCapability
             .add("destroyStart", (event: DbPluginEvent<any>) => {
-                this.logReduxAction('DESTROY_REQUEST', {
+                this.logReduxAction('DESTROY_REQUEST', event.id, {
                     plugin: pluginName,
                     schemaCount: event.schemas.size
                 }, {
                     timestamp: new Date().toISOString()
                 });
                 this.addToHistory('DESTROY_REQUEST', event);
+                this.queryPerformance.set(event.id, now());
             })
-            .add("destroyComplete", (result: ResultType<never>) => {
-                const duration = this.getOperationDuration();
+            .add("destroyComplete", (result: PluginEventResultType<never>) => {
+                const start = this.queryPerformance.get(result.id);
+                this.queryPerformance.delete(result.id)
+                const end = now();
+                const duration = start == null ? -1 : end - start;
                 const performance = this.getPerformanceIndicator(duration);
 
                 if (result.ok === 'success') {
-                    this.logReduxAction('DESTROY_SUCCESS', {
+                    this.logReduxAction('DESTROY_SUCCESS', result.id, {
                         plugin: pluginName
                     }, {
                         duration: `${duration.toFixed(4)}ms`,
@@ -127,7 +140,7 @@ export class DbPluginLoggingCapability implements IDbPluginCapability {
                         timestamp: new Date().toISOString()
                     });
                 } else {
-                    this.logReduxAction('DESTROY_ERROR', {
+                    this.logReduxAction('DESTROY_ERROR', result.id, {
                         plugin: pluginName,
                         error: result.error?.message || result.error
                     }, {
@@ -142,18 +155,6 @@ export class DbPluginLoggingCapability implements IDbPluginCapability {
         baseCapability.apply(plugin);
     }
 
-    private startTime: number = 0;
-
-    private getOperationDuration(): number {
-        if (this.startTime === 0) {
-            this.startTime = now();
-            return 0;
-        }
-        const duration = now() - this.startTime;
-        this.startTime = 0;
-        return duration;
-    }
-
     private getPerformanceIndicator(duration: number) {
         if (duration > 1000) return { emoji: '🐌', color: '#ef4444', label: 'SLOW', level: 'error' };
         if (duration > 500) return { emoji: '🐢', color: '#f97316', label: 'MEDIUM', level: 'warning' };
@@ -161,11 +162,10 @@ export class DbPluginLoggingCapability implements IDbPluginCapability {
         return { emoji: '🚀', color: '#22c55e', label: 'INSTANT', level: 'success' };
     }
 
-    private logReduxAction(action: string, payload: any, meta?: any) {
+    private logReduxAction(action: string, eventId: string, payload: any, meta?: any) {
         if (this.logStyle !== 'redux') return;
 
         const timestamp = new Date().toISOString();
-        const actionId = this.generateId();
 
         console.groupCollapsed(
             `%c${action} %c@ ${timestamp}`,
@@ -175,7 +175,7 @@ export class DbPluginLoggingCapability implements IDbPluginCapability {
 
         console.group('Action');
         console.log('Type:', action);
-        console.log('ID:', actionId);
+        console.log('Event ID:', eventId);
         console.log('Timestamp:', timestamp);
         console.groupEnd();
 

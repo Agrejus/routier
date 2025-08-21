@@ -2,9 +2,10 @@ import { DataBridge } from "../data-access/DataBridge";
 import { ChangeTracker } from "../change-tracking/ChangeTracker";
 import { DbPluginQueryEvent, Query, QueryField, QueryOptionsCollection, QueryOrdering } from "routier-core/plugins";
 import { CompiledSchema, InferType, SchemaId } from "routier-core/schema";
-import { CallbackResult, Result } from "routier-core/results";
+import { CallbackResult, PluginEventCallbackResult, PluginEventResult, Result } from "routier-core/results";
 import { GenericFunction } from "routier-core/types";
 import { Filter, ParamsFilter, toExpression } from "routier-core/expressions";
+import { uuid } from "routier-core/utilities";
 
 export abstract class QuerySource<TRoot extends {}, TShape> {
 
@@ -144,16 +145,17 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
         return {
             operation: new Query<TRoot, Shape>(this.queryOptions as any, this.schema),
             schemas: this.schemas,
+            id: uuid(8)
         }
     }
 
-    protected getData<TShape>(done: CallbackResult<TShape>) {
+    protected getData<TShape>(done: PluginEventCallbackResult<TShape>) {
 
         const event = this.createEvent<TShape>();
 
         this.dataBridge.query<TShape>(event, (result) => {
 
-            if (result.ok === Result.ERROR) {
+            if (result.ok === PluginEventResult.ERROR) {
                 done(result);
                 return;
             }
@@ -167,7 +169,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
                 const enriched = this.changeTracker.enrich(result.data as InferType<TRoot>[]);
                 const resolved = this.changeTracker.resolve(enriched, tags);
 
-                done(Result.success(resolved as TShape));
+                done(PluginEventResult.success(event.id, resolved as TShape));
                 return;
             }
 

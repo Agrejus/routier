@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DbPluginEvent, EphemeralDataPlugin } from 'routier-core/plugins';
-import { CallbackResult, Result } from 'routier-core/results';
+import { CallbackResult, PluginEventCallbackResult, PluginEventResult, Result } from 'routier-core/results';
 import { CompiledSchema } from 'routier-core/schema';
 import { FileSystemDbCollection } from './FileSystemDbCollection';
 
@@ -22,18 +22,18 @@ export class FileSystemPlugin extends EphemeralDataPlugin {
         return new FileSystemDbCollection(this.databaseFilePath, schema);
     }
 
-    override destroy<TEntity extends {}>(_: DbPluginEvent<TEntity>, done: CallbackResult<never>): void {
+    override destroy<TEntity extends {}>(event: DbPluginEvent<TEntity>, done: PluginEventCallbackResult<never>): void {
         try {
             fs.unlink(this.databaseFilePath, (e) => {
                 if (e) {
-                    done(Result.error(e));
+                    done(PluginEventResult.error(event.id, e));
                     return;
                 }
 
-                done(Result.success());
+                done(PluginEventResult.success(event.id));
             });
         } catch (e: any) {
-            done(Result.error(e));
+            done(PluginEventResult.error(event.id, e));
         }
     }
 }

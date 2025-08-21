@@ -1,7 +1,7 @@
 import { CompiledSchema } from "routier-core";
 import { ResolvedChanges } from "routier-core/collections";
 import { DbPluginBulkPersistEvent, IDbPlugin } from "routier-core/plugins";
-import { CallbackResult } from "routier-core/results";
+import { PluginEventCallbackPartialResult } from "routier-core/results";
 
 export class DataAccessStrategyBase<T extends {}> {
 
@@ -13,7 +13,7 @@ export class DataAccessStrategyBase<T extends {}> {
         this.schema = schema;
     }
 
-    protected _bulkPersist(event: DbPluginBulkPersistEvent<T>, done: CallbackResult<ResolvedChanges<T>>) {
+    protected _bulkPersist(event: DbPluginBulkPersistEvent<T>, done: PluginEventCallbackPartialResult<ResolvedChanges<T>>) {
         this.dbPlugin.bulkPersist(event, done);
     }
 }

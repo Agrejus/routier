@@ -3,7 +3,7 @@ import { DatabaseDataAccessStrategy } from "./strategies/DatabaseDataAccessStrat
 import { IDataAccessStrategy } from "./types";
 import { MemoryPlugin } from "routier-plugin-memory";
 import { DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin } from "routier-core/plugins";
-import { CallbackResult, Result } from "routier-core/results";
+import { PluginEventCallbackResult, Result } from "routier-core/results";
 import { ResolvedChanges } from "routier-core/collections";
 import { uuid, uuidv4 } from "routier-core/utilities";
 import { CompiledSchema } from "routier-core/schema";
@@ -32,15 +32,15 @@ export class DataBridge<T extends {}> {
         return new DataBridge<T>(strategy, options);
     }
 
-    bulkPersist(event: DbPluginBulkPersistEvent<T>, done: CallbackResult<ResolvedChanges<T>>) {
+    bulkPersist(event: DbPluginBulkPersistEvent<T>, done: PluginEventCallbackResult<ResolvedChanges<T>>) {
         this.strategy.bulkPersist(this.options, event, done);
     }
 
-    query<TShape>(event: DbPluginQueryEvent<T, TShape>, done: CallbackResult<TShape>) {
+    query<TShape>(event: DbPluginQueryEvent<T, TShape>, done: PluginEventCallbackResult<TShape>) {
         this.strategy.query(this.options, event, done);
     }
 
-    subscribe<TShape, U>(event: DbPluginQueryEvent<T, TShape>, done: CallbackResult<TShape>) {
+    subscribe<TShape, U>(event: DbPluginQueryEvent<T, TShape>, done: PluginEventCallbackResult<TShape>) {
         const subscription = event.operation.schema.createSubscription(this.signal);
         subscription.onMessage((changes) => {
 

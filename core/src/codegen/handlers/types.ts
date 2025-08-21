@@ -77,7 +77,7 @@ export abstract class PropertyInfoHandler implements IHandler {
     }
 
     protected toNamedFunction(stringifiedFunction: string, parent: ContainerBlock) {
-        const name = uuid()
+        const name = `_${uuid()}`;
 
         const builder = parent.function(name);
 
