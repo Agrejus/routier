@@ -1,8 +1,9 @@
 import { IDbPlugin } from "routier-core/plugins";
 import { CollectionOptions, CollectionPipelines } from "../types";
 import { RemovableCollection } from './RemovableCollection';
-import { ChangeTrackingType, CompiledSchema, InferCreateType, InferType, SchemaId } from "routier-core/schema";
+import { ChangeTrackingType, CompiledSchema, InferCreateType, InferType } from "routier-core/schema";
 import { CallbackResult, Result } from "routier-core/results";
+import { SchemaCollection } from "routier-core/collections";
 
 export class ImmutableCollection<TEntity extends {}> extends RemovableCollection<TEntity> {
 
@@ -11,7 +12,7 @@ export class ImmutableCollection<TEntity extends {}> extends RemovableCollection
         schema: CompiledSchema<TEntity>,
         options: CollectionOptions,
         pipelines: CollectionPipelines,
-        schemas: Map<SchemaId, CompiledSchema<TEntity>>
+        schemas: SchemaCollection
     ) {
         super(dbPlugin, schema, options, pipelines, schemas);
     }

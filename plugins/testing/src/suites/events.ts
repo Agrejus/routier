@@ -20,7 +20,7 @@ export class EventsTestSuite extends TestSuiteBase {
                         const response = await dataStore.saveChangesAsync();
 
                         // Assert
-                        expect(response.result.count()).toBe(1);
+                        expect(response.aggregate.size).toBe(1);
                         expect(added.endTime?.toISOString()).toBe(item.endTime?.toISOString());
                     }),
                     this.createTestCase("Can add item with default static value", (factory) => async () => {
@@ -32,7 +32,7 @@ export class EventsTestSuite extends TestSuiteBase {
                         const [added] = await dataStore.events.addAsync(item);
                         const response = await dataStore.saveChangesAsync();
                         // Assert
-                        expect(response.result.count()).toBe(1);
+                        expect(response.aggregate.size).toBe(1);
                         expect(added.name).toBe(item.name);
                         expect(added.name).toBe("James");
                     })

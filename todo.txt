@@ -2,6 +2,10 @@
 
 npm publish --tag beta
 
+
+// NEXT
+    Test out PDB sync and push data from server to client!
+
 Docs
 Overiew
 Type System

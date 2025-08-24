@@ -1,11 +1,10 @@
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '../../results';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, OptimisticReplicationPluginOptions } from '../types';
-import { WorkPipeline } from '../../pipeline';
-import { CollectionChanges, PendingChanges, ResolvedChanges } from '../../collections';
-import { CompiledSchema, InferCreateType } from '../../schema';
-import { assertIsNotNull } from '../../assertions';
+import { WorkPipeline } from '../../pipeline'; 7
+import { CompiledSchema } from '../../schema';
 import { Query } from '../query';
-import { uuid } from '../../utilities';
+import { resolveBulkPersistChanges, uuid } from '../../utilities';
+import { BulkPersistChanges, BulkPersistResult } from '../../collections';
 
 const getMemoryPluginCollectionSize = <T extends {}>(plugin: IDbPlugin, schema: CompiledSchema<T>): number => {
 
@@ -73,12 +72,11 @@ export class OptimisticReplicationDbPlugin implements IDbPlugin {
                         return;
                     }
 
-                    const changesCollection = new PendingChanges<TEntity>();
-                    const changes = new CollectionChanges<TEntity>()
+                    const changesCollection = new BulkPersistChanges();
+                    const schemaChanges = changesCollection.resolve(event.operation.schema.id);
 
-                    changes.adds.entities = sourceResult.data;
-
-                    changesCollection.changes.set(event.operation.schema.id, changes);
+                    // Add the existing items into the persist payload as adds
+                    schemaChanges.adds = sourceResult.data;
 
                     readPlugin.bulkPersist({
                         id: uuid(8),
@@ -115,7 +113,7 @@ export class OptimisticReplicationDbPlugin implements IDbPlugin {
         }
     }
 
-    destroy<TEntity extends {}>(event: DbPluginEvent<TEntity>, done: PluginEventCallbackResult<never>): void {
+    destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
         try {
 
             const workPipeline = new WorkPipeline();
@@ -140,7 +138,7 @@ export class OptimisticReplicationDbPlugin implements IDbPlugin {
         }
     }
 
-    bulkPersist<TEntity extends {}>(event: DbPluginBulkPersistEvent<TEntity>, done: PluginEventCallbackPartialResult<ResolvedChanges<TEntity>>): void {
+    bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackPartialResult<BulkPersistResult>): void {
         try {
 
             const workPipeline = new WorkPipeline();
@@ -163,23 +161,11 @@ export class OptimisticReplicationDbPlugin implements IDbPlugin {
                 // db anyways
                 done(r);
 
+                const optimisticBulkPersistChanges = new BulkPersistChanges();
+
                 // make sure we swap the adds here, that way we can make sure other persist events
                 // don't take their additions and try to change subsequent calls
-                const adds = r.data.result.adds();
-                const schemaIds = new Set(adds.data.map(x => x[0]));
-
-                for (const schemaId of schemaIds) {
-                    const schemaOperations = event.operation.changes.get(schemaId);
-                    schemaOperations.adds.entities = [];
-                }
-
-                for (const [schemaId, item] of adds.data) {
-                    const schemaOperations = event.operation.changes.get(schemaId);
-
-                    // replace additions on the event with the saved changes so 
-                    // the rest of the plugins will get any additons who's id's have been set                   
-                    schemaOperations.adds.entities.push(item as InferCreateType<TEntity>);
-                }
+                resolveBulkPersistChanges(event, r.data, optimisticBulkPersistChanges);
 
                 for (let i = 0, length = deferredPlugins.length; i < length; i++) {
                     workPipeline.pipe((d) => {
@@ -188,7 +174,7 @@ export class OptimisticReplicationDbPlugin implements IDbPlugin {
 
                         plugin.bulkPersist({
                             id: uuid(8),
-                            operation: event.operation,
+                            operation: optimisticBulkPersistChanges,
                             schemas: event.schemas
                         }, (r) => {
 

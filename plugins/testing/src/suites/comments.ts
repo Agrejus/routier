@@ -20,7 +20,7 @@ export class CommentsTestSuite extends TestSuiteBase {
                         const response = await dataStore.saveChangesAsync();
 
                         // Assert
-                        expect(response.result.count()).toBe(1);
+                        expect(response.aggregate.size).toBe(1);
                         expect(added._id).toStrictEqual(expect.any(String));
                         expect(added.author).toStrictEqual(item.author);
                         expect(added.content).toBe(item.content);

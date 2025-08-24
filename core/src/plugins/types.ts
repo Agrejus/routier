@@ -1,7 +1,7 @@
-import { PendingChanges, ResolvedChanges } from "../collections";
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult } from "../results";
 import { QueryOptionsCollection } from "./query/QueryOptionsCollection";
-import { CompiledSchema, SchemaId, InferType } from '../schema';
+import { CompiledSchema, InferType } from '../schema';
+import { BulkPersistChanges, BulkPersistResult, SchemaCollection } from "../collections";
 
 /**
  * Interface for a database plugin, which provides query, destroy, and bulk operations.
@@ -17,31 +17,31 @@ export interface IDbPlugin {
      * Destroys or cleans up the plugin, closing connections or freeing resources.
      * @param done Callback with an optional error.
      */
-    destroy<TRoot extends {}>(event: DbPluginEvent<TRoot>, done: PluginEventCallbackResult<never>): void;
+    destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void;
     /**
      * Executes bulk operations (add, update, remove) on the database.
      * @param event The bulk operations event containing schema, parent, and changes.
      * @param done Callback with the result or error.
      */
-    bulkPersist<TRoot extends {}>(event: DbPluginBulkPersistEvent<TRoot>, done: PluginEventCallbackPartialResult<ResolvedChanges<TRoot>>): void;
+    bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackPartialResult<BulkPersistResult>): void;
 }
 
 /**
  * Event for a query operation, including schema, parent, and the query operation.
  */
-export type DbPluginQueryEvent<TRoot extends {}, TShape> = DbPluginOperationEvent<TRoot, IQuery<TRoot, TShape>>;
+export type DbPluginQueryEvent<TRoot extends {}, TShape> = DbPluginOperationEvent<IQuery<TRoot, TShape>>;
 
 /**
  * Event for bulk operations, including schema, parent, and the entity changes.
  */
-export type DbPluginBulkPersistEvent<TEntity extends {}> = DbPluginOperationEvent<TEntity, PendingChanges<TEntity>>;
+export type DbPluginBulkPersistEvent = DbPluginOperationEvent<BulkPersistChanges>;
 
 /**
  * Base event for all plugin operations, containing the schema and parent.
  */
-export type DbPluginEvent<TEntity extends {}> = {
+export type DbPluginEvent = {
     /** The compiled schema for the entity. */
-    schemas: Map<SchemaId, CompiledSchema<TEntity>>;
+    schemas: SchemaCollection;
 
     /** Unique id of the event. */
     id: string;
@@ -50,7 +50,7 @@ export type DbPluginEvent<TEntity extends {}> = {
 /**
  * Event for a specific plugin operation, extending the base event with an operation payload.
  */
-export type DbPluginOperationEvent<TEntity extends {}, TOperation> = DbPluginEvent<TEntity> & {
+export type DbPluginOperationEvent<TOperation> = DbPluginEvent & {
     /** The operation payload (query, changes, etc.). */
     operation: TOperation;
 }

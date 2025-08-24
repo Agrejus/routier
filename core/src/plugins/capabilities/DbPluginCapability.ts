@@ -1,4 +1,4 @@
-import { ResolvedChanges } from "../../collections";
+import { BulkPersistResult } from "../../collections";
 import { PluginEventPartialResultType, PluginEventResultType } from "../../results";
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin } from "../types";
 
@@ -10,7 +10,7 @@ export interface IDbPluginCapability {
 
 /**
  * Extends plugin functionality through hooks and event handlers without
- * changing the plugin's type. Essential for maintaining type safety
+ * changing the plugin's type (mixin). Essential for maintaining type safety
  * in routier's core systems.
  */
 export class DbPluginCapability {
@@ -19,10 +19,10 @@ export class DbPluginCapability {
 
     add<TRoot extends {}, TShape extends any = TRoot>(name: "queryStart", callback: (event: DbPluginQueryEvent<TRoot, TShape>) => void): DbPluginCapability;
     add<TRoot extends {}, TShape extends any = TRoot>(name: "queryComplete", callback: (event: PluginEventResultType<TShape>) => void): DbPluginCapability;
-    add<TRoot extends {}, TShape extends any = TRoot>(name: "destroyStart", callback: (event: DbPluginEvent<TRoot>) => void): DbPluginCapability;
+    add<TRoot extends {}, TShape extends any = TRoot>(name: "destroyStart", callback: (event: DbPluginEvent) => void): DbPluginCapability;
     add<TRoot extends {}, TShape extends any = TRoot>(name: "destroyComplete", callback: (event: PluginEventResultType<never>) => void): DbPluginCapability;
-    add<TRoot extends {}, TShape extends any = TRoot>(name: "bulkPersistStart", callback: (event: DbPluginBulkPersistEvent<TRoot>) => void): DbPluginCapability;
-    add<TRoot extends {}, TShape extends any = TRoot>(name: "bulkPersistComplete", callback: (event: PluginEventPartialResultType<ResolvedChanges<TRoot>>) => void): DbPluginCapability;
+    add<TRoot extends {}, TShape extends any = TRoot>(name: "bulkPersistStart", callback: (event: DbPluginBulkPersistEvent) => void): DbPluginCapability;
+    add<TRoot extends {}, TShape extends any = TRoot>(name: "bulkPersistComplete", callback: (event: PluginEventPartialResultType<BulkPersistResult>) => void): DbPluginCapability;
     add<TRoot extends {}, TShape extends any = TRoot>(name: DbPluginCapabilityEvent, callback: Function): DbPluginCapability {
 
         this.resolve(name);

@@ -8,7 +8,7 @@ import { SelectionQueryableAsync } from "../queryable/SelectionQueryableAsync";
 import { ChangeTrackingType, CompiledSchema, ICollectionSubscription, InferCreateType, InferType, SchemaId, SubscriptionChanges } from "routier-core/schema";
 import { IDbPlugin, IQuery } from "routier-core/plugins";
 import { CallbackPartialResult, CallbackResult, PartialResultType, Result, ResultType } from "routier-core/results";
-import { CollectionChanges, PendingChanges, ResolvedChanges } from "routier-core/collections";
+import { BulkPersistChanges, BulkPersistResult, SchemaCollection } from "routier-core/collections";
 import { assertIsNotNull } from "routier-core/assertions";
 import { AsyncPipeline } from "routier-core/pipeline";
 import { GenericFunction } from "routier-core/types";
@@ -20,7 +20,7 @@ export class CollectionBase<TEntity extends {}> {
     protected readonly changeTracker: ChangeTracker<TEntity>;
     protected readonly dataBridge: DataBridge<TEntity>;
     readonly schema: CompiledSchema<TEntity>;
-    readonly schemas: Map<SchemaId, CompiledSchema<TEntity>>;
+    readonly schemas: SchemaCollection;
     protected subscription: ICollectionSubscription<TEntity>;
     private _tag: unknown;
 
@@ -29,7 +29,7 @@ export class CollectionBase<TEntity extends {}> {
         schema: CompiledSchema<TEntity>,
         options: CollectionOptions,
         pipelines: CollectionPipelines,
-        schemas: Map<SchemaId, CompiledSchema<TEntity>>
+        schemas: SchemaCollection
     ) {
 
         this.subscription = schema.createSubscription(options.signal);
@@ -104,27 +104,27 @@ export class CollectionBase<TEntity extends {}> {
         return result;
     }
 
-    protected afterPersist(data: PartialResultType<ResolvedChanges<TEntity>>, done: CallbackPartialResult<ResolvedChanges<TEntity>>) {
+    protected afterPersist(result: PartialResultType<{ changes: BulkPersistChanges, result: BulkPersistResult }>, done: CallbackPartialResult<{ changes: BulkPersistChanges, result: BulkPersistResult }>) {
 
         try {
 
-            if (data.ok === Result.ERROR) {
+            if (result.ok === Result.ERROR) {
                 this.changeTracker.clearAdditions();
-                done(data);
+                done(result);
                 return;
             }
 
             // merge only the changes from the collections persist operation
-            const resolvedChanges = data.data.result.get(this.schema.id);
-            const changes = data.data.changes.get(this.schema.id);
+            const resolvedChanges = result.data.result.get<TEntity>(this.schema.id);
+            const changes = result.data.changes.get<TEntity>(this.schema.id);
 
             // destroy tags and let go of the references
             changes.tags[Symbol.dispose]();
 
             assertIsNotNull(resolvedChanges, "Could not find resolved changes during afterPersist operation");
 
-            if (changes.hasChanges === false) {
-                done(data);
+            if (changes.hasItems === false) {
+                done(result);
                 return;
             }
 
@@ -138,9 +138,9 @@ export class CollectionBase<TEntity extends {}> {
             // we only want to notify of changes when an item that was saved matches the query
             // these get reset each time
             // send in the resulting adds because properties might have been set from the db operation
-            const updates = this.cloneMany(resolvedChanges.updates.entities);
-            const adds = this.cloneMany(resolvedChanges.adds.entities as InferType<TEntity>[]);
-            const removals = this.cloneMany(changes.removes.entities);
+            const updates = this.cloneMany(resolvedChanges.updates);
+            const adds = this.cloneMany(resolvedChanges.adds as InferType<TEntity>[]);
+            const removals = this.cloneMany(changes.removes);
 
             const subscriptionChanges: SubscriptionChanges<TEntity> = {
                 updates,
@@ -150,7 +150,7 @@ export class CollectionBase<TEntity extends {}> {
 
             this.subscription.send(subscriptionChanges);
 
-            done(data);
+            done(result);
         } catch (e) {
             done(Result.error(e));
         }
@@ -194,20 +194,19 @@ export class CollectionBase<TEntity extends {}> {
         });
     }
 
-    protected prepare(data: PartialResultType<PendingChanges<TEntity>>, done: CallbackPartialResult<PendingChanges<TEntity>>) {
+    protected prepare(result: PartialResultType<BulkPersistChanges>, done: CallbackPartialResult<BulkPersistChanges>) {
 
         try {
-            if (data.ok === Result.ERROR) {
-                done(data);
+            if (result.ok === Result.ERROR) {
+                done(result);
                 return;
             }
 
             const tags = this.changeTracker.tags.get();
-            const changes = CollectionChanges.EMPTY<TEntity>();
-            data.data.changes.set(this.schema.id, changes);
+            const changes = result.data.resolve(this.schema.id);
 
             if (this.changeTracker.hasChanges() === false) {
-                done(data);
+                done(result);
                 return
             }
 
@@ -216,13 +215,13 @@ export class CollectionBase<TEntity extends {}> {
             const adds = this.changeTracker.prepareAdditions();
 
             if (adds.length > 0) {
-                changes.adds.entities = adds;
+                changes.adds = adds;
             }
 
             const updates = this.changeTracker.getAttachmentsChanges();
 
             if (updates.length > 0) {
-                changes.updates.changes = updates;
+                changes.updates = updates;
             }
 
             const removes = this.changeTracker.prepareRemovals();
@@ -235,10 +234,10 @@ export class CollectionBase<TEntity extends {}> {
                 }
 
                 if (removes.entities.length > 0 || r.data.length > 0) {
-                    changes.removes.entities = [...removes.entities, ...r.data as InferType<TEntity>[]];
+                    changes.removes = [...removes.entities, ...r.data as InferType<TEntity>[]];
                 }
 
-                done(data);
+                done(result);
             });
         } catch (e) {
             done(Result.error(e));

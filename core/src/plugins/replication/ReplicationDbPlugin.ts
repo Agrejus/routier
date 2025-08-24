@@ -1,8 +1,8 @@
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '../../results';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ReplicationPluginOptions } from '../types';
 import { AsyncPipeline, WorkPipeline } from '../../pipeline';
-import { ResolvedChanges } from '../../collections';
-import { InferCreateType } from '../../schema';
+import { BulkPersistResult } from '../../collections';
+import { resolveBulkPersistChanges } from '../../utilities';
 
 export class ReplicationDbPlugin implements IDbPlugin {
 
@@ -37,7 +37,7 @@ export class ReplicationDbPlugin implements IDbPlugin {
         }
     }
 
-    destroy<TEntity extends {}>(event: DbPluginEvent<TEntity>, done: PluginEventCallbackResult<never>): void {
+    destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
         try {
 
             const pipeline = new AsyncPipeline<IDbPlugin, never>();
@@ -63,7 +63,7 @@ export class ReplicationDbPlugin implements IDbPlugin {
     }
 
 
-    bulkPersist<TEntity extends {}>(event: DbPluginBulkPersistEvent<TEntity>, done: PluginEventCallbackPartialResult<ResolvedChanges<TEntity>>): void {
+    bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackPartialResult<BulkPersistResult>): void {
         try {
             // insert into the source first to generate any ids, then take the result and persist that into the replicas
             const pipeline = new WorkPipeline();
@@ -73,12 +73,11 @@ export class ReplicationDbPlugin implements IDbPlugin {
                 plugins.push(this.plugins.read);
             }
 
-            const result = event.operation.toResult();
+            const result = new BulkPersistResult();
 
             for (let i = 0, length = plugins.length; i < length; i++) {
                 pipeline.pipe((d) => {
 
-                    const { changes } = event.operation;
                     const plugin = plugins[i];
 
                     // source is first
@@ -92,25 +91,7 @@ export class ReplicationDbPlugin implements IDbPlugin {
 
                             // make sure we swap the adds here, that way we can make sure other persist events
                             // don't take their additions and try to change subsequent calls
-                            const adds = r.data.result.adds();
-                            const schemaIds = new Set(adds.data.map(x => x[0]));
-
-                            for (const schemaId of schemaIds) {
-                                // Set the result on the response
-                                const persistResult = r.data.result.get(schemaId);
-                                result.result.set(schemaId, persistResult);
-
-                                const schemaOperations = changes.get(schemaId);
-                                schemaOperations.adds.entities = [];
-                            }
-
-                            for (const [schemaId, item] of adds.data) {
-                                const schemaOperations = changes.get(schemaId);
-
-                                // replace additions on the event with the saved changes so 
-                                // the rest of the plugins will get any additons who's id's have been set                   
-                                schemaOperations.adds.entities.push(item as InferCreateType<TEntity>);
-                            }
+                            resolveBulkPersistChanges(event, r.data, event.operation);
 
                             d(Result.success());
                         });

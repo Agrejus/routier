@@ -4,7 +4,7 @@ import { IDataAccessStrategy } from "./types";
 import { MemoryPlugin } from "routier-plugin-memory";
 import { DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin } from "routier-core/plugins";
 import { PluginEventCallbackResult, Result } from "routier-core/results";
-import { ResolvedChanges } from "routier-core/collections";
+import { BulkPersistResult } from "routier-core/collections";
 import { uuid, uuidv4 } from "routier-core/utilities";
 import { CompiledSchema } from "routier-core/schema";
 
@@ -32,7 +32,7 @@ export class DataBridge<T extends {}> {
         return new DataBridge<T>(strategy, options);
     }
 
-    bulkPersist(event: DbPluginBulkPersistEvent<T>, done: PluginEventCallbackResult<ResolvedChanges<T>>) {
+    bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackResult<BulkPersistResult>) {
         this.strategy.bulkPersist(this.options, event, done);
     }
 

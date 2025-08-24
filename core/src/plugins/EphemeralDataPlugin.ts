@@ -1,11 +1,12 @@
 import { assertIsNotNull } from '../assertions';
-import { ResolvedChanges } from '../collections';
+import { BulkPersistResult } from '../collections';
 import { WorkPipeline } from '../pipeline';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, JsonTranslator } from '.';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '../results';
 import { CompiledSchema, InferCreateType } from '../schema';
 import { DeepPartial } from '../types';
 import { MemoryDataCollection } from '../collections/MemoryDataCollection';
+import { UnknownRecord } from '../utilities';
 
 export abstract class EphemeralDataPlugin implements IDbPlugin {
 
@@ -17,26 +18,24 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
 
     protected abstract resolveCollection<TEntity extends {}>(schema: CompiledSchema<TEntity>): MemoryDataCollection;
 
-    bulkPersist<TRoot extends {}>(event: DbPluginBulkPersistEvent<TRoot>, done: PluginEventCallbackPartialResult<ResolvedChanges<TRoot>>) {
+    bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackPartialResult<BulkPersistResult>) {
         try {
             const pipeline = new WorkPipeline();
-            const operationResult = event.operation.toResult();
+            const bulkPersistResult = event.operation.toResult();
 
-            for (const schemaId of event.operation.changes.schemaIds) {
-                const changes = event.operation.changes.get(schemaId);
-
-                assertIsNotNull(changes);
+            for (const [schemaId, changes] of event.operation) {
 
                 pipeline.pipe((d) => {
                     try {
 
-                        const { adds, hasChanges, removes, updates } = changes;
+                        const { adds, hasItems, removes, updates } = changes;
 
-                        if (hasChanges === false) {
+                        if (hasItems === false) {
                             d(Result.success());
                             return;
                         }
 
+                        const result = bulkPersistResult.get(schemaId);
                         const schema = event.schemas.get(schemaId);
 
                         assertIsNotNull(schema);
@@ -49,21 +48,19 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                                 return;
                             }
 
-                            const result = operationResult.result.get(schemaId);
-
-                            for (let i = 0, length = adds.entities.length; i < length; i++) {
-                                collection.add(adds.entities[i]);
-                                result.adds.entities.push(adds.entities[i] as DeepPartial<InferCreateType<TRoot>>);
+                            for (let i = 0, length = adds.length; i < length; i++) {
+                                collection.add(adds[i]);
+                                result.adds.push(adds[i] as DeepPartial<InferCreateType<UnknownRecord>>);
                             }
 
-                            for (let i = 0, length = updates.changes.length; i < length; i++) {
-                                collection.update(updates.changes[i].entity);
-                                result.updates.entities.push(updates.changes[i].entity);
+                            for (let i = 0, length = updates.length; i < length; i++) {
+                                collection.update(updates[i].entity);
+                                result.updates.push(updates[i].entity);
                             }
 
-                            for (let i = 0, length = removes.entities.length; i < length; i++) {
-                                collection.remove(removes.entities[i]);
-                                result.removes.entities.push(removes.entities[i]);
+                            for (let i = 0, length = removes.length; i < length; i++) {
+                                collection.remove(removes[i]);
+                                result.removes.push(removes[i]);
                             }
 
                             collection.save(saveResult => {
@@ -94,13 +91,13 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                         return;
                     }
 
-                    done(PluginEventResult.partial(event.id, operationResult, asyncResult.error))
+                    done(PluginEventResult.partial(event.id, bulkPersistResult, asyncResult.error))
                     return;
                 }
 
                 successCount++;
 
-                done(PluginEventResult.success(event.id, operationResult));
+                done(PluginEventResult.success(event.id, bulkPersistResult));
             });
         } catch (e: any) {
             done(PluginEventResult.error(event.id, e))
@@ -131,5 +128,5 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
         }
     }
 
-    abstract destroy<TEntity extends {}>(event: DbPluginEvent<TEntity>, done: PluginEventCallbackResult<never>): void;
+    abstract destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void;
 }

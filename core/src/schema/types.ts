@@ -3,7 +3,7 @@ import { SchemaBase } from "./property/base/SchemaBase";
 import { SchemaArray } from "./property/types/SchemaArray";
 import { SchemaObject } from "./property/types/SchemaObject";
 import { PropertyInfo } from "./PropertyInfo";
-import { DeepPartial } from "src/types";
+import { DeepPartial } from "../types";
 
 export type DefaultValue<T, I = never> = T | ((injected: I) => T);
 export type FunctionBody<TEntity, TResult> = (entity: TEntity, collectionName: string) => TResult;

@@ -4,8 +4,8 @@ import { CollectionPipelines } from './types';
 import { IDbPlugin } from 'routier-core/plugins';
 import { CompiledSchema, SchemaId } from 'routier-core/schema';
 import { TrampolinePipeline } from 'routier-core/pipeline';
-import { CallbackPartialResult, CallbackResult, PartialResultType, Result } from 'routier-core/results';
-import { PendingChanges, ResolvedChanges } from 'routier-core/collections';
+import { CallbackPartialResult, CallbackResult, PartialResultType, PluginEventResult, Result } from 'routier-core/results';
+import { BulkPersistChanges, BulkPersistResult } from 'routier-core/collections';
 import { uuid } from 'routier-core/utilities';
 
 /**
@@ -35,8 +35,8 @@ export class DataStore implements Disposable {
         this.collections = new Map<SchemaId, Collection<any>>();
         this.schemas = new Map<SchemaId, CompiledSchema<any>>();
         this.collectionPipelines = {
-            prepareChanges: new TrampolinePipeline<PartialResultType<PendingChanges<any>>>(),
-            afterPersist: new TrampolinePipeline<PartialResultType<ResolvedChanges<any>>>(),
+            prepareChanges: new TrampolinePipeline<PartialResultType<BulkPersistChanges>>(),
+            afterPersist: new TrampolinePipeline<PartialResultType<{ changes: BulkPersistChanges, result: BulkPersistResult }>>(),
         };
     }
 
@@ -65,51 +65,52 @@ export class DataStore implements Disposable {
      * Saves all changes in all collections.
      * @param done Callback with the number of changes saved or an error.
      */
-    saveChanges(done: CallbackPartialResult<ResolvedChanges<any>>) {
-        this.collectionPipelines.prepareChanges.filter<PartialResultType<ResolvedChanges<any>>>({
-            data: new ResolvedChanges<any>(),
+    saveChanges(done: CallbackPartialResult<BulkPersistResult>) {
+        this.collectionPipelines.prepareChanges.filter<PartialResultType<BulkPersistChanges>>({
+            data: new BulkPersistChanges(),
             ok: Result.SUCCESS
-        }, (result, e) => {
+        }, (preparedChangesResult) => {
 
             // fatal error
-            if (e != null) {
-                done(Result.error(e));
-                return;
-            }
-
-            if (result.ok === Result.ERROR) {
-                done(result);
+            if (preparedChangesResult.ok === PluginEventResult.ERROR) {
+                done(preparedChangesResult);
                 return;
             }
 
             try {
+                const id = uuid(8)
                 this.dbPlugin.bulkPersist({
-                    id: uuid(8),
-                    operation: result.data,
+                    id,
+                    operation: preparedChangesResult.data,
                     schemas: this.schemas
-                }, (r) => {
+                }, (bulkPersistResult) => {
 
-                    if (r.ok === Result.ERROR) {
-                        done(Result.error(r.error))
+                    if (bulkPersistResult.ok === Result.ERROR) {
+                        done(Result.error(bulkPersistResult.error))
                         return;
                     }
 
-                    if (r.ok === Result.PARTIAL) {
-                        done(Result.partial(r.data, r.error));
+                    if (bulkPersistResult.ok === Result.PARTIAL) {
+                        done(Result.partial(bulkPersistResult.data, bulkPersistResult.error));
                         return;
                     }
 
-                    this.collectionPipelines.afterPersist.filter<PartialResultType<ResolvedChanges<any>>>({
-                        data: r.data,
+                    this.collectionPipelines.afterPersist.filter<PartialResultType<{ changes: BulkPersistChanges, result: BulkPersistResult }>>({
+                        data: { changes: preparedChangesResult.data, result: bulkPersistResult.data },
                         ok: Result.SUCCESS
-                    }, (afterPersistResult, afterPersistError) => {
+                    }, (afterPersistResult) => {
 
-                        if (afterPersistError != null) {
-                            done(Result.error(afterPersistError));
+                        if (afterPersistResult.ok === PluginEventResult.ERROR) {
+                            done(PluginEventResult.error(id, afterPersistResult.error));
                             return;
                         }
 
-                        done(afterPersistResult);
+                        if (afterPersistResult.ok === PluginEventResult.PARTIAL) {
+                            done(PluginEventResult.partial(id, afterPersistResult.data.result, afterPersistResult.error));
+                            return;
+                        }
+
+                        done(PluginEventResult.success(id, afterPersistResult.data.result))
                     });
                 });
             } catch (e) {
@@ -123,7 +124,7 @@ export class DataStore implements Disposable {
      * @returns A promise resolving to the number of changes saved.
      */
     saveChangesAsync() {
-        return new Promise<ResolvedChanges<any>>((resolve, reject) => {
+        return new Promise<BulkPersistResult>((resolve, reject) => {
             this.saveChanges((r) => Result.resolve(r, resolve, reject));
         });
     }
@@ -133,9 +134,9 @@ export class DataStore implements Disposable {
      * This method allows inspection of changes before they are actually persisted.
      * @param done Callback with the entity changes or an error.
      */
-    previewChanges(done: CallbackPartialResult<PendingChanges<any>>) {
-        this.collectionPipelines.prepareChanges.filter<PartialResultType<PendingChanges<any>>>({
-            data: new PendingChanges<any>(),
+    previewChanges(done: CallbackPartialResult<BulkPersistChanges>) {
+        this.collectionPipelines.prepareChanges.filter<PartialResultType<BulkPersistChanges>>({
+            data: new BulkPersistChanges(),
             ok: Result.SUCCESS
         }, (r, e) => {
             if (e != null) {
@@ -153,7 +154,7 @@ export class DataStore implements Disposable {
      * @returns A promise resolving to the entity changes.
      */
     previewChangesAsync() {
-        return new Promise<PendingChanges<any>>((resolve, reject) => {
+        return new Promise<BulkPersistChanges>((resolve, reject) => {
             this.previewChanges((r) => Result.resolve(r, resolve, reject));
         });
     }

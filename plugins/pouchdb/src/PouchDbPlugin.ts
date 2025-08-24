@@ -3,10 +3,10 @@ import { PouchDbTranslator } from './PouchDbTranslator';
 import { AsyncPipeline, SyncronousQueue, SyncronousUnitOfWork } from 'routier-core/pipeline';
 import { InferCreateType, InferType, PropertyInfo, SchemaId } from 'routier-core/schema';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, IQuery } from 'routier-core/plugins';
-import { ResolvedChanges } from 'routier-core/collections';
-import { CallbackPartialResult, CallbackResult, PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from 'routier-core/results';
+import { CallbackResult, PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from 'routier-core/results';
 import { assertIsNotNull } from 'routier-core/assertions';
 import { combineExpressions, ComparatorExpression, Expression, getProperties } from 'routier-core/expressions';
+import { BulkPersistResult } from 'routier-core';
 
 const queue = new SyncronousQueue();
 const INDEX_NAME = "routier_pdb_indexes"
@@ -446,7 +446,7 @@ export class PouchDbPlugin implements IDbPlugin {
         }, done);
     }
 
-    private _validateSchemas<TRoot extends {}>(event: DbPluginBulkPersistEvent<TRoot>) {
+    private _validateSchemas(event: DbPluginBulkPersistEvent) {
         for (const [, schema] of event.schemas) {
             if (schema.idProperties.length > 1) {
                 throw new Error("PouchDB cannot have more than one key per document.  Only '_id' is allowed to be the key")
@@ -454,9 +454,9 @@ export class PouchDbPlugin implements IDbPlugin {
         }
     }
 
-    private _bulkPersist<TRoot extends {}>(
-        event: DbPluginBulkPersistEvent<TRoot>,
-        done: PluginEventCallbackPartialResult<ResolvedChanges<TRoot>>) {
+    private _bulkPersist(
+        event: DbPluginBulkPersistEvent,
+        done: PluginEventCallbackPartialResult<BulkPersistResult>) {
 
         this._validateSchemas(event);
 
@@ -524,7 +524,7 @@ export class PouchDbPlugin implements IDbPlugin {
 
     bulkPersist<TRoot extends {}>(
         event: DbPluginBulkPersistEvent<TRoot>,
-        done: PluginEventCallbackPartialResult<ResolvedChanges<TRoot>>) {
+        done: PluginEventCallbackPartialResult<BulkPersistResult>) {
 
         const unitOfWork: SyncronousUnitOfWork = (d) => this._bulkPersist(event, (r) => {
             d();

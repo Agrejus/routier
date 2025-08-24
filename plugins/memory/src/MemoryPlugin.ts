@@ -1,7 +1,7 @@
 import { MemoryDatabase } from ".";
 import { DbPluginEvent, EphemeralDataPlugin } from "routier-core/plugins";
 import { CompiledSchema } from "routier-core/schema";
-import { CallbackResult, PluginEventCallbackResult, PluginEventResult, Result } from "routier-core/results";
+import { PluginEventCallbackResult, PluginEventResult } from "routier-core/results";
 import { MemoryDataCollection } from "routier-core/collections";
 
 const dbs: Record<string, MemoryDatabase> = {};
@@ -53,7 +53,7 @@ export class MemoryPlugin extends EphemeralDataPlugin {
         collection.seed(data);
     }
 
-    override destroy<TEntity extends {}>(event: DbPluginEvent<TEntity>, done: PluginEventCallbackResult<never>): void {
+    override destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
         dbs[this.databaseName] = {};
         done(PluginEventResult.success(event.id));
     }

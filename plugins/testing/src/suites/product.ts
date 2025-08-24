@@ -15,7 +15,7 @@ export class ProductTestSuite extends TestSuiteBase {
                 testCases: [this.createTestCase("can save changes when there are no changes", (factory) => async () => {
                     const dataStore = factory();
                     const result = await dataStore.saveChangesAsync();
-                    expect(result.result.count()).toBe(0);
+                    expect(result.aggregate.size).toBe(0);
                 })]
             },
             {
@@ -31,7 +31,7 @@ export class ProductTestSuite extends TestSuiteBase {
                         const response = await dataStore.saveChangesAsync();
 
                         // Assert
-                        expect(response.result.count()).toBe(1);
+                        expect(response.aggregate.size).toBe(1);
                         expect(added._id).toStrictEqual(expect.any(String));
                         expect(added.category).toBe(item.category);
                         expect(added.name).toBe(item.name);
@@ -49,7 +49,7 @@ export class ProductTestSuite extends TestSuiteBase {
                         const response = await dataStore.saveChangesAsync();
 
                         // Assert
-                        expect(response.result.count()).toBe(2);
+                        expect(response.aggregate.size).toBe(2);
                         expect(added).toHaveLength(2);
                         added.forEach((product, index) => {
                             expect(product._id).toStrictEqual(expect.any(String));
@@ -74,7 +74,7 @@ export class ProductTestSuite extends TestSuiteBase {
                         const found = await dataStore.products.firstAsync();
                         await dataStore.products.removeAsync(found);
                         const response = await dataStore.saveChangesAsync();
-                        expect(response.result.count()).toBe(1);
+                        expect(response.aggregate.size).toBe(1);
                         const all = await dataStore.products.toArrayAsync();
                         // Assert
                         expect(all.length).toBe(1);
@@ -93,7 +93,7 @@ export class ProductTestSuite extends TestSuiteBase {
                         const word = faker.lorem.word();
                         found.name = word;
                         const response = await dataStore.saveChangesAsync();
-                        expect(response.changes.count()).toBe(1);
+                        expect(response.aggregate.size).toBe(1);
                         const foundAfterSave = await dataStore.products.firstAsync(w => w._id === found._id);
                         // Assert
                         expect(foundAfterSave.name).toBe(word);
@@ -680,9 +680,9 @@ export class ProductTestSuite extends TestSuiteBase {
                     this.createTestCase("Should preview changes when no changes exist", (factory) => async () => {
                         const dataStore = factory();
                         const changes = await dataStore.previewChangesAsync();
-                        expect(changes.changes.adds().data.length).toBe(0);
-                        expect(changes.changes.removes().data.length).toBe(0);
-                        expect(changes.changes.count()).toBe(0);
+                        expect(changes.aggregate.size).toBe(0);
+                        expect(changes.aggregate.size).toBe(0);
+                        expect(changes.aggregate.size).toBe(0);
                     }),
                     this.createTestCase("Should preview changes when entities are added", (factory) => async () => {
                         const dataStore = factory();
@@ -690,9 +690,9 @@ export class ProductTestSuite extends TestSuiteBase {
                         await dataStore.products.addAsync(...generatedData);
 
                         const changes = await dataStore.previewChangesAsync();
-                        expect(changes.changes.adds().data.length).toBe(2);
-                        expect(changes.changes.removes().data.length).toBe(0);
-                        expect(changes.changes.updates().data.length).toBe(0);
+                        expect(changes.aggregate.adds).toBe(2);
+                        expect(changes.aggregate.removes).toBe(0);
+                        expect(changes.aggregate.updates).toBe(0);
                     }),
                     this.createTestCase("Should preview changes when entities are updated", (factory) => async () => {
                         const dataStore = factory();
@@ -701,9 +701,9 @@ export class ProductTestSuite extends TestSuiteBase {
 
                         added.name = "Updated Name";
                         const changes = await dataStore.previewChangesAsync();
-                        expect(changes.changes.adds().count()).toBe(0);
-                        expect(changes.changes.removes().count()).toBe(0);
-                        expect(changes.changes.updates().count()).toBe(1);
+                        expect(changes.aggregate.adds).toBe(0);
+                        expect(changes.aggregate.removes).toBe(0);
+                        expect(changes.aggregate.updates).toBe(1);
                     }),
                     this.createTestCase("Should preview changes when entities are removed", (factory) => async () => {
                         const dataStore = factory();
@@ -712,9 +712,9 @@ export class ProductTestSuite extends TestSuiteBase {
 
                         await dataStore.products.removeAsync(added);
                         const changes = await dataStore.previewChangesAsync();
-                        expect(changes.changes.adds().count()).toBe(0);
-                        expect(changes.changes.removes().count()).toBe(1);
-                        expect(changes.changes.updates().count()).toBe(0);
+                        expect(changes.aggregate.adds).toBe(0);
+                        expect(changes.aggregate.removes).toBe(1);
+                        expect(changes.aggregate.updates).toBe(0);
                     }),
                     this.createTestCase("Should check hasChanges when no changes exist", (factory) => async () => {
                         const dataStore = factory();
@@ -758,7 +758,7 @@ export class ProductTestSuite extends TestSuiteBase {
 
                         await dataStore.products.removeAllAsync();
                         const response = await dataStore.saveChangesAsync();
-                        expect(response.result.removes().count()).toBe(10);
+                        expect(response.aggregate.removes).toBe(10);
 
                         const finalCount = await dataStore.products.countAsync();
                         expect(finalCount).toBe(0);
@@ -770,7 +770,7 @@ export class ProductTestSuite extends TestSuiteBase {
 
                         await dataStore.products.removeAllAsync();
                         const response = await dataStore.saveChangesAsync();
-                        expect(response.result.removes().count()).toBe(0);
+                        expect(response.aggregate.removes).toBe(0);
 
                         const finalCount = await dataStore.products.countAsync();
                         expect(finalCount).toBe(0);

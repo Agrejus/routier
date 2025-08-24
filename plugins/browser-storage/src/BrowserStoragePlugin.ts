@@ -1,5 +1,5 @@
 import { DbPluginEvent, EphemeralDataPlugin } from 'routier-core/plugins';
-import { CallbackResult, PluginEventCallbackResult, PluginEventResult, Result } from 'routier-core/results';
+import { PluginEventCallbackResult, PluginEventResult, Result } from 'routier-core/results';
 import { CompiledSchema } from 'routier-core/schema';
 import { BrowserStorageCollection } from './BrowserStorageCollection';
 import { AsyncPipeline } from 'routier-core';
@@ -17,7 +17,7 @@ export class BrowserStoragePlugin extends EphemeralDataPlugin {
         return new BrowserStorageCollection(this.storage, this.databaseName, schema);
     }
 
-    override destroy<TEntity extends {}>(event: DbPluginEvent<TEntity>, done: PluginEventCallbackResult<never>): void {
+    override destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
         try {
             const pipeline = new AsyncPipeline<null, never>();
 

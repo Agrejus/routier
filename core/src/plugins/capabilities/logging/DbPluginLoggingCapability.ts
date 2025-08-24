@@ -1,8 +1,8 @@
 import { IDbPlugin, DbPluginQueryEvent, DbPluginBulkPersistEvent, DbPluginEvent } from "../../../plugins/types";
 import { DbPluginCapability, IDbPluginCapability } from "../DbPluginCapability";
 import { PluginEventResultType, PluginEventPartialResultType } from "../../../results";
-import { ResolvedChanges } from "../../../collections";
 import { now } from "../../../performance";
+import { BulkPersistChanges, BulkPersistResult } from "../../../collections";
 
 export class DbPluginLoggingCapability implements IDbPluginCapability {
     private logStyle: 'minimal' | 'detailed' | 'redux' = 'redux';
@@ -68,8 +68,8 @@ export class DbPluginLoggingCapability implements IDbPluginCapability {
 
         // Bulk operations logging
         baseCapability
-            .add("bulkPersistStart", (event: DbPluginBulkPersistEvent<any>) => {
-                const totalOperations = event.operation.changes.all().data.length;
+            .add("bulkPersistStart", (event: DbPluginBulkPersistEvent) => {
+                const totalOperations = event.operation.aggregate.size;
                 this.logReduxAction('BULK_OPERATIONS_REQUEST', event.id, {
                     plugin: pluginName,
                     totalOperations,
@@ -81,7 +81,7 @@ export class DbPluginLoggingCapability implements IDbPluginCapability {
                 this.addToHistory('BULK_OPERATIONS_REQUEST', event);
                 this.queryPerformance.set(event.id, now());
             })
-            .add("bulkPersistComplete", (result: PluginEventPartialResultType<ResolvedChanges<any>>) => {
+            .add("bulkPersistComplete", (result: PluginEventPartialResultType<BulkPersistResult>) => {
                 const start = this.queryPerformance.get(result.id);
                 this.queryPerformance.delete(result.id)
                 const end = now();
@@ -92,7 +92,7 @@ export class DbPluginLoggingCapability implements IDbPluginCapability {
                     this.logReduxAction('BULK_OPERATIONS_SUCCESS', result.id, {
                         plugin: pluginName,
                         completedOperations: this.countCompletedOperations(result.data),
-                        schemaCount: result.data?.result.all().data.length || 0
+                        schemaCount: result.data.size
                     }, {
                         duration: `${duration.toFixed(4)}ms`,
                         performance: performance.label,
@@ -114,7 +114,7 @@ export class DbPluginLoggingCapability implements IDbPluginCapability {
 
         // Destroy logging
         baseCapability
-            .add("destroyStart", (event: DbPluginEvent<any>) => {
+            .add("destroyStart", (event: DbPluginEvent) => {
                 this.logReduxAction('DESTROY_REQUEST', event.id, {
                     plugin: pluginName,
                     schemaCount: event.schemas.size
@@ -221,20 +221,17 @@ export class DbPluginLoggingCapability implements IDbPluginCapability {
         return typeof result;
     }
 
-    private extractBulkOperations(operations: any) {
-        const summary: Record<string, number> = {};
-        for (const [_, operation] of operations.changes.all().data) {
-            if ('entity' in operation) {
-                summary.single = (summary.single || 0) + 1;
-            } else {
-                summary.update = (summary.update || 0) + 1;
-            }
-        }
-        return summary;
+    private extractBulkOperations(operations: BulkPersistChanges) {
+        const aggregate = operations.aggregate;
+        return {
+            adds: aggregate.adds,
+            updates: aggregate.updates,
+            removes: aggregate.removes
+        };
     }
 
-    private countCompletedOperations(result: ResolvedChanges<any> | undefined): number {
-        return result?.result.all().data.length || 0;
+    private countCompletedOperations(result: BulkPersistResult | undefined): number {
+        return result?.aggregate.size || 0;
     }
 
     private addToHistory(type: string, data: any) {

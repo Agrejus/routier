@@ -1,4 +1,4 @@
-import { CollectionChanges, CollectionChangesResult, TagCollection } from "routier-core/collections";
+import { SchemaPersistChanges, SchemaPersistResult, TagCollection } from "routier-core/collections";
 import { EntityChangeType, IQuery, Query } from "routier-core/plugins";
 import { CallbackResult } from "routier-core/results";
 import { ChangeTrackingType, IdType, InferCreateType, InferType } from "routier-core/schema";
@@ -19,10 +19,10 @@ export interface IChangeTrackerStrategy<T extends {}> {
     resolve(entities: InferType<T>[], tag: unknown | null, options?: { merge?: boolean }): InferType<T>[];
     hasChanges(): boolean;
     replace(existingEntity: InferType<T> | InferCreateType<T>, newEntity: InferType<T> | InferCreateType<T>): void;
-    prepareRemovals(): CollectionChanges<T>["removes"];
-    prepareAdditions(): CollectionChanges<T>["adds"];
-    getAttachmentsChanges(): CollectionChanges<T>["updates"];
-    mergeChanges(changes: CollectionChangesResult<T>): void;
+    prepareRemovals(): SchemaPersistChanges<T>["removes"];
+    prepareAdditions(): SchemaPersistChanges<T>["adds"];
+    getAttachmentsChanges(): SchemaPersistChanges<T>["updates"];
+    mergeChanges(changes: SchemaPersistResult<T>): void;
     clearAdditions(): void;
     instance(entities: InferCreateType<T>[], changeTrackingType: ChangeTrackingType): Generator<InferType<T>, void, unknown>;
     getAndDestroyTags(): TagCollection;

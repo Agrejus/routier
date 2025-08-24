@@ -4,7 +4,7 @@ import { KnownKeyAdditions } from "./additions/KnownKeyAdditions";
 import { IAdditions } from "./additions/types";
 import { UnknownKeyAdditions } from "./additions/UnknownKeyAdditions";
 import { EntityChangeType, EntityUpdateInfo, IQuery } from "routier-core/plugins";
-import { CollectionChangesResult, TagCollection } from "routier-core/collections";
+import { SchemaPersistResult, TagCollection } from "routier-core/collections";
 import { GenericFunction } from "routier-core/types";
 import { CallbackResult, Result } from "routier-core/results";
 
@@ -61,11 +61,11 @@ export class ChangeTracker<TEntity extends {}> {
         return this._tagCollection;
     }
 
-    mergeChanges(changes: CollectionChangesResult<TEntity>) {
+    mergeChanges(changes: SchemaPersistResult<TEntity>) {
 
         const { updates, adds } = changes;
 
-        updates.entities.forEach(update => {
+        updates.forEach(update => {
             const id = this.schema.getId(update);
             const found = this.attachments.get(id);
 
@@ -73,7 +73,7 @@ export class ChangeTracker<TEntity extends {}> {
             this.schema.merge(found.doc as InferType<TEntity>, update); // merge needs to map children appropriately
         });
 
-        adds.entities.forEach(add => {
+        adds.forEach(add => {
             const found = this.additions.get(add as InferType<TEntity>);
             // need to deserialize the add in case there are any dates on it
             const deserializedAdd = this.schema.deserialize(add as InferType<TEntity>);

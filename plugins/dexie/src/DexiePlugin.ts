@@ -2,10 +2,9 @@ import Dexie from 'dexie';
 import { convertToDexieSchema } from "./utils";
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin } from 'routier-core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from 'routier-core/results';
-import { ResolvedChanges } from 'routier-core/collections';
-import { DeepPartial } from 'routier-core/types';
+import { BulkPersistResult } from 'routier-core/collections';
 import { InferCreateType, PropertyInfo, SchemaTypes } from 'routier-core/schema';
-import { uuidv4 } from 'routier-core';
+import { uuidv4 } from 'routier-core/utilities';
 import { ParamsFilter } from 'routier-core/expressions';
 import { DexieTranslator } from './DexieTranslator';
 
@@ -19,7 +18,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
         this.dbName = dbName;
     }
 
-    private _doWork<TResult, TEntity>(event: DbPluginEvent<TEntity>, work: (db: Dexie, done: (result: TResult, error?: any) => void) => void, done: (result: TResult, error?: any) => void, shouldClose: boolean = true) {
+    private _doWork<TResult>(event: DbPluginEvent, work: (db: Dexie, done: (result: TResult, error?: any) => void) => void, done: (result: TResult, error?: any) => void, shouldClose: boolean = true) {
         const db = new Dexie(this.dbName);
 
         const stores = this.getSchemas(event);
@@ -40,7 +39,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
         }
     }
 
-    destroy<TEntity extends {}>(event: DbPluginEvent<TEntity>, done: PluginEventCallbackResult<never>): void {
+    destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
         const db = new Dexie(this.dbName);
         db.delete().then(() => done(PluginEventResult.success(event.id))).catch(e => done(PluginEventResult.error(event.id, event)));
     }
@@ -54,24 +53,24 @@ export class DexiePlugin implements IDbPlugin, Disposable {
         }
     }
 
-    bulkPersist<TRoot extends {}>(event: DbPluginBulkPersistEvent<TRoot>, done: PluginEventCallbackPartialResult<ResolvedChanges<TRoot>>) {
+    bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackPartialResult<BulkPersistResult>) {
 
         this._doWork(event, async (db, d) => {
             const jobs: Promise<any>[] = [];
             const operationResult = event.operation.toResult();
             try {
                 for (const [schemaId, schema] of event.schemas) {
-                    const changes = event.operation.changes.get(schemaId);
-                    const schemaSpecificResult = operationResult.result.get(schemaId);
+                    const changes = event.operation.get(schemaId);
+                    const schemaSpecificResult = operationResult.get(schemaId);
 
-                    if (changes.hasChanges === false) {
+                    if (changes.hasItems === false) {
                         continue;
                     }
 
                     const collection = db.table(schema.collectionName);
 
-                    if (changes.removes.entities.length > 0) {
-                        const ids = changes.removes.entities.map(x => {
+                    if (changes.removes.length > 0) {
+                        const ids = changes.removes.map(x => {
 
                             if (schema.idProperties.length === 1) {
                                 // Handle single key, return the value
@@ -85,32 +84,32 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                             await collection.bulkDelete(ids);
 
                             // Assume everything succeeds
-                            schemaSpecificResult.removes.entities.push(...changes.removes.entities);
+                            schemaSpecificResult.removes.push(...changes.removes);
                         }
                         jobs.push(remove());
                     }
 
-                    if (changes.updates.changes.length > 0) {
-                        const updatedDocuments = changes.updates.changes.map(x => x.entity);
+                    if (changes.updates.length > 0) {
+                        const updatedDocuments = changes.updates.map(x => x.entity);
                         const update = async () => {
 
                             await collection.bulkPut(updatedDocuments);
 
                             // Assume everything succeeds
-                            schemaSpecificResult.updates.entities.push(...updatedDocuments);
+                            schemaSpecificResult.updates.push(...updatedDocuments);
                         }
                         jobs.push(update());
                     }
 
-                    if (changes.adds.entities.length > 0) {
+                    if (changes.adds.length > 0) {
                         if (schema.hasIdentities === true) {
 
                             // generate UUID's, Dexie does not generate them
                             const stringIds = schema.idProperties.filter(x => x.type === SchemaTypes.String);
                             const hasAllStringIds = schema.idProperties.length === stringIds.length;
 
-                            for (let i = 0, length = changes.adds.entities.length; i < length; i++) {
-                                const add = changes.adds.entities[i];
+                            for (let i = 0, length = changes.adds.length; i < length; i++) {
+                                const add = changes.adds[i];
 
                                 if (stringIds.length === 1) {
                                     const stringId = stringIds[0];
@@ -125,18 +124,18 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                             }
 
                             if (hasAllStringIds === true) {
-                                await collection.bulkAdd(changes.adds.entities);
+                                await collection.bulkAdd(changes.adds);
 
                                 // Assume everything succeeds
-                                schemaSpecificResult.adds.entities.push(...changes.adds.entities as DeepPartial<InferCreateType<TRoot>>[]);
+                                schemaSpecificResult.adds.push(...changes.adds);
                             } else {
-                                jobs.push(db.transaction('rw', collection, async () => Promise.all(changes.adds.entities.map(async x => {
+                                jobs.push(db.transaction('rw', collection, async () => Promise.all(changes.adds.map(async x => {
 
                                     const id = await collection.add(x);
 
                                     schema.idProperties[0].setValue(x, id);
 
-                                    schemaSpecificResult.adds.entities.push(x as DeepPartial<InferCreateType<TRoot>>);
+                                    schemaSpecificResult.adds.push(x);
 
                                     return x;
                                 }))));
@@ -145,10 +144,10 @@ export class DexiePlugin implements IDbPlugin, Disposable {
 
                             const add = async () => {
 
-                                await collection.bulkAdd(changes.adds.entities);
+                                await collection.bulkAdd(changes.adds);
 
                                 // Assume everything succeeds
-                                schemaSpecificResult.adds.entities.push(...changes.adds.entities as DeepPartial<InferCreateType<TRoot>>[]);
+                                schemaSpecificResult.adds.push(...changes.adds);
                             }
                             jobs.push(add());
                         }
@@ -163,7 +162,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
         }, done);
     }
 
-    private getSchemas<TEntity extends {}>(event: DbPluginEvent<TEntity>): Record<string, string> {
+    private getSchemas(event: DbPluginEvent): Record<string, string> {
         if (cache.has(this.dbName)) {
             return cache.get(this.dbName);
         }

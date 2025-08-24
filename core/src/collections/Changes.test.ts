@@ -1,681 +1,337 @@
-import { describe, it, expect, vi } from 'vitest';
-import { CollectionChanges, CollectionChangesResult, PendingChanges, ResolvedChanges } from './Changes';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { BulkPersistResult, BulkPersistChanges, SchemaPersistChanges, SchemaPersistResult } from './Changes';
 import { TagCollection } from './TagCollection';
 
-describe('CollectionChanges', () => {
-    describe('constructor', () => {
-        it('should create empty collection changes when no parameters provided', () => {
-            const changes = new CollectionChanges();
+describe('SchemaPersistChanges', () => {
+    let changes: SchemaPersistChanges;
 
-            expect(changes.adds.entities).toEqual([]);
-            expect(changes.updates.changes).toEqual([]);
-            expect(changes.removes.entities).toEqual([]);
+    beforeEach(() => {
+        changes = new SchemaPersistChanges();
+    });
+
+    describe('initialization', () => {
+        it('should initialize with empty arrays and new TagCollection', () => {
+            expect(changes.adds).toEqual([]);
+            expect(changes.updates).toEqual([]);
+            expect(changes.removes).toEqual([]);
             expect(changes.tags).toBeInstanceOf(TagCollection);
         });
+    });
 
-        it('should create collection changes with provided data', () => {
-            const adds = { entities: [{ id: '1', name: 'test' }] };
-            const updates = { changes: [{ entity: { id: '2', name: 'updated' }, changes: {} }] };
-            const removes = { entities: [{ id: '3', name: 'removed' }] };
-
-            const changes = new CollectionChanges({ adds, updates, removes } as any);
-
-            expect(changes.adds.entities).toEqual(adds.entities);
-            expect(changes.updates.changes).toEqual(updates.changes);
-            expect(changes.removes.entities).toEqual(removes.entities);
+    describe('hasItems', () => {
+        it('should return false when all arrays are empty', () => {
+            expect(changes.hasItems).toBe(false);
         });
 
-        it('should create collection changes with partial data', () => {
-            const adds = { entities: [{ id: '1', name: 'test' }] };
+        it('should return true when adds has items', () => {
+            changes.adds.push({ id: '1', name: 'Test' } as any);
+            expect(changes.hasItems).toBe(true);
+        });
 
-            const changes = new CollectionChanges({ adds } as any);
+        it('should return true when updates has items', () => {
+            changes.updates.push({ entity: { id: '1' }, changeType: 'propertiesChanged', delta: {} } as any);
+            expect(changes.hasItems).toBe(true);
+        });
 
-            expect(changes.adds.entities).toEqual(adds.entities);
-            expect(changes.updates.changes).toEqual([]);
-            expect(changes.removes.entities).toEqual([]);
+        it('should return true when removes has items', () => {
+            changes.removes.push({ id: '1', name: 'Test' } as any);
+            expect(changes.hasItems).toBe(true);
         });
     });
 
-    describe('EMPTY', () => {
-        it('should create empty collection changes', () => {
-            const changes = CollectionChanges.EMPTY();
-
-            expect(changes.adds.entities).toEqual([]);
-            expect(changes.updates.changes).toEqual([]);
-            expect(changes.removes.entities).toEqual([]);
-            expect(changes.hasChanges).toBe(false);
-        });
-    });
-
-    describe('hasChanges', () => {
-        it('should return false when no changes exist', () => {
-            const changes = new CollectionChanges();
-
-            expect(changes.hasChanges).toBe(false);
+    describe('total', () => {
+        it('should return 0 for empty changes', () => {
+            expect(changes.total).toBe(0);
         });
 
-        it('should return true when adds exist', () => {
-            const changes = new CollectionChanges({
-                adds: { entities: [{ id: '1', name: 'test' }] }
-            } as any);
+        it('should return correct total with mixed items', () => {
+            changes.adds.push({ id: '1' } as any);
+            changes.adds.push({ id: '2' } as any);
+            changes.updates.push({ entity: { id: '3' }, changeType: 'propertiesChanged', delta: {} } as any);
+            changes.removes.push({ id: '4' } as any);
 
-            expect(changes.hasChanges).toBe(true);
+            expect(changes.total).toBe(4);
         });
 
-        it('should return true when updates exist', () => {
-            const changes = new CollectionChanges({
-                updates: { changes: [{ entity: { id: '1' }, changes: {} }] }
-            } as any);
-
-            expect(changes.hasChanges).toBe(true);
-        });
-
-        it('should return true when removes exist', () => {
-            const changes = new CollectionChanges({
-                removes: { entities: [{ id: '1', name: 'test' }] }
-            } as any);
-
-            expect(changes.hasChanges).toBe(true);
-        });
-
-        it('should return true when multiple change types exist', () => {
-            const changes = new CollectionChanges({
-                adds: { entities: [{ id: '1', name: 'test' }] },
-                updates: { changes: [{ entity: { id: '2' }, changes: {} }] },
-                removes: { entities: [{ id: '3', name: 'removed' }] }
-            } as any);
-
-            expect(changes.hasChanges).toBe(true);
-        });
-    });
-
-    describe('combine', () => {
-        it('should combine two collection changes', () => {
-            const changes1 = new CollectionChanges({
-                adds: { entities: [{ id: '1', name: 'test1' }] },
-                updates: { changes: [{ entity: { id: '2' }, changes: {} }] }
-            } as any);
-
-            const changes2 = new CollectionChanges({
-                adds: { entities: [{ id: '3', name: 'test2' }] },
-                removes: { entities: [{ id: '4', name: 'removed' }] }
-            } as any);
-
-            changes1.combine(changes2);
-
-            expect(changes1.adds.entities).toHaveLength(2);
-            expect(changes1.updates.changes).toHaveLength(1);
-            expect(changes1.removes.entities).toHaveLength(1);
-        });
-
-        it('should combine empty collection changes', () => {
-            const changes1 = new CollectionChanges();
-            const changes2 = new CollectionChanges();
-
-            changes1.combine(changes2);
-
-            expect(changes1.adds.entities).toEqual([]);
-            expect(changes1.updates.changes).toEqual([]);
-            expect(changes1.removes.entities).toEqual([]);
+        it('should handle large numbers correctly', () => {
+            for (let i = 0; i < 1000; i++) {
+                changes.adds.push({ id: i.toString() } as any);
+            }
+            expect(changes.total).toBe(1000);
         });
     });
 });
 
-describe('CollectionChangesResult', () => {
-    describe('constructor', () => {
-        it('should create empty result when no parameters provided', () => {
-            const result = new CollectionChangesResult();
+describe('SchemaPersistResult', () => {
+    let result: SchemaPersistResult;
 
-            expect(result.adds.entities).toEqual([]);
-            expect(result.updates.entities).toEqual([]);
-            expect(result.removes.entities).toEqual([]);
+    beforeEach(() => {
+        result = new SchemaPersistResult();
+    });
+
+    describe('initialization', () => {
+        it('should initialize with empty arrays', () => {
+            expect(result.adds).toEqual([]);
+            expect(result.updates).toEqual([]);
+            expect(result.removes).toEqual([]);
         });
     });
 
-    describe('EMPTY', () => {
-        it('should create empty result', () => {
-            const result = CollectionChangesResult.EMPTY();
+    describe('hasItems', () => {
+        it('should return false when all arrays are empty', () => {
+            expect(result.hasItems).toBe(false);
+        });
 
-            expect(result.adds.entities).toEqual([]);
-            expect(result.updates.entities).toEqual([]);
-            expect(result.removes.entities).toEqual([]);
-            expect(result.hasChanges).toBe(false);
+        it('should return true when adds has items', () => {
+            result.adds.push({ id: '1', name: 'Test' } as any);
+            expect(result.hasItems).toBe(true);
+        });
+
+        it('should return true when updates has items', () => {
+            result.updates.push({ id: '1', name: 'Test' } as any);
+            expect(result.hasItems).toBe(true);
+        });
+
+        it('should return true when removes has items', () => {
+            result.removes.push({ id: '1', name: 'Test' } as any);
+            expect(result.hasItems).toBe(true);
         });
     });
 
-    describe('hasChanges', () => {
-        it('should return false when no changes exist', () => {
-            const result = new CollectionChangesResult();
-
-            expect(result.hasChanges).toBe(false);
+    describe('total', () => {
+        it('should return 0 for empty result', () => {
+            expect(result.total).toBe(0);
         });
 
-        it('should return true when adds exist', () => {
-            const result = new CollectionChangesResult();
-            result.adds.entities.push({ id: '1', name: 'test' } as any);
+        it('should return correct total with mixed items', () => {
+            result.adds.push({ id: '1' } as any);
+            result.adds.push({ id: '2' } as any);
+            result.updates.push({ id: '3' } as any);
+            result.removes.push({ id: '4' } as any);
 
-            expect(result.hasChanges).toBe(true);
-        });
-
-        it('should return true when updates exist', () => {
-            const result = new CollectionChangesResult();
-            result.updates.entities.push({ id: '1', name: 'updated' } as any);
-
-            expect(result.hasChanges).toBe(true);
-        });
-
-        it('should return true when removes exist', () => {
-            const result = new CollectionChangesResult();
-            result.removes.entities.push({ id: '1', name: 'removed' } as any);
-
-            expect(result.hasChanges).toBe(true);
-        });
-    });
-
-    describe('combine', () => {
-        it('should combine two results', () => {
-            const result1 = new CollectionChangesResult();
-            result1.adds.entities.push({ id: '1', name: 'test1' } as any);
-            result1.updates.entities.push({ id: '2', name: 'updated' } as any);
-
-            const result2 = new CollectionChangesResult();
-            result2.adds.entities.push({ id: '3', name: 'test2' } as any);
-            result2.removes.entities.push({ id: '4', name: 'removed' } as any);
-
-            result1.combine(result2);
-
-            expect(result1.adds.entities).toHaveLength(2);
-            expect(result1.updates.entities).toHaveLength(1);
-            expect(result1.removes.entities).toHaveLength(1);
-        });
-
-        it('should combine empty results', () => {
-            const result1 = new CollectionChangesResult();
-            const result2 = new CollectionChangesResult();
-
-            result1.combine(result2);
-
-            expect(result1.adds.entities).toEqual([]);
-            expect(result1.updates.entities).toEqual([]);
-            expect(result1.removes.entities).toEqual([]);
+            expect(result.total).toBe(4);
         });
     });
 });
 
-describe('PendingChanges', () => {
-    describe('constructor', () => {
-        it('should create empty pending changes when no data provided', () => {
-            const pendingChanges = new PendingChanges();
+describe('BulkPersistResult', () => {
+    let result: BulkPersistResult;
 
-            expect(pendingChanges.changes).toBeDefined();
-            expect(pendingChanges.changes.count()).toBe(0);
+    beforeEach(() => {
+        result = new BulkPersistResult();
+    });
+
+    describe('resolve', () => {
+        it('should return existing result if schemaId exists', () => {
+            const existingResult = new SchemaPersistResult();
+            result.set(1, existingResult);
+
+            const resolved = result.resolve(1);
+            expect(resolved).toBe(existingResult);
         });
 
-        it('should create pending changes with provided data', () => {
-            const data = new Map();
-            const changes = new CollectionChanges({
-                adds: { entities: [{ id: '1', name: 'test' }] }
-            } as any);
-            data.set('schema1', { changes });
+        it('should create and return new result if schemaId does not exist', () => {
+            const resolved = result.resolve(1);
+            expect(resolved).toBeInstanceOf(SchemaPersistResult);
+            expect(result.has(1)).toBe(true);
+        });
 
-            const pendingChanges = new PendingChanges(data);
+        it('should return the same instance when called multiple times', () => {
+            const first = result.resolve(1);
+            const second = result.resolve(1);
+            expect(first).toBe(second);
+        });
+    });
 
-            expect(pendingChanges.changes.count()).toBe(1);
+    describe('get with generic type', () => {
+        it('should return typed result', () => {
+            const typedResult = result.get<{ id: string; name: string }>(1);
+            expect(typedResult).toBeInstanceOf(SchemaPersistResult);
+        });
+    });
+
+    describe('aggregate properties', () => {
+        beforeEach(() => {
+            // Setup test data
+            const result1 = new SchemaPersistResult();
+            result1.adds.push({ id: '1' } as any);
+            result1.adds.push({ id: '2' } as any);
+            result1.updates.push({ id: '3' } as any);
+            result1.removes.push({ id: '4' } as any);
+
+            const result2 = new SchemaPersistResult();
+            result2.adds.push({ id: '5' } as any);
+            result2.updates.push({ id: '6' } as any);
+
+            result.set(1, result1);
+            result.set(2, result2);
+        });
+
+        it('should calculate aggregate size correctly', () => {
+            expect(result.aggregate.size).toBe(6); // 2+1+1+1+0+1
+        });
+
+        it('should calculate aggregate adds correctly', () => {
+            expect(result.aggregate.adds).toBe(3); // 2+1
+        });
+
+        it('should calculate aggregate updates correctly', () => {
+            expect(result.aggregate.updates).toBe(2); // 1+1
+        });
+
+        it('should calculate aggregate removes correctly', () => {
+            expect(result.aggregate.removes).toBe(1); // 1+0
+        });
+    });
+
+    describe('aggregate with empty results', () => {
+        it('should return 0 for all aggregates when empty', () => {
+            expect(result.aggregate.size).toBe(0);
+            expect(result.aggregate.adds).toBe(0);
+            expect(result.aggregate.updates).toBe(0);
+            expect(result.aggregate.removes).toBe(0);
+        });
+    });
+});
+
+describe('BulkPersistChanges', () => {
+    let changes: BulkPersistChanges;
+
+    beforeEach(() => {
+        changes = new BulkPersistChanges();
+    });
+
+    describe('resolve', () => {
+        it('should return existing changes if schemaId exists', () => {
+            const existingChanges = new SchemaPersistChanges();
+            changes.set(1, existingChanges);
+
+            const resolved = changes.resolve(1);
+            expect(resolved).toBe(existingChanges);
+        });
+
+        it('should create and return new changes if schemaId does not exist', () => {
+            const resolved = changes.resolve(1);
+            expect(resolved).toBeInstanceOf(SchemaPersistChanges);
+            expect(changes.has(1)).toBe(true);
+        });
+
+        it('should return the same instance when called multiple times', () => {
+            const first = changes.resolve(1);
+            const second = changes.resolve(1);
+            expect(first).toBe(second);
+        });
+    });
+
+    describe('get with generic type', () => {
+        it('should return typed changes', () => {
+            const typedChanges = changes.get<{ id: string; name: string }>(1);
+            expect(typedChanges).toBeInstanceOf(SchemaPersistChanges);
+        });
+    });
+
+    describe('aggregate properties', () => {
+        beforeEach(() => {
+            // Setup test data
+            const changes1 = new SchemaPersistChanges();
+            changes1.adds.push({ id: '1' } as any);
+            changes1.adds.push({ id: '2' } as any);
+            changes1.updates.push({ entity: { id: '3' }, changeType: 'propertiesChanged', delta: {} } as any);
+            changes1.removes.push({ id: '4' } as any);
+
+            const changes2 = new SchemaPersistChanges();
+            changes2.adds.push({ id: '5' } as any);
+            changes2.updates.push({ entity: { id: '6' }, changeType: 'propertiesChanged', delta: {} } as any);
+
+            changes.set(1, changes1);
+            changes.set(2, changes2);
+        });
+
+        it('should calculate aggregate size correctly', () => {
+            expect(changes.aggregate.size).toBe(6); // 2+1+1+1+0+1
+        });
+
+        it('should calculate aggregate adds correctly', () => {
+            expect(changes.aggregate.adds).toBe(3); // 2+1
+        });
+
+        it('should calculate aggregate updates correctly', () => {
+            expect(changes.aggregate.updates).toBe(2); // 1+1
+        });
+
+        it('should calculate aggregate removes correctly', () => {
+            expect(changes.aggregate.removes).toBe(1); // 1+0
         });
     });
 
     describe('toResult', () => {
-        it('should convert pending changes to resolved changes', () => {
-            const data = new Map();
-            const changes = new CollectionChanges({
-                adds: { entities: [{ id: '1', name: 'test' }] }
-            } as any);
-            data.set('schema1', { changes });
+        it('should create result with same schema IDs', () => {
+            changes.set(1, new SchemaPersistChanges());
+            changes.set(2, new SchemaPersistChanges());
 
-            const pendingChanges = new PendingChanges(data);
-            const resolvedChanges = pendingChanges.toResult();
+            const result = changes.toResult();
 
-            expect(resolvedChanges).toBeInstanceOf(ResolvedChanges);
-            expect(resolvedChanges.result.count()).toBe(0);
-            expect(resolvedChanges.changes.count()).toBe(1);
+            expect(result.has(1)).toBe(true);
+            expect(result.has(2)).toBe(true);
+            expect(result.size).toBe(2);
         });
 
-        it('should handle empty pending changes', () => {
-            const pendingChanges = new PendingChanges();
-            const resolvedChanges = pendingChanges.toResult();
+        it('should create empty SchemaPersistResult instances', () => {
+            changes.set(1, new SchemaPersistChanges());
+            const result = changes.toResult();
 
-            expect(resolvedChanges).toBeInstanceOf(ResolvedChanges);
-            expect(resolvedChanges.result.count()).toBe(0);
+            const schemaResult = result.get(1);
+            expect(schemaResult).toBeInstanceOf(SchemaPersistResult);
+            expect(schemaResult.adds).toEqual([]);
+            expect(schemaResult.updates).toEqual([]);
+            expect(schemaResult.removes).toEqual([]);
+        });
+
+        it('should handle empty changes map', () => {
+            const result = changes.toResult();
+            expect(result.size).toBe(0);
+        });
+    });
+
+    describe('aggregate with empty changes', () => {
+        it('should return 0 for all aggregates when empty', () => {
+            expect(changes.aggregate.size).toBe(0);
+            expect(changes.aggregate.adds).toBe(0);
+            expect(changes.aggregate.updates).toBe(0);
+            expect(changes.aggregate.removes).toBe(0);
         });
     });
 });
 
-describe('ResolvedChanges', () => {
-    describe('constructor', () => {
-        it('should create resolved changes with result set', () => {
-            const data = new Map();
-            const changes = new CollectionChanges({
-                adds: { entities: [{ id: '1', name: 'test' }] }
-            } as any);
-            const result = CollectionChangesResult.EMPTY();
-            result.adds.entities.push({ id: '1', name: 'test' } as any);
-            data.set('schema1', { changes, result });
-
-            const resolvedChanges = new ResolvedChanges(data);
-
-            expect(resolvedChanges.result).toBeDefined();
-            expect(resolvedChanges.result.count()).toBe(1);
-        });
-    });
-});
-
-describe('ChangeSet', () => {
-    describe('count', () => {
-        it('should return total count of all changes', () => {
-            const data = new Map();
-            const changes1 = new CollectionChanges({
-                adds: { entities: [{ id: '1', name: 'test1' }] },
-                updates: { changes: [{ entity: { id: '2' }, changes: {} }] }
-            } as any);
-            const changes2 = new CollectionChanges({
-                removes: { entities: [{ id: '3', name: 'removed' }] }
-            } as any);
-
-            data.set('schema1', { changes: changes1 });
-            data.set('schema2', { changes: changes2 });
-
-            const changeSet = new (class extends (PendingChanges as any) {
-                constructor() {
-                    super(data);
-                }
-            })();
-
-            expect(changeSet.changes.count()).toBe(3);
-        });
-
-        it('should return zero for empty change set', () => {
-            const changeSet = new (class extends (PendingChanges as any) {
-                constructor() {
-                    super();
-                }
-            })();
-
-            expect(changeSet.changes.count()).toBe(0);
-        });
+describe('Edge cases and error scenarios', () => {
+    it('should handle very large numbers correctly', () => {
+        const changes = new SchemaPersistChanges();
+        for (let i = 0; i < 10000; i++) {
+            changes.adds.push({ id: i.toString() } as any);
+        }
+        expect(changes.total).toBe(10000);
+        expect(changes.hasItems).toBe(true);
     });
 
-    describe('set and get', () => {
-        it('should set and get changes for schema', () => {
-            const data = new Map();
-            const changeSet = new (class extends (PendingChanges as any) {
-                constructor() {
-                    super(data);
-                }
-            })();
+    it('should handle mixed data types in arrays', () => {
+        const changes = new SchemaPersistChanges();
+        changes.adds.push({ id: '1', name: 'Test' } as any);
+        changes.adds.push({ id: 2, count: 42 } as any);
+        changes.adds.push({ id: '3', active: true } as any);
 
-            const changes = new CollectionChanges({
-                adds: { entities: [{ id: '1', name: 'test' }] }
-            } as any);
-
-            changeSet.changes.set('schema1', changes);
-            const retrieved = changeSet.changes.get('schema1');
-
-            expect(retrieved).toBeDefined();
-            expect(retrieved?.adds.entities).toEqual(changes.adds.entities);
-        });
-
-        it('should return undefined for non-existent schema', () => {
-            const changeSet = new (class extends (PendingChanges as any) {
-                constructor() {
-                    super();
-                }
-            })();
-
-            const retrieved = changeSet.changes.get('non-existent');
-
-            expect(retrieved).toBeUndefined();
-        });
+        expect(changes.total).toBe(3);
+        expect(changes.hasItems).toBe(true);
     });
 
-    describe('adds', () => {
-        it('should return all adds when no schema specified', () => {
-            const data = new Map();
-            const changes1 = new CollectionChanges({
-                adds: { entities: [{ id: '1', name: 'test1' }] }
-            } as any);
-            const changes2 = new CollectionChanges({
-                adds: { entities: [{ id: '2', name: 'test2' }] }
-            } as any);
-
-            data.set('schema1', { changes: changes1 });
-            data.set('schema2', { changes: changes2 });
-
-            const changeSet = new (class extends (PendingChanges as any) {
-                constructor() {
-                    super(data);
-                }
-            })();
-
-            const result = changeSet.changes.adds();
-
-            expect(result.data).toHaveLength(2);
-            expect(result.count()).toBe(2);
-        });
-
-        it('should return adds for specific schema', () => {
-            const data = new Map();
-            const changes = new CollectionChanges({
-                adds: { entities: [{ id: '1', name: 'test' }] }
-            } as any);
-
-            data.set('schema1', { changes });
-
-            const changeSet = new (class extends (PendingChanges as any) {
-                constructor() {
-                    super(data);
-                }
-            })();
-
-            const result = changeSet.changes.adds('schema1');
-
-            expect(result.data).toHaveLength(1);
-            expect(result.count()).toBe(1);
-        });
-
-        it('should return empty array for non-existent schema', () => {
-            const changeSet = new (class extends (PendingChanges as any) {
-                constructor() {
-                    super();
-                }
-            })();
-
-            const result = changeSet.changes.adds('non-existent');
-
-            expect(result.data).toEqual([]);
-            expect(result.count()).toBe(0);
-        });
-    });
-
-    describe('removes', () => {
-        it('should return all removes when no schema specified', () => {
-            const data = new Map();
-            const changes1 = new CollectionChanges({
-                removes: { entities: [{ id: '1', name: 'removed1' }] }
-            } as any);
-            const changes2 = new CollectionChanges({
-                removes: { entities: [{ id: '2', name: 'removed2' }] }
-            } as any);
-
-            data.set('schema1', { changes: changes1 });
-            data.set('schema2', { changes: changes2 });
-
-            const changeSet = new (class extends (PendingChanges as any) {
-                constructor() {
-                    super(data);
-                }
-            })();
-
-            const result = changeSet.changes.removes();
-
-            expect(result.data).toHaveLength(2);
-            expect(result.count()).toBe(2);
-        });
-
-        it('should return removes for specific schema', () => {
-            const data = new Map();
-            const changes = new CollectionChanges({
-                removes: { entities: [{ id: '1', name: 'removed' }] }
-            } as any);
-
-            data.set('schema1', { changes });
-
-            const changeSet = new (class extends (PendingChanges as any) {
-                constructor() {
-                    super(data);
-                }
-            })();
-
-            const result = changeSet.changes.removes('schema1');
-
-            expect(result.data).toHaveLength(1);
-            expect(result.count()).toBe(1);
-        });
-    });
-
-    describe('updates', () => {
-        it('should return all updates when no schema specified', () => {
-            const data = new Map();
-            const changes1 = new CollectionChanges({
-                updates: { changes: [{ entity: { id: '1' }, changes: {} }] }
-            } as any);
-            const changes2 = new CollectionChanges({
-                updates: { changes: [{ entity: { id: '2' }, changes: {} }] }
-            } as any);
-
-            data.set('schema1', { changes: changes1 });
-            data.set('schema2', { changes: changes2 });
-
-            const changeSet = new (class extends (PendingChanges as any) {
-                constructor() {
-                    super(data);
-                }
-            })();
-
-            const result = changeSet.changes.updates();
-
-            expect(result.data).toHaveLength(2);
-            expect(result.count()).toBe(2);
-        });
-
-        it('should return updates for specific schema', () => {
-            const data = new Map();
-            const changes = new CollectionChanges({
-                updates: { changes: [{ entity: { id: '1' }, changes: {} }] }
-            } as any);
-
-            data.set('schema1', { changes });
-
-            const changeSet = new (class extends (PendingChanges as any) {
-                constructor() {
-                    super(data);
-                }
-            })();
-
-            const result = changeSet.changes.updates('schema1');
-
-            expect(result.data).toHaveLength(1);
-            expect(result.count()).toBe(1);
-        });
-    });
-
-    describe('all', () => {
-        it('should return all changes when no schema specified', () => {
-            const data = new Map();
-            const changes = new CollectionChanges({
-                adds: { entities: [{ id: '1', name: 'test' }] },
-                updates: { changes: [{ entity: { id: '2' }, changes: {} }] },
-                removes: { entities: [{ id: '3', name: 'removed' }] }
-            } as any);
-
-            data.set('schema1', { changes });
-
-            const changeSet = new (class extends (PendingChanges as any) {
-                constructor() {
-                    super(data);
-                }
-            })();
-
-            const result = changeSet.changes.all();
-
-            expect(result.data).toHaveLength(3);
-            expect(result.count()).toBe(3);
-        });
-
-        it('should return all changes for specific schema', () => {
-            const data = new Map();
-            const changes = new CollectionChanges({
-                adds: { entities: [{ id: '1', name: 'test' }] },
-                updates: { changes: [{ entity: { id: '2' }, changes: {} }] },
-                removes: { entities: [{ id: '3', name: 'removed' }] }
-            } as any);
-
-            data.set('schema1', { changes });
-
-            const changeSet = new (class extends (PendingChanges as any) {
-                constructor() {
-                    super(data);
-                }
-            })();
-
-            const result = changeSet.changes.all('schema1');
-
-            expect(result.data).toHaveLength(3);
-            expect(result.count()).toBe(3);
-        });
-    });
-});
-
-describe('ResultSet', () => {
-    describe('count', () => {
-        it('should return total count of all results', () => {
-            const data = new Map();
-            const result1 = CollectionChangesResult.EMPTY();
-            result1.adds.entities.push({ id: '1', name: 'test1' } as any);
-            result1.updates.entities.push({ id: '2', name: 'updated' } as any);
-
-            const result2 = CollectionChangesResult.EMPTY();
-            result2.removes.entities.push({ id: '3', name: 'removed' } as any);
-
-            data.set('schema1', { changes: new CollectionChanges(), result: result1 });
-            data.set('schema2', { changes: new CollectionChanges(), result: result2 });
-
-            const resultSet = new (class extends (ResolvedChanges as any) {
-                constructor() {
-                    super(data);
-                }
-            })();
-
-            expect(resultSet.result.count()).toBe(3);
-        });
-    });
-
-    describe('set and get', () => {
-        it('should set and get result for schema', () => {
-            const data = new Map();
-            const changes = new CollectionChanges();
-            const result = CollectionChangesResult.EMPTY();
-            result.adds.entities.push({ id: '1', name: 'test' } as any);
-
-            data.set('schema1', { changes, result });
-
-            const resultSet = new (class extends (ResolvedChanges as any) {
-                constructor() {
-                    super(data);
-                }
-            })();
-
-            const newResult = CollectionChangesResult.EMPTY();
-            newResult.adds.entities.push({ id: '2', name: 'test2' } as any);
-
-            resultSet.result.set('schema1', newResult);
-            const retrieved = resultSet.result.get('schema1');
-
-            expect(retrieved).toBeDefined();
-            expect(retrieved?.adds.entities).toEqual(newResult.adds.entities);
-        });
-    });
-
-    describe('adds', () => {
-        it('should return all adds when no schema specified', () => {
-            const data = new Map();
-            const result1 = CollectionChangesResult.EMPTY();
-            result1.adds.entities.push({ id: '1', name: 'test1' } as any);
-
-            const result2 = CollectionChangesResult.EMPTY();
-            result2.adds.entities.push({ id: '2', name: 'test2' } as any);
-
-            data.set('schema1', { changes: new CollectionChanges(), result: result1 });
-            data.set('schema2', { changes: new CollectionChanges(), result: result2 });
-
-            const resultSet = new (class extends (ResolvedChanges as any) {
-                constructor() {
-                    super(data);
-                }
-            })();
-
-            const result = resultSet.result.adds();
-
-            expect(result.data).toHaveLength(2);
-            expect(result.count()).toBe(2);
-        });
-
-        it('should return adds for specific schema', () => {
-            const data = new Map();
-            const result = CollectionChangesResult.EMPTY();
-            result.adds.entities.push({ id: '1', name: 'test' } as any);
-
-            data.set('schema1', { changes: new CollectionChanges(), result });
-
-            const resultSet = new (class extends (ResolvedChanges as any) {
-                constructor() {
-                    super(data);
-                }
-            })();
-
-            const addsResult = resultSet.result.adds('schema1');
-
-            expect(addsResult.data).toHaveLength(1);
-            expect(addsResult.count()).toBe(1);
-        });
-    });
-
-    describe('removes', () => {
-        it('should return all removes when no schema specified', () => {
-            const data = new Map();
-            const result1 = CollectionChangesResult.EMPTY();
-            result1.removes.entities.push({ id: '1', name: 'removed1' } as any);
-
-            const result2 = CollectionChangesResult.EMPTY();
-            result2.removes.entities.push({ id: '2', name: 'removed2' } as any);
-
-            data.set('schema1', { changes: new CollectionChanges(), result: result1 });
-            data.set('schema2', { changes: new CollectionChanges(), result: result2 });
-
-            const resultSet = new (class extends (ResolvedChanges as any) {
-                constructor() {
-                    super(data);
-                }
-            })();
-
-            const result = resultSet.result.removes();
-
-            expect(result.data).toHaveLength(2);
-            expect(result.count()).toBe(2);
-        });
-    });
-
-    describe('updates', () => {
-        it('should return all updates when no schema specified', () => {
-            const data = new Map();
-            const result1 = CollectionChangesResult.EMPTY();
-            result1.updates.entities.push({ id: '1', name: 'updated1' } as any);
-
-            const result2 = CollectionChangesResult.EMPTY();
-            result2.updates.entities.push({ id: '2', name: 'updated2' } as any);
-
-            data.set('schema1', { changes: new CollectionChanges(), result: result1 });
-            data.set('schema2', { changes: new CollectionChanges(), result: result2 });
-
-            const resultSet = new (class extends (ResolvedChanges as any) {
-                constructor() {
-                    super(data);
-                }
-            })();
-
-            const result = resultSet.result.updates();
-
-            expect(result.data).toHaveLength(2);
-            expect(result.count()).toBe(2);
-        });
+    it('should handle concurrent modifications', () => {
+        const bulkChanges = new BulkPersistChanges();
+        const changes1 = bulkChanges.resolve(1);
+        const changes2 = bulkChanges.resolve(2);
+
+        changes1.adds.push({ id: '1' } as any);
+        changes2.adds.push({ id: '2' } as any);
+
+        expect(bulkChanges.aggregate.adds).toBe(2);
+        expect(bulkChanges.aggregate.size).toBe(2);
     });
 });

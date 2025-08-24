@@ -1,6 +1,3 @@
-import { ChangePackage } from "../collections/Changes";
-import { InferCreateType, InferType } from "../schema/types";
-import { DeepPartial } from "../types";
 import { isDate } from "../utilities";
 
 export function assertDate(data: unknown): asserts data is Date {
@@ -37,12 +34,4 @@ export function assertInstanceOf<T extends new (...args: any[]) => any>(value: u
     }
 
     throw new TypeError(`Value is not instance of type`);
-}
-
-export function assertChangePackageIsEntity<T extends {}>(data: ChangePackage<T>, message?: string): asserts data is {
-    entity: InferType<T> | InferCreateType<T> | DeepPartial<InferCreateType<T>>;
-} {
-    if (!("entity" in data)) {
-        throw new TypeError(message ?? 'Assertion failed, wrong type');
-    }
 }

@@ -1,4 +1,4 @@
-import { PendingChanges, ResolvedChanges } from "routier-core/collections";
+import { BulkPersistChanges, BulkPersistResult } from "routier-core";
 import { TrampolinePipeline } from "routier-core/pipeline";
 import { PartialResultType } from "routier-core/results";
 import { IdType, InferType } from "routier-core/schema";
@@ -78,6 +78,6 @@ export type CollectionOptions = {
 }
 
 export type CollectionPipelines = {
-    prepareChanges: TrampolinePipeline<PartialResultType<PendingChanges<any>>>;
-    afterPersist: TrampolinePipeline<PartialResultType<ResolvedChanges<any>>>;
+    prepareChanges: TrampolinePipeline<PartialResultType<BulkPersistChanges>>;
+    afterPersist: TrampolinePipeline<PartialResultType<{ changes: BulkPersistChanges, result: BulkPersistResult }>>;
 }

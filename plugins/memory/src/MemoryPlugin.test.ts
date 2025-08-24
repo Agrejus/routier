@@ -4,7 +4,7 @@ import { MemoryPlugin } from './MemoryPlugin';
 import { uuidv4 } from 'routier-core';
 
 const testSections = [
-    new ProductTestSuite(new MemoryPlugin(uuidv4()), { expect: expect as any, fn: vi.fn }),
+    new ProductTestSuite(new MemoryPlugin(uuidv4()), { expect: expect as any, fn: vi.fn, debugTestNames: ["Should preview changes when entities are added"] }),
     new EventsTestSuite(new MemoryPlugin(uuidv4()), { expect: expect as any, fn: vi.fn }),
     new CommentsTestSuite(new MemoryPlugin(uuidv4()), { expect: expect as any, fn: vi.fn })
 ];
