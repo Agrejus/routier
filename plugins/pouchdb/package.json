@@ -8,7 +8,10 @@
     "build:types": "tsc --emitDeclarationOnly",
     "build:bundle": "rspack build",
     "build": "tsc",
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "test": "vitest --run",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest --coverage"
   },
   "sideEffects": false,
   "author": "James DeMeuse <james.demeuse@gmail.com>",
@@ -38,6 +41,8 @@
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",
     "@types/pouchdb": "^6.4.2",
-    "ts-loader": "^9.5.2"
+    "routier-plugin-testing": "file://../testing",
+    "ts-loader": "^9.5.2",
+    "vitest": "^3.1.3"
   }
 }

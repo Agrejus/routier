@@ -57,4 +57,5 @@ export type MockFunction = {
 
 export type Fn = () => any;
 
-export type TestingOptions = { expect: Expect, fn: Fn, debugTestNames?: string[] };
+export type TestingOptions = { expect: Expect, fn: Fn, describe: (suite: string, test: () => void) => void, it: (name: string, test: () => Promise<void>) => void, debug?: DebugTestInfo };
+export type DebugTestInfo = { suite?: string, name?: string }

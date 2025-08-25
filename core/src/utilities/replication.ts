@@ -16,7 +16,8 @@ export const resolveBulkPersistChanges = (event: DbPluginBulkPersistEvent, resul
         schemaBulkPersistChanges.updates = changes.updates;
 
         // Take the adds from the result and set them to be persisted
-        // in the replicated plugins
+        // in the replicated plugins because the id's are set in the 
+        // memory data store
         schemaBulkPersistChanges.adds = schemmaBulkPersistResult.adds;
     }
 }

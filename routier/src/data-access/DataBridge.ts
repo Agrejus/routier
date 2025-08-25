@@ -59,7 +59,7 @@ export class DataBridge<T extends {}> {
                 // create a new plugin where we can quickly seed the changes and then query them
                 const ephemeralPlugin = new MemoryPlugin(uuidv4());
 
-                // seed the db, we don't care about bulk operations here, we just want to query the data
+                // seed the db, we don't care about bulk operations here, we just want to query the raw data
                 ephemeralPlugin.seed(event.operation.schema, [...changes.adds, ...changes.updates, ...changes.removals]);
 
                 // query the temp db to check and see if items match the query

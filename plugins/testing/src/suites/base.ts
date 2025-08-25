@@ -1,6 +1,6 @@
 import { TestDataStore } from '../context';
 import { IDbPlugin } from 'routier-core';
-import { TestingOptions } from '../types';
+import { Expect, Fn } from '../types';
 
 export type TestSuite = {
     name: string;
@@ -16,33 +16,24 @@ class TestCase implements Test {
 
     readonly name: string;
     private readonly run: () => Promise<void>;
-    private readonly debugTestSet: Set<string>;
 
-    constructor(name: string, run: () => Promise<void>, debugTestSet: Set<string>) {
+    constructor(name: string, run: () => Promise<void>) {
         this.name = name;
         this.run = run;
-        this.debugTestSet = debugTestSet;
     }
 
     async execute() {
-        if (this.debugTestSet.has(this.name)) {
-            console.log(`[ROUTIER] - Debugging Test.  Name: ${this.name}`)
-            debugger;
-        }
-
         await this.run();
     }
 }
 
 export abstract class TestSuiteBase {
     protected readonly plugin: IDbPlugin;
-    protected readonly testingOptions: TestingOptions;
-    protected readonly debugTestSet: Set<string>;
+    protected readonly testingOptions: { expect: Expect, fn: Fn };
 
-    constructor(plugin: IDbPlugin, testingOptions: TestingOptions) {
+    constructor(plugin: IDbPlugin, testingOptions: { expect: Expect, fn: Fn }) {
         this.plugin = plugin;
         this.testingOptions = testingOptions;
-        this.debugTestSet = new Set<string>(testingOptions.debugTestNames)
     }
 
     createTestCase(name: string, testGenerator: (factory: () => TestDataStore) => () => Promise<void>): Test {
@@ -63,7 +54,7 @@ export abstract class TestSuiteBase {
             for (const dataStore of dataStores) {
                 await dataStore.destroyAsync();
             }
-        }, this.debugTestSet)
+        })
     }
 
     abstract getTestSuites(): TestSuite[];
