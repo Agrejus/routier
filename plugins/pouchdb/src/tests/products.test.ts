@@ -1,10 +1,10 @@
 import { faker } from '@faker-js/faker';
 import { describe, it, expect, vi, afterAll } from 'vitest';
 import { TestDataStore, generateData, wait, seedData } from 'routier-plugin-testing';
-import { IDbPlugin, uuidv4 } from 'routier-core';
+import { IDbPlugin, UnknownRecord, uuidv4 } from 'routier-core';
 import { PouchDbPlugin } from '../PouchDbPlugin';
 
-const pluginFactory: () => IDbPlugin = () => new PouchDbPlugin(uuidv4());
+const pluginFactory: () => IDbPlugin = () => new PouchDbPlugin(`${uuidv4()}-db`);
 const stores: TestDataStore[] = [];
 const factory = () => {
 
@@ -70,10 +70,86 @@ describe("Product Tests", () => {
                 expect(product.tags).toEqual(items[index].tags);
             });
         });
+
+        describe("Proxy change tracking", () => {
+            it("Add should be a proxy after calling addAsync", async () => {
+                const dataStore = factory();
+                // Arrange
+                const [item] = generateData(dataStore.products.schema, 1);
+
+                // Act
+                const [added] = await dataStore.products.addAsync(item);
+
+                // __tracking__ is undefined until saveChanges is called
+                expect((added as UnknownRecord).__tracking__).toBeUndefined();
+                expect((added as UnknownRecord).__isProxy__).toBe(true);
+            });
+
+            it("previewChanges should not set change tracking changes", async () => {
+                const dataStore = factory();
+                // Arrange
+                const [item] = generateData(dataStore.products.schema, 1);
+
+                // Act
+                const [added] = await dataStore.products.addAsync(item);
+
+                await dataStore.previewChangesAsync();
+
+                // __tracking__ is undefined until saveChanges is called
+                // previewChanges should not set change tracking deltas
+                expect((added as UnknownRecord).__tracking__).toBeUndefined();
+                expect((added as UnknownRecord).__isProxy__).toBe(true);
+            });
+
+            it("hasChanges should not set change tracking changes", async () => {
+                const dataStore = factory();
+                // Arrange
+                const [item] = generateData(dataStore.products.schema, 1);
+
+                // Act
+                const [added] = await dataStore.products.addAsync(item);
+
+                const hasChanges = await dataStore.hasChangesAsync();
+
+                // __tracking__ is undefined until saveChanges is called
+                // hasChangesAsync should not set change tracking deltas
+                expect(hasChanges).toBe(true);
+                expect((added as UnknownRecord).__tracking__).toBeUndefined();
+                expect((added as UnknownRecord).__isProxy__).toBe(true);
+            });
+
+            it("Add should not set the id", async () => {
+                const dataStore = factory();
+                // Arrange
+                const [item] = generateData(dataStore.products.schema, 1);
+
+                // Act
+                const [added] = await dataStore.products.addAsync(item);
+
+                expect((added as UnknownRecord)._id).toBeUndefined();
+            });
+
+            it("should not mark and entity as dirty when the save result is modified", async () => {
+                const dataStore = factory();
+                // Arrange
+                const [item] = generateData(dataStore.products.schema, 1);
+
+                // Act
+                const [added] = await dataStore.products.addAsync(item);
+
+                const responseOne = await dataStore.saveChangesAsync();
+                expect(responseOne.aggregate.size).toBe(1);
+
+                added.name === "CHANGED";
+
+                const responseTwo = await dataStore.saveChangesAsync();
+                expect(responseTwo.aggregate.size).toBe(0);
+            });
+        });
     });
 
     describe('Remove Operations', () => {
-        it("removeOne", async () => {
+        it("can remove one entity", async () => {
             const dataStore = factory();
             // Arrange
             await seedData(dataStore, () => dataStore.products, 2);
@@ -87,10 +163,70 @@ describe("Product Tests", () => {
             // Assert
             expect(all.length).toBe(1);
         });
+
+        it("can remove many entities", async () => {
+            const dataStore = factory();
+            // Arrange
+            await seedData(dataStore, () => dataStore.products, 20);
+
+            // Act
+            const found = await dataStore.products.take(10).toArrayAsync();
+
+            expect(found.length).toBe(10);
+
+            await dataStore.products.removeAsync(...found);
+            const response = await dataStore.saveChangesAsync();
+            expect(response.aggregate.size).toBe(10);
+            const all = await dataStore.products.toArrayAsync();
+            // Assert
+            expect(all.length).toBe(10);
+        });
+
+        it("can remove many entities with a query", async () => {
+            const dataStore = factory();
+            // Arrange
+            await seedData(dataStore, () => dataStore.products, 20);
+
+            // Act
+            await dataStore.products.take(10).removeAsync();
+            const response = await dataStore.saveChangesAsync();
+
+            expect(response.aggregate.size).toBe(10);
+            const all = await dataStore.products.toArrayAsync();
+
+            // Assert
+            expect(all.length).toBe(10);
+        });
+
+        it("can remove many entities with a query", async () => {
+            const dataStore = factory();
+
+            // seedData will call saveChanges
+            await dataStore.products.addAsync({
+                category: "test_category",
+                inStock: false,
+                name: "test_name",
+                price: 100,
+                tags: ['accessory']
+            });
+
+            // Arrange
+            await seedData(dataStore, () => dataStore.products, 20);
+
+            // Act
+            await dataStore.products.where(x => x.name === "test_name").removeAsync();
+            const response = await dataStore.saveChangesAsync();
+
+            expect(response.aggregate.size).toBe(1);
+            const all = await dataStore.products.toArrayAsync();
+
+            // Assert
+            expect(all.length).toBe(20);
+        });
     });
 
     describe('Update Operations', () => {
-        it("updateOne", async () => {
+        it("should update one item", async () => {
             const dataStore = factory();
             // Arrange
             await seedData(dataStore, () => dataStore.products, 2);
@@ -104,7 +240,258 @@ describe("Product Tests", () => {
             // Assert
             expect(foundAfterSave.name).toBe(word);
         });
+
+        it("should update many items", async () => {
+            const dataStore = factory();
+            // Arrange
+            await seedData(dataStore, () => dataStore.products, 20);
+            // Act
+            const found = await dataStore.products.take(10).toArrayAsync();
+
+            for (const product of found) {
+                product.name = faker.lorem.word();
+                product.price = faker.number.float();
+            }
+
+            const response = await dataStore.saveChangesAsync();
+            expect(response.aggregate.size).toBe(10);
+            expect(response.aggregate.updates).toBe(10);
+        });
+
+        it("should not save anything when property is reverted to original value", async () => {
+            const dataStore = factory();
+            // Arrange
+            await seedData(dataStore, () => dataStore.products, 2);
+            // Act
+            const found = await dataStore.products.firstAsync();
+            const word = faker.lorem.word();
+            const old = found.name;
+            found.name = word;
+            found.name = old;
+            const response = await dataStore.saveChangesAsync();
+            expect(response.aggregate.size).toBe(0);
+            const foundAfterSave = await dataStore.products.firstAsync(w => w._id === found._id);
+            // Assert
+            expect(foundAfterSave.name).toBe(old);
+        });
+
+        it("should save the value that was set last", async () => {
+            const dataStore = factory();
+            // Arrange
+            await seedData(dataStore, () => dataStore.products, 2);
+            // Act
+            const found = await dataStore.products.firstAsync();
+
+            let lastValue = 0;
+            for (let i = 0; i < 100; i++) {
+                lastValue = 100 * i;
+                found.price = lastValue;
+            }
+
+            const response = await dataStore.saveChangesAsync();
+            expect(response.aggregate.size).toBe(1);
+            const foundAfterSave = await dataStore.products.firstAsync(w => w._id === found._id);
+
+            // Assert
+            expect(foundAfterSave.price).toBe(lastValue);
+        });
+
+        it("Can update an array and remove all items", async () => {
+            const dataStore = factory();
+            // Arrange
+            await dataStore.products.addAsync({
+                category: "test_category",
+                inStock: false,
+                name: "test_name",
+                price: 100,
+                tags: ['accessory']
+            });
+            await dataStore.saveChangesAsync();
+
+            // Act
+            const found = await dataStore.products.firstAsync();
+            found.tags = [];
+            const response = await dataStore.saveChangesAsync();
+            expect(response.aggregate.size).toBe(1);
+            const foundAfterSave = await dataStore.products.firstAsync(w => w._id === found._id);
+            // Assert
+            expect(foundAfterSave.tags.length).toBe(0);
+        });
+
+        it("QUIRK: should not update a nested array if it is not set through assignment", async () => {
+            // SOLUTION: Set the property to the expected result
+            const dataStore = factory();
+            // Arrange
+            await dataStore.products.addAsync({
+                category: "test_category",
+                inStock: false,
+                name: "test_name",
+                price: 100,
+                tags: ['accessory']
+            });
+            await dataStore.saveChangesAsync();
+
+            // Act
+            const found = await dataStore.products.firstAsync();
+            found.tags.length = 0;
+            const response = await dataStore.saveChangesAsync();
+            expect(response.aggregate.size).toBe(0);
+            const foundAfterSave = await dataStore.products.firstAsync(w => w._id === found._id);
+            // Assert - We modified it by ref so it was changed but not saved
+            expect(foundAfterSave.tags.length).toBe(0);
+        });
+
+        it("should not mark the item as dirty when the property is set to the same value", async () => {
+            const dataStore = factory();
+            // Arrange
+            await dataStore.products.addAsync({
+                category: "test_category",
+                inStock: false,
+                name: "test_name",
+                price: 100,
+                tags: ['accessory']
+            });
+            await dataStore.saveChangesAsync();
+
+            // Act
+            const found = await dataStore.products.firstAsync();
+            found.price = 100;
+
+            const response = await dataStore.saveChangesAsync();
+            expect(response.aggregate.size).toBe(0);
+        });
+
+        it("should force mark an item as dirty and should be saved", async () => {
+            const dataStore = factory();
+            // Arrange
+            await dataStore.products.addAsync({
+                category: "test_category",
+                inStock: false,
+                name: "test_name",
+                price: 100,
+                tags: ['accessory']
+            });
+            await dataStore.saveChangesAsync();
+
+            // Act
+            const found = await dataStore.products.firstAsync();
+            found.price = 100;
+
+            dataStore.products.attachments.markDirty(found);
+
+            dataStore.products.attachments.getChangeType(found);
+
+            const response = await dataStore.saveChangesAsync();
+            expect(response.aggregate.size).toBe(1);
+        });
     });
+
+    describe('Attachment Operations', () => {
+        // "propertiesChanged" | "markedDirty" | "notModified";
+        it('added items are not attached until saveChanges is called', async () => {
+            const dataStore = factory();
+            // Arrange
+            const [added] = await dataStore.products.addAsync({
+                category: "test_category",
+                inStock: false,
+                name: "test_name",
+                price: 100,
+                tags: ['accessory']
+            });
+
+            const changeType = dataStore.products.attachments.getChangeType(added);
+
+            expect(changeType).toBeUndefined();
+        });
+
+        it('added items are not attached until saveChanges is called', async () => {
+            const dataStore = factory();
+            // Arrange
+            const [added] = await dataStore.products.addAsync({
+                category: "test_category",
+                inStock: false,
+                name: "test_name",
+                price: 100,
+                tags: ['accessory']
+            });
+
+            await dataStore.saveChangesAsync();
+
+            const changeType = dataStore.products.attachments.getChangeType(added);
+
+            expect(changeType).toBe("notModified");
+        });
+
+        it('should remove an attached item and not be saved', async () => {
+            const dataStore = factory();
+            // Arrange
+            await dataStore.products.addAsync({
+                category: "test_category",
+                inStock: false,
+                name: "test_name",
+                price: 100,
+                tags: ['accessory']
+            });
+
+            await dataStore.saveChangesAsync();
+
+            const found = await dataStore.products.firstAsync();
+
+            found.name = "CHANGED";
+
+            const changeType = dataStore.products.attachments.getChangeType(found);
+
+            expect(changeType).toBe("propertiesChanged");
+
+            dataStore.products.attachments.remove(found);
+
+            const response = await dataStore.saveChangesAsync();
+
+            expect(response.aggregate.size).toBe(0);
+        });
+
+        it('should filter attached items', async () => {
+            const dataStore = factory();
+            // Arrange
+            await dataStore.products.addAsync({
+                category: "test_category",
+                inStock: false,
+                name: "test_name",
+                price: 100,
+                tags: ['accessory']
+            }, {
+                category: "test_category",
+                inStock: true,
+                name: "test_name_2",
+                price: 1000,
+                tags: ['accessory']
+            });
+
+            await dataStore.saveChangesAsync();
+
+            const attachments = dataStore.products.attachments.filter(x => x.category === "test_category");
+
+            expect(attachments.length).toBe(2);
+        });
+
+        it('should have attached item', async () => {
+            const dataStore = factory();
+            // Arrange
+            await dataStore.products.addAsync({
+                category: "test_category",
+                inStock: false,
+                name: "test_name",
+                price: 100,
+                tags: ['accessory']
+            });
+
+            await dataStore.saveChangesAsync();
+
+            const found = await dataStore.products.firstAsync();
+
+            expect(dataStore.products.attachments.has(found)).toBe(true);
+        });
+    })
 
     describe('ToArray Operations', () => {
         it("all records", async () => {
@@ -1033,5 +1420,4 @@ describe("Product Tests", () => {
             expect(callback).toHaveBeenCalledTimes(1);
         });
     });
-
 });

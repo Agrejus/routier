@@ -42,8 +42,9 @@ export class ChangeTracker<TEntity extends {}> {
         for (const [, attachment] of this.attachments) {
 
             const changeTrackedDoc: ChangeTrackedEntity<{}> = attachment.doc as any;
+            const changeType = attachment.changeType;
 
-            if (changeTrackedDoc.__tracking__?.isDirty === true) {
+            if (changeTrackedDoc.__tracking__?.isDirty === true || changeType !== "notModified") {
                 hasChanges = true;
                 break
             }
@@ -151,7 +152,23 @@ export class ChangeTracker<TEntity extends {}> {
 
     getAttached(entity: InferType<TEntity>) {
         const key = this.schema.getId(entity);
-        return this.attachments.get(key);
+
+        const found = this.attachments.get(key);
+
+        if (found == null) {
+            return undefined;
+        }
+
+        if (found.changeType === "notModified") {
+            const resolvedChangeType = this.resolveChangeType(found.doc);
+
+            return {
+                doc: found.doc,
+                changeType: resolvedChangeType
+            }
+        }
+
+        return found;
     }
 
     findAttached(selector: GenericFunction<InferType<TEntity>, boolean>) {

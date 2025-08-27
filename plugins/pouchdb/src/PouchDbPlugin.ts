@@ -741,7 +741,6 @@ export class PouchDbPlugin implements IDbPlugin {
 
     private _query<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<TShape>): void {
         this.resolveIndexes(event, (r) => {
-            debugger;
             if (r.ok !== Result.SUCCESS) {
                 done(PluginEventResult.error(event.id, r.error))
                 return;
