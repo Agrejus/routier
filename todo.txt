@@ -51,31 +51,13 @@ Reference PDB EF and DB EF
     Demos
 
     Missing
-        Errors should terminate the operation, do not continue
-        What about partial results?
-            PartialResultType<T>
-            Should we have transactions/retries
-            Event Driven?
-        Need to send in all changes at once vs by collection
-            If we are dealing with a NoSql scenario where everything is stored as a key/value pair, there is no concept of tables/collections,
-            we can just save everything in one shot.  Likewise, we can send the entire change package to the plugin and it can decide what to do with it
+        Event Store -> Undo/Redo
         Need unit testing
         history tracking ----> Replication
         context tracking
-        Event store
-        entity changes -> updates does not need to be a map, why?
-            does previewChanges need to divide out by schemaid?  Nah, just return all items
-
-
 
         Can we do CDC so we can create history tables?
-            Can we apply a TTL to documents?
-
-        History Records?  How can we use the replicator for this?
-        DbReplicator -> Inherit and override query and bulkOperations
-                        Filter for your collection
-                        When Replicating, change the schema from the base to the history schema
-                        
+        Can we apply a TTL to documents?
 
     Video's
         Why
@@ -91,4 +73,3 @@ Reference PDB EF and DB EF
             benefits?
         Make sure errors are reported correctly
         Make sure we are serializing and deserializing dates correctly in Routier
-        Test entity tagging

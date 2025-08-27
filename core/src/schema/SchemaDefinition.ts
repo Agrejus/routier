@@ -69,6 +69,10 @@ class CollectionSubscription<T extends {}> implements ICollectionSubscription<T>
         this._callback = callback;
     }
 
+    dispose() {
+        this[Symbol.dispose]();
+    }
+
     [Symbol.dispose](): void {
         this._channel.onmessage = null;
         this._channel.close();
@@ -332,7 +336,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const enricherFunctionBody = enricherFunctionRoot.function(undefined, { name: "function" }).parameters("entity", "changeTrackingType").return();
 
             enricherFunctionBody.raw(`function ${this.createChangeTracker.toString()}`);
-            enricherFunctionBody.variable("enableChangeTracking").value('changeTrackingType === "entity" ? createChangeTracker() : e => e');
+            enricherFunctionBody.variable("enableChangeTracking").value('changeTrackingType === "proxy" ? createChangeTracker() : e => e');
 
             enricherFunctionBody.slot("enriched");
             enricherFunctionBody.slot("declarations");

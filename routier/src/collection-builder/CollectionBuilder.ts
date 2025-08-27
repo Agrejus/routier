@@ -4,6 +4,7 @@ import { CollectionOptions, CollectionPipelines } from '../types';
 import { CollectionInstanceCreator } from './types';
 import { IDbPlugin } from 'routier-core/plugins';
 import { ImmutableCollection } from '../collections/ImmutableCollection';
+import { DiffCollection } from '../collections/DiffCollection';
 
 type CollectionBuilderProps<TEntity extends {}, TCollecition extends Collection<TEntity>> = {
     onCollectionCreated: (collection: Collection<TEntity>) => void;
@@ -46,23 +47,17 @@ export class CollectionBuilder<TEntity extends {}, TCollection extends Collectio
         });
     }
 
-
-    // stateful(options?: { optimistic?: boolean }) {
-    //     this._isStateful = true;
-    //     return new CollectionBuilder<TEntity, StatefulCollection<TEntity>>({
-    //         dbPlugin: this._dbPlugin,
-    //         isStateful: true,
-    //         onCollectionCreated: this._onCollectionCreated,
-    //         schema: this._schema,
-    //         instanceCreator: StatefulCollection,
-    //         pipelines: this._pipelines,
-    //         signal: this._signal,
-    //         stateful: {
-    //             optimistic: options?.optimistic ?? false
-    //         },
-    //         schemas: this.schemas
-    //     });
-    // }
+    diff() {
+        return new CollectionBuilder<TEntity, DiffCollection<TEntity>>({
+            dbPlugin: this._dbPlugin,
+            onCollectionCreated: this._onCollectionCreated,
+            schema: this._schema,
+            instanceCreator: DiffCollection,
+            pipelines: this._pipelines,
+            signal: this._signal,
+            schemas: this.schemas
+        });
+    }
 
     create(): TCollection;
     create<TExtension extends TCollection>(extend: (i: CollectionInstanceCreator<TEntity, TCollection>, dbPlugin: IDbPlugin, schema: CompiledSchema<TEntity>, options: CollectionOptions, pipelines: CollectionPipelines, schemas: Map<SchemaId, CompiledSchema<any>>) => TExtension): TExtension;

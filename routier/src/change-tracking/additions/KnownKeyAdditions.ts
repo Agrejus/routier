@@ -1,10 +1,10 @@
-import { CompiledSchema, IdType, InferType } from "routier-core/schema";
+import { CompiledSchema, IdType, InferCreateType, InferType } from "routier-core/schema";
 import { IAdditions } from "./types";
 
 export class KnownKeyAdditions<T extends {}> implements IAdditions<T> {
 
     private schema: CompiledSchema<T>;
-    private data: Map<IdType, InferType<T>> = new Map<IdType, InferType<T>>();
+    private data: Map<IdType, InferCreateType<T>> = new Map<IdType, InferCreateType<T>>();
 
     get size() {
         return this.data.size;
@@ -14,17 +14,17 @@ export class KnownKeyAdditions<T extends {}> implements IAdditions<T> {
         this.schema = schema;
     }
 
-    get(entity: InferType<T>): InferType<T> | undefined {
-        const id = this.schema.getId(entity);
-        return this.data.get(id) as InferType<T> | undefined;
+    get(entity: InferCreateType<T>): InferCreateType<T> | undefined {
+        const id = this.schema.getId(entity as InferType<T>);
+        return this.data.get(id);
     }
 
-    values(): InferType<T>[] {
+    values(): InferCreateType<T>[] {
         return [...this.data.values()];
     }
 
-    set(entity: InferType<T>) {
-        const id = this.schema.getId(entity);
+    set(entity: InferCreateType<T>) {
+        const id = this.schema.getId(entity as InferType<T>);
         this.data.set(id, entity);
     }
 

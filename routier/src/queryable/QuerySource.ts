@@ -6,6 +6,7 @@ import { CallbackResult, PluginEventCallbackResult, PluginEventResult, Result } 
 import { GenericFunction } from "routier-core/types";
 import { Filter, ParamsFilter, toExpression } from "routier-core/expressions";
 import { uuid } from "routier-core/utilities";
+import { SchemaCollection } from "routier-core";
 
 export abstract class QuerySource<TRoot extends {}, TShape> {
 
@@ -14,9 +15,9 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
     protected readonly queryOptions: QueryOptionsCollection<TShape>;
     protected isSubScribed: boolean = false;
     protected schema: CompiledSchema<TRoot>;
-    protected schemas: Map<SchemaId, CompiledSchema<any>>;
+    protected schemas: SchemaCollection;
 
-    constructor(schema: CompiledSchema<TRoot>, schemas: Map<SchemaId, CompiledSchema<any>>, options: { queryable?: QuerySource<TRoot, TShape>, dataBridge?: DataBridge<TRoot>, changeTracker?: ChangeTracker<TRoot> }) {
+    constructor(schema: CompiledSchema<TRoot>, schemas: SchemaCollection, options: { queryable?: QuerySource<TRoot, TShape>, dataBridge?: DataBridge<TRoot>, changeTracker?: ChangeTracker<TRoot> }) {
 
         this.schema = schema;
         this.schemas = schemas;

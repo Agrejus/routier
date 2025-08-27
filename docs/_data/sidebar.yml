@@ -1,159 +1,128 @@
 # Sidebar navigation for Routier documentation
-- title: Quick Start
-  url: /quick-start/
+- title: Tutorials
+  url: /tutorials/
   children:
     - title: Getting Started
-      url: /quick-start/getting-started.md
+      url: /tutorials/getting-started.md
     - title: Installation
-      url: /quick-start/installation.md
+      url: /tutorials/installation.md
     - title: Basic Example
-      url: /quick-start/basic-example.md
+      url: /tutorials/basic-example.md
     - title: Configuration
-      url: /quick-start/configuration.md
+      url: /tutorials/configuration.md
 
-- title: Core Concepts
-  url: /core-concepts/
+- title: Concepts
+  url: /concepts/
   children:
     - title: Schema
-      url: /core-concepts/schema/
+      url: /concepts/schema/
       children:
         - title: Creating A Schema
-          url: /core-concepts/schema/creating-a-schema.md
+          url: /concepts/schema/creating-a-schema.md
+        - title: Schema Builder Reference
+          url: /concepts/schema/schema-builder-reference.md
         - title: Property Types
-          url: /core-concepts/schema/property-types/
+          url: /concepts/schema/property-types/
         - title: Modifiers
-          url: /core-concepts/schema/modifiers/
+          url: /concepts/schema/modifiers/
         - title: Reference
-          url: /core-concepts/schema/reference.md
+          url: /concepts/schema/reference.md
         - title: Why Schemas?
-          url: /core-concepts/schema/why-schemas.md
+          url: /concepts/schema/why-schemas.md
     - title: Data Collections
-      url: /core-concepts/data-collections/
+      url: /concepts/data-collections/
       children:
         - title: Memory Collections
-          url: /core-concepts/data-collections/memory-collections.md
-        - title: Change Tracking
-          url: /core-concepts/data-collections/change-tracking.md
-        - title: Entity Management
-          url: /core-concepts/data-collections/entity-management.md
+          url: /concepts/data-collections/memory-collections.md
     - title: Queries
-      url: /core-concepts/queries/
+      url: /concepts/queries/
       children:
         - title: Natural Queries
-          url: /core-concepts/queries/natural-queries.md
+          url: /concepts/queries/natural-queries.md
         - title: Expressions
-          url: /core-concepts/queries/expressions/
+          url: /concepts/queries/expressions/
         - title: Query Options
-          url: /core-concepts/queries/query-options/
+          url: /concepts/queries/query-options/
     - title: Data Pipeline
-      url: /core-concepts/data-pipeline/
-      children:
-        - title: Synchronous Operations
-          url: /core-concepts/data-pipeline/synchronous-operations.md
-        - title: Asynchronous Operations
-          url: /core-concepts/data-pipeline/asynchronous-operations.md
-        - title: Performance Optimization
-          url: /core-concepts/data-pipeline/performance-optimization.md
+      url: /concepts/data-pipeline/
 
-- title: Plugins
-  url: /plugins/
+- title: Integrations
+  url: /integrations/
   children:
     - title: Built-in Plugins
-      url: /plugins/built-in-plugins/
+      url: /integrations/plugins/built-in-plugins/
       children:
         - title: Memory Plugin
-          url: /plugins/built-in-plugins/memory/
+          url: /integrations/plugins/built-in-plugins/memory/
         - title: Local Storage Plugin
-          url: /plugins/built-in-plugins/local-storage/
+          url: /integrations/plugins/built-in-plugins/local-storage/
         - title: File System Plugin
-          url: /plugins/built-in-plugins/file-system/
+          url: /integrations/plugins/built-in-plugins/file-system/
         - title: PouchDB Plugin
-          url: /plugins/built-in-plugins/pouchdb/
+          url: /integrations/plugins/built-in-plugins/pouchdb/
         - title: Dexie Plugin
-          url: /plugins/built-in-plugins/dexie/
+          url: /integrations/plugins/built-in-plugins/dexie/
         - title: SQLite Plugin
-          url: /plugins/built-in-plugins/sqlite/
+          url: /integrations/plugins/built-in-plugins/sqlite/
         - title: Testing Plugin
-          url: /plugins/built-in-plugins/testing/
+          url: /integrations/plugins/built-in-plugins/testing/
     - title: Advanced Plugins
-      url: /plugins/advanced-plugins/
+      url: /integrations/plugins/advanced-plugins/
       children:
         - title: Replication
-          url: /plugins/advanced-plugins/replication/
+          url: /integrations/plugins/advanced-plugins/replication/
         - title: Logging
-          url: /plugins/advanced-plugins/logging/
+          url: /integrations/plugins/advanced-plugins/logging/
         - title: Query Translation
-          url: /plugins/advanced-plugins/query-translation/
+          url: /integrations/plugins/advanced-plugins/query-translation/
     - title: Create Your Own
-      url: /plugins/create-your-own/
+      url: /integrations/plugins/create-your-own/
       children:
         - title: Plugin Architecture
-          url: /plugins/create-your-own/plugin-architecture.md
+          url: /integrations/plugins/create-your-own/plugin-architecture.md
         - title: Custom Collections
-          url: /plugins/create-your-own/custom-collections.md
+          url: /integrations/plugins/create-your-own/custom-collections.md
         - title: Custom Translators
-          url: /plugins/create-your-own/custom-translators.md
+          url: /integrations/plugins/create-your-own/custom-translators.md
+    - title: React
+      url: /integrations/react/
 
-- title: Data Operations
-  url: /data-operations/
+- title: How-to Guides
+  url: /how-to/
   children:
-    - title: CRUD Operations
-      url: /data-operations/crud/
+    - title: CRUD
+      url: /how-to/crud/
       children:
+        - title: Overview
+          url: /how-to/crud/README.md
         - title: Create
-          url: /data-operations/crud/create.md
+          url: /how-to/crud/create.md
+        - title: Read
+          url: /how-to/crud/read.md
         - title: Update
-          url: /data-operations/crud/update.md
+          url: /how-to/crud/update.md
         - title: Delete
-          url: /data-operations/crud/delete.md
+          url: /how-to/crud/delete.md
         - title: Bulk Operations
-          url: /data-operations/crud/bulk/
-    - title: Data Modification
-      url: /data-operations/modification/
-      children:
-        - title: Change Tracking
-          url: /data-operations/modification/change-tracking/
-        - title: Entity Tagging
-          url: /data-operations/modification/entity-tagging/
-        - title: Optimistic Updates
-          url: /data-operations/modification/optimistic-updates/
+          url: /how-to/crud/bulk/
     - title: State Management
-      url: /data-operations/state-management/
+      url: /how-to/state-management/
       children:
-        - title: Data Context Setup
-          url: /data-operations/state-management/data-context-setup.md
         - title: Live Queries
-          url: /data-operations/state-management/live-queries/
+          url: /how-to/state-management/live-queries/
         - title: Syncing
-          url: /data-operations/state-management/syncing/
+          url: /how-to/state-management/syncing/
+        - title: Change Tracking
+          url: /how-to/state-management/change-tracking/
+        - title: Entity Tagging
+          url: /how-to/state-management/entity-tagging/
+        - title: Optimistic Updates
+          url: /how-to/state-management/optimistic-updates/
 
-- title: React Integration
-  url: /react-integration/
-  children:
-    - title: Setup & Configuration
-      url: /react-integration/setup/
-    - title: Hooks & Components
-      url: /react-integration/hooks-components/
-    - title: State Management
-      url: /react-integration/state-management.md
-    - title: Performance Optimization
-      url: /react-integration/performance/
-
-- title: Advanced Features
-  url: /advanced-features/
-  children:
-    - title: Performance & Profiling
-      url: /advanced-features/performance-profiling/
-    - title: Change Tracking
-      url: /advanced-features/change-tracking/
-    - title: History Management
-      url: /advanced-features/history-management/
-    - title: Entity Relationships
-      url: /advanced-features/entity-relationships/
-    - title: Data Validation
-      url: /advanced-features/data-validation/
+    - title: Performance
+      url: /how-to/performance/
     - title: Error Handling
-      url: /advanced-features/error-handling/
+      url: /how-to/error-handling/
 
 - title: Guides & Examples
   url: /guides-examples/

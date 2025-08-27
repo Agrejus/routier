@@ -27,8 +27,8 @@
   ],
   "description": "Testing plugin for routier",
   "peerDependencies": {
-    "routier-core": "^0.0.1",
-    "routier": "^0.0.1"
+    "routier": "^0.0.1",
+    "routier-core": "^0.0.1"
   },
   "dependencies": {
     "@faker-js/faker": "^9.7.0"
@@ -38,6 +38,7 @@
     "@rspack/core": "^1.1.8",
     "routier": "file://../../routier",
     "routier-core": "file://../../core",
-    "ts-loader": "^9.5.2"
+    "ts-loader": "^9.5.2",
+    "vitest": "^3.2.4"
   }
 }

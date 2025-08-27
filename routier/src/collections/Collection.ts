@@ -1,7 +1,7 @@
 import { IDbPlugin } from "routier-core/plugins";
 import { CollectionOptions, CollectionPipelines } from "../types";
 import { RemovableCollection } from './RemovableCollection';
-import { CompiledSchema, InferCreateType, InferType, SchemaId } from "routier-core/schema";
+import { CompiledSchema, InferCreateType, InferType } from "routier-core/schema";
 import { CallbackResult, Result } from "routier-core/results";
 import { SchemaCollection } from "routier-core/collections";
 
@@ -26,7 +26,7 @@ export class Collection<TEntity extends {}> extends RemovableCollection<TEntity>
      * @param entities Array of entities to add to the collection
      * @param done Callback function called with the added entities or error
      */
-    add(entities: InferCreateType<TEntity>[], done: CallbackResult<InferType<TEntity>[]>) {
+    add(entities: InferCreateType<TEntity>[], done: CallbackResult<InferCreateType<TEntity>[]>) {
         const tag = this.getAndDestroyTag();
         this.changeTracker.add(entities, tag, done);
     }

@@ -8,6 +8,7 @@
     "build:types": "tsc --emitDeclarationOnly",
     "build:bundle": "rspack build",
     "build": "tsc",
+    "build2": "npm run build:bundle && npm run build:types",
     "tsc": "tsc",
     "test": "vitest --run",
     "test:watch": "vitest --watch",
@@ -37,10 +38,11 @@
     "routier-core": "^0.0.1"
   },
   "devDependencies": {
-    "routier-core": "file://../../core",
+    "@faker-js/faker": "^10.0.0",
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",
     "@types/pouchdb": "^6.4.2",
+    "routier-core": "file://../../core",
     "routier-plugin-testing": "file://../testing",
     "ts-loader": "^9.5.2",
     "vitest": "^3.1.3"

@@ -1,0 +1,22 @@
+{
+  "name": "pouchdb-server",
+  "version": "1.0.0",
+  "description": "PouchDB server example for Routier using official pouchdb-server",
+  "main": "index.js",
+  "scripts": {
+    "start": "./start.sh dev",
+    "start:prod": "./start.sh prod",
+    "start:custom": "./start.sh custom",
+    "install:global": "npm install -g pouchdb-server",
+    "test": "node test-server.js"
+  },
+  "keywords": ["pouchdb", "server", "routier", "example"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "pouchdb-server": "^4.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0"
+  }
+}

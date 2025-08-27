@@ -1,7 +1,8 @@
 import { InferType, s } from 'routier-core/schema';
 
 export const product = s.define("products", {
-    id: s.string().key().identity(),
+    _id: s.string().key().identity(),
+    _rev: s.string().identity(),
     name: s.string().index(),
     price: s.number().index(),
     category: s.string().index(),

@@ -47,9 +47,14 @@ export function ProductForm() {
 
 	// Query to get all products for display
 	const products = useQuery<any[]>(
-		c => dataStore.products.subscribe().toArray(c),
+		c => {
+			debugger;
+			return dataStore.products.subscribe().toArray(c)
+		},
 		[]
 	);
+
+	console.log(products);
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
 		const { name, value, type } = e.target;

@@ -1,9 +1,9 @@
-import { InferType } from "routier-core/schema";
+import { InferCreateType, InferType } from "routier-core/schema";
 
 export interface IAdditions<T extends {}> {
-    get(entity: InferType<T>): InferType<T> | undefined;
-    set(entity: InferType<T>): void;
+    get(entity: InferCreateType<T> | InferType<T>): InferCreateType<T> | undefined;
+    set(entity: InferCreateType<T>): void;
     size: number;
-    values(): InferType<T>[];
+    values(): InferCreateType<T>[];
     clear(): void;
 }

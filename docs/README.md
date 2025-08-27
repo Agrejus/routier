@@ -2,6 +2,10 @@
 
 Welcome to the Routier framework documentation! Routier is a modern, flexible data management framework designed for building scalable applications with robust data handling, change tracking, and real-time synchronization.
 
+## 🎯 **Key Point: Data Store Agnostic**
+
+**Routier doesn't care what data store you use.** Whether it's a traditional database, HTTP API, file system, in-memory storage, or even a custom storage solution - Routier provides the same powerful data management capabilities. Your data can live anywhere, and Routier will work with it through plugins.
+
 ## 🚀 Quick Start
 
 - [Getting Started](quick-start/getting-started.md)
@@ -39,7 +43,9 @@ Welcome to the Routier framework documentation! Routier is a modern, flexible da
 
 ## 🔌 Plugins
 
-### Built-in Plugins
+Routier's plugin system is what makes it data store agnostic. You can use any storage backend by implementing a plugin - from databases to HTTP APIs to custom solutions.
+
+### Available Plugins
 
 - [Memory Plugin](plugins/built-in-plugins/memory/README.md)
 - [Local Storage Plugin](plugins/built-in-plugins/local-storage/README.md)
@@ -47,13 +53,15 @@ Welcome to the Routier framework documentation! Routier is a modern, flexible da
 - [PouchDB Plugin](plugins/built-in-plugins/pouchdb/README.md)
 - [Dexie Plugin](plugins/built-in-plugins/dexie/README.md)
 - [SQLite Plugin](plugins/built-in-plugins/sqlite/README.md)
-- [Testing Plugin](plugins/built-in-plugins/testing/README.md)
 
 ### Advanced Plugins
 
 - [Replication](plugins/advanced-plugins/replication/README.md)
-- [Logging](plugins/advanced-plugins/logging/README.md)
 - [Query Translation](plugins/advanced-plugins/query-translation/README.md)
+
+### Capabilities
+
+- [Logging](plugins/advanced-plugins/logging/README.md)
 
 ### Create Your Own
 

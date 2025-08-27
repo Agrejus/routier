@@ -1,35 +1,32 @@
-import { TestSuiteBase } from './base';
 import { generateData } from '../utils/dataGenerator';
+import { describe, it, expect } from 'vitest';
+import { TestDataStore } from '../context';
+import { IDbPlugin } from 'routier-core';
 
-export class CommentsTestSuite extends TestSuiteBase {
+const pluginFactory: () => IDbPlugin = () => null as any; // Replace with your plugin
+const factory = () => new TestDataStore(pluginFactory());
 
-    override getTestSuites() {
-        const expect = this.testingOptions.expect;
+describe("Comments Tests", () => {
 
-        return [
-            {
-                name: "Add Operations",
-                testCases: [
-                    this.createTestCase("Can add item with default", (factory) => async () => {
-                        const dataStore = factory();
-                        // Arrange
-                        const [item] = generateData(dataStore.comments.schema, 1);
+    describe('Add Operations', () => {
+        it("Can add item with default", async () => {
+            const dataStore = factory();
+            // Arrange
+            const [item] = generateData(dataStore.comments.schema, 1);
 
-                        // Act
-                        const [added] = await dataStore.comments.addAsync(item);
-                        const response = await dataStore.saveChangesAsync();
+            // Act
+            const [added] = await dataStore.comments.addAsync(item);
+            const response = await dataStore.saveChangesAsync();
 
-                        // Assert
-                        expect(response.aggregate.size).toBe(1);
-                        expect(added._id).toStrictEqual(expect.any(String));
-                        expect(added.author).toStrictEqual(item.author);
-                        expect(added.content).toBe(item.content);
-                        expect(added.replies).toStrictEqual(item.replies);
-                        expect(added.createdAt).toBe(item.createdAt);
-                        expect(added.createdAt).toBeDefined()
-                    })
-                ]
-            }
-        ];
-    }
-}
+            // Assert
+            expect(response.aggregate.size).toBe(1);
+            expect(added._id).toStrictEqual(expect.any(String));
+            expect(added.author).toStrictEqual(item.author);
+            expect(added.content).toBe(item.content);
+            expect(added.replies).toStrictEqual(item.replies);
+            expect(added.createdAt).toBe(item.createdAt);
+            expect(added.createdAt).toBeDefined()
+        });
+    });
+
+});

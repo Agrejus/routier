@@ -24,3 +24,5 @@ export const seedData = async<T extends {}>(routier: DataStore, collectionSelect
     await collection.addAsync(...generatedData);
     await routier.saveChangesAsync();
 }
+
+export { generateData };

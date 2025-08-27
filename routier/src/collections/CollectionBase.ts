@@ -88,12 +88,12 @@ export class CollectionBase<TEntity extends {}> {
     }
 
     protected get changeTrackingType(): ChangeTrackingType {
-        return "entity";
+        return "proxy";
     }
 
     private cloneMany(items: InferType<TEntity>[]) {
 
-        if (this.changeTrackingType !== "entity") {
+        if (this.changeTrackingType !== "proxy") {
             return items;
         }
 
@@ -146,6 +146,7 @@ export class CollectionBase<TEntity extends {}> {
                 updates,
                 adds,
                 removals,
+                unknown: []
             };
 
             this.subscription.send(subscriptionChanges);
@@ -332,7 +333,7 @@ export class CollectionBase<TEntity extends {}> {
      */
     instance(...entities: InferCreateType<TEntity>[]) {
 
-        const result: InferType<TEntity>[] = [];
+        const result: InferCreateType<TEntity>[] = [];
 
         for (const entity of this.changeTracker.instance(entities, this.changeTrackingType)) {
             result.push(entity);

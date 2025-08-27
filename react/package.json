@@ -13,21 +13,22 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "routier": "workspace:*",
-    "routier-plugin-memory": "workspace:*",
-    "routier-plugin-local-storage": "workspace:*"
+
+  },
+  "peerDependencies": {
+    "routier-core": "^0.0.01",
+    "react": "^16.8.0"
   },
   "devDependencies": {
-    "@types/react": "^18.2.43",
-    "@types/react-dom": "^18.2.17",
+    "@types/react": "^16.8.0",
     "@typescript-eslint/eslint-plugin": "^6.14.0",
     "@typescript-eslint/parser": "^6.14.0",
     "@vitejs/plugin-react": "^4.2.1",
     "eslint": "^8.55.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
+    "react": "^16.8.0",
+    "routier-core": "file://../core",
     "typescript": "^5.2.2",
     "vite": "^5.0.8",
     "vitest": "^1.0.4"

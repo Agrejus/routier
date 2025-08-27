@@ -5,8 +5,8 @@ import { IDbPlugin } from 'routier-core/plugins';
 import { CompiledSchema, SchemaId } from 'routier-core/schema';
 import { TrampolinePipeline } from 'routier-core/pipeline';
 import { CallbackPartialResult, CallbackResult, PartialResultType, PluginEventResult, Result } from 'routier-core/results';
-import { BulkPersistChanges, BulkPersistResult } from 'routier-core/collections';
-import { uuid } from 'routier-core/utilities';
+import { BulkPersistChanges, BulkPersistResult, SchemaCollection } from 'routier-core/collections';
+import { UnknownRecord, uuid } from 'routier-core/utilities';
 
 /**
  * The main Routier class, providing collection management, change tracking, and persistence for entities.
@@ -23,7 +23,7 @@ export class DataStore implements Disposable {
     protected readonly collectionPipelines: CollectionPipelines;
     /** AbortController for managing cancellation and disposal. */
     protected readonly abortController: AbortController;
-    protected readonly schemas: Map<SchemaId, CompiledSchema<any>>;
+    protected readonly schemas: SchemaCollection;
 
     /**
      * Constructs a new Routier instance.
@@ -33,7 +33,7 @@ export class DataStore implements Disposable {
         this.abortController = new AbortController();
         this.dbPlugin = dbPlugin;
         this.collections = new Map<SchemaId, Collection<any>>();
-        this.schemas = new Map<SchemaId, CompiledSchema<any>>();
+        this.schemas = new SchemaCollection();
         this.collectionPipelines = {
             prepareChanges: new TrampolinePipeline<PartialResultType<BulkPersistChanges>>(),
             afterPersist: new TrampolinePipeline<PartialResultType<{ changes: BulkPersistChanges, result: BulkPersistResult }>>(),
@@ -48,7 +48,7 @@ export class DataStore implements Disposable {
     protected collection<TEntity extends {}>(schema: CompiledSchema<TEntity>) {
         const onCreated = (collection: Collection<TEntity>) => {
             this.collections.set(schema.id, collection);
-            this.schemas.set(schema.id, schema);
+            this.schemas.set(schema.id, schema as CompiledSchema<UnknownRecord>);
         };
         return new CollectionBuilder<TEntity, Collection<TEntity>>({
             dbPlugin: this.dbPlugin,
@@ -78,9 +78,8 @@ export class DataStore implements Disposable {
             }
 
             try {
-                const id = uuid(8)
                 this.dbPlugin.bulkPersist({
-                    id,
+                    id: uuid(8),
                     operation: preparedChangesResult.data,
                     schemas: this.schemas
                 }, (bulkPersistResult) => {
@@ -101,16 +100,16 @@ export class DataStore implements Disposable {
                     }, (afterPersistResult) => {
 
                         if (afterPersistResult.ok === PluginEventResult.ERROR) {
-                            done(PluginEventResult.error(id, afterPersistResult.error));
+                            done(PluginEventResult.error(bulkPersistResult.id, afterPersistResult.error));
                             return;
                         }
 
                         if (afterPersistResult.ok === PluginEventResult.PARTIAL) {
-                            done(PluginEventResult.partial(id, afterPersistResult.data.result, afterPersistResult.error));
+                            done(PluginEventResult.partial(bulkPersistResult.id, afterPersistResult.data.result, afterPersistResult.error));
                             return;
                         }
 
-                        done(PluginEventResult.success(id, afterPersistResult.data.result))
+                        done(PluginEventResult.success(bulkPersistResult.id, afterPersistResult.data.result))
                     });
                 });
             } catch (e) {

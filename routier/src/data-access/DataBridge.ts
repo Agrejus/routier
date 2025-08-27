@@ -54,7 +54,7 @@ export class DataBridge<T extends {}> {
 
             // Make sure something in the subscribed query changed, 
             // if it has, we need to requery so we can send all changes
-            if (changes.adds.length > 0 || changes.updates.length > 0 || changes.removals.length > 0) {
+            if (changes.adds.length > 0 || changes.updates.length > 0 || changes.removals.length > 0 || changes.unknown.length > 0) {
 
                 // create a new plugin where we can quickly seed the changes and then query them
                 const ephemeralPlugin = new MemoryPlugin(uuidv4());

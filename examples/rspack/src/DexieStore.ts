@@ -3,6 +3,10 @@ import { DexiePlugin } from "routier-plugin-dexie";
 import { DataStore } from 'routier';
 import { MemoryPlugin } from "routier-plugin-memory";
 import { DbPluginLoggingCapability, OptimisticReplicationDbPlugin } from "routier-core/plugins";
+import { PouchDbPlugin } from "routier-plugin-pouchdb";
+import { UnknownRecord } from "routier-core/utilities";
+import { SchemaCollection } from "routier-core/collections";
+import { assertIsNotNull } from "routier-core";
 
 const dexie = new DexiePlugin("my-db");
 const memory = new MemoryPlugin();
@@ -17,6 +21,38 @@ const optimisticPlugin = OptimisticReplicationDbPlugin.create({
     read: memory,
     replicas: []
 });
+
+// const pouchDbPlugin = new PouchDbPlugin("pouchdb-sync-db", {
+//     sync: {
+//         remoteDb: "http://127.0.0.1:3000/pouchdb-sync-db",
+//         live: true,
+//         retry: true,
+//         onChange: (schemas: SchemaCollection, change: PouchDB.Replication.SyncResult<any>) => {
+
+//             if (change.direction === "pull") {
+//                 const docs = change.change.docs.reduce((a, v) => ({ ...a, [v.documentType]: [...(a[v.documentType] ?? []), v] }), {} as { [key: string]: UnknownRecord[] });
+
+//                 for (const documentType in docs) {
+//                     const schema = schemas.getByName(documentType);
+
+//                     assertIsNotNull(schema);
+
+//                     const subscription = schema.createSubscription();
+
+//                     subscription.send({
+//                         adds: [],
+//                         removals: [],
+//                         updates: [],
+//                         unknown: docs
+//                     });
+
+//                     subscription[Symbol.dispose]();
+//                 }
+//             }
+
+//         }
+//     }
+// });
 
 export class DexieStore extends DataStore {
 

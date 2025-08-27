@@ -30,7 +30,7 @@ export class ImmutableCollection<TEntity extends {}> extends RemovableCollection
      * @param entities Array of entities to add to the collection
      * @param done Callback function called with the added entities or error
      */
-    add(entities: InferCreateType<TEntity>[], done: CallbackResult<InferType<TEntity>[]>) {
+    add(entities: InferCreateType<TEntity>[], done: CallbackResult<InferCreateType<TEntity>[]>) {
         const tag = this.tags.get();
         this.tags.destroy();
         this.changeTracker.add(entities, tag, done);

@@ -1,0 +1,161 @@
+# Schemas
+
+Schemas in Routier define the structure, behavior, and constraints of your data entities. They provide type safety, validation, and metadata that ensures your application works correctly with your data structure.
+
+## What Are Schemas?
+
+Schemas are type definitions that:
+
+- Define the structure of your data entities
+- Provide compile-time type safety
+- Enable automatic validation and transformation
+- Support database indexing and constraints
+- Enable change tracking and serialization
+
+## Schema Builder
+
+Routier provides a fluent, type-safe schema builder API:
+
+```typescript
+import { s } from "routier-core/schema";
+
+const userSchema = s
+  .define("users", {
+    id: s.string().key().identity(),
+    name: s.string(),
+    email: s.string().distinct(),
+    age: s.number().optional(),
+    isActive: s.boolean().default(true),
+    createdAt: s.date().default(() => new Date()),
+  })
+  .compile();
+```
+
+## Key Features
+
+### Type Safety
+
+- Full TypeScript support with generic constraints
+- Literal type constraints for enum-like values
+- Compile-time validation of schema structure
+
+### Flexible Modifiers
+
+- **Behavior**: `optional()`, `nullable()`, `readonly()`
+- **Values**: `default()`, `identity()`
+- **Constraints**: `key()`, `distinct()`
+- **Serialization**: `serialize()`, `deserialize()`
+- **Performance**: `index()`
+
+### Rich Type System
+
+- **Primitives**: `string`, `number`, `boolean`, `date`
+- **Complex**: `object`, `array`
+- **Constraints**: Literal types with generics
+- **Composition**: Nested schemas and arrays
+
+## Documentation
+
+### Getting Started
+
+- **[Creating A Schema](creating-a-schema.md)** - Learn how to create your first schema
+- **[Schema Builder Reference](schema-builder-reference.md)** - Complete reference for all types and modifiers
+
+### Core Concepts
+
+- **[Property Types](property-types/README.md)** - Available property types and their capabilities
+- **[Modifiers](modifiers/README.md)** - All available property modifiers and constraints
+
+### Reference
+
+- **[Schema Reference](reference.md)** - Complete schema API reference
+- **[Why Schemas?](why-schemas.md)** - Understanding the benefits and philosophy
+
+## Quick Examples
+
+### Basic Entity
+
+```typescript
+const productSchema = s
+  .define("products", {
+    id: s.string().key().identity(),
+    name: s.string(),
+    price: s.number(),
+    category: s.string<"electronics" | "clothing" | "books">(),
+    inStock: s.boolean().default(true),
+  })
+  .compile();
+```
+
+### Complex Nested Schema
+
+```typescript
+const orderSchema = s
+  .define("orders", {
+    id: s.string().key().identity(),
+    userId: s.string().index("user_date"),
+    items: s.array(
+      s.object({
+        productId: s.string(),
+        quantity: s.number(),
+        price: s.number(),
+      })
+    ),
+    shipping: s.object({
+      address: s.object({
+        street: s.string(),
+        city: s.string(),
+        zipCode: s.string(),
+      }),
+      method: s.string<"standard" | "express">(),
+    }),
+    status: s.string<"pending" | "processing" | "shipped">(),
+    createdAt: s
+      .date()
+      .default(() => new Date())
+      .index("user_date"),
+  })
+  .compile();
+```
+
+### Constrained Values
+
+```typescript
+const userSchema = s
+  .define("users", {
+    id: s.string().key().identity(),
+    role: s.string<"user" | "admin" | "moderator">(),
+    priority: s.number<1 | 2 | 3 | 4 | 5>(),
+    verified: s.boolean<true>(),
+  })
+  .compile();
+```
+
+## Benefits
+
+### Development Experience
+
+- **IntelliSense**: Full autocomplete and type checking
+- **Refactoring**: Safe refactoring with TypeScript
+- **Documentation**: Self-documenting code structure
+
+### Runtime Safety
+
+- **Validation**: Automatic data validation
+- **Transformation**: Built-in serialization/deserialization
+- **Constraints**: Database-level constraints and indexes
+
+### Performance
+
+- **Indexing**: Automatic database index creation
+- **Change Tracking**: Efficient change detection
+- **Serialization**: Optimized data transformation
+
+## Next Steps
+
+1. **[Create your first schema](creating-a-schema.md)** - Start building schemas
+2. **[Explore the builder reference](schema-builder-reference.md)** - Learn all available options
+3. **[Understand property types](property-types/README.md)** - Choose the right types for your data
+4. **[Apply modifiers](modifiers/README.md)** - Customize behavior and constraints
+
+Schemas are the foundation of Routier's data management system. They provide the structure and rules that make your data consistent, safe, and performant.

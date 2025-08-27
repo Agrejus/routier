@@ -4,23 +4,6 @@ Universal ORM abstraction that lets you easily use or switch between different O
 
 Can we put TTL on some of the records? We can check every N times for TTLs and purge them
 
-Are these needed?
-onBeforeSave
-onAfterSave
-
-Collection
-Can we do caching? Stringify the function and use as cache key
-
-Provide Custom Collection to restore legacy functionality
-pluck
-where(w => w).map(w => ({ test:w.test })).firstOrUndefined();
-
-    filter
-        where(w => w).toArray()
-
-Can we do CDC so we can create history tables?
-Can we apply a TTL to documents?
-
 # TODO:
 
 Remove Proxies, change over to context tracking

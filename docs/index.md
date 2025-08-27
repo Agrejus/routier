@@ -25,8 +25,7 @@ import { MemoryPlugin } from "routier-plugin-memory";
 // Define a schema
 const userSchema = s
   .define("user", {
-    _id: s.string().key().identity(),
-    _rev: s.string().identity(),
+    id: s.string().key().identity(),
     name: s.string().index(),
     email: s.string(),
     age: s.number().optional(),

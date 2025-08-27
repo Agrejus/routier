@@ -1,54 +1,51 @@
-import { TestSuiteBase } from './base';
 import { generateData } from '../utils/dataGenerator';
+import { describe, it, expect } from 'vitest';
+import { TestDataStore } from '../context';
+import { IDbPlugin } from 'routier-core';
 
-export class EventsTestSuite extends TestSuiteBase {
+const pluginFactory: () => IDbPlugin = () => null as any; // Replace with your plugin
+const factory = () => new TestDataStore(pluginFactory());
 
-    override getTestSuites() {
-        const expect = this.testingOptions.expect;
+describe("Events Tests", () => {
 
-        return [
-            {
-                name: "Add Operations",
-                testCases: [
-                    this.createTestCase("Can add item with default date", (factory) => async () => {
-                        const dataStore = factory();
-                        // Arrange
-                        const [item] = generateData(dataStore.events.schema, 1);
+    describe('Add Operations', () => {
+        it("Can add item with default date", async () => {
+            const dataStore = factory();
+            // Arrange
+            const [item] = generateData(dataStore.events.schema, 1);
 
-                        // Act
-                        const [added] = await dataStore.events.addAsync(item);
-                        const response = await dataStore.saveChangesAsync();
+            // Act
+            const [added] = await dataStore.events.addAsync(item);
+            const response = await dataStore.saveChangesAsync();
 
-                        // Assert
-                        expect(response.aggregate.size).toBe(1);
-                        expect(added.endTime?.toISOString()).toBe(item.endTime?.toISOString());
-                    }),
-                    this.createTestCase("Can add item with default static value", (factory) => async () => {
-                        const dataStore = factory();
-                        // Arrange
-                        const [item] = generateData(dataStore.events.schema, 1);
+            // Assert
+            expect(response.aggregate.size).toBe(1);
+            expect(added.endTime?.toISOString()).toBe(item.endTime?.toISOString());
+        });
 
-                        // Act
-                        const [added] = await dataStore.events.addAsync(item);
-                        const response = await dataStore.saveChangesAsync();
-                        // Assert
-                        expect(response.aggregate.size).toBe(1);
-                        expect(added.name).toBe(item.name);
-                        expect(added.name).toBe("James");
-                    })
-                ]
-            }, {
-                name: "Subscription Management",
-                testCases: [
-                    this.createTestCase("Should return unsubscribe function", (factory) => async () => {
-                        const dataStore = factory();
-                        await dataStore.events.firstOrUndefinedAsync(w => w._id != "")
-                        const unsubscribe = dataStore.products.subscribe().where(w => w._id != null).firstOrUndefined(() => { });
-                        expect(typeof unsubscribe).toBe('function');
-                        unsubscribe();
-                    })
-                ]
-            }
-        ];
-    }
-}
+        it("Can add item with default static value", async () => {
+            const dataStore = factory();
+            // Arrange
+            const [item] = generateData(dataStore.events.schema, 1);
+
+            // Act
+            const [added] = await dataStore.events.addAsync(item);
+            const response = await dataStore.saveChangesAsync();
+            // Assert
+            expect(response.aggregate.size).toBe(1);
+            expect(added.name).toBe(item.name);
+            expect(added.name).toBe("James");
+        });
+    });
+
+    describe('Subscription Management', () => {
+        it("Should return unsubscribe function", async () => {
+            const dataStore = factory();
+            await dataStore.events.firstOrUndefinedAsync(w => w._id != "")
+            const unsubscribe = dataStore.products.subscribe().where(w => w._id != null).firstOrUndefined(() => { });
+            expect(typeof unsubscribe).toBe('function');
+            unsubscribe();
+        });
+    });
+
+});

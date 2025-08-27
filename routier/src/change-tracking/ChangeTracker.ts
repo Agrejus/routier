@@ -70,23 +70,18 @@ export class ChangeTracker<TEntity extends {}> {
             const found = this.attachments.get(id);
 
             // Let's only map Ids and identities
-            this.schema.merge(found.doc as InferType<TEntity>, update); // merge needs to map children appropriately
+            this.schema.merge(found.doc, update); // merge needs to map children appropriately
         });
 
         adds.forEach(add => {
-            const found = this.additions.get(add as InferType<TEntity>);
+            const found = this.additions.get(add);
             // need to deserialize the add in case there are any dates on it
-            const deserializedAdd = this.schema.deserialize(add as InferType<TEntity>);
+            const deserializedAdd = this.schema.deserialize(add);
 
             // Let's only map Ids and identities
-            this.schema.merge(found as InferType<TEntity>, deserializedAdd as InferType<TEntity>); // merge needs to map children appropriately
+            this.schema.merge(found, deserializedAdd); // merge needs to map children appropriately
 
-            const id = this.schema.getId(add as InferType<TEntity>);
-
-            // if (changeTrackedDoc.__tracking__?.isDirty === true) {
-            //     hasChanges = true;
-            //     break
-            // }
+            const id = this.schema.getId(add);
 
             // Set here, if we never save we should never attach
             this.attachments.set(id, {
@@ -278,13 +273,13 @@ export class ChangeTracker<TEntity extends {}> {
         return this.additions.size > 0 || this.removals.length > 0 || this.hasAttachmentsChanges() === true || this.removalQueries.length > 0;
     }
 
-    add(entities: InferCreateType<TEntity>[], tag: unknown | null, done: CallbackResult<InferType<TEntity>[]>) {
+    add(entities: InferCreateType<TEntity>[], tag: unknown | null, done: CallbackResult<InferCreateType<TEntity>[]>) {
 
         try {
 
-            const result: InferType<TEntity>[] = [];
+            const result: InferCreateType<TEntity>[] = [];
 
-            for (const entity of this.instance(entities, "entity")) {
+            for (const entity of this.instance(entities, "proxy")) {
                 this.additions.set(entity);
 
                 result.push(entity);
@@ -303,12 +298,8 @@ export class ChangeTracker<TEntity extends {}> {
 
     // Use a generator so we don't need to inject another done function so we can set the addition in the add function
     *instance(entities: InferCreateType<TEntity>[], changeTrackingType: ChangeTrackingType) {
-
         for (let i = 0, length = entities.length; i < length; ++i) {
-            const entity = entities[i];
-            const enriched: InferCreateType<TEntity> = this.schema.enrich(entity as any, changeTrackingType) as any;
-
-            yield enriched as InferType<TEntity>;
+            yield this.schema.enrich(entities[i], changeTrackingType);
         }
     }
 
@@ -316,7 +307,7 @@ export class ChangeTracker<TEntity extends {}> {
         const result = [];
 
         for (let i = 0, length = entities.length; i < length; i++) {
-            result.push(this.schema.enrich(entities[i], "entity"));
+            result.push(this.schema.enrich(entities[i], "proxy"));
         }
 
         return result;

@@ -54,7 +54,7 @@ export type GetHashTypeFunction<TEntity extends {}> = {
     (entity: InferType<TEntity>): HashType.Ids;
 }
 
-export type ChangeTrackingType = "entity" | "immutable";
+export type ChangeTrackingType = "proxy" | "diff" | "immutable";
 
 export type IndexType = "single" | "compound" | "unique" | "primary-key"
 export type Index = {
@@ -81,11 +81,21 @@ export type SubscriptionChanges<T extends {}> = {
      * Entities that have been removed from the subscription.
      */
     removals: InferType<T>[];
+    /**
+     * Entities that have been added/updated/removed from the subscription and it is unknown 
+     * if the entities have been added/updated/removed.
+     */
+    unknown: InferType<T>[];
 }
 
 export interface ICollectionSubscription<T extends {}> extends Disposable {
     send(changes: SubscriptionChanges<T>): void;
     onMessage(callback: (changes: SubscriptionChanges<T>) => void): void;
+}
+
+type Enrich<TEntity extends {}> = {
+    (entity: InferType<TEntity>, changeTrackingType: ChangeTrackingType): InferType<TEntity>;
+    (entity: InferCreateType<TEntity>, changeTrackingType: ChangeTrackingType): InferCreateType<TEntity>;
 }
 
 /**
@@ -107,7 +117,7 @@ export type CompiledSchema<TEntity extends {}> = {
     /** Prepares a new entity for creation, applying defaults and transformations. */
     prepare: (entity: InferCreateType<TEntity>) => InferCreateType<TEntity>;
     /** Merges the source entity into the destination entity. */
-    merge: (destination: InferType<TEntity>, source: InferType<TEntity>) => InferType<TEntity>;
+    merge: (destination: InferType<TEntity> | InferCreateType<TEntity>, source: InferType<TEntity>) => InferType<TEntity>;
     /** Indicates if the schema has identity properties. */
     hasIdentities: boolean;
     /** List of properties that are identity keys. */
@@ -133,7 +143,7 @@ export type CompiledSchema<TEntity extends {}> = {
     /** Returns all IDs for the given entity (usually a single-element tuple). */
     getIds: (entity: InferType<TEntity>) => [IdType];
     /** Enriches the entity with change tracking or other metadata. */
-    enrich: (entity: InferType<TEntity>, changeTrackingType: ChangeTrackingType) => InferType<TEntity>;
+    enrich: Enrich<TEntity>;
     /** Indicates if the schema has identity keys. */
     hasIdentityKeys: boolean;
     /** Returns a deeply frozen (immutable) version of the entity. */

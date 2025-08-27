@@ -6,14 +6,20 @@ import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, EntityUpda
 import { CallbackResult, PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from 'routier-core/results';
 import { assertIsNotNull } from 'routier-core/assertions';
 import { combineExpressions, ComparatorExpression, Expression, getProperties } from 'routier-core/expressions';
-import { BulkPersistChanges, BulkPersistResult, UnknownRecord } from 'routier-core';
+import { BulkPersistChanges, BulkPersistResult, SchemaCollection, UnknownRecord } from 'routier-core';
 
 const queue = new SyncronousQueue();
 const INDEX_NAME = "routier_pdb_indexes"
 const cache: Record<string, unknown> = {};
 
 type PouchDBPluginOptions = PouchDB.Configuration.DatabaseConfiguration & {
-    queryType?: "default" | "memory-optimized" | "experimental"
+    queryType?: "default" | "memory-optimized" | "experimental";
+    sync?: {
+        remoteDb: string;
+        live: boolean,
+        retry: boolean,
+        onChange: (schemas: SchemaCollection, change: PouchDB.Replication.SyncResult<{}>) => void
+    };
 }
 
 export type PouchDbDesignDoc = {
@@ -49,6 +55,28 @@ export class PouchDbPlugin implements IDbPlugin {
     constructor(name: string, options?: PouchDBPluginOptions) {
         this._name = name;
         this._options = options;
+    }
+
+    private _tryStartSync(schemas: SchemaCollection) {
+        if (this._options?.sync != null) {
+
+            if (cache["sync"] == null) {
+                cache["sync"] = {}; // placeholder
+                const localDb = new PouchDB(this._name);
+                const remoteDb = new PouchDB(this._options.sync.remoteDb);
+
+                // Set up sync
+                const sync = localDb.sync(remoteDb, {
+                    live: this._options.sync.live,
+                    retry: this._options.sync.retry,
+                    back_off_function: (delay) => Math.min(delay * 2, 10000)
+                });
+
+                sync.on('change', (change) => this._options.sync.onChange(schemas, change));
+
+                cache["sync"] = sync;
+            }
+        }
     }
 
     private _identityBulkOperations(identitySchemaIds: SchemaId[], changes: BulkPersistChanges, result: BulkPersistResult, done: CallbackResult<never>): void {
@@ -204,7 +232,7 @@ export class PouchDbPlugin implements IDbPlugin {
         }, done);
     }
 
-    private _defaultBulkOperations<T extends {}>(nonIdentitySchemaIds: SchemaId[], changes: BulkPersistChanges, result: BulkPersistResult, done: CallbackResult<never>): void {
+    private _defaultBulkOperations(nonIdentitySchemaIds: SchemaId[], changes: BulkPersistChanges, result: BulkPersistResult, done: CallbackResult<never>): void {
 
         if (changes.aggregate.size === 0) {
             done(Result.success())
@@ -480,6 +508,7 @@ export class PouchDbPlugin implements IDbPlugin {
         done: PluginEventCallbackPartialResult<BulkPersistResult>) {
 
         this._validateSchemas(event);
+        this._tryStartSync(event.schemas);
 
         const result = event.operation.toResult();
         const identitySchemaIds: SchemaId[] = [];
@@ -516,7 +545,8 @@ export class PouchDbPlugin implements IDbPlugin {
     }
 
     private _doWork<TResult, TEntity>(work: (db: PouchDB.Database<TEntity>, done: CallbackResult<TResult>) => void, done: CallbackResult<TResult>, shouldClose: boolean = false) {
-        const db = new PouchDB<TEntity>(this._name, this._options);
+        const { sync, queryType, ...rest } = this._options ?? {};
+        const db = new PouchDB<TEntity>(this._name, rest);
 
         work(db, (result) => {
 
@@ -556,6 +586,9 @@ export class PouchDbPlugin implements IDbPlugin {
     }
 
     query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<TShape>): void {
+
+        this._tryStartSync(event.schemas);
+
         const unitOfWork: SyncronousUnitOfWork = (d) => this._query<TRoot, TShape>(event, (r) => {
             d();
             done(r)
@@ -708,7 +741,7 @@ export class PouchDbPlugin implements IDbPlugin {
 
     private _query<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<TShape>): void {
         this.resolveIndexes(event, (r) => {
-
+            debugger;
             if (r.ok !== Result.SUCCESS) {
                 done(PluginEventResult.error(event.id, r.error))
                 return;
