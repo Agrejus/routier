@@ -213,6 +213,8 @@ export class CollectionBase<TEntity extends {}> {
 
             assertIsNotNull(tags, "Could not find tag collection during prepare operation");
 
+            changes.tags = tags;
+
             const adds = this.changeTracker.prepareAdditions();
 
             if (adds.length > 0) {

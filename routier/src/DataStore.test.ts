@@ -5,15 +5,110 @@ import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEven
 import { now } from 'routier-core/performance';
 import { BulkPersistResult } from 'routier-core/collections';
 import { InferCreateType, s } from 'routier-core/schema';
-import { uuid, uuidv4 } from 'routier-core';
+import { OperatorExpression, uuid, uuidv4 } from 'routier-core';
+import { MemoryPlugin } from 'routier-plugin-memory';
+
+const simple = s.define("simple", {
+    id: s.number().key(),
+    name: s.string(),
+}).compile();
+
+type GenericPluginOptions = {
+    onQuery?: <TRoot extends {}, TShape extends unknown = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>) => void,
+    onDestroy?: (event: DbPluginEvent) => void,
+    onBulkPersist?: (event: DbPluginBulkPersistEvent) => void
+}
+class GenericPlugin extends MemoryPlugin {
+
+    private options?: GenericPluginOptions;
+
+    constructor(options?: GenericPluginOptions) {
+        super(uuidv4());
+        this.options = options;
+    }
+
+    query<TRoot extends {}, TShape extends unknown = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<TShape>): void {
+        this.options?.onQuery?.(event);
+        super.query(event, done);
+    }
+
+    destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
+        this.options?.onDestroy?.(event);
+        super.destroy(event, done);
+    }
+
+    bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackPartialResult<BulkPersistResult>): void {
+        this.options?.onBulkPersist?.(event);
+        super.bulkPersist(event, done);
+    }
+}
+
+class GenericDataStore extends DataStore {
+
+    simple = this.collection(simple).create();
+}
+
+const genericFactory = (options?: GenericPluginOptions) => {
+    return new GenericDataStore(new GenericPlugin(options));
+}
 
 describe('Data Store', () => {
 
+    describe("Tags", () => {
+
+        it('should tag added entity', async () => {
+
+            let resolve!: () => void;
+            const called = new Promise<void>(r => { resolve = r; });
+
+            const onBulkPersist = (event: DbPluginBulkPersistEvent) => {
+
+                for (const [, changes] of event.operation) {
+                    expect(changes.tags.size).toBe(1)
+                }
+                resolve();
+            };
+
+            const store = genericFactory({ onBulkPersist });
+            await store.simple.tag('test').addAsync({ id: 1, name: 'name' });
+            await store.saveChangesAsync();
+
+            await called; // waits until callback ran
+        });
+
+        it('should tag added entity', async () => {
+
+            let resolve!: () => void;
+            const called = new Promise<void>(r => { resolve = r; });
+            let count = 0;
+
+            const onBulkPersist = (event: DbPluginBulkPersistEvent) => {
+
+                for (const [, changes] of event.operation) {
+                    count++;
+
+                    if (count === 2) {
+                        expect(changes.tags.size).toBe(1);
+                    }
+                }
+                resolve();
+            };
+
+            const store = genericFactory({ onBulkPersist });
+            await store.simple.addAsync({ id: 1, name: 'name' });
+            await store.saveChangesAsync();
+
+            const found = await store.simple.tag("test").firstAsync();
+
+            found.name = "updated";
+
+            await store.saveChangesAsync();
+
+            await called; // waits until callback ran
+        });
+    });
+
     describe('Performance', () => {
-        const simple = s.define("simple", {
-            id: s.number().key(),
-            name: s.string(),
-        }).compile();
         const cache: Record<string, { start: number, end: number }> = {};
 
         class PerformancePlugin implements IDbPlugin {

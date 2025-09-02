@@ -118,6 +118,11 @@
           url: /how-to/state-management/entity-tagging/
         - title: Optimistic Updates
           url: /how-to/state-management/optimistic-updates/
+    - title: Collections
+      url: /how-to/collections/
+      children:
+        - title: Extending Collections
+          url: /how-to/collections/extending-collections.md
 
     - title: Performance
       url: /how-to/performance/

@@ -114,6 +114,7 @@ export class PouchDbPlugin implements IDbPlugin {
             try {
 
                 const updatedDocuments = [...updates].map(w => w.change.entity);
+                const errors: any[] = [];
 
                 db.bulkDocs([...removes.map(w => ({ _id: w.entity._id, _rev: w.entity._rev, _deleted: true })), ...updatedDocuments], null, (error, response) => {
 
@@ -125,6 +126,11 @@ export class PouchDbPlugin implements IDbPlugin {
                     for (let i = 0, length = response.length; i < length; i++) {
                         const doc = response[i];
 
+                        if ("error" in doc && doc.error === true) {
+                            errors.push(doc); // send back the entire error
+                            continue;
+                        }
+
                         if ("id" in doc && "ok" in doc) {
                             const updatesIndex = updates.findIndex(x => x.change.entity._id === doc.id);
 
@@ -133,6 +139,9 @@ export class PouchDbPlugin implements IDbPlugin {
                                 const update = updates[updatesIndex];
 
                                 const changesResult = result.get(update.schemaId);
+
+                                // Set the new rev
+                                (update.change.entity as UnknownRecord)._rev = doc.rev;
 
                                 changesResult.updates.push(update.change.entity);
                                 continue;
@@ -149,6 +158,11 @@ export class PouchDbPlugin implements IDbPlugin {
                                 changesResult.removes.push(remove.entity);
                             }
                         }
+                    }
+
+                    if (errors.length > 0) {
+                        d(Result.error(errors));
+                        return;
                     }
 
                     const pipeline = new WorkPipeline();

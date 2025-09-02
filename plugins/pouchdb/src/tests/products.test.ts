@@ -4,11 +4,12 @@ import { TestDataStore, generateData, wait, seedData } from 'routier-plugin-test
 import { IDbPlugin, UnknownRecord, uuidv4 } from 'routier-core';
 import { PouchDbPlugin } from '../PouchDbPlugin';
 
-const pluginFactory: () => IDbPlugin = () => new PouchDbPlugin(`${uuidv4()}-db`);
+const generateDbName = () => `${uuidv4()}-db`;
+const pluginFactory: (dbname?: string) => IDbPlugin = (dbname?: string) => new PouchDbPlugin(dbname ?? generateDbName());
 const stores: TestDataStore[] = [];
-const factory = () => {
+const factory = (dbname?: string) => {
 
-    const store = new TestDataStore(pluginFactory());
+    const store = new TestDataStore(pluginFactory(dbname));
 
     stores.push(store);
 
@@ -241,6 +242,28 @@ describe("Product Tests", () => {
             expect(foundAfterSave.name).toBe(word);
         });
 
+        it("should update one item twice", async () => {
+            const dataStore = factory();
+            await seedData(dataStore, () => dataStore.products, 2);
+
+            const found = await dataStore.products.firstAsync();
+            const firstWord = faker.lorem.word();
+            found.name = firstWord;
+            const firstResponse = await dataStore.saveChangesAsync();
+
+            expect(firstResponse.aggregate.size).toBe(1);
+            const foundAfterFirstSave = await dataStore.products.firstAsync(w => w._id === found._id);
+            expect(foundAfterFirstSave.name).toBe(firstWord);
+
+            const secondWord = faker.lorem.word();
+            found.name = secondWord;
+            const secondResponse = await dataStore.saveChangesAsync();
+
+            const foundAfterSecondSave = await dataStore.products.firstAsync(w => w._id === found._id);
+            expect(foundAfterSecondSave.name).toBe(secondWord);
+            expect(secondResponse.aggregate.size).toBe(1);
+        });
+
         it("should update many items", async () => {
             const dataStore = factory();
             // Arrange
@@ -387,7 +410,128 @@ describe("Product Tests", () => {
     });
 
     describe('Attachment Operations', () => {
-        // "propertiesChanged" | "markedDirty" | "notModified";
+
+        it("Should attach entity", async () => {
+            const dataStore = factory();
+            const generatedData = generateData(dataStore.products.schema, 1);
+            const secondDataStore = factory();
+            const [added] = await dataStore.products.addAsync(...generatedData);
+            await dataStore.saveChangesAsync();
+
+            expect(secondDataStore.products.attachments.has(added)).toBe(false);
+
+            secondDataStore.products.attachments.set(added);
+
+            expect(secondDataStore.products.attachments.has(added)).toBe(true);
+        });
+
+        it("Should attach entity and save update across contexts pointed to the same database", async () => {
+            const dbname = generateDbName();
+            const dataStore = factory(dbname);
+            const generatedData = generateData(dataStore.products.schema, 1);
+            const secondDataStore = factory(dbname);
+            await dataStore.products.addAsync(...generatedData);
+            await dataStore.saveChangesAsync();
+
+            const found = await dataStore.products.firstAsync();
+
+            expect(secondDataStore.products.attachments.has(found)).toBe(false);
+
+            secondDataStore.products.attachments.set(found);
+
+            found.category = "changed_value";
+
+            const result = await secondDataStore.saveChangesAsync();
+
+            expect(result.aggregate.updates).toBe(1);
+        });
+
+        it("Should detach entity", async () => {
+            const dataStore = factory();
+            const generatedData = generateData(dataStore.products.schema, 1);
+            const [added] = await dataStore.products.addAsync(...generatedData);
+            await dataStore.saveChangesAsync();
+
+            dataStore.products.attachments.set(added);
+            expect(dataStore.products.attachments.has(added)).toBe(true);
+
+            dataStore.products.attachments.remove(added);
+            expect(dataStore.products.attachments.has(added)).toBe(false);
+        });
+
+        it("Should get attached entity", async () => {
+            const dataStore = factory();
+            const generatedData = generateData(dataStore.products.schema, 1);
+            const [added] = await dataStore.products.addAsync(...generatedData);
+            await dataStore.saveChangesAsync();
+
+            dataStore.products.attachments.set(added);
+            const found = dataStore.products.attachments.get(added);
+
+            expect(found).toBeDefined();
+            expect(found?._id).toBe(added._id);
+        });
+
+        it("Should filter attached entities", async () => {
+            const dataStore = factory();
+            const generatedData = generateData(dataStore.products.schema, 10);
+            const instances = dataStore.products.instance(...generatedData);
+            dataStore.products.attachments.set(...instances);
+
+            const filtered = dataStore.products.attachments.filter(w => w.price > 100);
+            expect(Array.isArray(filtered)).toBe(true);
+            expect(filtered.length).toBeGreaterThanOrEqual(0);
+        });
+
+        it("Should find attached entity", async () => {
+            const dataStore = factory();
+            const generatedData = generateData(dataStore.products.schema, 10);
+            const instances = dataStore.products.instance(...generatedData);
+            dataStore.products.attachments.set(...instances);
+
+            const found = instances.find(w => w.price > 100)
+
+            const filtered = dataStore.products.attachments.find(w => w.price > 100);
+            expect(Array.isArray(filtered)).toBe(false);
+            expect(found).toEqual(filtered);
+        });
+
+        it("Should mark entity as dirty", async () => {
+            const dataStore = factory();
+            const generatedData = generateData(dataStore.products.schema, 1);
+            const [added] = await dataStore.products.addAsync(...generatedData);
+            await dataStore.saveChangesAsync();
+
+            const instance = dataStore.products.instance(added)[0];
+            dataStore.products.attachments.set(instance);
+            dataStore.products.attachments.markDirty(instance);
+
+            const changeType = dataStore.products.attachments.getChangeType(instance);
+            expect(changeType).toBeDefined();
+        });
+
+        it("Should get change type for attached entity", async () => {
+            const dataStore = factory();
+            const generatedData = generateData(dataStore.products.schema, 1);
+            const [added] = await dataStore.products.addAsync(...generatedData);
+            await dataStore.saveChangesAsync();
+
+            const instance = dataStore.products.instance(added)[0];
+            dataStore.products.attachments.set(instance);
+
+            const changeType = dataStore.products.attachments.getChangeType(instance);
+            expect(changeType).toBeDefined();
+        });
+
+        it("Should return undefined for change type of unattached entity", async () => {
+            const dataStore = factory();
+            const generatedData = generateData(dataStore.products.schema, 1);
+            const [added] = dataStore.products.instance(...generatedData);
+
+            const changeType = dataStore.products.attachments.getChangeType(added);
+            expect(changeType).toBeUndefined();
+        });
+
         it('added items are not attached until saveChanges is called', async () => {
             const dataStore = factory();
             // Arrange
@@ -490,6 +634,42 @@ describe("Product Tests", () => {
             const found = await dataStore.products.firstAsync();
 
             expect(dataStore.products.attachments.has(found)).toBe(true);
+        });
+
+        it('should get attached item', async () => {
+            const dataStore = factory();
+            // Arrange
+            await dataStore.products.addAsync({
+                category: "test_category",
+                inStock: false,
+                name: "test_name",
+                price: 100,
+                tags: ['accessory']
+            });
+
+            await dataStore.saveChangesAsync();
+
+            const found = await dataStore.products.firstAsync();
+
+            expect(dataStore.products.attachments.get(found)).toEqual(found);
+        });
+
+        it('should find attached item', async () => {
+            const dataStore = factory();
+            // Arrange
+            await dataStore.products.addAsync({
+                category: "test_category",
+                inStock: false,
+                name: "test_name",
+                price: 100,
+                tags: ['accessory']
+            });
+
+            await dataStore.saveChangesAsync();
+
+            const found = await dataStore.products.firstAsync();
+
+            expect(dataStore.products.attachments.find(x => x._id === found._id)).toEqual(found);
         });
     })
 
@@ -974,108 +1154,6 @@ describe("Product Tests", () => {
             const noDups = [...new Set(all.map(w => w.createdDate.toISOString()))].map(w => new Date(w));
             expect(result.length).toBe(noDups.length)
             expect(noDups).toStrictEqual(result);
-        });
-    });
-
-    describe('Attachments Operations', () => {
-        it("Should attach entity", async () => {
-            const dataStore = factory();
-            const generatedData = generateData(dataStore.products.schema, 1);
-            const secondDataStore = factory();
-            const [added] = await dataStore.products.addAsync(...generatedData);
-            await dataStore.saveChangesAsync();
-
-            expect(secondDataStore.products.attachments.has(added)).toBe(false);
-
-            secondDataStore.products.attachments.set(added);
-
-            expect(secondDataStore.products.attachments.has(added)).toBe(true);
-        });
-
-        it("Should detach entity", async () => {
-            const dataStore = factory();
-            const generatedData = generateData(dataStore.products.schema, 1);
-            const [added] = await dataStore.products.addAsync(...generatedData);
-            await dataStore.saveChangesAsync();
-
-            dataStore.products.attachments.set(added);
-            expect(dataStore.products.attachments.has(added)).toBe(true);
-
-            dataStore.products.attachments.remove(added);
-            expect(dataStore.products.attachments.has(added)).toBe(false);
-        });
-
-        it("Should get attached entity", async () => {
-            const dataStore = factory();
-            const generatedData = generateData(dataStore.products.schema, 1);
-            const [added] = await dataStore.products.addAsync(...generatedData);
-            await dataStore.saveChangesAsync();
-
-            dataStore.products.attachments.set(added);
-            const found = dataStore.products.attachments.get(added);
-
-            expect(found).toBeDefined();
-            expect(found?._id).toBe(added._id);
-        });
-
-        it("Should filter attached entities", async () => {
-            const dataStore = factory();
-            const generatedData = generateData(dataStore.products.schema, 10);
-            const instances = dataStore.products.instance(...generatedData);
-            dataStore.products.attachments.set(...instances);
-
-            const filtered = dataStore.products.attachments.filter(w => w.price > 100);
-            expect(Array.isArray(filtered)).toBe(true);
-            expect(filtered.length).toBeGreaterThanOrEqual(0);
-        });
-
-        it("Should find attached entity", async () => {
-            const dataStore = factory();
-            const generatedData = generateData(dataStore.products.schema, 10);
-            const instances = dataStore.products.instance(...generatedData);
-            dataStore.products.attachments.set(...instances);
-
-            const found = instances.find(w => w.price > 100)
-
-            const filtered = dataStore.products.attachments.find(w => w.price > 100);
-            expect(Array.isArray(filtered)).toBe(false);
-            expect(found).toEqual(filtered);
-        });
-
-        it("Should mark entity as dirty", async () => {
-            const dataStore = factory();
-            const generatedData = generateData(dataStore.products.schema, 1);
-            const [added] = await dataStore.products.addAsync(...generatedData);
-            await dataStore.saveChangesAsync();
-
-            const instance = dataStore.products.instance(added)[0];
-            dataStore.products.attachments.set(instance);
-            dataStore.products.attachments.markDirty(instance);
-
-            const changeType = dataStore.products.attachments.getChangeType(instance);
-            expect(changeType).toBeDefined();
-        });
-
-        it("Should get change type for attached entity", async () => {
-            const dataStore = factory();
-            const generatedData = generateData(dataStore.products.schema, 1);
-            const [added] = await dataStore.products.addAsync(...generatedData);
-            await dataStore.saveChangesAsync();
-
-            const instance = dataStore.products.instance(added)[0];
-            dataStore.products.attachments.set(instance);
-
-            const changeType = dataStore.products.attachments.getChangeType(instance);
-            expect(changeType).toBeDefined();
-        });
-
-        it("Should return undefined for change type of unattached entity", async () => {
-            const dataStore = factory();
-            const generatedData = generateData(dataStore.products.schema, 1);
-            const [added] = dataStore.products.instance(...generatedData);
-
-            const changeType = dataStore.products.attachments.getChangeType(added);
-            expect(changeType).toBeUndefined();
         });
     });
 
