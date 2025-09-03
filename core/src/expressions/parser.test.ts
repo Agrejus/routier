@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toExpression, combineExpressions } from './parser';
+import { toParsedExpression, combineExpressions } from './parser';
 import { CompiledSchema, SchemaTypes } from '../schema';
 import { Expression, ComparatorExpression, OperatorExpression, PropertyExpression, ValueExpression } from './types';
 
@@ -73,12 +73,13 @@ describe('Parser', () => {
         ]
     } as CompiledSchema<any>;
 
-    describe('toExpression', () => {
+    describe('toParsedExpression', () => {
         describe('basic comparisons', () => {
             it('should parse equality comparison with ==', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name == 'test');
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name == 'test');
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.comparator).toBe('equals');
                 expect(comp.negated).toBe(false);
                 expect(comp.strict).toBe(false);
@@ -88,30 +89,33 @@ describe('Parser', () => {
             });
 
             it('should parse strict equality comparison with ===', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name === 'test');
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name === 'test');
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.comparator).toBe('equals');
                 expect(comp.negated).toBe(false);
                 expect(comp.strict).toBe(true);
             });
 
             it('should parse inequality comparison with !=', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name != 'test');
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name != 'test');
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.comparator).toBe('equals');
                 expect(comp.negated).toBe(true);
                 expect(comp.strict).toBe(false);
             });
 
             it('should parse strict inequality comparison with !==', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name !== 'test');
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name !== 'test');
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.comparator).toBe('equals');
                 expect(comp.negated).toBe(true);
                 expect(comp.strict).toBe(true);
@@ -120,10 +124,11 @@ describe('Parser', () => {
 
         describe('numeric comparisons', () => {
             it('should parse greater than comparison', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.age > 18);
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.age > 18);
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.comparator).toBe('greater-than');
                 expect(comp.negated).toBe(false);
                 expect(comp.strict).toBe(false);
@@ -131,45 +136,49 @@ describe('Parser', () => {
             });
 
             it('should parse less than comparison', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.age < 65);
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.age < 65);
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.comparator).toBe('less-than');
                 expect(comp.negated).toBe(false);
                 expect(comp.strict).toBe(false);
             });
 
             it('should parse greater than or equal comparison', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.age >= 18);
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.age >= 18);
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.comparator).toBe('greater-than-equals');
                 expect(comp.negated).toBe(false);
                 expect(comp.strict).toBe(false);
             });
 
             it('should parse less than or equal comparison', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.age <= 65);
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.age <= 65);
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.comparator).toBe('less-than-equals');
                 expect(comp.negated).toBe(false);
                 expect(comp.strict).toBe(false);
             });
 
             it('should parse between comparison', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.age <= 65 && entity.age >= 35);
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.age <= 65 && entity.age >= 35);
 
-                expect(expression).toBeInstanceOf(OperatorExpression);
-                const operatorExpression = expression as OperatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(OperatorExpression);
+                const operatorExpression = parsedExpression.expression as OperatorExpression;
                 expect(operatorExpression.operator).toBe("&&");
 
                 const comp1 = operatorExpression.left as ComparatorExpression;
                 const comp2 = operatorExpression.right as ComparatorExpression;
 
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp1.comparator).toBe('less-than-equals');
                 expect(comp1.negated).toBe(false);
                 expect(comp1.strict).toBe(false);
@@ -182,10 +191,11 @@ describe('Parser', () => {
 
         describe('string methods', () => {
             it('should parse startsWith method', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name.startsWith('test'));
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name.startsWith('test'));
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.comparator).toBe('starts-with');
                 expect(comp.negated).toBe(false);
                 expect(comp.strict).toBe(false);
@@ -193,51 +203,56 @@ describe('Parser', () => {
             });
 
             it('should parse endsWith method', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name.endsWith('test'));
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name.endsWith('test'));
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.comparator).toBe('ends-with');
                 expect(comp.negated).toBe(false);
                 expect(comp.strict).toBe(false);
             });
 
             it('should parse includes method', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name.includes('test'));
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name.includes('test'));
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.comparator).toBe('includes');
                 expect(comp.negated).toBe(false);
                 expect(comp.strict).toBe(false);
             });
 
             it('should parse negated startsWith method', () => {
-                const expression = toExpression(mockSchema, (entity: any) => !entity.name.startsWith('test'));
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => !entity.name.startsWith('test'));
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
                 expect(comp.comparator).toBe('starts-with');
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.negated).toBe(true);
                 expect(comp.strict).toBe(false);
             });
 
             it('should parse startsWith method compared to false', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name.startsWith('test') === false);
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name.startsWith('test') === false);
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.comparator).toBe('starts-with');
                 expect(comp.negated).toBe(true);
                 expect(comp.strict).toBe(false);
             });
 
             it('should handle to lower case', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name.toLowerCase().startsWith('test'));
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name.toLowerCase().startsWith('test'));
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
                 expect(comp.comparator).toBe('starts-with');
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.negated).toBe(false);
                 expect(comp.strict).toBe(false);
                 expect((comp.left as PropertyExpression).transformer).toBe('to-lower-case');
@@ -246,11 +261,12 @@ describe('Parser', () => {
             });
 
             it('should handle to lower case for value and property', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name.toLowerCase().startsWith('test'.toLowerCase()));
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name.toLowerCase().startsWith('test'.toLowerCase()));
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
                 expect(comp.comparator).toBe('starts-with');
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.negated).toBe(false);
                 expect(comp.strict).toBe(false);
                 expect((comp.left as PropertyExpression).transformer).toBe('to-lower-case');
@@ -259,11 +275,12 @@ describe('Parser', () => {
             });
 
             it('should handle value-side toLowerCase', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name === 'TEST'.toLowerCase());
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name === 'TEST'.toLowerCase());
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
                 expect(comp.comparator).toBe('equals');
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.negated).toBe(false);
                 expect(comp.strict).toBe(true);
                 expect((comp.left as PropertyExpression).transformer).toBeNull();
@@ -272,11 +289,12 @@ describe('Parser', () => {
             });
 
             it('should handle toLocaleLowerCase', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name.toLocaleLowerCase().startsWith('test'));
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name.toLocaleLowerCase().startsWith('test'));
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
                 expect(comp.comparator).toBe('starts-with');
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.negated).toBe(false);
                 expect(comp.strict).toBe(false);
                 expect((comp.left as PropertyExpression).transformer).toBe('to-lower-case');
@@ -286,11 +304,12 @@ describe('Parser', () => {
             });
 
             it('should handle toLocaleUpperCase', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name.toLocaleUpperCase().includes('TEST'));
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name.toLocaleUpperCase().includes('TEST'));
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
                 expect(comp.comparator).toBe('includes');
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.negated).toBe(false);
                 expect(comp.strict).toBe(false);
                 expect((comp.left as PropertyExpression).transformer).toBe('to-upper-case');
@@ -300,11 +319,12 @@ describe('Parser', () => {
             });
 
             it('should handle value-side toLocaleLowerCase', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name === 'TEST'.toLocaleLowerCase());
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name === 'TEST'.toLocaleLowerCase());
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
                 expect(comp.comparator).toBe('equals');
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.negated).toBe(false);
                 expect(comp.strict).toBe(true);
                 expect((comp.left as PropertyExpression).transformer).toBeNull();
@@ -314,10 +334,11 @@ describe('Parser', () => {
             });
 
             it('should handle combined locale transformations', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name.toLocaleLowerCase().startsWith('test'.toLocaleLowerCase()));
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name.toLocaleLowerCase().startsWith('test'.toLocaleLowerCase()));
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.comparator).toBe('starts-with');
                 expect(comp.negated).toBe(false);
                 expect(comp.strict).toBe(false);
@@ -331,20 +352,22 @@ describe('Parser', () => {
 
         describe('boolean values', () => {
             it('should parse boolean true comparison', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.isActive == true);
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.isActive == true);
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
                 expect(comp.comparator).toBe('equals');
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect((comp.right as ValueExpression).value).toBe(true);
             });
 
             it('should parse boolean false comparison', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.isActive == false);
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.isActive == false);
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
                 expect(comp.comparator).toBe('equals');
+                expect(parsedExpression.executionTarget).toBe("database")
                 // The parser treats "false" as a string and converts it to Boolean("false") = true
                 expect((comp.right as ValueExpression).value).toBe(true);
             });
@@ -352,10 +375,11 @@ describe('Parser', () => {
 
         describe('array methods', () => {
             it('should parse boolean false comparison', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.tags.includes("test"));
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.tags.includes("test"));
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.comparator).toBe('includes');
                 // The parser treats "false" as a string and converts it to Boolean("false") = true
                 expect((comp.right as ValueExpression).value).toBe("test");
@@ -364,61 +388,66 @@ describe('Parser', () => {
 
         describe('parameterized filters', () => {
             it('should parse parameterized filter with string parameter', () => {
-                const expression = toExpression(mockSchema, ([entity, params]: [any, { searchTerm: string }]) => entity.name == params.searchTerm, { searchTerm: 'test' });
+                const parsedExpression = toParsedExpression(mockSchema, ([entity, params]: [any, { searchTerm: string }]) => entity.name == params.searchTerm, { searchTerm: 'test' });
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.comparator).toBe('equals');
                 expect((comp.right as ValueExpression).value).toBe('test');
             });
 
             it('should parse parameterized filter with number parameter', () => {
-                const expression = toExpression(mockSchema, ([entity, params]: [any, { minAge: number }]) => entity.age >= params.minAge, { minAge: 18 });
+                const parsedExpression = toParsedExpression(mockSchema, ([entity, params]: [any, { minAge: number }]) => entity.age >= params.minAge, { minAge: 18 });
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.comparator).toBe('greater-than-equals');
                 expect((comp.right as ValueExpression).value).toBe(18);
             });
 
             it('should parse parameterized filter with nested parameter', () => {
-                const expression = toExpression(mockSchema, ([entity, params]: [any, { filters: { searchTerm: string } }]) => entity.name == params.filters.searchTerm, { filters: { searchTerm: 'test' } });
+                const parsedExpression = toParsedExpression(mockSchema, ([entity, params]: [any, { filters: { searchTerm: string } }]) => entity.name == params.filters.searchTerm, { filters: { searchTerm: 'test' } });
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.comparator).toBe('equals');
                 expect((comp.right as ValueExpression).value).toBe('test');
             });
 
             it('should return NOT_PARSABLE for invalid parameter path', () => {
-                const expression = toExpression(mockSchema, ([entity, params]: [any, { searchTerm: string }]) => entity.name == (params as any).invalidPath, { searchTerm: 'test' });
+                const parsedExpression = toParsedExpression(mockSchema, ([entity, params]: [any, { searchTerm: string }]) => entity.name == (params as any).invalidPath, { searchTerm: 'test' });
 
-                expect(expression).toStrictEqual(Expression.NOT_PARSABLE);
+                expect(parsedExpression.expression).toStrictEqual(Expression.NOT_PARSABLE);
             });
 
             it('should return NOT_PARSABLE for invalid parameter usage', () => {
-                const expression = toExpression(mockSchema, ([entity, params]: [any, { searchTerm: string }]) => entity.name == params as any, { searchTerm: 'test' });
+                const parsedExpression = toParsedExpression(mockSchema, ([entity, params]: [any, { searchTerm: string }]) => entity.name == params as any, { searchTerm: 'test' });
 
-                expect(expression).toStrictEqual(Expression.NOT_PARSABLE);
+                expect(parsedExpression.expression).toStrictEqual(Expression.NOT_PARSABLE);
             });
         });
 
         describe('null/undefined comparisons', () => {
             it('should parse null comparison', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name == null);
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name == null);
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.comparator).toBe('equals');
                 expect(comp.strict).toBe(false);
                 expect((comp.right as ValueExpression).value).toBeNull();
             });
 
             it('should parse null comparison', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name == undefined);
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name == undefined);
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.comparator).toBe('equals');
                 expect(comp.strict).toBe(false);
                 expect((comp.right as ValueExpression).value).toBeUndefined();
@@ -427,30 +456,33 @@ describe('Parser', () => {
 
         describe('logical operators', () => {
             it('should parse AND operator', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name == 'test' && entity.age > 18);
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name == 'test' && entity.age > 18);
 
-                expect(expression).toBeInstanceOf(OperatorExpression);
-                const op = expression as OperatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(OperatorExpression);
+                const op = parsedExpression.expression as OperatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(op.operator).toBe('&&');
                 expect(op.left).toBeInstanceOf(ComparatorExpression);
                 expect(op.right).toBeInstanceOf(ComparatorExpression);
             });
 
             it('should parse OR operator', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name == 'test' || entity.age > 18);
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name == 'test' || entity.age > 18);
 
-                expect(expression).toBeInstanceOf(OperatorExpression);
-                const op = expression as OperatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(OperatorExpression);
+                const op = parsedExpression.expression as OperatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(op.operator).toBe('||');
                 expect(op.left).toBeInstanceOf(ComparatorExpression);
                 expect(op.right).toBeInstanceOf(ComparatorExpression);
             });
 
             it('should parse complex logical expression with precedence', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name == 'test' && entity.age > 18 || entity.isActive == true);
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name == 'test' && entity.age > 18 || entity.isActive == true);
 
-                expect(expression).toBeInstanceOf(OperatorExpression);
-                const op = expression as OperatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(OperatorExpression);
+                const op = parsedExpression.expression as OperatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(op.operator).toBe('&&');
                 expect(op.left).toBeInstanceOf(ComparatorExpression);
                 expect(op.right).toBeInstanceOf(OperatorExpression);
@@ -459,129 +491,136 @@ describe('Parser', () => {
 
         describe('parentheses', () => {
             it('should parse expression with parentheses', () => {
-                const expression = toExpression(mockSchema, (entity: any) => (entity.name == 'test') && (entity.age > 18));
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => (entity.name == 'test') && (entity.age > 18));
 
-                expect(expression).toBeInstanceOf(OperatorExpression);
-                const op = expression as OperatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(OperatorExpression);
+                const op = parsedExpression.expression as OperatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(op.operator).toBe('&&');
                 expect(op.left).toBeInstanceOf(ComparatorExpression);
                 expect(op.right).toBeInstanceOf(ComparatorExpression);
             });
 
             it('should parse nested parentheses', () => {
-                const expression = toExpression(mockSchema, (entity: any) => ((entity.name == 'test')));
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => ((entity.name == 'test')));
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.comparator).toBe('equals');
             });
         });
 
         describe('error handling', () => {
             it('should return NOT_PARSABLE for invalid function format', () => {
-                const expression = toExpression(mockSchema, (() => 'invalid') as any);
+                const parsedExpression = toParsedExpression(mockSchema, (() => 'invalid') as any);
 
-                expect(expression).toStrictEqual(Expression.NOT_PARSABLE);
+                expect(parsedExpression.expression).toStrictEqual(Expression.NOT_PARSABLE);
             });
 
             it('should return NOT_PARSABLE for unsupported expression format', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name + 'test' as any);
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name + 'test' as any);
 
-                expect(expression).toStrictEqual(Expression.NOT_PARSABLE);
+                expect(parsedExpression.expression).toStrictEqual(Expression.NOT_PARSABLE);
             });
 
             it('should return NOT_PARSABLE for unknown property', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.unknownProperty == 'test');
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.unknownProperty == 'test');
 
-                expect(expression).toStrictEqual(Expression.NOT_PARSABLE);
+                expect(parsedExpression.expression).toStrictEqual(Expression.NOT_PARSABLE);
             });
 
             it('should return NOT_PARSABLE for invalid parameter usage', () => {
-                const expression = toExpression(mockSchema, ([entity, params]: [any, { searchTerm: string }]) => entity.name == params as any, { searchTerm: 'test' });
+                const parsedExpression = toParsedExpression(mockSchema, ([entity, params]: [any, { searchTerm: string }]) => entity.name == params as any, { searchTerm: 'test' });
 
-                expect(expression).toStrictEqual(Expression.NOT_PARSABLE);
+                expect(parsedExpression.expression).toStrictEqual(Expression.NOT_PARSABLE);
             });
         });
 
         describe('type conversion', () => {
             it('should convert string values for string properties', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name == 'test');
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name == 'test');
 
-                const comp = expression as ComparatorExpression;
+                const comp = parsedExpression.expression as ComparatorExpression;
                 expect((comp.right as ValueExpression).value).toBe('test');
             });
 
             it('should convert number values for number properties', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.age == 25);
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.age == 25);
 
-                const comp = expression as ComparatorExpression;
+                const comp = parsedExpression.expression as ComparatorExpression;
                 expect((comp.right as ValueExpression).value).toBe(25);
             });
 
             it('should convert boolean values for boolean properties', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.isActive == true);
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.isActive == true);
 
-                const comp = expression as ComparatorExpression;
+                const comp = parsedExpression.expression as ComparatorExpression;
                 expect((comp.right as ValueExpression).value).toBe(true);
             });
 
             it('should handle numeric string values', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.age == '25');
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.age == '25');
 
-                const comp = expression as ComparatorExpression;
+                const comp = parsedExpression.expression as ComparatorExpression;
                 expect((comp.right as ValueExpression).value).toBe(25);
             });
 
             it('should handle boolean string values', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.isActive == 'true');
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.isActive == 'true');
 
-                const comp = expression as ComparatorExpression;
+                const comp = parsedExpression.expression as ComparatorExpression;
                 expect((comp.right as ValueExpression).value).toBe(true);
             });
         });
 
         describe('edge cases', () => {
             it('should handle expressions with extra whitespace', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name == 'test' && entity.age > 18);
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name == 'test' && entity.age > 18);
 
-                expect(expression).toBeInstanceOf(OperatorExpression);
-                const op = expression as OperatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(OperatorExpression);
+                const op = parsedExpression.expression as OperatorExpression;
                 expect(op.operator).toBe('&&');
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(op.left).toBeInstanceOf(ComparatorExpression);
                 expect(op.right).toBeInstanceOf(ComparatorExpression);
             });
 
             it('should handle expressions with multiple parentheses levels', () => {
-                const expression = toExpression(mockSchema, (entity: any) => ((entity.name == 'test')));
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => ((entity.name == 'test')));
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.comparator).toBe('equals');
             });
 
             it('should handle expressions with complex parentheses grouping', () => {
-                const expression = toExpression(mockSchema, (entity: any) => (entity.name == 'test' && entity.age > 18) || entity.isActive == true);
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => (entity.name == 'test' && entity.age > 18) || entity.isActive == true);
 
-                expect(expression).toBeInstanceOf(OperatorExpression);
-                const op = expression as OperatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(OperatorExpression);
+                const op = parsedExpression.expression as OperatorExpression;
                 expect(op.operator).toBe('&&');
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(op.left).toBeInstanceOf(ComparatorExpression);
                 expect(op.right).toBeInstanceOf(OperatorExpression);
             });
 
             it('should handle expressions with string values containing spaces', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name == 'test value');
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name == 'test value');
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect((comp.right as ValueExpression).value).toBe('test value');
             });
 
             it('should handle expressions with numeric comparisons to string numbers', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.age > '18');
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.age > '18');
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.comparator).toBe('greater-than');
                 expect((comp.right as ValueExpression).value).toBe(18);
             });
@@ -589,10 +628,11 @@ describe('Parser', () => {
 
         describe('reversed comparisons', () => {
             it('should handle reversed equality comparison', () => {
-                const expression = toExpression(mockSchema, (entity: any) => "test" === entity.name);
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => "test" === entity.name);
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.comparator).toBe('equals');
                 expect(comp.negated).toBe(false);
                 expect(comp.strict).toBe(true);
@@ -602,99 +642,18 @@ describe('Parser', () => {
             });
 
             it('should handle reversed numeric comparison', () => {
-                const expression = toExpression(mockSchema, (entity: any) => 18 <= entity.age);
+                const parsedExpression = toParsedExpression(mockSchema, (entity: any) => 18 <= entity.age);
 
-                expect(expression).toBeInstanceOf(ComparatorExpression);
-                const comp = expression as ComparatorExpression;
+                expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+                const comp = parsedExpression.expression as ComparatorExpression;
                 expect(comp.comparator).toBe('greater-than-equals');
+                expect(parsedExpression.executionTarget).toBe("database")
                 expect(comp.negated).toBe(false);
                 expect(comp.strict).toBe(false);
                 expect(comp.left).toBeInstanceOf(PropertyExpression);
                 expect(comp.right).toBeInstanceOf(ValueExpression);
                 expect((comp.right as ValueExpression).value).toBe(18);
             });
-        });
-
-        describe.skip('todo', () => {
-
-
-
-            // it('should parse multiple complex expressions efficiently', () => {
-            //     const params = {
-            //         filters: {
-            //             categories: ['electronics', 'books'],
-            //             priceRange: { min: 10, max: 500 },
-            //             searchTerm: 'javascript'
-            //         }
-            //     };
-
-            //     const expressions = [
-            //         // Expression 1: Product search with category and price filtering
-            //         ([entity, params]: [any, { filters: { categories: string[], priceRange: { min: number, max: number }, searchTerm: string } }]) =>
-            //             entity.category === params.filters.categories[0] &&
-            //             entity.price >= params.filters.priceRange.min &&
-            //             entity.price <= params.filters.priceRange.max &&
-            //             entity.name.toLowerCase().includes(params.filters.searchTerm.toLowerCase()) &&
-            //             entity.isActive === true &&
-            //             entity.rating >= 4.0,
-
-            //         // Expression 2: User preference based filtering
-            //         ([entity, params]: [any, { filters: { categories: string[], priceRange: { min: number, max: number }, searchTerm: string } }]) =>
-            //             (entity.category === params.filters.categories[0] || entity.category === params.filters.categories[1]) &&
-            //             entity.price <= params.filters.priceRange.max &&
-            //             entity.description.toLowerCase().includes(params.filters.searchTerm.toLowerCase()) &&
-            //             entity.reviewCount > 5 &&
-            //             entity.isVerified === true,
-
-            //         // Expression 3: Advanced filtering with multiple conditions
-            //         ([entity, params]: [any, { filters: { categories: string[], priceRange: { min: number, max: number }, searchTerm: string } }]) =>
-            //             entity.price >= params.filters.priceRange.min &&
-            //             entity.price <= params.filters.priceRange.max &&
-            //             (entity.name.startsWith('Pro') || entity.name.endsWith('Plus')) &&
-            //             entity.tags && entity.tags.length > 0 &&
-            //             !entity.tags.includes('deprecated') &&
-            //             entity.createdAt >= '2023-01-01' &&
-            //             entity.createdAt <= '2023-12-31',
-
-            //         // Expression 4: Complex nested logical operations
-            //         ([entity, params]: [any, { filters: { categories: string[], priceRange: { min: number, max: number }, searchTerm: string } }]) =>
-            //             ((entity.category === 'electronics' && entity.price > 100) ||
-            //                 (entity.category === 'books' && entity.price < 50) ||
-            //                 (entity.category === 'clothing' && entity.price >= 20 && entity.price <= 200)) &&
-            //             entity.name.toLowerCase().includes(params.filters.searchTerm.toLowerCase()) &&
-            //             entity.isActive === true &&
-            //             entity.rating >= 3.5,
-
-            //         // Expression 5: Multi-field search with validation
-            //         ([entity, params]: [any, { filters: { categories: string[], priceRange: { min: number, max: number }, searchTerm: string } }]) =>
-            //             entity.price >= params.filters.priceRange.min &&
-            //             entity.price <= params.filters.priceRange.max &&
-            //             (entity.name.toLowerCase().includes(params.filters.searchTerm.toLowerCase()) ||
-            //                 entity.description.toLowerCase().includes(params.filters.searchTerm.toLowerCase()) ||
-            //                 entity.brand.toLowerCase().includes(params.filters.searchTerm.toLowerCase())) &&
-            //             entity.isVerified === true &&
-            //             entity.reviewCount >= 3
-            //     ];
-
-            //     const start = performance.now();
-
-            //     const parsedExpressions = expressions.map(expr =>
-            //         toExpression(mockSchema, expr, params)
-            //     );
-
-            //     const end = performance.now();
-            //     const duration = end - start;
-
-            //     console.log(`Parsed ${expressions.length} complex expressions in: ${duration.toFixed(2)}ms`);
-            //     console.log(`Average time per expression: ${(duration / expressions.length).toFixed(2)}ms`);
-
-            //     parsedExpressions.forEach((expression, index) => {
-            //         expect(expression).not.toBeNull();
-            //         expect(expression).not.toStrictEqual(Expression.NOT_PARSABLE);
-            //     });
-
-            //     expect(duration).toBeLessThan(200); // Should complete in under 200ms
-            // });
         });
     });
 
@@ -767,16 +726,16 @@ describe('Parser', () => {
 
             // Warm Up
             for (let i = 0; i < 50; i++) {
-                toExpression(mockSchema, (entity: any) => entity.name === 'test');
+                toParsedExpression(mockSchema, (entity: any) => entity.name === 'test');
             }
 
             const start = performance.now();
-            const expression = toExpression(mockSchema, (entity: any) => entity.name === 'test');
+            const parsedExpression = toParsedExpression(mockSchema, (entity: any) => entity.name === 'test');
             const delta = performance.now() - start;
             console.log(`Took ${delta}ms`)
             expect(delta).toBeLessThan(.05);
-            expect(expression).toBeInstanceOf(ComparatorExpression);
-            const comp = expression as ComparatorExpression;
+            expect(parsedExpression.expression).toBeInstanceOf(ComparatorExpression);
+            const comp = parsedExpression.expression as ComparatorExpression;
             expect(comp.comparator).toBe('equals');
             expect(comp.negated).toBe(false);
             expect(comp.strict).toBe(true);
@@ -802,7 +761,7 @@ describe('Parser', () => {
 
             // Warm Up
             for (let i = 0; i < 50; i++) {
-                toExpression(mockSchema,
+                toParsedExpression(mockSchema,
                     ([entity, params]: [any, typeof complexParams]) =>
                         // User age and category preferences
                         (entity.age >= params.userFilters.ageRange.min && entity.age <= params.userFilters.ageRange.max) &&
@@ -843,7 +802,7 @@ describe('Parser', () => {
             }
 
             const start = performance.now();
-            const expression = toExpression(mockSchema,
+            const expression = toParsedExpression(mockSchema,
                 ([entity, params]: [any, typeof complexParams]) =>
                     // User age and category preferences
                     (entity.age >= params.userFilters.ageRange.min && entity.age <= params.userFilters.ageRange.max) &&

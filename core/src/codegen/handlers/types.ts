@@ -87,9 +87,10 @@ export abstract class PropertyInfoHandler implements IHandler {
             const parameters = split[0].replace(/\(|\)/g, "").split(",");
             const body = split[1];
 
-            if (body.startsWith("{") === true) {
+            if (body.startsWith("{") === true && body.endsWith("}")) {
 
-                builder.raw(stringifiedFunction);
+                // Remove brackets, wrapping function will have them
+                builder.appendBody(body.slice(1, body.length - 1));
 
                 return {
                     builder,

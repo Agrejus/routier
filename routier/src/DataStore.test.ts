@@ -64,7 +64,12 @@ describe('Data Store', () => {
             const onBulkPersist = (event: DbPluginBulkPersistEvent) => {
 
                 for (const [, changes] of event.operation) {
-                    expect(changes.tags.size).toBe(1)
+                    expect(changes.tags.size).toBe(1);
+
+                    for (const [entity, tag] of changes.tags) {
+                        expect((entity as any).id).toBe(1);
+                        expect(tag).toBe("test");
+                    }
                 }
                 resolve();
             };
@@ -76,7 +81,38 @@ describe('Data Store', () => {
             await called; // waits until callback ran
         });
 
-        it('should tag added entity', async () => {
+        it('should tag added entities', async () => {
+
+            let resolve!: () => void;
+            const called = new Promise<void>(r => { resolve = r; });
+
+            const onBulkPersist = (event: DbPluginBulkPersistEvent) => {
+
+                for (const [, changes] of event.operation) {
+                    expect(changes.tags.size).toBe(3);
+
+                    let count = 0;
+                    for (const [entity, tag] of changes.tags) {
+                        count++;
+                        expect((entity as any).id).toBe(count);
+                        expect(tag).toBe("test");
+                    }
+                }
+                resolve();
+            };
+
+            const store = genericFactory({ onBulkPersist });
+            await store.simple.tag('test').addAsync(
+                { id: 1, name: 'name 1' },
+                { id: 2, name: 'name 2' },
+                { id: 3, name: 'name 3' }
+            );
+            await store.saveChangesAsync();
+
+            await called; // waits until callback ran
+        });
+
+        it('should tag update', async () => {
 
             let resolve!: () => void;
             const called = new Promise<void>(r => { resolve = r; });

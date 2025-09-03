@@ -63,19 +63,21 @@ export class ChangeTracker<TEntity extends {}> {
     }
 
     mergeChanges(changes: SchemaPersistResult<TEntity>) {
-
         const { updates, adds } = changes;
 
-        updates.forEach(update => {
+        for (let i = 0, length = updates.length; i < length; i++) {
+            const update = updates[i];
             const id = this.schema.getId(update);
             const found = this.attachments.get(id);
 
             // Let's only map Ids and identities
             this.schema.merge(found.doc, update); // merge needs to map children appropriately
-        });
+        }
 
-        adds.forEach(add => {
+        for (let i = 0, length = adds.length; i < length; i++) {
+            const add = adds[i];
             const found = this.additions.get(add);
+
             // need to deserialize the add in case there are any dates on it
             const deserializedAdd = this.schema.deserialize(add);
 
@@ -89,7 +91,7 @@ export class ChangeTracker<TEntity extends {}> {
                 doc: found as InferType<TEntity>,
                 changeType: "notModified" // since we just added it, mark it as not modified
             });
-        });
+        }
     }
 
     prepareRemovals(): {

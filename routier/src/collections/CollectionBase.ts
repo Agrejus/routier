@@ -138,6 +138,9 @@ export class CollectionBase<TEntity extends {}> {
             // we only want to notify of changes when an item that was saved matches the query
             // these get reset each time
             // send in the resulting adds because properties might have been set from the db operation
+
+            // cloning has issues
+            // are we recomputing properties?
             const updates = this.cloneMany(resolvedChanges.updates);
             const adds = this.cloneMany(resolvedChanges.adds as InferType<TEntity>[]);
             const removals = this.cloneMany(changes.removes);

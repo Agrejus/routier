@@ -1,4 +1,11 @@
+import { QueryOptionExecutionTarget } from "../plugins";
 import { PropertyInfo } from "../schema";
+
+export type ParsedExpression = {
+    expression: Expression;
+    // Will be memory when trying to query on an untracked computed property or on a function
+    executionTarget: QueryOptionExecutionTarget;
+}
 
 /**
  * The base class for all expression types.

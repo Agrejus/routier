@@ -340,8 +340,8 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
             enricherFunctionBody.slot("enriched");
             enricherFunctionBody.slot("declarations");
-            enricherFunctionBody.slot("ifs");
             enricherFunctionBody.slot("assignment");
+            enricherFunctionBody.slot("ifs");
             enricherFunctionBody.slot("tracking").if('changeTrackingType === "immutable"', { name: "freeze" });
             enricherFunctionBody.raw('\treturn enableChangeTracking(enriched);');
 

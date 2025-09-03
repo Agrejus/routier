@@ -1,10 +1,10 @@
 import { DataBridge } from "../data-access/DataBridge";
 import { ChangeTracker } from "../change-tracking/ChangeTracker";
-import { DbPluginQueryEvent, Query, QueryField, QueryOptionsCollection, QueryOrdering } from "routier-core/plugins";
+import { DbPluginQueryEvent, JsonTranslator, Query, QueryField, QueryOptionsCollection, QueryOrdering } from "routier-core/plugins";
 import { CompiledSchema, InferType, SchemaId } from "routier-core/schema";
 import { CallbackResult, PluginEventCallbackResult, PluginEventResult, Result } from "routier-core/results";
 import { GenericFunction } from "routier-core/types";
-import { Filter, ParamsFilter, toExpression } from "routier-core/expressions";
+import { Filter, ParamsFilter, toParsedExpression } from "routier-core/expressions";
 import { uuid } from "routier-core/utilities";
 import { SchemaCollection } from "routier-core";
 
@@ -13,6 +13,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
     protected readonly dataBridge: DataBridge<TRoot>;
     protected readonly changeTracker: ChangeTracker<TRoot>;
     protected readonly queryOptions: QueryOptionsCollection<TShape>;
+    protected isMemoryQuery: boolean = false;
     protected isSubScribed: boolean = false;
     protected schema: CompiledSchema<TRoot>;
     protected schemas: SchemaCollection;
@@ -60,7 +61,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
             return () => { };
         }
 
-        const event = this.createEvent<U>();
+        const event = this.createQueryEvent<U>();
         const tags = this.changeTracker.tags.get();
 
         this.changeTracker.tags.destroy()
@@ -142,7 +143,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
     }
 
 
-    protected createEvent<Shape>(): DbPluginQueryEvent<TRoot, Shape> {
+    protected createQueryEvent<Shape>(): DbPluginQueryEvent<TRoot, Shape> {
         return {
             operation: new Query<TRoot, Shape>(this.queryOptions as any, this.schema),
             schemas: this.schemas,
@@ -152,9 +153,17 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
     protected getData<TShape>(done: PluginEventCallbackResult<TShape>) {
 
-        const event = this.createEvent<TShape>();
+        const event = this.createQueryEvent<TShape>();
 
-        this.dataBridge.query<TShape>(event, (result) => {
+        // ADD TEST FOR QUERY PARSING, MAKE SURE COMPUTED PROPERTIES AUTOMATICALLY TARGET MEMORY QUERY
+        // CLEAN THIS UP?
+        const resolvedEvent = this.isMemoryQuery ? {
+            operation: Query.EMPTY<TRoot, TShape>(this.schema), // send an empty query since we need to query in memory
+            schemas: this.schemas,
+            id: uuid(8)
+        } : event
+
+        this.dataBridge.query<TShape>(resolvedEvent, (result) => {
 
             if (result.ok === PluginEventResult.ERROR) {
                 done(result);
@@ -168,6 +177,17 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
             // if change tracking is true, we will never be shaping the result from .map()
             if (event.operation.changeTracking === true) {
                 const enriched = this.changeTracker.enrich(result.data as InferType<TRoot>[]);
+
+                // This means we are querying on a computed property that is untracked, need to select
+                // all and query in memory
+                if (this.isMemoryQuery === true) {
+                    const translator = new JsonTranslator(event.operation);
+                    const data = translator.translate(enriched);
+                    const resolved = this.changeTracker.resolve(data as InferType<TRoot>[], tags);
+                    done(PluginEventResult.success(event.id, resolved as TShape));
+                    return;
+                }
+
                 const resolved = this.changeTracker.resolve(enriched, tags);
 
                 done(PluginEventResult.success(event.id, resolved as TShape));
@@ -180,9 +200,11 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
     protected setFiltersQueryOption<P extends {}>(selector: ParamsFilter<TShape, P> | Filter<TShape>, params?: P) {
 
-        const expression = toExpression(this.schema, selector, params);
+        const parsedExpression = toParsedExpression(this.schema, selector, params);
 
-        this.queryOptions.add("filter", { filter: selector as Filter<TShape> | ParamsFilter<TShape, {}>, expression, params });
+        this.isMemoryQuery = parsedExpression.executionTarget === "memory";
+
+        this.queryOptions.add("filter", { filter: selector as Filter<TShape> | ParamsFilter<TShape, {}>, expression: parsedExpression.expression, params });
     }
 
     protected setMapQueryOption<K, R>(selector: GenericFunction<K, R>) {

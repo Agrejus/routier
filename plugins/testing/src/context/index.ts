@@ -3,6 +3,8 @@ import { IDbPlugin } from "routier-core";
 import { productsSchema } from "../schemas/product";
 import { commentsSchema } from "../schemas/comments";
 import { eventsSchema } from "../schemas/event";
+import { usersSchema } from "../schemas/user";
+import { userProfileSchema } from "../schemas/userProfile";
 
 export class TestDataStore extends DataStore {
     constructor(plugin: IDbPlugin) {
@@ -12,4 +14,6 @@ export class TestDataStore extends DataStore {
     products = this.collection(productsSchema).create();
     comments = this.collection(commentsSchema).create();
     events = this.collection(eventsSchema).create();
+    users = this.collection(usersSchema).create();
+    userProfiles = this.collection(userProfileSchema).create();
 }

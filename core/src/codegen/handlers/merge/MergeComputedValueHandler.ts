@@ -23,10 +23,11 @@ export class MergeComputedValueHandler extends PropertyInfoHandler {
 
             defaultFunctionWithParameters.builder.parameters(...parameterNames.map((w, i) => ({ name: defaultFunctionWithParameters.parameters[i], callName: w })));
 
-
-            const ifsSlot = builder.get<SlotBlock>("factory.function.assignments");
+            const slot = builder.get<SlotBlock>("factory.function.assignments");
             const enrichedAssignmentPath = property.getAssignmentPath({ parent: "destination" });
-            ifsSlot.if(`${enrichedAssignmentPath} == null`).appendBody(`${enrichedAssignmentPath} = ${defaultFunctionWithParameters.builder.toCallable()}`);
+
+            // We want to recompute the value always in case there are changes
+            slot.assign(enrichedAssignmentPath).value(defaultFunctionWithParameters.builder.toCallable());
 
             return builder;
         }
