@@ -1,6 +1,5 @@
-import { QueryOptionExecutionTarget } from "../plugins";
 import { CompiledSchema, SchemaTypes } from "../schema";
-import { Expression, OperatorExpression, ComparatorExpression, ValueExpression, PropertyExpression, Filter, ParamsFilter, Operator, ParsedExpression } from "./types";
+import { Expression, OperatorExpression, ComparatorExpression, ValueExpression, PropertyExpression, Filter, ParamsFilter, Operator } from "./types";
 
 // Pre-compiled regex patterns for better performance
 const METHOD_REGEX = /([a-zA-Z0-9_.]+)\.(startsWith|endsWith|includes)\(([^)]+)\)(\s*(===|==|!==|!=)\s*(true|false))?/;
@@ -119,7 +118,7 @@ export const combineExpressions = (...expressions: Expression[]): Expression => 
     return result;
 };
 
-export const toParsedExpression = <T extends any, P extends any>(schema: CompiledSchema<any>, fn: Filter<T> | ParamsFilter<T, P>, params?: P): ParsedExpression => {
+export const toExpression = <T extends any, P extends any>(schema: CompiledSchema<any>, fn: Filter<T> | ParamsFilter<T, P>, params?: P) => {
     try {
 
         const stringifiedFunction = fn.toString();
@@ -164,16 +163,12 @@ export const toParsedExpression = <T extends any, P extends any>(schema: Compile
         return parseExpressionToTree(schema, expression, parameterData);
     } catch (e) {
         console.warn("Error parsing expression", e);
-        return {
-            expression: Expression.NOT_PARSABLE,
-            executionTarget: "memory"
-        };
+        return Expression.NOT_PARSABLE;
     }
 }
 
-const parseExpressionToTree = <P extends any>(schema: CompiledSchema<any>, expression: string, params?: { name: string, data: P }): ParsedExpression => {
+const parseExpressionToTree = <P extends any>(schema: CompiledSchema<any>, expression: string, params?: { name: string, data: P }) => {
 
-    let executionTarget: QueryOptionExecutionTarget = "database";
     const parse = (exp: string): Expression => {
         // Remove any wrapping parentheses
         exp = exp.trim();
@@ -236,22 +231,10 @@ const parseExpressionToTree = <P extends any>(schema: CompiledSchema<any>, expre
         }
 
         // If no operator, try to parse as a condition
-        const condition = parseCondition(schema, exp, params);
-
-        // set the execution target to memory
-        if (condition.executionTarget === "memory" && executionTarget != "memory") {
-            executionTarget = "memory";
-        }
-
-        return condition.expression
+        return parseCondition(schema, exp, params);
     }
 
-    const parsedExpression = parse(expression);
-
-    return {
-        expression: parsedExpression,
-        executionTarget
-    }
+    return parse(expression);
 }
 
 const convertAndAssignValue = (valueExpression: unknown, propertyPathExpression: unknown) => {
@@ -321,7 +304,7 @@ const getSwappedOperator = (operator: string): string => {
     return swapMap[operator] || operator;
 };
 
-const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: string, params?: { name: string, data: P }): ParsedExpression => {
+const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: string, params?: { name: string, data: P }): Expression => {
 
     // Optimized string operations - single trim operation
     const trimmed = expression.trim();
@@ -347,15 +330,10 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
         if (params && leftSide.startsWith(params.name)) {
             // This is a parameter path, not a property path
             // For now, return NOT_PARSABLE for complex parameter-based method calls
-            return {
-                expression: Expression.NOT_PARSABLE,
-                executionTarget: "memory"
-            };
+            return Expression.NOT_PARSABLE;
         }
 
-        const propertyExpression = getProperty(schema, leftSide);
-
-        comparator.left = propertyExpression;
+        comparator.left = getProperty(schema, leftSide);
         comparator.right = getValue(methodMatch[3], params);
 
         // If the comparison is explicitly to false, mark it as negated
@@ -363,10 +341,7 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
             comparator.negated = true;
         }
 
-        return {
-            expression: comparator,
-            executionTarget: propertyExpression.property.isUnmapped ? "memory" : "database"
-        };
+        return comparator;
     }
 
     // Check for transformations on the value side (right side of comparison) - check this FIRST
@@ -401,10 +376,7 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
         comparator.left = propertyExpression;
         comparator.right = valueExpression;
 
-        return {
-            expression: comparator,
-            executionTarget: propertyExpression.property.isUnmapped ? "memory" : "database"
-        };
+        return comparator;
     }
 
     if (transformMethodMatch) {
@@ -467,10 +439,7 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
             comparator.negated = true;
         }
 
-        return {
-            expression: comparator,
-            executionTarget: propertyExpression.property.isUnmapped ? "memory" : "database"
-        };
+        return comparator;
     }
 
     if (equalityMatch) {
@@ -507,16 +476,12 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
             comparator.negated = isNegation;
         }
 
-        const propertyExpression = getProperty(schema, propertySide);
-        comparator.left = propertyExpression;
+        comparator.left = getProperty(schema, propertySide);
         comparator.right = getValue(valueSide, params);
 
         convertAndAssignValue(comparator.right, comparator.left);
 
-        return {
-            expression: comparator,
-            executionTarget: propertyExpression.property.isUnmapped ? "memory" : "database"
-        };
+        return comparator;
     }
 
     if (comparisonMatch) {
@@ -553,16 +518,12 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
             comparator.negated = isNegation;
         }
 
-        const propertyExpression = getProperty(schema, propertySide);
-        comparator.left = propertyExpression;
+        comparator.left = getProperty(schema, propertySide);
         comparator.right = getValue(valueSide, params);
 
         convertAndAssignValue(comparator.right, comparator.left);
 
-        return {
-            expression: comparator,
-            executionTarget: propertyExpression.property.isUnmapped ? "memory" : "database"
-        };
+        return comparator;
     }
 
     // If we get here, the expression is too complex for the current parser

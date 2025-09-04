@@ -1,6 +1,6 @@
 import { CallbackResult, Result, ResultType } from "routier-core/results";
 import { QuerySource } from "./QuerySource";
-import { Filter, ParamsFilter, toParsedExpression } from "routier-core/expressions";
+import { Filter, ParamsFilter, toExpression } from "routier-core/expressions";
 import { GenericFunction } from "routier-core/types";
 import { QueryOptionName } from "routier-core/plugins";
 export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<Root, Shape> {
@@ -238,10 +238,9 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
             // params query
             const selector = doneOrExpression as Filter<Shape> | ParamsFilter<Shape, {}>;
             const params = paramsOrDone as P;
-            const parsedExpression = toParsedExpression(this.schema, selector, params);
+            const expression = toExpression(this.schema, selector, params);
 
-            this.isMemoryQuery = parsedExpression.executionTarget === "memory";
-            this.queryOptions.add("filter", { filter: selector, expression: parsedExpression.expression, params });
+            this.queryOptions.add("filter", { filter: selector, expression, params });
 
             this.getData<Shape[]>((r) => resolve(done, r));
             return;
@@ -250,10 +249,9 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
         // regular query
         const d = paramsOrDone as CallbackResult<R>;
         const selector = doneOrExpression as Filter<Shape>;
-        const parsedExpression = toParsedExpression(this.schema, selector);
+        const expression = toExpression(this.schema, selector);
 
-        this.isMemoryQuery = parsedExpression.executionTarget === "memory";
-        this.queryOptions.add("filter", { filter: selector, expression: parsedExpression.expression });
+        this.queryOptions.add("filter", { filter: selector, expression });
         this.getData<Shape[]>((r) => resolve(d, r));
     }
 

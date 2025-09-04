@@ -2,9 +2,9 @@ import { DataBridge } from "../data-access/DataBridge";
 import { ChangeTracker } from "../change-tracking/ChangeTracker";
 import { DbPluginQueryEvent, JsonTranslator, Query, QueryField, QueryOptionsCollection, QueryOrdering } from "routier-core/plugins";
 import { CompiledSchema, InferType, SchemaId } from "routier-core/schema";
-import { CallbackResult, PluginEventCallbackResult, PluginEventResult, Result } from "routier-core/results";
+import { CallbackResult, PluginEventCallbackResult, PluginEventResult, PluginEventSuccessType, Result } from "routier-core/results";
 import { GenericFunction } from "routier-core/types";
-import { Filter, ParamsFilter, toParsedExpression } from "routier-core/expressions";
+import { Filter, ParamsFilter, toExpression } from "routier-core/expressions";
 import { uuid } from "routier-core/utilities";
 import { SchemaCollection } from "routier-core";
 
@@ -13,7 +13,6 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
     protected readonly dataBridge: DataBridge<TRoot>;
     protected readonly changeTracker: ChangeTracker<TRoot>;
     protected readonly queryOptions: QueryOptionsCollection<TShape>;
-    protected isMemoryQuery: boolean = false;
     protected isSubScribed: boolean = false;
     protected schema: CompiledSchema<TRoot>;
     protected schemas: SchemaCollection;
@@ -61,26 +60,16 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
             return () => { };
         }
 
-        const event = this.createQueryEvent<U>();
-        const tags = this.changeTracker.tags.get();
+        const { databaseEvent, memoryEvent } = this.createQueryPayload<U>();
 
-        this.changeTracker.tags.destroy()
-
-        return this.dataBridge.subscribe<U, unknown>(event, (r) => {
+        return this.dataBridge.subscribe<U, unknown>(databaseEvent, (r) => {
 
             if (r.ok === Result.ERROR) {
                 done(r);
                 return;
             }
 
-            if (event.operation.changeTracking === true) {
-                const enriched = this.changeTracker.enrich(r.data as InferType<TRoot>[]);
-                const resolved = this.changeTracker.resolve(enriched, tags, { merge: true });
-                done(Result.success(resolved as U));
-                return;
-            }
-
-            done(r);
+            this.postProcessQuery(r, { databaseEvent, memoryEvent }, done);
         });
     }
 
@@ -143,68 +132,82 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
     }
 
 
-    protected createQueryEvent<Shape>(): DbPluginQueryEvent<TRoot, Shape> {
+    protected createQueryPayload<Shape>(): { memoryEvent: DbPluginQueryEvent<TRoot, Shape>, databaseEvent: DbPluginQueryEvent<TRoot, Shape> } {
+
+        // send over only the database operations, if there are none its a select all
+        const splitQueryOptions = this.queryOptions.split();
+
         return {
-            operation: new Query<TRoot, Shape>(this.queryOptions as any, this.schema),
-            schemas: this.schemas,
-            id: uuid(8)
+            databaseEvent: {
+                operation: new Query<TRoot, Shape>(splitQueryOptions.database as any, this.schema),
+                schemas: this.schemas,
+                id: uuid(8)
+            },
+            memoryEvent: {
+                operation: new Query<TRoot, Shape>(splitQueryOptions.memory as any, this.schema),
+                schemas: this.schemas,
+                id: uuid(8)
+            }
         }
     }
 
     protected getData<TShape>(done: PluginEventCallbackResult<TShape>) {
 
-        const event = this.createQueryEvent<TShape>();
+        const { databaseEvent, memoryEvent } = this.createQueryPayload<TShape>();
 
-        // ADD TEST FOR QUERY PARSING, MAKE SURE COMPUTED PROPERTIES AUTOMATICALLY TARGET MEMORY QUERY
-        // CLEAN THIS UP?
-        const resolvedEvent = this.isMemoryQuery ? {
-            operation: Query.EMPTY<TRoot, TShape>(this.schema), // send an empty query since we need to query in memory
-            schemas: this.schemas,
-            id: uuid(8)
-        } : event
-
-        this.dataBridge.query<TShape>(resolvedEvent, (result) => {
+        this.dataBridge.query<TShape>(databaseEvent, (result) => {
 
             if (result.ok === PluginEventResult.ERROR) {
                 done(result);
                 return;
             }
 
+            this.postProcessQuery(result, { databaseEvent, memoryEvent }, done);
+
+        });
+    }
+
+    private postProcessQuery<TShape>(result: PluginEventSuccessType<TShape>, payload: { databaseEvent: DbPluginQueryEvent<TRoot, TShape>, memoryEvent: DbPluginQueryEvent<TRoot, TShape> }, done: PluginEventCallbackResult<TShape>) {
+        debugger;
+        const { databaseEvent, memoryEvent } = payload;
+
+        try {
             const tags = this.changeTracker.tags.get();
 
             this.changeTracker.tags.destroy();
 
             // if change tracking is true, we will never be shaping the result from .map()
-            if (event.operation.changeTracking === true) {
+            if (databaseEvent.operation.changeTracking === true) {
+                debugger;
                 const enriched = this.changeTracker.enrich(result.data as InferType<TRoot>[]);
 
                 // This means we are querying on a computed property that is untracked, need to select
                 // all and query in memory
-                if (this.isMemoryQuery === true) {
-                    const translator = new JsonTranslator(event.operation);
+                if (Query.isEmpty(memoryEvent.operation) === false) {
+                    const translator = new JsonTranslator(memoryEvent.operation);
                     const data = translator.translate(enriched);
                     const resolved = this.changeTracker.resolve(data as InferType<TRoot>[], tags);
-                    done(PluginEventResult.success(event.id, resolved as TShape));
+                    done(PluginEventResult.success(memoryEvent.id, resolved as TShape));
                     return;
                 }
 
                 const resolved = this.changeTracker.resolve(enriched, tags);
 
-                done(PluginEventResult.success(event.id, resolved as TShape));
+                done(PluginEventResult.success(databaseEvent.id, resolved as TShape));
                 return;
             }
 
             done(result);
-        });
+        } catch (e) {
+            done(PluginEventResult.error(databaseEvent.id, e));
+        }
     }
 
     protected setFiltersQueryOption<P extends {}>(selector: ParamsFilter<TShape, P> | Filter<TShape>, params?: P) {
 
-        const parsedExpression = toParsedExpression(this.schema, selector, params);
+        const expression = toExpression(this.schema, selector, params);
 
-        this.isMemoryQuery = parsedExpression.executionTarget === "memory";
-
-        this.queryOptions.add("filter", { filter: selector as Filter<TShape> | ParamsFilter<TShape, {}>, expression: parsedExpression.expression, params });
+        this.queryOptions.add("filter", { filter: selector as Filter<TShape> | ParamsFilter<TShape, {}>, expression, params });
     }
 
     protected setMapQueryOption<K, R>(selector: GenericFunction<K, R>) {

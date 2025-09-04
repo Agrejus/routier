@@ -14,13 +14,11 @@ const factory = () => {
     return store;
 };
 
-
 describe("User Profiles Tests", () => {
 
     afterAll(async () => {
         await Promise.all(stores.map(x => x.destroyAsync()));
     });
-
 
     describe('Add Operations', () => {
         it("Can add item and access functions", async () => {
@@ -37,18 +35,30 @@ describe("User Profiles Tests", () => {
     });
 
     describe('Select Operations', () => {
+
         it("Can query on computed untracked property", async () => {
             const dataStore = factory();
             // Arrange
-            const [item] = generateData(dataStore.userProfiles.schema, 1);
+            const items = generateData(dataStore.userProfiles.schema, 1000);
 
             // Act
-            await dataStore.userProfiles.addAsync(item);
+            await dataStore.userProfiles.addAsync(...items);
             await dataStore.saveChangesAsync();
 
-            const found = await dataStore.userProfiles.firstOrUndefinedAsync(x => x.age === 0);
+            const found = await dataStore.userProfiles
+                .where(x => x.firstName.startsWith("A"))
+                .where(x => x.age === 0).
+                firstOrUndefinedAsync();
 
-            expect(found).toBeDefined();
+            debugger;
+
+            // Enricher is not setting functions properly, needs to be fixed
+            expect(found?.fullName).toBeDefined();
+            expect(found?.age).toBeDefined();
+            expect(found?.formattedAddress).toBeDefined();
+            expect(found?.isActive).toBeDefined();
+            expect(found?.documentType).toBeDefined();
+            expect(found?.getDisplayName).toBeDefined();
         });
     });
 });

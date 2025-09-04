@@ -27,3 +27,33 @@ export function getProperties(expression: Expression): PropertyInfo<any>[] {
     traverse(expression);
     return properties;
 }
+
+export function isPropertyExpression(expression: Expression): expression is PropertyExpression {
+    return expression.type === "property";
+}
+
+export function forEach(expression: Expression, callback: (expression: Expression) => boolean) {
+    function traverse(expr: Expression): boolean {
+        // Call the callback for this expression
+        // If callback returns false, stop traversing
+        if (!callback(expr)) {
+            return false;
+        }
+
+        // Traverse left and right expressions if they exist
+        if (expr.left) {
+            if (!traverse(expr.left)) {
+                return false;
+            }
+        }
+        if (expr.right) {
+            if (!traverse(expr.right)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    traverse(expression);
+}

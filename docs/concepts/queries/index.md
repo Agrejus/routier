@@ -110,6 +110,28 @@ await ctx.users.where((u) => u.status === "inactive").removeAsync();
 - To get distinct values of a specific field, use `map` to project that field before calling `distinctAsync()`.
 - For live results, see Live Queries; you can chain `.subscribe()` before a terminal method to receive updates.
 
+### Computed or unmapped properties
+
+When filtering on a computed or unmapped property (not tracked in the database), the filter runs in memory. If you start your query with only computed/unmapped filters, the system will load records first and then apply those filters client‑side.
+
+Best practice: apply database‑backed filters first, then computed/unmapped filters. This minimizes the number of records that need to be loaded into memory.
+
+Example (in this schema, `firstName` is stored in the database while `age` is a computed property):
+
+```ts
+// Good: DB filter first, then computed filter (runs remaining in memory)
+const found = await ctx.userProfiles
+  .where((u) => u.firstName.startsWith("A")) // database-backed
+  .where((u) => u.age === 0) // computed (in-memory)
+  .firstOrUndefinedAsync();
+
+// Avoid: starting with a computed filter can lead to a broader load before filtering in memory
+const avoid = await ctx.userProfiles
+  .where((u) => u.age === 0) // computed (in-memory)
+  .where((u) => u.firstName.startsWith("A")) // database-backed
+  .toArrayAsync();
+```
+
 ### Related
 
 - [Expressions](/concepts/queries/expressions/)
