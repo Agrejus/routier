@@ -204,14 +204,6 @@ export class DexiePlugin implements IDbPlugin, Disposable {
 
             options.forEach(option => {
 
-                if (option.target !== "database") {
-
-                    // tell translator to use the base functionality
-                    // need to handle memory operations properly,
-                    // take is happening in memory and the translator is ignoring it
-                    return;
-                }
-
                 if (option.name === "filter") {
                     if (option.value.params == null) {
                         // standard filtering

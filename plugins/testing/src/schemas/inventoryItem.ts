@@ -1,5 +1,9 @@
 import { s } from 'routier-core';
 
+const isNullOrEmpty = (value: unknown) => {
+    return value == null || value == "";
+}
+
 export const inventoryItemsSchema = s.define("inventoryItems", {
     sku: s.string().key().identity(),
     name: s.string(),
@@ -8,6 +12,6 @@ export const inventoryItemsSchema = s.define("inventoryItems", {
     restockDate: s.date().optional(),
     discontinued: s.boolean()
 }).modify(w => ({
-    collectionName: w.computed((_, collectionName) => collectionName).tracked(),
-    wasRestocked: w.function((x) => x.restockDate != null)
+    hasCollectionName: w.computed((_, collectionName, injected) => !injected.isNullOrEmpty(collectionName), { isNullOrEmpty }).tracked(),
+    wasRestocked: w.function((x, _collectioNName, injected) => !injected.isNullOrEmpty(x.restockDate != null), { isNullOrEmpty })
 })).compile();

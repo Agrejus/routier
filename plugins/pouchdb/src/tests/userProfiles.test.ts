@@ -50,15 +50,13 @@ describe("User Profiles Tests", () => {
                 .where(x => x.age === 0).
                 firstOrUndefinedAsync();
 
-            debugger;
-
             // Enricher is not setting functions properly, needs to be fixed
             expect(found?.fullName).toBeDefined();
             expect(found?.age).toBeDefined();
             expect(found?.formattedAddress).toBeDefined();
             expect(found?.isActive).toBeDefined();
             expect(found?.documentType).toBeDefined();
-            expect(found?.getDisplayName).toBeDefined();
+            expect(typeof found?.getDisplayName).toBe("function");
         });
     });
 });

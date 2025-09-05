@@ -1,8 +1,9 @@
-import { AssignmentBuilder, CodeBuilder, ContainerBlock, Insert, ObjectBuilder, SlotBlock } from '..';
+import { AssignmentBuilder, CodeBuilder, ContainerBlock, ObjectBuilder, SlotBlock } from '..';
 import { PropertyInfo } from '../../schema/PropertyInfo';
 import { SlotPath } from '../SlotPath';
 import { SchemaError } from '../../errors/SchemaError';
 import { uuid } from '../../utilities/uuid';
+import { countWordOccurance } from '../utils';
 
 export interface IHandler {
     setNext(handler: IHandler): IHandler;
@@ -80,12 +81,19 @@ export abstract class PropertyInfoHandler implements IHandler {
         const name = `_${uuid()}`;
 
         const builder = parent.function(name);
+        const occurences = countWordOccurance(stringifiedFunction, "=>")
 
-        if (stringifiedFunction.includes("=>")) {
+        if (occurences > 0) {
 
             const split = stringifiedFunction.split("=>").map(w => w.trim());
             const parameters = split[0].replace(/\(|\)/g, "").split(",");
-            const body = split[1];
+            let body = split[1];
+
+            if (occurences > 1) {
+                // we have a function that returns a function
+                const index = stringifiedFunction.indexOf("=>");
+                body = stringifiedFunction.slice(index + 2, stringifiedFunction.length)
+            }
 
             if (body.startsWith("{") === true && body.endsWith("}")) {
 

@@ -5,6 +5,7 @@ import { commentsSchema } from "../schemas/comments";
 import { eventsSchema } from "../schemas/event";
 import { usersSchema } from "../schemas/user";
 import { userProfileSchema } from "../schemas/userProfile";
+import { inventoryItemsSchema } from "../schemas/inventoryItem";
 
 export class TestDataStore extends DataStore {
     constructor(plugin: IDbPlugin) {
@@ -16,4 +17,5 @@ export class TestDataStore extends DataStore {
     events = this.collection(eventsSchema).create();
     users = this.collection(usersSchema).create();
     userProfiles = this.collection(userProfileSchema).create();
+    inventoryItems = this.collection(inventoryItemsSchema).create();
 }
