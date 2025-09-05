@@ -2,11 +2,12 @@
   "name": "@routier/react",
   "version": "1.0.0",
   "description": "React integration examples for Routier framework",
-  "private": true,
+  "private": false,
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build:types": "tsc -p tsconfig.types.json",
+    "build": "vite build && npm run build:types",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test": "vitest",
@@ -16,8 +17,9 @@
 
   },
   "peerDependencies": {
-    "routier-core": "^0.0.01",
-    "react": "^16.8.0"
+    "@routier/core": ">=0.0.1",
+    "react": ">=16.8.0",
+    "react-dom": ">=16.8.0"
   },
   "devDependencies": {
     "@types/react": "^16.8.0",
@@ -27,13 +29,22 @@
     "eslint": "^8.55.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
-    "react": "^16.8.0",
-    "routier-core": "file://../core",
     "typescript": "^5.2.2",
     "vite": "^5.0.8",
     "vitest": "^1.0.4"
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "main": "./dist/index.cjs.js",
+  "module": "./dist/index.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.cjs.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "sideEffects": false
 }

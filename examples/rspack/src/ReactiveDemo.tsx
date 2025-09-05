@@ -1,6 +1,6 @@
 import { useDataStore } from './DexieStore';
 import { Product } from './schemas/product';
-import { useQuery } from "./useQuery";
+import { useQuery } from "@routier/react";
 import { useState } from "react";
 
 export function ReactiveDemo() {
@@ -178,7 +178,7 @@ export function ReactiveDemo() {
 							<h4>Recent Products:</h4>
 							<div className="products-list">
 								{reactiveProducts.data.slice(-5).reverse().map((product) => (
-									<div key={product.id} className="product-item">
+									<div key={product._id} className="product-item">
 										<span className="product-name">{product.name}</span>
 										<span className="product-price">${product.price?.toFixed(2) || '0.00'}</span>
 									</div>
@@ -206,7 +206,7 @@ export function ReactiveDemo() {
 							<h4>Products (as of last render):</h4>
 							<div className="products-list">
 								{nonReactiveProducts.data.slice(-5).reverse().map((product) => (
-									<div key={product.id} className="product-item">
+									<div key={product._id} className="product-item">
 										<span className="product-name">{product.name}</span>
 										<span className="product-price">${product.price?.toFixed(2) || '0.00'}</span>
 									</div>

@@ -7,11 +7,7 @@ export default defineConfig({
     plugins: [react()],
     resolve: {
         alias: {
-            '@': resolve(__dirname, './src'),
-            'routier': resolve(__dirname, '../routier/src'),
-            '@routier/core': resolve(__dirname, '../core/src'),
-            'routier-plugin-memory': resolve(__dirname, '../plugins/memory/src'),
-            'routier-plugin-local-storage': resolve(__dirname, '../plugins/local-storage/src')
+            '@': resolve(__dirname, './src')
         }
     },
     server: {
@@ -19,7 +15,16 @@ export default defineConfig({
         open: true
     },
     build: {
-        outDir: 'dist',
-        sourcemap: true
+        sourcemap: true,
+        lib: {
+            entry: resolve(__dirname, 'src/index.ts'),
+            name: '@routier/react',
+            formats: ['es', 'cjs'],
+            fileName: (format) => `index.${format}.js`
+        },
+        rollupOptions: {
+            external: ['react', 'react-dom', '@routier/core', 'routier'],
+        },
+        outDir: 'dist'
     }
 })

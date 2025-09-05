@@ -1,19 +1,22 @@
 /**
- * Counts whole-word, non-overlapping occurrences of a word in text.
+ * Counts non-overlapping occurrences of a term in text.
  *
  * Behavior:
  * - Case-sensitive matching
- * - Whole-word boundaries only (word chars: A–Z, a–z, 0–9, _)
- * - Non-overlapping matches (after a hit, advances by word length)
+ * - If the search term is composed entirely of word characters (A–Z, a–z, 0–9, _),
+ *   enforce whole-word boundaries so "red" does not match inside "redder".
+ * - If the search term contains any non-word character (e.g. "=>", "()", "::"),
+ *   match anywhere without boundary checks (useful for symbols).
+ * - Non-overlapping matches (after a hit, advances by term length)
  * - Optimized single-character fast path; otherwise uses indexOf loop
  *
  * Examples:
  * - countWordOccurance("red redder red", "red") => 2
- * - countWordOccurance("aa aa", "a") => 2
+ * - countWordOccurance("()=>{}", "=>") => 1
  * - countWordOccurance("aaaa", "aa") => 2 (non-overlapping)
  *
  * @param text The source text to scan
- * @param word The word to match (must be non-empty)
+ * @param word The term to match (must be non-empty)
  * @returns The number of occurrences found
  */
 export const countWordOccurance = (text: string, word: string) => {
@@ -40,16 +43,30 @@ export const countWordOccurance = (text: string, word: string) => {
             || c === 95;                 // _
     }
 
+    // Decide whether to enforce word boundaries based on the search term
+    let enforceWordBoundaries = true;
+    for (let k = 0; k < wl; k++) {
+        const cc = word.charCodeAt(k);
+        if (!isWordCharCode(cc)) {
+            enforceWordBoundaries = false;
+            break;
+        }
+    }
+
     while (true) {
         i = text.indexOf(word, i);
         if (i === -1) break;
 
-        const left = i - 1;
-        const right = i + wl;
-        const leftOk = left < 0 || !isWordCharCode(text.charCodeAt(left));
-        const rightOk = right >= tl || !isWordCharCode(text.charCodeAt(right));
-
-        if (leftOk && rightOk) count++;
+        if (enforceWordBoundaries) {
+            const left = i - 1;
+            const right = i + wl;
+            const leftOk = left < 0 || !isWordCharCode(text.charCodeAt(left));
+            const rightOk = right >= tl || !isWordCharCode(text.charCodeAt(right));
+            if (leftOk && rightOk) count++;
+        } else {
+            // No boundary enforcement for symbol-containing terms
+            count++;
+        }
         i += wl; // non-overlapping word matches
     }
 

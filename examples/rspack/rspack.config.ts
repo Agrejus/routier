@@ -12,7 +12,11 @@ export default defineConfig({
 		main: "./src/main.tsx"
 	},
 	resolve: {
-		extensions: ["...", ".ts", ".tsx", ".jsx"]
+		extensions: ["...", ".ts", ".tsx", ".jsx"],
+		alias: {
+			react: require("path").resolve(__dirname, "node_modules/react"),
+			"react-dom": require("path").resolve(__dirname, "node_modules/react-dom")
+		}
 	},
 	module: {
 		rules: [

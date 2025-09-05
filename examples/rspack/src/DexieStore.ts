@@ -1,9 +1,9 @@
 import { product } from "./schemas/product";
-import { DexiePlugin } from "routier-plugin-dexie";
+import { DexiePlugin } from "@routier/dexie-plugin";
 import { DataStore } from '../../../datastore/dist';
-import { MemoryPlugin } from "routier-plugin-memory";
+import { MemoryPlugin } from "@routier/memory-plugin";
 import { DbPluginLoggingCapability, OptimisticReplicationDbPlugin } from "@routier/core/plugins";
-import { PouchDbPlugin } from "routier-plugin-pouchdb";
+import { PouchDbPlugin } from "@routier/pouchdb-plugin";
 import { UnknownRecord } from "@routier/core/utilities";
 import { SchemaCollection } from "@routier/core/collections";
 import { assertIsNotNull } from "@routier/core";

@@ -30,14 +30,14 @@
   ],
   "description": "Memory plugin for routier",
   "peerDependencies": {
-    "routier-core": "^0.0.1"
+    "@routier/core": "^0.0.1"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.0.0",
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",
-    "routier-core": "file://../../core",
-    "routier-plugin-testing": "file://../testing",
+    "@routier/core": "file://../../core",
+    "@routier/testing-plugin": "file://../testing",
     "ts-loader": "^9.5.2",
     "vitest": "^3.1.3"
   }

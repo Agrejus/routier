@@ -168,7 +168,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
     }
 
     private postProcessQuery<TShape>(result: PluginEventSuccessType<TShape>, payload: { databaseEvent: DbPluginQueryEvent<TRoot, TShape>, memoryEvent: DbPluginQueryEvent<TRoot, TShape> }, done: PluginEventCallbackResult<TShape>) {
-        debugger;
+
         const { databaseEvent, memoryEvent } = payload;
 
         try {
@@ -178,7 +178,6 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
             // if change tracking is true, we will never be shaping the result from .map()
             if (databaseEvent.operation.changeTracking === true) {
-                debugger;
                 const enriched = this.changeTracker.enrich(result.data as InferType<TRoot>[]);
 
                 // This means we are querying on a computed property that is untracked, need to select

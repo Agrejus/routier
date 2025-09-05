@@ -1,6 +1,6 @@
 import { useDataStore } from './DexieStore';
 import { Product } from './schemas/product';
-import { useQuery } from "./useQuery";
+import { useQuery } from "@routier/react";
 import { useState, useMemo } from "react";
 
 interface GridFilters {
@@ -245,7 +245,7 @@ export function GridDemo() {
 						</thead>
 						<tbody>
 							{filteredAndSortedProducts.map((product) => (
-								<tr key={product.id}>
+								<tr key={product._id}>
 									<td className="product-name">{product.name}</td>
 									<td className="product-price">${product.price.toFixed(2)}</td>
 									<td className="product-category">{product.category || '-'}</td>

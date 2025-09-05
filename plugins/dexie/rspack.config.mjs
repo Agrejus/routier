@@ -40,6 +40,10 @@ export default defineConfig({
         extensions: [".ts", ".js"], // Resolve TypeScript and JavaScript files
         fallback: {
             "perf_hooks": false
+        },
+        alias: {
+            react: require('path').resolve(__dirname, 'node_modules/react'),
+            'react-dom': require('path').resolve(__dirname, 'node_modules/react-dom')
         }
     },
     target: "web", // Compile for both browser and Node.js

@@ -1,5 +1,5 @@
 import { useDataStore } from './DexieStore';
-import { useQuery } from "./useQuery";
+import { useQuery } from "@routier/react";
 import { useState } from "react";
 
 interface ProductFormData {

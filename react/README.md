@@ -1,133 +1,109 @@
-# Routier React Examples
+# @routier/react
 
-This is a React application demonstrating how to use the Routier framework for data management in React applications.
+Lightweight React bindings for Routier collections. This package exports the `useQuery` hook to subscribe to live query results with a simple callback interface.
 
-## Features
-
-- **User Management** - Create, read, and delete users
-- **Post Management** - Create, read, and delete blog posts
-- **Real-time Data** - Live updates using Routier's change tracking
-- **TypeScript** - Full type safety with TypeScript
-- **Modern React** - Built with React 18 and modern hooks
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18 or higher
-- npm or yarn
-
-### Installation
-
-1. Install dependencies:
+## Install
 
 ```bash
-npm install
+npm install @routier/react
+# peer deps (provided by your app)
+npm install react react-dom
 ```
 
-2. Start the development server:
+Ensure your bundler/app resolves a single copy of React. This package declares React as a peer dependency and does not bundle it.
 
-```bash
-npm run dev
+## Exports
+
+```ts
+import { useQuery } from "@routier/react";
 ```
 
-3. Open your browser and navigate to `http://localhost:3000`
+## useQuery
 
-## Available Scripts
+Signature:
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-- `npm run test` - Run tests
-- `npm run test:ui` - Run tests with UI
-- `npm run lint` - Run ESLint
-
-## Project Structure
-
-```
-src/
-├── App.tsx          # Main application component
-├── App.css          # Application styles
-├── main.tsx         # React entry point
-├── index.css        # Base styles
-└── test/
-    └── setup.ts     # Test configuration
+```ts
+function useQuery<T>(
+  subscribe: (callback: (result: ResultType<T>) => void) => void | (() => void),
+  deps?: any[]
+): {
+  status: "pending" | "success" | "error";
+  loading: boolean;
+  error: Error | null;
+  data: T | undefined;
+};
 ```
 
-## Routier Integration
+Behavior:
 
-This example demonstrates:
+- Subscribes to your data source and updates when the callback fires.
+- Returns a simple state object: `{ status, loading, error, data }`.
+- Unsubscribes automatically on unmount or dep changes if you return a cleanup function from `subscribe`.
 
-- **Schema Definition** - Using Routier's schema system
-- **Data Context** - Extending DataStore for your application
-- **Collections** - Creating and managing data collections
-- **CRUD Operations** - Add, read, update, delete operations
-- **Change Tracking** - Automatic change detection and persistence
+### Examples
 
-## Key Concepts
+Count example:
 
-### Schema Definition
+```ts
+const productCount = useQuery<number>(
+  (cb) => dataStore.products.subscribe().count(cb),
+  []
+);
 
-```typescript
-const userSchema = s
-  .define("user", {
-    _id: s.string().key().identity(),
-    _rev: s.string().identity(),
-    name: s.string().index(),
-    email: s.string(),
-    age: s.number().optional(),
-    createdAt: s.date().default(() => new Date()),
-  })
-  .compile();
+if (productCount.status === "success") {
+  console.log(productCount.data);
+}
 ```
 
-### Data Context
+Array example:
 
-```typescript
-class BlogContext extends DataStore {
-  constructor() {
-    super(new MemoryPlugin("blog-app"));
+```ts
+const products = useQuery<any[]>(
+  (cb) => dataStore.products.subscribe().toArray(cb),
+  []
+);
+
+if (products.status === "success") {
+  products.data?.forEach((p) => console.log(p.name));
+}
+```
+
+Custom subscription with cleanup:
+
+```ts
+useQuery(
+  (cb) => {
+    const sub = dataStore.products.subscribe();
+    const unsubscribe = sub.onChange(() => sub.toArray(cb));
+    // initial emit
+    sub.toArray(cb);
+    return unsubscribe;
+  },
+  [
+    /* deps */
+  ]
+);
+```
+
+## Troubleshooting: Invalid hook call
+
+If you see "Invalid hook call":
+
+1. Ensure a single React instance in your app (`npm ls react`).
+2. Do not import internal source files; import from `@routier/react`.
+3. Your bundler should alias `react` and `react-dom` to the app’s `node_modules` (monorepo setups):
+
+```js
+// webpack/rspack
+resolve: {
+  alias: {
+    react: path.resolve(__dirname, 'node_modules/react'),
+    'react-dom': path.resolve(__dirname, 'node_modules/react-dom')
   }
-
-  users = this.collection(userSchema).create();
-  posts = this.collection(postSchema).create();
 }
 ```
 
-### React Integration
+## Notes
 
-```typescript
-function App() {
-  const [ctx] = useState(() => new BlogContext());
-  const [users, setUsers] = useState<User[]>([]);
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    const usersData = await ctx.users.toArrayAsync();
-    setUsers(usersData);
-  };
-}
-```
-
-## Customization
-
-You can easily customize this example by:
-
-- Adding new schemas and collections
-- Implementing different storage plugins
-- Adding more complex queries and relationships
-- Implementing real-time subscriptions
-- Adding authentication and authorization
-
-## Learn More
-
-- [Routier Documentation](../docs/README.md)
-- [React Documentation](https://react.dev/)
-- [TypeScript Documentation](https://www.typescriptlang.org/)
-
-## Contributing
-
-This is part of the Routier framework. See the main project for contribution guidelines.
+- React is a peer dependency (not bundled).
+- The library builds to ESM and CJS and ships TypeScript declarations.

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Result, ResultType } from 'routier-core/results';
+import { Result, ResultType } from '@routier/core/results';
 
 type LiveQueryState<T> = 
   | { status: 'pending'; loading: true; error: null; data: undefined }
