@@ -10,7 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "routier": "file://../../routier",
+    "@routier/data-store": "file://../../routier",
     "routier-core": "file://../../core",
     "routier-plugin-memory": "file://../../plugins/memory",
     "routier-plugin-pouchdb": "file://../../plugins/pouchdb",

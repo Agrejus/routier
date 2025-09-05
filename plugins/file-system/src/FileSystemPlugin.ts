@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { DbPluginEvent, EphemeralDataPlugin } from 'routier-core/plugins';
-import { PluginEventCallbackResult, PluginEventResult } from 'routier-core/results';
-import { CompiledSchema } from 'routier-core/schema';
+import { DbPluginEvent, EphemeralDataPlugin } from '@routier/core/plugins';
+import { PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
+import { CompiledSchema } from '@routier/core/schema';
 import { FileSystemDbCollection } from './FileSystemDbCollection';
 
 export class FileSystemPlugin extends EphemeralDataPlugin {

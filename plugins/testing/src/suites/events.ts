@@ -1,7 +1,7 @@
 import { generateData } from '../utils/dataGenerator';
 import { describe, it, expect } from 'vitest';
 import { TestDataStore } from '../context';
-import { IDbPlugin } from 'routier-core';
+import { IDbPlugin } from '@routier/core';
 
 const pluginFactory: () => IDbPlugin = () => null as any; // Replace with your plugin
 const factory = () => new TestDataStore(pluginFactory());

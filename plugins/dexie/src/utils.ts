@@ -1,4 +1,4 @@
-import { CompiledSchema, PropertyInfo, SchemaTypes } from "routier-core";
+import { CompiledSchema, PropertyInfo, SchemaTypes } from "@routier/core";
 
 export const convertToDexieSchema = <T extends {}>(schema: CompiledSchema<T>) => {
     const schemaProperties: string[] = [];

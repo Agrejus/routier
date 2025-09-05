@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { CommentsTestSuite, EventsTestSuite, ProductTestSuite } from 'routier-plugin-testing';
 import { BrowserStoragePlugin } from './BrowserStoragePlugin';
-import { uuidv4 } from 'routier-core';
+import { uuidv4 } from '@routier/core';
 
 const testSections = [
     new ProductTestSuite(new BrowserStoragePlugin(uuidv4(), window.localStorage), { expect: expect as any, fn: vi.fn }),

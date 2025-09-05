@@ -1,4 +1,4 @@
-import { s } from 'routier-core';
+import { s } from '@routier/core';
 
 // A more practical example showing computed and function modifiers
 export const userProfileSchema = s.define("userProfiles", {

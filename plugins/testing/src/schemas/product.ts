@@ -1,4 +1,4 @@
-import { s } from "routier-core/schema";
+import { s } from "@routier/core/schema";
 
 export const productsSchema = s.define("products", {
     _id: s.string().key().identity(),

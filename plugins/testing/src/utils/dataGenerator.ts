@@ -1,5 +1,5 @@
-import { CompiledSchema, InferCreateType, SchemaTypes } from "routier-core";
-import { PropertyInfo } from "routier-core";
+import { CompiledSchema, InferCreateType, SchemaTypes } from "@routier/core";
+import { PropertyInfo } from "@routier/core";
 import { faker } from '@faker-js/faker';
 
 // Helper function to generate random data based on property type

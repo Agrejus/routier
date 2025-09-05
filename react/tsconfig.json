@@ -28,7 +28,7 @@
                 "./src/*"
             ],
             "routier": [
-                "../routier/src"
+                "../datastore/src"
             ],
             "routier-core": [
                 "../core/src"

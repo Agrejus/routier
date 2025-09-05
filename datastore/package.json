@@ -1,0 +1,63 @@
+{
+  "name": "@routier/datastore",
+  "version": "0.0.1",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "source": "./src/index.ts",
+  "scripts": {
+    "build:types": "tsc --emitDeclarationOnly",
+    "build:bundle": "rspack build",
+    "build": "npm run build:bundle && npm run build:types",
+    "tsc": "tsc",
+    "test": "vitest run"
+  },
+  "sideEffects": false,
+  "author": "James DeMeuse <james.demeuse@gmail.com>",
+  "license": "MIT",
+  "repository": "Agrejus/routier",
+  "keywords": [
+    "orm",
+    "typescript",
+    "typesafe",
+    "data store",
+    "datastore",
+    "data abstraction",
+    "data modeling",
+    "schema",
+    "query builder",
+    "expressions",
+    "change tracking",
+    "computed properties",
+    "live queries",
+    "offline-first",
+    "sync",
+    "replication",
+    "conflict resolution",
+    "adapter",
+    "plugin",
+    "persistence",
+    "browser",
+    "nodejs",
+    "indexeddb",
+    "dexie",
+    "pouchdb",
+    "couchdb",
+    "sqlite"
+  ],
+  "description": "Data abstraction layer that routes all database operations to any ORM or data store",
+  "peerDependencies": {
+    "routier-core": "^0.0.1"
+  },
+  "dependencies": {
+    "@routier/memory-plugin": "file://../plugins/memory"
+  },
+  "devDependencies": {
+    "@routier/core": "file://../core",
+    "@rspack/cli": "^1.1.8",
+    "@rspack/core": "^1.1.8",
+    "ts-loader": "^9.5.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}

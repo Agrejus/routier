@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { CompiledSchema } from "routier-core/schema";
-import { CallbackResult, Result } from "routier-core/results";
-import { MemoryDataCollection } from 'routier-core/collections';
+import { CompiledSchema } from "@routier/core/schema";
+import { CallbackResult, Result } from "@routier/core/results";
+import { MemoryDataCollection } from '@routier/core/collections';
 
 export class FileSystemDbCollection extends MemoryDataCollection {
 

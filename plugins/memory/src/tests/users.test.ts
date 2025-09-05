@@ -1,7 +1,7 @@
 import { faker } from '@faker-js/faker';
 import { describe, it, expect, afterAll } from 'vitest';
 import { TestDataStore } from 'routier-plugin-testing';
-import { IDbPlugin, uuidv4 } from 'routier-core';
+import { IDbPlugin, uuidv4 } from '@routier/core';
 import { MemoryPlugin } from '..';
 
 const generateDbName = () => `${uuidv4()}-db`;

@@ -1,8 +1,8 @@
-import { DbPluginEvent, EphemeralDataPlugin } from 'routier-core/plugins';
-import { PluginEventCallbackResult, PluginEventResult, Result } from 'routier-core/results';
-import { CompiledSchema } from 'routier-core/schema';
+import { DbPluginEvent, EphemeralDataPlugin } from '@routier/core/plugins';
+import { PluginEventCallbackResult, PluginEventResult, Result } from '@routier/core/results';
+import { CompiledSchema } from '@routier/core/schema';
 import { BrowserStorageCollection } from './BrowserStorageCollection';
-import { AsyncPipeline } from 'routier-core';
+import { AsyncPipeline } from '@routier/core';
 
 export class BrowserStoragePlugin extends EphemeralDataPlugin {
 

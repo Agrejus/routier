@@ -1,4 +1,4 @@
-import { s } from "routier-core/schema";
+import { s } from "@routier/core/schema";
 
 export const commentsSchema = s.define("comments", {
     _id: s.string().key().identity(),

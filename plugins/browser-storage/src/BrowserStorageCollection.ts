@@ -1,6 +1,6 @@
-import { CompiledSchema } from "routier-core/schema";
-import { CallbackResult, Result } from "routier-core/results";
-import { MemoryDataCollection } from 'routier-core/collections';
+import { CompiledSchema } from "@routier/core/schema";
+import { CallbackResult, Result } from "@routier/core/results";
+import { MemoryDataCollection } from '@routier/core/collections';
 
 export class BrowserStorageCollection extends MemoryDataCollection {
 

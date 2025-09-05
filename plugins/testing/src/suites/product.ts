@@ -3,7 +3,7 @@ import { wait, seedData } from '../utils';
 import { faker } from '@faker-js/faker';
 import { describe, it, expect, vi } from 'vitest';
 import { TestDataStore } from '../context';
-import { IDbPlugin } from 'routier-core';
+import { IDbPlugin } from '@routier/core';
 
 const pluginFactory: () => IDbPlugin = () => null as any; // Replace with your plugin
 const factory = () => new TestDataStore(pluginFactory());

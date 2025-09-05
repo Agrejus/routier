@@ -1,4 +1,4 @@
-import { s } from 'routier-core';
+import { s } from '@routier/core';
 
 const isNullOrEmpty = (value: unknown) => {
     return value == null || value == "";

@@ -1,4 +1,4 @@
-import { IQuery, JsonTranslator, QueryOption } from "routier-core/plugins";
+import { IQuery, JsonTranslator, QueryOption } from "@routier/core/plugins";
 
 type DexieTranslatorOptions = {
     useTranslatorDistinct: boolean;

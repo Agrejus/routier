@@ -1,4 +1,4 @@
-import { s } from 'routier-core';
+import { s } from '@routier/core';
 
 export const eventsSchema = s.define("events", {
     _id: s.string().key().identity(),

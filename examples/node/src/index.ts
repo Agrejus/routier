@@ -1,15 +1,12 @@
-import { Collection, DataStore } from "routier";
+import { Collection, DataStore } from "../../../datastore/dist";
 import { MemoryPlugin } from "routier-plugin-memory";
 import { PouchDbPlugin } from "routier-plugin-pouchdb";
 import { DexiePlugin } from "routier-plugin-dexie";
 import { FileSystemPlugin } from "routier-plugin-file-system";
 
 import { performance } from 'perf_hooks'
-import { faker } from '@faker-js/faker';
-import PouchDB from 'pouchdb';
-import { InferType, s } from "routier-core/schema";
-import { DbPluginLogging, DbPluginReplicator } from "routier-core/plugins";
-import { Result } from "routier-core";
+import { InferType, s } from "@routier/core/schema";
+import { Result } from "@routier/core";
 
 // ADDITIONS
 // .distinct()

@@ -1,7 +1,7 @@
 import { faker } from '@faker-js/faker';
 import { describe, it, expect, vi, afterAll } from 'vitest';
 import { TestDataStore, generateData, wait, seedData } from 'routier-plugin-testing';
-import { IDbPlugin, UnknownRecord, uuidv4 } from 'routier-core';
+import { IDbPlugin, UnknownRecord, uuidv4 } from '@routier/core';
 import { PouchDbPlugin } from '../PouchDbPlugin';
 
 const generateDbName = () => `${uuidv4()}-db`;

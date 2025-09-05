@@ -1,4 +1,4 @@
-import { s } from 'routier-core';
+import { s } from '@routier/core';
 
 export const blogPostsSchema = s.define("blogPosts", {
     id: s.string().key().identity(),

@@ -1,5 +1,5 @@
 import { DataContext } from "routier";
-import { InferType, s } from "routier-core";
+import { InferType, s } from "@routier/core";
 import { PouchDbPlugin } from "routier-plugin-pouchdb";
 import * as fs from 'fs';
 import * as path from 'path';

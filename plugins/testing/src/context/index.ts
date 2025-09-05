@@ -1,5 +1,5 @@
-import { DataStore } from "routier";
-import { IDbPlugin } from "routier-core";
+import { DataStore } from "../../../../datastore/dist";
+import { IDbPlugin } from "@routier/core";
 import { productsSchema } from "../schemas/product";
 import { commentsSchema } from "../schemas/comments";
 import { eventsSchema } from "../schemas/event";

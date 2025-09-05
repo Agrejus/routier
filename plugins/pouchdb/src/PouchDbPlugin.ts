@@ -1,12 +1,12 @@
 import PouchDB from 'pouchdb';
 import { PouchDbTranslator } from './PouchDbTranslator';
-import { SyncronousQueue, SyncronousUnitOfWork, WorkPipeline } from 'routier-core/pipeline';
-import { InferCreateType, InferType, PropertyInfo, SchemaId } from 'routier-core/schema';
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, EntityUpdateInfo, IDbPlugin, IQuery } from 'routier-core/plugins';
-import { CallbackResult, PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from 'routier-core/results';
-import { assertIsNotNull } from 'routier-core/assertions';
-import { combineExpressions, ComparatorExpression, Expression, getProperties } from 'routier-core/expressions';
-import { BulkPersistChanges, BulkPersistResult, SchemaCollection, UnknownRecord } from 'routier-core';
+import { SyncronousQueue, SyncronousUnitOfWork, WorkPipeline } from '@routier/core/pipeline';
+import { InferCreateType, InferType, PropertyInfo, SchemaId } from '@routier/core/schema';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, EntityUpdateInfo, IDbPlugin, IQuery } from '@routier/core/plugins';
+import { CallbackResult, PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '@routier/core/results';
+import { assertIsNotNull } from '@routier/core/assertions';
+import { combineExpressions, ComparatorExpression, Expression, getProperties } from '@routier/core/expressions';
+import { BulkPersistChanges, BulkPersistResult, SchemaCollection, UnknownRecord } from '@routier/core';
 
 const queue = new SyncronousQueue();
 const INDEX_NAME = "routier_pdb_indexes"

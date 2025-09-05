@@ -1,11 +1,11 @@
 import Dexie from 'dexie';
 import { convertToDexieSchema } from "./utils";
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin } from 'routier-core/plugins';
-import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from 'routier-core/results';
-import { BulkPersistResult } from 'routier-core/collections';
-import { InferCreateType, PropertyInfo, SchemaTypes } from 'routier-core/schema';
-import { uuidv4 } from 'routier-core/utilities';
-import { ParamsFilter } from 'routier-core/expressions';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin } from '@routier/core/plugins';
+import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
+import { BulkPersistResult } from '@routier/core/collections';
+import { InferCreateType, PropertyInfo, SchemaTypes } from '@routier/core/schema';
+import { uuidv4 } from '@routier/core/utilities';
+import { ParamsFilter } from '@routier/core/expressions';
 import { DexieTranslator } from './DexieTranslator';
 
 const cache = new Map<string, Record<string, string>>();

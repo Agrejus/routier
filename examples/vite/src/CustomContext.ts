@@ -1,5 +1,5 @@
 import { DataContext } from "routier";
-import { DbPluginLogging } from "routier-core";
+import { DbPluginLogging } from "@routier/core";
 import { product } from "./schemas/product";
 import { PouchDbPlugin, toMango, setQueryOptions } from "routier-plugin-pouchdb";
 

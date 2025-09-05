@@ -1,6 +1,6 @@
 import { describe, it, expect, afterAll } from 'vitest';
 import { TestDataStore, generateData } from 'routier-plugin-testing';
-import { IDbPlugin, uuidv4 } from 'routier-core';
+import { IDbPlugin, uuidv4 } from '@routier/core';
 import { PouchDbPlugin } from '../PouchDbPlugin';
 
 const pluginFactory: () => IDbPlugin = () => new PouchDbPlugin(uuidv4());

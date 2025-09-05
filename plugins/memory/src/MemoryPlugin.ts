@@ -1,8 +1,8 @@
 import { MemoryDatabase } from ".";
-import { DbPluginEvent, EphemeralDataPlugin } from "routier-core/plugins";
-import { CompiledSchema } from "routier-core/schema";
-import { PluginEventCallbackResult, PluginEventResult } from "routier-core/results";
-import { MemoryDataCollection } from "routier-core/collections";
+import { DbPluginEvent, EphemeralDataPlugin } from "@routier/core/plugins";
+import { CompiledSchema } from "@routier/core/schema";
+import { PluginEventCallbackResult, PluginEventResult } from "@routier/core/results";
+import { MemoryDataCollection } from "@routier/core/collections";
 
 const dbs: Record<string, MemoryDatabase> = {};
 

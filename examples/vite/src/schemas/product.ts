@@ -1,4 +1,4 @@
-import { s } from 'routier-core';
+import { s } from '@routier/core';
 
 export const product = s.define("products", {
     _id: s.string().key().identity(),

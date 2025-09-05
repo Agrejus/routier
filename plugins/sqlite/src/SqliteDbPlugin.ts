@@ -1,5 +1,5 @@
 import sqlite3 from 'sqlite3';
-import { CompiledSchema, DbPluginBulkOperationsEvent, DbPluginQueryEvent, EntityModificationResult, IDbPlugin } from 'routier-core';
+import { CompiledSchema, DbPluginBulkOperationsEvent, DbPluginQueryEvent, EntityModificationResult, IDbPlugin } from '@routier/core';
 import { buildSelectFromExpression, compiledSchemaToSqliteTable } from './utils';
 
 const tableCache: Record<string, string> = {};

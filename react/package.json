@@ -1,5 +1,5 @@
 {
-  "name": "routier-react",
+  "name": "@routier/react",
   "version": "1.0.0",
   "description": "React integration examples for Routier framework",
   "private": true,

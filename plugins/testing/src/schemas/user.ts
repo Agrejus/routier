@@ -1,4 +1,4 @@
-import { s, uuidv4 } from 'routier-core';
+import { s, uuidv4 } from '@routier/core';
 
 export const usersSchema = s.define("users", {
     id: s.string().key().default(x => x.uuid(), { uuid: uuidv4 }),

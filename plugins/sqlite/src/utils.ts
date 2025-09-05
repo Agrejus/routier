@@ -1,5 +1,5 @@
-import { PropertyInfo, CompiledSchema, SchemaTypes } from 'routier-core';
-import { Expression, ComparatorExpression, OperatorExpression, PropertyPathExpression, ValueExpression } from 'routier-core';
+import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core';
+import { Expression, ComparatorExpression, OperatorExpression, PropertyPathExpression, ValueExpression } from '@routier/core';
 
 /**
  * Maps schema types to SQLite column types.

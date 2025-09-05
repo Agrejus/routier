@@ -1,4 +1,4 @@
-import { MemoryDataCollection } from 'routier-core/collections';
+import { MemoryDataCollection } from '@routier/core/collections';
 import { MemoryPlugin } from './MemoryPlugin';
 
 export type MemoryDatabase = Record<string, MemoryDataCollection>;

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { CommentsTestSuite, EventsTestSuite, ProductTestSuite } from 'routier-plugin-testing';
 import { FileSystemPlugin } from './FileSystemPlugin';
-import { uuidv4 } from 'routier-core';
+import { uuidv4 } from '@routier/core';
 
 const testSections = [
     new ProductTestSuite(new FileSystemPlugin(__dirname, uuidv4()), { expect: expect as any, fn: vi.fn }),

@@ -1,6 +1,6 @@
 ## Routier
 
-Type-safe, plugin-driven ORM router. Define schemas with computed/function properties, query with natural JS expressions, and persist via pluggable backends (memory, IndexedDB/Dexie, PouchDB/CouchDB, SQLite, filesystem, and more).
+Type-safe, plugin-driven data abstraction layer that let's developers use any ORM/data store. Define schemas with computed/function properties, query with natural JS expressions, and persist via pluggable backends (memory, IndexedDB/Dexie, PouchDB/CouchDB, SQLite, filesystem, and more).
 
 ### Highlights
 

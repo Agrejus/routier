@@ -9,7 +9,7 @@ export default defineConfig({
         alias: {
             '@': resolve(__dirname, './src'),
             'routier': resolve(__dirname, '../routier/src'),
-            'routier-core': resolve(__dirname, '../core/src'),
+            '@routier/core': resolve(__dirname, '../core/src'),
             'routier-plugin-memory': resolve(__dirname, '../plugins/memory/src'),
             'routier-plugin-local-storage': resolve(__dirname, '../plugins/local-storage/src')
         }
