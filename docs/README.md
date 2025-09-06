@@ -1,148 +1,47 @@
-# Routier Framework Documentation
+# Routier Documentation
 
-Welcome to the Routier framework documentation! Routier is a modern, flexible data management framework designed for building scalable applications with robust data handling, change tracking, and real-time synchronization.
+Routier is a reactive data toolkit: schemas + collections + live queries + optimistic mutations, powered by a plugin system for any storage.
 
-## 🎯 **Key Point: Data Store Agnostic**
+## How it works
 
-**Routier doesn't care what data store you use.** Whether it's a traditional database, HTTP API, file system, in-memory storage, or even a custom storage solution - Routier provides the same powerful data management capabilities. Your data can live anywhere, and Routier will work with it through plugins.
+1. Define schemas (types, indexes, modifiers)
+2. Create collections from schemas
+3. Read data with live queries
+4. Write with optimistic mutations (rollback on error)
 
-## 🚀 Quick Start
+## Start here
 
-- [Getting Started](quick-start/getting-started.md)
-- [Installation](quick-start/installation.md)
-- [Basic Example](quick-start/basic-example.md)
-- [Configuration](quick-start/configuration.md)
+- Getting Started: /getting-started/overview
+- Installation: /getting-started/installation
+- Quick Start: /getting-started/quick-start
+- React Adapter: /getting-started/react-adapter
 
-## 📚 Core Concepts
+## Concepts
 
-### Schema
+- Schema: /concepts/schema/
+- Queries: /concepts/queries/
+- Data Pipeline: /concepts/data-pipeline/
 
-- [Creating A Schema](core-concepts/schema/creating-a-schema.md)
-- [Property Types](core-concepts/schema/property-types/README.md)
-- [Modifiers](core-concepts/schema/modifiers/README.md)
-- [Reference](core-concepts/schema/reference.md)
-- [Why Schemas?](core-concepts/schema/why-schemas.md)
+## Guides
 
-### Data Collections
+- Live Queries: /guides/live-queries.md
+- Optimistic Updates: /guides/optimistic-updates.md
+- State Management: /guides/state-management.md
+- Data Manipulation: /guides/data-manipulation.md
+- History Tracking: /guides/history-tracking.md
+- Syncing: /guides/syncing.md
+- Entity Tagging: /guides/entity-tagging.md
 
-- [Memory Collections](core-concepts/data-collections/memory-collections.md)
-- [Change Tracking](core-concepts/data-collections/change-tracking.md)
-- [Entity Management](core-concepts/data-collections/entity-management.md)
+## API
 
-### Queries
+- API Landing: /api/
+- Reference: /reference/api/
 
-- [Natural Queries](core-concepts/queries/natural-queries.md)
-- [Expressions](core-concepts/queries/expressions/README.md)
-- [Query Options](core-concepts/queries/query-options/README.md)
+## Examples
 
-### Data Pipeline
+- Basic: /examples/basic/
+- Advanced: /examples/advanced/
+- Performance: /examples/performance/
+- Real-world: /examples/real-world/
 
-- [Synchronous Operations](core-concepts/data-pipeline/synchronous-operations.md)
-- [Asynchronous Operations](core-concepts/data-pipeline/asynchronous-operations.md)
-- [Performance Optimization](core-concepts/data-pipeline/performance-optimization.md)
-
-## 🔌 Plugins
-
-Routier's plugin system is what makes it data store agnostic. You can use any storage backend by implementing a plugin - from databases to HTTP APIs to custom solutions.
-
-### Available Plugins
-
-- [Memory Plugin](plugins/built-in-plugins/memory/README.md)
-- [Local Storage Plugin](plugins/built-in-plugins/local-storage/README.md)
-- [File System Plugin](plugins/built-in-plugins/file-system/README.md)
-- [PouchDB Plugin](plugins/built-in-plugins/pouchdb/README.md)
-- [Dexie Plugin](plugins/built-in-plugins/dexie/README.md)
-- [SQLite Plugin](plugins/built-in-plugins/sqlite/README.md)
-
-### Advanced Plugins
-
-- [Replication](plugins/advanced-plugins/replication/README.md)
-- [Query Translation](plugins/advanced-plugins/query-translation/README.md)
-
-### Capabilities
-
-- [Logging](plugins/advanced-plugins/logging/README.md)
-
-### Create Your Own
-
-- [Plugin Architecture](plugins/create-your-own/plugin-architecture.md)
-- [Custom Collections](plugins/create-your-own/custom-collections.md)
-- [Custom Translators](plugins/create-your-own/custom-translators.md)
-
-## 🗄️ Data Operations
-
-### CRUD Operations
-
-- [Create](data-operations/crud/create.md)
-- [Update](data-operations/crud/update.md)
-- [Delete](data-operations/crud/delete.md)
-- [Bulk Operations](data-operations/crud/bulk/README.md)
-
-### Data Modification
-
-- [Change Tracking](data-operations/modification/change-tracking/README.md)
-- [Entity Tagging](data-operations/modification/entity-tagging/README.md)
-- [Optimistic Updates](data-operations/modification/optimistic-updates/README.md)
-
-### State Management
-
-- [Data Context Setup](data-operations/state-management/data-context-setup.md)
-- [Live Queries](data-operations/state-management/live-queries/README.md)
-- [Syncing](data-operations/state-management/syncing/README.md)
-
-## ⚛️ React Integration
-
-- [Setup & Configuration](react-integration/setup/README.md)
-- [Hooks & Components](react-integration/hooks-components/README.md)
-- [State Management](react-integration/state-management.md)
-- [Performance Optimization](react-integration/performance/README.md)
-
-## 🚀 Advanced Features
-
-- [Performance & Profiling](advanced-features/performance-profiling/README.md)
-- [Change Tracking](advanced-features/change-tracking/README.md)
-- [History Management](advanced-features/history-management/README.md)
-- [Entity Relationships](advanced-features/entity-relationships/README.md)
-- [Data Validation](advanced-features/data-validation/README.md)
-- [Error Handling](advanced-features/error-handling/README.md)
-
-## 📖 Guides & Examples
-
-- [Data Manipulation](guides-examples/data-manipulation/README.md)
-- [State Management](guides-examples/state-management/README.md)
-- [Optimistic Updates](guides-examples/optimistic-updates/README.md)
-- [Entity Tagging](guides-examples/entity-tagging/README.md)
-- [History Tracking](guides-examples/history-tracking/README.md)
-- [Live Queries](guides-examples/live-queries/README.md)
-- [Syncing](guides-examples/syncing/README.md)
-
-## 📚 Reference
-
-- [API Reference](reference/api/README.md)
-- [Configuration Options](reference/configuration/README.md)
-- [Error Codes](reference/errors/README.md)
-- [Migration Guide](reference/migration/README.md)
-- [Change Log](reference/change-log.md)
-
-## 💡 Examples
-
-- [Basic Examples](examples/basic/README.md)
-- [Advanced Examples](examples/advanced/README.md)
-- [Real-world Use Cases](examples/real-world/README.md)
-- [Performance Examples](examples/performance/README.md)
-
-## 🎮 Demos
-
-- [Interactive Examples](demos/interactive/README.md)
-- [Code Sandboxes](demos/code-sandboxes/README.md)
-- [Performance Benchmarks](demos/performance-benchmarks/README.md)
-
----
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-## 📄 License
-
-This project is licensed under the [LICENSE](LICENSE) file.
+For structure/flow inspiration: TanStack DB Overview — `https://tanstack.com/db/latest/docs/overview`

@@ -2,6 +2,20 @@
 
 Property modifiers in Routier allow you to customize the behavior, constraints, and metadata of your schema properties. They can be chained together to create powerful, flexible schemas that accurately represent your database structure.
 
+## Quick Summary
+
+- Default: Define default values for properties.
+- Deserialize: Custom deserializer (e.g., parse ISO strings to Date).
+- Distinct: Mark property as unique (distinct index).
+- Identity: Mark property as database/computed identity (auto-generated).
+- Index: Define single or composite indexes.
+- Key: Define primary key.
+- Nullable: Allow null.
+- Optional: Allow undefined (omit the field).
+- Readonly: Disallow modification after creation.
+- Serialize: Custom serializer (e.g., Date to ISO string).
+- Tracked: Persist computed value for indexing and faster reads.
+
 ## Available Modifiers
 
 All schema types support these core modifiers:
@@ -20,6 +34,40 @@ Additional modifiers are available on specific types:
 - **`.key()`** - Marks as primary key (string, number, date)
 - **`.identity()`** - Auto-generates values (string, number, date, boolean)
 - **`.distinct()`** - Ensures unique values (string, number, date, boolean)
+
+## Tracked (for computed values)
+
+### `.tracked()`
+
+Persists a computed value to the underlying store. Use when:
+
+- You need to index or sort/filter by the computed value
+- Recomputing is expensive and you want to cache post-save
+
+```typescript
+const schema = s.define("orders", {
+  // Derived, not persisted by default
+  total: s
+    .number()
+    .computed((order) =>
+      order.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+    ),
+
+  // Persist the computed value to the data store
+  totalCached: s
+    .number()
+    .computed((order) =>
+      order.items.reduce((sum, i) => sum + i.price * i.quantity, 0)
+    )
+    .tracked()
+    .index(),
+});
+```
+
+Notes:
+
+- `.tracked()` applies to computed properties. It does not change the computation, only persistence/indexability.
+- Use `.tracked()` sparingly; it increases write costs but can greatly improve read performance.
 
 ## Identity and Keys
 

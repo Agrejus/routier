@@ -387,6 +387,15 @@ Different types support different modifiers:
 | `.identity()`    | ✅     | ✅     | ✅      | ✅   | ✅     | ❌    |
 | `.distinct()`    | ✅     | ✅     | ✅      | ✅   | ❌     | ❌    |
 
+## Summary of Types
+
+- Array: `s.array(innerType)`
+- Boolean: `s.boolean()`
+- Date: `s.date()`
+- Number: `s.number()`
+- Object: `s.object({...})`
+- String: `s.string()`
+
 ## Next Steps
 
 - [Modifiers](modifiers/README.md) - Property modifiers and constraints

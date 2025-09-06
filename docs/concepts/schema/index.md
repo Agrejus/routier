@@ -47,6 +47,12 @@ const userSchema = s
 - **Serialization**: `serialize()`, `deserialize()`
 - **Performance**: `index()`
 
+### Collection-level Modifiers
+
+- **Computed**: `computed(fn)` derives a value from the entity (and optionally collection name/injected context). Defaults to untracked and not persisted.
+- **Tracked**: `tracked()` on a computed property persists the derived value to storage for faster reads and indexing.
+- **Function**: `function(fn)` attaches non-persisted methods to entities.
+
 ### Rich Type System
 
 - **Primitives**: `string`, `number`, `boolean`, `date`

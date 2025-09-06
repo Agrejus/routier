@@ -1,34 +1,50 @@
-# Sidebar navigation for Routier documentation
-- title: Tutorials
-  url: /tutorials/
-  children:
-    - title: Getting Started
-      url: /tutorials/getting-started.md
-    - title: Installation
-      url: /tutorials/installation.md
-    - title: Basic Example
-      url: /tutorials/basic-example.md
-    - title: Configuration
-      url: /tutorials/configuration.md
-
-- title: Concepts
-  url: /concepts/
-  children:
-    - title: Schema
-      url: /concepts/schema/
-      children:
-        - title: Creating A Schema
-          url: /concepts/schema/creating-a-schema.md
-        - title: Schema Builder Reference
-          url: /concepts/schema/schema-builder-reference.md
-        - title: Property Types
-          url: /concepts/schema/property-types/
-        - title: Modifiers
-          url: /concepts/schema/modifiers/
-        - title: Reference
-          url: /concepts/schema/reference.md
-        - title: Why Schemas?
-          url: /concepts/schema/why-schemas.md
+*** Begin Patch
+*** Update File: /Users/jdemeuse/Repos/routier/docs/_data/sidebar.yml
+@@
+-# Sidebar navigation for Routier documentation
++# Sidebar navigation for Routier documentation
++- title: Getting Started
++  url: /getting-started/
++  children:
++    - title: Overview
++      url: /getting-started/overview.md
++    - title: Installation
++      url: /getting-started/installation.md
++    - title: Quick Start
++      url: /getting-started/quick-start.md
++    - title: React Adapter
++      url: /getting-started/react-adapter.md
+@@
+ - title: Tutorials
+   url: /tutorials/
+   children:
+     - title: Getting Started
+       url: /tutorials/getting-started.md
+@@
+ - title: Concepts
+   url: /concepts/
+   children:
+@@
+ 
++- title: Guides
++  url: /guides/
++  children:
++    - title: Overview
++      url: /guides/index.md
++    - title: Live Queries
++      url: /guides-examples/live-queries/
++    - title: Optimistic Updates
++      url: /guides-examples/optimistic-updates/
++    - title: State Management
++      url: /guides-examples/state-management/
++    - title: Data Manipulation
++      url: /guides-examples/data-manipulation/
++    - title: History Tracking
++      url: /guides-examples/history-tracking/
++    - title: Syncing
++      url: /guides-examples/syncing/
++
+*** End Patchchema/why-schemas.md
     - title: Data Collections
       url: /concepts/data-collections/
       children:
@@ -45,6 +61,26 @@
           url: /concepts/queries/query-options/
     - title: Data Pipeline
       url: /concepts/data-pipeline/
+
+- title: Guides
+  url: /guides/
+  children:
+    - title: Overview
+      url: /guides/index.md
+    - title: Live Queries
+      url: /guides/live-queries.md
+    - title: Optimistic Updates
+      url: /guides/optimistic-updates.md
+    - title: State Management
+      url: /guides/state-management.md
+    - title: Data Manipulation
+      url: /guides/data-manipulation.md
+    - title: History Tracking
+      url: /guides/history-tracking.md
+    - title: Syncing
+      url: /guides/syncing.md
+    - title: Entity Tagging
+      url: /guides/entity-tagging.md
 
 - title: Integrations
   url: /integrations/
@@ -129,23 +165,7 @@
     - title: Error Handling
       url: /how-to/error-handling/
 
-- title: Guides & Examples
-  url: /guides-examples/
-  children:
-    - title: Data Manipulation
-      url: /guides-examples/data-manipulation/
-    - title: State Management
-      url: /guides-examples/state-management/
-    - title: Optimistic Updates
-      url: /guides-examples/optimistic-updates/
-    - title: Entity Tagging
-      url: /guides-examples/entity-tagging/
-    - title: History Tracking
-      url: /guides-examples/history-tracking/
-    - title: Live Queries
-      url: /guides-examples/live-queries/
-    - title: Syncing
-      url: /guides-examples/syncing/
+ 
 
 - title: Reference
   url: /reference/

@@ -1,0 +1,74 @@
+---
+description: "Authoring rules for docs that ensure consistency and high-quality, TanStack-style"
+globs:
+  - "docs/**/*.md"
+alwaysApply: true
+---
+
+# Documentation authoring rules (AI-oriented)
+
+## Information architecture
+
+- Prefer top-level sections: Getting Started, Concepts, Guides, How-To, API, Integrations, Tutorials, Examples, Demos.
+- Keep navigation shallow (max depth 2). Cross-link instead of nesting deeply.
+- Each page must declare its role: concept, guide, how-to, or reference.
+
+## Page templates
+
+- Concepts: overview (2–3 sentences), when to use, key ideas, links to guides and API.
+- Guides: goal statement, prerequisites, steps with code, pitfalls, next steps.
+- How-to: one task, concise steps, minimal context, link to concept and API.
+- API: purpose, signatures, params/returns, behavior notes, examples, related links.
+
+## Writing style
+
+- Be concise, task-first, and consistent with API naming.
+- Use TypeScript by default; add JS only if valuable.
+- Prefer small, runnable snippets followed by realistic examples.
+- Avoid fluff, avoid passive voice, prefer imperative verbs.
+
+## Code examples
+
+- Use fenced code blocks with the correct language tag.
+- Show the minimal working example first, then an expanded example.
+- Keep snippet scopes consistent with import paths used in the repo.
+- Do not include comments that explain obvious lines; add comments for why.
+
+## Cross-linking
+
+- Every page should link to: a related concept (if applicable) and related API.
+- Concepts should link to at least one guide and one how-to.
+- Avoid duplicate content; reference canonical pages instead.
+
+## Terminology
+
+- Match public API names exactly (functions, classes, options).
+- Use consistent nouns for core ideas: collections, live queries, optimistic mutations, transactions, schema.
+
+## Examples and demos
+
+- Examples are code-first; demos are UX-first. Link both from relevant guides.
+- Prefer incremental, copy-pasteable steps that build on each other.
+
+## Quality checks
+
+- No broken links. Verify local relative paths.
+- Sidebar entry must exist for new top-level pages.
+- Include an Edit on GitHub link if the site supports it.
+
+## React-specific
+
+- Prefer hooks-based examples. Show `useLiveQuery` for reading and collection mutators for writing.
+- Show optimistic behavior and rollback patterns explicitly where relevant.
+
+## Performance and errors
+
+- For performance topics, include measurement setup and expected outcomes.
+- For errors, include reproduction, cause, and recovery/rollback steps.
+
+## Example structure sync with TanStack DB
+
+- Getting Started: overview, installation, quick start, framework adapter.
+- Concepts: collections, schemas, live queries, optimistic mutations, transactions, dataflow.
+- Guides: live queries, optimistic updates, state management, syncing, history tracking, entity tagging, data manipulation.
+- API: links to generated reference plus hand-written overviews.

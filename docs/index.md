@@ -4,106 +4,75 @@ title: Home
 nav_order: 1
 ---
 
-# Routier Framework
+# Routier - Documentation
 
-A modern, flexible data management framework for building scalable applications with robust data handling, change tracking, and real-time synchronization.
+Routier is a reactive data toolkit for building fast, local-first apps. It provides schemas, collections, live queries, and optimistic mutations with a plugin model for any storage.
 
-## 🚀 Quick Start
+## How it works
 
-Get up and running with Routier in minutes:
+- Define schemas: type-safe entity definitions with indexes and modifiers
+- Create collections: typed sets of entities backed by a plugin
+- Use live queries: reactive queries across one or more collections
+- Make optimistic mutations: instant UI updates with automatic rollback
 
-```bash
-npm install routier
-npm install routier-plugin-memory
-```
-
-```typescript
+```ts
 import { DataStore } from "routier";
 import { s } from "routier-core/schema";
 import { MemoryPlugin } from "routier-plugin-memory";
 
-// Define a schema
 const userSchema = s
-  .define("user", {
+  .define("users", {
     id: s.string().key().identity(),
-    name: s.string().index(),
-    email: s.string(),
-    age: s.number().optional(),
+    email: s.string().distinct(),
+    name: s.string(),
     createdAt: s.date().default(() => new Date()),
   })
   .compile();
 
-// Create a custom context class that extends DataStore
-class AppContext extends DataStore {
-  constructor() {
-    super(new MemoryPlugin("my-app"));
-  }
-
-  // Create collections from schemas
+class Ctx extends DataStore {
   users = this.collection(userSchema).create();
+  constructor() {
+    super(new MemoryPlugin("app"));
+  }
 }
 
-// Use the context
-const ctx = new AppContext();
-
-// Add data to the collection
-await ctx.users.addAsync({
-  name: "John Doe",
-  email: "john@example.com",
-  age: 30,
-});
-
-// Save changes
+const ctx = new Ctx();
+await ctx.users.addAsync({ name: "Ada", email: "ada@example.com" });
 await ctx.saveChangesAsync();
 ```
 
-[Get Started →](quick-start/getting-started.md)
+## Getting Started
 
-## ✨ Key Features
+- Installation: /getting-started/installation
+- Quick Start: /getting-started/quick-start
+- React Adapter: /getting-started/react-adapter
 
-- **Schema-driven data validation** with TypeScript support
-- **Change tracking** for undo/redo functionality
-- **Real-time synchronization** across multiple data sources
-- **Plugin architecture** for extensibility
-- **React integration** with hooks and components
-- **High performance** with optimized data pipelines
-- **Multiple storage backends** (Memory, LocalStorage, IndexedDB, SQLite, etc.)
+## Concepts
 
-## 🔌 Built-in Plugins
+- Schemas: /concepts/schema/
+- Queries: /concepts/queries/
+- Data Pipeline: /concepts/data-pipeline/
 
-- **Memory Plugin** - In-memory data storage
-- **Local Storage Plugin** - Browser localStorage/sessionStorage
-- **File System Plugin** - Node.js file system storage
-- **PouchDB Plugin** - CouchDB/PouchDB integration
-- **Dexie Plugin** - IndexedDB wrapper
-- **SQLite Plugin** - SQLite database support
-- **Testing Plugin** - Test utilities and mocks
+## Guides
 
-## 📚 Documentation
+- Live Queries: /guides/live-queries.md
+- Optimistic Updates: /guides/optimistic-updates.md
+- State Management: /guides/state-management.md
+- Data Manipulation: /guides/data-manipulation.md
+- History Tracking: /guides/history-tracking.md
+- Syncing: /guides/syncing.md
+- Entity Tagging: /guides/entity-tagging.md
 
-- [Core Concepts](core-concepts/) - Schema, collections, queries, and data pipeline
-- [Plugins](plugins/) - Built-in plugins and creating custom ones
-- [Data Operations](data-operations/) - CRUD, change tracking, and state management
-- [React Integration](react-integration/) - Hooks, components, and performance
-- [Advanced Features](advanced-features/) - Performance, validation, and error handling
-- [Examples](examples/) - Code examples and real-world use cases
+## API
 
-## 🎯 Use Cases
+- API Landing: /api/
+- Reference: /reference/api/
 
-- **Web Applications** - React, Vue, Angular apps
-- **Desktop Applications** - Electron apps with local storage
-- **Mobile Applications** - React Native with local data
-- **Backend Services** - Node.js data management
-- **Real-time Applications** - Live data synchronization
-- **Offline-first Apps** - Local data with sync capabilities
+## Examples
 
-## 🤝 Community
+- Basic: /examples/basic/
+- Advanced: /examples/advanced/
+- Performance: /examples/performance/
+- Real-world: /examples/real-world/
 
-- [GitHub Repository](https://github.com/your-username/routier)
-- [Issues & Bug Reports](https://github.com/your-username/routier/issues)
-- [Discussions](https://github.com/your-username/routier/discussions)
-- [Contributing Guide](CONTRIBUTING.md)
-
-## 📄 License
-
-This project is licensed under the [LICENSE](LICENSE) file.
+More inspiration: TanStack DB Overview (structure and flow) — `https://tanstack.com/db/latest/docs/overview`
