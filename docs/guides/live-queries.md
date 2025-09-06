@@ -2,4 +2,8 @@
 
 Overview and best practices for using live queries across collections.
 
-Read more: /guides-examples/live-queries/
+Example include:
+
+```liquid
+{% highlight ts linenos %}{% include code/vite/src/schemas/product.ts %}{% endhighlight %}
+```

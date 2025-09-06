@@ -5,7 +5,8 @@
   "scripts": {
     "build": "npm run build:core && npm run build:routier",
     "build:core": "cd core && npm run tsc",
-    "build:routier": "cd routier && npm run tsc"
+    "build:routier": "cd routier && npm run tsc",
+    "sync:examples": "node scripts/sync-doc-examples.mjs"
   },
   "author": "",
   "license": "ISC",
