@@ -15,31 +15,9 @@ Routier is a reactive data toolkit for building fast, local-first apps. It provi
 - Use live queries: reactive queries across one or more collections
 - Make optimistic mutations: instant UI updates with automatic rollback
 
-```ts
-import { DataStore } from "routier";
-import { s } from "routier-core/schema";
-import { MemoryPlugin } from "routier-plugin-memory";
 
-const userSchema = s
-  .define("users", {
-    id: s.string().key().identity(),
-    email: s.string().distinct(),
-    name: s.string(),
-    createdAt: s.date().default(() => new Date()),
-  })
-  .compile();
+{% highlight ts linenos %}{% include code/from-docs/index/block-1.ts %}{% endhighlight %}
 
-class Ctx extends DataStore {
-  users = this.collection(userSchema).create();
-  constructor() {
-    super(new MemoryPlugin("app"));
-  }
-}
-
-const ctx = new Ctx();
-await ctx.users.addAsync({ name: "Ada", email: "ada@example.com" });
-await ctx.saveChangesAsync();
-```
 
 ## Getting Started
 

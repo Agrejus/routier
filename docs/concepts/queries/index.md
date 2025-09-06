@@ -10,80 +10,39 @@ Routier queries are fluent and can only be performed through a collection. Build
 
 ### Basic querying
 
-```ts
-// All items
-const all = await ctx.users.toArrayAsync();
 
-// First item or undefined
-const first = await ctx.users.firstOrUndefinedAsync();
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-1.ts %}{% endhighlight %}
 
-// Does any record exist?
-const hasAny = await ctx.users.someAsync();
-```
 
 ### Filtering with where
 
-```ts
-// Simple filter
-const james = await ctx.users.where((u) => u.name === "James").toArrayAsync();
 
-// Parameterized filter
-const withPrefix = await ctx.users
-  .where((u, p) => u.name.startsWith(p.prefix), { prefix: "Ja" })
-  .toArrayAsync();
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-2.ts %}{% endhighlight %}
+
 
 ### Sorting
 
-```ts
-// Ascending
-const byName = await ctx.users.sort((u) => u.name).toArrayAsync();
 
-// Descending
-const newest = await ctx.users
-  .sortDescending((u) => u.createdAt)
-  .toArrayAsync();
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-3.ts %}{% endhighlight %}
 
-// Multi-sort (applies in order added)
-const sorted = await ctx.users
-  .sort((u) => u.lastName)
-  .sort((u) => u.firstName)
-  .toArrayAsync();
-```
 
 ### Selecting fields with map
 
-```ts
-// Single field
-const names = await ctx.users.map((u) => u.name).toArrayAsync();
 
-// Reshape into a custom object
-const summaries = await ctx.users
-  .map((u) => ({ id: u.id, fullName: `${u.firstName} ${u.lastName}` }))
-  .toArrayAsync();
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-4.ts %}{% endhighlight %}
+
 
 ### Pagination
 
-```ts
-const page1 = await ctx.users.skip(0).take(10).toArrayAsync();
-const page2 = await ctx.users.skip(10).take(10).toArrayAsync();
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-5.ts %}{% endhighlight %}
+
 
 ### Aggregation and set operations
 
-```ts
-// Count
-const count = await ctx.users.countAsync();
 
-// Min/Max/Sum over a numeric projection
-const minAge = await ctx.users.minAsync((u) => u.age);
-const maxAge = await ctx.users.maxAsync((u) => u.age);
-const totalAge = await ctx.users.sumAsync((u) => u.age);
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-6.ts %}{% endhighlight %}
 
-// Distinct values: project first, then distinct
-const distinctAges = await ctx.users.map((u) => u.age).distinctAsync();
-```
 
 ### Terminal methods (execute the query)
 
@@ -99,10 +58,9 @@ const distinctAges = await ctx.users.map((u) => u.age).distinctAsync();
 
 Example removal:
 
-```ts
-// Remove all inactive users
-await ctx.users.where((u) => u.status === "inactive").removeAsync();
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-7.ts %}{% endhighlight %}
+
 
 ### Notes
 
@@ -118,19 +76,9 @@ Best practice: apply database‑backed filters first, then computed/unmapped fil
 
 Example (in this schema, `firstName` is stored in the database while `age` is a computed property):
 
-```ts
-// Good: DB filter first, then computed filter (runs remaining in memory)
-const found = await ctx.userProfiles
-  .where((u) => u.firstName.startsWith("A")) // database-backed
-  .where((u) => u.age === 0) // computed (in-memory)
-  .firstOrUndefinedAsync();
 
-// Avoid: starting with a computed filter can lead to a broader load before filtering in memory
-const avoid = await ctx.userProfiles
-  .where((u) => u.age === 0) // computed (in-memory)
-  .where((u) => u.firstName.startsWith("A")) // database-backed
-  .toArrayAsync();
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-8.ts %}{% endhighlight %}
+
 
 ### Related
 

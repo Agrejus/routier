@@ -19,7 +19,10 @@ async function copyTree(src, dest) {
         const d = path.join(dest, entry.name);
         if (entry.isDirectory()) {
             await copyTree(s, d);
-        } else if (entry.isFile() && entry.name.endsWith('.ts')) {
+        } else if (
+            entry.isFile() &&
+            (entry.name.endsWith('.ts') || entry.name.endsWith('.tsx') || entry.name.endsWith('.js'))
+        ) {
             await fs.copyFile(s, d);
         }
     }

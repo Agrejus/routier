@@ -6,7 +6,9 @@
     "build": "npm run build:core && npm run build:routier",
     "build:core": "cd core && npm run tsc",
     "build:routier": "cd routier && npm run tsc",
-    "sync:examples": "node scripts/sync-doc-examples.mjs"
+    "sync:examples": "node scripts/sync-doc-examples.mjs",
+    "extract:doc-code": "node scripts/extract-doc-code.mjs",
+    "docs:prepare": "npm run extract:doc-code && npm run sync:examples"
   },
   "author": "",
   "license": "ISC",
