@@ -1,3 +1,12 @@
+---
+title: Overview
+layout: default
+nav_order: 1
+has_children: true
+parent: Getting Started
+permalink: /getting-started/overview
+---
+
 ## Overview
 
 Routier is a reactive data toolkit for building fast, local-first apps with collections, live queries, and optimistic mutations.

@@ -6,6 +6,10 @@ nav_order: 1
 
 # Overview
 
+<p align="center">
+  <img src="{{ site.baseurl }}/assets/routier.svg" alt="Routier" width="140" height="140" />
+</p>
+
 Routier is a reactive data toolkit for building fast, local-first apps. It provides schemas, collections, live queries, and optimistic mutations with a plugin model for any storage.
 
 ## How it works

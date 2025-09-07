@@ -1,3 +1,11 @@
+---
+title: Getting Started with Routier
+layout: default
+parent: Tutorials
+nav_order: 1
+permalink: /tutorials/getting-started
+---
+
 # Getting Started with Routier
 
 Welcome to Routier! This guide will help you get up and running with the framework quickly.
@@ -22,9 +30,7 @@ npm install routier-plugin-local-storage
 
 ## Basic Setup
 
-
 {% highlight ts linenos %}{% include code/from-docs/tutorials/getting-started/block-2.ts %}{% endhighlight %}
-
 
 ## Next Steps
 
