@@ -44,7 +44,8 @@ Persists a computed value to the underlying store. Use when:
 - You need to index or sort/filter by the computed value
 - Recomputing is expensive and you want to cache post-save
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-1.ts %}{% endhighlight %}
+{% capture snippet_bznbzy %}{% include code/from-docs/concepts/schema/modifiers/README/block-1.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_bznbzy }}{% endhighlight %}
 
 Notes:
 
@@ -57,7 +58,8 @@ Notes:
 
 Marks a property as a primary key for the entity.
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-2.ts %}{% endhighlight %}
+{% capture snippet_85eeza %}{% include code/from-docs/concepts/schema/modifiers/README/block-2.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_85eeza }}{% endhighlight %}
 
 **Available on:** `string`, `number`, `date`
 
@@ -65,7 +67,8 @@ Marks a property as a primary key for the entity.
 
 Automatically generates a unique value for the property.
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-3.ts %}{% endhighlight %}
+{% capture snippet_n4hxuc %}{% include code/from-docs/concepts/schema/modifiers/README/block-3.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_n4hxuc }}{% endhighlight %}
 
 **Available on:** `string`, `number`, `date`, `boolean`
 
@@ -75,7 +78,8 @@ Automatically generates a unique value for the property.
 
 Creates a database index for efficient querying.
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-4.ts %}{% endhighlight %}
+{% capture snippet_27qlvd %}{% include code/from-docs/concepts/schema/modifiers/README/block-4.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_27qlvd }}{% endhighlight %}
 
 **Available on:** All types
 
@@ -83,7 +87,8 @@ Creates a database index for efficient querying.
 
 Multiple fields can share the same index name for compound indexing.
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-5.ts %}{% endhighlight %}
+{% capture snippet_zcizjw %}{% include code/from-docs/concepts/schema/modifiers/README/block-5.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_zcizjw }}{% endhighlight %}
 
 ## Defaults and Values
 
@@ -91,7 +96,8 @@ Multiple fields can share the same index name for compound indexing.
 
 Sets a default value for the property. Can accept either a direct value or a function that returns a value.
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-6.ts %}{% endhighlight %}
+{% capture snippet_9ckcic %}{% include code/from-docs/concepts/schema/modifiers/README/block-6.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_9ckcic }}{% endhighlight %}
 
 **Available on:** All types
 
@@ -102,7 +108,8 @@ Sets a default value for the property. Can accept either a direct value or a fun
 - If a property has `.default(...)`, it is considered optional during inserts. When the value is omitted, Routier will supply the default.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-1.ts %}{% endhighlight %}
+{% capture snippet_2iwgt0 %}{% include code/from-docs/concepts/schema/modifiers/README/block-1.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_2iwgt0 }}{% endhighlight %}
 
 
 ## Behavior Control
@@ -111,7 +118,8 @@ Sets a default value for the property. Can accept either a direct value or a fun
 
 Makes the property optional (can be undefined).
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-7.ts %}{% endhighlight %}
+{% capture snippet_eimzso %}{% include code/from-docs/concepts/schema/modifiers/README/block-7.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_eimzso }}{% endhighlight %}
 
 **Available on:** All types
 
@@ -119,7 +127,8 @@ Makes the property optional (can be undefined).
 
 Makes the property nullable (can be null).
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-8.ts %}{% endhighlight %}
+{% capture snippet_tudq6i %}{% include code/from-docs/concepts/schema/modifiers/README/block-8.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_tudq6i }}{% endhighlight %}
 
 **Available on:** All types
 
@@ -127,7 +136,8 @@ Makes the property nullable (can be null).
 
 Makes the property read-only after creation.
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-9.ts %}{% endhighlight %}
+{% capture snippet_jx409r %}{% include code/from-docs/concepts/schema/modifiers/README/block-9.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_jx409r }}{% endhighlight %}
 
 **Available on:** All types
 
@@ -137,7 +147,8 @@ Makes the property read-only after creation.
 
 Custom serialization function for the property.
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-10.ts %}{% endhighlight %}
+{% capture snippet_raovy6 %}{% include code/from-docs/concepts/schema/modifiers/README/block-10.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_raovy6 }}{% endhighlight %}
 
 **Available on:** All types
 
@@ -145,7 +156,8 @@ Custom serialization function for the property.
 
 Custom deserialization function for the property.
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-11.ts %}{% endhighlight %}
+{% capture snippet_t98whi %}{% include code/from-docs/concepts/schema/modifiers/README/block-11.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_t98whi }}{% endhighlight %}
 
 **Available on:** All types
 
@@ -155,7 +167,8 @@ Custom deserialization function for the property.
 
 Converts the property to an array type.
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-12.ts %}{% endhighlight %}
+{% capture snippet_nv6qg0 %}{% include code/from-docs/concepts/schema/modifiers/README/block-12.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_nv6qg0 }}{% endhighlight %}
 
 **Available on:** All types
 
@@ -163,7 +176,8 @@ Converts the property to an array type.
 
 Ensures the property value is unique across all entities.
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-13.ts %}{% endhighlight %}
+{% capture snippet_ny7toy %}{% include code/from-docs/concepts/schema/modifiers/README/block-13.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_ny7toy }}{% endhighlight %}
 
 **Available on:** `string`, `number`, `date`, `boolean`
 
@@ -171,7 +185,8 @@ Ensures the property value is unique across all entities.
 
 Modifiers can be chained together in any order:
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-14.ts %}{% endhighlight %}
+{% capture snippet_awss86 %}{% include code/from-docs/concepts/schema/modifiers/README/block-14.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_awss86 }}{% endhighlight %}
 
 ## Modifier Compatibility
 
@@ -187,25 +202,30 @@ Not all modifiers can be used together. Here are the key rules:
 
 While modifiers can be chained in any order, it's recommended to follow this pattern:
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-15.ts %}{% endhighlight %}
+{% capture snippet_gye6r6 %}{% include code/from-docs/concepts/schema/modifiers/README/block-15.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_gye6r6 }}{% endhighlight %}
 
 ## Best Practices
 
 ### 1. **Use Built-in Modifiers**
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-16.ts %}{% endhighlight %}
+{% capture snippet_tcl5f8 %}{% include code/from-docs/concepts/schema/modifiers/README/block-16.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_tcl5f8 }}{% endhighlight %}
 
 ### 2. **Define Constraints Early**
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-17.ts %}{% endhighlight %}
+{% capture snippet_lajwjh %}{% include code/from-docs/concepts/schema/modifiers/README/block-17.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_lajwjh }}{% endhighlight %}
 
 ### 3. **Leverage Type Safety**
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-18.ts %}{% endhighlight %}
+{% capture snippet_68sph6 %}{% include code/from-docs/concepts/schema/modifiers/README/block-18.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_68sph6 }}{% endhighlight %}
 
 ### 4. **Use Appropriate Modifiers**
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-19.ts %}{% endhighlight %}
+{% capture snippet_61aty5 %}{% include code/from-docs/concepts/schema/modifiers/README/block-19.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_61aty5 }}{% endhighlight %}
 
 ## Next Steps
 

@@ -24,7 +24,8 @@ The PouchDB plugin automatically handles synchronization when you configure the 
 
 Enable syncing by adding the `sync` configuration to your PouchDB plugin:
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-1.ts %}{% endhighlight %}
+{% capture snippet_76qv3x %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-1.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_76qv3x }}{% endhighlight %}
 
 ## Sync Options Reference
 
@@ -32,13 +33,15 @@ Enable syncing by adding the `sync` configuration to your PouchDB plugin:
 
 The URL to your remote CouchDB-compatible database:
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-2.ts %}{% endhighlight %}
+{% capture snippet_d9e51x %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-2.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_d9e51x }}{% endhighlight %}
 
 ### `live` (Optional)
 
 Controls whether synchronization is continuous or one-time:
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-3.ts %}{% endhighlight %}
+{% capture snippet_usu4cz %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-3.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_usu4cz }}{% endhighlight %}
 
 **Default:** `false`
 
@@ -46,7 +49,8 @@ Controls whether synchronization is continuous or one-time:
 
 Enables automatic retry with exponential backoff:
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-4.ts %}{% endhighlight %}
+{% capture snippet_9eeast %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-4.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_9eeast }}{% endhighlight %}
 
 **Default:** `false`
 
@@ -54,7 +58,8 @@ Enables automatic retry with exponential backoff:
 
 Callback function that receives sync events and schema information:
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-5.ts %}{% endhighlight %}
+{% capture snippet_7afs59 %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-5.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_7afs59 }}{% endhighlight %}
 
 ## How PouchDB Syncing Works
 
@@ -62,13 +67,15 @@ Callback function that receives sync events and schema information:
 
 When you create a PouchDB plugin with sync enabled, the system automatically:
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-6.ts %}{% endhighlight %}
+{% capture snippet_nrcx9t %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-6.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_nrcx9t }}{% endhighlight %}
 
 ### 2. **Retry Logic**
 
 The plugin implements intelligent retry with exponential backoff:
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-7.ts %}{% endhighlight %}
+{% capture snippet_orfro9 %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-7.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_orfro9 }}{% endhighlight %}
 
 - **Initial delay:** 1 second
 - **Maximum delay:** 10 seconds
@@ -78,19 +85,22 @@ The plugin implements intelligent retry with exponential backoff:
 
 Sync events are automatically routed to your `onChange` callback:
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-8.ts %}{% endhighlight %}
+{% capture snippet_vgs66c %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-8.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_vgs66c }}{% endhighlight %}
 
 ## Complete Example
 
 Here's a full example of setting up PouchDB syncing with Routier:
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-9.ts %}{% endhighlight %}
+{% capture snippet_pqvvto %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-9.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_pqvvto }}{% endhighlight %}
 
 ## Conflict Resolution
 
 PouchDB automatically detects conflicts when the same document is modified in multiple places. Handle conflicts in your `onChange` callback:
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-10.ts %}{% endhighlight %}
+{% capture snippet_07xx3a %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-10.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_07xx3a }}{% endhighlight %}
 
 ## Advanced Configuration
 
@@ -98,13 +108,15 @@ PouchDB automatically detects conflicts when the same document is modified in mu
 
 You can pass additional PouchDB sync options:
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-11.ts %}{% endhighlight %}
+{% capture snippet_vdqpgh %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-11.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_vdqpgh }}{% endhighlight %}
 
 ### Multiple Remote Databases
 
 Sync with multiple remote databases:
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-12.ts %}{% endhighlight %}
+{% capture snippet_uzg7vy %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-12.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_uzg7vy }}{% endhighlight %}
 
 ## Monitoring and Debugging
 
@@ -112,19 +124,22 @@ Sync with multiple remote databases:
 
 Track sync progress and status:
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-13.ts %}{% endhighlight %}
+{% capture snippet_ea1k9s %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-13.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_ea1k9s }}{% endhighlight %}
 
 ### Error Handling
 
 Handle sync errors gracefully:
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-14.ts %}{% endhighlight %}
+{% capture snippet_is7ga0 %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-14.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_is7ga0 }}{% endhighlight %}
 
 ### Debug Mode
 
 Enable detailed logging for troubleshooting:
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-15.ts %}{% endhighlight %}
+{% capture snippet_mlbki7 %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-15.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_mlbki7 }}{% endhighlight %}
 
 ## Performance Optimization
 
@@ -132,27 +147,32 @@ Enable detailed logging for troubleshooting:
 
 Only sync necessary documents:
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-16.ts %}{% endhighlight %}
+{% capture snippet_0q66hb %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-16.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_0q66hb }}{% endhighlight %}
 
 ### Batch Operations
 
 Optimize sync performance with batch operations:
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-17.ts %}{% endhighlight %}
+{% capture snippet_a3geum %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-17.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_a3geum }}{% endhighlight %}
 
 ## Best Practices
 
 ### 1. **Network Handling**
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-18.ts %}{% endhighlight %}
+{% capture snippet_9z23g5 %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-18.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_9z23g5 }}{% endhighlight %}
 
 ### 2. **Error Recovery**
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-19.ts %}{% endhighlight %}
+{% capture snippet_si26s4 %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-19.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_si26s4 }}{% endhighlight %}
 
 ### 3. **Data Validation**
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-20.ts %}{% endhighlight %}
+{% capture snippet_6pkm8p %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-20.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_6pkm8p }}{% endhighlight %}
 
 ## Troubleshooting
 
@@ -176,7 +196,8 @@ Optimize sync performance with batch operations:
 
 ### Debug Commands
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-21.ts %}{% endhighlight %}
+{% capture snippet_6uhw2t %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-21.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_6uhw2t }}{% endhighlight %}
 
 ## Next Steps
 

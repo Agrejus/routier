@@ -19,7 +19,8 @@ Routier is a reactive data toolkit for building fast, local-first apps. It provi
 - Use live queries: reactive queries across one or more collections
 - Make optimistic mutations: instant UI updates with automatic rollback
 
-{% highlight ts linenos %}{% include code/from-docs/index/block-1.ts %}{% endhighlight %}
+{% capture snippet_qcxtd6 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_qcxtd6 }}{% endhighlight %}
 
 ## Getting Started
 

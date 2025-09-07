@@ -17,7 +17,8 @@ CRUD operations in Routier work through a **DataStore** class that you inherit f
 **Important: Changes made to entities (including adds, updates, and deletes) are NOT automatically persisted to the database. You must explicitly call `saveChanges()` or `saveChangesAsync()` to persist any changes.**
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-1.ts %}{% endhighlight %}
+{% capture snippet_inlt8l %}{% include code/from-docs/how-to/crud/README/block-1.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_inlt8l }}{% endhighlight %}
 
 
 ## Creating a DataStore
@@ -25,13 +26,15 @@ CRUD operations in Routier work through a **DataStore** class that you inherit f
 ### Basic Setup
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-2.ts %}{% endhighlight %}
+{% capture snippet_c9yalp %}{% include code/from-docs/how-to/crud/README/block-2.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_c9yalp }}{% endhighlight %}
 
 
 ### Using Different Plugins
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-3.ts %}{% endhighlight %}
+{% capture snippet_9rqdgd %}{% include code/from-docs/how-to/crud/README/block-3.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_9rqdgd }}{% endhighlight %}
 
 
 ## CRUD Operations
@@ -44,7 +47,8 @@ Routier uses a **discriminated union result pattern** for callback-based operati
 - **Error**: `{ ok: "error", error: any }`
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-4.ts %}{% endhighlight %}
+{% capture snippet_pvi8qq %}{% include code/from-docs/how-to/crud/README/block-4.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_pvi8qq }}{% endhighlight %}
 
 
 ### Create (Add)
@@ -52,19 +56,22 @@ Routier uses a **discriminated union result pattern** for callback-based operati
 #### Adding Single Entities
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-5.ts %}{% endhighlight %}
+{% capture snippet_rpjfdj %}{% include code/from-docs/how-to/crud/README/block-5.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_rpjfdj }}{% endhighlight %}
 
 
 #### Adding Multiple Entities
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-6.ts %}{% endhighlight %}
+{% capture snippet_hum0xd %}{% include code/from-docs/how-to/crud/README/block-6.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_hum0xd }}{% endhighlight %}
 
 
 #### Adding with Callbacks
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-7.ts %}{% endhighlight %}
+{% capture snippet_5remab %}{% include code/from-docs/how-to/crud/README/block-7.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_5remab }}{% endhighlight %}
 
 
 ### Read (Query)
@@ -72,25 +79,29 @@ Routier uses a **discriminated union result pattern** for callback-based operati
 #### Basic Queries
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-8.ts %}{% endhighlight %}
+{% capture snippet_plmliu %}{% include code/from-docs/how-to/crud/README/block-8.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_plmliu }}{% endhighlight %}
 
 
 #### Filtered Queries
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-9.ts %}{% endhighlight %}
+{% capture snippet_5ykcgs %}{% include code/from-docs/how-to/crud/README/block-9.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_5ykcgs }}{% endhighlight %}
 
 
 #### Sorting and Pagination
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-10.ts %}{% endhighlight %}
+{% capture snippet_orluis %}{% include code/from-docs/how-to/crud/README/block-10.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_orluis }}{% endhighlight %}
 
 
 #### Aggregation
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-11.ts %}{% endhighlight %}
+{% capture snippet_o89v2i %}{% include code/from-docs/how-to/crud/README/block-11.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_o89v2i }}{% endhighlight %}
 
 
 ### Update
@@ -100,19 +111,22 @@ Routier uses a **discriminated union result pattern** for callback-based operati
 The key feature of Routier is that entities returned from queries are **proxy objects** that automatically track changes:
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-12.ts %}{% endhighlight %}
+{% capture snippet_odwrsz %}{% include code/from-docs/how-to/crud/README/block-12.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_odwrsz }}{% endhighlight %}
 
 
 #### Batch Updates
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-13.ts %}{% endhighlight %}
+{% capture snippet_ajq9ip %}{% include code/from-docs/how-to/crud/README/block-13.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_ajq9ip }}{% endhighlight %}
 
 
 #### Update with Callbacks
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-14.ts %}{% endhighlight %}
+{% capture snippet_niq4xm %}{% include code/from-docs/how-to/crud/README/block-14.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_niq4xm }}{% endhighlight %}
 
 
 ### Delete (Remove)
@@ -120,25 +134,29 @@ The key feature of Routier is that entities returned from queries are **proxy ob
 #### Removing Single Entities
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-15.ts %}{% endhighlight %}
+{% capture snippet_461037 %}{% include code/from-docs/how-to/crud/README/block-15.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_461037 }}{% endhighlight %}
 
 
 #### Removing Multiple Entities
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-16.ts %}{% endhighlight %}
+{% capture snippet_z4pjbb %}{% include code/from-docs/how-to/crud/README/block-16.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_z4pjbb }}{% endhighlight %}
 
 
 #### Removing by Query
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-17.ts %}{% endhighlight %}
+{% capture snippet_ilub79 %}{% include code/from-docs/how-to/crud/README/block-17.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_ilub79 }}{% endhighlight %}
 
 
 #### Remove with Callbacks
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-18.ts %}{% endhighlight %}
+{% capture snippet_ay5tzu %}{% include code/from-docs/how-to/crud/README/block-18.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_ay5tzu }}{% endhighlight %}
 
 
 ## Change Tracking and Persistence
@@ -154,13 +172,15 @@ Routier uses **proxy objects** to automatically track changes to entities:
 5. **Changes are NOT persisted until saveChanges() is called**
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-19.ts %}{% endhighlight %}
+{% capture snippet_nm1j0m %}{% include code/from-docs/how-to/crud/README/block-19.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_nm1j0m }}{% endhighlight %}
 
 
 ### Checking for Changes
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-20.ts %}{% endhighlight %}
+{% capture snippet_bru5vp %}{% include code/from-docs/how-to/crud/README/block-20.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_bru5vp }}{% endhighlight %}
 
 
 ### Saving Changes
@@ -168,13 +188,15 @@ Routier uses **proxy objects** to automatically track changes to entities:
 **Important: Changes are NOT automatically persisted to the database. You must explicitly call `saveChanges()` or `saveChangesAsync()` to persist any changes.**
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-21.ts %}{% endhighlight %}
+{% capture snippet_0of7vx %}{% include code/from-docs/how-to/crud/README/block-21.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_0of7vx }}{% endhighlight %}
 
 
 ## Complete CRUD Example
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-22.ts %}{% endhighlight %}
+{% capture snippet_9k4u8w %}{% include code/from-docs/how-to/crud/README/block-22.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_9k4u8w }}{% endhighlight %}
 
 
 ## Best Practices
@@ -182,19 +204,22 @@ Routier uses **proxy objects** to automatically track changes to entities:
 ### 1. **Use Async Methods for Simplicity**
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-23.ts %}{% endhighlight %}
+{% capture snippet_u6y5qk %}{% include code/from-docs/how-to/crud/README/block-23.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_u6y5qk }}{% endhighlight %}
 
 
 ### 2. **Leverage Change Tracking**
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-24.ts %}{% endhighlight %}
+{% capture snippet_vjsaav %}{% include code/from-docs/how-to/crud/README/block-24.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_vjsaav }}{% endhighlight %}
 
 
 ### 3. **Batch Operations When Possible**
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-25.ts %}{% endhighlight %}
+{% capture snippet_heqfkp %}{% include code/from-docs/how-to/crud/README/block-25.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_heqfkp }}{% endhighlight %}
 
 
 ### 4. **Save Changes Strategically**
@@ -202,13 +227,15 @@ Routier uses **proxy objects** to automatically track changes to entities:
 **Critical: You must call `saveChanges()` or `saveChangesAsync()` to persist any changes to the database.**
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-26.ts %}{% endhighlight %}
+{% capture snippet_firi5i %}{% include code/from-docs/how-to/crud/README/block-26.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_firi5i }}{% endhighlight %}
 
 
 ### 5. **Handle Errors Gracefully**
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/README/block-27.ts %}{% endhighlight %}
+{% capture snippet_s9q7m4 %}{% include code/from-docs/how-to/crud/README/block-27.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_s9q7m4 }}{% endhighlight %}
 
 
 ## Next Steps

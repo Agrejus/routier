@@ -21,13 +21,15 @@ When you create entities in Routier:
 ### Adding Single Entities
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/create/block-1.ts %}{% endhighlight %}
+{% capture snippet_vvzyz2 %}{% include code/from-docs/how-to/crud/create/block-1.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_vvzyz2 }}{% endhighlight %}
 
 
 ### Adding Multiple Entities
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/create/block-2.ts %}{% endhighlight %}
+{% capture snippet_gsb9ng %}{% include code/from-docs/how-to/crud/create/block-2.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_gsb9ng }}{% endhighlight %}
 
 
 ### Adding with Callbacks
@@ -35,7 +37,8 @@ When you create entities in Routier:
 **Note: Callback-based operations use a discriminated union result pattern. The callback receives a single `result` parameter that can be either `{ ok: "success", data: T }` or `{ ok: "error", error: any }`.**
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/create/block-3.ts %}{% endhighlight %}
+{% capture snippet_lyyye4 %}{% include code/from-docs/how-to/crud/create/block-3.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_lyyye4 }}{% endhighlight %}
 
 
 ## Schema-Driven Creation
@@ -43,19 +46,22 @@ When you create entities in Routier:
 ### Automatic Default Values
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/create/block-4.ts %}{% endhighlight %}
+{% capture snippet_yg8xxi %}{% include code/from-docs/how-to/crud/create/block-4.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_yg8xxi }}{% endhighlight %}
 
 
 ### Identity Field Generation
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/create/block-5.ts %}{% endhighlight %}
+{% capture snippet_hgf9sv %}{% include code/from-docs/how-to/crud/create/block-5.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_hgf9sv }}{% endhighlight %}
 
 
 ### Nested Object Creation
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/create/block-6.ts %}{% endhighlight %}
+{% capture snippet_knkpix %}{% include code/from-docs/how-to/crud/create/block-6.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_knkpix }}{% endhighlight %}
 
 
 ## Validation and Error Handling
@@ -63,19 +69,22 @@ When you create entities in Routier:
 ### Schema Validation
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/create/block-7.ts %}{% endhighlight %}
+{% capture snippet_y4xs72 %}{% include code/from-docs/how-to/crud/create/block-7.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_y4xs72 }}{% endhighlight %}
 
 
 ### Type Validation
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/create/block-8.ts %}{% endhighlight %}
+{% capture snippet_jv9ahy %}{% include code/from-docs/how-to/crud/create/block-8.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_jv9ahy }}{% endhighlight %}
 
 
 ### Constraint Validation
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/create/block-9.ts %}{% endhighlight %}
+{% capture snippet_0b1hfq %}{% include code/from-docs/how-to/crud/create/block-9.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_0b1hfq }}{% endhighlight %}
 
 
 ## Advanced Create Patterns
@@ -83,19 +92,22 @@ When you create entities in Routier:
 ### Conditional Creation
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/create/block-10.ts %}{% endhighlight %}
+{% capture snippet_cnidll %}{% include code/from-docs/how-to/crud/create/block-10.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_cnidll }}{% endhighlight %}
 
 
 ### Batch Creation with Validation
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/create/block-11.ts %}{% endhighlight %}
+{% capture snippet_xxyrbc %}{% include code/from-docs/how-to/crud/create/block-11.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_xxyrbc }}{% endhighlight %}
 
 
 ### Creation with Computed Fields
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/create/block-12.ts %}{% endhighlight %}
+{% capture snippet_4705gv %}{% include code/from-docs/how-to/crud/create/block-12.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_4705gv }}{% endhighlight %}
 
 
 ## Performance Considerations
@@ -103,13 +115,15 @@ When you create entities in Routier:
 ### Batch Creation
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/create/block-13.ts %}{% endhighlight %}
+{% capture snippet_k1ho3m %}{% include code/from-docs/how-to/crud/create/block-13.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_k1ho3m }}{% endhighlight %}
 
 
 ### Memory Management
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/create/block-14.ts %}{% endhighlight %}
+{% capture snippet_ltnx8g %}{% include code/from-docs/how-to/crud/create/block-14.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_ltnx8g }}{% endhighlight %}
 
 
 ## Best Practices
@@ -117,25 +131,29 @@ When you create entities in Routier:
 ### 1. **Validate Data Before Creation**
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/create/block-15.ts %}{% endhighlight %}
+{% capture snippet_u8ea3c %}{% include code/from-docs/how-to/crud/create/block-15.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_u8ea3c }}{% endhighlight %}
 
 
 ### 2. **Use Appropriate Default Values**
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/create/block-16.ts %}{% endhighlight %}
+{% capture snippet_fc5ex3 %}{% include code/from-docs/how-to/crud/create/block-16.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_fc5ex3 }}{% endhighlight %}
 
 
 ### 3. **Handle Errors Gracefully**
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/create/block-17.ts %}{% endhighlight %}
+{% capture snippet_uf275q %}{% include code/from-docs/how-to/crud/create/block-17.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_uf275q }}{% endhighlight %}
 
 
 ### 4. **Leverage Schema Features**
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/create/block-18.ts %}{% endhighlight %}
+{% capture snippet_n3llsb %}{% include code/from-docs/how-to/crud/create/block-18.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_n3llsb }}{% endhighlight %}
 
 
 ## Next Steps

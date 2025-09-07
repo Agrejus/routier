@@ -12,5 +12,6 @@ Overview and best practices for using live queries across collections.
 Example include:
 
 ```liquid
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-1.ts %}{% endhighlight %}
+{% capture snippet_1yiuat %}{% include code/from-docs/concepts/queries/index/block-1.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_1yiuat }}{% endhighlight %}
 ```

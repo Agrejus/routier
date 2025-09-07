@@ -5,7 +5,8 @@ Schemas in Routier define the structure and behavior of your data entities. The 
 ## Basic Schema Definition
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/creating-a-schema/block-1.ts %}{% endhighlight %}
+{% capture snippet_uwvygh %}{% include code/from-docs/concepts/schema/creating-a-schema/block-1.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_uwvygh }}{% endhighlight %}
 
 
 ## Schema Builder API
@@ -27,7 +28,8 @@ The `s` object provides the main entry point for schema creation:
 You can constrain properties to specific literal values:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/creating-a-schema/block-2.ts %}{% endhighlight %}
+{% capture snippet_r07whk %}{% include code/from-docs/concepts/schema/creating-a-schema/block-2.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_r07whk }}{% endhighlight %}
 
 
 ## Property Modifiers
@@ -37,25 +39,29 @@ Each schema type supports a set of modifiers that can be chained together:
 ### Core Modifiers
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/creating-a-schema/block-3.ts %}{% endhighlight %}
+{% capture snippet_834udw %}{% include code/from-docs/concepts/schema/creating-a-schema/block-3.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_834udw }}{% endhighlight %}
 
 
 ### Serialization Modifiers
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/creating-a-schema/block-4.ts %}{% endhighlight %}
+{% capture snippet_5wxct0 %}{% include code/from-docs/concepts/schema/creating-a-schema/block-4.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_5wxct0 }}{% endhighlight %}
 
 
 ### Array and Object Modifiers
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/creating-a-schema/block-5.ts %}{% endhighlight %}
+{% capture snippet_rl0i32 %}{% include code/from-docs/concepts/schema/creating-a-schema/block-5.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_rl0i32 }}{% endhighlight %}
 
 
 ## Complete Example
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/creating-a-schema/block-6.ts %}{% endhighlight %}
+{% capture snippet_btkdlv %}{% include code/from-docs/concepts/schema/creating-a-schema/block-6.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_btkdlv }}{% endhighlight %}
 
 
 ## Modifier Chaining
@@ -63,7 +69,8 @@ Each schema type supports a set of modifiers that can be chained together:
 Modifiers can be chained in any order, but it's recommended to follow a logical pattern:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/creating-a-schema/block-7.ts %}{% endhighlight %}
+{% capture snippet_yeelah %}{% include code/from-docs/concepts/schema/creating-a-schema/block-7.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_yeelah }}{% endhighlight %}
 
 
 ## Compiling Schemas
@@ -71,7 +78,8 @@ Modifiers can be chained in any order, but it's recommended to follow a logical 
 Always call `.compile()` at the end to create the final schema:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/creating-a-schema/block-8.ts %}{% endhighlight %}
+{% capture snippet_k6k6vd %}{% include code/from-docs/concepts/schema/creating-a-schema/block-8.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_k6k6vd }}{% endhighlight %}
 
 
 ## Next Steps

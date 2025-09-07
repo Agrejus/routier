@@ -7,25 +7,29 @@ Routier provides a comprehensive set of property types for building robust schem
 ### String
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-1.ts %}{% endhighlight %}
+{% capture snippet_34jf1v %}{% include code/from-docs/concepts/schema/property-types/README/block-1.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_34jf1v }}{% endhighlight %}
 
 
 ### Number
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-2.ts %}{% endhighlight %}
+{% capture snippet_oempxx %}{% include code/from-docs/concepts/schema/property-types/README/block-2.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_oempxx }}{% endhighlight %}
 
 
 ### Boolean
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-3.ts %}{% endhighlight %}
+{% capture snippet_t1gwom %}{% include code/from-docs/concepts/schema/property-types/README/block-3.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_t1gwom }}{% endhighlight %}
 
 
 ### Date
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-4.ts %}{% endhighlight %}
+{% capture snippet_0o33ad %}{% include code/from-docs/concepts/schema/property-types/README/block-4.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_0o33ad }}{% endhighlight %}
 
 
 ## Complex Types
@@ -33,13 +37,15 @@ Routier provides a comprehensive set of property types for building robust schem
 ### Object
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-5.ts %}{% endhighlight %}
+{% capture snippet_y9r625 %}{% include code/from-docs/concepts/schema/property-types/README/block-5.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_y9r625 }}{% endhighlight %}
 
 
 ### Array
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-6.ts %}{% endhighlight %}
+{% capture snippet_fh5wji %}{% include code/from-docs/concepts/schema/property-types/README/block-6.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_fh5wji }}{% endhighlight %}
 
 
 ## Type Constraints with Generics
@@ -49,19 +55,22 @@ Routier's type system allows you to constrain properties to specific literal val
 ### String Literals
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-7.ts %}{% endhighlight %}
+{% capture snippet_sepo73 %}{% include code/from-docs/concepts/schema/property-types/README/block-7.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_sepo73 }}{% endhighlight %}
 
 
 ### Number Literals
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-8.ts %}{% endhighlight %}
+{% capture snippet_vo0j1n %}{% include code/from-docs/concepts/schema/property-types/README/block-8.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_vo0j1n }}{% endhighlight %}
 
 
 ### Boolean Literals
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-9.ts %}{% endhighlight %}
+{% capture snippet_ep1grl %}{% include code/from-docs/concepts/schema/property-types/README/block-9.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_ep1grl }}{% endhighlight %}
 
 
 ## Type Composition
@@ -69,7 +78,8 @@ Routier's type system allows you to constrain properties to specific literal val
 ### Combining Types
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-10.ts %}{% endhighlight %}
+{% capture snippet_ot7kh4 %}{% include code/from-docs/concepts/schema/property-types/README/block-10.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_ot7kh4 }}{% endhighlight %}
 
 
 ## Type Conversion
@@ -79,7 +89,8 @@ Routier's type system allows you to constrain properties to specific literal val
 Any type can be converted to an array using the `.array()` modifier:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-11.ts %}{% endhighlight %}
+{% capture snippet_y4i5de %}{% include code/from-docs/concepts/schema/property-types/README/block-11.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_y4i5de }}{% endhighlight %}
 
 
 ## Special Use Cases
@@ -89,7 +100,8 @@ Any type can be converted to an array using the `.array()` modifier:
 Properties that auto-generate values:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-12.ts %}{% endhighlight %}
+{% capture snippet_zbhp4c %}{% include code/from-docs/concepts/schema/property-types/README/block-12.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_zbhp4c }}{% endhighlight %}
 
 
 ### Key Properties
@@ -97,7 +109,8 @@ Properties that auto-generate values:
 Properties that serve as unique identifiers:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-13.ts %}{% endhighlight %}
+{% capture snippet_myq6n4 %}{% include code/from-docs/concepts/schema/property-types/README/block-13.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_myq6n4 }}{% endhighlight %}
 
 
 ### Indexed Properties
@@ -105,7 +118,8 @@ Properties that serve as unique identifiers:
 Properties that create database indexes:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-14.ts %}{% endhighlight %}
+{% capture snippet_mtslo8 %}{% include code/from-docs/concepts/schema/property-types/README/block-14.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_mtslo8 }}{% endhighlight %}
 
 
 ## Best Practices
@@ -113,25 +127,29 @@ Properties that create database indexes:
 ### 1. **Use Literal Types for Constrained Values**
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-15.ts %}{% endhighlight %}
+{% capture snippet_qqb4dt %}{% include code/from-docs/concepts/schema/property-types/README/block-15.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_qqb4dt }}{% endhighlight %}
 
 
 ### 2. **Leverage Type Inference**
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-16.ts %}{% endhighlight %}
+{% capture snippet_b4mi9q %}{% include code/from-docs/concepts/schema/property-types/README/block-16.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_b4mi9q }}{% endhighlight %}
 
 
 ### 3. **Use Appropriate Types**
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-17.ts %}{% endhighlight %}
+{% capture snippet_u6gsr0 %}{% include code/from-docs/concepts/schema/property-types/README/block-17.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_u6gsr0 }}{% endhighlight %}
 
 
 ### 4. **Structure Complex Data**
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-18.ts %}{% endhighlight %}
+{% capture snippet_unwd1x %}{% include code/from-docs/concepts/schema/property-types/README/block-18.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_unwd1x }}{% endhighlight %}
 
 
 ## Type Compatibility

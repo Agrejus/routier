@@ -5,7 +5,8 @@ This document provides a comprehensive reference for the Routier schema builder,
 ## Schema Builder Entry Point
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-1.ts %}{% endhighlight %}
+{% capture snippet_8cm52t %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-1.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_8cm52t }}{% endhighlight %}
 
 
 ## Available Types
@@ -24,7 +25,8 @@ This document provides a comprehensive reference for the Routier schema builder,
 ### Type Examples
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-2.ts %}{% endhighlight %}
+{% capture snippet_gfez9z %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-2.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_gfez9z }}{% endhighlight %}
 
 
 ## Available Modifiers
@@ -57,7 +59,8 @@ This document provides a comprehensive reference for the Routier schema builder,
 Makes a property optional (can be undefined).
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-3.ts %}{% endhighlight %}
+{% capture snippet_8dsdf8 %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-3.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_8dsdf8 }}{% endhighlight %}
 
 
 ### `.nullable()`
@@ -65,7 +68,8 @@ Makes a property optional (can be undefined).
 Makes a property nullable (can be null).
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-4.ts %}{% endhighlight %}
+{% capture snippet_k2jdpf %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-4.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_k2jdpf }}{% endhighlight %}
 
 
 ### `.default(value | function)`
@@ -73,7 +77,8 @@ Makes a property nullable (can be null).
 Sets a default value for the property. Can accept either a direct value or a function that returns a value.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-5.ts %}{% endhighlight %}
+{% capture snippet_90gw2s %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-5.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_90gw2s }}{% endhighlight %}
 
 
 ### `.readonly()`
@@ -81,7 +86,8 @@ Sets a default value for the property. Can accept either a direct value or a fun
 Makes a property read-only after creation.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-6.ts %}{% endhighlight %}
+{% capture snippet_kgnh25 %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-6.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_kgnh25 }}{% endhighlight %}
 
 
 ### `.deserialize(fn)`
@@ -89,7 +95,8 @@ Makes a property read-only after creation.
 Custom deserialization function.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-7.ts %}{% endhighlight %}
+{% capture snippet_okmtsl %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-7.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_okmtsl }}{% endhighlight %}
 
 
 ### `.serialize(fn)`
@@ -97,7 +104,8 @@ Custom deserialization function.
 Custom serialization function.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-8.ts %}{% endhighlight %}
+{% capture snippet_he5sbw %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-8.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_he5sbw }}{% endhighlight %}
 
 
 ### `.array()`
@@ -105,7 +113,8 @@ Custom serialization function.
 Converts the property to an array type.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-9.ts %}{% endhighlight %}
+{% capture snippet_qxhxtr %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-9.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_qxhxtr }}{% endhighlight %}
 
 
 ### `.index(...names)`
@@ -113,7 +122,8 @@ Converts the property to an array type.
 Creates database indexes for efficient querying.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-10.ts %}{% endhighlight %}
+{% capture snippet_5ohv3o %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-10.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_5ohv3o }}{% endhighlight %}
 
 
 ### `.key()`
@@ -121,7 +131,8 @@ Creates database indexes for efficient querying.
 Marks a property as a primary key.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-11.ts %}{% endhighlight %}
+{% capture snippet_m3j2uu %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-11.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_m3j2uu }}{% endhighlight %}
 
 
 ### `.identity()`
@@ -129,7 +140,8 @@ Marks a property as a primary key.
 Automatically generates values for the property.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-12.ts %}{% endhighlight %}
+{% capture snippet_h8ny08 %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-12.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_h8ny08 }}{% endhighlight %}
 
 
 ### `.distinct()`
@@ -137,7 +149,8 @@ Automatically generates values for the property.
 Ensures the property value is unique across all entities.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-13.ts %}{% endhighlight %}
+{% capture snippet_62tgt9 %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-13.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_62tgt9 }}{% endhighlight %}
 
 
 ## Modifier Combinations
@@ -147,7 +160,8 @@ Ensures the property value is unique across all entities.
 Modifiers can be chained together in various combinations:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-14.ts %}{% endhighlight %}
+{% capture snippet_4rg6wf %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-14.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_4rg6wf }}{% endhighlight %}
 
 
 ### Mutually Exclusive Modifiers
@@ -155,7 +169,8 @@ Modifiers can be chained together in various combinations:
 Some modifiers cannot be used together:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-15.ts %}{% endhighlight %}
+{% capture snippet_6a74o4 %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-15.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_6a74o4 }}{% endhighlight %}
 
 
 ## Default Value Examples
@@ -163,7 +178,8 @@ Some modifiers cannot be used together:
 ### Direct Values vs Functions
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-16.ts %}{% endhighlight %}
+{% capture snippet_6p78eb %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-16.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_6p78eb }}{% endhighlight %}
 
 
 ## Complete Schema Examples
@@ -171,19 +187,22 @@ Some modifiers cannot be used together:
 ### Basic User Schema
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-17.ts %}{% endhighlight %}
+{% capture snippet_96r2ir %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-17.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_96r2ir }}{% endhighlight %}
 
 
 ### Complex Product Schema
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-18.ts %}{% endhighlight %}
+{% capture snippet_apywbi %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-18.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_apywbi }}{% endhighlight %}
 
 
 ### Nested Schema Example
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-19.ts %}{% endhighlight %}
+{% capture snippet_ypqptf %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-19.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_ypqptf }}{% endhighlight %}
 
 
 ## Best Practices
@@ -191,25 +210,29 @@ Some modifiers cannot be used together:
 ### 1. **Use Literal Types for Constraints**
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-20.ts %}{% endhighlight %}
+{% capture snippet_iymov7 %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-20.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_iymov7 }}{% endhighlight %}
 
 
 ### 2. **Chain Modifiers Logically**
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-21.ts %}{% endhighlight %}
+{% capture snippet_e5lrx4 %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-21.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_e5lrx4 }}{% endhighlight %}
 
 
 ### 3. **Use Appropriate Modifiers**
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-22.ts %}{% endhighlight %}
+{% capture snippet_rn5a2b %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-22.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_rn5a2b }}{% endhighlight %}
 
 
 ### 4. **Leverage Type Safety**
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-23.ts %}{% endhighlight %}
+{% capture snippet_mzv6in %}{% include code/from-docs/concepts/schema/schema-builder-reference/block-23.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_mzv6in }}{% endhighlight %}
 
 
 ## Type Compatibility Matrix

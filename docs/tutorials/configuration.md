@@ -7,31 +7,36 @@ This guide covers the various configuration options available in Routier.
 ### Memory Plugin
 
 
-{% highlight ts linenos %}{% include code/from-docs/tutorials/configuration/block-1.ts %}{% endhighlight %}
+{% capture snippet_imbwmu %}{% include code/from-docs/tutorials/configuration/block-1.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_imbwmu }}{% endhighlight %}
 
 
 ### Local Storage Plugin
 
 
-{% highlight ts linenos %}{% include code/from-docs/tutorials/configuration/block-2.ts %}{% endhighlight %}
+{% capture snippet_8h6l29 %}{% include code/from-docs/tutorials/configuration/block-2.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_8h6l29 }}{% endhighlight %}
 
 
 ### File System Plugin
 
 
-{% highlight ts linenos %}{% include code/from-docs/tutorials/configuration/block-3.ts %}{% endhighlight %}
+{% capture snippet_jyjuyw %}{% include code/from-docs/tutorials/configuration/block-3.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_jyjuyw }}{% endhighlight %}
 
 
 ### PouchDB Plugin
 
 
-{% highlight ts linenos %}{% include code/from-docs/tutorials/configuration/block-4.ts %}{% endhighlight %}
+{% capture snippet_f44scf %}{% include code/from-docs/tutorials/configuration/block-4.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_f44scf }}{% endhighlight %}
 
 
 ### Dexie Plugin
 
 
-{% highlight ts linenos %}{% include code/from-docs/tutorials/configuration/block-5.ts %}{% endhighlight %}
+{% capture snippet_pzlbnl %}{% include code/from-docs/tutorials/configuration/block-5.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_pzlbnl }}{% endhighlight %}
 
 
 ## Advanced Configuration
@@ -39,13 +44,15 @@ This guide covers the various configuration options available in Routier.
 ### Plugin Composition
 
 
-{% highlight ts linenos %}{% include code/from-docs/tutorials/configuration/block-6.ts %}{% endhighlight %}
+{% capture snippet_akaglm %}{% include code/from-docs/tutorials/configuration/block-6.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_akaglm }}{% endhighlight %}
 
 
 ### Custom Context Configuration
 
 
-{% highlight ts linenos %}{% include code/from-docs/tutorials/configuration/block-7.ts %}{% endhighlight %}
+{% capture snippet_6q0ij4 %}{% include code/from-docs/tutorials/configuration/block-7.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_6q0ij4 }}{% endhighlight %}
 
 
 ## Environment-Specific Configuration
@@ -53,13 +60,15 @@ This guide covers the various configuration options available in Routier.
 ### Development
 
 
-{% highlight ts linenos %}{% include code/from-docs/tutorials/configuration/block-8.ts %}{% endhighlight %}
+{% capture snippet_8s640w %}{% include code/from-docs/tutorials/configuration/block-8.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_8s640w }}{% endhighlight %}
 
 
 ### Testing
 
 
-{% highlight ts linenos %}{% include code/from-docs/tutorials/configuration/block-9.ts %}{% endhighlight %}
+{% capture snippet_ds5ucf %}{% include code/from-docs/tutorials/configuration/block-9.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_ds5ucf }}{% endhighlight %}
 
 
 ## Next Steps

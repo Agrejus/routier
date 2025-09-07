@@ -8,7 +8,8 @@
     "build:routier": "cd routier && npm run tsc",
     "sync:examples": "node scripts/sync-doc-examples.mjs",
     "extract:doc-code": "node scripts/extract-doc-code.mjs",
-    "docs:prepare": "npm run extract:doc-code && npm run sync:examples"
+    "docs:prepare": "npm run extract:doc-code && npm run sync:examples",
+    "docs:fix-includes": "node scripts/fix-capture-includes.mjs"
   },
   "author": "",
   "license": "ISC",

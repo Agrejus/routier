@@ -9,7 +9,8 @@ Complete API reference for Routier schemas, including all methods, types, and ad
 Creates an object schema with the specified properties.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-1.ts %}{% endhighlight %}
+{% capture snippet_zkjtsz %}{% include code/from-docs/concepts/schema/reference/block-1.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_zkjtsz }}{% endhighlight %}
 
 
 ### `s.define(name, properties)`
@@ -17,7 +18,8 @@ Creates an object schema with the specified properties.
 Defines a named schema with properties and returns a schema builder.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-2.ts %}{% endhighlight %}
+{% capture snippet_05owr1 %}{% include code/from-docs/concepts/schema/reference/block-2.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_05owr1 }}{% endhighlight %}
 
 
 ### `s.array(elementType)`
@@ -25,7 +27,8 @@ Defines a named schema with properties and returns a schema builder.
 Creates an array schema with the specified element type.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-3.ts %}{% endhighlight %}
+{% capture snippet_pcv2m5 %}{% include code/from-docs/concepts/schema/reference/block-3.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_pcv2m5 }}{% endhighlight %}
 
 
 ### `s.union(types)`
@@ -33,7 +36,8 @@ Creates an array schema with the specified element type.
 Creates a union schema that accepts any of the specified types.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-4.ts %}{% endhighlight %}
+{% capture snippet_p2fxbx %}{% include code/from-docs/concepts/schema/reference/block-4.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_p2fxbx }}{% endhighlight %}
 
 
 ### `s.literal(...values)`
@@ -41,7 +45,8 @@ Creates a union schema that accepts any of the specified types.
 Creates a literal schema that only accepts the specified values.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-5.ts %}{% endhighlight %}
+{% capture snippet_zli77j %}{% include code/from-docs/concepts/schema/reference/block-5.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_zli77j }}{% endhighlight %}
 
 
 ### `s.any()`
@@ -49,7 +54,8 @@ Creates a literal schema that only accepts the specified values.
 Creates a schema that accepts any value.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-6.ts %}{% endhighlight %}
+{% capture snippet_8oiehv %}{% include code/from-docs/concepts/schema/reference/block-6.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_8oiehv }}{% endhighlight %}
 
 
 ### `s.unknown()`
@@ -57,7 +63,8 @@ Creates a schema that accepts any value.
 Creates a schema that accepts unknown values (safer than `any`).
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-7.ts %}{% endhighlight %}
+{% capture snippet_ln12ss %}{% include code/from-docs/concepts/schema/reference/block-7.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_ln12ss }}{% endhighlight %}
 
 
 ### `s.record(keyType, valueType)`
@@ -65,7 +72,8 @@ Creates a schema that accepts unknown values (safer than `any`).
 Creates a record schema for key-value pairs.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-8.ts %}{% endhighlight %}
+{% capture snippet_7jufvm %}{% include code/from-docs/concepts/schema/reference/block-8.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_7jufvm }}{% endhighlight %}
 
 
 ## Property Types
@@ -73,25 +81,29 @@ Creates a record schema for key-value pairs.
 ### String Properties
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-9.ts %}{% endhighlight %}
+{% capture snippet_2nkuuy %}{% include code/from-docs/concepts/schema/reference/block-9.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_2nkuuy }}{% endhighlight %}
 
 
 ### Number Properties
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-10.ts %}{% endhighlight %}
+{% capture snippet_jkp6m3 %}{% include code/from-docs/concepts/schema/reference/block-10.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_jkp6m3 }}{% endhighlight %}
 
 
 ### Boolean Properties
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-11.ts %}{% endhighlight %}
+{% capture snippet_rclo3b %}{% include code/from-docs/concepts/schema/reference/block-11.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_rclo3b }}{% endhighlight %}
 
 
 ### Date Properties
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-12.ts %}{% endhighlight %}
+{% capture snippet_iipob8 %}{% include code/from-docs/concepts/schema/reference/block-12.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_iipob8 }}{% endhighlight %}
 
 
 ## Property Modifiers
@@ -99,37 +111,43 @@ Creates a record schema for key-value pairs.
 ### Identity and Keys
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-13.ts %}{% endhighlight %}
+{% capture snippet_snx4al %}{% include code/from-docs/concepts/schema/reference/block-13.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_snx4al }}{% endhighlight %}
 
 
 ### Indexing
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-14.ts %}{% endhighlight %}
+{% capture snippet_c800du %}{% include code/from-docs/concepts/schema/reference/block-14.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_c800du }}{% endhighlight %}
 
 
 ### Validation
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-15.ts %}{% endhighlight %}
+{% capture snippet_95d00b %}{% include code/from-docs/concepts/schema/reference/block-15.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_95d00b }}{% endhighlight %}
 
 
 ### Defaults and Values
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-16.ts %}{% endhighlight %}
+{% capture snippet_5503v4 %}{% include code/from-docs/concepts/schema/reference/block-16.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_5503v4 }}{% endhighlight %}
 
 
 ### Behavior Control
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-17.ts %}{% endhighlight %}
+{% capture snippet_7m792n %}{% include code/from-docs/concepts/schema/reference/block-17.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_7m792n }}{% endhighlight %}
 
 
 ### Serialization
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-18.ts %}{% endhighlight %}
+{% capture snippet_06sj57 %}{% include code/from-docs/concepts/schema/reference/block-18.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_06sj57 }}{% endhighlight %}
 
 
 ## Schema Modification
@@ -139,19 +157,22 @@ Creates a record schema for key-value pairs.
 Applies modifications to the schema.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-19.ts %}{% endhighlight %}
+{% capture snippet_lgafm5 %}{% include code/from-docs/concepts/schema/reference/block-19.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_lgafm5 }}{% endhighlight %}
 
 
 ### Computed Properties
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-20.ts %}{% endhighlight %}
+{% capture snippet_zuzs5v %}{% include code/from-docs/concepts/schema/reference/block-20.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_zuzs5v }}{% endhighlight %}
 
 
 ### Function Properties
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-21.ts %}{% endhighlight %}
+{% capture snippet_8hwrmn %}{% include code/from-docs/concepts/schema/reference/block-21.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_8hwrmn }}{% endhighlight %}
 
 
 ## Schema Compilation
@@ -161,7 +182,8 @@ Applies modifications to the schema.
 Compiles the schema into its final form.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-22.ts %}{% endhighlight %}
+{% capture snippet_fddsty %}{% include code/from-docs/concepts/schema/reference/block-22.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_fddsty }}{% endhighlight %}
 
 
 ## Schema Information
@@ -171,7 +193,8 @@ Compiles the schema into its final form.
 Returns information about all properties in the schema.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-23.ts %}{% endhighlight %}
+{% capture snippet_19bz4t %}{% include code/from-docs/concepts/schema/reference/block-23.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_19bz4t }}{% endhighlight %}
 
 
 ### `.getIndexes()`
@@ -179,7 +202,8 @@ Returns information about all properties in the schema.
 Returns information about all indexes in the schema.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-24.ts %}{% endhighlight %}
+{% capture snippet_cjthvu %}{% include code/from-docs/concepts/schema/reference/block-24.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_cjthvu }}{% endhighlight %}
 
 
 ### `.getIdProperties()`
@@ -187,7 +211,8 @@ Returns information about all indexes in the schema.
 Returns information about identity properties.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-25.ts %}{% endhighlight %}
+{% capture snippet_rwhjlt %}{% include code/from-docs/concepts/schema/reference/block-25.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_rwhjlt }}{% endhighlight %}
 
 
 ### `.hasIdentityKeys`
@@ -195,7 +220,8 @@ Returns information about identity properties.
 Boolean indicating if the schema has identity keys.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-26.ts %}{% endhighlight %}
+{% capture snippet_fplcxj %}{% include code/from-docs/concepts/schema/reference/block-26.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_fplcxj }}{% endhighlight %}
 
 
 ## Type Inference
@@ -205,7 +231,8 @@ Boolean indicating if the schema has identity keys.
 Extracts the TypeScript type from a schema.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-27.ts %}{% endhighlight %}
+{% capture snippet_zzserb %}{% include code/from-docs/concepts/schema/reference/block-27.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_zzserb }}{% endhighlight %}
 
 
 ### `InferCreateType<T>`
@@ -213,7 +240,8 @@ Extracts the TypeScript type from a schema.
 Extracts the creation type (without identity fields).
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-28.ts %}{% endhighlight %}
+{% capture snippet_4gaf0f %}{% include code/from-docs/concepts/schema/reference/block-28.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_4gaf0f }}{% endhighlight %}
 
 
 ## Schema Structure Checking
@@ -223,7 +251,8 @@ Extracts the creation type (without identity fields).
 Validates data against the schema.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-29.ts %}{% endhighlight %}
+{% capture snippet_z0yl02 %}{% include code/from-docs/concepts/schema/reference/block-29.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_z0yl02 }}{% endhighlight %}
 
 
 ### `.isValid(data)`
@@ -231,7 +260,8 @@ Validates data against the schema.
 Quick check if data is valid.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-30.ts %}{% endhighlight %}
+{% capture snippet_n1vtpw %}{% include code/from-docs/concepts/schema/reference/block-30.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_n1vtpw }}{% endhighlight %}
 
 
 ## Schema Serialization
@@ -241,7 +271,8 @@ Quick check if data is valid.
 Serializes data according to schema rules.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-31.ts %}{% endhighlight %}
+{% capture snippet_hpemqu %}{% include code/from-docs/concepts/schema/reference/block-31.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_hpemqu }}{% endhighlight %}
 
 
 ### `.deserialize(data)`
@@ -249,7 +280,8 @@ Serializes data according to schema rules.
 Deserializes data according to schema rules.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-32.ts %}{% endhighlight %}
+{% capture snippet_azauja %}{% include code/from-docs/concepts/schema/reference/block-32.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_azauja }}{% endhighlight %}
 
 
 ## Advanced Features
@@ -257,19 +289,22 @@ Deserializes data according to schema rules.
 ### Custom Validators
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-33.ts %}{% endhighlight %}
+{% capture snippet_92nuzd %}{% include code/from-docs/concepts/schema/reference/block-33.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_92nuzd }}{% endhighlight %}
 
 
 ### Conditional Validation
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-34.ts %}{% endhighlight %}
+{% capture snippet_ju3pq7 %}{% include code/from-docs/concepts/schema/reference/block-34.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_ju3pq7 }}{% endhighlight %}
 
 
 ### Dynamic Schemas
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-35.ts %}{% endhighlight %}
+{% capture snippet_c74ymd %}{% include code/from-docs/concepts/schema/reference/block-35.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_c74ymd }}{% endhighlight %}
 
 
 ## Best Practices
@@ -277,25 +312,29 @@ Deserializes data according to schema rules.
 ### 1. **Schema Organization**
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-36.ts %}{% endhighlight %}
+{% capture snippet_2uqlc6 %}{% include code/from-docs/concepts/schema/reference/block-36.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_2uqlc6 }}{% endhighlight %}
 
 
 ### 2. **Validation Strategy**
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-37.ts %}{% endhighlight %}
+{% capture snippet_8ail1k %}{% include code/from-docs/concepts/schema/reference/block-37.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_8ail1k }}{% endhighlight %}
 
 
 ### 3. **Type Safety**
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-38.ts %}{% endhighlight %}
+{% capture snippet_2yg31j %}{% include code/from-docs/concepts/schema/reference/block-38.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_2yg31j }}{% endhighlight %}
 
 
 ### 4. **Performance Considerations**
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-39.ts %}{% endhighlight %}
+{% capture snippet_uz1yp3 %}{% include code/from-docs/concepts/schema/reference/block-39.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_uz1yp3 }}{% endhighlight %}
 
 
 ## Error Handling
@@ -303,13 +342,15 @@ Deserializes data according to schema rules.
 ### Validation Errors
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-40.ts %}{% endhighlight %}
+{% capture snippet_sh61ip %}{% include code/from-docs/concepts/schema/reference/block-40.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_sh61ip }}{% endhighlight %}
 
 
 ### Schema Compilation Errors
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/reference/block-41.ts %}{% endhighlight %}
+{% capture snippet_qzbwjx %}{% include code/from-docs/concepts/schema/reference/block-41.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_qzbwjx }}{% endhighlight %}
 
 
 ## Next Steps

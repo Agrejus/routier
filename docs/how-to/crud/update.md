@@ -19,13 +19,15 @@ Routier's update system works through:
 When you query entities in Routier, they are returned as **proxy objects** that automatically track changes:
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-1.ts %}{% endhighlight %}
+{% capture snippet_0z48wy %}{% include code/from-docs/how-to/crud/update/block-1.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_0z48wy }}{% endhighlight %}
 
 
 ### Automatic Change Detection
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-2.ts %}{% endhighlight %}
+{% capture snippet_yc1i8q %}{% include code/from-docs/how-to/crud/update/block-2.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_yc1i8q }}{% endhighlight %}
 
 
 ## Basic Update Operations
@@ -33,25 +35,29 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 ### Single Property Updates
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-3.ts %}{% endhighlight %}
+{% capture snippet_2zb0mt %}{% include code/from-docs/how-to/crud/update/block-3.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_2zb0mt }}{% endhighlight %}
 
 
 ### Multiple Property Updates
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-4.ts %}{% endhighlight %}
+{% capture snippet_kp5kwi %}{% include code/from-docs/how-to/crud/update/block-4.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_kp5kwi }}{% endhighlight %}
 
 
 ### Nested Object Updates
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-5.ts %}{% endhighlight %}
+{% capture snippet_yzjelp %}{% include code/from-docs/how-to/crud/update/block-5.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_yzjelp }}{% endhighlight %}
 
 
 ### Array Updates
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-6.ts %}{% endhighlight %}
+{% capture snippet_m0pu4q %}{% include code/from-docs/how-to/crud/update/block-6.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_m0pu4q }}{% endhighlight %}
 
 
 ## Batch Update Operations
@@ -59,19 +65,22 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 ### Update Multiple Entities
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-7.ts %}{% endhighlight %}
+{% capture snippet_pvqwqf %}{% include code/from-docs/how-to/crud/update/block-7.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_pvqwqf }}{% endhighlight %}
 
 
 ### Conditional Batch Updates
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-8.ts %}{% endhighlight %}
+{% capture snippet_wv83pp %}{% include code/from-docs/how-to/crud/update/block-8.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_wv83pp }}{% endhighlight %}
 
 
 ### Batch Updates with Transformations
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-9.ts %}{% endhighlight %}
+{% capture snippet_nhh9ur %}{% include code/from-docs/how-to/crud/update/block-9.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_nhh9ur }}{% endhighlight %}
 
 
 ## Advanced Update Patterns
@@ -79,19 +88,22 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 ### Computed Updates
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-10.ts %}{% endhighlight %}
+{% capture snippet_vhw95t %}{% include code/from-docs/how-to/crud/update/block-10.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_vhw95t }}{% endhighlight %}
 
 
 ### Incremental Updates
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-11.ts %}{% endhighlight %}
+{% capture snippet_wm35ir %}{% include code/from-docs/how-to/crud/update/block-11.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_wm35ir }}{% endhighlight %}
 
 
 ### Conditional Field Updates
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-12.ts %}{% endhighlight %}
+{% capture snippet_0he1gr %}{% include code/from-docs/how-to/crud/update/block-12.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_0he1gr }}{% endhighlight %}
 
 
 ## Change Management
@@ -99,19 +111,22 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 ### Checking for Changes
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-13.ts %}{% endhighlight %}
+{% capture snippet_tzekfo %}{% include code/from-docs/how-to/crud/update/block-13.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_tzekfo }}{% endhighlight %}
 
 
 ### Saving Changes
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-14.ts %}{% endhighlight %}
+{% capture snippet_ypky6a %}{% include code/from-docs/how-to/crud/update/block-14.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_ypky6a }}{% endhighlight %}
 
 
 ### Partial Saves
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-15.ts %}{% endhighlight %}
+{% capture snippet_rd7whz %}{% include code/from-docs/how-to/crud/update/block-15.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_rd7whz }}{% endhighlight %}
 
 
 ## Update Validation
@@ -119,13 +134,15 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 ### Schema Validation
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-16.ts %}{% endhighlight %}
+{% capture snippet_361bbf %}{% include code/from-docs/how-to/crud/update/block-16.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_361bbf }}{% endhighlight %}
 
 
 ### Business Logic Validation
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-17.ts %}{% endhighlight %}
+{% capture snippet_gy1j1u %}{% include code/from-docs/how-to/crud/update/block-17.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_gy1j1u }}{% endhighlight %}
 
 
 ## Performance Considerations
@@ -133,13 +150,15 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 ### Batch Updates
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-18.ts %}{% endhighlight %}
+{% capture snippet_sl83kr %}{% include code/from-docs/how-to/crud/update/block-18.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_sl83kr }}{% endhighlight %}
 
 
 ### Change Batching
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-19.ts %}{% endhighlight %}
+{% capture snippet_kp4hzu %}{% include code/from-docs/how-to/crud/update/block-19.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_kp4hzu }}{% endhighlight %}
 
 
 ## Best Practices
@@ -147,25 +166,29 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 ### 1. **Leverage Change Tracking**
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-20.ts %}{% endhighlight %}
+{% capture snippet_wsbnun %}{% include code/from-docs/how-to/crud/update/block-20.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_wsbnun }}{% endhighlight %}
 
 
 ### 2. **Update Related Fields Together**
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-21.ts %}{% endhighlight %}
+{% capture snippet_4scm75 %}{% include code/from-docs/how-to/crud/update/block-21.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_4scm75 }}{% endhighlight %}
 
 
 ### 3. **Validate Before Updating**
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-22.ts %}{% endhighlight %}
+{% capture snippet_grsuc9 %}{% include code/from-docs/how-to/crud/update/block-22.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_grsuc9 }}{% endhighlight %}
 
 
 ### 4. **Use Meaningful Update Patterns**
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-23.ts %}{% endhighlight %}
+{% capture snippet_6764ib %}{% include code/from-docs/how-to/crud/update/block-23.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_6764ib }}{% endhighlight %}
 
 
 ## Error Handling
@@ -173,7 +196,8 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 ### Update Error Handling
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-24.ts %}{% endhighlight %}
+{% capture snippet_s88jdm %}{% include code/from-docs/how-to/crud/update/block-24.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_s88jdm }}{% endhighlight %}
 
 
 ## Next Steps
