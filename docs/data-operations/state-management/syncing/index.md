@@ -1,3 +1,13 @@
+---
+title: Syncing
+layout: default
+parent: State Management
+grand_parent: Data Operations
+has_children: true
+nav_order: 2
+permalink: /data-operations/state-management/syncing/
+---
+
 # Data Syncing
 
 Data syncing allows you to synchronize data between your local data store and remote servers, enabling offline-first applications with automatic synchronization when connectivity is restored.
@@ -25,9 +35,7 @@ The specific sync engine (like PouchDB) handles:
 
 Syncing is configured however the user wants within the specific database plugin. Routier itself doesn't handle syncing - it provides the interfaces that plugins use. Here's one example of how it might be configured with a PouchDB plugin:
 
-
 {% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-1.ts %}{% endhighlight %}
-
 
 ## Sync Options
 
@@ -37,25 +45,19 @@ The specific options available depend entirely on the plugin you're using. Diffe
 
 Most sync implementations need some way to connect to a remote data source:
 
-
 {% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-2.ts %}{% endhighlight %}
-
 
 ### **Sync Behavior**
 
 Common sync behaviors that plugins might implement:
 
-
 {% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-3.ts %}{% endhighlight %}
-
 
 ### **Event Handling**
 
 Many sync implementations provide callbacks for sync events:
 
-
 {% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-4.ts %}{% endhighlight %}
-
 
 **Note:** The exact property names, values, and behavior depend on your specific plugin implementation.
 
@@ -101,17 +103,13 @@ The exact retry behavior depends on your plugin implementation.
 
 Here's one example of how you might set up a synced data store with PouchDB. Other plugins may have different configuration approaches:
 
-
 {% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-5.ts %}{% endhighlight %}
-
 
 ## Conflict Resolution
 
 When conflicts occur (the same data is modified in multiple places), your plugin may provide ways to handle them:
 
-
 {% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-6.ts %}{% endhighlight %}
-
 
 **Note:** The exact conflict handling depends on your plugin implementation.
 
@@ -119,21 +117,15 @@ When conflicts occur (the same data is modified in multiple places), your plugin
 
 ### 1. **Network Handling**
 
-
 {% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-7.ts %}{% endhighlight %}
-
 
 ### 2. **Error Handling**
 
-
 {% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-8.ts %}{% endhighlight %}
-
 
 ### 3. **Performance Optimization**
 
-
 {% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-9.ts %}{% endhighlight %}
-
 
 ## Monitoring and Debugging
 
@@ -141,17 +133,13 @@ When conflicts occur (the same data is modified in multiple places), your plugin
 
 You can monitor sync status through your plugin's event callbacks:
 
-
 {% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-10.ts %}{% endhighlight %}
-
 
 ### Debug Mode
 
 Enable detailed logging for troubleshooting (if your plugin supports it):
 
-
 {% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-11.ts %}{% endhighlight %}
-
 
 ## Supported Backends
 

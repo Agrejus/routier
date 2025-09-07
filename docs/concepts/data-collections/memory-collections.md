@@ -13,9 +13,8 @@ Memory collections are the fastest storage option in Routier, storing all data i
 
 ## Creating Memory Collections
 
-
-{% highlight ts linenos %}{% include code/from-docs/concepts/data-collections/memory-collections/block-1.ts %}{% endhighlight %}
-
+{% capture snippet_mc_1 %}{% include code/from-docs/concepts/data-collections/memory-collections/block-1.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_mc_1 }}{% endhighlight %}
 
 ## Performance Characteristics
 
@@ -36,21 +35,18 @@ Memory collections are the fastest storage option in Routier, storing all data i
 
 ### Development and Testing
 
-
-{% highlight ts linenos %}{% include code/from-docs/concepts/data-collections/memory-collections/block-2.ts %}{% endhighlight %}
-
+{% capture snippet_mc_2 %}{% include code/from-docs/concepts/data-collections/memory-collections/block-2.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_mc_2 }}{% endhighlight %}
 
 ### High-Performance Applications
 
-
-{% highlight ts linenos %}{% include code/from-docs/concepts/data-collections/memory-collections/block-3.ts %}{% endhighlight %}
-
+{% capture snippet_mc_3 %}{% include code/from-docs/concepts/data-collections/memory-collections/block-3.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_mc_3 }}{% endhighlight %}
 
 ### Offline-First with Sync
 
-
-{% highlight ts linenos %}{% include code/from-docs/concepts/data-collections/memory-collections/block-4.ts %}{% endhighlight %}
-
+{% capture snippet_mc_4 %}{% include code/from-docs/concepts/data-collections/memory-collections/block-4.ts %}{% endcapture %}
+{% highlight ts linenos %}{{ snippet_mc_4 }}{% endhighlight %}
 
 ## Next Steps
 
