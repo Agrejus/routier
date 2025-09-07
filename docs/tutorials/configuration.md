@@ -6,111 +6,61 @@ This guide covers the various configuration options available in Routier.
 
 ### Memory Plugin
 
-```typescript
-import { MemoryPlugin } from "routier-plugin-memory";
 
-const memoryPlugin = new MemoryPlugin("my-app");
-```
+{% highlight ts linenos %}{% include code/from-docs/tutorials/configuration/block-1.ts %}{% endhighlight %}
+
 
 ### Local Storage Plugin
 
-```typescript
-import { LocalStoragePlugin } from "routier-plugin-local-storage";
 
-const localStoragePlugin = new LocalStoragePlugin(
-  "my-app",
-  window.localStorage
-);
-const sessionStoragePlugin = new LocalStoragePlugin(
-  "my-app",
-  window.sessionStorage
-);
-```
+{% highlight ts linenos %}{% include code/from-docs/tutorials/configuration/block-2.ts %}{% endhighlight %}
+
 
 ### File System Plugin
 
-```typescript
-import { FileSystemPlugin } from "routier-plugin-file-system";
 
-const fileSystemPlugin = new FileSystemPlugin(__dirname, "my-app");
-```
+{% highlight ts linenos %}{% include code/from-docs/tutorials/configuration/block-3.ts %}{% endhighlight %}
+
 
 ### PouchDB Plugin
 
-```typescript
-import { PouchDbPlugin } from "routier-plugin-pouchdb";
 
-const pouchDbPlugin = new PouchDbPlugin("my-database");
-```
+{% highlight ts linenos %}{% include code/from-docs/tutorials/configuration/block-4.ts %}{% endhighlight %}
+
 
 ### Dexie Plugin
 
-```typescript
-import { DexiePlugin } from "routier-plugin-dexie";
 
-const dexiePlugin = new DexiePlugin("my-database");
-```
+{% highlight ts linenos %}{% include code/from-docs/tutorials/configuration/block-5.ts %}{% endhighlight %}
+
 
 ## Advanced Configuration
 
 ### Plugin Composition
 
-```typescript
-import { DbPluginLogging, DbPluginReplicator } from "routier-core/plugins";
 
-// Add logging to any plugin
-const memoryPluginWithLogging = DbPluginLogging.create(memoryPlugin);
+{% highlight ts linenos %}{% include code/from-docs/tutorials/configuration/block-6.ts %}{% endhighlight %}
 
-// Create replication between plugins
-const replicationPlugin = DbPluginReplicator.create({
-  replicas: [memoryPluginWithLogging],
-  source: pouchDbPluginWithLogging,
-  read: memoryPluginWithLogging,
-});
-```
 
 ### Custom Context Configuration
 
-```typescript
-class AppContext extends DataStore {
-  constructor() {
-    // Pass primary plugin to super constructor
-    super(new MemoryPlugin("my-app"));
 
-    // Additional configuration can go here
-  }
-}
-```
+{% highlight ts linenos %}{% include code/from-docs/tutorials/configuration/block-7.ts %}{% endhighlight %}
+
 
 ## Environment-Specific Configuration
 
 ### Development
 
-```typescript
-const isDevelopment = process.env.NODE_ENV === "development";
 
-class DevContext extends DataStore {
-  constructor() {
-    if (isDevelopment) {
-      super(new MemoryPlugin("dev-app"));
-    } else {
-      super(new PouchDbPlugin("prod-database"));
-    }
-  }
-}
-```
+{% highlight ts linenos %}{% include code/from-docs/tutorials/configuration/block-8.ts %}{% endhighlight %}
+
 
 ### Testing
 
-```typescript
-import { TestingPlugin } from "routier-plugin-testing";
 
-class TestContext extends DataStore {
-  constructor() {
-    super(new TestingPlugin("test-app"));
-  }
-}
-```
+{% highlight ts linenos %}{% include code/from-docs/tutorials/configuration/block-9.ts %}{% endhighlight %}
+
 
 ## Next Steps
 

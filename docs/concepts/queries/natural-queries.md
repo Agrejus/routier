@@ -4,128 +4,51 @@ Routier provides a natural, fluent query API that makes data retrieval intuitive
 
 ## Basic Querying
 
-```typescript
-const ctx = new AppContext();
 
-// Get all users
-const allUsers = await ctx.users.toArrayAsync();
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/natural-queries/block-1.ts %}{% endhighlight %}
 
-// Get first user
-const firstUser = await ctx.users.firstOrUndefinedAsync();
-
-// Check if any users exist
-const hasUsers = await ctx.users.someAsync();
-```
 
 Queries always start from a collection:
 
-```typescript
-const james = await ctx.users
-  .where((u) => u.name === "James")
-  .firstOrUndefinedAsync();
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/natural-queries/block-2.ts %}{% endhighlight %}
+
 
 ## Filtering with Where
 
-```typescript
-// Simple filter
-const activeUsers = await ctx.users
-  .where((user) => user.status === "active")
-  .toArrayAsync();
 
-// Filter with parameters
-const usersByName = await ctx.users
-  .where((user, params) => user.name.startsWith(params.prefix), {
-    prefix: "John",
-  })
-  .toArrayAsync();
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/natural-queries/block-3.ts %}{% endhighlight %}
 
-// Multiple conditions
-const filteredUsers = await ctx.users
-  .where((user) => user.age >= 18 && user.status === "active")
-  .toArrayAsync();
-```
 
 ## Sorting
 
-```typescript
-// Single sort
-const sortedUsers = await ctx.users.sort((user) => user.name).toArrayAsync();
 
-// Multiple sorts
-const multiSorted = await ctx.users
-  .sort((user) => user.age)
-  .sort((user) => user.name)
-  .toArrayAsync();
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/natural-queries/block-4.ts %}{% endhighlight %}
 
-// Reverse sort
-const reverseSorted = await ctx.users
-  .sortDescending((user) => user.createdAt)
-  .toArrayAsync();
-```
 
 ## Mapping and Transformation
 
-```typescript
-// Transform data
-const userNames = await ctx.users.map((user) => user.name).toArrayAsync();
 
-// Complex transformation
-const userSummaries = await ctx.users
-  .map((user) => ({
-    id: user.id,
-    displayName: `${user.firstName} ${user.lastName}`,
-    age: user.age,
-    isAdult: user.age >= 18,
-  }))
-  .toArrayAsync();
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/natural-queries/block-5.ts %}{% endhighlight %}
+
 
 ## Aggregation
 
-```typescript
-// Count
-const userCount = await ctx.users.countAsync();
 
-// Sum
-const totalAge = await ctx.users.sumAsync((user) => user.age);
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/natural-queries/block-6.ts %}{% endhighlight %}
 
-// Min/Max
-const youngestAge = await ctx.users.minAsync((user) => user.age);
-const oldestAge = await ctx.users.maxAsync((user) => user.age);
-
-// Distinct values
-// Distinct operates on the current shape. Project the field first:
-const uniqueAges = await ctx.users.map((user) => user.age).distinctAsync();
-```
 
 ## Pagination
 
-```typescript
-// Skip and take
-const page1 = await ctx.users.skip(0).take(10).toArrayAsync();
 
-const page2 = await ctx.users.skip(10).take(10).toArrayAsync();
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/natural-queries/block-7.ts %}{% endhighlight %}
+
 
 ## Chaining Queries
 
-```typescript
-// Complex query chain
-const result = await ctx.users
-  .where((user) => user.status === "active")
-  .sort((user) => user.createdAt)
-  .skip(0)
-  .take(20)
-  .map((user) => ({
-    id: user.id,
-    name: user.name,
-    daysSinceCreated: Math.floor(
-      (Date.now() - user.createdAt.getTime()) / (1000 * 60 * 60 * 24)
-    ),
-  }))
-  .toArrayAsync();
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/natural-queries/block-8.ts %}{% endhighlight %}
+
 
 ## Next Steps
 

@@ -25,22 +25,9 @@ The specific sync engine (like PouchDB) handles:
 
 Syncing is configured however the user wants within the specific database plugin. Routier itself doesn't handle syncing - it provides the interfaces that plugins use. Here's one example of how it might be configured with a PouchDB plugin:
 
-```typescript
-import { PouchDbPlugin } from "routier-plugin-pouchdb";
 
-const plugin = new PouchDbPlugin("myapp", {
-  sync: {
-    remoteDb: "http://localhost:3000/myapp", // Remote database URL
-    live: true, // Enable live synchronization
-    retry: true, // Automatically retry failed syncs
-    onChange: (schemas, change) => {
-      // Handle sync events
-      console.log("Sync change:", change);
-      // Handle schema updates, conflicts, etc.
-    },
-  },
-});
-```
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-1.ts %}{% endhighlight %}
+
 
 ## Sync Options
 
@@ -50,38 +37,25 @@ The specific options available depend entirely on the plugin you're using. Diffe
 
 Most sync implementations need some way to connect to a remote data source:
 
-```typescript
-// Examples of different connection approaches
-remoteUrl: "http://localhost:3000/myapp";
-database: "myapp";
-endpoint: "https://api.example.com/sync";
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-2.ts %}{% endhighlight %}
+
 
 ### **Sync Behavior**
 
 Common sync behaviors that plugins might implement:
 
-```typescript
-// Continuous vs one-time sync
-continuous: true;
-autoSync: true;
-syncInterval: 5000;
 
-// Retry behavior
-retryOnFailure: true;
-maxRetries: 3;
-```
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-3.ts %}{% endhighlight %}
+
 
 ### **Event Handling**
 
 Many sync implementations provide callbacks for sync events:
 
-```typescript
-onSyncStart: () => console.log("Sync started");
-onSyncComplete: (result) => console.log("Sync complete", result);
-onSyncError: (error) => console.log("Sync error", error);
-onDataChange: (changes) => console.log("Data changed", changes);
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-4.ts %}{% endhighlight %}
+
 
 **Note:** The exact property names, values, and behavior depend on your specific plugin implementation.
 
@@ -127,68 +101,17 @@ The exact retry behavior depends on your plugin implementation.
 
 Here's one example of how you might set up a synced data store with PouchDB. Other plugins may have different configuration approaches:
 
-```typescript
-import { DataStore } from "routier";
-import { PouchDbPlugin } from "routier-plugin-pouchdb";
-import { productSchema } from "./schemas/product";
 
-// Configure the plugin with syncing
-const plugin = new PouchDbPlugin("myapp", {
-  sync: {
-    remoteDb: "http://localhost:3000/myapp",
-    live: true,
-    retry: true,
-    onChange: (schemas, change) => {
-      console.log("Sync event:", {
-        direction: change.direction,
-        changeCount: change.change?.docs?.length || 0,
-        timestamp: new Date().toISOString(),
-      });
-    },
-  },
-});
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-5.ts %}{% endhighlight %}
 
-// Create the data store
-const dataStore = new DataStore(plugin);
-
-// Add collections
-const products = dataStore.collection(productSchema).create();
-
-// Now all operations automatically sync
-await products.addAsync({
-  name: "New Product",
-  price: 99.99,
-});
-
-// This will automatically sync to the remote server
-await dataStore.saveChangesAsync();
-```
 
 ## Conflict Resolution
 
 When conflicts occur (the same data is modified in multiple places), your plugin may provide ways to handle them:
 
-```typescript
-// Example conflict handling approaches
-onConflict: (conflict) => {
-  // Handle conflicts based on your plugin's implementation
-  console.log("Conflict detected:", conflict);
 
-  // Common strategies:
-  // - Use the most recent version
-  // - Merge changes manually
-  // - Prompt the user to choose
-  // - Apply business rules
-};
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-6.ts %}{% endhighlight %}
 
-// Or your plugin might use different event names
-onDataConflict: (conflict) => {
-  /* ... */
-};
-onSyncConflict: (conflict) => {
-  /* ... */
-};
-```
 
 **Note:** The exact conflict handling depends on your plugin implementation.
 
@@ -196,58 +119,21 @@ onSyncConflict: (conflict) => {
 
 ### 1. **Network Handling**
 
-```typescript
-// Check connectivity before enabling sync
-if (navigator.onLine) {
-  // Enable sync based on your plugin's API
-  plugin.startSync();
-} else {
-  // Disable sync based on your plugin's API
-  plugin.stopSync();
-}
 
-// Listen for connectivity changes
-window.addEventListener("online", () => plugin.startSync());
-window.addEventListener("offline", () => plugin.stopSync());
-```
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-7.ts %}{% endhighlight %}
+
 
 ### 2. **Error Handling**
 
-```typescript
-// Handle sync errors based on your plugin's implementation
-onSyncError: (error) => {
-  console.error("Sync error:", error);
 
-  // Handle specific error types based on your plugin
-  if (error.type === "unauthorized") {
-    // Re-authenticate user
-  } else if (error.type === "conflict") {
-    // Handle conflicts
-  } else if (error.code === "NETWORK_ERROR") {
-    // Handle network issues
-  }
-};
-```
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-8.ts %}{% endhighlight %}
+
 
 ### 3. **Performance Optimization**
 
-```typescript
-// Use filters to sync only necessary data (if your plugin supports it)
-const syncConfig = {
-  // Your plugin's connection configuration
-  endpoint: "https://api.example.com/sync",
 
-  // Filter data based on your plugin's API
-  filter: (item) => {
-    // Only sync items the current user has access to
-    return item.userId === currentUserId;
-  },
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-9.ts %}{% endhighlight %}
 
-  // Batch operations if supported
-  batchSize: 100,
-  syncInterval: 5000,
-};
-```
 
 ## Monitoring and Debugging
 
@@ -255,43 +141,17 @@ const syncConfig = {
 
 You can monitor sync status through your plugin's event callbacks:
 
-```typescript
-// Monitor sync activity based on your plugin's API
-onSyncStatus: (status) => {
-  console.log("Sync status:", {
-    state: status.state, // e.g., "syncing", "idle", "error"
-    progress: status.progress, // e.g., percentage or count
-    timestamp: new Date().toISOString(),
-    details: status.details, // plugin-specific information
-  });
-};
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-10.ts %}{% endhighlight %}
+
 
 ### Debug Mode
 
 Enable detailed logging for troubleshooting (if your plugin supports it):
 
-```typescript
-// Enable debug logging based on your plugin's API
-const plugin = new MyPlugin("myapp", {
-  // Your plugin's sync configuration
-  sync: {
-    endpoint: "https://api.example.com/sync",
-    debug: true, // Enable debug mode if supported
-    verbose: true, // Enable verbose logging if supported
-    logLevel: "debug", // Set log level if supported
-  },
 
-  // Event handlers for debugging
-  onSyncEvent: (event) => {
-    console.group("Sync Event");
-    console.log("Type:", event.type);
-    console.log("Data:", event.data);
-    console.log("Timestamp:", new Date().toISOString());
-    console.groupEnd();
-  },
-});
-```
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-11.ts %}{% endhighlight %}
+
 
 ## Supported Backends
 

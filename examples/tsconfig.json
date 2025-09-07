@@ -1,0 +1,28 @@
+{
+    "compilerOptions": {
+        "baseUrl": ".",
+        "allowJs": true,
+        "allowSyntheticDefaultImports": true,
+        "module": "ESNext",
+        "lib": [
+            "ESNext"
+        ],
+        "target": "ESNext",
+        "declaration": true,
+        "noImplicitAny": true,
+        "sourceMap": true,
+        "outDir": "./dist",
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "resolveJsonModule": true
+    },
+    "include": [
+        "./from-docs/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist",
+        "./src/__tests__/*"
+    ]
+}

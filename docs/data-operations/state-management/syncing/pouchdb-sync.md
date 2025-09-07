@@ -16,20 +16,9 @@ The PouchDB plugin automatically handles synchronization when you configure the 
 
 Enable syncing by adding the `sync` configuration to your PouchDB plugin:
 
-```typescript
-import { PouchDbPlugin } from "routier-plugin-pouchdb";
 
-const plugin = new PouchDbPlugin("myapp", {
-  sync: {
-    remoteDb: "http://localhost:3000/myapp",
-    live: true,
-    retry: true,
-    onChange: (schemas, change) => {
-      console.log("Sync event:", change);
-    },
-  },
-});
-```
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-1.ts %}{% endhighlight %}
+
 
 ## Sync Options Reference
 
@@ -37,28 +26,17 @@ const plugin = new PouchDbPlugin("myapp", {
 
 The URL to your remote CouchDB-compatible database:
 
-```typescript
-// Local development
-remoteDb: "http://localhost:3000/myapp";
 
-// Cloudant
-remoteDb: "https://username.cloudant.com/myapp";
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-2.ts %}{% endhighlight %}
 
-// CouchDB
-remoteDb: "http://couchdb.example.com:5984/myapp";
-
-// PouchDB Server
-remoteDb: "http://localhost:3000/myapp";
-```
 
 ### `live` (Optional)
 
 Controls whether synchronization is continuous or one-time:
 
-```typescript
-live: true; // Continuous sync (recommended for most apps)
-live: false; // One-time sync only
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-3.ts %}{% endhighlight %}
+
 
 **Default:** `false`
 
@@ -66,10 +44,9 @@ live: false; // One-time sync only
 
 Enables automatic retry with exponential backoff:
 
-```typescript
-retry: true; // Auto-retry with backoff (recommended)
-retry: false; // No automatic retries
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-4.ts %}{% endhighlight %}
+
 
 **Default:** `false`
 
@@ -77,14 +54,9 @@ retry: false; // No automatic retries
 
 Callback function that receives sync events and schema information:
 
-```typescript
-onChange: (schemas, change) => {
-  // Handle sync events
-  console.log("Sync direction:", change.direction);
-  console.log("Change count:", change.change?.docs?.length || 0);
-  console.log("Affected schemas:", Array.from(schemas.keys()));
-};
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-5.ts %}{% endhighlight %}
+
 
 ## How PouchDB Syncing Works
 
@@ -92,25 +64,17 @@ onChange: (schemas, change) => {
 
 When you create a PouchDB plugin with sync enabled, the system automatically:
 
-```typescript
-// This happens automatically in _tryStartSync()
-const localDb = new PouchDB(this._name);
-const remoteDb = new PouchDB(this._options.sync.remoteDb);
 
-const sync = localDb.sync(remoteDb, {
-  live: this._options.sync.live,
-  retry: this._options.sync.retry,
-  back_off_function: (delay) => Math.min(delay * 2, 10000),
-});
-```
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-6.ts %}{% endhighlight %}
+
 
 ### 2. **Retry Logic**
 
 The plugin implements intelligent retry with exponential backoff:
 
-```typescript
-back_off_function: (delay) => Math.min(delay * 2, 10000);
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-7.ts %}{% endhighlight %}
+
 
 - **Initial delay:** 1 second
 - **Maximum delay:** 10 seconds
@@ -120,94 +84,25 @@ back_off_function: (delay) => Math.min(delay * 2, 10000);
 
 Sync events are automatically routed to your `onChange` callback:
 
-```typescript
-sync.on("change", (change) => this._options.sync.onChange(schemas, change));
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-8.ts %}{% endhighlight %}
+
 
 ## Complete Example
 
 Here's a full example of setting up PouchDB syncing with Routier:
 
-```typescript
-import { DataStore } from "routier";
-import { PouchDbPlugin } from "routier-plugin-pouchdb";
-import { productSchema } from "./schemas/product";
 
-// Configure PouchDB with syncing
-const plugin = new PouchDbPlugin("myapp", {
-  // Database configuration
-  name: "myapp",
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-9.ts %}{% endhighlight %}
 
-  // Sync configuration
-  sync: {
-    remoteDb: "http://localhost:3000/myapp",
-    live: true,
-    retry: true,
-    onChange: (schemas, change) => {
-      // Handle sync events
-      if (change.direction === "push") {
-        console.log("Local changes pushed to remote");
-      } else if (change.direction === "pull") {
-        console.log("Remote changes pulled to local");
-      }
-
-      // Log document changes
-      if (change.change && change.change.docs) {
-        change.change.docs.forEach((doc) => {
-          console.log(`Document ${doc.id} synced`);
-        });
-      }
-    },
-  },
-});
-
-// Create the data store
-const dataStore = new DataStore(plugin);
-
-// Add collections
-const products = dataStore.collection(productSchema).create();
-
-// All operations now automatically sync
-await products.addAsync({
-  name: "New Product",
-  price: 99.99,
-  category: "electronics",
-});
-
-// Save changes (triggers sync)
-await dataStore.saveChangesAsync();
-```
 
 ## Conflict Resolution
 
 PouchDB automatically detects conflicts when the same document is modified in multiple places. Handle conflicts in your `onChange` callback:
 
-```typescript
-onChange: (schemas, change) => {
-  if (change.change && change.change.docs) {
-    change.change.docs.forEach((doc) => {
-      if (doc._conflicts) {
-        console.log("Conflict detected for document:", doc.id);
-        console.log("Conflicts:", doc._conflicts);
 
-        // Implement your conflict resolution strategy
-        resolveConflict(doc);
-      }
-    });
-  }
-};
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-10.ts %}{% endhighlight %}
 
-async function resolveConflict(doc) {
-  // Strategy 1: Use the most recent version
-  const resolved = await getMostRecentVersion(doc);
-
-  // Strategy 2: Merge changes manually
-  const merged = await mergeConflictingChanges(doc);
-
-  // Strategy 3: Prompt user to choose
-  const userChoice = await promptUserForResolution(doc);
-}
-```
 
 ## Advanced Configuration
 
@@ -215,46 +110,17 @@ async function resolveConflict(doc) {
 
 You can pass additional PouchDB sync options:
 
-```typescript
-const plugin = new PouchDbPlugin("myapp", {
-  sync: {
-    remoteDb: "http://localhost:3000/myapp",
-    live: true,
-    retry: true,
-    // Additional PouchDB sync options
-    filter: (doc) => doc.type === "product",
-    query_params: { user_id: "current_user" },
-    since: "now",
-    limit: 1000,
-    include_docs: true,
-    attachments: false,
-    conflicts: true,
-  },
-});
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-11.ts %}{% endhighlight %}
+
 
 ### Multiple Remote Databases
 
 Sync with multiple remote databases:
 
-```typescript
-const plugin = new PouchDbPlugin("myapp", {
-  sync: {
-    remoteDb: "http://localhost:3000/myapp",
-    live: true,
-    retry: true,
-    onChange: (schemas, change) => {
-      console.log("Primary sync:", change);
-    },
-  },
-});
 
-// Add additional sync connections
-const additionalSync = localDb.sync("http://backup-server:3000/myapp", {
-  live: true,
-  retry: true,
-});
-```
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-12.ts %}{% endhighlight %}
+
 
 ## Monitoring and Debugging
 
@@ -262,72 +128,25 @@ const additionalSync = localDb.sync("http://backup-server:3000/myapp", {
 
 Track sync progress and status:
 
-```typescript
-onChange: (schemas, change) => {
-  // Monitor sync activity
-  const syncInfo = {
-    direction: change.direction,
-    changeCount: change.change?.docs?.length || 0,
-    timestamp: new Date().toISOString(),
-    schemas: Array.from(schemas.keys()),
-  };
 
-  console.log("Sync status:", syncInfo);
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-13.ts %}{% endhighlight %}
 
-  // Update UI with sync status
-  updateSyncStatus(syncInfo);
-};
-```
 
 ### Error Handling
 
 Handle sync errors gracefully:
 
-```typescript
-onChange: (schemas, change) => {
-  if (change.error) {
-    console.error("Sync error:", change.error);
 
-    // Handle specific error types
-    switch (change.error.name) {
-      case "unauthorized":
-        handleAuthenticationError();
-        break;
-      case "conflict":
-        handleConflictError(change.error);
-        break;
-      case "network_error":
-        handleNetworkError(change.error);
-        break;
-      default:
-        handleGenericError(change.error);
-    }
-  }
-};
-```
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-14.ts %}{% endhighlight %}
+
 
 ### Debug Mode
 
 Enable detailed logging for troubleshooting:
 
-```typescript
-const plugin = new PouchDbPlugin("myapp", {
-  sync: {
-    remoteDb: "http://localhost:3000/myapp",
-    live: true,
-    retry: true,
-    onChange: (schemas, change) => {
-      // Detailed debug logging
-      console.group("PouchDB Sync Event");
-      console.log("Direction:", change.direction);
-      console.log("Change:", change.change);
-      console.log("Schemas:", schemas);
-      console.log("Timestamp:", new Date().toISOString());
-      console.groupEnd();
-    },
-  },
-});
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-15.ts %}{% endhighlight %}
+
 
 ## Performance Optimization
 
@@ -335,85 +154,37 @@ const plugin = new PouchDbPlugin("myapp", {
 
 Only sync necessary documents:
 
-```typescript
-sync: {
-  remoteDb: 'http://localhost:3000/myapp',
-  live: true,
-  retry: true,
-  filter: (doc) => {
-    // Only sync user's own data
-    return doc.userId === currentUserId;
-  }
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-16.ts %}{% endhighlight %}
+
 
 ### Batch Operations
 
 Optimize sync performance with batch operations:
 
-```typescript
-// Batch multiple changes for efficient syncing
-await dataStore.products.addAsync(product1, product2, product3);
-await dataStore.products.updateAsync(update1, update2);
-await dataStore.saveChangesAsync(); // Single sync operation
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-17.ts %}{% endhighlight %}
+
 
 ## Best Practices
 
 ### 1. **Network Handling**
 
-```typescript
-// Check connectivity before enabling live sync
-if (navigator.onLine) {
-  console.log("Online - enabling live sync");
-} else {
-  console.log("Offline - sync will resume when online");
-}
 
-// Listen for connectivity changes
-window.addEventListener("online", () => {
-  console.log("Connection restored - resuming sync");
-});
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-18.ts %}{% endhighlight %}
 
-window.addEventListener("offline", () => {
-  console.log("Connection lost - sync paused");
-});
-```
 
 ### 2. **Error Recovery**
 
-```typescript
-onChange: (schemas, change) => {
-  if (change.error) {
-    // Log error for debugging
-    console.error("Sync error:", change.error);
 
-    // Implement retry logic
-    if (change.error.name === "network_error") {
-      setTimeout(() => {
-        console.log("Retrying sync...");
-        // Sync will automatically retry
-      }, 5000);
-    }
-  }
-};
-```
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-19.ts %}{% endhighlight %}
+
 
 ### 3. **Data Validation**
 
-```typescript
-onChange: (schemas, change) => {
-  if (change.change && change.change.docs) {
-    change.change.docs.forEach((doc) => {
-      // Validate synced documents
-      if (!isValidDocument(doc)) {
-        console.warn("Invalid document synced:", doc);
-        // Handle invalid data
-      }
-    });
-  }
-};
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-20.ts %}{% endhighlight %}
+
 
 ## Troubleshooting
 
@@ -437,18 +208,9 @@ onChange: (schemas, change) => {
 
 ### Debug Commands
 
-```typescript
-// Check sync status
-console.log("Plugin options:", plugin._options);
 
-// Check database connection
-const db = new PouchDB("myapp");
-db.info().then((info) => console.log("DB info:", info));
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-21.ts %}{% endhighlight %}
 
-// Check remote connection
-const remoteDb = new PouchDB("http://localhost:3000/myapp");
-remoteDb.info().then((info) => console.log("Remote DB info:", info));
-```
 
 ## Next Steps
 

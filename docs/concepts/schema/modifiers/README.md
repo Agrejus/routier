@@ -44,25 +44,9 @@ Persists a computed value to the underlying store. Use when:
 - You need to index or sort/filter by the computed value
 - Recomputing is expensive and you want to cache post-save
 
-```typescript
-const schema = s.define("orders", {
-  // Derived, not persisted by default
-  total: s
-    .number()
-    .computed((order) =>
-      order.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-    ),
 
-  // Persist the computed value to the data store
-  totalCached: s
-    .number()
-    .computed((order) =>
-      order.items.reduce((sum, i) => sum + i.price * i.quantity, 0)
-    )
-    .tracked()
-    .index(),
-});
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-1.ts %}{% endhighlight %}
+
 
 Notes:
 
@@ -75,13 +59,9 @@ Notes:
 
 Marks a property as a primary key for the entity.
 
-```typescript
-const schema = s.define("users", {
-  id: s.string().key().identity(), // Primary key
-  email: s.string().key(), // Alternative key
-  username: s.string().key(), // Another key
-});
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-2.ts %}{% endhighlight %}
+
 
 **Available on:** `string`, `number`, `date`
 
@@ -89,13 +69,9 @@ const schema = s.define("users", {
 
 Automatically generates a unique value for the property.
 
-```typescript
-const schema = s.define("users", {
-  id: s.string().key().identity(), // Auto-generated UUID
-  createdAt: s.date().identity(), // Auto-generated timestamp
-  version: s.number().identity(), // Auto-incrementing number
-});
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-3.ts %}{% endhighlight %}
+
 
 **Available on:** `string`, `number`, `date`, `boolean`
 
@@ -105,15 +81,9 @@ const schema = s.define("users", {
 
 Creates a database index for efficient querying.
 
-```typescript
-const schema = s.define("users", {
-  id: s.string().key().identity(),
-  name: s.string().index(), // Single field index
-  category: s.string().index("cat_status"), // Compound index
-  status: s.string().index("cat_status"), // Same compound index
-  priority: s.number().index(), // Numeric index
-});
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-4.ts %}{% endhighlight %}
+
 
 **Available on:** All types
 
@@ -121,14 +91,9 @@ const schema = s.define("users", {
 
 Multiple fields can share the same index name for compound indexing.
 
-```typescript
-const schema = s.define("orders", {
-  id: s.string().key().identity(),
-  userId: s.string().index("user_date"), // Compound index
-  date: s.date().index("user_date"), // Same compound index
-  type: s.string().index("user_date"), // Same compound index
-});
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-5.ts %}{% endhighlight %}
+
 
 ## Defaults and Values
 
@@ -136,30 +101,9 @@ const schema = s.define("orders", {
 
 Sets a default value for the property. Can accept either a direct value or a function that returns a value.
 
-```typescript
-const schema = s.define("users", {
-  // Direct values
-  status: s.string().default("active"),
-  isEnabled: s.boolean().default(true),
-  count: s.number().default(0),
 
-  // Function values (evaluated when needed)
-  createdAt: s.date().default(() => new Date()),
-  updatedAt: s.date().default(() => new Date()),
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-6.ts %}{% endhighlight %}
 
-  // Complex defaults with functions
-  tags: s.array(s.string()).default(() => []),
-  settings: s
-    .object({
-      theme: s.string().default("light"),
-      language: s.string().default("en"),
-    })
-    .default(() => ({ theme: "light", language: "en" })),
-
-  // Dynamic defaults based on injected context
-  userId: s.string().default((injected) => injected.currentUserId),
-});
-```
 
 **Available on:** All types
 
@@ -171,15 +115,9 @@ const schema = s.define("users", {
 
 Makes the property optional (can be undefined).
 
-```typescript
-const schema = s.define("users", {
-  id: s.string().key().identity(),
-  name: s.string(),
-  middleName: s.string().optional(),
-  nickname: s.string().optional(),
-  avatar: s.string().optional(),
-});
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-7.ts %}{% endhighlight %}
+
 
 **Available on:** All types
 
@@ -187,14 +125,9 @@ const schema = s.define("users", {
 
 Makes the property nullable (can be null).
 
-```typescript
-const schema = s.define("users", {
-  id: s.string().key().identity(),
-  name: s.string(),
-  avatar: s.string().nullable(),
-  lastLogin: s.date().nullable(),
-});
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-8.ts %}{% endhighlight %}
+
 
 **Available on:** All types
 
@@ -202,16 +135,9 @@ const schema = s.define("users", {
 
 Makes the property read-only after creation.
 
-```typescript
-const schema = s.define("users", {
-  id: s.string().key().identity().readonly(),
-  createdAt: s
-    .date()
-    .default(() => new Date())
-    .readonly(),
-  version: s.number().identity().readonly(),
-});
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-9.ts %}{% endhighlight %}
+
 
 **Available on:** All types
 
@@ -221,19 +147,9 @@ const schema = s.define("users", {
 
 Custom serialization function for the property.
 
-```typescript
-const schema = s.define("users", {
-  date: s.date().serialize((date) => date.toISOString()),
-  price: s.number().serialize((price) => Math.round(price * 100)),
-  tags: s.array(s.string()).serialize((tags) => tags.join(",")),
-  settings: s
-    .object({
-      theme: s.string(),
-      language: s.string(),
-    })
-    .serialize((settings) => JSON.stringify(settings)),
-});
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-10.ts %}{% endhighlight %}
+
 
 **Available on:** All types
 
@@ -241,14 +157,9 @@ const schema = s.define("users", {
 
 Custom deserialization function for the property.
 
-```typescript
-const schema = s.define("users", {
-  date: s.date().deserialize((str) => new Date(str)),
-  price: s.number().deserialize((cents) => cents / 100),
-  tags: s.string().deserialize((str) => str.split(",").filter(Boolean)),
-  settings: s.string().deserialize((str) => JSON.parse(str)),
-});
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-11.ts %}{% endhighlight %}
+
 
 **Available on:** All types
 
@@ -258,26 +169,9 @@ const schema = s.define("users", {
 
 Converts the property to an array type.
 
-```typescript
-const schema = s.define("users", {
-  id: s.string().key().identity(),
-  name: s.string(),
 
-  // Convert single string to array of strings
-  tags: s.string().array(),
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-12.ts %}{% endhighlight %}
 
-  // Convert single number to array of numbers
-  scores: s.number().array(),
-
-  // Convert object to array of objects
-  addresses: s
-    .object({
-      street: s.string(),
-      city: s.string(),
-    })
-    .array(),
-});
-```
 
 **Available on:** All types
 
@@ -285,14 +179,9 @@ const schema = s.define("users", {
 
 Ensures the property value is unique across all entities.
 
-```typescript
-const schema = s.define("users", {
-  id: s.string().key().identity(),
-  email: s.string().distinct(), // Must be unique
-  username: s.string().distinct(), // Must be unique
-  phoneNumber: s.string().distinct(), // Must be unique
-});
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-13.ts %}{% endhighlight %}
+
 
 **Available on:** `string`, `number`, `date`, `boolean`
 
@@ -300,30 +189,9 @@ const schema = s.define("users", {
 
 Modifiers can be chained together in any order:
 
-```typescript
-const schema = s.define("users", {
-  // Complex property with multiple modifiers
-  email: s
-    .string()
-    .default("user@example.com")
-    .distinct()
-    .optional()
-    .deserialize((str) => str.toLowerCase())
-    .serialize((str) => str.trim()),
 
-  // Computed property with modifiers
-  displayName: s
-    .string()
-    .optional()
-    .default(() => "Anonymous"),
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-14.ts %}{% endhighlight %}
 
-  // Array with complex validation
-  scores: s
-    .array(s.number())
-    .default(() => [])
-    .optional(),
-});
-```
 
 ## Modifier Compatibility
 
@@ -339,56 +207,35 @@ Not all modifiers can be used together. Here are the key rules:
 
 While modifiers can be chained in any order, it's recommended to follow this pattern:
 
-```typescript
-// Good - logical order
-email: s.string().distinct().optional().default("user@example.com");
 
-// Avoid - confusing order
-email: s.string().default("user@example.com").distinct().optional();
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-15.ts %}{% endhighlight %}
+
 
 ## Best Practices
 
 ### 1. **Use Built-in Modifiers**
 
-```typescript
-// Good - use built-in modifiers
-email: s.string().distinct();
-createdAt: s.date().default(() => new Date());
 
-// Avoid - custom validation when built-in exists
-email: s.string().validate((email) => email.includes("@"));
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-16.ts %}{% endhighlight %}
+
 
 ### 2. **Define Constraints Early**
 
-```typescript
-// Good - define constraints at schema level
-age: s.number().default(18);
 
-// Avoid - constraints defined elsewhere
-age: s.number(); // Constraints defined elsewhere
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-17.ts %}{% endhighlight %}
+
 
 ### 3. **Leverage Type Safety**
 
-```typescript
-// Good - use literal types for constrained values
-status: s.string<"active" | "inactive" | "suspended">();
 
-// Avoid - generic types when specific ones exist
-status: s.string(); // No type safety
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-18.ts %}{% endhighlight %}
+
 
 ### 4. **Use Appropriate Modifiers**
 
-```typescript
-// Good - use .optional() for truly optional fields
-middleName: s.string().optional();
 
-// Avoid - using .nullable() when .optional() is more appropriate
-middleName: s.string().nullable(); // Allows null but not undefined
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-19.ts %}{% endhighlight %}
+
 
 ## Next Steps
 

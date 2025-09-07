@@ -6,134 +6,41 @@ Routier provides a comprehensive set of property types for building robust schem
 
 ### String
 
-```typescript
-const schema = s.define("users", {
-  // Basic string
-  name: s.string(),
 
-  // String with literal constraints
-  status: s.string<"active" | "inactive" | "suspended">(),
-  role: s.string<"user" | "admin" | "moderator">(),
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-1.ts %}{% endhighlight %}
 
-  // String with modifiers
-  email: s.string().distinct(),
-  username: s.string().index(),
-  bio: s.string().optional(),
-});
-```
 
 ### Number
 
-```typescript
-const schema = s.define("users", {
-  // Basic number
-  age: s.number(),
 
-  // Number with literal constraints
-  priority: s.number<1 | 2 | 3 | 4 | 5>(),
-  score: s.number<0 | 10 | 20 | 30 | 40 | 50 | 60 | 70 | 80 | 90 | 100>(),
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-2.ts %}{% endhighlight %}
 
-  // Number with modifiers
-  count: s.number().default(0),
-  rating: s.number().index(),
-  version: s.number().identity(),
-  // Note: .default() accepts both direct values and functions
-});
-```
 
 ### Boolean
 
-```typescript
-const schema = s.define("users", {
-  // Basic boolean
-  isActive: s.boolean(),
 
-  // Boolean with literal constraints
-  verified: s.boolean<true>(), // Only true allowed
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-3.ts %}{% endhighlight %}
 
-  // Boolean with modifiers
-  isEnabled: s.boolean().default(true),
-  hasPermission: s.boolean().optional(),
-});
-```
 
 ### Date
 
-```typescript
-const schema = s.define("users", {
-  // Basic date
-  createdAt: s.date(),
 
-  // Date with modifiers
-  updatedAt: s.date().default(() => new Date()),
-  lastLogin: s.date().nullable(),
-  birthDate: s.date().optional(),
-  // Note: .default() accepts both direct values and functions
-});
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-4.ts %}{% endhighlight %}
+
 
 ## Complex Types
 
 ### Object
 
-```typescript
-const schema = s.define("users", {
-  // Nested object
-  address: s.object({
-    street: s.string(),
-    city: s.string(),
-    state: s.string(),
-    zipCode: s.string(),
-  }),
 
-  // Object with modifiers
-  profile: s
-    .object({
-      bio: s.string().optional(),
-      avatar: s.string().optional(),
-      preferences: s
-        .object({
-          theme: s.string<"light" | "dark">().default("light"),
-          notifications: s.boolean().default(true),
-        })
-        .default(() => ({ theme: "light", notifications: true })),
-    })
-    .optional(),
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-5.ts %}{% endhighlight %}
 
-  // Object with identity
-  metadata: s
-    .object({
-      source: s.string(),
-      version: s.string(),
-    })
-    .identity(),
-});
-```
 
 ### Array
 
-```typescript
-const schema = s.define("users", {
-  // Basic array
-  tags: s.array(s.string()),
 
-  // Array with modifiers
-  scores: s.array(s.number()).default(() => []),
-  phoneNumbers: s.array(s.string()).optional(),
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-6.ts %}{% endhighlight %}
 
-  // Array of objects
-  orders: s.array(
-    s.object({
-      productId: s.string(),
-      quantity: s.number(),
-      price: s.number(),
-    })
-  ),
-
-  // Nested arrays
-  matrix: s.array(s.array(s.number())),
-});
-```
 
 ## Type Constraints with Generics
 
@@ -141,85 +48,29 @@ Routier's type system allows you to constrain properties to specific literal val
 
 ### String Literals
 
-```typescript
-const schema = s.define("products", {
-  // Single literal value
-  type: s.string<"physical">(),
 
-  // Multiple literal values
-  status: s.string<"draft" | "published" | "archived">(),
-  category: s.string<"electronics" | "clothing" | "books">(),
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-7.ts %}{% endhighlight %}
 
-  // With modifiers
-  priority: s.string<"low" | "medium" | "high">().default("medium"),
-});
-```
 
 ### Number Literals
 
-```typescript
-const schema = s.define("orders", {
-  // Single literal value
-  maxItems: s.number<10>(),
 
-  // Multiple literal values
-  status: s.number<0 | 1 | 2>(), // 0=pending, 1=processing, 2=completed
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-8.ts %}{% endhighlight %}
 
-  // With modifiers
-  priority: s.number<1 | 2 | 3 | 4 | 5>().default(3),
-});
-```
 
 ### Boolean Literals
 
-```typescript
-const schema = s.define("users", {
-  // Only true allowed
-  verified: s.boolean<true>(),
 
-  // Only false allowed
-  disabled: s.boolean<false>(),
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-9.ts %}{% endhighlight %}
 
-  // With modifiers
-  isAdmin: s.boolean<true>().optional(),
-});
-```
 
 ## Type Composition
 
 ### Combining Types
 
-```typescript
-const schema = s.define("ecommerce", {
-  // Complex nested structure
-  user: s.object({
-    id: s.string().key().identity(),
-    profile: s.object({
-      personal: s.object({
-        firstName: s.string(),
-        lastName: s.string(),
-        birthDate: s.date().optional(),
-      }),
-      contact: s.object({
-        email: s.string().distinct(),
-        phone: s.string().optional(),
-      }),
-      preferences: s.object({
-        theme: s.string<"light" | "dark" | "auto">().default("auto"),
-        language: s.string<"en" | "es" | "fr">().default("en"),
-        notifications: s.boolean().default(true),
-      }),
-    }),
-    roles: s.array(s.string<"user" | "moderator" | "admin">()),
-    metadata: s
-      .object({
-        source: s.string(),
-        version: s.string(),
-      })
-      .optional(),
-  }),
-});
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-10.ts %}{% endhighlight %}
+
 
 ## Type Conversion
 
@@ -227,26 +78,9 @@ const schema = s.define("ecommerce", {
 
 Any type can be converted to an array using the `.array()` modifier:
 
-```typescript
-const schema = s.define("users", {
-  // Convert string to array of strings
-  singleTag: s.string().array(),
 
-  // Convert number to array of numbers
-  singleScore: s.number().array(),
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-11.ts %}{% endhighlight %}
 
-  // Convert object to array of objects
-  singleAddress: s
-    .object({
-      street: s.string(),
-      city: s.string(),
-    })
-    .array(),
-
-  // Convert boolean to array of booleans
-  singleFlag: s.boolean().array(),
-});
-```
 
 ## Special Use Cases
 
@@ -254,118 +88,51 @@ const schema = s.define("users", {
 
 Properties that auto-generate values:
 
-```typescript
-const schema = s.define("users", {
-  // Auto-generated UUID
-  id: s.string().key().identity(),
 
-  // Auto-generated timestamp
-  createdAt: s.date().identity(),
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-12.ts %}{% endhighlight %}
 
-  // Auto-incrementing number
-  version: s.number().identity(),
-
-  // Auto-generated boolean
-  isVerified: s.boolean().identity(),
-});
-```
 
 ### Key Properties
 
 Properties that serve as unique identifiers:
 
-```typescript
-const schema = s.define("users", {
-  // Primary key
-  id: s.string().key().identity(),
 
-  // Alternative keys
-  email: s.string().key(),
-  username: s.string().key(),
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-13.ts %}{% endhighlight %}
 
-  // Composite key (multiple properties)
-  orderId: s.string().key(),
-  itemId: s.string().key(),
-});
-```
 
 ### Indexed Properties
 
 Properties that create database indexes:
 
-```typescript
-const schema = s.define("users", {
-  // Single field index
-  name: s.string().index(),
 
-  // Compound index
-  category: s.string().index("cat_status"),
-  status: s.string().index("cat_status"),
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-14.ts %}{% endhighlight %}
 
-  // Multiple indexes
-  email: s.string().index("email").index("email_status"),
-  isActive: s.boolean().index("email_status"),
-});
-```
 
 ## Best Practices
 
 ### 1. **Use Literal Types for Constrained Values**
 
-```typescript
-// Good - type-safe constrained values
-status: s.string<"active" | "inactive" | "suspended">();
 
-// Avoid - generic types when specific ones exist
-status: s.string(); // No type safety
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-15.ts %}{% endhighlight %}
+
 
 ### 2. **Leverage Type Inference**
 
-```typescript
-// Good - TypeScript will infer the correct type
-const user = await ctx.users.addAsync({
-  firstName: "John",
-  lastName: "Doe",
-  email: "john@example.com",
-});
 
-// TypeScript knows user.firstName is string
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-16.ts %}{% endhighlight %}
+
 
 ### 3. **Use Appropriate Types**
 
-```typescript
-// Good - specific types
-email: s.string().distinct();
-age: s.number().default(18);
 
-// Avoid - generic types
-email: s.any();
-age: s.any();
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-17.ts %}{% endhighlight %}
+
 
 ### 4. **Structure Complex Data**
 
-```typescript
-// Good - well-structured nested objects
-profile: s.object({
-  personal: s.object({
-    firstName: s.string(),
-    lastName: s.string(),
-  }),
-  contact: s.object({
-    email: s.string().distinct(),
-    phone: s.string().optional(),
-  }),
-});
 
-// Avoid - flat structure with prefixes
-firstName: s.string(),
-lastName: s.string(),
-email: s.string().distinct(),
-phone: s.string().optional(),
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/property-types/README/block-18.ts %}{% endhighlight %}
+
 
 ## Type Compatibility
 

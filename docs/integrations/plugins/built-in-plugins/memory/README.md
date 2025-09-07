@@ -14,38 +14,25 @@ npm install routier-plugin-memory
 
 ## Basic Usage
 
-```typescript
-import { DataStore } from "routier";
-import { MemoryPlugin } from "routier-plugin-memory";
 
-class AppContext extends DataStore {
-  constructor() {
-    super(new MemoryPlugin("my-app"));
-  }
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-2.ts %}{% endhighlight %}
 
-  users = this.collection(userSchema).create();
-}
-```
 
 ## Configuration
 
 ### Constructor Parameters
 
-```typescript
-const memoryPlugin = new MemoryPlugin(
-  "my-app" // Database name (required)
-);
-```
+
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-3.ts %}{% endhighlight %}
+
 
 ### Database Name
 
 The database name is used to namespace your data and should be unique within your application:
 
-```typescript
-// Different contexts can use different names
-const userContext = new DataStore(new MemoryPlugin("users"));
-const orderContext = new DataStore(new MemoryPlugin("orders"));
-```
+
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-4.ts %}{% endhighlight %}
+
 
 ## Performance Characteristics
 
@@ -66,48 +53,29 @@ const orderContext = new DataStore(new MemoryPlugin("orders"));
 
 ### Development and Testing
 
-```typescript
-// Perfect for unit tests
-class TestContext extends DataStore {
-  constructor() {
-    super(new MemoryPlugin("test"));
-  }
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-5.ts %}{% endhighlight %}
+
 
 ### High-Performance Applications
 
-```typescript
-// For applications requiring maximum speed
-class PerformanceContext extends DataStore {
-  constructor() {
-    super(new MemoryPlugin("performance"));
-  }
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-6.ts %}{% endhighlight %}
+
 
 ### Offline-First with Sync
 
-```typescript
-import { DbPluginReplicator } from "routier-core/plugins";
 
-const memoryPlugin = new MemoryPlugin("offline");
-const pouchDbPlugin = new PouchDbPlugin("remote");
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-7.ts %}{% endhighlight %}
 
-const replicationPlugin = DbPluginReplicator.create({
-  replicas: [memoryPlugin],
-  source: pouchDbPlugin,
-  read: memoryPlugin,
-});
-```
 
 ## API Reference
 
 ### Constructor
 
-```typescript
-new MemoryPlugin(databaseName: string)
-```
+
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-8.ts %}{% endhighlight %}
+
 
 ### Properties
 

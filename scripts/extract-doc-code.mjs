@@ -7,8 +7,8 @@ const repoRoot = path.resolve(here, '..');
 const docsDir = path.join(repoRoot, 'docs');
 const examplesRoot = path.join(repoRoot, 'examples', 'from-docs');
 
-const SUPPORTED = new Set(['ts', 'tsx', 'js', 'javascript']);
-const EXT_MAP = { ts: 'ts', tsx: 'tsx', js: 'js', javascript: 'js' };
+const SUPPORTED = new Set(['ts', 'tsx', 'js', 'javascript', 'typescript']);
+const EXT_MAP = { ts: 'ts', tsx: 'tsx', js: 'js', javascript: 'js', typescript: 'ts' };
 
 async function* walk(dir) {
     const entries = await fs.readdir(dir, { withFileTypes: true });

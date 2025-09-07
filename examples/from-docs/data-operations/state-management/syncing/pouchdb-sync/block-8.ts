@@ -1,0 +1,1 @@
+sync.on("change", (change) => this._options.sync.onChange(schemas, change));

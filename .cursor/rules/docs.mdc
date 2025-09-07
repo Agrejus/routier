@@ -55,6 +55,29 @@ alwaysApply: true
 - No broken links. Verify local relative paths.
 - Sidebar entry must exist for new top-level pages.
 - Include an Edit on GitHub link if the site supports it.
+- YAML files must be valid. Do not leave merge/patch markers (e.g., `*** Begin Patch`).
+- Do not commit unresolved conflict markers in any docs files (`<<<<<<<`, `=======`, `>>>>>>>`).
+
+## Code inclusion (GitHub Pages native)
+
+- Use Liquid includes to embed example code: `{% include code/<path> %}` inside `{% highlight <lang> %}` blocks.
+- Only include files that exist under `docs/_includes/code/` (synced from `examples/`).
+- If a page needs only part of a file, create a smaller snippet file instead of using ranges.
+
+## Examples workflow
+
+- Source of truth for examples is `examples/` (and/or `examples/from-docs/` for extracted snippets).
+- Before committing or deploying, run:
+  - `npm run extract:doc-code` to pull fenced code blocks from docs into `examples/from-docs` and replace them with includes.
+  - `npm run sync:examples` to populate `docs/_includes/code/`.
+- In CI before Pages build:
+  - Setup Node 18+ and run `npm ci` (or `npm i`), then `npm run docs:prepare`.
+
+## Liquid includes hygiene
+
+- Paths after `code/` must exactly match the structure under `docs/_includes/code/`.
+- Prefer `.ts`/`.tsx` highlights (`{% highlight ts %}` or `tsx`) to match the file type.
+- Do not reference non-existent example files (build will fail on Pages).
 
 ## React-specific
 

@@ -13,27 +13,9 @@ Memory collections are the fastest storage option in Routier, storing all data i
 
 ## Creating Memory Collections
 
-```typescript
-import { DataStore } from "routier";
-import { MemoryPlugin } from "routier-plugin-memory";
-import { s } from "routier-core/schema";
 
-const userSchema = s
-  .define("user", {
-    id: s.string().key().identity(),
-    name: s.string(),
-    email: s.string(),
-  })
-  .compile();
+{% highlight ts linenos %}{% include code/from-docs/concepts/data-collections/memory-collections/block-1.ts %}{% endhighlight %}
 
-class AppContext extends DataStore {
-  constructor() {
-    super(new MemoryPlugin("my-app"));
-  }
-
-  users = this.collection(userSchema).create();
-}
-```
 
 ## Performance Characteristics
 
@@ -54,43 +36,21 @@ class AppContext extends DataStore {
 
 ### Development and Testing
 
-```typescript
-// Perfect for unit tests
-class TestContext extends DataStore {
-  constructor() {
-    super(new MemoryPlugin("test"));
-  }
 
-  users = this.collection(userSchema).create();
-}
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/data-collections/memory-collections/block-2.ts %}{% endhighlight %}
+
 
 ### High-Performance Applications
 
-```typescript
-// For applications requiring maximum speed
-class PerformanceContext extends DataStore {
-  constructor() {
-    super(new MemoryPlugin("performance"));
-  }
 
-  cache = this.collection(cacheSchema).create();
-}
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/data-collections/memory-collections/block-3.ts %}{% endhighlight %}
+
 
 ### Offline-First with Sync
 
-```typescript
-// Combine with replication for offline capabilities
-const memoryPlugin = new MemoryPlugin("offline");
-const pouchDbPlugin = new PouchDbPlugin("remote");
 
-const replicationPlugin = DbPluginReplicator.create({
-  replicas: [memoryPlugin],
-  source: pouchDbPlugin,
-  read: memoryPlugin,
-});
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/data-collections/memory-collections/block-4.ts %}{% endhighlight %}
+
 
 ## Next Steps
 

@@ -6,34 +6,17 @@ Collection-level modifiers extend entities with derived values and methods that 
 
 Create a derived value from the entity. By default, computed values are not persisted.
 
-```typescript
-const schema = s.define("users", {
-  firstName: s.string(),
-  lastName: s.string(),
 
-  // Not persisted by default
-  fullName: s.string().computed((user) => `${user.firstName} ${user.lastName}`),
-});
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/collection-modifiers/block-1.ts %}{% endhighlight %}
+
 
 ### Tracked computed
 
 Persist a computed value to the store for indexing/sorting and faster reads.
 
-```typescript
-const schema = s.define("orders", {
-  items: s.array(s.object({ price: s.number(), quantity: s.number() })),
 
-  // Persisted computed field
-  total: s
-    .number()
-    .computed((order) =>
-      order.items.reduce((sum, i) => sum + i.price * i.quantity, 0)
-    )
-    .tracked()
-    .index(),
-});
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/collection-modifiers/block-2.ts %}{% endhighlight %}
+
 
 Notes:
 
@@ -44,15 +27,9 @@ Notes:
 
 Attach non-persisted methods to an entity.
 
-```typescript
-const schema = s.define("users", {
-  firstName: s.string(),
-  lastName: s.string(),
 
-  // Method is not stored; available at runtime on entity instances
-  greet: s.function((user) => `Hello, ${user.firstName}!`),
-});
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/collection-modifiers/block-3.ts %}{% endhighlight %}
+
 
 Behavior:
 

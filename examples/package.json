@@ -1,0 +1,22 @@
+{
+  "name": "examples",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC", 
+  "dependencies": {
+    "@routier/datastore": "file://../datastore",
+    "@routier/core": "file://../core",
+    "@routier/react": "file://../react",
+    "@routier/dexie-plugin": "file://../plugins/dexie",
+    "@routier/memory-plugin": "file://../plugins/memory",
+    "@routier/pouchdb-plugin": "file://../plugins/pouchdb"
+  }, 
+  "devDependencies" : {
+    "typescript": "^5.7.2"
+  }
+}

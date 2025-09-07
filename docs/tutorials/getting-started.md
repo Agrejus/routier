@@ -22,45 +22,9 @@ npm install routier-plugin-local-storage
 
 ## Basic Setup
 
-```typescript
-import { DataStore } from "routier";
-import { s } from "routier-core/schema";
-import { MemoryPlugin } from "routier-plugin-memory";
 
-// Define a schema
-const userSchema = s
-  .define("user", {
-    id: s.string().key().identity(),
-    name: s.string().index(),
-    email: s.string(),
-    age: s.number().optional(),
-    createdAt: s.date().default(() => new Date()),
-  })
-  .compile();
+{% highlight ts linenos %}{% include code/from-docs/tutorials/getting-started/block-2.ts %}{% endhighlight %}
 
-// Create a custom context class that extends DataStore
-class AppContext extends DataStore {
-  constructor() {
-    super(new MemoryPlugin("my-app"));
-  }
-
-  // Create collections from schemas
-  users = this.collection(userSchema).create();
-}
-
-// Use the context
-const ctx = new AppContext();
-
-// Add data to the collection
-await ctx.users.addAsync({
-  name: "John Doe",
-  email: "john@example.com",
-  age: 30,
-});
-
-// Save changes
-await ctx.saveChangesAsync();
-```
 
 ## Next Steps
 
