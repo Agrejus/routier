@@ -4,52 +4,106 @@ Routier provides a natural, fluent query API that makes data retrieval intuitive
 
 ## Basic Querying
 
-{% capture snippet_cohq0u %}{% include code/from-docs/concepts/queries/natural-queries/block-1.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_cohq0u }}{% endhighlight %}
+
+
+{% capture snippet_cohq0u %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_cohq0u | escape }}
+```
+
 
 Queries always start from a collection:
 
-{% capture snippet_25zqea %}{% include code/from-docs/concepts/queries/natural-queries/block-2.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_25zqea }}{% endhighlight %}
+
+
+{% capture snippet_25zqea %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_25zqea | escape }}
+```
+
 
 ## Filtering with Where
 
-{% capture snippet_odc3mc %}{% include code/from-docs/concepts/queries/natural-queries/block-3.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_odc3mc }}{% endhighlight %}
+
+
+{% capture snippet_odc3mc %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_odc3mc | escape }}
+```
+
 
 ### Parameterized queries
 
 When compiling to a JavaScript filter function, free variables cannot be evaluated. Inject values via parameters to avoid full collection scans:
 
 
-{% capture snippet_yh53h9 %}{% include code/from-docs/concepts/queries/natural-queries/block-1.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_yh53h9 }}{% endhighlight %}
+
+
+{% capture snippet_yh53h9 %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_yh53h9 | escape }}
+```
+
 
 
 ## Sorting
 
-{% capture snippet_9ex9mv %}{% include code/from-docs/concepts/queries/natural-queries/block-4.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_9ex9mv }}{% endhighlight %}
+
+
+{% capture snippet_9ex9mv %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_9ex9mv | escape }}
+```
+
 
 ## Mapping and Transformation
 
-{% capture snippet_biz3yl %}{% include code/from-docs/concepts/queries/natural-queries/block-5.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_biz3yl }}{% endhighlight %}
+
+
+{% capture snippet_biz3yl %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_biz3yl | escape }}
+```
+
 
 ## Aggregation
 
-{% capture snippet_2o2ifg %}{% include code/from-docs/concepts/queries/natural-queries/block-6.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_2o2ifg }}{% endhighlight %}
+
+
+{% capture snippet_2o2ifg %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_2o2ifg | escape }}
+```
+
 
 ## Pagination
 
-{% capture snippet_ia3pbi %}{% include code/from-docs/concepts/queries/natural-queries/block-7.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_ia3pbi }}{% endhighlight %}
+
+
+{% capture snippet_ia3pbi %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_ia3pbi | escape }}
+```
+
 
 ## Chaining Queries
 
-{% capture snippet_sxpk65 %}{% include code/from-docs/concepts/queries/natural-queries/block-8.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_sxpk65 }}{% endhighlight %}
+
+
+{% capture snippet_sxpk65 %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_sxpk65 | escape }}
+```
+
 
 ## Next Steps
 

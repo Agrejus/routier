@@ -21,22 +21,40 @@ Bulk operations allow you to:
 ### Adding Multiple Entities
 
 
-{% capture snippet_yrprqb %}{% include code/from-docs/how-to/crud/bulk/README/block-1.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_yrprqb }}{% endhighlight %}
+
+
+{% capture snippet_yrprqb %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_yrprqb | escape }}
+```
+
 
 
 ### Bulk Add with Array
 
 
-{% capture snippet_uw8bcx %}{% include code/from-docs/how-to/crud/bulk/README/block-2.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_uw8bcx }}{% endhighlight %}
+
+
+{% capture snippet_uw8bcx %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_uw8bcx | escape }}
+```
+
 
 
 ### Bulk Add with Data Generation
 
 
-{% capture snippet_jvrsl9 %}{% include code/from-docs/how-to/crud/bulk/README/block-3.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_jvrsl9 }}{% endhighlight %}
+
+
+{% capture snippet_jvrsl9 %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_jvrsl9 | escape }}
+```
+
 
 
 ## Bulk Update Operations
@@ -44,22 +62,40 @@ Bulk operations allow you to:
 ### Batch Property Updates
 
 
-{% capture snippet_eag9mn %}{% include code/from-docs/how-to/crud/bulk/README/block-4.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_eag9mn }}{% endhighlight %}
+
+
+{% capture snippet_eag9mn %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_eag9mn | escape }}
+```
+
 
 
 ### Conditional Bulk Updates
 
 
-{% capture snippet_xp7cs4 %}{% include code/from-docs/how-to/crud/bulk/README/block-5.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_xp7cs4 }}{% endhighlight %}
+
+
+{% capture snippet_xp7cs4 %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_xp7cs4 | escape }}
+```
+
 
 
 ### Bulk Updates with Transformations
 
 
-{% capture snippet_q9gyuz %}{% include code/from-docs/how-to/crud/bulk/README/block-6.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_q9gyuz }}{% endhighlight %}
+
+
+{% capture snippet_q9gyuz %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_q9gyuz | escape }}
+```
+
 
 
 ## Bulk Delete Operations
@@ -67,22 +103,40 @@ Bulk operations allow you to:
 ### Remove Multiple Entities
 
 
-{% capture snippet_cyz6su %}{% include code/from-docs/how-to/crud/bulk/README/block-7.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_cyz6su }}{% endhighlight %}
+
+
+{% capture snippet_cyz6su %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_cyz6su | escape }}
+```
+
 
 
 ### Remove by Query
 
 
-{% capture snippet_x08o3f %}{% include code/from-docs/how-to/crud/bulk/README/block-8.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_x08o3f }}{% endhighlight %}
+
+
+{% capture snippet_x08o3f %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_x08o3f | escape }}
+```
+
 
 
 ### Bulk Remove with Confirmation
 
 
-{% capture snippet_w3hrvr %}{% include code/from-docs/how-to/crud/bulk/README/block-9.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_w3hrvr }}{% endhighlight %}
+
+
+{% capture snippet_w3hrvr %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_w3hrvr | escape }}
+```
+
 
 
 ## Bulk Operations with Change Tracking
@@ -90,15 +144,27 @@ Bulk operations allow you to:
 ### Efficient Change Management
 
 
-{% capture snippet_tb922c %}{% include code/from-docs/how-to/crud/bulk/README/block-10.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_tb922c }}{% endhighlight %}
+
+
+{% capture snippet_tb922c %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_tb922c | escape }}
+```
+
 
 
 ### Previewing Bulk Changes
 
 
-{% capture snippet_qs8ydl %}{% include code/from-docs/how-to/crud/bulk/README/block-11.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_qs8ydl }}{% endhighlight %}
+
+
+{% capture snippet_qs8ydl %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_qs8ydl | escape }}
+```
+
 
 
 ## Performance Considerations
@@ -106,15 +172,27 @@ Bulk operations allow you to:
 ### Batch Size Optimization
 
 
-{% capture snippet_bf0381 %}{% include code/from-docs/how-to/crud/bulk/README/block-12.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_bf0381 }}{% endhighlight %}
+
+
+{% capture snippet_bf0381 %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_bf0381 | escape }}
+```
+
 
 
 ### Memory Management
 
 
-{% capture snippet_99drnf %}{% include code/from-docs/how-to/crud/bulk/README/block-13.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_99drnf }}{% endhighlight %}
+
+
+{% capture snippet_99drnf %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_99drnf | escape }}
+```
+
 
 
 ## Error Handling in Bulk Operations
@@ -122,15 +200,27 @@ Bulk operations allow you to:
 ### Graceful Failure Handling
 
 
-{% capture snippet_i43kay %}{% include code/from-docs/how-to/crud/bulk/README/block-14.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_i43kay }}{% endhighlight %}
+
+
+{% capture snippet_i43kay %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_i43kay | escape }}
+```
+
 
 
 ### Partial Success Handling
 
 
-{% capture snippet_u5x4xt %}{% include code/from-docs/how-to/crud/bulk/README/block-15.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_u5x4xt }}{% endhighlight %}
+
+
+{% capture snippet_u5x4xt %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_u5x4xt | escape }}
+```
+
 
 
 ## Best Practices
@@ -138,29 +228,53 @@ Bulk operations allow you to:
 ### 1. **Use Appropriate Batch Sizes**
 
 
-{% capture snippet_6rl9cc %}{% include code/from-docs/how-to/crud/bulk/README/block-16.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_6rl9cc }}{% endhighlight %}
+
+
+{% capture snippet_6rl9cc %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_6rl9cc | escape }}
+```
+
 
 
 ### 2. **Save Changes Strategically**
 
 
-{% capture snippet_sz50tg %}{% include code/from-docs/how-to/crud/bulk/README/block-17.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_sz50tg }}{% endhighlight %}
+
+
+{% capture snippet_sz50tg %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_sz50tg | escape }}
+```
+
 
 
 ### 3. **Handle Errors Gracefully**
 
 
-{% capture snippet_gcc4wa %}{% include code/from-docs/how-to/crud/bulk/README/block-18.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_gcc4wa }}{% endhighlight %}
+
+
+{% capture snippet_gcc4wa %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_gcc4wa | escape }}
+```
+
 
 
 ### 4. **Monitor Performance**
 
 
-{% capture snippet_3htkn6 %}{% include code/from-docs/how-to/crud/bulk/README/block-19.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_3htkn6 }}{% endhighlight %}
+
+
+{% capture snippet_3htkn6 %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_3htkn6 | escape }}
+```
+
 
 
 ## Next Steps

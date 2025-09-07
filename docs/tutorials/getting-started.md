@@ -30,8 +30,14 @@ npm install routier-plugin-local-storage
 
 ## Basic Setup
 
-{% capture snippet_y1mh9l %}{% include code/from-docs/tutorials/getting-started/block-2.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_y1mh9l }}{% endhighlight %}
+
+
+{% capture snippet_y1mh9l %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_y1mh9l | escape }}
+```
+
 
 ## Next Steps
 

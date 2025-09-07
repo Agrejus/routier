@@ -21,22 +21,40 @@ Routier's delete operations feature:
 ### Removing Single Entities
 
 
-{% capture snippet_7mnuqn %}{% include code/from-docs/how-to/crud/delete/block-1.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_7mnuqn }}{% endhighlight %}
+
+
+{% capture snippet_7mnuqn %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_7mnuqn | escape }}
+```
+
 
 
 ### Removing Multiple Entities
 
 
-{% capture snippet_i4h7cy %}{% include code/from-docs/how-to/crud/delete/block-2.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_i4h7cy }}{% endhighlight %}
+
+
+{% capture snippet_i4h7cy %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_i4h7cy | escape }}
+```
+
 
 
 ### Removing with Callbacks
 
 
-{% capture snippet_o2pl49 %}{% include code/from-docs/how-to/crud/delete/block-3.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_o2pl49 }}{% endhighlight %}
+
+
+{% capture snippet_o2pl49 %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_o2pl49 | escape }}
+```
+
 
 
 ## Query-Based Deletion
@@ -44,22 +62,40 @@ Routier's delete operations feature:
 ### Remove by Query
 
 
-{% capture snippet_jowtyu %}{% include code/from-docs/how-to/crud/delete/block-4.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_jowtyu }}{% endhighlight %}
+
+
+{% capture snippet_jowtyu %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_jowtyu | escape }}
+```
+
 
 
 ### Remove with Complex Criteria
 
 
-{% capture snippet_ntn7jz %}{% include code/from-docs/how-to/crud/delete/block-5.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_ntn7jz }}{% endhighlight %}
+
+
+{% capture snippet_ntn7jz %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_ntn7jz | escape }}
+```
+
 
 
 ### Remove with Parameters
 
 
-{% capture snippet_fexf0e %}{% include code/from-docs/how-to/crud/delete/block-6.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_fexf0e }}{% endhighlight %}
+
+
+{% capture snippet_fexf0e %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_fexf0e | escape }}
+```
+
 
 
 ## Batch Deletion Patterns
@@ -67,22 +103,40 @@ Routier's delete operations feature:
 ### Remove by Status
 
 
-{% capture snippet_khspbq %}{% include code/from-docs/how-to/crud/delete/block-7.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_khspbq }}{% endhighlight %}
+
+
+{% capture snippet_khspbq %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_khspbq | escape }}
+```
+
 
 
 ### Remove with Confirmation
 
 
-{% capture snippet_pjopln %}{% include code/from-docs/how-to/crud/delete/block-8.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_pjopln }}{% endhighlight %}
+
+
+{% capture snippet_pjopln %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_pjopln | escape }}
+```
+
 
 
 ### Remove with Backup
 
 
-{% capture snippet_kdmz4x %}{% include code/from-docs/how-to/crud/delete/block-9.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_kdmz4x }}{% endhighlight %}
+
+
+{% capture snippet_kdmz4x %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_kdmz4x | escape }}
+```
+
 
 
 ## Advanced Deletion Patterns
@@ -90,22 +144,40 @@ Routier's delete operations feature:
 ### Cascading Deletion
 
 
-{% capture snippet_9c2sj8 %}{% include code/from-docs/how-to/crud/delete/block-10.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_9c2sj8 }}{% endhighlight %}
+
+
+{% capture snippet_9c2sj8 %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_9c2sj8 | escape }}
+```
+
 
 
 ### Soft Deletion
 
 
-{% capture snippet_p26y1b %}{% include code/from-docs/how-to/crud/delete/block-11.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_p26y1b }}{% endhighlight %}
+
+
+{% capture snippet_p26y1b %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_p26y1b | escape }}
+```
+
 
 
 ### Conditional Deletion
 
 
-{% capture snippet_2s8ypq %}{% include code/from-docs/how-to/crud/delete/block-12.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_2s8ypq }}{% endhighlight %}
+
+
+{% capture snippet_2s8ypq %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_2s8ypq | escape }}
+```
+
 
 
 ## Change Management for Deletions
@@ -113,22 +185,40 @@ Routier's delete operations feature:
 ### Checking Deletion Changes
 
 
-{% capture snippet_56jqdx %}{% include code/from-docs/how-to/crud/delete/block-13.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_56jqdx }}{% endhighlight %}
+
+
+{% capture snippet_56jqdx %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_56jqdx | escape }}
+```
+
 
 
 ### Saving Deletion Changes
 
 
-{% capture snippet_ca6a7p %}{% include code/from-docs/how-to/crud/delete/block-14.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_ca6a7p }}{% endhighlight %}
+
+
+{% capture snippet_ca6a7p %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_ca6a7p | escape }}
+```
+
 
 
 ### Rolling Back Deletions
 
 
-{% capture snippet_nlb686 %}{% include code/from-docs/how-to/crud/delete/block-15.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_nlb686 }}{% endhighlight %}
+
+
+{% capture snippet_nlb686 %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_nlb686 | escape }}
+```
+
 
 
 ## Performance Considerations
@@ -136,15 +226,27 @@ Routier's delete operations feature:
 ### Batch Deletion
 
 
-{% capture snippet_f10lqn %}{% include code/from-docs/how-to/crud/delete/block-16.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_f10lqn }}{% endhighlight %}
+
+
+{% capture snippet_f10lqn %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_f10lqn | escape }}
+```
+
 
 
 ### Large Dataset Deletion
 
 
-{% capture snippet_bdc0uw %}{% include code/from-docs/how-to/crud/delete/block-17.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_bdc0uw }}{% endhighlight %}
+
+
+{% capture snippet_bdc0uw %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_bdc0uw | escape }}
+```
+
 
 
 ## Error Handling
@@ -152,15 +254,27 @@ Routier's delete operations feature:
 ### Safe Deletion
 
 
-{% capture snippet_kx3x6d %}{% include code/from-docs/how-to/crud/delete/block-18.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_kx3x6d }}{% endhighlight %}
+
+
+{% capture snippet_kx3x6d %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_kx3x6d | escape }}
+```
+
 
 
 ### Deletion with Recovery
 
 
-{% capture snippet_ju9hps %}{% include code/from-docs/how-to/crud/delete/block-19.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_ju9hps }}{% endhighlight %}
+
+
+{% capture snippet_ju9hps %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_ju9hps | escape }}
+```
+
 
 
 ## Best Practices
@@ -168,29 +282,53 @@ Routier's delete operations feature:
 ### 1. **Confirm Deletions for Important Data**
 
 
-{% capture snippet_3o6p0t %}{% include code/from-docs/how-to/crud/delete/block-20.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_3o6p0t }}{% endhighlight %}
+
+
+{% capture snippet_3o6p0t %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_3o6p0t | escape }}
+```
+
 
 
 ### 2. **Use Appropriate Deletion Methods**
 
 
-{% capture snippet_vewmxn %}{% include code/from-docs/how-to/crud/delete/block-21.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_vewmxn }}{% endhighlight %}
+
+
+{% capture snippet_vewmxn %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_vewmxn | escape }}
+```
+
 
 
 ### 3. **Handle Related Data Appropriately**
 
 
-{% capture snippet_acizfz %}{% include code/from-docs/how-to/crud/delete/block-22.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_acizfz }}{% endhighlight %}
+
+
+{% capture snippet_acizfz %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_acizfz | escape }}
+```
+
 
 
 ### 4. **Log Deletion Operations**
 
 
-{% capture snippet_gxg1tw %}{% include code/from-docs/how-to/crud/delete/block-23.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_gxg1tw }}{% endhighlight %}
+
+
+{% capture snippet_gxg1tw %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_gxg1tw | escape }}
+```
+
 
 
 ## Next Steps

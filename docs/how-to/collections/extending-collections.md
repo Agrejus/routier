@@ -5,8 +5,14 @@ You can extend a generated collection to add domain-specific helpers while prese
 ### Example
 
 
-{% capture snippet_4yc1wf %}{% include code/from-docs/how-to/collections/extending-collections/block-1.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_4yc1wf }}{% endhighlight %}
+
+
+{% capture snippet_4yc1wf %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_4yc1wf | escape }}
+```
+
 
 
 ### Notes

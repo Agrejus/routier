@@ -5,8 +5,14 @@ This guide shows a complete working example of using Routier for a simple user m
 ## Complete Example
 
 
-{% capture snippet_fmz07h %}{% include code/from-docs/tutorials/basic-example/block-1.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_fmz07h }}{% endhighlight %}
+
+
+{% capture snippet_fmz07h %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_fmz07h | escape }}
+```
+
 
 
 ## What This Example Shows

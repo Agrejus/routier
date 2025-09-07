@@ -18,15 +18,27 @@ Routier's read operations feature:
 ### Getting All Entities
 
 
-{% capture snippet_9o40qi %}{% include code/from-docs/how-to/crud/read/block-1.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_9o40qi }}{% endhighlight %}
+
+
+{% capture snippet_9o40qi %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_9o40qi | escape }}
+```
+
 
 
 ### Getting Single Entities
 
 
-{% capture snippet_t6x45d %}{% include code/from-docs/how-to/crud/read/block-2.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_t6x45d }}{% endhighlight %}
+
+
+{% capture snippet_t6x45d %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_t6x45d | escape }}
+```
+
 
 
 ## Filtering with Where
@@ -34,22 +46,40 @@ Routier's read operations feature:
 ### Simple Filters
 
 
-{% capture snippet_p5nl2e %}{% include code/from-docs/how-to/crud/read/block-3.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_p5nl2e }}{% endhighlight %}
+
+
+{% capture snippet_p5nl2e %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_p5nl2e | escape }}
+```
+
 
 
 ### Parameterized Filters
 
 
-{% capture snippet_jcvg14 %}{% include code/from-docs/how-to/crud/read/block-4.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_jcvg14 }}{% endhighlight %}
+
+
+{% capture snippet_jcvg14 %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_jcvg14 | escape }}
+```
+
 
 
 ### Advanced Filters
 
 
-{% capture snippet_v1gr0f %}{% include code/from-docs/how-to/crud/read/block-5.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_v1gr0f }}{% endhighlight %}
+
+
+{% capture snippet_v1gr0f %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_v1gr0f | escape }}
+```
+
 
 
 ## Sorting
@@ -57,15 +87,27 @@ Routier's read operations feature:
 ### Basic Sorting
 
 
-{% capture snippet_mb35us %}{% include code/from-docs/how-to/crud/read/block-6.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_mb35us }}{% endhighlight %}
+
+
+{% capture snippet_mb35us %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_mb35us | escape }}
+```
+
 
 
 ### Complex Sorting
 
 
-{% capture snippet_kiewxc %}{% include code/from-docs/how-to/crud/read/block-7.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_kiewxc }}{% endhighlight %}
+
+
+{% capture snippet_kiewxc %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_kiewxc | escape }}
+```
+
 
 
 ## Pagination
@@ -73,15 +115,27 @@ Routier's read operations feature:
 ### Skip and Take
 
 
-{% capture snippet_q0v3kz %}{% include code/from-docs/how-to/crud/read/block-8.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_q0v3kz }}{% endhighlight %}
+
+
+{% capture snippet_q0v3kz %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_q0v3kz | escape }}
+```
+
 
 
 ### Complete Pagination Example
 
 
-{% capture snippet_5hcao5 %}{% include code/from-docs/how-to/crud/read/block-9.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_5hcao5 }}{% endhighlight %}
+
+
+{% capture snippet_5hcao5 %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_5hcao5 | escape }}
+```
+
 
 
 ## Aggregation Operations
@@ -89,29 +143,53 @@ Routier's read operations feature:
 ### Counting
 
 
-{% capture snippet_xunr8i %}{% include code/from-docs/how-to/crud/read/block-10.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_xunr8i }}{% endhighlight %}
+
+
+{% capture snippet_xunr8i %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_xunr8i | escape }}
+```
+
 
 
 ### Sum Operations
 
 
-{% capture snippet_jm836j %}{% include code/from-docs/how-to/crud/read/block-11.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_jm836j }}{% endhighlight %}
+
+
+{% capture snippet_jm836j %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_jm836j | escape }}
+```
+
 
 
 ### Min and Max Operations
 
 
-{% capture snippet_nnkaip %}{% include code/from-docs/how-to/crud/read/block-12.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_nnkaip }}{% endhighlight %}
+
+
+{% capture snippet_nnkaip %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_nnkaip | escape }}
+```
+
 
 
 ### Distinct Values
 
 
-{% capture snippet_wq7fry %}{% include code/from-docs/how-to/crud/read/block-13.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_wq7fry }}{% endhighlight %}
+
+
+{% capture snippet_wq7fry %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_wq7fry | escape }}
+```
+
 
 
 ## Data Transformation
@@ -119,15 +197,27 @@ Routier's read operations feature:
 ### Mapping Data
 
 
-{% capture snippet_oygbvt %}{% include code/from-docs/how-to/crud/read/block-14.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_oygbvt }}{% endhighlight %}
+
+
+{% capture snippet_oygbvt %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_oygbvt | escape }}
+```
+
 
 
 ### Complex Transformations
 
 
-{% capture snippet_zrxxjw %}{% include code/from-docs/how-to/crud/read/block-15.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_zrxxjw }}{% endhighlight %}
+
+
+{% capture snippet_zrxxjw %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_zrxxjw | escape }}
+```
+
 
 
 ## Query Chaining
@@ -135,15 +225,27 @@ Routier's read operations feature:
 ### Complex Query Examples
 
 
-{% capture snippet_cqlpyx %}{% include code/from-docs/how-to/crud/read/block-16.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_cqlpyx }}{% endhighlight %}
+
+
+{% capture snippet_cqlpyx %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_cqlpyx | escape }}
+```
+
 
 
 ### Query with Aggregation
 
 
-{% capture snippet_7zimzt %}{% include code/from-docs/how-to/crud/read/block-17.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_7zimzt }}{% endhighlight %}
+
+
+{% capture snippet_7zimzt %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_7zimzt | escape }}
+```
+
 
 
 ## Performance Considerations
@@ -151,15 +253,27 @@ Routier's read operations feature:
 ### Query Optimization
 
 
-{% capture snippet_7w1agc %}{% include code/from-docs/how-to/crud/read/block-18.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_7w1agc }}{% endhighlight %}
+
+
+{% capture snippet_7w1agc %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_7w1agc | escape }}
+```
+
 
 
 ### Memory Management
 
 
-{% capture snippet_gytojx %}{% include code/from-docs/how-to/crud/read/block-19.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_gytojx }}{% endhighlight %}
+
+
+{% capture snippet_gytojx %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_gytojx | escape }}
+```
+
 
 
 ## Best Practices
@@ -167,29 +281,53 @@ Routier's read operations feature:
 ### 1. **Use Appropriate Query Methods**
 
 
-{% capture snippet_7xxzgt %}{% include code/from-docs/how-to/crud/read/block-20.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_7xxzgt }}{% endhighlight %}
+
+
+{% capture snippet_7xxzgt %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_7xxzgt | escape }}
+```
+
 
 
 ### 2. **Chain Operations Efficiently**
 
 
-{% capture snippet_8phcbm %}{% include code/from-docs/how-to/crud/read/block-21.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_8phcbm }}{% endhighlight %}
+
+
+{% capture snippet_8phcbm %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_8phcbm | escape }}
+```
+
 
 
 ### 3. **Handle Empty Results Gracefully**
 
 
-{% capture snippet_fvul6i %}{% include code/from-docs/how-to/crud/read/block-22.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_fvul6i }}{% endhighlight %}
+
+
+{% capture snippet_fvul6i %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_fvul6i | escape }}
+```
+
 
 
 ### 4. **Use Type-Safe Queries**
 
 
-{% capture snippet_mfx2x7 %}{% include code/from-docs/how-to/crud/read/block-23.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_mfx2x7 }}{% endhighlight %}
+
+
+{% capture snippet_mfx2x7 %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_mfx2x7 | escape }}
+```
+
 
 
 ## Next Steps

@@ -19,8 +19,14 @@ A schema is a blueprint that defines:
 Schemas provide compile-time type checking and type safety:
 
 
-{% capture snippet_g1vs4h %}{% include code/from-docs/concepts/schema/why-schemas/block-1.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_g1vs4h }}{% endhighlight %}
+
+
+{% capture snippet_g1vs4h %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_g1vs4h | escape }}
+```
+
 
 
 ### 2. **Type Safety and Constraints**
@@ -28,8 +34,14 @@ Schemas provide compile-time type checking and type safety:
 Schemas ensure data structure matches your defined types, reducing bugs and improving data quality:
 
 
-{% capture snippet_dzl6uk %}{% include code/from-docs/concepts/schema/why-schemas/block-2.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_dzl6uk }}{% endhighlight %}
+
+
+{% capture snippet_dzl6uk %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_dzl6uk | escape }}
+```
+
 
 
 ### 3. **Self-Documenting Code**
@@ -37,8 +49,14 @@ Schemas ensure data structure matches your defined types, reducing bugs and impr
 Schemas serve as living documentation of your data structures:
 
 
-{% capture snippet_eybu6p %}{% include code/from-docs/concepts/schema/why-schemas/block-3.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_eybu6p }}{% endhighlight %}
+
+
+{% capture snippet_eybu6p %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_eybu6p | escape }}
+```
+
 
 
 ### 4. **Automatic Features**
@@ -46,8 +64,14 @@ Schemas serve as living documentation of your data structures:
 Schemas enable powerful features without additional code:
 
 
-{% capture snippet_malwii %}{% include code/from-docs/concepts/schema/why-schemas/block-4.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_malwii }}{% endhighlight %}
+
+
+{% capture snippet_malwii %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_malwii | escape }}
+```
+
 
 
 ### 5. **Consistent Data Handling**
@@ -55,8 +79,14 @@ Schemas enable powerful features without additional code:
 Schemas ensure all parts of your application handle data the same way:
 
 
-{% capture snippet_5mtp8w %}{% include code/from-docs/concepts/schema/why-schemas/block-5.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_5mtp8w }}{% endhighlight %}
+
+
+{% capture snippet_5mtp8w %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_5mtp8w | escape }}
+```
+
 
 
 ### 6. **Performance Optimization**
@@ -64,8 +94,14 @@ Schemas ensure all parts of your application handle data the same way:
 Schemas enable automatic performance optimizations:
 
 
-{% capture snippet_krnwpl %}{% include code/from-docs/concepts/schema/why-schemas/block-6.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_krnwpl }}{% endhighlight %}
+
+
+{% capture snippet_krnwpl %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_krnwpl | escape }}
+```
+
 
 
 ### 7. **Change Tracking and History**
@@ -73,8 +109,14 @@ Schemas enable automatic performance optimizations:
 Schemas enable powerful change tracking features:
 
 
-{% capture snippet_mc1w4v %}{% include code/from-docs/concepts/schema/why-schemas/block-7.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_mc1w4v }}{% endhighlight %}
+
+
+{% capture snippet_mc1w4v %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_mc1w4v | escape }}
+```
+
 
 
 ### 8. **Serialization and Persistence**
@@ -82,8 +124,14 @@ Schemas enable powerful change tracking features:
 Schemas handle data transformation automatically:
 
 
-{% capture snippet_ia38gi %}{% include code/from-docs/concepts/schema/why-schemas/block-8.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_ia38gi }}{% endhighlight %}
+
+
+{% capture snippet_ia38gi %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_ia38gi | escape }}
+```
+
 
 
 ## Real-World Examples
@@ -91,15 +139,27 @@ Schemas handle data transformation automatically:
 ### E-commerce Application
 
 
-{% capture snippet_qq7z16 %}{% include code/from-docs/concepts/schema/why-schemas/block-9.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_qq7z16 }}{% endhighlight %}
+
+
+{% capture snippet_qq7z16 %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_qq7z16 | escape }}
+```
+
 
 
 ### User Management System
 
 
-{% capture snippet_v2efrx %}{% include code/from-docs/concepts/schema/why-schemas/block-10.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_v2efrx }}{% endhighlight %}
+
+
+{% capture snippet_v2efrx %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_v2efrx | escape }}
+```
+
 
 
 ## When Not to Use Schemas
@@ -109,22 +169,40 @@ While schemas are powerful, they're not always necessary:
 ### **Simple Data Structures**
 
 
-{% capture snippet_nusyp4 %}{% include code/from-docs/concepts/schema/why-schemas/block-11.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_nusyp4 }}{% endhighlight %}
+
+
+{% capture snippet_nusyp4 %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_nusyp4 | escape }}
+```
+
 
 
 ### **Temporary Data**
 
 
-{% capture snippet_ufr7tz %}{% include code/from-docs/concepts/schema/why-schemas/block-12.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_ufr7tz }}{% endhighlight %}
+
+
+{% capture snippet_ufr7tz %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_ufr7tz | escape }}
+```
+
 
 
 ### **External API Responses**
 
 
-{% capture snippet_itz37e %}{% include code/from-docs/concepts/schema/why-schemas/block-13.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_itz37e }}{% endhighlight %}
+
+
+{% capture snippet_itz37e %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_itz37e | escape }}
+```
+
 
 
 ## Best Practices
@@ -132,29 +210,53 @@ While schemas are powerful, they're not always necessary:
 ### 1. **Start Simple**
 
 
-{% capture snippet_myxbxu %}{% include code/from-docs/concepts/schema/why-schemas/block-14.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_myxbxu }}{% endhighlight %}
+
+
+{% capture snippet_myxbxu %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_myxbxu | escape }}
+```
+
 
 
 ### 2. **Check Structure Early**
 
 
-{% capture snippet_mizzys %}{% include code/from-docs/concepts/schema/why-schemas/block-15.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_mizzys }}{% endhighlight %}
+
+
+{% capture snippet_mizzys %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_mizzys | escape }}
+```
+
 
 
 ### 3. **Use Computed Properties**
 
 
-{% capture snippet_0wnx5f %}{% include code/from-docs/concepts/schema/why-schemas/block-16.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_0wnx5f }}{% endhighlight %}
+
+
+{% capture snippet_0wnx5f %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_0wnx5f | escape }}
+```
+
 
 
 ### 4. **Leverage Type Inference**
 
 
-{% capture snippet_l9n9ls %}{% include code/from-docs/concepts/schema/why-schemas/block-17.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_l9n9ls }}{% endhighlight %}
+
+
+{% capture snippet_l9n9ls %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_l9n9ls | escape }}
+```
+
 
 
 ## Conclusion

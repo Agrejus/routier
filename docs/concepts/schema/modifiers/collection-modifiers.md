@@ -14,15 +14,27 @@ Collection-level modifiers extend entities with derived values and methods that 
 
 Create a derived value from the entity. By default, computed values are not persisted.
 
-{% capture snippet_924ccs %}{% include code/from-docs/concepts/schema/modifiers/collection-modifiers/block-1.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_924ccs }}{% endhighlight %}
+
+
+{% capture snippet_924ccs %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_924ccs | escape }}
+```
+
 
 ### Tracked computed
 
 Persist a computed value to the store for indexing/sorting and faster reads.
 
-{% capture snippet_fv4rns %}{% include code/from-docs/concepts/schema/modifiers/collection-modifiers/block-2.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_fv4rns }}{% endhighlight %}
+
+
+{% capture snippet_fv4rns %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_fv4rns | escape }}
+```
+
 
 Notes:
 
@@ -33,8 +45,14 @@ Notes:
 
 Attach non-persisted methods to an entity.
 
-{% capture snippet_nft04r %}{% include code/from-docs/concepts/schema/modifiers/collection-modifiers/block-3.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_nft04r }}{% endhighlight %}
+
+
+{% capture snippet_nft04r %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_nft04r | escape }}
+```
+
 
 Behavior:
 

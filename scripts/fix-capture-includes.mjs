@@ -24,10 +24,16 @@ function transform(content) {
     // {% highlight ts linenos %}{% include code/... %}{% endhighlight %}
     // and replace with capture + highlight
     const re = /\{\%\s*highlight\s+([^%]+?)\s*\%\}\s*\{\%\s*include\s+([^%]+?)\s*\%\}\s*\{\%\s*endhighlight\s*\%\}/g;
-    return content.replace(re, (_m, lang, inc) => {
+    let out = content.replace(re, (_m, lang, inc) => {
         const captureVar = 'snippet_' + Math.random().toString(36).slice(2, 8);
         return `\n{% capture ${captureVar} %}{% include ${inc.trim()} %}{% endcapture %}\n{% highlight ${lang.trim()} %}{{ ${captureVar} | strip }}{% endhighlight %}\n`;
     });
+    // Transform capture+highlight to fenced code blocks to avoid theme parsing quirks
+    const re2 = /\{\%\s*capture\s+(\w+)\s*\%\}[\s\S]*?\{\%\s*endcapture\s*\%\}\s*\{\%\s*highlight\s+([^\s%]+)(?:[^%]*)\%\}\s*\{\{\s*\1(?:\s*\|\s*strip)?\s*\}\}\s*\{\%\s*endhighlight\s*\%\}/g;
+    out = out.replace(re2, (_m, varName, lang) => {
+        return `\n\n{% capture ${varName} %}{% include code/%}{% endcapture %}\n\n\`\`\`${lang.trim()}\n{{ ${varName} | escape }}\n\`\`\`\n`;
+    });
+    return out;
 }
 
 async function run() {

@@ -15,8 +15,14 @@ npm install routier-plugin-memory
 ## Basic Usage
 
 
-{% capture snippet_j93uk4 %}{% include code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-2.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_j93uk4 }}{% endhighlight %}
+
+
+{% capture snippet_j93uk4 %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_j93uk4 | escape }}
+```
+
 
 
 ## Configuration
@@ -24,8 +30,14 @@ npm install routier-plugin-memory
 ### Constructor Parameters
 
 
-{% capture snippet_wmjaxi %}{% include code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-3.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_wmjaxi }}{% endhighlight %}
+
+
+{% capture snippet_wmjaxi %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_wmjaxi | escape }}
+```
+
 
 
 ### Database Name
@@ -33,8 +45,14 @@ npm install routier-plugin-memory
 The database name is used to namespace your data and should be unique within your application:
 
 
-{% capture snippet_t0gugq %}{% include code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-4.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_t0gugq }}{% endhighlight %}
+
+
+{% capture snippet_t0gugq %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_t0gugq | escape }}
+```
+
 
 
 ## Performance Characteristics
@@ -57,22 +75,40 @@ The database name is used to namespace your data and should be unique within you
 ### Development and Testing
 
 
-{% capture snippet_bjnyoi %}{% include code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-5.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_bjnyoi }}{% endhighlight %}
+
+
+{% capture snippet_bjnyoi %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_bjnyoi | escape }}
+```
+
 
 
 ### High-Performance Applications
 
 
-{% capture snippet_e67add %}{% include code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-6.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_e67add }}{% endhighlight %}
+
+
+{% capture snippet_e67add %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_e67add | escape }}
+```
+
 
 
 ### Offline-First with Sync
 
 
-{% capture snippet_1e3k2w %}{% include code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-7.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_1e3k2w }}{% endhighlight %}
+
+
+{% capture snippet_1e3k2w %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_1e3k2w | escape }}
+```
+
 
 
 ## API Reference
@@ -80,8 +116,14 @@ The database name is used to namespace your data and should be unique within you
 ### Constructor
 
 
-{% capture snippet_41jr8p %}{% include code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-8.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_41jr8p }}{% endhighlight %}
+
+
+{% capture snippet_41jr8p %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_41jr8p | escape }}
+```
+
 
 
 ### Properties

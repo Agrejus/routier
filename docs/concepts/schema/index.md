@@ -25,8 +25,14 @@ Schemas are type definitions that:
 
 Routier provides a fluent, type-safe schema builder API:
 
-{% capture snippet_isgum0 %}{% include code/from-docs/concepts/schema/index/block-1.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_isgum0 }}{% endhighlight %}
+
+
+{% capture snippet_isgum0 %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_isgum0 | escape }}
+```
+
 
 ## Key Features
 
@@ -78,18 +84,36 @@ Routier provides a fluent, type-safe schema builder API:
 
 ### Basic Entity
 
-{% capture snippet_00kemw %}{% include code/from-docs/concepts/schema/index/block-2.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_00kemw }}{% endhighlight %}
+
+
+{% capture snippet_00kemw %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_00kemw | escape }}
+```
+
 
 ### Complex Nested Schema
 
-{% capture snippet_j8qiei %}{% include code/from-docs/concepts/schema/index/block-3.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_j8qiei }}{% endhighlight %}
+
+
+{% capture snippet_j8qiei %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_j8qiei | escape }}
+```
+
 
 ### Constrained Values
 
-{% capture snippet_wdlc9l %}{% include code/from-docs/concepts/schema/index/block-4.ts %}{% endcapture %}
-{% highlight ts linenos %}{{ snippet_wdlc9l }}{% endhighlight %}
+
+
+{% capture snippet_wdlc9l %}{% include code/%}{% endcapture %}
+
+```ts
+{{ snippet_wdlc9l | escape }}
+```
+
 
 ## Benefits
 
