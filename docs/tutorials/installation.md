@@ -1,3 +1,10 @@
+---
+title: Installation Guide
+layout: default
+parent: Tutorials
+nav_order: 3
+---
+
 # Installation Guide
 
 ## Prerequisites

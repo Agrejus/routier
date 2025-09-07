@@ -1,3 +1,11 @@
+---
+title: Delete Operations
+layout: default
+parent: CRUD
+grand_parent: Data Operations
+nav_order: 5
+---
+
 # Delete Operations
 
 Delete operations in Routier allow you to remove entities from your collections. The framework provides both individual and batch deletion methods, with support for query-based removal and proper cleanup.
@@ -20,316 +28,293 @@ Routier's delete operations feature:
 
 ### Removing Single Entities
 
-
-
-
 {% capture snippet_7mnuqn %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_7mnuqn | escape }}
+{
+  {
+    snippet_7mnuqn | escape;
+  }
+}
 ```
 
-
-
 ### Removing Multiple Entities
-
-
-
 
 {% capture snippet_i4h7cy %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_i4h7cy | escape }}
+{
+  {
+    snippet_i4h7cy | escape;
+  }
+}
 ```
 
-
-
 ### Removing with Callbacks
-
-
-
 
 {% capture snippet_o2pl49 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_o2pl49 | escape }}
+{
+  {
+    snippet_o2pl49 | escape;
+  }
+}
 ```
-
-
 
 ## Query-Based Deletion
 
 ### Remove by Query
 
-
-
-
 {% capture snippet_jowtyu %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_jowtyu | escape }}
+{
+  {
+    snippet_jowtyu | escape;
+  }
+}
 ```
 
-
-
 ### Remove with Complex Criteria
-
-
-
 
 {% capture snippet_ntn7jz %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_ntn7jz | escape }}
+{
+  {
+    snippet_ntn7jz | escape;
+  }
+}
 ```
 
-
-
 ### Remove with Parameters
-
-
-
 
 {% capture snippet_fexf0e %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_fexf0e | escape }}
+{
+  {
+    snippet_fexf0e | escape;
+  }
+}
 ```
-
-
 
 ## Batch Deletion Patterns
 
 ### Remove by Status
 
-
-
-
 {% capture snippet_khspbq %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_khspbq | escape }}
+{
+  {
+    snippet_khspbq | escape;
+  }
+}
 ```
 
-
-
 ### Remove with Confirmation
-
-
-
 
 {% capture snippet_pjopln %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_pjopln | escape }}
+{
+  {
+    snippet_pjopln | escape;
+  }
+}
 ```
 
-
-
 ### Remove with Backup
-
-
-
 
 {% capture snippet_kdmz4x %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_kdmz4x | escape }}
+{
+  {
+    snippet_kdmz4x | escape;
+  }
+}
 ```
-
-
 
 ## Advanced Deletion Patterns
 
 ### Cascading Deletion
 
-
-
-
 {% capture snippet_9c2sj8 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_9c2sj8 | escape }}
+{
+  {
+    snippet_9c2sj8 | escape;
+  }
+}
 ```
 
-
-
 ### Soft Deletion
-
-
-
 
 {% capture snippet_p26y1b %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_p26y1b | escape }}
+{
+  {
+    snippet_p26y1b | escape;
+  }
+}
 ```
 
-
-
 ### Conditional Deletion
-
-
-
 
 {% capture snippet_2s8ypq %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_2s8ypq | escape }}
+{
+  {
+    snippet_2s8ypq | escape;
+  }
+}
 ```
-
-
 
 ## Change Management for Deletions
 
 ### Checking Deletion Changes
 
-
-
-
 {% capture snippet_56jqdx %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_56jqdx | escape }}
+{
+  {
+    snippet_56jqdx | escape;
+  }
+}
 ```
 
-
-
 ### Saving Deletion Changes
-
-
-
 
 {% capture snippet_ca6a7p %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_ca6a7p | escape }}
+{
+  {
+    snippet_ca6a7p | escape;
+  }
+}
 ```
 
-
-
 ### Rolling Back Deletions
-
-
-
 
 {% capture snippet_nlb686 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_nlb686 | escape }}
+{
+  {
+    snippet_nlb686 | escape;
+  }
+}
 ```
-
-
 
 ## Performance Considerations
 
 ### Batch Deletion
 
-
-
-
 {% capture snippet_f10lqn %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_f10lqn | escape }}
+{
+  {
+    snippet_f10lqn | escape;
+  }
+}
 ```
 
-
-
 ### Large Dataset Deletion
-
-
-
 
 {% capture snippet_bdc0uw %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_bdc0uw | escape }}
+{
+  {
+    snippet_bdc0uw | escape;
+  }
+}
 ```
-
-
 
 ## Error Handling
 
 ### Safe Deletion
 
-
-
-
 {% capture snippet_kx3x6d %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_kx3x6d | escape }}
+{
+  {
+    snippet_kx3x6d | escape;
+  }
+}
 ```
 
-
-
 ### Deletion with Recovery
-
-
-
 
 {% capture snippet_ju9hps %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_ju9hps | escape }}
+{
+  {
+    snippet_ju9hps | escape;
+  }
+}
 ```
-
-
 
 ## Best Practices
 
 ### 1. **Confirm Deletions for Important Data**
 
-
-
-
 {% capture snippet_3o6p0t %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_3o6p0t | escape }}
+{
+  {
+    snippet_3o6p0t | escape;
+  }
+}
 ```
 
-
-
 ### 2. **Use Appropriate Deletion Methods**
-
-
-
 
 {% capture snippet_vewmxn %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_vewmxn | escape }}
+{
+  {
+    snippet_vewmxn | escape;
+  }
+}
 ```
 
-
-
 ### 3. **Handle Related Data Appropriately**
-
-
-
 
 {% capture snippet_acizfz %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_acizfz | escape }}
+{
+  {
+    snippet_acizfz | escape;
+  }
+}
 ```
 
-
-
 ### 4. **Log Deletion Operations**
-
-
-
 
 {% capture snippet_gxg1tw %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_gxg1tw | escape }}
+{
+  {
+    snippet_gxg1tw | escape;
+  }
+}
 ```
-
-
 
 ## Next Steps
 

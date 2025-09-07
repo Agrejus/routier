@@ -1,19 +1,25 @@
+---
+title: Basic Example
+layout: default
+parent: Tutorials
+nav_order: 2
+---
+
 # Basic Example
 
 This guide shows a complete working example of using Routier for a simple user management system.
 
 ## Complete Example
 
-
-
-
 {% capture snippet_fmz07h %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_fmz07h | escape }}
+{
+  {
+    snippet_fmz07h | escape;
+  }
+}
 ```
-
-
 
 ## What This Example Shows
 

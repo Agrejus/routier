@@ -1,19 +1,26 @@
+---
+title: Extending Collections
+layout: default
+parent: Collections
+grand_parent: Data Operations
+nav_order: 1
+---
+
 ## Extending Collections
 
 You can extend a generated collection to add domain-specific helpers while preserving typing and change tracking.
 
 ### Example
 
-
-
-
 {% capture snippet_4yc1wf %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_4yc1wf | escape }}
+{
+  {
+    snippet_4yc1wf | escape;
+  }
+}
 ```
-
-
 
 ### Notes
 

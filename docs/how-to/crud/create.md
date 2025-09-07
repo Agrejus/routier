@@ -1,3 +1,11 @@
+---
+title: Create Operations
+layout: default
+parent: CRUD
+grand_parent: Data Operations
+nav_order: 2
+---
+
 # Create Operations
 
 Create operations in Routier allow you to add new entities to your collections. The framework provides both synchronous and asynchronous methods, with automatic change tracking and validation.
@@ -20,249 +28,231 @@ When you create entities in Routier:
 
 ### Adding Single Entities
 
-
-
-
 {% capture snippet_vvzyz2 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_vvzyz2 | escape }}
+{
+  {
+    snippet_vvzyz2 | escape;
+  }
+}
 ```
 
-
-
 ### Adding Multiple Entities
-
-
-
 
 {% capture snippet_gsb9ng %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_gsb9ng | escape }}
+{
+  {
+    snippet_gsb9ng | escape;
+  }
+}
 ```
-
-
 
 ### Adding with Callbacks
 
 **Note: Callback-based operations use a discriminated union result pattern. The callback receives a single `result` parameter that can be either `{ ok: "success", data: T }` or `{ ok: "error", error: any }`.**
 
-
-
-
 {% capture snippet_lyyye4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_lyyye4 | escape }}
+{
+  {
+    snippet_lyyye4 | escape;
+  }
+}
 ```
-
-
 
 ## Schema-Driven Creation
 
 ### Automatic Default Values
 
-
-
-
 {% capture snippet_yg8xxi %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_yg8xxi | escape }}
+{
+  {
+    snippet_yg8xxi | escape;
+  }
+}
 ```
 
-
-
 ### Identity Field Generation
-
-
-
 
 {% capture snippet_hgf9sv %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_hgf9sv | escape }}
+{
+  {
+    snippet_hgf9sv | escape;
+  }
+}
 ```
 
-
-
 ### Nested Object Creation
-
-
-
 
 {% capture snippet_knkpix %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_knkpix | escape }}
+{
+  {
+    snippet_knkpix | escape;
+  }
+}
 ```
-
-
 
 ## Validation and Error Handling
 
 ### Schema Validation
 
-
-
-
 {% capture snippet_y4xs72 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_y4xs72 | escape }}
+{
+  {
+    snippet_y4xs72 | escape;
+  }
+}
 ```
 
-
-
 ### Type Validation
-
-
-
 
 {% capture snippet_jv9ahy %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_jv9ahy | escape }}
+{
+  {
+    snippet_jv9ahy | escape;
+  }
+}
 ```
 
-
-
 ### Constraint Validation
-
-
-
 
 {% capture snippet_0b1hfq %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_0b1hfq | escape }}
+{
+  {
+    snippet_0b1hfq | escape;
+  }
+}
 ```
-
-
 
 ## Advanced Create Patterns
 
 ### Conditional Creation
 
-
-
-
 {% capture snippet_cnidll %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_cnidll | escape }}
+{
+  {
+    snippet_cnidll | escape;
+  }
+}
 ```
 
-
-
 ### Batch Creation with Validation
-
-
-
 
 {% capture snippet_xxyrbc %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_xxyrbc | escape }}
+{
+  {
+    snippet_xxyrbc | escape;
+  }
+}
 ```
 
-
-
 ### Creation with Computed Fields
-
-
-
 
 {% capture snippet_4705gv %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_4705gv | escape }}
+{
+  {
+    snippet_4705gv | escape;
+  }
+}
 ```
-
-
 
 ## Performance Considerations
 
 ### Batch Creation
 
-
-
-
 {% capture snippet_k1ho3m %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_k1ho3m | escape }}
+{
+  {
+    snippet_k1ho3m | escape;
+  }
+}
 ```
 
-
-
 ### Memory Management
-
-
-
 
 {% capture snippet_ltnx8g %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_ltnx8g | escape }}
+{
+  {
+    snippet_ltnx8g | escape;
+  }
+}
 ```
-
-
 
 ## Best Practices
 
 ### 1. **Validate Data Before Creation**
 
-
-
-
 {% capture snippet_u8ea3c %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_u8ea3c | escape }}
+{
+  {
+    snippet_u8ea3c | escape;
+  }
+}
 ```
 
-
-
 ### 2. **Use Appropriate Default Values**
-
-
-
 
 {% capture snippet_fc5ex3 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_fc5ex3 | escape }}
+{
+  {
+    snippet_fc5ex3 | escape;
+  }
+}
 ```
 
-
-
 ### 3. **Handle Errors Gracefully**
-
-
-
 
 {% capture snippet_uf275q %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_uf275q | escape }}
+{
+  {
+    snippet_uf275q | escape;
+  }
+}
 ```
 
-
-
 ### 4. **Leverage Schema Features**
-
-
-
 
 {% capture snippet_n3llsb %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_n3llsb | escape }}
+{
+  {
+    snippet_n3llsb | escape;
+  }
+}
 ```
-
-
 
 ## Next Steps
 

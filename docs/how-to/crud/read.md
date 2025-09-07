@@ -1,3 +1,11 @@
+---
+title: Read Operations
+layout: default
+parent: CRUD
+grand_parent: Data Operations
+nav_order: 3
+---
+
 # Read Operations
 
 Read operations in Routier provide powerful querying capabilities with a fluent, chainable API. The framework supports filtering, sorting, pagination, and aggregation operations.
@@ -17,318 +25,295 @@ Routier's read operations feature:
 
 ### Getting All Entities
 
-
-
-
 {% capture snippet_9o40qi %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_9o40qi | escape }}
+{
+  {
+    snippet_9o40qi | escape;
+  }
+}
 ```
 
-
-
 ### Getting Single Entities
-
-
-
 
 {% capture snippet_t6x45d %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_t6x45d | escape }}
+{
+  {
+    snippet_t6x45d | escape;
+  }
+}
 ```
-
-
 
 ## Filtering with Where
 
 ### Simple Filters
 
-
-
-
 {% capture snippet_p5nl2e %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_p5nl2e | escape }}
+{
+  {
+    snippet_p5nl2e | escape;
+  }
+}
 ```
 
-
-
 ### Parameterized Filters
-
-
-
 
 {% capture snippet_jcvg14 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_jcvg14 | escape }}
+{
+  {
+    snippet_jcvg14 | escape;
+  }
+}
 ```
 
-
-
 ### Advanced Filters
-
-
-
 
 {% capture snippet_v1gr0f %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_v1gr0f | escape }}
+{
+  {
+    snippet_v1gr0f | escape;
+  }
+}
 ```
-
-
 
 ## Sorting
 
 ### Basic Sorting
 
-
-
-
 {% capture snippet_mb35us %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_mb35us | escape }}
+{
+  {
+    snippet_mb35us | escape;
+  }
+}
 ```
 
-
-
 ### Complex Sorting
-
-
-
 
 {% capture snippet_kiewxc %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_kiewxc | escape }}
+{
+  {
+    snippet_kiewxc | escape;
+  }
+}
 ```
-
-
 
 ## Pagination
 
 ### Skip and Take
 
-
-
-
 {% capture snippet_q0v3kz %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_q0v3kz | escape }}
+{
+  {
+    snippet_q0v3kz | escape;
+  }
+}
 ```
 
-
-
 ### Complete Pagination Example
-
-
-
 
 {% capture snippet_5hcao5 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_5hcao5 | escape }}
+{
+  {
+    snippet_5hcao5 | escape;
+  }
+}
 ```
-
-
 
 ## Aggregation Operations
 
 ### Counting
 
-
-
-
 {% capture snippet_xunr8i %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_xunr8i | escape }}
+{
+  {
+    snippet_xunr8i | escape;
+  }
+}
 ```
 
-
-
 ### Sum Operations
-
-
-
 
 {% capture snippet_jm836j %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_jm836j | escape }}
+{
+  {
+    snippet_jm836j | escape;
+  }
+}
 ```
 
-
-
 ### Min and Max Operations
-
-
-
 
 {% capture snippet_nnkaip %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_nnkaip | escape }}
+{
+  {
+    snippet_nnkaip | escape;
+  }
+}
 ```
 
-
-
 ### Distinct Values
-
-
-
 
 {% capture snippet_wq7fry %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_wq7fry | escape }}
+{
+  {
+    snippet_wq7fry | escape;
+  }
+}
 ```
-
-
 
 ## Data Transformation
 
 ### Mapping Data
 
-
-
-
 {% capture snippet_oygbvt %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_oygbvt | escape }}
+{
+  {
+    snippet_oygbvt | escape;
+  }
+}
 ```
 
-
-
 ### Complex Transformations
-
-
-
 
 {% capture snippet_zrxxjw %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_zrxxjw | escape }}
+{
+  {
+    snippet_zrxxjw | escape;
+  }
+}
 ```
-
-
 
 ## Query Chaining
 
 ### Complex Query Examples
 
-
-
-
 {% capture snippet_cqlpyx %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_cqlpyx | escape }}
+{
+  {
+    snippet_cqlpyx | escape;
+  }
+}
 ```
 
-
-
 ### Query with Aggregation
-
-
-
 
 {% capture snippet_7zimzt %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_7zimzt | escape }}
+{
+  {
+    snippet_7zimzt | escape;
+  }
+}
 ```
-
-
 
 ## Performance Considerations
 
 ### Query Optimization
 
-
-
-
 {% capture snippet_7w1agc %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_7w1agc | escape }}
+{
+  {
+    snippet_7w1agc | escape;
+  }
+}
 ```
 
-
-
 ### Memory Management
-
-
-
 
 {% capture snippet_gytojx %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_gytojx | escape }}
+{
+  {
+    snippet_gytojx | escape;
+  }
+}
 ```
-
-
 
 ## Best Practices
 
 ### 1. **Use Appropriate Query Methods**
 
-
-
-
 {% capture snippet_7xxzgt %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_7xxzgt | escape }}
+{
+  {
+    snippet_7xxzgt | escape;
+  }
+}
 ```
 
-
-
 ### 2. **Chain Operations Efficiently**
-
-
-
 
 {% capture snippet_8phcbm %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_8phcbm | escape }}
+{
+  {
+    snippet_8phcbm | escape;
+  }
+}
 ```
 
-
-
 ### 3. **Handle Empty Results Gracefully**
-
-
-
 
 {% capture snippet_fvul6i %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_fvul6i | escape }}
+{
+  {
+    snippet_fvul6i | escape;
+  }
+}
 ```
 
-
-
 ### 4. **Use Type-Safe Queries**
-
-
-
 
 {% capture snippet_mfx2x7 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_mfx2x7 | escape }}
+{
+  {
+    snippet_mfx2x7 | escape;
+  }
+}
 ```
-
-
 
 ## Next Steps
 

@@ -1,3 +1,11 @@
+---
+title: Update Operations
+layout: default
+parent: CRUD
+grand_parent: Data Operations
+nav_order: 4
+---
+
 # Update Operations
 
 Update operations in Routier leverage the framework's powerful change tracking system. Entities returned from queries are **proxy objects** that automatically track changes, making updates simple and efficient.
@@ -18,331 +26,307 @@ Routier's update system works through:
 
 When you query entities in Routier, they are returned as **proxy objects** that automatically track changes:
 
-
-
-
 {% capture snippet_0z48wy %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_0z48wy | escape }}
+{
+  {
+    snippet_0z48wy | escape;
+  }
+}
 ```
 
-
-
 ### Automatic Change Detection
-
-
-
 
 {% capture snippet_yc1i8q %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_yc1i8q | escape }}
+{
+  {
+    snippet_yc1i8q | escape;
+  }
+}
 ```
-
-
 
 ## Basic Update Operations
 
 ### Single Property Updates
 
-
-
-
 {% capture snippet_2zb0mt %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_2zb0mt | escape }}
+{
+  {
+    snippet_2zb0mt | escape;
+  }
+}
 ```
 
-
-
 ### Multiple Property Updates
-
-
-
 
 {% capture snippet_kp5kwi %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_kp5kwi | escape }}
+{
+  {
+    snippet_kp5kwi | escape;
+  }
+}
 ```
 
-
-
 ### Nested Object Updates
-
-
-
 
 {% capture snippet_yzjelp %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_yzjelp | escape }}
+{
+  {
+    snippet_yzjelp | escape;
+  }
+}
 ```
 
-
-
 ### Array Updates
-
-
-
 
 {% capture snippet_m0pu4q %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_m0pu4q | escape }}
+{
+  {
+    snippet_m0pu4q | escape;
+  }
+}
 ```
-
-
 
 ## Batch Update Operations
 
 ### Update Multiple Entities
 
-
-
-
 {% capture snippet_pvqwqf %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_pvqwqf | escape }}
+{
+  {
+    snippet_pvqwqf | escape;
+  }
+}
 ```
 
-
-
 ### Conditional Batch Updates
-
-
-
 
 {% capture snippet_wv83pp %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_wv83pp | escape }}
+{
+  {
+    snippet_wv83pp | escape;
+  }
+}
 ```
 
-
-
 ### Batch Updates with Transformations
-
-
-
 
 {% capture snippet_nhh9ur %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_nhh9ur | escape }}
+{
+  {
+    snippet_nhh9ur | escape;
+  }
+}
 ```
-
-
 
 ## Advanced Update Patterns
 
 ### Computed Updates
 
-
-
-
 {% capture snippet_vhw95t %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_vhw95t | escape }}
+{
+  {
+    snippet_vhw95t | escape;
+  }
+}
 ```
 
-
-
 ### Incremental Updates
-
-
-
 
 {% capture snippet_wm35ir %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_wm35ir | escape }}
+{
+  {
+    snippet_wm35ir | escape;
+  }
+}
 ```
 
-
-
 ### Conditional Field Updates
-
-
-
 
 {% capture snippet_0he1gr %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_0he1gr | escape }}
+{
+  {
+    snippet_0he1gr | escape;
+  }
+}
 ```
-
-
 
 ## Change Management
 
 ### Checking for Changes
 
-
-
-
 {% capture snippet_tzekfo %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_tzekfo | escape }}
+{
+  {
+    snippet_tzekfo | escape;
+  }
+}
 ```
 
-
-
 ### Saving Changes
-
-
-
 
 {% capture snippet_ypky6a %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_ypky6a | escape }}
+{
+  {
+    snippet_ypky6a | escape;
+  }
+}
 ```
 
-
-
 ### Partial Saves
-
-
-
 
 {% capture snippet_rd7whz %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_rd7whz | escape }}
+{
+  {
+    snippet_rd7whz | escape;
+  }
+}
 ```
-
-
 
 ## Update Validation
 
 ### Schema Validation
 
-
-
-
 {% capture snippet_361bbf %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_361bbf | escape }}
+{
+  {
+    snippet_361bbf | escape;
+  }
+}
 ```
 
-
-
 ### Business Logic Validation
-
-
-
 
 {% capture snippet_gy1j1u %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_gy1j1u | escape }}
+{
+  {
+    snippet_gy1j1u | escape;
+  }
+}
 ```
-
-
 
 ## Performance Considerations
 
 ### Batch Updates
 
-
-
-
 {% capture snippet_sl83kr %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_sl83kr | escape }}
+{
+  {
+    snippet_sl83kr | escape;
+  }
+}
 ```
 
-
-
 ### Change Batching
-
-
-
 
 {% capture snippet_kp4hzu %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_kp4hzu | escape }}
+{
+  {
+    snippet_kp4hzu | escape;
+  }
+}
 ```
-
-
 
 ## Best Practices
 
 ### 1. **Leverage Change Tracking**
 
-
-
-
 {% capture snippet_wsbnun %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_wsbnun | escape }}
+{
+  {
+    snippet_wsbnun | escape;
+  }
+}
 ```
 
-
-
 ### 2. **Update Related Fields Together**
-
-
-
 
 {% capture snippet_4scm75 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_4scm75 | escape }}
+{
+  {
+    snippet_4scm75 | escape;
+  }
+}
 ```
 
-
-
 ### 3. **Validate Before Updating**
-
-
-
 
 {% capture snippet_grsuc9 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_grsuc9 | escape }}
+{
+  {
+    snippet_grsuc9 | escape;
+  }
+}
 ```
 
-
-
 ### 4. **Use Meaningful Update Patterns**
-
-
-
 
 {% capture snippet_6764ib %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_6764ib | escape }}
+{
+  {
+    snippet_6764ib | escape;
+  }
+}
 ```
-
-
 
 ## Error Handling
 
 ### Update Error Handling
 
-
-
-
 {% capture snippet_s88jdm %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_s88jdm | escape }}
+{
+  {
+    snippet_s88jdm | escape;
+  }
+}
 ```
-
-
 
 ## Next Steps
 
