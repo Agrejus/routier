@@ -1,0 +1,1 @@
+new MemoryPlugin(databaseName: string)

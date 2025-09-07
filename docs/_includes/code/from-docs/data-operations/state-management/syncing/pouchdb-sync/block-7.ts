@@ -1,0 +1,1 @@
+back_off_function: (delay) => Math.min(delay * 2, 10000);
