@@ -1,10 +1,9 @@
 ---
-title: Overview
+title: Getting Started
 layout: default
 nav_order: 1
 has_children: true
-parent: Getting Started
-permalink: /getting-started/overview
+permalink: /getting-started/
 ---
 
 ## Overview

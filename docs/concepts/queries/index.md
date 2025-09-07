@@ -19,69 +19,75 @@ Routier queries are fluent and can only be performed through a collection. Build
 
 ### Basic querying
 
-
-
 {% capture snippet_toc7ki %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_toc7ki | escape }}
+{
+  {
+    snippet_toc7ki | escape;
+  }
+}
 ```
 
-
 ### Filtering with where
-
-
 
 {% capture snippet_wfoe49 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_wfoe49 | escape }}
+{
+  {
+    snippet_wfoe49 | escape;
+  }
+}
 ```
 
-
 ### Sorting
-
-
 
 {% capture snippet_kwlaer %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_kwlaer | escape }}
+{
+  {
+    snippet_kwlaer | escape;
+  }
+}
 ```
 
-
 ### Selecting fields with map
-
-
 
 {% capture snippet_hkwyrg %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_hkwyrg | escape }}
+{
+  {
+    snippet_hkwyrg | escape;
+  }
+}
 ```
 
-
 ### Pagination
-
-
 
 {% capture snippet_9ysmzy %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_9ysmzy | escape }}
+{
+  {
+    snippet_9ysmzy | escape;
+  }
+}
 ```
 
-
 ### Aggregation and set operations
-
-
 
 {% capture snippet_cy63oz %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_cy63oz | escape }}
+{
+  {
+    snippet_cy63oz | escape;
+  }
+}
 ```
-
 
 ### Terminal methods (execute the query)
 
@@ -97,14 +103,15 @@ Routier queries are fluent and can only be performed through a collection. Build
 
 Example removal:
 
-
-
 {% capture snippet_8vys4s %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_8vys4s | escape }}
+{
+  {
+    snippet_8vys4s | escape;
+  }
+}
 ```
-
 
 ### Notes
 
@@ -120,14 +127,15 @@ Best practice: apply database‑backed filters first, then computed/unmapped fil
 
 Example (in this schema, `firstName` is stored in the database while `age` is a computed property):
 
-
-
 {% capture snippet_muj42f %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_muj42f | escape }}
+{
+  {
+    snippet_muj42f | escape;
+  }
+}
 ```
-
 
 ### Related
 

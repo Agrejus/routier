@@ -1,3 +1,11 @@
+---
+title: Property Modifiers
+layout: default
+parent: Schema
+grand_parent: Concepts
+nav_order: 3
+---
+
 # Property Modifiers
 
 Property modifiers in Routier allow you to customize the behavior, constraints, and metadata of your schema properties. They can be chained together to create powerful, flexible schemas that accurately represent your database structure.
@@ -44,14 +52,15 @@ Persists a computed value to the underlying store. Use when:
 - You need to index or sort/filter by the computed value
 - Recomputing is expensive and you want to cache post-save
 
-
-
 {% capture snippet_bznbzy %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_bznbzy | escape }}
+{
+  {
+    snippet_bznbzy | escape;
+  }
+}
 ```
-
 
 Notes:
 
@@ -64,14 +73,15 @@ Notes:
 
 Marks a property as a primary key for the entity.
 
-
-
 {% capture snippet_85eeza %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_85eeza | escape }}
+{
+  {
+    snippet_85eeza | escape;
+  }
+}
 ```
-
 
 **Available on:** `string`, `number`, `date`
 
@@ -79,14 +89,15 @@ Marks a property as a primary key for the entity.
 
 Automatically generates a unique value for the property.
 
-
-
 {% capture snippet_n4hxuc %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_n4hxuc | escape }}
+{
+  {
+    snippet_n4hxuc | escape;
+  }
+}
 ```
-
 
 **Available on:** `string`, `number`, `date`, `boolean`
 
@@ -96,14 +107,15 @@ Automatically generates a unique value for the property.
 
 Creates a database index for efficient querying.
 
-
-
 {% capture snippet_27qlvd %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_27qlvd | escape }}
+{
+  {
+    snippet_27qlvd | escape;
+  }
+}
 ```
-
 
 **Available on:** All types
 
@@ -111,14 +123,15 @@ Creates a database index for efficient querying.
 
 Multiple fields can share the same index name for compound indexing.
 
-
-
 {% capture snippet_zcizjw %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_zcizjw | escape }}
+{
+  {
+    snippet_zcizjw | escape;
+  }
+}
 ```
-
 
 ## Defaults and Values
 
@@ -126,14 +139,15 @@ Multiple fields can share the same index name for compound indexing.
 
 Sets a default value for the property. Can accept either a direct value or a function that returns a value.
 
-
-
 {% capture snippet_9ckcic %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_9ckcic | escape }}
+{
+  {
+    snippet_9ckcic | escape;
+  }
+}
 ```
-
 
 **Available on:** All types
 
@@ -143,16 +157,15 @@ Sets a default value for the property. Can accept either a direct value or a fun
 
 - If a property has `.default(...)`, it is considered optional during inserts. When the value is omitted, Routier will supply the default.
 
-
-
-
 {% capture snippet_2iwgt0 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_2iwgt0 | escape }}
+{
+  {
+    snippet_2iwgt0 | escape;
+  }
+}
 ```
-
-
 
 ## Behavior Control
 
@@ -160,14 +173,15 @@ Sets a default value for the property. Can accept either a direct value or a fun
 
 Makes the property optional (can be undefined).
 
-
-
 {% capture snippet_eimzso %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_eimzso | escape }}
+{
+  {
+    snippet_eimzso | escape;
+  }
+}
 ```
-
 
 **Available on:** All types
 
@@ -175,14 +189,15 @@ Makes the property optional (can be undefined).
 
 Makes the property nullable (can be null).
 
-
-
 {% capture snippet_tudq6i %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_tudq6i | escape }}
+{
+  {
+    snippet_tudq6i | escape;
+  }
+}
 ```
-
 
 **Available on:** All types
 
@@ -190,14 +205,15 @@ Makes the property nullable (can be null).
 
 Makes the property read-only after creation.
 
-
-
 {% capture snippet_jx409r %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_jx409r | escape }}
+{
+  {
+    snippet_jx409r | escape;
+  }
+}
 ```
-
 
 **Available on:** All types
 
@@ -207,14 +223,15 @@ Makes the property read-only after creation.
 
 Custom serialization function for the property.
 
-
-
 {% capture snippet_raovy6 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_raovy6 | escape }}
+{
+  {
+    snippet_raovy6 | escape;
+  }
+}
 ```
-
 
 **Available on:** All types
 
@@ -222,14 +239,15 @@ Custom serialization function for the property.
 
 Custom deserialization function for the property.
 
-
-
 {% capture snippet_t98whi %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_t98whi | escape }}
+{
+  {
+    snippet_t98whi | escape;
+  }
+}
 ```
-
 
 **Available on:** All types
 
@@ -239,14 +257,15 @@ Custom deserialization function for the property.
 
 Converts the property to an array type.
 
-
-
 {% capture snippet_nv6qg0 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_nv6qg0 | escape }}
+{
+  {
+    snippet_nv6qg0 | escape;
+  }
+}
 ```
-
 
 **Available on:** All types
 
@@ -254,14 +273,15 @@ Converts the property to an array type.
 
 Ensures the property value is unique across all entities.
 
-
-
 {% capture snippet_ny7toy %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_ny7toy | escape }}
+{
+  {
+    snippet_ny7toy | escape;
+  }
+}
 ```
-
 
 **Available on:** `string`, `number`, `date`, `boolean`
 
@@ -269,14 +289,15 @@ Ensures the property value is unique across all entities.
 
 Modifiers can be chained together in any order:
 
-
-
 {% capture snippet_awss86 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_awss86 | escape }}
+{
+  {
+    snippet_awss86 | escape;
+  }
+}
 ```
-
 
 ## Modifier Compatibility
 
@@ -292,60 +313,65 @@ Not all modifiers can be used together. Here are the key rules:
 
 While modifiers can be chained in any order, it's recommended to follow this pattern:
 
-
-
 {% capture snippet_gye6r6 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_gye6r6 | escape }}
+{
+  {
+    snippet_gye6r6 | escape;
+  }
+}
 ```
-
 
 ## Best Practices
 
 ### 1. **Use Built-in Modifiers**
 
-
-
 {% capture snippet_tcl5f8 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_tcl5f8 | escape }}
+{
+  {
+    snippet_tcl5f8 | escape;
+  }
+}
 ```
 
-
 ### 2. **Define Constraints Early**
-
-
 
 {% capture snippet_lajwjh %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_lajwjh | escape }}
+{
+  {
+    snippet_lajwjh | escape;
+  }
+}
 ```
 
-
 ### 3. **Leverage Type Safety**
-
-
 
 {% capture snippet_68sph6 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_68sph6 | escape }}
+{
+  {
+    snippet_68sph6 | escape;
+  }
+}
 ```
 
-
 ### 4. **Use Appropriate Modifiers**
-
-
 
 {% capture snippet_61aty5 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_61aty5 | escape }}
+{
+  {
+    snippet_61aty5 | escape;
+  }
+}
 ```
-
 
 ## Next Steps
 

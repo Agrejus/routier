@@ -1,3 +1,11 @@
+---
+title: Memory Collections
+layout: default
+parent: Collections
+grand_parent: Concepts
+nav_order: 1
+---
+
 # Memory Collections
 
 Memory collections provide fast, in-memory data storage for your Routier application.
@@ -13,14 +21,15 @@ Memory collections are the fastest storage option in Routier, storing all data i
 
 ## Creating Memory Collections
 
-
-
 {% capture snippet_mc_1 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_mc_1 | escape }}
+{
+  {
+    snippet_mc_1 | escape;
+  }
+}
 ```
-
 
 ## Performance Characteristics
 
@@ -41,36 +50,39 @@ Memory collections are the fastest storage option in Routier, storing all data i
 
 ### Development and Testing
 
-
-
 {% capture snippet_mc_2 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_mc_2 | escape }}
+{
+  {
+    snippet_mc_2 | escape;
+  }
+}
 ```
 
-
 ### High-Performance Applications
-
-
 
 {% capture snippet_mc_3 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_mc_3 | escape }}
+{
+  {
+    snippet_mc_3 | escape;
+  }
+}
 ```
 
-
 ### Offline-First with Sync
-
-
 
 {% capture snippet_mc_4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_mc_4 | escape }}
+{
+  {
+    snippet_mc_4 | escape;
+  }
+}
 ```
-
 
 ## Next Steps
 

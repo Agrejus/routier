@@ -3,7 +3,6 @@ title: Getting Started with Routier
 layout: default
 parent: Tutorials
 nav_order: 1
-permalink: /tutorials/getting-started
 ---
 
 # Getting Started with Routier
@@ -30,14 +29,15 @@ npm install routier-plugin-local-storage
 
 ## Basic Setup
 
-
-
 {% capture snippet_y1mh9l %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_y1mh9l | escape }}
+{
+  {
+    snippet_y1mh9l | escape;
+  }
+}
 ```
-
 
 ## Next Steps
 

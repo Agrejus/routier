@@ -1,3 +1,11 @@
+---
+title: Why Schemas?
+layout: default
+parent: Schema
+grand_parent: Concepts
+nav_order: 7
+---
+
 # Why Schemas?
 
 Schemas are the foundation of Routier's data management system. This document explains why schemas are important and how they benefit your application.
@@ -18,149 +26,139 @@ A schema is a blueprint that defines:
 
 Schemas provide compile-time type checking and type safety:
 
-
-
-
 {% capture snippet_g1vs4h %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_g1vs4h | escape }}
+{
+  {
+    snippet_g1vs4h | escape;
+  }
+}
 ```
-
-
 
 ### 2. **Type Safety and Constraints**
 
 Schemas ensure data structure matches your defined types, reducing bugs and improving data quality:
 
-
-
-
 {% capture snippet_dzl6uk %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_dzl6uk | escape }}
+{
+  {
+    snippet_dzl6uk | escape;
+  }
+}
 ```
-
-
 
 ### 3. **Self-Documenting Code**
 
 Schemas serve as living documentation of your data structures:
 
-
-
-
 {% capture snippet_eybu6p %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_eybu6p | escape }}
+{
+  {
+    snippet_eybu6p | escape;
+  }
+}
 ```
-
-
 
 ### 4. **Automatic Features**
 
 Schemas enable powerful features without additional code:
 
-
-
-
 {% capture snippet_malwii %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_malwii | escape }}
+{
+  {
+    snippet_malwii | escape;
+  }
+}
 ```
-
-
 
 ### 5. **Consistent Data Handling**
 
 Schemas ensure all parts of your application handle data the same way:
 
-
-
-
 {% capture snippet_5mtp8w %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_5mtp8w | escape }}
+{
+  {
+    snippet_5mtp8w | escape;
+  }
+}
 ```
-
-
 
 ### 6. **Performance Optimization**
 
 Schemas enable automatic performance optimizations:
 
-
-
-
 {% capture snippet_krnwpl %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_krnwpl | escape }}
+{
+  {
+    snippet_krnwpl | escape;
+  }
+}
 ```
-
-
 
 ### 7. **Change Tracking and History**
 
 Schemas enable powerful change tracking features:
 
-
-
-
 {% capture snippet_mc1w4v %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_mc1w4v | escape }}
+{
+  {
+    snippet_mc1w4v | escape;
+  }
+}
 ```
-
-
 
 ### 8. **Serialization and Persistence**
 
 Schemas handle data transformation automatically:
 
-
-
-
 {% capture snippet_ia38gi %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_ia38gi | escape }}
+{
+  {
+    snippet_ia38gi | escape;
+  }
+}
 ```
-
-
 
 ## Real-World Examples
 
 ### E-commerce Application
 
-
-
-
 {% capture snippet_qq7z16 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_qq7z16 | escape }}
+{
+  {
+    snippet_qq7z16 | escape;
+  }
+}
 ```
 
-
-
 ### User Management System
-
-
-
 
 {% capture snippet_v2efrx %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_v2efrx | escape }}
+{
+  {
+    snippet_v2efrx | escape;
+  }
+}
 ```
-
-
 
 ## When Not to Use Schemas
 
@@ -168,96 +166,89 @@ While schemas are powerful, they're not always necessary:
 
 ### **Simple Data Structures**
 
-
-
-
 {% capture snippet_nusyp4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_nusyp4 | escape }}
+{
+  {
+    snippet_nusyp4 | escape;
+  }
+}
 ```
 
-
-
 ### **Temporary Data**
-
-
-
 
 {% capture snippet_ufr7tz %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_ufr7tz | escape }}
+{
+  {
+    snippet_ufr7tz | escape;
+  }
+}
 ```
 
-
-
 ### **External API Responses**
-
-
-
 
 {% capture snippet_itz37e %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_itz37e | escape }}
+{
+  {
+    snippet_itz37e | escape;
+  }
+}
 ```
-
-
 
 ## Best Practices
 
 ### 1. **Start Simple**
 
-
-
-
 {% capture snippet_myxbxu %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_myxbxu | escape }}
+{
+  {
+    snippet_myxbxu | escape;
+  }
+}
 ```
 
-
-
 ### 2. **Check Structure Early**
-
-
-
 
 {% capture snippet_mizzys %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_mizzys | escape }}
+{
+  {
+    snippet_mizzys | escape;
+  }
+}
 ```
 
-
-
 ### 3. **Use Computed Properties**
-
-
-
 
 {% capture snippet_0wnx5f %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_0wnx5f | escape }}
+{
+  {
+    snippet_0wnx5f | escape;
+  }
+}
 ```
 
-
-
 ### 4. **Leverage Type Inference**
-
-
-
 
 {% capture snippet_l9n9ls %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_l9n9ls | escape }}
+{
+  {
+    snippet_l9n9ls | escape;
+  }
+}
 ```
-
-
 
 ## Conclusion
 

@@ -1,19 +1,26 @@
+---
+title: Creating a Schema
+layout: default
+parent: Schema
+grand_parent: Concepts
+nav_order: 1
+---
+
 # Creating A Schema
 
 Schemas in Routier define the structure and behavior of your data entities. The schema builder provides a fluent, type-safe API for creating robust data schemas.
 
 ## Basic Schema Definition
 
-
-
-
 {% capture snippet_uwvygh %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_uwvygh | escape }}
+{
+  {
+    snippet_uwvygh | escape;
+  }
+}
 ```
-
-
 
 ## Schema Builder API
 
@@ -33,16 +40,15 @@ The `s` object provides the main entry point for schema creation:
 
 You can constrain properties to specific literal values:
 
-
-
-
 {% capture snippet_r07whk %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_r07whk | escape }}
+{
+  {
+    snippet_r07whk | escape;
+  }
+}
 ```
-
-
 
 ## Property Modifiers
 
@@ -50,85 +56,79 @@ Each schema type supports a set of modifiers that can be chained together:
 
 ### Core Modifiers
 
-
-
-
 {% capture snippet_834udw %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_834udw | escape }}
+{
+  {
+    snippet_834udw | escape;
+  }
+}
 ```
 
-
-
 ### Serialization Modifiers
-
-
-
 
 {% capture snippet_5wxct0 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_5wxct0 | escape }}
+{
+  {
+    snippet_5wxct0 | escape;
+  }
+}
 ```
 
-
-
 ### Array and Object Modifiers
-
-
-
 
 {% capture snippet_rl0i32 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_rl0i32 | escape }}
+{
+  {
+    snippet_rl0i32 | escape;
+  }
+}
 ```
 
-
-
 ## Complete Example
-
-
-
 
 {% capture snippet_btkdlv %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_btkdlv | escape }}
+{
+  {
+    snippet_btkdlv | escape;
+  }
+}
 ```
-
-
 
 ## Modifier Chaining
 
 Modifiers can be chained in any order, but it's recommended to follow a logical pattern:
 
-
-
-
 {% capture snippet_yeelah %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_yeelah | escape }}
+{
+  {
+    snippet_yeelah | escape;
+  }
+}
 ```
-
-
 
 ## Compiling Schemas
 
 Always call `.compile()` at the end to create the final schema:
 
-
-
-
 {% capture snippet_k6k6vd %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_k6k6vd | escape }}
+{
+  {
+    snippet_k6k6vd | escape;
+  }
+}
 ```
-
-
 
 ## Next Steps
 
