@@ -1,3 +1,12 @@
+---
+title: Schema
+layout: default
+parent: Concepts
+nav_order: 1
+has_children: true
+permalink: /concepts/schema/
+---
+
 # Schemas
 
 Schemas in Routier define the structure, behavior, and constraints of your data entities. They provide type safety, validation, and metadata that ensures your application works correctly with your data structure.
@@ -16,9 +25,7 @@ Schemas are type definitions that:
 
 Routier provides a fluent, type-safe schema builder API:
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/index/block-1.ts %}{% endhighlight %}
-
 
 ## Key Features
 
@@ -70,21 +77,15 @@ Routier provides a fluent, type-safe schema builder API:
 
 ### Basic Entity
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/index/block-2.ts %}{% endhighlight %}
-
 
 ### Complex Nested Schema
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/index/block-3.ts %}{% endhighlight %}
-
 
 ### Constrained Values
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/index/block-4.ts %}{% endhighlight %}
-
 
 ## Benefits
 

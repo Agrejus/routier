@@ -1,3 +1,11 @@
+---
+title: Collection Modifiers
+layout: default
+parent: Schema
+grand_parent: Concepts
+nav_order: 3
+---
+
 # Collection Modifiers
 
 Collection-level modifiers extend entities with derived values and methods that are not direct stored fields.
@@ -6,17 +14,13 @@ Collection-level modifiers extend entities with derived values and methods that 
 
 Create a derived value from the entity. By default, computed values are not persisted.
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/collection-modifiers/block-1.ts %}{% endhighlight %}
-
 
 ### Tracked computed
 
 Persist a computed value to the store for indexing/sorting and faster reads.
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/collection-modifiers/block-2.ts %}{% endhighlight %}
-
 
 Notes:
 
@@ -27,9 +31,7 @@ Notes:
 
 Attach non-persisted methods to an entity.
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/collection-modifiers/block-3.ts %}{% endhighlight %}
-
 
 Behavior:
 

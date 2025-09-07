@@ -1,3 +1,12 @@
+---
+title: Queries
+layout: default
+parent: Concepts
+nav_order: 2
+has_children: true
+permalink: /concepts/queries/
+---
+
 ## Queries
 
 Routier queries are fluent and can only be performed through a collection. Build your query by chaining operations and finish with a terminal method to execute.
@@ -10,39 +19,27 @@ Routier queries are fluent and can only be performed through a collection. Build
 
 ### Basic querying
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-1.ts %}{% endhighlight %}
-
 
 ### Filtering with where
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-2.ts %}{% endhighlight %}
-
 
 ### Sorting
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-3.ts %}{% endhighlight %}
-
 
 ### Selecting fields with map
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-4.ts %}{% endhighlight %}
-
 
 ### Pagination
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-5.ts %}{% endhighlight %}
-
 
 ### Aggregation and set operations
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-6.ts %}{% endhighlight %}
-
 
 ### Terminal methods (execute the query)
 
@@ -58,9 +55,7 @@ Routier queries are fluent and can only be performed through a collection. Build
 
 Example removal:
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-7.ts %}{% endhighlight %}
-
 
 ### Notes
 
@@ -76,9 +71,7 @@ Best practice: apply database‑backed filters first, then computed/unmapped fil
 
 Example (in this schema, `firstName` is stored in the database while `age` is a computed property):
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-8.ts %}{% endhighlight %}
-
 
 ### Related
 

@@ -1,3 +1,10 @@
+---
+title: Live Queries
+layout: default
+parent: Guides
+nav_order: 1
+---
+
 ## Live Queries
 
 Overview and best practices for using live queries across collections.

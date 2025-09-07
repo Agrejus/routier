@@ -44,9 +44,7 @@ Persists a computed value to the underlying store. Use when:
 - You need to index or sort/filter by the computed value
 - Recomputing is expensive and you want to cache post-save
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-1.ts %}{% endhighlight %}
-
 
 Notes:
 
@@ -59,9 +57,7 @@ Notes:
 
 Marks a property as a primary key for the entity.
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-2.ts %}{% endhighlight %}
-
 
 **Available on:** `string`, `number`, `date`
 
@@ -69,9 +65,7 @@ Marks a property as a primary key for the entity.
 
 Automatically generates a unique value for the property.
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-3.ts %}{% endhighlight %}
-
 
 **Available on:** `string`, `number`, `date`, `boolean`
 
@@ -81,9 +75,7 @@ Automatically generates a unique value for the property.
 
 Creates a database index for efficient querying.
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-4.ts %}{% endhighlight %}
-
 
 **Available on:** All types
 
@@ -91,9 +83,7 @@ Creates a database index for efficient querying.
 
 Multiple fields can share the same index name for compound indexing.
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-5.ts %}{% endhighlight %}
-
 
 ## Defaults and Values
 
@@ -101,13 +91,19 @@ Multiple fields can share the same index name for compound indexing.
 
 Sets a default value for the property. Can accept either a direct value or a function that returns a value.
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-6.ts %}{% endhighlight %}
-
 
 **Available on:** All types
 
 **Note:** When using a function, it's evaluated each time a default is needed, making it perfect for dynamic values like timestamps or context-dependent defaults. The function can also accept an optional `injected` parameter for context-dependent defaults.
+
+#### Insert semantics
+
+- If a property has `.default(...)`, it is considered optional during inserts. When the value is omitted, Routier will supply the default.
+
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-1.ts %}{% endhighlight %}
+
 
 ## Behavior Control
 
@@ -115,9 +111,7 @@ Sets a default value for the property. Can accept either a direct value or a fun
 
 Makes the property optional (can be undefined).
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-7.ts %}{% endhighlight %}
-
 
 **Available on:** All types
 
@@ -125,9 +119,7 @@ Makes the property optional (can be undefined).
 
 Makes the property nullable (can be null).
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-8.ts %}{% endhighlight %}
-
 
 **Available on:** All types
 
@@ -135,9 +127,7 @@ Makes the property nullable (can be null).
 
 Makes the property read-only after creation.
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-9.ts %}{% endhighlight %}
-
 
 **Available on:** All types
 
@@ -147,9 +137,7 @@ Makes the property read-only after creation.
 
 Custom serialization function for the property.
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-10.ts %}{% endhighlight %}
-
 
 **Available on:** All types
 
@@ -157,9 +145,7 @@ Custom serialization function for the property.
 
 Custom deserialization function for the property.
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-11.ts %}{% endhighlight %}
-
 
 **Available on:** All types
 
@@ -169,9 +155,7 @@ Custom deserialization function for the property.
 
 Converts the property to an array type.
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-12.ts %}{% endhighlight %}
-
 
 **Available on:** All types
 
@@ -179,9 +163,7 @@ Converts the property to an array type.
 
 Ensures the property value is unique across all entities.
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-13.ts %}{% endhighlight %}
-
 
 **Available on:** `string`, `number`, `date`, `boolean`
 
@@ -189,9 +171,7 @@ Ensures the property value is unique across all entities.
 
 Modifiers can be chained together in any order:
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-14.ts %}{% endhighlight %}
-
 
 ## Modifier Compatibility
 
@@ -207,35 +187,25 @@ Not all modifiers can be used together. Here are the key rules:
 
 While modifiers can be chained in any order, it's recommended to follow this pattern:
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-15.ts %}{% endhighlight %}
-
 
 ## Best Practices
 
 ### 1. **Use Built-in Modifiers**
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-16.ts %}{% endhighlight %}
-
 
 ### 2. **Define Constraints Early**
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-17.ts %}{% endhighlight %}
-
 
 ### 3. **Leverage Type Safety**
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-18.ts %}{% endhighlight %}
-
 
 ### 4. **Use Appropriate Modifiers**
 
-
 {% highlight ts linenos %}{% include code/from-docs/concepts/schema/modifiers/README/block-19.ts %}{% endhighlight %}
-
 
 ## Next Steps
 
