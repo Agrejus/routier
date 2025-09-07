@@ -3,7 +3,6 @@ title: Routier Framework Documentation
 description: Modern, flexible, reactive data access layer for building scalable applications
 url: https://agrejus.github.io/routier
 baseurl: /routier
-theme: jekyll-theme-slate
 
 # Navigation
 nav:
@@ -29,7 +28,7 @@ nav:
     url: /demos/
 
 # Theme and styling
-theme: jekyll-theme-cayman
+theme: jekyll-theme-slate
 markdown: kramdown
 highlighter: rouge
 
