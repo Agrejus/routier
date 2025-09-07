@@ -9,4 +9,4 @@ nav_order: 2
 
 Implement optimistic insert, update, and delete with safe rollback.
 
-Read more: /guides-examples/optimistic-updates/
+Read more: [Optimistic Updates Guides & Examples]({{ site.baseurl }}/guides-examples/optimistic-updates/)

@@ -9,4 +9,4 @@ nav_order: 4
 
 Practical recipes for transforming, joining, and filtering data.
 
-Read more: /guides-examples/data-manipulation/
+Read more: [Data Manipulation Guides & Examples]({{ site.baseurl }}/guides-examples/data-manipulation/)

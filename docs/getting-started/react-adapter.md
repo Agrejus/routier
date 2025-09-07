@@ -16,4 +16,4 @@ Below is a minimal example using the `useQuery` hook. This snippet is included v
 {% capture code_content %}{% include code/react/adapter-quick.tsx %}{% endcapture %}
 {% highlight tsx %}{{ code_content | escape }}{% endhighlight %}
 
-Start here: {{ site.baseurl }}/integrations/react/
+Start here: [React Integration]({{ site.baseurl }}/integrations/react/)

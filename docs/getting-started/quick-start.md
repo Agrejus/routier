@@ -38,4 +38,4 @@ await ctx.users.addAsync({ name: "Ada", email: "ada@example.com" });
 await ctx.saveChangesAsync();
 ```
 
-See step-by-step: {{ site.baseurl }}/tutorials/getting-started
+See step-by-step: [Getting Started Tutorial]({{ site.baseurl }}/tutorials/getting-started)

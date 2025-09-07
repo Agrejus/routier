@@ -9,4 +9,4 @@ nav_order: 5
 
 Track, undo, and redo changes across entities and collections.
 
-Read more: /guides-examples/history-tracking/
+Read more: [History Tracking Guides & Examples]({{ site.baseurl }}/guides-examples/history-tracking/)

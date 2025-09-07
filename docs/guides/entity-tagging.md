@@ -104,4 +104,4 @@ In your storage plugin, read the tags from the write transaction/context to reco
 
 Use tags to model relationships, grouping, and selective updates.
 
-Read more: /guides-examples/entity-tagging/
+Read more: [Entity Tagging Guides & Examples]({{ site.baseurl }}/guides-examples/entity-tagging/)

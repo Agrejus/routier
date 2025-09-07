@@ -9,4 +9,4 @@ nav_order: 3
 
 Patterns for local state, derived data, and cross-collection composition.
 
-Read more: /guides-examples/state-management/
+Read more: [State Management Guides & Examples]({{ site.baseurl }}/guides-examples/state-management/)
