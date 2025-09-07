@@ -15,42 +15,40 @@ Routier is a reactive data toolkit for building fast, local-first apps. It provi
 - Use live queries: reactive queries across one or more collections
 - Make optimistic mutations: instant UI updates with automatic rollback
 
-
 {% highlight ts linenos %}{% include code/from-docs/index/block-1.ts %}{% endhighlight %}
-
 
 ## Getting Started
 
-- Installation: /getting-started/installation
-- Quick Start: /getting-started/quick-start
-- React Adapter: /getting-started/react-adapter
+- Installation: {{ site.baseurl }}/getting-started/installation
+- Quick Start: {{ site.baseurl }}/getting-started/quick-start
+- React Adapter: {{ site.baseurl }}/getting-started/react-adapter
 
 ## Concepts
 
-- Schemas: /concepts/schema/
-- Queries: /concepts/queries/
-- Data Pipeline: /concepts/data-pipeline/
+- Schemas: {{ site.baseurl }}/concepts/schema/
+- Queries: {{ site.baseurl }}/concepts/queries/
+- Data Pipeline: {{ site.baseurl }}/concepts/data-pipeline/
 
 ## Guides
 
-- Live Queries: /guides/live-queries.md
-- Optimistic Updates: /guides/optimistic-updates.md
-- State Management: /guides/state-management.md
-- Data Manipulation: /guides/data-manipulation.md
-- History Tracking: /guides/history-tracking.md
-- Syncing: /guides/syncing.md
-- Entity Tagging: /guides/entity-tagging.md
+- Live Queries: {{ site.baseurl }}/guides/live-queries.html
+- Optimistic Updates: {{ site.baseurl }}/guides/optimistic-updates.html
+- State Management: {{ site.baseurl }}/guides/state-management.html
+- Data Manipulation: {{ site.baseurl }}/guides/data-manipulation.html
+- History Tracking: {{ site.baseurl }}/guides/history-tracking.html
+- Syncing: {{ site.baseurl }}/guides/syncing.html
+- Entity Tagging: {{ site.baseurl }}/guides/entity-tagging.html
 
 ## API
 
-- API Landing: /api/
-- Reference: /reference/api/
+- API Landing: {{ site.baseurl }}/api/
+- Reference: {{ site.baseurl }}/reference/api/
 
 ## Examples
 
-- Basic: /examples/basic/
-- Advanced: /examples/advanced/
-- Performance: /examples/performance/
-- Real-world: /examples/real-world/
+- Basic: {{ site.baseurl }}/examples/basic/
+- Advanced: {{ site.baseurl }}/examples/advanced/
+- Performance: {{ site.baseurl }}/examples/performance/
+- Real-world: {{ site.baseurl }}/examples/real-world/
 
 More inspiration: TanStack DB Overview (structure and flow) — `https://tanstack.com/db/latest/docs/overview`

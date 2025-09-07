@@ -1,7 +1,7 @@
 # GitHub Pages configuration for Routier documentation
 title: Routier Framework Documentation
 description: Modern, flexible, reactive data access layer for building scalable applications
-url: https://agrejus.github.io/routier
+url: https://agrejus.github.io
 baseurl: /routier
 
 # Navigation
