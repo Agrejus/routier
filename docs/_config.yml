@@ -1,5 +1,5 @@
 # GitHub Pages configuration for Routier documentation
-title: Routier Framework Documentation
+title: Routier
 description: Modern, flexible, reactive data access layer for building scalable applications
 url: https://agrejus.github.io
 baseurl: /routier
@@ -28,7 +28,7 @@ nav:
     url: /demos/
 
 # Theme and styling
-theme: jekyll-theme-slate
+remote_theme: just-the-docs/just-the-docs
 markdown: kramdown
 highlighter: rouge
 
@@ -36,6 +36,7 @@ highlighter: rouge
 plugins:
   - jekyll-sitemap
   - jekyll-seo-tag
+  - jekyll-remote-theme
 
 # Collections
 collections:
