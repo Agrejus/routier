@@ -21,7 +21,7 @@ Schemas provide compile-time type checking and type safety:
 
 
 
-{% capture snippet_g1vs4h %}{% include code/%}{% endcapture %}
+{% capture snippet_g1vs4h %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_g1vs4h | escape }}
@@ -36,7 +36,7 @@ Schemas ensure data structure matches your defined types, reducing bugs and impr
 
 
 
-{% capture snippet_dzl6uk %}{% include code/%}{% endcapture %}
+{% capture snippet_dzl6uk %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_dzl6uk | escape }}
@@ -51,7 +51,7 @@ Schemas serve as living documentation of your data structures:
 
 
 
-{% capture snippet_eybu6p %}{% include code/%}{% endcapture %}
+{% capture snippet_eybu6p %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_eybu6p | escape }}
@@ -66,7 +66,7 @@ Schemas enable powerful features without additional code:
 
 
 
-{% capture snippet_malwii %}{% include code/%}{% endcapture %}
+{% capture snippet_malwii %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_malwii | escape }}
@@ -81,7 +81,7 @@ Schemas ensure all parts of your application handle data the same way:
 
 
 
-{% capture snippet_5mtp8w %}{% include code/%}{% endcapture %}
+{% capture snippet_5mtp8w %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_5mtp8w | escape }}
@@ -96,7 +96,7 @@ Schemas enable automatic performance optimizations:
 
 
 
-{% capture snippet_krnwpl %}{% include code/%}{% endcapture %}
+{% capture snippet_krnwpl %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_krnwpl | escape }}
@@ -111,7 +111,7 @@ Schemas enable powerful change tracking features:
 
 
 
-{% capture snippet_mc1w4v %}{% include code/%}{% endcapture %}
+{% capture snippet_mc1w4v %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_mc1w4v | escape }}
@@ -126,7 +126,7 @@ Schemas handle data transformation automatically:
 
 
 
-{% capture snippet_ia38gi %}{% include code/%}{% endcapture %}
+{% capture snippet_ia38gi %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_ia38gi | escape }}
@@ -141,7 +141,7 @@ Schemas handle data transformation automatically:
 
 
 
-{% capture snippet_qq7z16 %}{% include code/%}{% endcapture %}
+{% capture snippet_qq7z16 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_qq7z16 | escape }}
@@ -154,7 +154,7 @@ Schemas handle data transformation automatically:
 
 
 
-{% capture snippet_v2efrx %}{% include code/%}{% endcapture %}
+{% capture snippet_v2efrx %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_v2efrx | escape }}
@@ -171,7 +171,7 @@ While schemas are powerful, they're not always necessary:
 
 
 
-{% capture snippet_nusyp4 %}{% include code/%}{% endcapture %}
+{% capture snippet_nusyp4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_nusyp4 | escape }}
@@ -184,7 +184,7 @@ While schemas are powerful, they're not always necessary:
 
 
 
-{% capture snippet_ufr7tz %}{% include code/%}{% endcapture %}
+{% capture snippet_ufr7tz %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_ufr7tz | escape }}
@@ -197,7 +197,7 @@ While schemas are powerful, they're not always necessary:
 
 
 
-{% capture snippet_itz37e %}{% include code/%}{% endcapture %}
+{% capture snippet_itz37e %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_itz37e | escape }}
@@ -212,7 +212,7 @@ While schemas are powerful, they're not always necessary:
 
 
 
-{% capture snippet_myxbxu %}{% include code/%}{% endcapture %}
+{% capture snippet_myxbxu %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_myxbxu | escape }}
@@ -225,7 +225,7 @@ While schemas are powerful, they're not always necessary:
 
 
 
-{% capture snippet_mizzys %}{% include code/%}{% endcapture %}
+{% capture snippet_mizzys %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_mizzys | escape }}
@@ -238,7 +238,7 @@ While schemas are powerful, they're not always necessary:
 
 
 
-{% capture snippet_0wnx5f %}{% include code/%}{% endcapture %}
+{% capture snippet_0wnx5f %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_0wnx5f | escape }}
@@ -251,7 +251,7 @@ While schemas are powerful, they're not always necessary:
 
 
 
-{% capture snippet_l9n9ls %}{% include code/%}{% endcapture %}
+{% capture snippet_l9n9ls %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_l9n9ls | escape }}

@@ -23,7 +23,7 @@ When you create entities in Routier:
 
 
 
-{% capture snippet_vvzyz2 %}{% include code/%}{% endcapture %}
+{% capture snippet_vvzyz2 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_vvzyz2 | escape }}
@@ -36,7 +36,7 @@ When you create entities in Routier:
 
 
 
-{% capture snippet_gsb9ng %}{% include code/%}{% endcapture %}
+{% capture snippet_gsb9ng %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_gsb9ng | escape }}
@@ -51,7 +51,7 @@ When you create entities in Routier:
 
 
 
-{% capture snippet_lyyye4 %}{% include code/%}{% endcapture %}
+{% capture snippet_lyyye4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_lyyye4 | escape }}
@@ -66,7 +66,7 @@ When you create entities in Routier:
 
 
 
-{% capture snippet_yg8xxi %}{% include code/%}{% endcapture %}
+{% capture snippet_yg8xxi %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_yg8xxi | escape }}
@@ -79,7 +79,7 @@ When you create entities in Routier:
 
 
 
-{% capture snippet_hgf9sv %}{% include code/%}{% endcapture %}
+{% capture snippet_hgf9sv %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_hgf9sv | escape }}
@@ -92,7 +92,7 @@ When you create entities in Routier:
 
 
 
-{% capture snippet_knkpix %}{% include code/%}{% endcapture %}
+{% capture snippet_knkpix %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_knkpix | escape }}
@@ -107,7 +107,7 @@ When you create entities in Routier:
 
 
 
-{% capture snippet_y4xs72 %}{% include code/%}{% endcapture %}
+{% capture snippet_y4xs72 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_y4xs72 | escape }}
@@ -120,7 +120,7 @@ When you create entities in Routier:
 
 
 
-{% capture snippet_jv9ahy %}{% include code/%}{% endcapture %}
+{% capture snippet_jv9ahy %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_jv9ahy | escape }}
@@ -133,7 +133,7 @@ When you create entities in Routier:
 
 
 
-{% capture snippet_0b1hfq %}{% include code/%}{% endcapture %}
+{% capture snippet_0b1hfq %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_0b1hfq | escape }}
@@ -148,7 +148,7 @@ When you create entities in Routier:
 
 
 
-{% capture snippet_cnidll %}{% include code/%}{% endcapture %}
+{% capture snippet_cnidll %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_cnidll | escape }}
@@ -161,7 +161,7 @@ When you create entities in Routier:
 
 
 
-{% capture snippet_xxyrbc %}{% include code/%}{% endcapture %}
+{% capture snippet_xxyrbc %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_xxyrbc | escape }}
@@ -174,7 +174,7 @@ When you create entities in Routier:
 
 
 
-{% capture snippet_4705gv %}{% include code/%}{% endcapture %}
+{% capture snippet_4705gv %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_4705gv | escape }}
@@ -189,7 +189,7 @@ When you create entities in Routier:
 
 
 
-{% capture snippet_k1ho3m %}{% include code/%}{% endcapture %}
+{% capture snippet_k1ho3m %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_k1ho3m | escape }}
@@ -202,7 +202,7 @@ When you create entities in Routier:
 
 
 
-{% capture snippet_ltnx8g %}{% include code/%}{% endcapture %}
+{% capture snippet_ltnx8g %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_ltnx8g | escape }}
@@ -217,7 +217,7 @@ When you create entities in Routier:
 
 
 
-{% capture snippet_u8ea3c %}{% include code/%}{% endcapture %}
+{% capture snippet_u8ea3c %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_u8ea3c | escape }}
@@ -230,7 +230,7 @@ When you create entities in Routier:
 
 
 
-{% capture snippet_fc5ex3 %}{% include code/%}{% endcapture %}
+{% capture snippet_fc5ex3 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_fc5ex3 | escape }}
@@ -243,7 +243,7 @@ When you create entities in Routier:
 
 
 
-{% capture snippet_uf275q %}{% include code/%}{% endcapture %}
+{% capture snippet_uf275q %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_uf275q | escape }}
@@ -256,7 +256,7 @@ When you create entities in Routier:
 
 
 
-{% capture snippet_n3llsb %}{% include code/%}{% endcapture %}
+{% capture snippet_n3llsb %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_n3llsb | escape }}

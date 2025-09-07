@@ -21,7 +21,7 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 
 
 
-{% capture snippet_0z48wy %}{% include code/%}{% endcapture %}
+{% capture snippet_0z48wy %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_0z48wy | escape }}
@@ -34,7 +34,7 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 
 
 
-{% capture snippet_yc1i8q %}{% include code/%}{% endcapture %}
+{% capture snippet_yc1i8q %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_yc1i8q | escape }}
@@ -49,7 +49,7 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 
 
 
-{% capture snippet_2zb0mt %}{% include code/%}{% endcapture %}
+{% capture snippet_2zb0mt %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_2zb0mt | escape }}
@@ -62,7 +62,7 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 
 
 
-{% capture snippet_kp5kwi %}{% include code/%}{% endcapture %}
+{% capture snippet_kp5kwi %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_kp5kwi | escape }}
@@ -75,7 +75,7 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 
 
 
-{% capture snippet_yzjelp %}{% include code/%}{% endcapture %}
+{% capture snippet_yzjelp %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_yzjelp | escape }}
@@ -88,7 +88,7 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 
 
 
-{% capture snippet_m0pu4q %}{% include code/%}{% endcapture %}
+{% capture snippet_m0pu4q %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_m0pu4q | escape }}
@@ -103,7 +103,7 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 
 
 
-{% capture snippet_pvqwqf %}{% include code/%}{% endcapture %}
+{% capture snippet_pvqwqf %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_pvqwqf | escape }}
@@ -116,7 +116,7 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 
 
 
-{% capture snippet_wv83pp %}{% include code/%}{% endcapture %}
+{% capture snippet_wv83pp %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_wv83pp | escape }}
@@ -129,7 +129,7 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 
 
 
-{% capture snippet_nhh9ur %}{% include code/%}{% endcapture %}
+{% capture snippet_nhh9ur %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_nhh9ur | escape }}
@@ -144,7 +144,7 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 
 
 
-{% capture snippet_vhw95t %}{% include code/%}{% endcapture %}
+{% capture snippet_vhw95t %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_vhw95t | escape }}
@@ -157,7 +157,7 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 
 
 
-{% capture snippet_wm35ir %}{% include code/%}{% endcapture %}
+{% capture snippet_wm35ir %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_wm35ir | escape }}
@@ -170,7 +170,7 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 
 
 
-{% capture snippet_0he1gr %}{% include code/%}{% endcapture %}
+{% capture snippet_0he1gr %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_0he1gr | escape }}
@@ -185,7 +185,7 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 
 
 
-{% capture snippet_tzekfo %}{% include code/%}{% endcapture %}
+{% capture snippet_tzekfo %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_tzekfo | escape }}
@@ -198,7 +198,7 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 
 
 
-{% capture snippet_ypky6a %}{% include code/%}{% endcapture %}
+{% capture snippet_ypky6a %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_ypky6a | escape }}
@@ -211,7 +211,7 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 
 
 
-{% capture snippet_rd7whz %}{% include code/%}{% endcapture %}
+{% capture snippet_rd7whz %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_rd7whz | escape }}
@@ -226,7 +226,7 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 
 
 
-{% capture snippet_361bbf %}{% include code/%}{% endcapture %}
+{% capture snippet_361bbf %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_361bbf | escape }}
@@ -239,7 +239,7 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 
 
 
-{% capture snippet_gy1j1u %}{% include code/%}{% endcapture %}
+{% capture snippet_gy1j1u %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_gy1j1u | escape }}
@@ -254,7 +254,7 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 
 
 
-{% capture snippet_sl83kr %}{% include code/%}{% endcapture %}
+{% capture snippet_sl83kr %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_sl83kr | escape }}
@@ -267,7 +267,7 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 
 
 
-{% capture snippet_kp4hzu %}{% include code/%}{% endcapture %}
+{% capture snippet_kp4hzu %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_kp4hzu | escape }}
@@ -282,7 +282,7 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 
 
 
-{% capture snippet_wsbnun %}{% include code/%}{% endcapture %}
+{% capture snippet_wsbnun %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_wsbnun | escape }}
@@ -295,7 +295,7 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 
 
 
-{% capture snippet_4scm75 %}{% include code/%}{% endcapture %}
+{% capture snippet_4scm75 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_4scm75 | escape }}
@@ -308,7 +308,7 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 
 
 
-{% capture snippet_grsuc9 %}{% include code/%}{% endcapture %}
+{% capture snippet_grsuc9 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_grsuc9 | escape }}
@@ -321,7 +321,7 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 
 
 
-{% capture snippet_6764ib %}{% include code/%}{% endcapture %}
+{% capture snippet_6764ib %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_6764ib | escape }}
@@ -336,7 +336,7 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 
 
 
-{% capture snippet_s88jdm %}{% include code/%}{% endcapture %}
+{% capture snippet_s88jdm %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_s88jdm | escape }}

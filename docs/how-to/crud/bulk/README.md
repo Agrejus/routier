@@ -23,7 +23,7 @@ Bulk operations allow you to:
 
 
 
-{% capture snippet_yrprqb %}{% include code/%}{% endcapture %}
+{% capture snippet_yrprqb %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_yrprqb | escape }}
@@ -36,7 +36,7 @@ Bulk operations allow you to:
 
 
 
-{% capture snippet_uw8bcx %}{% include code/%}{% endcapture %}
+{% capture snippet_uw8bcx %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_uw8bcx | escape }}
@@ -49,7 +49,7 @@ Bulk operations allow you to:
 
 
 
-{% capture snippet_jvrsl9 %}{% include code/%}{% endcapture %}
+{% capture snippet_jvrsl9 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_jvrsl9 | escape }}
@@ -64,7 +64,7 @@ Bulk operations allow you to:
 
 
 
-{% capture snippet_eag9mn %}{% include code/%}{% endcapture %}
+{% capture snippet_eag9mn %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_eag9mn | escape }}
@@ -77,7 +77,7 @@ Bulk operations allow you to:
 
 
 
-{% capture snippet_xp7cs4 %}{% include code/%}{% endcapture %}
+{% capture snippet_xp7cs4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_xp7cs4 | escape }}
@@ -90,7 +90,7 @@ Bulk operations allow you to:
 
 
 
-{% capture snippet_q9gyuz %}{% include code/%}{% endcapture %}
+{% capture snippet_q9gyuz %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_q9gyuz | escape }}
@@ -105,7 +105,7 @@ Bulk operations allow you to:
 
 
 
-{% capture snippet_cyz6su %}{% include code/%}{% endcapture %}
+{% capture snippet_cyz6su %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_cyz6su | escape }}
@@ -118,7 +118,7 @@ Bulk operations allow you to:
 
 
 
-{% capture snippet_x08o3f %}{% include code/%}{% endcapture %}
+{% capture snippet_x08o3f %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_x08o3f | escape }}
@@ -131,7 +131,7 @@ Bulk operations allow you to:
 
 
 
-{% capture snippet_w3hrvr %}{% include code/%}{% endcapture %}
+{% capture snippet_w3hrvr %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_w3hrvr | escape }}
@@ -146,7 +146,7 @@ Bulk operations allow you to:
 
 
 
-{% capture snippet_tb922c %}{% include code/%}{% endcapture %}
+{% capture snippet_tb922c %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_tb922c | escape }}
@@ -159,7 +159,7 @@ Bulk operations allow you to:
 
 
 
-{% capture snippet_qs8ydl %}{% include code/%}{% endcapture %}
+{% capture snippet_qs8ydl %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_qs8ydl | escape }}
@@ -174,7 +174,7 @@ Bulk operations allow you to:
 
 
 
-{% capture snippet_bf0381 %}{% include code/%}{% endcapture %}
+{% capture snippet_bf0381 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_bf0381 | escape }}
@@ -187,7 +187,7 @@ Bulk operations allow you to:
 
 
 
-{% capture snippet_99drnf %}{% include code/%}{% endcapture %}
+{% capture snippet_99drnf %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_99drnf | escape }}
@@ -202,7 +202,7 @@ Bulk operations allow you to:
 
 
 
-{% capture snippet_i43kay %}{% include code/%}{% endcapture %}
+{% capture snippet_i43kay %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_i43kay | escape }}
@@ -215,7 +215,7 @@ Bulk operations allow you to:
 
 
 
-{% capture snippet_u5x4xt %}{% include code/%}{% endcapture %}
+{% capture snippet_u5x4xt %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_u5x4xt | escape }}
@@ -230,7 +230,7 @@ Bulk operations allow you to:
 
 
 
-{% capture snippet_6rl9cc %}{% include code/%}{% endcapture %}
+{% capture snippet_6rl9cc %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_6rl9cc | escape }}
@@ -243,7 +243,7 @@ Bulk operations allow you to:
 
 
 
-{% capture snippet_sz50tg %}{% include code/%}{% endcapture %}
+{% capture snippet_sz50tg %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_sz50tg | escape }}
@@ -256,7 +256,7 @@ Bulk operations allow you to:
 
 
 
-{% capture snippet_gcc4wa %}{% include code/%}{% endcapture %}
+{% capture snippet_gcc4wa %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_gcc4wa | escape }}
@@ -269,7 +269,7 @@ Bulk operations allow you to:
 
 
 
-{% capture snippet_3htkn6 %}{% include code/%}{% endcapture %}
+{% capture snippet_3htkn6 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_3htkn6 | escape }}

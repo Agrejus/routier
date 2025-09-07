@@ -27,7 +27,7 @@ Routier provides a fluent, type-safe schema builder API:
 
 
 
-{% capture snippet_isgum0 %}{% include code/%}{% endcapture %}
+{% capture snippet_isgum0 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_isgum0 | escape }}
@@ -86,7 +86,7 @@ Routier provides a fluent, type-safe schema builder API:
 
 
 
-{% capture snippet_00kemw %}{% include code/%}{% endcapture %}
+{% capture snippet_00kemw %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_00kemw | escape }}
@@ -97,7 +97,7 @@ Routier provides a fluent, type-safe schema builder API:
 
 
 
-{% capture snippet_j8qiei %}{% include code/%}{% endcapture %}
+{% capture snippet_j8qiei %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_j8qiei | escape }}
@@ -108,7 +108,7 @@ Routier provides a fluent, type-safe schema builder API:
 
 
 
-{% capture snippet_wdlc9l %}{% include code/%}{% endcapture %}
+{% capture snippet_wdlc9l %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_wdlc9l | escape }}

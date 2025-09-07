@@ -9,7 +9,7 @@ This guide covers the various configuration options available in Routier.
 
 
 
-{% capture snippet_imbwmu %}{% include code/%}{% endcapture %}
+{% capture snippet_imbwmu %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_imbwmu | escape }}
@@ -22,7 +22,7 @@ This guide covers the various configuration options available in Routier.
 
 
 
-{% capture snippet_8h6l29 %}{% include code/%}{% endcapture %}
+{% capture snippet_8h6l29 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_8h6l29 | escape }}
@@ -35,7 +35,7 @@ This guide covers the various configuration options available in Routier.
 
 
 
-{% capture snippet_jyjuyw %}{% include code/%}{% endcapture %}
+{% capture snippet_jyjuyw %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_jyjuyw | escape }}
@@ -48,7 +48,7 @@ This guide covers the various configuration options available in Routier.
 
 
 
-{% capture snippet_f44scf %}{% include code/%}{% endcapture %}
+{% capture snippet_f44scf %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_f44scf | escape }}
@@ -61,7 +61,7 @@ This guide covers the various configuration options available in Routier.
 
 
 
-{% capture snippet_pzlbnl %}{% include code/%}{% endcapture %}
+{% capture snippet_pzlbnl %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_pzlbnl | escape }}
@@ -76,7 +76,7 @@ This guide covers the various configuration options available in Routier.
 
 
 
-{% capture snippet_akaglm %}{% include code/%}{% endcapture %}
+{% capture snippet_akaglm %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_akaglm | escape }}
@@ -89,7 +89,7 @@ This guide covers the various configuration options available in Routier.
 
 
 
-{% capture snippet_6q0ij4 %}{% include code/%}{% endcapture %}
+{% capture snippet_6q0ij4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_6q0ij4 | escape }}
@@ -104,7 +104,7 @@ This guide covers the various configuration options available in Routier.
 
 
 
-{% capture snippet_8s640w %}{% include code/%}{% endcapture %}
+{% capture snippet_8s640w %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_8s640w | escape }}
@@ -117,7 +117,7 @@ This guide covers the various configuration options available in Routier.
 
 
 
-{% capture snippet_ds5ucf %}{% include code/%}{% endcapture %}
+{% capture snippet_ds5ucf %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_ds5ucf | escape }}

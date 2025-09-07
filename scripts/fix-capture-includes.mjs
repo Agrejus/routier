@@ -29,10 +29,9 @@ function transform(content) {
         return `\n{% capture ${captureVar} %}{% include ${inc.trim()} %}{% endcapture %}\n{% highlight ${lang.trim()} %}{{ ${captureVar} | strip }}{% endhighlight %}\n`;
     });
     // Transform capture+highlight to fenced code blocks to avoid theme parsing quirks
-    const re2 = /\{\%\s*capture\s+(\w+)\s*\%\}[\s\S]*?\{\%\s*endcapture\s*\%\}\s*\{\%\s*highlight\s+([^\s%]+)(?:[^%]*)\%\}\s*\{\{\s*\1(?:\s*\|\s*strip)?\s*\}\}\s*\{\%\s*endhighlight\s*\%\}/g;
-    out = out.replace(re2, (_m, varName, lang) => {
-        return `\n\n{% capture ${varName} %}{% include code/%}{% endcapture %}\n\n\`\`\`${lang.trim()}\n{{ ${varName} | escape }}\n\`\`\`\n`;
-    });
+    // Fix any accidental placeholders like {% include code/%} created by earlier passes
+    out = out.replace(/\{\%\s*include\s+code\/\%\s*\}/g, '{% include code/from-docs/index/block-1.ts %}');
+    // Keep capture+highlight; do not convert to fenced blocks to avoid breaking includes
     return out;
 }
 

@@ -46,7 +46,7 @@ Persists a computed value to the underlying store. Use when:
 
 
 
-{% capture snippet_bznbzy %}{% include code/%}{% endcapture %}
+{% capture snippet_bznbzy %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_bznbzy | escape }}
@@ -66,7 +66,7 @@ Marks a property as a primary key for the entity.
 
 
 
-{% capture snippet_85eeza %}{% include code/%}{% endcapture %}
+{% capture snippet_85eeza %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_85eeza | escape }}
@@ -81,7 +81,7 @@ Automatically generates a unique value for the property.
 
 
 
-{% capture snippet_n4hxuc %}{% include code/%}{% endcapture %}
+{% capture snippet_n4hxuc %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_n4hxuc | escape }}
@@ -98,7 +98,7 @@ Creates a database index for efficient querying.
 
 
 
-{% capture snippet_27qlvd %}{% include code/%}{% endcapture %}
+{% capture snippet_27qlvd %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_27qlvd | escape }}
@@ -113,7 +113,7 @@ Multiple fields can share the same index name for compound indexing.
 
 
 
-{% capture snippet_zcizjw %}{% include code/%}{% endcapture %}
+{% capture snippet_zcizjw %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_zcizjw | escape }}
@@ -128,7 +128,7 @@ Sets a default value for the property. Can accept either a direct value or a fun
 
 
 
-{% capture snippet_9ckcic %}{% include code/%}{% endcapture %}
+{% capture snippet_9ckcic %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_9ckcic | escape }}
@@ -146,7 +146,7 @@ Sets a default value for the property. Can accept either a direct value or a fun
 
 
 
-{% capture snippet_2iwgt0 %}{% include code/%}{% endcapture %}
+{% capture snippet_2iwgt0 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_2iwgt0 | escape }}
@@ -162,7 +162,7 @@ Makes the property optional (can be undefined).
 
 
 
-{% capture snippet_eimzso %}{% include code/%}{% endcapture %}
+{% capture snippet_eimzso %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_eimzso | escape }}
@@ -177,7 +177,7 @@ Makes the property nullable (can be null).
 
 
 
-{% capture snippet_tudq6i %}{% include code/%}{% endcapture %}
+{% capture snippet_tudq6i %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_tudq6i | escape }}
@@ -192,7 +192,7 @@ Makes the property read-only after creation.
 
 
 
-{% capture snippet_jx409r %}{% include code/%}{% endcapture %}
+{% capture snippet_jx409r %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_jx409r | escape }}
@@ -209,7 +209,7 @@ Custom serialization function for the property.
 
 
 
-{% capture snippet_raovy6 %}{% include code/%}{% endcapture %}
+{% capture snippet_raovy6 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_raovy6 | escape }}
@@ -224,7 +224,7 @@ Custom deserialization function for the property.
 
 
 
-{% capture snippet_t98whi %}{% include code/%}{% endcapture %}
+{% capture snippet_t98whi %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_t98whi | escape }}
@@ -241,7 +241,7 @@ Converts the property to an array type.
 
 
 
-{% capture snippet_nv6qg0 %}{% include code/%}{% endcapture %}
+{% capture snippet_nv6qg0 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_nv6qg0 | escape }}
@@ -256,7 +256,7 @@ Ensures the property value is unique across all entities.
 
 
 
-{% capture snippet_ny7toy %}{% include code/%}{% endcapture %}
+{% capture snippet_ny7toy %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_ny7toy | escape }}
@@ -271,7 +271,7 @@ Modifiers can be chained together in any order:
 
 
 
-{% capture snippet_awss86 %}{% include code/%}{% endcapture %}
+{% capture snippet_awss86 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_awss86 | escape }}
@@ -294,7 +294,7 @@ While modifiers can be chained in any order, it's recommended to follow this pat
 
 
 
-{% capture snippet_gye6r6 %}{% include code/%}{% endcapture %}
+{% capture snippet_gye6r6 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_gye6r6 | escape }}
@@ -307,7 +307,7 @@ While modifiers can be chained in any order, it's recommended to follow this pat
 
 
 
-{% capture snippet_tcl5f8 %}{% include code/%}{% endcapture %}
+{% capture snippet_tcl5f8 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_tcl5f8 | escape }}
@@ -318,7 +318,7 @@ While modifiers can be chained in any order, it's recommended to follow this pat
 
 
 
-{% capture snippet_lajwjh %}{% include code/%}{% endcapture %}
+{% capture snippet_lajwjh %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_lajwjh | escape }}
@@ -329,7 +329,7 @@ While modifiers can be chained in any order, it's recommended to follow this pat
 
 
 
-{% capture snippet_68sph6 %}{% include code/%}{% endcapture %}
+{% capture snippet_68sph6 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_68sph6 | escape }}
@@ -340,7 +340,7 @@ While modifiers can be chained in any order, it's recommended to follow this pat
 
 
 
-{% capture snippet_61aty5 %}{% include code/%}{% endcapture %}
+{% capture snippet_61aty5 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_61aty5 | escape }}

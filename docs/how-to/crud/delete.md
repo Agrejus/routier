@@ -23,7 +23,7 @@ Routier's delete operations feature:
 
 
 
-{% capture snippet_7mnuqn %}{% include code/%}{% endcapture %}
+{% capture snippet_7mnuqn %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_7mnuqn | escape }}
@@ -36,7 +36,7 @@ Routier's delete operations feature:
 
 
 
-{% capture snippet_i4h7cy %}{% include code/%}{% endcapture %}
+{% capture snippet_i4h7cy %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_i4h7cy | escape }}
@@ -49,7 +49,7 @@ Routier's delete operations feature:
 
 
 
-{% capture snippet_o2pl49 %}{% include code/%}{% endcapture %}
+{% capture snippet_o2pl49 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_o2pl49 | escape }}
@@ -64,7 +64,7 @@ Routier's delete operations feature:
 
 
 
-{% capture snippet_jowtyu %}{% include code/%}{% endcapture %}
+{% capture snippet_jowtyu %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_jowtyu | escape }}
@@ -77,7 +77,7 @@ Routier's delete operations feature:
 
 
 
-{% capture snippet_ntn7jz %}{% include code/%}{% endcapture %}
+{% capture snippet_ntn7jz %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_ntn7jz | escape }}
@@ -90,7 +90,7 @@ Routier's delete operations feature:
 
 
 
-{% capture snippet_fexf0e %}{% include code/%}{% endcapture %}
+{% capture snippet_fexf0e %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_fexf0e | escape }}
@@ -105,7 +105,7 @@ Routier's delete operations feature:
 
 
 
-{% capture snippet_khspbq %}{% include code/%}{% endcapture %}
+{% capture snippet_khspbq %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_khspbq | escape }}
@@ -118,7 +118,7 @@ Routier's delete operations feature:
 
 
 
-{% capture snippet_pjopln %}{% include code/%}{% endcapture %}
+{% capture snippet_pjopln %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_pjopln | escape }}
@@ -131,7 +131,7 @@ Routier's delete operations feature:
 
 
 
-{% capture snippet_kdmz4x %}{% include code/%}{% endcapture %}
+{% capture snippet_kdmz4x %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_kdmz4x | escape }}
@@ -146,7 +146,7 @@ Routier's delete operations feature:
 
 
 
-{% capture snippet_9c2sj8 %}{% include code/%}{% endcapture %}
+{% capture snippet_9c2sj8 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_9c2sj8 | escape }}
@@ -159,7 +159,7 @@ Routier's delete operations feature:
 
 
 
-{% capture snippet_p26y1b %}{% include code/%}{% endcapture %}
+{% capture snippet_p26y1b %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_p26y1b | escape }}
@@ -172,7 +172,7 @@ Routier's delete operations feature:
 
 
 
-{% capture snippet_2s8ypq %}{% include code/%}{% endcapture %}
+{% capture snippet_2s8ypq %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_2s8ypq | escape }}
@@ -187,7 +187,7 @@ Routier's delete operations feature:
 
 
 
-{% capture snippet_56jqdx %}{% include code/%}{% endcapture %}
+{% capture snippet_56jqdx %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_56jqdx | escape }}
@@ -200,7 +200,7 @@ Routier's delete operations feature:
 
 
 
-{% capture snippet_ca6a7p %}{% include code/%}{% endcapture %}
+{% capture snippet_ca6a7p %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_ca6a7p | escape }}
@@ -213,7 +213,7 @@ Routier's delete operations feature:
 
 
 
-{% capture snippet_nlb686 %}{% include code/%}{% endcapture %}
+{% capture snippet_nlb686 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_nlb686 | escape }}
@@ -228,7 +228,7 @@ Routier's delete operations feature:
 
 
 
-{% capture snippet_f10lqn %}{% include code/%}{% endcapture %}
+{% capture snippet_f10lqn %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_f10lqn | escape }}
@@ -241,7 +241,7 @@ Routier's delete operations feature:
 
 
 
-{% capture snippet_bdc0uw %}{% include code/%}{% endcapture %}
+{% capture snippet_bdc0uw %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_bdc0uw | escape }}
@@ -256,7 +256,7 @@ Routier's delete operations feature:
 
 
 
-{% capture snippet_kx3x6d %}{% include code/%}{% endcapture %}
+{% capture snippet_kx3x6d %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_kx3x6d | escape }}
@@ -269,7 +269,7 @@ Routier's delete operations feature:
 
 
 
-{% capture snippet_ju9hps %}{% include code/%}{% endcapture %}
+{% capture snippet_ju9hps %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_ju9hps | escape }}
@@ -284,7 +284,7 @@ Routier's delete operations feature:
 
 
 
-{% capture snippet_3o6p0t %}{% include code/%}{% endcapture %}
+{% capture snippet_3o6p0t %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_3o6p0t | escape }}
@@ -297,7 +297,7 @@ Routier's delete operations feature:
 
 
 
-{% capture snippet_vewmxn %}{% include code/%}{% endcapture %}
+{% capture snippet_vewmxn %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_vewmxn | escape }}
@@ -310,7 +310,7 @@ Routier's delete operations feature:
 
 
 
-{% capture snippet_acizfz %}{% include code/%}{% endcapture %}
+{% capture snippet_acizfz %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_acizfz | escape }}
@@ -323,7 +323,7 @@ Routier's delete operations feature:
 
 
 
-{% capture snippet_gxg1tw %}{% include code/%}{% endcapture %}
+{% capture snippet_gxg1tw %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_gxg1tw | escape }}

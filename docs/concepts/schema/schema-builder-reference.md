@@ -7,7 +7,7 @@ This document provides a comprehensive reference for the Routier schema builder,
 
 
 
-{% capture snippet_8cm52t %}{% include code/%}{% endcapture %}
+{% capture snippet_8cm52t %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_8cm52t | escape }}
@@ -33,7 +33,7 @@ This document provides a comprehensive reference for the Routier schema builder,
 
 
 
-{% capture snippet_gfez9z %}{% include code/%}{% endcapture %}
+{% capture snippet_gfez9z %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_gfez9z | escape }}
@@ -73,7 +73,7 @@ Makes a property optional (can be undefined).
 
 
 
-{% capture snippet_8dsdf8 %}{% include code/%}{% endcapture %}
+{% capture snippet_8dsdf8 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_8dsdf8 | escape }}
@@ -88,7 +88,7 @@ Makes a property nullable (can be null).
 
 
 
-{% capture snippet_k2jdpf %}{% include code/%}{% endcapture %}
+{% capture snippet_k2jdpf %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_k2jdpf | escape }}
@@ -103,7 +103,7 @@ Sets a default value for the property. Can accept either a direct value or a fun
 
 
 
-{% capture snippet_90gw2s %}{% include code/%}{% endcapture %}
+{% capture snippet_90gw2s %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_90gw2s | escape }}
@@ -118,7 +118,7 @@ Makes a property read-only after creation.
 
 
 
-{% capture snippet_kgnh25 %}{% include code/%}{% endcapture %}
+{% capture snippet_kgnh25 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_kgnh25 | escape }}
@@ -133,7 +133,7 @@ Custom deserialization function.
 
 
 
-{% capture snippet_okmtsl %}{% include code/%}{% endcapture %}
+{% capture snippet_okmtsl %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_okmtsl | escape }}
@@ -148,7 +148,7 @@ Custom serialization function.
 
 
 
-{% capture snippet_he5sbw %}{% include code/%}{% endcapture %}
+{% capture snippet_he5sbw %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_he5sbw | escape }}
@@ -163,7 +163,7 @@ Converts the property to an array type.
 
 
 
-{% capture snippet_qxhxtr %}{% include code/%}{% endcapture %}
+{% capture snippet_qxhxtr %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_qxhxtr | escape }}
@@ -178,7 +178,7 @@ Creates database indexes for efficient querying.
 
 
 
-{% capture snippet_5ohv3o %}{% include code/%}{% endcapture %}
+{% capture snippet_5ohv3o %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_5ohv3o | escape }}
@@ -193,7 +193,7 @@ Marks a property as a primary key.
 
 
 
-{% capture snippet_m3j2uu %}{% include code/%}{% endcapture %}
+{% capture snippet_m3j2uu %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_m3j2uu | escape }}
@@ -208,7 +208,7 @@ Automatically generates values for the property.
 
 
 
-{% capture snippet_h8ny08 %}{% include code/%}{% endcapture %}
+{% capture snippet_h8ny08 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_h8ny08 | escape }}
@@ -223,7 +223,7 @@ Ensures the property value is unique across all entities.
 
 
 
-{% capture snippet_62tgt9 %}{% include code/%}{% endcapture %}
+{% capture snippet_62tgt9 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_62tgt9 | escape }}
@@ -240,7 +240,7 @@ Modifiers can be chained together in various combinations:
 
 
 
-{% capture snippet_4rg6wf %}{% include code/%}{% endcapture %}
+{% capture snippet_4rg6wf %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_4rg6wf | escape }}
@@ -255,7 +255,7 @@ Some modifiers cannot be used together:
 
 
 
-{% capture snippet_6a74o4 %}{% include code/%}{% endcapture %}
+{% capture snippet_6a74o4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_6a74o4 | escape }}
@@ -270,7 +270,7 @@ Some modifiers cannot be used together:
 
 
 
-{% capture snippet_6p78eb %}{% include code/%}{% endcapture %}
+{% capture snippet_6p78eb %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_6p78eb | escape }}
@@ -285,7 +285,7 @@ Some modifiers cannot be used together:
 
 
 
-{% capture snippet_96r2ir %}{% include code/%}{% endcapture %}
+{% capture snippet_96r2ir %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_96r2ir | escape }}
@@ -298,7 +298,7 @@ Some modifiers cannot be used together:
 
 
 
-{% capture snippet_apywbi %}{% include code/%}{% endcapture %}
+{% capture snippet_apywbi %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_apywbi | escape }}
@@ -311,7 +311,7 @@ Some modifiers cannot be used together:
 
 
 
-{% capture snippet_ypqptf %}{% include code/%}{% endcapture %}
+{% capture snippet_ypqptf %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_ypqptf | escape }}
@@ -326,7 +326,7 @@ Some modifiers cannot be used together:
 
 
 
-{% capture snippet_iymov7 %}{% include code/%}{% endcapture %}
+{% capture snippet_iymov7 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_iymov7 | escape }}
@@ -339,7 +339,7 @@ Some modifiers cannot be used together:
 
 
 
-{% capture snippet_e5lrx4 %}{% include code/%}{% endcapture %}
+{% capture snippet_e5lrx4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_e5lrx4 | escape }}
@@ -352,7 +352,7 @@ Some modifiers cannot be used together:
 
 
 
-{% capture snippet_rn5a2b %}{% include code/%}{% endcapture %}
+{% capture snippet_rn5a2b %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_rn5a2b | escape }}
@@ -365,7 +365,7 @@ Some modifiers cannot be used together:
 
 
 
-{% capture snippet_mzv6in %}{% include code/%}{% endcapture %}
+{% capture snippet_mzv6in %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_mzv6in | escape }}

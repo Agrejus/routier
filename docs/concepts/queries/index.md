@@ -21,7 +21,7 @@ Routier queries are fluent and can only be performed through a collection. Build
 
 
 
-{% capture snippet_toc7ki %}{% include code/%}{% endcapture %}
+{% capture snippet_toc7ki %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_toc7ki | escape }}
@@ -32,7 +32,7 @@ Routier queries are fluent and can only be performed through a collection. Build
 
 
 
-{% capture snippet_wfoe49 %}{% include code/%}{% endcapture %}
+{% capture snippet_wfoe49 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_wfoe49 | escape }}
@@ -43,7 +43,7 @@ Routier queries are fluent and can only be performed through a collection. Build
 
 
 
-{% capture snippet_kwlaer %}{% include code/%}{% endcapture %}
+{% capture snippet_kwlaer %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_kwlaer | escape }}
@@ -54,7 +54,7 @@ Routier queries are fluent and can only be performed through a collection. Build
 
 
 
-{% capture snippet_hkwyrg %}{% include code/%}{% endcapture %}
+{% capture snippet_hkwyrg %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_hkwyrg | escape }}
@@ -65,7 +65,7 @@ Routier queries are fluent and can only be performed through a collection. Build
 
 
 
-{% capture snippet_9ysmzy %}{% include code/%}{% endcapture %}
+{% capture snippet_9ysmzy %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_9ysmzy | escape }}
@@ -76,7 +76,7 @@ Routier queries are fluent and can only be performed through a collection. Build
 
 
 
-{% capture snippet_cy63oz %}{% include code/%}{% endcapture %}
+{% capture snippet_cy63oz %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_cy63oz | escape }}
@@ -99,7 +99,7 @@ Example removal:
 
 
 
-{% capture snippet_8vys4s %}{% include code/%}{% endcapture %}
+{% capture snippet_8vys4s %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_8vys4s | escape }}
@@ -122,7 +122,7 @@ Example (in this schema, `firstName` is stored in the database while `age` is a 
 
 
 
-{% capture snippet_muj42f %}{% include code/%}{% endcapture %}
+{% capture snippet_muj42f %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_muj42f | escape }}

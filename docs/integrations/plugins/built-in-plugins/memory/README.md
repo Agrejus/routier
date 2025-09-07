@@ -17,7 +17,7 @@ npm install routier-plugin-memory
 
 
 
-{% capture snippet_j93uk4 %}{% include code/%}{% endcapture %}
+{% capture snippet_j93uk4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_j93uk4 | escape }}
@@ -32,7 +32,7 @@ npm install routier-plugin-memory
 
 
 
-{% capture snippet_wmjaxi %}{% include code/%}{% endcapture %}
+{% capture snippet_wmjaxi %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_wmjaxi | escape }}
@@ -47,7 +47,7 @@ The database name is used to namespace your data and should be unique within you
 
 
 
-{% capture snippet_t0gugq %}{% include code/%}{% endcapture %}
+{% capture snippet_t0gugq %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_t0gugq | escape }}
@@ -77,7 +77,7 @@ The database name is used to namespace your data and should be unique within you
 
 
 
-{% capture snippet_bjnyoi %}{% include code/%}{% endcapture %}
+{% capture snippet_bjnyoi %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_bjnyoi | escape }}
@@ -90,7 +90,7 @@ The database name is used to namespace your data and should be unique within you
 
 
 
-{% capture snippet_e67add %}{% include code/%}{% endcapture %}
+{% capture snippet_e67add %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_e67add | escape }}
@@ -103,7 +103,7 @@ The database name is used to namespace your data and should be unique within you
 
 
 
-{% capture snippet_1e3k2w %}{% include code/%}{% endcapture %}
+{% capture snippet_1e3k2w %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_1e3k2w | escape }}
@@ -118,7 +118,7 @@ The database name is used to namespace your data and should be unique within you
 
 
 
-{% capture snippet_41jr8p %}{% include code/%}{% endcapture %}
+{% capture snippet_41jr8p %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_41jr8p | escape }}

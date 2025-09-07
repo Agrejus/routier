@@ -7,7 +7,7 @@ You can extend a generated collection to add domain-specific helpers while prese
 
 
 
-{% capture snippet_4yc1wf %}{% include code/%}{% endcapture %}
+{% capture snippet_4yc1wf %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_4yc1wf | escape }}

@@ -19,7 +19,7 @@ CRUD operations in Routier work through a **DataStore** class that you inherit f
 
 
 
-{% capture snippet_inlt8l %}{% include code/%}{% endcapture %}
+{% capture snippet_inlt8l %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_inlt8l | escape }}
@@ -34,7 +34,7 @@ CRUD operations in Routier work through a **DataStore** class that you inherit f
 
 
 
-{% capture snippet_c9yalp %}{% include code/%}{% endcapture %}
+{% capture snippet_c9yalp %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_c9yalp | escape }}
@@ -47,7 +47,7 @@ CRUD operations in Routier work through a **DataStore** class that you inherit f
 
 
 
-{% capture snippet_9rqdgd %}{% include code/%}{% endcapture %}
+{% capture snippet_9rqdgd %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_9rqdgd | escape }}
@@ -67,7 +67,7 @@ Routier uses a **discriminated union result pattern** for callback-based operati
 
 
 
-{% capture snippet_pvi8qq %}{% include code/%}{% endcapture %}
+{% capture snippet_pvi8qq %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_pvi8qq | escape }}
@@ -82,7 +82,7 @@ Routier uses a **discriminated union result pattern** for callback-based operati
 
 
 
-{% capture snippet_rpjfdj %}{% include code/%}{% endcapture %}
+{% capture snippet_rpjfdj %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_rpjfdj | escape }}
@@ -95,7 +95,7 @@ Routier uses a **discriminated union result pattern** for callback-based operati
 
 
 
-{% capture snippet_hum0xd %}{% include code/%}{% endcapture %}
+{% capture snippet_hum0xd %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_hum0xd | escape }}
@@ -108,7 +108,7 @@ Routier uses a **discriminated union result pattern** for callback-based operati
 
 
 
-{% capture snippet_5remab %}{% include code/%}{% endcapture %}
+{% capture snippet_5remab %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_5remab | escape }}
@@ -123,7 +123,7 @@ Routier uses a **discriminated union result pattern** for callback-based operati
 
 
 
-{% capture snippet_plmliu %}{% include code/%}{% endcapture %}
+{% capture snippet_plmliu %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_plmliu | escape }}
@@ -136,7 +136,7 @@ Routier uses a **discriminated union result pattern** for callback-based operati
 
 
 
-{% capture snippet_5ykcgs %}{% include code/%}{% endcapture %}
+{% capture snippet_5ykcgs %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_5ykcgs | escape }}
@@ -149,7 +149,7 @@ Routier uses a **discriminated union result pattern** for callback-based operati
 
 
 
-{% capture snippet_orluis %}{% include code/%}{% endcapture %}
+{% capture snippet_orluis %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_orluis | escape }}
@@ -162,7 +162,7 @@ Routier uses a **discriminated union result pattern** for callback-based operati
 
 
 
-{% capture snippet_o89v2i %}{% include code/%}{% endcapture %}
+{% capture snippet_o89v2i %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_o89v2i | escape }}
@@ -179,7 +179,7 @@ The key feature of Routier is that entities returned from queries are **proxy ob
 
 
 
-{% capture snippet_odwrsz %}{% include code/%}{% endcapture %}
+{% capture snippet_odwrsz %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_odwrsz | escape }}
@@ -192,7 +192,7 @@ The key feature of Routier is that entities returned from queries are **proxy ob
 
 
 
-{% capture snippet_ajq9ip %}{% include code/%}{% endcapture %}
+{% capture snippet_ajq9ip %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_ajq9ip | escape }}
@@ -205,7 +205,7 @@ The key feature of Routier is that entities returned from queries are **proxy ob
 
 
 
-{% capture snippet_niq4xm %}{% include code/%}{% endcapture %}
+{% capture snippet_niq4xm %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_niq4xm | escape }}
@@ -220,7 +220,7 @@ The key feature of Routier is that entities returned from queries are **proxy ob
 
 
 
-{% capture snippet_461037 %}{% include code/%}{% endcapture %}
+{% capture snippet_461037 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_461037 | escape }}
@@ -233,7 +233,7 @@ The key feature of Routier is that entities returned from queries are **proxy ob
 
 
 
-{% capture snippet_z4pjbb %}{% include code/%}{% endcapture %}
+{% capture snippet_z4pjbb %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_z4pjbb | escape }}
@@ -246,7 +246,7 @@ The key feature of Routier is that entities returned from queries are **proxy ob
 
 
 
-{% capture snippet_ilub79 %}{% include code/%}{% endcapture %}
+{% capture snippet_ilub79 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_ilub79 | escape }}
@@ -259,7 +259,7 @@ The key feature of Routier is that entities returned from queries are **proxy ob
 
 
 
-{% capture snippet_ay5tzu %}{% include code/%}{% endcapture %}
+{% capture snippet_ay5tzu %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_ay5tzu | escape }}
@@ -282,7 +282,7 @@ Routier uses **proxy objects** to automatically track changes to entities:
 
 
 
-{% capture snippet_nm1j0m %}{% include code/%}{% endcapture %}
+{% capture snippet_nm1j0m %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_nm1j0m | escape }}
@@ -295,7 +295,7 @@ Routier uses **proxy objects** to automatically track changes to entities:
 
 
 
-{% capture snippet_bru5vp %}{% include code/%}{% endcapture %}
+{% capture snippet_bru5vp %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_bru5vp | escape }}
@@ -310,7 +310,7 @@ Routier uses **proxy objects** to automatically track changes to entities:
 
 
 
-{% capture snippet_0of7vx %}{% include code/%}{% endcapture %}
+{% capture snippet_0of7vx %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_0of7vx | escape }}
@@ -323,7 +323,7 @@ Routier uses **proxy objects** to automatically track changes to entities:
 
 
 
-{% capture snippet_9k4u8w %}{% include code/%}{% endcapture %}
+{% capture snippet_9k4u8w %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_9k4u8w | escape }}
@@ -338,7 +338,7 @@ Routier uses **proxy objects** to automatically track changes to entities:
 
 
 
-{% capture snippet_u6y5qk %}{% include code/%}{% endcapture %}
+{% capture snippet_u6y5qk %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_u6y5qk | escape }}
@@ -351,7 +351,7 @@ Routier uses **proxy objects** to automatically track changes to entities:
 
 
 
-{% capture snippet_vjsaav %}{% include code/%}{% endcapture %}
+{% capture snippet_vjsaav %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_vjsaav | escape }}
@@ -364,7 +364,7 @@ Routier uses **proxy objects** to automatically track changes to entities:
 
 
 
-{% capture snippet_heqfkp %}{% include code/%}{% endcapture %}
+{% capture snippet_heqfkp %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_heqfkp | escape }}
@@ -379,7 +379,7 @@ Routier uses **proxy objects** to automatically track changes to entities:
 
 
 
-{% capture snippet_firi5i %}{% include code/%}{% endcapture %}
+{% capture snippet_firi5i %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_firi5i | escape }}
@@ -392,7 +392,7 @@ Routier uses **proxy objects** to automatically track changes to entities:
 
 
 
-{% capture snippet_s9q7m4 %}{% include code/%}{% endcapture %}
+{% capture snippet_s9q7m4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_s9q7m4 | escape }}

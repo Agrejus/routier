@@ -11,7 +11,7 @@ Creates an object schema with the specified properties.
 
 
 
-{% capture snippet_zkjtsz %}{% include code/%}{% endcapture %}
+{% capture snippet_zkjtsz %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_zkjtsz | escape }}
@@ -26,7 +26,7 @@ Defines a named schema with properties and returns a schema builder.
 
 
 
-{% capture snippet_05owr1 %}{% include code/%}{% endcapture %}
+{% capture snippet_05owr1 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_05owr1 | escape }}
@@ -41,7 +41,7 @@ Creates an array schema with the specified element type.
 
 
 
-{% capture snippet_pcv2m5 %}{% include code/%}{% endcapture %}
+{% capture snippet_pcv2m5 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_pcv2m5 | escape }}
@@ -56,7 +56,7 @@ Creates a union schema that accepts any of the specified types.
 
 
 
-{% capture snippet_p2fxbx %}{% include code/%}{% endcapture %}
+{% capture snippet_p2fxbx %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_p2fxbx | escape }}
@@ -71,7 +71,7 @@ Creates a literal schema that only accepts the specified values.
 
 
 
-{% capture snippet_zli77j %}{% include code/%}{% endcapture %}
+{% capture snippet_zli77j %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_zli77j | escape }}
@@ -86,7 +86,7 @@ Creates a schema that accepts any value.
 
 
 
-{% capture snippet_8oiehv %}{% include code/%}{% endcapture %}
+{% capture snippet_8oiehv %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_8oiehv | escape }}
@@ -101,7 +101,7 @@ Creates a schema that accepts unknown values (safer than `any`).
 
 
 
-{% capture snippet_ln12ss %}{% include code/%}{% endcapture %}
+{% capture snippet_ln12ss %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_ln12ss | escape }}
@@ -116,7 +116,7 @@ Creates a record schema for key-value pairs.
 
 
 
-{% capture snippet_7jufvm %}{% include code/%}{% endcapture %}
+{% capture snippet_7jufvm %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_7jufvm | escape }}
@@ -131,7 +131,7 @@ Creates a record schema for key-value pairs.
 
 
 
-{% capture snippet_2nkuuy %}{% include code/%}{% endcapture %}
+{% capture snippet_2nkuuy %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_2nkuuy | escape }}
@@ -144,7 +144,7 @@ Creates a record schema for key-value pairs.
 
 
 
-{% capture snippet_jkp6m3 %}{% include code/%}{% endcapture %}
+{% capture snippet_jkp6m3 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_jkp6m3 | escape }}
@@ -157,7 +157,7 @@ Creates a record schema for key-value pairs.
 
 
 
-{% capture snippet_rclo3b %}{% include code/%}{% endcapture %}
+{% capture snippet_rclo3b %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_rclo3b | escape }}
@@ -170,7 +170,7 @@ Creates a record schema for key-value pairs.
 
 
 
-{% capture snippet_iipob8 %}{% include code/%}{% endcapture %}
+{% capture snippet_iipob8 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_iipob8 | escape }}
@@ -185,7 +185,7 @@ Creates a record schema for key-value pairs.
 
 
 
-{% capture snippet_snx4al %}{% include code/%}{% endcapture %}
+{% capture snippet_snx4al %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_snx4al | escape }}
@@ -198,7 +198,7 @@ Creates a record schema for key-value pairs.
 
 
 
-{% capture snippet_c800du %}{% include code/%}{% endcapture %}
+{% capture snippet_c800du %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_c800du | escape }}
@@ -211,7 +211,7 @@ Creates a record schema for key-value pairs.
 
 
 
-{% capture snippet_95d00b %}{% include code/%}{% endcapture %}
+{% capture snippet_95d00b %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_95d00b | escape }}
@@ -224,7 +224,7 @@ Creates a record schema for key-value pairs.
 
 
 
-{% capture snippet_5503v4 %}{% include code/%}{% endcapture %}
+{% capture snippet_5503v4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_5503v4 | escape }}
@@ -237,7 +237,7 @@ Creates a record schema for key-value pairs.
 
 
 
-{% capture snippet_7m792n %}{% include code/%}{% endcapture %}
+{% capture snippet_7m792n %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_7m792n | escape }}
@@ -250,7 +250,7 @@ Creates a record schema for key-value pairs.
 
 
 
-{% capture snippet_06sj57 %}{% include code/%}{% endcapture %}
+{% capture snippet_06sj57 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_06sj57 | escape }}
@@ -267,7 +267,7 @@ Applies modifications to the schema.
 
 
 
-{% capture snippet_lgafm5 %}{% include code/%}{% endcapture %}
+{% capture snippet_lgafm5 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_lgafm5 | escape }}
@@ -280,7 +280,7 @@ Applies modifications to the schema.
 
 
 
-{% capture snippet_zuzs5v %}{% include code/%}{% endcapture %}
+{% capture snippet_zuzs5v %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_zuzs5v | escape }}
@@ -293,7 +293,7 @@ Applies modifications to the schema.
 
 
 
-{% capture snippet_8hwrmn %}{% include code/%}{% endcapture %}
+{% capture snippet_8hwrmn %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_8hwrmn | escape }}
@@ -310,7 +310,7 @@ Compiles the schema into its final form.
 
 
 
-{% capture snippet_fddsty %}{% include code/%}{% endcapture %}
+{% capture snippet_fddsty %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_fddsty | escape }}
@@ -327,7 +327,7 @@ Returns information about all properties in the schema.
 
 
 
-{% capture snippet_19bz4t %}{% include code/%}{% endcapture %}
+{% capture snippet_19bz4t %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_19bz4t | escape }}
@@ -342,7 +342,7 @@ Returns information about all indexes in the schema.
 
 
 
-{% capture snippet_cjthvu %}{% include code/%}{% endcapture %}
+{% capture snippet_cjthvu %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_cjthvu | escape }}
@@ -357,7 +357,7 @@ Returns information about identity properties.
 
 
 
-{% capture snippet_rwhjlt %}{% include code/%}{% endcapture %}
+{% capture snippet_rwhjlt %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_rwhjlt | escape }}
@@ -372,7 +372,7 @@ Boolean indicating if the schema has identity keys.
 
 
 
-{% capture snippet_fplcxj %}{% include code/%}{% endcapture %}
+{% capture snippet_fplcxj %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_fplcxj | escape }}
@@ -389,7 +389,7 @@ Extracts the TypeScript type from a schema.
 
 
 
-{% capture snippet_zzserb %}{% include code/%}{% endcapture %}
+{% capture snippet_zzserb %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_zzserb | escape }}
@@ -404,7 +404,7 @@ Extracts the creation type (without identity fields).
 
 
 
-{% capture snippet_4gaf0f %}{% include code/%}{% endcapture %}
+{% capture snippet_4gaf0f %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_4gaf0f | escape }}
@@ -421,7 +421,7 @@ Validates data against the schema.
 
 
 
-{% capture snippet_z0yl02 %}{% include code/%}{% endcapture %}
+{% capture snippet_z0yl02 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_z0yl02 | escape }}
@@ -436,7 +436,7 @@ Quick check if data is valid.
 
 
 
-{% capture snippet_n1vtpw %}{% include code/%}{% endcapture %}
+{% capture snippet_n1vtpw %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_n1vtpw | escape }}
@@ -453,7 +453,7 @@ Serializes data according to schema rules.
 
 
 
-{% capture snippet_hpemqu %}{% include code/%}{% endcapture %}
+{% capture snippet_hpemqu %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_hpemqu | escape }}
@@ -468,7 +468,7 @@ Deserializes data according to schema rules.
 
 
 
-{% capture snippet_azauja %}{% include code/%}{% endcapture %}
+{% capture snippet_azauja %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_azauja | escape }}
@@ -483,7 +483,7 @@ Deserializes data according to schema rules.
 
 
 
-{% capture snippet_92nuzd %}{% include code/%}{% endcapture %}
+{% capture snippet_92nuzd %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_92nuzd | escape }}
@@ -496,7 +496,7 @@ Deserializes data according to schema rules.
 
 
 
-{% capture snippet_ju3pq7 %}{% include code/%}{% endcapture %}
+{% capture snippet_ju3pq7 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_ju3pq7 | escape }}
@@ -509,7 +509,7 @@ Deserializes data according to schema rules.
 
 
 
-{% capture snippet_c74ymd %}{% include code/%}{% endcapture %}
+{% capture snippet_c74ymd %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_c74ymd | escape }}
@@ -524,7 +524,7 @@ Deserializes data according to schema rules.
 
 
 
-{% capture snippet_2uqlc6 %}{% include code/%}{% endcapture %}
+{% capture snippet_2uqlc6 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_2uqlc6 | escape }}
@@ -537,7 +537,7 @@ Deserializes data according to schema rules.
 
 
 
-{% capture snippet_8ail1k %}{% include code/%}{% endcapture %}
+{% capture snippet_8ail1k %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_8ail1k | escape }}
@@ -550,7 +550,7 @@ Deserializes data according to schema rules.
 
 
 
-{% capture snippet_2yg31j %}{% include code/%}{% endcapture %}
+{% capture snippet_2yg31j %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_2yg31j | escape }}
@@ -563,7 +563,7 @@ Deserializes data according to schema rules.
 
 
 
-{% capture snippet_uz1yp3 %}{% include code/%}{% endcapture %}
+{% capture snippet_uz1yp3 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_uz1yp3 | escape }}
@@ -578,7 +578,7 @@ Deserializes data according to schema rules.
 
 
 
-{% capture snippet_sh61ip %}{% include code/%}{% endcapture %}
+{% capture snippet_sh61ip %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_sh61ip | escape }}
@@ -591,7 +591,7 @@ Deserializes data according to schema rules.
 
 
 
-{% capture snippet_qzbwjx %}{% include code/%}{% endcapture %}
+{% capture snippet_qzbwjx %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_qzbwjx | escape }}

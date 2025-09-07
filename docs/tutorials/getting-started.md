@@ -32,7 +32,7 @@ npm install routier-plugin-local-storage
 
 
 
-{% capture snippet_y1mh9l %}{% include code/%}{% endcapture %}
+{% capture snippet_y1mh9l %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_y1mh9l | escape }}

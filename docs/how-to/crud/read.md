@@ -20,7 +20,7 @@ Routier's read operations feature:
 
 
 
-{% capture snippet_9o40qi %}{% include code/%}{% endcapture %}
+{% capture snippet_9o40qi %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_9o40qi | escape }}
@@ -33,7 +33,7 @@ Routier's read operations feature:
 
 
 
-{% capture snippet_t6x45d %}{% include code/%}{% endcapture %}
+{% capture snippet_t6x45d %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_t6x45d | escape }}
@@ -48,7 +48,7 @@ Routier's read operations feature:
 
 
 
-{% capture snippet_p5nl2e %}{% include code/%}{% endcapture %}
+{% capture snippet_p5nl2e %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_p5nl2e | escape }}
@@ -61,7 +61,7 @@ Routier's read operations feature:
 
 
 
-{% capture snippet_jcvg14 %}{% include code/%}{% endcapture %}
+{% capture snippet_jcvg14 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_jcvg14 | escape }}
@@ -74,7 +74,7 @@ Routier's read operations feature:
 
 
 
-{% capture snippet_v1gr0f %}{% include code/%}{% endcapture %}
+{% capture snippet_v1gr0f %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_v1gr0f | escape }}
@@ -89,7 +89,7 @@ Routier's read operations feature:
 
 
 
-{% capture snippet_mb35us %}{% include code/%}{% endcapture %}
+{% capture snippet_mb35us %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_mb35us | escape }}
@@ -102,7 +102,7 @@ Routier's read operations feature:
 
 
 
-{% capture snippet_kiewxc %}{% include code/%}{% endcapture %}
+{% capture snippet_kiewxc %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_kiewxc | escape }}
@@ -117,7 +117,7 @@ Routier's read operations feature:
 
 
 
-{% capture snippet_q0v3kz %}{% include code/%}{% endcapture %}
+{% capture snippet_q0v3kz %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_q0v3kz | escape }}
@@ -130,7 +130,7 @@ Routier's read operations feature:
 
 
 
-{% capture snippet_5hcao5 %}{% include code/%}{% endcapture %}
+{% capture snippet_5hcao5 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_5hcao5 | escape }}
@@ -145,7 +145,7 @@ Routier's read operations feature:
 
 
 
-{% capture snippet_xunr8i %}{% include code/%}{% endcapture %}
+{% capture snippet_xunr8i %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_xunr8i | escape }}
@@ -158,7 +158,7 @@ Routier's read operations feature:
 
 
 
-{% capture snippet_jm836j %}{% include code/%}{% endcapture %}
+{% capture snippet_jm836j %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_jm836j | escape }}
@@ -171,7 +171,7 @@ Routier's read operations feature:
 
 
 
-{% capture snippet_nnkaip %}{% include code/%}{% endcapture %}
+{% capture snippet_nnkaip %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_nnkaip | escape }}
@@ -184,7 +184,7 @@ Routier's read operations feature:
 
 
 
-{% capture snippet_wq7fry %}{% include code/%}{% endcapture %}
+{% capture snippet_wq7fry %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_wq7fry | escape }}
@@ -199,7 +199,7 @@ Routier's read operations feature:
 
 
 
-{% capture snippet_oygbvt %}{% include code/%}{% endcapture %}
+{% capture snippet_oygbvt %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_oygbvt | escape }}
@@ -212,7 +212,7 @@ Routier's read operations feature:
 
 
 
-{% capture snippet_zrxxjw %}{% include code/%}{% endcapture %}
+{% capture snippet_zrxxjw %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_zrxxjw | escape }}
@@ -227,7 +227,7 @@ Routier's read operations feature:
 
 
 
-{% capture snippet_cqlpyx %}{% include code/%}{% endcapture %}
+{% capture snippet_cqlpyx %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_cqlpyx | escape }}
@@ -240,7 +240,7 @@ Routier's read operations feature:
 
 
 
-{% capture snippet_7zimzt %}{% include code/%}{% endcapture %}
+{% capture snippet_7zimzt %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_7zimzt | escape }}
@@ -255,7 +255,7 @@ Routier's read operations feature:
 
 
 
-{% capture snippet_7w1agc %}{% include code/%}{% endcapture %}
+{% capture snippet_7w1agc %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_7w1agc | escape }}
@@ -268,7 +268,7 @@ Routier's read operations feature:
 
 
 
-{% capture snippet_gytojx %}{% include code/%}{% endcapture %}
+{% capture snippet_gytojx %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_gytojx | escape }}
@@ -283,7 +283,7 @@ Routier's read operations feature:
 
 
 
-{% capture snippet_7xxzgt %}{% include code/%}{% endcapture %}
+{% capture snippet_7xxzgt %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_7xxzgt | escape }}
@@ -296,7 +296,7 @@ Routier's read operations feature:
 
 
 
-{% capture snippet_8phcbm %}{% include code/%}{% endcapture %}
+{% capture snippet_8phcbm %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_8phcbm | escape }}
@@ -309,7 +309,7 @@ Routier's read operations feature:
 
 
 
-{% capture snippet_fvul6i %}{% include code/%}{% endcapture %}
+{% capture snippet_fvul6i %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_fvul6i | escape }}
@@ -322,7 +322,7 @@ Routier's read operations feature:
 
 
 
-{% capture snippet_mfx2x7 %}{% include code/%}{% endcapture %}
+{% capture snippet_mfx2x7 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_mfx2x7 | escape }}

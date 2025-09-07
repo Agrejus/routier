@@ -6,7 +6,7 @@ Routier provides a natural, fluent query API that makes data retrieval intuitive
 
 
 
-{% capture snippet_cohq0u %}{% include code/%}{% endcapture %}
+{% capture snippet_cohq0u %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_cohq0u | escape }}
@@ -17,7 +17,7 @@ Queries always start from a collection:
 
 
 
-{% capture snippet_25zqea %}{% include code/%}{% endcapture %}
+{% capture snippet_25zqea %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_25zqea | escape }}
@@ -28,7 +28,7 @@ Queries always start from a collection:
 
 
 
-{% capture snippet_odc3mc %}{% include code/%}{% endcapture %}
+{% capture snippet_odc3mc %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_odc3mc | escape }}
@@ -42,7 +42,7 @@ When compiling to a JavaScript filter function, free variables cannot be evaluat
 
 
 
-{% capture snippet_yh53h9 %}{% include code/%}{% endcapture %}
+{% capture snippet_yh53h9 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_yh53h9 | escape }}
@@ -54,7 +54,7 @@ When compiling to a JavaScript filter function, free variables cannot be evaluat
 
 
 
-{% capture snippet_9ex9mv %}{% include code/%}{% endcapture %}
+{% capture snippet_9ex9mv %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_9ex9mv | escape }}
@@ -65,7 +65,7 @@ When compiling to a JavaScript filter function, free variables cannot be evaluat
 
 
 
-{% capture snippet_biz3yl %}{% include code/%}{% endcapture %}
+{% capture snippet_biz3yl %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_biz3yl | escape }}
@@ -76,7 +76,7 @@ When compiling to a JavaScript filter function, free variables cannot be evaluat
 
 
 
-{% capture snippet_2o2ifg %}{% include code/%}{% endcapture %}
+{% capture snippet_2o2ifg %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_2o2ifg | escape }}
@@ -87,7 +87,7 @@ When compiling to a JavaScript filter function, free variables cannot be evaluat
 
 
 
-{% capture snippet_ia3pbi %}{% include code/%}{% endcapture %}
+{% capture snippet_ia3pbi %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_ia3pbi | escape }}
@@ -98,7 +98,7 @@ When compiling to a JavaScript filter function, free variables cannot be evaluat
 
 
 
-{% capture snippet_sxpk65 %}{% include code/%}{% endcapture %}
+{% capture snippet_sxpk65 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_sxpk65 | escape }}

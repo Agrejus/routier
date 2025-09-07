@@ -9,7 +9,7 @@ Routier provides a comprehensive set of property types for building robust schem
 
 
 
-{% capture snippet_34jf1v %}{% include code/%}{% endcapture %}
+{% capture snippet_34jf1v %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_34jf1v | escape }}
@@ -22,7 +22,7 @@ Routier provides a comprehensive set of property types for building robust schem
 
 
 
-{% capture snippet_oempxx %}{% include code/%}{% endcapture %}
+{% capture snippet_oempxx %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_oempxx | escape }}
@@ -35,7 +35,7 @@ Routier provides a comprehensive set of property types for building robust schem
 
 
 
-{% capture snippet_t1gwom %}{% include code/%}{% endcapture %}
+{% capture snippet_t1gwom %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_t1gwom | escape }}
@@ -48,7 +48,7 @@ Routier provides a comprehensive set of property types for building robust schem
 
 
 
-{% capture snippet_0o33ad %}{% include code/%}{% endcapture %}
+{% capture snippet_0o33ad %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_0o33ad | escape }}
@@ -63,7 +63,7 @@ Routier provides a comprehensive set of property types for building robust schem
 
 
 
-{% capture snippet_y9r625 %}{% include code/%}{% endcapture %}
+{% capture snippet_y9r625 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_y9r625 | escape }}
@@ -76,7 +76,7 @@ Routier provides a comprehensive set of property types for building robust schem
 
 
 
-{% capture snippet_fh5wji %}{% include code/%}{% endcapture %}
+{% capture snippet_fh5wji %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_fh5wji | escape }}
@@ -93,7 +93,7 @@ Routier's type system allows you to constrain properties to specific literal val
 
 
 
-{% capture snippet_sepo73 %}{% include code/%}{% endcapture %}
+{% capture snippet_sepo73 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_sepo73 | escape }}
@@ -106,7 +106,7 @@ Routier's type system allows you to constrain properties to specific literal val
 
 
 
-{% capture snippet_vo0j1n %}{% include code/%}{% endcapture %}
+{% capture snippet_vo0j1n %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_vo0j1n | escape }}
@@ -119,7 +119,7 @@ Routier's type system allows you to constrain properties to specific literal val
 
 
 
-{% capture snippet_ep1grl %}{% include code/%}{% endcapture %}
+{% capture snippet_ep1grl %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_ep1grl | escape }}
@@ -134,7 +134,7 @@ Routier's type system allows you to constrain properties to specific literal val
 
 
 
-{% capture snippet_ot7kh4 %}{% include code/%}{% endcapture %}
+{% capture snippet_ot7kh4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_ot7kh4 | escape }}
@@ -151,7 +151,7 @@ Any type can be converted to an array using the `.array()` modifier:
 
 
 
-{% capture snippet_y4i5de %}{% include code/%}{% endcapture %}
+{% capture snippet_y4i5de %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_y4i5de | escape }}
@@ -168,7 +168,7 @@ Properties that auto-generate values:
 
 
 
-{% capture snippet_zbhp4c %}{% include code/%}{% endcapture %}
+{% capture snippet_zbhp4c %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_zbhp4c | escape }}
@@ -183,7 +183,7 @@ Properties that serve as unique identifiers:
 
 
 
-{% capture snippet_myq6n4 %}{% include code/%}{% endcapture %}
+{% capture snippet_myq6n4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_myq6n4 | escape }}
@@ -198,7 +198,7 @@ Properties that create database indexes:
 
 
 
-{% capture snippet_mtslo8 %}{% include code/%}{% endcapture %}
+{% capture snippet_mtslo8 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_mtslo8 | escape }}
@@ -213,7 +213,7 @@ Properties that create database indexes:
 
 
 
-{% capture snippet_qqb4dt %}{% include code/%}{% endcapture %}
+{% capture snippet_qqb4dt %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_qqb4dt | escape }}
@@ -226,7 +226,7 @@ Properties that create database indexes:
 
 
 
-{% capture snippet_b4mi9q %}{% include code/%}{% endcapture %}
+{% capture snippet_b4mi9q %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_b4mi9q | escape }}
@@ -239,7 +239,7 @@ Properties that create database indexes:
 
 
 
-{% capture snippet_u6gsr0 %}{% include code/%}{% endcapture %}
+{% capture snippet_u6gsr0 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_u6gsr0 | escape }}
@@ -252,7 +252,7 @@ Properties that create database indexes:
 
 
 
-{% capture snippet_unwd1x %}{% include code/%}{% endcapture %}
+{% capture snippet_unwd1x %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_unwd1x | escape }}

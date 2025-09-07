@@ -7,7 +7,7 @@ Schemas in Routier define the structure and behavior of your data entities. The 
 
 
 
-{% capture snippet_uwvygh %}{% include code/%}{% endcapture %}
+{% capture snippet_uwvygh %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_uwvygh | escape }}
@@ -36,7 +36,7 @@ You can constrain properties to specific literal values:
 
 
 
-{% capture snippet_r07whk %}{% include code/%}{% endcapture %}
+{% capture snippet_r07whk %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_r07whk | escape }}
@@ -53,7 +53,7 @@ Each schema type supports a set of modifiers that can be chained together:
 
 
 
-{% capture snippet_834udw %}{% include code/%}{% endcapture %}
+{% capture snippet_834udw %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_834udw | escape }}
@@ -66,7 +66,7 @@ Each schema type supports a set of modifiers that can be chained together:
 
 
 
-{% capture snippet_5wxct0 %}{% include code/%}{% endcapture %}
+{% capture snippet_5wxct0 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_5wxct0 | escape }}
@@ -79,7 +79,7 @@ Each schema type supports a set of modifiers that can be chained together:
 
 
 
-{% capture snippet_rl0i32 %}{% include code/%}{% endcapture %}
+{% capture snippet_rl0i32 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_rl0i32 | escape }}
@@ -92,7 +92,7 @@ Each schema type supports a set of modifiers that can be chained together:
 
 
 
-{% capture snippet_btkdlv %}{% include code/%}{% endcapture %}
+{% capture snippet_btkdlv %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_btkdlv | escape }}
@@ -107,7 +107,7 @@ Modifiers can be chained in any order, but it's recommended to follow a logical 
 
 
 
-{% capture snippet_yeelah %}{% include code/%}{% endcapture %}
+{% capture snippet_yeelah %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_yeelah | escape }}
@@ -122,7 +122,7 @@ Always call `.compile()` at the end to create the final schema:
 
 
 
-{% capture snippet_k6k6vd %}{% include code/%}{% endcapture %}
+{% capture snippet_k6k6vd %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
 {{ snippet_k6k6vd | escape }}
