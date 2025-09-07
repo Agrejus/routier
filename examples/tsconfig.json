@@ -18,7 +18,7 @@
         "resolveJsonModule": true
     },
     "include": [
-        "./from-docs/*"
+        "./**/*"
     ],
     "exclude": [
         "node_modules",
