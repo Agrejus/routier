@@ -18,17 +18,15 @@ import { Result } from "@routier/core";
 // *	Multi-entry index => We know if its an array already -> indexable + array
 // [A+B]	Compound index => indexable("test", "one") use the same index identifier twice
 
-// const model = s.define("MY_TABLE", {
-//     _id: s.string().key().default((i) => i.createUUID(64), { createUUID }).indexable("test", "one"),
-//     _rev: s.string().identity().indexable("test"),
-//     name: s.string(),
-//     year: s.number(),
-//     date: s.date().default(new Date()).deserialize(w => new Date(w)).serialize(w => w.toISOString())
-// }).modify(w => ({
-//     test: w.computed(w => w._id),
-//     toString: w.function(w => w.date.toISOString()),
-//     documentType: w.computed((_, t) => t).tracked()
-// })).compile();
+const model = s.define("MY_TABLE", {
+    _id: s.string().key().default((i) => i.createUUID(64), { createUUID }).indexable("test", "one"),
+    _rev: s.string().identity().indexable("test"),
+    name: s.string(),
+    year: s.number(),
+    date: s.date().default(new Date()).deserialize(w => new Date(w)).serialize(w => w.toISOString())
+}).modify(w => ({
+    collectionName: w.computed((_, collectionName) => collectionName).tracked()
+})).compile();
 
 // const obj = {
 //     one: faker.number.int({ min: 1, max: 1000 }),

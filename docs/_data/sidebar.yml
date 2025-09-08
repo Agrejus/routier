@@ -99,8 +99,6 @@
           url: /integrations/plugins/built-in-plugins/dexie/
         - title: SQLite Plugin
           url: /integrations/plugins/built-in-plugins/sqlite/
-        - title: Testing Plugin
-          url: /integrations/plugins/built-in-plugins/testing/
     - title: Advanced Plugins
       url: /integrations/plugins/advanced-plugins/
       children:

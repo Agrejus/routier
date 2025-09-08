@@ -31,6 +31,9 @@ nav:
 remote_theme: just-the-docs/just-the-docs
 logo: /assets/routier.svg
 logo_alt: Routier
+aux_links: {}
+just_the_docs:
+  show_navbar_logo: true
 markdown: kramdown
 highlighter: rouge
 

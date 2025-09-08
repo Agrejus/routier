@@ -23,7 +23,7 @@ Example:
 npm install @routier/memory-plugin
 ```
 
-Other plugins are available (Local Storage, File System, Dexie, SQLite, PouchDB, Testing). See the list at:
+Other plugins are available (Local Storage, File System, Dexie, SQLite, PouchDB). See the list at:
 
 - [Built‑in Plugins]({{ site.baseurl }}/integrations/plugins/built-in-plugins/)
 

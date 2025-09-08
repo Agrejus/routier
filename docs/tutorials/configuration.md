@@ -57,8 +57,7 @@ This guide covers the various configuration options available in Routier.
 
 ### Testing
 
-{% capture snippet_ds5ucf %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_ds5ucf  | strip }}{% endhighlight %}
+For tests, prefer the Memory plugin or mocks/stubs around persistence. The internal testing plugin is not part of the public distribution.
 
 ## Next Steps
 

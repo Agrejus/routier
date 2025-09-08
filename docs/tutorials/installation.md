@@ -41,8 +41,8 @@ npm install routier-plugin-dexie
 # SQLite plugin for SQLite databases
 npm install routier-plugin-sqlite
 
-# Testing plugin for test utilities
-npm install routier-plugin-testing
+# (Optional) Use Memory plugin for testing/mocks
+# No dedicated testing plugin is required
 ```
 
 ## TypeScript Support

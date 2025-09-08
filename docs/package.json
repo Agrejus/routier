@@ -8,7 +8,13 @@
     "docs:watch": "npx @11ty/eleventy --watch"
   },
   "devDependencies": {
-    "@11ty/eleventy": "^2.0.0"
+    "@11ty/eleventy": "^2.0.0",
+    "@routier/datastore": "file://../datastore",
+    "@routier/core": "file://../core",
+    "@routier/react": "file://../react",
+    "@routier/dexie-plugin": "file://../plugins/dexie",
+    "@routier/memory-plugin": "file://../plugins/memory",
+    "@routier/pouchdb-plugin": "file://../plugins/pouchdb"
   },
   "keywords": [
     "routier",

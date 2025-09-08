@@ -1,0 +1,12 @@
+.site-title {
+  display: inline-flex;
+  align-items: center;
+}
+/* Add site title text next to the logo in the sidebar/header */
+.site-title::after {
+  content: " Routier";
+  font-weight: 600;
+  color: var(--body-text-color, #1f2328);
+  margin-left: 8px;
+}
+
