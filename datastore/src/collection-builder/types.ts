@@ -1,6 +1,16 @@
-import { CompiledSchema, SchemaId } from "@routier/core/schema";
+import { CompiledSchema, InferType, SchemaId } from "@routier/core/schema";
 import { Collection } from "../collections/Collection";
 import { CollectionOptions, CollectionPipelines } from "../types";
-import { IDbPlugin } from "@routier/core/plugins";
+import { IDbPlugin, QueryOptionsCollection } from "@routier/core/plugins";
 
-export type CollectionInstanceCreator<TEntity extends {}, TCollection extends Collection<TEntity>> = new (dbPlugin: IDbPlugin, schema: CompiledSchema<TEntity>, options: CollectionOptions, pipelines: CollectionPipelines, schemas: Map<SchemaId, CompiledSchema<any>>) => TCollection;
+export type CollectionInstanceCreator<
+    TEntity extends {},
+    TCollection extends Collection<TEntity>
+> = new (
+    dbPlugin: IDbPlugin,
+    schema: CompiledSchema<TEntity>,
+    options: CollectionOptions,
+    pipelines: CollectionPipelines,
+    schemas: Map<SchemaId, CompiledSchema<any>>,
+    queryOptions: QueryOptionsCollection<InferType<TEntity>>
+) => TCollection;

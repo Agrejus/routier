@@ -1,7 +1,8 @@
-import { TestDataStore, generateData } from 'routier-plugin-testing';
+import { generateData } from '@routier/testing-plugin';
 import { describe, it, expect, afterAll } from 'vitest';
 import { IDbPlugin, uuidv4 } from '@routier/core';
 import { PouchDbPlugin } from '../PouchDbPlugin';
+import { TestDataStore } from './datastore/PouchDbDatastore';
 
 const pluginFactory: () => IDbPlugin = () => new PouchDbPlugin(uuidv4());
 const stores: TestDataStore[] = [];
@@ -13,7 +14,6 @@ const factory = () => {
 
     return store;
 };
-
 
 describe("Comments Tests", () => {
 

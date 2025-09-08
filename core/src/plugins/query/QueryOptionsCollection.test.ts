@@ -61,4 +61,26 @@ describe('QueryOptionsCollection', () => {
         expect(collection.get('take')[0].index).toBe(1);
         expect(collection.get('sort')[0].index).toBe(2);
     });
+
+    it('forEach iterates options in index order across types', () => {
+        const collection = QueryOptionsCollection.EMPTY<any>();
+
+        collection.add('skip', 1);
+        collection.add('take', 2);
+        collection.add('sort', { selector: (i: any) => i.id, direction: QueryOrdering.Descending, propertyName: 'id' });
+        collection.add('skip', 3);
+        collection.add('take', 4);
+
+        const namesInOrder: string[] = [];
+        collection.forEach((opt) => {
+            namesInOrder.push(opt.name);
+        });
+
+        const expectedByIndex = [...collection.items.values()]
+            .flat()
+            .sort((a, b) => a.index - b.index)
+            .map(i => i.option.name);
+
+        expect(namesInOrder).toEqual(expectedByIndex);
+    });
 }); 

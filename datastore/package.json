@@ -46,7 +46,7 @@
   ],
   "description": "Data abstraction layer that routes all database operations to any ORM or data store",
   "peerDependencies": {
-    "routier-core": "^0.0.1"
+    "@routier/core": "^0.0.1"
   },
   "dependencies": {
     "@routier/memory-plugin": "file://../plugins/memory"

@@ -1,42 +1,28 @@
 ---
-title: Collection Modifiers
+title: Schema Modifiers
 layout: default
 parent: Schema
 grand_parent: Concepts
 nav_order: 3
 ---
 
-# Collection Modifiers
+# Schema Modifiers
 
-Collection-level modifiers extend entities with derived values and methods that are not direct stored fields.
+Schema-level modifiers extend entities with derived values and methods that are not direct stored fields.
 
 ## Computed
 
 Create a derived value from the entity. By default, computed values are not persisted.
 
 {% capture snippet_924ccs %}{% include code/from-docs/concepts/schema/modifiers/collection-modifiers/block-1.ts %}{% endcapture %}
-
-```ts
-{
-  {
-    snippet_924ccs | escape;
-  }
-}
-```
+{% highlight ts %}{{ snippet_924ccs  | strip }}{% endhighlight %}
 
 ### Tracked computed
 
 Persist a computed value to the store for indexing/sorting and faster reads.
 
 {% capture snippet_fv4rns %}{% include code/from-docs/concepts/schema/modifiers/collection-modifiers/block-2.ts %}{% endcapture %}
-
-```ts
-{
-  {
-    snippet_fv4rns | escape;
-  }
-}
-```
+{% highlight ts %}{{ snippet_fv4rns  | strip }}{% endhighlight %}
 
 Notes:
 
@@ -48,14 +34,7 @@ Notes:
 Attach non-persisted methods to an entity.
 
 {% capture snippet_nft04r %}{% include code/from-docs/concepts/schema/modifiers/collection-modifiers/block-3.ts %}{% endcapture %}
-
-```ts
-{
-  {
-    snippet_nft04r | escape;
-  }
-}
-```
+{% highlight ts %}{{ snippet_nft04r  | strip }}{% endhighlight %}
 
 Behavior:
 

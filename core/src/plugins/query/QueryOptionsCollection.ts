@@ -1,4 +1,3 @@
-import { PropertyExpression } from "../../expressions";
 import { forEach, isPropertyExpression } from "../../expressions/utils";
 import { QueryOption, QueryOptionName, QueryOptionExecutionTarget, QueryOptionValueMap } from "./types";
 

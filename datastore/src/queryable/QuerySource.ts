@@ -16,11 +16,13 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
     protected isSubScribed: boolean = false;
     protected schema: CompiledSchema<TRoot>;
     protected schemas: SchemaCollection;
+    protected scopedQueryOptions: QueryOptionsCollection<TRoot>;
 
-    constructor(schema: CompiledSchema<TRoot>, schemas: SchemaCollection, options: { queryable?: QuerySource<TRoot, TShape>, dataBridge?: DataBridge<TRoot>, changeTracker?: ChangeTracker<TRoot> }) {
+    constructor(schema: CompiledSchema<TRoot>, schemas: SchemaCollection, scopedQueryOptions: QueryOptionsCollection<TRoot>, options: { queryable?: QuerySource<TRoot, TShape>, dataBridge?: DataBridge<TRoot>, changeTracker?: ChangeTracker<TRoot> }) {
 
         this.schema = schema;
         this.schemas = schemas;
+        this.scopedQueryOptions = scopedQueryOptions;
 
         if (options?.dataBridge != null) {
             this.dataBridge = options.dataBridge;
@@ -41,13 +43,35 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
     }
 
     // Cannot change the root type, it comes from the collection type, only the resulting type (shape)
-    protected create<Shape, TInstance extends QuerySource<TRoot, Shape>>(Instance: new (schema: CompiledSchema<TRoot>, schemas: Map<SchemaId, CompiledSchema<any>>, options: { queryable?: QuerySource<TRoot, Shape>, dataBridge?: DataBridge<TRoot>, changeTracker?: ChangeTracker<TRoot> }) => TInstance) {
-        return new Instance(this.schema, this.schemas, { queryable: this as any });
+    protected create<Shape, TInstance extends QuerySource<TRoot, Shape>>(Instance: new (schema: CompiledSchema<TRoot>, schemas: Map<SchemaId, CompiledSchema<any>>, scopedQueryOptions: QueryOptionsCollection<TRoot>, options: { queryable?: QuerySource<TRoot, Shape>, dataBridge?: DataBridge<TRoot>, changeTracker?: ChangeTracker<TRoot> }) => TInstance) {
+        return new Instance(this.schema, this.schemas, this.scopedQueryOptions, { queryable: this as any });
+    }
+
+    private resolveQueryOptions<T>() {
+        if (this.scopedQueryOptions.items.size === 0) {
+            return this.queryOptions;
+        }
+
+        // Combine scoped options with the built query
+        const resolvedQueryOptions = new QueryOptionsCollection<T>();
+
+        // Add scoped items first
+        this.scopedQueryOptions.forEach(item => {
+            resolvedQueryOptions.add(item.name, item.value);
+        });
+
+        // Add query options last to ensure we perform scoped operations first
+        // in case we have any memory execution targets
+        this.queryOptions.forEach(item => {
+            resolvedQueryOptions.add(item.name, item.value);
+        });
+
+        return resolvedQueryOptions;
     }
 
     protected _remove<U>(done: CallbackResult<never>) {
 
-        const query = new Query<TRoot, TRoot>(this.queryOptions as any, this.schema, false);
+        const query = new Query<TRoot, TRoot>(this.resolveQueryOptions<TRoot>() as any, this.schema, false);
 
         this.changeTracker.removeByQuery(query, null, done);
 
@@ -135,7 +159,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
     protected createQueryPayload<Shape>(): { memoryEvent: DbPluginQueryEvent<TRoot, Shape>, databaseEvent: DbPluginQueryEvent<TRoot, Shape> } {
 
         // send over only the database operations, if there are none its a select all
-        const splitQueryOptions = this.queryOptions.split();
+        const splitQueryOptions = this.resolveQueryOptions<Shape>().split();
 
         return {
             databaseEvent: {

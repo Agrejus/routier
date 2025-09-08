@@ -39,7 +39,7 @@
         - title: Modifiers
           url: /concepts/schema/modifiers/
         - title: Collection Modifiers
-          url: /concepts/schema/modifiers/collection-modifiers.md
+          url: /concepts/schema/modifiers/schema-modifiers.md
         - title: Reference
           url: /concepts/schema/reference.md
         - title: Why Schemas?

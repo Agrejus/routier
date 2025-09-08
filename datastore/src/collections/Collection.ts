@@ -1,4 +1,4 @@
-import { IDbPlugin } from "@routier/core/plugins";
+import { IDbPlugin, QueryOptionsCollection } from "@routier/core/plugins";
 import { CollectionOptions, CollectionPipelines } from "../types";
 import { RemovableCollection } from './RemovableCollection';
 import { CompiledSchema, InferCreateType, InferType } from "@routier/core/schema";
@@ -12,9 +12,10 @@ export class Collection<TEntity extends {}> extends RemovableCollection<TEntity>
         schema: CompiledSchema<TEntity>,
         options: CollectionOptions,
         pipelines: CollectionPipelines,
-        schemas: SchemaCollection
+        schemas: SchemaCollection,
+        queryOptions: QueryOptionsCollection<InferType<TEntity>>
     ) {
-        super(dbPlugin, schema, options, pipelines, schemas);
+        super(dbPlugin, schema, options, pipelines, schemas, queryOptions);
 
         // Bind all public methods to ensure 'this' context is preserved
         this.add = this.add.bind(this);

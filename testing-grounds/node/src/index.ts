@@ -126,7 +126,7 @@ class Ctx extends DataStore {
     }
 
     // test = this.collection(model).create();
-    nested = this.collection(nested).create();
+    nested = this.collection(nested).filter(x => x.documentType).create();
     comments = this.collection(commentsSchema).create();
 }
 
