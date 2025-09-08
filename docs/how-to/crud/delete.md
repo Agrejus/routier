@@ -29,131 +29,131 @@ Routier's delete operations feature:
 ### Removing Single Entities
 
 {% capture snippet_7mnuqn %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_7mnuqn | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_7mnuqn  | strip }}{% endhighlight %}
 
 ### Removing Multiple Entities
 
 {% capture snippet_i4h7cy %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_i4h7cy | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_i4h7cy  | strip }}{% endhighlight %}
 
 ### Removing with Callbacks
 
 {% capture snippet_o2pl49 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_o2pl49 | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_o2pl49  | strip }}{% endhighlight %}
 
 ## Query-Based Deletion
 
 ### Remove by Query
 
 {% capture snippet_jowtyu %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_jowtyu | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_jowtyu  | strip }}{% endhighlight %}
 
 ### Remove with Complex Criteria
 
 {% capture snippet_ntn7jz %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_ntn7jz | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_ntn7jz  | strip }}{% endhighlight %}
 
 ### Remove with Parameters
 
 {% capture snippet_fexf0e %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_fexf0e | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_fexf0e  | strip }}{% endhighlight %}
 
 ## Batch Deletion Patterns
 
 ### Remove by Status
 
 {% capture snippet_khspbq %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_khspbq | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_khspbq  | strip }}{% endhighlight %}
 
 ### Remove with Confirmation
 
 {% capture snippet_pjopln %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_pjopln | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_pjopln  | strip }}{% endhighlight %}
 
 ### Remove with Backup
 
 {% capture snippet_kdmz4x %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_kdmz4x | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_kdmz4x  | strip }}{% endhighlight %}
 
 ## Advanced Deletion Patterns
 
 ### Cascading Deletion
 
 {% capture snippet_9c2sj8 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_9c2sj8 | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_9c2sj8  | strip }}{% endhighlight %}
 
 ### Soft Deletion
 
 {% capture snippet_p26y1b %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_p26y1b | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_p26y1b  | strip }}{% endhighlight %}
 
 ### Conditional Deletion
 
 {% capture snippet_2s8ypq %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_2s8ypq | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_2s8ypq  | strip }}{% endhighlight %}
 
 ## Change Management for Deletions
 
 ### Checking Deletion Changes
 
 {% capture snippet_56jqdx %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_56jqdx | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_56jqdx  | strip }}{% endhighlight %}
 
 ### Saving Deletion Changes
 
 {% capture snippet_ca6a7p %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_ca6a7p | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_ca6a7p  | strip }}{% endhighlight %}
 
 ### Rolling Back Deletions
 
 {% capture snippet_nlb686 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_nlb686 | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_nlb686  | strip }}{% endhighlight %}
 
 ## Performance Considerations
 
 ### Batch Deletion
 
 {% capture snippet_f10lqn %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_f10lqn | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_f10lqn  | strip }}{% endhighlight %}
 
 ### Large Dataset Deletion
 
 {% capture snippet_bdc0uw %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_bdc0uw | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_bdc0uw  | strip }}{% endhighlight %}
 
 ## Error Handling
 
 ### Safe Deletion
 
 {% capture snippet_kx3x6d %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_kx3x6d | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_kx3x6d  | strip }}{% endhighlight %}
 
 ### Deletion with Recovery
 
 {% capture snippet_ju9hps %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_ju9hps | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_ju9hps  | strip }}{% endhighlight %}
 
 ## Best Practices
 
 ### 1. **Confirm Deletions for Important Data**
 
 {% capture snippet_3o6p0t %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_3o6p0t | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_3o6p0t  | strip }}{% endhighlight %}
 
 ### 2. **Use Appropriate Deletion Methods**
 
 {% capture snippet_vewmxn %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_vewmxn | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_vewmxn  | strip }}{% endhighlight %}
 
 ### 3. **Handle Related Data Appropriately**
 
 {% capture snippet_acizfz %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_acizfz | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_acizfz  | strip }}{% endhighlight %}
 
 ### 4. **Log Deletion Operations**
 
 {% capture snippet_gxg1tw %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_gxg1tw | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_gxg1tw  | strip }}{% endhighlight %}
 
 ## Next Steps
 

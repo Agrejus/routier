@@ -40,7 +40,7 @@ Syncing is configured however the user wants within the specific database plugin
 {% capture snippet_835yxq %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_835yxq | escape }}
+{{ snippet_835yxq  | strip }}
 ```
 
 
@@ -57,7 +57,7 @@ Most sync implementations need some way to connect to a remote data source:
 {% capture snippet_gxg67t %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_gxg67t | escape }}
+{{ snippet_gxg67t  | strip }}
 ```
 
 
@@ -70,7 +70,7 @@ Common sync behaviors that plugins might implement:
 {% capture snippet_8rwuvm %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_8rwuvm | escape }}
+{{ snippet_8rwuvm  | strip }}
 ```
 
 
@@ -83,7 +83,7 @@ Many sync implementations provide callbacks for sync events:
 {% capture snippet_nrw1v6 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_nrw1v6 | escape }}
+{{ snippet_nrw1v6  | strip }}
 ```
 
 
@@ -136,7 +136,7 @@ Here's one example of how you might set up a synced data store with PouchDB. Oth
 {% capture snippet_c0vihy %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_c0vihy | escape }}
+{{ snippet_c0vihy  | strip }}
 ```
 
 
@@ -149,7 +149,7 @@ When conflicts occur (the same data is modified in multiple places), your plugin
 {% capture snippet_zq3fq2 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_zq3fq2 | escape }}
+{{ snippet_zq3fq2  | strip }}
 ```
 
 
@@ -164,7 +164,7 @@ When conflicts occur (the same data is modified in multiple places), your plugin
 {% capture snippet_5mub03 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_5mub03 | escape }}
+{{ snippet_5mub03  | strip }}
 ```
 
 
@@ -175,7 +175,7 @@ When conflicts occur (the same data is modified in multiple places), your plugin
 {% capture snippet_cu2b4f %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_cu2b4f | escape }}
+{{ snippet_cu2b4f  | strip }}
 ```
 
 
@@ -186,7 +186,7 @@ When conflicts occur (the same data is modified in multiple places), your plugin
 {% capture snippet_eg7aet %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_eg7aet | escape }}
+{{ snippet_eg7aet  | strip }}
 ```
 
 
@@ -201,7 +201,7 @@ You can monitor sync status through your plugin's event callbacks:
 {% capture snippet_0nto2h %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_0nto2h | escape }}
+{{ snippet_0nto2h  | strip }}
 ```
 
 
@@ -214,7 +214,7 @@ Enable detailed logging for troubleshooting (if your plugin supports it):
 {% capture snippet_98y1i5 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_98y1i5 | escape }}
+{{ snippet_98y1i5  | strip }}
 ```
 
 

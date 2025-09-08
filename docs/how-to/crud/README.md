@@ -25,19 +25,19 @@ CRUD operations in Routier work through a **DataStore** class that you inherit f
 **Important: Changes made to entities (including adds, updates, and deletes) are NOT automatically persisted to the database. You must explicitly call `saveChanges()` or `saveChangesAsync()` to persist any changes.**
 
 {% capture snippet_inlt8l %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_inlt8l | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_inlt8l  | strip }}{% endhighlight %}
 
 ## Creating a DataStore
 
 ### Basic Setup
 
 {% capture snippet_c9yalp %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_c9yalp | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_c9yalp  | strip }}{% endhighlight %}
 
 ### Using Different Plugins
 
 {% capture snippet_9rqdgd %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_9rqdgd | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_9rqdgd  | strip }}{% endhighlight %}
 
 ## CRUD Operations
 
@@ -49,46 +49,46 @@ Routier uses a **discriminated union result pattern** for callback-based operati
 - **Error**: `{ ok: "error", error: any }`
 
 {% capture snippet_pvi8qq %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_pvi8qq | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_pvi8qq  | strip }}{% endhighlight %}
 
 ### Create (Add)
 
 #### Adding Single Entities
 
 {% capture snippet_rpjfdj %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_rpjfdj | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_rpjfdj  | strip }}{% endhighlight %}
 
 #### Adding Multiple Entities
 
 {% capture snippet_hum0xd %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_hum0xd | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_hum0xd  | strip }}{% endhighlight %}
 
 #### Adding with Callbacks
 
 {% capture snippet_5remab %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_5remab | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_5remab  | strip }}{% endhighlight %}
 
 ### Read (Query)
 
 #### Basic Queries
 
 {% capture snippet_plmliu %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_plmliu | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_plmliu  | strip }}{% endhighlight %}
 
 #### Filtered Queries
 
 {% capture snippet_5ykcgs %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_5ykcgs | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_5ykcgs  | strip }}{% endhighlight %}
 
 #### Sorting and Pagination
 
 {% capture snippet_orluis %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_orluis | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_orluis  | strip }}{% endhighlight %}
 
 #### Aggregation
 
 {% capture snippet_o89v2i %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_o89v2i | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_o89v2i  | strip }}{% endhighlight %}
 
 ### Update
 
@@ -97,39 +97,39 @@ Routier uses a **discriminated union result pattern** for callback-based operati
 The key feature of Routier is that entities returned from queries are **proxy objects** that automatically track changes:
 
 {% capture snippet_odwrsz %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_odwrsz | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_odwrsz  | strip }}{% endhighlight %}
 
 #### Batch Updates
 
 {% capture snippet_ajq9ip %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_ajq9ip | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_ajq9ip  | strip }}{% endhighlight %}
 
 #### Update with Callbacks
 
 {% capture snippet_niq4xm %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_niq4xm | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_niq4xm  | strip }}{% endhighlight %}
 
 ### Delete (Remove)
 
 #### Removing Single Entities
 
 {% capture snippet_461037 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_461037 | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_461037  | strip }}{% endhighlight %}
 
 #### Removing Multiple Entities
 
 {% capture snippet_z4pjbb %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_z4pjbb | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_z4pjbb  | strip }}{% endhighlight %}
 
 #### Removing by Query
 
 {% capture snippet_ilub79 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_ilub79 | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_ilub79  | strip }}{% endhighlight %}
 
 #### Remove with Callbacks
 
 {% capture snippet_ay5tzu %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_ay5tzu | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_ay5tzu  | strip }}{% endhighlight %}
 
 ## Change Tracking and Persistence
 
@@ -144,53 +144,53 @@ Routier uses **proxy objects** to automatically track changes to entities:
 5. **Changes are NOT persisted until saveChanges() is called**
 
 {% capture snippet_nm1j0m %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_nm1j0m | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_nm1j0m  | strip }}{% endhighlight %}
 
 ### Checking for Changes
 
 {% capture snippet_bru5vp %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_bru5vp | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_bru5vp  | strip }}{% endhighlight %}
 
 ### Saving Changes
 
 **Important: Changes are NOT automatically persisted to the database. You must explicitly call `saveChanges()` or `saveChangesAsync()` to persist any changes.**
 
 {% capture snippet_0of7vx %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_0of7vx | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_0of7vx  | strip }}{% endhighlight %}
 
 ## Complete CRUD Example
 
 {% capture snippet_9k4u8w %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_9k4u8w | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_9k4u8w  | strip }}{% endhighlight %}
 
 ## Best Practices
 
 ### 1. **Use Async Methods for Simplicity**
 
 {% capture snippet_u6y5qk %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_u6y5qk | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_u6y5qk  | strip }}{% endhighlight %}
 
 ### 2. **Leverage Change Tracking**
 
 {% capture snippet_vjsaav %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_vjsaav | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_vjsaav  | strip }}{% endhighlight %}
 
 ### 3. **Batch Operations When Possible**
 
 {% capture snippet_heqfkp %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_heqfkp | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_heqfkp  | strip }}{% endhighlight %}
 
 ### 4. **Save Changes Strategically**
 
 **Critical: You must call `saveChanges()` or `saveChangesAsync()` to persist any changes to the database.**
 
 {% capture snippet_firi5i %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_firi5i | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_firi5i  | strip }}{% endhighlight %}
 
 ### 5. **Handle Errors Gracefully**
 
 {% capture snippet_s9q7m4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_s9q7m4 | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_s9q7m4  | strip }}{% endhighlight %}
 
 ## Next Steps
 

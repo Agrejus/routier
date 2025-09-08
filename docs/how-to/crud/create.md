@@ -29,104 +29,104 @@ When you create entities in Routier:
 ### Adding Single Entities
 
 {% capture snippet_vvzyz2 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_vvzyz2 | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_vvzyz2  | strip }}{% endhighlight %}
 
 ### Adding Multiple Entities
 
 {% capture snippet_gsb9ng %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_gsb9ng | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_gsb9ng  | strip }}{% endhighlight %}
 
 ### Adding with Callbacks
 
 **Note: Callback-based operations use a discriminated union result pattern. The callback receives a single `result` parameter that can be either `{ ok: "success", data: T }` or `{ ok: "error", error: any }`.**
 
 {% capture snippet_lyyye4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_lyyye4 | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_lyyye4  | strip }}{% endhighlight %}
 
 ## Schema-Driven Creation
 
 ### Automatic Default Values
 
 {% capture snippet_yg8xxi %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_yg8xxi | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_yg8xxi  | strip }}{% endhighlight %}
 
 ### Identity Field Generation
 
 {% capture snippet_hgf9sv %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_hgf9sv | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_hgf9sv  | strip }}{% endhighlight %}
 
 ### Nested Object Creation
 
 {% capture snippet_knkpix %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_knkpix | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_knkpix  | strip }}{% endhighlight %}
 
 ## Validation and Error Handling
 
 ### Schema Validation
 
 {% capture snippet_y4xs72 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_y4xs72 | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_y4xs72  | strip }}{% endhighlight %}
 
 ### Type Validation
 
 {% capture snippet_jv9ahy %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_jv9ahy | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_jv9ahy  | strip }}{% endhighlight %}
 
 ### Constraint Validation
 
 {% capture snippet_0b1hfq %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_0b1hfq | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_0b1hfq  | strip }}{% endhighlight %}
 
 ## Advanced Create Patterns
 
 ### Conditional Creation
 
 {% capture snippet_cnidll %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_cnidll | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_cnidll  | strip }}{% endhighlight %}
 
 ### Batch Creation with Validation
 
 {% capture snippet_xxyrbc %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_xxyrbc | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_xxyrbc  | strip }}{% endhighlight %}
 
 ### Creation with Computed Fields
 
 {% capture snippet_4705gv %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_4705gv | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_4705gv  | strip }}{% endhighlight %}
 
 ## Performance Considerations
 
 ### Batch Creation
 
 {% capture snippet_k1ho3m %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_k1ho3m | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_k1ho3m  | strip }}{% endhighlight %}
 
 ### Memory Management
 
 {% capture snippet_ltnx8g %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_ltnx8g | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_ltnx8g  | strip }}{% endhighlight %}
 
 ## Best Practices
 
 ### 1. **Validate Data Before Creation**
 
 {% capture snippet_u8ea3c %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_u8ea3c | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_u8ea3c  | strip }}{% endhighlight %}
 
 ### 2. **Use Appropriate Default Values**
 
 {% capture snippet_fc5ex3 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_fc5ex3 | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_fc5ex3  | strip }}{% endhighlight %}
 
 ### 3. **Handle Errors Gracefully**
 
 {% capture snippet_uf275q %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_uf275q | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_uf275q  | strip }}{% endhighlight %}
 
 ### 4. **Leverage Schema Features**
 
 {% capture snippet_n3llsb %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_n3llsb | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_n3llsb  | strip }}{% endhighlight %}
 
 ## Next Steps
 

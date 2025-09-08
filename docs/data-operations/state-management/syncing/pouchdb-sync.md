@@ -29,7 +29,7 @@ Enable syncing by adding the `sync` configuration to your PouchDB plugin:
 {% capture snippet_76qv3x %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_76qv3x | escape }}
+{{ snippet_76qv3x  | strip }}
 ```
 
 
@@ -44,7 +44,7 @@ The URL to your remote CouchDB-compatible database:
 {% capture snippet_d9e51x %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_d9e51x | escape }}
+{{ snippet_d9e51x  | strip }}
 ```
 
 
@@ -57,7 +57,7 @@ Controls whether synchronization is continuous or one-time:
 {% capture snippet_usu4cz %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_usu4cz | escape }}
+{{ snippet_usu4cz  | strip }}
 ```
 
 
@@ -72,7 +72,7 @@ Enables automatic retry with exponential backoff:
 {% capture snippet_9eeast %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_9eeast | escape }}
+{{ snippet_9eeast  | strip }}
 ```
 
 
@@ -87,7 +87,7 @@ Callback function that receives sync events and schema information:
 {% capture snippet_7afs59 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_7afs59 | escape }}
+{{ snippet_7afs59  | strip }}
 ```
 
 
@@ -102,7 +102,7 @@ When you create a PouchDB plugin with sync enabled, the system automatically:
 {% capture snippet_nrcx9t %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_nrcx9t | escape }}
+{{ snippet_nrcx9t  | strip }}
 ```
 
 
@@ -115,7 +115,7 @@ The plugin implements intelligent retry with exponential backoff:
 {% capture snippet_orfro9 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_orfro9 | escape }}
+{{ snippet_orfro9  | strip }}
 ```
 
 
@@ -132,7 +132,7 @@ Sync events are automatically routed to your `onChange` callback:
 {% capture snippet_vgs66c %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_vgs66c | escape }}
+{{ snippet_vgs66c  | strip }}
 ```
 
 
@@ -145,7 +145,7 @@ Here's a full example of setting up PouchDB syncing with Routier:
 {% capture snippet_pqvvto %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_pqvvto | escape }}
+{{ snippet_pqvvto  | strip }}
 ```
 
 
@@ -158,7 +158,7 @@ PouchDB automatically detects conflicts when the same document is modified in mu
 {% capture snippet_07xx3a %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_07xx3a | escape }}
+{{ snippet_07xx3a  | strip }}
 ```
 
 
@@ -173,7 +173,7 @@ You can pass additional PouchDB sync options:
 {% capture snippet_vdqpgh %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_vdqpgh | escape }}
+{{ snippet_vdqpgh  | strip }}
 ```
 
 
@@ -186,7 +186,7 @@ Sync with multiple remote databases:
 {% capture snippet_uzg7vy %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_uzg7vy | escape }}
+{{ snippet_uzg7vy  | strip }}
 ```
 
 
@@ -201,7 +201,7 @@ Track sync progress and status:
 {% capture snippet_ea1k9s %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_ea1k9s | escape }}
+{{ snippet_ea1k9s  | strip }}
 ```
 
 
@@ -214,7 +214,7 @@ Handle sync errors gracefully:
 {% capture snippet_is7ga0 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_is7ga0 | escape }}
+{{ snippet_is7ga0  | strip }}
 ```
 
 
@@ -227,7 +227,7 @@ Enable detailed logging for troubleshooting:
 {% capture snippet_mlbki7 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_mlbki7 | escape }}
+{{ snippet_mlbki7  | strip }}
 ```
 
 
@@ -242,7 +242,7 @@ Only sync necessary documents:
 {% capture snippet_0q66hb %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_0q66hb | escape }}
+{{ snippet_0q66hb  | strip }}
 ```
 
 
@@ -255,7 +255,7 @@ Optimize sync performance with batch operations:
 {% capture snippet_a3geum %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_a3geum | escape }}
+{{ snippet_a3geum  | strip }}
 ```
 
 
@@ -268,7 +268,7 @@ Optimize sync performance with batch operations:
 {% capture snippet_9z23g5 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_9z23g5 | escape }}
+{{ snippet_9z23g5  | strip }}
 ```
 
 
@@ -279,7 +279,7 @@ Optimize sync performance with batch operations:
 {% capture snippet_si26s4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_si26s4 | escape }}
+{{ snippet_si26s4  | strip }}
 ```
 
 
@@ -290,7 +290,7 @@ Optimize sync performance with batch operations:
 {% capture snippet_6pkm8p %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_6pkm8p | escape }}
+{{ snippet_6pkm8p  | strip }}
 ```
 
 
@@ -321,7 +321,7 @@ Optimize sync performance with batch operations:
 {% capture snippet_6uhw2t %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_6uhw2t | escape }}
+{{ snippet_6uhw2t  | strip }}
 ```
 
 

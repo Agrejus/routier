@@ -13,7 +13,7 @@ This document provides a comprehensive reference for the Routier schema builder,
 ## Schema Builder Entry Point
 
 {% capture snippet_8cm52t %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_8cm52t | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_8cm52t  | strip }}{% endhighlight %}
 
 ## Available Types
 
@@ -31,7 +31,7 @@ This document provides a comprehensive reference for the Routier schema builder,
 ### Type Examples
 
 {% capture snippet_gfez9z %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_gfez9z | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_gfez9z  | strip }}{% endhighlight %}
 
 ## Available Modifiers
 
@@ -63,77 +63,77 @@ This document provides a comprehensive reference for the Routier schema builder,
 Makes a property optional (can be undefined).
 
 {% capture snippet_8dsdf8 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_8dsdf8 | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_8dsdf8  | strip }}{% endhighlight %}
 
 ### `.nullable()`
 
 Makes a property nullable (can be null).
 
 {% capture snippet_k2jdpf %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_k2jdpf | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_k2jdpf  | strip }}{% endhighlight %}
 
 ### `.default(value | function)`
 
 Sets a default value for the property. Can accept either a direct value or a function that returns a value.
 
 {% capture snippet_90gw2s %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_90gw2s | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_90gw2s  | strip }}{% endhighlight %}
 
 ### `.readonly()`
 
 Makes a property read-only after creation.
 
 {% capture snippet_kgnh25 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_kgnh25 | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_kgnh25  | strip }}{% endhighlight %}
 
 ### `.deserialize(fn)`
 
 Custom deserialization function.
 
 {% capture snippet_okmtsl %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_okmtsl | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_okmtsl  | strip }}{% endhighlight %}
 
 ### `.serialize(fn)`
 
 Custom serialization function.
 
 {% capture snippet_he5sbw %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_he5sbw | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_he5sbw  | strip }}{% endhighlight %}
 
 ### `.array()`
 
 Converts the property to an array type.
 
 {% capture snippet_qxhxtr %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_qxhxtr | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_qxhxtr  | strip }}{% endhighlight %}
 
 ### `.index(...names)`
 
 Creates database indexes for efficient querying.
 
 {% capture snippet_5ohv3o %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_5ohv3o | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_5ohv3o  | strip }}{% endhighlight %}
 
 ### `.key()`
 
 Marks a property as a primary key.
 
 {% capture snippet_m3j2uu %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_m3j2uu | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_m3j2uu  | strip }}{% endhighlight %}
 
 ### `.identity()`
 
 Automatically generates values for the property.
 
 {% capture snippet_h8ny08 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_h8ny08 | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_h8ny08  | strip }}{% endhighlight %}
 
 ### `.distinct()`
 
 Ensures the property value is unique across all entities.
 
 {% capture snippet_62tgt9 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_62tgt9 | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_62tgt9  | strip }}{% endhighlight %}
 
 ## Modifier Combinations
 
@@ -142,60 +142,60 @@ Ensures the property value is unique across all entities.
 Modifiers can be chained together in various combinations:
 
 {% capture snippet_4rg6wf %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_4rg6wf | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_4rg6wf  | strip }}{% endhighlight %}
 
 ### Mutually Exclusive Modifiers
 
 Some modifiers cannot be used together:
 
 {% capture snippet_6a74o4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_6a74o4 | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_6a74o4  | strip }}{% endhighlight %}
 
 ## Default Value Examples
 
 ### Direct Values vs Functions
 
 {% capture snippet_6p78eb %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_6p78eb | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_6p78eb  | strip }}{% endhighlight %}
 
 ## Complete Schema Examples
 
 ### Basic User Schema
 
 {% capture snippet_96r2ir %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_96r2ir | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_96r2ir  | strip }}{% endhighlight %}
 
 ### Complex Product Schema
 
 {% capture snippet_apywbi %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_apywbi | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_apywbi  | strip }}{% endhighlight %}
 
 ### Nested Schema Example
 
 {% capture snippet_ypqptf %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_ypqptf | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_ypqptf  | strip }}{% endhighlight %}
 
 ## Best Practices
 
 ### 1. **Use Literal Types for Constraints**
 
 {% capture snippet_iymov7 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_iymov7 | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_iymov7  | strip }}{% endhighlight %}
 
 ### 2. **Chain Modifiers Logically**
 
 {% capture snippet_e5lrx4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_e5lrx4 | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_e5lrx4  | strip }}{% endhighlight %}
 
 ### 3. **Use Appropriate Modifiers**
 
 {% capture snippet_rn5a2b %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_rn5a2b | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_rn5a2b  | strip }}{% endhighlight %}
 
 ### 4. **Leverage Type Safety**
 
 {% capture snippet_mzv6in %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_mzv6in | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_mzv6in  | strip }}{% endhighlight %}
 
 ## Type Compatibility Matrix
 

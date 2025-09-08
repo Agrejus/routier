@@ -24,7 +24,7 @@ Routier is a reactive data toolkit for building fast, local-first apps. It provi
 {% capture snippet_qcxtd6 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
 ```ts
-{{ snippet_qcxtd6 | escape }}
+{{ snippet_qcxtd6  | strip }}
 ```
 
 

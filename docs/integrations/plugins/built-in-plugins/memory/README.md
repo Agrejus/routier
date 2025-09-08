@@ -23,21 +23,21 @@ npm install routier-plugin-memory
 ## Basic Usage
 
 {% capture snippet_j93uk4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_j93uk4 | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_j93uk4  | strip }}{% endhighlight %}
 
 ## Configuration
 
 ### Constructor Parameters
 
 {% capture snippet_wmjaxi %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_wmjaxi | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_wmjaxi  | strip }}{% endhighlight %}
 
 ### Database Name
 
 The database name is used to namespace your data and should be unique within your application:
 
 {% capture snippet_t0gugq %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_t0gugq | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_t0gugq  | strip }}{% endhighlight %}
 
 ## Performance Characteristics
 
@@ -59,24 +59,24 @@ The database name is used to namespace your data and should be unique within you
 ### Development and Testing
 
 {% capture snippet_bjnyoi %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_bjnyoi | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_bjnyoi  | strip }}{% endhighlight %}
 
 ### High-Performance Applications
 
 {% capture snippet_e67add %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_e67add | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_e67add  | strip }}{% endhighlight %}
 
 ### Offline-First with Sync
 
 {% capture snippet_1e3k2w %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_1e3k2w | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_1e3k2w  | strip }}{% endhighlight %}
 
 ## API Reference
 
 ### Constructor
 
 {% capture snippet_41jr8p %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_41jr8p | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_41jr8p  | strip }}{% endhighlight %}
 
 ### Properties
 

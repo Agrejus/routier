@@ -13,7 +13,7 @@ You can extend a generated collection to add domain-specific helpers while prese
 ### Example
 
 {% capture snippet_4yc1wf %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_4yc1wf | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_4yc1wf  | strip }}{% endhighlight %}
 
 ### Notes
 

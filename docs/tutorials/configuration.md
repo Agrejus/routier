@@ -14,51 +14,51 @@ This guide covers the various configuration options available in Routier.
 ### Memory Plugin
 
 {% capture snippet_imbwmu %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_imbwmu | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_imbwmu  | strip }}{% endhighlight %}
 
 ### Local Storage Plugin
 
 {% capture snippet_8h6l29 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_8h6l29 | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_8h6l29  | strip }}{% endhighlight %}
 
 ### File System Plugin
 
 {% capture snippet_jyjuyw %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_jyjuyw | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_jyjuyw  | strip }}{% endhighlight %}
 
 ### PouchDB Plugin
 
 {% capture snippet_f44scf %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_f44scf | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_f44scf  | strip }}{% endhighlight %}
 
 ### Dexie Plugin
 
 {% capture snippet_pzlbnl %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_pzlbnl | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_pzlbnl  | strip }}{% endhighlight %}
 
 ## Advanced Configuration
 
 ### Plugin Composition
 
 {% capture snippet_akaglm %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_akaglm | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_akaglm  | strip }}{% endhighlight %}
 
 ### Custom Context Configuration
 
 {% capture snippet_6q0ij4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_6q0ij4 | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_6q0ij4  | strip }}{% endhighlight %}
 
 ## Environment-Specific Configuration
 
 ### Development
 
 {% capture snippet_8s640w %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_8s640w | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_8s640w  | strip }}{% endhighlight %}
 
 ### Testing
 
 {% capture snippet_ds5ucf %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_ds5ucf | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_ds5ucf  | strip }}{% endhighlight %}
 
 ## Next Steps
 

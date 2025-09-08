@@ -13,49 +13,49 @@ Routier provides a natural, fluent query API that makes data retrieval intuitive
 ## Basic Querying
 
 {% capture snippet_cohq0u %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_cohq0u | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_cohq0u  | strip }}{% endhighlight %}
 
 Queries always start from a collection:
 
 {% capture snippet_25zqea %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_25zqea | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_25zqea  | strip }}{% endhighlight %}
 
 ## Filtering with Where
 
 {% capture snippet_odc3mc %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_odc3mc | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_odc3mc  | strip }}{% endhighlight %}
 
 ### Parameterized queries
 
 When compiling to a JavaScript filter function, free variables cannot be evaluated. Inject values via parameters to avoid full collection scans:
 
 {% capture snippet_yh53h9 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_yh53h9 | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_yh53h9  | strip }}{% endhighlight %}
 
 ## Sorting
 
 {% capture snippet_9ex9mv %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_9ex9mv | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_9ex9mv  | strip }}{% endhighlight %}
 
 ## Mapping and Transformation
 
 {% capture snippet_biz3yl %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_biz3yl | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_biz3yl  | strip }}{% endhighlight %}
 
 ## Aggregation
 
 {% capture snippet_2o2ifg %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_2o2ifg | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_2o2ifg  | strip }}{% endhighlight %}
 
 ## Pagination
 
 {% capture snippet_ia3pbi %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_ia3pbi | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_ia3pbi  | strip }}{% endhighlight %}
 
 ## Chaining Queries
 
 {% capture snippet_sxpk65 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_sxpk65 | escape }}{% endhighlight %}
+{% highlight ts %}{{ snippet_sxpk65  | strip }}{% endhighlight %}
 
 ## Next Steps
 
