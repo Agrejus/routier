@@ -7,6 +7,7 @@ import { EntityChangeType, EntityUpdateInfo, IQuery } from "@routier/core/plugin
 import { SchemaPersistResult, TagCollection } from "@routier/core/collections";
 import { GenericFunction } from "@routier/core/types";
 import { CallbackResult, Result } from "@routier/core/results";
+import { assertIsNotNull } from "@routier/core";
 
 
 export class ChangeTracker<TEntity extends {}> {
@@ -77,6 +78,8 @@ export class ChangeTracker<TEntity extends {}> {
         for (let i = 0, length = adds.length; i < length; i++) {
             const add = adds[i];
             const found = this.additions.get(add);
+
+            assertIsNotNull(add, "Cannot find internal addition, please make sure the entire document is returned from the plugin for adds");
 
             // need to deserialize the add in case there are any dates on it
             const deserializedAdd = this.schema.deserialize(add);

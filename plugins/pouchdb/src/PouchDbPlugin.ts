@@ -278,7 +278,6 @@ export class PouchDbPlugin implements IDbPlugin {
             try {
 
                 db.bulkDocs([
-                    ...adds.map(x => x.entity),
                     ...removes.map(x => ({ _id: x.entity._id, _rev: x.entity._rev, _deleted: true })),
                     ...updates.map(x => x.change.entity)
                 ], null, (error, response) => {
@@ -314,24 +313,15 @@ export class PouchDbPlugin implements IDbPlugin {
                         const updatesIndex = updates.findIndex(x => x.change.entity._id === doc.id);
 
                         if (updatesIndex !== -1) {
-                            const { schemaId } = updates[updatesIndex];
-                            const schemaResult = result.get(schemaId);
+                            // Optimistically assume that the update worked as expected
+                            const update = updates[updatesIndex];
 
-                            assertIsNotNull(schemaResult);
+                            const changesResult = result.get(update.schemaId);
 
-                            schemaResult.updates.push(doc as any);
-                            continue;
-                        }
+                            // Set the new rev
+                            (update.change.entity as UnknownRecord)._rev = doc.rev;
 
-                        const addsIndex = adds.findIndex(x => x.entity._id === doc.id);
-
-                        if (addsIndex !== -1) {
-                            const { schemaId } = adds[addsIndex];
-                            const schemaResult = result.get(schemaId);
-
-                            assertIsNotNull(schemaResult);
-
-                            schemaResult.adds.push(doc as any);
+                            changesResult.updates.push(update.change.entity);
                             continue;
                         }
 
@@ -339,8 +329,80 @@ export class PouchDbPlugin implements IDbPlugin {
                         return;
                     }
 
-                    d(Result.success());
+                    const pipeline = new WorkPipeline();
 
+                    for (let i = 0, length = nonIdentitySchemaIds.length; i < length; i++) {
+                        const schemaId = nonIdentitySchemaIds[i];
+                        pipeline.pipe((d) => {
+                            const schemaAdds = adds.filter(x => x.schemaId === schemaId).map(x => x.entity);
+                            const schemaResult = result.get(schemaId);
+
+                            assertIsNotNull(schemaResult);
+                            assertIsNotNull(schemaAdds);
+
+                            db.bulkDocs([...schemaAdds], null, (error, response) => {
+
+                                if (error) {
+                                    d(Result.error(error));
+                                    return;
+                                }
+
+                                const ids = response.map(x => x.id);
+
+                                for (let i = 0, length = response.length; i < length; i++) {
+
+                                    const doc = response[i];
+
+                                    if ("error" in doc) {
+
+                                        const reason = doc.reason ?? doc.error;
+
+                                        d(Result.error(reason));
+                                        return;
+                                    }
+
+                                    if ("id" in doc && "ok" in doc) {
+                                        ids.push(doc.id);
+                                    } else {
+                                        d(Result.error(doc.error));
+                                        return;
+                                    }
+                                }
+
+                                this._bulkGetAdditions(ids, (bulkGetResponse) => {
+
+                                    if (bulkGetResponse.ok !== Result.SUCCESS) {
+                                        d(Result.error(bulkGetResponse));
+                                        return;
+                                    }
+
+                                    for (let i = 0, length = bulkGetResponse.data.results.length; i < length; i++) {
+                                        const docs = bulkGetResponse.data.results[i].docs;
+
+                                        if (docs.length === 1) {
+                                            const doc = docs[0];
+
+                                            if ("ok" in doc) {
+                                                schemaResult.adds.push(doc.ok as any);
+                                            }
+                                        }
+                                    }
+
+                                    d(Result.success());
+                                });
+                            });
+
+                        });
+                    }
+
+                    pipeline.filter((r) => {
+                        if (r.ok !== Result.SUCCESS) {
+                            d(r);
+                            return;
+                        }
+
+                        d(Result.success());
+                    });
                 });
             } catch (e) {
                 d(Result.error(e));
@@ -735,6 +797,22 @@ export class PouchDbPlugin implements IDbPlugin {
     private _queryWithFilters<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<TShape>) {
         const translator = new PouchDbTranslator<TEntity, TShape>(event.operation);
         this._doWork((w, d) => {
+
+            if (this._name.startsWith("http")) {
+                // Cannot query remote databases using translator.matches, fallback to alldocs
+                // Does not throw, will fail on the remote server
+                w.allDocs({
+                    include_docs: true
+                }).then(response => {
+                    const data = response.rows.map(w => w.doc);
+                    const translated = translator.translate(data);
+                    d(Result.success(translated));
+                }).catch(error => {
+                    d(Result.error(error));
+                });
+                return;
+            }
+
             w.query<{}, any>((doc, emit) => {
                 if (typeof doc === "object" && "_id" in doc && translator.matches(doc)) {
                     emit(doc._id, doc);
@@ -750,6 +828,7 @@ export class PouchDbPlugin implements IDbPlugin {
                 const translated = translator.translate(data);
                 d(Result.success(translated));
             });
+
         }, done);
     }
 

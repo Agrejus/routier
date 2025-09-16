@@ -1,6 +1,7 @@
 import { DefaultValue, SchemaModifiers, SchemaTypes } from "../../types";
 import { SchemaBase } from "../base/SchemaBase";
 import { SchemaDefault } from "../modifiers/SchemaDefault";
+import { SchemaFrom } from "../modifiers/SchemaFrom";
 import { SchemaIdentity } from "../modifiers/SchemaIdentity";
 import { SchemaNullable } from "../modifiers/SchemaNullable";
 import { SchemaOptional } from "../modifiers/SchemaOptional";
@@ -17,6 +18,10 @@ export class SchemaObject<T extends {}, TModifiers extends SchemaModifiers> exte
         this.instance = schema;
     }
 
+    from(propertyName: string) {
+        return new SchemaFrom<T, TModifiers>(propertyName, this);
+    }
+
     optional() {
         return new SchemaOptional<T, TModifiers | "optional">(this);
     }
@@ -30,7 +35,7 @@ export class SchemaObject<T extends {}, TModifiers extends SchemaModifiers> exte
     }
 
     identity() {
-        return new SchemaIdentity<T, TModifiers | "identity">(this);
+        return new SchemaIdentity<T, TModifiers | "identity" | "readonly">(this);
     }
 
     array() {

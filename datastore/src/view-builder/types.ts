@@ -1,17 +1,19 @@
 import { CompiledSchema, InferType } from "@routier/core/schema";
 import { CollectionOptions, CollectionPipelines } from "../types";
 import { IDbPlugin, QueryOptionsCollection } from "@routier/core/plugins";
-import { CollectionBase } from "../collections/CollectionBase";
-import { SchemaCollection } from '@routier/core/collections';
+import { View } from "../views/View";
+import { SchemaCollection } from "@routier/core/collections";
+import { DeriveCallback } from "./ViewBuilder";
 
-export type CollectionInstanceCreator<
+export type ViewInstanceCreator<
     TEntity extends {},
-    TCollection extends CollectionBase<TEntity>
+    TCollection extends View<TEntity>
 > = new (
     dbPlugin: IDbPlugin,
     schema: CompiledSchema<TEntity>,
     options: CollectionOptions,
     pipelines: CollectionPipelines,
     schemas: SchemaCollection,
-    queryOptions: QueryOptionsCollection<InferType<TEntity>>
+    queryOptions: QueryOptionsCollection<InferType<TEntity>>,
+    derive: (callback: DeriveCallback<TEntity>) => void
 ) => TCollection;

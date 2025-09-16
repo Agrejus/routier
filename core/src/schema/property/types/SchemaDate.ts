@@ -3,6 +3,7 @@ import { SchemaBase } from "../base/SchemaBase";
 import { SchemaDefault } from "../modifiers/SchemaDefault";
 import { SchemaDeserialize } from "../modifiers/SchemaDeserialize";
 import { SchemaDistinct } from "../modifiers/SchemaDistinct";
+import { SchemaFrom } from "../modifiers/SchemaFrom";
 import { SchemaIndex } from "../modifiers/SchemaIndex";
 import { SchemaNullable } from "../modifiers/SchemaNullable";
 import { SchemaOptional } from "../modifiers/SchemaOptional";
@@ -15,6 +16,10 @@ export class SchemaDate<T extends Date, TModifiers extends SchemaModifiers> exte
     instance: T;
     type = SchemaTypes.Date;
     private _schemaDate = true;
+
+    from(propertyName: string) {
+        return new SchemaFrom<T, TModifiers>(propertyName, this);
+    }
 
     optional() {
         return new SchemaOptional<T, TModifiers | "optional">(this);

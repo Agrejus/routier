@@ -1,97 +1,20 @@
-# Beta
+Readonly collection
+    Done -> Need to figure out deep readonly
+remap property names
+Views 
+    WHen a collection(s) have changed, need an even so we can update the view
+    How will they work?  When one of the schemas has changes we need to recalculate the view
 
-npm publish --tag beta
+    // cb should be the expected shape of the view
+    lobbyView = this.view(schema).compute((cb) => {
+        const result = [];
 
-
-// NEXT
-    Test out PDB sync and push data from server to client!
-
-Docs
-Overiew
-Type System
-Reference PDB EF and DB EF
-
-        Installation
-        One Router Instance per DB
-
-    Quick Start
-    Schema
-        Creating A Schema
-        Reference
-    Plugins
-        Local Storage
-        File System
-        PouchDB
-        Dexie
-        Sqlite
-        Replication <--------- History/Versioning for undo/redo
-        Optimistic Replication
-        Logging
-        Create Your Own
-    Queries
-        Expressions
-            Expression Tree
-    React
-    Data Modification
-        Create
-        Update
-        Delete
-    Guides
-        Data Manipulation
-        Data Context Setup
-        State Management
-        Optimistic Updates
-        Entity Tagging
-        History Tracking
-    Live Queries
-    Performance & Profiling
-    Examples
-    Reference
-    Change Log
-    Demos
-
-    Missing
-        Event Store -> Undo/Redo
-        Need unit testing
-        history tracking ----> Replication
-        context tracking
-
-        Can we do CDC so we can create history tables?
-        Can we apply a TTL to documents?
-
-    Video's
-        Why
-        Getting Started
-        Code Pens
-
-    TODO
-        Error with remove response, cannot find entity
-            How do we enforce correct response?
-                base class or interface?
-        Fix failing tests, currently working on adds (first batch)
-        Remove Proxies, change over to context tracking
-            benefits?
-        Make sure errors are reported correctly
-        Make sure we are serializing and deserializing dates correctly in Routier
+        this.players.subscribe().where(x => x.id === 1).toList((players) => {
+            this.playerMatches.subscribe().where(([x, p]) => p.playerIds.includes(x.playerId), { playerIds: players.map(p => p._id) }).toArray((r) => {
+                cb(r);
+            });
+        });        
+    }).create()
 
 
-
-## What is Routier
-
-Universal ORM abstraction that lets you easily use or switch between different ORM frameworks and data stores.
-
-Can we put TTL on some of the records? We can check every N times for TTLs and purge them
-
-# TODO:
-
-Remove Proxies, change over to context tracking
-Make sure errors are reported correctly
-History Records? How can we use the replicator for this?
-DbReplicator -> Inherit and override query and bulkOperations
-Filter for your collection
-When Replicating, change the schema from the base to the history schema
-
-Right now, we cannot support stateful dbsets.  
-Reason: Querying is fine, it is saveChanges that is the problem, we now saveChanges in the DataStore
-which does not have access to the stateful set. We currently go to each set and grab its changes,
-each set does not know how to save changes. Right now we will need to use the optimistic replicator
+    this.collection(matchSchema).scope(([x, p]) => x.collectionName === p.collectionName, { ...matchSchema }).readonly().create();

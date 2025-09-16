@@ -12,7 +12,4 @@ Task-focused guides for working with collections.
 
 ### Global scope (collection discriminator)
 
-When multiple entity types share a single physical table/collection (e.g., PouchDB), define a tracked computed discriminator (like `collectionName`) on your schema and apply a global scope at collection creation. This ensures all queries are constrained to the correct logical collection and avoids collisions on shared field names.
-
-{% capture snippet_scope_single_db %}{% include code/how-to/collections/scope-single-db.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_scope_single_db | strip }}{% endhighlight %}
+When multiple entity types share a single physical table/collection (e.g., PouchDB), use a global scope. See: [Scope a collection (single physical store)]({{ site.baseurl }}/how-to/collections/scope-single-store/).

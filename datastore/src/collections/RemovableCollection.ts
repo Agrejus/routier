@@ -4,6 +4,7 @@ import { CollectionBase } from './CollectionBase';
 import { CompiledSchema, InferType } from "@routier/core/schema";
 import { CallbackResult, Result } from "@routier/core/results";
 import { SchemaCollection } from "@routier/core/collections";
+import { combineQueryOptionsCollections } from "@routier/core";
 
 export class RemovableCollection<TEntity extends {}> extends CollectionBase<TEntity> {
 
@@ -51,7 +52,11 @@ export class RemovableCollection<TEntity extends {}> extends CollectionBase<TEnt
      */
     removeAll(done: (error?: any) => void) {
         const tag = this.getAndDestroyTag();
-        this.changeTracker.removeByQuery(Query.EMPTY<TEntity, TEntity>(this.schema), tag, done);
+        this.changeTracker.removeByQuery({
+            changeTracking: false,
+            options: this.scopedQueryOptions as any,
+            schema: this.schema
+        }, tag, done);
     }
 
     /**

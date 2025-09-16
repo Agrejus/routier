@@ -2,6 +2,7 @@ import { SchemaBase } from "../base/SchemaBase";
 import { SchemaIdentity } from "./SchemaIdentity";
 import { SchemaDefault } from "./SchemaDefault";
 import { DefaultValue, IdType, SchemaModifiers } from "../../types";
+import { SchemaFrom } from "./SchemaFrom";
 
 export class SchemaKey<T extends IdType, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {
     instance: T;
@@ -19,5 +20,9 @@ export class SchemaKey<T extends IdType, TModifiers extends SchemaModifiers> ext
 
     default<I = never>(value: DefaultValue<T, I>, injected?: I) {
         return new SchemaDefault<T, I, TModifiers | "default">(value, injected, this);
+    }
+
+    from(propertyName: string) {
+        return new SchemaFrom<T, TModifiers>(propertyName, this);
     }
 }

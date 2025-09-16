@@ -43,6 +43,13 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
     first(done: CallbackResult<Shape>): U;
     first<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<Shape>, paramsOrDone?: P | CallbackResult<Shape>, done?: CallbackResult<Shape>): U {
 
+        // Need to set the filter before we take one
+        this._setQueryExpression({
+            doneOrSelector: doneOrExpression,
+            done,
+            paramsOrDone
+        })
+
         this.queryOptions.add("take", 1); // ensure we only select 1 record
 
         const shaper = (r: Shape[]) => {
@@ -93,6 +100,13 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
     firstOrUndefined(done: CallbackResult<Shape | undefined>): U;
     firstOrUndefined<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<Shape | undefined>, paramsOrDone?: P | CallbackResult<Shape | undefined>, done?: CallbackResult<Shape | undefined>): U {
 
+        // Need to set the filter before we take one
+        this._setQueryExpression({
+            doneOrSelector: doneOrExpression,
+            done,
+            paramsOrDone
+        })
+
         this.queryOptions.add("take", 1); // ensure we only select 1 record
 
         this._query<P, Shape>({
@@ -135,6 +149,13 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
     some<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<boolean>): U;
     some(done: CallbackResult<boolean>): U;
     some<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<boolean>, paramsOrDone?: P | CallbackResult<boolean>, done?: CallbackResult<boolean>): U {
+
+        // Need to set the filter before we take one
+        this._setQueryExpression({
+            doneOrSelector: doneOrExpression,
+            done,
+            paramsOrDone
+        })
         this.queryOptions.add("take", 1); // ensure we only select 1 record
 
         const shaper = (r: Shape[]) => r.length > 0;
@@ -219,6 +240,35 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
         return this.subscribeQuery<Shape[]>(done) as U;
     }
 
+    private _setQueryExpression<P extends {}, R extends {}>(options: {
+        doneOrSelector: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<R>,
+        paramsOrDone?: P | CallbackResult<R>,
+        done?: CallbackResult<R>
+    }) {
+        const { doneOrSelector: doneOrExpression, done, paramsOrDone } = options;
+
+        if (done == null && paramsOrDone == null) {
+            // empty query
+            return;
+        }
+
+        if (done != null) {
+            // params query
+            const selector = doneOrExpression as Filter<Shape> | ParamsFilter<Shape, {}>;
+            const params = paramsOrDone as P;
+            const expression = toExpression(this.schema, selector, params);
+
+            this.queryOptions.add("filter", { filter: selector, expression, params });
+            return;
+        }
+
+        // regular query
+        const selector = doneOrExpression as Filter<Shape>;
+        const expression = toExpression(this.schema, selector);
+
+        this.queryOptions.add("filter", { filter: selector, expression });
+    }
+
     private _query<P extends {}, R extends {}>(options: {
         doneOrSelector: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<R>,
         paramsOrDone?: P | CallbackResult<R>,
@@ -236,22 +286,12 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
 
         if (done != null) {
             // params query
-            const selector = doneOrExpression as Filter<Shape> | ParamsFilter<Shape, {}>;
-            const params = paramsOrDone as P;
-            const expression = toExpression(this.schema, selector, params);
-
-            this.queryOptions.add("filter", { filter: selector, expression, params });
-
             this.getData<Shape[]>((r) => resolve(done, r));
             return;
         }
 
         // regular query
         const d = paramsOrDone as CallbackResult<R>;
-        const selector = doneOrExpression as Filter<Shape>;
-        const expression = toExpression(this.schema, selector);
-
-        this.queryOptions.add("filter", { filter: selector, expression });
         this.getData<Shape[]>((r) => resolve(d, r));
     }
 

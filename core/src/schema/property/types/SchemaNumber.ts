@@ -3,6 +3,7 @@ import { SchemaBase } from "../base/SchemaBase";
 import { SchemaDefault } from "../modifiers/SchemaDefault";
 import { SchemaDeserialize } from "../modifiers/SchemaDeserialize";
 import { SchemaDistinct } from "../modifiers/SchemaDistinct";
+import { SchemaFrom } from "../modifiers/SchemaFrom";
 import { SchemaIdentity } from "../modifiers/SchemaIdentity";
 import { SchemaIndex } from "../modifiers/SchemaIndex";
 import { SchemaKey } from "../modifiers/SchemaKey";
@@ -18,6 +19,10 @@ export class SchemaNumber<T extends number, TModifiers extends SchemaModifiers> 
     type = SchemaTypes.Number;
     private _schemaNumber = true;
 
+    from(propertyName: string) {
+        return new SchemaFrom<T, TModifiers>(propertyName, this);
+    }
+
     optional() {
         return new SchemaOptional<T, TModifiers | "optional">(this);
     }
@@ -27,7 +32,7 @@ export class SchemaNumber<T extends number, TModifiers extends SchemaModifiers> 
     }
 
     key() {
-        return new SchemaKey<T, TModifiers | "key" | "readonly">(this);
+        return new SchemaKey<T, TModifiers | "key">(this);
     }
 
     default<I = never>(value: DefaultValue<T, I>, injected?: I) {
@@ -47,7 +52,7 @@ export class SchemaNumber<T extends number, TModifiers extends SchemaModifiers> 
     }
 
     identity() {
-        return new SchemaIdentity<T, TModifiers | "identity">(this);
+        return new SchemaIdentity<T, TModifiers | "identity" | "readonly">(this);
     }
 
     array() {

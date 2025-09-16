@@ -36,8 +36,8 @@
   "devDependencies": {
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",
-    "routier": "file://../../routier",
-    "routier-core": "file://../../core",
+    "@routier/datastore": "file://../../datastore",
+    "@routier/core": "file://../../core",
     "ts-loader": "^9.5.2",
     "vitest": "^3.2.4"
   }

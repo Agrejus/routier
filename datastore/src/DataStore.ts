@@ -7,6 +7,9 @@ import { TrampolinePipeline } from '@routier/core/pipeline';
 import { CallbackPartialResult, CallbackResult, PartialResultType, PluginEventResult, Result } from '@routier/core/results';
 import { BulkPersistChanges, BulkPersistResult, SchemaCollection } from '@routier/core/collections';
 import { UnknownRecord, uuid } from '@routier/core/utilities';
+import { View } from './views/View';
+import { ViewBuilder } from './view-builder/ViewBuilder';
+import { CollectionBase } from './collections/CollectionBase';
 
 /**
  * The main Routier class, providing collection management, change tracking, and persistence for entities.
@@ -18,7 +21,7 @@ export class DataStore implements Disposable {
     /** The underlying database plugin used for persistence. */
     protected readonly dbPlugin: IDbPlugin;
     /** Map of schema key to collection instances. */
-    protected readonly collections: Map<SchemaId, Collection<any>>;
+    protected readonly collections: Map<SchemaId, CollectionBase<any>>;
     /** Pipelines for save and hasChanges operations. */
     protected readonly collectionPipelines: CollectionPipelines;
     /** AbortController for managing cancellation and disposal. */
@@ -32,7 +35,7 @@ export class DataStore implements Disposable {
     constructor(dbPlugin: IDbPlugin) {
         this.abortController = new AbortController();
         this.dbPlugin = dbPlugin;
-        this.collections = new Map<SchemaId, Collection<any>>();
+        this.collections = new Map<SchemaId, CollectionBase<any>>();
         this.schemas = new SchemaCollection();
         this.collectionPipelines = {
             prepareChanges: new TrampolinePipeline<PartialResultType<BulkPersistChanges>>(),
@@ -58,6 +61,28 @@ export class DataStore implements Disposable {
             pipelines: this.collectionPipelines,
             signal: this.abortController.signal,
             schemas: this.schemas
+        });
+    }
+
+    /**
+ * Creates a new collection builder for the given schema.
+ * @param schema The compiled schema for the entity type.
+ * @returns A CollectionBuilder for the entity type.
+ */
+    protected view<TEntity extends {}>(schema: CompiledSchema<TEntity>) {
+        const onCreated = (view: View<TEntity>) => {
+            this.collections.set(schema.id, view);
+            this.schemas.set(schema.id, schema as CompiledSchema<UnknownRecord>);
+        };
+        return new ViewBuilder<TEntity, View<TEntity>>({
+            dbPlugin: this.dbPlugin,
+            instanceCreator: View<TEntity>,
+            onCollectionCreated: onCreated.bind(this),
+            schema,
+            pipelines: this.collectionPipelines,
+            signal: this.abortController.signal,
+            schemas: this.schemas,
+            deriveCallback: () => void (0)
         });
     }
 

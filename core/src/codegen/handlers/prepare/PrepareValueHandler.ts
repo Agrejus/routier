@@ -17,14 +17,17 @@ export class PrepareValueHandler extends PropertyInfoHandler {
                     .object({ name: "object" });
             }
 
+            // Remap the property to the name in the database if from is set
+            const name = property.from != null ? property.from : property.name;
+
             if (property.parent == null) {
-                objectBuilder.property(`${property.name}: ${entitySelectorPath}`);
+                objectBuilder.property(`${name}: ${entitySelectorPath}`);
                 return builder;
             }
 
             const slotPath = new SlotPath(...property.getParentPathArray());
             objectBuilder = objectBuilder.get<ObjectBuilder>(slotPath.get());
-            objectBuilder.property(`${property.name}: ${entitySelectorPath}`);
+            objectBuilder.property(`${name}: ${entitySelectorPath}`);
             return builder;
         }
 

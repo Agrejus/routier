@@ -32,6 +32,12 @@ When compiling to a JavaScript filter function, free variables cannot be evaluat
 {% capture snippet_yh53h9 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_yh53h9  | strip }}{% endhighlight %}
 
+### Expression parsing and fallback behavior
+
+Routier's expression parser is extremely robust and handles a wide variety of JavaScript expressions including comparisons, string methods, array operations, logical operators, and parameterized queries. The parser attempts to convert these expressions into database-optimized queries for maximum performance.
+
+When an expression cannot be parsed (returns `NOT_PARSABLE`), Routier falls back to selecting all data from the collection and running the query in memory. This fallback ensures your queries always work, but may impact performance on large datasets. Use parameterized queries and avoid complex expressions that cannot be parsed to maintain optimal performance.
+
 ## Sorting
 
 {% capture snippet_9ex9mv %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}

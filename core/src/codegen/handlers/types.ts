@@ -52,7 +52,8 @@ export abstract class PropertyInfoHandler implements IHandler {
     }
 
     protected setEnrichedProperty(property: PropertyInfo<any>, root: CodeBuilder) {
-        const entitySelectorPath = property.getAssignmentPath({ parent: "entity" });
+        const useFromPropertyName = property.from != null;
+        const entitySelectorPath = property.getAssignmentPath({ parent: "entity", useFromPropertyName });
 
         if (property.parent != null) {
             const slotPath = new SlotPath("factory", "function", "assignment");
@@ -61,7 +62,7 @@ export abstract class PropertyInfoHandler implements IHandler {
             const builder = root.get<AssignmentBuilder>(slotPath.get());
             const objectBuilder = builder.getValue as ObjectBuilder;
 
-            const childEntityPathSelector = property.getSelectrorPath({ parent: "entity" });
+            const childEntityPathSelector = property.getSelectrorPath({ parent: "entity", useFromPropertyName });
             objectBuilder.property(`${property.name}: ${childEntityPathSelector}`);
             return;
         }

@@ -3,6 +3,7 @@ import { SchemaBase } from "../base/SchemaBase";
 import { SchemaDefault } from "../modifiers/SchemaDefault";
 import { SchemaDeserialize } from "../modifiers/SchemaDeserialize";
 import { SchemaDistinct } from "../modifiers/SchemaDistinct";
+import { SchemaFrom } from "../modifiers/SchemaFrom";
 import { SchemaIndex } from "../modifiers/SchemaIndex";
 import { SchemaNullable } from "../modifiers/SchemaNullable";
 import { SchemaOptional } from "../modifiers/SchemaOptional";
@@ -15,6 +16,10 @@ export class SchemaBoolean<T extends boolean, TModifiers extends SchemaModifiers
     instance: T;
     type = SchemaTypes.Boolean;
     private _schemaBoolean = true;
+
+    from(propertyName: string) {
+        return new SchemaFrom<T, TModifiers>(propertyName, this);
+    }
 
     optional() {
         return new SchemaOptional<T, TModifiers | "optional">(this);

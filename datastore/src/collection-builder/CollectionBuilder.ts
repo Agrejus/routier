@@ -1,31 +1,33 @@
 import { CompiledSchema, InferType, SchemaId } from '@routier/core/schema';
-import { Collection } from '../collections/Collection';
-import { CollectionOptions, CollectionPipelines } from '../types';
+import { CollectionOptions, CollectionPipelines, DeepReadonly } from '../types';
 import { CollectionInstanceCreator } from './types';
 import { IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
 import { ImmutableCollection } from '../collections/ImmutableCollection';
+import { ReadonlyCollection } from '../collections/ReadonlyCollection';
 import { DiffCollection } from '../collections/DiffCollection';
 import { Filter, ParamsFilter, toExpression } from '@routier/core/expressions';
+import { CollectionBase } from '../collections/CollectionBase';
+import { SchemaCollection } from '@routier/core/collections';
 
-type CollectionBuilderProps<TEntity extends {}, TCollecition extends Collection<TEntity>> = {
-    onCollectionCreated: (collection: Collection<TEntity>) => void;
+type CollectionBuilderProps<TEntity extends {}, TCollection extends CollectionBase<TEntity>> = {
+    onCollectionCreated: (collection: CollectionBase<TEntity>) => void;
     schema: CompiledSchema<TEntity>;
     dbPlugin: IDbPlugin;
-    instanceCreator: CollectionInstanceCreator<TEntity, TCollecition>;
+    instanceCreator: CollectionInstanceCreator<TEntity, TCollection>;
     pipelines: CollectionPipelines;
     signal: AbortSignal;
     scopedQueryOptions?: QueryOptionsCollection<InferType<TEntity>>;
-    schemas: Map<SchemaId, CompiledSchema<any>>;
+    schemas: SchemaCollection;
 }
-export class CollectionBuilder<TEntity extends {}, TCollection extends Collection<TEntity>> {
+export class CollectionBuilder<TEntity extends {}, TCollection extends CollectionBase<TEntity>> {
 
-    private _onCollectionCreated: (collection: Collection<TEntity>) => void;
+    private _onCollectionCreated: (collection: CollectionBase<TEntity>) => void;
     private readonly _schema: CompiledSchema<TEntity>;
     private readonly _dbPlugin: IDbPlugin;
     private _instanceCreator: CollectionInstanceCreator<TEntity, TCollection>;
     private _pipelines: CollectionPipelines;
     private _signal: AbortSignal;
-    private schemas: Map<SchemaId, CompiledSchema<any>>;
+    private schemas: SchemaCollection;
     private scopedQueryOptions: QueryOptionsCollection<InferType<TEntity>>;
 
     constructor(props: CollectionBuilderProps<TEntity, TCollection>) {
@@ -108,6 +110,19 @@ export class CollectionBuilder<TEntity extends {}, TCollection extends Collectio
             onCollectionCreated: this._onCollectionCreated,
             schema: this._schema,
             instanceCreator: this._instanceCreator,
+            pipelines: this._pipelines,
+            signal: this._signal,
+            schemas: this.schemas,
+            scopedQueryOptions: this.scopedQueryOptions
+        });
+    }
+
+    readonly() {
+        return new CollectionBuilder<TEntity, ReadonlyCollection<TEntity>>({
+            dbPlugin: this._dbPlugin,
+            onCollectionCreated: this._onCollectionCreated,
+            schema: this._schema,
+            instanceCreator: ReadonlyCollection,
             pipelines: this._pipelines,
             signal: this._signal,
             schemas: this.schemas,

@@ -327,14 +327,23 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
 
         // Check if the left side is a parameter path
         const leftSide = methodMatch[1];
-        if (params && leftSide.startsWith(params.name)) {
-            // This is a parameter path, not a property path
-            // For now, return NOT_PARSABLE for complex parameter-based method calls
-            return Expression.NOT_PARSABLE;
-        }
+        const rightSide = methodMatch[3];
 
-        comparator.left = getProperty(schema, leftSide);
-        comparator.right = getValue(methodMatch[3], params);
+        if (params && leftSide.startsWith(params.name)) {
+            // This is a parameter path on the left side (e.g., params.distinctPlayers.includes(entity.playerId))
+            // For includes method, we need to swap left and right sides
+            if (methodMatch[2] === 'includes') {
+                comparator.left = getValue(leftSide, params);
+                comparator.right = getProperty(schema, rightSide);
+            } else {
+                // For other methods, return NOT_PARSABLE for now
+                return Expression.NOT_PARSABLE;
+            }
+        } else {
+            // Normal case: property on left, value on right
+            comparator.left = getProperty(schema, leftSide);
+            comparator.right = getValue(rightSide, params);
+        }
 
         // If the comparison is explicitly to false, mark it as negated
         if (methodMatch[6] === "false") {

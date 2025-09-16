@@ -1,5 +1,5 @@
 import { generateData } from "./dataGenerator";
-import { Collection, DataStore } from "../../../../datastore/dist";
+import { Collection, DataStore } from "@routier/datastore";
 
 export const wait = (ms: number) => new Promise<void>((resolve) => {
 

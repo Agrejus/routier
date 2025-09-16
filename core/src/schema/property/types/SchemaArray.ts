@@ -6,6 +6,7 @@ import { SchemaDeserialize } from '../modifiers/SchemaDeserialize';
 import { SchemaSerialize } from '../modifiers/SchemaSerialize';
 import { SchemaIndex } from "../modifiers/SchemaIndex";
 import { DefaultValue, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes } from "../../types";
+import { SchemaFrom } from "../modifiers/SchemaFrom";
 
 export class SchemaArray<T extends any, TModifiers extends SchemaModifiers> extends SchemaBase<T[], TModifiers> {
 
@@ -17,6 +18,10 @@ export class SchemaArray<T extends any, TModifiers extends SchemaModifiers> exte
     constructor(entity?: SchemaBase<T[], TModifiers>, literals?: T[][]) {
         super(entity, literals);
         this.innerSchema = entity;
+    }
+
+    from(propertyName: string) {
+        return new SchemaFrom<T[], TModifiers>(propertyName, this);
     }
 
     optional() {

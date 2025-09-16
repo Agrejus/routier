@@ -25,3 +25,4 @@ npm install @routier/pouchdb-plugin pouchdb
 
 - Pair with CouchDB for two-way sync.
 - See Syncing guide for setup.
+- When storing multiple entity types in one database, scope each collection to a discriminator. See: [Scope a collection (single physical store)]({{ site.baseurl }}/how-to/collections/scope-single-store/).

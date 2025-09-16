@@ -1,0 +1,77 @@
+import { CollectionBase } from '../collections/CollectionBase';
+import { DeriveCallback } from '../view-builder/ViewBuilder';
+import { CollectionOptions, CollectionPipelines } from '../types';
+import { IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
+import { ChangeTrackingType, CompiledSchema, InferCreateType, InferType } from '@routier/core/schema';
+import { SchemaCollection } from '@routier/core/collections';
+import { CallbackResult, combineQueryOptionsCollections, Result } from '@routier/core';
+
+/**
+ * View that only allows data selection. Cannot add, remove, or update data.
+ */
+export class View<TEntity extends {}> extends CollectionBase<TEntity> {
+
+    protected derive: (callback: DeriveCallback<TEntity>) => void;
+
+    constructor(
+        dbPlugin: IDbPlugin,
+        schema: CompiledSchema<TEntity>,
+        options: CollectionOptions,
+        pipelines: CollectionPipelines,
+        schemas: SchemaCollection,
+        scopedQueryOptions: QueryOptionsCollection<InferType<TEntity>>,
+        derive: (callback: DeriveCallback<TEntity>) => void
+    ) {
+        super(dbPlugin, schema, options, pipelines, schemas, scopedQueryOptions)
+        this.derive = derive;
+    }
+
+    protected override get changeTrackingType(): ChangeTrackingType {
+        return "immutable";
+    }
+
+    emptyAsync() {
+        return new Promise<never>((resolve, reject) => this.empty((r) => Result.resolve(r, resolve, reject)));
+    }
+
+    empty(done: CallbackResult<never>) {
+        try {
+
+            this.changeTracker.removeByQuery({
+                changeTracking: false,
+                options: this.scopedQueryOptions as any,
+                schema: this.schema
+            }, null, (result) => {
+
+                if (result.ok === "error") {
+                    return done(result);
+                }
+
+                done(Result.success())
+            });
+        } catch (e) {
+            done(Result.error(e));
+        }
+    }
+
+    computeAsync() {
+        return new Promise<never>((resolve, reject) => this.compute((r) => Result.resolve(r, resolve, reject)));
+    }
+
+    compute(done: CallbackResult<never>) {
+        try {
+            this.derive((data) => {
+                this.changeTracker.add(data as InferCreateType<TEntity>[], null, (result) => {
+
+                    if (result.ok === "error") {
+                        return done(result);
+                    }
+
+                    done(Result.success())
+                });
+            });
+        } catch (e) {
+            done(Result.error(e));
+        }
+    }
+}

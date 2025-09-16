@@ -69,9 +69,15 @@ describe('Parser', () => {
             {
                 getAssignmentPath: () => 'createdAt',
                 type: SchemaTypes.Date
+            },
+            {
+                getAssignmentPath: () => 'playerId',
+                type: SchemaTypes.String
             }
         ]
     } as CompiledSchema<any>;
+
+    //            const matches = await dataStore.playerMatches.where(([x, p]) => p.distinctPlayers.includes(x.playerId), { distinctPlayers }).toArrayAsync();
 
     describe('toExpression', () => {
         describe('basic comparisons', () => {
@@ -400,6 +406,18 @@ describe('Parser', () => {
                 const expression = toExpression(mockSchema, ([entity, params]: [any, { searchTerm: string }]) => entity.name == params as any, { searchTerm: 'test' });
 
                 expect(expression).toStrictEqual(Expression.NOT_PARSABLE);
+            });
+
+            it('should parse parameterized filter with includes method', () => {
+                const expression = toExpression(mockSchema, ([entity, params]: [any, { distinctPlayers: string[] }]) => params.distinctPlayers.includes(entity.playerId), { distinctPlayers: ['player1', 'player2'] });
+
+                expect(expression).toBeInstanceOf(ComparatorExpression);
+                const comp = expression as ComparatorExpression;
+                expect(comp.comparator).toBe('includes');
+                expect(comp.negated).toBe(false);
+                expect(comp.strict).toBe(false);
+                expect((comp.left as ValueExpression).value).toEqual(['player1', 'player2']);
+                expect((comp.right as PropertyExpression).property.getAssignmentPath()).toBe('playerId');
             });
         });
 

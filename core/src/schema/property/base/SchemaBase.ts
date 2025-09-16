@@ -13,6 +13,7 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
     isReadonly: boolean = false;
     isDistict: boolean = false;
     indexes: string[] = [];
+    fromPropertyName: string | null = null;
 
     injected: any = null;
     defaultValue: DefaultValue<T> | null = null;
@@ -38,6 +39,7 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
             this.type = entity.type;
             this.injected = entity.injected;
             this.indexes = entity.indexes;
+            this.fromPropertyName = entity.fromPropertyName;
         }
 
         if (literals) {

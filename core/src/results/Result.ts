@@ -5,7 +5,7 @@ abstract class BaseResult {
     static SUCCESS = "success" as const;
     static PARTIAL = "partial" as const;
 
-    static resolve<T>(result: any, resolve: (data: T) => void, reject: (error?: any) => void) {
+    static resolve<T>(result: ResultType<T> | PartialResultType<T>, resolve: (data: T) => void, reject: (error?: any) => void) {
         if (result.ok === BaseResult.SUCCESS) {
             resolve(result.data);
             return;

@@ -9,3 +9,4 @@ export * from './SchemaOptional';
 export * from './SchemaReadonly';
 export * from './SchemaSerialize';
 export * from './SchemaTracked';
+export * from './SchemaFrom';

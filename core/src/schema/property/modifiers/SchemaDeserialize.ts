@@ -1,5 +1,6 @@
 import { PropertyDeserializer, PropertySerializer, SchemaModifiers } from "../../types";
 import { SchemaBase } from "../base/SchemaBase";
+import { SchemaFrom } from "./SchemaFrom";
 import { SchemaSerialize } from "./SchemaSerialize";
 
 export class SchemaDeserialize<T extends any, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {
@@ -14,5 +15,9 @@ export class SchemaDeserialize<T extends any, TModifiers extends SchemaModifiers
 
     serialize(serializer: PropertySerializer<T>) {
         return new SchemaSerialize<T, TModifiers | "serialize">(serializer, this);
+    }
+
+    from(propertyName: string) {
+        return new SchemaFrom<T, TModifiers>(propertyName, this);
     }
 }

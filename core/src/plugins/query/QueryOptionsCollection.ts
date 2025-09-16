@@ -44,17 +44,21 @@ export class QueryOptionsCollection<T> {
             // Need to check for unmapped properties
             const filterValue = value as QueryOptionValueMap<T>["filter"];
 
-            forEach(filterValue.expression, (expression) => {
+            if (filterValue.expression.type === "not-parsable") {
+                this.nextExecutionTarget = "memory";
+            } else {
+                forEach(filterValue.expression, (expression) => {
 
-                if (isPropertyExpression(expression) && expression.property.isUnmapped) {
-                    // Cut over to memory execution, unmapped properties are not in the database and
-                    // cannot be queried
-                    this.nextExecutionTarget = "memory";
-                    return false;
-                }
+                    if (isPropertyExpression(expression) && expression.property.isUnmapped) {
+                        // Cut over to memory execution, unmapped properties are not in the database and
+                        // cannot be queried
+                        this.nextExecutionTarget = "memory";
+                        return false;
+                    }
 
-                return true;
-            });
+                    return true;
+                });
+            }
         }
 
         const item: QueryCollectionItem<T, K> = {

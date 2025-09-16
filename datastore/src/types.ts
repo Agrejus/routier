@@ -73,6 +73,14 @@ export type DeepOptional<T> = {
     : T[K]; // Keep non-object types as they are
 };
 
+export type DeepReadonly<T> = {
+    readonly [K in keyof T]: T[K] extends Record<string, any>
+    ? T[K] extends Array<infer U> // Check if T[K] is an array
+    ? ReadonlyArray<DeepReadonly<U>> // Recursively make array elements readonly
+    : DeepReadonly<T[K]> // Recursively make object properties readonly
+    : T[K]; // Keep non-object types as they are
+};
+
 export type CollectionOptions = {
     signal: AbortSignal
 }

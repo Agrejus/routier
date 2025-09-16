@@ -17,6 +17,8 @@ export class PropertyInfo<T extends {}> {
 
     /** The name of the property. */
     readonly name: string;
+    /** The name of the property we need to map from. */
+    readonly from: string | null = null;
     /** The schema type of the property. */
     readonly type: SchemaTypes;
 
@@ -86,6 +88,7 @@ export class PropertyInfo<T extends {}> {
         this.injected = schema.injected;
         this.isDistinct = schema.isDistict;
         this.indexes = schema.indexes;
+        this.from = schema.fromPropertyName;
 
         this.defaultValue = schema.defaultValue;
         this.valueSerializer = schema.valueSerializer;
@@ -153,6 +156,7 @@ export class PropertyInfo<T extends {}> {
     private _resolvePathArray(options?: {
         root?: string,
         assignmentType?: AssignmentType
+        useFromPropertyName?: boolean
     }) {
         const propertyChain = this._getPropertyChain();
         const hasRoot = options?.root != null;
@@ -160,7 +164,7 @@ export class PropertyInfo<T extends {}> {
 
         for (const prop of propertyChain) {
             const accessor = this._needsOptionalChaining(prop, options?.assignmentType) ? '?.' : '.';
-            path.push(accessor, prop.name);
+            path.push(accessor, options?.useFromPropertyName ? prop.from : prop.name);
         }
 
         return path;
@@ -313,10 +317,11 @@ export class PropertyInfo<T extends {}> {
      * @param options.assignmentType Optional assignment type for path resolution.
      * @returns {string} The selector path string (e.g., 'parent.prop1.prop2').
      */
-    getSelectrorPath(options: { parent: string, assignmentType?: AssignmentType }) {
+    getSelectrorPath(options: { parent: string, assignmentType?: AssignmentType, useFromPropertyName?: boolean }) {
         const parts = this._resolvePathArray({
             root: options.parent,
-            assignmentType: options.assignmentType
+            assignmentType: options.assignmentType,
+            useFromPropertyName: options.useFromPropertyName
         });
         return parts.join("");
     }
@@ -327,10 +332,11 @@ export class PropertyInfo<T extends {}> {
      * @param options.parent Optional root variable name.
      * @returns {string} The assignment path string (e.g., 'prop1.prop2').
      */
-    getAssignmentPath(options?: { parent?: string }) {
+    getAssignmentPath(options?: { parent?: string, useFromPropertyName?: boolean }) {
         const parts = this._resolvePathArray({
             root: options?.parent,
-            assignmentType: "ASSIGNMENT"
+            assignmentType: "ASSIGNMENT",
+            useFromPropertyName: options?.useFromPropertyName
         });
 
         if (options?.parent == null) {

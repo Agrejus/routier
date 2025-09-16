@@ -2,6 +2,7 @@ import { DefaultValue, PropertyDeserializer, PropertySerializer, SchemaModifiers
 import { SchemaBase } from "../base/SchemaBase";
 import { SchemaDefault } from "./SchemaDefault";
 import { SchemaDeserialize } from "./SchemaDeserialize";
+import { SchemaFrom } from "./SchemaFrom";
 import { SchemaSerialize } from "./SchemaSerialize";
 
 export class SchemaReadonly<T extends any, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {
@@ -25,5 +26,9 @@ export class SchemaReadonly<T extends any, TModifiers extends SchemaModifiers> e
 
     serializer(serializer: PropertySerializer<T>) {
         return new SchemaSerialize<T, TModifiers | "deserialize">(serializer, this);
+    }
+
+    from(propertyName: string) {
+        return new SchemaFrom<T, TModifiers>(propertyName, this);
     }
 }
