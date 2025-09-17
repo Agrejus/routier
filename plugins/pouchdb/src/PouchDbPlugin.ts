@@ -14,11 +14,19 @@ const cache: Record<string, unknown> = {};
 
 type PouchDBPluginOptions = PouchDB.Configuration.DatabaseConfiguration & {
     queryType?: "default" | "memory-optimized" | "experimental";
-    sync?: {
+    sync?: PouchDB.Replication.SyncOptions & {
         remoteDb: string;
-        live: boolean,
-        retry: boolean,
-        onChange: (schemas: SchemaCollection, change: PouchDB.Replication.SyncResult<{}>) => void
+        onChange?: (schemas: SchemaCollection, change: PouchDB.Replication.SyncResult<{}>) => void;
+        onError?: (error: any) => void;
+        onComplete?: (info: PouchDB.Replication.SyncResult<{}>) => void;
+        onPaused?: (info: PouchDB.Replication.SyncResult<{}>) => void;
+        onActive?: (info: PouchDB.Replication.SyncResult<{}>) => void;
+        onDenied?: (info: PouchDB.Replication.SyncResult<{}>) => void;
+        auth?: {
+            username: string;
+            password: string;
+        };
+        headers?: { [key: string]: string };
     };
 }
 
@@ -67,9 +75,7 @@ export class PouchDbPlugin implements IDbPlugin {
 
                 // Set up sync
                 const sync = localDb.sync(remoteDb, {
-                    live: this._options.sync.live,
-                    retry: this._options.sync.retry,
-                    back_off_function: (delay) => Math.min(delay * 2, 10000)
+                    ...this._options.sync
                 });
 
                 sync.on('change', (change) => this._options.sync.onChange(schemas, change));

@@ -4,7 +4,6 @@ import { CollectionBase } from './CollectionBase';
 import { CompiledSchema, InferType } from "@routier/core/schema";
 import { CallbackResult, Result } from "@routier/core/results";
 import { SchemaCollection } from "@routier/core/collections";
-import { combineQueryOptionsCollections } from "@routier/core";
 
 export class RemovableCollection<TEntity extends {}> extends CollectionBase<TEntity> {
 

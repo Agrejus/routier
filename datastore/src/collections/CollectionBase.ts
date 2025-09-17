@@ -274,7 +274,7 @@ export class CollectionBase<TEntity extends {}> {
      * @returns A subscription object that can be used to listen for collection changes
      */
     subscribe() {
-        const queryable = new Queryable<InferType<TEntity>, InferType<TEntity>, () => void>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const queryable = new Queryable<InferType<TEntity>, InferType<TEntity>, () => void>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any,
         });
@@ -297,14 +297,14 @@ export class CollectionBase<TEntity extends {}> {
     where<P extends {} = never>(selector: ParamsFilter<InferType<TEntity>, P> | Filter<InferType<TEntity>>, params?: P) {
 
         if (params == null) {
-            const queryable = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+            const queryable = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
                 dataBridge: this.dataBridge as any,
                 changeTracker: this.changeTracker as any
             });
             return queryable.where(selector as Filter<InferType<TEntity>>);
         }
 
-        const queryable = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const queryable = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -318,7 +318,7 @@ export class CollectionBase<TEntity extends {}> {
      * @returns QueryableAsync instance for chaining additional query operations
      */
     sort(selector: EntityMap<InferType<TEntity>, InferType<TEntity>[keyof InferType<TEntity>]>) {
-        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -331,7 +331,7 @@ export class CollectionBase<TEntity extends {}> {
      * @returns QueryableAsync instance for chaining additional query operations
      */
     sortDescending(selector: EntityMap<InferType<TEntity>, InferType<TEntity>[keyof InferType<TEntity>]>) {
-        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -345,7 +345,7 @@ export class CollectionBase<TEntity extends {}> {
      * @returns QueryableAsync instance for chaining additional query operations
      */
     map<R extends InferType<TEntity>[keyof InferType<TEntity>] | {}>(expression: EntityMap<InferType<TEntity>, R>) {
-        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -358,7 +358,7 @@ export class CollectionBase<TEntity extends {}> {
      * @returns QueryableAsync instance for chaining additional query operations
      */
     skip(amount: number) {
-        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -371,7 +371,7 @@ export class CollectionBase<TEntity extends {}> {
      * @returns QueryableAsync instance for chaining additional query operations
      */
     take(amount: number) {
-        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -383,7 +383,7 @@ export class CollectionBase<TEntity extends {}> {
      * @param done Callback function called with the array of entities or error
      */
     toArray(done: CallbackResult<InferType<TEntity>[]>) {
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -395,7 +395,7 @@ export class CollectionBase<TEntity extends {}> {
      * @returns Promise that resolves with the array of entities or rejects with an error
      */
     toArrayAsync(): Promise<InferType<TEntity>[]> {
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -421,7 +421,7 @@ export class CollectionBase<TEntity extends {}> {
      */
     first(done: CallbackResult<InferType<TEntity>>): void;
     first<P extends {} = never>(doneOrExpression: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P> | CallbackResult<InferType<TEntity>>, paramsOrDone?: P | CallbackResult<InferType<TEntity>>, done?: CallbackResult<InferType<TEntity>>) {
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -462,7 +462,7 @@ export class CollectionBase<TEntity extends {}> {
      */
     firstAsync(): Promise<InferType<TEntity>>;
     firstAsync<P extends {} = never>(expression?: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P>, params?: P): Promise<InferType<TEntity>> {
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -500,7 +500,7 @@ export class CollectionBase<TEntity extends {}> {
      */
     firstOrUndefined(done: CallbackResult<InferType<TEntity> | undefined>): void;
     firstOrUndefined<P extends {} = never>(doneOrExpression: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P> | CallbackResult<InferType<TEntity> | undefined>, paramsOrDone?: P | CallbackResult<InferType<TEntity> | undefined>, done?: CallbackResult<InferType<TEntity> | undefined>) {
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -541,7 +541,7 @@ export class CollectionBase<TEntity extends {}> {
      */
     firstOrUndefinedAsync(): Promise<InferType<TEntity> | undefined>;
     firstOrUndefinedAsync<P extends {} = never>(expression?: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P>, params?: P): Promise<InferType<TEntity> | undefined> {
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -579,7 +579,7 @@ export class CollectionBase<TEntity extends {}> {
      */
     some(done: CallbackResult<boolean>): void;
     some<P extends {} = never>(doneOrExpression: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P> | CallbackResult<boolean>, paramsOrDone?: P | CallbackResult<boolean>, done?: CallbackResult<boolean>) {
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -620,7 +620,7 @@ export class CollectionBase<TEntity extends {}> {
      */
     someAsync(): Promise<boolean>;
     someAsync<P extends {} = never>(expression?: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P>, params?: P): Promise<boolean> {
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -654,7 +654,7 @@ export class CollectionBase<TEntity extends {}> {
     every<P extends {}>(expression: Filter<InferType<TEntity>>, done: CallbackResult<boolean>): void;
     every<P extends {}>(expression: ParamsFilter<InferType<TEntity>, P>, params: P, done: CallbackResult<boolean>): void;
     every<P extends {} = never>(expression: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P> | CallbackResult<boolean>, paramsOrDone: P | CallbackResult<boolean>, done?: CallbackResult<boolean>) {
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -686,7 +686,7 @@ export class CollectionBase<TEntity extends {}> {
     everyAsync<P extends {}>(expression: Filter<InferType<TEntity>>): Promise<boolean>;
     everyAsync<P extends {}>(expression: ParamsFilter<InferType<TEntity>, P>, params: P): Promise<boolean>;
     everyAsync<P extends {} = never>(expression?: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P>, params?: P): Promise<boolean> {
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -707,7 +707,7 @@ export class CollectionBase<TEntity extends {}> {
      * @param done Callback function called with the minimum value or error
      */
     min(selector: GenericFunction<InferType<TEntity>, number>, done: CallbackResult<number>): void {
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -721,7 +721,7 @@ export class CollectionBase<TEntity extends {}> {
      * @returns Promise that resolves with the minimum value or rejects with an error
      */
     minAsync(selector: GenericFunction<InferType<TEntity>, number>): Promise<number> {
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -735,7 +735,7 @@ export class CollectionBase<TEntity extends {}> {
      * @param done Callback function called with the maximum value or error
      */
     max(selector: GenericFunction<InferType<TEntity>, number>, done: CallbackResult<number>): void {
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -749,7 +749,7 @@ export class CollectionBase<TEntity extends {}> {
      * @returns Promise that resolves with the maximum value or rejects with an error
      */
     maxAsync(selector: GenericFunction<InferType<TEntity>, number>): Promise<number> {
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -763,7 +763,7 @@ export class CollectionBase<TEntity extends {}> {
      * @param done Callback function called with the sum or error
      */
     sum(selector: GenericFunction<InferType<TEntity>, number>, done: CallbackResult<number>): void {
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -777,7 +777,7 @@ export class CollectionBase<TEntity extends {}> {
      * @returns Promise that resolves with the sum or rejects with an error
      */
     sumAsync(selector: GenericFunction<InferType<TEntity>, number>): Promise<number> {
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -790,7 +790,7 @@ export class CollectionBase<TEntity extends {}> {
      * @param done Callback function called with the count or error
      */
     count(done: CallbackResult<number>): void {
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -803,7 +803,7 @@ export class CollectionBase<TEntity extends {}> {
      * @returns Promise that resolves with the count or rejects with an error
      */
     countAsync(): Promise<number> {
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -816,7 +816,7 @@ export class CollectionBase<TEntity extends {}> {
      * @param done Callback function called with the distinct entities or error
      */
     distinct(done: CallbackResult<InferType<TEntity>[]>): void {
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
@@ -829,7 +829,7 @@ export class CollectionBase<TEntity extends {}> {
      * @returns Promise that resolves with the distinct entities or rejects with an error
      */
     distinctAsync(): Promise<InferType<TEntity>[]> {
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, {
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });

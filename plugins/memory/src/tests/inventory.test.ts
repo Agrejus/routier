@@ -1,8 +1,8 @@
 import { faker } from '@faker-js/faker';
 import { describe, it, expect, afterAll } from 'vitest';
-import { TestDataStore } from 'routier-plugin-testing';
 import { IDbPlugin, uuidv4 } from '@routier/core';
-import { MemoryPlugin } from '..';
+import { MemoryPlugin } from '../MemoryPlugin';
+import { TestDataStore } from './datastore/MemoryDatastore';
 
 const generateDbName = () => `${uuidv4()}-db`;
 const pluginFactory: (dbname?: string) => IDbPlugin = (dbname?: string) => new MemoryPlugin(dbname ?? generateDbName());
@@ -33,8 +33,6 @@ describe("Inventory Tests", () => {
             });
 
             const response = await dataStore.saveChangesAsync();
-
-            added.hasCollectionName
 
             expect(added.wasRestocked).toBe(false);
             expect(added.hasCollectionName).toBe(true);

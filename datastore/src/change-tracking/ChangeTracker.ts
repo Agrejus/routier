@@ -325,11 +325,11 @@ export class ChangeTracker<TEntity extends {}> {
         }
     }
 
-    enrich(entities: InferType<TEntity>[]) {
+    enrich(entities: InferType<TEntity>[], changeTrackingType: ChangeTrackingType) {
         const result = [];
 
         for (let i = 0, length = entities.length; i < length; i++) {
-            result.push(this.schema.enrich(entities[i], "proxy"));
+            result.push(this.schema.enrich(entities[i], changeTrackingType));
         }
 
         return result;

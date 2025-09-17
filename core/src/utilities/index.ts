@@ -7,3 +7,4 @@ export * from './uuid';
 export * from './replication';
 export * from './types';
 export * from './queryOptionsCollection';
+export * from './dbPluginEventUtils';

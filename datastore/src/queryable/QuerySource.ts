@@ -1,7 +1,7 @@
 import { DataBridge } from "../data-access/DataBridge";
 import { ChangeTracker } from "../change-tracking/ChangeTracker";
 import { DbPluginQueryEvent, JsonTranslator, Query, QueryField, QueryOptionsCollection, QueryOrdering } from "@routier/core/plugins";
-import { CompiledSchema, InferType, SchemaId } from "@routier/core/schema";
+import { ChangeTrackingType, CompiledSchema, InferType, SchemaId } from "@routier/core/schema";
 import { CallbackResult, PluginEventCallbackResult, PluginEventResult, PluginEventSuccessType, Result } from "@routier/core/results";
 import { GenericFunction } from "@routier/core/types";
 import { Filter, ParamsFilter, toExpression } from "@routier/core/expressions";
@@ -17,12 +17,14 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
     protected schema: CompiledSchema<TRoot>;
     protected schemas: SchemaCollection;
     protected scopedQueryOptions: QueryOptionsCollection<TRoot>;
+    protected readonly changeTrackingType: ChangeTrackingType
 
-    constructor(schema: CompiledSchema<TRoot>, schemas: SchemaCollection, scopedQueryOptions: QueryOptionsCollection<TRoot>, options: { queryable?: QuerySource<TRoot, TShape>, dataBridge?: DataBridge<TRoot>, changeTracker?: ChangeTracker<TRoot> }) {
+    constructor(schema: CompiledSchema<TRoot>, schemas: SchemaCollection, scopedQueryOptions: QueryOptionsCollection<TRoot>, changeTrackingType: ChangeTrackingType, options: { queryable?: QuerySource<TRoot, TShape>, dataBridge?: DataBridge<TRoot>, changeTracker?: ChangeTracker<TRoot> }) {
 
         this.schema = schema;
         this.schemas = schemas;
         this.scopedQueryOptions = scopedQueryOptions;
+        this.changeTrackingType = changeTrackingType;
 
         if (options?.dataBridge != null) {
             this.dataBridge = options.dataBridge;
@@ -43,8 +45,8 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
     }
 
     // Cannot change the root type, it comes from the collection type, only the resulting type (shape)
-    protected create<Shape, TInstance extends QuerySource<TRoot, Shape>>(Instance: new (schema: CompiledSchema<TRoot>, schemas: Map<SchemaId, CompiledSchema<any>>, scopedQueryOptions: QueryOptionsCollection<TRoot>, options: { queryable?: QuerySource<TRoot, Shape>, dataBridge?: DataBridge<TRoot>, changeTracker?: ChangeTracker<TRoot> }) => TInstance) {
-        return new Instance(this.schema, this.schemas, this.scopedQueryOptions, { queryable: this as any });
+    protected create<Shape, TInstance extends QuerySource<TRoot, Shape>>(Instance: new (schema: CompiledSchema<TRoot>, schemas: Map<SchemaId, CompiledSchema<any>>, scopedQueryOptions: QueryOptionsCollection<TRoot>, changeTrackingType: ChangeTrackingType, options: { queryable?: QuerySource<TRoot, Shape>, dataBridge?: DataBridge<TRoot>, changeTracker?: ChangeTracker<TRoot> }) => TInstance) {
+        return new Instance(this.schema, this.schemas, this.scopedQueryOptions, this.changeTrackingType, { queryable: this as any });
     }
 
     private resolveQueryOptions<T>() {
@@ -202,7 +204,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
             // if change tracking is true, we will never be shaping the result from .map()
             if (databaseEvent.operation.changeTracking === true) {
-                const enriched = this.changeTracker.enrich(result.data as InferType<TRoot>[]);
+                const enriched = this.changeTracker.enrich(result.data as InferType<TRoot>[], this.changeTrackingType);
 
                 // This means we are querying on a computed property that is untracked, need to select
                 // all and query in memory

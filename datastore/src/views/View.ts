@@ -3,8 +3,11 @@ import { DeriveCallback } from '../view-builder/ViewBuilder';
 import { CollectionOptions, CollectionPipelines } from '../types';
 import { IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
 import { ChangeTrackingType, CompiledSchema, InferCreateType, InferType } from '@routier/core/schema';
-import { SchemaCollection } from '@routier/core/collections';
-import { CallbackResult, combineQueryOptionsCollections, Result } from '@routier/core';
+import { BulkPersistChanges, SchemaCollection } from '@routier/core/collections';
+import { CallbackPartialResult, CallbackResult, PartialResultType, Result } from '@routier/core';
+
+// When do we save?  When we recompute the view, we do not know when it is done.  Then we still need to persist the view.
+// Maybe make them memory only so we do not need to worry about persistence
 
 /**
  * View that only allows data selection. Cannot add, remove, or update data.
@@ -30,6 +33,10 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
         return "immutable";
     }
 
+    protected override prepare(result: PartialResultType<BulkPersistChanges>, done: CallbackPartialResult<BulkPersistChanges>): void {
+
+    }
+
     emptyAsync() {
         return new Promise<never>((resolve, reject) => this.empty((r) => Result.resolve(r, resolve, reject)));
     }
@@ -39,7 +46,7 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
 
             this.changeTracker.removeByQuery({
                 changeTracking: false,
-                options: this.scopedQueryOptions as any,
+                options: this.scopedQueryOptions as unknown as QueryOptionsCollection<TEntity>,
                 schema: this.schema
             }, null, (result) => {
 
