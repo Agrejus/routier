@@ -4,6 +4,9 @@
   "description": "React integration examples for Routier framework",
   "private": false,
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "vite",
     "build:types": "tsc -p tsconfig.types.json",
