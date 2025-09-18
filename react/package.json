@@ -1,12 +1,17 @@
 {
   "name": "@routier/react",
-  "version": "0.0.1-alpha.1",
+  "version": "0.0.1-alpha.3",
   "description": "React integration examples for Routier framework",
   "private": false,
   "type": "module",
   "publishConfig": {
     "access": "public"
   },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "dev": "vite",
     "build:types": "tsc -p tsconfig.types.json",
@@ -17,7 +22,7 @@
     "test:ui": "vitest --ui"
   },
   "peerDependencies": {
-    "@routier/core": "^0.0.1",
+    "@routier/core": "^0.0.1-alpha.2",
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0"
   },

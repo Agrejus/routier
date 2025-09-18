@@ -1,6 +1,6 @@
 {
   "name": "@routier/datastore",
-  "version": "0.0.1-alpha.1",
+  "version": "0.0.1-alpha.5",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "source": "./src/index.ts",
@@ -15,6 +15,11 @@
     "test": "vitest run"
   },
   "sideEffects": false,
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
   "author": "James DeMeuse <james.demeuse@gmail.com>",
   "license": "MIT",
   "repository": "Agrejus/routier",
@@ -49,10 +54,10 @@
   ],
   "description": "Data abstraction layer that routes all database operations to any ORM or data store",
   "peerDependencies": {
-    "@routier/core": "^0.0.1"
+    "@routier/core": "^0.0.1-alpha.1"
   },
   "dependencies": {
-    "@routier/memory-plugin": "^0.0.1-alpha.1"
+    "@routier/memory-plugin": "^0.0.1-alpha.2"
   },
   "devDependencies": {
     "@routier/core": "^0.0.1-alpha.1",

@@ -1,12 +1,17 @@
 {
   "name": "@routier/pouchdb-plugin",
-  "version": "0.0.1-alpha.1",
+  "version": "0.0.1-alpha.3",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "source": "./src/index.ts",
   "publishConfig": {
     "access": "public"
   },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build:types": "tsc --emitDeclarationOnly",
     "build:bundle": "rspack build",
@@ -38,12 +43,12 @@
     "pouchdb": "^9.0.0"
   },
   "peerDependencies": {
-    "@routier/core": "^0.0.1"
+    "@routier/core": "^0.0.1-alpha.2"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.0.0",
-    "@routier/core": "^0.0.1-alpha.1",
-    "@routier/datastore": "^0.0.1-alpha.1",
+    "@routier/core": "^0.0.1-alpha.2",
+    "@routier/datastore": "^0.0.1-alpha.4",
     "@routier/test-utils": "^0.0.1-alpha.1",
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",

@@ -1,12 +1,17 @@
 {
   "name": "@routier/core",
-  "version": "0.0.1-alpha.1",
+  "version": "0.0.1-alpha.2",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "source": "./src/index.ts",
   "publishConfig": {
     "access": "public"
   },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
   "exports": {
     ".": "./dist/index.js",
     "./utilities": "./dist/utilities/index.js",

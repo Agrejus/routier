@@ -3,8 +3,8 @@ import { DeriveCallback } from '../view-builder/ViewBuilder';
 import { CollectionOptions, CollectionPipelines } from '../types';
 import { IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
 import { ChangeTrackingType, CompiledSchema, InferCreateType, InferType } from '@routier/core/schema';
-import { BulkPersistChanges, SchemaCollection } from '@routier/core/collections';
-import { CallbackPartialResult, CallbackResult, PartialResultType, Result } from '@routier/core';
+import { SchemaCollection } from '@routier/core/collections';
+import { CallbackResult, Result } from '@routier/core';
 
 // When do we save?  When we recompute the view, we do not know when it is done.  Then we still need to persist the view.
 // Maybe make them memory only so we do not need to worry about persistence
@@ -31,10 +31,6 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
 
     protected override get changeTrackingType(): ChangeTrackingType {
         return "immutable";
-    }
-
-    protected override prepare(result: PartialResultType<BulkPersistChanges>, done: CallbackPartialResult<BulkPersistChanges>): void {
-
     }
 
     emptyAsync() {
