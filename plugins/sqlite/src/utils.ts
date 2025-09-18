@@ -1,5 +1,5 @@
-import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core';
-import { Expression, ComparatorExpression, OperatorExpression, PropertyPathExpression, ValueExpression } from '@routier/core';
+import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema';
+import { Expression, ComparatorExpression, OperatorExpression, ValueExpression, PropertyExpression } from '@routier/core/expressions';
 
 /**
  * Maps schema types to SQLite column types.
@@ -153,7 +153,7 @@ export function expressionToWhereClause(expr: Expression): { where: string, para
         }
         if (e.type === 'comparator') {
             const cmp = e as ComparatorExpression;
-            const left = cmp.left as PropertyPathExpression;
+            const left = cmp.left as PropertyExpression;
             const right = cmp.right as ValueExpression;
             const col = `"${left.property.name}"`;
             switch (cmp.comparator) {
@@ -186,7 +186,7 @@ export function expressionToWhereClause(expr: Expression): { where: string, para
             }
         }
         if (e.type === 'property') {
-            return `"${(e as PropertyPathExpression).property.name}"`;
+            return `"${(e as PropertyExpression).property.name}"`;
         }
         if (e.type === 'value') {
             params.push((e as ValueExpression).value);

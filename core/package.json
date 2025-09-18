@@ -1,6 +1,6 @@
 {
   "name": "@routier/core",
-  "version": "0.0.1",
+  "version": "0.0.1-alpha.1",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "source": "./src/index.ts",
@@ -20,17 +20,39 @@
   },
   "typesVersions": {
     "*": {
-      "utilities": ["./dist/utilities/index.d.ts"],
-      "results": ["./dist/results/index.d.ts"],
-      "schema": ["./dist/schema/index.d.ts"],
-      "pipeline": ["./dist/pipeline/index.d.ts"],
-      "collections": ["./dist/collections/index.d.ts"],
-      "plugins": ["./dist/plugins/index.d.ts"],
-      "expressions": ["./dist/expressions/index.d.ts"],
-      "errors": ["./dist/errors/index.d.ts"],
-      "performance": ["./dist/performance/index.d.ts"],
-      "assertions": ["./dist/assertions/index.d.ts"],
-      "types": ["./dist/types/index.d.ts"]
+      "utilities": [
+        "./dist/utilities/index.d.ts"
+      ],
+      "results": [
+        "./dist/results/index.d.ts"
+      ],
+      "schema": [
+        "./dist/schema/index.d.ts"
+      ],
+      "pipeline": [
+        "./dist/pipeline/index.d.ts"
+      ],
+      "collections": [
+        "./dist/collections/index.d.ts"
+      ],
+      "plugins": [
+        "./dist/plugins/index.d.ts"
+      ],
+      "expressions": [
+        "./dist/expressions/index.d.ts"
+      ],
+      "errors": [
+        "./dist/errors/index.d.ts"
+      ],
+      "performance": [
+        "./dist/performance/index.d.ts"
+      ],
+      "assertions": [
+        "./dist/assertions/index.d.ts"
+      ],
+      "types": [
+        "./dist/types/index.d.ts"
+      ]
     }
   },
   "scripts": {
@@ -60,9 +82,7 @@
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",
     "ts-loader": "^9.5.2",
-    "typescript": "^5.7.2"
-  },
-  "dependencies": {
+    "typescript": "^5.7.2",
     "vitest": "^3.2.4"
   }
 }

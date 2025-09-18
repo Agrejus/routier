@@ -1,4 +1,4 @@
-import { generateData } from '@routier/testing-plugin';
+import { generateData } from '../../../../test-utils/dist';
 import { describe, it, expect, afterAll } from 'vitest';
 import { IDbPlugin, uuidv4 } from '@routier/core';
 import { PouchDbPlugin } from '../PouchDbPlugin';

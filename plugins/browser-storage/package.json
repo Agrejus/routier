@@ -1,6 +1,6 @@
 {
   "name": "@routier/browser-storage-plugin",
-  "version": "0.0.1",
+  "version": "0.0.1-alpha.1",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "source": "./src/index.ts",
@@ -30,18 +30,15 @@
   ],
   "description": "Dexie plugin for routier",
   "peerDependencies": {
-    "routier-core": "^0.0.1"
+    "@routier/core": "^0.0.1"
   },
   "devDependencies": {
-    "routier-core": "file://../../core",
+    "@routier/core": "^0.0.1-alpha.1",
+    "@routier/test-utils": "^0.0.1-alpha.1",
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",
     "jsdom": "^26.1.0",
-    "routier-plugin-testing": "file://../testing",
     "ts-loader": "^9.5.2",
     "vitest": "^3.1.3"
-  },
-  "dependencies": {
-
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@routier/sqlite-plugin",
-  "version": "0.0.1",
+  "version": "0.0.1-alpha.1",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "source": "./src/index.ts",
@@ -27,12 +27,12 @@
   ],
   "description": "Dexie plugin for routier",
   "peerDependencies": {
-    "routier-core": "^0.0.1"
+    "@routier/core": "^0.0.1"
   },
   "devDependencies": {
+    "@routier/core": "^0.0.1-alpha.1",
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",
-    "routier-core": "file://../../core",
     "ts-loader": "^9.5.2"
   },
   "dependencies": {

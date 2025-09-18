@@ -2,14 +2,29 @@
   "name": "routier-collection",
   "version": "1.0.0",
   "main": "index.js",
+  "private": true,
+  "workspaces": [
+    "core",
+    "datastore", 
+    "react",
+    "plugins/*",
+    "test-utils"
+  ],
   "scripts": {
-    "build": "npm run build:core && npm run build:routier",
+    "build": "lerna run build",
     "build:core": "cd core && npm run tsc",
     "build:routier": "cd routier && npm run tsc",
     "sync:examples": "node scripts/sync-doc-examples.mjs",
     "extract:doc-code": "node scripts/extract-doc-code.mjs",
     "docs:prepare": "npm run extract:doc-code && npm run sync:examples",
-    "docs:fix-includes": "node scripts/fix-capture-includes.mjs"
+    "docs:fix-includes": "node scripts/fix-capture-includes.mjs",
+    "version:patch": "lerna version patch --conventional-commits",
+    "version:minor": "lerna version minor --conventional-commits", 
+    "version:major": "lerna version major --conventional-commits",
+    "publish:canary": "lerna publish --canary",
+    "publish": "lerna publish from-git",
+    "clean": "lerna clean",
+    "list": "lerna list"
   },
   "author": "",
   "license": "ISC",

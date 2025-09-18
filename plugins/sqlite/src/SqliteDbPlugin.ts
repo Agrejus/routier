@@ -1,6 +1,9 @@
 import sqlite3 from 'sqlite3';
-import { CompiledSchema, DbPluginBulkOperationsEvent, DbPluginQueryEvent, EntityModificationResult, IDbPlugin } from '@routier/core';
 import { buildSelectFromExpression, compiledSchemaToSqliteTable } from './utils';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin } from '@routier/core/plugins';
+import { PluginEventCallbackPartialResult, PluginEventCallbackResult } from '@routier/core/results';
+import { BulkPersistResult } from '@routier/core/collections';
+import { CompiledSchema } from '@routier/core/schema';
 
 const tableCache: Record<string, string> = {};
 
@@ -18,24 +21,26 @@ export class SqliteDbPlugin implements IDbPlugin {
         }
     }
 
-    query<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: (result: TShape, error?: any) => void) {
-        this.resolveSchema(event.schema);
-        const select = buildSelectFromExpression<TEntity>({
-            schema: event.schema,
-            expression: event.operation.expression
-        });
+    query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<TShape>): void {
+        // this.resolveSchema(event.operation.schema);
+        // const select = buildSelectFromExpression<TRoot>({
+        //     schema: event.schema,
+        //     expression: event.operation.expression
+        // });
 
-        this._doWork(event.schema.collectionName, select.sql, select.params, (result, error) => {
+        // this._doWork(event.schema.collectionName, select.sql, select.params, (result, error) => {
 
-        })
+        // })
     }
 
-    destroy(done: (error?: any) => void) {
+    destroy(_event: DbPluginEvent, done: (error?: any) => void): void {
         const db = new sqlite3.Database(':memory:');
     }
 
-    bulkOperations<TEntity extends {}>(event: DbPluginBulkOperationsEvent<TEntity>, done: (result: EntityModificationResult<TEntity>, error?: any) => void) {
-        this.resolveSchema(event.schema);
+    bulkPersist(
+        event: DbPluginBulkPersistEvent,
+        done: PluginEventCallbackPartialResult<BulkPersistResult>) {
+
     }
 
     private _doWork<TResult>(

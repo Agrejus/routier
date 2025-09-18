@@ -1,116 +1,95 @@
-## Routier
+# Routier
 
-Type-safe, plugin-driven data abstraction layer that let's developers use any ORM/data store. Define schemas with computed/function properties, query with natural JS expressions, and persist via pluggable backends (memory, IndexedDB/Dexie, PouchDB/CouchDB, SQLite, filesystem, and more).
+<p align="center">
+  <img src="docs/assets/routier.svg" alt="Routier" width="140" height="140" />
+</p>
 
-### Highlights
+> **⚠️ Alpha Release** - This project is currently in alpha. APIs may change between versions. Use with caution in production.
 
-- Schema-first with rich modifiers: identity, defaults, computed, functions, unmapped, tracked
-- Natural queries: `(e) => e.name.startsWith('A') && e.age >= 18`
-- Smart execution: database-backed filters run server/adapter-side when possible, computed/unmapped filters run in memory
-- Change tracking, history, and performance tooling
-- Pluggable storage via first-class plugins
+A reactive data toolkit for building fast, local-first apps. Define schemas, create collections, use live queries, and make optimistic mutations with a plugin model for any storage.
 
-### Install (package names may vary per publish channel)
+**[📖 View Full Documentation](https://agrejus.github.io/routier/)** - Complete guides, API reference, and tutorials
+
+## Features
+
+- **Schema-first**: Type-safe entity definitions with indexes and modifiers
+- **Live queries**: Reactive queries across one or more collections
+- **Optimistic mutations**: Instant UI updates with automatic rollback
+- **Pluggable storage**: Memory, Local Storage, Dexie, SQLite, PouchDB, File System, and more
+- **Change tracking**: Automatic tracking of entity modifications
+- **Performance**: Database-backed filters when possible, in-memory for computed properties
+
+## Quick Start
 
 ```bash
-npm install routier routier-core routier-plugin-dexie
-# or
-npm install routier routier-core routier-plugin-pouchdb
+npm install @routier/core @routier/datastore @routier/memory-plugin
 ```
 
-### Quick start
-
-Define a schema with computed/function properties (in `routier-core`):
-
 ```ts
-import { s } from "routier-core";
+import { DataStore } from "@routier/datastore";
+import { MemoryPlugin } from "@routier/memory-plugin";
+import { s } from "@routier/core/schema";
 
-export const userProfileSchema = s
-  .define("userProfiles", {
+// Define a schema
+const userSchema = s
+  .define("users", {
     id: s.string().key().identity(),
-    firstName: s.string(),
-    lastName: s.string(),
-    email: s.string(),
-    dateOfBirth: s.date(),
-    createdAt: s.date().default(() => new Date()),
+    name: s.string(),
+    email: s.string().distinct(),
   })
   .compile();
+
+// Create a datastore with a plugin
+class AppContext extends DataStore {
+  constructor() {
+    super(new MemoryPlugin("routier-app"));
+  }
+  users = this.collection(userSchema).create();
+}
+
+const ctx = new AppContext();
+
+// Add data
+await ctx.users.addAsync({ name: "Ada", email: "ada@example.com" });
+await ctx.saveChangesAsync();
+
+// Query with live updates
+ctx.users
+  .subscribe()
+  .where((u) => u.name.startsWith("A"))
+  .toArray((result) => {
+    console.log("Live query result:", result);
+  });
 ```
 
-Create a store with a plugin and query (see `examples/` for full setups):
+## Why Routier?
 
-```ts
-import { DataStore } from "routier";
-import { PouchDbPlugin } from "routier-plugin-pouchdb";
-import { uuidv4 } from "routier-core";
-import { userProfileSchema } from "./schemas/userProfile";
+Choosing storage for local-first apps is hard—and the landscape moves fast. Routier separates your domain model from persistence through a small plugin interface:
 
-const store = new DataStore(new PouchDbPlugin(uuidv4()));
-const userProfiles = store.collection(userProfileSchema);
+- **Swap storage backends** without changing schemas, queries, or UI
+- **Use any framework/ORM/data store** you want via plugins
+- **Experiment safely**: try a new store by writing a plugin
+- **Fill ORM gaps**: feature-rich and easily extended
 
-await userProfiles.addAsync({
-  firstName: "Alice",
-  lastName: "Smith",
-  email: "a@x.com",
-  dateOfBirth: new Date("2000-01-01"),
-});
-await store.saveChangesAsync();
+## Built-in Plugins
 
-const alice = await userProfiles
-  .where((u) => u.firstName.startsWith("A"))
-  .firstOrUndefinedAsync();
-```
+- **Memory**: In-memory storage for development and testing
+- **Local Storage**: Browser localStorage/sessionStorage
+- **Dexie**: IndexedDB with Dexie.js
+- **PouchDB**: CouchDB sync and replication
+- **SQLite**: Node.js SQLite integration
+- **File System**: Node.js file-based storage
 
-### Querying: database vs in-memory
+## Examples
 
-Routier analyzes predicates to decide where they execute. Filters that reference database-mapped properties are pushed down to the adapter; filters on computed or unmapped properties run in memory.
+- **[Basic Examples](examples/)** - Vite, Rspack, Node.js setups
+- **[Performance Benchmarks](docs/demos/performance-benchmarks/)** - Speed comparisons
+- **[Real-world Apps](docs/examples/real-world/)** - Complete applications
 
-Tip: chain database-backed filters first, then computed/unmapped filters to avoid broad scans.
+## Contributing
 
-```ts
-// firstName: mapped (DB); age: computed (in-memory)
-const found = await userProfiles
-  .where((u) => u.firstName.startsWith("A")) // DB-backed
-  .where((u) => u.age === 0) // computed → in-memory
-  .firstOrUndefinedAsync();
-```
+Issues and PRs welcome! Please see our [Contributing Guide](docs/CONTRIBUTING.md) or open an issue to discuss changes.
 
-See more in Concepts → Queries → “Computed or unmapped properties” (`docs/concepts/queries/index.md`).
-
-### Plugins
-
-- Memory: `plugins/memory/`
-- Dexie (IndexedDB): `plugins/dexie/`
-- PouchDB (CouchDB sync): `plugins/pouchdb/`
-- SQLite: `plugins/sqlite/`
-- File System (Node): `plugins/file-system/`
-- Browser Storage (local/session): `plugins/browser-storage/`
-
-Each plugin implements a common interface so you can swap backends without changing app code.
-
-### Examples & Docs
-
-- Docs: `docs/` (Concepts, Guides, Tutorials, Reference)
-- Examples: `examples/` (vite, rspack, node) – run the package’s README for steps
-
-### Development
-
-Build from repo root:
-
-```bash
-npm run build          # builds core and routier
-```
-
-Run tests per package (e.g. core):
-
-```bash
-cd core && npm test
-```
-
-### Contributing
-
-Issues and PRs welcome. Please see `docs/CONTRIBUTING.md` if available, or open an issue to discuss changes.
-
-### License
+## License
 
 MIT

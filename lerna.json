@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1-alpha.1",
+  "npmClient": "npm",
+  "command": {
+    "publish": {
+      "conventionalCommits": true,
+      "message": "chore(release): publish"
+    }
+  },
+  "packages": [
+    "core",
+    "datastore",
+    "react",
+    "plugins/*",
+    "test-utils"
+  ]
+}

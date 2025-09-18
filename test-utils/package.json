@@ -1,6 +1,6 @@
 {
-  "name": "@routier/testing-plugin",
-  "version": "0.0.1",
+  "name": "@routier/test-utils",
+  "version": "0.0.1-alpha.1",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "source": "./src/index.ts",
@@ -27,17 +27,16 @@
   ],
   "description": "Testing plugin for routier",
   "peerDependencies": {
-    "routier": "^0.0.1",
-    "routier-core": "^0.0.1"
+    "@routier/core": "^0.0.1"
   },
   "dependencies": {
     "@faker-js/faker": "^9.7.0"
   },
   "devDependencies": {
+    "@routier/core": "file://../../core",
+    "@routier/datastore": "file://../../datastore",
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",
-    "@routier/datastore": "file://../../datastore",
-    "@routier/core": "file://../../core",
     "ts-loader": "^9.5.2",
     "vitest": "^3.2.4"
   }

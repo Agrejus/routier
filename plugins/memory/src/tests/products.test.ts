@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 import { describe, it, expect, vi, afterAll } from 'vitest';
-import { generateData, wait, seedData } from '@routier/testing-plugin';
+import { generateData, wait, seedData } from '../../../../test-utils/dist';
 import { IDbPlugin, UnknownRecord, uuidv4 } from '@routier/core';
 import { MemoryPlugin } from '../MemoryPlugin';
 import { TestDataStore } from './datastore/MemoryDatastore';
