@@ -1,6 +1,6 @@
 import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { SelectionQueryableAsync } from "./SelectionQueryableAsync";
-import { SkippedQueryable } from "./SkippedQueryable";
+import { SubscribedSkippedQueryable } from "./SubscribedSkippedQueryable";
 import { TakeQueryableAsync } from "./TakeQueryableAsync";
 import { GenericFunction } from "@routier/core/types";
 import { QueryOrdering } from "@routier/core/plugins";
@@ -37,6 +37,6 @@ export class SkippedQueryableAsync<Root extends {}, Shape> extends SelectionQuer
 
     subscribe() {
         this.isSubScribed = true;
-        return this.create(SkippedQueryable<Root, Shape, () => void>);
+        return this.create(SubscribedSkippedQueryable<Root, Shape, () => void>);
     }
 }

@@ -65,10 +65,10 @@ export class DataStore implements Disposable {
     }
 
     /**
- * Creates a new collection builder for the given schema.
- * @param schema The compiled schema for the entity type.
- * @returns A CollectionBuilder for the entity type.
- */
+     * Creates a new collection builder for the given schema.
+     * @param schema The compiled schema for the entity type.
+     * @returns A CollectionBuilder for the entity type.
+     */
     protected view<TEntity extends {}>(schema: CompiledSchema<TEntity>) {
         const onCreated = (view: View<TEntity>) => {
             this.collections.set(schema.id, view);
@@ -82,6 +82,7 @@ export class DataStore implements Disposable {
             pipelines: this.collectionPipelines,
             signal: this.abortController.signal,
             schemas: this.schemas,
+            persistCallback: this.dbPlugin.bulkPersist.bind(this.dbPlugin),
             deriveCallback: () => void (0)
         });
     }
@@ -106,7 +107,8 @@ export class DataStore implements Disposable {
                 this.dbPlugin.bulkPersist({
                     id: uuid(8),
                     operation: preparedChangesResult.data,
-                    schemas: this.schemas
+                    schemas: this.schemas,
+                    source: "data-store"
                 }, (bulkPersistResult) => {
 
                     if (bulkPersistResult.ok === Result.ERROR) {
@@ -238,7 +240,8 @@ export class DataStore implements Disposable {
     destroy(done: CallbackResult<never>) {
         this.dbPlugin.destroy({
             id: uuid(8),
-            schemas: this.schemas
+            schemas: this.schemas,
+            source: "data-store"
         }, done);
     }
 

@@ -140,6 +140,7 @@ export class CollectionBase<TEntity extends {}> {
                 unknown: []
             };
 
+            console.log(`[ROUTIER] COLLECTION_SEND schemaId=${this.schema.id} collectionName=${this.schema.collectionName} adds=${subscriptionChanges.adds.length} updates=${subscriptionChanges.updates.length} removals=${subscriptionChanges.removals.length}`);
             this.subscription.send(subscriptionChanges);
 
             done(result);
@@ -162,7 +163,8 @@ export class CollectionBase<TEntity extends {}> {
                 this.dataBridge.query({
                     id: uuid(8),
                     operation,
-                    schemas: this.schemas
+                    schemas: this.schemas,
+                    source: "data-store"
                 }, (r) => {
                     done(r as ResultType<TEntity[]>);
                 })

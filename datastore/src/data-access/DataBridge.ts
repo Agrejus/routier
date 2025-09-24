@@ -42,8 +42,10 @@ export class DataBridge<T extends {}> {
 
     subscribe<TShape, U>(event: DbPluginQueryEvent<T, TShape>, done: PluginEventCallbackResult<TShape>) {
         const subscription = event.operation.schema.createSubscription(this.signal);
+        const id = uuid(8);
+        console.log(`[ROUTIER] SUBSCRIBE bridgeId=${id} schemaId=${event.operation.schema.id}`)
         subscription.onMessage((changes) => {
-
+            debugger;
             const filters = event.operation.options.get("filter")
 
             // subscription has no filter, automatically run the query
@@ -67,7 +69,8 @@ export class DataBridge<T extends {}> {
 
                     ephemeralPlugin.destroy({
                         id: uuid(8),
-                        schemas: event.schemas
+                        schemas: event.schemas,
+                        source: "collection"
                     }, () => { /* noop */ });
 
                     if (r.ok === Result.ERROR) {
@@ -85,6 +88,9 @@ export class DataBridge<T extends {}> {
             }
         });
 
-        return () => subscription[Symbol.dispose]();
+        return () => {
+            console.log(`[ROUTIER] UNSUBSCRIBE bridgeId=${id}`);
+            return subscription[Symbol.dispose]();
+        };
     }
 }

@@ -3,18 +3,17 @@ import { DeriveCallback } from '../view-builder/ViewBuilder';
 import { CollectionOptions, CollectionPipelines } from '../types';
 import { IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
 import { ChangeTrackingType, CompiledSchema, InferCreateType, InferType } from '@routier/core/schema';
-import { SchemaCollection } from '@routier/core/collections';
-import { CallbackResult, Result } from '@routier/core';
-
-// When do we save?  When we recompute the view, we do not know when it is done.  Then we still need to persist the view.
-// Maybe make them memory only so we do not need to worry about persistence
+import { BulkPersistChanges, SchemaCollection, SchemaPersistChanges } from '@routier/core/collections';
+import { CallbackResult, noop, Result, uuid } from '@routier/core';
 
 /**
- * View that only allows data selection. Cannot add, remove, or update data.
+ * View that only allows data selection. Cannot add, remove, or update data.  Data is computed
+ * and saved when subscriptions in the derived function change
  */
 export class View<TEntity extends {}> extends CollectionBase<TEntity> {
 
     protected derive: (callback: DeriveCallback<TEntity>) => void;
+    protected persist: IDbPlugin["bulkPersist"];
 
     constructor(
         dbPlugin: IDbPlugin,
@@ -23,10 +22,37 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
         pipelines: CollectionPipelines,
         schemas: SchemaCollection,
         scopedQueryOptions: QueryOptionsCollection<InferType<TEntity>>,
-        derive: (callback: DeriveCallback<TEntity>) => void
+        derive: (callback: DeriveCallback<TEntity>) => void,
+        persist: IDbPlugin["bulkPersist"]
     ) {
-        super(dbPlugin, schema, options, pipelines, schemas, scopedQueryOptions)
-        this.derive = derive;
+        super(dbPlugin, schema, options, pipelines, schemas, scopedQueryOptions);
+
+        // Compute the view right away
+        this.derive = (cb) => {
+
+            derive((data) => {
+                const schemas = new SchemaCollection();
+
+                schemas.set(this.schema.id, this.schema as CompiledSchema<Record<string, unknown>>);
+                const operation = new BulkPersistChanges();
+                const schemaChanges = new SchemaPersistChanges();
+                schemaChanges.adds = data;
+
+                operation.set(this.schema.id, schemaChanges);
+
+                persist({
+                    id: uuid(8),
+                    operation,
+                    schemas,
+                    source: "view"
+                }, noop);
+
+                cb(data);
+            });
+        };
+
+        this.derive(noop);
+        this.persist = persist;
     }
 
     protected override get changeTrackingType(): ChangeTrackingType {

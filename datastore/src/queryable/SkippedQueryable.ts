@@ -3,6 +3,7 @@ import { SelectionQueryable } from "./SelectionQueryable";
 import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
 import { QueryOrdering } from "@routier/core/plugins";
+import { SubscribedSkippedQueryable } from "./SubscribedSkippedQueryable";
 
 // Cannot perform another skip
 export class SkippedQueryable<Root extends {}, Shape, U> extends SelectionQueryable<Root, Shape, U> {
@@ -37,6 +38,6 @@ export class SkippedQueryable<Root extends {}, Shape, U> extends SelectionQuerya
 
     subscribe() {
         this.isSubScribed = true;
-        return this.create(SkippedQueryable<Root, Shape, () => void>);
+        return this.create(SubscribedSkippedQueryable<Root, Shape, () => void>);
     }
 }

@@ -52,7 +52,7 @@ export class OptimisticReplicationDbPlugin implements IDbPlugin {
                 sourcePlugin.query<TEntity, TShape>({
                     id: uuid(8),
                     schemas: event.schemas,
-
+                    source: "collection",
                     // Select All Data
                     operation: Query.EMPTY<TEntity, TShape>(event.operation.schema)
                 }, (sourceResult) => {
@@ -81,7 +81,8 @@ export class OptimisticReplicationDbPlugin implements IDbPlugin {
                     readPlugin.bulkPersist({
                         id: uuid(8),
                         schemas: event.schemas,
-                        operation: changesCollection
+                        operation: changesCollection,
+                        source: "collection",
                     }, (readPersistResult) => {
 
                         if (readPersistResult.ok === Result.ERROR) {
@@ -149,7 +150,8 @@ export class OptimisticReplicationDbPlugin implements IDbPlugin {
             this.plugins.read.bulkPersist({
                 id: uuid(8),
                 operation: event.operation,
-                schemas: event.schemas
+                schemas: event.schemas,
+                source: "data-store",
             }, (r) => {
 
                 if (r.ok !== Result.SUCCESS) {
@@ -175,7 +177,8 @@ export class OptimisticReplicationDbPlugin implements IDbPlugin {
                         plugin.bulkPersist({
                             id: uuid(8),
                             operation: optimisticBulkPersistChanges,
-                            schemas: event.schemas
+                            schemas: event.schemas,
+                            source: "data-store",
                         }, (r) => {
 
                             if (r.ok === Result.ERROR) {

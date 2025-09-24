@@ -15,5 +15,6 @@ export type ViewInstanceCreator<
     pipelines: CollectionPipelines,
     schemas: SchemaCollection,
     queryOptions: QueryOptionsCollection<InferType<TEntity>>,
-    derive: (callback: DeriveCallback<TEntity>) => void
+    derive: (callback: DeriveCallback<TEntity>) => void,
+    persist: IDbPlugin["bulkPersist"]
 ) => TCollection;

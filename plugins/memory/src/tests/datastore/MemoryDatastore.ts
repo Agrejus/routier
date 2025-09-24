@@ -1,4 +1,4 @@
-import { IDbPlugin } from "@routier/core";
+import { IDbPlugin, uuidv4 } from "@routier/core";
 import { DataStore } from "@routier/datastore";
 import { productsSchema } from "../schemas/product";
 import { commentsSchema } from "../schemas/comments";
@@ -9,6 +9,7 @@ import { inventoryItemsSchema } from "../schemas/inventoryItem";
 import { playerSchema } from "../schemas/player";
 import { playerMatchSchema } from "../schemas/playerMatch";
 import { immutableItemSchema } from "../schemas/immutableItem";
+import { CommentsView, commentsViewSchema } from "../schemas/commentsView";
 
 export class TestDataStore extends DataStore {
     constructor(plugin: IDbPlugin) {
@@ -26,4 +27,23 @@ export class TestDataStore extends DataStore {
     playerMatches = this.collection(playerMatchSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...playerMatchSchema }).create();
 
     immutableItems = this.collection(immutableItemSchema).readonly().create();
+
+    commentsView = this.view(commentsViewSchema).derive((done) => {
+        this.comments.subscribe().next().toArray(response => {
+
+            if (response.ok === "error") {
+                return done([]);
+            }
+
+            done(response.data.map(x => ({
+                content: "hi",
+                user: {
+                    name: ""
+                },
+                createdAt: new Date(),
+                replies: 1,
+                id: uuidv4()
+            } as CommentsView)))
+        })
+    }).create();
 }

@@ -5,3 +5,4 @@ export * from './property/modifiers';
 export * from './property/types';
 export * from './PropertyInfo';
 export * from './types';
+export * from './communication';

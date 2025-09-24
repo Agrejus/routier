@@ -14,6 +14,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
     protected readonly changeTracker: ChangeTracker<TRoot>;
     protected readonly queryOptions: QueryOptionsCollection<TShape>;
     protected isSubScribed: boolean = false;
+    protected skipInitialQuery: boolean = false;
     protected schema: CompiledSchema<TRoot>;
     protected schemas: SchemaCollection;
     protected scopedQueryOptions: QueryOptionsCollection<TRoot>;
@@ -36,6 +37,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
         if (options?.queryable != null) {
             this.isSubScribed = options.queryable.isSubScribed;
+            this.skipInitialQuery = options.queryable.skipInitialQuery;
             this.queryOptions = options.queryable.queryOptions;
             this.dataBridge = options.queryable.dataBridge;
             this.changeTracker = options.queryable.changeTracker;
@@ -45,7 +47,14 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
     }
 
     // Cannot change the root type, it comes from the collection type, only the resulting type (shape)
-    protected create<Shape, TInstance extends QuerySource<TRoot, Shape>>(Instance: new (schema: CompiledSchema<TRoot>, schemas: Map<SchemaId, CompiledSchema<any>>, scopedQueryOptions: QueryOptionsCollection<TRoot>, changeTrackingType: ChangeTrackingType, options: { queryable?: QuerySource<TRoot, Shape>, dataBridge?: DataBridge<TRoot>, changeTracker?: ChangeTracker<TRoot> }) => TInstance) {
+    protected create<Shape, TInstance extends QuerySource<TRoot, Shape>>(
+        Instance: new (
+            schema: CompiledSchema<TRoot>,
+            schemas: SchemaCollection,
+            scopedQueryOptions: QueryOptionsCollection<TRoot>,
+            changeTrackingType: ChangeTrackingType,
+            options: { queryable?: QuerySource<TRoot, Shape>, dataBridge?: DataBridge<TRoot>, changeTracker?: ChangeTracker<TRoot> }
+        ) => TInstance) {
         return new Instance(this.schema, this.schemas, this.scopedQueryOptions, this.changeTrackingType, { queryable: this as any });
     }
 
@@ -167,17 +176,23 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
             databaseEvent: {
                 operation: new Query<TRoot, Shape>(splitQueryOptions.database as any, this.schema),
                 schemas: this.schemas,
-                id: uuid(8)
+                id: uuid(8),
+                source: "collection"
             },
             memoryEvent: {
                 operation: new Query<TRoot, Shape>(splitQueryOptions.memory as any, this.schema),
                 schemas: this.schemas,
-                id: uuid(8)
+                id: uuid(8),
+                source: "collection"
             }
         }
     }
 
     protected getData<TShape>(done: PluginEventCallbackResult<TShape>) {
+
+        if (this.skipInitialQuery) {
+            return;
+        }
 
         const { databaseEvent, memoryEvent } = this.createQueryPayload<TShape>();
 

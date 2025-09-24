@@ -184,6 +184,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
 
         // Need to select everything
         const coalescedDone = done != null ? done : (paramsOrDone as CallbackResult<boolean>);
+
         return this._query({
             doneOrSelector: coalescedDone
         }, (d, r) => {
