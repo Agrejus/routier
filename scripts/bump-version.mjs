@@ -33,48 +33,66 @@ function findPackageJsonFiles(dir, files = []) {
 }
 
 /**
- * Update package.json file with new version
+ * Extract version prefix from a version string
+ */
+function extractVersionPrefix(versionString) {
+    // Match common version prefixes: ^, ~, >=, <=, >, <, =, or any other non-digit character at start
+    const prefixMatch = versionString.match(/^([^\d]+)/);
+    return prefixMatch ? prefixMatch[1] : '';
+}
+
+/**
+ * Update package.json file with new version while preserving prefixes
  */
 function updatePackageJson(filePath, packageName, newVersion) {
     const content = readFileSync(filePath, 'utf8');
     const packageJson = JSON.parse(content);
     let updated = false;
-
+    
+    // Helper function to update a dependency with prefix preservation
+    function updateDependency(deps, packageName, newVersion) {
+        if (deps && deps[packageName]) {
+            const currentVersion = deps[packageName];
+            const prefix = extractVersionPrefix(currentVersion);
+            const versionWithPrefix = prefix + newVersion;
+            deps[packageName] = versionWithPrefix;
+            return true;
+        }
+        return false;
+    }
+    
     // Update dependencies
-    if (packageJson.dependencies && packageJson.dependencies[packageName]) {
-        packageJson.dependencies[packageName] = newVersion;
+    if (updateDependency(packageJson.dependencies, packageName, newVersion)) {
         updated = true;
     }
-
+    
     // Update devDependencies
-    if (packageJson.devDependencies && packageJson.devDependencies[packageName]) {
-        packageJson.devDependencies[packageName] = newVersion;
+    if (updateDependency(packageJson.devDependencies, packageName, newVersion)) {
         updated = true;
     }
-
+    
     // Update peerDependencies
-    if (packageJson.peerDependencies && packageJson.peerDependencies[packageName]) {
-        packageJson.peerDependencies[packageName] = newVersion;
+    if (updateDependency(packageJson.peerDependencies, packageName, newVersion)) {
         updated = true;
     }
-
+    
     // Update optionalDependencies
-    if (packageJson.optionalDependencies && packageJson.optionalDependencies[packageName]) {
-        packageJson.optionalDependencies[packageName] = newVersion;
+    if (updateDependency(packageJson.optionalDependencies, packageName, newVersion)) {
         updated = true;
     }
-
+    
     // Update the package's own version if it matches the package name
+    // (No prefix for the package's own version)
     if (packageJson.name === packageName) {
         packageJson.version = newVersion;
         updated = true;
     }
-
+    
     if (updated) {
         writeFileSync(filePath, JSON.stringify(packageJson, null, 2) + '\n');
         return true;
     }
-
+    
     return false;
 }
 
