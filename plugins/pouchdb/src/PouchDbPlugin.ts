@@ -65,24 +65,26 @@ export class PouchDbPlugin implements IDbPlugin {
         this._options = options;
     }
 
-    private _tryStartSync(schemas: SchemaCollection) {
-        if (this._options?.sync != null) {
+    startSync(schemas: SchemaCollection) {
 
-            if (cache["sync"] == null) {
-                cache["sync"] = {}; // placeholder
-                const localDb = new PouchDB(this._name);
-                const remoteDb = new PouchDB(this._options.sync.remoteDb);
+        assertIsNotNull(this._options?.sync, "Cannot start sync process without sync options.  Provide sync options in PouchDbPlugin constructor");
 
-                // Set up sync
-                const sync = localDb.sync(remoteDb, {
-                    ...this._options.sync
-                });
+        if (cache["sync"] == null) {
+            cache["sync"] = {}; // placeholder
+            const localDb = new PouchDB(this._name);
+            const remoteDb = new PouchDB(this._options.sync.remoteDb);
 
-                sync.on('change', (change) => this._options.sync.onChange(schemas, change));
+            // Set up sync
+            const sync = localDb.sync(remoteDb, {
+                ...this._options.sync
+            });
 
-                cache["sync"] = sync;
-            }
+            sync.on('change', (change) => this._options.sync.onChange(schemas, change));
+
+            cache["sync"] = sync;
         }
+
+        return cache["sync"] as PouchDB.Replication.Sync<{}>
     }
 
     private _identityBulkOperations(identitySchemaIds: SchemaId[], changes: BulkPersistChanges, result: BulkPersistResult, done: CallbackResult<never>): void {
@@ -590,7 +592,6 @@ export class PouchDbPlugin implements IDbPlugin {
         done: PluginEventCallbackPartialResult<BulkPersistResult>) {
 
         this._validateSchemas(event);
-        this._tryStartSync(event.schemas);
 
         const result = event.operation.toResult();
         const identitySchemaIds: SchemaId[] = [];
@@ -668,8 +669,6 @@ export class PouchDbPlugin implements IDbPlugin {
     }
 
     query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<TShape>): void {
-
-        this._tryStartSync(event.schemas);
 
         const unitOfWork: SyncronousUnitOfWork = (d) => this._query<TRoot, TShape>(event, (r) => {
             d();

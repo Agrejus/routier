@@ -21,6 +21,7 @@
     "version:patch": "lerna version patch --conventional-commits",
     "version:minor": "lerna version minor --conventional-commits", 
     "version:major": "lerna version major --conventional-commits",
+    "bump": "node scripts/bump-version.mjs",
     "publish:canary": "lerna publish --canary",
     "publish": "lerna publish from-git",
     "clean": "lerna clean",

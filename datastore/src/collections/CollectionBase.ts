@@ -5,7 +5,7 @@ import { Queryable } from '../queryable/Queryable';
 import { QueryableAsync } from '../queryable/QueryableAsync';
 import { SelectionQueryable } from "../queryable/SelectionQueryable";
 import { SelectionQueryableAsync } from "../queryable/SelectionQueryableAsync";
-import { ChangeTrackingType, CompiledSchema, ICollectionSubscription, InferCreateType, InferType, SubscriptionChanges } from "@routier/core/schema";
+import { ChangeTrackingType, CompiledSchema, ISchemaSubscription, InferCreateType, InferType, SubscriptionChanges } from "@routier/core/schema";
 import { IDbPlugin, IQuery, QueryOptionsCollection } from "@routier/core/plugins";
 import { CallbackPartialResult, CallbackResult, PartialResultType, Result, ResultType } from "@routier/core/results";
 import { BulkPersistChanges, BulkPersistResult, SchemaCollection } from "@routier/core/collections";
@@ -21,7 +21,7 @@ export class CollectionBase<TEntity extends {}> {
     protected readonly dataBridge: DataBridge<TEntity>;
     readonly schema: CompiledSchema<TEntity>;
     readonly schemas: SchemaCollection;
-    protected subscription: ICollectionSubscription<TEntity>;
+    protected subscription: ISchemaSubscription<TEntity>;
     protected _tag: unknown;
     scopedQueryOptions: QueryOptionsCollection<InferType<TEntity>>;
 
@@ -140,7 +140,6 @@ export class CollectionBase<TEntity extends {}> {
                 unknown: []
             };
 
-            console.log(`[ROUTIER] COLLECTION_SEND schemaId=${this.schema.id} collectionName=${this.schema.collectionName} adds=${subscriptionChanges.adds.length} updates=${subscriptionChanges.updates.length} removals=${subscriptionChanges.removals.length}`);
             this.subscription.send(subscriptionChanges);
 
             done(result);

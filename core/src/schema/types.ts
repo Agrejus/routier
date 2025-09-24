@@ -89,7 +89,7 @@ export type SubscriptionChanges<T extends {}> = {
     unknown: InferType<T>[];
 }
 
-export interface ICollectionSubscription<T extends {}> extends Disposable {
+export interface ISchemaSubscription<T extends {}> extends Disposable {
     send(changes: SubscriptionChanges<T>): void;
     onMessage(callback: (changes: SubscriptionChanges<T>) => void): void;
 }
@@ -106,7 +106,7 @@ export type CompiledSchema<TEntity extends {}> = {
 
     deserializePartial: (item: Record<string, unknown>, properties: PropertyInfo<TEntity>[]) => DeepPartial<InferType<TEntity>>;
 
-    createSubscription: (abortSignal?: AbortSignal) => ICollectionSubscription<TEntity>;
+    createSubscription: (abortSignal?: AbortSignal) => ISchemaSubscription<TEntity>;
     /** Returns the property info for a given id (full path) */
     getProperty: (id: string) => PropertyInfo<TEntity>;
     /** Returns the ID of the given entity. */

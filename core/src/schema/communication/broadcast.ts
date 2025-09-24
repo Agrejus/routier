@@ -1,50 +1,77 @@
+import { now } from "../../performance";
 import { Tagged, uuid } from "../../utilities";
-import { ICollectionSubscription, SchemaId, SubscriptionChanges } from "../types";
+import { ISchemaSubscription, SchemaId, SubscriptionChanges } from "../types";
 
 type BroadcastChannelReceiverId = Tagged<string, "BroadcastChannelReceiverId">;
-const registry: Record<SchemaId, SchemaChannelRegistry<unknown>> = {};
+type SubscriptionListenerCallback<T> = (changes: StampedChanges<T>) => void;
+interface ISubscriptionAction<T> {
+    action(changes: StampedChanges<T>): void
+}
+type StampedChanges<T> = { data: SubscriptionChanges<T>, timestamp: number };
 
-const getChannelRegistry = <T>(schemaId: SchemaId): SchemaChannelRegistry<T> => {
+const registry: Record<SchemaId, SchemaChannel<unknown>> = {};
+
+const getChannelRegistry = <T>(schemaId: SchemaId): SchemaChannel<T> => {
 
     if (registry[schemaId]) {
-        return registry[schemaId] as SchemaChannelRegistry<T>;
+        return registry[schemaId] as SchemaChannel<T>;
     }
 
-    const channel = new SchemaChannelRegistry<T>(schemaId);
+    const channel = new SchemaChannel<T>(schemaId);
 
     registry[schemaId] = channel;
 
     return channel;
 }
 
-type SubscriptionListener<T> = (changes: SubscriptionChanges<T>) => void;
+// Must have a sender and receiver.  Sender cannot listen for it's own message
+class SchemaChannel<T> {
 
-class SchemaChannelRegistry<T> {
+    readonly sender: SchemaChannelSender<T>;
+    readonly receiver: SchemaChannelReceiver<T>;
+
+    constructor(schemaId: SchemaId) {
+        this.sender = new SchemaChannelSender<T>(schemaId);
+        this.receiver = new SchemaChannelReceiver<T>(schemaId);
+    }
+}
+
+class SchemaChannelSender<T> {
 
     private readonly broadcastChannel: BroadcastChannel;
-    private subscriptions: BroadcastChannelReceiver<T>[] = [];
+
+    constructor(schemaId: SchemaId) {
+        this.broadcastChannel = new BroadcastChannel(`__routier-schema-subscription-channel:${schemaId}`);
+    }
+
+    send(changes: StampedChanges<T>) {
+        this.broadcastChannel.postMessage(changes)
+    }
+}
+
+class SchemaChannelReceiver<T> {
+
+    private readonly broadcastChannel: BroadcastChannel;
+    private subscriptions: SubscriptionListener<T>[] = [];
 
     constructor(schemaId: SchemaId) {
         this.broadcastChannel = new BroadcastChannel(`__routier-schema-subscription-channel:${schemaId}`);
 
-        this.broadcastChannel.onmessage = (event: any) => {
-            // We don't care about sending to ourselves, it should happen.  Runs off of the listeners
-            const changes = event.data as SubscriptionChanges<T>;
+        this.broadcastChannel.onmessage = (e) => {
+
+            // We can't send to the same instance it is not possbile
+            const stampedChanges = e.data as StampedChanges<T>;
 
             for (let i = 0, length = this.subscriptions.length; i < length; i++) {
                 const subscription = this.subscriptions[i];
 
-                subscription.action(changes);
+                subscription.action(stampedChanges);
             }
         };
     }
 
-    send(changes: SubscriptionChanges<T>) {
-        this.broadcastChannel.postMessage(changes)
-    }
-
-    addListener(id: BroadcastChannelReceiverId, listener: SubscriptionListener<T>) {
-        this.subscriptions.push(new BroadcastChannelReceiver<T>(id, listener));
+    addListener(id: BroadcastChannelReceiverId, listener: SubscriptionListenerCallback<T>) {
+        this.subscriptions.push(new SubscriptionListener<T>(id, listener));
     }
 
     removeListeners(id: BroadcastChannelReceiverId) {
@@ -52,30 +79,29 @@ class SchemaChannelRegistry<T> {
     }
 }
 
-interface IBroadcastChannelAction<T> {
-    action(changes: SubscriptionChanges<T>): void
-}
-class BroadcastChannelReceiver<T> implements IBroadcastChannelAction<T> {
+class SubscriptionListener<T> implements ISubscriptionAction<T> {
 
     readonly id: BroadcastChannelReceiverId;
-    private readonly listener: SubscriptionListener<T>;
+    private readonly listener: SubscriptionListenerCallback<T>;
 
-    constructor(id: BroadcastChannelReceiverId, listener: SubscriptionListener<T>) {
+    constructor(id: BroadcastChannelReceiverId, listener: SubscriptionListenerCallback<T>) {
         this.id = id;
         this.listener = listener;
     }
 
-    action(changes: SubscriptionChanges<T>) {
+    action(changes: StampedChanges<T>) {
         this.listener(changes);
     }
 }
 
-export class SubscriptionManager<T extends {}> implements ICollectionSubscription<T> {
+export class SchemaSubscription<T extends {}> implements ISchemaSubscription<T> {
 
     private readonly id: BroadcastChannelReceiverId;
     private readonly schemaId: SchemaId;
+    private readonly createdAt: number;
 
     constructor(schemaId: SchemaId, signal?: AbortSignal) {
+        this.createdAt = now();
         this.id = uuid(8) as BroadcastChannelReceiverId;
         this.schemaId = schemaId;
 
@@ -85,21 +111,32 @@ export class SubscriptionManager<T extends {}> implements ICollectionSubscriptio
     }
 
     send(changes: SubscriptionChanges<T>) {
-        const regisry = getChannelRegistry(this.schemaId);
+        const regisry = getChannelRegistry<T>(this.schemaId);
 
         // Send message to all listeners.
         // Since we create a new listener when we do onMessage,
         // we don't need to worry about sending to ourselves, it 
         // can't happen
-        regisry.send(changes);
+        regisry.sender.send({
+            data: changes,
+            timestamp: now()
+        });
     }
 
     onMessage(callback: (changes: SubscriptionChanges<T>) => void) {
 
-        const regisry = getChannelRegistry(this.schemaId);
+        const regisry = getChannelRegistry<T>(this.schemaId);
 
         // Link the callback to an instance
-        regisry.addListener(this.id, callback);
+        regisry.receiver.addListener(this.id, ({ data, timestamp }) => {
+
+            if (timestamp < this.createdAt) {
+                // Sent before the receiver was even created
+                return;
+            }
+
+            callback(data);
+        });
     }
 
     dispose() {
@@ -107,9 +144,9 @@ export class SubscriptionManager<T extends {}> implements ICollectionSubscriptio
     }
 
     [Symbol.dispose](): void {
-        const regisry = getChannelRegistry(this.schemaId);
+        const regisry = getChannelRegistry<T>(this.schemaId);
 
         // Remove listeners for this instance only
-        regisry.removeListeners(this.id);
+        regisry.receiver.removeListeners(this.id);
     }
 }

@@ -5,7 +5,7 @@ import { IDbPlugin } from '@routier/core/plugins';
 import { CompiledSchema, SchemaId } from '@routier/core/schema';
 import { TrampolinePipeline } from '@routier/core/pipeline';
 import { CallbackPartialResult, CallbackResult, PartialResultType, PluginEventResult, Result } from '@routier/core/results';
-import { BulkPersistChanges, BulkPersistResult, SchemaCollection } from '@routier/core/collections';
+import { BulkPersistChanges, BulkPersistResult, SchemaCollection, ReadonlySchemaCollection } from '@routier/core/collections';
 import { UnknownRecord, uuid } from '@routier/core/utilities';
 import { View } from './views/View';
 import { ViewBuilder } from './view-builder/ViewBuilder';
@@ -26,7 +26,12 @@ export class DataStore implements Disposable {
     protected readonly collectionPipelines: CollectionPipelines;
     /** AbortController for managing cancellation and disposal. */
     protected readonly abortController: AbortController;
-    protected readonly schemas: SchemaCollection;
+
+    protected readonly _schemas: SchemaCollection;
+
+    get schemas() {
+        return new ReadonlySchemaCollection([...this._schemas]);
+    }
 
     /**
      * Constructs a new Routier instance.
@@ -36,11 +41,15 @@ export class DataStore implements Disposable {
         this.abortController = new AbortController();
         this.dbPlugin = dbPlugin;
         this.collections = new Map<SchemaId, CollectionBase<any>>();
-        this.schemas = new SchemaCollection();
+        this._schemas = new SchemaCollection();
         this.collectionPipelines = {
             prepareChanges: new TrampolinePipeline<PartialResultType<BulkPersistChanges>>(),
             afterPersist: new TrampolinePipeline<PartialResultType<{ changes: BulkPersistChanges, result: BulkPersistResult }>>(),
         };
+    }
+
+    getDbPlugin<T extends IDbPlugin>() {
+        return this.dbPlugin as T;
     }
 
     /**
@@ -51,7 +60,7 @@ export class DataStore implements Disposable {
     protected collection<TEntity extends {}>(schema: CompiledSchema<TEntity>) {
         const onCreated = (collection: Collection<TEntity>) => {
             this.collections.set(schema.id, collection);
-            this.schemas.set(schema.id, schema as CompiledSchema<UnknownRecord>);
+            this._schemas.set(schema.id, schema as CompiledSchema<UnknownRecord>);
         };
         return new CollectionBuilder<TEntity, Collection<TEntity>>({
             dbPlugin: this.dbPlugin,
@@ -60,7 +69,7 @@ export class DataStore implements Disposable {
             schema,
             pipelines: this.collectionPipelines,
             signal: this.abortController.signal,
-            schemas: this.schemas
+            schemas: this._schemas
         });
     }
 
@@ -72,7 +81,7 @@ export class DataStore implements Disposable {
     protected view<TEntity extends {}>(schema: CompiledSchema<TEntity>) {
         const onCreated = (view: View<TEntity>) => {
             this.collections.set(schema.id, view);
-            this.schemas.set(schema.id, schema as CompiledSchema<UnknownRecord>);
+            this._schemas.set(schema.id, schema as CompiledSchema<UnknownRecord>);
         };
         return new ViewBuilder<TEntity, View<TEntity>>({
             dbPlugin: this.dbPlugin,
@@ -81,7 +90,7 @@ export class DataStore implements Disposable {
             schema,
             pipelines: this.collectionPipelines,
             signal: this.abortController.signal,
-            schemas: this.schemas,
+            schemas: this._schemas,
             persistCallback: this.dbPlugin.bulkPersist.bind(this.dbPlugin),
             deriveCallback: () => void (0)
         });
@@ -107,7 +116,7 @@ export class DataStore implements Disposable {
                 this.dbPlugin.bulkPersist({
                     id: uuid(8),
                     operation: preparedChangesResult.data,
-                    schemas: this.schemas,
+                    schemas: this._schemas,
                     source: "data-store"
                 }, (bulkPersistResult) => {
 
@@ -240,7 +249,7 @@ export class DataStore implements Disposable {
     destroy(done: CallbackResult<never>) {
         this.dbPlugin.destroy({
             id: uuid(8),
-            schemas: this.schemas,
+            schemas: this._schemas,
             source: "data-store"
         }, done);
     }

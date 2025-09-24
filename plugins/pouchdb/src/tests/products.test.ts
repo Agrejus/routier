@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 import { describe, it, expect, vi, afterAll } from 'vitest';
-import { generateData, wait, seedData } from '@routier/testing-plugin';
+import { generateData, wait, seedData } from '@routier/test-utils';
 import { IDbPlugin, UnknownRecord, uuidv4 } from '@routier/core';
 import { PouchDbPlugin } from '../PouchDbPlugin';
 import { TestDataStore } from './datastore/PouchDbDatastore';
@@ -1515,6 +1515,22 @@ describe("Product Tests", () => {
             await wait(500);
 
             expect(callback).toHaveBeenCalledTimes(1);
+        });
+
+        it("Should fire callbacks after change", async () => {
+            const dataStore = factory();
+            const callback = vi.fn();
+            await seedData(dataStore, () => dataStore.products);
+
+            dataStore.products.subscribe().where(w => w._id != "").firstOrUndefined(callback);
+
+            await wait(500);
+
+            await dataStore.products.addAsync(...generateData(dataStore.products.schema, 1));
+            await dataStore.saveChangesAsync();
+            await wait(500);
+
+            expect(callback).toHaveBeenCalledTimes(2);
         });
     });
 });
