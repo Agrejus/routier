@@ -30,10 +30,10 @@
   ],
   "description": "Dexie plugin for routier",
   "peerDependencies": {
-    "@routier/core": "^0.0.1"
+    "@routier/core": "^0.0.1-alpha.3"
   },
   "devDependencies": {
-    "@routier/core": "^0.0.1-alpha.1",
+    "@routier/core": "^0.0.1-alpha.3",
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",
     "ts-loader": "^9.5.2"

@@ -119,8 +119,8 @@ export class ViewBuilder<TEntity extends {}, TCollection extends View<TEntity>> 
     }
 
     create(): TCollection;
-    create<TExtension extends TCollection>(extend: (i: ViewInstanceCreator<TEntity, TCollection>, dbPlugin: IDbPlugin, schema: CompiledSchema<TEntity>, options: CollectionOptions, pipelines: CollectionPipelines, schemas: Map<SchemaId, CompiledSchema<any>>, scopedQueryOptions: QueryOptionsCollection<InferType<TEntity>>, derive: (callback: DeriveCallback<TEntity>) => void) => TExtension, persist: IDbPlugin["bulkPersist"]): TExtension;
-    create<TExtension extends TCollection = never>(extend?: (i: ViewInstanceCreator<TEntity, TCollection>, dbPlugin: IDbPlugin, schema: CompiledSchema<TEntity>, options: CollectionOptions, pipelines: CollectionPipelines, schemas: Map<SchemaId, CompiledSchema<any>>, scopedQueryOptions: QueryOptionsCollection<InferType<TEntity>>, derive: (callback: DeriveCallback<TEntity>) => void, persist: IDbPlugin["bulkPersist"]) => TExtension) {
+    create<TExtension extends TCollection>(extend: (i: ViewInstanceCreator<TEntity, TCollection>, dbPlugin: IDbPlugin, schema: CompiledSchema<TEntity>, options: CollectionOptions, pipelines: CollectionPipelines, schemas: SchemaCollection, scopedQueryOptions: QueryOptionsCollection<InferType<TEntity>>, derive: (callback: DeriveCallback<TEntity>) => void) => TExtension, persist: IDbPlugin["bulkPersist"]): TExtension;
+    create<TExtension extends TCollection = never>(extend?: (i: ViewInstanceCreator<TEntity, TCollection>, dbPlugin: IDbPlugin, schema: CompiledSchema<TEntity>, options: CollectionOptions, pipelines: CollectionPipelines, schemas: SchemaCollection, scopedQueryOptions: QueryOptionsCollection<InferType<TEntity>>, derive: (callback: DeriveCallback<TEntity>) => void, persist: IDbPlugin["bulkPersist"]) => TExtension) {
 
         const options: CollectionOptions = {
             signal: this._signal,

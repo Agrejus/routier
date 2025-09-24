@@ -16,12 +16,12 @@ type PouchDBPluginOptions = PouchDB.Configuration.DatabaseConfiguration & {
     queryType?: "default" | "memory-optimized" | "experimental";
     sync?: PouchDB.Replication.SyncOptions & {
         remoteDb: string;
-        onChange?: (schemas: SchemaCollection, change: PouchDB.Replication.SyncResult<{}>) => void;
-        onError?: (error: any) => void;
-        onComplete?: (info: PouchDB.Replication.SyncResult<{}>) => void;
-        onPaused?: (info: PouchDB.Replication.SyncResult<{}>) => void;
-        onActive?: (info: PouchDB.Replication.SyncResult<{}>) => void;
-        onDenied?: (info: PouchDB.Replication.SyncResult<{}>) => void;
+        onChange?: (schemas: SchemaCollection, event: PouchDB.Replication.SyncResult<{}>) => void;
+        onError?: (schemas: SchemaCollection, error?: any) => void;
+        onComplete?: (schemas: SchemaCollection, event: PouchDB.Replication.SyncResultComplete<{}>) => void;
+        onPaused?: (schemas: SchemaCollection, event?: any) => void;
+        onActive?: (schemas: SchemaCollection) => void;
+        onDenied?: (schemas: SchemaCollection, event?: any) => void;
         auth?: {
             username: string;
             password: string;
@@ -65,7 +65,7 @@ export class PouchDbPlugin implements IDbPlugin {
         this._options = options;
     }
 
-    startSync(schemas: SchemaCollection) {
+    sync(schemas: SchemaCollection) {
 
         assertIsNotNull(this._options?.sync, "Cannot start sync process without sync options.  Provide sync options in PouchDbPlugin constructor");
 
@@ -79,7 +79,29 @@ export class PouchDbPlugin implements IDbPlugin {
                 ...this._options.sync
             });
 
-            sync.on('change', (change) => this._options.sync.onChange(schemas, change));
+            if (this._options.sync.onChange) {
+                sync.on('change', (e) => this._options.sync.onChange(schemas, e));
+            }
+
+            if (this._options.sync.onActive) {
+                sync.on('active', () => this._options.sync.onActive(schemas));
+            }
+
+            if (this._options.sync.onComplete) {
+                sync.on('complete', (e) => this._options.sync.onComplete(schemas, e));
+            }
+
+            if (this._options.sync.onDenied) {
+                sync.on('denied', (e) => this._options.sync.onDenied(schemas, e));
+            }
+
+            if (this._options.sync.onError) {
+                sync.on('error', (e) => this._options.sync.onError(schemas, e));
+            }
+
+            if (this._options.sync.onPaused) {
+                sync.on('paused', (e) => this._options.sync.onPaused(schemas, e));
+            }
 
             cache["sync"] = sync;
         }

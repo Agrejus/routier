@@ -131,8 +131,8 @@ export class CollectionBuilder<TEntity extends {}, TCollection extends Collectio
     }
 
     create(): TCollection;
-    create<TExtension extends TCollection>(extend: (i: CollectionInstanceCreator<TEntity, TCollection>, dbPlugin: IDbPlugin, schema: CompiledSchema<TEntity>, options: CollectionOptions, pipelines: CollectionPipelines, schemas: Map<SchemaId, CompiledSchema<any>>, scopedQueryOptions: QueryOptionsCollection<InferType<TEntity>>) => TExtension): TExtension;
-    create<TExtension extends TCollection = never>(extend?: (i: CollectionInstanceCreator<TEntity, TCollection>, dbPlugin: IDbPlugin, schema: CompiledSchema<TEntity>, options: CollectionOptions, pipelines: CollectionPipelines, schemas: Map<SchemaId, CompiledSchema<any>>, scopedQueryOptions: QueryOptionsCollection<InferType<TEntity>>) => TExtension) {
+    create<TExtension extends TCollection>(extend: (i: CollectionInstanceCreator<TEntity, TCollection>, dbPlugin: IDbPlugin, schema: CompiledSchema<TEntity>, options: CollectionOptions, pipelines: CollectionPipelines, schemas: SchemaCollection, scopedQueryOptions: QueryOptionsCollection<InferType<TEntity>>) => TExtension): TExtension;
+    create<TExtension extends TCollection = never>(extend?: (i: CollectionInstanceCreator<TEntity, TCollection>, dbPlugin: IDbPlugin, schema: CompiledSchema<TEntity>, options: CollectionOptions, pipelines: CollectionPipelines, schemas: SchemaCollection, scopedQueryOptions: QueryOptionsCollection<InferType<TEntity>>) => TExtension) {
 
         const options: CollectionOptions = {
             signal: this._signal,
