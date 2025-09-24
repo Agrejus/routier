@@ -48,11 +48,18 @@ function updatePackageJson(filePath, packageName, newVersion) {
     const content = readFileSync(filePath, 'utf8');
     const packageJson = JSON.parse(content);
     let updated = false;
-    
+
     // Helper function to update a dependency with prefix preservation
     function updateDependency(deps, packageName, newVersion) {
         if (deps && deps[packageName]) {
             const currentVersion = deps[packageName];
+
+            // Skip file: protocol dependencies (local development)
+            if (currentVersion.startsWith('file:')) {
+                console.log(`  ⏭️  Skipping ${packageName}: ${currentVersion} (file: protocol)`);
+                return false;
+            }
+
             const prefix = extractVersionPrefix(currentVersion);
             const versionWithPrefix = prefix + newVersion;
             deps[packageName] = versionWithPrefix;
@@ -60,39 +67,39 @@ function updatePackageJson(filePath, packageName, newVersion) {
         }
         return false;
     }
-    
+
     // Update dependencies
     if (updateDependency(packageJson.dependencies, packageName, newVersion)) {
         updated = true;
     }
-    
+
     // Update devDependencies
     if (updateDependency(packageJson.devDependencies, packageName, newVersion)) {
         updated = true;
     }
-    
+
     // Update peerDependencies
     if (updateDependency(packageJson.peerDependencies, packageName, newVersion)) {
         updated = true;
     }
-    
+
     // Update optionalDependencies
     if (updateDependency(packageJson.optionalDependencies, packageName, newVersion)) {
         updated = true;
     }
-    
+
     // Update the package's own version if it matches the package name
     // (No prefix for the package's own version)
     if (packageJson.name === packageName) {
         packageJson.version = newVersion;
         updated = true;
     }
-    
+
     if (updated) {
         writeFileSync(filePath, JSON.stringify(packageJson, null, 2) + '\n');
         return true;
     }
-    
+
     return false;
 }
 

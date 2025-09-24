@@ -18,6 +18,8 @@ This script updates all references to a specific package version across all `pac
 - 📦 **Multiple Dependency Types**: Updates `dependencies`, `devDependencies`, `peerDependencies`, and `optionalDependencies`
 - 🎯 **Package Self-Versioning**: Updates the package's own version when the package name matches
 - 📋 **Lerna Integration**: Updates `lerna.json` version when appropriate
+- 🔒 **Prefix Preservation**: Maintains version prefixes like `^`, `~`, `>=`, `<=`, etc.
+- 🚫 **File Protocol Skip**: Ignores `file:` protocol dependencies (local development)
 - ✅ **Safe Operation**: Provides detailed output and allows review before committing
 - 🔄 **Idempotent**: Can be run multiple times safely
 
@@ -51,12 +53,29 @@ npm run bump @routier/react 0.0.1-alpha.2
 
 The script updates the following in all relevant `package.json` files:
 
-1. **Dependencies**: `dependencies[packageName] = newVersion`
-2. **Dev Dependencies**: `devDependencies[packageName] = newVersion`
-3. **Peer Dependencies**: `peerDependencies[packageName] = newVersion`
-4. **Optional Dependencies**: `optionalDependencies[packageName] = newVersion`
-5. **Package Version**: `version = newVersion` (when package name matches)
+1. **Dependencies**: `dependencies[packageName] = prefix + newVersion` (preserves `^`, `~`, etc.)
+2. **Dev Dependencies**: `devDependencies[packageName] = prefix + newVersion` (preserves `^`, `~`, etc.)
+3. **Peer Dependencies**: `peerDependencies[packageName] = prefix + newVersion` (preserves `^`, `~`, etc.)
+4. **Optional Dependencies**: `optionalDependencies[packageName] = prefix + newVersion` (preserves `^`, `~`, etc.)
+5. **Package Version**: `version = newVersion` (no prefix for package's own version)
 6. **Lerna Version**: Updates `lerna.json` version for root packages
+
+#### Version Prefix Preservation
+
+The script intelligently preserves version prefixes:
+
+- `^0.0.1-alpha.5` → `^0.0.1-alpha.10` (keeps `^`)
+- `~0.0.1-alpha.5` → `~0.0.1-alpha.10` (keeps `~`)
+- `>=0.0.1-alpha.5` → `>=0.0.1-alpha.10` (keeps `>=`)
+- `0.0.1-alpha.5` → `0.0.1-alpha.10` (no prefix, stays no prefix)
+
+#### File Protocol Dependencies
+
+The script automatically skips `file:` protocol dependencies (local development references):
+
+- `file:../core` → **skipped** (local development)
+- `file:../../plugins/memory` → **skipped** (local development)
+- `^0.0.1-alpha.5` → `^0.0.1-alpha.10` (updated normally)
 
 #### Example Output
 
