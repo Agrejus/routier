@@ -50,27 +50,29 @@ describe("Product Tests", () => {
             expect(added.tags).toEqual(item.tags);
         });
 
-        // it("Can add multiple products", async () => {
-        //     const dataStore = factory();
-        //     // Arrange
-        //     const items = generateData(dataStore.products.schema, 2);
+        it("Can add multiple products", async () => {
+            const dataStore = factory();
+            // Arrange
+            const items = generateData(dataStore.products.schema, 2);
 
-        //     // Act
-        //     const added = await dataStore.products.addAsync(...items);
-        //     const response = await dataStore.saveChangesAsync();
+            // have an issue with identity inserts, it is not finding the original record, serialization maybe?
 
-        //     // Assert
-        //     expect(response.aggregate.size).toBe(2);
-        //     expect(added).toHaveLength(2);
-        //     added.forEach((product, index) => {
-        //         expect(product._id).toStrictEqual(expect.any(String));
-        //         expect(product.category).toBe(items[index].category);
-        //         expect(product.name).toBe(items[index].name);
-        //         expect(product.inStock).toBe(items[index].inStock);
-        //         expect(product.price).toBe(items[index].price);
-        //         expect(product.tags).toEqual(items[index].tags);
-        //     });
-        // });
+            // Act
+            const added = await dataStore.products.addAsync(...items);
+            const response = await dataStore.saveChangesAsync();
+
+            // Assert
+            expect(response.aggregate.size).toBe(2);
+            expect(added).toHaveLength(2);
+            added.forEach((product, index) => {
+                expect(product._id).toStrictEqual(expect.any(String));
+                expect(product.category).toBe(items[index].category);
+                expect(product.name).toBe(items[index].name);
+                expect(product.inStock).toBe(items[index].inStock);
+                expect(product.price).toBe(items[index].price);
+                expect(product.tags).toEqual(items[index].tags);
+            });
+        });
 
         //     describe("Proxy change tracking", () => {
         //         it("Add should be a proxy after calling addAsync", async () => {

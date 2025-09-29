@@ -331,11 +331,13 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             compareCodeBuilder.slot("return").raw(`     return result;`);
 
             const deserializeCodeBuilder = new CodeBuilder();
+            deserializeCodeBuilder.slot("functions");
             deserializeCodeBuilder.slot("result");
             deserializeCodeBuilder.slot("if");
             deserializeCodeBuilder.slot("return").raw(`     return result;`);
 
             const serializeCodeBuilder = new CodeBuilder();
+            serializeCodeBuilder.slot("functions");
             serializeCodeBuilder.slot("result");
             serializeCodeBuilder.slot("if");
             serializeCodeBuilder.slot("return").raw(`     return result;`);

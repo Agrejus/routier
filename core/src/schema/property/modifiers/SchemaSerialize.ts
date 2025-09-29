@@ -12,7 +12,7 @@ export class SchemaSerialize<T extends any, TModifiers extends SchemaModifiers> 
         this.valueSerializer = serializer;
     }
 
-    deserializer(deserializer: PropertyDeserializer<T>) {
+    deserialize(deserializer: PropertyDeserializer<T>) {
         return new SchemaDeserialize<T, TModifiers | "deserialize">(deserializer, this);
     }
 }

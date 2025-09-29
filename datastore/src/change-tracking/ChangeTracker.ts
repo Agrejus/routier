@@ -77,12 +77,23 @@ export class ChangeTracker<TEntity extends {}> {
 
         for (let i = 0, length = adds.length; i < length; i++) {
             const add = adds[i];
-            const found = this.additions.get(add);
 
-            assertIsNotNull(add, "Cannot find internal addition, please make sure the entire document is returned from the plugin for adds");
-
-            // need to deserialize the add in case there are any dates on it
+            // Need to deserialize so we can match properly
             const deserializedAdd = this.schema.deserialize(add);
+
+            const found = this.additions.get(deserializedAdd);
+
+            assertIsNotNull(found, () => {
+
+                return `Cannot find internal addition, please check the following:
+                
+1. Entire document must be returned from the plugin for adds
+2. Serialization/deserialization must be set at the schema level if the underlying datastore does not support certain types. Ex.  Sqlite stores booleans as integers
+
+Internal Documents: ${JSON.stringify([...this.attachments.entries()], null, 2)}
+
+Plugin Document: ${JSON.stringify(add, null, 2)}`
+            });
 
             // Let's only map Ids and identities
             this.schema.merge(found, deserializedAdd); // merge needs to map children appropriately
@@ -325,6 +336,16 @@ export class ChangeTracker<TEntity extends {}> {
         }
     }
 
+    deserializeAndEnrich(entities: InferType<TEntity>[], changeTrackingType: ChangeTrackingType) {
+        const result = [];
+
+        for (let i = 0, length = entities.length; i < length; i++) {
+            result.push(this.schema.enrich(this.schema.deserialize(entities[i]), changeTrackingType));
+        }
+
+        return result;
+    }
+
     enrich(entities: InferType<TEntity>[], changeTrackingType: ChangeTrackingType) {
         const result = [];
 
@@ -366,8 +387,10 @@ export class ChangeTracker<TEntity extends {}> {
         // this will remove any change tracking.  We do
         // not want to send any change tracked items to the plugin
         // because then they will need to worry about lifecycle management
+        // Need to make sure we run any serialization changes as well
         for (const item of this.additions.values()) {
-            result.push(this.schema.prepare(item as any));
+            const prepared = this.schema.prepare(item)
+            result.push(this.schema.serialize(prepared as InferType<TEntity>) as InferCreateType<TEntity>);
         }
 
         return result;

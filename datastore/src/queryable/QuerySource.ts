@@ -219,7 +219,8 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
             // if change tracking is true, we will never be shaping the result from .map()
             if (databaseEvent.operation.changeTracking === true) {
-                const enriched = this.changeTracker.enrich(result.data as InferType<TRoot>[], this.changeTrackingType);
+
+                const enriched = this.changeTracker.deserializeAndEnrich(result.data as InferType<TRoot>[], this.changeTrackingType);
 
                 // This means we are querying on a computed property that is untracked, need to select
                 // all and query in memory
@@ -227,14 +228,12 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
                     const translator = new JsonTranslator(memoryEvent.operation);
                     const data = translator.translate(enriched);
                     const resolved = this.changeTracker.resolve(data as InferType<TRoot>[], tags);
-                    done(PluginEventResult.success(memoryEvent.id, resolved as TShape));
-                    return;
+                    return done(PluginEventResult.success(memoryEvent.id, resolved as TShape));
                 }
 
                 const resolved = this.changeTracker.resolve(enriched, tags);
 
-                done(PluginEventResult.success(databaseEvent.id, resolved as TShape));
-                return;
+                return done(PluginEventResult.success(databaseEvent.id, resolved as TShape));
             }
 
             done(result);

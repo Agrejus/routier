@@ -6,9 +6,17 @@ export function assertDate(data: unknown): asserts data is Date {
     }
 }
 
-export function assertIsNotNull<T>(data: T | null | undefined, message?: string): asserts data is NonNullable<T> {
+export function assertIsNotNull<T>(data: T | null | undefined, message?: string | (() => string)): asserts data is NonNullable<T> {
     if (data == null) {
-        throw new TypeError(message ?? 'Assertion failed, data is null');
+        if (message == null) {
+            throw new TypeError('Assertion failed, data is null');
+        }
+
+        if (typeof message === "string") {
+            throw new TypeError(message);
+        }
+
+        throw new TypeError(message());
     }
 }
 

@@ -2,6 +2,7 @@ import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema'
 import { Expression, ComparatorExpression, OperatorExpression, ValueExpression, PropertyExpression } from '@routier/core/expressions';
 import { IQuery } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
+import { SqlOperation } from './types';
 
 /**
  * Maps schema types to SQLite column types.
@@ -234,7 +235,11 @@ export function buildSelectFromExpression<TEntity extends {}, TShape>(options: {
     return { sql, params };
 }
 
-export function buildFromPersistOperation<TEntity extends {}, TShape>(schema: CompiledSchema<TEntity>, changes: SchemaPersistChanges<Record<string, unknown>>): { sql: string, params: any[] } {
+export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSchema<TEntity>, changes: SchemaPersistChanges<Record<string, unknown>>): {
+    adds: SqlOperation | null;
+    updates: SqlOperation | null;
+    removes: SqlOperation | null;
+} {
     const collectionName = schema.collectionName;
     const {
         adds,
@@ -244,7 +249,7 @@ export function buildFromPersistOperation<TEntity extends {}, TShape>(schema: Co
     } = changes;
 
     if (!hasItems) {
-        return { sql: '', params: [] };
+        return { adds: null, updates: null, removes: null };
     }
 
     // Get column names from schema properties, excluding identity columns for INSERT
@@ -257,30 +262,34 @@ export function buildFromPersistOperation<TEntity extends {}, TShape>(schema: Co
         .map(p => `"${p.name}"`);
     const insertColumnStr = insertColumns.join(', ');
 
-    const statements: string[] = [];
-    const allParams: any[] = [];
-
     // Handle INSERT operations (adds)
+    let addsOperation: SqlOperation | null = null;
     if (adds.length > 0) {
         const placeholders = adds.map(() =>
             `(${insertColumns.map(() => '?').join(', ')})`
         ).join(', ');
 
         const insertSql = `INSERT INTO "${collectionName}" (${insertColumnStr}) VALUES ${placeholders} RETURNING ${allColumnStr}`;
-        statements.push(insertSql);
 
         // Flatten all add parameters (excluding identity columns)
+        const addParams: any[] = [];
         for (const add of adds) {
             for (const col of schema.properties) {
                 if (!col.isIdentity) {
-                    allParams.push(add[col.name]);
+                    addParams.push(add[col.name]);
                 }
             }
         }
+
+        addsOperation = { sql: insertSql, params: addParams };
     }
 
     // Handle UPDATE operations (updates)
+    let updatesOperation: SqlOperation | null = null;
     if (updates.length > 0) {
+        const statements: string[] = [];
+        const allParams: any[] = [];
+
         for (const update of updates) {
             const { entity, delta } = update;
 
@@ -302,23 +311,27 @@ export function buildFromPersistOperation<TEntity extends {}, TShape>(schema: Co
                 allParams.push(entity.id); // WHERE clause parameter
             }
         }
+
+        if (statements.length > 0) {
+            updatesOperation = { sql: statements.join('; '), params: allParams };
+        }
     }
 
     // Handle DELETE operations (removes)
+    let removesOperation: SqlOperation | null = null;
     if (removes.length > 0) {
         const removeIds = removes.map(remove => remove.id);
         const placeholders = removeIds.map(() => '?').join(', ');
 
         const deleteSql = `DELETE FROM "${collectionName}" WHERE "id" IN (${placeholders}) RETURNING ${allColumnStr}`;
-        statements.push(deleteSql);
-
-        allParams.push(...removeIds);
+        removesOperation = { sql: deleteSql, params: removeIds };
     }
 
-    // Combine all statements with semicolons
-    const combinedSql = statements.join('; ');
-
-    return { sql: combinedSql, params: allParams };
+    return {
+        adds: addsOperation,
+        updates: updatesOperation,
+        removes: removesOperation
+    };
 }
 
 /**
@@ -328,7 +341,7 @@ export function buildFromPersistOperation<TEntity extends {}, TShape>(schema: Co
  * @param query The IQuery object containing options and schema
  * @returns The complete SQL statement and parameters
  */
-export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuery<TEntity, TShape>): { sql: string, params: any[] } {
+export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuery<TEntity, TShape>): SqlOperation {
     const { schema, options } = query;
     const tableName = schema.collectionName;
 
