@@ -3,9 +3,9 @@ import { generateData, seedData } from '@routier/test-utils';
 import { IDbPlugin, UnknownRecord, uuidv4 } from '@routier/core';
 import { SqliteDbPlugin } from '../SqliteDbPlugin';
 import { SqliteDataStore } from './data-access/context';
-import { faker } from '@faker-js/faker';
+import { da, faker } from '@faker-js/faker';
 
-const generateDbName = () => `${uuidv4()}-db`;
+const generateDbName = () => `z-${uuidv4()}-db`;
 const pluginFactory: (dbname?: string) => IDbPlugin = (dbname?: string) => new SqliteDbPlugin(dbname ?? generateDbName());
 const stores: SqliteDataStore[] = [];
 const factory = (dbname?: string) => {
@@ -271,6 +271,7 @@ describe("Product Tests", () => {
             await seedData(dataStore, () => dataStore.products, 20);
             // Act
             const found = await dataStore.products.take(10).toArrayAsync();
+            const ids = found.map(x => x._id);
 
             for (const product of found) {
                 product.name = faker.lorem.word();
@@ -280,6 +281,16 @@ describe("Product Tests", () => {
             const response = await dataStore.saveChangesAsync();
             expect(response.aggregate.size).toBe(10);
             expect(response.aggregate.updates).toBe(10);
+
+            const saved = await dataStore.products.where(([x, p]) => p.ids.includes(x._id), { ids }).toArrayAsync();
+
+            expect(saved.length).toBe(10);
+
+            for (const save of saved) {
+                const beforeSave = found.find(x => x._id === save._id);
+                expect(save.name).toBe(beforeSave?.name);
+                expect(save.price).toBe(beforeSave?.price);
+            }
         });
 
         it("should not save anything when property is reverted to original value", async () => {
@@ -338,6 +349,7 @@ describe("Product Tests", () => {
             const response = await dataStore.saveChangesAsync();
             expect(response.aggregate.size).toBe(1);
             const foundAfterSave = await dataStore.products.firstAsync(w => w._id === found._id);
+
             // Assert
             expect(foundAfterSave.tags.length).toBe(0);
         });
@@ -361,8 +373,8 @@ describe("Product Tests", () => {
             const response = await dataStore.saveChangesAsync();
             expect(response.aggregate.size).toBe(0);
             const foundAfterSave = await dataStore.products.firstAsync(w => w._id === found._id);
-            // Assert - We modified it by ref so it was changed but not saved
-            expect(foundAfterSave.tags.length).toBe(0);
+            // Assert - We modified it and it was reset/overwritten by the selected item from the database
+            expect(foundAfterSave.tags.length).toBe(1);
         });
 
         it("should not mark the item as dirty when the property is set to the same value", async () => {
@@ -734,10 +746,13 @@ describe("Product Tests", () => {
             await seedData(dataStore, () => dataStore.products, 2);
 
             // Act
-            const found = await dataStore.products.where(w => w._id != "").sort(w => w.name).skip(1).take(1).toArrayAsync();
+            const first = await dataStore.products.where(w => w._id != "").sort(w => w.name).take(1).toArrayAsync();
+            const second = await dataStore.products.where(w => w._id != "").sort(w => w.name).skip(1).take(1).toArrayAsync();
 
             // Assert
-            expect(found.length).toBe(1);
+            expect(first.length).toBe(1);
+            expect(second.length).toBe(1);
+            expect(first[0]._id != second[0]._id).toBe(true);
         });
 
         it("where + toArrayAsync", async () => {
@@ -806,20 +821,36 @@ describe("Product Tests", () => {
             }
         });
 
-        it("where + where", async () => {
+        it("where + where lowercase", async () => {
             const dataStore = factory();
             // Arrange
             await seedData(dataStore, () => dataStore.products, 200);
 
             const all = await dataStore.products.toArrayAsync();
-            const count = await dataStore.products.where(w => w.price > 100).where(w => w.name.startsWith("s")).toArrayAsync();
+            const actual = await dataStore.products.where(w => w.price > 100).where(w => w.name.startsWith("s")).toArrayAsync();
 
-            const expectedSum = all.filter(w => w.price > 100 && w.name.startsWith("s"));
+            const expected = all.filter(w => w.price > 100 && w.name.startsWith("s"));
 
-            expectedSum.sort();
-            count.sort();
+            expected.sort();
+            actual.sort();
 
-            expect(expectedSum).toStrictEqual(count);
+            expect(expected).toStrictEqual(actual);
+        });
+
+        it("where + where uppercase", async () => {
+            const dataStore = factory();
+            // Arrange
+            await seedData(dataStore, () => dataStore.products, 200);
+
+            const all = await dataStore.products.toArrayAsync();
+            const actual = await dataStore.products.where(w => w.price > 100).where(w => w.name.startsWith("S")).toArrayAsync();
+
+            const expected = all.filter(w => w.price > 100 && w.name.startsWith("S"));
+
+            expected.sort();
+            actual.sort();
+
+            expect(expected).toStrictEqual(actual);
         });
 
         it("where + sort + toArrayAsync", async () => {
@@ -1426,10 +1457,12 @@ describe("Product Tests", () => {
         it("Should handle aggregation query", async () => {
             const dataStore = factory();
             await seedData(dataStore, () => dataStore.products, 1000);
+            const all = await dataStore.products.where(w => w.inStock).toArrayAsync();
+            const total = all.reduce((a, v) => a + v.price, 0);
             const totalValue = await dataStore.products
                 .where(w => w.inStock)
                 .sumAsync(w => w.price);
-            expect(totalValue).toBeGreaterThan(0);
+            expect(totalValue).toBe(total);
         });
 
         it("Should handle nested filtering", async () => {

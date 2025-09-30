@@ -109,7 +109,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
-        expect(result.sql).toBe('SELECT "id", "name", "age" FROM (SELECT "id", "name", "age" FROM "users" ORDER BY "name" DESC) AS subquery_1 OFFSET 5');
+        expect(result.sql).toBe('SELECT "id", "name", "age" FROM (SELECT "id", "name", "age" FROM "users" ORDER BY "name" DESC) AS subquery_1 LIMIT -1 OFFSET 5');
         expect(result.params).toEqual([]);
     });
 
@@ -148,8 +148,8 @@ describe('buildQueryFromIQuery Integration Tests', () => {
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
-        expect(result.sql).toBe('SELECT "id", "name", "age" FROM "users" WHERE "age" > ? AND "name" LIKE ?');
-        expect(result.params).toEqual([18, 'John%']);
+        expect(result.sql).toBe('SELECT "id", "name", "age" FROM "users" WHERE "age" > ? AND "name" GLOB ?');
+        expect(result.params).toEqual([18, 'John*']);
     });
 
     it('should build a query with DISTINCT', () => {
@@ -188,7 +188,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
-        expect(result.sql).toBe('SELECT "id", "name", "age" FROM (SELECT "id", "name", "age" FROM (SELECT "id", "name", "age" FROM "users" ORDER BY "age" DESC) AS subquery_1 OFFSET 10) AS subquery_2 LIMIT 5');
+        expect(result.sql).toBe('SELECT "id", "name", "age" FROM (SELECT "id", "name", "age" FROM "users" ORDER BY "age" DESC) AS subquery_1 LIMIT 5 OFFSET 10');
         expect(result.params).toEqual([]);
     });
 
@@ -210,8 +210,8 @@ describe('buildQueryFromIQuery Integration Tests', () => {
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
-        expect(result.sql).toBe('SELECT "id", "name", "age" FROM "users" WHERE "age" > ? AND "name" LIKE ? AND "age" < ?');
-        expect(result.params).toEqual([18, 'John%', 65]);
+        expect(result.sql).toBe('SELECT "id", "name", "age" FROM "users" WHERE "age" > ? AND "name" GLOB ? AND "age" < ?');
+        expect(result.params).toEqual([18, 'John*', 65]);
     });
 
     it('should build a query with MIN aggregate function', () => {
@@ -228,7 +228,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
-        expect(result.sql).toBe('SELECT MIN("age") FROM "users"');
+        expect(result.sql).toBe('SELECT MIN("age") AS "age" FROM "users"');
         expect(result.params).toEqual([]);
     });
 
@@ -246,7 +246,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
-        expect(result.sql).toBe('SELECT MAX("age") FROM "users"');
+        expect(result.sql).toBe('SELECT MAX("age") AS "age" FROM "users"');
         expect(result.params).toEqual([]);
     });
 
@@ -264,7 +264,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
-        expect(result.sql).toBe('SELECT SUM("age") FROM "users"');
+        expect(result.sql).toBe('SELECT SUM("age") AS "age" FROM "users"');
         expect(result.params).toEqual([]);
     });
 
@@ -284,7 +284,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
-        expect(result.sql).toBe('SELECT MIN("age") FROM "users" WHERE "age" > ?');
+        expect(result.sql).toBe('SELECT MIN("age") AS "age" FROM "users" WHERE "age" > ?');
         expect(result.params).toEqual([18]);
     });
 
@@ -402,7 +402,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
-        expect(result.sql).toBe('SELECT "id", "name", "age" FROM (SELECT "id", "name", "age" FROM (SELECT "id", "name", "age" FROM "users" WHERE "age" > ? ORDER BY "name" ASC) AS subquery_1 OFFSET 5) AS subquery_2 LIMIT 10');
+        expect(result.sql).toBe('SELECT "id", "name", "age" FROM (SELECT "id", "name", "age" FROM "users" WHERE "age" > ? ORDER BY "name" ASC) AS subquery_1 LIMIT 10 OFFSET 5');
         expect(result.params).toEqual([18]);
     });
 
@@ -426,7 +426,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
-        expect(result.sql).toBe('SELECT "id", "name", "age" FROM (SELECT "id", "name", "age" FROM (SELECT "id", "name", "age" FROM "users" WHERE "age" > ? AND "name" IS NOT NULL ORDER BY "name" ASC) AS subquery_1 OFFSET 5) AS subquery_2 LIMIT 10');
+        expect(result.sql).toBe('SELECT "id", "name", "age" FROM (SELECT "id", "name", "age" FROM "users" WHERE "age" > ? AND "name" IS NOT NULL ORDER BY "name" ASC) AS subquery_1 LIMIT 10 OFFSET 5');
         expect(result.params).toEqual([18]);
     });
 
@@ -473,5 +473,45 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         const result = buildFromQueryOperation(capturedQuery);
         expect(result.sql).toBe('SELECT "id", "name", "age" FROM "users" WHERE "age" > ? AND "name" IS NOT NULL');
         expect(result.params).toEqual([18]); // Only the non-null comparison adds a parameter
+    });
+
+    it('should handle case-sensitive LIKE operations', () => {
+        let capturedQuery: any = null;
+
+        const plugin = new SqliteTestPlugin((event) => {
+            capturedQuery = event.operation;
+        });
+
+        const datastore = new TestDataStore(plugin);
+
+        // Test case-sensitive starts-with
+        datastore.users
+            .where(x => x.name.startsWith('John'))
+            .toArray(vi.fn<any>());
+
+        expect(capturedQuery).toBeDefined();
+        const result = buildFromQueryOperation(capturedQuery);
+        expect(result.sql).toBe('SELECT "id", "name", "age" FROM "users" WHERE "name" GLOB ?');
+        expect(result.params).toEqual(['John*']);
+    });
+
+    it('should handle logical operators correctly (&& -> AND, || -> OR)', () => {
+        let capturedQuery: any = null;
+
+        const plugin = new SqliteTestPlugin((event) => {
+            capturedQuery = event.operation;
+        });
+
+        const datastore = new TestDataStore(plugin);
+
+        // Test complex logical expression
+        datastore.users
+            .where(x => x.age > 18 && (x.age < 65 || x.name.startsWith('Admin')))
+            .toArray(vi.fn<any>());
+
+        expect(capturedQuery).toBeDefined();
+        const result = buildFromQueryOperation(capturedQuery);
+        expect(result.sql).toBe('SELECT "id", "name", "age" FROM "users" WHERE ("age" > ? AND ("age" < ? OR "name" GLOB ?))');
+        expect(result.params).toEqual([18, 65, 'Admin*']);
     });
 });

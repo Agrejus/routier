@@ -337,8 +337,8 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             deserializeCodeBuilder.slot("return").raw(`     return result;`);
 
             const serializeCodeBuilder = new CodeBuilder();
+            serializeCodeBuilder.slot("result").raw("const result = {};");
             serializeCodeBuilder.slot("functions");
-            serializeCodeBuilder.slot("result");
             serializeCodeBuilder.slot("if");
             serializeCodeBuilder.slot("return").raw(`     return result;`);
 

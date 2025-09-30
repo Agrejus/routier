@@ -4,18 +4,32 @@ import { DataTranslator } from "./DataTranslator";
 export class SqlTranslator<TRoot extends {}, TShape> extends DataTranslator<TRoot, TShape> {
 
     count<TResult extends number>(data: unknown, _: QueryOption<TShape, "count">): TResult {
+        if (Array.isArray(data) && data.length > 0) {
+            // Count should be returned as the property alias on the query
+            return data[0].count;
+        }
+
         return data as TResult;
     }
 
     min<TResult extends string | number | Date>(data: unknown, _: QueryOption<TShape, "min">): TResult {
-        return data as TResult;
+        return this.shapeResult(data);
     }
 
     max<TResult extends string | number | Date>(data: unknown, _: QueryOption<TShape, "max">): TResult {
-        return data as TResult;
+        return this.shapeResult(data);
     }
 
     sum<TResult extends number>(data: unknown, _: QueryOption<TShape, "sum">): TResult {
+        return this.shapeResult(data);
+    }
+
+    private shapeResult<TResult>(data: unknown) {
+        if (Array.isArray(data) && data.length > 0) {
+            // Shape the result
+            return data[0];
+        }
+
         return data as TResult;
     }
 
@@ -39,7 +53,30 @@ export class SqlTranslator<TRoot extends {}, TShape> extends DataTranslator<TRoo
         return data as TShape;
     }
 
-    map(data: unknown, _: QueryOption<TShape, "map">): TShape {
-        return data as TShape;
+    map(data: unknown, option: QueryOption<TShape, "map">): TShape {
+        if (Array.isArray(data) == false) {
+            throw new Error("Can only map an array of data");
+        }
+
+        const response = [];
+
+        for (let i = 0, length = data.length; i < length; i++) {
+
+            for (let j = 0, l = option.value.fields.length; j < l; j++) {
+                const field = option.value.fields[j];
+
+                if (field.property != null) {
+                    const value = field.property.getValue(data[i]);
+
+                    if (value != null) {
+                        field.property.setValue(data[i], field.property.deserialize(value));
+                    }
+                }
+            }
+
+            response.push(option.value.selector(data[i]));
+        }
+
+        return response as TShape;
     }
 }

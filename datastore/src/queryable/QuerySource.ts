@@ -227,11 +227,20 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
                 if (Query.isEmpty(memoryEvent.operation) === false) {
                     const translator = new JsonTranslator(memoryEvent.operation);
                     const data = translator.translate(enriched);
-                    const resolved = this.changeTracker.resolve(data as InferType<TRoot>[], tags);
+
+                    if (memoryEvent.operation.changeTracking === false) {
+                        return done(PluginEventResult.success(memoryEvent.id, data));
+                    }
+
+                    const resolved = this.changeTracker.resolve(data as InferType<TRoot>[], tags, {
+                        merge: true
+                    });
                     return done(PluginEventResult.success(memoryEvent.id, resolved as TShape));
                 }
 
-                const resolved = this.changeTracker.resolve(enriched, tags);
+                const resolved = this.changeTracker.resolve(enriched, tags, {
+                    merge: true
+                });
 
                 return done(PluginEventResult.success(databaseEvent.id, resolved as TShape));
             }

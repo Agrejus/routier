@@ -188,7 +188,6 @@ export class SqliteDbPlugin implements IDbPlugin {
                                     }
 
                                     if (type === "removes") {
-                                        debugger;
                                         const { removes } = result.get(op.schemaId);
                                         removes.push(...retryRows as { [x: string]: never; }[]);
                                     }
@@ -209,14 +208,12 @@ export class SqliteDbPlugin implements IDbPlugin {
                             }
 
                             if (type === "updates") {
-                                debugger;
                                 const { updates } = result.get(op.schemaId);
                                 updates.push(...rows as { [x: string]: never; }[]);
                             }
 
                             if (type === "removes") {
                                 const { removes } = result.get(op.schemaId);
-
                                 removes.push(...rows as { [x: string]: never; }[]);
                             }
 

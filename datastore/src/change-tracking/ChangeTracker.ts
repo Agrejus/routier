@@ -145,7 +145,9 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
                 continue;
             }
 
-            changes.push({ entity: this.schema.prepare(changeTrackedDoc as InferCreateType<TEntity>) as InferType<TEntity>, delta: changeTrackedDoc.__tracking__.changes, changeType })
+            const entity = this.schema.prepare(changeTrackedDoc as InferCreateType<TEntity>) as InferType<TEntity>;
+            const serializedEntity = this.schema.serialize(entity);
+            changes.push({ entity: serializedEntity, delta: this.schema.serialize(changeTrackedDoc.__tracking__.changes as InferType<TEntity>), changeType })
         }
 
         return changes

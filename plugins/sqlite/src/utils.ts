@@ -1,6 +1,6 @@
 import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema';
 import { Expression, ComparatorExpression, OperatorExpression, ValueExpression, PropertyExpression } from '@routier/core/expressions';
-import { IQuery } from '@routier/core/plugins';
+import { IQuery, QueryField } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
 import { SqlOperation } from './types';
 
@@ -152,42 +152,146 @@ export function expressionToWhereClause(expr: Expression): { where: string, para
             const op = (e as OperatorExpression).operator;
             const left = e.left ? walk(e.left) : '';
             const right = e.right ? walk(e.right) : '';
-            return `(${left} ${op} ${right})`;
+
+            // Translate JavaScript logical operators to SQL operators
+            let sqlOp: string;
+            switch (op) {
+                case '&&':
+                    sqlOp = 'AND';
+                    break;
+                case '||':
+                    sqlOp = 'OR';
+                    break;
+                default:
+                    sqlOp = op; // Use as-is for other operators
+                    break;
+            }
+
+            return `(${left} ${sqlOp} ${right})`;
         }
         if (e.type === 'comparator') {
             const cmp = e as ComparatorExpression;
-            const left = cmp.left as PropertyExpression;
-            const right = cmp.right as ValueExpression;
-            const col = `"${left.property.name}"`;
-            switch (cmp.comparator) {
-                case 'equals':
-                    // Handle null comparisons properly
-                    if (right.value === null) {
+
+            // Handle special cases for string operations that require specific column/value patterns
+            if (cmp.comparator === 'starts-with' || cmp.comparator === 'ends-with' || cmp.comparator === 'includes') {
+                // Check if this is an array includes operation (IN) vs string includes (LIKE)
+                if (cmp.comparator === 'includes') {
+                    // Determine if this is array.includes(value) or string.includes(substring)
+                    if (cmp.left.type === 'property' && cmp.right.type === 'value') {
+                        const col = `"${(cmp.left as PropertyExpression).property.name}"`;
+                        const value = (cmp.right as ValueExpression).value;
+
+                        // If the value is an array, use IN operator
+                        if (Array.isArray(value)) {
+                            const placeholders = value.map(() => '?').join(', ');
+                            params.push(...value);
+                            return cmp.negated ? `${col} NOT IN (${placeholders})` : `${col} IN (${placeholders})`;
+                        }
+                        // Otherwise, treat as string includes (LIKE) - case sensitive using GLOB
+                        else {
+                            // Convert LIKE pattern to GLOB pattern for case-sensitive matching
+                            const globPattern = `*${value}*`;
+                            params.push(globPattern);
+                            return cmp.negated ? `${col} NOT GLOB ?` : `${col} GLOB ?`;
+                        }
+                    } else if (cmp.left.type === 'value' && cmp.right.type === 'property') {
+                        const col = `"${(cmp.right as PropertyExpression).property.name}"`;
+                        const value = (cmp.left as ValueExpression).value;
+
+                        // If the value is an array, use IN operator
+                        if (Array.isArray(value)) {
+                            const placeholders = value.map(() => '?').join(', ');
+                            params.push(...value);
+                            return cmp.negated ? `${col} NOT IN (${placeholders})` : `${col} IN (${placeholders})`;
+                        }
+                        // Otherwise, treat as string includes (GLOB) - case sensitive
+                        else {
+                            // Convert LIKE pattern to GLOB pattern for case-sensitive matching
+                            const globPattern = `*${value}*`;
+                            params.push(globPattern);
+                            return cmp.negated ? `? NOT GLOB ${col}` : `? GLOB ${col}`;
+                        }
+                    } else {
+                        throw new Error(`Complex expressions not supported for includes operations`);
+                    }
+                }
+
+                // Handle starts-with and ends-with (always string operations)
+                if (cmp.left.type === 'property' && cmp.right.type === 'value') {
+                    const col = `"${(cmp.left as PropertyExpression).property.name}"`;
+                    const value = (cmp.right as ValueExpression).value;
+                    let pattern: string;
+
+                    switch (cmp.comparator) {
+                        case 'starts-with':
+                            pattern = `${value}*`; // GLOB pattern for starts-with
+                            break;
+                        case 'ends-with':
+                            pattern = `*${value}`; // GLOB pattern for ends-with
+                            break;
+                    }
+
+                    params.push(pattern);
+                    return cmp.negated ? `${col} NOT GLOB ?` : `${col} GLOB ?`;
+                } else if (cmp.left.type === 'value' && cmp.right.type === 'property') {
+                    const col = `"${(cmp.right as PropertyExpression).property.name}"`;
+                    const value = (cmp.left as ValueExpression).value;
+                    let pattern: string;
+
+                    switch (cmp.comparator) {
+                        case 'starts-with':
+                            pattern = `${value}*`; // GLOB pattern for starts-with
+                            break;
+                        case 'ends-with':
+                            pattern = `*${value}`; // GLOB pattern for ends-with
+                            break;
+                    }
+
+                    params.push(pattern);
+                    return cmp.negated ? `? NOT GLOB ${col}` : `? GLOB ${col}`;
+                } else {
+                    throw new Error(`Complex expressions not supported for ${cmp.comparator} operations`);
+                }
+            }
+
+            // Handle null comparisons for equals/not-equals
+            if (cmp.comparator === 'equals') {
+                if (cmp.left.type === 'property' && cmp.right.type === 'value') {
+                    const col = `"${(cmp.left as PropertyExpression).property.name}"`;
+                    const value = (cmp.right as ValueExpression).value;
+
+                    if (value === null) {
                         return cmp.negated ? `${col} IS NOT NULL` : `${col} IS NULL`;
                     }
-                    params.push(right.value);
+                    params.push(value);
                     return cmp.negated ? `${col} != ?` : `${col} = ?`;
-                case 'starts-with':
-                    params.push(`${right.value}%`);
-                    return cmp.negated ? `${col} NOT LIKE ?` : `${col} LIKE ?`;
-                case 'ends-with':
-                    params.push(`%${right.value}`);
-                    return cmp.negated ? `${col} NOT LIKE ?` : `${col} LIKE ?`;
-                case 'includes':
-                    params.push(`%${right.value}%`);
-                    return cmp.negated ? `${col} NOT LIKE ?` : `${col} LIKE ?`;
+                } else if (cmp.left.type === 'value' && cmp.right.type === 'property') {
+                    const col = `"${(cmp.right as PropertyExpression).property.name}"`;
+                    const value = (cmp.left as ValueExpression).value;
+
+                    if (value === null) {
+                        return cmp.negated ? `? IS NOT NULL` : `? IS NULL`;
+                    }
+                    params.push(value);
+                    return cmp.negated ? `? != ${col}` : `? = ${col}`;
+                }
+            }
+
+            // Generic comparison for other cases
+            const leftExpr = walk(cmp.left);
+            const rightExpr = walk(cmp.right);
+
+            switch (cmp.comparator) {
+                case 'equals':
+                    return cmp.negated ? `${leftExpr} != ${rightExpr}` : `${leftExpr} = ${rightExpr}`;
                 case 'greater-than':
-                    params.push(right.value);
-                    return cmp.negated ? `${col} <= ?` : `${col} > ?`;
+                    return cmp.negated ? `${leftExpr} <= ${rightExpr}` : `${leftExpr} > ${rightExpr}`;
                 case 'greater-than-equals':
-                    params.push(right.value);
-                    return cmp.negated ? `${col} < ?` : `${col} >= ?`;
+                    return cmp.negated ? `${leftExpr} < ${rightExpr}` : `${leftExpr} >= ${rightExpr}`;
                 case 'less-than':
-                    params.push(right.value);
-                    return cmp.negated ? `${col} >= ?` : `${col} < ?`;
+                    return cmp.negated ? `${leftExpr} >= ${rightExpr}` : `${leftExpr} < ${rightExpr}`;
                 case 'less-than-equals':
-                    params.push(right.value);
-                    return cmp.negated ? `${col} > ?` : `${col} <= ?`;
+                    return cmp.negated ? `${leftExpr} > ${rightExpr}` : `${leftExpr} <= ${rightExpr}`;
                 default:
                     throw new Error(`Unsupported comparator: ${cmp.comparator}`);
             }
@@ -304,7 +408,14 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 
         for (const [, groupUpdates] of updateGroups) {
             const firstUpdate = groupUpdates[0];
-            const deltaKeys = Object.keys(firstUpdate.delta);
+            let deltaKeys = Object.keys(firstUpdate.delta);
+
+            // If delta is empty, use all properties from the entity (except identity columns)
+            if (deltaKeys.length === 0) {
+                const entityKeys = Object.keys(firstUpdate.entity);
+                const identityKeys = schema.idProperties.map(p => p.name);
+                deltaKeys = entityKeys.filter(key => !identityKeys.includes(key));
+            }
 
             // Build SET clause with CASE statements for each column
             const setClauses: string[] = [];
@@ -320,7 +431,12 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
                     const idValue = schema.idProperties[0].getValue(update.entity);
                     caseStatement += ` WHEN ? THEN ?`;
                     allParams.push(idValue);
-                    allParams.push(update.delta[key]);
+
+                    // Use entity value if delta is empty, otherwise use delta value
+                    const value = Object.keys(update.delta).length === 0
+                        ? update.entity[key]
+                        : update.delta[key];
+                    allParams.push(value);
                 }
 
                 caseStatement += ` ELSE "${key}" END`;
@@ -329,6 +445,8 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 
             // Build WHERE clause for all IDs in this group
             const idPlaceholders = groupUpdates.map(() => '?').join(', ');
+
+            // Add IDs for WHERE clause (they're already in CASE statements, but WHERE needs them too)
             for (const update of groupUpdates) {
                 const idValue = schema.idProperties[0].getValue(update.entity);
                 allParams.push(idValue);
@@ -360,6 +478,7 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
                 const idValue = idProperty.getValue(remove);
                 entityWhereClauses.push(`"${idProperty.name}" = ?`);
                 allParams.push(idValue);
+
             }
 
             whereClauses.push(`(${entityWhereClauses.join(' AND ')})`);
@@ -387,17 +506,40 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuery<TEntity, TShape>): SqlOperation {
     const { schema, options } = query;
     const tableName = schema.collectionName;
-    debugger;
-    // Pre-compute column string once
-    const columnCount = schema.properties.length;
-    if (columnCount === 0) {
-        throw new Error("Need to select at least one column, found zero");
+
+    // Check if there's a map operation that specifies which columns to select
+    let mapFields: QueryField[] | null = null;
+    for (const [, items] of options.items) {
+        for (const item of items) {
+            if (item.option.name === 'map' && item.option.value.fields) {
+                mapFields = item.option.value.fields;
+                break;
+            }
+        }
+        if (mapFields) break;
     }
 
-    // Use string concatenation instead of array join for better performance
-    let columnsStr = `"${schema.properties[0].name}"`;
-    for (let i = 1; i < columnCount; i++) {
-        columnsStr += `, "${schema.properties[i].name}"`;
+    // Build column string based on map fields or all properties
+    let columnsStr: string;
+    if (mapFields && mapFields.length > 0) {
+        // Use only the columns specified in map.fields
+        columnsStr = `"${mapFields[0].destinationName || mapFields[0].sourceName}"`;
+        for (let i = 1; i < mapFields.length; i++) {
+            const fieldName = mapFields[i].destinationName || mapFields[i].sourceName;
+            columnsStr += `, "${fieldName}"`;
+        }
+    } else {
+        // Use all schema properties
+        const columnCount = schema.properties.length;
+        if (columnCount === 0) {
+            throw new Error("Need to select at least one column, found zero");
+        }
+
+        // Use string concatenation instead of array join for better performance
+        columnsStr = `"${schema.properties[0].name}"`;
+        for (let i = 1; i < columnCount; i++) {
+            columnsStr += `, "${schema.properties[i].name}"`;
+        }
     }
 
     const params: any[] = [];
@@ -477,17 +619,31 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
 
     // Phase 2: Handle skip/take operations (create subqueries)
     let subqueryCount = 0;
+    let skipValue: number | null = null;
+    let takeValue: number | null = null;
+
+    // Collect skip and take values
     for (const op of skipTakeOps) {
         if (op.type === 'skip') {
-            subqueryCount++;
-            currentQuery = `SELECT ${columnsStr} FROM (${currentQuery}) AS subquery_${subqueryCount} OFFSET ${op.value}`;
+            skipValue = op.value;
         } else if (op.type === 'take') {
-            if (subqueryCount > 0) {
-                subqueryCount++;
-                currentQuery = `SELECT ${columnsStr} FROM (${currentQuery}) AS subquery_${subqueryCount} LIMIT ${op.value}`;
-            } else {
-                currentQuery += ` LIMIT ${op.value}`;
-            }
+            takeValue = op.value;
+        }
+    }
+
+    // Apply skip/take with proper SQLite syntax
+    if (skipValue !== null || takeValue !== null) {
+        if (skipValue !== null && takeValue !== null) {
+            // Both skip and take: LIMIT take OFFSET skip
+            subqueryCount++;
+            currentQuery = `SELECT ${columnsStr} FROM (${currentQuery}) AS subquery_${subqueryCount} LIMIT ${takeValue} OFFSET ${skipValue}`;
+        } else if (skipValue !== null) {
+            // Only skip: Use a large LIMIT with OFFSET (SQLite requires LIMIT before OFFSET)
+            subqueryCount++;
+            currentQuery = `SELECT ${columnsStr} FROM (${currentQuery}) AS subquery_${subqueryCount} LIMIT -1 OFFSET ${skipValue}`;
+        } else if (takeValue !== null) {
+            // Only take: LIMIT take
+            currentQuery += ` LIMIT ${takeValue}`;
         }
     }
 
@@ -505,8 +661,8 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
                 break;
 
             case 'count':
-                // Replace SELECT with COUNT
-                currentQuery = currentQuery.replace(/SELECT .*? FROM/, 'SELECT COUNT(*) FROM');
+                // Replace SELECT with COUNT and rename the column to "count"
+                currentQuery = currentQuery.replace(/SELECT .*? FROM/, 'SELECT COUNT(*) AS "count" FROM');
                 break;
 
             case 'min':
@@ -522,12 +678,13 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
                         break;
                     }
                 }
-                currentQuery = currentQuery.replace(/SELECT .*? FROM/, `SELECT ${op.type.toUpperCase()}("${aggregateField}") FROM`);
+                // Use AS to rename the aggregate column to the field name
+                currentQuery = currentQuery.replace(/SELECT .*? FROM/, `SELECT ${op.type.toUpperCase()}("${aggregateField}") AS "${aggregateField}" FROM`);
                 break;
 
             case 'map':
-                // Map operations typically need to be handled in memory after the SQL query
-                // since they involve JavaScript functions
+                // Map operations are handled earlier when building the column selection
+                // The actual field mapping/transformation happens in memory after the SQL query
                 break;
         }
     }

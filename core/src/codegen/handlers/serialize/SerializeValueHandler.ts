@@ -1,5 +1,4 @@
-import { CodeBuilder, ObjectBuilder, SlotBlock } from '../../blocks';
-import { SlotPath } from '../../SlotPath';
+import { CodeBuilder, SlotBlock } from '../../blocks';
 import { PropertyInfoHandler } from "../types";
 import { PropertyInfo, SchemaTypes } from "../../../schema";
 
@@ -8,23 +7,20 @@ export class SerializeValueHandler extends PropertyInfoHandler {
     override handle(property: PropertyInfo<any>, builder: CodeBuilder): CodeBuilder | null {
 
         if (property.type != SchemaTypes.Object && property.type != SchemaTypes.Date) {
-            let objectBuilder = builder.getOrDefault<ObjectBuilder>("result.variable.object");
+            let objectBuilder = builder.getOrDefault<SlotBlock>("if");
             const entitySelectorPath = property.getAssignmentPath({ parent: "entity" });
-
-            if (objectBuilder == null) {
-                objectBuilder = builder.get<SlotBlock>("result")
-                    .assign("const result", { name: "variable" })
-                    .object({ name: "object" });
-            }
+            const resultSelectorPath = property.getAssignmentPath({ parent: "result" });
 
             if (property.parent == null) {
-                objectBuilder.property(`${property.name}: ${entitySelectorPath}`);
+                // Only assign if the incoming entity has the property, this allows partial serialization
+                // Basically only serialize what is there
+                objectBuilder.if(`Object.hasOwn(entity, "${property.name}")`).appendBody(`${resultSelectorPath} = ${entitySelectorPath}`)
                 return builder;
             }
 
-            const slotPath = new SlotPath(...property.getParentPathArray());
-            objectBuilder = objectBuilder.get<ObjectBuilder>(slotPath.get());
-            objectBuilder.property(`${property.name}: ${entitySelectorPath}`);
+            // TODO: SOLVE THIS
+            //const slotPath = new SlotPath(...property.getParentPathArray());
+            debugger;
             return builder;
         }
 

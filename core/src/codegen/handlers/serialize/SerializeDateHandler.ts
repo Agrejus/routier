@@ -1,4 +1,4 @@
-import { CodeBuilder, ContainerBlock, ObjectBuilder } from '../../blocks';
+import { CodeBuilder, ContainerBlock, ObjectBuilder, SlotBlock } from '../../blocks';
 import { SlotPath } from '../../SlotPath';
 import { PropertyInfoHandler } from "../types";
 import { PropertyInfo, SchemaTypes } from "../../../schema";
@@ -11,8 +11,7 @@ export class SerializeDateHandler extends PropertyInfoHandler {
     override handle(property: PropertyInfo<any>, builder: CodeBuilder): CodeBuilder | null {
 
         if (property.type === SchemaTypes.Date) {
-            const slotPath = new SlotPath("result.variable.object");
-            let objectBuilder = builder.get<ObjectBuilder>(slotPath.get());
+            let objectBuilder = builder.get<SlotBlock>("if");
             const entitySelectorPath = property.getSelectrorPath({ parent: "entity" });
             const entityAssignmentPath = property.getAssignmentPath({ parent: "result" });
             const assignment = `${property.name}: ${entitySelectorPath} instanceof Date ? ${entitySelectorPath}.toISOString() : ${entitySelectorPath}`;
@@ -28,14 +27,16 @@ export class SerializeDateHandler extends PropertyInfoHandler {
 
             // A date cannot be a nested object, just do the assignment
             if (property.parent == null) {
-                objectBuilder.property(assignment);
+                objectBuilder.if(`Object.hasOwn(entity, "${property.name}")`).appendBody(`${entityAssignmentPath} = ${entitySelectorPath}`)
 
                 return builder;
             }
 
-            slotPath.push(...property.getParentPathArray());
-            const nestedObjectBuilder = builder.get<ObjectBuilder>(slotPath.get());
-            nestedObjectBuilder.property(assignment)
+            // TODO: SOLVE THIS, IT IS CLOSE
+            //const slotPath = new SlotPath(...property.getParentPathArray());
+            // slotPath.push(...property.getParentPathArray());
+            // const nestedObjectBuilder = builder.get<ObjectBuilder>(slotPath.get());
+            // nestedObjectBuilder.property(assignment)
 
             return builder;
         }

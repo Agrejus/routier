@@ -92,6 +92,8 @@ const ERROR_MESSAGES = {
     PARAM_PATH_NOT_FOUND: (value: string, params: any) => `Cannot find path in params for .where(). Make sure parameters are not used inline.\r\nPath: ${value}, Params: ${JSON.stringify(params)}`
 };
 
+const STRINGIFIED_COMPARE_OPERATORS = ["true", "false"];
+
 export const combineExpressions = (...expressions: Expression[]): Expression => {
 
     if (expressions.length === 0) {
@@ -332,16 +334,25 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
             // This is a parameter path on the left side (e.g., params.distinctPlayers.includes(entity.playerId))
             // For includes method, we need to swap left and right sides
             if (methodMatch[2] === 'includes') {
-                comparator.left = getValue(leftSide, params);
-                comparator.right = getProperty(schema, rightSide);
+
+                const property = getProperty(schema, rightSide);
+                const value = getValue(leftSide, params); // retrieve the original value
+                const serializer = property.property.valueSerializer;
+
+                comparator.left = serializer ? getValue(String(property.property.valueSerializer(JSON.parse(value.value as any)))) : value;
+                comparator.right = property;
             } else {
                 // For other methods, return NOT_PARSABLE for now
                 return Expression.NOT_PARSABLE;
             }
         } else {
             // Normal case: property on left, value on right
-            comparator.left = getProperty(schema, leftSide);
-            comparator.right = getValue(rightSide, params);
+            const property = getProperty(schema, leftSide);
+            const serializer = property.property.valueSerializer;
+            const value = getValue(rightSide, params); // retrieve the original value
+
+            comparator.left = property;
+            comparator.right = serializer ? getValue(String(property.property.valueSerializer(JSON.parse(value.value as any)))) : value;
         }
 
         // If the comparison is explicitly to false, mark it as negated
@@ -361,11 +372,15 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
             comparator.negated = isNegation;
         }
 
+        const property = getProperty(schema, valueTransformMatch[1].trim());
+        const serializer = property.property.valueSerializer;
+        const value = getValue(valueTransformMatch[3], params); // retrieve the original value
+
         // Create the property expression for the left side (no transformer)
-        const propertyExpression = getProperty(schema, valueTransformMatch[1].trim());
+        const propertyExpression = property;
 
         // Create a ValueExpression for the right side with transformer
-        const valueExpression = getValue(valueTransformMatch[3], params);
+        const valueExpression = serializer ? getValue(String(property.property.valueSerializer(JSON.parse(value.value as any)))) : value;
 
         // Set transformer and locale based on the method
         const method = valueTransformMatch[4];
@@ -396,51 +411,53 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
         }
 
         // Create the property expression for the left side with transformer
-        const propertyExpression = getProperty(schema, transformMethodMatch[1]);
+        const property = getProperty(schema, transformMethodMatch[1]);
 
         // Set transformer and locale based on the method
         const method = transformMethodMatch[2];
         if (method === 'toLowerCase' || method === 'toLocaleLowerCase') {
-            propertyExpression.transformer = 'to-lower-case';
+            property.transformer = 'to-lower-case';
             if (method === 'toLocaleLowerCase') {
-                propertyExpression.locale = 'en-US'; // Default locale, could be extracted from method call
+                property.locale = 'en-US'; // Default locale, could be extracted from method call
             }
         } else {
-            propertyExpression.transformer = 'to-upper-case';
+            property.transformer = 'to-upper-case';
             if (method === 'toLocaleUpperCase') {
-                propertyExpression.locale = 'en-US'; // Default locale, could be extracted from method call
+                property.locale = 'en-US'; // Default locale, could be extracted from method call
             }
         }
 
         // Create a ValueExpression for the right side
-        let valueExpression = getValue(transformMethodMatch[4], params);
+        let value = getValue(transformMethodMatch[4], params);
 
         // Check if the value also has a transformation (but only if it's not already handled by value-side check)
         const valueTransformMatch = transformMethodMatch[4].match(/^([^)]+)\.(toLowerCase|toUpperCase|toLocaleLowerCase|toLocaleUpperCase)\(\)$/);
 
         if (valueTransformMatch) {
             // Create a new ValueExpression with the base value and transformer
-            valueExpression = new ValueExpression({
+            value = new ValueExpression({
                 value: valueTransformMatch[1].replace(/^["']|["']$/g, '') // Remove quotes
             });
 
             // Set transformer and locale based on the method
             const valueMethod = valueTransformMatch[2];
             if (valueMethod === 'toLowerCase' || valueMethod === 'toLocaleLowerCase') {
-                valueExpression.transformer = 'to-lower-case';
+                value.transformer = 'to-lower-case';
                 if (valueMethod === 'toLocaleLowerCase') {
-                    valueExpression.locale = 'en-US'; // Default locale
+                    value.locale = 'en-US'; // Default locale
                 }
             } else {
-                valueExpression.transformer = 'to-upper-case';
+                value.transformer = 'to-upper-case';
                 if (valueMethod === 'toLocaleUpperCase') {
-                    valueExpression.locale = 'en-US'; // Default locale
+                    value.locale = 'en-US'; // Default locale
                 }
             }
         }
 
-        comparator.left = propertyExpression;
-        comparator.right = valueExpression;
+        const serializer = property.property.valueSerializer;
+
+        comparator.left = property;
+        comparator.right = serializer ? getValue(String(property.property.valueSerializer(JSON.parse(value.value as any)))) : value;
 
         // If the comparison is explicitly to false, mark it as negated
         if (transformMethodMatch[7] === "false") {
@@ -484,8 +501,12 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
             comparator.negated = isNegation;
         }
 
-        comparator.left = getProperty(schema, propertySide);
-        comparator.right = getValue(valueSide, params);
+        const property = getProperty(schema, propertySide);
+        const value = getValue(valueSide, params);
+        const serializer = property.property.valueSerializer;
+
+        comparator.left = property;
+        comparator.right = serializer ? getValue(String(property.property.valueSerializer(JSON.parse(value.value as any)))) : value;
 
         convertAndAssignValue(comparator.right, comparator.left);
 
@@ -526,10 +547,35 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
             comparator.negated = isNegation;
         }
 
-        comparator.left = getProperty(schema, propertySide);
-        comparator.right = getValue(valueSide, params);
+        const property = getProperty(schema, propertySide);
+        const value = getValue(valueSide, params);
+        const serializer = property.property.valueSerializer;
+
+        comparator.left = property;
+        comparator.right = serializer ? getValue(String(property.property.valueSerializer(JSON.parse(value.value as any)))) : value;
 
         convertAndAssignValue(comparator.right, comparator.left);
+
+        return comparator;
+    }
+
+    // Check for standalone property reference (truthy comparison)
+    // Pattern: property name only (e.g., "w.inStock" -> w.inStock === true)
+    const standalonePropertyMatch = finalExpression.match(/^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/);
+    if (standalonePropertyMatch && isPropertyPath(finalExpression)) {
+        const comparator = getComparator('===');
+
+        if (isNegation) {
+            comparator.negated = isNegation;
+        }
+
+        const property = getProperty(schema, finalExpression);
+        const value = getValue('true', params);
+        const serializer = property.property.valueSerializer;
+
+        comparator.left = property;
+        // need to parse the value so it matches what the serializer expects
+        comparator.right = serializer ? getValue(String(property.property.valueSerializer(JSON.parse(value.value as any)))) : value;
 
         return comparator;
     }
@@ -602,6 +648,10 @@ const getValue = <P extends any>(value: string, params?: { name: string, data: P
                 }
             }
         }
+    }
+
+    if (STRINGIFIED_COMPARE_OPERATORS.includes(value)) {
+        return new ValueExpression({ value });
     }
 
     if (isNaN(numValue)) {
