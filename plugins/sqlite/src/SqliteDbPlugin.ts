@@ -1,12 +1,11 @@
 import sqlite3 from 'sqlite3';
 import fs from 'fs';
 import { buildFromPersistOperation, buildFromQueryOperation, compiledSchemaToSqliteTable } from './utils';
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, IQuery, SqlTranslator } from '@routier/core/plugins';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, SqlTranslator } from '@routier/core/plugins';
 import { CallbackResult, PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '@routier/core/results';
 import { BulkPersistResult } from '@routier/core/collections';
-import { CompiledSchema, SchemaId } from '@routier/core/schema';
-import { UnknownRecord, WorkPipeline } from '@routier/core';
-import { SqlOperation, SqlPersistOperation } from './types';
+import { CompiledSchema } from '@routier/core/schema';
+import { SqlPersistOperation } from './types';
 
 const tableCache: Record<string, string> = {};
 
@@ -34,7 +33,6 @@ export class SqliteDbPlugin implements IDbPlugin {
                 return;
             }
 
-            debugger;
             const data = translator.translate(result.data);
 
             done(PluginEventResult.success(event.id, data));
@@ -80,7 +78,7 @@ export class SqliteDbPlugin implements IDbPlugin {
                 done(PluginEventResult.error(event.id, result.error));
                 return;
             }
-            debugger;
+
             done(PluginEventResult.success(event.id, result.data));
         });
     }
@@ -102,7 +100,7 @@ export class SqliteDbPlugin implements IDbPlugin {
         event: DbPluginBulkPersistEvent,
         done: CallbackResult<BulkPersistResult>
     ): void {
-        debugger;
+
         const db = new sqlite3.Database(this.fileName);
         const result = event.operation.toResult();
         const operations: { adds: SqlPersistOperation | null, updates: SqlPersistOperation | null, removes: SqlPersistOperation | null }[] = [];
@@ -205,20 +203,20 @@ export class SqliteDbPlugin implements IDbPlugin {
                             });
                         } else {
                             // Success, continue to next operation
-
                             if (type === "adds") {
                                 const { adds } = result.get(op.schemaId);
                                 adds.push(...rows as { [x: string]: never; }[]);
                             }
 
                             if (type === "updates") {
+                                debugger;
                                 const { updates } = result.get(op.schemaId);
                                 updates.push(...rows as { [x: string]: never; }[]);
                             }
 
                             if (type === "removes") {
-                                debugger;
                                 const { removes } = result.get(op.schemaId);
+
                                 removes.push(...rows as { [x: string]: never; }[]);
                             }
 

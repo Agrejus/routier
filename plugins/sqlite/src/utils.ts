@@ -287,32 +287,59 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
     // Handle UPDATE operations (updates)
     let updatesOperation: SqlOperation | null = null;
     if (updates.length > 0) {
+        // Group updates by which columns they're changing
+        const updateGroups = new Map<string, typeof updates>();
+
+        for (const update of updates) {
+            const deltaKeys = Object.keys(update.delta).sort().join(',');
+            if (!updateGroups.has(deltaKeys)) {
+                updateGroups.set(deltaKeys, []);
+            }
+            updateGroups.get(deltaKeys)!.push(update);
+        }
+
+        // Build a separate UPDATE statement for each group
         const statements: string[] = [];
         const allParams: any[] = [];
 
-        for (const update of updates) {
-            const { entity, delta } = update;
+        for (const [, groupUpdates] of updateGroups) {
+            const firstUpdate = groupUpdates[0];
+            const deltaKeys = Object.keys(firstUpdate.delta);
 
-            // Build SET clause from delta
+            // Build SET clause with CASE statements for each column
             const setClauses: string[] = [];
-            const updateParams: any[] = [];
 
-            for (const [key, value] of Object.entries(delta)) {
-                setClauses.push(`"${key}" = ?`);
-                updateParams.push(value);
+            // Get ID column names
+            const idColumns = schema.idProperties.map(p => p.name);
+            const idColumn = idColumns[0]; // Use first ID for CASE matching
+
+            for (const key of deltaKeys) {
+                let caseStatement = `"${key}" = CASE "${idColumn}"`;
+
+                for (const update of groupUpdates) {
+                    const idValue = schema.idProperties[0].getValue(update.entity);
+                    caseStatement += ` WHEN ? THEN ?`;
+                    allParams.push(idValue);
+                    allParams.push(update.delta[key]);
+                }
+
+                caseStatement += ` ELSE "${key}" END`;
+                setClauses.push(caseStatement);
             }
 
-            if (setClauses.length > 0) {
-                const setClause = setClauses.join(', ');
-                const updateSql = `UPDATE "${collectionName}" SET ${setClause} WHERE "id" = ? RETURNING ${allColumnStr}`;
-                statements.push(updateSql);
-
-                allParams.push(...updateParams);
-                allParams.push(entity.id); // WHERE clause parameter
+            // Build WHERE clause for all IDs in this group
+            const idPlaceholders = groupUpdates.map(() => '?').join(', ');
+            for (const update of groupUpdates) {
+                const idValue = schema.idProperties[0].getValue(update.entity);
+                allParams.push(idValue);
             }
+
+            const updateSql = `UPDATE "${collectionName}" SET ${setClauses.join(', ')} WHERE "${idColumn}" IN (${idPlaceholders}) RETURNING ${allColumnStr}`;
+            statements.push(updateSql);
         }
 
         if (statements.length > 0) {
+            // Join multiple statements with semicolon only if there are multiple groups
             updatesOperation = { sql: statements.join('; '), params: allParams };
         }
     }
@@ -320,11 +347,27 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
     // Handle DELETE operations (removes)
     let removesOperation: SqlOperation | null = null;
     if (removes.length > 0) {
-        const removeIds = removes.map(remove => remove.id);
-        const placeholders = removeIds.map(() => '?').join(', ');
+        const idProperties = schema.idProperties;
 
-        const deleteSql = `DELETE FROM "${collectionName}" WHERE "id" IN (${placeholders}) RETURNING ${allColumnStr}`;
-        removesOperation = { sql: deleteSql, params: removeIds };
+        // Build WHERE clause for each remove operation
+        const whereClauses: string[] = [];
+        const allParams: any[] = [];
+
+        for (const remove of removes) {
+            const entityWhereClauses: string[] = [];
+
+            for (const idProperty of idProperties) {
+                const idValue = idProperty.getValue(remove);
+                entityWhereClauses.push(`"${idProperty.name}" = ?`);
+                allParams.push(idValue);
+            }
+
+            whereClauses.push(`(${entityWhereClauses.join(' AND ')})`);
+        }
+
+        const whereClause = whereClauses.join(' OR ');
+        const deleteSql = `DELETE FROM "${collectionName}" WHERE ${whereClause} RETURNING ${allColumnStr}`;
+        removesOperation = { sql: deleteSql, params: allParams };
     }
 
     return {
@@ -344,7 +387,7 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuery<TEntity, TShape>): SqlOperation {
     const { schema, options } = query;
     const tableName = schema.collectionName;
-
+    debugger;
     // Pre-compute column string once
     const columnCount = schema.properties.length;
     if (columnCount === 0) {

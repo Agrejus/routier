@@ -2,7 +2,6 @@ import { s } from "@routier/core/schema";
 
 export const productsSchema = s.define("products", {
     _id: s.string().key().identity(),
-    _rev: s.string().identity(),
     name: s.string(),
     price: s.number(),
     category: s.string(),

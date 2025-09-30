@@ -120,7 +120,6 @@ export const combineExpressions = (...expressions: Expression[]): Expression => 
 
 export const toExpression = <T extends any, P extends any>(schema: CompiledSchema<any>, fn: Filter<T> | ParamsFilter<T, P>, params?: P) => {
     try {
-
         const stringifiedFunction = fn.toString();
 
         // Optimized string parsing
@@ -603,6 +602,15 @@ const getValue = <P extends any>(value: string, params?: { name: string, data: P
                 }
             }
         }
+    }
+
+    if (isNaN(numValue)) {
+        // value is a variable passed in by the dev, we cannot evaluate it's value
+        // need to fallback to select all by throwing an error
+        throw new Error(`Cannot derive value from variable, please pass parameters into the expression.
+
+Example: .where(([x, params]) => x.id === params.id, { id: someVar.id })
+Issue At: ${value}`);
     }
 
     // Default case: return as-is
