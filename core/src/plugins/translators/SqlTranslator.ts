@@ -58,6 +58,12 @@ export class SqlTranslator<TRoot extends {}, TShape> extends DataTranslator<TRoo
             throw new Error("Can only map an array of data");
         }
 
+        if (this.query.options.has("count") && data.length === 1) {
+            // data here is the shape of { count: number }[] and will map to nothing.  
+            // Return the original data and let count take care of this
+            return data as TShape;
+        }
+
         const response = [];
 
         for (let i = 0, length = data.length; i < length; i++) {

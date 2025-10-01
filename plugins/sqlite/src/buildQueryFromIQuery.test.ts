@@ -127,7 +127,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
-        expect(result.sql).toBe('SELECT COUNT(*) FROM "users"');
+        expect(result.sql).toBe('SELECT COUNT(*) AS "count" FROM "users"');
         expect(result.params).toEqual([]);
     });
 

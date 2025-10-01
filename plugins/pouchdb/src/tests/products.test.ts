@@ -941,9 +941,11 @@ describe("Product Tests", () => {
 
         it("map + firstOrUndefinedAsync + two properties", async () => {
             const dataStore = factory();
+
             // Arrange
             await seedData(dataStore, () => dataStore.products, 100);
 
+            // NEED TO ENSURE REMAPPING IS WORKING, may need to create a new object in the translator when remapping
             // Act
             const found = await dataStore.products.map(w => ({ first: w._id, second: w.inStock })).firstOrUndefinedAsync();
 

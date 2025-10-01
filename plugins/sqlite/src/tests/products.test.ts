@@ -1520,8 +1520,7 @@ describe("Product Tests", () => {
 
         it("Should handle sum with empty collection", async () => {
             const dataStore = factory();
-            const result = await dataStore.products.sumAsync(w => w.price);
-            expect(result).toBe(0);
+            await expect(dataStore.products.sumAsync(w => w.price)).rejects.toThrow();
         });
 
         it("Should handle count with empty collection", async () => {

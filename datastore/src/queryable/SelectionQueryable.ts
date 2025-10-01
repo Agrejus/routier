@@ -301,7 +301,18 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
         this.queryOptions.add("map", { selector, fields });
         this.queryOptions.add(name, true);
 
-        this.getData<number>(done);
+        this.getData<number>((result) => {
+
+            if (result.ok === "error") {
+                return done(result);
+            }
+
+            if (result.data == null) {
+                return done(Result.error(new Error("No items found in data source")));
+            }
+
+            return done(result);
+        });
 
         return this.subscribeQuery<number>(done) as U;
     }

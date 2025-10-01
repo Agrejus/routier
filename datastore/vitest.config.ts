@@ -8,4 +8,7 @@ export default defineConfig({
       reporter: ['text', 'html'],
     },
   },
+  esbuild: {
+    target: 'node18'
+  }
 });

@@ -42,8 +42,8 @@ export default defineConfig({
             "perf_hooks": false
         },
         alias: {
-            react: require('path').resolve(__dirname, 'node_modules/react'),
-            'react-dom': require('path').resolve(__dirname, 'node_modules/react-dom')
+            react: resolve(__dirname, 'node_modules/react'),
+            'react-dom': resolve(__dirname, 'node_modules/react-dom')
         }
     },
     target: "web", // Compile for both browser and Node.js
