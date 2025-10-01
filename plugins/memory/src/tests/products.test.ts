@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker';
-import { describe, it, expect, vi, afterAll } from 'vitest';
+import { describe, it, expect, vi, afterAll } from '@jest/globals';
 import { generateData, wait, seedData } from '../../../../test-utils/dist';
 import { IDbPlugin, UnknownRecord, uuidv4 } from '@routier/core';
 import { MemoryPlugin } from '../MemoryPlugin';

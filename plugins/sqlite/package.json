@@ -11,7 +11,8 @@
     "build:types": "tsc --emitDeclarationOnly",
     "build:bundle": "rspack build",
     "build": "npm run build:bundle && npm run build:types",
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "test": "jest"
   },
   "sideEffects": false,
   "author": "James DeMeuse <james.demeuse@gmail.com>",
@@ -38,8 +39,7 @@
     "@routier/datastore": "^0.0.1-alpha.6",
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",
-    "ts-loader": "^9.5.2",
-    "vitest": "^3.2.4"
+    "ts-loader": "^9.5.2"
   },
   "dependencies": {
     "sqlite3": "^5.1.7"

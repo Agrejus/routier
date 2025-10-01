@@ -1,4 +1,4 @@
-import { InferCreateType, InferType, SchemaId } from "src/schema";
+import { InferCreateType, InferType, SchemaId } from "../schema";
 import { DbPluginBulkPersistEvent, EntityUpdateInfo } from "../plugins";
 
 type DbEvent = {

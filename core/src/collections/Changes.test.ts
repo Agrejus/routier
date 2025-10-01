@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from '@jest/globals';
 import { BulkPersistResult, BulkPersistChanges, SchemaPersistChanges, SchemaPersistResult } from './Changes';
 import { TagCollection } from './TagCollection';
 

@@ -12,7 +12,7 @@
     "build:bundle": "rspack build",
     "build": "npm run build:bundle && npm run build:types",
     "tsc": "tsc",
-    "test": "vitest run"
+    "test": "jest"
   },
   "sideEffects": false,
   "files": [
@@ -65,7 +65,6 @@
     "@rspack/core": "^1.1.8",
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5.6.3",
-    "vitest": "^2.1.8"
+    "typescript": "^5.6.3"
   }
 }

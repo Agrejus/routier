@@ -308,16 +308,16 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
         return this.additions.size > 0 || this.removals.length > 0 || this.hasAttachmentsChanges() === true || this.removalQueries.length > 0;
     }
 
-    add(entities: InferCreateType<TEntity>[], tag: unknown | null, done: CallbackResult<InferCreateType<TEntity>[]>) {
+    add(entities: InferCreateType<TEntity>[], tag: unknown | null, done: CallbackResult<InferType<TEntity>[]>) {
 
         try {
 
-            const result: InferCreateType<TEntity>[] = [];
+            const result: InferType<TEntity>[] = [];
 
             for (const entity of this.instance(entities, "proxy")) {
                 this.additions.set(entity);
 
-                result.push(entity);
+                result.push(entity as InferType<TEntity>);
 
                 if (tag != null) {
                     const tagCollection = this.resolveTagCollection();

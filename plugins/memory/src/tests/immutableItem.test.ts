@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll } from 'vitest';
+import { describe, it, expect, afterAll } from '@jest/globals';
 import { generateData } from '../../../../test-utils/dist';
 import { uuidv4 } from '@routier/core';
 import { MemoryPlugin } from '../MemoryPlugin';

@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll } from 'vitest';
+import { describe, it, expect, afterAll } from '@jest/globals';
 import { generateData, seedData } from '@routier/test-utils';
 import { IDbPlugin, UnknownRecord, uuidv4 } from '@routier/core';
 import { SqliteDbPlugin } from '../SqliteDbPlugin';
@@ -209,7 +209,7 @@ describe("Product Tests", () => {
                 inStock: false,
                 name: "test_name",
                 price: 100,
-                tags: ['accessory']
+                tags: ["accessory"]
             });
 
             // Arrange
@@ -778,7 +778,7 @@ describe("Product Tests", () => {
             // Assert
             expect(found).toBeDefined();
             expect(found.length).toBe(100);
-            expect(found[0]).toBeTypeOf("string");
+            expect(found[0]).toBe("string");
         });
 
         it("sort", async () => {
@@ -967,9 +967,11 @@ describe("Product Tests", () => {
 
             // Assert
             expect(found).toBeDefined();
-            expect(found).toBeTypeOf("string");
+            expect(typeof found).toBe("string");
         });
+    });
 
+    describe('Map Operations', () => {
         it("map + firstOrUndefinedAsync + two properties", async () => {
             const dataStore = factory();
             // Arrange
@@ -983,7 +985,25 @@ describe("Product Tests", () => {
             expect(found?.first).toBeDefined();
             expect(found?.second).toBeDefined();
         });
-    });
+
+        it("map + toArrayAsync + two properties", async () => {
+            const dataStore = factory();
+            // Arrange
+            await seedData(dataStore, () => dataStore.products, 100);
+
+            // Act
+            const all = await dataStore.products.map(w => ({ first: w._id, second: w.inStock })).toArrayAsync();
+
+            expect(all.length).toBe(100)
+
+            // Assert
+            for (const item of all) {
+                expect(item?.first).toBeDefined();
+                expect(item?.second).toBeDefined();
+                expect(Object.keys(item).length).toBe(2);
+            }
+        });
+    })
 
     describe('Every Operations', () => {
         it("everyAsync = true", async () => {

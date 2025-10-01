@@ -1,11 +1,11 @@
 import { faker } from '@faker-js/faker';
-import { describe, it, expect, vi, afterAll } from 'vitest';
+import { describe, it, expect, jest, afterAll } from '@jest/globals';
 import { generateData, wait, seedData } from '@routier/test-utils';
 import { IDbPlugin, UnknownRecord, uuidv4 } from '@routier/core';
 import { PouchDbPlugin } from '../PouchDbPlugin';
 import { TestDataStore } from './datastore/PouchDbDatastore';
 
-const generateDbName = () => `${uuidv4()}-db`;
+const generateDbName = () => `z-${uuidv4()}-db`;
 const pluginFactory: (dbname?: string) => IDbPlugin = (dbname?: string) => new PouchDbPlugin(dbname ?? generateDbName());
 const stores: TestDataStore[] = [];
 const factory = (dbname?: string) => {
@@ -763,7 +763,7 @@ describe("Product Tests", () => {
             // Assert
             expect(found).toBeDefined();
             expect(found.length).toBe(100);
-            expect(found[0]).toBeTypeOf("string");
+            expect(found[0]).toBe(expect.any(String));
         });
 
         it("sort", async () => {
@@ -936,7 +936,7 @@ describe("Product Tests", () => {
 
             // Assert
             expect(found).toBeDefined();
-            expect(found).toBeTypeOf("string");
+            expect(typeof found).toBe("string");
         });
 
         it("map + firstOrUndefinedAsync + two properties", async () => {
@@ -1503,7 +1503,7 @@ describe("Product Tests", () => {
     describe('Subscription Management', () => {
         it("Should not fire callbacks after unsubscribe", async () => {
             const dataStore = factory();
-            const callback = vi.fn();
+            const callback = jest.fn();
             await seedData(dataStore, () => dataStore.products);
 
             const unsubscribe = dataStore.products.subscribe().where(w => w._id != "").firstOrUndefined(callback);
@@ -1521,7 +1521,7 @@ describe("Product Tests", () => {
 
         it("Should fire callbacks after change", async () => {
             const dataStore = factory();
-            const callback = vi.fn();
+            const callback = jest.fn();
             await seedData(dataStore, () => dataStore.products);
 
             dataStore.products.subscribe().where(w => w._id != "").firstOrUndefined(callback);

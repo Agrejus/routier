@@ -5,7 +5,7 @@
   "private": true,
   "workspaces": [
     "core",
-    "datastore", 
+    "datastore",
     "react",
     "plugins/*",
     "test-utils"
@@ -19,7 +19,7 @@
     "docs:prepare": "npm run extract:doc-code && npm run sync:examples",
     "docs:fix-includes": "node scripts/fix-capture-includes.mjs",
     "version:patch": "lerna version patch --conventional-commits",
-    "version:minor": "lerna version minor --conventional-commits", 
+    "version:minor": "lerna version minor --conventional-commits",
     "version:major": "lerna version major --conventional-commits",
     "bump": "node scripts/bump-version.mjs",
     "publish:canary": "lerna publish --canary",
@@ -34,6 +34,9 @@
     "ts-node": "^10.9.2"
   },
   "devDependencies": {
-    "vitest": "^3.2.4"
+    "@babel/preset-env": "^7.28.3",
+    "@types/jest": "^29.5.12",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2"
   }
 }

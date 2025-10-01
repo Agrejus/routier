@@ -5,7 +5,8 @@
         "allowSyntheticDefaultImports": true,
         "module": "ESNext",
         "lib": [
-            "ESNext"
+            "ESNext",
+            "ES2023"
         ],
         "target": "ESNext",
         "declaration": true,

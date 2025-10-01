@@ -522,10 +522,10 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
     // Build column string based on map fields or all properties
     let columnsStr: string;
     if (mapFields && mapFields.length > 0) {
-        // Use only the columns specified in map.fields
-        columnsStr = `"${mapFields[0].destinationName || mapFields[0].sourceName}"`;
+        // Remapping will happen in the translator after this
+        columnsStr = `"${mapFields[0].sourceName}"`;
         for (let i = 1; i < mapFields.length; i++) {
-            const fieldName = mapFields[i].destinationName || mapFields[i].sourceName;
+            const fieldName = mapFields[i].sourceName;
             columnsStr += `, "${fieldName}"`;
         }
     } else {

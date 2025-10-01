@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi } from '@jest/globals';
 import { CommentsTestSuite, EventsTestSuite, ProductTestSuite } from 'routier-plugin-testing';
 import { FileSystemPlugin } from './FileSystemPlugin';
 import { uuidv4 } from '@routier/core';

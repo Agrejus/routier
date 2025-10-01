@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, jest } from '@jest/globals';
 import { buildFromQueryOperation } from './utils';
 import { DbPluginQueryEvent } from '@routier/core/plugins';
 import { s } from '@routier/core/schema';
@@ -44,7 +44,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         const datastore = new TestDataStore(plugin);
 
         // This will trigger a query with no filters
-        datastore.users.firstOrUndefined(vi.fn<any>());
+        datastore.users.firstOrUndefined(jest.fn<any>());
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
@@ -62,7 +62,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         const datastore = new TestDataStore(plugin);
 
         // This will trigger a query with a filter
-        datastore.users.firstOrUndefined(x => x.age === 25, vi.fn<any>());
+        datastore.users.firstOrUndefined(x => x.age === 25, jest.fn<any>());
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
@@ -84,7 +84,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             .where(x => x.age > 18)
             .sort(x => x.name)
             .take(10)
-            .toArray(vi.fn<any>());
+            .toArray(jest.fn<any>());
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
@@ -105,7 +105,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         datastore.users
             .sortDescending(x => x.name)
             .skip(5)
-            .toArray(vi.fn<any>());
+            .toArray(jest.fn<any>());
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
@@ -123,7 +123,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         const datastore = new TestDataStore(plugin);
 
         // This will trigger a count query
-        datastore.users.count(vi.fn<any>());
+        datastore.users.count(jest.fn<any>());
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
@@ -144,7 +144,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         datastore.users
             .where(x => x.age > 18)
             .where(x => x.name.startsWith('John'))
-            .toArray(vi.fn<any>());
+            .toArray(jest.fn<any>());
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
@@ -162,7 +162,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         const datastore = new TestDataStore(plugin);
 
         // This will trigger a distinct query
-        datastore.users.distinct(vi.fn<any>());
+        datastore.users.distinct(jest.fn<any>());
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
@@ -184,7 +184,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             .sortDescending(x => x.age)
             .skip(10)
             .take(5)
-            .toArray(vi.fn<any>());
+            .toArray(jest.fn<any>());
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
@@ -206,7 +206,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             .where(x => x.age > 18)
             .where(x => x.name.startsWith('John'))
             .where(x => x.age < 65)
-            .toArray(vi.fn<any>());
+            .toArray(jest.fn<any>());
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
@@ -224,7 +224,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         const datastore = new TestDataStore(plugin);
 
         // This will trigger a MIN query
-        datastore.users.min(x => x.age, vi.fn<any>());
+        datastore.users.min(x => x.age, jest.fn<any>());
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
@@ -242,7 +242,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         const datastore = new TestDataStore(plugin);
 
         // This will trigger a MAX query
-        datastore.users.max(x => x.age, vi.fn<any>());
+        datastore.users.max(x => x.age, jest.fn<any>());
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
@@ -260,7 +260,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         const datastore = new TestDataStore(plugin);
 
         // This will trigger a SUM query
-        datastore.users.sum(x => x.age, vi.fn<any>());
+        datastore.users.sum(x => x.age, jest.fn<any>());
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
@@ -280,7 +280,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         // This will trigger a filtered MIN query
         datastore.users
             .where(x => x.age > 18)
-            .min(x => x.age, vi.fn<any>());
+            .min(x => x.age, jest.fn<any>());
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
@@ -300,7 +300,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         // This will trigger a map query
         datastore.users
             .map(x => ({ name: x.name, age: x.age }))
-            .toArray(vi.fn<any>());
+            .toArray(jest.fn<any>());
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
@@ -319,7 +319,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         const datastore = new TestDataStore(plugin);
 
         // This will trigger a some query
-        datastore.users.some(x => x.age > 18, vi.fn<any>());
+        datastore.users.some(x => x.age > 18, jest.fn<any>());
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
@@ -337,7 +337,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         const datastore = new TestDataStore(plugin);
 
         // This will trigger an every query
-        datastore.users.every(x => x.age > 18, vi.fn<any>());
+        datastore.users.every(x => x.age > 18, jest.fn<any>());
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
@@ -355,7 +355,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         const datastore = new TestDataStore(plugin);
 
         // This will trigger a first query
-        datastore.users.first(vi.fn<any>());
+        datastore.users.first(jest.fn<any>());
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
@@ -375,7 +375,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         // This will trigger a filtered first query
         datastore.users
             .where(x => x.age > 18)
-            .first(vi.fn<any>());
+            .first(jest.fn<any>());
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
@@ -398,7 +398,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             .sort(x => x.name)
             .skip(5)
             .take(10)
-            .toArray(vi.fn<any>());
+            .toArray(jest.fn<any>());
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
@@ -422,7 +422,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             .skip(5)
             .take(10)
             .where(x => x.name != null)
-            .toArray(vi.fn<any>());
+            .toArray(jest.fn<any>());
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
@@ -440,14 +440,14 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         const datastore = new TestDataStore(plugin);
 
         // Test IS NOT NULL
-        datastore.users.where(x => x.name != null).toArray(vi.fn<any>());
+        datastore.users.where(x => x.name != null).toArray(jest.fn<any>());
         expect(capturedQuery).toBeDefined();
         let result = buildFromQueryOperation(capturedQuery);
         expect(result.sql).toBe('SELECT "id", "name", "age" FROM "users" WHERE "name" IS NOT NULL');
         expect(result.params).toEqual([]);
 
         // Test IS NULL
-        datastore.users.where(x => x.name == null).toArray(vi.fn<any>());
+        datastore.users.where(x => x.name == null).toArray(jest.fn<any>());
         expect(capturedQuery).toBeDefined();
         result = buildFromQueryOperation(capturedQuery);
         expect(result.sql).toBe('SELECT "id", "name", "age" FROM "users" WHERE "name" IS NULL');
@@ -467,7 +467,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         datastore.users
             .where(x => x.age > 18)
             .where(x => x.name != null)
-            .toArray(vi.fn<any>());
+            .toArray(jest.fn<any>());
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
@@ -487,7 +487,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         // Test case-sensitive starts-with
         datastore.users
             .where(x => x.name.startsWith('John'))
-            .toArray(vi.fn<any>());
+            .toArray(jest.fn<any>());
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
@@ -507,7 +507,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         // Test complex logical expression
         datastore.users
             .where(x => x.age > 18 && (x.age < 65 || x.name.startsWith('Admin')))
-            .toArray(vi.fn<any>());
+            .toArray(jest.fn<any>());
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);

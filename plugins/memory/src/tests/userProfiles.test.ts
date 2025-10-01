@@ -1,5 +1,5 @@
 import { generateData } from '../../../../test-utils/dist';
-import { describe, it, expect, afterAll } from 'vitest';
+import { describe, it, expect, afterAll } from '@jest/globals';
 import { IDbPlugin, uuidv4 } from '@routier/core';
 import { MemoryPlugin } from '../MemoryPlugin';
 import { TestDataStore } from './datastore/MemoryDatastore';

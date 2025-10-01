@@ -68,7 +68,7 @@
     "build:bundle": "rspack build",
     "build": "npm run build:bundle && npm run build:types",
     "tsc": "tsc",
-    "test": "vitest run"
+    "test": "jest"
   },
   "sideEffects": false,
   "author": "James DeMeuse <james.demeuse@gmail.com>",
@@ -90,7 +90,6 @@
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",
     "ts-loader": "^9.5.2",
-    "typescript": "^5.7.2",
-    "vitest": "^3.2.4"
+    "typescript": "^5.7.2"
   }
 }

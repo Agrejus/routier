@@ -1,11 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { MemoryDataCollection } from './MemoryDataCollection';
 import { CompiledSchema, SchemaTypes } from '../schema';
 import { PropertyInfo } from '../schema/PropertyInfo';
 import { Result } from '../results';
 
-vi.mock('../utilities/uuid', () => ({
-    uuidv4: vi.fn(() => 'mock-uuid-123')
+jest.mock('../utilities/uuid', () => ({
+    uuidv4: jest.fn(() => 'mock-uuid-123')
 }));
 
 describe('EphemeralDataCollection', () => {
@@ -18,8 +18,8 @@ describe('EphemeralDataCollection', () => {
             id: 'id',
             name: 'id',
             type: SchemaTypes.String,
-            getValue: vi.fn((item: any) => item.id),
-            setValue: vi.fn(),
+            getValue: jest.fn((item: any) => item.id),
+            setValue: jest.fn(),
             isIdentity: true,
             isKey: true,
             isNullable: false,
@@ -38,15 +38,15 @@ describe('EphemeralDataCollection', () => {
             literals: [],
             parent: undefined,
             level: 0,
-            _getPropertyChain: vi.fn(),
-            _needsOptionalChaining: vi.fn(),
-            _resolvePathArray: vi.fn(),
-            getPathArray: vi.fn(() => ['id']),
-            getParentPathArray: vi.fn(),
+            _getPropertyChain: jest.fn(),
+            _needsOptionalChaining: jest.fn(),
+            _resolvePathArray: jest.fn(),
+            getPathArray: jest.fn(() => ['id']),
+            getParentPathArray: jest.fn(),
             hasNullableParents: false,
             hasIdentityChildren: false,
-            getSelectrorPath: vi.fn(),
-            getAssignmentPath: vi.fn()
+            getSelectrorPath: jest.fn(),
+            getAssignmentPath: jest.fn()
         } as any;
 
         mockSchema = {
@@ -55,26 +55,26 @@ describe('EphemeralDataCollection', () => {
             properties: [mockIdProperty],
             hasIdentities: true,
             hashType: 'Ids' as any,
-            hash: vi.fn(),
-            getHashType: vi.fn(),
-            compare: vi.fn(),
-            deserialize: vi.fn(),
-            serialize: vi.fn(),
+            hash: jest.fn(),
+            getHashType: jest.fn(),
+            compare: jest.fn(),
+            deserialize: jest.fn(),
+            serialize: jest.fn(),
             id: 1,
             collectionName: 'test_collection',
-            getIds: vi.fn(),
-            enrich: vi.fn(),
-            freeze: vi.fn(),
-            enableChangeTracking: vi.fn(),
+            getIds: jest.fn(),
+            enrich: jest.fn(),
+            freeze: jest.fn(),
+            enableChangeTracking: jest.fn(),
             definition: {} as any,
-            getIndexes: vi.fn(() => []),
-            createSubscription: vi.fn(),
-            getProperty: vi.fn(),
-            getId: vi.fn(),
-            clone: vi.fn(),
-            strip: vi.fn(),
-            prepare: vi.fn(),
-            merge: vi.fn()
+            getIndexes: jest.fn(() => []),
+            createSubscription: jest.fn(),
+            getProperty: jest.fn(),
+            getId: jest.fn(),
+            clone: jest.fn(),
+            strip: jest.fn(),
+            prepare: jest.fn(),
+            merge: jest.fn()
         } as any;
 
         collection = new MemoryDataCollection(mockSchema);
@@ -263,13 +263,13 @@ describe('EphemeralDataCollection', () => {
                 ...mockIdProperty,
                 name: 'id1',
                 id: 'id1',
-                getValue: vi.fn((item: any) => item.id1)
+                getValue: jest.fn((item: any) => item.id1)
             } as any;
             const idProperty2 = {
                 ...mockIdProperty,
                 name: 'id2',
                 id: 'id2',
-                getValue: vi.fn((item: any) => item.id2)
+                getValue: jest.fn((item: any) => item.id2)
             } as any;
             const multiIdSchema = {
                 ...mockSchema,
@@ -322,7 +322,7 @@ describe('EphemeralDataCollection', () => {
             collection.add(item1);
             collection.add(item2);
 
-            const mockCallback = vi.fn();
+            const mockCallback = jest.fn();
             collection.destroy(mockCallback);
 
             expect(collection.size).toBe(0);
@@ -331,7 +331,7 @@ describe('EphemeralDataCollection', () => {
         });
 
         it('should handle destroy on empty collection', () => {
-            const mockCallback = vi.fn();
+            const mockCallback = jest.fn();
             collection.destroy(mockCallback);
 
             expect(collection.size).toBe(0);

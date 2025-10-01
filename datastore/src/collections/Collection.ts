@@ -99,7 +99,7 @@ export class Collection<TEntity extends {}> extends RemovableCollection<TEntity>
      * @param entities Array of entities to add to the collection
      * @param done Callback function called with the added entities or error
      */
-    add(entities: InferCreateType<TEntity>[], done: CallbackResult<InferCreateType<TEntity>[]>) {
+    add(entities: InferCreateType<TEntity>[], done: CallbackResult<InferType<TEntity>[]>) {
         const tag = this.getAndDestroyTag();
         this.changeTracker.add(entities, tag, done);
     }
@@ -110,7 +110,7 @@ export class Collection<TEntity extends {}> extends RemovableCollection<TEntity>
      * @returns Promise that resolves with the added entities or rejects with an error
      */
     addAsync(...entities: InferCreateType<TEntity>[]) {
-        return new Promise<InferCreateType<TEntity>[]>((resolve, reject) => this.add(entities, (r) => Result.resolve(r, resolve, reject)));
+        return new Promise<InferType<TEntity>[]>((resolve, reject) => this.add(entities, (r) => Result.resolve(r, resolve, reject)));
     }
 
     /**

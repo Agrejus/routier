@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from '@jest/globals';
 import { PropertyInfo } from './PropertyInfo';
 import { SchemaBase } from './property/base/SchemaBase';
 import { SchemaTypes } from './types';

@@ -1,11 +1,11 @@
-import { describe, it, expect, vi } from 'vitest';
-import { SyncronousQueue, SyncronousUnitOfWork } from './SyncronousQueue';
+import { describe, it, expect, jest } from '@jest/globals';
+import { SyncronousQueue } from './SyncronousQueue';
 
 describe('SyncronousQueue', () => {
     describe('enqueue', () => {
         it('should add unit of work to queue and start processing', () => {
             const queue = new SyncronousQueue();
-            const mockUnitOfWork = vi.fn((done: () => void) => {
+            const mockUnitOfWork = jest.fn((done: () => void) => {
                 done();
             });
 
@@ -18,12 +18,12 @@ describe('SyncronousQueue', () => {
             const queue = new SyncronousQueue();
             const executionOrder: number[] = [];
 
-            const unitOfWork1 = vi.fn((done: () => void) => {
+            const unitOfWork1 = jest.fn((done: () => void) => {
                 executionOrder.push(1);
                 done();
             });
 
-            const unitOfWork2 = vi.fn((done: () => void) => {
+            const unitOfWork2 = jest.fn((done: () => void) => {
                 executionOrder.push(2);
                 done();
             });
@@ -40,14 +40,14 @@ describe('SyncronousQueue', () => {
             const queue = new SyncronousQueue();
             let doneCalled = false;
 
-            const slowUnitOfWork = vi.fn((done: () => void) => {
+            const slowUnitOfWork = jest.fn((done: () => void) => {
                 setTimeout(() => {
                     doneCalled = true;
                     done();
                 }, 10);
             });
 
-            const fastUnitOfWork = vi.fn((done: () => void) => {
+            const fastUnitOfWork = jest.fn((done: () => void) => {
                 done();
             });
 
@@ -62,14 +62,14 @@ describe('SyncronousQueue', () => {
             const queue = new SyncronousQueue();
             const executionOrder: number[] = [];
 
-            const slowUnitOfWork = vi.fn((done: () => void) => {
+            const slowUnitOfWork = jest.fn((done: () => void) => {
                 executionOrder.push(1);
                 setTimeout(() => {
                     done();
                 }, 10);
             });
 
-            const fastUnitOfWork = vi.fn((done: () => void) => {
+            const fastUnitOfWork = jest.fn((done: () => void) => {
                 executionOrder.push(2);
                 done();
             });
@@ -90,17 +90,17 @@ describe('SyncronousQueue', () => {
             const queue = new SyncronousQueue();
 
             expect(() => {
-                queue.enqueue(vi.fn((done: () => void) => done()));
+                queue.enqueue(jest.fn((done: () => void) => done()));
             }).not.toThrow();
         });
 
         it('should handle unit of work that never calls done', () => {
             const queue = new SyncronousQueue();
-            const stuckUnitOfWork = vi.fn((done: () => void) => {
+            const stuckUnitOfWork = jest.fn((done: () => void) => {
                 // Never calls done
             });
 
-            const secondUnitOfWork = vi.fn((done: () => void) => {
+            const secondUnitOfWork = jest.fn((done: () => void) => {
                 done();
             });
 
@@ -115,13 +115,13 @@ describe('SyncronousQueue', () => {
             const queue = new SyncronousQueue();
             const executionOrder: number[] = [];
 
-            const multiDoneUnitOfWork = vi.fn((done: () => void) => {
+            const multiDoneUnitOfWork = jest.fn((done: () => void) => {
                 executionOrder.push(1);
                 done();
                 done(); // Call done multiple times
             });
 
-            const secondUnitOfWork = vi.fn((done: () => void) => {
+            const secondUnitOfWork = jest.fn((done: () => void) => {
                 executionOrder.push(2);
                 done();
             });
@@ -138,7 +138,7 @@ describe('SyncronousQueue', () => {
             const queue = new SyncronousQueue();
             const executionOrder: number[] = [];
 
-            const createUnitOfWork = (id: number) => vi.fn((done: () => void) => {
+            const createUnitOfWork = (id: number) => jest.fn((done: () => void) => {
                 executionOrder.push(id);
                 done();
             });
@@ -152,11 +152,11 @@ describe('SyncronousQueue', () => {
 
         it('should handle unit of work that throws error', () => {
             const queue = new SyncronousQueue();
-            const errorUnitOfWork = vi.fn((done: () => void) => {
+            const errorUnitOfWork = jest.fn((done: () => void) => {
                 throw new Error('Test error');
             });
 
-            const secondUnitOfWork = vi.fn((done: () => void) => {
+            const secondUnitOfWork = jest.fn((done: () => void) => {
                 done();
             });
 
@@ -169,11 +169,11 @@ describe('SyncronousQueue', () => {
 
         it('should not process next unit after error', () => {
             const queue = new SyncronousQueue();
-            const errorUnitOfWork = vi.fn((done: () => void) => {
+            const errorUnitOfWork = jest.fn((done: () => void) => {
                 throw new Error('Test error');
             });
 
-            const secondUnitOfWork = vi.fn((done: () => void) => {
+            const secondUnitOfWork = jest.fn((done: () => void) => {
                 done();
             });
 
@@ -193,14 +193,14 @@ describe('SyncronousQueue', () => {
             const queue = new SyncronousQueue();
             const executionOrder: number[] = [];
 
-            const asyncUnitOfWork = vi.fn((done: () => void) => {
+            const asyncUnitOfWork = jest.fn((done: () => void) => {
                 executionOrder.push(1);
                 Promise.resolve().then(() => {
                     done();
                 });
             });
 
-            const syncUnitOfWork = vi.fn((done: () => void) => {
+            const syncUnitOfWork = jest.fn((done: () => void) => {
                 executionOrder.push(2);
                 done();
             });
@@ -219,7 +219,7 @@ describe('SyncronousQueue', () => {
     describe('edge cases', () => {
         it('should handle null done callback', () => {
             const queue = new SyncronousQueue();
-            const unitOfWork = vi.fn((done: () => void) => {
+            const unitOfWork = jest.fn((done: () => void) => {
                 done();
             });
 
@@ -234,9 +234,9 @@ describe('SyncronousQueue', () => {
             const queue = new SyncronousQueue();
             const executionOrder: number[] = [];
 
-            const recursiveUnitOfWork = vi.fn((done: () => void) => {
+            const recursiveUnitOfWork = jest.fn((done: () => void) => {
                 executionOrder.push(1);
-                queue.enqueue(vi.fn((innerDone: () => void) => {
+                queue.enqueue(jest.fn((innerDone: () => void) => {
                     executionOrder.push(2);
                     innerDone();
                 }));
@@ -253,7 +253,7 @@ describe('SyncronousQueue', () => {
             const queue = new SyncronousQueue();
             const executionCount = { count: 0 };
 
-            const unitOfWork = vi.fn((done: () => void) => {
+            const unitOfWork = jest.fn((done: () => void) => {
                 executionCount.count++;
                 done();
             });

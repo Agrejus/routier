@@ -136,7 +136,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
             return propertyPaths.map(propertyPath => {
                 const [destinationName, sourcePathAndName] = propertyPath.split(":").map(w => w.trim());
                 const sourceName = this._extractPropertyName(sourcePathAndName);
-                const property = this.schema.getProperty(sourcePathAndName);
+                const property = this.schema.getProperty(sourceName);
 
                 return {
                     sourceName,
@@ -259,6 +259,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
     }
 
     protected setMapQueryOption<K, R>(selector: GenericFunction<K, R>) {
+
         const fields = this.getFields(selector);
 
         this.queryOptions.add("map", { selector: selector as GenericFunction<any, any>, fields });

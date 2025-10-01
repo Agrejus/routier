@@ -5,6 +5,7 @@ import { SchemaObject } from "./property/types/SchemaObject";
 import { PropertyInfo } from "./PropertyInfo";
 import { DeepPartial } from "../types";
 import { SchemaFunction } from "./table";
+import { SchemaString } from "./property/types";
 
 export type DefaultValue<T, I = never> = T | ((injected: I) => T);
 export type FunctionBody<TEntity, TResult> = (entity: TEntity, collectionName: string) => TResult;
@@ -168,13 +169,13 @@ export type SchemaModifiers = "default" | "deserialize" |
     "readonly" | "serialize" |
     "unmapped" | "computed" |
     "distinct";
-//SchemaFunction
+
 type InferPrimitive<T> =
     T extends SchemaArray<infer Y, infer __> ? InferPrimitive<Y>[]
     : T extends SchemaObject<infer Obj, infer _> ?
     { [K in keyof Obj]: InferPrimitive<Obj[K]> } : // Process nested objects
     T extends SchemaFunction<infer F, infer __> ? F : T extends SchemaBase<infer X, infer _> ?
-    X : // Extract the primitive type
+    X extends Array<infer A> ? InferPrimitive<A>[] : X : // Extract the primitive type
     never;
 
 export type InferType<T> = T extends CompiledSchema<infer R> ? InferCompiledSchema<R> : T extends {} ? InferCompiledSchema<T> : T;

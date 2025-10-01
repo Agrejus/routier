@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from '@jest/globals';
 import { toExpression, combineExpressions } from './parser';
 import { CompiledSchema, SchemaTypes } from '../schema';
 import { Expression, ComparatorExpression, OperatorExpression, PropertyExpression, ValueExpression } from './types';

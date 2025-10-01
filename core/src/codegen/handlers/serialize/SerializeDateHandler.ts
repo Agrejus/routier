@@ -32,6 +32,7 @@ export class SerializeDateHandler extends PropertyInfoHandler {
                 return builder;
             }
 
+            debugger;
             // TODO: SOLVE THIS, IT IS CLOSE
             //const slotPath = new SlotPath(...property.getParentPathArray());
             // slotPath.push(...property.getParentPathArray());

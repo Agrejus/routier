@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from '@jest/globals';
 import { JsonTranslator } from './JsonTranslator';
 import { QueryOption, QueryOrdering } from '../query/types';
 import { Filter, ParamsFilter } from '../../expressions/types';
