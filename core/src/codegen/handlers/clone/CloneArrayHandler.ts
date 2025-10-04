@@ -2,11 +2,11 @@ import { CodeBuilder, SlotBlock } from '../../blocks';
 import { PropertyInfoHandler } from "../types";
 import { PropertyInfo, SchemaTypes } from "../../../schema";
 
-export class CloneObjectHandler extends PropertyInfoHandler {
+export class CloneArrayHandler extends PropertyInfoHandler {
 
     override handle(property: PropertyInfo<any>, builder: CodeBuilder): CodeBuilder | null {
 
-        if (property.type === SchemaTypes.Object) {
+        if (property.type === SchemaTypes.Array) {
 
             if (property.isNullable || property.isOptional) {
                 // Child properties will take care of this

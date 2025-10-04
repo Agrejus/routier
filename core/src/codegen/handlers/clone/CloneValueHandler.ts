@@ -1,5 +1,4 @@
-import { CodeBuilder, ObjectBuilder, SlotBlock } from '../../blocks';
-import { SlotPath } from '../../SlotPath';
+import { CodeBuilder, SlotBlock } from '../../blocks';
 import { PropertyInfoHandler } from "../types";
 import { PropertyInfo, SchemaTypes } from "../../../schema";
 
@@ -7,24 +6,25 @@ export class CloneValueHandler extends PropertyInfoHandler {
 
     override handle(property: PropertyInfo<any>, builder: CodeBuilder): CodeBuilder | null {
 
-        if (property.type != SchemaTypes.Object) {
-            let objectBuilder = builder.getOrDefault<ObjectBuilder>("result.variable.object");
-            const entitySelectorPath = property.getAssignmentPath({ parent: "entity" });
-
-            if (objectBuilder == null) {
-                objectBuilder = builder.get<SlotBlock>("result")
-                    .assign("const result", { name: "variable" })
-                    .object({ name: "object" });
-            }
+        if (property.type != SchemaTypes.Object && property.type != SchemaTypes.Array) {
+            const slot = builder.getOrDefault<SlotBlock>("if");
+            const entitySelectorPath = property.getSelectrorPath({ parent: "entity" });
+            const resultAssignmentPath = property.getAssignmentPath({ parent: "result" });
 
             if (property.parent == null) {
-                objectBuilder.property(`${property.name}: ${entitySelectorPath}`);
+                // we are a first level property
+                slot.if(`${entitySelectorPath} != null`).appendBody(`${resultAssignmentPath} = ${entitySelectorPath}`);
                 return builder;
             }
 
-            const slotPath = new SlotPath(...property.getParentPathArray());
-            objectBuilder = objectBuilder.get<ObjectBuilder>(slotPath.get());
-            objectBuilder.property(`${property.name}: ${entitySelectorPath}`);
+            if (property.hasNullableParents) {
+                debugger;
+                return builder;
+            }
+
+            // Second level or more property
+            // Assignment here is ok, because the parent cannot be null in practice
+            slot.if(`${entitySelectorPath} != null`).appendBody(`${resultAssignmentPath} = ${entitySelectorPath}`);
             return builder;
         }
 

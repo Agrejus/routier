@@ -3,7 +3,7 @@ import { generateData, seedData } from '@routier/test-utils';
 import { IDbPlugin, UnknownRecord, uuidv4 } from '@routier/core';
 import { SqliteDbPlugin } from '../SqliteDbPlugin';
 import { SqliteDataStore } from './data-access/context';
-import { da, faker } from '@faker-js/faker';
+import { faker } from '@faker-js/faker';
 
 const generateDbName = () => `z-${uuidv4()}-db`;
 const pluginFactory: (dbname?: string) => IDbPlugin = (dbname?: string) => new SqliteDbPlugin(dbname ?? generateDbName());
@@ -778,7 +778,7 @@ describe("Product Tests", () => {
             // Assert
             expect(found).toBeDefined();
             expect(found.length).toBe(100);
-            expect(found[0]).toBe("string");
+            expect(typeof found[0]).toBe("string");
         });
 
         it("sort", async () => {
@@ -1511,6 +1511,9 @@ describe("Product Tests", () => {
             expect(result[0]).toHaveProperty('id');
             expect(result[0]).toHaveProperty('price');
             expect(result[0]).toHaveProperty('name');
+            expect(typeof result[0].id).toBe("string");
+            expect(typeof result[0].price).toBe("number");
+            expect(typeof result[0].name).toBe("string");
         });
     });
 

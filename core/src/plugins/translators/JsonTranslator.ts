@@ -93,6 +93,10 @@ export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRo
 
         assertIsArray(data, this._formatDataNotArrayError("sum"));
 
+        if (data.length === 0) {
+            throw new Error("Cannot perform operation on empty array, result query contains no data")
+        }
+
         const map = this.query.options.getLast("map");
 
         let sum = 0;

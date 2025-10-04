@@ -1,5 +1,5 @@
-import { describe, it, expect, afterAll } from 'vitest';
-import { generateData } from '../../../../test-utils/dist';
+import { describe, it, expect, afterAll } from '@jest/globals';
+import { generateData } from '@routier/test-utils';
 import { IDbPlugin, uuidv4 } from '@routier/core';
 import { PouchDbPlugin } from '../PouchDbPlugin';
 import { TestDataStore } from './datastore/PouchDbDatastore';

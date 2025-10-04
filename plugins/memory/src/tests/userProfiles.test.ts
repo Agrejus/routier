@@ -1,4 +1,4 @@
-import { generateData } from '../../../../test-utils/dist';
+import { generateData } from '@routier/test-utils';
 import { describe, it, expect, afterAll } from '@jest/globals';
 import { IDbPlugin, uuidv4 } from '@routier/core';
 import { MemoryPlugin } from '../MemoryPlugin';
@@ -31,7 +31,7 @@ describe("User Profiles Tests", () => {
             const [added] = await dataStore.userProfiles.addAsync(item);
             await dataStore.saveChangesAsync();
 
-            expect(added.age).toBeTypeOf("number");
+            expect(typeof added.age).toBe("number");
         });
     });
 

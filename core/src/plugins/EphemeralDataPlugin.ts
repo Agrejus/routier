@@ -3,7 +3,7 @@ import { BulkPersistResult } from '../collections';
 import { WorkPipeline } from '../pipeline';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, JsonTranslator } from '.';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '../results';
-import { CompiledSchema, InferCreateType } from '../schema';
+import { CompiledSchema, InferCreateType, InferType } from '../schema';
 import { DeepPartial } from '../types';
 import { MemoryDataCollection } from '../collections/MemoryDataCollection';
 import { UnknownRecord } from '../utilities';
@@ -119,7 +119,14 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                     return;
                 }
 
-                const translated = translator.translate(collection.records);
+                debugger;
+                const cloned: Record<string, unknown>[] = [];
+
+                for (let i = 0, length = collection.records.length; i < length; i++) {
+                    cloned.push(event.operation.schema.clone(collection.records[0] as InferType<TEntity>));
+                }
+
+                const translated = translator.translate(JSON.parse(JSON.stringify(collection.records)));
 
                 done(PluginEventResult.success(event.id, translated));
             })

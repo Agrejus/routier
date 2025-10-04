@@ -26,7 +26,17 @@ module.exports = {
             displayName: 'core',
             testMatch: ['<rootDir>/core/**/*.test.ts'],
             preset: 'ts-jest',
-            testEnvironment: 'node'
+            testEnvironment: 'node',
+            transform: {
+                '^.+\\.ts$': ['ts-jest', {
+                    tsconfig: {
+                        lib: ['ESNext', 'ES2023'],
+                        target: 'ESNext',
+                        esModuleInterop: true,
+                        allowSyntheticDefaultImports: true
+                    }
+                }]
+            }
         },
         {
             displayName: 'datastore',

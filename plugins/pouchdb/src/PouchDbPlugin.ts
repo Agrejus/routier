@@ -790,8 +790,12 @@ export class PouchDbPlugin implements IDbPlugin {
                     return;
                 }
 
-                const translated = translator.translate(response.rows.map(w => w.doc));
-                d(Result.success(translated));
+                try {
+                    const translated = translator.translate(response.rows.map(w => w.doc));
+                    d(Result.success(translated));
+                } catch (e) {
+                    d(Result.error(e));
+                }
             });
         }, done);
     }
@@ -812,9 +816,14 @@ export class PouchDbPlugin implements IDbPlugin {
             w.allDocs({
                 include_docs: true
             }).then(response => {
-                const data = response.rows.map(w => w.doc);
-                const translated = translator.translate(data);
-                d(Result.success(translated));
+
+                try {
+                    const data = response.rows.map(w => w.doc);
+                    const translated = translator.translate(data);
+                    d(Result.success(translated));
+                } catch (e) {
+                    d(Result.error(e));
+                }
             }).catch(error => {
                 d(Result.error(error));
             });
@@ -832,8 +841,12 @@ export class PouchDbPlugin implements IDbPlugin {
                     include_docs: true
                 }).then(response => {
                     const data = response.rows.map(w => w.doc);
-                    const translated = translator.translate(data);
-                    d(Result.success(translated));
+                    try {
+                        const translated = translator.translate(data);
+                        d(Result.success(translated));
+                    } catch (e) {
+                        d(Result.error(e));
+                    }
                 }).catch(error => {
                     d(Result.error(error));
                 });
@@ -852,8 +865,13 @@ export class PouchDbPlugin implements IDbPlugin {
                 }
 
                 const data = response.rows.map(w => w.value);
-                const translated = translator.translate(data);
-                d(Result.success(translated));
+
+                try {
+                    const translated = translator.translate(data);
+                    d(Result.success(translated));
+                } catch (e) {
+                    d(Result.error(e));
+                }
             });
 
         }, done);

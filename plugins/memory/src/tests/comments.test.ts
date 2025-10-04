@@ -1,4 +1,4 @@
-import { generateData } from '../../../../test-utils/dist';
+import { generateData } from '@routier/test-utils';
 import { describe, it, expect, afterAll } from '@jest/globals';
 import { IDbPlugin, uuidv4 } from '@routier/core';
 import { MemoryPlugin } from '../MemoryPlugin';
