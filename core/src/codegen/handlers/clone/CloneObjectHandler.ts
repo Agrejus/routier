@@ -1,4 +1,4 @@
-import { CodeBuilder, SlotBlock } from '../../blocks';
+import { CodeBuilder } from '../../blocks';
 import { PropertyInfoHandler } from "../types";
 import { PropertyInfo, SchemaTypes } from "../../../schema";
 
@@ -8,23 +8,7 @@ export class CloneObjectHandler extends PropertyInfoHandler {
 
         if (property.type === SchemaTypes.Object) {
 
-            if (property.isNullable || property.isOptional) {
-                // Child properties will take care of this
-                return builder;
-            }
-
-            const slot = builder.get<SlotBlock>("assignments");
-            const resultAssignmentPath = property.getAssignmentPath({ parent: "result" });
-
-            if (property.parent == null) {
-                slot.assign(`${resultAssignmentPath}`).value("{}");
-                return builder;
-            }
-
-            // slotPath.push(...property.getParentPathArray());
-            // const nestedObjectBuilder = builder.get<ObjectBuilder>(slotPath.get());
-            // nestedObjectBuilder.nested(property.name, property.name)
-
+            // Child properties will take care of this
             return builder;
         }
 

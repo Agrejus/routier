@@ -21,7 +21,7 @@ export class DexieTranslator<TRoot extends {}, TShape> extends JsonTranslator<TR
 
     override skip<TResult>(data: unknown, option: QueryOption<TShape, "skip">): TResult {
 
-        // make sure we still skip if the target is not the database
+        // Dexie will skip for us, we do not need to actually skip
         if (option.target === "database") {
             return data as TResult;
         }
@@ -31,7 +31,7 @@ export class DexieTranslator<TRoot extends {}, TShape> extends JsonTranslator<TR
 
     override take<TResult>(data: unknown, option: QueryOption<TShape, "take">): TResult {
 
-        // make sure we still take if the target is not the database
+        // Dexie will take for us, we do not need to actually take
         if (option.target === "database") {
             return data as TResult;
         }

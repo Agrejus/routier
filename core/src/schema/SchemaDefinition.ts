@@ -425,7 +425,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const mergeParams = mergeFunctionRoot.getParameters()
             const enrichGenerator = Function(`return ${enricherCodeBuilder.toString()}`);
             const mergeGenerator = Function(`return ${mergeCodeBuilder.toString()}`);
-            debugger;
+
             const getIdsFunction = Function("entity", idSelectorCodeBuilder.toString()) as (entity: InferType<T>) => [IdType];
             const getHashTypeFunction = Function("entity", hashTypeCodeBuilder.toString()) as GetHashTypeFunction<T>;
             const prepareFunction = Function("entity", prepareCodeBuilder.toString()) as (entity: InferCreateType<T>) => InferCreateType<T>;

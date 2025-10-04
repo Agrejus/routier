@@ -1,4 +1,4 @@
-import { CodeBuilder, SlotBlock } from '../../blocks';
+import { CodeBuilder, IfBuilder, SlotBlock } from '../../blocks';
 import { PropertyInfoHandler } from "../types";
 import { PropertyInfo, SchemaTypes } from "../../../schema";
 
@@ -17,14 +17,12 @@ export class CloneValueHandler extends PropertyInfoHandler {
                 return builder;
             }
 
-            if (property.hasNullableParents) {
-                debugger;
-                return builder;
-            }
-
             // Second level or more property
-            // Assignment here is ok, because the parent cannot be null in practice
-            slot.if(`${entitySelectorPath} != null`).appendBody(`${resultAssignmentPath} = ${entitySelectorPath}`);
+            // Need to ensure parent is assigned
+            const propertyParentPath = ["entity", ...property.getParentPathArray()]
+            const ifBuilder = new IfBuilder(`${propertyParentPath.join("?.")} == nulll`).appendBody(`${propertyParentPath.join(".")} = {};`);
+
+            slot.if(`${entitySelectorPath} != null`).appendBody(ifBuilder.toString()).appendBody(`${resultAssignmentPath} = ${entitySelectorPath}`);
             return builder;
         }
 

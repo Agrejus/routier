@@ -78,7 +78,8 @@ module.exports = {
                 '^.+\\.js$': ['babel-jest', {
                     presets: [['@babel/preset-env', { targets: { node: 'current' } }]]
                 }]
-            }
+            },
+            setupFilesAfterEnv: ['<rootDir>/plugins/dexie/jest.setup.js']
         },
         {
             displayName: 'test-utils',

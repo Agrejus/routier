@@ -19,7 +19,7 @@ export class SerializeObjectHandler extends PropertyInfoHandler {
                 }
 
                 // Do nothing if it's nullable or optional as property assignments will check
-                // and create if it does not exist.  This way we can handle null/optional properly
+                // and create if it does not exist.  This way we can handle null/optional
                 return builder;
             }
 

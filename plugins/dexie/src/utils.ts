@@ -19,14 +19,17 @@ export const convertToDexieSchema = <T extends {}>(schema: CompiledSchema<T>) =>
         let modifier = "";
 
         if (property.isKey && property.isIdentity) {
+            // Auto increment (numbers only)
             modifier += "++";
         }
 
         if (property.type === SchemaTypes.Array) {
+            // Multi entry index (arrays)
             modifier += "*";
         }
 
         if (property.isDistinct === true) {
+            // Unique Index
             modifier += "&";
         }
 
@@ -36,6 +39,9 @@ export const convertToDexieSchema = <T extends {}>(schema: CompiledSchema<T>) =>
             if (!!modifier) {
                 // Handle the primary key
                 schemaProperties.push(`${modifier}${property.name}`);
+            } else {
+                // Add the plain property
+                schemaProperties.push(property.name);
             }
 
             continue;

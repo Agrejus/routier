@@ -10,5 +10,22 @@ module.exports = {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'html'],
   moduleFileExtensions: ['ts', 'js', 'json'],
-  testTimeout: 10000
+  testTimeout: 10000,
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  transformIgnorePatterns: [
+    'node_modules/(?!(@routier|@faker-js)/)'
+  ],
+  transform: {
+    '^.+\\.ts$': ['ts-jest', {
+      tsconfig: {
+        lib: ['ESNext', 'ES2023'],
+        target: 'ESNext',
+        esModuleInterop: true,
+        allowSyntheticDefaultImports: true
+      }
+    }],
+    '^.+\\.js$': ['babel-jest', {
+      presets: [['@babel/preset-env', { targets: { node: 'current' } }]]
+    }]
+  }
 };

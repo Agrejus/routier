@@ -119,7 +119,6 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                     return;
                 }
 
-                debugger;
                 const cloned: Record<string, unknown>[] = [];
 
                 for (let i = 0, length = collection.records.length; i < length; i++) {
