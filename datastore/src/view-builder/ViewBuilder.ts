@@ -16,11 +16,13 @@ type CollectionBuilderProps<TEntity extends {}, TCollection extends View<TEntity
     signal: AbortSignal;
     scopedQueryOptions?: QueryOptionsCollection<InferType<TEntity>>;
     schemas: SchemaCollection;
-    deriveCallback: (callback: DeriveCallback<TEntity>) => void;
+    deriveCallback: Derive<TEntity>;
     persistCallback: IDbPlugin["bulkPersist"];
 }
 
-export type DeriveCallback<TEntity extends {}> = (viewData: InferCreateType<TEntity>[]) => void;
+export type DeriveCallback<TEntity extends {}> = (data: InferType<TEntity>[]) => void;
+export type Derive<TEntity extends {}> = (callback: DeriveCallback<TEntity>) => DeriveResponse;
+export type DeriveResponse = (() => void) | (() => void)[];
 
 export class ViewBuilder<TEntity extends {}, TCollection extends View<TEntity>> {
 
@@ -32,7 +34,7 @@ export class ViewBuilder<TEntity extends {}, TCollection extends View<TEntity>> 
     private _signal: AbortSignal;
     private schemas: SchemaCollection;
     private scopedQueryOptions: QueryOptionsCollection<InferType<TEntity>>;
-    private deriveCallback: (callback: DeriveCallback<TEntity>) => void;
+    private deriveCallback: Derive<TEntity>;
     private persistCallback: IDbPlugin["bulkPersist"];
 
     constructor(props: CollectionBuilderProps<TEntity, TCollection>) {
@@ -100,9 +102,9 @@ export class ViewBuilder<TEntity extends {}, TCollection extends View<TEntity>> 
         });
     }
 
-    derive(done: (callback: DeriveCallback<TEntity>) => void) {
+    derive(derive: Derive<TEntity>) {
 
-        this.deriveCallback = done;
+        this.deriveCallback = derive;
 
         return new ViewBuilder<TEntity, View<TEntity>>({
             dbPlugin: this._dbPlugin,
@@ -119,8 +121,8 @@ export class ViewBuilder<TEntity extends {}, TCollection extends View<TEntity>> 
     }
 
     create(): TCollection;
-    create<TExtension extends TCollection>(extend: (i: ViewInstanceCreator<TEntity, TCollection>, dbPlugin: IDbPlugin, schema: CompiledSchema<TEntity>, options: CollectionOptions, pipelines: CollectionPipelines, schemas: SchemaCollection, scopedQueryOptions: QueryOptionsCollection<InferType<TEntity>>, derive: (callback: DeriveCallback<TEntity>) => void) => TExtension, persist: IDbPlugin["bulkPersist"]): TExtension;
-    create<TExtension extends TCollection = never>(extend?: (i: ViewInstanceCreator<TEntity, TCollection>, dbPlugin: IDbPlugin, schema: CompiledSchema<TEntity>, options: CollectionOptions, pipelines: CollectionPipelines, schemas: SchemaCollection, scopedQueryOptions: QueryOptionsCollection<InferType<TEntity>>, derive: (callback: DeriveCallback<TEntity>) => void, persist: IDbPlugin["bulkPersist"]) => TExtension) {
+    create<TExtension extends TCollection>(extend: (i: ViewInstanceCreator<TEntity, TCollection>, dbPlugin: IDbPlugin, schema: CompiledSchema<TEntity>, options: CollectionOptions, pipelines: CollectionPipelines, schemas: SchemaCollection, scopedQueryOptions: QueryOptionsCollection<InferType<TEntity>>, derive: Derive<TEntity>) => TExtension, persist: IDbPlugin["bulkPersist"]): TExtension;
+    create<TExtension extends TCollection = never>(extend?: (i: ViewInstanceCreator<TEntity, TCollection>, dbPlugin: IDbPlugin, schema: CompiledSchema<TEntity>, options: CollectionOptions, pipelines: CollectionPipelines, schemas: SchemaCollection, scopedQueryOptions: QueryOptionsCollection<InferType<TEntity>>, derive: Derive<TEntity>, persist: IDbPlugin["bulkPersist"]) => TExtension) {
 
         const options: CollectionOptions = {
             signal: this._signal,

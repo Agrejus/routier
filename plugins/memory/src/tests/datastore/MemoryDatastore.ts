@@ -10,6 +10,7 @@ import { playerSchema } from "../schemas/player";
 import { playerMatchSchema } from "../schemas/playerMatch";
 import { immutableItemSchema } from "../schemas/immutableItem";
 import { CommentsView, commentsViewSchema } from "../schemas/commentsView";
+import { productsViewSchema } from "../schemas/productView";
 
 export class TestDataStore extends DataStore {
     constructor(plugin: IDbPlugin) {
@@ -17,6 +18,28 @@ export class TestDataStore extends DataStore {
     }
 
     products = this.collection(productsSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...productsSchema }).create();
+    productsView = this.view(productsViewSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...productsSchema }).derive((done) => {
+        const unsubscribe = this.products.subscribe().toArray(productsResponse => {
+
+            if (productsResponse.ok === "error") {
+                return // do nothing
+            }
+
+            done(productsResponse.data.map(x => ({
+                id: `view:${x._id}`,
+                category: x.category,
+                inStock: x.inStock,
+                name: x.name,
+                price: x.price,
+                tags: x.tags,
+                createdDate: x.createdDate,
+                documentType: x.documentType
+            })));
+
+        });
+
+        return unsubscribe
+    }).create();
     comments = this.collection(commentsSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...commentsSchema }).create();
     events = this.collection(eventsSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...eventsSchema }).create();
     users = this.collection(usersSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...usersSchema }).create();
@@ -29,8 +52,11 @@ export class TestDataStore extends DataStore {
     immutableItems = this.collection(immutableItemSchema).readonly().create();
 
     commentsView = this.view(commentsViewSchema).derive((done) => {
-        this.comments.subscribe().next().toArray(response => {
+        // defer because we don't want to compute every time we create a datastore
 
+        // BUG: Not returning data after it is saved
+        const unsubscribe = this.comments.subscribe().defer().toArray(response => {
+            debugger;
             if (response.ok === "error") {
                 return done([]);
             }
@@ -42,8 +68,10 @@ export class TestDataStore extends DataStore {
                 },
                 createdAt: new Date(),
                 replies: 1,
-                id: uuidv4()
+                id: `view:${x._id}`
             } as CommentsView)))
-        })
+        });
+
+        return unsubscribe;
     }).create();
 }

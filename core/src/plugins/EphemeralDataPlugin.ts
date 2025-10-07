@@ -125,7 +125,7 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                     cloned.push(event.operation.schema.clone(collection.records[0] as InferType<TEntity>));
                 }
 
-                const translated = translator.translate(JSON.parse(JSON.stringify(collection.records)));
+                const translated = translator.translate(cloned);
 
                 done(PluginEventResult.success(event.id, translated));
             })

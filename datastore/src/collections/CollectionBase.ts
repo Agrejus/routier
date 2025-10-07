@@ -15,7 +15,7 @@ import { GenericFunction } from "@routier/core/types";
 import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { uuid } from "@routier/core/utilities";
 
-export class CollectionBase<TEntity extends {}> {
+export class CollectionBase<TEntity extends {}> implements Disposable {
 
     protected readonly changeTracker: ChangeTracker<TEntity>;
     protected readonly dataBridge: DataBridge<TEntity>;
@@ -73,6 +73,14 @@ export class CollectionBase<TEntity extends {}> {
         this.countAsync = this.countAsync.bind(this);
         this.distinct = this.distinct.bind(this);
         this.distinctAsync = this.distinctAsync.bind(this);
+    }
+
+    [Symbol.dispose]() {
+        this.dispose();
+    }
+
+    dispose() {
+        // Noop
     }
 
     protected get changeTrackingType(): ChangeTrackingType {

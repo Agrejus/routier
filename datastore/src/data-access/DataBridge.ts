@@ -75,7 +75,7 @@ export class DataBridge<T extends {}> {
                         return;
                     }
 
-                    if (r == null || (Array.isArray(r) && r.length === 0)) {
+                    if (r.data == null || (Array.isArray(r.data) && r.data.length === 0)) {
                         return;
                     }
 

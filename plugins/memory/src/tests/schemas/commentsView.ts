@@ -1,7 +1,7 @@
 import { InferType, s } from "@routier/core/schema";
 
 export const commentsViewSchema = s.define("commentsView", {
-    id: s.string().key().identity(),
+    id: s.string().key(),
     user: s.object({
         name: s.string()
     }),

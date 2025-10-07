@@ -79,6 +79,11 @@ export class DataStore implements Disposable {
      * @returns A CollectionBuilder for the entity type.
      */
     protected view<TEntity extends {}>(schema: CompiledSchema<TEntity>) {
+
+        if (schema.idProperties.some(x => x.isIdentity)) {
+            throw new Error("View cannot have an identty key.  Must be a known/computed key so Routier can find and update the record");
+        }
+
         const onCreated = (view: View<TEntity>) => {
             this.collections.set(schema.id, view);
             this._schemas.set(schema.id, schema as CompiledSchema<UnknownRecord>);
@@ -270,5 +275,9 @@ export class DataStore implements Disposable {
     [Symbol.dispose]() {
         // should clear and detach everything in the change tracker?
         this.abortController.abort("Data Store disposed");
+
+        for (const [, collection] of this.collections) {
+            collection.dispose();
+        }
     }
 }

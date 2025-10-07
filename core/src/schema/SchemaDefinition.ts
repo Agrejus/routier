@@ -454,7 +454,6 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
             const getProperty = (id: string) => propertyMap.get(id);
             const id = hash([...allPropertyNamesAndPaths, this.collectionName].join(","));
-            const paths = new Set(properties.map(x => x.getAssignmentPath()));
 
             // memoize this by the validProperties
             // TODO: See if we can generate a function to do this and eliminate loops

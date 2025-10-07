@@ -29,7 +29,7 @@ export class SubscribedTakeQueryable<Root extends {}, Shape, U> extends Selectio
         return this.create(SubscribedTakeQueryable<Root, Shape, U>);
     }
 
-    next() {
+    defer() {
         this.skipInitialQuery = true;
         return this.create(SubscribedTakeQueryable<Root, Shape, () => void>);
     }

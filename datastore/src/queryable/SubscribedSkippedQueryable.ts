@@ -35,7 +35,7 @@ export class SubscribedSkippedQueryable<Root extends {}, Shape, U> extends Selec
         return this.create(SubscribedSkippedQueryable<Root, Shape, U>);
     }
 
-    next() {
+    defer() {
         this.skipInitialQuery = true;
         return this.create(SubscribedTakeQueryable<Root, Shape, () => void>);
     }
