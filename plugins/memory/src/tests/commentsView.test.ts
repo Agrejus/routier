@@ -50,7 +50,7 @@ describe("Comments View Tests", () => {
             const { plugin, dataStore } = factory();
 
             const data = generateData(dataStore.comments.schema, 10);
-            plugin.seed(dataStore.comments.schema, data);
+            plugin.seed(dataStore.comments.schema, data.map(entity => dataStore.comments.schema.enrich(entity, "proxy")));
 
             const [item] = generateData(dataStore.comments.schema, 1);
 
@@ -59,9 +59,9 @@ describe("Comments View Tests", () => {
             await dataStore.saveChangesAsync();
 
             // Assert
-            // await waitFor(async () => {
-            //     return await dataStore.commentsView.someAsync();
-            // });
+            await waitFor(async () => {
+                return await dataStore.commentsView.countAsync() === 11;
+            });
         });
     });
 });

@@ -20,8 +20,6 @@ export class CloneArrayHandler extends PropertyInfoHandler {
                 slot.assign(`${resultAssignmentPath}`).value("{}");
                 return builder;
             }
-            debugger;
-
             // slotPath.push(...property.getParentPathArray());
             // const nestedObjectBuilder = builder.get<ObjectBuilder>(slotPath.get());
             // nestedObjectBuilder.nested(property.name, property.name)

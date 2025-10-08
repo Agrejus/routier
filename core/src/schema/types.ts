@@ -6,6 +6,7 @@ import { PropertyInfo } from "./PropertyInfo";
 import { DeepPartial } from "../types";
 import { SchemaFunction } from "./table";
 import { SchemaString } from "./property/types";
+import { SchemaOptional } from "./property/modifiers";
 
 export type DefaultValue<T, I = never> = T | ((injected: I) => T);
 export type FunctionBody<TEntity, TResult> = (entity: TEntity, collectionName: string) => TResult;
@@ -171,6 +172,7 @@ export type SchemaModifiers = "default" | "deserialize" |
     "distinct";
 
 type InferPrimitive<T> =
+    T extends SchemaOptional<infer C, infer __> ? C extends (string | number | Date) ? C : { [K in keyof C]: InferPrimitive<C[K]> } :
     T extends SchemaArray<infer Y, infer __> ? InferPrimitive<Y>[]
     : T extends SchemaObject<infer Obj, infer _> ?
     { [K in keyof Obj]: InferPrimitive<Obj[K]> } : // Process nested objects

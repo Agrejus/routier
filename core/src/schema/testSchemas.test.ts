@@ -6,7 +6,7 @@ export const productsSchema = s.define("products", {
     _rev: s.string().identity(),
     name: s.string(),
     price: s.number(),
-    category: s.string(),
+    category: s.string().optional(),
     inStock: s.boolean(),
     location: s.object({
         id: s.string(),
@@ -17,6 +17,9 @@ export const productsSchema = s.define("products", {
         id: s.string(),
         name: s.string()
     }).array(),
+    user: s.object({
+        name: s.string()
+    }).optional(),
     createdDate: s.date().default(() => new Date()).deserialize(x => (typeof x === "object" && (x as unknown) instanceof Date) ? x : new Date(x))
 }).modify(x => ({
     documentType: x.computed((_, collectionName) => collectionName).tracked()

@@ -54,7 +54,7 @@ export class MemoryPlugin extends EphemeralDataPlugin {
     }
 
     override destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
-        dbs[this.databaseName] = {};
+        // dbs[this.databaseName] = {};
         done(PluginEventResult.success(event.id));
     }
 }

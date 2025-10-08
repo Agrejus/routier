@@ -21,7 +21,6 @@ export class SerializeSerializerHandler extends PropertyInfoHandler {
                 return builder;
             }
 
-            debugger;
             // TODO: SOLVE THIS
             //const slotPath = new SlotPath(...property.getParentPathArray());
 

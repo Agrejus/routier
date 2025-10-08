@@ -53,23 +53,21 @@ export class TestDataStore extends DataStore {
 
     commentsView = this.view(commentsViewSchema).derive((done) => {
         // defer because we don't want to compute every time we create a datastore
-
-        // BUG: Not returning data after it is saved
         const unsubscribe = this.comments.subscribe().defer().toArray(response => {
-            debugger;
+
             if (response.ok === "error") {
                 return done([]);
             }
-
+            debugger;
             done(response.data.map(x => ({
-                content: "hi",
+                content: x.content,
                 user: {
-                    name: ""
+                    name: x.author
                 },
                 createdAt: new Date(),
-                replies: 1,
+                replies: x.replies,
                 id: `view:${x._id}`
-            } as CommentsView)))
+            })))
         });
 
         return unsubscribe;

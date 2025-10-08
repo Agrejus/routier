@@ -23,7 +23,6 @@ export class SerializeObjectHandler extends PropertyInfoHandler {
                 return builder;
             }
 
-            debugger;
             slotPath.push(...property.getParentPathArray());
             const nestedObjectBuilder = builder.get<ObjectBuilder>(slotPath.get());
             nestedObjectBuilder.nested(property.name, property.name)
