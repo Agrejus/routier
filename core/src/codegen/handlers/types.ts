@@ -56,12 +56,10 @@ export abstract class PropertyInfoHandler implements IHandler {
         const entitySelectorPath = property.getAssignmentPath({ parent: "entity", useFromPropertyName });
 
         if (property.parent != null) {
-            const slotPath = new SlotPath("factory", "function", "assignment");
+            const slotPath = new SlotPath("factory", "function", "enriched", "object", "enriched");
             const path = property.parent.getAssignmentPath({ parent: "enriched" });
             slotPath.push(`[${path}]`)
-            const builder = root.get<AssignmentBuilder>(slotPath.get());
-            const objectBuilder = builder.getValue as ObjectBuilder;
-
+            const objectBuilder = root.get<ObjectBuilder>(slotPath.get());
             const childEntityPathSelector = property.getSelectrorPath({ parent: "entity", useFromPropertyName });
             objectBuilder.property(`${property.name}: ${childEntityPathSelector}`);
             return;

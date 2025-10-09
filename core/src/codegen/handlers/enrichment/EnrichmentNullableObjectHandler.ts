@@ -34,7 +34,7 @@ export class EnrichmentNullableObjectHandler extends PropertyInfoHandler {
                     throw new Error(`Error building enricher, could not find slot for ${slotPath.get()}`)
                 }
 
-                enriched = enrichedSlot.nested(property.name, property.name);
+                enriched = enrichedSlot.nested(property.name, `[${enrichedPath}]`);
             }
             return builder;
         }

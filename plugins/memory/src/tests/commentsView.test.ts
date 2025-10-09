@@ -60,7 +60,9 @@ describe("Comments View Tests", () => {
 
             // Assert
             await waitFor(async () => {
-                return await dataStore.commentsView.countAsync() === 11;
+                const count = await dataStore.commentsView.countAsync();
+                console.log(count);
+                return count === 11;
             });
         });
     });

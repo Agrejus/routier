@@ -19,7 +19,7 @@ export class CloneValueHandler extends PropertyInfoHandler {
 
             // Second level or more property
             // Need to ensure parent is assigned
-            const propertyParentPath = ["entity", ...property.getParentPathArray()]
+            const propertyParentPath = ["result", ...property.getParentPathArray()]
             const ifBuilder = new IfBuilder(`${propertyParentPath.join("?.")} == null`).appendBody(`${propertyParentPath.join(".")} = {};`);
 
             slot.if(`${entitySelectorPath} != null`).appendBody(ifBuilder.toString()).appendBody(`${resultAssignmentPath} = ${entitySelectorPath}`);
