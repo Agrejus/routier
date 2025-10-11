@@ -1,4 +1,4 @@
-import { LocalStoragePlugin } from "routier-plugin-local-storage";
+import { LocalStoragePlugin } from "@routier/browser-storage-plugin";
 
 const localStoragePlugin = new LocalStoragePlugin(
   "my-app",

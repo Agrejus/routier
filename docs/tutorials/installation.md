@@ -17,29 +17,29 @@ nav_order: 3
 ### Core Package
 
 ```bash
-npm install routier
+npm install @routier/core @routier/datastore
 ```
 
 ### Plugins
 
 ```bash
 # Memory plugin for in-memory storage
-npm install routier-plugin-memory
+npm install @routier/memory-plugin
 
 # Local storage plugin for browser storage
-npm install routier-plugin-local-storage
+npm install @routier/browser-storage-plugin
 
 # File system plugin for Node.js
-npm install routier-plugin-file-system
+npm install @routier/file-system-plugin
 
 # PouchDB plugin for CouchDB integration
-npm install routier-plugin-pouchdb
+npm install @routier/pouchdb-plugin
 
 # Dexie plugin for IndexedDB
-npm install routier-plugin-dexie
+npm install @routier/dexie-plugin
 
 # SQLite plugin for SQLite databases
-npm install routier-plugin-sqlite
+npm install @routier/sqlite-plugin
 
 # (Optional) Use Memory plugin for testing/mocks
 # No dedicated testing plugin is required

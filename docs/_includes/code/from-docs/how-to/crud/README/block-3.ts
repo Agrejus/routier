@@ -1,6 +1,6 @@
-import { MemoryPlugin } from "routier-plugin-memory";
-import { DexiePlugin } from "routier-plugin-dexie";
-import { PouchDbPlugin } from "routier-plugin-pouchdb";
+import { MemoryPlugin } from "@routier/memory-plugin";
+import { DexiePlugin } from "@routier/dexie-plugin";
+import { PouchDbPlugin } from "@routier/pouchdb-plugin";
 
 // Memory (fastest, no persistence)
 class MemoryContext extends DataStore {

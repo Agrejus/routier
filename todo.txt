@@ -1,20 +1,5 @@
 Readonly collection
     Done -> Need to figure out deep readonly
+        A: Freeze Deep
 remap property names
-Views 
-    WHen a collection(s) have changed, need an even so we can update the view
-    How will they work?  When one of the schemas has changes we need to recalculate the view
-
-    // cb should be the expected shape of the view
-    lobbyView = this.view(schema).compute((cb) => {
-        const result = [];
-
-        this.players.subscribe().where(x => x.id === 1).toList((players) => {
-            this.playerMatches.subscribe().where(([x, p]) => p.playerIds.includes(x.playerId), { playerIds: players.map(p => p._id) }).toArray((r) => {
-                cb(r);
-            });
-        });        
-    }).create()
-
-
-    this.collection(matchSchema).scope(([x, p]) => x.collectionName === p.collectionName, { ...matchSchema }).readonly().create();
+    A: added schema.from()

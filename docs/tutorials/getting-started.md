@@ -22,9 +22,9 @@ Routier is a modern, flexible data management framework designed for building sc
 ## Installation
 
 ```bash
-npm install routier
-npm install routier-plugin-memory
-npm install routier-plugin-local-storage
+npm install @routier/core @routier/datastore
+npm install @routier/memory-plugin
+npm install @routier/browser-storage-plugin
 ```
 
 ## Basic Setup

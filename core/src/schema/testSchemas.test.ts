@@ -15,7 +15,7 @@ export const optionalObjectSchemaFactory = () => s.define("optionalObject", {
     createdAt: s.date().default(() => new Date()).deserialize(x => (typeof x === "object" && (x as unknown) instanceof Date) ? x : new Date(x))
 }).compile();
 
-export const usersSchemaOneFactory = () => s.define("users", {
+export const usersSchemaOneFactory = () => s.define("usersOne", {
     id: s.string().key().default(x => x.uuid(), { uuid: uuidv4 }),
     firstName: s.string(),
     lastName: s.string(),
@@ -25,6 +25,26 @@ export const usersSchemaOneFactory = () => s.define("users", {
         street: s.string(),
         city: s.string(),
         state: s.string(),
+        zip: s.string()
+    })
+}).modify(x => ({
+    documentType: x.computed((_, collectionName) => collectionName).tracked()
+})).compile();
+
+export const usersSchemaTwoFactory = () => s.define("usersTwo", {
+    id: s.string().key().default(x => x.uuid(), { uuid: uuidv4 }),
+    firstName: s.string(),
+    lastName: s.string(),
+    age: s.number(),
+    createdDate: s.date().default(() => new Date("01/01/1900 8:00 AM")),
+    address: s.object({
+        street: s.string(),
+        city: s.string(),
+        state: s.object({
+            id: s.string(),
+            name: s.string(),
+            abbreviation: s.string()
+        }),
         zip: s.string()
     })
 }).modify(x => ({

@@ -1,5 +1,5 @@
-import { DataStore } from "routier";
-import { MemoryPlugin } from "routier-plugin-memory";
+import { DataStore } from "@routier/datastore";
+import { MemoryPlugin } from "@routier/memory-plugin";
 
 class AppContext extends DataStore {
   constructor() {

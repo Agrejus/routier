@@ -4,7 +4,6 @@ import { SchemaDefault } from "./SchemaDefault";
 import { SchemaDeserialize } from "./SchemaDeserialize";
 import { SchemaDistinct } from "./SchemaDistinct";
 import { SchemaIdentity } from "./SchemaIdentity";
-import { SchemaKey } from "./SchemaKey";
 import { SchemaNullable } from "./SchemaNullable";
 import { SchemaOptional } from "./SchemaOptional";
 import { SchemaReadonly } from "./SchemaReadonly";

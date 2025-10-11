@@ -1,5 +1,5 @@
-import { DataStore } from "routier";
-import { PouchDbPlugin } from "routier-plugin-pouchdb";
+import { DataStore } from "@routier/datastore";
+import { PouchDbPlugin } from "@routier/pouchdb-plugin";
 import { productSchema } from "./schemas/product";
 
 // Configure PouchDB with syncing
@@ -30,14 +30,19 @@ const plugin = new PouchDbPlugin("myapp", {
   },
 });
 
-// Create the data store
-const dataStore = new DataStore(plugin);
+// Create the data store class
+class AppDataStore extends DataStore {
+  constructor() {
+    super(plugin);
+  }
 
-// Add collections
-const products = dataStore.collection(productSchema).create();
+  products = this.collection(productSchema).create();
+}
+
+const dataStore = new AppDataStore();
 
 // All operations now automatically sync
-await products.addAsync({
+await dataStore.products.addAsync({
   name: "New Product",
   price: 99.99,
   category: "electronics",

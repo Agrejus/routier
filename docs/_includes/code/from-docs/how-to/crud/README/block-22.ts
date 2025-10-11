@@ -1,6 +1,6 @@
-import { DataStore } from "routier";
-import { MemoryPlugin } from "routier-plugin-memory";
-import { s } from "routier-core/schema";
+import { DataStore } from "@routier/datastore";
+import { MemoryPlugin } from "@routier/memory-plugin";
+import { s } from "@routier/core/schema";
 
 // Define schema
 const productSchema = s

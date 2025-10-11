@@ -1,3 +1,3 @@
-import { MemoryPlugin } from "routier-plugin-memory";
+import { MemoryPlugin } from "@routier/memory-plugin";
 
 const memoryPlugin = new MemoryPlugin("my-app");

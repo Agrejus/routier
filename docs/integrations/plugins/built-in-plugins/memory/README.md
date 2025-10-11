@@ -17,7 +17,7 @@ The Memory Plugin is the fastest storage option in Routier, storing all data in 
 ## Installation
 
 ```bash
-npm install routier-plugin-memory
+npm install @routier/memory-plugin
 ```
 
 ## Basic Usage
