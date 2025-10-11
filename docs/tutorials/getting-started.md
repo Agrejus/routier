@@ -34,7 +34,7 @@ npm install @routier/browser-storage-plugin
 ```ts
 {
   {
-    snippet_y1mh9l | escape;
+    snippet_y1mh9l;
   }
 }
 ```

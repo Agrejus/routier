@@ -26,7 +26,7 @@ Memory collections are the fastest storage option in Routier, storing all data i
 ```ts
 {
   {
-    snippet_mc_1 | escape;
+    snippet_mc_1;
   }
 }
 ```
@@ -55,7 +55,7 @@ Memory collections are the fastest storage option in Routier, storing all data i
 ```ts
 {
   {
-    snippet_mc_2 | escape;
+    snippet_mc_2;
   }
 }
 ```
@@ -67,7 +67,7 @@ Memory collections are the fastest storage option in Routier, storing all data i
 ```ts
 {
   {
-    snippet_mc_3 | escape;
+    snippet_mc_3;
   }
 }
 ```
@@ -79,7 +79,7 @@ Memory collections are the fastest storage option in Routier, storing all data i
 ```ts
 {
   {
-    snippet_mc_4 | escape;
+    snippet_mc_4;
   }
 }
 ```

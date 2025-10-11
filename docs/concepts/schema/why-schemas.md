@@ -31,7 +31,7 @@ Schemas provide compile-time type checking and type safety:
 ```ts
 {
   {
-    snippet_g1vs4h | escape;
+    snippet_g1vs4h;
   }
 }
 ```
@@ -45,7 +45,7 @@ Schemas ensure data structure matches your defined types, reducing bugs and impr
 ```ts
 {
   {
-    snippet_dzl6uk | escape;
+    snippet_dzl6uk;
   }
 }
 ```
@@ -59,7 +59,7 @@ Schemas serve as living documentation of your data structures:
 ```ts
 {
   {
-    snippet_eybu6p | escape;
+    snippet_eybu6p;
   }
 }
 ```
@@ -73,7 +73,7 @@ Schemas enable powerful features without additional code:
 ```ts
 {
   {
-    snippet_malwii | escape;
+    snippet_malwii;
   }
 }
 ```
@@ -87,7 +87,7 @@ Schemas ensure all parts of your application handle data the same way:
 ```ts
 {
   {
-    snippet_5mtp8w | escape;
+    snippet_5mtp8w;
   }
 }
 ```
@@ -101,7 +101,7 @@ Schemas enable automatic performance optimizations:
 ```ts
 {
   {
-    snippet_krnwpl | escape;
+    snippet_krnwpl;
   }
 }
 ```
@@ -115,7 +115,7 @@ Schemas enable powerful change tracking features:
 ```ts
 {
   {
-    snippet_mc1w4v | escape;
+    snippet_mc1w4v;
   }
 }
 ```
@@ -129,7 +129,7 @@ Schemas handle data transformation automatically:
 ```ts
 {
   {
-    snippet_ia38gi | escape;
+    snippet_ia38gi;
   }
 }
 ```
@@ -143,7 +143,7 @@ Schemas handle data transformation automatically:
 ```ts
 {
   {
-    snippet_qq7z16 | escape;
+    snippet_qq7z16;
   }
 }
 ```
@@ -155,7 +155,7 @@ Schemas handle data transformation automatically:
 ```ts
 {
   {
-    snippet_v2efrx | escape;
+    snippet_v2efrx;
   }
 }
 ```
@@ -171,7 +171,7 @@ While schemas are powerful, they're not always necessary:
 ```ts
 {
   {
-    snippet_nusyp4 | escape;
+    snippet_nusyp4;
   }
 }
 ```
@@ -183,7 +183,7 @@ While schemas are powerful, they're not always necessary:
 ```ts
 {
   {
-    snippet_ufr7tz | escape;
+    snippet_ufr7tz;
   }
 }
 ```
@@ -195,7 +195,7 @@ While schemas are powerful, they're not always necessary:
 ```ts
 {
   {
-    snippet_itz37e | escape;
+    snippet_itz37e;
   }
 }
 ```
@@ -209,7 +209,7 @@ While schemas are powerful, they're not always necessary:
 ```ts
 {
   {
-    snippet_myxbxu | escape;
+    snippet_myxbxu;
   }
 }
 ```
@@ -221,7 +221,7 @@ While schemas are powerful, they're not always necessary:
 ```ts
 {
   {
-    snippet_mizzys | escape;
+    snippet_mizzys;
   }
 }
 ```
@@ -233,7 +233,7 @@ While schemas are powerful, they're not always necessary:
 ```ts
 {
   {
-    snippet_0wnx5f | escape;
+    snippet_0wnx5f;
   }
 }
 ```
@@ -245,7 +245,7 @@ While schemas are powerful, they're not always necessary:
 ```ts
 {
   {
-    snippet_l9n9ls | escape;
+    snippet_l9n9ls;
   }
 }
 ```

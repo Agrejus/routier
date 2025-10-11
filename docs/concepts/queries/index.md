@@ -24,7 +24,7 @@ Routier queries are fluent and can only be performed through a collection. Build
 ```ts
 {
   {
-    snippet_toc7ki | escape;
+    snippet_toc7ki;
   }
 }
 ```
@@ -36,7 +36,7 @@ Routier queries are fluent and can only be performed through a collection. Build
 ```ts
 {
   {
-    snippet_wfoe49 | escape;
+    snippet_wfoe49;
   }
 }
 ```
@@ -48,7 +48,7 @@ Routier queries are fluent and can only be performed through a collection. Build
 ```ts
 {
   {
-    snippet_kwlaer | escape;
+    snippet_kwlaer;
   }
 }
 ```
@@ -60,7 +60,7 @@ Routier queries are fluent and can only be performed through a collection. Build
 ```ts
 {
   {
-    snippet_hkwyrg | escape;
+    snippet_hkwyrg;
   }
 }
 ```
@@ -72,7 +72,7 @@ Routier queries are fluent and can only be performed through a collection. Build
 ```ts
 {
   {
-    snippet_9ysmzy | escape;
+    snippet_9ysmzy;
   }
 }
 ```
@@ -84,7 +84,7 @@ Routier queries are fluent and can only be performed through a collection. Build
 ```ts
 {
   {
-    snippet_cy63oz | escape;
+    snippet_cy63oz;
   }
 }
 ```
@@ -108,7 +108,7 @@ Example removal:
 ```ts
 {
   {
-    snippet_8vys4s | escape;
+    snippet_8vys4s;
   }
 }
 ```
@@ -132,7 +132,7 @@ Example (in this schema, `firstName` is stored in the database while `age` is a 
 ```ts
 {
   {
-    snippet_muj42f | escape;
+    snippet_muj42f;
   }
 }
 ```

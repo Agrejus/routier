@@ -11,9 +11,9 @@ Use Routier with React via hooks and bindings.
 
 ### Example
 
-Below is a minimal example using the `useQuery` hook. This snippet is included via Liquid and kept in sync with the codebase.
+Below is a minimal example using the `useQuery` hook.
 
 {% capture code_content %}{% include code/react/adapter-quick.tsx %}{% endcapture %}
-{% highlight tsx %}{{ code_content | escape }}{% endhighlight %}
+{% highlight tsx %}{{ code_content }}{% endhighlight %}
 
 Start here: [React Integration]({{ site.baseurl }}/integrations/react/)
