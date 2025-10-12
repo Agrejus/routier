@@ -16,8 +16,6 @@ Example include:
 
 {% capture snippet_1yiuat %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-```ts
-{{ snippet_1yiuat  | strip }}
-```
+{% highlight ts %}{{ snippet_1yiuat | strip }}{% endhighlight %}
 
 ```

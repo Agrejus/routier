@@ -35,14 +35,9 @@ The specific sync engine (like PouchDB) handles:
 
 Syncing is configured however the user wants within the specific database plugin. Routier itself doesn't handle syncing - it provides the interfaces that plugins use. Here's one example of how it might be configured with a PouchDB plugin:
 
-
-
 {% capture snippet_835yxq %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-```ts
-{{ snippet_835yxq  | strip }}
-```
-
+{% highlight ts %}{{ snippet_835yxq | strip }}{% endhighlight %}
 
 ## Sync Options
 
@@ -52,40 +47,25 @@ The specific options available depend entirely on the plugin you're using. Diffe
 
 Most sync implementations need some way to connect to a remote data source:
 
-
-
 {% capture snippet_gxg67t %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-```ts
-{{ snippet_gxg67t  | strip }}
-```
-
+{% highlight ts %}{{ snippet_gxg67t | strip }}{% endhighlight %}
 
 ### **Sync Behavior**
 
 Common sync behaviors that plugins might implement:
 
-
-
 {% capture snippet_8rwuvm %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-```ts
-{{ snippet_8rwuvm  | strip }}
-```
-
+{% highlight ts %}{{ snippet_8rwuvm | strip }}{% endhighlight %}
 
 ### **Event Handling**
 
 Many sync implementations provide callbacks for sync events:
 
-
-
 {% capture snippet_nrw1v6 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-```ts
-{{ snippet_nrw1v6  | strip }}
-```
-
+{% highlight ts %}{{ snippet_nrw1v6 | strip }}{% endhighlight %}
 
 **Note:** The exact property names, values, and behavior depend on your specific plugin implementation.
 
@@ -131,27 +111,17 @@ The exact retry behavior depends on your plugin implementation.
 
 Here's one example of how you might set up a synced data store with PouchDB. Other plugins may have different configuration approaches:
 
-
-
 {% capture snippet_c0vihy %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-```ts
-{{ snippet_c0vihy  | strip }}
-```
-
+{% highlight ts %}{{ snippet_c0vihy | strip }}{% endhighlight %}
 
 ## Conflict Resolution
 
 When conflicts occur (the same data is modified in multiple places), your plugin may provide ways to handle them:
 
-
-
 {% capture snippet_zq3fq2 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-```ts
-{{ snippet_zq3fq2  | strip }}
-```
-
+{% highlight ts %}{{ snippet_zq3fq2 | strip }}{% endhighlight %}
 
 **Note:** The exact conflict handling depends on your plugin implementation.
 
@@ -159,36 +129,21 @@ When conflicts occur (the same data is modified in multiple places), your plugin
 
 ### 1. **Network Handling**
 
-
-
 {% capture snippet_5mub03 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-```ts
-{{ snippet_5mub03  | strip }}
-```
-
+{% highlight ts %}{{ snippet_5mub03 | strip }}{% endhighlight %}
 
 ### 2. **Error Handling**
 
-
-
 {% capture snippet_cu2b4f %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-```ts
-{{ snippet_cu2b4f  | strip }}
-```
-
+{% highlight ts %}{{ snippet_cu2b4f | strip }}{% endhighlight %}
 
 ### 3. **Performance Optimization**
 
-
-
 {% capture snippet_eg7aet %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-```ts
-{{ snippet_eg7aet  | strip }}
-```
-
+{% highlight ts %}{{ snippet_eg7aet | strip }}{% endhighlight %}
 
 ## Monitoring and Debugging
 
@@ -196,27 +151,17 @@ When conflicts occur (the same data is modified in multiple places), your plugin
 
 You can monitor sync status through your plugin's event callbacks:
 
-
-
 {% capture snippet_0nto2h %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-```ts
-{{ snippet_0nto2h  | strip }}
-```
-
+{% highlight ts %}{{ snippet_0nto2h | strip }}{% endhighlight %}
 
 ### Debug Mode
 
 Enable detailed logging for troubleshooting (if your plugin supports it):
 
-
-
 {% capture snippet_98y1i5 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-```ts
-{{ snippet_98y1i5  | strip }}
-```
-
+{% highlight ts %}{{ snippet_98y1i5 | strip }}{% endhighlight %}
 
 ## Supported Backends
 

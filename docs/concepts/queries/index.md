@@ -21,73 +21,37 @@ Routier queries are fluent and can only be performed through a collection. Build
 
 {% capture snippet_toc7ki %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-```ts
-{
-  {
-    snippet_toc7ki;
-  }
-}
-```
+{% highlight ts %}{{ snippet_toc7ki | strip }}{% endhighlight %}
 
 ### Filtering with where
 
 {% capture snippet_wfoe49 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-```ts
-{
-  {
-    snippet_wfoe49;
-  }
-}
-```
+{% highlight ts %}{{ snippet_wfoe49 | strip }}{% endhighlight %}
 
 ### Sorting
 
 {% capture snippet_kwlaer %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-```ts
-{
-  {
-    snippet_kwlaer;
-  }
-}
-```
+{% highlight ts %}{{ snippet_kwlaer | strip }}{% endhighlight %}
 
 ### Selecting fields with map
 
 {% capture snippet_hkwyrg %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-```ts
-{
-  {
-    snippet_hkwyrg;
-  }
-}
-```
+{% highlight ts %}{{ snippet_hkwyrg | strip }}{% endhighlight %}
 
 ### Pagination
 
 {% capture snippet_9ysmzy %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-```ts
-{
-  {
-    snippet_9ysmzy;
-  }
-}
-```
+{% highlight ts %}{{ snippet_9ysmzy | strip }}{% endhighlight %}
 
 ### Aggregation and set operations
 
 {% capture snippet_cy63oz %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-```ts
-{
-  {
-    snippet_cy63oz;
-  }
-}
-```
+{% highlight ts %}{{ snippet_cy63oz | strip }}{% endhighlight %}
 
 ### Terminal methods (execute the query)
 
@@ -105,13 +69,7 @@ Example removal:
 
 {% capture snippet_8vys4s %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-```ts
-{
-  {
-    snippet_8vys4s;
-  }
-}
-```
+{% highlight ts %}{{ snippet_8vys4s | strip }}{% endhighlight %}
 
 ### Notes
 
@@ -129,13 +87,7 @@ Example (in this schema, `firstName` is stored in the database while `age` is a 
 
 {% capture snippet_muj42f %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-```ts
-{
-  {
-    snippet_muj42f;
-  }
-}
-```
+{% highlight ts %}{{ snippet_muj42f | strip }}{% endhighlight %}
 
 ### Related
 

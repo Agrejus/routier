@@ -31,13 +31,7 @@ npm install @routier/browser-storage-plugin
 
 {% capture snippet_y1mh9l %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-```ts
-{
-  {
-    snippet_y1mh9l;
-  }
-}
-```
+{% highlight ts %}{{ snippet_y1mh9l | strip }}{% endhighlight %}
 
 ## Next Steps
 
