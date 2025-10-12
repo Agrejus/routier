@@ -10,8 +10,6 @@ nav_order: 1
   <img src="{{ site.baseurl }}/assets/routier.svg" alt="Routier" width="140" height="140" />
 </p>
 
-## What is Routier?
-
 Routier is a fast, front-end–first data toolkit that augments any datastore with
 schemas, collections, live queries, optimistic mutations, replication, caching,
 and more—without locking you into a specific ORM or backend. It’s designed to be
@@ -37,13 +35,7 @@ Here's how Routier works in practice:
 
 {% capture snippet_qcxtd6 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-```ts
-{
-  {
-    snippet_qcxtd6;
-  }
-}
-```
+{% highlight ts %}{{ snippet_qcxtd6 | strip }}{% endhighlight %}
 
 ### Target Platform
 
