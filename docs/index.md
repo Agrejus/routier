@@ -15,7 +15,7 @@ nav_order: 1
 Routier is a fast, front-end–first data toolkit that augments any datastore with
 schemas, collections, live queries, optimistic mutations, replication, caching,
 and more—without locking you into a specific ORM or backend. It’s designed to be
-extremely thin and fast—staying close to “bare‑metal” JavaScript by avoiding
+extremely thin and fast, staying close to “bare‑metal” JavaScript by avoiding
 promises/async-await in core hot paths.
 
 ### Why Routier
@@ -29,7 +29,21 @@ OPFS). Rewriting your data layer every time is costly and risky.
 Routier solves this by providing a thin, fast, datastore‑agnostic layer you
 control. Keep your domain model and data API intact; swap the storage plugin
 beneath it. Get the same developer experience and app behavior, regardless of
-which frontend datastore you’re running today—or migrate to tomorrow.
+which frontend datastore you're running today, or migrate to tomorrow.
+
+## Quick Example
+
+Here's how Routier works in practice:
+
+{% capture snippet_qcxtd6 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+
+```ts
+{
+  {
+    snippet_qcxtd6;
+  }
+}
+```
 
 ### Target Platform
 
@@ -38,13 +52,13 @@ client-side applications and modern browser storage technologies:
 
 - IndexedDB
 - Local Storage
-- SQLite (via WASM, e.g. PG‑Lite)
+- SQLite
 - Origin Private File System (OPFS)
 
 ## Philosophy
 
 - Toolkit, not an ORM: Routier augments any datastore. It doesn’t bake in
-  validation or force a query language; bring your own validation (Zod, AJV).
+  validation or force a query language; bring your own validation if needed (Zod, AJV).
 - Front-end first: Tuned for client runtimes and local-first patterns; also
   works on the backend if needed.
 - Thin and fast by design: Internally avoids promises/async-await in hot paths,
@@ -64,7 +78,7 @@ intentionally left to libraries like Zod or AJV.
 - Distinct (uniqueness)
   - Enforce unique fields even if your store lacks native support.
 - Property Remapping
-  - Map awkward source names (e.g., `__id`) to clean domain names via `from`.
+  - Map awkward source names (e.g., `__id`) to clean domain names via `.from()`.
 - Identity
   - Let Routier generate IDs or declare that your database issues them.
 - Indexes
@@ -121,7 +135,7 @@ your way while providing powerful data behavior.
     serialization), speed (indexes, caching), and ergonomics (live queries,
     optimistic updates).
 - Swap without rewrites
-  - Move from IndexedDB to SQLite (PG‑Lite) or adopt OPFS by changing the
+  - Move from IndexedDB to SQLite or adopt OPFS by changing the
     plugin; preserve your domain model and app code.
 - Validation by choice
   - Use Zod or AJV for input/output validation; Routier handles transformation
@@ -150,16 +164,6 @@ your way while providing powerful data behavior.
 - Create collections: typed sets of entities backed by a plugin
 - Use live queries: reactive queries across one or more collections
 - Make optimistic mutations: instant UI updates with automatic rollback
-
-{% capture snippet_qcxtd6 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-
-```ts
-{
-  {
-    snippet_qcxtd6;
-  }
-}
-```
 
 ## Getting Started
 
