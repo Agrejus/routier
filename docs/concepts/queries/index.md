@@ -19,37 +19,37 @@ Routier queries are fluent and can only be performed through a collection. Build
 
 ### Basic querying
 
-{% capture snippet_toc7ki %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_toc7ki %}{% include code/from-docs/concepts/queries/basic-querying.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_toc7ki | strip }}{% endhighlight %}
 
 ### Filtering with where
 
-{% capture snippet_wfoe49 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_wfoe49 %}{% include code/from-docs/concepts/queries/filtering-where.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_wfoe49 | strip }}{% endhighlight %}
 
 ### Sorting
 
-{% capture snippet_kwlaer %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_kwlaer %}{% include code/from-docs/concepts/queries/sorting.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_kwlaer | strip }}{% endhighlight %}
 
 ### Selecting fields with map
 
-{% capture snippet_hkwyrg %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_hkwyrg %}{% include code/from-docs/concepts/queries/selecting-fields-map.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_hkwyrg | strip }}{% endhighlight %}
 
 ### Pagination
 
-{% capture snippet_9ysmzy %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_9ysmzy %}{% include code/from-docs/concepts/queries/pagination.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_9ysmzy | strip }}{% endhighlight %}
 
 ### Aggregation and set operations
 
-{% capture snippet_cy63oz %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_cy63oz %}{% include code/from-docs/concepts/queries/aggregation-set-operations.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_cy63oz | strip }}{% endhighlight %}
 
@@ -65,9 +65,13 @@ Routier queries are fluent and can only be performed through a collection. Build
 - **distinct / distinctAsync**: unique set of current shape
 - **remove / removeAsync**: delete items matching the current query
 
+{% capture snippet_terminal_methods %}{% include code/from-docs/concepts/queries/terminal-methods.ts %}{% endcapture %}
+
+{% highlight ts %}{{ snippet_terminal_methods | strip }}{% endhighlight %}
+
 Example removal:
 
-{% capture snippet_8vys4s %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_8vys4s %}{% include code/from-docs/concepts/queries/example-removal.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_8vys4s | strip }}{% endhighlight %}
 
@@ -85,7 +89,7 @@ Best practice: apply database‑backed filters first, then computed/unmapped fil
 
 Example (in this schema, `firstName` is stored in the database while `age` is a computed property):
 
-{% capture snippet_muj42f %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_muj42f %}{% include code/from-docs/concepts/queries/computed-unmapped-properties.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_muj42f | strip }}{% endhighlight %}
 
