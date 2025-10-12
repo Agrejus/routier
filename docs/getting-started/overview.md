@@ -6,50 +6,74 @@ has_children: true
 permalink: /getting-started/
 ---
 
-## Overview
+# Getting Started with Routier
 
-Routier is a reactive data toolkit for building fast, local‑first apps. It gives you typed schemas, high‑level collections, live queries, and optimistic mutations, all backed by pluggable storage.
+Welcome to Routier! This section will guide you through setting up Routier in your project and getting your first application running.
 
-### How it works
+## What You'll Learn
 
-- Define schemas (types, defaults, indexes, modifiers)
-- Create collections from schemas (backed by a plugin)
-- Read with live queries (reactive, incremental updates)
-- Write with optimistic mutations (instant UI; rollback on error when implemented by the selected plugin)
+By the end of this getting started guide, you'll have:
 
-### Why Routier
+- ✅ Installed Routier and a storage plugin
+- ✅ Created your first schema and collection
+- ✅ Built a simple application with live queries
+- ✅ Understood Routier's core concepts
 
-Choosing storage for local‑first apps is hard—and the landscape moves fast. Frameworks/ORMs and front‑end storage (e.g. OPFS + WASM) keep evolving, so the “right” choice today may not be right tomorrow. Routier separates your domain model from persistence through a small plugin interface:
+## Prerequisites
 
-- Swap storage backends without changing schemas, queries, or UI
-- Use any framework/ORM/data store you want via plugins
-- Experiment safely: to try a new store (e.g. OPFS + WASM), write a plugin and keep the rest of your app the same
-- Fill ORM gaps: if your ORM lacks features, Routier is feature‑rich and easily extended (via plugins or collection modifiers)
+Before you begin, make sure you have:
 
-See also: [Built‑in plugins]({{ site.baseurl }}/integrations/plugins/built-in-plugins/)
+- **Node.js** (v16 or higher)
+- **npm** or **yarn** package manager
+- Basic knowledge of **TypeScript** or **JavaScript**
+- A text editor (VS Code recommended)
 
-### Where to start
+## Quick Overview
 
-- Install the packages you need
-- Set up a datastore with a plugin
-- Follow the Quick Start for a working example
+Routier works by:
 
-### What you get
+1. **Defining schemas** - Type-safe data structures with defaults, indexes, and computed properties
+2. **Creating collections** - Typed entity sets backed by any storage plugin
+3. **Using live queries** - Reactive queries that update automatically when data changes
+4. **Making optimistic mutations** - Instant UI updates with automatic rollback on errors
 
-- Typed schemas and safe mutations
-- Reactive live queries across collections
-- Optimistic state with automatic rollback
-- Pluggable storage (Memory, Local Storage, Dexie, SQLite, PouchDB, …)
+## Choose Your Path
 
-### Performance
+### 🚀 **Quick Start** (Recommended)
 
-Routier is designed to be blazing fast. It minimizes client‑side overhead so, in practice, most perceived latency comes from your chosen database/ORM. Query compilation, incremental change tracking, and memoized live updates keep reads and writes snappy.
+If you want to see Routier in action immediately:
 
-- Learn more: [Performance Profiling]({{ site.baseurl }}/advanced-features/performance-profiling/) · [Benchmarks]({{ site.baseurl }}/demos/performance-benchmarks/)
+- [Quick Start Guide]({{ site.baseurl }}/getting-started/quick-start) - Build a working example in minutes
 
-### Next steps
+### 📦 **Installation First**
 
-- [Installation]({{ site.baseurl }}/getting-started/installation)
-- [Quick Start]({{ site.baseurl }}/getting-started/quick-start)
-- [React Adapter]({{ site.baseurl }}/getting-started/react-adapter)
-- [Concepts]({{ site.baseurl }}/concepts/)
+If you prefer to understand the setup process:
+
+- [Installation Guide]({{ site.baseurl }}/getting-started/installation) - Install packages and dependencies
+- [Quick Start Guide]({{ site.baseurl }}/getting-started/quick-start) - Then build your first app
+
+### ⚛️ **React Developer**
+
+If you're building with React:
+
+- [React Adapter]({{ site.baseurl }}/getting-started/react-adapter) - React hooks and components
+
+### ⚙️ **Advanced Setup**
+
+If you need custom configuration:
+
+- [Configuration Guide]({{ site.baseurl }}/getting-started/configuration) - Advanced setup options
+
+## Next Steps
+
+Once you've completed the getting started guide:
+
+- **Learn the concepts**: [Schema Guide]({{ site.baseurl }}/concepts/schema/) - Deep dive into data modeling
+- **Explore features**: [Live Queries]({{ site.baseurl }}/guides/live-queries) - Reactive data patterns
+- **See examples**: [Basic Examples]({{ site.baseurl }}/examples/basic/) - Real-world usage patterns
+
+## Need Help?
+
+- 📖 **Documentation**: Browse our comprehensive guides and API reference
+- 💬 **Community**: Join discussions and get help from other developers
+- 🐛 **Issues**: Report bugs or request features on GitHub

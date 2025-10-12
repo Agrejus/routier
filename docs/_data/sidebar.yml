@@ -3,14 +3,14 @@
 - title: Getting Started
   url: /getting-started/
   children:
-    - title: Overview
-      url: /getting-started/overview.md
     - title: Installation
       url: /getting-started/installation.md
     - title: Quick Start
       url: /getting-started/quick-start.md
     - title: React Adapter
       url: /getting-started/react-adapter.md
+    - title: Configuration
+      url: /tutorials/configuration.md
 
 - title: Tutorials
   url: /tutorials/
