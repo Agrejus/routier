@@ -11,13 +11,25 @@ permalink: /concepts/queries/
 
 Routier queries are fluent and can only be performed through a collection. Build your query by chaining operations and finish with a terminal method to execute.
 
+### Table of Contents
+
+- [Basic Querying](#basic-querying)
+- [Filtering with where](#filtering-with-where)
+- [Sorting](#sorting)
+- [Selecting fields with map](#selecting-fields-with-map)
+- [Pagination](#pagination)
+- [Aggregation and set operations](#aggregation-and-set-operations)
+- [Terminal methods](#terminal-methods)
+- [Computed properties](#computed-or-unmapped-properties)
+- [Related Topics](#related)
+
 ### Key points
 
 - **Queries run via a collection**: `context.users.where(u => u.name === "James").firstOrUndefinedAsync()`
 - **Chaining is lazy**: nothing executes until you call a terminal method like `toArrayAsync()` or `firstAsync()`.
 - **Both async Promises and callback styles are supported** for all terminal operations.
 
-### Basic querying
+### Basic Querying
 
 {% capture snippet_toc7ki %}{% include code/from-docs/concepts/queries/basic-querying.ts %}{% endcapture %}
 
@@ -53,7 +65,7 @@ Routier queries are fluent and can only be performed through a collection. Build
 
 {% highlight ts %}{{ snippet_cy63oz | strip }}{% endhighlight %}
 
-### Terminal methods (execute the query)
+### Terminal methods
 
 - **toArray / toArrayAsync**: return all results
 - **first / firstAsync**: first item, throws if none

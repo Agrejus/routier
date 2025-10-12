@@ -26,11 +26,8 @@ const totalValue = await dataStore.products
     .where(p => p.inStock === true)
     .sumAsync(p => p.price);
 
-const averagePrice = await dataStore.products
-    .where(p => p.category === "electronics")
-    .avgAsync(p => p.price);
-
 const maxPrice = await dataStore.products
+    .where(p => p.category === "electronics")
     .maxAsync(p => p.price);
 
 const minPrice = await dataStore.products
