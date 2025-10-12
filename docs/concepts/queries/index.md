@@ -7,24 +7,11 @@ has_children: true
 permalink: /concepts/queries/
 ---
 
-## Queries
+# Queries
 
 Routier queries are fluent and can only be performed through a collection. Build your query by chaining operations and finish with a terminal method to execute.
 
-### Table of Contents
-
-- [Getting Started](#getting-started)
-- [Query Building](#query-building)
-- [Advanced Queries](#advanced-queries)
-- [Reference](#reference)
-
-### Key Concepts
-
-- **Queries run via a collection**: `context.users.where(u => u.name === "James").firstOrUndefinedAsync()`
-- **Chaining is lazy**: nothing executes until you call a terminal method like `toArrayAsync()` or `firstAsync()`.
-- **Both async Promises and callback styles are supported** for all terminal operations.
-
-## Getting Started
+## Quick Start
 
 ### Basic Querying
 
@@ -52,60 +39,44 @@ const hasItems = await dataStore.products.someAsync();
 const count = await dataStore.products.countAsync();
 ```
 
-## Query Building
+## Query Operations
 
-### Filtering Data
+### [Filtering Data](/concepts/queries/filtering/)
 
-Filter your data with `where` clauses:
+Filter your data with `where` clauses. Supports both simple predicates and parameterized queries.
 
 **Simple filtering:**
 {% capture snippet_filtering_simple %}{% include code/from-docs/concepts/queries/filtering-simple.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_filtering_simple | strip }}{% endhighlight %}
 
-**Multiple conditions:**
-{% capture snippet_filtering_multiple %}{% include code/from-docs/concepts/queries/filtering-multiple.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_filtering_multiple | strip }}{% endhighlight %}
+### [Sorting Results](/concepts/queries/sorting/)
 
-**Parameterized queries:**
-{% capture snippet_filtering_parameterized %}{% include code/from-docs/concepts/queries/filtering-parameterized.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_filtering_parameterized | strip }}{% endhighlight %}
-
-### Sorting Results
-
-Sort your data in ascending or descending order:
+Sort your data in ascending or descending order.
 
 **Ascending sort:**
 {% capture snippet_sorting_ascending %}{% include code/from-docs/concepts/queries/sorting-ascending.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_sorting_ascending | strip }}{% endhighlight %}
 
-**Descending sort:**
-{% capture snippet_sorting_descending %}{% include code/from-docs/concepts/queries/sorting-descending.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_sorting_descending | strip }}{% endhighlight %}
+### [Field Selection](/concepts/queries/field-selection/)
 
-### Selecting Fields
-
-Use `map` to select specific fields or create computed values:
+Use `map` to select specific fields or create computed values.
 
 **Select specific fields:**
 {% capture snippet_selecting_fields %}{% include code/from-docs/concepts/queries/selecting-fields.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_selecting_fields | strip }}{% endhighlight %}
 
-**Computed fields:**
-{% capture snippet_selecting_computed %}{% include code/from-docs/concepts/queries/selecting-computed.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_selecting_computed | strip }}{% endhighlight %}
+### [Pagination](/concepts/queries/pagination/)
 
-### Pagination
-
-Use `take` and `skip` for pagination:
+Use `take` and `skip` for pagination.
 
 {% capture snippet_pagination_example %}{% include code/from-docs/concepts/queries/pagination-example.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_pagination_example | strip }}{% endhighlight %}
 
-## Advanced Queries
+## Advanced Topics
 
-### Aggregation
+### [Aggregation](/concepts/queries/aggregation/)
 
-Perform calculations on your data with aggregation methods:
+Perform calculations on your data with aggregation methods.
 
 {% capture snippet_aggregation_basic %}{% include code/from-docs/concepts/queries/aggregation-basic.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_aggregation_basic | strip }}{% endhighlight %}
@@ -117,12 +88,11 @@ When filtering on computed or unmapped properties (not tracked in the database),
 **Best practice**: Apply database-backed filters first, then computed/unmapped filters to minimize records loaded into memory.
 
 {% capture snippet_muj42f %}{% include code/from-docs/concepts/queries/computed-unmapped-properties.ts %}{% endcapture %}
-
 {% highlight ts %}{{ snippet_muj42f | strip }}{% endhighlight %}
 
 ## Reference
 
-### Terminal Methods
+### [Terminal Methods](/concepts/queries/terminal-methods/)
 
 All queries must end with a terminal method to execute:
 
@@ -136,15 +106,11 @@ All queries must end with a terminal method to execute:
 - **distinct / distinctAsync**: unique set of current shape
 - **remove / removeAsync**: delete items matching the current query
 
-{% capture snippet_terminal_methods %}{% include code/from-docs/concepts/queries/terminal-methods.ts %}{% endcapture %}
+### Key Concepts
 
-{% highlight ts %}{{ snippet_terminal_methods | strip }}{% endhighlight %}
-
-### Removal Examples
-
-{% capture snippet_8vys4s %}{% include code/from-docs/concepts/queries/example-removal.ts %}{% endcapture %}
-
-{% highlight ts %}{{ snippet_8vys4s | strip }}{% endhighlight %}
+- **Queries run via a collection**: `context.users.where(u => u.name === "James").firstOrUndefinedAsync()`
+- **Chaining is lazy**: nothing executes until you call a terminal method like `toArrayAsync()` or `firstAsync()`.
+- **Both async Promises and callback styles are supported** for all terminal operations.
 
 ### Important Notes
 
@@ -154,5 +120,6 @@ All queries must end with a terminal method to execute:
 
 ### Related Topics
 
+- [Natural Queries](/concepts/queries/natural-queries/)
 - [Expressions](/concepts/queries/expressions/)
 - [Query Options](/concepts/queries/query-options/)

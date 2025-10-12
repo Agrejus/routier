@@ -52,6 +52,18 @@
     - title: Queries
       url: /concepts/queries/
       children:
+        - title: Filtering
+          url: /concepts/queries/filtering.md
+        - title: Sorting
+          url: /concepts/queries/sorting.md
+        - title: Field Selection
+          url: /concepts/queries/field-selection.md
+        - title: Pagination
+          url: /concepts/queries/pagination.md
+        - title: Aggregation
+          url: /concepts/queries/aggregation.md
+        - title: Terminal Methods
+          url: /concepts/queries/terminal-methods.md
         - title: Natural Queries
           url: /concepts/queries/natural-queries.md
         - title: Expressions
