@@ -10,6 +10,14 @@ permalink: /concepts/queries/aggregation/
 
 Perform calculations on your data with aggregation methods like `sum`, `min`, `max`, `count`, and `distinct`.
 
+## Quick Navigation
+
+- [Basic Aggregation](#basic-aggregation)
+- [Aggregation with Filtering](#aggregation-with-filtering)
+- [Distinct Values](#distinct-values)
+- [Boolean Operations](#boolean-operations)
+- [Related](#related)
+
 ## Basic Aggregation
 
 Perform calculations on your data:

@@ -10,6 +10,14 @@ permalink: /concepts/queries/sorting/
 
 Sort your data in ascending or descending order using `sort` and `sortDescending`.
 
+## Quick Navigation
+
+- [Ascending Sort](#ascending-sort)
+- [Descending Sort](#descending-sort)
+- [Multiple Sort Criteria](#multiple-sort-criteria)
+- [Combined with Filtering](#combined-with-filtering)
+- [Related](#related)
+
 ## Ascending Sort
 
 Sort data in ascending order:

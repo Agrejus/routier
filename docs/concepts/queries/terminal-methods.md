@@ -10,6 +10,14 @@ permalink: /concepts/queries/terminal-methods/
 
 All queries must end with a terminal method to execute. These methods actually perform the query and return results.
 
+## Quick Navigation
+
+- [Available Terminal Methods](#available-terminal-methods)
+- [Basic Terminal Methods](#basic-terminal-methods)
+- [Removal Operations](#removal-operations)
+- [Important Notes](#important-notes)
+- [Related](#related)
+
 ## Available Terminal Methods
 
 - **toArray / toArrayAsync**: return all results

@@ -10,6 +10,14 @@ permalink: /concepts/queries/pagination/
 
 Use `take` and `skip` to implement pagination for large datasets.
 
+## Quick Navigation
+
+- [Basic Pagination](#basic-pagination)
+- [Simple Take and Skip](#simple-take-and-skip)
+- [Pagination with Filtering](#pagination-with-filtering)
+- [Pagination with Sorting](#pagination-with-sorting)
+- [Related](#related)
+
 ## Basic Pagination
 
 Implement page-based pagination:
