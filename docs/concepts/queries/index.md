@@ -13,59 +13,118 @@ Routier queries are fluent and can only be performed through a collection. Build
 
 ### Table of Contents
 
-- [Basic Querying](#basic-querying)
-- [Filtering with where](#filtering-with-where)
-- [Sorting](#sorting)
-- [Selecting fields with map](#selecting-fields-with-map)
-- [Pagination](#pagination)
-- [Aggregation and set operations](#aggregation-and-set-operations)
-- [Terminal methods](#terminal-methods)
-- [Computed properties](#computed-or-unmapped-properties)
-- [Related Topics](#related)
+- [Getting Started](#getting-started)
+- [Query Building](#query-building)
+- [Advanced Queries](#advanced-queries)
+- [Reference](#reference)
 
-### Key points
+### Key Concepts
 
 - **Queries run via a collection**: `context.users.where(u => u.name === "James").firstOrUndefinedAsync()`
 - **Chaining is lazy**: nothing executes until you call a terminal method like `toArrayAsync()` or `firstAsync()`.
 - **Both async Promises and callback styles are supported** for all terminal operations.
 
+## Getting Started
+
 ### Basic Querying
+
+The simplest way to query your data:
 
 {% capture snippet_toc7ki %}{% include code/from-docs/concepts/queries/basic-querying.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_toc7ki | strip }}{% endhighlight %}
 
-### Filtering with where
+### Common Patterns
 
-{% capture snippet_wfoe49 %}{% include code/from-docs/concepts/queries/filtering-where.ts %}{% endcapture %}
+Here are the most common query patterns you'll use:
 
-{% highlight ts %}{{ snippet_wfoe49 | strip }}{% endhighlight %}
+```ts
+// Get all items
+const all = await dataStore.products.toArrayAsync();
 
-### Sorting
+// Get first item
+const first = await dataStore.products.firstAsync();
 
-{% capture snippet_kwlaer %}{% include code/from-docs/concepts/queries/sorting.ts %}{% endcapture %}
+// Check if any exist
+const hasItems = await dataStore.products.someAsync();
 
-{% highlight ts %}{{ snippet_kwlaer | strip }}{% endhighlight %}
+// Count items
+const count = await dataStore.products.countAsync();
+```
 
-### Selecting fields with map
+## Query Building
 
-{% capture snippet_hkwyrg %}{% include code/from-docs/concepts/queries/selecting-fields-map.ts %}{% endcapture %}
+### Filtering Data
 
-{% highlight ts %}{{ snippet_hkwyrg | strip }}{% endhighlight %}
+Filter your data with `where` clauses:
+
+**Simple filtering:**
+{% capture snippet_filtering_simple %}{% include code/from-docs/concepts/queries/filtering-simple.ts %}{% endcapture %}
+{% highlight ts %}{{ snippet_filtering_simple | strip }}{% endhighlight %}
+
+**Multiple conditions:**
+{% capture snippet_filtering_multiple %}{% include code/from-docs/concepts/queries/filtering-multiple.ts %}{% endcapture %}
+{% highlight ts %}{{ snippet_filtering_multiple | strip }}{% endhighlight %}
+
+**Parameterized queries:**
+{% capture snippet_filtering_parameterized %}{% include code/from-docs/concepts/queries/filtering-parameterized.ts %}{% endcapture %}
+{% highlight ts %}{{ snippet_filtering_parameterized | strip }}{% endhighlight %}
+
+### Sorting Results
+
+Sort your data in ascending or descending order:
+
+**Ascending sort:**
+{% capture snippet_sorting_ascending %}{% include code/from-docs/concepts/queries/sorting-ascending.ts %}{% endcapture %}
+{% highlight ts %}{{ snippet_sorting_ascending | strip }}{% endhighlight %}
+
+**Descending sort:**
+{% capture snippet_sorting_descending %}{% include code/from-docs/concepts/queries/sorting-descending.ts %}{% endcapture %}
+{% highlight ts %}{{ snippet_sorting_descending | strip }}{% endhighlight %}
+
+### Selecting Fields
+
+Use `map` to select specific fields or create computed values:
+
+**Select specific fields:**
+{% capture snippet_selecting_fields %}{% include code/from-docs/concepts/queries/selecting-fields.ts %}{% endcapture %}
+{% highlight ts %}{{ snippet_selecting_fields | strip }}{% endhighlight %}
+
+**Computed fields:**
+{% capture snippet_selecting_computed %}{% include code/from-docs/concepts/queries/selecting-computed.ts %}{% endcapture %}
+{% highlight ts %}{{ snippet_selecting_computed | strip }}{% endhighlight %}
 
 ### Pagination
 
-{% capture snippet_9ysmzy %}{% include code/from-docs/concepts/queries/pagination.ts %}{% endcapture %}
+Use `take` and `skip` for pagination:
 
-{% highlight ts %}{{ snippet_9ysmzy | strip }}{% endhighlight %}
+{% capture snippet_pagination_example %}{% include code/from-docs/concepts/queries/pagination-example.ts %}{% endcapture %}
+{% highlight ts %}{{ snippet_pagination_example | strip }}{% endhighlight %}
 
-### Aggregation and set operations
+## Advanced Queries
 
-{% capture snippet_cy63oz %}{% include code/from-docs/concepts/queries/aggregation-set-operations.ts %}{% endcapture %}
+### Aggregation
 
-{% highlight ts %}{{ snippet_cy63oz | strip }}{% endhighlight %}
+Perform calculations on your data with aggregation methods:
 
-### Terminal methods
+{% capture snippet_aggregation_basic %}{% include code/from-docs/concepts/queries/aggregation-basic.ts %}{% endcapture %}
+{% highlight ts %}{{ snippet_aggregation_basic | strip }}{% endhighlight %}
+
+### Computed Properties
+
+When filtering on computed or unmapped properties (not tracked in the database), the filter runs in memory.
+
+**Best practice**: Apply database-backed filters first, then computed/unmapped filters to minimize records loaded into memory.
+
+{% capture snippet_muj42f %}{% include code/from-docs/concepts/queries/computed-unmapped-properties.ts %}{% endcapture %}
+
+{% highlight ts %}{{ snippet_muj42f | strip }}{% endhighlight %}
+
+## Reference
+
+### Terminal Methods
+
+All queries must end with a terminal method to execute:
 
 - **toArray / toArrayAsync**: return all results
 - **first / firstAsync**: first item, throws if none
@@ -81,31 +140,19 @@ Routier queries are fluent and can only be performed through a collection. Build
 
 {% highlight ts %}{{ snippet_terminal_methods | strip }}{% endhighlight %}
 
-Example removal:
+### Removal Examples
 
 {% capture snippet_8vys4s %}{% include code/from-docs/concepts/queries/example-removal.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_8vys4s | strip }}{% endhighlight %}
 
-### Notes
+### Important Notes
 
-- `where` supports either a simple predicate `(item) => boolean` or a parameterized predicate `(item, params) => boolean` with a params object.
-- To get distinct values of a specific field, use `map` to project that field before calling `distinctAsync()`.
-- For live results, see Live Queries; you can chain `.subscribe()` before a terminal method to receive updates.
+- `where` supports either a simple predicate `(item) => boolean` or a parameterized predicate `(item, params) => boolean` with a params object
+- To get distinct values of a specific field, use `map` to project that field before calling `distinctAsync()`
+- For live results, see Live Queries; you can chain `.subscribe()` before a terminal method to receive updates
 
-### Computed or unmapped properties
-
-When filtering on a computed or unmapped property (not tracked in the database), the filter runs in memory. If you start your query with only computed/unmapped filters, the system will load records first and then apply those filters client‑side.
-
-Best practice: apply database‑backed filters first, then computed/unmapped filters. This minimizes the number of records that need to be loaded into memory.
-
-Example (in this schema, `firstName` is stored in the database while `age` is a computed property):
-
-{% capture snippet_muj42f %}{% include code/from-docs/concepts/queries/computed-unmapped-properties.ts %}{% endcapture %}
-
-{% highlight ts %}{{ snippet_muj42f | strip }}{% endhighlight %}
-
-### Related
+### Related Topics
 
 - [Expressions](/concepts/queries/expressions/)
 - [Query Options](/concepts/queries/query-options/)
