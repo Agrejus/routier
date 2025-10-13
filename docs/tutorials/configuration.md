@@ -9,6 +9,13 @@ nav_order: 5
 
 This guide covers the various configuration options available in Routier.
 
+## Quick Navigation
+
+- [Plugin Configuration](#plugin-configuration)
+- [Advanced Configuration](#advanced-configuration)
+- [Environment-Specific Configuration](#environment-specific-configuration)
+- [Next Steps](#next-steps)
+
 ## Plugin Configuration
 
 ### Memory Plugin

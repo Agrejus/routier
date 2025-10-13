@@ -10,6 +10,17 @@ nav_order: 1
 
 Routier provides a natural, fluent query API that makes data retrieval intuitive and powerful. All queries are performed through a collection.
 
+## Quick Navigation
+
+- [Basic Querying](#basic-querying)
+- [Filtering with Where](#filtering-with-where)
+- [Sorting](#sorting)
+- [Mapping and Transformation](#mapping-and-transformation)
+- [Aggregation](#aggregation)
+- [Pagination](#pagination)
+- [Chaining Queries](#chaining-queries)
+- [Next Steps](#next-steps)
+
 ## Basic Querying
 
 {% capture snippet_cohq0u %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
@@ -33,6 +44,46 @@ When compiling to a JavaScript filter function, free variables cannot be evaluat
 {% highlight ts %}{{ snippet_yh53h9  | strip }}{% endhighlight %}
 
 ### Expression parsing and fallback behavior
+
+Routier transforms JavaScript queries into agnostic expressions that plugins can translate into any query language. This architecture, inspired by [.NET Expression Trees](https://docs.microsoft.com/en-us/dotnet/csharp/expression-trees), enables powerful cross-platform querying.
+
+#### How Expression Trees Work
+
+Expression trees represent code as data structures rather than executable code. In Routier, when you write:
+
+```ts
+dataStore.products.where((p) => p.price > 100 && p.category === "electronics");
+```
+
+Routier parses this into an abstract syntax tree (AST) that represents the logical structure:
+
+```
+OperatorExpression (&&)
+├── left: ComparatorExpression (greater-than)
+│   ├── left: PropertyExpression (p.price)
+│   └── right: ValueExpression (100)
+└── right: ComparatorExpression (equals)
+    ├── left: PropertyExpression (p.category)
+    └── right: ValueExpression ("electronics")
+```
+
+This tree structure allows Routier to:
+
+- **Analyze** the query structure without executing it
+- **Optimize** by reordering operations or combining filters
+- **Translate** into different query languages (SQL, MongoDB, etc.)
+- **Validate** query correctness before execution
+
+#### Plugin Translation
+
+Each storage plugin receives these expression trees and translates them into their native query language:
+
+- **SQLite Plugin**: Converts `OperatorExpression` to SQL `AND`/`OR`, `ComparatorExpression` to SQL operators (`=`, `>`, `LIKE`, etc.)
+- **Dexie Plugin**: Uses IndexedDB's native filtering with JavaScript functions
+- **PouchDB Plugin**: Translates to PouchDB query functions and map/reduce operations
+- **Memory Plugin**: Optimizes for in-memory filtering with direct JavaScript evaluation
+
+This abstraction means you can write the same query syntax regardless of your underlying storage technology.
 
 Routier's expression parser is extremely robust and handles a wide variety of JavaScript expressions including comparisons, string methods, array operations, logical operators, and parameterized queries. The parser attempts to convert these expressions into database-optimized queries for maximum performance.
 

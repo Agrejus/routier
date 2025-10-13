@@ -10,6 +10,15 @@ permalink: /getting-started/
 
 Welcome to Routier! This section will guide you through setting up Routier in your project and getting your first application running.
 
+## Quick Navigation
+
+- [What You'll Learn](#what-youll-learn)
+- [Prerequisites](#prerequisites)
+- [Quick Overview](#quick-overview)
+- [Choose Your Path](#choose-your-path)
+- [Next Steps](#next-steps)
+- [Need Help?](#need-help)
+
 ## What You'll Learn
 
 By the end of this getting started guide, you'll have:

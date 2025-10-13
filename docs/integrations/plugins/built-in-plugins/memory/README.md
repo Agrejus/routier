@@ -10,6 +10,17 @@ nav_order: 1
 
 The Memory Plugin provides fast, in-memory data storage for your Routier application.
 
+## Quick Navigation
+
+- [Overview](#overview)
+- [Installation](#installation)
+- [Basic Usage](#basic-usage)
+- [Configuration](#configuration)
+- [Performance Characteristics](#performance-characteristics)
+- [Use Cases](#use-cases)
+- [API Reference](#api-reference)
+- [Next Steps](#next-steps)
+
 ## Overview
 
 The Memory Plugin is the fastest storage option in Routier, storing all data in RAM for instant access. It's perfect for development, testing, and high-performance applications.

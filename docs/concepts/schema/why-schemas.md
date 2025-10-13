@@ -10,6 +10,16 @@ nav_order: 7
 
 Schemas are the foundation of Routier's data management system. This document explains why schemas are important and how they benefit your application.
 
+## Quick Navigation
+
+- [What Are Schemas?](#what-are-schemas)
+- [Benefits of Using Schemas](#benefits-of-using-schemas)
+- [Real-World Examples](#real-world-examples)
+- [When Not to Use Schemas](#when-not-to-use-schemas)
+- [Best Practices](#best-practices)
+- [Conclusion](#conclusion)
+- [Next Steps](#next-steps)
+
 ## What Are Schemas?
 
 A schema is a blueprint that defines:

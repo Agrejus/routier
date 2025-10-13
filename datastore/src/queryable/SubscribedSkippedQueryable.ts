@@ -34,9 +34,4 @@ export class SubscribedSkippedQueryable<Root extends {}, Shape, U> extends Selec
         this.setSortQueryOption(expression, QueryOrdering.Descending);
         return this.create(SubscribedSkippedQueryable<Root, Shape, U>);
     }
-
-    defer() {
-        this.skipInitialQuery = true;
-        return this.create(SubscribedTakeQueryable<Root, Shape, () => void>);
-    }
 }

@@ -11,6 +11,16 @@ permalink: /concepts/schema/
 
 Schemas in Routier define the structure, behavior, and constraints of your data entities. They provide type safety, validation, and metadata that ensures your application works correctly with your data structure.
 
+## Quick Navigation
+
+- [What Are Schemas?](#what-are-schemas)
+- [Schema Builder](#schema-builder)
+- [Key Features](#key-features)
+- [Documentation](#documentation)
+- [Quick Examples](#quick-examples)
+- [Benefits](#benefits)
+- [Next Steps](#next-steps)
+
 ## What Are Schemas?
 
 Schemas are type definitions that:

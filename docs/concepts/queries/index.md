@@ -11,6 +11,13 @@ permalink: /concepts/queries/
 
 Routier queries are fluent and can only be performed through a collection. Build your query by chaining operations and finish with a terminal method to execute.
 
+## Quick Navigation
+
+- [Quick Start](#quick-start)
+- [Query Operations](#query-operations)
+- [Advanced Topics](#advanced-topics)
+- [Reference](#reference)
+
 ## Quick Start
 
 ### Basic Querying

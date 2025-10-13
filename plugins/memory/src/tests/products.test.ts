@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 import { describe, it, expect, afterAll } from '@jest/globals';
-import { generateData, seedData } from '@routier/test-utils';
+import { generateData, seedData, wait } from '@routier/test-utils';
 import { IDbPlugin, UnknownRecord, uuidv4 } from '@routier/core';
 import { MemoryPlugin } from '../MemoryPlugin';
 import { TestDataStore } from './datastore/MemoryDatastore';
@@ -1550,6 +1550,33 @@ describe("Product Tests", () => {
             const dataStore = factory();
             const result = await dataStore.products.countAsync();
             expect(result).toBe(0);
+        });
+    });
+
+    describe('Defer', () => {
+
+        it('should not query first time when using defer', async () => {
+
+            const dataStore = factory();
+
+            const cb = jest.fn();
+            dataStore.users.defer().where(x => x.address != null).firstOrUndefined(cb);
+
+            await wait(2000);
+
+            expect(cb).not.toHaveBeenCalled();
+        });
+
+        it('should query first time when not using defer', async () => {
+
+            const dataStore = factory();
+
+            const cb = jest.fn();
+            dataStore.users.where(x => x.address != null).firstOrUndefined(cb);
+
+            await wait(2000);
+
+            expect(cb).toHaveBeenCalled();
         });
     });
 });

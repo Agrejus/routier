@@ -10,6 +10,16 @@ nav_order: 1
 
 Schemas in Routier define the structure and behavior of your data entities. The schema builder provides a fluent, type-safe API for creating robust data schemas.
 
+## Quick Navigation
+
+- [Basic Schema Definition](#basic-schema-definition)
+- [Schema Builder API](#schema-builder-api)
+- [Property Modifiers](#property-modifiers)
+- [Complete Example](#complete-example)
+- [Modifier Chaining](#modifier-chaining)
+- [Compiling Schemas](#compiling-schemas)
+- [Next Steps](#next-steps)
+
 ## Basic Schema Definition
 
 {% capture snippet_uwvygh %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}

@@ -41,15 +41,15 @@ Use parameters for dynamic filtering with variables. This is **required** when y
 When you need to use variables in your query, you must use parameterized queries. Direct variable usage in predicates will still work, but Routier will fall back to selecting all records because it cannot evaluate the variable values:
 
 ```ts
-// ❌ This will work but selects ALL records - Routier can't evaluate minPrice/maxPrice
+// ⚠️ This works but selects ALL records first, then filters in memory - less efficient
 const minPrice = 100;
 const maxPrice = 500;
 const products = await dataStore.products
-  .where((p) => p.price >= minPrice && p.price <= maxPrice) // Falls back to select all
+  .where((p) => p.price >= minPrice && p.price <= maxPrice) // Selects all, filters in memory
   .toArrayAsync();
 ```
 
-**Result**: You'll get all products, not just those in the price range, because Routier can't access the variable values.
+**Result**: You'll get the correct filtered results, but Routier will first load all records into memory, then apply the filter. This is less efficient than database-level filtering.
 
 ### How Parameterized Queries Work
 
@@ -95,7 +95,7 @@ const products = await dataStore.products
 ## Notes
 
 - `where` supports either a simple predicate `(item) => boolean` or a parameterized predicate `(item, params) => boolean` with a params object
-- **Use parameterized queries when you need variables** - non-parameterized queries with variables will fall back to selecting all records
+- **Use parameterized queries when you need variables** - non-parameterized queries with variables will select all records and filter in memory (less efficient)
 - Multiple `where` clauses are combined with AND logic
 - For OR logic, use a single `where` with `||` operators inside the predicate
 

@@ -291,6 +291,17 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     }
 
     /**
+     * Ignores the first execution of the resulting query
+     */
+    defer() {
+        const queryable = new Queryable<InferType<TEntity>, InferType<TEntity>, () => void>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
+            dataBridge: this.dataBridge as any,
+            changeTracker: this.changeTracker as any,
+        });
+        return queryable.defer();
+    }
+
+    /**
      * Creates a query with a filter expression to filter entities in the collection.
      * @param expression Filter expression to apply to the collection
      * @returns QueryableAsync instance for chaining additional query operations

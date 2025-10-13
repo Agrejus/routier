@@ -10,6 +10,17 @@ nav_order: 1
 
 Routier provides a powerful and intuitive CRUD (Create, Read, Update, Delete) API that leverages change tracking and proxy-based entities for efficient data management.
 
+## Quick Navigation
+
+- [Overview](#overview)
+- [Critical: Persistence Requires Explicit Save](#-critical-persistence-requires-explicit-save)
+- [Creating a DataStore](#creating-a-datastore)
+- [CRUD Operations](#crud-operations)
+- [Change Tracking and Persistence](#change-tracking-and-persistence)
+- [Complete CRUD Example](#complete-crud-example)
+- [Best Practices](#best-practices)
+- [Next Steps](#next-steps)
+
 ## Overview
 
 CRUD operations in Routier work through a **DataStore** class that you inherit from. The DataStore manages collections of entities and provides change tracking through proxy objects. Here's how it works:

@@ -48,4 +48,9 @@ export class Queryable<Root extends {}, Shape, U> extends SelectionQueryable<Roo
         this.isSubScribed = true;
         return this.create(SubscribedQueryable<Root, Shape, () => void>);
     }
+
+    defer() {
+        this.skipInitialQuery = true;
+        return this.create(Queryable<Root, Shape, () => void>);
+    }
 }

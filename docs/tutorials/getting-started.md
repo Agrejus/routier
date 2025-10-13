@@ -9,6 +9,14 @@ nav_order: 1
 
 Welcome to Routier! This guide will help you get up and running with the framework quickly.
 
+## Quick Navigation
+
+- [What is Routier?](#what-is-routier)
+- [Installation](#installation)
+- [Basic Setup](#basic-setup)
+- [Next Steps](#next-steps)
+- [Need Help?](#need-help)
+
 ## What is Routier?
 
 Routier is a modern, flexible data management framework designed for building scalable applications with:

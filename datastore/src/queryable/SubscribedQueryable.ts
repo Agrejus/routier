@@ -42,9 +42,4 @@ export class SubscribedQueryable<Root extends {}, Shape, U> extends SelectionQue
         this.setSortQueryOption(expression, QueryOrdering.Descending);
         return this.create(SubscribedQueryable<Root, Shape, U>);
     }
-
-    defer() {
-        this.skipInitialQuery = true;
-        return this.create(SubscribedQueryable<Root, Shape, () => void>);
-    }
 }
