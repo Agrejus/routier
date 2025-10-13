@@ -36,7 +36,7 @@ A schema is a blueprint that defines:
 
 Schemas provide compile-time type checking and type safety:
 
-{% capture snippet_g1vs4h %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_g1vs4h %}{% include code/from-docs/concepts/schema/why-schemas/type-safety-example.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_g1vs4h | strip }}{% endhighlight %}
 
@@ -44,7 +44,7 @@ Schemas provide compile-time type checking and type safety:
 
 Schemas ensure data structure matches your defined types, reducing bugs and improving data quality:
 
-{% capture snippet_dzl6uk %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_dzl6uk %}{% include code/from-docs/concepts/schema/why-schemas/constraints-example.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_dzl6uk | strip }}{% endhighlight %}
 
@@ -52,7 +52,7 @@ Schemas ensure data structure matches your defined types, reducing bugs and impr
 
 Schemas serve as living documentation of your data structures:
 
-{% capture snippet_eybu6p %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_eybu6p %}{% include code/from-docs/concepts/schema/why-schemas/self-documenting-example.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_eybu6p | strip }}{% endhighlight %}
 
@@ -60,7 +60,7 @@ Schemas serve as living documentation of your data structures:
 
 Schemas enable powerful features without additional code:
 
-{% capture snippet_malwii %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_malwii %}{% include code/from-docs/concepts/schema/why-schemas/automatic-features-example.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_malwii | strip }}{% endhighlight %}
 
@@ -68,7 +68,7 @@ Schemas enable powerful features without additional code:
 
 Schemas ensure all parts of your application handle data the same way:
 
-{% capture snippet_5mtp8w %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_5mtp8w %}{% include code/from-docs/concepts/schema/why-schemas/consistent-handling-example.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_5mtp8w | strip }}{% endhighlight %}
 
@@ -76,7 +76,7 @@ Schemas ensure all parts of your application handle data the same way:
 
 Schemas enable automatic performance optimizations:
 
-{% capture snippet_krnwpl %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_krnwpl %}{% include code/from-docs/concepts/schema/why-schemas/performance-example.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_krnwpl | strip }}{% endhighlight %}
 
@@ -84,7 +84,7 @@ Schemas enable automatic performance optimizations:
 
 Schemas enable powerful change tracking features:
 
-{% capture snippet_mc1w4v %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_mc1w4v %}{% include code/from-docs/concepts/schema/why-schemas/change-tracking-example.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_mc1w4v | strip }}{% endhighlight %}
 
@@ -92,7 +92,7 @@ Schemas enable powerful change tracking features:
 
 Schemas handle data transformation automatically:
 
-{% capture snippet_ia38gi %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_ia38gi %}{% include code/from-docs/concepts/schema/why-schemas/serialization-example.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_ia38gi | strip }}{% endhighlight %}
 
@@ -100,13 +100,13 @@ Schemas handle data transformation automatically:
 
 ### E-commerce Application
 
-{% capture snippet_qq7z16 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_qq7z16 %}{% include code/from-docs/concepts/schema/why-schemas/ecommerce-example.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_qq7z16 | strip }}{% endhighlight %}
 
 ### User Management System
 
-{% capture snippet_v2efrx %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_v2efrx %}{% include code/from-docs/concepts/schema/why-schemas/user-management-example.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_v2efrx | strip }}{% endhighlight %}
 
@@ -116,19 +116,19 @@ While schemas are powerful, they're not always necessary:
 
 ### **Simple Data Structures**
 
-{% capture snippet_nusyp4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_nusyp4 %}{% include code/from-docs/concepts/schema/why-schemas/simple-data-example.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_nusyp4 | strip }}{% endhighlight %}
 
 ### **Temporary Data**
 
-{% capture snippet_ufr7tz %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_ufr7tz %}{% include code/from-docs/concepts/schema/why-schemas/temporary-data-example.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_ufr7tz | strip }}{% endhighlight %}
 
 ### **External API Responses**
 
-{% capture snippet_itz37e %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_itz37e %}{% include code/from-docs/concepts/schema/why-schemas/external-api-example.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_itz37e | strip }}{% endhighlight %}
 
@@ -136,25 +136,25 @@ While schemas are powerful, they're not always necessary:
 
 ### 1. **Start Simple**
 
-{% capture snippet_myxbxu %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_myxbxu %}{% include code/from-docs/concepts/schema/why-schemas/start-simple-example.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_myxbxu | strip }}{% endhighlight %}
 
 ### 2. **Check Structure Early**
 
-{% capture snippet_mizzys %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_mizzys %}{% include code/from-docs/concepts/schema/why-schemas/check-structure-example.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_mizzys | strip }}{% endhighlight %}
 
 ### 3. **Use Computed Properties**
 
-{% capture snippet_0wnx5f %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_0wnx5f %}{% include code/from-docs/concepts/schema/why-schemas/computed-properties-example.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_0wnx5f | strip }}{% endhighlight %}
 
 ### 4. **Leverage Type Inference**
 
-{% capture snippet_l9n9ls %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_l9n9ls %}{% include code/from-docs/concepts/schema/why-schemas/type-inference-example.ts %}{% endcapture %}
 
 {% highlight ts %}{{ snippet_l9n9ls | strip }}{% endhighlight %}
 
