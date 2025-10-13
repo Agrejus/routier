@@ -34,8 +34,6 @@
       children:
         - title: Creating A Schema
           url: /concepts/schema/creating-a-schema.md
-        - title: Schema Builder Reference
-          url: /concepts/schema/schema-builder-reference.md
         - title: Property Types
           url: /concepts/schema/property-types/
         - title: Modifiers
@@ -44,8 +42,6 @@
           url: /concepts/schema/modifiers/schema-modifiers.md
         - title: InferType
           url: /concepts/schema/infer-type.md
-        - title: Reference
-          url: /concepts/schema/reference.md
         - title: Why Schemas?
           url: /concepts/schema/why-schemas.md
     - title: Data Collections

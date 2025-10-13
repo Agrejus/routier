@@ -106,22 +106,22 @@ Properties that create database indexes:
 
 ### 1. **Use Literal Types for Constrained Values**
 
-{% capture snippet_qqb4dt %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_qqb4dt %}{% include code/from-docs/concepts/schema/property-types/literal-best-practice.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_qqb4dt  | strip }}{% endhighlight %}
 
 ### 2. **Leverage Type Inference**
 
-{% capture snippet_b4mi9q %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_b4mi9q %}{% include code/from-docs/concepts/schema/property-types/type-inference-best-practice.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_b4mi9q  | strip }}{% endhighlight %}
 
 ### 3. **Use Appropriate Types**
 
-{% capture snippet_u6gsr0 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_u6gsr0 %}{% include code/from-docs/concepts/schema/property-types/appropriate-types-best-practice.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_u6gsr0  | strip }}{% endhighlight %}
 
 ### 4. **Structure Complex Data**
 
-{% capture snippet_unwd1x %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_unwd1x %}{% include code/from-docs/concepts/schema/property-types/complex-structure-best-practice.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_unwd1x  | strip }}{% endhighlight %}
 
 ## Type Compatibility
@@ -157,4 +157,3 @@ Different types support different modifiers:
 
 - [Modifiers](modifiers/README.md) - Property modifiers and constraints
 - [Creating A Schema](../creating-a-schema.md) - Back to schema creation
-- [Schema Reference](../reference.md) - Complete schema API reference

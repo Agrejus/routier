@@ -140,6 +140,5 @@ async function updateUser(user: User, updates: Partial<User>) {
 ## Related
 
 - **[Creating A Schema](creating-a-schema.md)** - Learn how to define schemas
-- **[Schema Builder Reference](schema-builder-reference.md)** - Complete API reference
 - **[Property Types](property-types/README.md)** - Available property types
 - **[Modifiers](modifiers/README.md)** - Property modifiers and constraints

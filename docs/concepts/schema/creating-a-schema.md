@@ -88,5 +88,5 @@ Always call `.compile()` at the end to create the final schema:
 
 - [Property Types](property-types/README.md) - Detailed property type reference
 - [Modifiers](modifiers/README.md) - All available property modifiers
-- [Schema Reference](reference.md) - Complete schema API reference
+- [InferType](infer-type.md) - Type inference and type safety
 - [Why Schemas?](why-schemas.md) - Understanding the benefits of schemas

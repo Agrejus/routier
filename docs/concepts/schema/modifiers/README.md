@@ -74,7 +74,7 @@ Marks a property as a primary key for the entity.
 
 ### `.identity()`
 
-Automatically generates a unique value for the property.
+Marks the property for automatic value generation by the datastore. The datastore will generate unique values for this property.
 
 {% capture snippet_n4hxuc %}{% include code/from-docs/concepts/schema/modifiers/identity-example.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_n4hxuc  | strip }}{% endhighlight %}
@@ -177,12 +177,20 @@ Custom deserialization function for the property.
 
 ### `.array()`
 
-Converts the property to an array type.
+Converts any property type to an array of that type. This allows you to combine base types with array functionality.
 
-{% capture snippet_nv6qg0 %}{% include code/from-docs/concepts/schema/modifiers/array-example.ts %}{% endcapture %}
+{% capture snippet_nv6qg0 %}{% include code/from-docs/concepts/schema/modifiers/type-combination-example.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_nv6qg0  | strip }}{% endhighlight %}
 
 **Available on:** All types
+
+**Type Combinations:**
+
+- `s.string().array()` → `string[]`
+- `s.number().array()` → `number[]`
+- `s.boolean().array()` → `boolean[]`
+- `s.date().array()` → `Date[]`
+- `s.object({...}).array()` → `object[]`
 
 ### `.distinct()`
 
@@ -259,4 +267,3 @@ While modifiers can be chained in any order, it's recommended to follow this pat
 
 - [Property Types](../property-types/README.md) - Available property types
 - [Creating A Schema](../creating-a-schema.md) - Back to schema creation
-- [Schema Reference](../reference.md) - Complete schema API reference

@@ -74,16 +74,15 @@ Routier provides a fluent, type-safe schema builder API:
 ### Getting Started
 
 - **[Creating A Schema](creating-a-schema.md)** - Learn how to create your first schema
-- **[Schema Builder Reference](schema-builder-reference.md)** - Complete reference for all types and modifiers
 
 ### Core Concepts
 
 - **[Property Types](property-types/README.md)** - Available property types and their capabilities
 - **[Modifiers](modifiers/README.md)** - All available property modifiers and constraints
+- **[InferType](infer-type.md)** - Type inference and type safety
 
 ### Reference
 
-- **[Schema Reference](reference.md)** - Complete schema API reference
 - **[Why Schemas?](why-schemas.md)** - Understanding the benefits and philosophy
 
 ## Quick Examples
@@ -144,8 +143,8 @@ Schemas are compiled into optimized JavaScript functions that eliminate runtime 
 ## Next Steps
 
 1. **[Create your first schema](creating-a-schema.md)** - Start building schemas
-2. **[Explore the builder reference](schema-builder-reference.md)** - Learn all available options
-3. **[Understand property types](property-types/README.md)** - Choose the right types for your data
-4. **[Apply modifiers](modifiers/README.md)** - Customize behavior and constraints
+2. **[Understand property types](property-types/README.md)** - Choose the right types for your data
+3. **[Apply modifiers](modifiers/README.md)** - Customize behavior and constraints
+4. **[Learn about type inference](infer-type.md)** - Leverage TypeScript integration
 
 Schemas are the foundation of Routier's data management system. They provide the structure and rules that make your data consistent, safe, and performant.

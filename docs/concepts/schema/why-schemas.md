@@ -175,4 +175,3 @@ By embracing schemas, you'll build applications that are more reliable, performa
 - [Creating A Schema](creating-a-schema.md) - Learn how to create schemas
 - [Property Types](property-types/README.md) - Explore available property types
 - [Modifiers](modifiers/README.md) - Understand property modifiers
-- [Schema Reference](reference.md) - Complete API reference
