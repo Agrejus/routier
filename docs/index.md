@@ -24,7 +24,7 @@ works—until you need to change. You hit performance ceilings, need local-first
 or want to adopt a different storage primitive (e.g., SQLite/PG‑Lite, IndexedDB,
 OPFS). Rewriting your data layer every time is costly and risky.
 
-Routier solves this by providing a thin, fast, datastore‑agnostic layer you
+Routier solves this by providing a feature-rich, fast, datastore‑agnostic layer you
 control. Keep your domain model and data API intact; swap the storage plugin
 beneath it. Get the same developer experience and app behavior, regardless of
 which frontend datastore you're running today, or migrate to tomorrow.

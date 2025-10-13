@@ -70,19 +70,37 @@ OperatorExpression (&&)
 
 This tree structure allows Routier to:
 
-- **Analyze** the query structure without executing it
-- **Optimize** by reordering operations or combining filters
-- **Translate** into different query languages (SQL, MongoDB, etc.)
-- **Validate** query correctness before execution
+- **Convert** JavaScript expressions into a standardized AST format
+- **Pass** the AST to plugins for translation into native query languages
 
 ## Plugin Translation
 
-Each storage plugin receives these expression trees and translates them into their native query language:
+Each storage plugin receives these ASTs and translates them into their native query language:
 
 - **SQLite Plugin**: Converts `OperatorExpression` to SQL `AND`/`OR`, `ComparatorExpression` to SQL operators (`=`, `>`, `LIKE`, etc.)
 - **Dexie Plugin**: Uses IndexedDB's native filtering with JavaScript functions
 - **PouchDB Plugin**: Translates to PouchDB query functions and map/reduce operations
 - **Memory Plugin**: Optimizes for in-memory filtering with direct JavaScript evaluation
+
+### Query Languages vs Storage Technologies
+
+**Query Languages** are structured syntaxes that databases interpret to perform queries:
+
+- **SQL**: `SELECT * FROM products WHERE price > 100 AND category = 'electronics'`
+- **MongoDB Mango**: `{"$and": [{"price": {"$gt": 100}}, {"category": "electronics"}]}`
+- **MQL (MongoDB Query Language)**: `db.products.find({price: {$gt: 100}, category: "electronics"})`
+- **Lucene**: `price:[100 TO *] AND category:electronics`
+- **Firestore**: `collection('products').where('price', '>', 100).where('category', '==', 'electronics')`
+- **CouchDB Selector**: `{"selector": {"price": {"$gt": 100}, "category": "electronics"}}`
+
+**Storage Technologies** are the underlying data storage systems:
+
+- **SQLite**: Uses SQL query language
+- **PostgreSQL**: Uses SQL query language
+- **MongoDB**: Uses MQL and Mango query languages
+- **IndexedDB**: Uses JavaScript-based filtering (not a query language)
+- **PouchDB**: Uses CouchDB selector syntax and map/reduce functions
+- **Firestore**: Uses Firestore query language
 
 This abstraction means you can write the same query syntax regardless of your underlying storage technology.
 

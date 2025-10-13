@@ -42,6 +42,8 @@
           url: /concepts/schema/modifiers/
         - title: Collection Modifiers
           url: /concepts/schema/modifiers/schema-modifiers.md
+        - title: InferType
+          url: /concepts/schema/infer-type.md
         - title: Reference
           url: /concepts/schema/reference.md
         - title: Why Schemas?

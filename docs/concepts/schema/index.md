@@ -35,9 +35,9 @@ Schemas are type definitions that:
 
 Routier provides a fluent, type-safe schema builder API:
 
-{% capture snippet_isgum0 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_basic_schema %}{% include code/from-docs/concepts/schema/basic-schema.ts %}{% endcapture %}
 
-{% highlight ts %}{{ snippet_isgum0 | strip }}{% endhighlight %}
+{% highlight ts %}{{ snippet_basic_schema | strip }}{% endhighlight %}
 
 ## Key Features
 
@@ -89,21 +89,21 @@ Routier provides a fluent, type-safe schema builder API:
 
 ### Basic Entity
 
-{% capture snippet_00kemw %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_basic_schema %}{% include code/from-docs/concepts/schema/basic-schema.ts %}{% endcapture %}
 
-{% highlight ts %}{{ snippet_00kemw | strip }}{% endhighlight %}
+{% highlight ts %}{{ snippet_basic_schema | strip }}{% endhighlight %}
 
 ### Complex Nested Schema
 
-{% capture snippet_j8qiei %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_complex_schema %}{% include code/from-docs/concepts/schema/complex-schema.ts %}{% endcapture %}
 
-{% highlight ts %}{{ snippet_j8qiei | strip }}{% endhighlight %}
+{% highlight ts %}{{ snippet_complex_schema | strip }}{% endhighlight %}
 
 ### Constrained Values
 
-{% capture snippet_wdlc9l %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_constrained_schema %}{% include code/from-docs/concepts/schema/constrained-schema.ts %}{% endcapture %}
 
-{% highlight ts %}{{ snippet_wdlc9l | strip }}{% endhighlight %}
+{% highlight ts %}{{ snippet_constrained_schema | strip }}{% endhighlight %}
 
 ## Benefits
 
@@ -113,17 +113,19 @@ Routier provides a fluent, type-safe schema builder API:
 - **Refactoring**: Safe refactoring with TypeScript
 - **Documentation**: Self-documenting code structure
 
-### Runtime Safety
+### Data Management
 
-- **Validation**: Automatic data validation
-- **Transformation**: Built-in serialization/deserialization
-- **Constraints**: Database-level constraints and indexes
+- **Serialization**: Built-in serialization/deserialization
+- **Transformation**: Property mapping and remapping
+- **Defaults**: Automatic default value application
+- **Identity**: Primary key and identity management
 
-### Performance
+### Database Integration
 
-- **Indexing**: Automatic database index creation
+- **Indexing**: Schema-driven index creation for distinct properties and custom indexes
+- **Constraints**: Unique constraints for distinct properties
 - **Change Tracking**: Efficient change detection
-- **Serialization**: Optimized data transformation
+- **Schema Translation**: Converts to native database schemas
 
 ## Next Steps
 
