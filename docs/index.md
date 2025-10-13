@@ -60,9 +60,9 @@ client-side applications and modern browser storage technologies:
 
 ## Core Features
 
-### Schemas: Transformation and Structure (bring your own validation)
+### Schemas: Transformation and Structure
 
-Routier schemas focus on structure, transformation, and behavior. Validation is
+Routier schemas focus on structure, transformation, and behavior. Type checking is
 intentionally left to libraries like Zod or AJV.
 
 - Defaults
@@ -129,7 +129,7 @@ your way while providing powerful data behavior.
 - Swap without rewrites
   - Move from IndexedDB to SQLite or adopt OPFS by changing the
     plugin; preserve your domain model and app code.
-- Validation by choice
+- Type checking by choice
   - Use Zod or AJV for input/output validation; Routier handles transformation
     and persistence concerns.
 - Client-first, backend-capable

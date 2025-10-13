@@ -21,7 +21,7 @@ Welcome to Routier! This guide will help you get up and running with the framewo
 
 Routier is a modern, flexible data management framework designed for building scalable applications with:
 
-- **Robust data handling** with schema validation
+- **Robust data handling** with schema structure and type safety
 - **Change tracking** for undo/redo functionality
 - **Real-time synchronization** across multiple data sources
 - **Plugin architecture** for extensibility

@@ -77,7 +77,7 @@ Routier provides two related type utilities:
 
 ## Type Safety Benefits
 
-### Compile-Time Validation
+### Compile-Time Type Checking
 
 ```typescript
 // ✅ TypeScript will catch this error at compile time

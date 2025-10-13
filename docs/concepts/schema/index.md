@@ -9,7 +9,7 @@ permalink: /concepts/schema/
 
 # Schemas
 
-Schemas in Routier define the structure, behavior, and constraints of your data entities. They provide type safety, validation, and metadata that ensures your application works correctly with your data structure.
+Schemas in Routier define the structure, behavior, and constraints of your data entities. They provide type safety, transformation, and metadata that ensures your application works correctly with your data structure.
 
 ## Quick Navigation
 
@@ -45,7 +45,7 @@ Routier provides a fluent, type-safe schema builder API:
 
 - Full TypeScript support with generic constraints
 - Literal type constraints for enum-like values
-- Compile-time validation of schema structure
+- Compile-time type checking of schema structure
 
 ### Flexible Modifiers
 

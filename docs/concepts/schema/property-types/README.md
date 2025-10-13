@@ -14,34 +14,34 @@ Routier provides a comprehensive set of property types for building robust schem
 
 ### String
 
-{% capture snippet_34jf1v %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_34jf1v %}{% include code/from-docs/concepts/schema/property-types/string-examples.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_34jf1v  | strip }}{% endhighlight %}
 
 ### Number
 
-{% capture snippet_oempxx %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_oempxx %}{% include code/from-docs/concepts/schema/property-types/number-examples.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_oempxx  | strip }}{% endhighlight %}
 
 ### Boolean
 
-{% capture snippet_t1gwom %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_t1gwom %}{% include code/from-docs/concepts/schema/property-types/boolean-examples.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_t1gwom  | strip }}{% endhighlight %}
 
 ### Date
 
-{% capture snippet_0o33ad %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_0o33ad %}{% include code/from-docs/concepts/schema/property-types/date-examples.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_0o33ad  | strip }}{% endhighlight %}
 
 ## Complex Types
 
 ### Object
 
-{% capture snippet_y9r625 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_y9r625 %}{% include code/from-docs/concepts/schema/property-types/object-examples.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_y9r625  | strip }}{% endhighlight %}
 
 ### Array
 
-{% capture snippet_fh5wji %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_fh5wji %}{% include code/from-docs/concepts/schema/property-types/array-examples.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_fh5wji  | strip }}{% endhighlight %}
 
 ## Type Constraints with Generics
@@ -50,24 +50,24 @@ Routier's type system allows you to constrain properties to specific literal val
 
 ### String Literals
 
-{% capture snippet_sepo73 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_sepo73 %}{% include code/from-docs/concepts/schema/property-types/string-literals.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_sepo73  | strip }}{% endhighlight %}
 
 ### Number Literals
 
-{% capture snippet_vo0j1n %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_vo0j1n %}{% include code/from-docs/concepts/schema/property-types/number-literals.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_vo0j1n  | strip }}{% endhighlight %}
 
 ### Boolean Literals
 
-{% capture snippet_ep1grl %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_ep1grl %}{% include code/from-docs/concepts/schema/property-types/boolean-literals.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_ep1grl  | strip }}{% endhighlight %}
 
 ## Type Composition
 
 ### Combining Types
 
-{% capture snippet_ot7kh4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_ot7kh4 %}{% include code/from-docs/concepts/schema/property-types/type-composition.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_ot7kh4  | strip }}{% endhighlight %}
 
 ## Type Conversion
@@ -76,7 +76,7 @@ Routier's type system allows you to constrain properties to specific literal val
 
 Any type can be converted to an array using the `.array()` modifier:
 
-{% capture snippet_y4i5de %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_y4i5de %}{% include code/from-docs/concepts/schema/property-types/array-conversions.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_y4i5de  | strip }}{% endhighlight %}
 
 ## Special Use Cases
@@ -85,21 +85,21 @@ Any type can be converted to an array using the `.array()` modifier:
 
 Properties that auto-generate values:
 
-{% capture snippet_zbhp4c %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_zbhp4c %}{% include code/from-docs/concepts/schema/property-types/identity-properties.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_zbhp4c  | strip }}{% endhighlight %}
 
 ### Key Properties
 
 Properties that serve as unique identifiers:
 
-{% capture snippet_myq6n4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_myq6n4 %}{% include code/from-docs/concepts/schema/property-types/key-properties.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_myq6n4  | strip }}{% endhighlight %}
 
 ### Indexed Properties
 
 Properties that create database indexes:
 
-{% capture snippet_mtslo8 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_mtslo8 %}{% include code/from-docs/concepts/schema/property-types/indexed-properties.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_mtslo8  | strip }}{% endhighlight %}
 
 ## Best Practices
@@ -135,13 +135,13 @@ Different types support different modifiers:
 | `.optional()`    | ✅     | ✅     | ✅      | ✅   | ✅     | ✅    |
 | `.nullable()`    | ✅     | ✅     | ✅      | ✅   | ✅     | ✅    |
 | `.default()`     | ✅     | ✅     | ✅      | ✅   | ✅     | ✅    |
-| `.readonly()`    | ✅     | ✅     | ✅      | ✅   | ✅     | ✅    |
-| `.deserialize()` | ✅     | ✅     | ✅      | ✅   | ✅     | ✅    |
-| `.serialize()`   | ✅     | ✅     | ✅      | ✅   | ✅     | ✅    |
-| `.array()`       | ✅     | ✅     | ✅      | ✅   | ✅     | ✅    |
-| `.index()`       | ✅     | ✅     | ✅      | ✅   | ✅     | ✅    |
-| `.key()`         | ✅     | ✅     | ✅      | ❌   | ❌     | ❌    |
-| `.identity()`    | ✅     | ✅     | ✅      | ✅   | ✅     | ❌    |
+| `.readonly()`    | ✅     | ✅     | ✅      | ✅   | ❌     | ❌    |
+| `.deserialize()` | ✅     | ✅     | ✅      | ✅   | ❌     | ✅    |
+| `.serialize()`   | ✅     | ✅     | ✅      | ✅   | ❌     | ✅    |
+| `.array()`       | ✅     | ✅     | ✅      | ✅   | ✅     | ❌    |
+| `.index()`       | ✅     | ✅     | ✅      | ✅   | ❌     | ✅    |
+| `.key()`         | ✅     | ✅     | ❌      | ✅   | ❌     | ❌    |
+| `.identity()`    | ✅     | ✅     | ❌      | ✅   | ✅     | ❌    |
 | `.distinct()`    | ✅     | ✅     | ✅      | ✅   | ❌     | ❌    |
 
 ## Summary of Types

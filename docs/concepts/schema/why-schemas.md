@@ -162,7 +162,7 @@ While schemas are powerful, they're not always necessary:
 
 Schemas in Routier provide a powerful foundation for building robust, type-safe, and performant applications. They offer:
 
-- **Type Safety** - Compile-time type checking and structure validation
+- **Type Safety** - Compile-time type checking and structure definition
 - **Automatic Features** - Indexing, change tracking, computed properties
 - **Consistency** - Uniform data handling across your application
 - **Performance** - Automatic optimizations and efficient queries

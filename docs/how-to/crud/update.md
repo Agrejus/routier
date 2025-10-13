@@ -107,14 +107,14 @@ When you query entities in Routier, they are returned as **proxy objects** that 
 {% capture snippet_rd7whz %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_rd7whz  | strip }}{% endhighlight %}
 
-## Update Validation
+## Update Type Safety
 
-### Schema Validation
+### Schema Type Checking
 
 {% capture snippet_361bbf %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_361bbf  | strip }}{% endhighlight %}
 
-### Business Logic Validation
+### Business Logic Type Checking
 
 {% capture snippet_gy1j1u %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_gy1j1u  | strip }}{% endhighlight %}

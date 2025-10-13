@@ -102,7 +102,7 @@ Creates a record schema for key-value pairs.
 {% capture snippet_c800du %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_c800du  | strip }}{% endhighlight %}
 
-### Validation
+### Type Safety
 
 {% capture snippet_95d00b %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_95d00b  | strip }}{% endhighlight %}
@@ -235,7 +235,7 @@ Deserializes data according to schema rules.
 {% capture snippet_92nuzd %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_92nuzd  | strip }}{% endhighlight %}
 
-### Conditional Validation
+### Conditional Type Checking
 
 {% capture snippet_ju3pq7 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_ju3pq7  | strip }}{% endhighlight %}
@@ -252,7 +252,7 @@ Deserializes data according to schema rules.
 {% capture snippet_2uqlc6 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_2uqlc6  | strip }}{% endhighlight %}
 
-### 2. **Validation Strategy**
+### 2. **Type Safety Strategy**
 
 {% capture snippet_8ail1k %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_8ail1k  | strip }}{% endhighlight %}
@@ -269,7 +269,7 @@ Deserializes data according to schema rules.
 
 ## Error Handling
 
-### Validation Errors
+### Type Safety Errors
 
 {% capture snippet_sh61ip %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_sh61ip  | strip }}{% endhighlight %}

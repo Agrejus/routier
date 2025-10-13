@@ -8,13 +8,13 @@ nav_order: 2
 
 # Create Operations
 
-Create operations in Routier allow you to add new entities to your collections. The framework provides both synchronous and asynchronous methods, with automatic change tracking and validation.
+Create operations in Routier allow you to add new entities to your collections. The framework provides both synchronous and asynchronous methods, with automatic change tracking and type safety.
 
 ## Overview
 
 When you create entities in Routier:
 
-1. **Entities are validated** against your schema
+1. **Entities are type-checked** against your schema
 2. **Default values are applied** automatically
 3. **Identity fields are generated** if specified
 4. **Changes are tracked** for later persistence
@@ -60,19 +60,25 @@ When you create entities in Routier:
 {% capture snippet_knkpix %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_knkpix  | strip }}{% endhighlight %}
 
-## Validation and Error Handling
+## Type Safety and Error Handling
 
-### Schema Validation
+### Schema Type Checking
+
+Routier's `.distinct()` modifier creates database indexes for uniqueness constraints. The actual enforcement of these constraints depends on the plugin implementation - some plugins may enforce uniqueness at the database level, while others may allow duplicates in memory.
 
 {% capture snippet_y4xs72 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_y4xs72  | strip }}{% endhighlight %}
 
-### Type Validation
+### TypeScript Type Safety
+
+Routier relies on TypeScript for compile-time type checking rather than runtime validation. Operations will succeed at runtime even with incorrect types, making it important to use TypeScript's type system and `InferCreateType` for proper type safety.
 
 {% capture snippet_jv9ahy %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_jv9ahy  | strip }}{% endhighlight %}
 
-### Constraint Validation
+### Constraint Enforcement
+
+Constraint enforcement is handled by the individual plugins rather than Routier core. For example, SQLite plugins may enforce unique constraints at the database level, while memory plugins might allow duplicates. Check your specific plugin's documentation for constraint behavior.
 
 {% capture snippet_0b1hfq %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_0b1hfq  | strip }}{% endhighlight %}
@@ -84,7 +90,7 @@ When you create entities in Routier:
 {% capture snippet_cnidll %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_cnidll  | strip }}{% endhighlight %}
 
-### Batch Creation with Validation
+### Batch Creation with Type Safety
 
 {% capture snippet_xxyrbc %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_xxyrbc  | strip }}{% endhighlight %}
@@ -108,7 +114,7 @@ When you create entities in Routier:
 
 ## Best Practices
 
-### 1. **Validate Data Before Creation**
+### 1. **Type-Check Data Before Creation**
 
 {% capture snippet_u8ea3c %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_u8ea3c  | strip }}{% endhighlight %}

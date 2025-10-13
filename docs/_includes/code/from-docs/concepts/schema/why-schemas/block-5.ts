@@ -20,7 +20,7 @@ class AppDataStore extends DataStore {
 
 const dataStore = new AppDataStore();
 
-// In your API layer - TypeScript provides compile-time validation
+// In your API layer - TypeScript provides compile-time type checking
 app.post("/users", (req, res) => {
   // TypeScript ensures the data structure matches the schema
   const userData: InferCreateType<typeof userSchema> = req.body;
