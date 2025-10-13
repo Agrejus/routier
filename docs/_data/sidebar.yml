@@ -27,6 +27,8 @@
 - title: Concepts
   url: /concepts/
   children:
+    - title: Query Architecture
+      url: /concepts/query-architecture.md
     - title: Schema
       url: /concepts/schema/
       children:
@@ -64,8 +66,6 @@
           url: /concepts/queries/aggregation.md
         - title: Terminal Methods
           url: /concepts/queries/terminal-methods.md
-        - title: Natural Queries
-          url: /concepts/queries/natural-queries.md
         - title: Expressions
           url: /concepts/queries/expressions/
         - title: Query Options

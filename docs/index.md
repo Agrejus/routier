@@ -16,23 +16,6 @@ and more—without locking you into a specific ORM or backend. It's designed to 
 extremely thin and fast, staying close to "bare‑metal" JavaScript by avoiding
 promises/async-await in core hot paths.
 
-## Quick Navigation
-
-- [Why Routier](#why-routier)
-- [Quick Example](#quick-example)
-- [Target Platform](#target-platform)
-- [Philosophy](#philosophy)
-- [Core Features](#core-features)
-- [Performance Philosophy](#performance-philosophy)
-- [How Routier Fits Your Stack](#how-routier-fits-your-stack)
-- [Typical Workflow](#typical-workflow)
-- [How it works](#how-it-works)
-- [Getting Started](#getting-started)
-- [Concepts](#concepts)
-- [Guides](#guides)
-- [API](#api)
-- [Examples](#examples)
-
 ### Why Routier
 
 Modern apps inevitably build a data abstraction layer: defaults, business rules,
