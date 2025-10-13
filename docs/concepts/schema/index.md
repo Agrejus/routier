@@ -27,9 +27,9 @@ Schemas are type definitions that:
 
 - Define the structure of your data entities
 - Provide compile-time type safety
-- Enable automatic validation and transformation
+- Enable automatic transformation and serialization
 - Support database indexing and constraints
-- Enable change tracking and serialization
+- Enable change tracking and data management
 
 ## Schema Builder
 
@@ -54,10 +54,11 @@ Routier provides a fluent, type-safe schema builder API:
 - **Constraints**: `key()`, `distinct()`
 - **Serialization**: `serialize()`, `deserialize()`
 - **Performance**: `index()`
+- **Mapping**: `from()`
 
 ### Collection-level Modifiers
 
-- **Computed**: `computed(fn)` derives a value from the entity (and optionally collection name/injected context). Defaults to untracked and not persisted.
+- **Computed**: `computed(fn)` derives a value from the entity (and optionally collection name/injected context). Defaults to untracked and not persisted. Computation is performed on save.
 - **Tracked**: `tracked()` on a computed property persists the derived value to storage for faster reads and indexing.
 - **Function**: `function(fn)` attaches non-persisted methods to entities.
 
@@ -126,6 +127,19 @@ Routier provides a fluent, type-safe schema builder API:
 - **Constraints**: Unique constraints for distinct properties
 - **Change Tracking**: Efficient change detection
 - **Schema Translation**: Converts to native database schemas
+
+### Performance
+
+Schemas are compiled into optimized JavaScript functions that eliminate runtime overhead:
+
+- **Code Generation**: Schema definitions are compiled into fast, specialized functions for serialization, cloning, comparison, and change tracking
+- **Zero Runtime Reflection**: All property access and transformations are pre-compiled, avoiding expensive runtime property inspection
+- **Optimized Data Paths**: Generated code uses direct property access and optimized algorithms for common operations
+- **Memory Efficiency**: Compiled schemas minimize memory allocations and garbage collection pressure
+
+{% capture snippet_memory_efficiency %}{% include code/from-docs/concepts/schema/memory-efficiency-example.ts %}{% endcapture %}
+
+{% highlight ts %}{{ snippet_memory_efficiency | strip }}{% endhighlight %}
 
 ## Next Steps
 
