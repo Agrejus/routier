@@ -12,18 +12,15 @@ const orderSchema = s.define("orders", {
 }).modify(w => ({
     // Computed properties for derived values
     subtotal: w.computed((entity) =>
-        entity.items.reduce((sum, item) => sum + (item.quantity * item.price), 0),
-        {}
+        entity.items.reduce((sum, item) => sum + (item.quantity * item.price), 0)
     ).tracked(),
 
     tax: w.computed((entity) =>
-        entity.subtotal * entity.taxRate,
-        {}
+        entity.subtotal * entity.taxRate
     ).tracked(),
 
     total: w.computed((entity) =>
-        entity.subtotal + entity.tax,
-        {}
+        entity.subtotal + entity.tax
     ).tracked(),
 })).compile();
 

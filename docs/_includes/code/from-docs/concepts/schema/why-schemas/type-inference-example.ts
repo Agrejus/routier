@@ -21,7 +21,12 @@ function createUser(userData: CreateUser): User {
 
 function updateUser(user: User, updates: Partial<User>): User {
     // TypeScript ensures type-safe updates
-    return { ...user, ...updates };
+    // In Routier, you modify properties directly on the proxy object
+    if (updates.name !== undefined) user.name = updates.name;
+    if (updates.email !== undefined) user.email = updates.email;
+    if (updates.age !== undefined) user.age = updates.age;
+    if (updates.isActive !== undefined) user.isActive = updates.isActive;
+    return user;
 }
 
 // Type inference benefits:

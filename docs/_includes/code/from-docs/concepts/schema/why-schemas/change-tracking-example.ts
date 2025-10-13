@@ -12,8 +12,7 @@ const documentSchema = s.define("documents", {
 }).modify(w => ({
     // Computed properties for change tracking
     hasChanges: w.computed((entity) =>
-        entity.version > 1,
-        {}
+        entity.version > 1
     ).tracked(),
 
     // Function for history management

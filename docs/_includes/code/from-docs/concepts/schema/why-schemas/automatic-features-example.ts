@@ -10,8 +10,7 @@ const blogPostSchema = s.define("blogPosts", {
 }).modify(w => ({
     // Computed properties - automatically calculated
     slug: w.computed((entity) =>
-        entity.title.toLowerCase().replace(/\s+/g, '-'),
-        {}
+        entity.title.toLowerCase().replace(/\s+/g, '-')
     ).tracked(),
 
     // Function properties - non-persisted methods

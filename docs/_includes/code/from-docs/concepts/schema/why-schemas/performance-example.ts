@@ -14,8 +14,7 @@ const analyticsSchema = s.define("analytics", {
 }).modify(w => ({
     // Computed properties for common calculations
     isRecent: w.computed((entity) =>
-        Date.now() - entity.timestamp.getTime() < 24 * 60 * 60 * 1000,
-        {}
+        Date.now() - entity.timestamp.getTime() < 24 * 60 * 60 * 1000
     ).tracked(), // Tracked for fast reads
 })).compile();
 
