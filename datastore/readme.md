@@ -80,12 +80,6 @@ Choosing storage for local-first apps is hard—and the landscape moves fast. Ro
 - **SQLite**: Node.js SQLite integration
 - **File System**: Node.js file-based storage
 
-## Examples
-
-- **[Basic Examples](examples/)** - Vite, Rspack, Node.js setups
-- **[Performance Benchmarks](docs/demos/performance-benchmarks/)** - Speed comparisons
-- **[Real-world Apps](docs/examples/real-world/)** - Complete applications
-
 ## Contributing
 
 Issues and PRs welcome! Please see our [Contributing Guide](docs/CONTRIBUTING.md) or open an issue to discuss changes.

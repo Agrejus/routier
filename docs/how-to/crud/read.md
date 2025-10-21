@@ -21,141 +21,57 @@ Routier's read operations feature:
 5. **Built-in aggregation** - Count, sum, min, max operations
 6. **Pagination support** - Skip and take operations
 
-## Basic Query Operations
+## Comprehensive Query Documentation
 
-### Getting All Entities
+For detailed information about read operations, including:
 
-{% capture snippet_9o40qi %}{% include code/from-docs/how-to/crud/read/basic-queries.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_9o40qi  | strip }}{% endhighlight %}
+- **Basic querying** with `toArrayAsync()`, `firstAsync()`, `countAsync()`
+- **Filtering** with `where()` clauses and parameterized queries
+- **Sorting** with `orderBy()` and `orderByDescending()`
+- **Field selection** with `map()` and `select()`
+- **Pagination** with `skip()` and `take()`
+- **Aggregation** operations like `sum()`, `min()`, `max()`, `distinct()`
+- **Computed properties** and performance optimization
+- **Terminal methods** and query execution
 
-### Getting Single Entities
+Please refer to the comprehensive [Queries documentation](../../concepts/queries/) which covers all aspects of querying in Routier with detailed examples and best practices.
 
-{% capture snippet_t6x45d %}{% include code/from-docs/how-to/crud/read/simple-filters.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_t6x45d  | strip }}{% endhighlight %}
+## Key Concepts
 
-## Filtering with Where
+### Query Execution
 
-### Simple Filters
+All queries must end with a terminal method to execute:
 
-{% capture snippet_p5nl2e %}{% include code/from-docs/how-to/crud/read/parameterized-filters.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_p5nl2e  | strip }}{% endhighlight %}
+- `toArrayAsync()` - return all results
+- `firstAsync()` - first item, throws if none
+- `firstOrUndefinedAsync()` - first item or undefined
+- `someAsync()` - any match
+- `countAsync()` - count of items
+- `sumAsync()`, `minAsync()`, `maxAsync()` - aggregations
 
-### Parameterized Filters
+### Query Chaining
 
-{% capture snippet_jcvg14 %}{% include code/from-docs/how-to/crud/read/advanced-filters.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_jcvg14  | strip }}{% endhighlight %}
+Queries are lazy and chainable - nothing executes until you call a terminal method:
 
-### Advanced Filters
+```ts
+// This query chain doesn't execute until toArrayAsync() is called
+const results = await dataStore.products
+  .where((p) => p.price > 100)
+  .orderBy((p) => p.name)
+  .skip(10)
+  .take(5)
+  .toArrayAsync();
+```
 
-{% capture snippet_v1gr0f %}{% include code/from-docs/how-to/crud/read/basic-sorting.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_v1gr0f  | strip }}{% endhighlight %}
+### Performance Considerations
 
-## Sorting
-
-### Basic Sorting
-
-{% capture snippet_mb35us %}{% include code/from-docs/how-to/crud/read/complex-sorting.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_mb35us  | strip }}{% endhighlight %}
-
-### Complex Sorting
-
-{% capture snippet_kiewxc %}{% include code/from-docs/how-to/crud/read/skip-take.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_kiewxc  | strip }}{% endhighlight %}
-
-## Pagination
-
-### Skip and Take
-
-{% capture snippet_q0v3kz %}{% include code/from-docs/how-to/crud/read/complete-pagination.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_q0v3kz  | strip }}{% endhighlight %}
-
-### Complete Pagination Example
-
-{% capture snippet_5hcao5 %}{% include code/from-docs/how-to/crud/read/counting.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_5hcao5  | strip }}{% endhighlight %}
-
-## Aggregation Operations
-
-### Counting
-
-{% capture snippet_xunr8i %}{% include code/from-docs/how-to/crud/read/sum-operations.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_xunr8i  | strip }}{% endhighlight %}
-
-### Sum Operations
-
-{% capture snippet_jm836j %}{% include code/from-docs/how-to/crud/read/min-max-operations.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_jm836j  | strip }}{% endhighlight %}
-
-### Min and Max Operations
-
-{% capture snippet_nnkaip %}{% include code/from-docs/how-to/crud/read/distinct-values.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_nnkaip  | strip }}{% endhighlight %}
-
-### Distinct Values
-
-{% capture snippet_wq7fry %}{% include code/from-docs/how-to/crud/read/mapping-data.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_wq7fry  | strip }}{% endhighlight %}
-
-## Data Transformation
-
-### Mapping Data
-
-{% capture snippet_oygbvt %}{% include code/from-docs/how-to/crud/read/complex-transformations.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_oygbvt  | strip }}{% endhighlight %}
-
-### Complex Transformations
-
-{% capture snippet_zrxxjw %}{% include code/from-docs/how-to/crud/read/complex-query-examples.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_zrxxjw  | strip }}{% endhighlight %}
-
-## Query Chaining
-
-### Complex Query Examples
-
-{% capture snippet_cqlpyx %}{% include code/from-docs/how-to/crud/read/query-optimization.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_cqlpyx  | strip }}{% endhighlight %}
-
-### Query with Aggregation
-
-{% capture snippet_7zimzt %}{% include code/from-docs/how-to/crud/read/memory-management.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_7zimzt  | strip }}{% endhighlight %}
-
-## Performance Considerations
-
-### Query Optimization
-
-{% capture snippet_7w1agc %}{% include code/from-docs/how-to/crud/read/appropriate-query-methods.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_7w1agc  | strip }}{% endhighlight %}
-
-### Memory Management
-
-{% capture snippet_gytojx %}{% include code/from-docs/how-to/crud/read/chain-operations-efficiently.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_gytojx  | strip }}{% endhighlight %}
-
-## Best Practices
-
-### 1. **Use Appropriate Query Methods**
-
-{% capture snippet_7xxzgt %}{% include code/from-docs/how-to/crud/read/handle-empty-results.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_7xxzgt  | strip }}{% endhighlight %}
-
-### 2. **Chain Operations Efficiently**
-
-{% capture snippet_8phcbm %}{% include code/from-docs/how-to/crud/read/type-safe-queries.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_8phcbm  | strip }}{% endhighlight %}
-
-### 3. **Handle Empty Results Gracefully**
-
-{% capture snippet_fvul6i %}{% include code/from-docs/how-to/crud/read/type-safe-queries.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_fvul6i  | strip }}{% endhighlight %}
-
-### 4. **Use Type-Safe Queries**
-
-{% capture snippet_mfx2x7 %}{% include code/from-docs/how-to/crud/read/type-safe-queries.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_mfx2x7  | strip }}{% endhighlight %}
+- Apply database-backed filters first, then computed/unmapped filters
+- Use appropriate terminal methods for your use case
+- Consider pagination for large datasets
 
 ## Next Steps
 
+- [Queries Documentation](../../concepts/queries/) - Comprehensive querying guide with examples
 - [Create Operations](create.md) - Learn how to add new entities
 - [Update Operations](update.md) - Learn how to modify existing entities
 - [Delete Operations](delete.md) - Learn how to remove entities
