@@ -11,122 +11,226 @@ permalink: /concepts/queries/
 
 Routier queries are fluent and can only be performed through a collection. Build your query by chaining operations and finish with a terminal method to execute.
 
-## Quick Navigation
+## Quick Reference
 
-- [Quick Start](#quick-start)
-- [Query Operations](#query-operations)
-- [Advanced Topics](#advanced-topics)
-- [Reference](#reference)
+### Terminal Methods (Query Execution)
 
-## Quick Start
+| Method                    | Description                     | Example                                      |
+| ------------------------- | ------------------------------- | -------------------------------------------- |
+| `toArrayAsync()`          | Get all results as an array     | `await ctx.products.toArrayAsync()`          |
+| `firstAsync()`            | Get first item (throws if none) | `await ctx.products.firstAsync()`            |
+| `firstOrUndefinedAsync()` | Get first item or undefined     | `await ctx.products.firstOrUndefinedAsync()` |
+| `someAsync()`             | Check if any items exist        | `await ctx.products.someAsync()`             |
+| `countAsync()`            | Count total items               | `await ctx.products.countAsync()`            |
+| `sumAsync(field)`         | Sum numeric field               | `await ctx.products.sumAsync(p => p.price)`  |
+| `minAsync(field)`         | Get minimum value               | `await ctx.products.minAsync(p => p.price)`  |
+| `maxAsync(field)`         | Get maximum value               | `await ctx.products.maxAsync(p => p.price)`  |
+| `distinctAsync()`         | Get unique values               | `await ctx.products.distinctAsync()`         |
 
-### Basic Querying
+### Query Operations (Chaining)
 
-The simplest way to query your data:
+| Method                     | Description             | Example                                                     |
+| -------------------------- | ----------------------- | ----------------------------------------------------------- |
+| `where(predicate)`         | Filter results          | `ctx.products.where(p => p.price > 100)`                    |
+| `orderBy(field)`           | Sort ascending          | `ctx.products.orderBy(p => p.name)`                         |
+| `orderByDescending(field)` | Sort descending         | `ctx.products.orderByDescending(p => p.price)`              |
+| `map(selector)`            | Transform/select fields | `ctx.products.map(p => ({ name: p.name, price: p.price }))` |
+| `skip(count)`              | Skip first N items      | `ctx.products.skip(10)`                                     |
+| `take(count)`              | Take first N items      | `ctx.products.take(5)`                                      |
 
-{% capture snippet_toc7ki %}{% include code/from-docs/concepts/queries/basic-querying.ts %}{% endcapture %}
+## Detailed Examples
 
-{% highlight ts %}{{ snippet_toc7ki | strip }}{% endhighlight %}
-
-### Common Patterns
-
-Here are the most common query patterns you'll use:
+### Getting All Results
 
 ```ts
-// Get all items
-const all = await dataStore.products.toArrayAsync();
-
-// Get first item
-const first = await dataStore.products.firstAsync();
-
-// Check if any exist
-const hasItems = await dataStore.products.someAsync();
-
-// Count items
-const count = await dataStore.products.countAsync();
+// Get all products
+const allProducts = await ctx.products.toArrayAsync();
 ```
 
-## Query Operations
+### Getting Single Items
 
-### [Filtering Data](/concepts/queries/filtering/)
+```ts
+// Get first product (throws if none exist)
+const firstProduct = await ctx.products.firstAsync();
 
-Filter your data with `where` clauses. Supports both simple predicates and parameterized queries.
+// Get first product or undefined if none exist
+const firstOrUndefined = await ctx.products.firstOrUndefinedAsync();
+```
 
-**Simple filtering:**
-{% capture snippet_filtering_simple %}{% include code/from-docs/concepts/queries/filtering-simple.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_filtering_simple | strip }}{% endhighlight %}
+### Checking Existence
 
-### [Sorting Results](/concepts/queries/sorting/)
+```ts
+// Check if any products exist
+const hasProducts = await ctx.products.someAsync();
 
-Sort your data in ascending or descending order.
+// Check if all products are in stock
+const allInStock = await ctx.products.everyAsync((p) => p.inStock);
+```
 
-**Ascending sort:**
-{% capture snippet_sorting_ascending %}{% include code/from-docs/concepts/queries/sorting-ascending.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_sorting_ascending | strip }}{% endhighlight %}
+### Counting Items
 
-### [Field Selection](/concepts/queries/field-selection/)
+```ts
+// Count total products
+const totalCount = await ctx.products.countAsync();
 
-Use `map` to select specific fields or create computed values.
+// Count products in specific category
+const electronicsCount = await ctx.products
+  .where((p) => p.category === "electronics")
+  .countAsync();
+```
 
-**Select specific fields:**
-{% capture snippet_selecting_fields %}{% include code/from-docs/concepts/queries/selecting-fields.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_selecting_fields | strip }}{% endhighlight %}
+### Filtering Data
 
-### [Pagination](/concepts/queries/pagination/)
+```ts
+// Simple filtering
+const expensiveProducts = await ctx.products
+  .where((p) => p.price > 100)
+  .toArrayAsync();
 
-Use `take` and `skip` for pagination.
+// Multiple filters
+const activeElectronics = await ctx.products
+  .where((p) => p.category === "electronics")
+  .where((p) => p.inStock === true)
+  .toArrayAsync();
 
-{% capture snippet_pagination_example %}{% include code/from-docs/concepts/queries/pagination-example.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_pagination_example | strip }}{% endhighlight %}
+// Parameterized filtering
+const productsInRange = await ctx.products
+  .where((p, params) => p.price >= params.min && p.price <= params.max, {
+    min: 50,
+    max: 200,
+  })
+  .toArrayAsync();
+```
 
-## Advanced Topics
+### Sorting Results
 
-### [Aggregation](/concepts/queries/aggregation/)
+```ts
+// Sort by price (ascending)
+const productsByPrice = await ctx.products
+  .orderBy((p) => p.price)
+  .toArrayAsync();
 
-Perform calculations on your data with aggregation methods.
+// Sort by price (descending)
+const expensiveFirst = await ctx.products
+  .orderByDescending((p) => p.price)
+  .toArrayAsync();
 
-{% capture snippet_aggregation_basic %}{% include code/from-docs/concepts/queries/aggregation-basic.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_aggregation_basic | strip }}{% endhighlight %}
+// Multiple sort criteria
+const sortedProducts = await ctx.products
+  .orderBy((p) => p.category)
+  .orderBy((p) => p.name)
+  .toArrayAsync();
+```
+
+### Field Selection and Transformation
+
+```ts
+// Select specific fields
+const productSummaries = await ctx.products
+  .map((p) => ({
+    id: p.id,
+    name: p.name,
+    price: p.price,
+  }))
+  .toArrayAsync();
+
+// Create computed fields
+const productsWithTax = await ctx.products
+  .map((p) => ({
+    ...p,
+    priceWithTax: p.price * 1.1,
+  }))
+  .toArrayAsync();
+```
+
+### Pagination
+
+```ts
+// Get first 10 products
+const firstPage = await ctx.products.take(10).toArrayAsync();
+
+// Get second page (skip first 10, take next 10)
+const secondPage = await ctx.products.skip(10).take(10).toArrayAsync();
+
+// Pagination helper
+const pageSize = 10;
+const pageNumber = 2; // 0-based
+const page = await ctx.products
+  .skip(pageSize * pageNumber)
+  .take(pageSize)
+  .toArrayAsync();
+```
+
+### Aggregation Operations
+
+```ts
+// Sum prices of in-stock products
+const totalValue = await ctx.products
+  .where((p) => p.inStock === true)
+  .sumAsync((p) => p.price);
+
+// Get minimum and maximum prices
+const minPrice = await ctx.products.minAsync((p) => p.price);
+const maxPrice = await ctx.products.maxAsync((p) => p.price);
+
+// Get distinct categories
+const categories = await ctx.products.map((p) => p.category).distinctAsync();
+```
+
+### Complex Queries
+
+```ts
+// Complex query with multiple operations
+const topExpensiveElectronics = await ctx.products
+  .where((p) => p.category === "electronics")
+  .where((p) => p.inStock === true)
+  .orderByDescending((p) => p.price)
+  .take(5)
+  .map((p) => ({
+    name: p.name,
+    price: p.price,
+    priceWithTax: p.price * 1.1,
+  }))
+  .toArrayAsync();
+```
+
+## Key Concepts
+
+### Query Execution
+
+- **Lazy evaluation**: Queries don't execute until you call a terminal method
+- **Chaining**: You can chain multiple operations together
+- **Collection-based**: All queries must start with a collection
+
+### Performance Tips
+
+- **Database filters first**: Apply `where` clauses on database fields before computed fields
+- **Limit results**: Use `take()` to limit large result sets
+- **Efficient pagination**: Use `skip()` and `take()` for pagination
 
 ### Computed Properties
 
-When filtering on computed or unmapped properties (not tracked in the database), the filter runs in memory.
+When filtering on computed properties (not stored in database), the filter runs in memory:
 
-**Best practice**: Apply database-backed filters first, then computed/unmapped filters to minimize records loaded into memory.
+```ts
+// Good: Database-backed filter first
+const expensiveElectronics = await ctx.products
+  .where((p) => p.category === "electronics") // Database filter
+  .where((p) => p.isExpensive === true) // Computed filter
+  .toArrayAsync();
 
-{% capture snippet_muj42f %}{% include code/from-docs/concepts/queries/computed-unmapped-properties.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_muj42f | strip }}{% endhighlight %}
+// Less efficient: Computed filter first
+const allExpensive = await ctx.products
+  .where((p) => p.isExpensive === true) // Loads all records
+  .where((p) => p.category === "electronics") // Then filters
+  .toArrayAsync();
+```
 
-## Reference
+## Related Topics
 
-### [Terminal Methods](/concepts/queries/terminal-methods/)
-
-All queries must end with a terminal method to execute:
-
-- **toArray / toArrayAsync**: return all results
-- **first / firstAsync**: first item, throws if none
-- **firstOrUndefined / firstOrUndefinedAsync**: first item or undefined
-- **some / someAsync**: any match
-- **every / everyAsync**: all match (evaluated client-side against the result set)
-- **min/max/sum (and Async)**: numeric aggregations
-- **count / countAsync**: count of items
-- **distinct / distinctAsync**: unique set of current shape
-- **remove / removeAsync**: delete items matching the current query
-
-### Key Concepts
-
-- **Queries run via a collection**: `context.users.where(u => u.name === "James").firstOrUndefinedAsync()`
-- **Chaining is lazy**: nothing executes until you call a terminal method like `toArrayAsync()` or `firstAsync()`.
-- **Both async Promises and callback styles are supported** for all terminal operations.
-
-### Important Notes
-
-- `where` supports either a simple predicate `(item) => boolean` or a parameterized predicate `(item, params) => boolean` with a params object
-- To get distinct values of a specific field, use `map` to project that field before calling `distinctAsync()`
-- For live results, see Live Queries; you can chain `.subscribe()` before a terminal method to receive updates
-
-### Related Topics
-
-- [Natural Queries](/concepts/queries/natural-queries/)
-- [Expressions](/concepts/queries/expressions/)
-- [Query Options](/concepts/queries/query-options/)
+- [Filtering](/concepts/queries/filtering/) - Detailed filtering examples
+- [Sorting](/concepts/queries/sorting/) - Advanced sorting techniques
+- [Field Selection](/concepts/queries/field-selection/) - Data transformation
+- [Pagination](/concepts/queries/pagination/) - Pagination strategies
+- [Aggregation](/concepts/queries/aggregation/) - Aggregation operations
+- [Terminal Methods](/concepts/queries/terminal-methods/) - Query execution methods
