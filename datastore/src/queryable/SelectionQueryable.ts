@@ -2,8 +2,37 @@ import { CallbackResult, Result, ResultType } from "@routier/core/results";
 import { QuerySource } from "./QuerySource";
 import { Filter, ParamsFilter, toExpression } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
-import { QueryOptionName } from "@routier/core/plugins";
+import { QueryOptionName, QueryOptionsCollection } from "@routier/core/plugins";
+import { ChangeTrackingType, CompiledSchema } from "@routier/core/schema";
+import { SchemaCollection } from "@routier/core/collections";
+import { DataBridge } from "../data-access/DataBridge";
+import { ChangeTracker } from "../change-tracking/ChangeTracker";
 export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<Root, Shape> {
+
+    constructor(
+        schema: CompiledSchema<Root>,
+        schemas: SchemaCollection,
+        scopedQueryOptions: QueryOptionsCollection<Root>,
+        changeTrackingType: ChangeTrackingType,
+        options: {
+            queryable?: QuerySource<Root, Shape>,
+            dataBridge?: DataBridge<Root>,
+            changeTracker?: ChangeTracker<Root>
+        }) {
+        super(schema, schemas, scopedQueryOptions, changeTrackingType, options);
+
+        this.remove = this.remove.bind(this);
+        this.toArray = this.toArray.bind(this);
+        this.first = this.first.bind(this);
+        this.firstOrUndefined = this.firstOrUndefined.bind(this);
+        this.some = this.some.bind(this);
+        this.every = this.every.bind(this);
+        this.min = this.min.bind(this);
+        this.max = this.max.bind(this);
+        this.sum = this.sum.bind(this);
+        this.count = this.count.bind(this);
+        this.distinct = this.distinct.bind(this);
+    }
 
     remove(expression: Filter<Shape>, done: CallbackResult<never>): void;
     remove<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<never>): void;
@@ -156,6 +185,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
             done,
             paramsOrDone
         })
+
         this.queryOptions.add("take", 1); // ensure we only select 1 record
 
         const shaper = (r: Shape[]) => r.length > 0;
@@ -224,7 +254,6 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
         return this._aggregateFunction(selector, "sum", done);
     }
 
-    // we will want to handle this better with SQL, that will return just a number, not items
     count(done: CallbackResult<number>): U {
         this.queryOptions.add("count", true);
 
@@ -234,6 +263,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
     }
 
     distinct(done: CallbackResult<Shape[]>): U {
+
         this.queryOptions.add("distinct", true);
 
         this.getData<Shape[]>(done);
@@ -297,6 +327,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
     }
 
     private _aggregateFunction(selector: GenericFunction<Shape, number>, name: QueryOptionName, done: CallbackResult<number>) {
+
         const fields = this.getFields(selector);
         this.queryOptions.add("map", { selector, fields });
         this.queryOptions.add(name, true);

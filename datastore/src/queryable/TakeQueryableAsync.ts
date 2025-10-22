@@ -2,11 +2,33 @@ import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { SelectionQueryableAsync } from "./SelectionQueryableAsync";
 import { SubscribedTakeQueryable } from "./SubscribedTakeQueryable";
 import { GenericFunction } from "@routier/core/types";
-import { QueryOrdering } from "@routier/core/plugins";
+import { QueryOptionsCollection, QueryOrdering } from "@routier/core/plugins";
+import { ChangeTrackingType, CompiledSchema } from "@routier/core/schema";
+import { SchemaCollection } from "@routier/core/collections";
+import { QuerySource } from "./QuerySource";
+import { DataBridge } from "../data-access/DataBridge";
+import { ChangeTracker } from "../change-tracking/ChangeTracker";
 
-// cannot skip or take here, this class is returned after a take
-// and a skip cannot occur after a take
 export class TakeQueryableAsync<Root extends {}, Shape> extends SelectionQueryableAsync<Root, Shape> {
+
+    constructor(
+        schema: CompiledSchema<Root>,
+        schemas: SchemaCollection,
+        scopedQueryOptions: QueryOptionsCollection<Root>,
+        changeTrackingType: ChangeTrackingType,
+        options: {
+            queryable?: QuerySource<Root, Shape>,
+            dataBridge?: DataBridge<Root>,
+            changeTracker?: ChangeTracker<Root>
+        }) {
+        super(schema, schemas, scopedQueryOptions, changeTrackingType, options);
+
+        this.where = this.where.bind(this);
+        this.map = this.map.bind(this);
+        this.sort = this.sort.bind(this);
+        this.sortDescending = this.sortDescending.bind(this);
+        this.subscribe = this.subscribe.bind(this);
+    }
 
     where(expression: Filter<Shape>): TakeQueryableAsync<Root, Shape>;
     where<P extends {}>(selector: ParamsFilter<Shape, P>, params: P): TakeQueryableAsync<Root, Shape>;

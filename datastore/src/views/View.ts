@@ -32,7 +32,7 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
         this.derive = (cb) => {
             return derive(data => {
                 const schemas = new SchemaCollection();
-                debugger;
+
                 schemas.set(this.schema.id, this.schema as CompiledSchema<Record<string, unknown>>);
                 const operation = new BulkPersistChanges();
                 const schemaChanges = new SchemaPersistChanges();

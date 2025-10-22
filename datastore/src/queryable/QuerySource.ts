@@ -1,7 +1,7 @@
 import { DataBridge } from "../data-access/DataBridge";
 import { ChangeTracker } from "../change-tracking/ChangeTracker";
 import { DbPluginQueryEvent, JsonTranslator, Query, QueryField, QueryOptionsCollection, QueryOrdering } from "@routier/core/plugins";
-import { ChangeTrackingType, CompiledSchema, InferType, SchemaId } from "@routier/core/schema";
+import { ChangeTrackingType, CompiledSchema, InferType } from "@routier/core/schema";
 import { CallbackResult, PluginEventCallbackResult, PluginEventResult, PluginEventSuccessType, Result } from "@routier/core/results";
 import { GenericFunction } from "@routier/core/types";
 import { Filter, ParamsFilter, toExpression } from "@routier/core/expressions";
@@ -20,7 +20,16 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
     protected scopedQueryOptions: QueryOptionsCollection<TRoot>;
     protected readonly changeTrackingType: ChangeTrackingType
 
-    constructor(schema: CompiledSchema<TRoot>, schemas: SchemaCollection, scopedQueryOptions: QueryOptionsCollection<TRoot>, changeTrackingType: ChangeTrackingType, options: { queryable?: QuerySource<TRoot, TShape>, dataBridge?: DataBridge<TRoot>, changeTracker?: ChangeTracker<TRoot> }) {
+    constructor(
+        schema: CompiledSchema<TRoot>,
+        schemas: SchemaCollection,
+        scopedQueryOptions: QueryOptionsCollection<TRoot>,
+        changeTrackingType: ChangeTrackingType,
+        options: {
+            queryable?: QuerySource<TRoot, TShape>,
+            dataBridge?: DataBridge<TRoot>,
+            changeTracker?: ChangeTracker<TRoot>
+        }) {
 
         this.schema = schema;
         this.schemas = schemas;

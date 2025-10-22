@@ -1,9 +1,40 @@
-import { toPromise } from "@routier/core";
+import { toPromise } from "@routier/core/results";
 import { SelectionQueryable } from "./SelectionQueryable";
 import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
+import { ChangeTrackingType, CompiledSchema } from "@routier/core/schema";
+import { SchemaCollection } from "@routier/core/collections";
+import { QueryOptionsCollection } from "@routier/core/plugins";
+import { QuerySource } from "./QuerySource";
+import { DataBridge } from "../data-access/DataBridge";
+import { ChangeTracker } from "../change-tracking/ChangeTracker";
 
 export class SelectionQueryableAsync<Root extends {}, Shape> extends SelectionQueryable<Root, Shape, void> {
+
+    constructor(
+        schema: CompiledSchema<Root>,
+        schemas: SchemaCollection,
+        scopedQueryOptions: QueryOptionsCollection<Root>,
+        changeTrackingType: ChangeTrackingType,
+        options: {
+            queryable?: QuerySource<Root, Shape>,
+            dataBridge?: DataBridge<Root>,
+            changeTracker?: ChangeTracker<Root>
+        }) {
+        super(schema, schemas, scopedQueryOptions, changeTrackingType, options);
+
+        this.removeAsync = this.removeAsync.bind(this);
+        this.toArrayAsync = this.toArrayAsync.bind(this);
+        this.firstAsync = this.firstAsync.bind(this);
+        this.firstOrUndefinedAsync = this.firstOrUndefinedAsync.bind(this);
+        this.someAsync = this.someAsync.bind(this);
+        this.everyAsync = this.everyAsync.bind(this);
+        this.minAsync = this.minAsync.bind(this);
+        this.maxAsync = this.maxAsync.bind(this);
+        this.sumAsync = this.sumAsync.bind(this);
+        this.countAsync = this.countAsync.bind(this);
+        this.distinctAsync = this.distinctAsync.bind(this);
+    }
 
     removeAsync(expression: Filter<Shape>): Promise<void>;
     removeAsync<P extends {}>(expression: ParamsFilter<Shape, P>, params: P): Promise<void>;

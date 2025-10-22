@@ -1,7 +1,7 @@
 import { faker } from '@faker-js/faker';
 import { describe, it, expect, afterAll } from '@jest/globals';
 import { generateData, seedData, wait } from '@routier/test-utils';
-import { IDbPlugin, UnknownRecord, uuidv4 } from '@routier/core';
+import { CallbackResult, IDbPlugin, UnknownRecord, uuidv4 } from '@routier/core';
 import { MemoryPlugin } from '../MemoryPlugin';
 import { TestDataStore } from './datastore/MemoryDatastore';
 
@@ -1577,6 +1577,637 @@ describe("Product Tests", () => {
             await wait(2000);
 
             expect(cb).toHaveBeenCalled();
+        });
+    });
+
+    describe('Method Binding Tests', () => {
+        describe('Queryable Method Binding', () => {
+            it('should bind where method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const whereMethod = dataStore.products.where;
+                const result = await whereMethod(p => p.price > 100).toArrayAsync();
+
+                expect(Array.isArray(result)).toBe(true);
+            });
+
+            it('should bind map method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const mapMethod = dataStore.products.map;
+                const result = await mapMethod(p => p.name).toArrayAsync();
+
+                expect(Array.isArray(result)).toBe(true);
+                expect(result.every(item => typeof item === 'string')).toBe(true);
+            });
+
+            it('should bind skip method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const skipMethod = dataStore.products.skip;
+                const result = await skipMethod(2).toArrayAsync();
+
+                expect(result.length).toBeLessThanOrEqual(3);
+            });
+
+            it('should bind take method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const takeMethod = dataStore.products.take;
+                const result = await takeMethod(2).toArrayAsync();
+
+                expect(result.length).toBeLessThanOrEqual(2);
+            });
+
+            it('should bind sort method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const sortMethod = dataStore.products.sort;
+                const result = await sortMethod(p => p.price).toArrayAsync();
+
+                expect(Array.isArray(result)).toBe(true);
+            });
+
+            it('should bind sortDescending method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const sortDescendingMethod = dataStore.products.sortDescending;
+                const result = await sortDescendingMethod(p => p.price).toArrayAsync();
+
+                expect(Array.isArray(result)).toBe(true);
+            });
+
+            it('should bind subscribe method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const subscribeMethod = dataStore.products.subscribe;
+                const subscribedQuery = subscribeMethod();
+
+                expect(subscribedQuery).toBeDefined();
+                expect(typeof subscribedQuery.toArray).toBe('function');
+            });
+
+            it('should bind defer method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const deferMethod = dataStore.products.defer;
+                const deferredQuery = deferMethod();
+
+                expect(deferredQuery).toBeDefined();
+                expect(typeof deferredQuery.toArray).toBe('function');
+            });
+        });
+
+        describe('SelectionQueryable Method Binding', () => {
+            it('should bind remove method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const removeMethod = dataStore.products.remove;
+                const callback = jest.fn();
+
+                removeMethod([], callback);
+                await dataStore.saveChangesAsync();
+
+                expect(callback).toHaveBeenCalled();
+            });
+
+            it('should bind toArray method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const toArrayMethod = dataStore.products.toArray;
+                const callback = jest.fn();
+
+                toArrayMethod(callback);
+
+                expect(callback).toHaveBeenCalled();
+            });
+
+            it('should bind first method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const firstMethod = dataStore.products.first;
+                const callback = jest.fn();
+
+                firstMethod(callback);
+
+                expect(callback).toHaveBeenCalled();
+            });
+
+            it('should bind firstOrUndefined method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const firstOrUndefinedMethod = dataStore.products.firstOrUndefined;
+                const callback = jest.fn();
+
+                firstOrUndefinedMethod(callback);
+
+                expect(callback).toHaveBeenCalled();
+            });
+
+            it('should bind some method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const someMethod = dataStore.products.some;
+                const callback = jest.fn();
+
+                someMethod(callback);
+
+                expect(callback).toHaveBeenCalled();
+            });
+
+            it('should bind every method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const everyMethod = dataStore.products.every;
+                const callback = jest.fn();
+
+                everyMethod(p => p.price > 0, callback);
+
+                expect(callback).toHaveBeenCalled();
+            });
+
+            it('should bind min method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const minMethod = dataStore.products.min;
+                const callback = jest.fn();
+
+                minMethod(p => p.price, callback);
+
+                expect(callback).toHaveBeenCalled();
+            });
+
+            it('should bind max method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const maxMethod = dataStore.products.max;
+                const callback = jest.fn();
+
+                maxMethod(p => p.price, callback);
+
+                expect(callback).toHaveBeenCalled();
+            });
+
+            it('should bind sum method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const sumMethod = dataStore.products.sum;
+                const callback = jest.fn();
+
+                sumMethod(p => p.price, callback);
+
+                expect(callback).toHaveBeenCalled();
+            });
+
+            it('should bind count method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const countMethod = dataStore.products.count;
+                const callback = jest.fn();
+
+                countMethod(callback);
+
+                expect(callback).toHaveBeenCalled();
+            });
+
+            it('should bind distinct method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const distinctMethod = dataStore.products.distinct;
+                const callback = jest.fn();
+
+                distinctMethod(callback);
+
+                expect(callback).toHaveBeenCalled();
+            });
+        });
+
+        describe('SelectionQueryableAsync Method Binding', () => {
+            it('should bind removeAsync method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const removeAsyncMethod = dataStore.products.removeAsync;
+                const result = await removeAsyncMethod();
+
+                expect(result.length).toBe(0);
+            });
+
+            it('should bind toArrayAsync method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const toArrayAsyncMethod = dataStore.products.toArrayAsync;
+                const result = await toArrayAsyncMethod();
+
+                expect(Array.isArray(result)).toBe(true);
+            });
+
+            it('should bind firstAsync method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const firstAsyncMethod = dataStore.products.firstAsync;
+                const result = await firstAsyncMethod();
+
+                expect(result).toBeDefined();
+            });
+
+            it('should bind firstOrUndefinedAsync method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const firstOrUndefinedAsyncMethod = dataStore.products.firstOrUndefinedAsync;
+                const result = await firstOrUndefinedAsyncMethod();
+
+                expect(result).toBeDefined();
+            });
+
+            it('should bind someAsync method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const someAsyncMethod = dataStore.products.someAsync;
+                const result = await someAsyncMethod();
+
+                expect(typeof result).toBe('boolean');
+            });
+
+            it('should bind everyAsync method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const everyAsyncMethod = dataStore.products.everyAsync;
+                const result = await everyAsyncMethod(p => p.price > 0);
+
+                expect(typeof result).toBe('boolean');
+            });
+
+            it('should bind minAsync method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const minAsyncMethod = dataStore.products.minAsync;
+                const result = await minAsyncMethod(p => p.price);
+
+                expect(typeof result).toBe('number');
+            });
+
+            it('should bind maxAsync method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const maxAsyncMethod = dataStore.products.maxAsync;
+                const result = await maxAsyncMethod(p => p.price);
+
+                expect(typeof result).toBe('number');
+            });
+
+            it('should bind sumAsync method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const sumAsyncMethod = dataStore.products.sumAsync;
+                const result = await sumAsyncMethod(p => p.price);
+
+                expect(typeof result).toBe('number');
+            });
+
+            it('should bind countAsync method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const countAsyncMethod = dataStore.products.countAsync;
+                const result = await countAsyncMethod();
+
+                expect(typeof result).toBe('number');
+            });
+
+            it('should bind distinctAsync method correctly', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const distinctAsyncMethod = dataStore.products.distinctAsync;
+                const result = await distinctAsyncMethod();
+
+                expect(Array.isArray(result)).toBe(true);
+            });
+        });
+
+        describe('SkippedQueryable Method Binding', () => {
+            it('should bind methods correctly after skip operation', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const skippedQuery = dataStore.products.skip(2);
+
+                const whereMethod = skippedQuery.where;
+                const mapMethod = skippedQuery.map;
+                const takeMethod = skippedQuery.take;
+                const sortMethod = skippedQuery.sort;
+                const sortDescendingMethod = skippedQuery.sortDescending;
+                const subscribeMethod = skippedQuery.subscribe;
+
+                expect(typeof whereMethod).toBe('function');
+                expect(typeof mapMethod).toBe('function');
+                expect(typeof takeMethod).toBe('function');
+                expect(typeof sortMethod).toBe('function');
+                expect(typeof sortDescendingMethod).toBe('function');
+                expect(typeof subscribeMethod).toBe('function');
+
+                const result = await whereMethod(p => p.price > 100).toArrayAsync();
+                expect(Array.isArray(result)).toBe(true);
+            });
+        });
+
+        describe('SkippedQueryableAsync Method Binding', () => {
+            it('should bind methods correctly after skip operation in async context', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const skippedQuery = dataStore.products.skip(2);
+
+                const whereMethod = skippedQuery.where;
+                const mapMethod = skippedQuery.map;
+                const takeMethod = skippedQuery.take;
+                const sortMethod = skippedQuery.sort;
+                const sortDescendingMethod = skippedQuery.sortDescending;
+                const subscribeMethod = skippedQuery.subscribe;
+
+                expect(typeof whereMethod).toBe('function');
+                expect(typeof mapMethod).toBe('function');
+                expect(typeof takeMethod).toBe('function');
+                expect(typeof sortMethod).toBe('function');
+                expect(typeof sortDescendingMethod).toBe('function');
+                expect(typeof subscribeMethod).toBe('function');
+
+                const result = await whereMethod(p => p.price > 100).toArrayAsync();
+                expect(Array.isArray(result)).toBe(true);
+            });
+        });
+
+        describe('TakeQueryable Method Binding', () => {
+            it('should bind methods correctly after take operation', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const takeQuery = dataStore.products.take(2);
+
+                const whereMethod = takeQuery.where;
+                const mapMethod = takeQuery.map;
+                const sortMethod = takeQuery.sort;
+                const sortDescendingMethod = takeQuery.sortDescending;
+                const subscribeMethod = takeQuery.subscribe;
+
+                expect(typeof whereMethod).toBe('function');
+                expect(typeof mapMethod).toBe('function');
+                expect(typeof sortMethod).toBe('function');
+                expect(typeof sortDescendingMethod).toBe('function');
+                expect(typeof subscribeMethod).toBe('function');
+
+                const result = await whereMethod(p => p.price > 100).toArrayAsync();
+                expect(Array.isArray(result)).toBe(true);
+            });
+        });
+
+        describe('TakeQueryableAsync Method Binding', () => {
+            it('should bind methods correctly after take operation in async context', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const takeQuery = dataStore.products.take(2);
+
+                const whereMethod = takeQuery.where;
+                const mapMethod = takeQuery.map;
+                const sortMethod = takeQuery.sort;
+                const sortDescendingMethod = takeQuery.sortDescending;
+                const subscribeMethod = takeQuery.subscribe;
+
+                expect(typeof whereMethod).toBe('function');
+                expect(typeof mapMethod).toBe('function');
+                expect(typeof sortMethod).toBe('function');
+                expect(typeof sortDescendingMethod).toBe('function');
+                expect(typeof subscribeMethod).toBe('function');
+
+                const result = await whereMethod(p => p.price > 100).toArrayAsync();
+                expect(Array.isArray(result)).toBe(true);
+            });
+        });
+
+        describe('SubscribedQueryable Method Binding', () => {
+            it('should bind methods correctly after subscribe operation', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const subscribedQuery = dataStore.products.subscribe();
+
+                const whereMethod = subscribedQuery.where;
+                const mapMethod = subscribedQuery.map;
+                const takeMethod = subscribedQuery.take;
+                const sortMethod = subscribedQuery.sort;
+                const sortDescendingMethod = subscribedQuery.sortDescending;
+
+                expect(typeof whereMethod).toBe('function');
+                expect(typeof mapMethod).toBe('function');
+                expect(typeof takeMethod).toBe('function');
+                expect(typeof sortMethod).toBe('function');
+                expect(typeof sortDescendingMethod).toBe('function');
+
+                const callback = jest.fn();
+                whereMethod(p => p.price > 100).toArray(callback);
+                expect(callback).toHaveBeenCalled();
+            });
+
+            it('should bind count', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const subscribedQuery = dataStore.products.subscribe();
+
+                const countMethod = subscribedQuery.firstOrUndefined;
+
+                // Adjust this to your real callback shape
+                type CallbackResult<T> = (value: T) => void;
+
+                // Helpers
+                type Last<T extends any[]> = T extends [...infer _, infer L] ? L : never;
+
+                // Given a method type like
+                //   (expr: Filter<...>, done: CallbackResult<X>) => void
+                // extract X from the last param
+                type CallbackPayloadOfMethod<M> =
+                    M extends (...args: infer P) => any
+                    ? Last<P> extends CallbackResult<infer R>
+                    ? R
+                    : never
+                    : never;
+
+                // A function that takes a method and returns its callback payload type
+                const resultFromMethod = <M extends (...args: any[]) => any>(
+                    _method: M
+                ): CallbackPayloadOfMethod<M> => {
+                    return null as unknown as CallbackPayloadOfMethod<M>;
+                };
+
+                const y = resultFromMethod(cb => dataStore.products.firstOrUndefined(x => x._id === "", cb));
+                const z = resultFromMethod(cb => dataStore.products.every(x => x._id === "", cb));
+
+                expect(typeof countMethod).toBe('function');
+
+                const callback = jest.fn();
+                countMethod(callback);
+                countMethod(callback);
+                expect(callback).toHaveBeenCalledTimes(2);
+                expect(callback).toHaveBeenNthCalledWith(1, {
+                    ok: "success",
+                    data: 5,
+                    id: expect.any(String)
+                });
+                expect(callback).toHaveBeenNthCalledWith(2, {
+                    ok: "error",
+                    error: expect.any(Object),
+                    id: expect.any(String)
+                });
+            });
+        });
+
+        describe('SubscribedSkippedQueryable Method Binding', () => {
+            it('should bind methods correctly after subscribe and skip operations', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const subscribedSkippedQuery = dataStore.products.subscribe().skip(2);
+
+                const whereMethod = subscribedSkippedQuery.where;
+                const mapMethod = subscribedSkippedQuery.map;
+                const takeMethod = subscribedSkippedQuery.take;
+                const sortMethod = subscribedSkippedQuery.sort;
+                const sortDescendingMethod = subscribedSkippedQuery.sortDescending;
+
+                expect(typeof whereMethod).toBe('function');
+                expect(typeof mapMethod).toBe('function');
+                expect(typeof takeMethod).toBe('function');
+                expect(typeof sortMethod).toBe('function');
+                expect(typeof sortDescendingMethod).toBe('function');
+
+                const callback = jest.fn();
+                whereMethod(p => p.price > 100).toArray(callback);
+                expect(callback).toHaveBeenCalled();
+            });
+        });
+
+        describe('SubscribedTakeQueryable Method Binding', () => {
+            it('should bind methods correctly after subscribe and take operations', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                const subscribedTakeQuery = dataStore.products.subscribe().take(2);
+
+                const whereMethod = subscribedTakeQuery.where;
+                const mapMethod = subscribedTakeQuery.map;
+                const sortMethod = subscribedTakeQuery.sort;
+                const sortDescendingMethod = subscribedTakeQuery.sortDescending;
+
+                expect(typeof whereMethod).toBe('function');
+                expect(typeof mapMethod).toBe('function');
+                expect(typeof sortMethod).toBe('function');
+                expect(typeof sortDescendingMethod).toBe('function');
+
+                const callback = jest.fn();
+                whereMethod(p => p.price > 100).toArray(callback);
+                expect(callback).toHaveBeenCalled();
+            });
+        });
+
+        describe('Complex Method Binding Scenarios', () => {
+            it('should maintain method binding through complex query chains', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 10);
+
+                const complexQuery = dataStore.products
+                    .where(p => p.price > 100)
+                    .sort(p => p.price)
+                    .skip(2)
+                    .take(3)
+                    .map(p => ({ name: p.name, price: p.price }));
+
+                const whereMethod = complexQuery.where;
+                const mapMethod = complexQuery.map;
+                const sortMethod = complexQuery.sort;
+                const sortDescendingMethod = complexQuery.sortDescending;
+                const subscribeMethod = complexQuery.subscribe;
+
+                expect(typeof whereMethod).toBe('function');
+                expect(typeof mapMethod).toBe('function');
+                expect(typeof sortMethod).toBe('function');
+                expect(typeof sortDescendingMethod).toBe('function');
+                expect(typeof subscribeMethod).toBe('function');
+
+                const result = await complexQuery.toArrayAsync();
+                expect(Array.isArray(result)).toBe(true);
+                expect(result.length).toBeLessThanOrEqual(3);
+            });
+
+            it('should maintain method binding with parameterized queries', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 10);
+
+                const params = { minPrice: 50, maxPrice: 200 };
+                const parameterizedQuery = dataStore.products
+                    .where(([p, params]) => p.price >= params.minPrice && p.price <= params.maxPrice, params)
+                    .sort(p => p.price);
+
+                const whereMethod = parameterizedQuery.where;
+                const mapMethod = parameterizedQuery.map;
+                const sortMethod = parameterizedQuery.sort;
+                const sortDescendingMethod = parameterizedQuery.sortDescending;
+
+                expect(typeof whereMethod).toBe('function');
+                expect(typeof mapMethod).toBe('function');
+                expect(typeof sortMethod).toBe('function');
+                expect(typeof sortDescendingMethod).toBe('function');
+
+                const result = await parameterizedQuery.toArrayAsync();
+                expect(Array.isArray(result)).toBe(true);
+            });
+
+            it('should maintain method binding with deferred queries', async () => {
+                const dataStore = factory();
+                await seedData(dataStore, () => dataStore.products, 5);
+
+                // Test that defer method is properly bound by calling it
+                const deferMethod = dataStore.products.defer;
+                const deferredQuery = deferMethod();
+
+                // Test that the returned queryable has bound methods by calling them
+                const filteredQuery = deferredQuery.where(p => p.price > 100);
+                const mappedQuery = filteredQuery.map(p => p.name);
+                const sortedQuery = mappedQuery.sort(p => p);
+
+                // Test that the bound methods work correctly by executing the query
+                const callback = jest.fn();
+                sortedQuery.toArray(callback);
+                expect(callback).not.toHaveBeenCalled();
+            });
         });
     });
 });

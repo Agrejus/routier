@@ -48,6 +48,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
         this.hasChanges = this.hasChanges.bind(this);
         this.instance = this.instance.bind(this);
         this.subscribe = this.subscribe.bind(this);
+        this.defer = this.defer.bind(this);
         this.where = this.where.bind(this);
         this.sort = this.sort.bind(this);
         this.sortDescending = this.sortDescending.bind(this);
@@ -63,6 +64,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
         this.someAsync = this.someAsync.bind(this);
         this.every = this.every.bind(this);
         this.everyAsync = this.everyAsync.bind(this);
+        this.map = this.map.bind(this);
         this.min = this.min.bind(this);
         this.minAsync = this.minAsync.bind(this);
         this.max = this.max.bind(this);
