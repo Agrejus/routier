@@ -8,7 +8,8 @@
     "datastore",
     "react",
     "plugins/*",
-    "test-utils"
+    "test-utils",
+    "benchmark"
   ],
   "scripts": {
     "build": "lerna run build",
@@ -22,6 +23,8 @@
     "version:minor": "lerna version minor --conventional-commits",
     "version:major": "lerna version major --conventional-commits",
     "bump": "node scripts/bump-version.mjs",
+    "benchmark": "cd benchmark && npm run benchmark",
+    "benchmark:memory": "cd benchmark && npm run benchmark:memory",
     "publish:canary": "lerna publish --canary",
     "publish": "lerna publish from-git",
     "clean": "lerna clean",

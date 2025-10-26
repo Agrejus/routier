@@ -1,12 +1,16 @@
 {
   "name": "@routier/dexie-plugin",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "source": "./src/index.ts",
   "publishConfig": {
     "access": "public"
   },
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
   "scripts": {
     "build:types": "tsc --emitDeclarationOnly",
     "build:bundle": "rspack build",
@@ -32,10 +36,10 @@
   ],
   "description": "Dexie plugin for routier",
   "peerDependencies": {
-    "@routier/core": "^0.0.1"
+    "@routier/core": ">=0.0.5"
   },
   "devDependencies": {
-    "@routier/core": "^0.0.1",
+    "@routier/core": "^0.0.5",
     "@routier/test-utils": "^0.0.1-alpha.1",
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",

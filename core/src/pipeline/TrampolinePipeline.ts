@@ -120,8 +120,8 @@ export class TrampolinePipeline<TInitial, TCurrent = TInitial> {
                             this._hasErrored = true;
                         }
                         currentStep = null; // Stop the loop
-                        // We don't call `done` here because an error occurred.
-                        // The application should handle the uncaught exception if desired.
+                        // Call done with the error to properly notify the caller
+                        queueMicrotask(() => done(currentData as TFinal, trampolineError));
                         break; // Explicitly break loop on error
                     }
                 }
@@ -266,8 +266,8 @@ export class AsyncPipeline<TData, TResult> {
                             this._hasErrored = true;
                         }
                         currentStep = null; // Stop the loop
-                        // We don't call `done` here because an error occurred.
-                        // The application should handle the uncaught exception if desired.
+                        // Call done with the error to properly notify the caller
+                        queueMicrotask(() => done(Result.error(trampolineError)));
                         break; // Explicitly break loop on error
                     }
                 }
@@ -307,125 +307,96 @@ export type UnitOfWork = (done: CallbackResult<never>) => void;
  */
 export class WorkPipeline {
     private unitsOfWork: UnitOfWork[] = [];
-    private _hasErrored: boolean = false; // Flag to prevent calling done on error
 
     filter(done: CallbackResult<never>) {
+        const units = this.unitsOfWork;
+        const unitsLength = units.length;
 
-        this._hasErrored = false; // Reset error flag on new execution
-
-        if (this.unitsOfWork.length === 0) {
+        // Fast path for empty pipeline
+        if (unitsLength === 0) {
             queueMicrotask(() => done(Result.success()));
             return;
         }
 
-        let index = 0;
-        let isRunning = false; // Guard against overlapping trampoline calls
+        // Fast path for single work unit
+        if (unitsLength === 1) {
+            try {
+                units[0]((result) => {
+                    queueMicrotask(() => done(result));
+                });
+            } catch (error: any) {
+                done(Result.error(error));
+            }
+            return;
+        }
+
+        let isRunning = false;
+        let hasErrored = false;
 
         try {
-            // --- Revised Completion Logic --- (Moved up for clarity)
-            const finalStepSentinel = (): StepResult<never> => { // A special step function for the very end
-                // Only call done if no error has occurred
-                if (!this._hasErrored) {
-                    queueMicrotask(() => done(Result.success()));
-                }
-                return null; // Stop the trampoline
-            };
-
-            const createStepRevised = (idx: number): TrampolineStep<any> => {
+            const createStep = (idx: number): TrampolineStep<any> => {
                 return () => {
-                    if (this._hasErrored) return null; // Stop if an error occurred elsewhere
-
-                    if (idx >= this.unitsOfWork.length) {
-                        return finalStepSentinel(); // Execute the dedicated final step
+                    if (hasErrored) return null;
+                    if (idx >= unitsLength) {
+                        if (!hasErrored) {
+                            queueMicrotask(() => done(Result.success()));
+                        }
+                        return null;
                     }
 
-                    const processor = this.unitsOfWork[idx];
-                    // Initialize syncCallbackResult to null to satisfy StepResult type
-                    let syncCallbackResult: StepResult<any> = null;
+                    const processor = units[idx];
+                    let syncResult: StepResult<any> = null;
                     let calledSync = false;
 
                     try {
                         processor((result) => {
-                            // --- Error Handling ---
                             if (result.ok === Result.ERROR) {
-                                console.error(`Error reported by AsyncPipeline at index ${idx}:`, result.error);
-                                this._hasErrored = true; // Set flag
-                                // Throw the error to be caught by outer try...catch blocks
+                                hasErrored = true;
                                 throw result.error;
                             }
-                            // --- /Error Handling ---
 
-                            // If no error, proceed as before
-                            index = idx + 1; // Update index for the next step
-                            const nextStep = createStepRevised(index); // Use updated index
+                            const nextStep = createStep(idx + 1);
 
                             if (isRunning) {
-                                // Callback was synchronous
-                                syncCallbackResult = nextStep; // Store next step function
+                                syncResult = nextStep;
                                 calledSync = true;
                             } else {
-                                // Callback was asynchronous, restart trampoline
                                 trampoline(nextStep);
                             }
                         });
                     } catch (error) {
-                        if (!this._hasErrored) { // Check flag to avoid double logging if error was from callback
-                            console.error(`Error thrown by processor at index ${idx} or its callback:`, error);
-                            this._hasErrored = true;
-                        }
-                        // Rethrow to be caught by the trampoline's catch block
+                        hasErrored = true;
                         throw error;
                     }
 
-                    if (calledSync) {
-                        // Return the next step function for the sync loop
-                        return syncCallbackResult;
-                    } else {
-                        // Pause trampoline for async, loop will stop as step returns null
-                        return null;
-                    }
+                    return calledSync ? syncResult : null;
                 };
             };
 
-            // The trampoline loop
             const trampoline = (step: TrampolineStep<any> | null) => {
-
-                if (isRunning) {
-                    return;
-                }
-
+                if (isRunning) return;
                 isRunning = true;
-                let currentStep = step;
 
-                while (typeof currentStep === 'function') {
+                let currentStep = step;
+                while (currentStep) {
                     try {
-                        // Stop immediately if an error was flagged elsewhere
-                        if (this._hasErrored) {
+                        if (hasErrored) {
                             currentStep = null;
                             break;
                         }
-                        currentStep = currentStep(); // Execute step, get next step or null
-                    } catch (trampolineError) {
-                        // Catch errors propagated from step execution (processor or callback errors)
-                        if (!this._hasErrored) { // Avoid double logging
-                            console.error("Error during trampoline step execution:", trampolineError);
-                            this._hasErrored = true;
-                        }
-                        currentStep = null; // Stop the loop
-                        // We don't call `done` here because an error occurred.
-                        // The application should handle the uncaught exception if desired.
-                        break; // Explicitly break loop on error
+                        currentStep = currentStep();
+                    } catch (error) {
+                        hasErrored = true;
+                        currentStep = null;
+                        queueMicrotask(() => done(Result.error(error)));
+                        break;
                     }
                 }
-                // Loop ends when currentStep is null or loop is broken by error
-                isRunning = false;
 
-                // Completion check is now handled by finalStepSentinel ensuring `done` isn't called on error.
+                isRunning = false;
             };
 
-            // --- Start the process ---
-            index = 0; // Reset index
-            trampoline(createStepRevised(0)); // Start with the revised step creator
+            trampoline(createStep(0));
         } catch (error: any) {
             done(Result.error(error));
         }

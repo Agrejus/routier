@@ -139,22 +139,69 @@ function updateOtherFiles(packageName, newVersion) {
 }
 
 /**
+ * Get the current version of a package
+ */
+function getCurrentVersion(packageName) {
+    const packageJsonFiles = findPackageJsonFiles(rootDir);
+
+    for (const filePath of packageJsonFiles) {
+        const content = readFileSync(filePath, 'utf8');
+        const packageJson = JSON.parse(content);
+
+        if (packageJson.name === packageName) {
+            return packageJson.version;
+        }
+    }
+
+    throw new Error(`Package ${packageName} not found`);
+}
+
+/**
+ * Bump version to next patch
+ */
+function bumpPatchVersion(version) {
+    const parts = version.split('.');
+    const major = parseInt(parts[0]) || 0;
+    const minor = parseInt(parts[1]) || 0;
+    const patch = parseInt(parts[2]) || 0;
+
+    return `${major}.${minor}.${patch + 1}`;
+}
+
+/**
  * Main function
  */
 function main() {
     const args = process.argv.slice(2);
 
-    if (args.length !== 2) {
-        console.log('Usage: node bump-version.mjs <package-name> <new-version>');
+    if (args.length < 1 || args.length > 2) {
+        console.log('Usage: node bump-version.mjs <package-name> [<new-version>|--next]');
         console.log('');
         console.log('Examples:');
         console.log('  node bump-version.mjs @routier/core 0.0.1-alpha.10');
         console.log('  node bump-version.mjs @routier/datastore 0.0.1-alpha.5');
         console.log('  node bump-version.mjs @routier/memory-plugin 0.0.1-alpha.3');
+        console.log('  node bump-version.mjs @routier/react --next');
         process.exit(1);
     }
 
-    const [packageName, newVersion] = args;
+    const packageName = args[0];
+    let newVersion = args[1];
+
+    // Handle --next flag
+    if (newVersion === '--next') {
+        try {
+            const currentVersion = getCurrentVersion(packageName);
+            newVersion = bumpPatchVersion(currentVersion);
+            console.log(`📈 Auto-bumping ${packageName} from ${currentVersion} to ${newVersion}`);
+        } catch (error) {
+            console.error(`❌ Error: ${error.message}`);
+            process.exit(1);
+        }
+    } else if (!newVersion) {
+        console.log('❌ Error: Version or --next flag is required');
+        process.exit(1);
+    }
 
     console.log(`🔄 Bumping ${packageName} to version ${newVersion}...`);
 

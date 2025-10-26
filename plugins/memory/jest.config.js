@@ -10,5 +10,8 @@ module.exports = {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'html'],
   moduleFileExtensions: ['ts', 'js', 'json'],
-  testTimeout: 10000
+  testTimeout: 10000,
+  transformIgnorePatterns: [
+    'node_modules/(?!(@faker-js/faker|tinybench|@routier)/)'
+  ]
 };

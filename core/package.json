@@ -1,6 +1,6 @@
 {
   "name": "@routier/core",
-  "version": "0.0.1",
+  "version": "0.0.5",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "source": "./src/index.ts",
@@ -24,6 +24,7 @@
     "./expressions": "./dist/expressions/index.js",
     "./errors": "./dist/errors/index.js",
     "./performance": "./dist/performance/index.js",
+    "./capabilities": "./dist/capabilities/index.js",
     "./types": "./dist/types/index.js"
   },
   "typesVersions": {
@@ -57,6 +58,9 @@
       ],
       "assertions": [
         "./dist/assertions/index.d.ts"
+      ],
+      "capabilities": [
+        "./dist/capabilities/index.d.ts"
       ],
       "types": [
         "./dist/types/index.d.ts"

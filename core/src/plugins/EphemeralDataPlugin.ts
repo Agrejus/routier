@@ -20,115 +20,112 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
 
     bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackPartialResult<BulkPersistResult>) {
         try {
-            const pipeline = new WorkPipeline();
             const bulkPersistResult = event.operation.toResult();
+            const schemas = event.schemas;
+            const pipeline = new WorkPipeline();
+            let hasWork = false;
 
             for (const [schemaId, changes] of event.operation) {
+                const { adds, hasItems, removes, updates } = changes;
+
+                if (!hasItems) {
+                    continue;
+                }
+
+                hasWork = true;
+                const result = bulkPersistResult.get(schemaId);
+                const schema = schemas.get(schemaId);
+                assertIsNotNull(schema);
 
                 pipeline.pipe((d) => {
                     try {
-
-                        const { adds, hasItems, removes, updates } = changes;
-
-                        if (hasItems === false) {
-                            d(Result.success());
-                            return;
-                        }
-
-                        const result = bulkPersistResult.get(schemaId);
-                        const schema = event.schemas.get(schemaId);
-
-                        assertIsNotNull(schema);
-
                         const collection = this.resolveCollection(schema);
                         collection.load(readResult => {
-
                             if (readResult.ok === Result.ERROR) {
                                 d(readResult);
                                 return;
                             }
 
-                            for (let i = 0, length = adds.length; i < length; i++) {
-                                collection.add(adds[i]);
-                                result.adds.push(adds[i] as DeepPartial<InferCreateType<UnknownRecord>>);
+                            // Pre-allocate arrays for better performance
+                            const addsLength = adds.length;
+                            const updatesLength = updates.length;
+                            const removesLength = removes.length;
+                            result.adds = new Array(addsLength);
+                            result.updates = new Array(updatesLength);
+                            result.removes = new Array(removesLength);
+
+                            // Batch all operations
+                            for (let j = 0; j < addsLength; j++) {
+                                const item = adds[j];
+                                collection.add(item);
+                                result.adds[j] = item as DeepPartial<InferCreateType<UnknownRecord>>;
                             }
 
-                            for (let i = 0, length = updates.length; i < length; i++) {
-                                collection.update(updates[i].entity);
-                                result.updates.push(updates[i].entity);
+                            for (let j = 0; j < updatesLength; j++) {
+                                const item = updates[j].entity;
+                                collection.update(item);
+                                result.updates[j] = item;
                             }
 
-                            for (let i = 0, length = removes.length; i < length; i++) {
-                                collection.remove(removes[i]);
-                                result.removes.push(removes[i]);
+                            for (let j = 0; j < removesLength; j++) {
+                                collection.remove(removes[j]);
+                                result.removes[j] = removes[j];
                             }
 
                             collection.save(saveResult => {
-
                                 if (saveResult.ok === Result.ERROR) {
                                     d(saveResult);
                                     return;
                                 }
-
                                 d(Result.success());
                             });
-                        })
-
+                        });
                     } catch (e) {
                         d(Result.error(e));
                     }
                 });
             }
 
-            let successCount = 0;
+            if (!hasWork) {
+                done(PluginEventResult.success(event.id, bulkPersistResult));
+                return;
+            }
 
-            pipeline.filter((asyncResult) => {
-
-                if (asyncResult.ok !== PluginEventResult.SUCCESS) {
-
-                    if (successCount === 0) {
-                        done(PluginEventResult.error(event.id, asyncResult.error))
-                        return;
-                    }
-
-                    done(PluginEventResult.partial(event.id, bulkPersistResult, asyncResult.error))
+            pipeline.filter((result) => {
+                if (result.ok === Result.ERROR) {
+                    done(PluginEventResult.error(event.id, result.error));
                     return;
                 }
-
-                successCount++;
-
                 done(PluginEventResult.success(event.id, bulkPersistResult));
             });
         } catch (e: any) {
-            done(PluginEventResult.error(event.id, e))
+            done(PluginEventResult.error(event.id, e));
         }
     }
 
     query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<TShape>): void {
-
         try {
-            const { operation } = event;
+            const operation = event.operation;
+            const schema = operation.schema;
             const translator = new JsonTranslator<TEntity, TShape>(operation);
-            const collection = this.resolveCollection(operation.schema);
+            const collection = this.resolveCollection(schema);
 
-            // translate if we are doing any operations like count/sum/min/max/skip/take
             collection.load(r => {
-
                 if (r.ok === Result.ERROR) {
                     done(PluginEventResult.error(event.id, r.error));
                     return;
                 }
 
-                const cloned: Record<string, unknown>[] = [];
+                const records = collection.records;
+                const length = records.length;
+                const cloned: Record<string, unknown>[] = new Array(length);
 
-                for (let i = 0, length = collection.records.length; i < length; i++) {
-                    cloned.push(event.operation.schema.clone(collection.records[i] as InferType<TEntity>));
+                for (let i = 0; i < length; i++) {
+                    cloned[i] = schema.clone(records[i] as InferType<TEntity>);
                 }
 
-                const translated = translator.translate(cloned);
-
-                done(PluginEventResult.success(event.id, translated));
-            })
+                done(PluginEventResult.success(event.id, translator.translate(cloned)));
+            });
         } catch (e) {
             done(PluginEventResult.error(event.id, e));
         }

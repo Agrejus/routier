@@ -1,6 +1,6 @@
 {
   "name": "@routier/memory-plugin",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "source": "./src/index.ts",
@@ -38,15 +38,16 @@
   ],
   "description": "Memory plugin for routier",
   "peerDependencies": {
-    "@routier/core": "^0.0.1"
+    "@routier/core": ">=0.0.5"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.0.0",
-    "@routier/core": "^0.0.1",
-    "@routier/datastore": "^0.0.2",
+    "@routier/core": "^0.0.5",
+    "@routier/datastore": "^0.0.3",
     "@routier/test-utils": "^0.0.1-alpha.1",
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",
+    "tinybench": "^5.1.0",
     "ts-loader": "^9.5.2"
   }
 }

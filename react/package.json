@@ -1,6 +1,6 @@
 {
   "name": "@routier/react",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "React integration examples for Routier framework",
   "private": false,
   "type": "module",
@@ -22,7 +22,7 @@
     "test:ui": "vitest --ui"
   },
   "peerDependencies": {
-    "@routier/core": "^0.0.1",
+    "@routier/core": ">=0.0.5",
     "react": ">=16.8.0",
     "react-dom": ">=16.8.0"
   },

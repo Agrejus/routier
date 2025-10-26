@@ -309,18 +309,17 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     }
 
     add(entities: InferCreateType<TEntity>[], tag: unknown | null, done: CallbackResult<InferType<TEntity>[]>) {
-
         try {
+            const length = entities.length;
+            const result: InferType<TEntity>[] = new Array(length);
+            const tagCollection = tag != null ? this.resolveTagCollection() : null;
 
-            const result: InferType<TEntity>[] = [];
-
-            for (const entity of this.instance(entities, "proxy")) {
+            for (let i = 0; i < length; i++) {
+                const entity = this.schema.enrich(entities[i], "proxy");
                 this.additions.set(entity);
+                result[i] = entity as InferType<TEntity>;
 
-                result.push(entity as InferType<TEntity>);
-
-                if (tag != null) {
-                    const tagCollection = this.resolveTagCollection();
+                if (tagCollection != null) {
                     tagCollection.set(entity, tag);
                 }
             }
