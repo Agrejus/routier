@@ -33,10 +33,10 @@
   ],
   "description": "Dexie plugin for routier",
   "peerDependencies": {
-    "@routier/core": ">=0.0.5"
+    "@routier/core": ">=0.0.6"
   },
   "devDependencies": {
-    "@routier/core": "^0.0.5",
+    "@routier/core": "^0.0.6",
     "@routier/test-utils": "^0.0.1-alpha.1",
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",

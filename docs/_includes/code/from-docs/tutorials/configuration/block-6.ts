@@ -1,4 +1,4 @@
-import { DbPluginLogging, DbPluginReplicator } from "@routier/core/plugins";
+import { DbPluginLogging, DbPluginReplicator } from "routier-core/plugins";
 
 // Add logging to any plugin
 const memoryPluginWithLogging = DbPluginLogging.create(memoryPlugin);

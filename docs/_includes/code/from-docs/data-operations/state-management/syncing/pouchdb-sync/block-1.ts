@@ -1,4 +1,4 @@
-import { PouchDbPlugin } from "@routier/pouchdb-plugin";
+import { PouchDbPlugin } from "routier-plugin-pouchdb";
 
 const plugin = new PouchDbPlugin("myapp", {
   sync: {

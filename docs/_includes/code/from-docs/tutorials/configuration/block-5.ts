@@ -1,3 +1,3 @@
-import { DexiePlugin } from "@routier/dexie-plugin";
+import { DexiePlugin } from "routier-plugin-dexie";
 
 const dexiePlugin = new DexiePlugin("my-database");

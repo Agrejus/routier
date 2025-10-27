@@ -1,37 +1,24 @@
-import { s, InferCreateType } from "@routier/core/schema";
-import { DataStore } from "@routier/datastore";
-import { MemoryPlugin } from "@routier/memory-plugin";
-
 // Define once, use everywhere
-const userSchema = s.define("users", {
+const userSchema = s.object({
   id: s.string().key().identity(),
-  email: s.string(),
+  email: s.string().email(),
   name: s.string(),
-}).compile();
+});
 
 // In your data store
-class AppDataStore extends DataStore {
-  constructor() {
-    super(new MemoryPlugin("app"));
-  }
+const users = dataStore.collection(userSchema).create();
 
-  users = this.collection(userSchema).create();
-}
-
-const dataStore = new AppDataStore();
-
-// In your API layer - TypeScript provides compile-time type checking
+// In your API layer
 app.post("/users", (req, res) => {
-  // TypeScript ensures the data structure matches the schema
-  const userData: InferCreateType<typeof userSchema> = req.body;
-
-  // Add user to collection
-  dataStore.users.addAsync(userData);
-  dataStore.saveChangesAsync();
+  const result = userSchema.validate(req.body);
+  if (!result.valid) {
+    return res.status(400).json({ errors: result.errors });
+  }
+  // Data structure matches schema
 });
 
 // In your frontend
-const createUser = async (userData: InferCreateType<typeof userSchema>) => {
+const createUser = async (userData: CreateUser) => {
   // TypeScript ensures userData matches the schema
   const response = await fetch("/users", {
     method: "POST",

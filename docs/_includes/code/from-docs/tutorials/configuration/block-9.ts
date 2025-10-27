@@ -1,4 +1,4 @@
-// Removed testing plugin import; use MemoryPlugin in tests or mocks
+import { TestingPlugin } from "routier-plugin-testing";
 
 class TestContext extends DataStore {
   constructor() {

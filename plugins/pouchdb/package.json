@@ -43,12 +43,12 @@
     "pouchdb": "^9.0.0"
   },
   "peerDependencies": {
-    "@routier/core": ">=0.0.5"
+    "@routier/core": ">=0.0.6"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.0.0",
-    "@routier/core": "^0.0.5",
-    "@routier/datastore": "^0.0.3",
+    "@routier/core": "^0.0.6",
+    "@routier/datastore": "^0.0.4",
     "@routier/memory-plugin": "file://../memory",
     "@routier/test-utils": "^0.0.1-alpha.1",
     "@rspack/cli": "^1.1.8",

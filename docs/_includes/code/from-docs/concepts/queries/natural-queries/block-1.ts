@@ -1,10 +1,9 @@
-const ctx = new AppContext();
+// Good: parameterized value is known to the engine
+const users = await ctx.users
+  .where(([u, p]) => u.name.startsWith(p.prefix), { prefix: "Ja" })
+  .toArrayAsync();
 
-// Get all users
-const allUsers = await ctx.users.toArrayAsync();
-
-// Get first user
-const firstUser = await ctx.users.firstOrUndefinedAsync();
-
-// Check if any users exist
-const hasUsers = await ctx.users.someAsync();
+// Without parameters, Routier will load from the store then filter in memory
+const slower = await ctx.users
+  .where((u) => u.name.startsWith(prefix)) // prefix is not known at compile time
+  .toArrayAsync();

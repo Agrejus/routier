@@ -1,4 +1,4 @@
-import { s } from "@routier/core/schema";
+import { s } from "routier-core/schema";
 
 const userSchema = s
   .define("users", {

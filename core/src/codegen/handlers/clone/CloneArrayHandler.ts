@@ -1,4 +1,4 @@
-import { CodeBuilder, SlotBlock } from '../../blocks';
+import { CodeBuilder, IfBuilder, SlotBlock } from '../../blocks';
 import { PropertyInfoHandler } from "../types";
 import { PropertyInfo, SchemaTypes } from "../../../schema";
 
@@ -13,11 +13,14 @@ export class CloneArrayHandler extends PropertyInfoHandler {
                 return builder;
             }
 
-            const slot = builder.get<SlotBlock>("assignments");
-            const resultAssignmentPath = property.getAssignmentPath({ parent: "result" });
+            const entitySelectorPath = property.getSelectrorPath({ parent: "entity" });
 
             if (property.parent == null) {
-                slot.assign(`${resultAssignmentPath}`).value("{}");
+
+                const resultAssignmentPath = property.getAssignmentPath({ parent: "result" });
+                const slot = builder.get<SlotBlock>("if");
+
+                slot.if(`${entitySelectorPath} != null`).appendBody(`${resultAssignmentPath} = [...${entitySelectorPath}]`);
                 return builder;
             }
             // slotPath.push(...property.getParentPathArray());

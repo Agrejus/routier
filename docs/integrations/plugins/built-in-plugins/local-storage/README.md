@@ -18,7 +18,7 @@ npm install @routier/browser-storage-plugin
 
 ## Basic Usage
 
-{% capture snippet_ls_basic %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_ls_basic %}{% include code/from-docs/integrations/plugins/built-in-plugins/local-storage/README/block-1.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_ls_basic | strip }}{% endhighlight %}
 
 ## Notes

@@ -18,7 +18,7 @@ npm install @routier/sqlite-plugin sqlite3
 
 ## Basic Usage
 
-{% capture snippet_sqlite_basic %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_sqlite_basic %}{% include code/from-docs/integrations/plugins/built-in-plugins/sqlite/README/block-1.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_sqlite_basic | strip }}{% endhighlight %}
 
 ## Notes

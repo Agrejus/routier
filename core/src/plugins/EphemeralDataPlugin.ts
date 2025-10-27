@@ -46,7 +46,6 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                                 return;
                             }
 
-                            // Pre-allocate arrays for better performance
                             const addsLength = adds.length;
                             const updatesLength = updates.length;
                             const removesLength = removes.length;
@@ -54,7 +53,6 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                             result.updates = new Array(updatesLength);
                             result.removes = new Array(removesLength);
 
-                            // Batch all operations
                             for (let j = 0; j < addsLength; j++) {
                                 const item = adds[j];
                                 collection.add(item);

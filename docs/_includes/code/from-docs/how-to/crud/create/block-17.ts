@@ -1,17 +1,16 @@
-// ✅ Good - comprehensive error handling for actual errors
+// ✅ Good - comprehensive error handling
 async function createUserSafely(userData: any) {
   try {
     const user = await ctx.users.addAsync(userData);
     console.log("User created successfully:", user);
     return user;
   } catch (error) {
-    // Handle actual errors (network, database connection, etc.)
-    if (error.message.includes("network")) {
-      console.error("Network error occurred");
-      // Handle network issues
-    } else if (error.message.includes("database")) {
-      console.error("Database error occurred");
-      // Handle database issues
+    if (error.message.includes("unique")) {
+      console.error("User with this email already exists");
+      // Handle duplicate gracefully
+    } else if (error.message.includes("required")) {
+      console.error("Missing required fields");
+      // Handle validation errors
     } else {
       console.error("Unexpected error:", error);
       // Handle unexpected errors

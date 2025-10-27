@@ -41,6 +41,31 @@ describe("Product Tests", () => {
             const [added] = await dataStore.products.addAsync(item);
             const response = await dataStore.saveChangesAsync();
 
+            // Asserts
+            expect(response.aggregate.size).toBe(1);
+            expect(added._id).toStrictEqual(expect.any(String));
+            expect(added.category).toBe(item.category);
+            expect(added.name).toBe(item.name);
+            expect(added.inStock).toBe(item.inStock);
+            expect(added.price).toBe(item.price);
+            expect(added.tags).toEqual(item.tags);
+        });
+
+        it("Can add a basic product and should not be updated by ref", async () => {
+            const dataStore = factory();
+            // Arrange
+            const [item] = generateData(dataStore.products.schema, 1);
+
+            // Act
+            const [added] = await dataStore.products.addAsync(item);
+            const response = await dataStore.saveChangesAsync();
+
+            added.name = "test";
+
+            const found = await dataStore.products.firstOrUndefinedAsync(x => x.category === item.category);
+
+            expect(found?.name).not.toEqual("test");
+
             // Assert
             expect(response.aggregate.size).toBe(1);
             expect(added._id).toStrictEqual(expect.any(String));

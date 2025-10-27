@@ -1,6 +1,6 @@
-import { DataStore } from "@routier/datastore";
-import { IDbPlugin } from "@routier/core/plugins";
-import { InferCreateType } from "@routier/core/schema";
+import { DataStore } from "routier";
+import { IDbPlugin } from "routier-core/plugins";
+import { InferCreateType } from "routier-core/schema";
 import { simple } from "./schemas"; // your compiled schema
 
 class GenericDataStore extends DataStore {

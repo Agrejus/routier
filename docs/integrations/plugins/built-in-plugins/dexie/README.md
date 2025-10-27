@@ -18,7 +18,7 @@ npm install @routier/dexie-plugin dexie
 
 ## Basic Usage
 
-{% capture snippet_dexie_basic %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_dexie_basic %}{% include code/from-docs/integrations/plugins/built-in-plugins/dexie/README/block-1.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_dexie_basic | strip }}{% endhighlight %}
 
 ## Notes

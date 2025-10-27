@@ -1,17 +1,10 @@
-const schema = s.define("orders", {
-  // Derived, not persisted by default
-  total: s
-    .number()
-    .computed((order) =>
-      order.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-    ),
+const userSchema = s
+  .define("users", {
+    id: s.string().key().identity(),
+    // Optional on insert; will use the default if omitted
+    createdAt: s.date().default(() => new Date()),
+  })
+  .compile();
 
-  // Persist the computed value to the data store
-  totalCached: s
-    .number()
-    .computed((order) =>
-      order.items.reduce((sum, i) => sum + i.price * i.quantity, 0)
-    )
-    .tracked()
-    .index(),
-});
+// OK: createdAt omitted; default will be applied
+await ctx.users.addAsync({ id: crypto.randomUUID() });

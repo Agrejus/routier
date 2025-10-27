@@ -1,6 +1,6 @@
-import { DataStore } from "@routier/datastore";
-import { s } from "@routier/core/schema";
-import { MemoryPlugin } from "@routier/memory-plugin";
+import { DataStore } from "routier";
+import { s } from "routier-core/schema";
+import { MemoryPlugin } from "routier-plugin-memory";
 
 const userSchema = s
   .define("users", {

@@ -18,7 +18,7 @@ npm install @routier/pouchdb-plugin pouchdb
 
 ## Basic Usage
 
-{% capture snippet_pouch_basic %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_pouch_basic %}{% include code/from-docs/integrations/plugins/built-in-plugins/pouchdb/README/block-1.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_pouch_basic | strip }}{% endhighlight %}
 
 ## Notes
