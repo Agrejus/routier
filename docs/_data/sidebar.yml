@@ -129,6 +129,11 @@
           url: /integrations/plugins/create-your-own/custom-translators.md
     - title: React
       url: /integrations/react/
+      children:
+        - title: React Hooks
+          url: /integrations/react/hooks/
+        - title: Best Practices
+          url: /integrations/react/best-practices/
 
 - title: How-to Guides
   url: /how-to/
