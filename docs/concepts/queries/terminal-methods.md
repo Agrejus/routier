@@ -10,6 +10,14 @@ permalink: /concepts/queries/terminal-methods/
 
 All queries must end with a terminal method to execute. These methods actually perform the query and return results.
 
+## Quick Navigation
+
+- [Quick Reference](#quick-reference)
+- [Detailed Examples](#detailed-examples)
+- [Important Notes](#important-notes)
+- [Common Patterns](#common-patterns)
+- [Related Topics](#related-topics)
+
 ## Quick Reference
 
 | Method                    | Description                     | Example                                         |

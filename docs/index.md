@@ -167,7 +167,6 @@ your way while providing powerful data behavior.
 
 - [Schemas]({{ site.baseurl }}/concepts/schema/)
 - [Queries]({{ site.baseurl }}/concepts/queries/)
-- [Data Pipeline]({{ site.baseurl }}/concepts/data-pipeline/)
 
 ## Guides
 
@@ -179,14 +178,8 @@ your way while providing powerful data behavior.
 - [Syncing]({{ site.baseurl }}/guides/syncing.html)
 - [Entity Tagging]({{ site.baseurl }}/guides/entity-tagging.html)
 
-## API
+## Integrations
 
-- [API Landing]({{ site.baseurl }}/api/)
-- [Reference]({{ site.baseurl }}/reference/api/)
-
-## Examples
-
-- [Basic]({{ site.baseurl }}/examples/basic/)
-- [Advanced]({{ site.baseurl }}/examples/advanced/)
-- [Performance]({{ site.baseurl }}/examples/performance/)
-- [Real-world]({{ site.baseurl }}/examples/real-world/)
+- [React Integration]({{ site.baseurl }}/integrations/react/)
+- [Built-in Plugins]({{ site.baseurl }}/integrations/plugins/built-in-plugins/)
+- [Create Your Own Plugin]({{ site.baseurl }}/integrations/plugins/create-your-own/)

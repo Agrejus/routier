@@ -20,7 +20,6 @@ Routier is a reactive data toolkit: schemas + collections + live queries + optim
 
 - Schema: /concepts/schema/
 - Queries: /concepts/queries/
-- Data Pipeline: /concepts/data-pipeline/
 
 ## Guides
 
@@ -32,16 +31,9 @@ Routier is a reactive data toolkit: schemas + collections + live queries + optim
 - Syncing: /guides/syncing.md
 - Entity Tagging: /guides/entity-tagging.md
 
-## API
+## Integrations
 
-- API Landing: /api/
-- Reference: /reference/api/
-
-## Examples
-
-- Basic: /examples/basic/
-- Advanced: /examples/advanced/
-- Performance: /examples/performance/
-- Real-world: /examples/real-world/
+- React: /integrations/react/
+- Plugins: /integrations/plugins/built-in-plugins/
 
 For structure/flow inspiration: TanStack DB Overview — `https://tanstack.com/db/latest/docs/overview`

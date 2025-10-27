@@ -37,5 +37,3 @@ const ctx = new AppContext();
 await ctx.users.addAsync({ name: "Ada", email: "ada@example.com" });
 await ctx.saveChangesAsync();
 ```
-
-See step-by-step: [Getting Started Tutorial]({{ site.baseurl }}/tutorials/getting-started)
