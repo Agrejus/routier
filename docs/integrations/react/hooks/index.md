@@ -204,39 +204,24 @@ Only listen to changes, ignore initial state:
 
 ## Patterns and Best Practices
 
-### Context Setup
+### Accessing Your Data Store
 
-Provide your DataStore through React Context:
+Create your DataStore in a simple custom hook:
 
 ```tsx
-// DataStoreContext.tsx
-import { createContext, useContext, ReactNode } from "react";
+// hooks/useDataStore.ts
+import { useMemo } from "react";
 import { DataStore } from "@routier/datastore";
-
-const DataStoreContext = createContext<DataStore | null>(null);
-
-export function DataStoreProvider({
-  children,
-  store,
-}: {
-  children: ReactNode;
-  store: DataStore;
-}) {
-  return (
-    <DataStoreContext.Provider value={store}>
-      {children}
-    </DataStoreContext.Provider>
-  );
-}
+import { MemoryPlugin } from "@routier/plugins-memory";
 
 export function useDataStore() {
-  const context = useContext(DataStoreContext);
-  if (!context) {
-    throw new Error("useDataStore must be used within DataStoreProvider");
-  }
-  return context;
+  return useMemo(() => new DataStore(new MemoryPlugin("app")), []);
 }
 ```
+
+**Note:** Subscriptions work via BroadcastChannel, so live updates work across different DataStore instances. You can create a new instance per component without losing reactivity.
+
+Alternatively, you can use Context if you prefer a shared instance across your app. See the [Best Practices](/integrations/react/best-practices/) guide for details.
 
 ### Status Checking
 
@@ -255,21 +240,6 @@ TypeScript's discriminated unions make this safe:
 if (result.status === "success") {
   console.log(result.data); // ✅ Safe
 }
-```
-
-### Memoization for Performance
-
-For expensive queries, memoize the query builder:
-
-```tsx
-import { useMemo } from "react";
-
-const expensiveQuery = useMemo(
-  () => dataStore.products.where(complexFilter).subscribe(),
-  [dataStore, filterCriteria]
-);
-
-const result = useQuery((cb) => expensiveQuery.toArray(cb), [expensiveQuery]);
 ```
 
 ### Dependencies Array

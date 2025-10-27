@@ -12,19 +12,37 @@ Build robust, performant React applications with Routier by following these patt
 
 ## Table of Contents
 
-- [Context Setup](#context-setup)
-- [Data Store Architecture](#data-store-architecture)
+- [Accessing Your Data Store](#accessing-your-data-store)
 - [Error Handling](#error-handling)
 - [Loading States](#loading-states)
 - [Performance Optimization](#performance-optimization)
 - [Testing](#testing)
 - [Common Patterns](#common-patterns)
 
-## Context Setup
+## Accessing Your Data Store
 
-Provide your DataStore through React Context for clean dependency injection.
+You have flexibility in how you provide your DataStore to components. Here are the common approaches:
 
-### Basic Context Setup
+### Simple Custom Hook
+
+Create a custom hook that returns a new DataStore instance:
+
+```tsx
+// hooks/useDataStore.ts
+import { useMemo } from "react";
+import { DataStore } from "@routier/datastore";
+import { MemoryPlugin } from "@routier/memory-plugin";
+
+export function useDataStore() {
+  return useMemo(() => new DataStore(new MemoryPlugin("app")), []);
+}
+```
+
+**Note:** Subscriptions work via BroadcastChannel, so updates work across different DataStore instances. You can create a new instance in each component without losing live updates.
+
+### With React Context (Optional)
+
+If you prefer to share a single instance through your component tree:
 
 ```tsx
 // DataStoreContext.tsx
@@ -34,12 +52,9 @@ import { MemoryPlugin } from "@routier/memory-plugin";
 
 const DataStoreContext = createContext<DataStore | null>(null);
 
-interface DataStoreProviderProps {
-  children: ReactNode;
-  store: DataStore;
-}
+export function DataStoreProvider({ children }: { children: ReactNode }) {
+  const store = useMemo(() => new DataStore(new MemoryPlugin("app")), []);
 
-export function DataStoreProvider({ children, store }: DataStoreProviderProps) {
   return (
     <DataStoreContext.Provider value={store}>
       {children}
@@ -54,81 +69,9 @@ export function useDataStore() {
   }
   return context;
 }
-
-// Usage in app.tsx
-const store = new DataStore(new MemoryPlugin("app"));
-
-function App() {
-  return (
-    <DataStoreProvider store={store}>
-      <YourComponents />
-    </DataStoreProvider>
-  );
-}
 ```
 
-### Multi-Database Setup
-
-When using multiple databases or plugins:
-
-```tsx
-// Multiple stores with different plugins
-const memoryStore = new DataStore(new MemoryPlugin("cache"));
-const persistentStore = new DataStore(new DexiePlugin("main"));
-
-function App() {
-  return (
-    <MemoryStoreProvider store={memoryStore}>
-      <PersistentStoreProvider store={persistentStore}>
-        <YourComponents />
-      </PersistentStoreProvider>
-    </MemoryStoreProvider>
-  );
-}
-```
-
-## Data Store Architecture
-
-### Recommended Project Structure
-
-```
-src/
-  contexts/
-    DataStoreContext.tsx      # Store context
-    StoreProvider.tsx          # Provider setup
-  store/
-    DataStore.ts              # Store definition
-  collections/
-    users.ts                  # User schema & collection
-    products.ts               # Product schema & collection
-  hooks/
-    useUsers.ts               # Custom hooks for users
-    useProducts.ts            # Custom hooks for products
-  components/
-    UsersList.tsx
-    ProductsList.tsx
-```
-
-### Centralized Store Definition
-
-```tsx
-// store/DataStore.ts
-import { DataStore } from "@routier/datastore";
-import { MemoryPlugin } from "@routier/memory-plugin";
-import { userSchema } from "../collections/users";
-import { productSchema } from "../collections/products";
-
-class AppDataStore extends DataStore {
-  users = this.collection(userSchema).create();
-  products = this.collection(productSchema).create();
-
-  constructor() {
-    super(new MemoryPlugin("app"));
-  }
-}
-
-export const appStore = new AppDataStore();
-```
+**Important:** Routier uses BroadcastChannel for subscriptions, so even different DataStore instances will receive update notifications automatically. Both approaches work seamlessly with live queries.
 
 ## Error Handling
 
@@ -265,29 +208,7 @@ if (products.status === "pending") {
 
 ## Performance Optimization
 
-### Memoize Expensive Queries
-
-```tsx
-import { useMemo } from "react";
-
-function ExpensiveProductsList({ filter }: { filter: string }) {
-  const dataStore = useDataStore();
-
-  // Memoize the query builder to avoid recreating it
-  const query = useMemo(
-    () =>
-      dataStore.products
-        .where((p) => p.name.includes(filter))
-        .sort((p) => p.price)
-        .subscribe(),
-    [dataStore, filter]
-  );
-
-  const result = useQuery((cb) => query.toArray(cb), [query]);
-
-  // Rest of component...
-}
-```
+**Note:** Routier's query evaluation is extremely fast (less than 1ms), so memoization is typically unnecessary unless you're dealing with very complex queries or very large datasets.
 
 ### Debounce Search Inputs
 
