@@ -79,7 +79,8 @@ Once you've completed the getting started guide:
 
 - **Learn the concepts**: [Schema Guide]({{ site.baseurl }}/concepts/schema/) - Deep dive into data modeling
 - **Explore features**: [Live Queries]({{ site.baseurl }}/guides/live-queries) - Reactive data patterns
-- **See examples**: [Basic Examples]({{ site.baseurl }}/examples/basic/) - Real-world usage patterns
+- **Check out React**: [React Integration]({{ site.baseurl }}/integrations/react/) - Use Routier with React
+- **Browse plugins**: [Built-in Plugins]({{ site.baseurl }}/integrations/plugins/built-in-plugins/) - Available storage options
 
 ## Need Help?
 

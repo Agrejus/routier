@@ -10,6 +10,21 @@ nav_order: 5
 
 Delete operations in Routier allow you to remove entities from your collections. The framework provides both individual and batch deletion methods, with support for query-based removal and proper cleanup.
 
+## Quick Navigation
+
+- [Overview](#overview)
+- [Basic Delete Operations](#basic-delete-operations)
+- [Query-Based Deletion](#query-based-deletion)
+- [Batch Deletion Patterns](#batch-deletion-patterns)
+- [Advanced Deletion Patterns](#advanced-deletion-patterns)
+- [Change Management for Deletions](#change-management-for-deletions)
+- [Performance Considerations](#performance-considerations)
+- [Error Handling](#error-handling)
+- [Best Practices](#best-practices)
+- [Common Deletion Patterns](#common-deletion-patterns)
+- [Deletion Strategies](#deletion-strategies)
+- [Next Steps](#next-steps)
+
 ## Overview
 
 Routier's delete operations feature:

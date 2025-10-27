@@ -10,6 +10,21 @@ nav_order: 4
 
 Update operations in Routier leverage the framework's powerful change tracking system. Entities returned from queries are **proxy objects** that automatically track changes, making updates simple and efficient.
 
+## Quick Navigation
+
+- [Overview](#overview)
+- [How Change Tracking Works](#how-change-tracking-works)
+- [Basic Update Operations](#basic-update-operations)
+- [Batch Update Operations](#batch-update-operations)
+- [Advanced Update Patterns](#advanced-update-patterns)
+- [Change Management](#change-management)
+- [Update Type Safety](#update-type-safety)
+- [Performance Considerations](#performance-considerations)
+- [Best Practices](#best-practices)
+- [Error Handling](#error-handling)
+- [Common Update Patterns](#common-update-patterns)
+- [Next Steps](#next-steps)
+
 ## Overview
 
 Routier's update system works through:

@@ -13,6 +13,24 @@ Live queries automatically update when the underlying data changes, providing re
 
 Live queries in Routier allow you to subscribe to data changes and automatically receive updates when the underlying data is modified. This is perfect for building reactive UIs and real-time applications.
 
+## Quick Navigation
+
+- [Quick Reference](#quick-reference)
+- [Basic Live Queries](#basic-live-queries)
+  - [Simple Live Query](#simple-live-query)
+  - [Live Query with Filtering](#live-query-with-filtering)
+  - [Live Query with Sorting](#live-query-with-sorting)
+- [Advanced Live Query Patterns](#advanced-live-query-patterns)
+  - [Live Aggregation](#live-aggregation)
+  - [Live Pagination](#live-pagination)
+  - [Live Single Item](#live-single-item)
+- [Managing Live Queries](#managing-live-queries)
+- [Performance Considerations](#performance-considerations)
+- [Common Patterns](#common-patterns)
+- [Best Practices](#best-practices)
+- [Error Handling](#error-handling)
+- [Related Topics](#related-topics)
+
 ## Quick Reference
 
 | Method          | Description         | Example                                   |

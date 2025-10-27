@@ -10,6 +10,18 @@ nav_order: 2
 
 Create operations in Routier allow you to add new entities to your collections. The framework provides both synchronous and asynchronous methods, with automatic change tracking and type safety.
 
+## Quick Navigation
+
+- [Overview](#overview)
+- [Basic Create Operations](#basic-create-operations)
+- [Schema-Driven Creation](#schema-driven-creation)
+- [Type Safety and Error Handling](#type-safety-and-error-handling)
+- [Advanced Create Patterns](#advanced-create-patterns)
+- [Performance Considerations](#performance-considerations)
+- [Best Practices](#best-practices)
+- [Common Patterns](#common-patterns)
+- [Next Steps](#next-steps)
+
 ## Overview
 
 When you create entities in Routier:
