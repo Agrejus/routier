@@ -125,7 +125,7 @@ const sortedProducts = await ctx.products
 ### Field Selection and Transformation
 
 ```ts
-// Select specific fields
+// Select specific fields to reduce data transfer
 const productSummaries = await ctx.products
   .map((p) => ({
     id: p.id,
@@ -134,10 +134,12 @@ const productSummaries = await ctx.products
   }))
   .toArrayAsync();
 
-// Create computed fields
+// Create computed fields on-the-fly
 const productsWithTax = await ctx.products
   .map((p) => ({
-    ...p,
+    id: p.id,
+    name: p.name,
+    price: p.price,
     priceWithTax: p.price * 1.1,
   }))
   .toArrayAsync();

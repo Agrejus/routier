@@ -9,6 +9,12 @@ nav_order: 2
 
 Install the core libraries, the datastore, and one storage plugin.
 
+## Quick Navigation
+
+- [Install Core and Datastore](#1-install-core-and-datastore)
+- [Pick a Plugin](#2-pick-a-plugin)
+- [Next Steps](#next-steps)
+
 ### 1) Install core and datastore
 
 ```bash
@@ -27,7 +33,7 @@ Other plugins are available (Local Storage, File System, Dexie, SQLite, PouchDB)
 
 - [Built‑in Plugins]({{ site.baseurl }}/integrations/plugins/built-in-plugins/)
 
-Next steps:
+## Next Steps
 
-- [Quick Start]({{ site.baseurl }}/getting-started/quick-start)
-- [React Adapter]({{ site.baseurl }}/getting-started/react-adapter)
+- [Quick Start]({{ site.baseurl }}/getting-started/quick-start) - Build a working example in minutes
+- [React Adapter]({{ site.baseurl }}/getting-started/react-adapter) - Use Routier with React

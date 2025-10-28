@@ -11,6 +11,12 @@ permalink: /how-to/collections/scope-single-store/
 
 For single-table/collection backends (e.g., PouchDB, Local Storage), scope each collection so queries only return documents for that logical collection.
 
+## Quick Navigation
+
+- [Steps](#steps)
+- [Why Use Scoping](#why)
+- [Related Topics](#related)
+
 ### Steps
 
 1. Add a tracked computed discriminator to your schema that stores the logical collection name (for example, `documentType`).

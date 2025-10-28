@@ -64,8 +64,6 @@
       url: /guides/index.md
     - title: Live Queries
       url: /guides/live-queries.md
-    - title: Optimistic Updates
-      url: /guides/optimistic-updates.md
     - title: State Management
       url: /guides/state-management.md
     - title: Data Manipulation
@@ -76,6 +74,8 @@
       url: /guides/syncing.md
     - title: Entity Tagging
       url: /guides/entity-tagging.md
+    - title: Optimistic Replication
+      url: /guides/optimistic-replication.md
 
 - title: How-to Guides
   url: /how-to/

@@ -10,6 +10,12 @@ nav_order: 1
 
 You can extend a generated collection to add domain-specific helpers while preserving typing and change tracking.
 
+## Quick Navigation
+
+- [Example](#example)
+- [Notes](#notes)
+- [When to Use](#when-to-use)
+
 ### Example
 
 {% capture snippet_4yc1wf %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}

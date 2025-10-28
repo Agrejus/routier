@@ -8,7 +8,7 @@ permalink: /concepts/queries/sorting/
 
 # Sorting Results
 
-Sort your data in ascending or descending order using `sort` and `sortDescending`.
+Sort your data in ascending or descending order using `orderBy` and `orderByDescending`.
 
 ## Quick Navigation
 
@@ -39,8 +39,8 @@ Chain multiple sort operations for complex sorting:
 ```ts
 // Sort by category first, then by price
 const productsByCategoryAndPrice = await dataStore.products
-  .sort((p) => p.category)
-  .sort((p) => p.price)
+  .orderBy((p) => p.category)
+  .orderBy((p) => p.price)
   .toArrayAsync();
 ```
 
@@ -51,7 +51,7 @@ Sort filtered results:
 ```ts
 const expensiveProductsSorted = await dataStore.products
   .where((p) => p.price > 100)
-  .sortDescending((p) => p.price)
+  .orderByDescending((p) => p.price)
   .toArrayAsync();
 ```
 

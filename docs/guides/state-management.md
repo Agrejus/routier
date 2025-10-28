@@ -7,6 +7,64 @@ nav_order: 3
 
 ## State Management
 
-Patterns for local state, derived data, and cross-collection composition.
+Patterns for local state, derived data, and cross-collection composition in Routier applications.
 
-Read more: [State Management Guides & Examples]({{ site.baseurl }}/guides-examples/state-management/)
+## Overview
+
+State management in Routier involves managing application state through collections, live queries, and derived data. Routier provides built-in features that make state management straightforward and efficient.
+
+## Key Concepts
+
+### Collections as State
+
+Collections act as your primary state containers:
+
+```ts
+class AppContext extends DataStore {
+  users = this.collection(userSchema).create();
+  products = this.collection(productSchema).create();
+}
+```
+
+### Live Queries
+
+Keep UI in sync with data changes automatically:
+
+```ts
+const liveUsers = ctx.users.subscribe().toArrayAsync();
+// Automatically updates when users change
+```
+
+### Change Tracking
+
+All modifications are tracked automatically until saved:
+
+```ts
+user.name = "New Name"; // Tracked automatically
+await ctx.saveChangesAsync(); // Persisted
+```
+
+### Derived State
+
+Compute derived data from your collections:
+
+```ts
+const stats = {
+  totalUsers: await ctx.users.countAsync(),
+  activeUsers: await ctx.users.where((u) => u.isActive).countAsync(),
+};
+```
+
+## Patterns
+
+- **Single Source of Truth**: Collections serve as your data source
+- **Automatic Updates**: Live queries keep UI in sync
+- **Explicit Persistence**: Changes saved with `saveChangesAsync()`
+- **Type Safety**: Full TypeScript support
+
+## Related Guides
+
+- **[Live Queries](live-queries.md)** - Reactive data patterns
+- **[Syncing](syncing.md)** - Sync with remote sources
+- **[Change Tracking](/concepts/change-tracking/)** - Understanding change tracking
+- **[Data Manipulation](data-manipulation.md)** - Working with your data

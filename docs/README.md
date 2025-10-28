@@ -24,7 +24,7 @@ Routier is a reactive data toolkit: schemas + collections + live queries + optim
 ## Guides
 
 - Live Queries: /guides/live-queries.md
-- Optimistic Updates: /guides/optimistic-updates.md
+- Optimistic Replication: /guides/optimistic-replication.md
 - State Management: /guides/state-management.md
 - Data Manipulation: /guides/data-manipulation.md
 - History Tracking: /guides/history-tracking.md

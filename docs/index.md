@@ -171,7 +171,7 @@ your way while providing powerful data behavior.
 ## Guides
 
 - [Live Queries]({{ site.baseurl }}/guides/live-queries.html)
-- [Optimistic Updates]({{ site.baseurl }}/guides/optimistic-updates.html)
+- [Optimistic Replication]({{ site.baseurl }}/guides/optimistic-replication.html)
 - [State Management]({{ site.baseurl }}/guides/state-management.html)
 - [Data Manipulation]({{ site.baseurl }}/guides/data-manipulation.html)
 - [History Tracking]({{ site.baseurl }}/guides/history-tracking.html)

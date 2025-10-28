@@ -96,13 +96,13 @@ if (products.status === "success") {
 }
 ```
 
-## What's Next?
+## Related Topics
 
-- **[React Hooks](./hooks/)** - Learn how `useQuery` works with detailed examples
+- **[React Hooks](./hooks/)** - Detailed guide to `useQuery` and other hooks
 - **[Best Practices](./best-practices/)** - Patterns, performance tips, and common scenarios
 
-## Related Guides
+## Concepts You'll Need
 
 - [Live Queries](/guides/live-queries/) - Understanding live queries in depth
-- [Optimistic Updates](/guides/optimistic-updates/) - Optimistic update patterns
+- [Optimistic Replication](/guides/optimistic-replication/) - Fast reads with memory replication
 - [State Management](/guides/state-management/) - Managing application state

@@ -341,5 +341,5 @@ async function addProduct(product: Product) {
 ## See Also
 
 - [Live Queries Guide](../../../guides/live-queries/) - Understanding live queries
-- [Optimistic Updates Guide](../../../guides/optimistic-updates/) - Using optimistic updates
+- [Optimistic Replication Guide](../../../guides/optimistic-replication/) - Using optimistic replication
 - [State Management Guide](../../../guides/state-management/) - Managing application state

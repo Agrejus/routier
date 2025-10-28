@@ -43,28 +43,6 @@ Live queries in Routier allow you to subscribe to data changes and automatically
 ### Simple Live Query
 
 ```ts
-import { DataStore } from "@routier/datastore";
-import { s } from "@routier/core/schema";
-import { MemoryPlugin } from "@routier/memory-plugin";
-
-const userSchema = s
-  .define("users", {
-    id: s.string().key().identity(),
-    email: s.string().distinct(),
-    name: s.string(),
-    createdAt: s.date().default(() => new Date()),
-  })
-  .compile();
-
-class Ctx extends DataStore {
-  users = this.collection(userSchema).create();
-  constructor() {
-    super(new MemoryPlugin("app"));
-  }
-}
-
-const ctx = new Ctx();
-
 // Create a live query that updates automatically
 const liveUsers = ctx.users.subscribe().toArrayAsync();
 
@@ -213,12 +191,12 @@ class UserComponent {
 // Live dashboard with multiple live queries
 const dashboard = {
   totalUsers: ctx.users.subscribe().countAsync(),
-  activeUsers: ctx.users
-    .where((u) => u.isActive === true)
+  activeProducts: ctx.products
+    .where((p) => p.inStock === true)
     .subscribe()
     .countAsync(),
-  recentUsers: ctx.users
-    .orderByDescending((u) => u.createdAt)
+  topSellers: ctx.products
+    .orderByDescending((p) => p.sales)
     .take(5)
     .subscribe()
     .toArrayAsync(),
@@ -262,14 +240,15 @@ const staticConfig = ctx.config.toArrayAsync();
 ### 2. **Apply Filters Before Subscribing**
 
 ```ts
-// Good: Filter before subscribing
+// Good: Filter before subscribing to reduce tracked changes
 const liveActiveUsers = ctx.users
   .where((u) => u.isActive === true)
   .subscribe()
   .toArrayAsync();
 
-// Less efficient: Subscribe to all data
+// Less efficient: Subscribe to all data, then filter in component
 const allUsers = ctx.users.subscribe().toArrayAsync();
+// Component would need to filter: allUsers.data?.filter(u => u.isActive)
 ```
 
 ### 3. **Clean Up Subscriptions**
