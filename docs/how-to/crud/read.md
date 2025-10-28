@@ -78,6 +78,7 @@ const results = await dataStore.products
 
 ## Next Steps
 
+- [Data Manipulation](../../guides/data-manipulation) - Learn about proxy-based updates and array/object manipulation
 - [Queries Documentation](../../concepts/queries/) - Comprehensive querying guide with examples
 - [Create Operations](create.md) - Learn how to add new entities
 - [Update Operations](update.md) - Learn how to modify existing entities

@@ -302,6 +302,7 @@ await ctx.users.removeAsync(user); // Related data deleted automatically
 
 ## Next Steps
 
+- [Data Manipulation](../../guides/data-manipulation) - Learn about proxy-based updates and array/object manipulation
 - [Create Operations](create.md) - Learn how to add new entities
 - [Read Operations](read.md) - Learn how to query and retrieve data
 - [Update Operations](update.md) - Learn how to modify existing entities

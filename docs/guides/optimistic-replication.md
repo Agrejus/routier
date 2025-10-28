@@ -34,15 +34,11 @@ This architecture provides the best of both worlds: lightning-fast reads from me
 
 ## Why is it Fast?
 
-### Reads Are Lightning Fast
+### Immediate Read Performance
 
-All reads happen in memory, which is orders of magnitude faster than disk-based storage:
+All reads happen in memory, avoiding the latency of disk-based storage like IndexedDB. This means your queries execute immediately without waiting for database I/O operations.
 
-- **Memory access**: ~0.1 microseconds
-- **IndexedDB access**: ~10-100 milliseconds
-- **Result**: 100-1000x faster reads
-
-### Write Operations = Non-Blocking
+### Non-Blocking Writes
 
 Writes go to the persistent source plugin, but since reads come from memory, write latency doesn't affect your UI:
 

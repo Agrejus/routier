@@ -49,137 +49,113 @@ client-side applications and modern browser storage technologies:
 
 ## Philosophy
 
-- Toolkit, not an ORM: Routier augments any datastore. It doesn’t bake in
-  validation or force a query language; bring your own validation if needed (Zod, AJV).
-- Front-end first: Tuned for client runtimes and local-first patterns; also
-  works on the backend if needed.
-- Thin and fast by design: Internally avoids promises/async-await in hot paths,
-  opting for minimal abstractions and callbacks to reduce overhead.
-- Portable by plugins: Storage-specific behavior is encapsulated in plugins.
-  Swap plugins to move between stores without rewriting app code.
+Routier follows a simple, clear philosophy that guides every design decision.
+
+**Toolkit, not an ORM**: Routier augments any datastore without forcing a particular approach. Bring your own validation (Zod, AJV) and keep full control of your data layer.
+
+**Front-end first**: Optimized for client runtimes and local-first patterns, with performance tuned for the browser. Also works beautifully on the backend.
+
+**Thin and fast by design**: Core hot paths avoid promises/async-await, using minimal abstractions and callbacks for maximum performance.
+
+**Portable by plugins**: Storage-specific behavior lives in plugins. Swap between IndexedDB, SQLite, Local Storage, or any backend without changing your app code.
+
+[Learn about our philosophy →]({{ site.baseurl }}/getting-started/overview)
 
 ## Core Features
 
-### Schemas: Transformation and Structure
+Routier provides a comprehensive toolkit for managing data in modern applications.
 
-Routier schemas focus on structure, transformation, and behavior. Type checking is
-intentionally left to libraries like Zod or AJV.
+### 📐 **Schemas**
 
-- Defaults
-  - Static or functional defaults for create/update (e.g., timestamps, status).
-- Distinct (uniqueness)
-  - Enforce unique fields even if your store lacks native support.
-- Property Remapping
-  - Map awkward source names (e.g., `__id`) to clean domain names via `.from()`.
-- Identity
-  - Let Routier generate IDs or declare that your database issues them.
-- Indexes
-  - Single or composite indexes for faster lookups and views.
-- Nullability and Optionality
-  - Encode presence semantics explicitly; support read-only fields as well.
-- Serialization Hooks
-  - Per-field `serialize`/`deserialize` to translate store formats (e.g., dates).
-- Computed Properties
-  - Derive fields before save or on read (e.g., `fullName`, `age`).
-- Methods on Records
-  - Attach functions like `getAge()` or `getFullName()` to returned objects.
-    These are stripped before persistence and never serialized.
+Define your data structure with power and flexibility:
 
-### Collections, Live Queries, and Mutations
+- **Defaults**: Automatic values for new records (timestamps, statuses)
+- **Identity**: Auto-generated or database-managed primary keys
+- **Indexes**: Fast lookups with single or composite indexes
+- **Computed Properties**: Derived fields that update automatically
+- **Serialization**: Transform data when saving or loading (e.g., dates)
+- **Property Mapping**: Clean up awkward database field names
+- **Methods**: Attach functions to entities (stripped before persistence)
 
-- Collections
-  - Typed entity sets backed by any storage plugin.
-- Live Queries
-  - Reactive queries that update automatically when underlying data changes.
-- Optimistic Mutations
-  - Instant UI updates with automatic rollback on failure.
+Type checking is handled by libraries like Zod or AJV—Routier focuses on structure and transformation.
 
-### Views, Replication, and Caching
+### 🔄 **Live Queries**
 
-- Views
-  - Create views even if your datastore doesn’t support them natively.
-- Replication
-  - Synchronize between stores (e.g., local-first → remote) with control over
-    direction and conflicts.
-- Caching
-  - Smart caching and predictable invalidation for fast read paths.
+Reactive data that updates automatically:
 
-### Plugin Architecture
+- Subscriptions that push updates when data changes
+- Zero-config reactivity for real-time UIs
+- Built-in change detection and propagation
 
-- Universal Compatibility
-  - Works with any storage backend through plugins.
-- Easy Migration
-  - Swap storage solutions without changing your domain layer or app code.
-- Extensible
-  - Create custom plugins for specialized use cases.
+### ⚡ **Performance**
+
+Optimized for speed:
+
+- **Optimistic Replication**: Reads from memory, writes persist asynchronously
+- **Smart Caching**: Predictable invalidation for fast reads
+- **Database Views**: Create views even without native support
+
+### 🔌 **Plugin Architecture**
+
+Storage that adapts to your needs:
+
+- **Any Backend**: Works with IndexedDB, SQLite, Local Storage, OPFS, and more
+- **Easy Migration**: Swap storage without changing your code
+- **Extensible**: Build custom plugins for specialized needs
 
 ## Performance Philosophy
 
-Routier is built for maximum performance. In the core architecture, we
-intentionally avoided promises and async/await to reduce microtask scheduling
-and hidden chains in hot paths. The result: a thin, fast layer that stays out of
-your way while providing powerful data behavior.
+Routier is built for maximum performance. We intentionally avoided promises and async/await in core hot paths to reduce microtask scheduling overhead. The result is a thin, fast layer that provides powerful data behavior without getting in your way.
+
+Performance isn't just about speed—it's about predictable, consistent behavior that scales with your application. [See how it works →]({{ site.baseurl }}/getting-started/overview)
 
 ## How Routier Fits Your Stack
 
-- Enhance, don’t replace
-  - Keep your existing datastore. Routier adds structure (schemas, defaults,
-    serialization), speed (indexes, caching), and ergonomics (live queries,
-    optimistic updates).
-- Swap without rewrites
-  - Move from IndexedDB to SQLite or adopt OPFS by changing the
-    plugin; preserve your domain model and app code.
-- Type checking by choice
-  - Use Zod or AJV for input/output validation; Routier handles transformation
-    and persistence concerns.
-- Client-first, backend-capable
-  - Designed for the browser and local-first, adaptable to backend runtimes.
+Routier enhances your existing setup rather than replacing it, giving you the benefits you need without the constraints you don't.
 
-## Typical Workflow
+**Enhance, don't replace**: Keep your existing datastore. Add structure (schemas, defaults, serialization), speed (indexes, caching), and better ergonomics (live queries, optimistic updates).
 
-1. Define collections and schemas
-   - Describe fields, defaults, identity, indexes, and per-field serializers.
-   - Add computed fields and instance methods for richer domain objects.
-2. Choose a storage plugin
-   - IndexedDB, Local Storage, SQLite/PG‑Lite, OPFS, or your custom adapter.
-3. Read and observe
-   - Use live queries to reflect changes immediately in your UI and state.
-4. Write with confidence
-   - Perform optimistic mutations; rely on indexes and caching for speed.
-5. Replicate and evolve
-   - Synchronize local-first data with remote sources—without changing your
-     domain model.
+**Swap without rewrites**: Move from IndexedDB to SQLite or adopt OPFS by changing the plugin. Your domain model and app code remain unchanged.
 
-## How it works
+**Type checking by choice**: Use Zod or AJV for validation. Routier handles transformation and persistence concerns separately.
 
-- Define schemas: type-safe entity definitions with indexes and modifiers
-- Create collections: typed sets of entities backed by a plugin
-- Use live queries: reactive queries across one or more collections
-- Make optimistic mutations: instant UI updates with automatic rollback
+**Client-first, backend-capable**: Designed for the browser and local-first workflows, adaptable to backend runtimes as needed.
 
-## Getting Started
+[Installation guide →]({{ site.baseurl }}/getting-started/installation) | [Configuration →]({{ site.baseurl }}/tutorials/configuration)
 
-- [Installation]({{ site.baseurl }}/getting-started/installation)
-- [Quick Start]({{ site.baseurl }}/getting-started/quick-start)
-- [React Adapter]({{ site.baseurl }}/getting-started/react-adapter)
+## Getting Started with Routier
 
-## Concepts
+Here's the typical workflow when building with Routier:
 
-- [Schemas]({{ site.baseurl }}/concepts/schema/)
-- [Queries]({{ site.baseurl }}/concepts/queries/)
+**1. Define schemas and collections**: Describe your data structure with fields, defaults, indexes, and computed properties. [Creating schemas →]({{ site.baseurl }}/concepts/schema/creating-a-schema)
 
-## Guides
+**2. Choose a storage plugin**: Pick IndexedDB, Local Storage, SQLite, OPFS, or build your own. [Built-in plugins →]({{ site.baseurl }}/integrations/plugins/built-in-plugins/)
 
-- [Live Queries]({{ site.baseurl }}/guides/live-queries.html)
-- [Optimistic Replication]({{ site.baseurl }}/guides/optimistic-replication.html)
-- [State Management]({{ site.baseurl }}/guides/state-management.html)
-- [Data Manipulation]({{ site.baseurl }}/guides/data-manipulation.html)
-- [History Tracking]({{ site.baseurl }}/guides/history-tracking.html)
-- [Syncing]({{ site.baseurl }}/guides/syncing.html)
-- [Entity Tagging]({{ site.baseurl }}/guides/entity-tagging.html)
+**3. Read with live queries**: Subscribe to data changes for reactive UIs that update automatically. [Live queries guide →]({{ site.baseurl }}/guides/live-queries)
 
-## Integrations
+**4. Write with confidence**: Use optimistic replication for fast writes. Changes tracked automatically until you save. [State management →]({{ site.baseurl }}/guides/state-management)
 
-- [React Integration]({{ site.baseurl }}/integrations/react/)
-- [Built-in Plugins]({{ site.baseurl }}/integrations/plugins/built-in-plugins/)
-- [Create Your Own Plugin]({{ site.baseurl }}/integrations/plugins/create-your-own/)
+**5. Evolve and scale**: Sync data, add more collections, swap storage backends—all without changing your domain code.
+
+[Quick start guide →]({{ site.baseurl }}/getting-started/quick-start)
+
+## How It Works
+
+Routier provides a simple, consistent API that works across all storage backends.
+
+**Define schemas**: Type-safe entity definitions with indexes, computed properties, and modifiers. [Schema guide →]({{ site.baseurl }}/concepts/schema/)
+
+**Create collections**: Typed entity sets backed by your chosen plugin. [Collections overview →]({{ site.baseurl }}/how-to/collections/)
+
+**Query your data**: Filter, sort, aggregate, and paginate with a fluent query API. [Query guide →]({{ site.baseurl }}/concepts/queries/)
+
+**Watch for changes**: Subscribe to live queries that update when data changes. [Live queries →]({{ site.baseurl }}/guides/live-queries)
+
+## Next Steps
+
+Ready to get started? Choose your path:
+
+**[Installation]({{ site.baseurl }}/getting-started/installation)** - Install packages and dependencies  
+**[Quick Start]({{ site.baseurl }}/getting-started/quick-start)** - Build your first app in minutes  
+**[React Integration]({{ site.baseurl }}/integrations/react/)** - Use Routier with React  
+**[View All Guides]({{ site.baseurl }}/guides/)** - Explore comprehensive guides

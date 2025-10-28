@@ -146,5 +146,6 @@ Schemas are compiled into optimized JavaScript functions that eliminate runtime 
 2. **[Understand property types](property-types/README.md)** - Choose the right types for your data
 3. **[Apply modifiers](modifiers/README.md)** - Customize behavior and constraints
 4. **[Learn about type inference](infer-type.md)** - Leverage TypeScript integration
+5. **[Data Manipulation](/guides/data-manipulation/)** - Learn how to update entities with proxies
 
 Schemas are the foundation of Routier's data management system. They provide the structure and rules that make your data consistent, safe, and performant.

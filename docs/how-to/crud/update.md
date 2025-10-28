@@ -262,6 +262,7 @@ await ctx.saveChangesAsync();
 
 ## Next Steps
 
+- [Data Manipulation](../../guides/data-manipulation) - Learn about proxy-based updates and array/object manipulation
 - [Create Operations](create.md) - Learn how to add new entities
 - [Read Operations](read.md) - Learn how to query and retrieve data
 - [Delete Operations](delete.md) - Learn how to remove entities

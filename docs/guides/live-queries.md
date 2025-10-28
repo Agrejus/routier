@@ -16,6 +16,7 @@ Live queries in Routier allow you to subscribe to data changes and automatically
 ## Quick Navigation
 
 - [Quick Reference](#quick-reference)
+- [Important: Callbacks vs Async](#important-callbacks-vs-async)
 - [Basic Live Queries](#basic-live-queries)
   - [Simple Live Query](#simple-live-query)
   - [Live Query with Filtering](#live-query-with-filtering)
@@ -33,10 +34,29 @@ Live queries in Routier allow you to subscribe to data changes and automatically
 
 ## Quick Reference
 
-| Method          | Description         | Example                                   |
-| --------------- | ------------------- | ----------------------------------------- |
-| `subscribe()`   | Enable live updates | `ctx.products.subscribe().toArrayAsync()` |
-| `unsubscribe()` | Stop live updates   | `query.unsubscribe()`                     |
+| Method          | Description         | Example                                      |
+| --------------- | ------------------- | -------------------------------------------- |
+| `subscribe()`   | Enable live updates | `ctx.products.subscribe().toArray(callback)` |
+| `unsubscribe()` | Stop live updates   | `query.unsubscribe()`                        |
+
+## Important: Callbacks vs Async
+
+When using `.subscribe()`, you **must use callback-based methods** (not async methods):
+
+```ts
+// ✅ Correct: Use callbacks with .subscribe()
+ctx.users.subscribe().toArray((result) => {
+  if (result.ok === "success") {
+    console.log(result.data);
+  }
+});
+
+// ❌ Incorrect: Cannot use async methods with .subscribe()
+// This will NOT work:
+const data = await ctx.users.subscribe().toArrayAsync();
+```
+
+The reason: subscriptions need to trigger the callback whenever data changes, which can't be done with promises. Callbacks can be invoked at any time, making them perfect for reactive updates.
 
 ## Basic Live Queries
 
@@ -44,19 +64,27 @@ Live queries in Routier allow you to subscribe to data changes and automatically
 
 ```ts
 // Create a live query that updates automatically
-const liveUsers = ctx.users.subscribe().toArrayAsync();
+ctx.users.subscribe().toArray((result) => {
+  if (result.ok === "success") {
+    console.log(result.data); // Live data updates automatically
+  }
+});
 
-// The liveUsers will automatically update when users are added, updated, or removed
+// The query will automatically update when users are added, updated, or removed
 ```
 
 ### Live Query with Filtering
 
 ```ts
 // Live query with filtering - updates when filtered data changes
-const liveActiveUsers = ctx.users
+ctx.users
   .where((u) => u.isActive === true)
   .subscribe()
-  .toArrayAsync();
+  .toArray((result) => {
+    if (result.ok === "success") {
+      console.log("Active users:", result.data);
+    }
+  });
 
 // This will automatically update when:
 // - New active users are added
@@ -68,10 +96,14 @@ const liveActiveUsers = ctx.users
 
 ```ts
 // Live query with sorting - maintains sort order as data changes
-const liveSortedUsers = ctx.users
+ctx.users
   .orderBy((u) => u.name)
   .subscribe()
-  .toArrayAsync();
+  .toArray((result) => {
+    if (result.ok === "success") {
+      console.log("Sorted users:", result.data);
+    }
+  });
 
 // This will automatically update and maintain alphabetical order when:
 // - New users are added
@@ -85,13 +117,24 @@ const liveSortedUsers = ctx.users
 
 ```ts
 // Live count that updates automatically
-const liveUserCount = ctx.users.subscribe().countAsync();
+ctx.users.subscribe().count((result) => {
+  if (result.ok === "success") {
+    console.log("User count:", result.data);
+  }
+});
 
 // Live sum that updates automatically
-const liveTotalValue = ctx.products
+ctx.products
   .where((p) => p.inStock === true)
   .subscribe()
-  .sumAsync((p) => p.price);
+  .sum(
+    (result, selector) => {
+      if (result.ok === "success") {
+        console.log("Total value:", result.data);
+      }
+    },
+    (p) => p.price
+  );
 ```
 
 ### Live Pagination
@@ -101,11 +144,15 @@ const liveTotalValue = ctx.products
 const pageSize = 10;
 const currentPage = 0;
 
-const livePage = ctx.users
+ctx.users
   .skip(currentPage * pageSize)
   .take(pageSize)
   .subscribe()
-  .toArrayAsync();
+  .toArray((result) => {
+    if (result.ok === "success") {
+      console.log("Current page:", result.data);
+    }
+  });
 
 // This will update when users are added/removed/modified
 // affecting the current page
@@ -115,10 +162,14 @@ const livePage = ctx.users
 
 ```ts
 // Live single item query
-const liveFirstUser = ctx.users
+ctx.users
   .orderBy((u) => u.createdAt)
   .subscribe()
-  .firstOrUndefinedAsync();
+  .firstOrUndefined((result) => {
+    if (result.ok === "success") {
+      console.log("First user:", result.data);
+    }
+  });
 
 // This will update when the first user changes
 ```
@@ -129,22 +180,32 @@ const liveFirstUser = ctx.users
 
 ```ts
 // Create a live query
-const liveQuery = ctx.users.subscribe().toArrayAsync();
+const subscription = ctx.users.subscribe().toArray((result) => {
+  if (result.ok === "success") {
+    console.log(result.data);
+  }
+});
 
 // Later, unsubscribe to stop updates
-liveQuery.unsubscribe();
+subscription.unsubscribe();
 ```
 
 ### Conditional Live Queries
 
 ```ts
 // Only create live query if needed
-let liveUsers = null;
+let unsubscribe: (() => void) | null = null;
 
 if (shouldUseLiveQuery) {
-  liveUsers = ctx.users.subscribe().toArrayAsync();
+  unsubscribe = ctx.users.subscribe().toArray((result) => {
+    if (result.ok === "success") {
+      // Handle data
+    }
+  }).unsubscribe;
 } else {
-  liveUsers = ctx.users.toArrayAsync();
+  ctx.users.toArrayAsync().then((data) => {
+    // Handle data
+  });
 }
 ```
 
@@ -154,14 +215,22 @@ if (shouldUseLiveQuery) {
 
 ```ts
 // Good: Apply filters before subscribing
-const liveExpensiveProducts = ctx.products
+ctx.products
   .where((p) => p.price > 100)
   .subscribe()
-  .toArrayAsync();
+  .toArray((result) => {
+    if (result.ok === "success") {
+      // Handle expensive products
+    }
+  });
 
 // Less efficient: Subscribe to all data then filter
-const allProducts = ctx.products.subscribe().toArrayAsync();
-const expensiveProducts = allProducts.filter((p) => p.price > 100);
+ctx.products.subscribe().toArray((result) => {
+  if (result.ok === "success") {
+    const expensiveProducts = result.data.filter((p) => p.price > 100);
+    // Handle filtered results
+  }
+});
 ```
 
 ### Memory Management
@@ -169,15 +238,20 @@ const expensiveProducts = allProducts.filter((p) => p.price > 100);
 ```ts
 // Clean up live queries when components unmount
 class UserComponent {
-  private liveUsers: any = null;
+  private unsubscribe: (() => void) | null = null;
 
-  async initialize() {
-    this.liveUsers = ctx.users.subscribe().toArrayAsync();
+  initialize() {
+    const subscription = ctx.users.subscribe().toArray((result) => {
+      if (result.ok === "success") {
+        // Handle data
+      }
+    });
+    this.unsubscribe = subscription.unsubscribe;
   }
 
   destroy() {
-    if (this.liveUsers) {
-      this.liveUsers.unsubscribe();
+    if (this.unsubscribe) {
+      this.unsubscribe();
     }
   }
 }
@@ -189,18 +263,30 @@ class UserComponent {
 
 ```ts
 // Live dashboard with multiple live queries
-const dashboard = {
-  totalUsers: ctx.users.subscribe().countAsync(),
-  activeProducts: ctx.products
-    .where((p) => p.inStock === true)
-    .subscribe()
-    .countAsync(),
-  topSellers: ctx.products
-    .orderByDescending((p) => p.sales)
-    .take(5)
-    .subscribe()
-    .toArrayAsync(),
-};
+ctx.users.subscribe().count((result) => {
+  if (result.ok === "success") {
+    console.log("Total users:", result.data);
+  }
+});
+
+ctx.products
+  .where((p) => p.inStock === true)
+  .subscribe()
+  .count((result) => {
+    if (result.ok === "success") {
+      console.log("Active products:", result.data);
+    }
+  });
+
+ctx.products
+  .orderByDescending((p) => p.sales)
+  .take(5)
+  .subscribe()
+  .toArray((result) => {
+    if (result.ok === "success") {
+      console.log("Top sellers:", result.data);
+    }
+  });
 ```
 
 ### Live Search Results
@@ -208,21 +294,29 @@ const dashboard = {
 ```ts
 // Live search that updates as user types
 const searchTerm = "john";
-const liveSearchResults = ctx.users
+ctx.users
   .where((u) => u.name.toLowerCase().includes(searchTerm.toLowerCase()))
   .subscribe()
-  .toArrayAsync();
+  .toArray((result) => {
+    if (result.ok === "success") {
+      console.log("Search results:", result.data);
+    }
+  });
 ```
 
 ### Live Notifications
 
 ```ts
 // Live query for unread notifications
-const liveUnreadNotifications = ctx.notifications
+ctx.notifications
   .where((n) => n.isRead === false)
   .orderByDescending((n) => n.createdAt)
   .subscribe()
-  .toArrayAsync();
+  .toArray((result) => {
+    if (result.ok === "success") {
+      console.log("Unread notifications:", result.data);
+    }
+  });
 ```
 
 ## Best Practices
@@ -231,47 +325,75 @@ const liveUnreadNotifications = ctx.notifications
 
 ```ts
 // Good: Use live queries for data that changes frequently
-const liveMessages = ctx.messages.subscribe().toArrayAsync();
+ctx.messages.subscribe().toArray((result) => {
+  if (result.ok === "success") {
+    console.log("Messages:", result.data);
+  }
+});
 
 // Less useful: Static data doesn't need live queries
-const staticConfig = ctx.config.toArrayAsync();
+const staticConfig = await ctx.config.toArrayAsync();
 ```
 
 ### 2. **Apply Filters Before Subscribing**
 
 ```ts
 // Good: Filter before subscribing to reduce tracked changes
-const liveActiveUsers = ctx.users
+ctx.users
   .where((u) => u.isActive === true)
   .subscribe()
-  .toArrayAsync();
+  .toArray((result) => {
+    if (result.ok === "success") {
+      // Handle active users
+    }
+  });
 
 // Less efficient: Subscribe to all data, then filter in component
-const allUsers = ctx.users.subscribe().toArrayAsync();
-// Component would need to filter: allUsers.data?.filter(u => u.isActive)
+ctx.users.subscribe().toArray((result) => {
+  if (result.ok === "success") {
+    const activeUsers = result.data.filter((u) => u.isActive);
+    // Handle filtered results
+  }
+});
 ```
 
 ### 3. **Clean Up Subscriptions**
 
 ```ts
 // Always unsubscribe when done
-const liveQuery = ctx.users.subscribe().toArrayAsync();
+const subscription = ctx.users.subscribe().toArray((result) => {
+  if (result.ok === "success") {
+    // Handle data
+  }
+});
 
 // Clean up
-liveQuery.unsubscribe();
+subscription.unsubscribe();
 ```
 
 ### 4. **Use Appropriate Terminal Methods**
 
 ```ts
-// Use countAsync for counts
-const liveCount = ctx.users.subscribe().countAsync();
+// Use count() for counts
+ctx.users.subscribe().count((result) => {
+  if (result.ok === "success") {
+    console.log("Count:", result.data);
+  }
+});
 
-// Use toArrayAsync for lists
-const liveList = ctx.users.subscribe().toArrayAsync();
+// Use toArray() for lists
+ctx.users.subscribe().toArray((result) => {
+  if (result.ok === "success") {
+    console.log("List:", result.data);
+  }
+});
 
-// Use firstAsync for single items
-const liveFirst = ctx.users.subscribe().firstAsync();
+// Use firstOrUndefined() for single items
+ctx.users.subscribe().firstOrUndefined((result) => {
+  if (result.ok === "success") {
+    console.log("First:", result.data);
+  }
+});
 ```
 
 ## Error Handling
@@ -279,14 +401,17 @@ const liveFirst = ctx.users.subscribe().firstAsync();
 ### Live Query Error Handling
 
 ```ts
-try {
-  const liveUsers = ctx.users.subscribe().toArrayAsync();
-  // Handle live updates
-} catch (error) {
-  console.error("Live query error:", error);
-  // Fallback to regular query
-  const users = await ctx.users.toArrayAsync();
-}
+ctx.users.subscribe().toArray((result) => {
+  if (result.ok === "success") {
+    // Handle live updates
+  } else {
+    console.error("Live query error:", result.error);
+    // Fallback to regular query
+    ctx.users.toArrayAsync().then((users) => {
+      // Handle fallback data
+    });
+  }
+});
 ```
 
 ## Related Topics

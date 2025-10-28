@@ -214,6 +214,7 @@ for (let i = 0; i < data.length; i += batchSize) {
 
 ## Next Steps
 
+- [Data Manipulation](../../guides/data-manipulation) - Learn about proxy-based updates and array/object manipulation
 - [Read Operations](read.md) - Learn how to query and retrieve data
 - [Update Operations](update.md) - Learn how to modify existing entities
 - [Delete Operations](delete.md) - Learn how to remove entities

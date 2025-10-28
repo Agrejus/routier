@@ -101,6 +101,7 @@ For advanced scenarios, Routier supports callback-based operations using a discr
 
 ## Next Steps
 
+- [Data Manipulation](../../guides/data-manipulation) - Learn about proxy-based updates and array/object manipulation
 - [Create Operations](create.md) - Learn how to add new entities with detailed examples
 - [Read Operations](read.md) - Learn how to query and retrieve data with advanced filtering
 - [Update Operations](update.md) - Learn how to modify existing entities with change tracking

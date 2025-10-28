@@ -31,9 +31,14 @@ class AppContext extends DataStore {
 Keep UI in sync with data changes automatically:
 
 ```ts
-const liveUsers = ctx.users.subscribe().toArrayAsync();
-// Automatically updates when users change
+ctx.users.subscribe().toArray((result) => {
+  if (result.ok === "success") {
+    console.log("Users:", result.data); // Automatically updates when users change
+  }
+});
 ```
+
+Note: With `.subscribe()`, you must use callback-based methods (not async methods like `toArrayAsync()`).
 
 ### Change Tracking
 
