@@ -70,6 +70,7 @@ const stats = {
 ## Related Guides
 
 - **[Live Queries](live-queries.md)** - Reactive data patterns
+- **[Views](/how-to/collections/views.md)** - Create read-only derived collections
 - **[Syncing](syncing.md)** - Sync with remote sources
 - **[Change Tracking](/concepts/change-tracking/)** - Understanding change tracking
 - **[Data Manipulation](data-manipulation.md)** - Working with your data

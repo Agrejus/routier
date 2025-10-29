@@ -2,9 +2,10 @@ import { CollectionBase } from '../collections/CollectionBase';
 import { Derive, DeriveResponse } from '../view-builder/ViewBuilder';
 import { CollectionOptions, CollectionPipelines } from '../types';
 import { IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
-import { ChangeTrackingType, CompiledSchema, InferCreateType, InferType } from '@routier/core/schema';
+import { ChangeTrackingType, CompiledSchema, IdType, InferCreateType, InferType } from '@routier/core/schema';
 import { BulkPersistChanges, SchemaCollection, SchemaPersistChanges } from '@routier/core/collections';
 import { CallbackResult, noop, Result, uuid } from '@routier/core';
+import { QueryableAsync } from '../queryable/QueryableAsync';
 
 /**
  * View that only allows data selection. Cannot add, remove, or update data.  Data is computed
@@ -31,24 +32,71 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
         // Compute the view right away
         this.derive = (cb) => {
             return derive(data => {
-                const schemas = new SchemaCollection();
 
-                schemas.set(this.schema.id, this.schema as CompiledSchema<Record<string, unknown>>);
-                const operation = new BulkPersistChanges();
-                const schemaChanges = new SchemaPersistChanges();
-                schemaChanges.adds = data;
+                if (data.length === 0) {
+                    return cb([]);
+                }
 
-                operation.set(this.schema.id, schemaChanges);
+                const idProperties = this.schema.idProperties;
+                let query: QueryableAsync<InferType<TEntity>, InferType<TEntity>>;
 
-                // Automatically save the view
-                persist({
-                    id: uuid(8),
-                    operation,
-                    schemas,
-                    source: "view"
-                }, noop);
+                for (let i = 0, length = idProperties.length; i < length; i++) {
+                    const idProperty = idProperties[i];
+                    const ids = data.map(x => (x as Record<string, IdType>)[idProperty.name]);
 
-                cb(data);
+                    query = this.where(([x, p]) => p.ids.includes((x as Record<string, IdType>)[p.name]), { ids, name: idProperty.name });
+                }
+
+                query.toArray(toArrayResult => {
+
+                    if (toArrayResult.ok === "error") {
+                        return cb([]);
+                    }
+
+                    const schemas = new SchemaCollection();
+
+                    schemas.set(this.schema.id, this.schema as CompiledSchema<Record<string, unknown>>);
+                    const operation = new BulkPersistChanges();
+                    const schemaChanges = new SchemaPersistChanges();
+
+                    if (toArrayResult.data.length === 0) {
+                        schemaChanges.adds = data;
+                    } else {
+
+                        // compute changes
+                        for (let i = 0, length = data.length; i < length; i++) {
+                            const item = data[i];
+                            const existing = toArrayResult.data.find(x => this.schema.compareIds(item, x))
+
+                            if (existing != null) {
+
+                                if (this.schema.compare(existing, item)) {
+                                    continue; // Nothing has changed
+                                }
+
+                                schemaChanges.updates.push({
+                                    changeType: "markedDirty", // We are not sure what changed, mark it dirty
+                                    delta: {},
+                                    entity: item
+                                });
+                                continue;
+                            }
+                            schemaChanges.adds.push(item);
+                        }
+                    }
+
+                    operation.set(this.schema.id, schemaChanges);
+
+                    // Automatically save the view
+                    persist({
+                        id: uuid(8),
+                        operation,
+                        schemas,
+                        source: "view"
+                    }, noop);
+
+                    cb(data);
+                });
             });
         };
 

@@ -290,8 +290,29 @@ function assertIsValueExpression(value: unknown): asserts value is ValueExpressi
 }
 
 // Helper function to detect if a string is a property path
-const isPropertyPath = (value: string): boolean => {
-    return value.includes('.') && value.match(/^[a-zA-Z0-9_.]+$/) !== null;
+const isPropertyPath = (value: string, params?: { name: string, data: any }): boolean => {
+    // Check for dot notation (e.g., entity.name)
+    if (value.includes('.') && value.match(/^[a-zA-Z0-9_.]+$/) !== null) {
+        return true;
+    }
+    // Check for bracket notation with literal strings (e.g., entity["name"], entity['name'], or entity[\"name\"] with escaped quotes)
+    const literalBracketPattern = /^[a-zA-Z_$][a-zA-Z0-9_$]*(\[\\?["'][^"']+\\?["']\])+$/;
+    if (literalBracketPattern.test(value)) {
+        return true;
+    }
+    // Check for bracket notation with parameter paths (e.g., entity[p.name], entity[params.property])
+    if (params && value.includes('[') && value.includes(']')) {
+        const bracketMatch = value.match(/\[([^\]]+)\]/);
+        if (bracketMatch) {
+            const bracketContent = bracketMatch[1].trim();
+            // Check if it's a parameter path - should start with params.name followed by dot, or be just params.name
+            const isParamPath = bracketContent.startsWith(params.name + '.') || bracketContent === params.name;
+            if (isParamPath || (bracketContent.includes('.') && bracketContent.match(PARAM_PATH_REGEX))) {
+                return true;
+            }
+        }
+    }
+    return false;
 };
 
 // Helper function to determine if we need to swap the operator for reversed comparisons
@@ -335,7 +356,7 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
             // For includes method, we need to swap left and right sides
             if (methodMatch[2] === 'includes') {
 
-                const property = getProperty(schema, rightSide);
+                const property = getProperty(schema, rightSide, params);
                 const value = getValue(leftSide, params); // retrieve the original value
                 const serializer = property.property.valueSerializer;
 
@@ -347,7 +368,7 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
             }
         } else {
             // Normal case: property on left, value on right
-            const property = getProperty(schema, leftSide);
+            const property = getProperty(schema, leftSide, params);
             const serializer = property.property.valueSerializer;
             const value = getValue(rightSide, params); // retrieve the original value
 
@@ -372,7 +393,7 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
             comparator.negated = isNegation;
         }
 
-        const property = getProperty(schema, valueTransformMatch[1].trim());
+        const property = getProperty(schema, valueTransformMatch[1].trim(), params);
         const serializer = property.property.valueSerializer;
         const value = getValue(valueTransformMatch[3], params); // retrieve the original value
 
@@ -411,7 +432,7 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
         }
 
         // Create the property expression for the left side with transformer
-        const property = getProperty(schema, transformMethodMatch[1]);
+        const property = getProperty(schema, transformMethodMatch[1], params);
 
         // Set transformer and locale based on the method
         const method = transformMethodMatch[2];
@@ -472,8 +493,8 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
         const operator = equalityMatch[2];
         const right = equalityMatch[3].trim();
 
-        const leftIsProperty = isPropertyPath(left);
-        const rightIsProperty = isPropertyPath(right);
+        const leftIsProperty = isPropertyPath(left, params);
+        const rightIsProperty = isPropertyPath(right, params);
 
         // Determine which side is the property and which is the value
         let propertySide: string, valueSide: string, finalOperator: string;
@@ -501,7 +522,7 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
             comparator.negated = isNegation;
         }
 
-        const property = getProperty(schema, propertySide);
+        const property = getProperty(schema, propertySide, params);
         const value = getValue(valueSide, params);
         const serializer = property.property.valueSerializer;
 
@@ -518,8 +539,8 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
         const operator = comparisonMatch[2];
         const right = comparisonMatch[3].trim();
 
-        const leftIsProperty = isPropertyPath(left);
-        const rightIsProperty = isPropertyPath(right);
+        const leftIsProperty = isPropertyPath(left, params);
+        const rightIsProperty = isPropertyPath(right, params);
 
         // Determine which side is the property and which is the value
         let propertySide: string, valueSide: string, finalOperator: string;
@@ -547,7 +568,7 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
             comparator.negated = isNegation;
         }
 
-        const property = getProperty(schema, propertySide);
+        const property = getProperty(schema, propertySide, params);
         const value = getValue(valueSide, params);
         const serializer = property.property.valueSerializer;
 
@@ -562,14 +583,14 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
     // Check for standalone property reference (truthy comparison)
     // Pattern: property name only (e.g., "w.inStock" -> w.inStock === true)
     const standalonePropertyMatch = finalExpression.match(/^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/);
-    if (standalonePropertyMatch && isPropertyPath(finalExpression)) {
+    if (standalonePropertyMatch && isPropertyPath(finalExpression, params)) {
         const comparator = getComparator('===');
 
         if (isNegation) {
             comparator.negated = isNegation;
         }
 
-        const property = getProperty(schema, finalExpression);
+        const property = getProperty(schema, finalExpression, params);
         const value = getValue('true', params);
         const serializer = property.property.valueSerializer;
 
@@ -693,14 +714,82 @@ const getValueFromParams = <P extends any>(value: string, params: { name: string
     return result;
 }
 
-const getProperty = (schema: CompiledSchema<any>, value: string): PropertyExpression => {
-    // Optimized string splitting - only split if we have the expected pattern
-    if (!value.includes('.')) {
+const getProperty = <P extends any>(schema: CompiledSchema<any>, value: string, params?: { name: string, data: P }): PropertyExpression => {
+    let pathString: string;
+
+    // Handle bracket notation (e.g., entity["name"], entity['name'], entity[p.name], or entity[\"name\"] with escaped quotes)
+    if (value.includes('[') && value.includes(']')) {
+        // First try to match literal string brackets: ["name"], ['name'], [\"name\"], [\'name\']
+        const literalBracketMatches = value.matchAll(/\[\\?["']([^"']+)\\?["']\]/g);
+        const pathParts: string[] = [];
+        let foundLiteral = false;
+
+        for (const match of literalBracketMatches) {
+            // match[1] is the property name inside the brackets
+            const propName = match[1];
+            if (propName) {
+                pathParts.push(propName);
+                foundLiteral = true;
+            }
+        }
+
+        // If no literal matches found, try parameter path in brackets (e.g., [p.name])
+        if (!foundLiteral && params) {
+            // Match brackets containing parameter paths: [p.name], [params.property], etc.
+            const bracketParamMatch = value.match(/\[([^\]]+)\]/);
+            if (bracketParamMatch) {
+                const bracketContent = bracketParamMatch[1].trim();
+
+                // Check if this is a parameter path
+                // It should start with params.name (e.g., "p") followed by a dot, or be just params.name
+                const isParamPath = bracketContent.startsWith(params.name + '.') || bracketContent === params.name;
+
+                if (isParamPath || (bracketContent.includes('.') && bracketContent.match(PARAM_PATH_REGEX))) {
+                    try {
+                        // Try to resolve as a parameter path
+                        let paramPath: string;
+                        if (bracketContent.startsWith(params.name + '.') || bracketContent === params.name) {
+                            // Already has params.name prefix
+                            paramPath = bracketContent;
+                        } else {
+                            // Add params.name prefix
+                            const paramMatch = bracketContent.match(PARAM_PATH_REGEX);
+                            paramPath = paramMatch
+                                ? `${params.name}.${paramMatch[1]}`
+                                : `${params.name}.${bracketContent}`;
+                        }
+
+                        const resolvedValue = getValueFromParams(paramPath, params);
+                        // The resolved value should be the property name
+                        if (typeof resolvedValue === 'string') {
+                            pathParts.push(resolvedValue);
+                        } else {
+                            throw new Error(ERROR_MESSAGES.PROPERTY_NOT_FOUND(value));
+                        }
+                    } catch (e) {
+                        // Not a valid parameter path, continue to error
+                        throw new Error(ERROR_MESSAGES.PROPERTY_NOT_FOUND(value));
+                    }
+                } else {
+                    throw new Error(ERROR_MESSAGES.PROPERTY_NOT_FOUND(value));
+                }
+            } else {
+                throw new Error(ERROR_MESSAGES.PROPERTY_NOT_FOUND(value));
+            }
+        }
+
+        if (pathParts.length === 0) {
+            throw new Error(ERROR_MESSAGES.PROPERTY_NOT_FOUND(value));
+        }
+
+        pathString = pathParts.join(".");
+    } else if (value.includes('.')) {
+        // Handle dot notation (e.g., entity.name)
+        const pathSplit = value.split(/[?!.]/g).slice(1);
+        pathString = pathSplit.join(".");
+    } else {
         throw new Error(ERROR_MESSAGES.PROPERTY_NOT_FOUND(value));
     }
-
-    const pathSplit = value.split(/[?!.]/g).slice(1);
-    const pathString = pathSplit.join(".");
 
     // Early exit if no path found
     if (!pathString) {

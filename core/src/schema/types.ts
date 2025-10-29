@@ -157,6 +157,8 @@ export type CompiledSchema<TEntity extends {}> = {
     definition: SchemaDefinition<TEntity>;
     /** Returns all indexes defined for this schema. */
     getIndexes: () => Index[];
+    /** Compares two entities for Id equality. */
+    compareIds: (a: InferType<TEntity>, b: InferType<TEntity>) => boolean;
 }
 
 export type PropertySerializer<T extends any> = (value: T) => string | number;

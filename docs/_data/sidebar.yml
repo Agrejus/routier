@@ -102,6 +102,8 @@
           url: /how-to/collections/extending-collections.md
         - title: Scope Single Store
           url: /how-to/collections/scope-single-store.md
+        - title: Views
+          url: /how-to/collections/views.md
 
 - title: Integrations
   url: /integrations/

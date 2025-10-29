@@ -1,4 +1,4 @@
-import { IDbPlugin, uuidv4 } from "@routier/core";
+import { fastHash, HashType, IDbPlugin } from "@routier/core";
 import { DataStore } from "@routier/datastore";
 import { productsSchema } from "../schemas/product";
 import { commentsSchema } from "../schemas/comments";
@@ -9,36 +9,57 @@ import { inventoryItemsSchema } from "../schemas/inventoryItem";
 import { playerSchema } from "../schemas/player";
 import { playerMatchSchema } from "../schemas/playerMatch";
 import { immutableItemSchema } from "../schemas/immutableItem";
-import { CommentsView, commentsViewSchema } from "../schemas/commentsView";
+import { commentsViewSchema } from "../schemas/commentsView";
 import { productsViewSchema } from "../schemas/productView";
+import { productsHistorySchema } from "../schemas/productsHistory";
 
 export class TestDataStore extends DataStore {
     constructor(plugin: IDbPlugin) {
         super(plugin);
     }
 
-    products = this.collection(productsSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...productsSchema }).create();
-    productsView = this.view(productsViewSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...productsSchema }).derive((done) => {
-        const unsubscribe = this.products.subscribe().toArray(productsResponse => {
+    products = this.collection(productsSchema).scope(([x, p]) => x.documentType === p.collectionName, productsSchema).create();
+    productsView = this.view(productsViewSchema).scope(([x, p]) => x.documentType === p.collectionName, productsViewSchema).derive((done) => {
+        return this.products.subscribe().toArray(productsResponse => {
 
             if (productsResponse.ok === "error") {
-                return // do nothing
+                return done([]);// do nothing
             }
 
             done(productsResponse.data.map(x => ({
-                id: `view:${x._id}`,
+                id: `view:${x._id}`, // Must have a predictable Id to reference for updates, otherwise everything will be an insert
                 category: x.category,
                 inStock: x.inStock,
                 name: x.name,
                 price: x.price,
                 tags: x.tags,
                 createdDate: x.createdDate,
-                documentType: x.documentType
+                documentType: productsViewSchema.collectionName
             })));
 
         });
+    }).create();
+    productsHistory = this.view(productsHistorySchema).scope(([x, p]) => x.documentType === p.collectionName, productsHistorySchema).derive((done) => {
+        return this.products.subscribe().toArray(productsResponse => {
 
-        return unsubscribe
+            if (productsResponse.ok === "error") {
+                return done([]);// do nothing
+            }
+
+            done(productsResponse.data.map(x => ({
+                // Hash the object so we can compare if anything has changed.  This will ensure a new record is inserted when anything changes
+                id: fastHash(productsSchema.hash(x, HashType.Object)),
+                productId: x._id,
+                category: x.category,
+                inStock: x.inStock,
+                name: x.name,
+                price: x.price,
+                tags: x.tags,
+                createdDate: x.createdDate,
+                documentType: productsHistorySchema.collectionName
+            })));
+
+        });
     }).create();
     comments = this.collection(commentsSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...commentsSchema }).create();
     events = this.collection(eventsSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...eventsSchema }).create();

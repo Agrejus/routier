@@ -2235,4 +2235,62 @@ describe("Product Tests", () => {
             });
         });
     });
+
+    describe('View Test', () => {
+        it('history view should add a new record on update', async () => {
+            const dataStore = factory();
+            // Arrange
+            const items = generateData(dataStore.products.schema, 2);
+
+            // Act
+            await dataStore.products.addAsync(...items);
+            await dataStore.saveChangesAsync();
+
+            await wait(500);
+
+            const viewItemsCount = await dataStore.productsHistory.countAsync();
+
+            expect(viewItemsCount).toBe(2);
+
+            const firstProduct = await dataStore.products.firstAsync();
+
+            firstProduct.category = "Changed";
+
+            await dataStore.saveChangesAsync();
+
+            await wait(200);
+
+            const viewItemsCountAfterChange = await dataStore.productsHistory.countAsync();
+
+            expect(viewItemsCountAfterChange).toBe(3);
+        });
+
+        it('products view should update existing and not add a new record', async () => {
+            const dataStore = factory();
+            // Arrange
+            const items = generateData(dataStore.products.schema, 2);
+
+            // Act
+            await dataStore.products.addAsync(...items);
+            await dataStore.saveChangesAsync();
+
+            await wait(500);
+
+            const viewItemsCount = await dataStore.productsView.countAsync();
+
+            expect(viewItemsCount).toBe(2);
+
+            const firstProduct = await dataStore.products.firstAsync();
+
+            firstProduct.category = "Changed";
+
+            await dataStore.saveChangesAsync();
+
+            await wait(200);
+
+            const viewItemsCountAfterChange = await dataStore.productsView.firstOrUndefinedAsync(x => x.category === "Changed");
+
+            expect(viewItemsCountAfterChange).toBeDefined();
+        });
+    });
 });

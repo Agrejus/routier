@@ -122,6 +122,18 @@ describe('Parser', () => {
                 expect(comp.negated).toBe(true);
                 expect(comp.strict).toBe(true);
             });
+
+            it('should parse equality comparison with == and property selection by index name', () => {
+                const expression = toExpression(mockSchema, (entity: any) => entity["name"] == 'test');
+                expect(expression).toBeInstanceOf(ComparatorExpression);
+                const comp = expression as ComparatorExpression;
+                expect(comp.comparator).toBe('equals');
+                expect(comp.negated).toBe(false);
+                expect(comp.strict).toBe(false);
+                expect(comp.left).toBeInstanceOf(PropertyExpression);
+                expect(comp.right).toBeInstanceOf(ValueExpression);
+                expect((comp.right as ValueExpression).value).toBe('test');
+            });
         });
 
         describe('numeric comparisons', () => {
@@ -419,6 +431,31 @@ describe('Parser', () => {
                 expect((comp.left as ValueExpression).value).toEqual(['player1', 'player2']);
                 expect((comp.right as PropertyExpression).property.getAssignmentPath()).toBe('playerId');
             });
+
+            it('should parse parameterized filter with includes method using bracket notation', () => {
+                const expression = toExpression(mockSchema, ([x, p]: [any, { ids: string[] }]) => p.ids.includes(x["playerId"]), { ids: ['id1', 'id2', 'id3'] });
+
+                expect(expression).toBeInstanceOf(ComparatorExpression);
+                const comp = expression as ComparatorExpression;
+                expect(comp.comparator).toBe('includes');
+                expect(comp.negated).toBe(false);
+                expect(comp.strict).toBe(false);
+                expect((comp.left as ValueExpression).value).toEqual(['id1', 'id2', 'id3']);
+                expect((comp.right as PropertyExpression).property.getAssignmentPath()).toBe('playerId');
+            });
+
+            it('should parse parameterized filter with includes method using bracket notation and name is a variable', () => {
+                const name = "playerId";
+                const expression = toExpression(mockSchema, ([x, p]: [any, { ids: string[], name: string }]) => p.ids.includes(x[p.name]), { ids: ['id1', 'id2', 'id3'], name });
+
+                expect(expression).toBeInstanceOf(ComparatorExpression);
+                const comp = expression as ComparatorExpression;
+                expect(comp.comparator).toBe('includes');
+                expect(comp.negated).toBe(false);
+                expect(comp.strict).toBe(false);
+                expect((comp.left as ValueExpression).value).toEqual(['id1', 'id2', 'id3']);
+                expect((comp.right as PropertyExpression).property.getAssignmentPath()).toBe('playerId');
+            });
         });
 
         describe('null/undefined comparisons', () => {
@@ -582,9 +619,27 @@ describe('Parser', () => {
 
                 expect(expression).toBeInstanceOf(OperatorExpression);
                 const op = expression as OperatorExpression;
-                expect(op.operator).toBe('&&');
-                expect(op.left).toBeInstanceOf(ComparatorExpression);
-                expect(op.right).toBeInstanceOf(OperatorExpression);
+                expect(op.operator).toBe('||');
+                expect(op.left).toBeInstanceOf(OperatorExpression);
+                expect(op.right).toBeInstanceOf(ComparatorExpression);
+
+                // Left side should be the parenthesized && expression
+                const leftOp = op.left as OperatorExpression;
+                expect(leftOp.operator).toBe('&&');
+                expect(leftOp.left).toBeInstanceOf(ComparatorExpression);
+                expect(leftOp.right).toBeInstanceOf(ComparatorExpression);
+
+                // Right side should be the parenthesized && expression
+                const rightOp = op.right as ComparatorExpression;
+                expect(rightOp.comparator).toBe('equals');
+
+                // Verify the && left expression (entity.name == 'test')
+                const andLeft = leftOp.left as ComparatorExpression;
+                expect(andLeft.comparator).toBe('equals');
+
+                // Verify the && right expression (entity.age > 18)
+                const andRight = leftOp.right as ComparatorExpression;
+                expect(andRight.comparator).toBe('greater-than');
             });
 
             it('should handle expressions with string values containing spaces', () => {

@@ -21,6 +21,7 @@ import { hash } from "../utilities";
 import { CompiledSchema, GetHashTypeFunction, HashFunction, HashType, IdType, Index, InferCreateType, InferType, SchemaTypes } from './types';
 import { DeepPartial } from '../types';
 import { SchemaSubscription } from './communication/broadcast';
+import { CompareIdsHandlerBuilder } from '../codegen/handlers';
 
 export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
@@ -248,6 +249,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const enableChangeTrackingHandlerBuilder = new EnableChangeTrackingHandlerBuilder();
             const freezeHandlerBuilder = new FreezeHandlerBuilder();
             const serializeHandlerBuilder = new SerializeHandlerBuilder();
+            const compareIdsHandlerBuilder = new CompareIdsHandlerBuilder();
 
             const enricher = enrichmentHandlerBuilder.build();
             const merge = mergeHandlerFactory.build();
@@ -262,6 +264,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const enableChangeTrackingHandler = enableChangeTrackingHandlerBuilder.build();
             const freezeHandler = freezeHandlerBuilder.build();
             const serializeHandler = serializeHandlerBuilder.build();
+            const compareIdsHandler = compareIdsHandlerBuilder.build();
 
             const changeTrackingCodeBuilder = new CodeBuilder();
             changeTrackingCodeBuilder.raw(`function ${this.createChangeTracker.toString()}`);
@@ -331,6 +334,10 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const compareCodeBuilder = new CodeBuilder();
             compareCodeBuilder.slot("result");
             compareCodeBuilder.slot("return").raw(`     return result;`);
+
+            const compareIdsCodeBuilder = new CodeBuilder();
+            compareIdsCodeBuilder.slot("ifs");
+            compareIdsCodeBuilder.slot("return").raw(`     return true;`);
 
             const deserializeCodeBuilder = new CodeBuilder();
             deserializeCodeBuilder.slot("functions");
@@ -415,6 +422,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                 hashHandler.handle(property, hashCodeBuilder);
                 enableChangeTrackingHandler.handle(property, changeTrackingCodeBuilder);
                 freezeHandler.handle(property, freezeCodeBuilder);
+                compareIdsHandler.handle(property, compareIdsCodeBuilder);
             });
 
             if (idProperties.length === 0) {
@@ -432,11 +440,12 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const cloneFunction = Function("entity", cloneCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
             const deserializeFunction = Function("entity", deserializeCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
             const serializeFunction = Function("entity", serializeCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
-            const compareFunction = Function("a", "b", compareCodeBuilder.toString()) as (a: InferType<T>, fromDb: InferType<T>) => boolean;;
+            const compareFunction = Function("a", "b", compareCodeBuilder.toString()) as (a: InferType<T>, b: InferType<T>) => boolean;
             const stripFunction = Function("entity", stripCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
             const hashFunction = Function("entity", "type", hashCodeBuilder.toString()) as HashFunction<T>;
             const enableChangeTrackingFunction = Function("entity", changeTrackingCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
             const freezeFunction = Function("entity", freezeCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
+            const compareIdsFunction = Function("a", "b", compareIdsCodeBuilder.toString()) as (a: InferType<T>, b: InferType<T>) => boolean;
 
             const enricherFactoryFunction = enrichGenerator();
             const mergeFactoryFunction = mergeGenerator();
@@ -490,6 +499,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                 deserialize: deserializeFunction,
                 serialize: serializeFunction,
                 compare: compareFunction,
+                compareIds: compareIdsFunction,
                 strip: stripFunction,
                 hash: hashFunction,
                 id,
