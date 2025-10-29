@@ -1,11 +1,14 @@
-import { DbPluginLogging, DbPluginReplicator } from "routier-core/plugins";
+import { ReplicationDbPlugin } from "@routier/core/plugins";
+import { MemoryPlugin } from "@routier/memory-plugin";
+import { PouchDbPlugin } from "@routier/pouchdb-plugin";
 
-// Add logging to any plugin
-const memoryPluginWithLogging = DbPluginLogging.create(memoryPlugin);
+// Create base plugins
+const memoryPlugin = new MemoryPlugin("offline");
+const pouchDbPlugin = new PouchDbPlugin("remote");
 
 // Create replication between plugins
-const replicationPlugin = DbPluginReplicator.create({
-  replicas: [memoryPluginWithLogging],
-  source: pouchDbPluginWithLogging,
-  read: memoryPluginWithLogging,
+const replicationPlugin = ReplicationDbPlugin.create({
+  replicas: [memoryPlugin],
+  source: pouchDbPlugin,
+  read: memoryPlugin,
 });

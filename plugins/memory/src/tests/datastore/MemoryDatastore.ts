@@ -1,7 +1,7 @@
 import { fastHash, HashType, IDbPlugin } from "@routier/core";
 import { DataStore } from "@routier/datastore";
 import { productsSchema } from "../schemas/product";
-import { commentsSchema } from "../schemas/comments";
+import { commentsSchema, CreateComment } from "../schemas/comments";
 import { eventsSchema } from "../schemas/event";
 import { usersSchema } from "../schemas/user";
 import { userProfileSchema } from "../schemas/userProfile";
@@ -93,4 +93,14 @@ export class TestDataStore extends DataStore {
 
         return unsubscribe;
     }).create();
+
+    extendedComments = this.collection(commentsSchema).scope(([x, p]) => x.documentType === p.collectionName, commentsSchema).create((Instance, ...args) => new class extends Instance {
+        constructor() {
+            super(...args);
+        }
+
+        someOtherAddAsync(...entities: CreateComment[]) {
+            return this.addAsync(...entities);
+        }
+    });
 }

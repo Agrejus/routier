@@ -1,4 +1,4 @@
-import { s } from "@routier/core/schema";
+import { InferCreateType, s } from "@routier/core/schema";
 
 export const commentsSchema = s.define("comments", {
     _id: s.string().key().identity(),
@@ -10,3 +10,5 @@ export const commentsSchema = s.define("comments", {
 }).modify(x => ({
     documentType: x.computed((_, collectionName) => collectionName).tracked()
 })).compile();
+
+export type CreateComment = InferCreateType<typeof commentsSchema>;

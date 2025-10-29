@@ -121,50 +121,16 @@ productsView = this.view(productsViewSchema)
 
 ## History Tables
 
-History tables create a new record every time source data changes. Use `fastHash` with the schema's hash function to generate a unique ID based on the entire object:
+History tables are views that create a new record every time source data changes, preserving an immutable audit trail. They use `fastHash` with the schema's hash function to generate unique IDs based on the entire object state, ensuring each change creates a new record rather than updating an existing one.
 
-```ts
-import { fastHash, HashType } from "@routier/core";
-
-productsHistory = this.view(productsHistorySchema)
-  .derive((done) => {
-    return this.products.subscribe().toArray((response) => {
-      if (response.ok === "error") {
-        return done([]);
-      }
-
-      done(
-        response.data.map((x) => ({
-          // Hash the object so we can compare if anything has changed
-          // This ensures a new record is inserted when anything changes
-          id: fastHash(productsSchema.hash(x, HashType.Object)),
-          productId: x._id,
-          category: x.category,
-          inStock: x.inStock,
-          name: x.name,
-          price: x.price,
-          tags: x.tags,
-          createdDate: x.createdDate,
-          documentType: productsHistorySchema.collectionName,
-        }))
-      );
-    });
-  })
-  .create();
-```
-
-**How it works:**
-
-1. **Hash the entire object**: `productsSchema.hash(x, HashType.Object)` generates a deterministic hash of all object properties
-2. **Fast hash for ID**: `fastHash()` converts the string hash to a numeric ID
-3. **Change detection**: When any property changes, the hash changes, producing a new ID
-4. **History preservation**: Old records remain, new records are inserted (no updates)
-
-**When to use:**
+This pattern is ideal for:
 
 - **Audit trails**: Track all changes over time
 - **Version history**: Maintain snapshots of entity states
 - **Change tracking**: Know when and how data changed
+- **Undo/Redo**: Retrieve previous states
+
+For complete implementation details, examples, and best practices, see the **[History Tracking guide](/guides/history-tracking.md)**.
 
 ## View Patterns
 
@@ -291,4 +257,5 @@ The `compute` methods run the derive function you provided when creating the vie
 - **[Collections Overview](index.md)** - Understanding collections
 - **[Scope Single Store](scope-single-store.md)** - Scoping views for single-store backends
 - **[Live Queries](/guides/live-queries.md)** - Understanding reactive queries
+- **[History Tracking](/guides/history-tracking.md)** - Implementing audit trails and version history
 - **[State Management](/guides/state-management.md)** - Managing application state

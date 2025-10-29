@@ -10,179 +10,270 @@ permalink: /data-operations/state-management/syncing/
 
 # Data Syncing
 
-Data syncing allows you to synchronize data between your local data store and remote servers, enabling offline-first applications with automatic synchronization when connectivity is restored.
+Set up bidirectional synchronization between your local Routier data store and remote servers. This guide walks through a complete example using the PouchDB plugin, which provides robust sync capabilities out of the box.
 
 ## Overview
 
-Routier provides exposed methods and interfaces that sync engines can use to integrate with the data store. The actual syncing implementation is handled by the specific database plugin (e.g., PouchDB, SQLite, etc.), not by Routier itself. Each plugin can implement syncing however it wants - there's no prescribed way to do it.
+The PouchDB plugin for Routier includes built-in synchronization that works with CouchDB and other CouchDB-compatible backends. When configured, it automatically:
 
-Routier exposes:
+- **Syncs changes bidirectionally** between local and remote databases
+- **Handles conflicts** when data is modified in multiple places
+- **Retries failed sync operations** with exponential backoff
+- **Provides real-time updates** through live synchronization
 
-- **Collection change events** that sync engines can listen to
-- **Schema information** for proper data handling
-- **Data persistence hooks** for sync integration points
-- **Query interfaces** for sync-related operations
+## Quick Start
 
-The specific sync engine (like PouchDB) handles:
+Enable syncing by configuring the `sync` option when creating your PouchDB plugin:
 
-- **Bidirectional synchronization** between local and remote data stores
-- **Conflict resolution** when the same data is modified in multiple places
-- **Automatic retry** with exponential backoff for failed sync attempts
-- **Real-time updates** with live synchronization
-- **Offline support** with queued changes that sync when online
+{% capture snippet_pouch_sync_basic %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-1.ts %}{% endcapture %}
+{% highlight ts %}{{ snippet_pouch_sync_basic | strip }}{% endhighlight %}
 
-## Configuration
+## Complete Example
 
-Syncing is configured however the user wants within the specific database plugin. Routier itself doesn't handle syncing - it provides the interfaces that plugins use. Here's one example of how it might be configured with a PouchDB plugin:
+Here's a full example showing pull-only sync with filtering and custom document processing:
 
-{% capture snippet_835yxq %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+{% capture snippet_pouch_sync_complete %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-9.ts %}{% endcapture %}
+{% highlight ts %}{{ snippet_pouch_sync_complete | strip }}{% endhighlight %}
 
-{% highlight ts %}{{ snippet_835yxq | strip }}{% endhighlight %}
+This example demonstrates:
 
-## Sync Options
+1. **Pull-only sync**: `push: false` means changes only flow from remote to local
+2. **Document filtering**: Only syncs documents from specific collections (item and category)
+3. **Custom processing**: The `onChange` callback groups documents by collection and processes them through schema subscriptions
+4. **Live synchronization**: `live: true` keeps data up-to-date in real-time
 
-The specific options available depend entirely on the plugin you're using. Different plugins may have completely different configuration approaches. Here are some common concepts that many sync implementations might support:
+### Setting Up a CouchDB Server
 
-### **Connection Configuration**
+To test this example, you'll need a CouchDB-compatible server. You can use express-pouchdb to run a local server:
 
-Most sync implementations need some way to connect to a remote data source:
+```ts
+import PouchDB from "pouchdb";
+import express from "express";
+import expressPouchDB from "express-pouchdb";
+import cors from "cors";
 
-{% capture snippet_gxg67t %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+const app = express();
 
-{% highlight ts %}{{ snippet_gxg67t | strip }}{% endhighlight %}
+// Enable CORS for browser connections
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+  })
+);
 
-### **Sync Behavior**
+// Mount PouchDB at root
+app.use(expressPouchDB(PouchDB));
 
-Common sync behaviors that plugins might implement:
-
-{% capture snippet_8rwuvm %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-
-{% highlight ts %}{{ snippet_8rwuvm | strip }}{% endhighlight %}
-
-### **Event Handling**
-
-Many sync implementations provide callbacks for sync events:
-
-{% capture snippet_nrw1v6 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-
-{% highlight ts %}{{ snippet_nrw1v6 | strip }}{% endhighlight %}
-
-**Note:** The exact property names, values, and behavior depend on your specific plugin implementation.
+app.listen(5984, () => {
+  console.log("CouchDB server running on http://127.0.0.1:5984");
+});
+```
 
 ## How It Works
 
-### 1. **Plugin Integration**
+When you enable syncing:
 
-When you enable syncing through a plugin, the plugin typically:
+1. **Initial Sync**: On startup, the plugin connects to the remote database and performs an initial sync
+2. **Live Updates**: With `live: true`, the plugin continuously monitors for changes on both local and remote sides
+3. **Change Propagation**: When you add, update, or delete entities locally, changes are queued and pushed to remote
+4. **Remote Updates**: When remote data changes, updates are automatically pulled and applied locally
+5. **Conflict Handling**: If the same entity is modified in both places, conflicts are detected and handled according to your configuration
 
-- Creates a connection to your remote data source
-- Sets up the synchronization mechanism
-- Configures any retry or error handling logic
-- Establishes the sync behavior you've configured
+## Sync Options
 
-Routier provides the hooks and events that the plugin listens to for data changes.
+The PouchDB plugin supports several sync configuration options:
 
-### 2. **Change Detection**
+### `remoteDb` (Required)
 
-The system monitors:
+The URL to your remote CouchDB-compatible database:
 
-- **Local changes** - When you add, update, or delete data
-- **Remote changes** - When data is modified on the server
-- **Conflicts** - When the same data is modified in multiple places
+```ts
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp";
+}
+```
 
-### 3. **Synchronization**
+### Pull and Push Configuration
 
-- **Push**: Local changes are sent to the remote server
-- **Pull**: Remote changes are retrieved and applied locally
-- **Merge**: Conflicts are resolved according to your strategy
+You can configure sync direction separately using `pull` and `push` options:
 
-### 4. **Retry Logic**
+```ts
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  pull: {
+    live: true,     // Continuous sync
+    retry: true,    // Auto-retry
+    filter: (doc) => {
+      // Only sync specific documents
+      return doc.collectionName === "season";
+    }
+  },
+  push: false       // Disable pushing (pull-only)
+}
+```
 
-Many sync implementations include retry logic for failed attempts:
+- **`pull`**: Configuration for pulling changes from remote
+- **`push`**: Set to `false` for pull-only sync, or configure push options
 
-- **Simple retry**: Fixed delay between attempts
-- **Exponential backoff**: Increasing delays between retries
-- **Maximum retries**: Limit on total retry attempts
-- **Custom strategies**: Plugin-specific retry behavior
+### Filtering Documents
 
-The exact retry behavior depends on your plugin implementation.
+Use the `filter` function to control which documents are synced:
 
-## Example Implementation
+```ts
+pull: {
+  filter: (doc) => {
+    // Only sync documents from specific collections
+    return doc.collectionName === "item" || doc.collectionName === "category";
+  };
+}
+```
 
-Here's one example of how you might set up a synced data store with PouchDB. Other plugins may have different configuration approaches:
+### `live` (Optional)
 
-{% capture snippet_c0vihy %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+Enable continuous synchronization:
 
-{% highlight ts %}{{ snippet_c0vihy | strip }}{% endhighlight %}
+```ts
+pull: {
+  live: true; // Continuous sync (default: false)
+}
+```
+
+With `live: false`, sync happens once on startup. With `live: true`, changes are synchronized in real-time.
+
+### `retry` (Optional)
+
+Enable automatic retry with exponential backoff:
+
+```ts
+pull: {
+  retry: true; // Auto-retry failed syncs (default: false)
+}
+```
+
+When enabled, failed sync operations automatically retry with increasing delays (1s, 2s, 4s, up to 10s max).
+
+### `onChange` (Optional)
+
+Callback function that receives sync events. Use this to process synced documents manually:
+
+```ts
+sync: {
+  onChange: (schemas: SchemaCollection, change) => {
+    if (change.direction === "pull" && change.change.docs) {
+      // Group documents by collection
+      const docsByCollection = change.change.docs.reduce(/* ... */);
+
+      // Process each collection
+      for (const collectionName in docsByCollection) {
+        const schema = schemas.getByName(collectionName);
+        const subscription = schema.createSubscription();
+
+        subscription.send({
+          adds: [],
+          removals: [],
+          updates: [],
+          unknown: docsByCollection[collectionName],
+        });
+
+        subscription[Symbol.dispose]();
+      }
+    }
+  };
+}
+```
+
+Use this callback to:
+
+- Manually process and route synced documents
+- Group documents by collection for batch processing
+- Apply custom transformations before updating local data
+- Track sync progress and log events
 
 ## Conflict Resolution
 
-When conflicts occur (the same data is modified in multiple places), your plugin may provide ways to handle them:
+PouchDB automatically detects conflicts when the same document is modified in multiple places. Handle conflicts by checking the change information in your `onChange` callback:
 
-{% capture snippet_zq3fq2 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+```ts
+sync: {
+  remoteDb: "http://localhost:5984/myapp",
+  onChange: (schemas, change) => {
+    if (change.change && change.change.docs) {
+      change.change.docs.forEach((doc) => {
+        if (doc._conflicts) {
+          // Document has conflicts - handle them
+          console.warn(`Conflict detected in document ${doc._id}`);
+          // Implement your conflict resolution logic
+        }
+      });
+    }
+  }
+}
+```
 
-{% highlight ts %}{{ snippet_zq3fq2 | strip }}{% endhighlight %}
+## Network Handling
 
-**Note:** The exact conflict handling depends on your plugin implementation.
+The PouchDB plugin automatically handles network connectivity:
+
+- **Offline queuing**: Changes made offline are queued and synced when connectivity returns
+- **Connection detection**: Sync pauses when network is unavailable
+- **Automatic resume**: Sync resumes when network is restored
+
+You can monitor sync status through the `onChange` callback to inform users about sync state.
+
+## Sync Patterns
+
+### Pull-Only Sync
+
+For read-only data or when you want to prevent local changes from syncing back:
+
+```ts
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  pull: { live: true, retry: true },
+  push: false
+}
+```
+
+### Bidirectional Sync
+
+Default behavior when push is not disabled:
+
+```ts
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  live: true,
+  retry: true
+}
+```
+
+### Filtered Sync
+
+Only sync specific collections or document types:
+
+```ts
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  pull: {
+    live: true,
+    filter: (doc) => doc.collectionName === "public_data"
+  }
+}
+```
 
 ## Best Practices
 
-### 1. **Network Handling**
-
-{% capture snippet_5mub03 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-
-{% highlight ts %}{{ snippet_5mub03 | strip }}{% endhighlight %}
-
-### 2. **Error Handling**
-
-{% capture snippet_cu2b4f %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-
-{% highlight ts %}{{ snippet_cu2b4f | strip }}{% endhighlight %}
-
-### 3. **Performance Optimization**
-
-{% capture snippet_eg7aet %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-
-{% highlight ts %}{{ snippet_eg7aet | strip }}{% endhighlight %}
-
-## Monitoring and Debugging
-
-### Sync Status
-
-You can monitor sync status through your plugin's event callbacks:
-
-{% capture snippet_0nto2h %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-
-{% highlight ts %}{{ snippet_0nto2h | strip }}{% endhighlight %}
-
-### Debug Mode
-
-Enable detailed logging for troubleshooting (if your plugin supports it):
-
-{% capture snippet_98y1i5 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-
-{% highlight ts %}{{ snippet_98y1i5 | strip }}{% endhighlight %}
-
-## Supported Backends
-
-Routier is designed to work with **any backend** - it's not limited to specific database types. The framework provides interfaces that any database plugin can use for syncing, regardless of the underlying technology.
-
-**Examples of what's possible:**
-
-- **PouchDB** - Full sync support with CouchDB compatibility (handles its own syncing)
-- **SQLite** - Can implement sync with remote SQL databases
-- **IndexedDB** - Can implement browser-based sync
-- **PostgreSQL** - Can implement sync with remote PostgreSQL instances
-- **MongoDB** - Can implement sync with MongoDB Atlas or other MongoDB services
-- **Firebase** - Can implement real-time sync with Firebase
-- **Custom APIs** - Can implement sync with any REST, GraphQL, or custom API
-- **Custom plugins** - Can implement their own syncing strategies for any backend
-
-**The key point:** Routier doesn't care what backend you use. It provides the data management framework, and you can implement syncing however you want for your specific backend technology. The syncing implementation is entirely up to the individual plugin, not Routier itself.
+1. **Use pull-only sync for read-only data**: Set `push: false` when local changes shouldn't sync back to server
+2. **Filter documents when possible**: Reduce bandwidth by only syncing needed collections
+3. **Use live sync for real-time apps**: Enable `live: true` when you need immediate synchronization
+4. **Enable retry for reliability**: Use `retry: true` for production applications
+5. **Process documents in onChange**: Group and route documents by collection for better performance
+6. **Monitor sync events**: Implement `onChange` callbacks to track sync progress and errors
+7. **Test offline scenarios**: Verify your app works correctly when sync is paused
 
 ## Next Steps
 
-- Learn about [Live Queries](../live-queries/) for real-time data updates
-- Explore [Change Tracking](../../modification/change-tracking/) for local modifications
-- See [Advanced Syncing](../advanced-syncing/) for complex scenarios
-- Check out [PouchDB Syncing](./pouchdb-sync.md) for PouchDB-specific implementation details
+- **[PouchDB Syncing Details](pouchdb-sync.md)** - Complete reference for PouchDB sync options and advanced configuration
+- **[Syncing Guide](/guides/syncing.md)** - Conceptual overview of how syncing works in Routier
+- **[Change Tracking](/concepts/change-tracking/)** - Understanding how Routier tracks local changes
+- **[Live Queries](/guides/live-queries.md)** - Real-time data queries

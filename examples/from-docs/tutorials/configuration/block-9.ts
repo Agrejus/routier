@@ -1,7 +1,9 @@
-import { TestingPlugin } from "routier-plugin-testing";
+import { DataStore } from "@routier/datastore";
+import { MemoryPlugin } from "@routier/memory-plugin";
 
 class TestContext extends DataStore {
   constructor() {
-    super(new TestingPlugin("test-app"));
+    // Use Memory plugin for tests (no persistence, fast)
+    super(new MemoryPlugin("test-app"));
   }
 }

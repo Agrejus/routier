@@ -1,47 +1,79 @@
-import { DataStore } from "routier";
-import { PouchDbPlugin } from "routier-plugin-pouchdb";
-import { productSchema } from "./schemas/product";
+import { DataStore } from "@routier/datastore";
+import { PouchDbPlugin } from "@routier/pouchdb-plugin";
+import { s } from "@routier/core/schema";
+import { UnknownRecord } from "@routier/core";
+import { SchemaCollection } from "@routier/core/collections";
 
-// Configure PouchDB with syncing
+// Define schemas
+const itemSchema = s
+  .define("item", {
+    id: s.string().key().identity(),
+    name: s.string(),
+    description: s.string(),
+    createdAt: s.date(),
+  })
+  .compile();
+
+const categorySchema = s
+  .define("category", {
+    id: s.string().key().identity(),
+    name: s.string(),
+    description: s.string(),
+  })
+  .compile();
+
+// Configure PouchDB with pull-only sync and filtering
 const plugin = new PouchDbPlugin("myapp", {
-  // Database configuration
-  name: "myapp",
-
-  // Sync configuration
   sync: {
-    remoteDb: "http://localhost:3000/myapp",
-    live: true,
-    retry: true,
-    onChange: (schemas, change) => {
-      // Handle sync events
-      if (change.direction === "push") {
-        console.log("Local changes pushed to remote");
-      } else if (change.direction === "pull") {
-        console.log("Remote changes pulled to local");
-      }
+    remoteDb: "http://127.0.0.1:5984/myapp",
+    pull: {
+      live: true,
+      retry: true,
 
-      // Log document changes
-      if (change.change && change.change.docs) {
-        change.change.docs.forEach((doc) => {
-          console.log(`Document ${doc.id} synced`);
-        });
+      // Optional
+      filter: (doc) => {
+        // Only sync documents from specific collections
+        return doc.collectionName === "item" || doc.collectionName === "category";
+      },
+    },
+    push: false as any, // Pull-only sync
+    onChange: (schemas: SchemaCollection, change: any) => {
+      if (change.direction !== "pull" || !change.change.docs) return;
+
+      // Group documents by collection
+      const docsByCollection = change.change.docs.reduce(
+        (acc: { [key: string]: UnknownRecord[] }, doc: UnknownRecord) => {
+          const name = doc.collectionName as string;
+          if (name) (acc[name] ??= []).push(doc);
+          return acc;
+        },
+        {} as { [key: string]: UnknownRecord[] }
+      );
+
+      // Process each collection
+      for (const [name, docs] of Object.entries(docsByCollection)) {
+        const schema = schemas.getByName(name);
+        if (!schema) continue;
+
+        const subscription = schema.createSubscription();
+        subscription.send({ adds: [], removals: [], updates: [], unknown: docs });
+        subscription[Symbol.dispose]();
       }
     },
   },
 });
 
-// Create the data store
-const dataStore = new DataStore(plugin);
+// Create DataStore with plugin
+class AppDataStore extends DataStore {
+  items = this.collection(itemSchema).create();
+  categories = this.collection(categorySchema).create();
 
-// Add collections
-const products = dataStore.collection(productSchema).create();
+  constructor() {
+    super(plugin);
+  }
+}
 
-// All operations now automatically sync
-await products.addAsync({
-  name: "New Product",
-  price: 99.99,
-  category: "electronics",
-});
+const ctx = new AppDataStore();
 
-// Save changes (triggers sync)
-await dataStore.saveChangesAsync();
+// Sync starts automatically when plugin is created
+// Remote changes will be pulled automatically based on the filter
