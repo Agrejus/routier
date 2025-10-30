@@ -6,223 +6,433 @@ grand_parent: State Management
 nav_order: 1
 ---
 
-# PouchDB Syncing
+# PouchDB Syncing Reference
 
-PouchDB provides robust synchronization capabilities that work seamlessly with Routier. This guide covers how to set up and configure PouchDB syncing based on the actual implementation.
+This page provides a complete reference for PouchDB synchronization options and advanced configuration. For a practical walkthrough with examples, see the [Syncing Overview](index.md).
 
 ## Overview
 
-The PouchDB plugin automatically handles synchronization when you configure the `sync` option. The syncing system is built on top of PouchDB's battle-tested replication engine and provides:
+The PouchDB plugin integrates with PouchDB's replication engine, which provides battle-tested sync capabilities for CouchDB-compatible databases. When you configure the `sync` option, the plugin automatically sets up bidirectional replication between your local and remote databases.
 
-- **Automatic sync setup** when the plugin initializes
-- **Bidirectional replication** between local and remote databases
-- **Conflict detection and resolution**
-- **Automatic retry with exponential backoff**
-- **Live synchronization** for real-time updates
-
-## Basic Configuration
-
-Enable syncing by adding the `sync` configuration to your PouchDB plugin:
-
-{% capture snippet_76qv3x %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-
-{% highlight ts %}{{ snippet_76qv3x | strip }}{% endhighlight %}
-
-## Sync Options Reference
+## Sync Configuration Options
 
 ### `remoteDb` (Required)
 
-The URL to your remote CouchDB-compatible database:
+The URL to your remote CouchDB-compatible database. Must be a valid HTTP/HTTPS URL.
 
-{% capture snippet_d9e51x %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+```ts
+import { PouchDbPlugin } from "@routier/pouchdb-plugin";
 
-{% highlight ts %}{{ snippet_d9e51x | strip }}{% endhighlight %}
+const plugin = new PouchDbPlugin("myapp", {
+  sync: {
+    remoteDb: "http://127.0.0.1:5984/myapp",
+  },
+});
+```
 
 ### `live` (Optional)
 
-Controls whether synchronization is continuous or one-time:
-
-{% capture snippet_usu4cz %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-
-{% highlight ts %}{{ snippet_usu4cz | strip }}{% endhighlight %}
+Enable continuous synchronization. When `true`, the sync will continue running and pick up changes in real-time. When `false`, sync happens once on startup.
 
 **Default:** `false`
+
+```ts
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  live: true // Continuous sync
+}
+```
 
 ### `retry` (Optional)
 
-Enables automatic retry with exponential backoff:
-
-{% capture snippet_9eeast %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-
-{% highlight ts %}{{ snippet_9eeast | strip }}{% endhighlight %}
+Enable automatic retry with exponential backoff. When enabled, failed sync operations automatically retry with increasing delays (1s, 2s, 4s, up to 10s max).
 
 **Default:** `false`
 
+```ts
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  retry: true // Auto-retry failed syncs
+}
+```
+
+### `pull` (Optional)
+
+Configure options for pulling changes from remote. This is an object that can include:
+
+- `live`: Continuous pull (default: false)
+- `retry`: Auto-retry failed pulls (default: false)
+- `filter`: Function to filter documents during pull
+- Any other PouchDB replication options
+
+```ts
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  pull: {
+    live: true,
+    retry: true,
+    filter: (doc) => doc.collectionName === "public_data"
+  }
+}
+```
+
+### `push` (Optional)
+
+Configure options for pushing changes to remote. Can be set to `false` to disable pushing, or an object with push-specific options.
+
+- Set to `false`: Disable pushing (pull-only sync)
+- Object: Configuration for pushing (similar structure to `pull`)
+
+```ts
+// Pull-only sync
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  pull: { live: true },
+  push: false
+}
+
+// Configure push options
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  push: {
+    live: true,
+    retry: true
+  }
+}
+```
+
+### `filter` (Optional)
+
+Function to filter documents during sync. The filter function receives a document and returns `true` to include it or `false` to exclude it.
+
+```ts
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  filter: (doc) => {
+    // Only sync documents from specific collections
+    return doc.collectionName === "item" || doc.collectionName === "category";
+  }
+}
+```
+
+**Note:** Filters apply to both pull and push unless specified separately in `pull` or `push` options.
+
 ### `onChange` (Optional)
 
-Callback function that receives sync events and schema information:
+Callback function that receives sync events. Use this to process synced documents manually, track progress, or handle conflicts.
 
-{% capture snippet_7afs59 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+```ts
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  onChange: (schemas, change) => {
+    if (change.direction === "pull" && change.change?.docs) {
+      // Process pulled documents
+      console.log(`Pulled ${change.change.docs.length} documents`);
+    }
+  }
+}
+```
 
-{% highlight ts %}{{ snippet_7afs59 | strip }}{% endhighlight %}
+**Parameters:**
 
-## How PouchDB Syncing Works
+- `schemas`: `SchemaCollection` - Collection of all schemas in the datastore
+- `change`: `PouchDB.Replication.SyncResult<{}>` - The sync event from PouchDB
 
-### 1. **Automatic Initialization**
+**See:** [Processing Sync Events](#processing-sync-events) for detailed examples.
 
-When you create a PouchDB plugin with sync enabled, the system automatically:
+### `onError` (Optional)
 
-{% capture snippet_nrcx9t %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+Callback function called when a sync error occurs.
 
-{% highlight ts %}{{ snippet_nrcx9t | strip }}{% endhighlight %}
+```ts
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  onError: (schemas, error) => {
+    console.error("Sync error:", error);
+    // Handle error, notify user, etc.
+  }
+}
+```
 
-### 2. **Retry Logic**
+### `onComplete` (Optional)
 
-The plugin implements intelligent retry with exponential backoff:
+Callback function called when a sync operation completes (only for non-live syncs).
 
-{% capture snippet_orfro9 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+```ts
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  onComplete: (schemas, event) => {
+    console.log("Sync completed:", event);
+  }
+}
+```
 
-{% highlight ts %}{{ snippet_orfro9 | strip }}{% endhighlight %}
+### `onPaused` (Optional)
 
-- **Initial delay:** 1 second
-- **Maximum delay:** 10 seconds
-- **Backoff formula:** `Math.min(delay * 2, 10000)`
+Callback function called when sync is paused (typically due to network issues).
 
-### 3. **Event Handling**
+```ts
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  onPaused: (schemas, event) => {
+    console.log("Sync paused - network may be unavailable");
+  }
+}
+```
 
-Sync events are automatically routed to your `onChange` callback:
+### `onActive` (Optional)
 
-{% capture snippet_vgs66c %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+Callback function called when sync becomes active after being paused.
 
-{% highlight ts %}{{ snippet_vgs66c | strip }}{% endhighlight %}
+```ts
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  onActive: (schemas) => {
+    console.log("Sync resumed");
+  }
+}
+```
 
-## Complete Example
+### `onDenied` (Optional)
 
-Here's a full example of setting up PouchDB syncing with Routier:
+Callback function called when sync is denied (typically due to authentication/permission issues).
 
-{% capture snippet_pqvvto %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+```ts
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  onDenied: (schemas, event) => {
+    console.error("Sync denied:", event);
+  }
+}
+```
 
-{% highlight ts %}{{ snippet_pqvvto | strip }}{% endhighlight %}
+### `auth` (Optional)
+
+Authentication credentials for the remote database.
+
+```ts
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  auth: {
+    username: "myuser",
+    password: "mypassword"
+  }
+}
+```
+
+### `headers` (Optional)
+
+Custom HTTP headers to send with sync requests.
+
+```ts
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  headers: {
+    "X-Custom-Header": "value"
+  }
+}
+```
+
+## Processing Sync Events
+
+The `onChange` callback receives sync events that contain information about what documents were changed. Use this to:
+
+- Group documents by collection
+- Route documents to the appropriate schema
+- Apply custom transformations
+- Track sync progress
+
+### Basic Usage
+
+```ts
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  onChange: (schemas, change) => {
+    if (change.direction === "pull" && change.change?.docs) {
+      console.log(`Pulled ${change.change.docs.length} documents`);
+    } else if (change.direction === "push" && change.change?.docs) {
+      console.log(`Pushed ${change.change.docs.length} documents`);
+    }
+  }
+}
+```
+
+### Routing Documents by Collection
+
+Process documents by grouping them by collection name:
+
+{% capture snippet_pouch_sync_route %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-9.ts %}{% endcapture %}
+{% highlight ts %}{{ snippet_pouch_sync_route | strip }}{% endhighlight %}
 
 ## Conflict Resolution
 
-PouchDB automatically detects conflicts when the same document is modified in multiple places. Handle conflicts in your `onChange` callback:
+PouchDB automatically detects conflicts when the same document is modified in both local and remote databases. Conflicts are indicated by the `_conflicts` property on documents.
 
-{% capture snippet_07xx3a %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+### Detecting Conflicts
 
-{% highlight ts %}{{ snippet_07xx3a | strip }}{% endhighlight %}
+Check for conflicts in your `onChange` callback:
 
-## Advanced Configuration
+```ts
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  onChange: (schemas, change) => {
+    if (change.change?.docs) {
+      change.change.docs.forEach((doc) => {
+        if (doc._conflicts && doc._conflicts.length > 0) {
+          console.warn(`Conflict detected in document ${doc._id}`);
+          // Handle conflict: merge, use local, use remote, etc.
+        }
+      });
+    }
+  }
+}
+```
 
-### Custom Sync Options
+### Resolving Conflicts
 
-You can pass additional PouchDB sync options:
+You can resolve conflicts by:
 
-{% capture snippet_vdqpgh %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+1. **Using the local version**: Delete the remote conflict revisions
+2. **Using the remote version**: Delete the local version
+3. **Merging**: Combine changes from both versions
+4. **Using business logic**: Apply domain-specific rules to determine the winner
 
-{% highlight ts %}{{ snippet_vdqpgh | strip }}{% endhighlight %}
+## Advanced PouchDB Options
 
-### Multiple Remote Databases
+The PouchDB plugin accepts all standard PouchDB replication options. These are passed through to PouchDB's `sync()` method. Refer to [PouchDB's replication documentation](https://pouchdb.com/api.html#replication) for the complete list.
 
-Sync with multiple remote databases:
+Common advanced options include:
 
-{% capture snippet_uzg7vy %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+- `doc_ids`: Array of document IDs to sync
+- `query_params`: Additional query parameters for filtered replication
+- `view`: Use a CouchDB view for filtering
+- `since`: Sync only changes since a specific sequence number
+- `heartbeat`: Interval for heartbeat requests in milliseconds
+- `timeout`: Timeout for requests in milliseconds
+- `batch_size`: Number of documents to process per batch
+- `batches_limit`: Maximum number of batches to process per replication cycle
 
-{% highlight ts %}{{ snippet_uzg7vy | strip }}{% endhighlight %}
+## Sync Patterns
 
-## Monitoring and Debugging
+### Pull-Only Sync
 
-### Sync Status Monitoring
+Use pull-only sync when you want to receive updates from a server but don't want local changes to sync back:
 
-Track sync progress and status:
+```ts
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  pull: {
+    live: true,
+    retry: true
+  },
+  push: false
+}
+```
 
-{% capture snippet_ea1k9s %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+### Push-Only Sync
 
-{% highlight ts %}{{ snippet_ea1k9s | strip }}{% endhighlight %}
+Use push-only sync to send local changes to a server without receiving updates:
 
-### Error Handling
+```ts
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  pull: false,
+  push: {
+    live: true,
+    retry: true
+  }
+}
+```
 
-Handle sync errors gracefully:
+### Bidirectional Sync
 
-{% capture snippet_is7ga0 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+Default behavior when both directions are enabled:
 
-{% highlight ts %}{{ snippet_is7ga0 | strip }}{% endhighlight %}
+```ts
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  live: true,
+  retry: true
+}
+```
 
-### Debug Mode
+### One-Time Sync
 
-Enable detailed logging for troubleshooting:
+Perform a single sync operation without live updates:
 
-{% capture snippet_mlbki7 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+```ts
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  live: false
+}
+```
 
-{% highlight ts %}{{ snippet_mlbki7 | strip }}{% endhighlight %}
+## Starting Sync
 
-## Performance Optimization
+After creating the plugin, you need to start the sync process. The plugin provides a `sync()` method that you should call:
 
-### Filtered Sync
+```ts
+import { DataStore } from "@routier/datastore";
+import { PouchDbPlugin } from "@routier/pouchdb-plugin";
 
-Only sync necessary documents:
+const plugin = new PouchDbPlugin("myapp", {
+  sync: {
+    remoteDb: "http://127.0.0.1:5984/myapp",
+    live: true,
+    retry: true,
+  },
+});
 
-{% capture snippet_0q66hb %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+class AppDataStore extends DataStore {
+  constructor() {
+    super(plugin);
+  }
+}
 
-{% highlight ts %}{{ snippet_0q66hb | strip }}{% endhighlight %}
+const store = new AppDataStore();
 
-### Batch Operations
-
-Optimize sync performance with batch operations:
-
-{% capture snippet_a3geum %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-
-{% highlight ts %}{{ snippet_a3geum | strip }}{% endhighlight %}
-
-## Best Practices
-
-### 1. **Network Handling**
-
-{% capture snippet_9z23g5 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-
-{% highlight ts %}{{ snippet_9z23g5 | strip }}{% endhighlight %}
-
-### 2. **Error Recovery**
-
-{% capture snippet_si26s4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-
-{% highlight ts %}{{ snippet_si26s4 | strip }}{% endhighlight %}
-
-### 3. **Data Validation**
-
-{% capture snippet_6pkm8p %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-
-{% highlight ts %}{{ snippet_6pkm8p | strip }}{% endhighlight %}
+// Start sync
+plugin.sync(store.schemas);
+```
 
 ## Troubleshooting
 
-### Common Issues
+### Sync Not Starting
 
-1. **Authentication Errors**
+- Verify `remoteDb` URL is correct and accessible
+- Check that sync options are provided in the plugin constructor
+- Ensure `plugin.sync(store.schemas)` is called after datastore creation
 
-   - Check credentials and permissions
-   - Verify remote database access
+### Authentication Errors
 
-2. **Network Issues**
+- Verify credentials in `auth` option
+- Check that the user has read/write permissions on the remote database
+- Test the remote database URL in a browser or with curl
 
-   - Check connectivity
-   - Verify remote database URL
-   - Check firewall settings
+### Network Issues
 
-3. **Conflict Resolution**
-   - Implement proper conflict handling
-   - Use document versioning
-   - Consider business logic for merging
+- Verify network connectivity
+- Check CORS settings on the remote server
+- Review firewall/proxy settings
+- Use `onPaused` and `onActive` callbacks to monitor connection state
 
-### Debug Commands
+### Conflicts
 
-{% capture snippet_6uhw2t %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
+- Implement conflict resolution in your `onChange` callback
+- Use document versioning strategies
+- Consider business logic for merging conflicting changes
 
-{% highlight ts %}{{ snippet_6uhw2t | strip }}{% endhighlight %}
+### Performance Issues
+
+- Use `filter` to reduce the number of documents synced
+- Adjust `batch_size` if syncing large datasets
+- Monitor sync progress with `onChange` callbacks
+- Consider using views for more efficient filtering
 
 ## Next Steps
 
-- Learn about [Live Queries](../live-queries/) for real-time updates
-- Explore [Change Tracking](../../modification/change-tracking/) for local modifications
-- See [Advanced Syncing](../advanced-syncing/) for complex scenarios
-- Check out [PouchDB Plugin](../../../plugins/built-in-plugins/pouchdb/) for more details
+- **[Syncing Overview](index.md)** - Practical example and walkthrough
+- **[Syncing Guide](/guides/syncing.md)** - Conceptual overview of syncing in Routier
+- **[PouchDB Plugin](/integrations/plugins/built-in-plugins/pouchdb/)** - PouchDB plugin documentation
+- **[Live Queries](/guides/live-queries.md)** - Real-time data queries
+- **[Change Tracking](/concepts/change-tracking/)** - Understanding how Routier tracks changes

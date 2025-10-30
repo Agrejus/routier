@@ -13,12 +13,9 @@ Routier provides several built-in storage plugins to get you started quickly.
 
 ## Quick Navigation
 
-- [Memory Plugin](memory/) - In-memory storage (no persistence)
-- [Local Storage Plugin](local-storage/) - Browser local storage
-- [File System Plugin](file-system/) - File system storage
-- [Dexie DependencyWrapper](dexie/) - IndexedDB via Dexie
-- [SQLite DependencyWrapper](sqlite/) - SQLite storage
-- [PouchDB DependencyWrapper](pouchdb/) - PouchDB storage
+- [Overview](#overview)
+- [Installation](#installation)
+- [Creating Your Own Plugin](#creating-your-own-plugin)
 
 ## Overview
 

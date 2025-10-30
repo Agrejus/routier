@@ -12,9 +12,8 @@ Task-focused guides for working with collections.
 
 ## Quick Navigation
 
-- [Extending Collections](extending-collections.md) - Add domain-specific helpers
-- [Scope Single Store](scope-single-store.md) - Use single physical store for multiple collections
-- [Views](views.md) - Create read-only derived collections that auto-update
+- [Overview](#overview)
+- [When to Use These Guides](#when-to-use-these-guides)
 
 ## Overview
 
