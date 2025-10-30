@@ -68,6 +68,6 @@ For tests, prefer the Memory plugin or mocks/stubs around persistence. The inter
 
 ## Next Steps
 
-- [Getting Started](getting-started.md) - Basic setup
+- [Getting Started](../getting-started/overview.md) - Basic setup
 - [Basic Example](basic-example.md) - Complete working example
-- [Plugin Architecture](../plugins/create-your-own/plugin-architecture.md) - Creating custom plugins
+- [Plugin Architecture](../integrations/plugins/create-your-own/) - Creating custom plugins

@@ -45,7 +45,7 @@ const total = await ctx.products
 // Combine operations - filter, sort, and transform
 const results = await ctx.products
   .where((p) => p.category === "electronics")
-  .orderBy((p) => p.price)
+  .sort((p) => p.price)
   .map((p) => ({ id: p.id, name: p.name }))
   .toArrayAsync();
 ```

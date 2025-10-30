@@ -26,5 +26,5 @@ This guide shows a complete working example of using Routier for a simple user m
 ## Next Steps
 
 - [Configuration](configuration.md) - Advanced configuration options
-- [Schema Guide](../core-concepts/schema/creating-a-schema.md) - Detailed schema creation
-- [Query Guide](../core-concepts/queries/natural-queries.md) - Advanced querying techniques
+- [Schema Guide](../concepts/schema/creating-a-schema.md) - Detailed schema creation
+- [Query Guide](../concepts/queries/index.md) - Advanced querying techniques

@@ -8,7 +8,7 @@ export function DeferredNotifications() {
   // Ignores historical notifications
   const notifications = useQuery(
     (callback) => dataStore.notifications.subscribe().defer().toArray(callback),
-    []
+    [dataStore]
   );
 
   if (notifications.status === "pending") {

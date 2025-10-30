@@ -186,7 +186,7 @@ async function example() {
   // Queries are instant
   const teslaVehicles = await ctx.vehicles
     .where((v) => v.make === "Tesla")
-    .orderBy((v) => v.year)
+    .sort((v) => v.year)
     .toArrayAsync();
 }
 ```

@@ -39,8 +39,8 @@ Chain multiple sort operations for complex sorting:
 ```ts
 // Sort by category first, then by price
 const productsByCategoryAndPrice = await dataStore.products
-  .orderBy((p) => p.category)
-  .orderBy((p) => p.price)
+  .sort((p) => p.category)
+  .sort((p) => p.price)
   .toArrayAsync();
 ```
 

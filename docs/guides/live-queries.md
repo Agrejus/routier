@@ -97,7 +97,7 @@ ctx.users
 ```ts
 // Live query with sorting - maintains sort order as data changes
 ctx.users
-  .orderBy((u) => u.name)
+  .sort((u) => u.name)
   .subscribe()
   .toArray((result) => {
     if (result.ok === "success") {
@@ -163,7 +163,7 @@ ctx.users
 ```ts
 // Live single item query
 ctx.users
-  .orderBy((u) => u.createdAt)
+  .sort((u) => u.createdAt)
   .subscribe()
   .firstOrUndefined((result) => {
     if (result.ok === "success") {

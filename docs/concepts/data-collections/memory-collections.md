@@ -64,4 +64,4 @@ Memory collections are the fastest storage option in Routier, storing all data i
 
 - [Change Tracking](change-tracking.md) - Understanding how changes are tracked
 - [Entity Management](entity-management.md) - Managing entities in collections
-- [Memory Plugin](../plugins/built-in-plugins/memory/README.md) - Detailed plugin documentation
+- [Memory Plugin]({{ site.baseurl }}/integrations/plugins/built-in-plugins/memory/) - Detailed plugin documentation

@@ -32,7 +32,7 @@ Routier queries are fluent and can only be performed through a collection. Build
 | Method                     | Description             | Example                                                     |
 | -------------------------- | ----------------------- | ----------------------------------------------------------- |
 | `where(predicate)`         | Filter results          | `ctx.products.where(p => p.price > 100)`                    |
-| `orderBy(field)`           | Sort ascending          | `ctx.products.orderBy(p => p.name)`                         |
+| `sort(field)`              | Sort ascending          | `ctx.products.sort(p => p.name)`                            |
 | `orderByDescending(field)` | Sort descending         | `ctx.products.orderByDescending(p => p.price)`              |
 | `map(selector)`            | Transform/select fields | `ctx.products.map(p => ({ name: p.name, price: p.price }))` |
 | `skip(count)`              | Skip first N items      | `ctx.products.skip(10)`                                     |
@@ -106,9 +106,7 @@ const productsInRange = await ctx.products
 
 ```ts
 // Sort by price (ascending)
-const productsByPrice = await ctx.products
-  .orderBy((p) => p.price)
-  .toArrayAsync();
+const productsByPrice = await ctx.products.sort((p) => p.price).toArrayAsync();
 
 // Sort by price (descending)
 const expensiveFirst = await ctx.products
@@ -117,8 +115,8 @@ const expensiveFirst = await ctx.products
 
 // Multiple sort criteria
 const sortedProducts = await ctx.products
-  .orderBy((p) => p.category)
-  .orderBy((p) => p.name)
+  .sort((p) => p.category)
+  .sort((p) => p.name)
   .toArrayAsync();
 ```
 

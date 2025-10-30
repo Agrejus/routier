@@ -7,7 +7,7 @@ export function ProductsList() {
   // Subscribe to live query results
   const products = useQuery(
     (callback) => dataStore.products.subscribe().toArray(callback),
-    []
+    [dataStore]
   );
 
   // Handle loading state

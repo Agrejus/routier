@@ -3,3 +3,7 @@ Readonly collection
         A: Freeze Deep
 remap property names
     A: added schema.from()
+
+TODO:
+    Can we use a computed property for the ID?  Would be great for history records
+    Can we implement a group by?  Would need to happen in memory

@@ -7,17 +7,17 @@ export function MultipleQueries() {
   // Multiple independent queries in one component
   const products = useQuery(
     (callback) => dataStore.products.subscribe().toArray(callback),
-    []
+    [dataStore]
   );
 
   const categories = useQuery(
     (callback) => dataStore.categories.subscribe().toArray(callback),
-    []
+    [dataStore]
   );
 
   const productCount = useQuery(
     (callback) => dataStore.products.subscribe().count(callback),
-    []
+    [dataStore]
   );
 
   if (products.status === "pending" || categories.status === "pending") {

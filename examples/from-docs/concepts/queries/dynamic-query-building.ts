@@ -1,7 +1,6 @@
 import { DataStore } from "@routier/datastore";
 import { s } from "@routier/core/schema";
 import { MemoryPlugin } from "@routier/memory-plugin";
-import { InferType } from "@routier/core/schema";
 
 const productSchema = s.define("products", {
     id: s.string().key().identity(),
@@ -46,14 +45,4 @@ if (minPrice > 0) {
 
 // Execute the built query
 const results = await query.toArrayAsync();
-
-// Pattern: Building queries with arrays using includes()
-// When filtering by multiple ID values from an array
-const productIds = ["prod-1", "prod-2", "prod-3"];
-const productsByIds = await dataStore.products
-    .where(([p, params]) =>
-        params.ids.includes(p.id),
-        { ids: productIds }
-    )
-    .toArrayAsync();
 

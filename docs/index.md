@@ -59,7 +59,7 @@ Routier follows a simple, clear philosophy that guides every design decision.
 
 **Portable by plugins**: Storage-specific behavior lives in plugins. Swap between IndexedDB, SQLite, Local Storage, or any backend without changing your app code.
 
-[Learn about our philosophy →]({{ site.baseurl }}/getting-started/overview)
+[Learn about our philosophy →]({{ site.baseurl }}/getting-started/)
 
 ## Core Features
 
@@ -107,7 +107,7 @@ Storage that adapts to your needs:
 
 Routier is built for maximum performance. We intentionally avoided promises and async/await in core hot paths to reduce microtask scheduling overhead. The result is a thin, fast layer that provides powerful data behavior without getting in your way.
 
-Performance isn't just about speed—it's about predictable, consistent behavior that scales with your application. [See how it works →]({{ site.baseurl }}/getting-started/overview)
+Performance isn't just about speed—it's about predictable, consistent behavior that scales with your application. [See how it works →]({{ site.baseurl }}/getting-started/)
 
 ## How Routier Fits Your Stack
 

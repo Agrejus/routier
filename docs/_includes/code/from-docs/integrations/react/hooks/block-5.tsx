@@ -12,7 +12,7 @@ export function SortedProducts() {
         .subscribe()
         .sort((p) => p.name)
         .toArray(callback),
-    []
+    [dataStore]
   );
 
   if (products.status === "pending") return <div>Loading...</div>;
@@ -21,11 +21,12 @@ export function SortedProducts() {
 
   return (
     <ul>
-      {products.data?.map((product) => (
-        <li key={product.id}>
-          {product.name} - ${product.price}
-        </li>
-      ))}
+      {products.status === "success" &&
+        products.data.map((product) => (
+          <li key={product.id}>
+            {product.name} - ${product.price}
+          </li>
+        ))}
     </ul>
   );
 }

@@ -120,7 +120,7 @@ Robust sync implementations include:
 
 ## Related Guides
 
-- **[PouchDB Syncing](/data-operations/state-management/syncing/pouchdb-sync.md)** - Practical example with PouchDB
+- **[PouchDB Syncing]({{ site.baseurl }}/data-operations/state-management/syncing/pouchdb-sync)** - Practical example with PouchDB
 - **[Change Tracking](/concepts/change-tracking/)** - Understanding how Routier tracks changes
 - **[State Management](state-management.md)** - Managing application state
 - **[Live Queries](live-queries.md)** - Real-time data updates

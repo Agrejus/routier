@@ -7,7 +7,7 @@ export function ProductCount() {
   // Query a count
   const countResult = useQuery(
     (callback) => dataStore.products.subscribe().count(callback),
-    []
+    [dataStore]
   );
 
   if (countResult.status === "pending") return <div>Loading...</div>;

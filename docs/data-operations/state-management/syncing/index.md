@@ -274,6 +274,6 @@ sync: {
 ## Next Steps
 
 - **[PouchDB Syncing Details](pouchdb-sync.md)** - Complete reference for PouchDB sync options and advanced configuration
-- **[Syncing Guide](/guides/syncing.md)** - Conceptual overview of how syncing works in Routier
+- **[Syncing Guide]({{ site.baseurl }}/guides/syncing)** - Conceptual overview of how syncing works in Routier
 - **[Change Tracking](/concepts/change-tracking/)** - Understanding how Routier tracks local changes
-- **[Live Queries](/guides/live-queries.md)** - Real-time data queries
+- **[Live Queries]({{ site.baseurl }}/guides/live-queries)** - Real-time data queries

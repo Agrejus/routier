@@ -130,7 +130,7 @@ This pattern is ideal for:
 - **Change tracking**: Know when and how data changed
 - **Undo/Redo**: Retrieve previous states
 
-For complete implementation details, examples, and best practices, see the **[History Tracking guide](/guides/history-tracking.md)**.
+For complete implementation details, examples, and best practices, see the **[History Tracking guide]({{ site.baseurl }}/guides/history-tracking)**.
 
 ## View Patterns
 
@@ -256,6 +256,6 @@ The `compute` methods run the derive function you provided when creating the vie
 
 - **[Collections Overview](index.md)** - Understanding collections
 - **[Scope Single Store](scope-single-store.md)** - Scoping views for single-store backends
-- **[Live Queries](/guides/live-queries.md)** - Understanding reactive queries
-- **[History Tracking](/guides/history-tracking.md)** - Implementing audit trails and version history
-- **[State Management](/guides/state-management.md)** - Managing application state
+- **[Live Queries]({{ site.baseurl }}/guides/live-queries)** - Understanding reactive queries
+- **[History Tracking]({{ site.baseurl }}/guides/history-tracking)** - Implementing audit trails and version history
+- **[State Management]({{ site.baseurl }}/guides/state-management)** - Managing application state

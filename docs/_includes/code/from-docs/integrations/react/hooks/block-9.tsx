@@ -8,7 +8,7 @@ export function OneTimeQuery() {
   // Perfect for static configuration or initial data that won't change
   const config = useQuery(
     (callback) => dataStore.settings.toArray(callback), // No .subscribe()
-    []
+    [dataStore]
   );
 
   if (config.status === "pending") return <div>Loading config...</div>;

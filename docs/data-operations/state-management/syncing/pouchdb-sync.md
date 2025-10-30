@@ -432,7 +432,7 @@ plugin.sync(store.schemas);
 ## Next Steps
 
 - **[Syncing Overview](index.md)** - Practical example and walkthrough
-- **[Syncing Guide](/guides/syncing.md)** - Conceptual overview of syncing in Routier
+- **[Syncing Guide]({{ site.baseurl }}/guides/syncing)** - Conceptual overview of syncing in Routier
 - **[PouchDB Plugin](/integrations/plugins/built-in-plugins/pouchdb/)** - PouchDB plugin documentation
-- **[Live Queries](/guides/live-queries.md)** - Real-time data queries
+- **[Live Queries]({{ site.baseurl }}/guides/live-queries)** - Real-time data queries
 - **[Change Tracking](/concepts/change-tracking/)** - Understanding how Routier tracks changes

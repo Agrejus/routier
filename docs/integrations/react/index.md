@@ -29,7 +29,7 @@ function ProductsList() {
 
   const products = useQuery(
     (callback) => dataStore.products.subscribe().toArray(callback),
-    []
+    [dataStore]
   );
 
   if (products.status === "pending") return <div>Loading...</div>;
@@ -37,9 +37,10 @@ function ProductsList() {
 
   return (
     <ul>
-      {products.data?.map((product) => (
-        <li key={product.id}>{product.name}</li>
-      ))}
+      {products.status === "success" &&
+        products.data.map((product) => (
+          <li key={product.id}>{product.name}</li>
+        ))}
     </ul>
   );
 }

@@ -121,13 +121,14 @@ Once you have a history table, you can query it to see all historical states of 
 // Get all history for a specific product
 const productHistory = await ctx.productsHistory
   .where((p) => p.productId === "product-123")
-  .orderBy((p) => p.createdDate)
+  .sort((p) => p.createdDate)
   .toArrayAsync();
 
-// Get the latest version of each product
-const latestHistory = await ctx.productsHistory
-  .groupBy((p) => p.productId)
-  .select((g) => g.items.max((h) => h.createdDate))
+// Get the latest version for a single product
+const latestForOne = await ctx.productsHistory
+  .where((p) => p.productId === "product-123")
+  .sort((p) => p.createdDate)
+  .take(1)
   .toArrayAsync();
 ```
 
@@ -147,7 +148,7 @@ const latestHistory = await ctx.productsHistory
 
 ## Related Guides
 
-- **[Views](/how-to/collections/views.md)** - Understanding how views work for history tracking
+- **[Views]({{ site.baseurl }}/how-to/collections/views/)** - Understanding how views work for history tracking
 - **[Change Tracking](/concepts/change-tracking/)** - How Routier tracks changes
 - **[State Management](state-management.md)** - Managing application state
 - **[Data Manipulation](data-manipulation.md)** - Working with your data
