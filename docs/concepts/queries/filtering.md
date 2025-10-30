@@ -15,6 +15,7 @@ Filter your data with `where` clauses to find exactly what you need.
 - [Simple Filtering](#simple-filtering)
 - [Multiple Conditions](#multiple-conditions)
 - [Parameterized Queries](#parameterized-queries)
+- [Building Queries Conditionally](#building-queries-conditionally)
 - [Notes](#notes)
 - [Related](#related)
 
@@ -91,6 +92,53 @@ const products = await dataStore.products
   .take(pageSize)
   .toArrayAsync();
 ```
+
+## Building Queries Conditionally
+
+You can build queries dynamically by assigning query results back to a variable and chaining additional operations conditionally:
+
+{% capture snippet_dynamic_query %}{% include code/from-docs/concepts/queries/dynamic-query-building.ts %}{% endcapture %}
+{% highlight ts %}{{ snippet_dynamic_query | strip }}{% endhighlight %}
+
+### Key Pattern
+
+Start with a base query and conditionally add filters:
+
+```ts
+// Start with base collection
+let query = dataStore.products;
+
+// Conditionally add filters based on logic
+// Always use parameterized queries when using variables
+if (shouldFilterByCategory) {
+  query = query.where(([p, params]) => p.category === params.category, {
+    category: "electronics",
+  });
+}
+
+if (minPrice > 0) {
+  query = query.where(([p, params]) => p.price >= params.minPrice, {
+    minPrice,
+  });
+}
+
+// Execute after building
+const results = await query.toArrayAsync();
+```
+
+### Filtering by Arrays
+
+Use parameterized queries with `includes()` to filter by multiple values:
+
+```ts
+const productIds = ["prod-1", "prod-2", "prod-3"];
+
+const products = await dataStore.products
+  .where(([p, params]) => params.ids.includes(p.id), { ids: productIds })
+  .toArrayAsync();
+```
+
+This pattern is especially useful when building queries in loops or based on conditional logic, as seen in Routier's internal view computation system.
 
 ## Notes
 

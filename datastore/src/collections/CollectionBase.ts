@@ -401,6 +401,18 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     }
 
     /**
+     * Converts the collection to a QueryableAsync instance for building queries dynamically.
+     * This is useful when you need to conditionally build queries by chaining operations based on logic.
+     * @returns QueryableAsync instance for chaining additional query operations
+     */
+    toQueryable() {
+        return new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
+            dataBridge: this.dataBridge as any,
+            changeTracker: this.changeTracker as any
+        });
+    }
+
+    /**
      * Executes the query and returns all results as an array.
      * @param done Callback function called with the array of entities or error
      */

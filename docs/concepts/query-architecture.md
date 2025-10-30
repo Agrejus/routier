@@ -86,7 +86,7 @@ Each storage plugin receives these ASTs and translates them into their native qu
 
 **Query Languages** are structured syntaxes that databases interpret to perform queries:
 
-- **SQL**: `SELECT * FROM products WHERE price > 100 AND category = 'electronics'`
+- **SQL**: `SELECT id, name, price, category FROM products WHERE price > 100 AND category = 'electronics'`
 - **MongoDB Mango**: `{"$and": [{"price": {"$gt": 100}}, {"category": "electronics"}]}`
 - **MQL (MongoDB Query Language)**: `db.products.find({price: {$gt: 100}, category: "electronics"})`
 - **Lucene**: `price:[100 TO *] AND category:electronics`
@@ -152,7 +152,7 @@ const products = await dataStore.products
 When Routier can parse your JavaScript expressions, it translates them to optimized database queries:
 
 ```ts
-// This gets translated to: SELECT * FROM products WHERE price > 100 AND category = 'electronics'
+// This gets translated to: SELECT id, name, price, category FROM products WHERE price > 100 AND category = 'electronics'
 const optimized = await dataStore.products
   .where((p) => p.price > 100 && p.category === "electronics")
   .toArrayAsync();
