@@ -1,8 +1,7 @@
 Readonly collection
-    Done -> Need to figure out deep readonly
-        A: Freeze Deep
+    Freeze Deep
 remap property names
-    A: added schema.from()
+    A: added schema.from() <---- Need to implement this
 
 TODO:
     Can we use a computed property for the ID?  Would be great for history records

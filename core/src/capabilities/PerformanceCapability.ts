@@ -26,7 +26,8 @@ export class PerformanceCapability extends Capability {
         performanceMetrics: PerformanceMetrics,
         isCompleted: boolean
     ) => void;
-    private shouldLog?: (methodName: string | symbol, metadata: MethodMetadata) => boolean;
+    private shouldLogMethod?: (methodName: string | symbol, metadata: MethodMetadata) => boolean;
+    private activeInterceptors: WeakSet<Function> = new WeakSet();
 
     constructor(options?: PerformanceCapabilityOptions) {
         super();
@@ -65,7 +66,7 @@ export class PerformanceCapability extends Capability {
                 }
             });
         });
-        this.shouldLog = options?.shouldLog ?? (() => true);
+        this.shouldLogMethod = options?.shouldLog ?? (() => true);
         this.callTraceManager = new CallTraceManager();
         this.performanceTracker = new PerformanceTracker();
     }
@@ -76,44 +77,60 @@ export class PerformanceCapability extends Capability {
         methodPath: string,
         instance: any
     ): Function {
-        return (...args: any[]) => {
-            const isNewOperation = this.callTraceManager.isNewOperation();
-            let operationId: string;
-
-            if (isNewOperation) {
-                operationId = this.callTraceManager.startNewOperation();
-                const startTime = this.performanceTracker.startMethodTiming(operationId, methodPath);
-                this.log('ORIGIN', operationId, methodName, methodPath, { startTime }, false);
-            } else {
-                operationId = this.callTraceManager.getActiveOperationId();
-
-                // Record that the previous method is about to call this one
-                const callTrace = this.callTraceManager.getCurrentTrace();
-                const previousMethodPath = callTrace[callTrace.length - 2];
-                if (previousMethodPath) {
-                    this.performanceTracker.recordNextMethodStart(operationId, previousMethodPath);
-                }
-
-                const startTime = this.performanceTracker.startMethodTiming(operationId, methodPath);
-                this.log('CHILD', operationId, methodName, methodPath, { startTime }, false);
+        const interceptorFn = (...args: any[]) => {
+            // Re-entrancy guard: If this interceptor is already executing (self-recursion),
+            // bypass tracking and call original directly to prevent infinite loops
+            if (this.activeInterceptors.has(interceptorFn)) {
+                return originalMethod.apply(instance, args);
             }
+
+            // Mark this interceptor as active
+            this.activeInterceptors.add(interceptorFn);
 
             try {
-                const result = originalMethod.apply(instance, args);
-                return result;
-            } finally {
-                // End performance tracking
-                const performanceMetrics = this.performanceTracker.endMethodTiming(operationId, methodPath);
-
-                // Log completion with performance metrics
-                this.log(isNewOperation ? 'ORIGIN' : 'CHILD', operationId, methodName, methodPath, performanceMetrics, true);
+                const isNewOperation = this.callTraceManager.isNewOperation();
+                let operationId: string;
 
                 if (isNewOperation) {
-                    this.callTraceManager.endOperation();
-                    this.performanceTracker.cleanupOperation(operationId);
+                    operationId = this.callTraceManager.startNewOperation();
+                    const startTime = this.performanceTracker.startMethodTiming(operationId, methodPath);
+                    this.log('ORIGIN', operationId, methodName, methodPath, { startTime }, false);
+                } else {
+                    operationId = this.callTraceManager.getActiveOperationId();
+
+                    // Record that the previous method is about to call this one
+                    const callTrace = this.callTraceManager.getCurrentTrace();
+                    const previousMethodPath = callTrace[callTrace.length - 2];
+                    if (previousMethodPath) {
+                        this.performanceTracker.recordNextMethodStart(operationId, previousMethodPath);
+                    }
+
+                    const startTime = this.performanceTracker.startMethodTiming(operationId, methodPath);
+                    this.log('CHILD', operationId, methodName, methodPath, { startTime }, false);
                 }
+
+                try {
+                    const result = originalMethod.apply(instance, args);
+                    return result;
+                } finally {
+                    // End performance tracking
+                    const performanceMetrics = this.performanceTracker.endMethodTiming(operationId, methodPath);
+
+                    // Log completion with performance metrics
+                    this.log(isNewOperation ? 'ORIGIN' : 'CHILD', operationId, methodName, methodPath, performanceMetrics, true);
+
+                    if (isNewOperation) {
+                        this.callTraceManager.endOperation();
+                        this.performanceTracker.cleanupOperation(operationId);
+                    }
+                }
+            } finally {
+                // Clear the re-entrancy flag
+                this.activeInterceptors.delete(interceptorFn);
             }
         };
+
+        return interceptorFn;
     }
 
     override apply(instance: unknown): void {
@@ -124,6 +141,17 @@ export class PerformanceCapability extends Capability {
         // Create a performance wrapper
         const wrapper: MethodWrapper = {
             wrapMethod: (originalMethod: Function, methodInfo: MethodInfo) => {
+                const metadata: MethodMetadata = {
+                    parent: methodInfo.parent,
+                    instance: methodInfo.instance,
+                    methodPath: methodInfo.methodPath
+                };
+
+                const shouldLog = this.shouldLogMethod(methodInfo.methodName, metadata);
+                if (!shouldLog) {
+                    return originalMethod; // Return unwrapped method if not logging
+                }
+
                 return this.createPerformanceInterceptor(
                     originalMethod,
                     String(methodInfo.methodName),

@@ -1,0 +1,35 @@
+{
+    "$schema": "https://typedoc.org/schema.json",
+    "entryPoints": [
+        "core/src/index.ts",
+        "datastore/src/index.ts",
+        "react/src/index.ts"
+    ],
+    "out": "docs/reference/api",
+    "entryPointStrategy": "expand",
+    "tsconfig": "tsconfig.typedoc.json",
+    "plugin": [
+        "typedoc-plugin-markdown"
+    ],
+    "readme": "none",
+    "excludePrivate": true,
+    "excludeProtected": true,
+    "excludeInternal": true,
+    "hideGenerator": true,
+    "disableSources": false,
+    "skipErrorChecking": true,
+    "sort": [
+        "source-order"
+    ],
+    "kindSortOrder": [
+        "Project",
+        "Module",
+        "Namespace",
+        "Enum",
+        "Class",
+        "Interface",
+        "TypeAlias",
+        "Function",
+        "Variable"
+    ]
+}
