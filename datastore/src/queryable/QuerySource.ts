@@ -175,7 +175,6 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
         return split.join(".")
     }
 
-
     protected createQueryPayload<Shape>(): { memoryEvent: DbPluginQueryEvent<TRoot, Shape>, databaseEvent: DbPluginQueryEvent<TRoot, Shape> } {
 
         // send over only the database operations, if there are none its a select all

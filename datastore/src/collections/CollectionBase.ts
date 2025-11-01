@@ -82,7 +82,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     }
 
     dispose() {
-        // Noop
+        // Noop for now
     }
 
     protected get changeTrackingType(): ChangeTrackingType {

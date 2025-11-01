@@ -137,6 +137,12 @@ export type CompiledSchema<TEntity extends {}> = {
     compare: (a: InferType<TEntity>, fromDb: InferType<TEntity>) => boolean;
     /** Deserializes an entity from storage format. */
     deserialize: (entity: InferType<TEntity>) => InferType<TEntity>;
+
+    /** Combines serializing and preparing an entity for saving. */
+    preprocess: (entity: InferCreateType<TEntity>) => InferType<TEntity>;
+    /** Combines deserializing and enriching an entity for selection. */
+    postprocess: Enrich<TEntity>;
+
     /** Serializes an entity to storage format. */
     serialize: (entity: InferType<TEntity>) => InferType<TEntity>;
     /** Unique id for the schema. */

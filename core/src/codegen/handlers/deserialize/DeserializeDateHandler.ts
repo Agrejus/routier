@@ -13,8 +13,8 @@ export class DeserializeDateHandler extends PropertyInfoHandler {
         if (property.type === SchemaTypes.Date) {
             const slotPath = new SlotPath("result.variable.object");
             let objectBuilder = builder.get<ObjectBuilder>(slotPath.get());
-            const entitySelectorPath = property.getSelectrorPath({ parent: "entity" });
-            const entityAssignmentPath = property.getAssignmentPath({ parent: "result" });
+            const entitySelectorPath = property.getSelectrorPath({ parent: "unserialized" });
+            const entityAssignmentPath = property.getAssignmentPath({ parent: "entity", useFromPropertyName: property.isRenamed });
             const assignment = `${property.name}: typeof ${entitySelectorPath} === "string" ? new Date(${entitySelectorPath}) : ${entitySelectorPath}`;
 
             // if it is nullable or optional, assign in an if block, otherwise we 

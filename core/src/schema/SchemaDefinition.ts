@@ -2,7 +2,7 @@ import { SchemaFunction } from './table/SchemaFunction';
 import { SchemaComputed } from './table/SchemaComputed';
 import { SchemaBase } from "./property/base/SchemaBase";
 import { PropertyInfo } from './PropertyInfo';
-import { CodeBuilder } from '../codegen';
+import { CodeBuilder, FunctionBuilder, SlotBlock } from '../codegen';
 import { EnrichmentHandlerBuilder } from '../codegen/handlers/EnrichmentHandlerBuilder';
 import { MergeHandlerBuilder } from '../codegen/handlers/MergeHandlerBuilder';
 import { PrepareHandlerBuilder } from '../codegen/handlers/PrepareHandlerBuilder';
@@ -21,7 +21,7 @@ import { hash } from "../utilities";
 import { CompiledSchema, GetHashTypeFunction, HashFunction, HashType, IdType, Index, InferCreateType, InferType, SchemaTypes } from './types';
 import { DeepPartial } from '../types';
 import { SchemaSubscription } from './communication/broadcast';
-import { CompareIdsHandlerBuilder } from '../codegen/handlers';
+import { CompareIdsHandlerBuilder } from '../codegen/handlers/CompareIdsHandlerBuilder';
 
 export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
@@ -280,15 +280,26 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const enricherFunctionRoot = enricherCodeBuilder.factory("factory", { name: "factory" }).parameters({ name: "collectionName", value: this.collectionName });
             const enricherFunctionBody = enricherFunctionRoot.function(undefined, { name: "function" }).parameters("entity", "changeTrackingType").return();
 
-            enricherFunctionBody.raw(`function ${this.createChangeTracker.toString()}`);
-            enricherFunctionBody.variable("enableChangeTracking").value('changeTrackingType === "proxy" ? createChangeTracker() : e => e');
+            enricherFunctionBody.slot("changeTracker").raw(`\tfunction ${this.createChangeTracker.toString()}`);
+            enricherFunctionBody.slot("enableChangeTracking")
+                .variable("enableChangeTracking")
+                .value('changeTrackingType === "proxy" ? createChangeTracker() : e => e');
 
+            enricherFunctionBody.slot("append");
             enricherFunctionBody.slot("enriched");
             enricherFunctionBody.slot("declarations");
             enricherFunctionBody.slot("assignment");
             enricherFunctionBody.slot("ifs");
             enricherFunctionBody.slot("tracking").if('changeTrackingType === "immutable"', { name: "freeze" });
-            enricherFunctionBody.raw('\treturn enableChangeTracking(enriched);');
+            enricherFunctionBody.slot("return").raw('\treturn enableChangeTracking(enriched);');
+
+            const preprocessCodeBuilder = new CodeBuilder();
+            preprocessCodeBuilder.slot("main");
+            preprocessCodeBuilder.slot("return").raw(`     return result;`);
+
+            const postprocessCodeBuilder = new CodeBuilder();
+            postprocessCodeBuilder.slot("main");
+            postprocessCodeBuilder.slot("return").raw(`     return result;`);
 
             const mergeCodeBuilder = new CodeBuilder();
 
@@ -343,7 +354,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             deserializeCodeBuilder.slot("functions");
             deserializeCodeBuilder.slot("result");
             deserializeCodeBuilder.slot("if");
-            deserializeCodeBuilder.slot("return").raw(`     return result;`);
+            deserializeCodeBuilder.slot("return").raw(`     return entity;`);
 
             const serializeCodeBuilder = new CodeBuilder();
             serializeCodeBuilder.slot("result").raw("const result = {};");
@@ -429,16 +440,34 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                 throw new Error(`Schema must have a key.  Use .key() to mark a property as a key.  Collection Name: ${this.collectionName}`)
             }
 
-            const enrichParams = enricherFunctionRoot.getParameters()
-            const mergeParams = mergeFunctionRoot.getParameters()
+            const enrichParams = enricherFunctionRoot.getParameters();
+            const mergeParams = mergeFunctionRoot.getParameters();
             const enrichGenerator = Function(`return ${enricherCodeBuilder.toString()}`);
             const mergeGenerator = Function(`return ${mergeCodeBuilder.toString()}`);
+
+            // After enricher is used, we modify it to be deserialize and enrich
+            enricherFunctionBody.get<SlotBlock>("append").insert(deserializeCodeBuilder.get<SlotBlock>("functions"));
+            enricherFunctionBody.get<SlotBlock>("append").insert(deserializeCodeBuilder.get<SlotBlock>("result"));
+            enricherFunctionBody.get<SlotBlock>("append").insert(deserializeCodeBuilder.get<SlotBlock>("if"));
+            enricherFunctionRoot.replace("function", new FunctionBuilder(undefined).parameters("unserialized", "changeTrackingType").return());
+
+            const postProcessGenerator = Function(`return ${enricherCodeBuilder.toString()}`);
+            const postProcessParams = enricherFunctionRoot.getParameters();
+
+            // Combine prepare and serialize
+            preprocessCodeBuilder.get<SlotBlock>("main").insert(prepareCodeBuilder.get<SlotBlock>("result"));
+            preprocessCodeBuilder.get<SlotBlock>("main").insert(prepareCodeBuilder.get<SlotBlock>("assignments"));
+
+            preprocessCodeBuilder.get<SlotBlock>("main").insert(serializeCodeBuilder.get<SlotBlock>("assignments"));
+            preprocessCodeBuilder.get<SlotBlock>("main").insert(serializeCodeBuilder.get<SlotBlock>("functions"));
+            preprocessCodeBuilder.get<SlotBlock>("main").insert(serializeCodeBuilder.get<SlotBlock>("if"));
+
 
             const getIdsFunction = Function("entity", idSelectorCodeBuilder.toString()) as (entity: InferType<T>) => [IdType];
             const getHashTypeFunction = Function("entity", hashTypeCodeBuilder.toString()) as GetHashTypeFunction<T>;
             const prepareFunction = Function("entity", prepareCodeBuilder.toString()) as (entity: InferCreateType<T>) => InferCreateType<T>;
             const cloneFunction = Function("entity", cloneCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
-            const deserializeFunction = Function("entity", deserializeCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
+            const deserializeFunction = Function("unserialized", deserializeCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
             const serializeFunction = Function("entity", serializeCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
             const compareFunction = Function("a", "b", compareCodeBuilder.toString()) as (a: InferType<T>, b: InferType<T>) => boolean;
             const stripFunction = Function("entity", stripCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
@@ -446,9 +475,12 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const enableChangeTrackingFunction = Function("entity", changeTrackingCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
             const freezeFunction = Function("entity", freezeCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
             const compareIdsFunction = Function("a", "b", compareIdsCodeBuilder.toString()) as (a: InferType<T>, b: InferType<T>) => boolean;
+            const preprocessFunction = Function("entity", preprocessCodeBuilder.toString()) as (entity: InferCreateType<T>) => InferType<T>;
 
             const enricherFactoryFunction = enrichGenerator();
+            const postProcessFactoryFunction = postProcessGenerator();
             const mergeFactoryFunction = mergeGenerator();
+            const postProcessFunction = postProcessFactoryFunction(...postProcessParams.map(w => w.value))
             const enricherFunction = enricherFactoryFunction(...enrichParams.map(w => w.value));
             const mergeFunction = mergeFactoryFunction(...mergeParams.map(w => w.value));
 
@@ -485,6 +517,8 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
             return {
                 createSubscription: (signal?: AbortSignal) => new SchemaSubscription(id, signal),
+                preprocess: preprocessFunction,
+                postprocess: postProcessFunction,
                 getId,
                 getProperty,
                 properties,

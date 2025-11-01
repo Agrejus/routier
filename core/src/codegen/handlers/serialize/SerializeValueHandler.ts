@@ -8,7 +8,7 @@ export class SerializeValueHandler extends PropertyInfoHandler {
 
         if (property.type != SchemaTypes.Object && property.type != SchemaTypes.Date) {
             const slot = builder.getOrDefault<SlotBlock>("if");
-            const entitySelectorPath = property.getAssignmentPath({ parent: "entity" });
+            const entitySelectorPath = property.getAssignmentPath({ parent: "entity", useFromPropertyName: property.isRenamed });
             const resultSelectorPath = property.getAssignmentPath({ parent: "result" });
 
             if (property.parent == null) {

@@ -1,10 +1,11 @@
-import { CodeBuilder, ContainerBlock, ObjectBuilder, SlotBlock } from '../../blocks';
+import { CodeBuilder, ContainerBlock, SlotBlock } from '../../blocks';
 import { SlotPath } from '../../SlotPath';
 import { PropertyInfoHandler } from "../types";
 import { PropertyInfo, SchemaTypes } from "../../../schema";
 
 /**
- * Handles converting a Date value from JavaScript to a string value
+ * Handles converting a Date value from JavaScript to a string value.  Should handle remapping here because it is the lowest level in the code here.
+ * Remapping higher up could break lower level code
  */
 export class SerializeDateHandler extends PropertyInfoHandler {
 
@@ -12,8 +13,10 @@ export class SerializeDateHandler extends PropertyInfoHandler {
 
         if (property.type === SchemaTypes.Date) {
             let objectBuilder = builder.get<SlotBlock>("if");
-            const entitySelectorPath = property.getSelectrorPath({ parent: "entity" });
-            const entityAssignmentPath = property.getAssignmentPath({ parent: "result" });
+            const entitySelectorPath = property.getSelectrorPath({ parent: "entity", useFromPropertyName: property.isRenamed });
+            const entityAssignmentPath = property.getAssignmentPath({
+                parent: "result"
+            });
             const assignment = `${property.name}: ${entitySelectorPath} instanceof Date ? ${entitySelectorPath}.toISOString() : ${entitySelectorPath}`;
 
             // if it is nullable or optional, assign in an if block, otherwise we 

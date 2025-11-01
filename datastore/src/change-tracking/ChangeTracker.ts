@@ -145,8 +145,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
                 continue;
             }
 
-            const entity = this.schema.prepare(changeTrackedDoc as InferCreateType<TEntity>) as InferType<TEntity>;
-            const serializedEntity = this.schema.serialize(entity);
+            const serializedEntity = this.schema.preprocess(changeTrackedDoc as InferCreateType<TEntity>);
             changes.push({ entity: serializedEntity, delta: this.schema.serialize(changeTrackedDoc.__tracking__.changes as InferType<TEntity>), changeType })
         }
 
@@ -341,7 +340,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
         const result = [];
 
         for (let i = 0, length = entities.length; i < length; i++) {
-            result.push(this.schema.enrich(this.schema.deserialize(entities[i]), changeTrackingType));
+            result.push(this.schema.postprocess(entities[i], changeTrackingType));
         }
 
         return result;
@@ -390,8 +389,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
         // because then they will need to worry about lifecycle management
         // Need to make sure we run any serialization changes as well
         for (const item of this.additions.values()) {
-            const prepared = this.schema.prepare(item)
-            result.push(this.schema.serialize(prepared as InferType<TEntity>) as InferCreateType<TEntity>);
+            result.push(this.schema.preprocess(item) as InferCreateType<TEntity>);
         }
 
         return result;

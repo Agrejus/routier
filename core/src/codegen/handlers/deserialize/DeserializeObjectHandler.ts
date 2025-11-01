@@ -12,14 +12,14 @@ export class DeserializeObjectHandler extends PropertyInfoHandler {
             let objectBuilder = builder.get<ObjectBuilder>(slotPath.get());
 
             if (property.parent == null) {
-                objectBuilder.nested(property.name, property.name)
+                objectBuilder.nested(property.getResolvedName(), property.name)
 
                 return builder;
             }
 
             slotPath.push(...property.getParentPathArray());
             const nestedObjectBuilder = builder.get<ObjectBuilder>(slotPath.get());
-            nestedObjectBuilder.nested(property.name, property.name)
+            nestedObjectBuilder.nested(property.getResolvedName(), property.name)
 
             return builder;
         }

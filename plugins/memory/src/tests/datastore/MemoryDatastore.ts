@@ -12,6 +12,7 @@ import { immutableItemSchema } from "../schemas/immutableItem";
 import { commentsViewSchema } from "../schemas/commentsView";
 import { productsViewSchema } from "../schemas/productView";
 import { productsHistorySchema } from "../schemas/productsHistory";
+import { ordersSchema } from "../schemas/order";
 
 export class TestDataStore extends DataStore {
     constructor(plugin: IDbPlugin) {
@@ -71,6 +72,7 @@ export class TestDataStore extends DataStore {
     playerMatches = this.collection(playerMatchSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...playerMatchSchema }).create();
 
     immutableItems = this.collection(immutableItemSchema).readonly().create();
+    orders = this.collection(ordersSchema).create();
 
     commentsView = this.view(commentsViewSchema).derive((done) => {
         // defer because we don't want to compute every time we create a datastore
@@ -93,14 +95,4 @@ export class TestDataStore extends DataStore {
 
         return unsubscribe;
     }).create();
-
-    extendedComments = this.collection(commentsSchema).scope(([x, p]) => x.documentType === p.collectionName, commentsSchema).create((Instance, ...args) => new class extends Instance {
-        constructor() {
-            super(...args);
-        }
-
-        someOtherAddAsync(...entities: CreateComment[]) {
-            return this.addAsync(...entities);
-        }
-    });
 }

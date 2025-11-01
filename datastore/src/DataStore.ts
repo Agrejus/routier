@@ -59,6 +59,11 @@ export class DataStore implements Disposable {
      */
     protected collection<TEntity extends {}>(schema: CompiledSchema<TEntity>) {
         const onCreated = (collection: Collection<TEntity>) => {
+
+            if (this.collections.has(schema.id)) {
+                throw new Error(`Cannot have two collections/views with the same schema.  Schema Collection Name: ${schema.collectionName}`);
+            }
+
             this.collections.set(schema.id, collection);
             this._schemas.set(schema.id, schema as CompiledSchema<UnknownRecord>);
         };
@@ -85,6 +90,11 @@ export class DataStore implements Disposable {
         }
 
         const onCreated = (view: View<TEntity>) => {
+
+            if (this.collections.has(schema.id)) {
+                throw new Error(`Cannot have two collections/views with the same schema.  Schema Collection Name: ${schema.collectionName}`);
+            }
+
             this.collections.set(schema.id, view);
             this._schemas.set(schema.id, schema as CompiledSchema<UnknownRecord>);
         };
