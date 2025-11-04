@@ -1,8 +1,8 @@
 # GitHub Pages configuration for Routier documentation
 title: Routier
 description: Modern, flexible, reactive data access layer for building scalable applications
-url: https://agrejus.github.io
-baseurl: /routier
+url: https://routier.dev
+baseurl: ""
 
 # Navigation
 nav:
