@@ -20,7 +20,7 @@ type CollectionBuilderProps<TEntity extends {}, TCollection extends View<TEntity
     persistCallback: IDbPlugin["bulkPersist"];
 }
 
-export type DeriveCallback<TEntity extends {}> = (data: InferType<TEntity>[]) => void;
+export type DeriveCallback<TEntity extends {}> = (data: (InferType<TEntity> | InferCreateType<TEntity>)[]) => void;
 export type Derive<TEntity extends {}> = (callback: DeriveCallback<TEntity>) => DeriveResponse;
 export type DeriveResponse = (() => void) | (() => void)[];
 

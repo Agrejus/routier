@@ -5,7 +5,7 @@ import { TakeQueryableAsync } from "./TakeQueryableAsync";
 import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
 import { QueryOptionsCollection, QueryOrdering } from "@routier/core/plugins";
-import { ChangeTrackingType, CompiledSchema } from "@routier/core/schema";
+import { ChangeTrackingType, CompiledSchema, IdType } from "@routier/core/schema";
 import { SchemaCollection } from "@routier/core/collections";
 import { QuerySource } from "./QuerySource";
 import { DataBridge } from "../data-access/DataBridge";
@@ -46,6 +46,12 @@ export class QueryableAsync<Root extends {}, Shape> extends SelectionQueryableAs
     map<R extends Shape[keyof Shape] | Partial<Shape>>(expression: GenericFunction<Shape, R>) {
 
         this.setMapQueryOption(expression);
+        return this.create(QueryableAsync<Root, R>);
+    }
+
+    group<R extends Shape[keyof Shape] & IdType>(selector: GenericFunction<Shape, R>) {
+
+        this.setGroupQueryOption(selector);
         return this.create(QueryableAsync<Root, R>);
     }
 

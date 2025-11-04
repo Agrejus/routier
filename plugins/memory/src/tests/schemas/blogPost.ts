@@ -1,7 +1,6 @@
-import { s } from '@routier/core';
+import { fastHash, HashType, s } from '@routier/core';
 
 export const blogPostsSchema = s.define("blogPosts", {
-    id: s.string().key().identity(),
     title: s.string(),
     authorId: s.string(),
     content: s.string(),
@@ -9,5 +8,8 @@ export const blogPostsSchema = s.define("blogPosts", {
     isPublished: s.boolean(),
     publishedAt: s.date()
 }).modify(x => ({
-    documentType: x.computed((_, collectionName) => collectionName).tracked()
+    documentType: x.computed((_, collectionName) => collectionName).tracked(),
+    id: x.computed((entity, _, deps) => deps.fastHash(JSON.stringify(entity)), {
+        fastHash
+    }).tracked().key()
 })).compile();

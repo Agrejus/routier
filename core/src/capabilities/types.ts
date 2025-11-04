@@ -1,25 +1,5 @@
-export interface MethodInfo {
-    readonly methodName: string | symbol;
-    readonly instance: any;
-    readonly methodPath: string[];
-    readonly parent: any;
-}
-
-export interface ExplorationOptions {
-    readonly maxDepth?: number;
-    readonly includeNonEnumerable?: boolean;
-    readonly filter?: (methodInfo: MethodInfo) => boolean;
-}
-
-export interface MethodWrapper {
-    readonly wrapMethod: (originalMethod: Function, methodInfo: MethodInfo) => Function;
-}
-
-export interface MethodMetadata {
-    readonly parent: any | null;
-    readonly instance: any;
-    readonly methodPath: string[];
-}
+export type MethodInfoMetadata = { parent?: MethodInfoMetadata, instance: Record<string | symbol, any>, propertyName: string | symbol, path?: string };
+export type MethodInfo = { name: string | symbol, isCallable: boolean; }
 
 export interface PerformanceMetrics {
     readonly startTime: number;

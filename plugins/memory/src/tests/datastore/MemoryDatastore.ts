@@ -12,6 +12,8 @@ import { immutableItemSchema } from "../schemas/immutableItem";
 import { commentsViewSchema } from "../schemas/commentsView";
 import { productsViewSchema } from "../schemas/productView";
 import { productsHistorySchema } from "../schemas/productsHistory";
+import { ordersSchema } from "../schemas/order";
+import { blogPostsSchema } from "../schemas/blogPost";
 
 export class TestDataStore extends DataStore {
     constructor(plugin: IDbPlugin) {
@@ -43,12 +45,11 @@ export class TestDataStore extends DataStore {
         return this.products.subscribe().toArray(productsResponse => {
 
             if (productsResponse.ok === "error") {
-                return done([]);// do nothing
+                return done([]); // do nothing
             }
 
+            // Id is computed inside of derive as part of the pre-save process as defined by the schema
             done(productsResponse.data.map(x => ({
-                // Hash the object so we can compare if anything has changed.  This will ensure a new record is inserted when anything changes
-                id: fastHash(productsSchema.hash(x, HashType.Object)),
                 productId: x._id,
                 category: x.category,
                 inStock: x.inStock,
@@ -71,6 +72,7 @@ export class TestDataStore extends DataStore {
     playerMatches = this.collection(playerMatchSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...playerMatchSchema }).create();
 
     immutableItems = this.collection(immutableItemSchema).readonly().create();
+    orders = this.collection(ordersSchema).create();
 
     commentsView = this.view(commentsViewSchema).derive((done) => {
         // defer because we don't want to compute every time we create a datastore
@@ -93,14 +95,5 @@ export class TestDataStore extends DataStore {
 
         return unsubscribe;
     }).create();
-
-    extendedComments = this.collection(commentsSchema).scope(([x, p]) => x.documentType === p.collectionName, commentsSchema).create((Instance, ...args) => new class extends Instance {
-        constructor() {
-            super(...args);
-        }
-
-        someOtherAddAsync(...entities: CreateComment[]) {
-            return this.addAsync(...entities);
-        }
-    });
+    blogPosts = this.collection(blogPostsSchema).create();
 }

@@ -2,7 +2,8 @@ import { DataTranslator } from "./DataTranslator";
 import { QueryOption } from "../query/types";
 import { assertIsArray } from "../../assertions";
 import { ParamsFilter } from "../../expressions";
-import { isDate } from "../../utilities";
+import { isDate, UnknownRecord } from "../../utilities";
+import { IdType } from "../../schema";
 
 export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRoot, TShape> {
 
@@ -31,7 +32,7 @@ export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRo
             throw new Error("Can only map an array of data");
         }
 
-        const response = [];
+        const response = new Array(data.length);
 
         // We want deserialization to flow through mappings
         // TODO: Speed this up!
@@ -50,10 +51,53 @@ export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRo
                 }
             }
 
-            response.push(option.value.selector(data[i]));
+            response[i] = option.value.selector(data[i]);
         }
 
         return response as T;
+    }
+
+    override group<T>(data: unknown, option: QueryOption<T, "group">): T {
+        debugger;
+        if (Array.isArray(data) == false) {
+            throw new Error("Can only group an array of data");
+        }
+
+        const group: Record<IdType, unknown[]> = {};
+
+        for (let i = 0, length = data.length; i < length; i++) {
+
+            const keyValue = option.value.selector(data[i]) as IdType;
+
+            if (!group[keyValue]) {
+                group[keyValue] = [];
+            }
+
+            const item: UnknownRecord = {};
+
+            for (let j = 0, l = option.value.fields.length; j < l; j++) {
+                const field = option.value.fields[j];
+
+                if (field.property != null) {
+                    const value = field.property.getValue(data[i]);
+                    const doesPropertyExist = Object.hasOwn(data[i], field.destinationName);
+
+                    if (value != null) {
+                        field.property.setValue(item, field.property.deserialize(value));
+                        continue;
+                    }
+
+                    // The property exists, lets set it to the value (null/undefined)
+                    if (doesPropertyExist) {
+                        field.property.setValue(item, value);
+                    }
+                }
+            }
+
+            group[keyValue].push(item);
+        }
+
+        return group as T;
     }
 
     override count<TResult extends number>(data: unknown, _: QueryOption<TShape, "count">): TResult {

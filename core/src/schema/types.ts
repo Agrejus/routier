@@ -100,7 +100,10 @@ type Enrich<TEntity extends {}> = {
     (entity: InferType<TEntity>, changeTrackingType: ChangeTrackingType): InferType<TEntity>;
     (entity: InferCreateType<TEntity>, changeTrackingType: ChangeTrackingType): InferCreateType<TEntity>;
 }
-
+export type Prepare<TEntity extends {}> = {
+    (entity: InferCreateType<TEntity>): InferCreateType<TEntity>;
+    (entity: InferType<TEntity>): InferType<TEntity>;
+}
 /**
  * Represents a fully compiled schema with all utilities and metadata for an entity type.
  */
@@ -118,7 +121,7 @@ export type CompiledSchema<TEntity extends {}> = {
     /** Removes unmapped or extraneous properties from the entity. */
     strip: (entity: InferType<TEntity>) => InferType<TEntity>;
     /** Prepares a new entity for creation, applying defaults and transformations. */
-    prepare: (entity: InferCreateType<TEntity>) => InferCreateType<TEntity>;
+    prepare: Prepare<TEntity>;
     /** Merges the source entity into the destination entity. */
     merge: (destination: InferType<TEntity> | InferCreateType<TEntity>, source: InferType<TEntity>) => InferType<TEntity>;
     /** Indicates if the schema has identity properties. */
@@ -137,6 +140,12 @@ export type CompiledSchema<TEntity extends {}> = {
     compare: (a: InferType<TEntity>, fromDb: InferType<TEntity>) => boolean;
     /** Deserializes an entity from storage format. */
     deserialize: (entity: InferType<TEntity>) => InferType<TEntity>;
+
+    /** Combines serializing and preparing an entity for saving. */
+    preprocess: (entity: InferCreateType<TEntity>) => InferType<TEntity>;
+    /** Combines deserializing and enriching an entity for selection. */
+    postprocess: Enrich<TEntity>;
+
     /** Serializes an entity to storage format. */
     serialize: (entity: InferType<TEntity>) => InferType<TEntity>;
     /** Unique id for the schema. */

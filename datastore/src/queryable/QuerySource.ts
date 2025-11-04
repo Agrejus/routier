@@ -175,7 +175,6 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
         return split.join(".")
     }
 
-
     protected createQueryPayload<Shape>(): { memoryEvent: DbPluginQueryEvent<TRoot, Shape>, databaseEvent: DbPluginQueryEvent<TRoot, Shape> } {
 
         // send over only the database operations, if there are none its a select all
@@ -229,6 +228,9 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
             // if change tracking is true, we will never be shaping the result from .map()
             if (databaseEvent.operation.changeTracking === true) {
 
+                const translator = new JsonTranslator(memoryEvent.operation);
+                const data = translator.translate(result.data as InferType<TRoot>[]);
+                console.log(data);
                 const enriched = this.changeTracker.deserializeAndEnrich(result.data as InferType<TRoot>[], this.changeTrackingType);
 
                 // This means we are querying on a computed property that is untracked, need to select
@@ -272,6 +274,26 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
         const fields = this.getFields(selector);
 
         this.queryOptions.add("map", { selector: selector as GenericFunction<any, any>, fields });
+    }
+
+    protected setGroupQueryOption<K, R>(selector: GenericFunction<K, R>) {
+
+        const [key] = this.getFields(selector);
+        let fields = this.schema.properties.map(x => ({
+            destinationName: x.name,
+            getter: x.getValue,
+            isRename: false,
+            sourceName: x.name,
+            property: x
+        } as QueryField));
+        const map = this.queryOptions.getLast("map");
+
+        // If we remapped, grab those fields
+        if (map != null) {
+            fields = map.value.fields;
+        }
+
+        this.queryOptions.add("group", { selector: selector as GenericFunction<any, any>, key, fields });
     }
 
     protected setSortQueryOption(selector: GenericFunction<TShape, TShape[keyof TShape]>, direction: QueryOrdering) {

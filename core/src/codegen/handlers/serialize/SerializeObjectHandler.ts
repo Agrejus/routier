@@ -8,7 +8,9 @@ export class SerializeObjectHandler extends PropertyInfoHandler {
 
         if (property.type === SchemaTypes.Object) {
             const slotPath = new SlotPath("assignments");
-            const childPath = property.getAssignmentPath({ parent: "result" });
+            const childPath = property.getAssignmentPath({
+                parent: "result"
+            });
 
             if (property.isNullable || property.isOptional) {
                 // Do nothing if it's nullable or optional as property assignments will check

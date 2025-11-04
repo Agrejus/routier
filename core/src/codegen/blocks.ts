@@ -23,6 +23,30 @@ export abstract class Block {
         return this._lines.findIndex(w => typeof w !== "string" && w.name === name);
     }
 
+    getLines() {
+        return this._lines;
+    }
+
+    getParent() {
+        return this._parent;
+    }
+
+    getIndent() {
+        return this._indent;
+    }
+
+    setLines(lines: Line[]) {
+        this._lines = lines;
+    }
+
+    setParent(block: Block) {
+        this._parent = block;
+    }
+
+    setIndent(indent: string) {
+        this._indent = indent;
+    }
+
     getOrDefault<T extends Block>(name: string): T | undefined {
 
         if (name.includes('.') === false) {
@@ -63,6 +87,36 @@ export abstract class Block {
 
     has(name: string) {
         return this._lines.some(w => typeof w !== "string" && w.name === name);
+    }
+
+    remove(name: string) {
+        this._lines = this._lines.filter(x => typeof x === "object" && typeof x.name === "string" && x.name !== name);
+    }
+
+    replace(name: string, line: Block) {
+
+        const foundIndex = this._lines.findIndex(x => typeof x !== "string" && x.name === name);
+
+        if (foundIndex === -1) {
+            throw new Error(`Cannot find line by name.  Name: ${name}`)
+        }
+
+        const found = this._lines[foundIndex];
+
+        if (typeof found === "string") {
+            // Replace the line
+            this._lines.splice(foundIndex, 1, line);
+            return;
+        }
+
+        line.setLines(found.getLines());
+        line.setIndent(found.getIndent());
+        line.setParent(found.getParent());
+
+        // Replace the line
+        this._lines.splice(foundIndex, 1, line);
+
+        return;
     }
 
     protected push(line: Line) {

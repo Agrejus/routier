@@ -1,8 +1,8 @@
 Readonly collection
+    Differential Change Tracking
     Freeze Deep
-remap property names
-    A: added schema.from() <---- Need to implement this
 
 TODO:
-    Can we use a computed property for the ID?  Would be great for history records
-    Can we implement a group by?  Would need to happen in memory
+    Started group by
+        Have some errors in the group by function
+    Do we really need the deserializer in postProcessQuery in QuerySource?  The plugin already does this 

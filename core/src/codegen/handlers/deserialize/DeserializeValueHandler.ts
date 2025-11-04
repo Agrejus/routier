@@ -9,11 +9,11 @@ export class DeserializeValueHandler extends PropertyInfoHandler {
 
         if (property.type != SchemaTypes.Object && property.type != SchemaTypes.Date) {
             let objectBuilder = builder.getOrDefault<ObjectBuilder>("result.variable.object");
-            const entitySelectorPath = property.getAssignmentPath({ parent: "entity" });
+            const entitySelectorPath = property.getAssignmentPath({ parent: "unserialized", useFromPropertyName: property.isRenamed });
 
             if (objectBuilder == null) {
                 objectBuilder = builder.get<SlotBlock>("result")
-                    .assign("const result", { name: "variable" })
+                    .assign("const entity", { name: "variable" })
                     .object({ name: "object" });
             }
 

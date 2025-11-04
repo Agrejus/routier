@@ -1,7 +1,7 @@
 import { generateData, wait } from '@routier/test-utils';
 import { describe, it, expect, afterAll, beforeAll } from '@jest/globals';
 import { IDbPlugin, uuid, uuidv4 } from '@routier/core';
-import { PerformanceCapability, TracingCapability } from '@routier/core/capabilities';
+import { TracingCapability, PerformanceCapability } from '@routier/core/capabilities';
 import { MemoryPlugin } from '../MemoryPlugin';
 import { TestDataStore } from './datastore/MemoryDatastore';
 import { SimpleBenchmark } from './utils/SimpleBenchmark';
@@ -40,16 +40,19 @@ describe("Comments Tests", () => {
             expect(added.content).toBe(item.content);
             expect(added.replies).toStrictEqual(item.replies);
             expect(added.createdAt).toBe(item.createdAt);
-            expect(added.createdAt).toBeDefined();
+            expect(added.createdAt).toBeDefined()
         });
     });
 
-    it("Can add item with default and tracing", async () => {
+
+    it("performance timing", async () => {
         const dataStore = factory();
 
-        const tracing = new PerformanceCapability();
+        const performance = new PerformanceCapability();
+        const tracing = new TracingCapability();
 
-        tracing.apply(dataStore);
+        performance.apply(dataStore);
+        // tracing.apply(dataStore);
 
         // Arrange
         const [item] = generateData(dataStore.comments.schema, 1);
@@ -67,6 +70,6 @@ describe("Comments Tests", () => {
         expect(added.content).toBe(item.content);
         expect(added.replies).toStrictEqual(item.replies);
         expect(added.createdAt).toBe(item.createdAt);
-        expect(added.createdAt).toBeDefined();
+        expect(added.createdAt).toBeDefined()
     });
 });

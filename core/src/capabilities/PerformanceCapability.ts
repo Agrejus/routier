@@ -1,171 +1,152 @@
+import { stringifyObject } from "../utilities";
 import { Capability } from "./Capability";
 import { PerformanceTracker } from "./performance/PerformanceTracker";
 import { CallTraceManager } from "./tracing/CallTraceManager";
-import { MethodInfo, MethodMetadata, MethodWrapper, PerformanceMetrics } from "./types";
+import { MethodInfoMetadata, MethodInfo } from "./types";
 
 export type PerformanceCapabilityOptions = {
-    log?: (
-        type: 'ORIGIN' | 'CHILD',
-        operationId: string,
-        methodName: string,
-        methodPath: string,
-        performanceMetrics: PerformanceMetrics
-    ) => void;
-    shouldLog: (methodName: string | symbol, metadata: MethodMetadata) => boolean
+    filter: (methodName: string | symbol, methodInfo: MethodInfo, metadata: MethodInfoMetadata) => boolean
 }
 
 export class PerformanceCapability extends Capability {
 
     private callTraceManager: CallTraceManager;
     private performanceTracker: PerformanceTracker;
-    private log: (
-        type: 'ORIGIN' | 'CHILD',
-        operationId: string,
-        methodName: string,
-        methodPath: string,
-        performanceMetrics: PerformanceMetrics,
-        isCompleted: boolean
-    ) => void;
-    private shouldLogMethod?: (methodName: string | symbol, metadata: MethodMetadata) => boolean;
-    private activeInterceptors: WeakSet<Function> = new WeakSet();
+    private filter: (methodName: string | symbol, methodInfo: MethodInfo, metadata: MethodInfoMetadata) => boolean;
+    private childDurations: Map<string, number[]> = new Map();
 
     constructor(options?: PerformanceCapabilityOptions) {
         super();
-        this.log = options?.log ?? ((
-            type: 'ORIGIN' | 'CHILD',
-            operationId: string,
-            methodName: string,
-            methodPath: string,
-            performanceMetrics: PerformanceMetrics,
-            isCompleted: boolean
-        ) => {
-
-            if (isCompleted) {
-                if (!performanceMetrics.duration) return;
-
-                const deltaFromStart = this.performanceTracker.getDeltaFromOperationStart(operationId, performanceMetrics.endTime || performanceMetrics.startTime);
-
-                console.log(`[${type} ${operationId}] ${methodName} COMPLETED`, {
-                    methodPath,
-                    performance: {
-                        deltaFromStart: this.performanceTracker.formatDuration(deltaFromStart),
-                        executionTime: this.performanceTracker.formatDuration(performanceMetrics.duration),
-                        timeToNextCall: performanceMetrics.timeToNextCall ?
-                            this.performanceTracker.formatDuration(performanceMetrics.timeToNextCall) : 'N/A'
-                    }
-                });
-                return;
-            }
-
-            const deltaFromStart = this.performanceTracker.getDeltaFromOperationStart(operationId, performanceMetrics.startTime);
-
-            console.log(`[${type} ${operationId}] ${methodName}`, {
-                methodPath,
-                performance: {
-                    deltaFromStart: this.performanceTracker.formatDuration(deltaFromStart)
-                }
-            });
-        });
-        this.shouldLogMethod = options?.shouldLog ?? (() => true);
+        this.filter = options?.filter ?? (() => true)
         this.callTraceManager = new CallTraceManager();
         this.performanceTracker = new PerformanceTracker();
     }
 
-    private createPerformanceInterceptor(
-        originalMethod: Function,
-        methodName: string,
-        methodPath: string,
-        instance: any
-    ): Function {
-        const interceptorFn = (...args: any[]) => {
-            // Re-entrancy guard: If this interceptor is already executing (self-recursion),
-            // bypass tracking and call original directly to prevent infinite loops
-            if (this.activeInterceptors.has(interceptorFn)) {
-                return originalMethod.apply(instance, args);
-            }
+    override apply(instance: unknown): void {
 
-            // Mark this interceptor as active
-            this.activeInterceptors.add(interceptorFn);
+        this.explore(instance, (meta, info) => {
 
-            try {
-                const isNewOperation = this.callTraceManager.isNewOperation();
-                let operationId: string;
+            if (info.isCallable) {
+                const originalMethod = meta.instance[info.name].bind(meta.instance);
 
-                if (isNewOperation) {
-                    operationId = this.callTraceManager.startNewOperation();
-                    const startTime = this.performanceTracker.startMethodTiming(operationId, methodPath);
-                    this.log('ORIGIN', operationId, methodName, methodPath, { startTime }, false);
-                } else {
-                    operationId = this.callTraceManager.getActiveOperationId();
+                meta.instance[info.name] = (...args: any[]) => {
 
-                    // Record that the previous method is about to call this one
-                    const callTrace = this.callTraceManager.getCurrentTrace();
-                    const previousMethodPath = callTrace[callTrace.length - 2];
-                    if (previousMethodPath) {
-                        this.performanceTracker.recordNextMethodStart(operationId, previousMethodPath);
+                    const path = `${meta.path!}.${String(info.name)}()`;
+
+                    if (this.filter(path, info, meta) === false) {
+                        return originalMethod(...args);
                     }
 
-                    const startTime = this.performanceTracker.startMethodTiming(operationId, methodPath);
-                    this.log('CHILD', operationId, methodName, methodPath, { startTime }, false);
-                }
-
-                try {
-                    const result = originalMethod.apply(instance, args);
-                    return result;
-                } finally {
-                    // End performance tracking
-                    const performanceMetrics = this.performanceTracker.endMethodTiming(operationId, methodPath);
-
-                    // Log completion with performance metrics
-                    this.log(isNewOperation ? 'ORIGIN' : 'CHILD', operationId, methodName, methodPath, performanceMetrics, true);
+                    const isNewOperation = this.callTraceManager.isNewOperation();
+                    let operationId: string;
+                    let callTrace: string[];
+                    let depth: number;
 
                     if (isNewOperation) {
-                        this.callTraceManager.endOperation();
-                        this.performanceTracker.cleanupOperation(operationId);
+                        operationId = this.callTraceManager.startNewOperation();
+                        this.childDurations.set(operationId, []);
+                        callTrace = this.callTraceManager.addMethodToTrace(path);
+                        depth = callTrace.length - 1;
+                        const formattedCallTrace = this.callTraceManager.formatMethodPaths(callTrace);
+
+                        this.performanceTracker.startMethodTiming(operationId, path);
+
+                        console.log(`\n${'═'.repeat(60)}`);
+                        console.log(`▶ ORIGIN [${operationId}] ${path}`);
+                        if (args.length > 0) {
+                            console.log(`  Args:`, stringifyObject(args, 4, 0));
+                        }
+                        console.log(`  Call Stack: ${formattedCallTrace.join(' → ')}`);
+                    } else {
+                        operationId = this.callTraceManager.getActiveOperationId();
+                        callTrace = this.callTraceManager.addMethodToTrace(path);
+                        depth = callTrace.length - 1;
+                        const indent = '  '.repeat(Math.min(depth, 4));
+
+                        // Track children for this child method too
+                        const childMethodKey = `${operationId}:${path}`;
+                        this.childDurations.set(childMethodKey, []);
+
+                        this.performanceTracker.startMethodTiming(operationId, path);
+
+                        console.log(`${indent}└─ CHILD [${operationId}] ${path}`);
+                        if (args.length > 0) {
+                            console.log(`${indent}   Args:`, stringifyObject(args, 4, 0));
+                        }
+                    }
+
+                    try {
+                        return originalMethod(...args);
+                    } finally {
+                        const metrics = this.performanceTracker.endMethodTiming(operationId, path);
+                        const duration = metrics.duration ?? 0;
+                        const formattedDuration = this.performanceTracker.formatDuration(duration);
+
+                        if (isNewOperation) {
+                            const childDurations = this.childDurations.get(operationId) ?? [];
+                            const totalChildTime = childDurations.reduce((sum, d) => sum + d, 0);
+                            const formattedTotalChildTime = this.performanceTracker.formatDuration(totalChildTime);
+                            const overhead = duration - totalChildTime;
+                            const formattedOverhead = this.performanceTracker.formatDuration(Math.max(0, overhead));
+
+                            console.log(`\n${'═'.repeat(60)}`);
+                            console.log(`◀ COMPLETE [${operationId}] ${path}`);
+                            console.log(`  Total Duration: ${formattedDuration}`);
+                            if (childDurations.length > 0) {
+                                console.log(`  Children Duration: ${formattedTotalChildTime} (${childDurations.length} calls)`);
+                                console.log(`  Overhead: ${formattedOverhead}`);
+                            }
+                            console.log(`${'═'.repeat(60)}\n`);
+
+                            this.childDurations.delete(operationId);
+                            this.performanceTracker.cleanupOperation(operationId);
+                            this.callTraceManager.endOperation();
+                        } else {
+                            const indent = '  '.repeat(Math.min(depth, 4));
+                            const childMethodKey = `${operationId}:${path}`;
+                            const childDurations = this.childDurations.get(childMethodKey) ?? [];
+                            const totalChildTime = childDurations.reduce((sum, d) => sum + d, 0);
+                            const formattedTotalChildTime = this.performanceTracker.formatDuration(totalChildTime);
+                            const overhead = duration - totalChildTime;
+                            const formattedOverhead = this.performanceTracker.formatDuration(Math.max(0, overhead));
+
+                            console.log(`${indent}   ✓ ${formattedDuration}`);
+                            if (childDurations.length > 0) {
+                                console.log(`${indent}     Children: ${formattedTotalChildTime} (${childDurations.length} calls), Overhead: ${formattedOverhead}`);
+                            }
+
+                            // Clean up child method tracking
+                            this.childDurations.delete(childMethodKey);
+
+                            // Find the parent method and add this duration to its children list
+                            // The parent is the method one level up in the call trace
+                            const currentTrace = this.callTraceManager.getCurrentTrace();
+                            if (currentTrace.length > 1) {
+                                // Parent is the second-to-last item in the trace (before we remove current)
+                                const parentPath = currentTrace[currentTrace.length - 2];
+
+                                // Check if parent is the root operation (trace length 2 means root + this child)
+                                if (currentTrace.length === 2) {
+                                    // Direct child of root - add to root's children list
+                                    const rootChildDurations = this.childDurations.get(operationId);
+                                    if (rootChildDurations) {
+                                        rootChildDurations.push(duration);
+                                    }
+                                } else {
+                                    // Nested child - add to parent method's children list
+                                    const parentMethodKey = `${operationId}:${parentPath}`;
+                                    const parentChildDurations = this.childDurations.get(parentMethodKey);
+                                    if (parentChildDurations) {
+                                        parentChildDurations.push(duration);
+                                    }
+                                }
+                            }
+                        }
+
+                        this.callTraceManager.removeMethodFromTrace();
                     }
                 }
-            } finally {
-                // Clear the re-entrancy flag
-                this.activeInterceptors.delete(interceptorFn);
             }
-        };
-
-        return interceptorFn;
-    }
-
-    override apply(instance: unknown): void {
-        if (!this.isValidObject(instance)) {
-            return;
-        }
-
-        // Create a performance wrapper
-        const wrapper: MethodWrapper = {
-            wrapMethod: (originalMethod: Function, methodInfo: MethodInfo) => {
-                const metadata: MethodMetadata = {
-                    parent: methodInfo.parent,
-                    instance: methodInfo.instance,
-                    methodPath: methodInfo.methodPath
-                };
-
-                const shouldLog = this.shouldLogMethod(methodInfo.methodName, metadata);
-                if (!shouldLog) {
-                    return originalMethod; // Return unwrapped method if not logging
-                }
-
-                return this.createPerformanceInterceptor(
-                    originalMethod,
-                    String(methodInfo.methodName),
-                    methodInfo.methodPath.join(' → '),
-                    methodInfo.instance
-                );
-            }
-        };
-
-        // Use the generic interception utility
-        this.exploreObjectMethods(instance, (methodInfo) => {
-            const originalMethod = methodInfo.instance[methodInfo.methodName].bind(methodInfo.instance);
-            const wrappedMethod = wrapper.wrapMethod(originalMethod, methodInfo);
-            methodInfo.instance[methodInfo.methodName] = wrappedMethod;
-        }, {});
+        });
     }
 }

@@ -128,6 +128,10 @@ export class PropertyInfo<T extends {}> {
         return level;
     }
 
+    get isRenamed() {
+        return !!this.from;
+    }
+
     private _getPropertyChain(): PropertyInfo<T>[] {
         if (this._propertyChainCache) {
             return this._propertyChainCache;
@@ -156,7 +160,7 @@ export class PropertyInfo<T extends {}> {
     private _resolvePathArray(options?: {
         root?: string,
         assignmentType?: AssignmentType
-        useFromPropertyName?: boolean
+        useFromPropertyName?: boolean,
     }) {
         const propertyChain = this._getPropertyChain();
         const hasRoot = options?.root != null;
@@ -168,6 +172,10 @@ export class PropertyInfo<T extends {}> {
         }
 
         return path;
+    }
+
+    getResolvedName() {
+        return this.from ?? this.name;
     }
 
     /**
@@ -317,11 +325,11 @@ export class PropertyInfo<T extends {}> {
      * @param options.assignmentType Optional assignment type for path resolution.
      * @returns {string} The selector path string (e.g., 'parent.prop1.prop2').
      */
-    getSelectrorPath(options: { parent: string, assignmentType?: AssignmentType, useFromPropertyName?: boolean }) {
+    getSelectrorPath(options: { parent: string, assignmentType?: AssignmentType, useFromPropertyName?: boolean, useRemappedName?: boolean }) {
         const parts = this._resolvePathArray({
             root: options.parent,
-            assignmentType: options.assignmentType,
-            useFromPropertyName: options.useFromPropertyName
+            assignmentType: options?.assignmentType,
+            useFromPropertyName: options?.useFromPropertyName
         });
         return parts.join("");
     }

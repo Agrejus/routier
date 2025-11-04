@@ -1,5 +1,4 @@
-import { CodeBuilder, ObjectBuilder, SlotBlock } from '../../blocks';
-import { SlotPath } from '../../SlotPath';
+import { CodeBuilder, SlotBlock } from '../../blocks';
 import { PropertyInfoHandler } from "../types";
 import { PropertyInfo } from "../../../schema";
 
@@ -10,7 +9,7 @@ export class SerializeSerializerHandler extends PropertyInfoHandler {
         if (property.valueSerializer != null) {
             const objectBuilder = builder.getOrDefault<SlotBlock>("if");
             const assignmentBuilder = builder.getOrDefault<SlotBlock>("functions");
-            const entitySelectorPath = property.getAssignmentPath({ parent: "entity" });
+            const entitySelectorPath = property.getAssignmentPath({ parent: "entity", useFromPropertyName: property.isRenamed });
             const resultSelectorPath = property.getAssignmentPath({ parent: "result" });
 
             const defaultFunctionWithParameters = this.toNamedFunction(property.valueSerializer.toString(), assignmentBuilder);
