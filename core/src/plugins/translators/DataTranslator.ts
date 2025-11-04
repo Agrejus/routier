@@ -14,7 +14,8 @@ export abstract class DataTranslator<TRoot extends {}, TShape> {
         skip: (data: unknown, option: QueryOption<TShape, "skip">) => this.skip(data, option),
         sort: (data: unknown, option: QueryOption<TShape, "sort">) => this.sort(data, option),
         sum: (data: unknown, option: QueryOption<TShape, "sum">) => this.sum<any>(data, option),
-        take: (data: unknown, option: QueryOption<TShape, "take">) => this.take(data, option)
+        take: (data: unknown, option: QueryOption<TShape, "take">) => this.take(data, option),
+        group: (data: unknown, option: QueryOption<TShape, "group">) => this.group(data, option)
     };
 
     constructor(query: IQuery<TRoot, TShape>) {
@@ -34,6 +35,7 @@ export abstract class DataTranslator<TRoot extends {}, TShape> {
     abstract take(data: unknown, option: QueryOption<TShape, "take">): TShape;
     abstract sort(data: unknown, option: QueryOption<TShape, "sort">): TShape;
     abstract map(data: unknown, option: QueryOption<TShape, "map">): TShape;
+    abstract group(data: unknown, option: QueryOption<TShape, "group">): TShape;
 
     translate(data: unknown): TShape {
 

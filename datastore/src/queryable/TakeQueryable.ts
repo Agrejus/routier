@@ -3,7 +3,7 @@ import { SelectionQueryable } from "./SelectionQueryable";
 import { GenericFunction } from "@routier/core/types";
 import { QueryOptionsCollection, QueryOrdering } from "@routier/core/plugins";
 import { SubscribedTakeQueryable } from "./SubscribedTakeQueryable";
-import { ChangeTrackingType, CompiledSchema } from "@routier/core/schema";
+import { ChangeTrackingType, CompiledSchema, IdType } from "@routier/core/schema";
 import { SchemaCollection } from "@routier/core/collections";
 import { QuerySource } from "./QuerySource";
 import { DataBridge } from "../data-access/DataBridge";
@@ -39,6 +39,12 @@ export class TakeQueryable<Root extends {}, Shape, U> extends SelectionQueryable
 
     map<R extends Shape[keyof Shape] | Partial<Shape>>(expression: GenericFunction<Shape, R>) {
         this.setMapQueryOption(expression);
+        return this.create(TakeQueryable<Root, R, U>);
+    }
+
+    group<R extends Shape[keyof Shape] & IdType>(selector: GenericFunction<Record<R, Shape>, R>) {
+
+        this.setGroupQueryOption(selector);
         return this.create(TakeQueryable<Root, R, U>);
     }
 

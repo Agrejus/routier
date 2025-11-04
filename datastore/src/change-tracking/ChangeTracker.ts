@@ -112,9 +112,9 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
         entities: InferType<TEntity>[];
         queries: IQuery<TEntity, TEntity>[];
     } {
-        const entities: InferType<TEntity>[] = [];
+        const entities = new Array<InferType<TEntity>>(this.removals.length);
         for (let i = 0, length = this.removals.length; i < length; i++) {
-            entities.push(this.schema.prepare(this.removals[i] as any) as any);
+            entities[i] = this.schema.prepare(this.removals[i]);
         }
 
         return {
@@ -337,20 +337,20 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     }
 
     deserializeAndEnrich(entities: InferType<TEntity>[], changeTrackingType: ChangeTrackingType) {
-        const result = [];
+        const result = new Array(entities.length);
 
         for (let i = 0, length = entities.length; i < length; i++) {
-            result.push(this.schema.postprocess(entities[i], changeTrackingType));
+            result[i] = this.schema.postprocess(entities[i], changeTrackingType);
         }
 
         return result;
     }
 
     enrich(entities: InferType<TEntity>[], changeTrackingType: ChangeTrackingType) {
-        const result = [];
+        const result = new Array(entities.length);
 
         for (let i = 0, length = entities.length; i < length; i++) {
-            result.push(this.schema.enrich(entities[i], changeTrackingType));
+            result[i] = this.schema.enrich(entities[i], changeTrackingType);
         }
 
         return result;

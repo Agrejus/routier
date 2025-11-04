@@ -99,6 +99,18 @@ export const remap = () => s.define("remapWithInjections", {
     isOnline: s.boolean()
 }).compile();
 
+export const computedId = () => s.define("computedId", {
+    name: s.string().default(x => x.name, { name: "James" }),
+    location: s.string().optional(),
+    startTime: s.date().serialize(x => x.toISOString()).deserialize(x => new Date(x)),
+    endTime: s.date().optional(),
+    description: s.string().optional(),
+    isOnline: s.boolean()
+}).modify(x => ({
+    id: x.computed((_, c) => c).tracked().key()
+})).compile();
+
+
 
 export const computedAndFunctionPropertiesSchemaFactory = () => s.define("computedAndFunctionProperties", {
     sku: s.string().key().identity(),

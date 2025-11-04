@@ -13,6 +13,7 @@ import { commentsViewSchema } from "../schemas/commentsView";
 import { productsViewSchema } from "../schemas/productView";
 import { productsHistorySchema } from "../schemas/productsHistory";
 import { ordersSchema } from "../schemas/order";
+import { blogPostsSchema } from "../schemas/blogPost";
 
 export class TestDataStore extends DataStore {
     constructor(plugin: IDbPlugin) {
@@ -44,12 +45,11 @@ export class TestDataStore extends DataStore {
         return this.products.subscribe().toArray(productsResponse => {
 
             if (productsResponse.ok === "error") {
-                return done([]);// do nothing
+                return done([]); // do nothing
             }
 
+            // Id is computed inside of derive as part of the pre-save process as defined by the schema
             done(productsResponse.data.map(x => ({
-                // Hash the object so we can compare if anything has changed.  This will ensure a new record is inserted when anything changes
-                id: fastHash(productsSchema.hash(x, HashType.Object)),
                 productId: x._id,
                 category: x.category,
                 inStock: x.inStock,
@@ -95,4 +95,5 @@ export class TestDataStore extends DataStore {
 
         return unsubscribe;
     }).create();
+    blogPosts = this.collection(blogPostsSchema).create();
 }

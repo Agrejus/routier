@@ -2236,6 +2236,21 @@ describe("Product Tests", () => {
         });
     });
 
+    describe('Group Tests', () => {
+
+        it('should group', async () => {
+            const dataStore = factory();
+            // Arrange
+            await seedData(dataStore, () => dataStore.products);
+
+            // Act
+            const found = await dataStore.products.group(x => x.category).toArrayAsync();
+
+            // Assert
+            expect(found.length).toBe(2);
+        });
+    });
+
     describe('View Test', () => {
         it('history view should add a new record on update', async () => {
             const dataStore = factory();

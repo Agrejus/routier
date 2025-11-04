@@ -33,13 +33,57 @@ History tracking in Routier allows you to:
 - Time-travel debugging
 - Collaborative editing features
 
-## Implementing History Tracking with Views
+## Implementing History Tracking
 
-History tracking in Routier is implemented using **views** that create history tables. A history table automatically records a new entry every time source data changes, preserving a complete audit trail.
+History tracking in Routier can be implemented in different ways. Both approaches create history tables that automatically record a new entry every time source data changes, preserving a complete audit trail.
 
-### Creating a History Table
+### Using Computed Properties for Change Detection
 
-History tables use views with a unique hashing strategy to detect changes and insert new records instead of updating existing ones. Use `fastHash` with the schema's hash function to generate a unique ID based on the entire object:
+When your history table is subscribed to a data source, you can use computed properties with the `tracked()` modifier to automatically insert a new record whenever the subscribed data changes. This approach computes the ID based on the entire entity state, ensuring any change results in a new record:
+
+```ts
+import { s } from "@routier/core/schema";
+import { fastHash } from "@routier/core/utilities";
+
+export const productsHistorySchema = s
+  .define("productsHistory", {
+    productId: s.string(),
+    name: s.string(),
+    price: s.number(),
+    category: s.string(),
+    inStock: s.boolean(),
+    tags: s.string("computer", "accessory").array(),
+    createdDate: s.date().default(() => new Date()),
+  })
+  .modify((x) => ({
+    documentType: x.computed((_, collectionName) => collectionName).tracked(),
+    // Hash the object so we can compare if anything has changed.
+    // This ensures a new record is inserted when anything changes
+    id: x
+      .computed((entity, _, deps) => deps.fastHash(JSON.stringify(entity)), {
+        fastHash,
+      })
+      .tracked()
+      .key(),
+  }))
+  .compile();
+```
+
+**How this approach works:**
+
+1. **Computed ID**: The `id` field is computed using `fastHash(JSON.stringify(entity))`, which generates a hash based on the entire entity's serialized state.
+
+2. **Tracked modifier**: The `tracked()` modifier ensures the computed value is persisted to storage, making it available for indexing and querying.
+
+3. **Key modifier**: The `key()` modifier marks this as the primary key. Since the ID changes when any property changes, Routier treats changed entities as new records rather than updates.
+
+4. **Automatic change detection**: When the subscribed data source changes, the computed ID recalculates. If the hash differs from the stored value, a new record with the new ID is inserted, preserving the previous state.
+
+This pattern is particularly useful when your history table is derived from a view that subscribes to another collection, as it automatically handles change detection at the schema level.
+
+### Using Views with Schema Hash Functions
+
+Another way to implement history tracking is using views with a unique hashing strategy to detect changes and insert new records instead of updating existing ones. This approach uses `fastHash` with the schema's hash function to generate a unique ID based on the entire object:
 
 ```ts
 import { DataStore } from "@routier/datastore";
@@ -103,7 +147,7 @@ export class AppDataStore extends DataStore {
 }
 ```
 
-### How It Works
+**How this approach works:**
 
 1. **Hash the entire object**: `productsSchema.hash(x, HashType.Object)` generates a deterministic hash of all object properties. This hash uniquely represents the current state of the entity.
 

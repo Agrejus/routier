@@ -37,12 +37,17 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                     return cb([]);
                 }
 
+                const enriched = new Array<InferType<TEntity>>(data.length);
+                for (let i = 0, length = data.length; i < length; i++) {
+                    enriched[i] = this.schema.postprocess(data[i] as InferType<TEntity>, this.changeTrackingType);
+                }
+
                 const idProperties = this.schema.idProperties;
                 let query: QueryableAsync<InferType<TEntity>, InferType<TEntity>>;
 
                 for (let i = 0, length = idProperties.length; i < length; i++) {
                     const idProperty = idProperties[i];
-                    const ids = data.map(x => (x as Record<string, IdType>)[idProperty.name]);
+                    const ids = enriched.map(x => (x as Record<string, IdType>)[idProperty.name]);
 
                     query = this.where(([x, p]) => p.ids.includes((x as Record<string, IdType>)[p.name]), { ids, name: idProperty.name });
                 }
@@ -60,12 +65,12 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                     const schemaChanges = new SchemaPersistChanges();
 
                     if (toArrayResult.data.length === 0) {
-                        schemaChanges.adds = data;
+                        schemaChanges.adds = enriched;
                     } else {
 
                         // compute changes
-                        for (let i = 0, length = data.length; i < length; i++) {
-                            const item = data[i];
+                        for (let i = 0, length = enriched.length; i < length; i++) {
+                            const item = enriched[i];
                             const existing = toArrayResult.data.find(x => this.schema.compareIds(item, x))
 
                             if (existing != null) {
@@ -95,7 +100,7 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                         source: "view"
                     }, noop);
 
-                    cb(data);
+                    cb(enriched);
                 });
             });
         };

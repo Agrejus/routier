@@ -1,3 +1,5 @@
+import { IdType } from "../../schema/types";
+import { UnknownRecord } from "../../utilities/types";
 import { QueryOption } from "../query/types";
 import { DataTranslator } from "./DataTranslator";
 
@@ -51,6 +53,42 @@ export class SqlTranslator<TRoot extends {}, TShape> extends DataTranslator<TRoo
 
     sort(data: unknown, _: QueryOption<TShape, "sort">): TShape {
         return data as TShape;
+    }
+
+    group<T>(data: unknown, option: QueryOption<T, "group">): T {
+
+        if (Array.isArray(data) == false) {
+            throw new Error("Can only group an array of data");
+        }
+
+        const group: Record<IdType, unknown[]> = {};
+
+        for (let i = 0, length = data.length; i < length; i++) {
+
+            const keyValue = option.value.selector(data[i]) as IdType;
+
+            if (!group[keyValue]) {
+                group[keyValue] = [];
+            }
+
+            const item: UnknownRecord = {};
+
+            for (let j = 0, l = option.value.fields.length; j < l; j++) {
+                const field = option.value.fields[j];
+
+                if (field.property != null) {
+                    const value = field.property.getValue(data[i]);
+
+                    if (value != null) {
+                        field.property.setValue(item, field.property.deserialize(value));
+                    }
+                }
+            }
+
+            group[keyValue].push(item);
+        }
+
+        return group as T;
     }
 
     map(data: unknown, option: QueryOption<TShape, "map">): TShape {

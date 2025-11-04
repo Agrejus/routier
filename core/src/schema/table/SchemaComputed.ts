@@ -15,6 +15,6 @@ export class SchemaComputed<T extends any, I, TModifiers extends SchemaModifiers
     }
 
     tracked() {
-        return new SchemaTracked<T, TModifiers>(this);
+        return new SchemaTracked<T, Exclude<TModifiers, "unmapped">>(this as unknown as SchemaBase<T, Exclude<TModifiers, "unmapped">>);
     }
 }

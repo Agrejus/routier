@@ -18,7 +18,7 @@ import { FreezeHandlerBuilder } from '../codegen/handlers/FreezeHandlerBuilder';
 import { SchemaError } from '../errors/SchemaError';
 import { SerializeHandlerBuilder } from "../codegen/handlers/SerializeHandlerBuilder";
 import { hash } from "../utilities";
-import { CompiledSchema, GetHashTypeFunction, HashFunction, HashType, IdType, Index, InferCreateType, InferType, SchemaTypes } from './types';
+import { CompiledSchema, GetHashTypeFunction, HashFunction, HashType, IdType, Index, InferCreateType, InferType, Prepare, SchemaTypes } from './types';
 import { DeepPartial } from '../types';
 import { SchemaSubscription } from './communication/broadcast';
 import { CompareIdsHandlerBuilder } from '../codegen/handlers/CompareIdsHandlerBuilder';
@@ -39,12 +39,12 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
     modify<R>(builder: (d: {
         function: <UU, I = never>(fn: (entity: InferType<CompiledSchema<T>>, collectionName: string, injected: I) => UU, injected?: I) => SchemaFunction<UU, I, "unmapped">;
-        computed: <UU, I = never>(fn: (entity: InferType<CompiledSchema<T>>, collectionName: string, injected: I) => UU, injected?: I) => SchemaComputed<UU, I, "unmapped">;
+        computed: <UU, I = never>(fn: (entity: InferType<CompiledSchema<T>>, collectionName: string, injected: I) => UU, injected?: I) => SchemaComputed<UU, I, "computed" | "unmapped">;
     }) => R) {
 
         const b = {
             function: <UU, I = never>(fn: (entity: InferType<CompiledSchema<T>>, collectionName: string, injected?: I) => UU, injected?: I) => new SchemaFunction<UU, I, "unmapped">(fn as any, injected),
-            computed: <UU, I = never>(fn: (entity: InferType<CompiledSchema<T>>, collectionName: string, injected?: I) => UU, injected?: I) => new SchemaComputed<UU, I, "unmapped">(fn as any, injected)
+            computed: <UU, I = never>(fn: (entity: InferType<CompiledSchema<T>>, collectionName: string, injected?: I) => UU, injected?: I) => new SchemaComputed<UU, I, "computed" | "unmapped">(fn as any, injected)
         }
 
         const r = builder(b)
@@ -465,7 +465,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
             const getIdsFunction = Function("entity", idSelectorCodeBuilder.toString()) as (entity: InferType<T>) => [IdType];
             const getHashTypeFunction = Function("entity", hashTypeCodeBuilder.toString()) as GetHashTypeFunction<T>;
-            const prepareFunction = Function("entity", prepareCodeBuilder.toString()) as (entity: InferCreateType<T>) => InferCreateType<T>;
+            const prepareFunction = Function("entity", prepareCodeBuilder.toString()) as Prepare<T>;
             const cloneFunction = Function("entity", cloneCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
             const deserializeFunction = Function("unserialized", deserializeCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
             const serializeFunction = Function("entity", serializeCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;

@@ -32,6 +32,7 @@ export type QueryOptionValueMap<T extends {}> = {
     take: number;
     sort: { selector: GenericFunction<T, T[keyof T]>, direction: QueryOrdering, propertyName: string };
     map: { selector: GenericFunction<T, any>, fields: QueryField[] };
+    group: { selector: GenericFunction<T, any>, key: QueryField, fields: QueryField[] };
     filter: { params?: {}, filter: ParamsFilter<T, {}> | Filter<T>, expression: Expression };
     min: true; // True or not set
     max: true; // True or not set

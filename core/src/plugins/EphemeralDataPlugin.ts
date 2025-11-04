@@ -84,6 +84,7 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                 });
             }
 
+            // If there is no work, just return the result
             if (!hasWork) {
                 done(PluginEventResult.success(event.id, bulkPersistResult));
                 return;

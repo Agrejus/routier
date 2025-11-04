@@ -5,7 +5,7 @@ export class CallTraceManager {
     private activeCallStack: string[] = [];
 
     startNewOperation(): string {
-        const operationId = uuid();
+        const operationId = uuid(8);
         this.activeOperationId = operationId;
         this.activeCallStack = [];
         return operationId;
