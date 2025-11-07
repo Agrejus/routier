@@ -56,7 +56,7 @@ export class Collection<TEntity extends {}> extends RemovableCollection<TEntity>
         /** Attaches entities to change tracking, enabling property change monitoring and dirty state management */
         set: (...entities: InferType<TEntity>[]) => {
             const tag = this.getAndDestroyTag()
-            return this.changeTracker.resolve(entities, tag, { merge: true });
+            return this.changeTracker.resolveMany(entities, tag, { merge: true });
         },
         /** Checks if an entity is currently attached to change tracking */
         has: (entity: InferType<TEntity>) => {

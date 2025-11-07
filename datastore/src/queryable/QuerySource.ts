@@ -1,6 +1,6 @@
 import { DataBridge } from "../data-access/DataBridge";
 import { ChangeTracker } from "../change-tracking/ChangeTracker";
-import { DbPluginQueryEvent, JsonTranslator, Query, QueryField, QueryOptionsCollection, QueryOrdering } from "@routier/core/plugins";
+import { DbPluginQueryEvent, ITranslatedValue, JsonTranslator, Query, QueryField, QueryOptionsCollection, QueryOrdering } from "@routier/core/plugins";
 import { ChangeTrackingType, CompiledSchema, InferType } from "@routier/core/schema";
 import { CallbackResult, PluginEventCallbackResult, PluginEventResult, PluginEventSuccessType, Result } from "@routier/core/results";
 import { GenericFunction } from "@routier/core/types";
@@ -211,52 +211,59 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
                 return;
             }
 
-            this.postProcessQuery(result, { databaseEvent, memoryEvent }, done);
+            this.postProcessQuery<TShape>(result, { databaseEvent, memoryEvent }, done);
 
         });
     }
 
-    private postProcessQuery<TShape>(result: PluginEventSuccessType<TShape>, payload: { databaseEvent: DbPluginQueryEvent<TRoot, TShape>, memoryEvent: DbPluginQueryEvent<TRoot, TShape> }, done: PluginEventCallbackResult<TShape>) {
+    private postProcessQuery<TShape>(result: PluginEventSuccessType<ITranslatedValue<TShape>>, payload: { databaseEvent: DbPluginQueryEvent<TRoot, TShape>, memoryEvent: DbPluginQueryEvent<TRoot, TShape> }, done: PluginEventCallbackResult<TShape>) {
 
         const { databaseEvent, memoryEvent } = payload;
 
         try {
+
             const tags = this.changeTracker.tags.get();
 
             this.changeTracker.tags.destroy();
 
-            // if change tracking is true, we will never be shaping the result from .map()
             if (databaseEvent.operation.changeTracking === true) {
-
-                const translator = new JsonTranslator(memoryEvent.operation);
-                const data = translator.translate(result.data as InferType<TRoot>[]);
-                console.log(data);
-                const enriched = this.changeTracker.deserializeAndEnrich(result.data as InferType<TRoot>[], this.changeTrackingType);
-
-                // This means we are querying on a computed property that is untracked, need to select
-                // all and query in memory
-                if (Query.isEmpty(memoryEvent.operation) === false) {
-                    const translator = new JsonTranslator(memoryEvent.operation);
-                    const data = translator.translate(enriched);
-
-                    if (memoryEvent.operation.changeTracking === false) {
-                        return done(PluginEventResult.success(memoryEvent.id, data));
-                    }
-
-                    const resolved = this.changeTracker.resolve(data as InferType<TRoot>[], tags, {
-                        merge: true
-                    });
-                    return done(PluginEventResult.success(memoryEvent.id, resolved as TShape));
-                }
-
-                const resolved = this.changeTracker.resolve(enriched, tags, {
-                    merge: true
-                });
-
-                return done(PluginEventResult.success(databaseEvent.id, resolved as TShape));
+                // Post process the db query results
+                result.data.forEach(item => this.schema.postprocess(item as InferType<TRoot>, this.changeTrackingType));
             }
 
-            done(result);
+            // This means we are querying on a computed property that is untracked, need to select
+            // all and query in memory
+            if (Query.isEmpty(memoryEvent.operation) === false) {
+
+                const enriched = result.data.value as InferType<TRoot>[];
+
+                // We need to execute operations on the result that the plugin will not do
+                const translator = new JsonTranslator(memoryEvent.operation);
+                const translatedEnrichedData = translator.translate(enriched);
+
+                if (memoryEvent.operation.changeTracking === false) {
+                    return done(PluginEventResult.success(memoryEvent.id, translatedEnrichedData.value));
+                }
+
+                // Resolve the data with the current attachments
+                result.data.forEach(item => this.changeTracker.resolve(item as InferType<TRoot>, tags, {
+                    merge: true
+                }));
+
+                return done(PluginEventResult.success(memoryEvent.id, result.data.value as TShape));
+            }
+
+            // No change tracking on the result, just return it as is
+            if (databaseEvent.operation.changeTracking === false) {
+                return done(PluginEventResult.success(databaseEvent.id, result.data as TShape));
+            }
+
+            // Resolve the data with the current attachments
+            result.data.forEach(item => this.changeTracker.resolve(item as InferType<TRoot>, tags, {
+                merge: true
+            }));
+
+            done(PluginEventResult.success(databaseEvent.id, result.data.value));
         } catch (e) {
             done(PluginEventResult.error(databaseEvent.id, e));
         }

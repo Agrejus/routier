@@ -4,7 +4,7 @@
 
 Routier is a reactive data toolkit for building fast, local-first apps. Define schemas, create collections, use live queries, and make optimistic mutations with a plugin model for any storage.
 
-**[📖 View Full Documentation](https://agrejus.github.io/routier/)** - Complete guides, API reference, and tutorials
+**[📖 View Full Documentation](https://routier.dev/)** - Complete guides, API reference, and tutorials
 
 ## Repository Structure
 
@@ -133,11 +133,11 @@ Choosing storage for local-first apps is hard—and the landscape moves fast. Ro
 
 ## Documentation
 
-- **[Getting Started](https://agrejus.github.io/routier/getting-started/)** - Installation and setup guides
-- **[Concepts](https://agrejus.github.io/routier/concepts/)** - Schema, queries, and architecture
-- **[Guides](https://agrejus.github.io/routier/guides/)** - Live queries, syncing, history tracking
-- **[How-To](https://agrejus.github.io/routier/how-to/)** - CRUD operations, collections, views
-- **[Integrations](https://agrejus.github.io/routier/integrations/)** - React hooks, plugins
+- **[Getting Started](https://routier.dev/getting-started/)** - Installation and setup guides
+- **[Concepts](https://routier.dev/concepts/)** - Schema, queries, and architecture
+- **[Guides](https://routier.dev/guides/)** - Live queries, syncing, history tracking
+- **[How-To](https://routier.dev/how-to/)** - CRUD operations, collections, views
+- **[Integrations](https://routier.dev/integrations/)** - React hooks, plugins
 
 ## Contributing
 

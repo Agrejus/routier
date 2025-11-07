@@ -2,7 +2,7 @@ import { toPromise } from "@routier/core/results";
 import { SelectionQueryable } from "./SelectionQueryable";
 import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
-import { ChangeTrackingType, CompiledSchema } from "@routier/core/schema";
+import { ChangeTrackingType, CompiledSchema, IdType } from "@routier/core/schema";
 import { SchemaCollection } from "@routier/core/collections";
 import { QueryOptionsCollection } from "@routier/core/plugins";
 import { QuerySource } from "./QuerySource";
@@ -62,6 +62,10 @@ export class SelectionQueryableAsync<Root extends {}, Shape> extends SelectionQu
 
     toArrayAsync(): Promise<Shape[]> {
         return toPromise<Shape[]>(w => this.toArray(w));
+    }
+
+    toGroupAsync<R extends Shape[keyof Shape] & IdType>(selector: GenericFunction<Shape, R>): Promise<Record<R, Shape[]>> {
+        return toPromise<Record<R, Shape[]>>(w => this.toGroup(selector, w));
     }
 
     firstAsync(expression: Filter<Shape>): Promise<Shape>;

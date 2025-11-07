@@ -42,12 +42,6 @@ export class TakeQueryableAsync<Root extends {}, Shape> extends SelectionQueryab
         return this.create(TakeQueryableAsync<Root, R>);
     }
 
-    group<R extends Shape[keyof Shape] & IdType>(selector: GenericFunction<Record<R, Shape>, R>) {
-
-        this.setGroupQueryOption(selector);
-        return this.create(TakeQueryableAsync<Root, R>);
-    }
-
     sort(expression: GenericFunction<Shape, Shape[keyof Shape]>) {
         this.setSortQueryOption(expression, QueryOrdering.Ascending);
         return this.create(TakeQueryableAsync<Root, Shape>);

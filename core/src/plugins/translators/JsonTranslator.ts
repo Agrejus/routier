@@ -34,9 +34,6 @@ export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRo
 
         const response = new Array(data.length);
 
-        // We want deserialization to flow through mappings
-        // TODO: Speed this up!
-        // Generate a function on the fly?
         for (let i = 0, length = data.length; i < length; i++) {
 
             for (let j = 0, l = option.value.fields.length; j < l; j++) {
@@ -46,7 +43,9 @@ export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRo
                     const value = field.property.getValue(data[i]);
 
                     if (value != null) {
-                        field.property.setValue(data[i], field.property.deserialize(value));
+                        // Some types do not support deserialization (Array, Function, Computed, etc), just directly set the incoming value
+                        const resolvedValue = field.property.supportsDeserialization ? field.property.deserialize(value) : value;
+                        field.property.setValue(data[i], resolvedValue);
                     }
                 }
             }
@@ -58,7 +57,7 @@ export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRo
     }
 
     override group<T>(data: unknown, option: QueryOption<T, "group">): T {
-        debugger;
+
         if (Array.isArray(data) == false) {
             throw new Error("Can only group an array of data");
         }
@@ -80,15 +79,16 @@ export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRo
 
                 if (field.property != null) {
                     const value = field.property.getValue(data[i]);
-                    const doesPropertyExist = Object.hasOwn(data[i], field.destinationName);
 
                     if (value != null) {
-                        field.property.setValue(item, field.property.deserialize(value));
+                        // Some types do not support deserialization (Array, Function, Computed, etc), just directly set the incoming value
+                        const resolvedValue = field.property.supportsDeserialization ? field.property.deserialize(value) : value;
+                        field.property.setValue(item, resolvedValue);
                         continue;
                     }
 
                     // The property exists, lets set it to the value (null/undefined)
-                    if (doesPropertyExist) {
+                    if (Object.hasOwn(data[i], field.destinationName)) {
                         field.property.setValue(item, value);
                     }
                 }

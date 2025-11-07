@@ -1,6 +1,6 @@
 [**routier-collection**](../../../README.md)
 
-***
+---
 
 [routier-collection](../../../README.md) / [core/src](../README.md) / EphemeralDataPlugin
 
@@ -64,7 +64,7 @@ Callback with the result or error.
 
 [`IDbPlugin`](../interfaces/IDbPlugin.md).[`bulkPersist`](../interfaces/IDbPlugin.md#bulkpersist)
 
-***
+---
 
 ### query()
 
@@ -78,11 +78,11 @@ Executes a query operation on the database.
 
 ##### TEntity
 
-`TEntity` *extends* `object`
+`TEntity` _extends_ `object`
 
 ##### TShape
 
-`TShape` *extends* `unknown` = `TEntity`
+`TShape` _extends_ `unknown` = `TEntity`
 
 #### Parameters
 
@@ -94,9 +94,9 @@ The query event containing schema, parent, and query operation.
 
 ##### done
 
-[`PluginEventCallbackResult`](../type-aliases/PluginEventCallbackResult.md)\<`TShape`\>
+[`PluginEventCallbackResult`](../type-aliases/PluginEventCallbackResult.md)\<[`ITranslatedValue`](ITranslatedValue.md)\<`TShape`\>\>
 
-Callback with the result or error.
+Callback with the result or error. The result must be wrapped in an `ITranslatedValue` to allow the datastore to iterate over results (for grouped queries) and determine if change tracking should be enabled.
 
 #### Returns
 
@@ -106,7 +106,7 @@ Callback with the result or error.
 
 [`IDbPlugin`](../interfaces/IDbPlugin.md).[`query`](../interfaces/IDbPlugin.md#query)
 
-***
+---
 
 ### destroy()
 

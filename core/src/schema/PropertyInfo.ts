@@ -1,6 +1,14 @@
+import { UnknownRecord } from '../utilities';
 import { SchemaBase } from './property/base/SchemaBase';
 import { SchemaArray } from './property/types/SchemaArray';
 import { DefaultValue, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaTypes } from './types';
+
+const SUPPORTED_DESERIALIZATION_TYPES = new Set<SchemaTypes>([
+    SchemaTypes.Boolean,
+    SchemaTypes.Date,
+    SchemaTypes.Number,
+    SchemaTypes.String,
+]);
 
 /**
  * Represents metadata and utilities for a property in a schema, including its type, name, parent, children, and serialization details.
@@ -130,6 +138,10 @@ export class PropertyInfo<T extends {}> {
 
     get isRenamed() {
         return !!this.from;
+    }
+
+    get supportsDeserialization() {
+        return this.valueDeserializer != null || SUPPORTED_DESERIALIZATION_TYPES.has(this.type);
     }
 
     private _getPropertyChain(): PropertyInfo<T>[] {
@@ -269,17 +281,22 @@ export class PropertyInfo<T extends {}> {
      * @param instance The object instance to retrieve the value from.
      * @returns The value of the property, or null if not found.
      */
-    getValue(instance: unknown) {
+    getValue(instance: UnknownRecord) {
         if (instance == null) {
             return null;
         }
         const pathArray = this.getPathArray();
+        const length = pathArray.length;
+        // Fast path for single level properties
+        if (length === 1) {
+            return instance[pathArray[0]];
+        }
         let current: any = instance;
-        for (const prop of pathArray) {
+        for (let i = 0; i < length; i++) {
             if (current == null) {
                 return null;
             }
-            current = current[prop];
+            current = current[pathArray[i]];
         }
         return current;
     }
@@ -355,6 +372,7 @@ export class PropertyInfo<T extends {}> {
     }
 
     deserialize(value: string | number) {
+
         if (this.valueDeserializer != null) {
             return this.valueDeserializer(value);
         }

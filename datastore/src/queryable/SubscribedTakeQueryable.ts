@@ -40,12 +40,6 @@ export class SubscribedTakeQueryable<Root extends {}, Shape, U> extends Selectio
         return this.create(SubscribedTakeQueryable<Root, R, U>);
     }
 
-    group<R extends Shape[keyof Shape] & IdType>(selector: GenericFunction<Record<R, Shape>, R>) {
-
-        this.setGroupQueryOption(selector);
-        return this.create(SubscribedTakeQueryable<Root, R, U>);
-    }
-
     sort(expression: GenericFunction<Shape, Shape[keyof Shape]>) {
         this.setSortQueryOption(expression, QueryOrdering.Ascending);
         return this.create(SubscribedTakeQueryable<Root, Shape, U>);

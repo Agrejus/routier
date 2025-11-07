@@ -42,12 +42,6 @@ export class TakeQueryable<Root extends {}, Shape, U> extends SelectionQueryable
         return this.create(TakeQueryable<Root, R, U>);
     }
 
-    group<R extends Shape[keyof Shape] & IdType>(selector: GenericFunction<Record<R, Shape>, R>) {
-
-        this.setGroupQueryOption(selector);
-        return this.create(TakeQueryable<Root, R, U>);
-    }
-
     sort(expression: GenericFunction<Shape, Shape[keyof Shape]>) {
         this.setSortQueryOption(expression, QueryOrdering.Ascending);
         return this.create(TakeQueryable<Root, Shape, U>);

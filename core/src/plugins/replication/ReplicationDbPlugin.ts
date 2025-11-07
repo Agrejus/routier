@@ -3,6 +3,7 @@ import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin,
 import { AsyncPipeline, WorkPipeline } from '../../pipeline';
 import { BulkPersistResult } from '../../collections';
 import { resolveBulkPersistChanges } from '../../utilities';
+import { ITranslatedValue } from '../translators';
 
 export class ReplicationDbPlugin implements IDbPlugin {
 
@@ -26,7 +27,7 @@ export class ReplicationDbPlugin implements IDbPlugin {
     /**
      * Will query the read plugin if there is one, otherwise the source plugin will be queried
     */
-    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<TShape>): void {
+    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
         try {
 
             const plugin = this.plugins.read != null ? this.plugins.read : this.plugins.source;

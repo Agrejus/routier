@@ -2244,10 +2244,10 @@ describe("Product Tests", () => {
             await seedData(dataStore, () => dataStore.products);
 
             // Act
-            const found = await dataStore.products.group(x => x.category).toArrayAsync();
+            const group = await dataStore.products.toGroupAsync(x => x.category);
 
             // Assert
-            expect(found.length).toBe(2);
+            expect(group).toBe(2);
         });
     });
 

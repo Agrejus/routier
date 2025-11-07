@@ -2,7 +2,7 @@ import { CollectionOptions } from "../types";
 import { DatabaseDataAccessStrategy } from "./strategies/DatabaseDataAccessStrategy";
 import { IDataAccessStrategy } from "./types";
 import { MemoryPlugin } from "@routier/memory-plugin";
-import { DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin } from "@routier/core/plugins";
+import { DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue } from "@routier/core/plugins";
 import { PluginEventCallbackResult, Result } from "@routier/core/results";
 import { BulkPersistResult } from "@routier/core/collections";
 import { uuid, uuidv4 } from "@routier/core/utilities";
@@ -36,11 +36,11 @@ export class DataBridge<T extends {}> {
         this.strategy.bulkPersist(this.options, event, done);
     }
 
-    query<TShape>(event: DbPluginQueryEvent<T, TShape>, done: PluginEventCallbackResult<TShape>) {
+    query<TShape>(event: DbPluginQueryEvent<T, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>) {
         this.strategy.query(this.options, event, done);
     }
 
-    subscribe<TShape, U>(event: DbPluginQueryEvent<T, TShape>, done: PluginEventCallbackResult<TShape>) {
+    subscribe<TShape, U>(event: DbPluginQueryEvent<T, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>) {
         const subscription = event.operation.schema.createSubscription(this.signal);
         subscription.onMessage((changes) => {
             const filters = event.operation.options.get("filter")

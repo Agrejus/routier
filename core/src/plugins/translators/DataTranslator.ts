@@ -1,5 +1,9 @@
 import { QueryOption, QueryOptionName } from "../query/types";
 import { IQuery } from "../types";
+import { TranslatedArrayValue } from "./TranslatedArrayValue";
+import { TranslatedGroupValue } from "./TranslatedGroupValue";
+import { TranslatedSingleValue } from "./TranslatedSingleValue";
+import { ITranslatedValue } from "./types";
 
 export abstract class DataTranslator<TRoot extends {}, TShape> {
 
@@ -37,12 +41,20 @@ export abstract class DataTranslator<TRoot extends {}, TShape> {
     abstract map(data: unknown, option: QueryOption<TShape, "map">): TShape;
     abstract group(data: unknown, option: QueryOption<TShape, "group">): TShape;
 
-    translate(data: unknown): TShape {
+    translate(data: unknown): ITranslatedValue<TShape> {
 
         this.query.options.forEach(item => {
             data = this.functionMap[item.name](data, item);
         });
 
-        return data as TShape;
+        if (Array.isArray(data)) {
+            return new TranslatedArrayValue<TShape>(data);
+        }
+
+        if (this.query.options.has("group")) {
+            return new TranslatedGroupValue<TShape>(data);
+        }
+
+        return new TranslatedSingleValue<TShape>(data);
     }
 }

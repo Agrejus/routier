@@ -155,8 +155,6 @@ export class DataStore implements Disposable {
                             return;
                         }
 
-                        // need to compute views if any
-
                         if (afterPersistResult.ok === PluginEventResult.PARTIAL) {
                             done(PluginEventResult.partial(bulkPersistResult.id, afterPersistResult.data.result, afterPersistResult.error));
                             return;

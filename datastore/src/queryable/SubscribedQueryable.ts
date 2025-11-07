@@ -46,12 +46,6 @@ export class SubscribedQueryable<Root extends {}, Shape, U> extends SelectionQue
         return this.create(SubscribedQueryable<Root, R, U>);
     }
 
-    group<R extends Shape[keyof Shape] & IdType>(selector: GenericFunction<Record<R, Shape>, R>) {
-
-        this.setGroupQueryOption(selector);
-        return this.create(SubscribedQueryable<Root, R, U>);
-    }
-
     skip(amount: number) {
         this.setSkipQueryOption(amount);
         return this.create(SubscribedSkippedQueryable<Root, Shape, U>);

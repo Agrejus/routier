@@ -5,6 +5,7 @@ import { CompiledSchema } from '../../schema';
 import { Query } from '../query';
 import { resolveBulkPersistChanges, uuid } from '../../utilities';
 import { BulkPersistChanges, BulkPersistResult } from '../../collections';
+import { ITranslatedValue } from '../translators';
 
 const getMemoryPluginCollectionSize = <T extends {}>(plugin: IDbPlugin, schema: CompiledSchema<T>): number => {
 
@@ -20,10 +21,6 @@ type HydrationStatus =
     | "hydration-pending"
     | "hydration-error"
     | "hydration-success";
-
-const HYDRATION_STATUS_PENDING: HydrationStatus = "hydration-pending";
-const HYDRATION_STATUS_ERROR: HydrationStatus = "hydration-error";
-const HYDRATION_STATUS_SUCCESS: HydrationStatus = "hydration-success";
 
 let hydrationStatus: HydrationStatus = "hydration-not-started";
 
@@ -49,7 +46,7 @@ export class OptimisticReplicationDbPlugin implements IDbPlugin {
     /**
      * Will query the read plugin if there is one, otherwise the source plugin will be queried
     */
-    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<TShape>): void {
+    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
         try {
 
             const readPlugin = this.plugins.read;

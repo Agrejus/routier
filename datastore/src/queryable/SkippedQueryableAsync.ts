@@ -44,12 +44,6 @@ export class SkippedQueryableAsync<Root extends {}, Shape> extends SelectionQuer
         return this.create(SkippedQueryableAsync<Root, R>);
     }
 
-    group<R extends Shape[keyof Shape] & IdType>(selector: GenericFunction<Record<R, Shape>, R>) {
-
-        this.setGroupQueryOption(selector);
-        return this.create(SkippedQueryableAsync<Root, R>);
-    }
-
     take(amount: number) {
         this.setTakeQueryOption(amount);
         return this.create(TakeQueryableAsync<Root, Shape>);

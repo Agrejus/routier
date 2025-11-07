@@ -2,6 +2,7 @@ import { PluginEventCallbackPartialResult, PluginEventCallbackResult } from "../
 import { QueryOptionsCollection } from "./query/QueryOptionsCollection";
 import { CompiledSchema, InferType } from '../schema';
 import { BulkPersistChanges, BulkPersistResult, SchemaCollection } from "../collections";
+import { ITranslatedValue } from "./translators";
 
 /**
  * Interface for a database plugin, which provides query, destroy, and bulk operations.
@@ -12,7 +13,7 @@ export interface IDbPlugin {
      * @param event The query event containing schema, parent, and query operation.
      * @param done Callback with the result or error.
      */
-    query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<TShape>): void;
+    query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void;
     /**
      * Destroys or cleans up the plugin, closing connections or freeing resources.
      * @param done Callback with an optional error.

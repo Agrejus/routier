@@ -7,7 +7,7 @@ import { SelectionQueryable } from "../queryable/SelectionQueryable";
 import { SelectionQueryableAsync } from "../queryable/SelectionQueryableAsync";
 import { ChangeTrackingType, CompiledSchema, IdType, ISchemaSubscription, InferCreateType, InferType, SubscriptionChanges } from "@routier/core/schema";
 import { IDbPlugin, IQuery, QueryOptionsCollection } from "@routier/core/plugins";
-import { CallbackPartialResult, CallbackResult, PartialResultType, Result, ResultType } from "@routier/core/results";
+import { CallbackPartialResult, CallbackResult, PartialResultType, Result, ResultType, toPromise } from "@routier/core/results";
 import { BulkPersistChanges, BulkPersistResult, SchemaCollection } from "@routier/core/collections";
 import { assertIsNotNull } from "@routier/core/assertions";
 import { AsyncPipeline } from "@routier/core/pipeline";
@@ -75,7 +75,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
         this.countAsync = this.countAsync.bind(this);
         this.distinct = this.distinct.bind(this);
         this.distinctAsync = this.distinctAsync.bind(this);
-        this.group = this.group.bind(this);
+        this.toGroup = this.toGroup.bind(this);
     }
 
     [Symbol.dispose]() {
@@ -362,12 +362,16 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
         return result.sortDescending(selector);
     }
 
-    group<R extends InferType<TEntity>[keyof InferType<TEntity>] & IdType>(selector: GenericFunction<InferType<TEntity>, R>) {
-        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
+    toGroup<R extends InferType<TEntity>[keyof InferType<TEntity>] & IdType>(selector: GenericFunction<InferType<TEntity>, R>, done: CallbackResult<Record<R, InferType<TEntity>[]>>) {
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
             dataBridge: this.dataBridge as any,
             changeTracker: this.changeTracker as any
         });
-        return result.group(selector);
+        return result.toGroup(selector, done);
+    }
+
+    toGroupAsync<R extends InferType<TEntity>[keyof InferType<TEntity>] & IdType>(selector: GenericFunction<InferType<TEntity>, R>) {
+        return toPromise<Record<R, InferType<TEntity>[]>>(w => this.toGroup(selector, w));
     }
 
     /**

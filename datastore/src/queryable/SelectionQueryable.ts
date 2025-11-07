@@ -3,7 +3,7 @@ import { QuerySource } from "./QuerySource";
 import { Filter, ParamsFilter, toExpression } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
 import { QueryOptionName, QueryOptionsCollection } from "@routier/core/plugins";
-import { ChangeTrackingType, CompiledSchema } from "@routier/core/schema";
+import { ChangeTrackingType, CompiledSchema, IdType } from "@routier/core/schema";
 import { SchemaCollection } from "@routier/core/collections";
 import { DataBridge } from "../data-access/DataBridge";
 import { ChangeTracker } from "../change-tracking/ChangeTracker";
@@ -269,6 +269,15 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
         this.getData<Shape[]>(done);
 
         return this.subscribeQuery<Shape[]>(done) as U;
+    }
+
+    toGroup<R extends Shape[keyof Shape] & IdType>(selector: GenericFunction<Shape, R>, done: CallbackResult<Record<R, Shape[]>>): U {
+
+        this.setGroupQueryOption(selector);
+
+        this.getData<Record<R, Shape[]>>(done);
+
+        return this.subscribeQuery<Record<R, Shape[]>>(done) as U;
     }
 
     private _setQueryExpression<P extends {}, R extends {}>(options: {

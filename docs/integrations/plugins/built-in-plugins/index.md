@@ -53,6 +53,7 @@ import {
   DbPluginQueryEvent,
   DbPluginBulkPersistEvent,
   DbPluginEvent,
+  ITranslatedValue,
 } from "@routier/core/plugins";
 import {
   PluginEventCallbackResult,
@@ -60,6 +61,7 @@ import {
   PluginEventResult,
 } from "@routier/core/results";
 import { BulkPersistResult } from "@routier/core/collections";
+import { JsonTranslator } from "@routier/core/plugins/translators";
 
 export class MyCustomPlugin implements IDbPlugin {
   private options: any;
@@ -70,11 +72,17 @@ export class MyCustomPlugin implements IDbPlugin {
 
   query<TRoot extends {}, TShape>(
     event: DbPluginQueryEvent<TRoot, TShape>,
-    done: PluginEventCallbackResult<TShape>
+    done: PluginEventCallbackResult<ITranslatedValue<TShape>>
   ): void {
     // Translate event.operation to your backend's query format
-    // Execute the query and call done with results
-    done(PluginEventResult.success(event.id, results));
+    // Execute the query and use a translator to wrap results in ITranslatedValue
+    const translator = new JsonTranslator(event.operation);
+    const results: unknown[] = []; // Your query results here
+
+    // translate() automatically wraps results in ITranslatedValue to allow
+    // iteration (for grouped queries) and change tracking
+    const translatedValue = translator.translate(results);
+    done(PluginEventResult.success(event.id, translatedValue));
   }
 
   bulkPersist(
@@ -107,6 +115,22 @@ export class MyCustomPlugin implements IDbPlugin {
 ```
 
 ### Important Considerations
+
+#### ITranslatedValue and Result Wrapping
+
+Query results must be wrapped in an `ITranslatedValue` implementation. This interface provides two key capabilities:
+
+1. **Iteration**: Allows the datastore to iterate over results, which is required for grouped queries where results are key-value pairs rather than simple arrays.
+
+2. **Change Tracking**: The `isTrackable` property indicates whether change tracking should be enabled for the results. This is automatically determined from `event.operation.changeTracking`, which is `true` when the query returns full entities (not aggregated or mapped results).
+
+When using a `DataTranslator` (like `JsonTranslator` or `SqlTranslator`), the `translate()` method automatically wraps results in the appropriate `ITranslatedValue` implementation:
+
+- `TranslatedArrayValue` for standard array results
+- `TranslatedGroupValue` for grouped results (key-value pairs)
+- `TranslatedSingleValue` for single primitive values
+
+If you're not using a translator, you can manually wrap results using these classes.
 
 #### Query Translation
 
@@ -164,7 +188,12 @@ The SQLite plugin creates tables lazily on first use, but you can create them ea
 
 #### Result Handling
 
-For `query`: Return entities matching the query shape. Routier handles change tracking automatically.
+For `query`: Return entities matching the query shape wrapped in an `ITranslatedValue`. The `ITranslatedValue` interface allows the datastore to:
+
+- Iterate over results (required for grouped queries)
+- Determine if change tracking should be enabled based on the `isTrackable` property
+
+Use `TranslatedArrayValue` for array results or other implementations for different result shapes. Routier handles change tracking automatically when `isTrackable` is `true`.
 
 For `bulkPersist`: You must populate the result object returned by `event.operation.toResult()`. After persisting, update the result:
 

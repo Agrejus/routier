@@ -311,10 +311,14 @@ export class MyCustomTranslator<
 
 ### Usage in Plugin
 
+The `DataTranslator.translate()` method automatically wraps results in `ITranslatedValue`, so you don't need to manually wrap them:
+
 ```ts
+import { ITranslatedValue } from "@routier/core/plugins";
+
 query<TRoot extends {}, TShape>(
     event: DbPluginQueryEvent<TRoot, TShape>,
-    done: PluginEventCallbackResult<TShape>
+    done: PluginEventCallbackResult<ITranslatedValue<TShape>>
 ): void {
     const translator = new MyCustomTranslator(event.operation);
 
@@ -326,8 +330,10 @@ query<TRoot extends {}, TShape>(
         }
 
         // Translate raw results to expected shape
-        const translated = translator.translate(result.data);
-        done(PluginEventResult.success(event.id, translated));
+        // translate() automatically wraps results in ITranslatedValue to allow
+        // iteration (for grouped queries) and change tracking
+        const translatedValue = translator.translate(result.data);
+        done(PluginEventResult.success(event.id, translatedValue));
     });
 }
 ```

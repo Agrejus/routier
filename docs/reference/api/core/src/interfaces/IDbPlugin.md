@@ -1,6 +1,6 @@
 [**routier-collection**](../../../README.md)
 
-***
+---
 
 [routier-collection](../../../README.md) / [core/src](../README.md) / IDbPlugin
 
@@ -24,11 +24,11 @@ Executes a query operation on the database.
 
 ##### TRoot
 
-`TRoot` *extends* `object`
+`TRoot` _extends_ `object`
 
 ##### TShape
 
-`TShape` *extends* `unknown` = `TRoot`
+`TShape` _extends_ `unknown` = `TRoot`
 
 #### Parameters
 
@@ -40,15 +40,15 @@ The query event containing schema, parent, and query operation.
 
 ##### done
 
-[`PluginEventCallbackResult`](../type-aliases/PluginEventCallbackResult.md)\<`TShape`\>
+[`PluginEventCallbackResult`](../type-aliases/PluginEventCallbackResult.md)\<[`ITranslatedValue`](../classes/ITranslatedValue.md)\<`TShape`\>\>
 
-Callback with the result or error.
+Callback with the result or error. The result must be wrapped in an `ITranslatedValue` to allow the datastore to iterate over results (for grouped queries) and determine if change tracking should be enabled.
 
 #### Returns
 
 `void`
 
-***
+---
 
 ### destroy()
 
@@ -74,7 +74,7 @@ Callback with an optional error.
 
 `void`
 
-***
+---
 
 ### bulkPersist()
 

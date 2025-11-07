@@ -1,7 +1,7 @@
 import { assertIsNotNull } from '../assertions';
 import { BulkPersistResult } from '../collections';
 import { WorkPipeline } from '../pipeline';
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, JsonTranslator } from '.';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, JsonTranslator } from '.';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '../results';
 import { CompiledSchema, InferCreateType, InferType } from '../schema';
 import { DeepPartial } from '../types';
@@ -102,7 +102,7 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
         }
     }
 
-    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<TShape>): void {
+    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
         try {
             const operation = event.operation;
             const schema = operation.schema;

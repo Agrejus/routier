@@ -8,7 +8,7 @@
 
 A reactive data toolkit for building fast, local-first apps. Define schemas, create collections, use live queries, and make optimistic mutations with a plugin model for any storage.
 
-**[📖 View Full Documentation](https://agrejus.github.io/routier/)** - Complete guides, API reference, and tutorials
+**[📖 View Full Documentation](https://routier.dev/)** - Complete guides, API reference, and tutorials
 
 ## Features
 

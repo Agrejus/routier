@@ -1,6 +1,6 @@
 [**routier-collection**](../../../README.md)
 
-***
+---
 
 [routier-collection](../../../README.md) / [core/src](../README.md) / ReplicationDbPlugin
 
@@ -44,7 +44,7 @@ Creates a new DbPluginReplicator that coordinates operations between a source da
 
 A new DbPluginReplicator instance that manages the source-replica relationship
 
-***
+---
 
 ### query()
 
@@ -58,11 +58,11 @@ Will query the read plugin if there is one, otherwise the source plugin will be 
 
 ##### TEntity
 
-`TEntity` *extends* `object`
+`TEntity` _extends_ `object`
 
 ##### TShape
 
-`TShape` *extends* `unknown` = `TEntity`
+`TShape` _extends_ `unknown` = `TEntity`
 
 #### Parameters
 
@@ -72,7 +72,9 @@ Will query the read plugin if there is one, otherwise the source plugin will be 
 
 ##### done
 
-[`PluginEventCallbackResult`](../type-aliases/PluginEventCallbackResult.md)\<`TShape`\>
+[`PluginEventCallbackResult`](../type-aliases/PluginEventCallbackResult.md)\<[`ITranslatedValue`](ITranslatedValue.md)\<`TShape`\>\>
+
+Callback with the result or error. The result must be wrapped in an `ITranslatedValue` to allow the datastore to iterate over results (for grouped queries) and determine if change tracking should be enabled.
 
 #### Returns
 
@@ -82,7 +84,7 @@ Will query the read plugin if there is one, otherwise the source plugin will be 
 
 [`IDbPlugin`](../interfaces/IDbPlugin.md).[`query`](../interfaces/IDbPlugin.md#query)
 
-***
+---
 
 ### destroy()
 
@@ -112,7 +114,7 @@ Callback with an optional error.
 
 [`IDbPlugin`](../interfaces/IDbPlugin.md).[`destroy`](../interfaces/IDbPlugin.md#destroy)
 
-***
+---
 
 ### bulkPersist()
 

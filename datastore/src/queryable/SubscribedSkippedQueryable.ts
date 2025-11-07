@@ -42,12 +42,6 @@ export class SubscribedSkippedQueryable<Root extends {}, Shape, U> extends Selec
         return this.create(SubscribedSkippedQueryable<Root, R, U>);
     }
 
-    group<R extends Shape[keyof Shape] & IdType>(selector: GenericFunction<Record<R, Shape>, R>) {
-
-        this.setGroupQueryOption(selector);
-        return this.create(SubscribedSkippedQueryable<Root, R, U>);
-    }
-
     take(amount: number) {
         this.setTakeQueryOption(amount);
         return this.create(SubscribedTakeQueryable<Root, Shape, U>);

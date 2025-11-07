@@ -224,37 +224,41 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     }
 
     // Checks to see if the item is already attached, if so we merge, if not we attach and return each result
-    resolve(entities: InferType<TEntity>[], tag: unknown | null, options?: { merge?: boolean }) {
+    resolve(entity: InferType<TEntity>, tag: unknown | null, options?: { merge?: boolean }) {
 
-        const result: InferType<TEntity>[] = [];
-        for (let i = 0, length = entities.length; i < length; ++i) {
-            const entity = entities[i];
-            const key = this.schema.getId(entity);
-            const existing = this.attachments.get(key);
+        const key = this.schema.getId(entity);
+        const existing = this.attachments.get(key);
 
-            if (existing != null) {
-                if (options?.merge === true) {
-                    this.schema.merge(existing.doc, entity); // merge needs to map children appropriately
-                }
-
-                result.push(existing.doc);
-
-                if (tag != null) {
-                    const tagCollection = this.resolveTagCollection();
-                    tagCollection.set(existing, tag);
-                }
-                continue;
+        if (existing != null) {
+            if (options?.merge === true) {
+                this.schema.merge(existing.doc, entity); // merge needs to map children appropriately
             }
-
-
-            const changeType = this.resolveChangeType(entity);
-            this.attachments.set(key, { doc: entity, changeType });
-            result.push(entity);
 
             if (tag != null) {
                 const tagCollection = this.resolveTagCollection();
-                tagCollection.set(entity, tag);
+                tagCollection.set(existing, tag);
             }
+
+            return existing.doc
+        }
+
+
+        const changeType = this.resolveChangeType(entity);
+        this.attachments.set(key, { doc: entity, changeType });
+
+        if (tag != null) {
+            const tagCollection = this.resolveTagCollection();
+            tagCollection.set(entity, tag);
+        }
+
+        return entity;
+    }
+
+    resolveMany(entities: InferType<TEntity>[], tag: unknown | null, options?: { merge?: boolean }) {
+        const result = new Array<InferType<TEntity>>(entities.length);
+
+        for (let i = 0, length = entities.length; i < length; i++) {
+            result[i] = this.resolve(entities[i], tag, options);
         }
 
         return result;
@@ -336,7 +340,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
         }
     }
 
-    deserializeAndEnrich(entities: InferType<TEntity>[], changeTrackingType: ChangeTrackingType) {
+    postprocess(entities: InferType<TEntity>[], changeTrackingType: ChangeTrackingType) {
         const result = new Array(entities.length);
 
         for (let i = 0, length = entities.length; i < length; i++) {
