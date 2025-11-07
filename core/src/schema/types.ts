@@ -104,6 +104,13 @@ export type Prepare<TEntity extends {}> = {
     (entity: InferCreateType<TEntity>): InferCreateType<TEntity>;
     (entity: InferType<TEntity>): InferType<TEntity>;
 }
+export type Preprocess<TEntity extends {}> = {
+    (entity: InferCreateType<TEntity>): InferType<TEntity>;
+    (entity: InferType<TEntity>): InferType<TEntity>;
+}
+
+export type CompiledSchemaCore<TEntity extends {}> = Omit<CompiledSchema<TEntity>, "createSubscription">;
+
 /**
  * Represents a fully compiled schema with all utilities and metadata for an entity type.
  */
@@ -142,7 +149,7 @@ export type CompiledSchema<TEntity extends {}> = {
     deserialize: (entity: InferType<TEntity>) => InferType<TEntity>;
 
     /** Combines serializing and preparing an entity for saving. */
-    preprocess: (entity: InferCreateType<TEntity>) => InferType<TEntity>;
+    preprocess: Preprocess<TEntity>;
     /** Combines deserializing and enriching an entity for selection. */
     postprocess: Enrich<TEntity>;
 

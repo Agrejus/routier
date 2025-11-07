@@ -1,6 +1,6 @@
 import { now } from "../../performance";
 import { Tagged, uuid } from "../../utilities";
-import { ISchemaSubscription, SchemaId, SubscriptionChanges } from "../types";
+import { CompiledSchema, CompiledSchemaCore, InferType, ISchemaSubscription, SchemaId, SubscriptionChanges } from "../types";
 
 type BroadcastChannelReceiverId = Tagged<string, "BroadcastChannelReceiverId">;
 type SubscriptionListenerCallback<T> = (changes: StampedChanges<T>) => void;
@@ -97,13 +97,13 @@ class SubscriptionListener<T> implements ISubscriptionAction<T> {
 export class SchemaSubscription<T extends {}> implements ISchemaSubscription<T> {
 
     private readonly id: BroadcastChannelReceiverId;
-    private readonly schemaId: SchemaId;
+    private readonly schema: CompiledSchemaCore<T>;
     private readonly createdAt: number;
 
-    constructor(schemaId: SchemaId, signal?: AbortSignal) {
+    constructor(schema: CompiledSchemaCore<T>, signal?: AbortSignal) {
         this.createdAt = now();
         this.id = uuid(8) as BroadcastChannelReceiverId;
-        this.schemaId = schemaId;
+        this.schema = schema;
 
         signal?.addEventListener("abort", () => {
             this.dispose();
@@ -111,21 +111,45 @@ export class SchemaSubscription<T extends {}> implements ISchemaSubscription<T> 
     }
 
     send(changes: SubscriptionChanges<T>) {
-        const regisry = getChannelRegistry<T>(this.schemaId);
+        const regisry = getChannelRegistry<T>(this.schema.id);
+
+        // cannot send raw data, needs to be preprocessed
+        const preprocessedChanges: SubscriptionChanges<T> = {
+            adds: new Array<InferType<T>>(changes.adds.length),
+            removals: new Array<InferType<T>>(changes.removals.length),
+            unknown: new Array<InferType<T>>(changes.unknown.length),
+            updates: new Array<InferType<T>>(changes.updates.length),
+        };
+
+        for (let i = 0, length = changes.adds.length; i < length; i++) {
+            preprocessedChanges.adds[i] = this.schema.preprocess(changes.adds[i]);
+        }
+
+        for (let i = 0, length = changes.removals.length; i < length; i++) {
+            preprocessedChanges.removals[i] = this.schema.preprocess(changes.removals[i]);
+        }
+
+        for (let i = 0, length = changes.unknown.length; i < length; i++) {
+            preprocessedChanges.unknown[i] = this.schema.preprocess(changes.unknown[i]);
+        }
+
+        for (let i = 0, length = changes.updates.length; i < length; i++) {
+            preprocessedChanges.updates[i] = this.schema.preprocess(changes.updates[i]);
+        }
 
         // Send message to all listeners.
         // Since we create a new listener when we do onMessage,
         // we don't need to worry about sending to ourselves, it 
         // can't happen
         regisry.sender.send({
-            data: changes,
+            data: preprocessedChanges,
             timestamp: now()
         });
     }
 
     onMessage(callback: (changes: SubscriptionChanges<T>) => void) {
 
-        const regisry = getChannelRegistry<T>(this.schemaId);
+        const regisry = getChannelRegistry<T>(this.schema.id);
 
         // Link the callback to an instance
         regisry.receiver.addListener(this.id, ({ data, timestamp }) => {
@@ -135,7 +159,31 @@ export class SchemaSubscription<T extends {}> implements ISchemaSubscription<T> 
                 return;
             }
 
-            callback(data);
+            // Changes were preprocessed before they were sent, need to postprocess them
+            const postProcessedChanges: SubscriptionChanges<T> = {
+                adds: new Array<InferType<T>>(data.adds.length),
+                removals: new Array<InferType<T>>(data.removals.length),
+                unknown: new Array<InferType<T>>(data.unknown.length),
+                updates: new Array<InferType<T>>(data.updates.length),
+            };
+
+            for (let i = 0, length = data.adds.length; i < length; i++) {
+                postProcessedChanges.adds[i] = this.schema.preprocess(data.adds[i]);
+            }
+
+            for (let i = 0, length = data.removals.length; i < length; i++) {
+                postProcessedChanges.removals[i] = this.schema.preprocess(data.removals[i]);
+            }
+
+            for (let i = 0, length = data.unknown.length; i < length; i++) {
+                postProcessedChanges.unknown[i] = this.schema.preprocess(data.unknown[i]);
+            }
+
+            for (let i = 0, length = data.updates.length; i < length; i++) {
+                postProcessedChanges.updates[i] = this.schema.preprocess(data.updates[i]);
+            }
+
+            callback(postProcessedChanges);
         });
     }
 
@@ -144,7 +192,7 @@ export class SchemaSubscription<T extends {}> implements ISchemaSubscription<T> 
     }
 
     [Symbol.dispose](): void {
-        const regisry = getChannelRegistry<T>(this.schemaId);
+        const regisry = getChannelRegistry<T>(this.schema.id);
 
         // Remove listeners for this instance only
         regisry.receiver.removeListeners(this.id);

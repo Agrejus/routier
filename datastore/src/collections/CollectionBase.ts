@@ -6,8 +6,8 @@ import { QueryableAsync } from '../queryable/QueryableAsync';
 import { SelectionQueryable } from "../queryable/SelectionQueryable";
 import { SelectionQueryableAsync } from "../queryable/SelectionQueryableAsync";
 import { ChangeTrackingType, CompiledSchema, IdType, ISchemaSubscription, InferCreateType, InferType, SubscriptionChanges } from "@routier/core/schema";
-import { IDbPlugin, IQuery, QueryOptionsCollection } from "@routier/core/plugins";
-import { CallbackPartialResult, CallbackResult, PartialResultType, Result, ResultType, toPromise } from "@routier/core/results";
+import { IDbPlugin, IQuery, ITranslatedValue, QueryOptionsCollection } from "@routier/core/plugins";
+import { CallbackPartialResult, CallbackResult, PartialResultType, Result, toPromise } from "@routier/core/results";
 import { BulkPersistChanges, BulkPersistResult, SchemaCollection } from "@routier/core/collections";
 import { assertIsNotNull } from "@routier/core/assertions";
 import { AsyncPipeline } from "@routier/core/pipeline";
@@ -76,6 +76,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
         this.distinct = this.distinct.bind(this);
         this.distinctAsync = this.distinctAsync.bind(this);
         this.toGroup = this.toGroup.bind(this);
+        this.toGroupAsync = this.toGroupAsync.bind(this);
     }
 
     [Symbol.dispose]() {
@@ -166,7 +167,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
             return;
         }
 
-        const pipeline = new AsyncPipeline<IQuery<TEntity, TEntity>, TEntity[]>();
+        const pipeline = new AsyncPipeline<IQuery<TEntity, TEntity>, ITranslatedValue<TEntity>>();
 
         pipeline.pipeEach(queries, (operation, done) => {
             try {
@@ -175,9 +176,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
                     operation,
                     schemas: this.schemas,
                     source: "data-store"
-                }, (r) => {
-                    done(r as ResultType<TEntity[]>);
-                })
+                }, done);
             } catch (e) {
                 done(Result.error(e));
             }
@@ -188,10 +187,15 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
                 done(Result.error(result.error));
                 return;
             }
-
+            debugger;
             const data: TEntity[] = [];
             for (let i = 0, length = result.data.length; i < length; i++) {
-                data.push(...result.data[i]);
+                const collection = result.data[i];
+
+                collection.forEach(item => {
+                    data.push(item as TEntity);
+                })
+
             }
 
             done(Result.success(data));

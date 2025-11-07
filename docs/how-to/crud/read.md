@@ -55,6 +55,7 @@ All queries must end with a terminal method to execute:
 - `someAsync()` - any match
 - `countAsync()` - count of items
 - `sumAsync()`, `minAsync()`, `maxAsync()` - aggregations
+- `toGroupAsync(selector)` - group items by key
 
 ### Query Chaining
 

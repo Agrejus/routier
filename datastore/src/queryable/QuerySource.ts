@@ -255,7 +255,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
             // No change tracking on the result, just return it as is
             if (databaseEvent.operation.changeTracking === false) {
-                return done(PluginEventResult.success(databaseEvent.id, result.data as TShape));
+                return done(PluginEventResult.success(databaseEvent.id, result.data.value as TShape));
             }
 
             // Resolve the data with the current attachments

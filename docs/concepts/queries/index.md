@@ -15,17 +15,18 @@ Routier queries are fluent and can only be performed through a collection. Build
 
 ### Terminal Methods (Query Execution)
 
-| Method                    | Description                     | Example                                      |
-| ------------------------- | ------------------------------- | -------------------------------------------- |
-| `toArrayAsync()`          | Get all results as an array     | `await ctx.products.toArrayAsync()`          |
-| `firstAsync()`            | Get first item (throws if none) | `await ctx.products.firstAsync()`            |
-| `firstOrUndefinedAsync()` | Get first item or undefined     | `await ctx.products.firstOrUndefinedAsync()` |
-| `someAsync()`             | Check if any items exist        | `await ctx.products.someAsync()`             |
-| `countAsync()`            | Count total items               | `await ctx.products.countAsync()`            |
-| `sumAsync(field)`         | Sum numeric field               | `await ctx.products.sumAsync(p => p.price)`  |
-| `minAsync(field)`         | Get minimum value               | `await ctx.products.minAsync(p => p.price)`  |
-| `maxAsync(field)`         | Get maximum value               | `await ctx.products.maxAsync(p => p.price)`  |
-| `distinctAsync()`         | Get unique values               | `await ctx.products.distinctAsync()`         |
+| Method                    | Description                     | Example                                            |
+| ------------------------- | ------------------------------- | -------------------------------------------------- |
+| `toArrayAsync()`          | Get all results as an array     | `await ctx.products.toArrayAsync()`                |
+| `firstAsync()`            | Get first item (throws if none) | `await ctx.products.firstAsync()`                  |
+| `firstOrUndefinedAsync()` | Get first item or undefined     | `await ctx.products.firstOrUndefinedAsync()`       |
+| `someAsync()`             | Check if any items exist        | `await ctx.products.someAsync()`                   |
+| `countAsync()`            | Count total items               | `await ctx.products.countAsync()`                  |
+| `sumAsync(field)`         | Sum numeric field               | `await ctx.products.sumAsync(p => p.price)`        |
+| `minAsync(field)`         | Get minimum value               | `await ctx.products.minAsync(p => p.price)`        |
+| `maxAsync(field)`         | Get maximum value               | `await ctx.products.maxAsync(p => p.price)`        |
+| `distinctAsync()`         | Get unique values               | `await ctx.products.distinctAsync()`               |
+| `toGroupAsync(selector)`  | Group items by key              | `await ctx.products.toGroupAsync(p => p.category)` |
 
 ### Query Operations (Chaining)
 

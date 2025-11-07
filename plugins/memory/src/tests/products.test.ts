@@ -2241,13 +2241,19 @@ describe("Product Tests", () => {
         it('should group', async () => {
             const dataStore = factory();
             // Arrange
-            await seedData(dataStore, () => dataStore.products);
+            await seedData(dataStore, () => dataStore.products, 100);
 
             // Act
+            const allData = await dataStore.products.toArrayAsync();
+            const expectedResult = allData.reduce((a, v) => ({ ...a, [v.category]: a[v.category] == null ? [v] : [...a[v.category], v] }), {} as Record<string, unknown[]>)
             const group = await dataStore.products.toGroupAsync(x => x.category);
 
             // Assert
-            expect(group).toBe(2);
+            expect(Object.keys(expectedResult)).toStrictEqual(Object.keys(group));
+
+            for (const key of Object.keys(expectedResult)) {
+                expect(expectedResult[key].length).toBe(group[key].length);
+            }
         });
     });
 

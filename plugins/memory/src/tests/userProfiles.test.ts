@@ -31,6 +31,9 @@ describe("User Profiles Tests", () => {
             const [added] = await dataStore.userProfiles.addAsync(item);
             await dataStore.saveChangesAsync();
 
+            const found = await dataStore.userProfiles.firstAsync(x => x._id === added._id)
+
+            expect(found).toBeDefined();
             expect(typeof added.age).toBe("number");
         });
     });

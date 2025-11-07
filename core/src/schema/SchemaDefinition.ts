@@ -18,7 +18,7 @@ import { FreezeHandlerBuilder } from '../codegen/handlers/FreezeHandlerBuilder';
 import { SchemaError } from '../errors/SchemaError';
 import { SerializeHandlerBuilder } from "../codegen/handlers/SerializeHandlerBuilder";
 import { hash } from "../utilities";
-import { CompiledSchema, GetHashTypeFunction, HashFunction, HashType, IdType, Index, InferCreateType, InferType, Prepare, SchemaTypes } from './types';
+import { CompiledSchema, CompiledSchemaCore, GetHashTypeFunction, HashFunction, HashType, IdType, Index, InferCreateType, InferType, Prepare, Preprocess, SchemaTypes } from './types';
 import { DeepPartial } from '../types';
 import { SchemaSubscription } from './communication/broadcast';
 import { CompareIdsHandlerBuilder } from '../codegen/handlers/CompareIdsHandlerBuilder';
@@ -475,7 +475,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const enableChangeTrackingFunction = Function("entity", changeTrackingCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
             const freezeFunction = Function("entity", freezeCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
             const compareIdsFunction = Function("a", "b", compareIdsCodeBuilder.toString()) as (a: InferType<T>, b: InferType<T>) => boolean;
-            const preprocessFunction = Function("entity", preprocessCodeBuilder.toString()) as (entity: InferCreateType<T>) => InferType<T>;
+            const preprocessFunction = Function("entity", preprocessCodeBuilder.toString()) as Preprocess<T>;
 
             const enricherFactoryFunction = enrichGenerator();
             const postProcessFactoryFunction = postProcessGenerator();
@@ -515,8 +515,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                 return item as DeepPartial<InferType<T>>;
             }
 
-            return {
-                createSubscription: (signal?: AbortSignal) => new SchemaSubscription(id, signal),
+            const result: CompiledSchemaCore<T> = {
                 preprocess: preprocessFunction,
                 postprocess: postProcessFunction,
                 getId,
@@ -608,6 +607,11 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
                     return indexes;
                 }
+            };
+
+            return {
+                createSubscription: (signal?: AbortSignal) => new SchemaSubscription(result, signal),
+                ...result
             }
         } catch (e) {
             throw new SchemaError(e, `Error compiling schema for collection: ${this.collectionName}`);

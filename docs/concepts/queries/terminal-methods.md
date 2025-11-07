@@ -20,19 +20,20 @@ All queries must end with a terminal method to execute. These methods actually p
 
 ## Quick Reference
 
-| Method                    | Description                     | Example                                         |
-| ------------------------- | ------------------------------- | ----------------------------------------------- |
-| `toArrayAsync()`          | Get all results as an array     | `await ctx.products.toArrayAsync()`             |
-| `firstAsync()`            | Get first item (throws if none) | `await ctx.products.firstAsync()`               |
-| `firstOrUndefinedAsync()` | Get first item or undefined     | `await ctx.products.firstOrUndefinedAsync()`    |
-| `someAsync()`             | Check if any items exist        | `await ctx.products.someAsync()`                |
-| `everyAsync(predicate)`   | Check if all items match        | `await ctx.products.everyAsync(p => p.inStock)` |
-| `countAsync()`            | Count total items               | `await ctx.products.countAsync()`               |
-| `sumAsync(field)`         | Sum numeric field               | `await ctx.products.sumAsync(p => p.price)`     |
-| `minAsync(field)`         | Get minimum value               | `await ctx.products.minAsync(p => p.price)`     |
-| `maxAsync(field)`         | Get maximum value               | `await ctx.products.maxAsync(p => p.price)`     |
-| `distinctAsync()`         | Get unique values               | `await ctx.products.distinctAsync()`            |
-| `removeAsync()`           | Delete matching items           | `await ctx.products.removeAsync()`              |
+| Method                    | Description                     | Example                                            |
+| ------------------------- | ------------------------------- | -------------------------------------------------- |
+| `toArrayAsync()`          | Get all results as an array     | `await ctx.products.toArrayAsync()`                |
+| `firstAsync()`            | Get first item (throws if none) | `await ctx.products.firstAsync()`                  |
+| `firstOrUndefinedAsync()` | Get first item or undefined     | `await ctx.products.firstOrUndefinedAsync()`       |
+| `someAsync()`             | Check if any items exist        | `await ctx.products.someAsync()`                   |
+| `everyAsync(predicate)`   | Check if all items match        | `await ctx.products.everyAsync(p => p.inStock)`    |
+| `countAsync()`            | Count total items               | `await ctx.products.countAsync()`                  |
+| `sumAsync(field)`         | Sum numeric field               | `await ctx.products.sumAsync(p => p.price)`        |
+| `minAsync(field)`         | Get minimum value               | `await ctx.products.minAsync(p => p.price)`        |
+| `maxAsync(field)`         | Get maximum value               | `await ctx.products.maxAsync(p => p.price)`        |
+| `distinctAsync()`         | Get unique values               | `await ctx.products.distinctAsync()`               |
+| `toGroupAsync(selector)`  | Group items by key              | `await ctx.products.toGroupAsync(p => p.category)` |
+| `removeAsync()`           | Delete matching items           | `await ctx.products.removeAsync()`                 |
 
 ## Detailed Examples
 
@@ -138,6 +139,33 @@ const uniquePrices = await ctx.products.map((p) => p.price).distinctAsync();
 const uniqueNames = await ctx.products.map((p) => p.name).distinctAsync();
 ```
 
+### Grouping Data
+
+Group items by a key value, returning a record where keys are the grouped values and values are arrays of items with that key:
+
+```ts
+// Group products by category
+const productsByCategory = await ctx.products.toGroupAsync((p) => p.category);
+// Result: { "electronics": Product[], "clothing": Product[], "books": Product[] }
+
+// Group products by status
+const productsByStatus = await ctx.products.toGroupAsync((p) => p.status);
+// Result: { "active": Product[], "inactive": Product[] }
+
+// Group with filtering
+const expensiveByCategory = await ctx.products
+  .where((p) => p.price > 100)
+  .toGroupAsync((p) => p.category);
+
+// Group by numeric field
+const productsByPriceRange = await ctx.products.toGroupAsync((p) =>
+  p.price < 50 ? "budget" : p.price < 200 ? "mid" : "premium"
+);
+// Result: { "budget": Product[], "mid": Product[], "premium": Product[] }
+```
+
+The selector function must return a value that can be used as an object key (string, number, or Date). Each group contains an array of all items that share the same key value.
+
 ### Removal Operations
 
 ```ts
@@ -228,6 +256,23 @@ if (hasData) {
   const firstProduct = await ctx.products.firstAsync();
   // Process first product
 }
+```
+
+### Organizing Data by Category
+
+```ts
+// Group products by category for display
+const productsByCategory = await ctx.products.toGroupAsync((p) => p.category);
+
+// Iterate over groups
+for (const [category, products] of Object.entries(productsByCategory)) {
+  console.log(`${category}: ${products.length} products`);
+}
+
+// Group with filtering
+const activeProductsByStatus = await ctx.products
+  .where((p) => p.active)
+  .toGroupAsync((p) => p.status);
 ```
 
 ## Related Topics

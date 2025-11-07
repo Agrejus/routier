@@ -66,3 +66,11 @@ const totalValue = await dataStore.products.sumAsync(p => p.price);
 const uniqueCategories = await dataStore.products
     .map(p => p.category)
     .distinctAsync();
+
+// toGroup / toGroupAsync - group items by key
+const productsByCategory = await dataStore.products.toGroupAsync(p => p.category);
+// Result: { "electronics": Product[], "clothing": Product[], "books": Product[] }
+
+const expensiveByCategory = await dataStore.products
+    .where(p => p.price > 100)
+    .toGroupAsync(p => p.category);
