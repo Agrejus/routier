@@ -96,8 +96,9 @@ Use `.defer()` to skip the initial query and only listen to **changes**:
 
 ```tsx
 // Only gets data AFTER the first change, ignores initial state
+// Important: defer() must come before subscribe()
 const products = useQuery(
-  (callback) => dataStore.products.subscribe().defer().toArray(callback),
+  (callback) => dataStore.products.defer().subscribe().toArray(callback),
   []
 );
 ```
@@ -105,9 +106,12 @@ const products = useQuery(
 **Behavior with `.defer()`:**
 
 1. Component mounts, stays in `pending` state
-2. First query is skipped
-3. Waits for the next change event
-4. On change, queries and updates
+2. First query execution is skipped (only the first one)
+3. Waits for the first change event
+4. On first change, queries and updates
+5. On all subsequent changes, queries and updates normally
+
+**Important:** `.defer()` must be called **before** `.subscribe()` in the query chain. The order matters.
 
 **Use `.defer()` when:**
 
@@ -215,11 +219,16 @@ import { DataStore } from "@routier/datastore";
 import { MemoryPlugin } from "@routier/plugins-memory";
 
 export function useDataStore() {
-  return useMemo(() => new DataStore(new MemoryPlugin("app")), []);
+  // This will cause subscriptions to run infinitely if this is not done
+  // Always use useMemo to prevent infinite subscription loops
+  const dataStore = useMemo(() => new DataStore(new MemoryPlugin("app")), []);
+  return dataStore;
 }
 ```
 
-**Note:** Subscriptions work via BroadcastChannel, so live updates work across different DataStore instances. You can create a new instance per component without losing reactivity.
+**Critical:** You **must** use `useMemo` when creating a DataStore instance. Without `useMemo`, a new DataStore is created on every render, which causes subscriptions to be recreated infinitely. Each new datastore instance triggers `useQuery`'s effect to re-run, creating new subscriptions, which can cause performance issues and infinite loops.
+
+**Note:** Subscriptions work via BroadcastChannel, so live updates work across different DataStore instances. You can create a new instance per component without losing reactivity, but each instance must be memoized.
 
 Alternatively, you can use Context if you prefer a shared instance across your app. See the [Best Practices](/integrations/react/best-practices/) guide for details.
 

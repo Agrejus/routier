@@ -68,7 +68,7 @@ export class PouchDbTranslator<TEntity extends {}, TShape extends unknown = TEnt
         return (item: unknown) => selector([item, params]) !== false;
     }
 
-    override translate(data: unknown): TShape {
+    override translate(data: unknown) {
         assertIsArray(data);
 
         const result: unknown[] = [];

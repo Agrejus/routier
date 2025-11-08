@@ -9,6 +9,8 @@ nav_order: 2
 
 Install the core libraries, the datastore, and one storage plugin.
 
+> **💡 Try it first:** Want to explore Routier before installing? [Open the CodeSandbox demo](https://codesandbox.io/p/devbox/routier-4nlxsx) to see it in action.
+
 ## Quick Navigation
 
 - [Install Core and Datastore](#1-install-core-and-datastore)

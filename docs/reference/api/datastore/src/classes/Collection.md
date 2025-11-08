@@ -1,6 +1,6 @@
 [**routier-collection**](../../../README.md)
 
-***
+---
 
 [routier-collection](../../../README.md) / [datastore/src](../README.md) / Collection
 
@@ -16,7 +16,7 @@ Defined in: [datastore/src/collections/Collection.ts:9](https://github.com/Agrej
 
 ### TEntity
 
-`TEntity` *extends* `object`
+`TEntity` _extends_ `object`
 
 ## Constructors
 
@@ -84,7 +84,7 @@ Defined in: [datastore/src/collections/Collection.ts:41](https://github.com/Agre
 
 `void`
 
-***
+---
 
 ### attachments
 
@@ -220,7 +220,7 @@ Retrieves the change type for a specific entity. Returns the change type if atta
 
 `EntityChangeType`
 
-***
+---
 
 ### schema
 
@@ -232,7 +232,7 @@ Defined in: [datastore/src/collections/CollectionBase.ts:22](https://github.com/
 
 `RemovableCollection.schema`
 
-***
+---
 
 ### schemas
 
@@ -244,7 +244,7 @@ Defined in: [datastore/src/collections/CollectionBase.ts:23](https://github.com/
 
 `RemovableCollection.schemas`
 
-***
+---
 
 ### scopedQueryOptions
 
@@ -284,7 +284,7 @@ Callback function called with the added entities or error
 
 `void`
 
-***
+---
 
 ### addAsync()
 
@@ -308,7 +308,7 @@ Entities to add to the collection
 
 Promise that resolves with the added entities or rejects with an error
 
-***
+---
 
 ### tag()
 
@@ -332,7 +332,7 @@ The tag to associate with the next operation
 
 The collection instance for method chaining
 
-***
+---
 
 ### \[dispose\]()
 
@@ -348,7 +348,7 @@ Defined in: [datastore/src/collections/CollectionBase.ts:80](https://github.com/
 
 `RemovableCollection.[dispose]`
 
-***
+---
 
 ### dispose()
 
@@ -364,7 +364,7 @@ Defined in: [datastore/src/collections/CollectionBase.ts:84](https://github.com/
 
 `RemovableCollection.dispose`
 
-***
+---
 
 ### hasChanges()
 
@@ -380,7 +380,7 @@ Defined in: [datastore/src/collections/CollectionBase.ts:263](https://github.com
 
 `RemovableCollection.hasChanges`
 
-***
+---
 
 ### instance()
 
@@ -408,7 +408,7 @@ Array of change-tracked entity instances
 
 `RemovableCollection.instance`
 
-***
+---
 
 ### subscribe()
 
@@ -428,7 +428,7 @@ A subscription object that can be used to listen for collection changes
 
 `RemovableCollection.subscribe`
 
-***
+---
 
 ### defer()
 
@@ -436,17 +436,60 @@ A subscription object that can be used to listen for collection changes
 
 Defined in: [datastore/src/collections/CollectionBase.ts:298](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L298)
 
-Ignores the first execution of the resulting query
+Skips the **first** query execution only, then listens to all subsequent changes. When used with `.subscribe()`, the query will not execute immediately on setup, but will wait for the first change event before executing. After the first change, the query behaves normally and executes on every subsequent change.
+
+**Important:** `.defer()` must be called **before** `.subscribe()` in the query chain.
 
 #### Returns
 
 `Queryable`\<`InferType`\<`TEntity`\>, `InferType`\<`TEntity`\>, () => `void`\>
 
+A queryable that will skip the initial execution when a terminal method is called.
+
+#### Example
+
+```ts
+// Skip initial query, only react to changes
+ctx.products
+  .defer()
+  .subscribe()
+  .toArray((result) => {
+    // This callback is NOT called on initial setup
+    // It's only called when products change after setup
+    if (result.ok === "success") {
+      console.log("Products after change:", result.data);
+    }
+  });
+
+// In views: prevent computation on datastore creation
+commentsView = this.view(commentsViewSchema)
+  .derive((done) => {
+    const unsubscribe = this.comments
+      .defer()
+      .subscribe()
+      .toArray((response) => {
+        if (response.ok === "error") {
+          return done([]);
+        }
+        done(response.data.map(/* transform */));
+      });
+    return unsubscribe;
+  })
+  .create();
+```
+
+#### Use Cases
+
+- **Activity feeds**: Show only new items after component mounts
+- **Notifications**: Display only new notifications, not historical ones
+- **Views**: Prevent view computation when datastore is created
+- **Chat messages**: Show only new messages after joining
+
 #### Inherited from
 
 `RemovableCollection.defer`
 
-***
+---
 
 ### where()
 
@@ -488,7 +531,7 @@ Creates a query with a parameterized filter to filter entities in the collection
 
 ###### P
 
-`P` *extends* `object`
+`P` _extends_ `object`
 
 ##### Parameters
 
@@ -514,7 +557,7 @@ QueryableAsync instance for chaining additional query operations
 
 `RemovableCollection.where`
 
-***
+---
 
 ### sort()
 
@@ -542,7 +585,7 @@ QueryableAsync instance for chaining additional query operations
 
 `RemovableCollection.sort`
 
-***
+---
 
 ### sortDescending()
 
@@ -570,7 +613,7 @@ QueryableAsync instance for chaining additional query operations
 
 `RemovableCollection.sortDescending`
 
-***
+---
 
 ### map()
 
@@ -604,7 +647,7 @@ QueryableAsync instance for chaining additional query operations
 
 `RemovableCollection.map`
 
-***
+---
 
 ### skip()
 
@@ -632,7 +675,7 @@ QueryableAsync instance for chaining additional query operations
 
 `RemovableCollection.skip`
 
-***
+---
 
 ### take()
 
@@ -660,7 +703,7 @@ QueryableAsync instance for chaining additional query operations
 
 `RemovableCollection.take`
 
-***
+---
 
 ### toQueryable()
 
@@ -681,7 +724,7 @@ QueryableAsync instance for chaining additional query operations
 
 `RemovableCollection.toQueryable`
 
-***
+---
 
 ### toArray()
 
@@ -707,7 +750,7 @@ Callback function called with the array of entities or error
 
 `RemovableCollection.toArray`
 
-***
+---
 
 ### toArrayAsync()
 
@@ -727,7 +770,7 @@ Promise that resolves with the array of entities or rejects with an error
 
 `RemovableCollection.toArrayAsync`
 
-***
+---
 
 ### first()
 
@@ -773,7 +816,7 @@ Returns the first entity that matches the parameterized filter.
 
 ###### P
 
-`P` *extends* `object`
+`P` _extends_ `object`
 
 ##### Parameters
 
@@ -825,7 +868,7 @@ Callback function called with the first entity or error
 
 `RemovableCollection.first`
 
-***
+---
 
 ### firstAsync()
 
@@ -867,7 +910,7 @@ Returns the first entity that matches the parameterized filter asynchronously.
 
 ###### P
 
-`P` *extends* `object`
+`P` _extends_ `object`
 
 ##### Parameters
 
@@ -909,7 +952,7 @@ Promise that resolves with the first entity or rejects with an error
 
 `RemovableCollection.firstAsync`
 
-***
+---
 
 ### firstOrUndefined()
 
@@ -955,7 +998,7 @@ Returns the first entity that matches the parameterized filter, or undefined if 
 
 ###### P
 
-`P` *extends* `object`
+`P` _extends_ `object`
 
 ##### Parameters
 
@@ -1007,7 +1050,7 @@ Callback function called with the first entity, undefined, or error
 
 `RemovableCollection.firstOrUndefined`
 
-***
+---
 
 ### firstOrUndefinedAsync()
 
@@ -1049,7 +1092,7 @@ Returns the first entity that matches the parameterized filter asynchronously, o
 
 ###### P
 
-`P` *extends* `object`
+`P` _extends_ `object`
 
 ##### Parameters
 
@@ -1091,7 +1134,7 @@ Promise that resolves with the first entity, undefined, or rejects with an error
 
 `RemovableCollection.firstOrUndefinedAsync`
 
-***
+---
 
 ### some()
 
@@ -1137,7 +1180,7 @@ Checks if any entity matches the parameterized filter.
 
 ###### P
 
-`P` *extends* `object`
+`P` _extends_ `object`
 
 ##### Parameters
 
@@ -1189,7 +1232,7 @@ Callback function called with true if collection has entities, false otherwise, 
 
 `RemovableCollection.some`
 
-***
+---
 
 ### someAsync()
 
@@ -1231,7 +1274,7 @@ Checks if any entity matches the parameterized filter asynchronously.
 
 ###### P
 
-`P` *extends* `object`
+`P` _extends_ `object`
 
 ##### Parameters
 
@@ -1273,7 +1316,7 @@ Promise that resolves with true if collection has entities, false otherwise, or 
 
 `RemovableCollection.someAsync`
 
-***
+---
 
 ### every()
 
@@ -1319,7 +1362,7 @@ Checks if all entities match the parameterized filter.
 
 ###### P
 
-`P` *extends* `object`
+`P` _extends_ `object`
 
 ##### Parameters
 
@@ -1353,7 +1396,7 @@ Checks if all entities match the filter expression.
 
 ###### P
 
-`P` *extends* `object`
+`P` _extends_ `object`
 
 ##### Parameters
 
@@ -1381,7 +1424,7 @@ Callback function called with true if all entities match, false otherwise, or er
 
 `RemovableCollection.every`
 
-***
+---
 
 ### everyAsync()
 
@@ -1423,7 +1466,7 @@ Checks if all entities match the parameterized filter asynchronously.
 
 ###### P
 
-`P` *extends* `object`
+`P` _extends_ `object`
 
 ##### Parameters
 
@@ -1453,7 +1496,7 @@ Checks if all entities match the filter expression asynchronously.
 
 ###### P
 
-`P` *extends* `object`
+`P` _extends_ `object`
 
 ##### Parameters
 
@@ -1477,7 +1520,7 @@ Promise that resolves with true if all entities match, false otherwise, or rejec
 
 `RemovableCollection.everyAsync`
 
-***
+---
 
 ### min()
 
@@ -1509,7 +1552,7 @@ Callback function called with the minimum value or error
 
 `RemovableCollection.min`
 
-***
+---
 
 ### minAsync()
 
@@ -1537,7 +1580,7 @@ Promise that resolves with the minimum value or rejects with an error
 
 `RemovableCollection.minAsync`
 
-***
+---
 
 ### max()
 
@@ -1569,7 +1612,7 @@ Callback function called with the maximum value or error
 
 `RemovableCollection.max`
 
-***
+---
 
 ### maxAsync()
 
@@ -1597,7 +1640,7 @@ Promise that resolves with the maximum value or rejects with an error
 
 `RemovableCollection.maxAsync`
 
-***
+---
 
 ### sum()
 
@@ -1629,7 +1672,7 @@ Callback function called with the sum or error
 
 `RemovableCollection.sum`
 
-***
+---
 
 ### sumAsync()
 
@@ -1657,7 +1700,7 @@ Promise that resolves with the sum or rejects with an error
 
 `RemovableCollection.sumAsync`
 
-***
+---
 
 ### count()
 
@@ -1683,7 +1726,7 @@ Callback function called with the count or error
 
 `RemovableCollection.count`
 
-***
+---
 
 ### countAsync()
 
@@ -1703,7 +1746,7 @@ Promise that resolves with the count or rejects with an error
 
 `RemovableCollection.countAsync`
 
-***
+---
 
 ### distinct()
 
@@ -1729,7 +1772,7 @@ Callback function called with the distinct entities or error
 
 `RemovableCollection.distinct`
 
-***
+---
 
 ### distinctAsync()
 
@@ -1749,7 +1792,7 @@ Promise that resolves with the distinct entities or rejects with an error
 
 `RemovableCollection.distinctAsync`
 
-***
+---
 
 ### remove()
 
@@ -1781,7 +1824,7 @@ Callback function called with the removed entities or error
 
 `RemovableCollection.remove`
 
-***
+---
 
 ### removeAsync()
 
@@ -1809,7 +1852,7 @@ Promise that resolves with the removed entities or rejects with an error
 
 `RemovableCollection.removeAsync`
 
-***
+---
 
 ### removeAll()
 
@@ -1835,7 +1878,7 @@ Callback function called when the operation completes or with an error
 
 `RemovableCollection.removeAll`
 
-***
+---
 
 ### removeAllAsync()
 

@@ -38,6 +38,8 @@ Routier queries are fluent and can only be performed through a collection. Build
 | `map(selector)`            | Transform/select fields | `ctx.products.map(p => ({ name: p.name, price: p.price }))` |
 | `skip(count)`              | Skip first N items      | `ctx.products.skip(10)`                                     |
 | `take(count)`              | Take first N items      | `ctx.products.take(5)`                                      |
+| `subscribe()`              | Enable live updates     | `ctx.products.subscribe().toArray(callback)`                |
+| `defer()`                  | Skip initial query      | `ctx.products.defer().subscribe().toArray(callback)`        |
 
 ## Detailed Examples
 

@@ -10,6 +10,14 @@ nav_order: 1
   <img src="{{ site.baseurl }}/assets/routier.svg" alt="Routier" width="140" height="140" />
 </p>
 
+<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; padding: 20px; margin: 24px 0; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+  <h3 style="margin-top: 0; color: white;">🚀 Try Routier in CodeSandbox</h3>
+  <p style="margin-bottom: 12px; color: rgba(255,255,255,0.95);">Explore Routier with a live, interactive example. See schemas, live queries, and React integration in action.</p>
+  <p style="margin-bottom: 0;">
+    <a href="https://codesandbox.io/p/devbox/routier-4nlxsx" target="_blank" rel="noopener noreferrer" style="color: white; font-weight: bold; text-decoration: underline;">Open CodeSandbox Demo →</a>
+  </p>
+</div>
+
 Routier is a fast, front-end–first data toolkit that augments any datastore with
 schemas, collections, live queries, optimistic mutations, replication, caching,
 and more—without locking you into a specific ORM or backend. It's designed to be
@@ -32,6 +40,8 @@ which frontend datastore you're running today, or migrate to tomorrow.
 ## Quick Example
 
 Here's how Routier works in practice:
+
+> **💡 Try it live:** [Open the CodeSandbox demo](https://codesandbox.io/p/devbox/routier-4nlxsx) to see this code running interactively.
 
 {% capture snippet_qcxtd6 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 

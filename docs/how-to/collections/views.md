@@ -88,6 +88,49 @@ export class AppDataStore extends DataStore {
 }
 ```
 
+### Using `.defer()` in Views
+
+When creating views, you can use `.defer()` to prevent the view from computing immediately when the datastore is created. This is useful when you don't want the view to execute its query on datastore instantiation:
+
+```ts
+commentsView = this.view(commentsViewSchema)
+  .derive((done) => {
+    // defer() prevents this query from executing when the datastore is created
+    // The view will only compute when comments actually change
+    const unsubscribe = this.comments
+      .defer()
+      .subscribe()
+      .toArray((response) => {
+        if (response.ok === "error") {
+          return done([]);
+        }
+
+        done(
+          response.data.map((x) => ({
+            id: `view:${x._id}`,
+            content: x.content,
+            user: {
+              name: x.author,
+            },
+            createdAt: new Date(),
+            replies: x.replies,
+          }))
+        );
+      });
+
+    return unsubscribe; // Return unsubscribe function for cleanup
+  })
+  .create();
+```
+
+**When to use `.defer()` in views:**
+
+- **Lazy computation**: You want the view to compute only when source data changes, not when the datastore is created
+- **Performance**: Avoid unnecessary computation during datastore initialization
+- **Conditional views**: Views that should only activate when certain conditions are met
+
+**Important:** When using `.defer()` in views, you must return the unsubscribe function from the derive callback so the view can properly clean up subscriptions when disposed.
+
 ## One-to-One Views
 
 One-to-one views maintain a predictable mapping between source entities and view entities. Use a predictable ID pattern like `view:${originalId}`:
@@ -213,12 +256,14 @@ productsView = this.view(productsViewSchema)
 
 ## View Lifecycle
 
-1. **Creation**: View is created and derive function is called immediately
+1. **Creation**: View is created and derive function is called immediately (unless `.defer()` is used)
 2. **Subscription**: View subscribes to source collections via live queries
 3. **Change Detection**: When source data changes, derive function is invoked
 4. **Computation**: Derive function transforms source data into view data
 5. **Auto-Save**: View automatically persists computed data (no `saveChangesAsync` needed)
 6. **Update/Insert**: Routier compares IDs and either updates existing records or inserts new ones
+
+**Note:** If you use `.defer()` in the derive function, step 1 is skipped—the view will not compute on creation, but will compute on the first change event and all subsequent changes.
 
 ## Manual Computation
 

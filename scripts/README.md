@@ -22,15 +22,21 @@ This script updates all references to a specific package version across all `pac
 - 🚫 **File Protocol Skip**: Ignores `file:` protocol dependencies (local development)
 - ✅ **Safe Operation**: Provides detailed output and allows review before committing
 - 🔄 **Idempotent**: Can be run multiple times safely
+- 📈 **Auto-Bump**: Use `--next` to automatically increment patch version
+- 📉 **Revert Bumps**: Use `--previous` to decrement patch version (undo accidental bumps)
 
 #### Usage
 
 ```bash
 # Using npm script (recommended)
 npm run bump <package-name> <new-version>
+npm run bump <package-name> --next
+npm run bump <package-name> --previous
 
 # Direct execution
 node scripts/bump-version.mjs <package-name> <new-version>
+node scripts/bump-version.mjs <package-name> --next
+node scripts/bump-version.mjs <package-name> --previous
 ```
 
 #### Examples
@@ -47,7 +53,57 @@ npm run bump @routier/memory-plugin 0.0.1-alpha.3
 
 # Bump @routier/react to 0.0.1-alpha.2
 npm run bump @routier/react 0.0.1-alpha.2
+
+# Auto-bump patch version (increments patch number automatically)
+npm run bump @routier/core --next
+# If current version is 0.0.1-alpha.5, bumps to 0.0.1-alpha.6
+
+# Decrement patch version (useful if you accidentally bumped)
+npm run bump @routier/core --previous
+# If current version is 0.0.1-alpha.6, decrements to 0.0.1-alpha.5
 ```
+
+#### Auto-Bumping with `--next`
+
+Instead of specifying an exact version, you can use the `--next` flag to automatically increment the patch version:
+
+```bash
+npm run bump @routier/core --next
+```
+
+This will:
+
+1. Find the current version of the package
+2. Increment the patch version (last number)
+3. Update all references to the new version
+
+**Example:**
+
+- Current version: `0.0.1-alpha.5`
+- After `--next`: `0.0.1-alpha.6`
+
+This is useful for quick patch version bumps during development without needing to manually calculate the next version number.
+
+#### Reverting with `--previous`
+
+If you accidentally bumped a package version, you can use the `--previous` flag to decrement the patch version:
+
+```bash
+npm run bump @routier/core --previous
+```
+
+This will:
+
+1. Find the current version of the package
+2. Decrement the patch version (last number)
+3. Update all references to the previous version
+
+**Example:**
+
+- Current version: `0.0.1-alpha.6`
+- After `--previous`: `0.0.1-alpha.5`
+
+**Note:** The script will error if you try to decrement a version where the patch number is already 0 (e.g., `0.0.0`).
 
 #### What Gets Updated
 

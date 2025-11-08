@@ -1,6 +1,6 @@
 import Dexie from 'dexie';
 import { convertToDexieSchema } from "./utils";
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin } from '@routier/core/plugins';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
 import { BulkPersistResult } from '@routier/core/collections';
 import { InferCreateType, PropertyInfo, SchemaTypes } from '@routier/core/schema';
@@ -192,7 +192,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
         return event.operation.schema.properties;
     }
 
-    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<TShape>): void {
+    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
         this._doWork(event, (db, d) => {
 
             const { collectionName } = event.operation.schema;

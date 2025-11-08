@@ -2,7 +2,7 @@ import PouchDB from 'pouchdb';
 import { PouchDbTranslator } from './PouchDbTranslator';
 import { SyncronousQueue, SyncronousUnitOfWork, WorkPipeline } from '@routier/core/pipeline';
 import { InferCreateType, InferType, PropertyInfo, SchemaId } from '@routier/core/schema';
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, EntityUpdateInfo, IDbPlugin, IQuery } from '@routier/core/plugins';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, EntityUpdateInfo, IDbPlugin, IQuery, ITranslatedValue } from '@routier/core/plugins';
 import { CallbackResult, PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '@routier/core/results';
 import { assertIsNotNull } from '@routier/core/assertions';
 import { combineExpressions, ComparatorExpression, Expression, getProperties } from '@routier/core/expressions';
@@ -690,7 +690,7 @@ export class PouchDbPlugin implements IDbPlugin {
         queue.enqueue(unitOfWork.bind(this));
     }
 
-    query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<TShape>): void {
+    query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
 
         const unitOfWork: SyncronousUnitOfWork = (d) => this._query<TRoot, TShape>(event, (r) => {
             d();
@@ -764,7 +764,7 @@ export class PouchDbPlugin implements IDbPlugin {
         };
     }
 
-    private _queryIndex<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, matchingIndex: MatchingIndex, done: CallbackResult<TShape>) {
+    private _queryIndex<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, matchingIndex: MatchingIndex, done: CallbackResult<ITranslatedValue<TShape>>) {
         const translator = new PouchDbTranslator<TEntity, TShape>(event.operation);
         this._doWork((w, d) => {
 
@@ -800,7 +800,7 @@ export class PouchDbPlugin implements IDbPlugin {
         }, done);
     }
 
-    private _queryNoIndex<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<TShape>) {
+    private _queryNoIndex<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<ITranslatedValue<TShape>>) {
         const filters = event.operation.options.get("filter")
         if (filters.length === 0) {
             this._queryWithNoFilters(event, done);
@@ -810,7 +810,7 @@ export class PouchDbPlugin implements IDbPlugin {
         this._queryWithFilters(event, done);
     }
 
-    private _queryWithNoFilters<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<TShape>) {
+    private _queryWithNoFilters<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<ITranslatedValue<TShape>>) {
         const translator = new PouchDbTranslator<TEntity, TShape>(event.operation);
         this._doWork((w, d) => {
             w.allDocs({
@@ -830,7 +830,7 @@ export class PouchDbPlugin implements IDbPlugin {
         }, done);
     }
 
-    private _queryWithFilters<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<TShape>) {
+    private _queryWithFilters<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: CallbackResult<ITranslatedValue<TShape>>) {
         const translator = new PouchDbTranslator<TEntity, TShape>(event.operation);
         this._doWork((w, d) => {
 
@@ -877,7 +877,7 @@ export class PouchDbPlugin implements IDbPlugin {
         }, done);
     }
 
-    private _query<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<TShape>): void {
+    private _query<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
         this.resolveIndexes(event, (r) => {
             if (r.ok !== Result.SUCCESS) {
                 done(PluginEventResult.error(event.id, r.error))

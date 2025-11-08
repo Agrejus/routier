@@ -11,6 +11,14 @@ permalink: /integrations/react/
 
 Routier provides first-class support for React through the `useQuery` hook, enabling reactive data fetching with automatic updates when your data changes.
 
+<div style="background: #f0fdf4; border-left: 4px solid #22c55e; padding: 16px; margin: 20px 0; border-radius: 4px;">
+  <p style="margin: 0 0 8px 0; font-weight: 600; color: #166534;">⚛️ Interactive React Demo</p>
+  <p style="margin: 0 0 12px 0; color: #15803d;">See Routier's React integration in action with live examples of `useQuery`, live queries, and reactive updates.</p>
+  <p style="margin: 0;">
+    <a href="https://codesandbox.io/p/devbox/routier-4nlxsx" target="_blank" rel="noopener noreferrer" style="color: #22c55e; font-weight: 600;">Open CodeSandbox Demo →</a>
+  </p>
+</div>
+
 ## Features
 
 - **Live Queries**: Automatic re-renders when data changes
@@ -22,10 +30,10 @@ Routier provides first-class support for React through the `useQuery` hook, enab
 
 ```tsx
 import { useQuery } from "@routier/react";
-import { useDataStore } from "./context/DataStoreContext";
+import { useDataStore } from "./hooks/useDataStore";
 
 function ProductsList() {
-  const dataStore = useDataStore();
+  const dataStore = useDataStore(); // Must be memoized in useDataStore hook
 
   const products = useQuery(
     (callback) => dataStore.products.subscribe().toArray(callback),
@@ -45,6 +53,8 @@ function ProductsList() {
   );
 }
 ```
+
+**Important:** Your `useDataStore` hook must use `useMemo` to memoize the DataStore instance. Creating a new DataStore on every render will cause infinite subscription loops. See the [Best Practices](./best-practices/) guide for details.
 
 ## Installation
 

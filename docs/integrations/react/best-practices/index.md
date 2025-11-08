@@ -13,6 +13,7 @@ Build robust, performant React applications with Routier by following these patt
 ## Table of Contents
 
 - [Accessing Your Data Store](#accessing-your-data-store)
+- [Common Pitfalls](#common-pitfalls)
 - [Error Handling](#error-handling)
 - [Loading States](#loading-states)
 - [Performance Optimization](#performance-optimization)
@@ -34,11 +35,16 @@ import { DataStore } from "@routier/datastore";
 import { MemoryPlugin } from "@routier/memory-plugin";
 
 export function useDataStore() {
-  return useMemo(() => new DataStore(new MemoryPlugin("app")), []);
+  // This will cause subscriptions to run infinitely if this is not done
+  // Always use useMemo to prevent infinite subscription loops
+  const dataStore = useMemo(() => new DataStore(new MemoryPlugin("app")), []);
+  return dataStore;
 }
 ```
 
-**Note:** Subscriptions work via BroadcastChannel, so updates work across different DataStore instances. You can create a new instance in each component without losing live updates.
+**Critical:** You **must** use `useMemo` when creating a DataStore instance. Without `useMemo`, a new DataStore is created on every render, which causes subscriptions to be recreated infinitely. Each new datastore instance triggers `useQuery`'s effect to re-run, creating new subscriptions, which can cause performance issues and infinite loops.
+
+**Note:** Subscriptions work via BroadcastChannel, so updates work across different DataStore instances. You can create a new instance in each component without losing live updates, but each instance must be memoized.
 
 ### With React Context (Optional)
 
@@ -53,6 +59,8 @@ import { MemoryPlugin } from "@routier/memory-plugin";
 const DataStoreContext = createContext<DataStore | null>(null);
 
 export function DataStoreProvider({ children }: { children: ReactNode }) {
+  // This will cause subscriptions to run infinitely if this is not done
+  // Always use useMemo to prevent infinite subscription loops
   const store = useMemo(() => new DataStore(new MemoryPlugin("app")), []);
 
   return (
@@ -72,6 +80,56 @@ export function useDataStore() {
 ```
 
 **Important:** Routier uses BroadcastChannel for subscriptions, so even different DataStore instances will receive update notifications automatically. Both approaches work seamlessly with live queries.
+
+## Common Pitfalls
+
+### Infinite Subscription Loops
+
+**Problem:** Creating a new DataStore instance on every render causes infinite subscription loops.
+
+```tsx
+// ❌ WRONG - This will cause infinite subscriptions
+function ProductsList() {
+  const dataStore = new DataStore(new MemoryPlugin("app")); // New instance every render!
+
+  const products = useQuery(
+    (cb) => dataStore.products.subscribe().toArray(cb),
+    [dataStore] // dataStore reference changes every render
+  );
+  // This causes useQuery's effect to re-run infinitely
+}
+```
+
+**Why this happens:**
+
+1. Component renders, creates new DataStore instance
+2. `useQuery` sees a new `dataStore` reference in dependencies
+3. Effect re-runs, creates new subscription
+4. Subscription triggers callback, component re-renders
+5. Back to step 1 - infinite loop
+
+**Solution:** Always memoize your DataStore instance:
+
+```tsx
+// ✅ CORRECT - Memoized instance
+function ProductsList() {
+  const dataStore = useDataStore(); // Memoized in hook
+
+  const products = useQuery(
+    (cb) => dataStore.products.subscribe().toArray(cb),
+    [dataStore] // Stable reference
+  );
+}
+
+// In your useDataStore hook:
+export function useDataStore() {
+  // This will cause subscriptions to run infinitely if this is not done
+  const dataStore = useMemo(() => new DataStore(new MemoryPlugin("app")), []);
+  return dataStore;
+}
+```
+
+**How to identify:** If you see subscriptions firing repeatedly or your component re-rendering continuously, check that your DataStore is memoized with `useMemo`.
 
 ## Error Handling
 
@@ -393,21 +451,26 @@ function ConfigDisplay() {
 
 ### When to Use `.defer()`
 
-The `.defer()` method skips the first query and only listens to changes:
+The `.defer()` method skips the **first** query execution only, then listens to all subsequent changes:
 
 ```tsx
 // Perfect for real-time notifications
+// Important: defer() must come before subscribe()
 function NotificationsFeed() {
   const notifications = useQuery(
-    (callback) => dataStore.notifications.subscribe().defer().toArray(callback),
+    (callback) => dataStore.notifications.defer().subscribe().toArray(callback),
     []
   );
 
   // Component mounts with pending state
-  // When a new notification arrives, it queries and updates
+  // First query is skipped (only the first execution)
+  // When the first notification arrives, it queries and updates
+  // All subsequent notifications trigger queries normally
   // User only sees new notifications, not historical ones
 }
 ```
+
+**Important:** `.defer()` must be called **before** `.subscribe()` in the query chain. The order matters.
 
 **When to use `.defer()`:**
 
@@ -424,8 +487,9 @@ function ChatWindow() {
 
   // Only show NEW messages after user joins the chat
   // Don't load entire chat history on mount
+  // Note: defer() comes before subscribe()
   const messages = useQuery(
-    (callback) => dataStore.messages.subscribe().defer().toArray(callback),
+    (callback) => dataStore.messages.defer().subscribe().toArray(callback),
     []
   );
 
@@ -456,12 +520,15 @@ const messages = useQuery(
 );
 // Shows: [message1, message2, message3, ...] (entire history)
 
-// With .defer() - Only shows new messages
+// With .defer() - Skips first execution, then shows all messages on changes
+// Note: defer() must come before subscribe()
 const messages = useQuery(
-  (cb) => dataStore.messages.subscribe().defer().toArray(cb),
+  (cb) => dataStore.messages.defer().subscribe().toArray(cb),
   []
 );
-// Shows: [] initially, then only [message4, message5, ...] (only new)
+// Shows: [] initially (first query skipped)
+// Then on first change: [message4, message5, ...] (all messages at that point)
+// Then on subsequent changes: updates with all current messages
 ```
 
 ## Common Patterns

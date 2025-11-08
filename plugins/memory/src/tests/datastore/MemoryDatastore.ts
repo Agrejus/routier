@@ -14,6 +14,8 @@ import { productsViewSchema } from "../schemas/productView";
 import { productsHistorySchema } from "../schemas/productsHistory";
 import { ordersSchema } from "../schemas/order";
 import { blogPostsSchema } from "../schemas/blogPost";
+import { taskViewSchema } from "../schemas/taskView";
+import { taskSchema } from "../schemas/task";
 
 export class TestDataStore extends DataStore {
     constructor(plugin: IDbPlugin) {
@@ -96,4 +98,31 @@ export class TestDataStore extends DataStore {
         return unsubscribe;
     }).create();
     blogPosts = this.collection(blogPostsSchema).create();
+
+    tasks = this.collection(taskSchema).create();
+    highPriorityTasksView = this.view(taskViewSchema)
+        .derive((done) => {
+            return this.tasks.subscribe().toArray((response) => {
+                if (response.ok === "error") {
+                    return done([]);
+                }
+
+                // Filter and transform high priority tasks
+                done(
+                    response.data
+                        .filter((x) => x.priority === "high" || x.priority === "urgent")
+                        .map((x) => ({
+                            id: `view:${x.id}`, // Predictable ID for one-to-one mapping
+                            title: x.title,
+                            description: x.description,
+                            priority: x.priority,
+                            status: x.status,
+                            assignee: x.assignee,
+                            originalTaskId: x.id,
+                            createdAt: x.createdAt,
+                        }))
+                );
+            });
+        })
+        .create();
 }

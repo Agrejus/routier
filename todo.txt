@@ -3,6 +3,5 @@ Readonly collection
     Freeze Deep
 
 TODO:
-    Started group by
-        Have some errors in the group by function
-    Do we really need the deserializer in postProcessQuery in QuerySource?  The plugin already does this 
+    Deeply nested schemas
+    Sample App view subscriptions are continuoously running

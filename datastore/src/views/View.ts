@@ -2,7 +2,7 @@ import { CollectionBase } from '../collections/CollectionBase';
 import { Derive, DeriveResponse } from '../view-builder/ViewBuilder';
 import { CollectionOptions, CollectionPipelines } from '../types';
 import { IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
-import { ChangeTrackingType, CompiledSchema, IdType, InferCreateType, InferType } from '@routier/core/schema';
+import { ChangeTrackingType, CompiledSchema, IdType, InferCreateType, InferType, SubscriptionChanges } from '@routier/core/schema';
 import { BulkPersistChanges, SchemaCollection, SchemaPersistChanges } from '@routier/core/collections';
 import { CallbackResult, noop, Result, uuid } from '@routier/core';
 import { QueryableAsync } from '../queryable/QueryableAsync';
@@ -98,7 +98,30 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                         operation,
                         schemas,
                         source: "view"
-                    }, noop);
+                    }, (r) => {
+
+                        if (r.ok === Result.ERROR) {
+                            console.error("Failed to update view", r.error);
+                            return;
+                        }
+
+                        const resolvedChanges = r.data.get<TEntity>(this.schema.id);
+                        // we only want to notify of changes when an item that was saved matches the query
+                        // these get reset each time
+                        // send in the resulting adds because properties might have been set from the db operation
+                        const updates = this.cloneMany(resolvedChanges.updates);
+                        const adds = this.cloneMany(resolvedChanges.adds as InferType<TEntity>[]);
+                        const removals = this.cloneMany(resolvedChanges.removes);
+
+                        const subscriptionChanges: SubscriptionChanges<TEntity> = {
+                            updates,
+                            adds,
+                            removals,
+                            unknown: []
+                        };
+
+                        this.subscription.send(subscriptionChanges);
+                    });
 
                     cb(enriched);
                 });

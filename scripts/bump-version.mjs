@@ -169,19 +169,36 @@ function bumpPatchVersion(version) {
 }
 
 /**
+ * Decrement version to previous patch
+ */
+function decrementPatchVersion(version) {
+    const parts = version.split('.');
+    const major = parseInt(parts[0]) || 0;
+    const minor = parseInt(parts[1]) || 0;
+    const patch = parseInt(parts[2]) || 0;
+
+    if (patch <= 0) {
+        throw new Error(`Cannot decrement version ${version}: patch version is already 0`);
+    }
+
+    return `${major}.${minor}.${patch - 1}`;
+}
+
+/**
  * Main function
  */
 function main() {
     const args = process.argv.slice(2);
 
     if (args.length < 1 || args.length > 2) {
-        console.log('Usage: node bump-version.mjs <package-name> [<new-version>|--next]');
+        console.log('Usage: node bump-version.mjs <package-name> [<new-version>|--next|--previous]');
         console.log('');
         console.log('Examples:');
         console.log('  node bump-version.mjs @routier/core 0.0.1-alpha.10');
         console.log('  node bump-version.mjs @routier/datastore 0.0.1-alpha.5');
         console.log('  node bump-version.mjs @routier/memory-plugin 0.0.1-alpha.3');
         console.log('  node bump-version.mjs @routier/react --next');
+        console.log('  node bump-version.mjs @routier/core --previous');
         process.exit(1);
     }
 
@@ -198,8 +215,17 @@ function main() {
             console.error(`❌ Error: ${error.message}`);
             process.exit(1);
         }
+    } else if (newVersion === '--previous') {
+        try {
+            const currentVersion = getCurrentVersion(packageName);
+            newVersion = decrementPatchVersion(currentVersion);
+            console.log(`📉 Auto-decrementing ${packageName} from ${currentVersion} to ${newVersion}`);
+        } catch (error) {
+            console.error(`❌ Error: ${error.message}`);
+            process.exit(1);
+        }
     } else if (!newVersion) {
-        console.log('❌ Error: Version or --next flag is required');
+        console.log('❌ Error: Version, --next, or --previous flag is required');
         process.exit(1);
     }
 

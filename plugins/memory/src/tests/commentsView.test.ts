@@ -1,8 +1,9 @@
-import { generateData } from '@routier/test-utils';
+import { generateData, wait } from '@routier/test-utils';
 import { describe, it, afterAll } from '@jest/globals';
 import { uuidv4 } from '@routier/core';
 import { MemoryPlugin } from '../MemoryPlugin';
 import { TestDataStore } from './datastore/MemoryDatastore';
+import { waitFor } from './utils/waitFor';
 
 const pluginFactory: () => MemoryPlugin = () => new MemoryPlugin(uuidv4());
 const stores: TestDataStore[] = [];
@@ -16,28 +17,6 @@ const factory = () => {
 
     return { dataStore: store, plugin };
 };
-
-const waitFor = async (fn: () => Promise<boolean>) => {
-    return new Promise<boolean>((resovle, reject) => {
-        try {
-            const wait = async () => {
-
-                const result = await fn();
-
-                if (result === false) {
-                    setTimeout(wait, 50);
-                    return;
-                }
-
-                resovle(true);
-            }
-
-            wait();
-        } catch (e) {
-            reject(e);
-        }
-    });
-}
 
 describe("Comments View Tests", () => {
 
@@ -62,6 +41,33 @@ describe("Comments View Tests", () => {
             await waitFor(async () => {
                 return await dataStore.commentsView.countAsync() === 11;
             });
+        });
+
+        it("Should fire subscription changes when view updates", async () => {
+            const { plugin, dataStore } = factory();
+
+            const data = generateData(dataStore.comments.schema, 10);
+            plugin.seed(dataStore.comments.schema, data.map(entity => dataStore.comments.schema.enrich(entity, "proxy")));
+
+            const [item] = generateData(dataStore.comments.schema, 1);
+            const subscriptionCallback = jest.fn();
+            const commentsCallback = jest.fn();
+
+            // Act
+            dataStore.comments.subscribe().toArray(commentsCallback);
+            dataStore.commentsView.subscribe().toArray(subscriptionCallback);
+
+            await dataStore.comments.addAsync(item);
+            await dataStore.saveChangesAsync();
+
+            // Assert
+            await waitFor(async () => {
+                return await dataStore.commentsView.countAsync() === 11;
+            });
+
+            await wait(1000);
+
+            expect(subscriptionCallback).toHaveBeenCalledTimes(1);
         });
     });
 });
