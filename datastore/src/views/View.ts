@@ -156,18 +156,13 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
     empty(done: CallbackResult<never>) {
         try {
 
-            this.changeTracker.removeByQuery({
+            this.removeQueryChangeTracker.track({
                 changeTracking: false,
                 options: this.scopedQueryOptions as unknown as QueryOptionsCollection<TEntity>,
                 schema: this.schema
-            }, null, (result) => {
+            }, null);
 
-                if (result.ok === "error") {
-                    return done(result);
-                }
-
-                done(Result.success())
-            });
+            done(Result.success())
         } catch (e) {
             done(Result.error(e));
         }
@@ -180,14 +175,9 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
     compute(done: CallbackResult<never>) {
         try {
             this.derive((data) => {
-                this.changeTracker.add(data as InferCreateType<TEntity>[], null, (result) => {
+                this.addChangeTracker.trackMany(data as InferCreateType<TEntity>[], null);
 
-                    if (result.ok === "error") {
-                        return done(result);
-                    }
-
-                    done(Result.success())
-                });
+                done(Result.success());
             });
         } catch (e) {
             done(Result.error(e));

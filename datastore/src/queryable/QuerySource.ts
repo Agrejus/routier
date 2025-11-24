@@ -1,71 +1,90 @@
 import { DataBridge } from "../data-access/DataBridge";
-import { ChangeTracker } from "../change-tracking/ChangeTracker";
-import { DbPluginQueryEvent, ITranslatedValue, JsonTranslator, Query, QueryField, QueryOptionsCollection, QueryOrdering } from "@routier/core/plugins";
+import { DbPluginQueryEvent, EntityUpdateInfo, IQuery, ITranslatedValue, JsonTranslator, Query, QueryField, QueryOptionsCollection, QueryOrdering } from "@routier/core/plugins";
 import { ChangeTrackingType, CompiledSchema, InferType } from "@routier/core/schema";
 import { CallbackResult, PluginEventCallbackResult, PluginEventResult, PluginEventSuccessType, Result } from "@routier/core/results";
 import { GenericFunction } from "@routier/core/types";
 import { Filter, ParamsFilter, toExpression } from "@routier/core/expressions";
 import { uuid } from "@routier/core/utilities";
-import { SchemaCollection } from "@routier/core";
+import { SchemaCollection, TagCollection } from "@routier/core";
+import { IChangeTracker } from "../change-tracking/types";
+import { QueryableContainer } from '../queryable/IoC/QueryableContainer';
 
 export abstract class QuerySource<TRoot extends {}, TShape> {
 
-    protected readonly dataBridge: DataBridge<TRoot>;
-    protected readonly changeTracker: ChangeTracker<TRoot>;
-    protected readonly queryOptions: QueryOptionsCollection<TShape>;
-    protected isSubScribed: boolean = false;
-    protected skipInitialQuery: boolean = false;
-    protected schema: CompiledSchema<TRoot>;
-    protected schemas: SchemaCollection;
-    protected scopedQueryOptions: QueryOptionsCollection<TRoot>;
-    protected readonly changeTrackingType: ChangeTrackingType
+    protected readonly container: QueryableContainer<TRoot>;
 
-    constructor(
-        schema: CompiledSchema<TRoot>,
-        schemas: SchemaCollection,
-        scopedQueryOptions: QueryOptionsCollection<TRoot>,
-        changeTrackingType: ChangeTrackingType,
-        options: {
-            queryable?: QuerySource<TRoot, TShape>,
-            dataBridge?: DataBridge<TRoot>,
-            changeTracker?: ChangeTracker<TRoot>
-        }) {
-
-        this.schema = schema;
-        this.schemas = schemas;
-        this.scopedQueryOptions = scopedQueryOptions;
-        this.changeTrackingType = changeTrackingType;
-
-        if (options?.dataBridge != null) {
-            this.dataBridge = options.dataBridge;
-        }
-
-        if (options?.changeTracker != null) {
-            this.changeTracker = options.changeTracker;
-        }
-
-        if (options?.queryable != null) {
-            this.isSubScribed = options.queryable.isSubScribed;
-            this.skipInitialQuery = options.queryable.skipInitialQuery;
-            this.queryOptions = options.queryable.queryOptions;
-            this.dataBridge = options.queryable.dataBridge;
-            this.changeTracker = options.queryable.changeTracker;
-        } else {
-            this.queryOptions = new QueryOptionsCollection<TShape>();
-        }
+    protected get dataBridge(): DataBridge<TRoot> {
+        return this.container.resolve("dataBridge");
     }
 
-    // Cannot change the root type, it comes from the collection type, only the resulting type (shape)
-    protected create<Shape, TInstance extends QuerySource<TRoot, Shape>>(
-        Instance: new (
-            schema: CompiledSchema<TRoot>,
-            schemas: SchemaCollection,
-            scopedQueryOptions: QueryOptionsCollection<TRoot>,
-            changeTrackingType: ChangeTrackingType,
-            options: { queryable?: QuerySource<TRoot, Shape>, dataBridge?: DataBridge<TRoot>, changeTracker?: ChangeTracker<TRoot> }
-        ) => TInstance) {
-        return new Instance(this.schema, this.schemas, this.scopedQueryOptions, this.changeTrackingType, { queryable: this as any });
+    protected get removeQueryChangeTracker(): IChangeTracker<IQuery<TRoot, TRoot>> {
+        return this.container.resolve("removeQueryChangeTracker");
     }
+
+    protected get updateChangeTracker(): IChangeTracker<TRoot, EntityUpdateInfo<TRoot>> {
+        return this.container.resolve("updateChangeTracker");
+    }
+
+    protected get queryOptions(): QueryOptionsCollection<TShape> {
+        return this.container.resolve("queryOptions");
+    }
+
+    protected get isSubScribed(): boolean {
+        return this.container.resolve("isSubScribed");
+    }
+
+    protected get skipInitialQuery(): boolean {
+        return this.container.resolve("skipInitialQuery");
+    }
+
+    protected get schema(): CompiledSchema<TRoot> {
+        return this.container.resolve("schema");
+    }
+
+    protected get schemas(): SchemaCollection {
+        return this.container.resolve("schemas");
+    }
+
+    protected get scopedQueryOptions(): QueryOptionsCollection<TRoot> {
+        return this.container.resolve("scopedQueryOptions");
+    }
+
+    protected get changeTrackingType(): ChangeTrackingType {
+        return this.container.resolve("changeTrackingType");
+    }
+
+    protected get tags(): TagCollection {
+        return this.container.resolve("tags");
+    }
+
+    constructor(container: QueryableContainer<TRoot>) {
+        this.container = container;
+
+        // if (options?.removeQueryChangeTracker != null) {
+        //     this.removeQueryChangeTracker = options.removeQueryChangeTracker;
+        // }
+
+        // if (options?.updateChangeTracker != null) {
+        //     this.updateChangeTracker = options.updateChangeTracker;
+        // }
+
+        // if (options?.queryable != null) {
+        //     this.isSubScribed = options.queryable.isSubScribed;
+        //     this.skipInitialQuery = options.queryable.skipInitialQuery;
+        //     this.queryOptions = options.queryable.queryOptions;
+        //     this.dataBridge = options.queryable.dataBridge;
+        //     this.removeQueryChangeTracker = options.queryable.removeQueryChangeTracker;
+        //     this.updateChangeTracker = options.queryable.updateChangeTracker;
+        // } else {
+        //     this.queryOptions = new QueryOptionsCollection<TShape>();
+        // }
+    }
+
+    // // Cannot change the root type, it comes from the collection type, only the resulting type (shape)
+    // protected create<Shape, TInstance extends QuerySource<TRoot, Shape>>(
+    //     Instance: new (container: QueryableContainer<TRoot>) => TInstance) {
+    //     return new Instance(this.container);
+    // }
 
     private resolveQueryOptions<T>() {
         if (this.scopedQueryOptions.items.size === 0) {
@@ -93,7 +112,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
         const query = new Query<TRoot, TRoot>(this.resolveQueryOptions<TRoot>() as any, this.schema, false);
 
-        this.changeTracker.removeByQuery(query, null, done);
+        this.removeQueryChangeTracker.track(query, null);
 
         return this.subscribeQuery<TShape[]>(done) as U;
     }
@@ -222,9 +241,10 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
         try {
 
-            const tags = this.changeTracker.tags.get();
+            // FIX TAGS
+            const tags = TagCollection.from(this.tags);
 
-            this.changeTracker.tags.destroy();
+            this.tags.clear();
 
             if (databaseEvent.operation.changeTracking === true) {
                 // Post process the db query results
@@ -246,9 +266,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
                 }
 
                 // Resolve the data with the current attachments
-                result.data.forEach(item => this.changeTracker.resolve(item as InferType<TRoot>, tags, {
-                    merge: true
-                }));
+                result.data.forEach(item => this.updateChangeTracker.track(item as TRoot, tags));
 
                 return done(PluginEventResult.success(memoryEvent.id, result.data.value as TShape));
             }
@@ -259,9 +277,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
             }
 
             // Resolve the data with the current attachments
-            result.data.forEach(item => this.changeTracker.resolve(item as InferType<TRoot>, tags, {
-                merge: true
-            }));
+            result.data.forEach(item => this.updateChangeTracker.track(item as TRoot, tags));
 
             done(PluginEventResult.success(databaseEvent.id, result.data.value));
         } catch (e) {

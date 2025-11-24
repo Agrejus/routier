@@ -4,26 +4,13 @@ import { SkippedQueryableAsync } from "./SkippedQueryableAsync";
 import { TakeQueryableAsync } from "./TakeQueryableAsync";
 import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
-import { QueryOptionsCollection, QueryOrdering } from "@routier/core/plugins";
-import { ChangeTrackingType, CompiledSchema, IdType } from "@routier/core/schema";
-import { SchemaCollection } from "@routier/core/collections";
-import { QuerySource } from "./QuerySource";
-import { DataBridge } from "../data-access/DataBridge";
-import { ChangeTracker } from "../change-tracking/ChangeTracker";
+import { QueryOrdering } from "@routier/core/plugins";
+import { QueryableContainer } from "./IoC/QueryableContainer";
 
 export class QueryableAsync<Root extends {}, Shape> extends SelectionQueryableAsync<Root, Shape> {
 
-    constructor(
-        schema: CompiledSchema<Root>,
-        schemas: SchemaCollection,
-        scopedQueryOptions: QueryOptionsCollection<Root>,
-        changeTrackingType: ChangeTrackingType,
-        options: {
-            queryable?: QuerySource<Root, Shape>,
-            dataBridge?: DataBridge<Root>,
-            changeTracker?: ChangeTracker<Root>
-        }) {
-        super(schema, schemas, scopedQueryOptions, changeTrackingType, options);
+    constructor(container: QueryableContainer<Root>) {
+        super(container);
 
         this.where = this.where.bind(this);
         this.map = this.map.bind(this);
@@ -40,38 +27,39 @@ export class QueryableAsync<Root extends {}, Shape> extends SelectionQueryableAs
         this.setFiltersQueryOption(selector, params);
         // We don't need a params queryable.  Params are localized to the where clause and do not
         // matter to the rest of the query
-        return this.create(QueryableAsync<Root, Shape>);
+        return new QueryableAsync<Root, Shape>(this.container);
     }
 
     map<R extends Shape[keyof Shape] | Partial<Shape>>(expression: GenericFunction<Shape, R>) {
 
         this.setMapQueryOption(expression);
-        return this.create(QueryableAsync<Root, R>);
+
+        return new QueryableAsync<Root, R>(this.container);
     }
 
     skip(amount: number) {
         this.setSkipQueryOption(amount);
-        return this.create(SkippedQueryableAsync<Root, Shape>);
+        return new SkippedQueryableAsync<Root, Shape>(this.container);
     }
 
     take(amount: number) {
         this.setTakeQueryOption(amount);
-        return this.create(TakeQueryableAsync<Root, Shape>);
+        return new TakeQueryableAsync<Root, Shape>(this.container);
     }
 
     sort(expression: GenericFunction<Shape, Shape[keyof Shape]>) {
         this.setSortQueryOption(expression, QueryOrdering.Ascending);
-        return this.create(QueryableAsync<Root, Shape>);
+        return new QueryableAsync<Root, Shape>(this.container);
     }
 
     sortDescending(expression: GenericFunction<Shape, Shape[keyof Shape]>) {
         this.setSortQueryOption(expression, QueryOrdering.Descending);
-        return this.create(QueryableAsync<Root, Shape>);
+        return new QueryableAsync<Root, Shape>(this.container);
     }
 
     // does not allow for async functions due to the subscription
     subscribe() {
-        this.isSubScribed = true;
-        return this.create(Queryable<Root, Shape, () => void>);
+        this.container.register("isSubScribed", true);
+        return new Queryable<Root, Shape, () => void>(this.container);
     }
 }

@@ -149,7 +149,7 @@ export class BulkPersistChanges extends Map<SchemaId, SchemaPersistChanges> {
 
 export class SchemaPersistChanges<T extends {} = Record<string, unknown>> {
     adds: InferCreateType<T>[] = [];
-    updates: EntityUpdateInfo<T>[] = [];
+    updates: EntityUpdateInfo<InferType<T>>[] = [];
     removes: InferType<T>[] = [];
     tags: TagCollection = new TagCollection();
 

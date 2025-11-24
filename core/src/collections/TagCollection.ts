@@ -7,6 +7,15 @@ export class TagCollection implements Disposable {
         return this._size;
     }
 
+    static from(tags: TagCollection) {
+        const result = new TagCollection();
+        for (const [key, value] of tags) {
+            result.set(key, value);
+        }
+
+        return result;
+    }
+
     get(key: Object) {
         return this.data.get(key);
     }
@@ -42,6 +51,10 @@ export class TagCollection implements Disposable {
         for (const [key, value] of tags) {
             this.data.set(key, value);
         }
+    }
+
+    clear() {
+        this.data.clear();
     }
 
     values() {

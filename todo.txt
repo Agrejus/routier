@@ -5,3 +5,7 @@ Readonly collection
 TODO:
     Deeply nested schemas
     Sample App view subscriptions are continuoously running
+    Linter.  OxLint?
+    
+MAYBE:
+    Expose change feed (is this necessary?  Anything can listen to the changes)

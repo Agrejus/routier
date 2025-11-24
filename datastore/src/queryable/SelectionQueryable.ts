@@ -2,24 +2,13 @@ import { CallbackResult, Result, ResultType } from "@routier/core/results";
 import { QuerySource } from "./QuerySource";
 import { Filter, ParamsFilter, toExpression } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
-import { QueryOptionName, QueryOptionsCollection } from "@routier/core/plugins";
-import { ChangeTrackingType, CompiledSchema, IdType } from "@routier/core/schema";
-import { SchemaCollection } from "@routier/core/collections";
-import { DataBridge } from "../data-access/DataBridge";
-import { ChangeTracker } from "../change-tracking/ChangeTracker";
+import { QueryOptionName } from "@routier/core/plugins";
+import { IdType } from "@routier/core/schema";
+import { QueryableContainer } from "./IoC/QueryableContainer";
 export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<Root, Shape> {
 
-    constructor(
-        schema: CompiledSchema<Root>,
-        schemas: SchemaCollection,
-        scopedQueryOptions: QueryOptionsCollection<Root>,
-        changeTrackingType: ChangeTrackingType,
-        options: {
-            queryable?: QuerySource<Root, Shape>,
-            dataBridge?: DataBridge<Root>,
-            changeTracker?: ChangeTracker<Root>
-        }) {
-        super(schema, schemas, scopedQueryOptions, changeTrackingType, options);
+    constructor(container: QueryableContainer<Root>) {
+        super(container);
 
         this.remove = this.remove.bind(this);
         this.toArray = this.toArray.bind(this);

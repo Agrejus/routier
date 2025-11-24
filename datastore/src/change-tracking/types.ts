@@ -10,6 +10,17 @@ export type QuerySubscription<TEntity extends {}, U> = {
     shape: (data: TEntity[]) => U;
     done: CallbackResult<U>;
 };
+export interface IChangeTracker<TEntity extends {}, TResult extends {} = TEntity> extends Iterable<TResult> {
+    get(key: IdType): TResult | undefined;
+    compute(): TResult[];
+    has(entity: TEntity): boolean;
+    hasChanges(): boolean;
+    trackMany(entities: TEntity[], tag: unknown | null): TEntity[];
+    track(entity: TEntity, tag: unknown | null): TEntity;
+    untrack(entity: TEntity): TEntity;
+    untrackMany(entities: TEntity[]): TEntity[];
+    clear(): void
+}
 
 export interface IChangeTrackerStrategy<T extends {}> {
     enrich(entities: InferType<T>[]): InferType<T>[];

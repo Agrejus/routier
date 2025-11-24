@@ -1,6 +1,6 @@
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult } from "../results";
 import { QueryOptionsCollection } from "./query/QueryOptionsCollection";
-import { CompiledSchema, InferType } from '../schema';
+import { CompiledSchema } from '../schema';
 import { BulkPersistChanges, BulkPersistResult, SchemaCollection } from "../collections";
 import { ITranslatedValue } from "./translators";
 
@@ -87,11 +87,13 @@ export type OptimisticReplicationPluginOptions = {
     read: IDbPlugin;
 }
 
-
+export type UnknownDelta = {
+    [key: string]: UnknownDelta | unknown;
+}
 export type EntityUpdateInfo<T extends {}> = {
-    entity: InferType<T>,
+    entity: T;
     changeType: EntityChangeType;
-    delta: { [key: string]: string | number | Date }
+    delta: UnknownDelta;
 }
 
 export type TaggedEntity<T> = {
