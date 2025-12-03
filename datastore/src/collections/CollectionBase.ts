@@ -354,7 +354,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      */
     sort(selector: EntityMap<InferType<TEntity>, InferType<TEntity>[keyof InferType<TEntity>]>) {
         const request = this.container.resolve("request");
-        const result = new QueryableAsync<TEntity, InferType<TEntity>>(this.container as any, request as any);
+        const result = new QueryableAsync<TEntity, InferType<TEntity>>(this.container, request);
         return result.sort(selector);
     }
 
@@ -741,7 +741,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
         const request = this.container.resolve("request");
         const result = new SelectionQueryable<TEntity, InferType<TEntity>, void>(this.container, request);
 
-        return result.min(selector as any, done);
+        return result.min(selector, done);
     }
 
     /**
@@ -754,7 +754,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
         const request = this.container.resolve("request");
         const result = new SelectionQueryableAsync<TEntity, InferType<TEntity>>(this.container, request);
 
-        return result.minAsync(selector as any);
+        return result.minAsync(selector);
     }
 
     /**
@@ -767,7 +767,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
         const request = this.container.resolve("request");
         const result = new SelectionQueryable<TEntity, InferType<TEntity>, void>(this.container, request);
 
-        return result.max(selector as any, done);
+        return result.max(selector, done);
     }
 
     /**
@@ -780,7 +780,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
         const request = this.container.resolve("request");
         const result = new SelectionQueryableAsync<TEntity, InferType<TEntity>>(this.container, request);
 
-        return result.maxAsync(selector as any);
+        return result.maxAsync(selector);
     }
 
     /**
@@ -793,7 +793,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
         const request = this.container.resolve("request");
         const result = new SelectionQueryable<TEntity, InferType<TEntity>, void>(this.container, request);
 
-        return result.sum(selector as any, done);
+        return result.sum(selector, done);
     }
 
     /**
@@ -806,7 +806,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
         const request = this.container.resolve("request");
         const result = new SelectionQueryableAsync<TEntity, InferType<TEntity>>(this.container, request);
 
-        return result.sumAsync(selector as any);
+        return result.sumAsync(selector);
     }
 
     /**

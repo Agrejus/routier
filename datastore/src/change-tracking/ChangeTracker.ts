@@ -7,7 +7,7 @@ import { EntityChangeType, EntityUpdateInfo, IQuery } from "@routier/core/plugin
 import { SchemaPersistResult, TagCollection } from "@routier/core/collections";
 import { GenericFunction } from "@routier/core/types";
 import { CallbackResult, Result } from "@routier/core/results";
-import { assertIsNotNull } from "@routier/core";
+import { assertIsNotNull, unsafeCast } from "@routier/core";
 
 
 export class ChangeTracker<TEntity extends {}> {
@@ -42,7 +42,7 @@ export class ChangeTracker<TEntity extends {}> {
 
         for (const [, attachment] of this.attachments) {
 
-            const changeTrackedDoc: ChangeTrackedEntity<{}> = attachment.doc as any;
+            const changeTrackedDoc = unsafeCast<ChangeTrackedEntity<{}>>(attachment.doc);
             const changeType = attachment.changeType;
 
             if (changeTrackedDoc.__tracking__?.isDirty === true || changeType !== "notModified") {
@@ -127,7 +127,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
         const changes: EntityUpdateInfo<TEntity>[] = [];
 
         for (const [, attachment] of this.attachments) {
-            const changeTrackedDoc: ChangeTrackedEntity<{}> = attachment.doc as any;
+            const changeTrackedDoc = unsafeCast<ChangeTrackedEntity<{}>>(attachment.doc);
 
             let changeType: EntityChangeType = "notModified";
 
@@ -214,7 +214,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     }
 
     private resolveChangeType(entity: InferType<TEntity>): EntityChangeType {
-        const changeTrackedDoc: ChangeTrackedEntity<{}> = entity as any;
+        const changeTrackedDoc = unsafeCast<ChangeTrackedEntity<{}>>(entity);
 
         if (changeTrackedDoc.__tracking__?.isDirty === true) {
             return "propertiesChanged"

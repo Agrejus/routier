@@ -67,7 +67,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
     protected _remove<U>(done: CallbackResult<never>) {
 
-        const query = new Query<TRoot, TRoot>(this.resolveQueryOptions<TRoot>() as any, this.schema, false);
+        const query = new Query<TRoot, TRoot>(this.resolveQueryOptions<TRoot>(), this.schema, false);
 
         this.changeTracker.removeByQuery(query, null, done);
 
@@ -175,6 +175,10 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
     protected getData<TShape>(done: PluginEventCallbackResult<TShape>) {
 
         if (this.request.skipInitialQuery) {
+            // Set to false in case the same query called twice
+            // Can happen when a query is saved in a variable and run more than once.
+            // Otherwise each query starts a new request and this is false by default
+            this.request.skipInitialQuery = false;
             return;
         }
 

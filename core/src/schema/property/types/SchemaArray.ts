@@ -45,6 +45,6 @@ export class SchemaArray<T extends any, TModifiers extends SchemaModifiers> exte
     }
 
     index(...indexes: string[]) {
-        return new SchemaIndex<T[], TModifiers>(this as any, ...indexes);
+        return new SchemaIndex<T[], TModifiers>(this, ...indexes);
     }
 }

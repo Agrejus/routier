@@ -1,4 +1,4 @@
-import { IdType } from "@routier/core";
+import { IdType, unsafeCast } from "@routier/core";
 import { IChangeTracker, TrackedEntity } from "./types";
 import { ChangeTrackedEntity } from "../types";
 
@@ -15,7 +15,7 @@ export class ProxyChangeTracker<T extends {}> implements IChangeTracker<T> {
 
         for (const [, attachment] of this.data) {
 
-            const changeTrackedDoc: ChangeTrackedEntity<{}> = attachment.doc as any;
+            const changeTrackedDoc = unsafeCast<ChangeTrackedEntity<{}>>(attachment.doc);
             const changeType = attachment.changeType;
 
             if (changeTrackedDoc.__tracking__?.isDirty === true || changeType !== "notModified") {

@@ -2071,7 +2071,7 @@ describe("Product Tests", () => {
 
                 const subscribedQuery = dataStore.products.subscribe();
 
-                const countMethod = subscribedQuery.firstOrUndefined;
+                const countMethod = subscribedQuery.count;
 
                 // Adjust this to your real callback shape
                 type CallbackResult<T> = (value: T) => void;

@@ -303,7 +303,7 @@ export function expressionToWhereClause(expr: Expression): { where: string, para
             params.push((e as ValueExpression).value);
             return '?';
         }
-        throw new Error(`Unknown expression type: ${(e as any).type}`);
+        throw new Error(`Unknown expression type: ${e.type}`);
     }
     const where = walk(expr);
     return { where, params };

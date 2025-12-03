@@ -53,7 +53,7 @@ export class TagCollection implements Disposable {
     }
 
     [Symbol.dispose]() {
-        this.data = null as any;
+        this.data.clear();
     }
 
     [Symbol.iterator]() {
