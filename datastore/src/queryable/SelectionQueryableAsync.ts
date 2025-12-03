@@ -2,26 +2,14 @@ import { toPromise } from "@routier/core/results";
 import { SelectionQueryable } from "./SelectionQueryable";
 import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
-import { ChangeTrackingType, CompiledSchema, IdType } from "@routier/core/schema";
-import { SchemaCollection } from "@routier/core/collections";
-import { QueryOptionsCollection } from "@routier/core/plugins";
-import { QuerySource } from "./QuerySource";
-import { DataBridge } from "../data-access/DataBridge";
-import { ChangeTracker } from "../change-tracking/ChangeTracker";
+import { IdType } from "@routier/core/schema";
+import { CollectionDependencies } from "../collections/types";
+import { SimpleContainer } from "../ioc/SimpleContainer";
 
 export class SelectionQueryableAsync<Root extends {}, Shape> extends SelectionQueryable<Root, Shape, void> {
 
-    constructor(
-        schema: CompiledSchema<Root>,
-        schemas: SchemaCollection,
-        scopedQueryOptions: QueryOptionsCollection<Root>,
-        changeTrackingType: ChangeTrackingType,
-        options: {
-            queryable?: QuerySource<Root, Shape>,
-            dataBridge?: DataBridge<Root>,
-            changeTracker?: ChangeTracker<Root>
-        }) {
-        super(schema, schemas, scopedQueryOptions, changeTrackingType, options);
+    constructor(container: SimpleContainer<CollectionDependencies<Root>>) {
+        super(container);
 
         this.removeAsync = this.removeAsync.bind(this);
         this.toArrayAsync = this.toArrayAsync.bind(this);

@@ -1,17 +1,10 @@
-import { CompiledSchema, InferType } from "@routier/core/schema";
-import { CollectionOptions, CollectionPipelines } from "../types";
-import { IDbPlugin, QueryOptionsCollection } from "@routier/core/plugins";
 import { CollectionBase } from "../collections/CollectionBase";
-import { SchemaCollection } from '@routier/core/collections';
+import { SimpleContainer } from "../ioc/SimpleContainer";
+import { CollectionDependencies } from '../collections/types';
 
 export type CollectionInstanceCreator<
     TEntity extends {},
     TCollection extends CollectionBase<TEntity>
 > = new (
-    dbPlugin: IDbPlugin,
-    schema: CompiledSchema<TEntity>,
-    options: CollectionOptions,
-    pipelines: CollectionPipelines,
-    schemas: SchemaCollection,
-    queryOptions: QueryOptionsCollection<InferType<TEntity>>
+    container: SimpleContainer<CollectionDependencies<TEntity>>
 ) => TCollection;

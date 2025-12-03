@@ -1,21 +1,15 @@
-import { IDbPlugin, Query, QueryOptionsCollection } from "@routier/core/plugins";
-import { CollectionOptions, CollectionPipelines } from "../types";
 import { CollectionBase } from './CollectionBase';
-import { CompiledSchema, InferType } from "@routier/core/schema";
+import { InferType } from "@routier/core/schema";
 import { CallbackResult, Result } from "@routier/core/results";
-import { SchemaCollection } from "@routier/core/collections";
+import { SimpleContainer } from "../ioc/SimpleContainer";
+import { CollectionDependencies } from "./types";
 
 export class RemovableCollection<TEntity extends {}> extends CollectionBase<TEntity> {
 
     constructor(
-        dbPlugin: IDbPlugin,
-        schema: CompiledSchema<TEntity>,
-        options: CollectionOptions,
-        pipelines: CollectionPipelines,
-        schemas: SchemaCollection,
-        queryOptions: QueryOptionsCollection<InferType<TEntity>>
+        container: SimpleContainer<CollectionDependencies<TEntity>>
     ) {
-        super(dbPlugin, schema, options, pipelines, schemas, queryOptions);
+        super(container);
 
         // Bind all public methods to ensure 'this' context is preserved
         this.remove = this.remove.bind(this);

@@ -1,7 +1,7 @@
 import { Collection } from './collections/Collection';
 import { CollectionBuilder } from './collection-builder/CollectionBuilder';
 import { CollectionPipelines } from './types';
-import { IDbPlugin } from '@routier/core/plugins';
+import { IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
 import { CompiledSchema, SchemaId } from '@routier/core/schema';
 import { TrampolinePipeline } from '@routier/core/pipeline';
 import { CallbackPartialResult, CallbackResult, PartialResultType, PluginEventResult, Result } from '@routier/core/results';
@@ -10,6 +10,9 @@ import { UnknownRecord, uuid } from '@routier/core/utilities';
 import { View } from './views/View';
 import { ViewBuilder } from './view-builder/ViewBuilder';
 import { CollectionBase } from './collections/CollectionBase';
+import { SimpleContainer } from './ioc/SimpleContainer';
+import { CollectionDependencies } from './collections/types';
+import { ViewDependencies } from './views/types';
 
 /**
  * The main Routier class, providing collection management, change tracking, and persistence for entities.
@@ -67,14 +70,20 @@ export class DataStore implements Disposable {
             this.collections.set(schema.id, collection);
             this._schemas.set(schema.id, schema as CompiledSchema<UnknownRecord>);
         };
+
+        const container = new SimpleContainer<CollectionDependencies<TEntity>>();
+
+        container.singleton("plugin", () => this.dbPlugin)
+            .singleton("schema", () => schema)
+            .singleton("schemas", () => this._schemas)
+            .singleton("pipelines", () => this.collectionPipelines)
+            .singleton("signal", () => this.abortController.signal)
+            .singleton("scopedQueryOptions", () => new QueryOptionsCollection<TEntity>());
+
         return new CollectionBuilder<TEntity, Collection<TEntity>>({
-            dbPlugin: this.dbPlugin,
+            container,
             instanceCreator: Collection<TEntity>,
             onCollectionCreated: onCreated.bind(this),
-            schema,
-            pipelines: this.collectionPipelines,
-            signal: this.abortController.signal,
-            schemas: this._schemas
         });
     }
 
@@ -98,16 +107,21 @@ export class DataStore implements Disposable {
             this.collections.set(schema.id, view);
             this._schemas.set(schema.id, schema as CompiledSchema<UnknownRecord>);
         };
+
+        const container = new SimpleContainer<ViewDependencies<TEntity>>();
+
+        container.singleton("plugin", () => this.dbPlugin)
+            .singleton("persist", () => this.dbPlugin.bulkPersist.bind(this.dbPlugin))
+            .singleton("schema", () => schema)
+            .singleton("schemas", () => this._schemas)
+            .singleton("pipelines", () => this.collectionPipelines)
+            .singleton("signal", () => this.abortController.signal)
+            .singleton("scopedQueryOptions", () => new QueryOptionsCollection<TEntity>());
+
         return new ViewBuilder<TEntity, View<TEntity>>({
-            dbPlugin: this.dbPlugin,
+            container,
             instanceCreator: View<TEntity>,
             onCollectionCreated: onCreated.bind(this),
-            schema,
-            pipelines: this.collectionPipelines,
-            signal: this.abortController.signal,
-            schemas: this._schemas,
-            persistCallback: this.dbPlugin.bulkPersist.bind(this.dbPlugin),
-            deriveCallback: () => void (0)
         });
     }
 

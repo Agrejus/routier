@@ -1,45 +1,66 @@
-import { CollectionOptions, CollectionPipelines, EntityMap } from "../types";
-import { ChangeTracker } from '../change-tracking/ChangeTracker';
-import { DataBridge } from '../data-access/DataBridge';
+import { EntityMap } from "../types";
 import { Queryable } from '../queryable/Queryable';
 import { QueryableAsync } from '../queryable/QueryableAsync';
 import { SelectionQueryable } from "../queryable/SelectionQueryable";
 import { SelectionQueryableAsync } from "../queryable/SelectionQueryableAsync";
-import { ChangeTrackingType, CompiledSchema, IdType, ISchemaSubscription, InferCreateType, InferType, SubscriptionChanges } from "@routier/core/schema";
-import { IDbPlugin, IQuery, ITranslatedValue, QueryOptionsCollection } from "@routier/core/plugins";
+import { ChangeTrackingType, IdType, InferCreateType, InferType, SubscriptionChanges } from "@routier/core/schema";
+import { IQuery, ITranslatedValue } from "@routier/core/plugins";
 import { CallbackPartialResult, CallbackResult, PartialResultType, Result, toPromise } from "@routier/core/results";
-import { BulkPersistChanges, BulkPersistResult, SchemaCollection } from "@routier/core/collections";
+import { BulkPersistChanges, BulkPersistResult } from "@routier/core/collections";
 import { assertIsNotNull } from "@routier/core/assertions";
 import { AsyncPipeline } from "@routier/core/pipeline";
 import { GenericFunction } from "@routier/core/types";
 import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { uuid } from "@routier/core/utilities";
+import { SimpleContainer } from '../ioc/SimpleContainer';
+import { CollectionDependencies, RequestContext } from "./types";
+import { ChangeTracker } from "../change-tracking/ChangeTracker";
+import { DataBridge } from "../data-access/DataBridge";
 
 export class CollectionBase<TEntity extends {}> implements Disposable {
 
-    protected readonly changeTracker: ChangeTracker<TEntity>;
-    protected readonly dataBridge: DataBridge<TEntity>;
-    readonly schema: CompiledSchema<TEntity>;
-    readonly schemas: SchemaCollection;
-    protected subscription: ISchemaSubscription<TEntity>;
+    protected get changeTracker() {
+        return this.container.resolve("changeTracker");
+    }
+
+    protected get dataBridge() {
+        return this.container.resolve("dataBridge");
+    }
+
+    get schema() {
+        return this.container.resolve("schema");
+    }
+
+    get schemas() {
+        return this.container.resolve("schemas");
+    }
+
+    protected get subscription() {
+        return this.container.resolve("subscription");
+    }
+
+    get scopedQueryOptions() {
+        return this.container.resolve("scopedQueryOptions");
+    }
+
+    protected container: SimpleContainer<CollectionDependencies<TEntity>>;
     protected _tag: unknown;
-    scopedQueryOptions: QueryOptionsCollection<InferType<TEntity>>;
 
     constructor(
-        dbPlugin: IDbPlugin,
-        schema: CompiledSchema<TEntity>,
-        options: CollectionOptions,
-        pipelines: CollectionPipelines,
-        schemas: SchemaCollection,
-        scopedQueryOptions: QueryOptionsCollection<InferType<TEntity>>
+        container: SimpleContainer<CollectionDependencies<TEntity>>
     ) {
+        this.container = container;
 
-        this.subscription = schema.createSubscription(options.signal);
-        this.schema = schema;
-        this.schemas = schemas;
-        this.changeTracker = new ChangeTracker<TEntity>(schema);
-        this.dataBridge = DataBridge.create<TEntity>(dbPlugin, schema, options);
-        this.scopedQueryOptions = scopedQueryOptions;
+        const signal = this.container.resolve("signal");
+        const plugin = this.container.resolve("plugin");
+
+        // We can likely register this higher
+        container.singleton("subscription", () => this.schema.createSubscription(signal))
+            .singleton("changeTracker", () => new ChangeTracker<TEntity>(this.schema))
+            .singleton("dataBridge", () => DataBridge.create<TEntity>(plugin, this.schema, signal))
+            .scoped("request", () => new RequestContext<TEntity>());
+
+        const pipelines = this.container.resolve("pipelines");
 
         pipelines.prepareChanges.pipe(this.prepare.bind(this));
         pipelines.afterPersist.pipe(this.afterPersist.bind(this));
@@ -287,10 +308,8 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @returns A subscription object that can be used to listen for collection changes
      */
     subscribe() {
-        const queryable = new Queryable<InferType<TEntity>, InferType<TEntity>, () => void>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any,
-        });
+        this.container.beginScope();
+        const queryable = new Queryable<InferType<TEntity>, InferType<TEntity>, () => void>(this.container as any);
         return queryable.subscribe();
     }
 
@@ -298,10 +317,8 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * Ignores the first execution of the resulting query
      */
     defer() {
-        const queryable = new Queryable<InferType<TEntity>, InferType<TEntity>, () => void>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any,
-        });
+        this.container.beginScope();
+        const queryable = new Queryable<InferType<TEntity>, InferType<TEntity>, () => void>(this.container as any);
         return queryable.defer();
     }
 
@@ -319,19 +336,13 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      */
     where<P extends {}>(selector: ParamsFilter<InferType<TEntity>, P>, params: P): QueryableAsync<InferType<TEntity>, InferType<TEntity>>;
     where<P extends {} = never>(selector: ParamsFilter<InferType<TEntity>, P> | Filter<InferType<TEntity>>, params?: P) {
-
+        this.container.beginScope();
         if (params == null) {
-            const queryable = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-                dataBridge: this.dataBridge as any,
-                changeTracker: this.changeTracker as any
-            });
+            const queryable = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
             return queryable.where(selector as Filter<InferType<TEntity>>);
         }
 
-        const queryable = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+        const queryable = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
 
         return queryable.where(selector as ParamsFilter<InferType<TEntity>, P>, params);
     }
@@ -342,10 +353,8 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @returns QueryableAsync instance for chaining additional query operations
      */
     sort(selector: EntityMap<InferType<TEntity>, InferType<TEntity>[keyof InferType<TEntity>]>) {
-        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+        this.container.beginScope();
+        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
         return result.sort(selector);
     }
 
@@ -355,19 +364,16 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @returns QueryableAsync instance for chaining additional query operations
      */
     sortDescending(selector: EntityMap<InferType<TEntity>, InferType<TEntity>[keyof InferType<TEntity>]>) {
-        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+        this.container.beginScope();
+        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
 
         return result.sortDescending(selector);
     }
 
     toGroup<R extends InferType<TEntity>[keyof InferType<TEntity>] & IdType>(selector: GenericFunction<InferType<TEntity>, R>, done: CallbackResult<Record<R, InferType<TEntity>[]>>) {
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+
+        this.container.beginScope();
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
         return result.toGroup(selector, done);
     }
 
@@ -381,10 +387,8 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @returns QueryableAsync instance for chaining additional query operations
      */
     map<R extends InferType<TEntity>[keyof InferType<TEntity>] | {}>(expression: EntityMap<InferType<TEntity>, R>) {
-        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+        this.container.beginScope();
+        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
         return result.map(expression);
     }
 
@@ -394,10 +398,8 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @returns QueryableAsync instance for chaining additional query operations
      */
     skip(amount: number) {
-        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+        this.container.beginScope();
+        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
         return result.skip(amount);
     }
 
@@ -407,10 +409,8 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @returns QueryableAsync instance for chaining additional query operations
      */
     take(amount: number) {
-        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+        this.container.beginScope();
+        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
         return result.take(amount);
     }
 
@@ -420,10 +420,8 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @returns QueryableAsync instance for chaining additional query operations
      */
     toQueryable() {
-        return new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+        this.container.beginScope();
+        return new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
     }
 
     /**
@@ -431,10 +429,8 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @param done Callback function called with the array of entities or error
      */
     toArray(done: CallbackResult<InferType<TEntity>[]>) {
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+        this.container.beginScope();
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.container as any);
         return result.toArray(done);
     }
 
@@ -443,10 +439,8 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @returns Promise that resolves with the array of entities or rejects with an error
      */
     toArrayAsync(): Promise<InferType<TEntity>[]> {
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+        this.container.beginScope();
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
         return result.toArrayAsync();
     }
 
@@ -469,10 +463,9 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      */
     first(done: CallbackResult<InferType<TEntity>>): void;
     first<P extends {} = never>(doneOrExpression: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P> | CallbackResult<InferType<TEntity>>, paramsOrDone?: P | CallbackResult<InferType<TEntity>>, done?: CallbackResult<InferType<TEntity>>) {
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+        debugger;
+        this.container.beginScope();
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.container as any);
 
         if (paramsOrDone == null) {
             const d = doneOrExpression as CallbackResult<InferType<TEntity>>;
@@ -510,10 +503,9 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      */
     firstAsync(): Promise<InferType<TEntity>>;
     firstAsync<P extends {} = never>(expression?: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P>, params?: P): Promise<InferType<TEntity>> {
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+
+        this.container.beginScope();
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
 
         if (params == null && expression == null) {
             return result.firstAsync();
@@ -548,10 +540,9 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      */
     firstOrUndefined(done: CallbackResult<InferType<TEntity> | undefined>): void;
     firstOrUndefined<P extends {} = never>(doneOrExpression: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P> | CallbackResult<InferType<TEntity> | undefined>, paramsOrDone?: P | CallbackResult<InferType<TEntity> | undefined>, done?: CallbackResult<InferType<TEntity> | undefined>) {
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+
+        this.container.beginScope();
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.container as any);
 
         if (paramsOrDone == null) {
             const d = doneOrExpression as CallbackResult<InferType<TEntity> | undefined>;
@@ -589,10 +580,9 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      */
     firstOrUndefinedAsync(): Promise<InferType<TEntity> | undefined>;
     firstOrUndefinedAsync<P extends {} = never>(expression?: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P>, params?: P): Promise<InferType<TEntity> | undefined> {
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+
+        this.container.beginScope();
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
 
         if (params == null && expression == null) {
             return result.firstOrUndefinedAsync();
@@ -627,10 +617,9 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      */
     some(done: CallbackResult<boolean>): void;
     some<P extends {} = never>(doneOrExpression: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P> | CallbackResult<boolean>, paramsOrDone?: P | CallbackResult<boolean>, done?: CallbackResult<boolean>) {
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+
+        this.container.beginScope();
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.container as any);
 
         if (paramsOrDone == null) {
             const d = doneOrExpression as CallbackResult<boolean>;
@@ -668,10 +657,9 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      */
     someAsync(): Promise<boolean>;
     someAsync<P extends {} = never>(expression?: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P>, params?: P): Promise<boolean> {
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+
+        this.container.beginScope();
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
 
         if (params == null && expression == null) {
             return result.someAsync();
@@ -702,10 +690,9 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     every<P extends {}>(expression: Filter<InferType<TEntity>>, done: CallbackResult<boolean>): void;
     every<P extends {}>(expression: ParamsFilter<InferType<TEntity>, P>, params: P, done: CallbackResult<boolean>): void;
     every<P extends {} = never>(expression: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P> | CallbackResult<boolean>, paramsOrDone: P | CallbackResult<boolean>, done?: CallbackResult<boolean>) {
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+
+        this.container.beginScope();
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.container as any);
 
         if (done != null) {
             const d = done as CallbackResult<boolean>;
@@ -734,10 +721,9 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     everyAsync<P extends {}>(expression: Filter<InferType<TEntity>>): Promise<boolean>;
     everyAsync<P extends {}>(expression: ParamsFilter<InferType<TEntity>, P>, params: P): Promise<boolean>;
     everyAsync<P extends {} = never>(expression?: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P>, params?: P): Promise<boolean> {
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+
+        this.container.beginScope();
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
 
         if (params != null) {
             const e = expression as ParamsFilter<InferType<TEntity>, P>;
@@ -755,10 +741,9 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @param done Callback function called with the minimum value or error
      */
     min(selector: GenericFunction<InferType<TEntity>, number>, done: CallbackResult<number>): void {
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+
+        this.container.beginScope();
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.container as any);
 
         return result.min(selector as any, done);
     }
@@ -769,10 +754,9 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @returns Promise that resolves with the minimum value or rejects with an error
      */
     minAsync(selector: GenericFunction<InferType<TEntity>, number>): Promise<number> {
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+
+        this.container.beginScope();
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
 
         return result.minAsync(selector as any);
     }
@@ -783,10 +767,9 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @param done Callback function called with the maximum value or error
      */
     max(selector: GenericFunction<InferType<TEntity>, number>, done: CallbackResult<number>): void {
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+
+        this.container.beginScope();
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.container as any);
 
         return result.max(selector as any, done);
     }
@@ -797,10 +780,9 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @returns Promise that resolves with the maximum value or rejects with an error
      */
     maxAsync(selector: GenericFunction<InferType<TEntity>, number>): Promise<number> {
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+
+        this.container.beginScope();
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
 
         return result.maxAsync(selector as any);
     }
@@ -811,10 +793,9 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @param done Callback function called with the sum or error
      */
     sum(selector: GenericFunction<InferType<TEntity>, number>, done: CallbackResult<number>): void {
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+
+        this.container.beginScope();
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.container as any);
 
         return result.sum(selector as any, done);
     }
@@ -825,10 +806,9 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @returns Promise that resolves with the sum or rejects with an error
      */
     sumAsync(selector: GenericFunction<InferType<TEntity>, number>): Promise<number> {
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+
+        this.container.beginScope();
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
 
         return result.sumAsync(selector as any);
     }
@@ -838,10 +818,9 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @param done Callback function called with the count or error
      */
     count(done: CallbackResult<number>): void {
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+
+        this.container.beginScope();
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.container as any);
 
         return result.count(done);
     }
@@ -851,10 +830,9 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @returns Promise that resolves with the count or rejects with an error
      */
     countAsync(): Promise<number> {
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+
+        this.container.beginScope();
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
 
         return result.countAsync();
     }
@@ -864,10 +842,9 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @param done Callback function called with the distinct entities or error
      */
     distinct(done: CallbackResult<InferType<TEntity>[]>): void {
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+
+        this.container.beginScope();
+        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.container as any);
 
         return result.distinct(done);
     }
@@ -877,10 +854,9 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @returns Promise that resolves with the distinct entities or rejects with an error
      */
     distinctAsync(): Promise<InferType<TEntity>[]> {
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.schema as any, this.schemas, this.scopedQueryOptions, this.changeTrackingType, {
-            dataBridge: this.dataBridge as any,
-            changeTracker: this.changeTracker as any
-        });
+
+        this.container.beginScope();
+        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
 
         return result.distinctAsync();
     }

@@ -1,11 +1,11 @@
 import { CollectionBase } from '../collections/CollectionBase';
-import { Derive, DeriveResponse } from '../view-builder/ViewBuilder';
-import { CollectionOptions, CollectionPipelines } from '../types';
 import { IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
 import { ChangeTrackingType, CompiledSchema, IdType, InferCreateType, InferType, SubscriptionChanges } from '@routier/core/schema';
 import { BulkPersistChanges, SchemaCollection, SchemaPersistChanges } from '@routier/core/collections';
 import { CallbackResult, noop, Result, uuid } from '@routier/core';
 import { QueryableAsync } from '../queryable/QueryableAsync';
+import { SimpleContainer } from '../ioc/SimpleContainer';
+import { Derive, DeriveResponse, ViewDependencies } from './types';
 
 /**
  * View that only allows data selection. Cannot add, remove, or update data.  Data is computed
@@ -17,17 +17,11 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
     protected persist: IDbPlugin["bulkPersist"];
     protected unsubscribe: DeriveResponse;
 
-    constructor(
-        dbPlugin: IDbPlugin,
-        schema: CompiledSchema<TEntity>,
-        options: CollectionOptions,
-        pipelines: CollectionPipelines,
-        schemas: SchemaCollection,
-        scopedQueryOptions: QueryOptionsCollection<InferType<TEntity>>,
-        derive: Derive<TEntity>,
-        persist: IDbPlugin["bulkPersist"]
-    ) {
-        super(dbPlugin, schema, options, pipelines, schemas, scopedQueryOptions);
+    constructor(container: SimpleContainer<ViewDependencies<TEntity>>) {
+        super(container);
+
+        const derive = container.resolve("derive");
+        const persist = container.resolve("persist");
 
         // Compute the view right away
         this.derive = (cb) => {

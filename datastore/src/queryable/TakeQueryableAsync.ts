@@ -2,26 +2,14 @@ import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { SelectionQueryableAsync } from "./SelectionQueryableAsync";
 import { SubscribedTakeQueryable } from "./SubscribedTakeQueryable";
 import { GenericFunction } from "@routier/core/types";
-import { QueryOptionsCollection, QueryOrdering } from "@routier/core/plugins";
-import { ChangeTrackingType, CompiledSchema, IdType } from "@routier/core/schema";
-import { SchemaCollection } from "@routier/core/collections";
-import { QuerySource } from "./QuerySource";
-import { DataBridge } from "../data-access/DataBridge";
-import { ChangeTracker } from "../change-tracking/ChangeTracker";
+import { QueryOrdering } from "@routier/core/plugins";
+import { CollectionDependencies } from "../collections/types";
+import { SimpleContainer } from "../ioc/SimpleContainer";
 
 export class TakeQueryableAsync<Root extends {}, Shape> extends SelectionQueryableAsync<Root, Shape> {
 
-    constructor(
-        schema: CompiledSchema<Root>,
-        schemas: SchemaCollection,
-        scopedQueryOptions: QueryOptionsCollection<Root>,
-        changeTrackingType: ChangeTrackingType,
-        options: {
-            queryable?: QuerySource<Root, Shape>,
-            dataBridge?: DataBridge<Root>,
-            changeTracker?: ChangeTracker<Root>
-        }) {
-        super(schema, schemas, scopedQueryOptions, changeTrackingType, options);
+    constructor(container: SimpleContainer<CollectionDependencies<Root>>) {
+        super(container);
 
         this.where = this.where.bind(this);
         this.map = this.map.bind(this);
@@ -53,7 +41,7 @@ export class TakeQueryableAsync<Root extends {}, Shape> extends SelectionQueryab
     }
 
     subscribe() {
-        this.isSubScribed = true;
+        this.request.isSubScribed = true;
         return this.create(SubscribedTakeQueryable<Root, Shape, () => void>);
     }
 }

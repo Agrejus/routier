@@ -1,69 +1,44 @@
-import { CompiledSchema, InferType, SchemaId } from '@routier/core/schema';
-import { CollectionOptions, CollectionPipelines, DeepReadonly } from '../types';
+import { InferType } from '@routier/core/schema';
 import { CollectionInstanceCreator } from './types';
-import { IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
+import { QueryOptionsCollection } from '@routier/core/plugins';
 import { ImmutableCollection } from '../collections/ImmutableCollection';
 import { ReadonlyCollection } from '../collections/ReadonlyCollection';
 import { DiffCollection } from '../collections/DiffCollection';
 import { Filter, ParamsFilter, toExpression } from '@routier/core/expressions';
 import { CollectionBase } from '../collections/CollectionBase';
-import { SchemaCollection } from '@routier/core/collections';
+import { SimpleContainer } from '../ioc/SimpleContainer';
+import { CollectionDependencies } from '../collections/types';
 
 type CollectionBuilderProps<TEntity extends {}, TCollection extends CollectionBase<TEntity>> = {
-    onCollectionCreated: (collection: CollectionBase<TEntity>) => void;
-    schema: CompiledSchema<TEntity>;
-    dbPlugin: IDbPlugin;
+    container: SimpleContainer<CollectionDependencies<TEntity>>;
     instanceCreator: CollectionInstanceCreator<TEntity, TCollection>;
-    pipelines: CollectionPipelines;
-    signal: AbortSignal;
-    scopedQueryOptions?: QueryOptionsCollection<InferType<TEntity>>;
-    schemas: SchemaCollection;
+    onCollectionCreated: (collection: CollectionBase<TEntity>) => void;
 }
 export class CollectionBuilder<TEntity extends {}, TCollection extends CollectionBase<TEntity>> {
 
     private _onCollectionCreated: (collection: CollectionBase<TEntity>) => void;
-    private readonly _schema: CompiledSchema<TEntity>;
-    private readonly _dbPlugin: IDbPlugin;
-    private _instanceCreator: CollectionInstanceCreator<TEntity, TCollection>;
-    private _pipelines: CollectionPipelines;
-    private _signal: AbortSignal;
-    private schemas: SchemaCollection;
-    private scopedQueryOptions: QueryOptionsCollection<InferType<TEntity>>;
+    private instanceCreator: CollectionInstanceCreator<TEntity, TCollection>;
+    private container: SimpleContainer<CollectionDependencies<TEntity>>;
 
     constructor(props: CollectionBuilderProps<TEntity, TCollection>) {
-        this._pipelines = props.pipelines;
-        this._schema = props.schema;
-        this._dbPlugin = props.dbPlugin;
+        this.container = props.container;
         this._onCollectionCreated = props.onCollectionCreated;
-        this._instanceCreator = props.instanceCreator;
-        this._signal = props.signal;
-        this.schemas = props.schemas;
-        this.scopedQueryOptions = props.scopedQueryOptions ?? new QueryOptionsCollection<InferType<TEntity>>();
+        this.instanceCreator = props.instanceCreator;
     }
 
     immutable() {
         return new CollectionBuilder<TEntity, ImmutableCollection<TEntity>>({
-            dbPlugin: this._dbPlugin,
             onCollectionCreated: this._onCollectionCreated,
-            schema: this._schema,
             instanceCreator: ImmutableCollection,
-            pipelines: this._pipelines,
-            signal: this._signal,
-            schemas: this.schemas,
-            scopedQueryOptions: this.scopedQueryOptions
+            container: this.container
         });
     }
 
     diff() {
         return new CollectionBuilder<TEntity, DiffCollection<TEntity>>({
-            dbPlugin: this._dbPlugin,
             onCollectionCreated: this._onCollectionCreated,
-            schema: this._schema,
             instanceCreator: DiffCollection,
-            pipelines: this._pipelines,
-            signal: this._signal,
-            schemas: this.schemas,
-            scopedQueryOptions: this.scopedQueryOptions
+            container: this.container
         });
     }
 
@@ -101,54 +76,47 @@ export class CollectionBuilder<TEntity extends {}, TCollection extends Collectio
     scope<P extends {}>(selector: ParamsFilter<InferType<TEntity>, P>, params: P): CollectionBuilder<TEntity, TCollection>;
     scope<P extends {} = never>(selector: ParamsFilter<InferType<TEntity>, P> | Filter<InferType<TEntity>>, params?: P): CollectionBuilder<TEntity, TCollection> {
 
-        const expression = toExpression(this._schema, selector, params);
+        const schema = this.container.resolve("schema");
 
-        this.scopedQueryOptions.add("filter", { filter: selector as Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, {}>, expression, params });
+        const expression = toExpression(schema, selector, params);
+
+        const scopedQueryOptions = new QueryOptionsCollection<TEntity>();
+
+        scopedQueryOptions.add("filter", { filter: selector as Filter<TEntity> | ParamsFilter<TEntity, {}>, expression, params });
+
+        // Re-register (overwrite)
+        this.container.singleton("scopedQueryOptions", () => scopedQueryOptions);
 
         return new CollectionBuilder<TEntity, TCollection>({
-            dbPlugin: this._dbPlugin,
             onCollectionCreated: this._onCollectionCreated,
-            schema: this._schema,
-            instanceCreator: this._instanceCreator,
-            pipelines: this._pipelines,
-            signal: this._signal,
-            schemas: this.schemas,
-            scopedQueryOptions: this.scopedQueryOptions
+            instanceCreator: this.instanceCreator,
+            container: this.container
         });
     }
 
     readonly() {
         return new CollectionBuilder<TEntity, ReadonlyCollection<TEntity>>({
-            dbPlugin: this._dbPlugin,
             onCollectionCreated: this._onCollectionCreated,
-            schema: this._schema,
             instanceCreator: ReadonlyCollection,
-            pipelines: this._pipelines,
-            signal: this._signal,
-            schemas: this.schemas,
-            scopedQueryOptions: this.scopedQueryOptions
+            container: this.container
         });
     }
 
     create(): TCollection;
-    create<TExtension extends TCollection>(extend: (i: CollectionInstanceCreator<TEntity, TCollection>, dbPlugin: IDbPlugin, schema: CompiledSchema<TEntity>, options: CollectionOptions, pipelines: CollectionPipelines, schemas: SchemaCollection, scopedQueryOptions: QueryOptionsCollection<InferType<TEntity>>) => TExtension): TExtension;
-    create<TExtension extends TCollection = never>(extend?: (i: CollectionInstanceCreator<TEntity, TCollection>, dbPlugin: IDbPlugin, schema: CompiledSchema<TEntity>, options: CollectionOptions, pipelines: CollectionPipelines, schemas: SchemaCollection, scopedQueryOptions: QueryOptionsCollection<InferType<TEntity>>) => TExtension) {
-
-        const options: CollectionOptions = {
-            signal: this._signal,
-        }
+    create<TExtension extends TCollection>(extend: (i: CollectionInstanceCreator<TEntity, TCollection>, container: SimpleContainer<CollectionDependencies<TEntity>>) => TExtension): TExtension;
+    create<TExtension extends TCollection = never>(extend?: (i: CollectionInstanceCreator<TEntity, TCollection>, container: SimpleContainer<CollectionDependencies<TEntity>>) => TExtension) {
 
         if (extend == null) {
-            const Instance = this._instanceCreator;
-            const result = new Instance(this._dbPlugin, this._schema, options, this._pipelines, this.schemas, this.scopedQueryOptions ?? new QueryOptionsCollection<InferType<TEntity>>());
+            const Instance = this.instanceCreator;
+            const result = new Instance(this.container);
 
             this._onCollectionCreated(result);
 
             return result;
         }
 
-        const Instance = this._instanceCreator;
-        const extendedResult = extend(Instance, this._dbPlugin, this._schema, options, this._pipelines, this.schemas, this.scopedQueryOptions ?? new QueryOptionsCollection<InferType<TEntity>>());
+        const Instance = this.instanceCreator;
+        const extendedResult = extend(Instance, this.container);
 
         this._onCollectionCreated(extendedResult);
 

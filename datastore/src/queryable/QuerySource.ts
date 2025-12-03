@@ -1,75 +1,71 @@
-import { DataBridge } from "../data-access/DataBridge";
-import { ChangeTracker } from "../change-tracking/ChangeTracker";
 import { DbPluginQueryEvent, ITranslatedValue, JsonTranslator, Query, QueryField, QueryOptionsCollection, QueryOrdering } from "@routier/core/plugins";
-import { ChangeTrackingType, CompiledSchema, InferType } from "@routier/core/schema";
+import { InferType } from "@routier/core/schema";
 import { CallbackResult, PluginEventCallbackResult, PluginEventResult, PluginEventSuccessType, Result } from "@routier/core/results";
 import { GenericFunction } from "@routier/core/types";
 import { Filter, ParamsFilter, toExpression } from "@routier/core/expressions";
 import { uuid } from "@routier/core/utilities";
-import { SchemaCollection } from "@routier/core";
+import { CollectionDependencies } from "../collections/types";
+import { SimpleContainer } from "../ioc/SimpleContainer";
 
 export abstract class QuerySource<TRoot extends {}, TShape> {
 
-    protected readonly dataBridge: DataBridge<TRoot>;
-    protected readonly changeTracker: ChangeTracker<TRoot>;
-    protected readonly queryOptions: QueryOptionsCollection<TShape>;
-    protected isSubScribed: boolean = false;
-    protected skipInitialQuery: boolean = false;
-    protected schema: CompiledSchema<TRoot>;
-    protected schemas: SchemaCollection;
-    protected scopedQueryOptions: QueryOptionsCollection<TRoot>;
-    protected readonly changeTrackingType: ChangeTrackingType
+    protected get dataBridge() {
+        return this.container.resolve("dataBridge");
+    }
 
-    constructor(
-        schema: CompiledSchema<TRoot>,
-        schemas: SchemaCollection,
-        scopedQueryOptions: QueryOptionsCollection<TRoot>,
-        changeTrackingType: ChangeTrackingType,
-        options: {
-            queryable?: QuerySource<TRoot, TShape>,
-            dataBridge?: DataBridge<TRoot>,
-            changeTracker?: ChangeTracker<TRoot>
-        }) {
+    protected get changeTracker() {
+        return this.container.resolve("changeTracker");
+    }
 
-        this.schema = schema;
-        this.schemas = schemas;
-        this.scopedQueryOptions = scopedQueryOptions;
-        this.changeTrackingType = changeTrackingType;
+    protected get schema() {
+        return this.container.resolve("schema");
+    }
 
-        if (options?.dataBridge != null) {
-            this.dataBridge = options.dataBridge;
-        }
+    protected get schemas() {
+        return this.container.resolve("schemas");
+    }
 
-        if (options?.changeTracker != null) {
-            this.changeTracker = options.changeTracker;
-        }
+    protected get scopedQueryOptions() {
+        return this.container.resolve("scopedQueryOptions");
+    }
 
-        if (options?.queryable != null) {
-            this.isSubScribed = options.queryable.isSubScribed;
-            this.skipInitialQuery = options.queryable.skipInitialQuery;
-            this.queryOptions = options.queryable.queryOptions;
-            this.dataBridge = options.queryable.dataBridge;
-            this.changeTracker = options.queryable.changeTracker;
-        } else {
-            this.queryOptions = new QueryOptionsCollection<TShape>();
-        }
+    protected get request() {
+        return this.container.resolve("request");
+    }
+
+    // protected readonly queryOptions: QueryOptionsCollection<TShape>;
+
+    // protected isSubScribed: boolean = false;
+    // protected skipInitialQuery: boolean = false;
+    // protected readonly changeTrackingType: ChangeTrackingType;
+    protected readonly container: SimpleContainer<CollectionDependencies<TRoot>>
+
+    constructor(container: SimpleContainer<CollectionDependencies<TRoot>>) {
+        this.container = container;
+
+        // Request needs to be registered by the caller, that way we don't need to check for null/undefined
+        // Same with queryOptions
+
+        // if (options?.queryable != null) {
+        //     this.isSubScribed = options.queryable.isSubScribed;
+        //     this.skipInitialQuery = options.queryable.skipInitialQuery;
+        //     this.queryOptions = options.queryable.queryOptions;
+        //     this.dataBridge = options.queryable.dataBridge;
+        //     this.changeTracker = options.queryable.changeTracker;
+        // } else {
+        //     this.queryOptions = new QueryOptionsCollection<TShape>();
+        // }
     }
 
     // Cannot change the root type, it comes from the collection type, only the resulting type (shape)
     protected create<Shape, TInstance extends QuerySource<TRoot, Shape>>(
-        Instance: new (
-            schema: CompiledSchema<TRoot>,
-            schemas: SchemaCollection,
-            scopedQueryOptions: QueryOptionsCollection<TRoot>,
-            changeTrackingType: ChangeTrackingType,
-            options: { queryable?: QuerySource<TRoot, Shape>, dataBridge?: DataBridge<TRoot>, changeTracker?: ChangeTracker<TRoot> }
-        ) => TInstance) {
-        return new Instance(this.schema, this.schemas, this.scopedQueryOptions, this.changeTrackingType, { queryable: this as any });
+        Instance: new (container: SimpleContainer<CollectionDependencies<TRoot>>) => TInstance) {
+        return new Instance(this.container);
     }
 
     private resolveQueryOptions<T>() {
         if (this.scopedQueryOptions.items.size === 0) {
-            return this.queryOptions;
+            return this.request.queryOptions;
         }
 
         // Combine scoped options with the built query
@@ -82,7 +78,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
         // Add query options last to ensure we perform scoped operations first
         // in case we have any memory execution targets
-        this.queryOptions.forEach(item => {
+        this.request.queryOptions.forEach(item => {
             resolvedQueryOptions.add(item.name, item.value);
         });
 
@@ -100,7 +96,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
     protected subscribeQuery<U>(done: CallbackResult<U>) {
 
-        if (this.isSubScribed === false) {
+        if (this.request.isSubScribed === false) {
             return () => { };
         }
 
@@ -198,7 +194,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
     protected getData<TShape>(done: PluginEventCallbackResult<TShape>) {
 
-        if (this.skipInitialQuery) {
+        if (this.request.skipInitialQuery) {
             return;
         }
 
@@ -228,7 +224,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
             if (databaseEvent.operation.changeTracking === true) {
                 // Post process the db query results
-                result.data.forEach(item => this.schema.postprocess(item as InferType<TRoot>, this.changeTrackingType));
+                result.data.forEach(item => this.schema.postprocess(item as InferType<TRoot>, this.request.changeTrackingType));
             }
 
             // This means we are querying on a computed property that is untracked, need to select
@@ -273,14 +269,14 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
         const expression = toExpression(this.schema, selector, params);
 
-        this.queryOptions.add("filter", { filter: selector as Filter<TShape> | ParamsFilter<TShape, {}>, expression, params });
+        this.request.queryOptions.add("filter", { filter: selector as Filter<TRoot> | ParamsFilter<TRoot, {}>, expression, params });
     }
 
     protected setMapQueryOption<K, R>(selector: GenericFunction<K, R>) {
 
         const fields = this.getFields(selector);
 
-        this.queryOptions.add("map", { selector: selector as GenericFunction<any, any>, fields });
+        this.request.queryOptions.add("map", { selector: selector as GenericFunction<any, any>, fields });
     }
 
     protected setGroupQueryOption<K, R>(selector: GenericFunction<K, R>) {
@@ -293,27 +289,27 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
             sourceName: x.name,
             property: x
         } as QueryField));
-        const map = this.queryOptions.getLast("map");
+        const map = this.request.queryOptions.getLast("map");
 
         // If we remapped, grab those fields
         if (map != null) {
             fields = map.value.fields;
         }
 
-        this.queryOptions.add("group", { selector: selector as GenericFunction<any, any>, key, fields });
+        this.request.queryOptions.add("group", { selector: selector as GenericFunction<any, any>, key, fields });
     }
 
     protected setSortQueryOption(selector: GenericFunction<TShape, TShape[keyof TShape]>, direction: QueryOrdering) {
         const propertyName = this.getSortPropertyName(selector);
 
-        this.queryOptions.add("sort", { selector, direction, propertyName });
+        this.request.queryOptions.add("sort", { selector: selector as any, direction, propertyName });
     }
 
     protected setSkipQueryOption(amount: number) {
-        this.queryOptions.add("skip", amount);
+        this.request.queryOptions.add("skip", amount);
     }
 
     protected setTakeQueryOption(amount: number) {
-        this.queryOptions.add("take", amount);
+        this.request.queryOptions.add("take", amount);
     }
 }   

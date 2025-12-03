@@ -1,22 +1,16 @@
-import { IDbPlugin, QueryOptionsCollection } from "@routier/core/plugins";
-import { CollectionOptions, CollectionPipelines } from "../types";
 import { RemovableCollection } from './RemovableCollection';
-import { CompiledSchema, InferCreateType, InferType } from "@routier/core/schema";
+import { InferCreateType, InferType } from "@routier/core/schema";
 import { CallbackResult, Result } from "@routier/core/results";
-import { SchemaCollection } from "@routier/core/collections";
 import { GenericFunction } from "@routier/core/types";
+import { SimpleContainer } from "../ioc/SimpleContainer";
+import { CollectionDependencies } from "./types";
 
 export class Collection<TEntity extends {}> extends RemovableCollection<TEntity> {
 
     constructor(
-        dbPlugin: IDbPlugin,
-        schema: CompiledSchema<TEntity>,
-        options: CollectionOptions,
-        pipelines: CollectionPipelines,
-        schemas: SchemaCollection,
-        queryOptions: QueryOptionsCollection<InferType<TEntity>>
+        container: SimpleContainer<CollectionDependencies<TEntity>>
     ) {
-        super(dbPlugin, schema, options, pipelines, schemas, queryOptions);
+        super(container);
 
         // Bind all methods in tags object
         this.tags.get = this.tags.get.bind(this);

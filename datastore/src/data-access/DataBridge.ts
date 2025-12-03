@@ -1,4 +1,3 @@
-import { CollectionOptions } from "../types";
 import { DatabaseDataAccessStrategy } from "./strategies/DatabaseDataAccessStrategy";
 import { IDataAccessStrategy } from "./types";
 import { MemoryPlugin } from "@routier/memory-plugin";
@@ -14,30 +13,28 @@ export class DataBridge<T extends {}> {
 
     private readonly signal: AbortSignal;
     private readonly strategy: IDataAccessStrategy<T>;
-    private readonly options: CollectionOptions;
 
-    private constructor(strategy: IDataAccessStrategy<T>, options: CollectionOptions) {
+    private constructor(strategy: IDataAccessStrategy<T>, signal: AbortSignal) {
         this.strategy = strategy;
-        this.signal = options.signal;
-        this.options = options;
+        this.signal = signal;
     }
 
-    private static createStrategy<T extends {}>(dbPlugin: IDbPlugin, schema: CompiledSchema<T>, options: CollectionOptions) {
+    private static createStrategy<T extends {}>(dbPlugin: IDbPlugin, schema: CompiledSchema<T>) {
         return new DatabaseDataAccessStrategy<T>(dbPlugin, schema);
     }
 
-    static create<T extends {}>(dbPlugin: IDbPlugin, schema: CompiledSchema<T>, options: CollectionOptions) {
-        const strategy = DataBridge.createStrategy<T>(dbPlugin, schema, options);
+    static create<T extends {}>(dbPlugin: IDbPlugin, schema: CompiledSchema<T>, signal: AbortSignal) {
+        const strategy = DataBridge.createStrategy<T>(dbPlugin, schema);
 
-        return new DataBridge<T>(strategy, options);
+        return new DataBridge<T>(strategy, signal);
     }
 
     bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackResult<BulkPersistResult>) {
-        this.strategy.bulkPersist(this.options, event, done);
+        this.strategy.bulkPersist(event, done);
     }
 
     query<TShape>(event: DbPluginQueryEvent<T, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>) {
-        this.strategy.query(this.options, event, done);
+        this.strategy.query(event, done);
     }
 
     subscribe<TShape, U>(event: DbPluginQueryEvent<T, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>) {

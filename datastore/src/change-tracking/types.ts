@@ -34,6 +34,26 @@ export interface IChangeTrackerStrategy<T extends {}> {
     getAttached(entity: InferType<T>): { doc: InferType<T>, changeType: EntityChangeType } | undefined;
 }
 
+export type TrackedEntity<T> = {
+    doc: T,
+    changeType: EntityChangeType
+}
+
+export interface IChangeTracker<T extends {}> extends IMap<IdType, TrackedEntity<T>> {
+    hasChanges(): boolean;
+}
+
+export interface IMap<TKey, TValue> {
+    set(key: TKey, value: TValue): void;
+    get(key: TKey): TValue | undefined;
+    has(key: TKey): boolean;
+    delete(key: TKey): boolean;
+    entries(): MapIterator<[TKey, TValue]>;
+    values(): MapIterator<TValue>;
+    size: number;
+    [Symbol.iterator](): IterableIterator<[TKey, TValue]>;
+}
+
 export type UpdatesPackage<T extends {}> = Map<IdType, {
     doc: InferType<T>;
     delta: {

@@ -1,27 +1,15 @@
 import { SelectionQueryable } from "./SelectionQueryable";
 import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
-import { QueryOptionsCollection, QueryOrdering } from "@routier/core/plugins";
+import { QueryOrdering } from "@routier/core/plugins";
 import { SubscribedTakeQueryable } from "./SubscribedTakeQueryable";
-import { ChangeTrackingType, CompiledSchema, IdType } from "@routier/core/schema";
-import { SchemaCollection } from "@routier/core/collections";
-import { QuerySource } from "./QuerySource";
-import { DataBridge } from "../data-access/DataBridge";
-import { ChangeTracker } from "../change-tracking/ChangeTracker";
+import { CollectionDependencies } from "../collections/types";
+import { SimpleContainer } from "../ioc/SimpleContainer";
 
 export class SubscribedSkippedQueryable<Root extends {}, Shape, U> extends SelectionQueryable<Root, Shape, U> {
 
-    constructor(
-        schema: CompiledSchema<Root>,
-        schemas: SchemaCollection,
-        scopedQueryOptions: QueryOptionsCollection<Root>,
-        changeTrackingType: ChangeTrackingType,
-        options: {
-            queryable?: QuerySource<Root, Shape>,
-            dataBridge?: DataBridge<Root>,
-            changeTracker?: ChangeTracker<Root>
-        }) {
-        super(schema, schemas, scopedQueryOptions, changeTrackingType, options);
+    constructor(container: SimpleContainer<CollectionDependencies<Root>>) {
+        super(container);
 
         this.where = this.where.bind(this);
         this.map = this.map.bind(this);
