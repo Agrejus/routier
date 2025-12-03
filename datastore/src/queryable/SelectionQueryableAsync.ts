@@ -3,13 +3,13 @@ import { SelectionQueryable } from "./SelectionQueryable";
 import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
 import { IdType } from "@routier/core/schema";
-import { CollectionDependencies } from "../collections/types";
+import { CollectionDependencies, RequestContext } from "../collections/types";
 import { SimpleContainer } from "../ioc/SimpleContainer";
 
 export class SelectionQueryableAsync<Root extends {}, Shape> extends SelectionQueryable<Root, Shape, void> {
 
-    constructor(container: SimpleContainer<CollectionDependencies<Root>>) {
-        super(container);
+    constructor(container: SimpleContainer<CollectionDependencies<Root>>, request: RequestContext<Root>) {
+        super(container, request);
 
         this.removeAsync = this.removeAsync.bind(this);
         this.toArrayAsync = this.toArrayAsync.bind(this);

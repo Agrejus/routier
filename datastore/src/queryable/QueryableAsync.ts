@@ -5,13 +5,13 @@ import { TakeQueryableAsync } from "./TakeQueryableAsync";
 import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
 import { QueryOrdering } from "@routier/core/plugins";
-import { CollectionDependencies } from "../collections/types";
+import { CollectionDependencies, RequestContext } from "../collections/types";
 import { SimpleContainer } from "../ioc/SimpleContainer";
 
 export class QueryableAsync<Root extends {}, Shape> extends SelectionQueryableAsync<Root, Shape> {
 
-    constructor(container: SimpleContainer<CollectionDependencies<Root>>) {
-        super(container);
+    constructor(container: SimpleContainer<CollectionDependencies<Root>>, request: RequestContext<Root>) {
+        super(container, request);
 
         this.where = this.where.bind(this);
         this.map = this.map.bind(this);
@@ -32,7 +32,6 @@ export class QueryableAsync<Root extends {}, Shape> extends SelectionQueryableAs
     }
 
     map<R extends Shape[keyof Shape] | Partial<Shape>>(expression: GenericFunction<Shape, R>) {
-
         this.setMapQueryOption(expression);
         return this.create(QueryableAsync<Root, R>);
     }

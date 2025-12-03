@@ -4,7 +4,7 @@ import { CallbackResult, PluginEventCallbackResult, PluginEventResult, PluginEve
 import { GenericFunction } from "@routier/core/types";
 import { Filter, ParamsFilter, toExpression } from "@routier/core/expressions";
 import { uuid } from "@routier/core/utilities";
-import { CollectionDependencies } from "../collections/types";
+import { CollectionDependencies, RequestContext } from "../collections/types";
 import { SimpleContainer } from "../ioc/SimpleContainer";
 
 export abstract class QuerySource<TRoot extends {}, TShape> {
@@ -29,38 +29,18 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
         return this.container.resolve("scopedQueryOptions");
     }
 
-    protected get request() {
-        return this.container.resolve("request");
-    }
+    protected readonly request: RequestContext<TRoot>;
+    protected readonly container: SimpleContainer<CollectionDependencies<TRoot>>;
 
-    // protected readonly queryOptions: QueryOptionsCollection<TShape>;
-
-    // protected isSubScribed: boolean = false;
-    // protected skipInitialQuery: boolean = false;
-    // protected readonly changeTrackingType: ChangeTrackingType;
-    protected readonly container: SimpleContainer<CollectionDependencies<TRoot>>
-
-    constructor(container: SimpleContainer<CollectionDependencies<TRoot>>) {
+    constructor(container: SimpleContainer<CollectionDependencies<TRoot>>, request: RequestContext<TRoot>) {
         this.container = container;
-
-        // Request needs to be registered by the caller, that way we don't need to check for null/undefined
-        // Same with queryOptions
-
-        // if (options?.queryable != null) {
-        //     this.isSubScribed = options.queryable.isSubScribed;
-        //     this.skipInitialQuery = options.queryable.skipInitialQuery;
-        //     this.queryOptions = options.queryable.queryOptions;
-        //     this.dataBridge = options.queryable.dataBridge;
-        //     this.changeTracker = options.queryable.changeTracker;
-        // } else {
-        //     this.queryOptions = new QueryOptionsCollection<TShape>();
-        // }
+        this.request = request
     }
 
     // Cannot change the root type, it comes from the collection type, only the resulting type (shape)
     protected create<Shape, TInstance extends QuerySource<TRoot, Shape>>(
-        Instance: new (container: SimpleContainer<CollectionDependencies<TRoot>>) => TInstance) {
-        return new Instance(this.container);
+        Instance: new (container: SimpleContainer<CollectionDependencies<TRoot>>, request: RequestContext<TRoot>) => TInstance) {
+        return new Instance(this.container, this.request);
     }
 
     private resolveQueryOptions<T>() {

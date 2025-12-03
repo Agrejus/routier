@@ -7,4 +7,4 @@ TODO:
     Sample App view subscriptions are continuoously running
     With the IoC container, there is the possiblity of queries overlapping when trying to use the same store in an async manner
         Need to test this
-    Tests lock up after using IoC container
+    Tests lock up after using IoC container when running in parallel

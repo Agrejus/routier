@@ -4,12 +4,12 @@ import { Filter, ParamsFilter, toExpression } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
 import { QueryOptionName } from "@routier/core/plugins";
 import { IdType } from "@routier/core/schema";
-import { CollectionDependencies } from "../collections/types";
+import { CollectionDependencies, RequestContext } from "../collections/types";
 import { SimpleContainer } from "../ioc/SimpleContainer";
 export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<Root, Shape> {
 
-    constructor(container: SimpleContainer<CollectionDependencies<Root>>) {
-        super(container);
+    constructor(container: SimpleContainer<CollectionDependencies<Root>>, request: RequestContext<Root>) {
+        super(container, request);
 
         this.remove = this.remove.bind(this);
         this.toArray = this.toArray.bind(this);

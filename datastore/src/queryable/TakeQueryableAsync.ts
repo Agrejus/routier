@@ -3,13 +3,13 @@ import { SelectionQueryableAsync } from "./SelectionQueryableAsync";
 import { SubscribedTakeQueryable } from "./SubscribedTakeQueryable";
 import { GenericFunction } from "@routier/core/types";
 import { QueryOrdering } from "@routier/core/plugins";
-import { CollectionDependencies } from "../collections/types";
+import { CollectionDependencies, RequestContext } from "../collections/types";
 import { SimpleContainer } from "../ioc/SimpleContainer";
 
 export class TakeQueryableAsync<Root extends {}, Shape> extends SelectionQueryableAsync<Root, Shape> {
 
-    constructor(container: SimpleContainer<CollectionDependencies<Root>>) {
-        super(container);
+    constructor(container: SimpleContainer<CollectionDependencies<Root>>, request: RequestContext<Root>) {
+        super(container, request);
 
         this.where = this.where.bind(this);
         this.map = this.map.bind(this);

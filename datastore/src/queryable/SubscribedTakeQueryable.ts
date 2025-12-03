@@ -2,13 +2,13 @@ import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { SelectionQueryable } from "./SelectionQueryable";
 import { GenericFunction } from "@routier/core/types";
 import { QueryOrdering } from "@routier/core/plugins";
-import { CollectionDependencies } from "../collections/types";
+import { CollectionDependencies, RequestContext } from "../collections/types";
 import { SimpleContainer } from "../ioc/SimpleContainer";
 
 export class SubscribedTakeQueryable<Root extends {}, Shape, U> extends SelectionQueryable<Root, Shape, U> {
 
-    constructor(container: SimpleContainer<CollectionDependencies<Root>>) {
-        super(container);
+    constructor(container: SimpleContainer<CollectionDependencies<Root>>, request: RequestContext<Root>) {
+        super(container, request);
 
         this.where = this.where.bind(this);
         this.map = this.map.bind(this);

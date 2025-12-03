@@ -879,6 +879,8 @@ describe("Product Tests", () => {
         });
 
         it("where + sort + toArrayAsync", async () => {
+
+            // FAILING -> returning object instead of a number
             const dataStore = factory();
             // Arrange
             await seedData(dataStore, () => dataStore.products, 200);
@@ -1582,6 +1584,7 @@ describe("Product Tests", () => {
 
         it('should not query first time when using defer', async () => {
 
+            // FAILING when running concurrently -> hanging
             const dataStore = factory();
 
             const cb = jest.fn();
@@ -2259,6 +2262,8 @@ describe("Product Tests", () => {
 
     describe('View Test', () => {
         it('history view should add a new record on update', async () => {
+
+            // FAILING when running concurrently, hanging
             const dataStore = factory();
             // Arrange
             const items = generateData(dataStore.products.schema, 2);
