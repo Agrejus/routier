@@ -37,7 +37,7 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                 }
 
                 const idProperties = this.schema.idProperties;
-                let query: QueryableAsync<InferType<TEntity>, InferType<TEntity>>;
+                let query: QueryableAsync<TEntity, TEntity>;
 
                 for (let i = 0, length = idProperties.length; i < length; i++) {
                     const idProperty = idProperties[i];

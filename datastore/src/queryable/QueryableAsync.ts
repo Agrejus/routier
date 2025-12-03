@@ -7,6 +7,7 @@ import { GenericFunction } from "@routier/core/types";
 import { QueryOrdering } from "@routier/core/plugins";
 import { CollectionDependencies } from "../collections/types";
 import { SimpleContainer } from "../ioc/SimpleContainer";
+import { InferType } from "@routier/core/schema";
 
 export class QueryableAsync<Root extends {}, Shape> extends SelectionQueryableAsync<Root, Shape> {
 
@@ -22,16 +23,16 @@ export class QueryableAsync<Root extends {}, Shape> extends SelectionQueryableAs
         this.subscribe = this.subscribe.bind(this);
     }
 
-    where(expression: Filter<Shape>): QueryableAsync<Root, Shape>;
-    where<P extends {}>(selector: ParamsFilter<Shape, P>, params: P): QueryableAsync<Root, Shape>;
-    where<P extends {} = never>(selector: ParamsFilter<Shape, P> | Filter<Shape>, params?: P) {
+    where(expression: Filter<InferType<Shape>>): QueryableAsync<Root, Shape>;
+    where<P extends {}>(selector: ParamsFilter<InferType<Shape>, P>, params: P): QueryableAsync<Root, Shape>;
+    where<P extends {} = never>(selector: ParamsFilter<InferType<Shape>, P> | Filter<InferType<Shape>>, params?: P) {
         this.setFiltersQueryOption(selector, params);
         // We don't need a params queryable.  Params are localized to the where clause and do not
         // matter to the rest of the query
         return this.create(QueryableAsync<Root, Shape>);
     }
 
-    map<R extends Shape[keyof Shape] | Partial<Shape>>(expression: GenericFunction<Shape, R>) {
+    map<R extends Shape[keyof Shape] | Partial<Shape>>(expression: GenericFunction<InferType<Shape>, R>) {
 
         this.setMapQueryOption(expression);
         return this.create(QueryableAsync<Root, R>);
@@ -47,12 +48,12 @@ export class QueryableAsync<Root extends {}, Shape> extends SelectionQueryableAs
         return this.create(TakeQueryableAsync<Root, Shape>);
     }
 
-    sort(expression: GenericFunction<Shape, Shape[keyof Shape]>) {
+    sort(expression: GenericFunction<InferType<Shape>, InferType<Shape>[keyof InferType<Shape>]>) {
         this.setSortQueryOption(expression, QueryOrdering.Ascending);
         return this.create(QueryableAsync<Root, Shape>);
     }
 
-    sortDescending(expression: GenericFunction<Shape, Shape[keyof Shape]>) {
+    sortDescending(expression: GenericFunction<InferType<Shape>, InferType<Shape>[keyof InferType<Shape>]>) {
         this.setSortQueryOption(expression, QueryOrdering.Descending);
         return this.create(QueryableAsync<Root, Shape>);
     }

@@ -3,7 +3,7 @@ import { QuerySource } from "./QuerySource";
 import { Filter, ParamsFilter, toExpression } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
 import { QueryOptionName } from "@routier/core/plugins";
-import { IdType } from "@routier/core/schema";
+import { IdType, InferType } from "@routier/core/schema";
 import { CollectionDependencies } from "../collections/types";
 import { SimpleContainer } from "../ioc/SimpleContainer";
 export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<Root, Shape> {
@@ -24,14 +24,14 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
         this.distinct = this.distinct.bind(this);
     }
 
-    remove(expression: Filter<Shape>, done: CallbackResult<never>): void;
-    remove<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<never>): void;
+    remove(expression: Filter<InferType<Shape>>, done: CallbackResult<never>): void;
+    remove<P extends {}>(expression: ParamsFilter<InferType<Shape>, P>, params: P, done: CallbackResult<never>): void;
     remove(done: CallbackResult<never>): void;
-    remove<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<never>, paramsOrDone?: P | CallbackResult<never>, done?: CallbackResult<never>): void {
+    remove<P extends {} = never>(doneOrExpression: Filter<InferType<Shape>> | ParamsFilter<InferType<Shape>, P> | CallbackResult<never>, paramsOrDone?: P | CallbackResult<never>, done?: CallbackResult<never>): void {
 
         if (done != null) {
             // params expression
-            const paramsFilter = doneOrExpression as ParamsFilter<Shape, P>;
+            const paramsFilter = doneOrExpression as ParamsFilter<InferType<Shape>, P>;
             const paramsData = paramsOrDone as P;
             this.setFiltersQueryOption(paramsFilter, paramsData);
             this._remove(done);
@@ -41,7 +41,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
         if (paramsOrDone != null) {
             // generic expression
             const d = paramsOrDone as CallbackResult<never>;
-            const genericFilter = doneOrExpression as Filter<Shape>;
+            const genericFilter = doneOrExpression as Filter<InferType<Shape>>;
             this.setFiltersQueryOption(genericFilter);
             this._remove(d);
             return
@@ -52,15 +52,15 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
         this._remove(d);
     }
 
-    toArray(done: CallbackResult<Shape[]>): U {
+    toArray(done: CallbackResult<InferType<Shape>[]>): U {
         this.getData(done);
-        return this.subscribeQuery<Shape[]>(done) as U;
+        return this.subscribeQuery<InferType<Shape>[]>(done) as U;
     }
 
-    first(expression: Filter<Shape>, done: CallbackResult<Shape>): U;
-    first<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<Shape>): U;
-    first(done: CallbackResult<Shape>): U;
-    first<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<Shape>, paramsOrDone?: P | CallbackResult<Shape>, done?: CallbackResult<Shape>): U {
+    first(expression: Filter<InferType<Shape>>, done: CallbackResult<InferType<Shape>>): U;
+    first<P extends {}>(expression: ParamsFilter<InferType<Shape>, P>, params: P, done: CallbackResult<InferType<Shape>>): U;
+    first(done: CallbackResult<InferType<Shape>>): U;
+    first<P extends {} = never>(doneOrExpression: Filter<InferType<Shape>> | ParamsFilter<InferType<Shape>, P> | CallbackResult<InferType<Shape>>, paramsOrDone?: P | CallbackResult<InferType<Shape>>, done?: CallbackResult<InferType<Shape>>): U {
 
         // Need to set the filter before we take one
         this._setQueryExpression({
@@ -71,7 +71,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
 
         this.request.queryOptions.add("take", 1); // ensure we only select 1 record
 
-        const shaper = (r: Shape[]) => {
+        const shaper = (r: InferType<Shape>[]) => {
             if (r.length === 0) {
                 return undefined
             }
@@ -100,8 +100,8 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
             d(Result.success(result));
         });
 
-        const d = done != null ? done : paramsOrDone != null ? paramsOrDone as CallbackResult<Shape> : doneOrExpression as CallbackResult<Shape>;
-        return this.subscribeQuery<Shape[]>((r) => {
+        const d = done != null ? done : paramsOrDone != null ? paramsOrDone as CallbackResult<InferType<Shape>> : doneOrExpression as CallbackResult<InferType<Shape>>;
+        return this.subscribeQuery<InferType<Shape>[]>((r) => {
 
             if (r.ok === Result.ERROR) {
                 d(r);
@@ -114,10 +114,10 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
         }) as U;
     }
 
-    firstOrUndefined(expression: Filter<Shape>, done: CallbackResult<Shape | undefined>): U;
-    firstOrUndefined<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<Shape | undefined>): U;
-    firstOrUndefined(done: CallbackResult<Shape | undefined>): U;
-    firstOrUndefined<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<Shape | undefined>, paramsOrDone?: P | CallbackResult<Shape | undefined>, done?: CallbackResult<Shape | undefined>): U {
+    firstOrUndefined(expression: Filter<InferType<Shape>>, done: CallbackResult<InferType<Shape> | undefined>): U;
+    firstOrUndefined<P extends {}>(expression: ParamsFilter<InferType<Shape>, P>, params: P, done: CallbackResult<InferType<Shape> | undefined>): U;
+    firstOrUndefined(done: CallbackResult<InferType<Shape> | undefined>): U;
+    firstOrUndefined<P extends {} = never>(doneOrExpression: Filter<InferType<Shape>> | ParamsFilter<InferType<Shape>, P> | CallbackResult<InferType<Shape> | undefined>, paramsOrDone?: P | CallbackResult<InferType<Shape> | undefined>, done?: CallbackResult<InferType<Shape> | undefined>): U {
 
         // Need to set the filter before we take one
         this._setQueryExpression({
@@ -128,7 +128,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
 
         this.request.queryOptions.add("take", 1); // ensure we only select 1 record
 
-        this._query<P, Shape>({
+        this._query<P, InferType<Shape>>({
             doneOrSelector: doneOrExpression,
             done,
             paramsOrDone
@@ -148,8 +148,8 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
             d(Result.success(r.data[0]));
         });
 
-        const d = done != null ? done : paramsOrDone != null ? paramsOrDone as CallbackResult<Shape> : doneOrExpression as CallbackResult<Shape>;
-        return this.subscribeQuery<Shape[]>((r) => {
+        const d = done != null ? done : paramsOrDone != null ? paramsOrDone as CallbackResult<InferType<Shape>> : doneOrExpression as CallbackResult<InferType<Shape>>;
+        return this.subscribeQuery<InferType<Shape>[]>((r) => {
             if (r.ok === Result.ERROR) {
                 d(r);
                 return;
@@ -164,10 +164,10 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
         }) as U;
     }
 
-    some(expression: Filter<Shape>, done: CallbackResult<boolean>): U;
-    some<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<boolean>): U;
+    some(expression: Filter<InferType<Shape>>, done: CallbackResult<boolean>): U;
+    some<P extends {}>(expression: ParamsFilter<InferType<Shape>, P>, params: P, done: CallbackResult<boolean>): U;
     some(done: CallbackResult<boolean>): U;
-    some<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<boolean>, paramsOrDone?: P | CallbackResult<boolean>, done?: CallbackResult<boolean>): U {
+    some<P extends {} = never>(doneOrExpression: Filter<InferType<Shape>> | ParamsFilter<InferType<Shape>, P> | CallbackResult<boolean>, paramsOrDone?: P | CallbackResult<boolean>, done?: CallbackResult<boolean>): U {
 
         // Need to set the filter before we take one
         this._setQueryExpression({
@@ -178,7 +178,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
 
         this.request.queryOptions.add("take", 1); // ensure we only select 1 record
 
-        const shaper = (r: Shape[]) => r.length > 0;
+        const shaper = (r: InferType<Shape>[]) => r.length > 0;
 
         this._query({
             doneOrSelector: doneOrExpression,
@@ -198,9 +198,9 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
         return this.subscribeQuery<boolean>(d) as U;
     }
 
-    every(expression: Filter<Shape>, done: CallbackResult<boolean>): U;
-    every<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<boolean>): U;
-    every<P extends {} = never>(expression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<boolean>, paramsOrDone?: P | CallbackResult<boolean>, done?: CallbackResult<boolean>): U {
+    every(expression: Filter<InferType<Shape>>, done: CallbackResult<boolean>): U;
+    every<P extends {}>(expression: ParamsFilter<InferType<Shape>, P>, params: P, done: CallbackResult<boolean>): U;
+    every<P extends {} = never>(expression: Filter<InferType<Shape>> | ParamsFilter<InferType<Shape>, P> | CallbackResult<boolean>, paramsOrDone?: P | CallbackResult<boolean>, done?: CallbackResult<boolean>): U {
 
         // Need to select everything
         const coalescedDone = done != null ? done : (paramsOrDone as CallbackResult<boolean>);
@@ -217,7 +217,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
             if (done != null) {
                 // params query
                 const params = paramsOrDone as P
-                const paramsExpression = expression as ParamsFilter<Shape, P>;
+                const paramsExpression = expression as ParamsFilter<InferType<Shape>, P>;
                 const result = r.data.filter(w => paramsExpression([w, params]));
 
                 d(Result.success(result.length === r.data.length));
@@ -225,22 +225,22 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
             }
 
             // regular query
-            const regularExpression = expression as Filter<Shape>;
+            const regularExpression = expression as Filter<InferType<Shape>>;
             const result = r.data.filter(regularExpression);
 
             d(Result.success(result.length === r.data.length));
         }) as U;
     }
 
-    min(selector: GenericFunction<Shape, number>, done: CallbackResult<number>): U {
+    min(selector: GenericFunction<InferType<Shape>, number>, done: CallbackResult<number>): U {
         return this._aggregateFunction(selector, "min", done);
     }
 
-    max(selector: GenericFunction<Shape, number>, done: CallbackResult<number>): U {
+    max(selector: GenericFunction<InferType<Shape>, number>, done: CallbackResult<number>): U {
         return this._aggregateFunction(selector, "max", done);
     }
 
-    sum(selector: GenericFunction<Shape, number>, done: CallbackResult<number>): U {
+    sum(selector: GenericFunction<InferType<Shape>, number>, done: CallbackResult<number>): U {
         return this._aggregateFunction(selector, "sum", done);
     }
 
@@ -252,26 +252,26 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
         return this.subscribeQuery<number>(done) as U;
     }
 
-    distinct(done: CallbackResult<Shape[]>): U {
+    distinct(done: CallbackResult<InferType<Shape>[]>): U {
 
         this.request.queryOptions.add("distinct", true);
 
-        this.getData<Shape[]>(done);
+        this.getData<InferType<Shape>[]>(done);
 
-        return this.subscribeQuery<Shape[]>(done) as U;
+        return this.subscribeQuery<InferType<Shape>[]>(done) as U;
     }
 
-    toGroup<R extends Shape[keyof Shape] & IdType>(selector: GenericFunction<Shape, R>, done: CallbackResult<Record<R, Shape[]>>): U {
+    toGroup<R extends InferType<Shape>[keyof InferType<Shape>] & IdType>(selector: GenericFunction<InferType<Shape>, R>, done: CallbackResult<Record<R, InferType<Shape>[]>>): U {
 
         this.setGroupQueryOption(selector);
 
-        this.getData<Record<R, Shape[]>>(done);
+        this.getData<Record<R, InferType<Shape>[]>>(done);
 
-        return this.subscribeQuery<Record<R, Shape[]>>(done) as U;
+        return this.subscribeQuery<Record<R, InferType<Shape>[]>>(done) as U;
     }
 
     private _setQueryExpression<P extends {}, R extends {}>(options: {
-        doneOrSelector: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<R>,
+        doneOrSelector: Filter<InferType<Shape>> | ParamsFilter<InferType<Shape>, P> | CallbackResult<R>,
         paramsOrDone?: P | CallbackResult<R>,
         done?: CallbackResult<R>
     }) {
@@ -300,32 +300,32 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
     }
 
     private _query<P extends {}, R extends {}>(options: {
-        doneOrSelector: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<R>,
+        doneOrSelector: Filter<InferType<Shape>> | ParamsFilter<InferType<Shape>, P> | CallbackResult<R>,
         paramsOrDone?: P | CallbackResult<R>,
         done?: CallbackResult<R>
-    }, resolve: (done: CallbackResult<R>, data: ResultType<Shape[]>, error?: any) => void) {
+    }, resolve: (done: CallbackResult<R>, data: ResultType<InferType<Shape>[]>, error?: any) => void) {
 
         const { doneOrSelector: doneOrExpression, done, paramsOrDone } = options;
 
         if (done == null && paramsOrDone == null) {
             // empty query
             const d = doneOrExpression as CallbackResult<R>;
-            this.getData<Shape[]>((r) => resolve(d, r));
+            this.getData<InferType<Shape>[]>((r) => resolve(d, r));
             return;
         }
 
         if (done != null) {
             // params query
-            this.getData<Shape[]>((r) => resolve(done, r));
+            this.getData<InferType<Shape>[]>((r) => resolve(done, r));
             return;
         }
 
         // regular query
         const d = paramsOrDone as CallbackResult<R>;
-        this.getData<Shape[]>((r) => resolve(d, r));
+        this.getData<InferType<Shape>[]>((r) => resolve(d, r));
     }
 
-    private _aggregateFunction(selector: GenericFunction<Shape, number>, name: QueryOptionName, done: CallbackResult<number>) {
+    private _aggregateFunction(selector: GenericFunction<InferType<Shape>, number>, name: QueryOptionName, done: CallbackResult<number>) {
 
         const fields = this.getFields(selector);
         this.request.queryOptions.add("map", { selector: selector as any, fields });

@@ -6,6 +6,7 @@ import { SubscribedSkippedQueryable } from "./SubscribedSkippedQueryable";
 import { SubscribedTakeQueryable } from "./SubscribedTakeQueryable";
 import { CollectionDependencies } from "../collections/types";
 import { SimpleContainer } from "../ioc/SimpleContainer";
+import { InferType } from "@routier/core/schema";
 
 export class SubscribedQueryable<Root extends {}, Shape, U> extends SelectionQueryable<Root, Shape, U> {
 
@@ -19,16 +20,16 @@ export class SubscribedQueryable<Root extends {}, Shape, U> extends SelectionQue
         this.sortDescending = this.sortDescending.bind(this);
     }
 
-    where(expression: Filter<Shape>): SubscribedQueryable<Root, Shape, U>;
-    where<P extends {}>(selector: ParamsFilter<Shape, P>, params: P): SubscribedQueryable<Root, Shape, U>;
-    where<P extends {} = never>(selector: ParamsFilter<Shape, P> | Filter<Shape>, params?: P) {
+    where(expression: Filter<InferType<Shape>>): SubscribedQueryable<Root, Shape, U>;
+    where<P extends {}>(selector: ParamsFilter<InferType<Shape>, P>, params: P): SubscribedQueryable<Root, Shape, U>;
+    where<P extends {} = never>(selector: ParamsFilter<InferType<Shape>, P> | Filter<InferType<Shape>>, params?: P) {
         this.setFiltersQueryOption(selector, params);
         // We don't need a params queryable.  Params are localized to the where clause and do not
         // matter to the rest of the query
         return this.create(SubscribedQueryable<Root, Shape, U>);
     }
 
-    map<R extends Shape[keyof Shape] | Partial<Shape>>(expression: GenericFunction<Shape, R>) {
+    map<R extends Shape[keyof Shape] | Partial<Shape>>(expression: GenericFunction<InferType<Shape>, R>) {
 
         this.setMapQueryOption(expression);
         return this.create(SubscribedQueryable<Root, R, U>);
@@ -45,12 +46,12 @@ export class SubscribedQueryable<Root extends {}, Shape, U> extends SelectionQue
         return this.create(SubscribedTakeQueryable<Root, Shape, U>);
     }
 
-    sort(expression: GenericFunction<Shape, Shape[keyof Shape]>) {
+    sort(expression: GenericFunction<InferType<Shape>, InferType<Shape>[keyof InferType<Shape>]>) {
         this.setSortQueryOption(expression, QueryOrdering.Ascending);
         return this.create(SubscribedQueryable<Root, Shape, U>);
     }
 
-    sortDescending(expression: GenericFunction<Shape, Shape[keyof Shape]>) {
+    sortDescending(expression: GenericFunction<InferType<Shape>, InferType<Shape>[keyof InferType<Shape>]>) {
         this.setSortQueryOption(expression, QueryOrdering.Descending);
         return this.create(SubscribedQueryable<Root, Shape, U>);
     }

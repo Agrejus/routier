@@ -4,6 +4,7 @@ import { GenericFunction } from "@routier/core/types";
 import { QueryOrdering } from "@routier/core/plugins";
 import { CollectionDependencies } from "../collections/types";
 import { SimpleContainer } from "../ioc/SimpleContainer";
+import { InferType } from "@routier/core/schema";
 
 export class SubscribedTakeQueryable<Root extends {}, Shape, U> extends SelectionQueryable<Root, Shape, U> {
 
@@ -16,9 +17,9 @@ export class SubscribedTakeQueryable<Root extends {}, Shape, U> extends Selectio
         this.sortDescending = this.sortDescending.bind(this);
     }
 
-    where(expression: Filter<Shape>): SubscribedTakeQueryable<Root, Shape, U>;
-    where<P extends {}>(selector: ParamsFilter<Shape, P>, params: P): SubscribedTakeQueryable<Root, Shape, U>;
-    where<P extends {} = never>(selector: ParamsFilter<Shape, P> | Filter<Shape>, params?: P) {
+    where(expression: Filter<InferType<Shape>>): SubscribedTakeQueryable<Root, Shape, U>;
+    where<P extends {}>(selector: ParamsFilter<InferType<Shape>, P>, params: P): SubscribedTakeQueryable<Root, Shape, U>;
+    where<P extends {} = never>(selector: ParamsFilter<InferType<Shape>, P> | Filter<InferType<Shape>>, params?: P) {
         this.setFiltersQueryOption(selector, params);
         return this.create(SubscribedTakeQueryable<Root, Shape, U>);
     }
@@ -28,12 +29,12 @@ export class SubscribedTakeQueryable<Root extends {}, Shape, U> extends Selectio
         return this.create(SubscribedTakeQueryable<Root, R, U>);
     }
 
-    sort(expression: GenericFunction<Shape, Shape[keyof Shape]>) {
+    sort(expression: GenericFunction<InferType<Shape>, InferType<Shape>[keyof InferType<Shape>]>) {
         this.setSortQueryOption(expression, QueryOrdering.Ascending);
         return this.create(SubscribedTakeQueryable<Root, Shape, U>);
     }
 
-    sortDescending(expression: GenericFunction<Shape, Shape[keyof Shape]>) {
+    sortDescending(expression: GenericFunction<InferType<Shape>, InferType<Shape>[keyof InferType<Shape>]>) {
         this.setSortQueryOption(expression, QueryOrdering.Descending);
         return this.create(SubscribedTakeQueryable<Root, Shape, U>);
     }

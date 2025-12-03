@@ -113,7 +113,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
         });
     }
 
-    protected getSortPropertyName(selector: GenericFunction<TShape, TShape[keyof TShape]>) {
+    protected getSortPropertyName(selector: GenericFunction<InferType<TShape>, InferType<TShape>[keyof InferType<TShape>]>) {
         const stringified = selector.toString();
 
         if (stringified.includes("=>") === false) {
@@ -265,7 +265,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
         }
     }
 
-    protected setFiltersQueryOption<P extends {}>(selector: ParamsFilter<TShape, P> | Filter<TShape>, params?: P) {
+    protected setFiltersQueryOption<P extends {}>(selector: ParamsFilter<InferType<TShape>, P> | Filter<InferType<TShape>>, params?: P) {
 
         const expression = toExpression(this.schema, selector, params);
 
@@ -299,7 +299,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
         this.request.queryOptions.add("group", { selector: selector as GenericFunction<any, any>, key, fields });
     }
 
-    protected setSortQueryOption(selector: GenericFunction<TShape, TShape[keyof TShape]>, direction: QueryOrdering) {
+    protected setSortQueryOption(selector: GenericFunction<InferType<TShape>, InferType<TShape>[keyof InferType<TShape>]>, direction: QueryOrdering) {
         const propertyName = this.getSortPropertyName(selector);
 
         this.request.queryOptions.add("sort", { selector: selector as any, direction, propertyName });

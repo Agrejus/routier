@@ -309,7 +309,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      */
     subscribe() {
         this.container.beginScope();
-        const queryable = new Queryable<InferType<TEntity>, InferType<TEntity>, () => void>(this.container as any);
+        const queryable = new Queryable<TEntity, TEntity, () => void>(this.container);
         return queryable.subscribe();
     }
 
@@ -318,7 +318,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      */
     defer() {
         this.container.beginScope();
-        const queryable = new Queryable<InferType<TEntity>, InferType<TEntity>, () => void>(this.container as any);
+        const queryable = new Queryable<TEntity, TEntity, () => void>(this.container);
         return queryable.defer();
     }
 
@@ -327,22 +327,22 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @param expression Filter expression to apply to the collection
      * @returns QueryableAsync instance for chaining additional query operations
      */
-    where(expression: Filter<InferType<TEntity>>): QueryableAsync<InferType<TEntity>, InferType<TEntity>>;
+    where(expression: Filter<InferType<TEntity>>): QueryableAsync<TEntity, TEntity>;
     /**
      * Creates a query with a parameterized filter to filter entities in the collection.
      * @param selector Parameterized filter function
      * @param params Parameters to pass to the filter function
      * @returns QueryableAsync instance for chaining additional query operations
      */
-    where<P extends {}>(selector: ParamsFilter<InferType<TEntity>, P>, params: P): QueryableAsync<InferType<TEntity>, InferType<TEntity>>;
+    where<P extends {}>(selector: ParamsFilter<InferType<TEntity>, P>, params: P): QueryableAsync<TEntity, TEntity>;
     where<P extends {} = never>(selector: ParamsFilter<InferType<TEntity>, P> | Filter<InferType<TEntity>>, params?: P) {
         this.container.beginScope();
         if (params == null) {
-            const queryable = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
+            const queryable = new QueryableAsync<TEntity, TEntity>(this.container);
             return queryable.where(selector as Filter<InferType<TEntity>>);
         }
 
-        const queryable = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
+        const queryable = new QueryableAsync<TEntity, TEntity>(this.container);
 
         return queryable.where(selector as ParamsFilter<InferType<TEntity>, P>, params);
     }
@@ -354,7 +354,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      */
     sort(selector: EntityMap<InferType<TEntity>, InferType<TEntity>[keyof InferType<TEntity>]>) {
         this.container.beginScope();
-        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
+        const result = new QueryableAsync<TEntity, TEntity>(this.container);
         return result.sort(selector);
     }
 
@@ -365,7 +365,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      */
     sortDescending(selector: EntityMap<InferType<TEntity>, InferType<TEntity>[keyof InferType<TEntity>]>) {
         this.container.beginScope();
-        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
+        const result = new QueryableAsync<TEntity, TEntity>(this.container);
 
         return result.sortDescending(selector);
     }
@@ -373,7 +373,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     toGroup<R extends InferType<TEntity>[keyof InferType<TEntity>] & IdType>(selector: GenericFunction<InferType<TEntity>, R>, done: CallbackResult<Record<R, InferType<TEntity>[]>>) {
 
         this.container.beginScope();
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
+        const result = new SelectionQueryableAsync<TEntity, TEntity>(this.container);
         return result.toGroup(selector, done);
     }
 
@@ -386,9 +386,9 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @param expression Function that transforms each entity to the new shape
      * @returns QueryableAsync instance for chaining additional query operations
      */
-    map<R extends InferType<TEntity>[keyof InferType<TEntity>] | {}>(expression: EntityMap<InferType<TEntity>, R>) {
+    map<R extends TEntity[keyof TEntity] | {}>(expression: EntityMap<InferType<TEntity>, R>) {
         this.container.beginScope();
-        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
+        const result = new QueryableAsync<TEntity, TEntity>(this.container);
         return result.map(expression);
     }
 
@@ -399,7 +399,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      */
     skip(amount: number) {
         this.container.beginScope();
-        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
+        const result = new QueryableAsync<TEntity, TEntity>(this.container);
         return result.skip(amount);
     }
 
@@ -410,7 +410,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      */
     take(amount: number) {
         this.container.beginScope();
-        const result = new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
+        const result = new QueryableAsync<TEntity, TEntity>(this.container);
         return result.take(amount);
     }
 
@@ -421,7 +421,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      */
     toQueryable() {
         this.container.beginScope();
-        return new QueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
+        return new QueryableAsync<TEntity, TEntity>(this.container);
     }
 
     /**
@@ -430,7 +430,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      */
     toArray(done: CallbackResult<InferType<TEntity>[]>) {
         this.container.beginScope();
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.container as any);
+        const result = new SelectionQueryable<TEntity, TEntity, void>(this.container);
         return result.toArray(done);
     }
 
@@ -440,7 +440,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      */
     toArrayAsync(): Promise<InferType<TEntity>[]> {
         this.container.beginScope();
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
+        const result = new SelectionQueryableAsync<TEntity, TEntity>(this.container);
         return result.toArrayAsync();
     }
 
@@ -465,7 +465,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     first<P extends {} = never>(doneOrExpression: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P> | CallbackResult<InferType<TEntity>>, paramsOrDone?: P | CallbackResult<InferType<TEntity>>, done?: CallbackResult<InferType<TEntity>>) {
         debugger;
         this.container.beginScope();
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.container as any);
+        const result = new SelectionQueryable<TEntity, TEntity, void>(this.container);
 
         if (paramsOrDone == null) {
             const d = doneOrExpression as CallbackResult<InferType<TEntity>>;
@@ -505,7 +505,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     firstAsync<P extends {} = never>(expression?: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P>, params?: P): Promise<InferType<TEntity>> {
 
         this.container.beginScope();
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
+        const result = new SelectionQueryableAsync<TEntity, TEntity>(this.container);
 
         if (params == null && expression == null) {
             return result.firstAsync();
@@ -542,7 +542,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     firstOrUndefined<P extends {} = never>(doneOrExpression: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P> | CallbackResult<InferType<TEntity> | undefined>, paramsOrDone?: P | CallbackResult<InferType<TEntity> | undefined>, done?: CallbackResult<InferType<TEntity> | undefined>) {
 
         this.container.beginScope();
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.container as any);
+        const result = new SelectionQueryable<TEntity, TEntity, void>(this.container);
 
         if (paramsOrDone == null) {
             const d = doneOrExpression as CallbackResult<InferType<TEntity> | undefined>;
@@ -582,7 +582,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     firstOrUndefinedAsync<P extends {} = never>(expression?: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P>, params?: P): Promise<InferType<TEntity> | undefined> {
 
         this.container.beginScope();
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
+        const result = new SelectionQueryableAsync<TEntity, TEntity>(this.container);
 
         if (params == null && expression == null) {
             return result.firstOrUndefinedAsync();
@@ -619,7 +619,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     some<P extends {} = never>(doneOrExpression: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P> | CallbackResult<boolean>, paramsOrDone?: P | CallbackResult<boolean>, done?: CallbackResult<boolean>) {
 
         this.container.beginScope();
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.container as any);
+        const result = new SelectionQueryable<TEntity, TEntity, void>(this.container);
 
         if (paramsOrDone == null) {
             const d = doneOrExpression as CallbackResult<boolean>;
@@ -659,7 +659,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     someAsync<P extends {} = never>(expression?: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P>, params?: P): Promise<boolean> {
 
         this.container.beginScope();
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
+        const result = new SelectionQueryableAsync<TEntity, TEntity>(this.container);
 
         if (params == null && expression == null) {
             return result.someAsync();
@@ -692,7 +692,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     every<P extends {} = never>(expression: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P> | CallbackResult<boolean>, paramsOrDone: P | CallbackResult<boolean>, done?: CallbackResult<boolean>) {
 
         this.container.beginScope();
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.container as any);
+        const result = new SelectionQueryable<TEntity, TEntity, void>(this.container);
 
         if (done != null) {
             const d = done as CallbackResult<boolean>;
@@ -723,7 +723,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     everyAsync<P extends {} = never>(expression?: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P>, params?: P): Promise<boolean> {
 
         this.container.beginScope();
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
+        const result = new SelectionQueryableAsync<TEntity, TEntity>(this.container);
 
         if (params != null) {
             const e = expression as ParamsFilter<InferType<TEntity>, P>;
@@ -743,7 +743,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     min(selector: GenericFunction<InferType<TEntity>, number>, done: CallbackResult<number>): void {
 
         this.container.beginScope();
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.container as any);
+        const result = new SelectionQueryable<TEntity, TEntity, void>(this.container);
 
         return result.min(selector as any, done);
     }
@@ -756,7 +756,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     minAsync(selector: GenericFunction<InferType<TEntity>, number>): Promise<number> {
 
         this.container.beginScope();
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
+        const result = new SelectionQueryableAsync<TEntity, TEntity>(this.container);
 
         return result.minAsync(selector as any);
     }
@@ -769,7 +769,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     max(selector: GenericFunction<InferType<TEntity>, number>, done: CallbackResult<number>): void {
 
         this.container.beginScope();
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.container as any);
+        const result = new SelectionQueryable<TEntity, TEntity, void>(this.container);
 
         return result.max(selector as any, done);
     }
@@ -782,7 +782,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     maxAsync(selector: GenericFunction<InferType<TEntity>, number>): Promise<number> {
 
         this.container.beginScope();
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
+        const result = new SelectionQueryableAsync<TEntity, TEntity>(this.container);
 
         return result.maxAsync(selector as any);
     }
@@ -795,7 +795,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     sum(selector: GenericFunction<InferType<TEntity>, number>, done: CallbackResult<number>): void {
 
         this.container.beginScope();
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.container as any);
+        const result = new SelectionQueryable<TEntity, TEntity, void>(this.container);
 
         return result.sum(selector as any, done);
     }
@@ -808,7 +808,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     sumAsync(selector: GenericFunction<InferType<TEntity>, number>): Promise<number> {
 
         this.container.beginScope();
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
+        const result = new SelectionQueryableAsync<TEntity, TEntity>(this.container);
 
         return result.sumAsync(selector as any);
     }
@@ -820,7 +820,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     count(done: CallbackResult<number>): void {
 
         this.container.beginScope();
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.container as any);
+        const result = new SelectionQueryable<TEntity, TEntity, void>(this.container);
 
         return result.count(done);
     }
@@ -832,7 +832,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     countAsync(): Promise<number> {
 
         this.container.beginScope();
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
+        const result = new SelectionQueryableAsync<TEntity, TEntity>(this.container);
 
         return result.countAsync();
     }
@@ -844,7 +844,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     distinct(done: CallbackResult<InferType<TEntity>[]>): void {
 
         this.container.beginScope();
-        const result = new SelectionQueryable<InferType<TEntity>, InferType<TEntity>, void>(this.container as any);
+        const result = new SelectionQueryable<TEntity, TEntity, void>(this.container);
 
         return result.distinct(done);
     }
@@ -856,7 +856,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     distinctAsync(): Promise<InferType<TEntity>[]> {
 
         this.container.beginScope();
-        const result = new SelectionQueryableAsync<InferType<TEntity>, InferType<TEntity>>(this.container as any);
+        const result = new SelectionQueryableAsync<TEntity, TEntity>(this.container);
 
         return result.distinctAsync();
     }
