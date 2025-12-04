@@ -5,11 +5,10 @@ import { GenericFunction } from "@routier/core/types";
 import { QueryOptionName } from "@routier/core/plugins";
 import { IdType } from "@routier/core/schema";
 import { CollectionDependencies, RequestContext } from "../collections/types";
-import { SimpleContainer } from "../ioc/SimpleContainer";
 export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<Root, Shape> {
 
-    constructor(container: SimpleContainer<CollectionDependencies<Root>>, request: RequestContext<Root>) {
-        super(container, request);
+    constructor(dependencies: CollectionDependencies<Root>, request: RequestContext<Root>) {
+        super(dependencies, request);
 
         this.remove = this.remove.bind(this);
         this.toArray = this.toArray.bind(this);
@@ -286,7 +285,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
             // params query
             const selector = doneOrExpression as Filter<Shape> | ParamsFilter<Shape, {}>;
             const params = paramsOrDone as P;
-            const expression = toExpression(this.schema, selector, params);
+            const expression = toExpression(this.dependencies.schema, selector, params);
 
             this.request.queryOptions.add("filter", { filter: selector as any, expression, params });
             return;
@@ -294,7 +293,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
 
         // regular query
         const selector = doneOrExpression as Filter<Shape>;
-        const expression = toExpression(this.schema, selector);
+        const expression = toExpression(this.dependencies.schema, selector);
 
         this.request.queryOptions.add("filter", { filter: selector as any, expression });
     }

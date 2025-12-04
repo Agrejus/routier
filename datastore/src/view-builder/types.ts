@@ -1,10 +1,11 @@
 import { View } from "../views/View";
-import { SimpleContainer } from "../ioc/SimpleContainer";
-import { ViewDependencies } from "../views/types";
+import { CollectionDependencies } from "../collections/types";
+import { Derive } from "../views/types";
 
 export type ViewInstanceCreator<
     TEntity extends {},
     TCollection extends View<TEntity>
 > = new (
-    container: SimpleContainer<ViewDependencies<TEntity>>
+    dependencies: CollectionDependencies<TEntity>,
+    derive: Derive<TEntity>
 ) => TCollection;

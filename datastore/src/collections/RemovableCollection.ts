@@ -1,15 +1,14 @@
 import { CollectionBase } from './CollectionBase';
 import { InferType } from "@routier/core/schema";
 import { CallbackResult, Result } from "@routier/core/results";
-import { SimpleContainer } from "../ioc/SimpleContainer";
 import { CollectionDependencies } from "./types";
 
 export class RemovableCollection<TEntity extends {}> extends CollectionBase<TEntity> {
 
     constructor(
-        container: SimpleContainer<CollectionDependencies<TEntity>>
+        dependencies: CollectionDependencies<TEntity>
     ) {
-        super(container);
+        super(dependencies);
 
         // Bind all public methods to ensure 'this' context is preserved
         this.remove = this.remove.bind(this);
@@ -25,7 +24,7 @@ export class RemovableCollection<TEntity extends {}> extends CollectionBase<TEnt
      */
     remove(entities: InferType<TEntity>[], done: CallbackResult<InferType<TEntity>[]>) {
         const tag = this.getAndDestroyTag();
-        this.changeTracker.remove(entities, tag, done);
+        this.dependencies.changeTracker.remove(entities, tag, done);
     }
 
     /**
@@ -45,10 +44,10 @@ export class RemovableCollection<TEntity extends {}> extends CollectionBase<TEnt
      */
     removeAll(done: (error?: any) => void) {
         const tag = this.getAndDestroyTag();
-        this.changeTracker.removeByQuery({
+        this.dependencies.changeTracker.removeByQuery({
             changeTracking: false,
-            options: this.scopedQueryOptions as any,
-            schema: this.schema
+            options: this.dependencies.scopedQueryOptions as any,
+            schema: this.dependencies.schema
         }, tag, done);
     }
 

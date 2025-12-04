@@ -1,16 +1,14 @@
 import { InferType } from '@routier/core/schema';
 import { CollectionInstanceCreator } from './types';
-import { QueryOptionsCollection } from '@routier/core/plugins';
 import { ImmutableCollection } from '../collections/ImmutableCollection';
 import { ReadonlyCollection } from '../collections/ReadonlyCollection';
 import { DiffCollection } from '../collections/DiffCollection';
 import { Filter, ParamsFilter, toExpression } from '@routier/core/expressions';
 import { CollectionBase } from '../collections/CollectionBase';
-import { SimpleContainer } from '../ioc/SimpleContainer';
 import { CollectionDependencies } from '../collections/types';
 
 type CollectionBuilderProps<TEntity extends {}, TCollection extends CollectionBase<TEntity>> = {
-    container: SimpleContainer<CollectionDependencies<TEntity>>;
+    dependencies: CollectionDependencies<TEntity>;
     instanceCreator: CollectionInstanceCreator<TEntity, TCollection>;
     onCollectionCreated: (collection: CollectionBase<TEntity>) => void;
 }
@@ -18,10 +16,10 @@ export class CollectionBuilder<TEntity extends {}, TCollection extends Collectio
 
     private _onCollectionCreated: (collection: CollectionBase<TEntity>) => void;
     private instanceCreator: CollectionInstanceCreator<TEntity, TCollection>;
-    private container: SimpleContainer<CollectionDependencies<TEntity>>;
+    private dependencies: CollectionDependencies<TEntity>;
 
     constructor(props: CollectionBuilderProps<TEntity, TCollection>) {
-        this.container = props.container;
+        this.dependencies = props.dependencies;
         this._onCollectionCreated = props.onCollectionCreated;
         this.instanceCreator = props.instanceCreator;
     }
@@ -30,7 +28,7 @@ export class CollectionBuilder<TEntity extends {}, TCollection extends Collectio
         return new CollectionBuilder<TEntity, ImmutableCollection<TEntity>>({
             onCollectionCreated: this._onCollectionCreated,
             instanceCreator: ImmutableCollection,
-            container: this.container
+            dependencies: this.dependencies
         });
     }
 
@@ -38,7 +36,7 @@ export class CollectionBuilder<TEntity extends {}, TCollection extends Collectio
         return new CollectionBuilder<TEntity, DiffCollection<TEntity>>({
             onCollectionCreated: this._onCollectionCreated,
             instanceCreator: DiffCollection,
-            container: this.container
+            dependencies: this.dependencies
         });
     }
 
@@ -76,21 +74,16 @@ export class CollectionBuilder<TEntity extends {}, TCollection extends Collectio
     scope<P extends {}>(selector: ParamsFilter<InferType<TEntity>, P>, params: P): CollectionBuilder<TEntity, TCollection>;
     scope<P extends {} = never>(selector: ParamsFilter<InferType<TEntity>, P> | Filter<InferType<TEntity>>, params?: P): CollectionBuilder<TEntity, TCollection> {
 
-        const schema = this.container.resolve("schema");
+        const schema = this.dependencies.schema
 
         const expression = toExpression(schema, selector, params);
 
-        const scopedQueryOptions = new QueryOptionsCollection<TEntity>();
-
-        scopedQueryOptions.add("filter", { filter: selector as Filter<TEntity> | ParamsFilter<TEntity, {}>, expression, params });
-
-        // Re-register (overwrite)
-        this.container.singleton("scopedQueryOptions", () => scopedQueryOptions);
+        this.dependencies.scopedQueryOptions.add("filter", { filter: selector as Filter<TEntity> | ParamsFilter<TEntity, {}>, expression, params });
 
         return new CollectionBuilder<TEntity, TCollection>({
             onCollectionCreated: this._onCollectionCreated,
             instanceCreator: this.instanceCreator,
-            container: this.container
+            dependencies: this.dependencies
         });
     }
 
@@ -98,17 +91,17 @@ export class CollectionBuilder<TEntity extends {}, TCollection extends Collectio
         return new CollectionBuilder<TEntity, ReadonlyCollection<TEntity>>({
             onCollectionCreated: this._onCollectionCreated,
             instanceCreator: ReadonlyCollection,
-            container: this.container
+            dependencies: this.dependencies
         });
     }
 
     create(): TCollection;
-    create<TExtension extends TCollection>(extend: (i: CollectionInstanceCreator<TEntity, TCollection>, container: SimpleContainer<CollectionDependencies<TEntity>>) => TExtension): TExtension;
-    create<TExtension extends TCollection = never>(extend?: (i: CollectionInstanceCreator<TEntity, TCollection>, container: SimpleContainer<CollectionDependencies<TEntity>>) => TExtension) {
+    create<TExtension extends TCollection>(extend: (i: CollectionInstanceCreator<TEntity, TCollection>, dependencies: CollectionDependencies<TEntity>) => TExtension): TExtension;
+    create<TExtension extends TCollection = never>(extend?: (i: CollectionInstanceCreator<TEntity, TCollection>, dependencies: CollectionDependencies<TEntity>) => TExtension) {
 
         if (extend == null) {
             const Instance = this.instanceCreator;
-            const result = new Instance(this.container);
+            const result = new Instance(this.dependencies);
 
             this._onCollectionCreated(result);
 
@@ -116,7 +109,7 @@ export class CollectionBuilder<TEntity extends {}, TCollection extends Collectio
         }
 
         const Instance = this.instanceCreator;
-        const extendedResult = extend(Instance, this.container);
+        const extendedResult = extend(Instance, this.dependencies);
 
         this._onCollectionCreated(extendedResult);
 

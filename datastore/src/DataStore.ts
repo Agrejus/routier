@@ -10,9 +10,9 @@ import { UnknownRecord, uuid } from '@routier/core/utilities';
 import { View } from './views/View';
 import { ViewBuilder } from './view-builder/ViewBuilder';
 import { CollectionBase } from './collections/CollectionBase';
-import { SimpleContainer } from './ioc/SimpleContainer';
 import { CollectionDependencies } from './collections/types';
-import { ViewDependencies } from './views/types';
+import { ChangeTracker } from './change-tracking/ChangeTracker';
+import { DataBridge } from './data-access/DataBridge';
 
 /**
  * The main Routier class, providing collection management, change tracking, and persistence for entities.
@@ -71,17 +71,20 @@ export class DataStore implements Disposable {
             this._schemas.set(schema.id, schema as CompiledSchema<UnknownRecord>);
         };
 
-        const container = new SimpleContainer<CollectionDependencies<TEntity>>();
-
-        container.singleton("plugin", () => this.dbPlugin)
-            .singleton("schema", () => schema)
-            .singleton("schemas", () => this._schemas)
-            .singleton("pipelines", () => this.collectionPipelines)
-            .singleton("signal", () => this.abortController.signal)
-            .singleton("scopedQueryOptions", () => new QueryOptionsCollection<TEntity>());
+        const dependencies = new CollectionDependencies<TEntity>(
+            this.dbPlugin,
+            schema,
+            this._schemas,
+            this.collectionPipelines,
+            this.abortController.signal,
+            new QueryOptionsCollection<TEntity>(),
+            schema.createSubscription(this.abortController.signal),
+            new ChangeTracker<TEntity>(schema),
+            DataBridge.create<TEntity>(this.dbPlugin, schema, this.abortController.signal)
+        );
 
         return new CollectionBuilder<TEntity, Collection<TEntity>>({
-            container,
+            dependencies,
             instanceCreator: Collection<TEntity>,
             onCollectionCreated: onCreated.bind(this),
         });
@@ -108,18 +111,20 @@ export class DataStore implements Disposable {
             this._schemas.set(schema.id, schema as CompiledSchema<UnknownRecord>);
         };
 
-        const container = new SimpleContainer<ViewDependencies<TEntity>>();
-
-        container.singleton("plugin", () => this.dbPlugin)
-            .singleton("persist", () => this.dbPlugin.bulkPersist.bind(this.dbPlugin))
-            .singleton("schema", () => schema)
-            .singleton("schemas", () => this._schemas)
-            .singleton("pipelines", () => this.collectionPipelines)
-            .singleton("signal", () => this.abortController.signal)
-            .singleton("scopedQueryOptions", () => new QueryOptionsCollection<TEntity>());
+        const dependencies = new CollectionDependencies<TEntity>(
+            this.dbPlugin,
+            schema,
+            this._schemas,
+            this.collectionPipelines,
+            this.abortController.signal,
+            new QueryOptionsCollection<TEntity>(),
+            schema.createSubscription(this.abortController.signal),
+            new ChangeTracker<TEntity>(schema),
+            DataBridge.create<TEntity>(this.dbPlugin, schema, this.abortController.signal)
+        );
 
         return new ViewBuilder<TEntity, View<TEntity>>({
-            container,
+            dependencies,
             instanceCreator: View<TEntity>,
             onCollectionCreated: onCreated.bind(this),
         });

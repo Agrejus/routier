@@ -4,12 +4,11 @@ import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
 import { IdType } from "@routier/core/schema";
 import { CollectionDependencies, RequestContext } from "../collections/types";
-import { SimpleContainer } from "../ioc/SimpleContainer";
 
 export class SelectionQueryableAsync<Root extends {}, Shape> extends SelectionQueryable<Root, Shape, void> {
 
-    constructor(container: SimpleContainer<CollectionDependencies<Root>>, request: RequestContext<Root>) {
-        super(container, request);
+    constructor(dependencies: CollectionDependencies<Root>, request: RequestContext<Root>) {
+        super(dependencies, request);
 
         this.removeAsync = this.removeAsync.bind(this);
         this.toArrayAsync = this.toArrayAsync.bind(this);

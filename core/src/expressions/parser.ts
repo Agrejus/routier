@@ -95,6 +95,11 @@ const ERROR_MESSAGES = {
 
 const STRINGIFIED_COMPARE_OPERATORS = ["true", "false"];
 
+const parseUnknown = (value: unknown) => {
+    assertString(value);
+    return JSON.parse(value);
+}
+
 export const combineExpressions = (...expressions: Expression[]): Expression => {
 
     if (expressions.length === 0) {
@@ -360,10 +365,7 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
                 const property = getProperty(schema, rightSide, params);
                 const value = getValue(leftSide, params); // retrieve the original value
                 const serializer = property.property.valueSerializer;
-
-                assertString(value.value);
-
-                comparator.left = serializer ? getValue(String(property.property.valueSerializer(JSON.parse(value.value)))) : value;
+                comparator.left = serializer ? getValue(String(property.property.valueSerializer(parseUnknown(value.value)))) : value;
                 comparator.right = property;
             } else {
                 // For other methods, return NOT_PARSABLE for now
@@ -375,10 +377,8 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
             const serializer = property.property.valueSerializer;
             const value = getValue(rightSide, params); // retrieve the original value
 
-            assertString(value.value);
-
             comparator.left = property;
-            comparator.right = serializer ? getValue(String(property.property.valueSerializer(JSON.parse(value.value)))) : value;
+            comparator.right = serializer ? getValue(String(property.property.valueSerializer(parseUnknown(value.value)))) : value;
         }
 
         // If the comparison is explicitly to false, mark it as negated
@@ -405,10 +405,8 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
         // Create the property expression for the left side (no transformer)
         const propertyExpression = property;
 
-        assertString(value.value);
-
         // Create a ValueExpression for the right side with transformer
-        const valueExpression = serializer ? getValue(String(property.property.valueSerializer(JSON.parse(value.value)))) : value;
+        const valueExpression = serializer ? getValue(String(property.property.valueSerializer(parseUnknown(value.value)))) : value;
 
         // Set transformer and locale based on the method
         const method = valueTransformMatch[4];
@@ -484,10 +482,8 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
 
         const serializer = property.property.valueSerializer;
 
-        assertString(value.value);
-
         comparator.left = property;
-        comparator.right = serializer ? getValue(String(property.property.valueSerializer(JSON.parse(value.value)))) : value;
+        comparator.right = serializer ? getValue(String(property.property.valueSerializer(parseUnknown(value.value)))) : value;
 
         // If the comparison is explicitly to false, mark it as negated
         if (transformMethodMatch[7] === "false") {
@@ -535,10 +531,8 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
         const value = getValue(valueSide, params);
         const serializer = property.property.valueSerializer;
 
-        assertString(value.value);
-
         comparator.left = property;
-        comparator.right = serializer ? getValue(String(property.property.valueSerializer(JSON.parse(value.value)))) : value;
+        comparator.right = serializer ? getValue(String(property.property.valueSerializer(parseUnknown(value.value)))) : value;
 
         convertAndAssignValue(comparator.right, comparator.left);
 
@@ -583,10 +577,8 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
         const value = getValue(valueSide, params);
         const serializer = property.property.valueSerializer;
 
-        assertString(value.value);
-
         comparator.left = property;
-        comparator.right = serializer ? getValue(String(property.property.valueSerializer(JSON.parse(value.value)))) : value;
+        comparator.right = serializer ? getValue(String(property.property.valueSerializer(parseUnknown(value.value)))) : value;
 
         convertAndAssignValue(comparator.right, comparator.left);
 
@@ -607,11 +599,9 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
         const value = getValue('true', params);
         const serializer = property.property.valueSerializer;
 
-        assertString(value.value);
-
         comparator.left = property;
         // need to parse the value so it matches what the serializer expects
-        comparator.right = serializer ? getValue(String(property.property.valueSerializer(JSON.parse(value.value)))) : value;
+        comparator.right = serializer ? getValue(String(property.property.valueSerializer(parseUnknown(value.value)))) : value;
 
         return comparator;
     }

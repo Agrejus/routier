@@ -1,26 +1,28 @@
 import { InferType } from '@routier/core/schema';
-import { IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
 import { CollectionBase } from '../collections/CollectionBase';
 import { View } from '../views/View';
-import { Derive, ViewDependencies } from '../views/types';
+import { Derive } from '../views/types';
 import { ViewInstanceCreator } from './types';
 import { Filter, ParamsFilter, toExpression } from '@routier/core/expressions';
-import { SimpleContainer } from '../ioc/SimpleContainer';
+import { CollectionDependencies } from '../collections/types';
 
 type CollectionBuilderProps<TEntity extends {}, TCollection extends View<TEntity>> = {
     onCollectionCreated: (collection: CollectionBase<TEntity>) => void;
     instanceCreator: ViewInstanceCreator<TEntity, TCollection>;
-    container: SimpleContainer<ViewDependencies<TEntity>>;
+    dependencies: CollectionDependencies<TEntity>;
+    derive?: Derive<TEntity>;
 }
 
 export class ViewBuilder<TEntity extends {}, TCollection extends View<TEntity>> {
 
     private _onCollectionCreated: (collection: CollectionBase<TEntity>) => void;
     private _instanceCreator: ViewInstanceCreator<TEntity, TCollection>;
-    private container: SimpleContainer<ViewDependencies<TEntity>>;
+    private dependencies: CollectionDependencies<TEntity>;
+    private _derive: Derive<TEntity> = () => void (0);
 
     constructor(props: CollectionBuilderProps<TEntity, TCollection>) {
-        this.container = props.container;
+        this.dependencies = props.dependencies;
+        this._derive = props.derive;
         this._onCollectionCreated = props.onCollectionCreated;
         this._instanceCreator = props.instanceCreator;
     }
@@ -59,41 +61,39 @@ export class ViewBuilder<TEntity extends {}, TCollection extends View<TEntity>> 
     scope<P extends {}>(selector: ParamsFilter<InferType<TEntity>, P>, params: P): ViewBuilder<TEntity, TCollection>;
     scope<P extends {} = never>(selector: ParamsFilter<InferType<TEntity>, P> | Filter<InferType<TEntity>>, params?: P) {
 
-        const schema = this.container.resolve("schema");
+        const schema = this.dependencies.schema;
         const expression = toExpression(schema, selector, params);
 
-        const scopedQueryOptions = new QueryOptionsCollection<TEntity>();
-        scopedQueryOptions.add("filter", { filter: selector as Filter<TEntity> | ParamsFilter<TEntity, {}>, expression, params });
-
-        // Re-register (overwrite)
-        this.container.singleton("scopedQueryOptions", () => scopedQueryOptions);
+        this.dependencies.scopedQueryOptions.add("filter", { filter: selector as Filter<TEntity> | ParamsFilter<TEntity, {}>, expression, params });
 
         return new ViewBuilder<TEntity, View<TEntity>>({
+            derive: this._derive,
             onCollectionCreated: this._onCollectionCreated,
             instanceCreator: View,
-            container: this.container
+            dependencies: this.dependencies
         });
     }
 
     derive(derive: Derive<TEntity>) {
 
-        this.container.singleton("derive", () => derive)
+        this._derive = derive;
 
         return new ViewBuilder<TEntity, View<TEntity>>({
+            derive: this._derive,
             onCollectionCreated: this._onCollectionCreated,
             instanceCreator: View,
-            container: this.container
+            dependencies: this.dependencies
         });
     }
 
     create(): TCollection;
-    create<TExtension extends TCollection>(extend: (i: ViewInstanceCreator<TEntity, TCollection>, container: SimpleContainer<ViewDependencies<TEntity>>) => TExtension, persist: IDbPlugin["bulkPersist"]): TExtension;
-    create<TExtension extends TCollection = never>(extend?: (i: ViewInstanceCreator<TEntity, TCollection>, container: SimpleContainer<ViewDependencies<TEntity>>) => TExtension) {
+    create<TExtension extends TCollection>(extend: (i: ViewInstanceCreator<TEntity, TCollection>, dependencies: CollectionDependencies<TEntity>, derive: Derive<TEntity>) => TExtension): TExtension;
+    create<TExtension extends TCollection = never>(extend?: (i: ViewInstanceCreator<TEntity, TCollection>, dependencies: CollectionDependencies<TEntity>, derive: Derive<TEntity>) => TExtension) {
 
 
         if (extend == null) {
             const Instance = this._instanceCreator;
-            const result = new Instance(this.container);
+            const result = new Instance(this.dependencies, this._derive);
 
             this._onCollectionCreated(result);
 
@@ -101,7 +101,7 @@ export class ViewBuilder<TEntity extends {}, TCollection extends View<TEntity>> 
         }
 
         const Instance = this._instanceCreator;
-        const extendedResult = extend(Instance, this.container);
+        const extendedResult = extend(Instance, this.dependencies, this._derive);
 
         this._onCollectionCreated(extendedResult);
 

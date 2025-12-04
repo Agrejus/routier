@@ -1,14 +1,13 @@
 import { RemovableCollection } from './RemovableCollection';
 import { ChangeTrackingType } from "@routier/core/schema";
-import { SimpleContainer } from "../ioc/SimpleContainer";
 import { CollectionDependencies } from "./types";
 
 export class ImmutableCollection<TEntity extends {}> extends RemovableCollection<TEntity> {
 
     constructor(
-        container: SimpleContainer<CollectionDependencies<TEntity>>
+        dependencies: CollectionDependencies<TEntity>
     ) {
-        super(container);
+        super(dependencies);
 
         this.mutate = this.mutate.bind(this);
     }

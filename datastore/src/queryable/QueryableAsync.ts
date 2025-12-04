@@ -6,12 +6,11 @@ import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
 import { QueryOrdering } from "@routier/core/plugins";
 import { CollectionDependencies, RequestContext } from "../collections/types";
-import { SimpleContainer } from "../ioc/SimpleContainer";
 
 export class QueryableAsync<Root extends {}, Shape> extends SelectionQueryableAsync<Root, Shape> {
 
-    constructor(container: SimpleContainer<CollectionDependencies<Root>>, request: RequestContext<Root>) {
-        super(container, request);
+    constructor(dependencies: CollectionDependencies<Root>, request: RequestContext<Root>) {
+        super(dependencies, request);
 
         this.where = this.where.bind(this);
         this.map = this.map.bind(this);

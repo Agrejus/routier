@@ -5,46 +5,25 @@ import { GenericFunction } from "@routier/core/types";
 import { Filter, ParamsFilter, toExpression } from "@routier/core/expressions";
 import { uuid } from "@routier/core/utilities";
 import { CollectionDependencies, RequestContext } from "../collections/types";
-import { SimpleContainer } from "../ioc/SimpleContainer";
 
 export abstract class QuerySource<TRoot extends {}, TShape> {
 
-    protected get dataBridge() {
-        return this.container.resolve("dataBridge");
-    }
-
-    protected get changeTracker() {
-        return this.container.resolve("changeTracker");
-    }
-
-    protected get schema() {
-        return this.container.resolve("schema");
-    }
-
-    protected get schemas() {
-        return this.container.resolve("schemas");
-    }
-
-    protected get scopedQueryOptions() {
-        return this.container.resolve("scopedQueryOptions");
-    }
-
     protected readonly request: RequestContext<TRoot>;
-    protected readonly container: SimpleContainer<CollectionDependencies<TRoot>>;
+    protected readonly dependencies: CollectionDependencies<TRoot>;
 
-    constructor(container: SimpleContainer<CollectionDependencies<TRoot>>, request: RequestContext<TRoot>) {
-        this.container = container;
+    constructor(dependencies: CollectionDependencies<TRoot>, request: RequestContext<TRoot>) {
+        this.dependencies = dependencies;
         this.request = request
     }
 
     // Cannot change the root type, it comes from the collection type, only the resulting type (shape)
     protected create<Shape, TInstance extends QuerySource<TRoot, Shape>>(
-        Instance: new (container: SimpleContainer<CollectionDependencies<TRoot>>, request: RequestContext<TRoot>) => TInstance) {
-        return new Instance(this.container, this.request);
+        Instance: new (dependencies: CollectionDependencies<TRoot>, request: RequestContext<TRoot>) => TInstance) {
+        return new Instance(this.dependencies, this.request);
     }
 
     private resolveQueryOptions<T>() {
-        if (this.scopedQueryOptions.items.size === 0) {
+        if (this.dependencies.scopedQueryOptions.items.size === 0) {
             return this.request.queryOptions;
         }
 
@@ -52,7 +31,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
         const resolvedQueryOptions = new QueryOptionsCollection<T>();
 
         // Add scoped items first
-        this.scopedQueryOptions.forEach(item => {
+        this.dependencies.scopedQueryOptions.forEach(item => {
             resolvedQueryOptions.add(item.name, item.value);
         });
 
@@ -67,9 +46,9 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
     protected _remove<U>(done: CallbackResult<never>) {
 
-        const query = new Query<TRoot, TRoot>(this.resolveQueryOptions<TRoot>(), this.schema, false);
+        const query = new Query<TRoot, TRoot>(this.resolveQueryOptions<TRoot>(), this.dependencies.schema, false);
 
-        this.changeTracker.removeByQuery(query, null, done);
+        this.dependencies.changeTracker.removeByQuery(query, null, done);
 
         return this.subscribeQuery<TShape[]>(done) as U;
     }
@@ -82,7 +61,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
         const { databaseEvent, memoryEvent } = this.createQueryPayload<U>();
 
-        return this.dataBridge.subscribe<U, unknown>(databaseEvent, (r) => {
+        return this.dependencies.dataBridge.subscribe<U, unknown>(databaseEvent, (r) => {
 
             if (r.ok === Result.ERROR) {
                 done(r);
@@ -121,7 +100,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
             return propertyPaths.map(propertyPath => {
                 const [destinationName, sourcePathAndName] = propertyPath.split(":").map(w => w.trim());
                 const sourceName = this._extractPropertyName(sourcePathAndName);
-                const property = this.schema.getProperty(sourceName);
+                const property = this.dependencies.schema.getProperty(sourceName);
 
                 return {
                     sourceName,
@@ -133,7 +112,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
         }
 
         const field = this._extractPropertyName(body);
-        const property = this.schema.getProperty(field);
+        const property = this.dependencies.schema.getProperty(field);
 
         return [{
             destinationName: field,
@@ -158,14 +137,14 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
         return {
             databaseEvent: {
-                operation: new Query<TRoot, Shape>(splitQueryOptions.database as any, this.schema),
-                schemas: this.schemas,
+                operation: new Query<TRoot, Shape>(splitQueryOptions.database as any, this.dependencies.schema),
+                schemas: this.dependencies.schemas,
                 id: uuid(8),
                 source: "collection"
             },
             memoryEvent: {
-                operation: new Query<TRoot, Shape>(splitQueryOptions.memory as any, this.schema),
-                schemas: this.schemas,
+                operation: new Query<TRoot, Shape>(splitQueryOptions.memory as any, this.dependencies.schema),
+                schemas: this.dependencies.schemas,
                 id: uuid(8),
                 source: "collection"
             }
@@ -184,7 +163,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
         const { databaseEvent, memoryEvent } = this.createQueryPayload<TShape>();
 
-        this.dataBridge.query<TShape>(databaseEvent, (result) => {
+        this.dependencies.dataBridge.query<TShape>(databaseEvent, (result) => {
 
             if (result.ok === PluginEventResult.ERROR) {
                 done(result);
@@ -202,13 +181,13 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
         try {
 
-            const tags = this.changeTracker.tags.get();
+            const tags = this.dependencies.changeTracker.tags.get();
 
-            this.changeTracker.tags.destroy();
+            this.dependencies.changeTracker.tags.destroy();
 
             if (databaseEvent.operation.changeTracking === true) {
                 // Post process the db query results
-                result.data.forEach(item => this.schema.postprocess(item as InferType<TRoot>, this.request.changeTrackingType));
+                result.data.forEach(item => this.dependencies.schema.postprocess(item as InferType<TRoot>, this.request.changeTrackingType));
             }
 
             // This means we are querying on a computed property that is untracked, need to select
@@ -226,7 +205,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
                 }
 
                 // Resolve the data with the current attachments
-                result.data.forEach(item => this.changeTracker.resolve(item as InferType<TRoot>, tags, {
+                result.data.forEach(item => this.dependencies.changeTracker.resolve(item as InferType<TRoot>, tags, {
                     merge: true
                 }));
 
@@ -239,7 +218,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
             }
 
             // Resolve the data with the current attachments
-            result.data.forEach(item => this.changeTracker.resolve(item as InferType<TRoot>, tags, {
+            result.data.forEach(item => this.dependencies.changeTracker.resolve(item as InferType<TRoot>, tags, {
                 merge: true
             }));
 
@@ -251,7 +230,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
     protected setFiltersQueryOption<P extends {}>(selector: ParamsFilter<TShape, P> | Filter<TShape>, params?: P) {
 
-        const expression = toExpression(this.schema, selector, params);
+        const expression = toExpression(this.dependencies.schema, selector, params);
 
         this.request.queryOptions.add("filter", { filter: selector as Filter<TRoot> | ParamsFilter<TRoot, {}>, expression, params });
     }
@@ -266,7 +245,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
     protected setGroupQueryOption<K, R>(selector: GenericFunction<K, R>) {
 
         const [key] = this.getFields(selector);
-        let fields = this.schema.properties.map(x => ({
+        let fields = this.dependencies.schema.properties.map(x => ({
             destinationName: x.name,
             getter: x.getValue,
             isRename: false,

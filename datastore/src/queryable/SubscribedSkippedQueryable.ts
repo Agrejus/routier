@@ -4,12 +4,11 @@ import { GenericFunction } from "@routier/core/types";
 import { QueryOrdering } from "@routier/core/plugins";
 import { SubscribedTakeQueryable } from "./SubscribedTakeQueryable";
 import { CollectionDependencies, RequestContext } from "../collections/types";
-import { SimpleContainer } from "../ioc/SimpleContainer";
 
 export class SubscribedSkippedQueryable<Root extends {}, Shape, U> extends SelectionQueryable<Root, Shape, U> {
 
-    constructor(container: SimpleContainer<CollectionDependencies<Root>>, request: RequestContext<Root>) {
-        super(container, request);
+    constructor(dependencies: CollectionDependencies<Root>, request: RequestContext<Root>) {
+        super(dependencies, request);
 
         this.where = this.where.bind(this);
         this.map = this.map.bind(this);
