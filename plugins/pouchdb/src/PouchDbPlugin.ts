@@ -508,7 +508,7 @@ export class PouchDbPlugin implements IDbPlugin {
 
                 // if we have no indexes, let's create it
                 if (response.rows.length === 0) {
-                    db.put(ddoc as any, {}, (e) => {
+                    db.put(ddoc as UnknownRecord, {}, (e) => {
                         if (e) {
                             d(Result.error(e));
                             return;
@@ -525,7 +525,7 @@ export class PouchDbPlugin implements IDbPlugin {
 
                 // make sure we have the correct index created
                 if (matchingIndex == null) {
-                    db.put(ddoc as any, {}, (e) => {
+                    db.put(ddoc as UnknownRecord, {}, (e) => {
                         if (e) {
                             d(Result.error(e));
                             return;

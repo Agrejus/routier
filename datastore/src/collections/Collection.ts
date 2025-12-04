@@ -1,22 +1,15 @@
-import { IDbPlugin, QueryOptionsCollection } from "@routier/core/plugins";
-import { CollectionOptions, CollectionPipelines } from "../types";
 import { RemovableCollection } from './RemovableCollection';
-import { CompiledSchema, InferCreateType, InferType } from "@routier/core/schema";
+import { InferCreateType, InferType } from "@routier/core/schema";
 import { CallbackResult, Result } from "@routier/core/results";
-import { SchemaCollection } from "@routier/core/collections";
 import { GenericFunction } from "@routier/core/types";
+import { CollectionDependencies } from "./types";
 
 export class Collection<TEntity extends {}> extends RemovableCollection<TEntity> {
 
     constructor(
-        dbPlugin: IDbPlugin,
-        schema: CompiledSchema<TEntity>,
-        options: CollectionOptions,
-        pipelines: CollectionPipelines,
-        schemas: SchemaCollection,
-        queryOptions: QueryOptionsCollection<InferType<TEntity>>
+        dependencies: CollectionDependencies<TEntity>
     ) {
-        super(dbPlugin, schema, options, pipelines, schemas, queryOptions);
+        super(dependencies);
 
         // Bind all methods in tags object
         this.tags.get = this.tags.get.bind(this);
@@ -40,10 +33,10 @@ export class Collection<TEntity extends {}> extends RemovableCollection<TEntity>
 
     tags = {
         get: () => {
-            return this.changeTracker.tags.get()
+            return this.dependencies.changeTracker.tags.get()
         },
         destroy: () => {
-            return this.changeTracker.tags.destroy()
+            return this.dependencies.changeTracker.tags.destroy()
         }
     }
 
@@ -51,40 +44,40 @@ export class Collection<TEntity extends {}> extends RemovableCollection<TEntity>
     attachments = {
         /** Detaches entities from change tracking, removing them from the collection's managed set */
         remove: (...entities: InferType<TEntity>[]) => {
-            return this.changeTracker.detach(entities);
+            return this.dependencies.changeTracker.detach(entities);
         },
         /** Attaches entities to change tracking, enabling property change monitoring and dirty state management */
         set: (...entities: InferType<TEntity>[]) => {
             const tag = this.getAndDestroyTag()
-            return this.changeTracker.resolveMany(entities, tag, { merge: true });
+            return this.dependencies.changeTracker.resolveMany(entities, tag, { merge: true });
         },
         /** Checks if an entity is currently attached to change tracking */
         has: (entity: InferType<TEntity>) => {
-            return this.changeTracker.isAttached(entity);
+            return this.dependencies.changeTracker.isAttached(entity);
         },
         /** Retrieves an attached entity from change tracking if it exists */
         get: (entity: InferType<TEntity>) => {
-            const found = this.changeTracker.getAttached(entity);
+            const found = this.dependencies.changeTracker.getAttached(entity);
 
             return found?.doc;
         },
         /** Filters attached entities using a selector function, returning entities that match the criteria */
         filter: (selector: GenericFunction<InferType<TEntity>, boolean>) => {
-            return this.changeTracker.filterAttached(selector);
+            return this.dependencies.changeTracker.filterAttached(selector);
         },
 
         /** Finds attached entity using a selector function, returning first entity that matches the criteria */
         find: (selector: GenericFunction<InferType<TEntity>, boolean>) => {
-            return this.changeTracker.findAttached(selector);
+            return this.dependencies.changeTracker.findAttached(selector);
         },
 
         /** Marks entities as dirty, forcing them to be included in the next save operation regardless of actual property changes */
         markDirty: (...entities: InferType<TEntity>[]) => {
-            return this.changeTracker.markDirty(entities);
+            return this.dependencies.changeTracker.markDirty(entities);
         },
         /** Retrieves the change type for a specific entity. Returns the change type if attached, or undefined if not attached. */
         getChangeType: (entity: InferType<TEntity>) => {
-            const found = this.changeTracker.getAttached(entity);
+            const found = this.dependencies.changeTracker.getAttached(entity);
 
             if (found == null) {
                 return undefined
@@ -101,7 +94,7 @@ export class Collection<TEntity extends {}> extends RemovableCollection<TEntity>
      */
     add(entities: InferCreateType<TEntity>[], done: CallbackResult<InferType<TEntity>[]>) {
         const tag = this.getAndDestroyTag();
-        this.changeTracker.add(entities, tag, done);
+        this.dependencies.changeTracker.add(entities, tag, done);
     }
 
     /**

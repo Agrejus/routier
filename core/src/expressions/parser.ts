@@ -1,3 +1,4 @@
+import { assertString } from "../assertions";
 import { CompiledSchema, SchemaTypes } from "../schema";
 import { Expression, OperatorExpression, ComparatorExpression, ValueExpression, PropertyExpression, Filter, ParamsFilter, Operator } from "./types";
 
@@ -94,6 +95,11 @@ const ERROR_MESSAGES = {
 
 const STRINGIFIED_COMPARE_OPERATORS = ["true", "false"];
 
+const parseUnknown = (value: unknown) => {
+    assertString(value);
+    return JSON.parse(value);
+}
+
 export const combineExpressions = (...expressions: Expression[]): Expression => {
 
     if (expressions.length === 0) {
@@ -121,8 +127,9 @@ export const combineExpressions = (...expressions: Expression[]): Expression => 
 };
 
 export const toExpression = <T extends any, P extends any>(schema: CompiledSchema<any>, fn: Filter<T> | ParamsFilter<T, P>, params?: P) => {
+    const stringifiedFunction = fn.toString();
+
     try {
-        const stringifiedFunction = fn.toString();
 
         // Optimized string parsing
         const arrowIndex = stringifiedFunction.indexOf('=>');
@@ -162,8 +169,13 @@ export const toExpression = <T extends any, P extends any>(schema: CompiledSchem
         }
 
         return parseExpressionToTree(schema, expression, parameterData);
-    } catch (e) {
-        console.warn("Error parsing expression", e);
+    } catch (error) {
+        console.warn("Error parsing expression", {
+            error,
+            collectionName: schema.collectionName,
+            params,
+            selector: stringifiedFunction
+        });
         return Expression.NOT_PARSABLE;
     }
 }
@@ -359,8 +371,7 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
                 const property = getProperty(schema, rightSide, params);
                 const value = getValue(leftSide, params); // retrieve the original value
                 const serializer = property.property.valueSerializer;
-
-                comparator.left = serializer ? getValue(String(property.property.valueSerializer(JSON.parse(value.value as any)))) : value;
+                comparator.left = serializer ? getValue(String(property.property.valueSerializer(parseUnknown(value.value)))) : value;
                 comparator.right = property;
             } else {
                 // For other methods, return NOT_PARSABLE for now
@@ -373,7 +384,7 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
             const value = getValue(rightSide, params); // retrieve the original value
 
             comparator.left = property;
-            comparator.right = serializer ? getValue(String(property.property.valueSerializer(JSON.parse(value.value as any)))) : value;
+            comparator.right = serializer ? getValue(String(property.property.valueSerializer(parseUnknown(value.value)))) : value;
         }
 
         // If the comparison is explicitly to false, mark it as negated
@@ -401,7 +412,7 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
         const propertyExpression = property;
 
         // Create a ValueExpression for the right side with transformer
-        const valueExpression = serializer ? getValue(String(property.property.valueSerializer(JSON.parse(value.value as any)))) : value;
+        const valueExpression = serializer ? getValue(String(property.property.valueSerializer(parseUnknown(value.value)))) : value;
 
         // Set transformer and locale based on the method
         const method = valueTransformMatch[4];
@@ -478,7 +489,7 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
         const serializer = property.property.valueSerializer;
 
         comparator.left = property;
-        comparator.right = serializer ? getValue(String(property.property.valueSerializer(JSON.parse(value.value as any)))) : value;
+        comparator.right = serializer ? getValue(String(property.property.valueSerializer(parseUnknown(value.value)))) : value;
 
         // If the comparison is explicitly to false, mark it as negated
         if (transformMethodMatch[7] === "false") {
@@ -527,7 +538,7 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
         const serializer = property.property.valueSerializer;
 
         comparator.left = property;
-        comparator.right = serializer ? getValue(String(property.property.valueSerializer(JSON.parse(value.value as any)))) : value;
+        comparator.right = serializer ? getValue(String(property.property.valueSerializer(parseUnknown(value.value)))) : value;
 
         convertAndAssignValue(comparator.right, comparator.left);
 
@@ -573,7 +584,7 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
         const serializer = property.property.valueSerializer;
 
         comparator.left = property;
-        comparator.right = serializer ? getValue(String(property.property.valueSerializer(JSON.parse(value.value as any)))) : value;
+        comparator.right = serializer ? getValue(String(property.property.valueSerializer(parseUnknown(value.value)))) : value;
 
         convertAndAssignValue(comparator.right, comparator.left);
 
@@ -596,7 +607,7 @@ const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: 
 
         comparator.left = property;
         // need to parse the value so it matches what the serializer expects
-        comparator.right = serializer ? getValue(String(property.property.valueSerializer(JSON.parse(value.value as any)))) : value;
+        comparator.right = serializer ? getValue(String(property.property.valueSerializer(parseUnknown(value.value)))) : value;
 
         return comparator;
     }

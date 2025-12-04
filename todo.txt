@@ -4,4 +4,6 @@ Readonly collection
 
 TODO:
     Deeply nested schemas
-    Sample App view subscriptions are continuoously running
+    Sample App view subscriptions are continuously running
+    Tests lock up when running in parallel
+        Probably something to do with views

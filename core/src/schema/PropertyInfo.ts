@@ -307,7 +307,7 @@ export class PropertyInfo<T extends {}> {
      * @param instance The object instance to set the value on.
      * @param value The value to set.
      */
-    setValue(instance: unknown, value: unknown) {
+    setValue(instance: UnknownRecord, value: unknown) {
         if (instance == null) {
             throw new Error('Cannot set value on null or undefined instance');
         }
@@ -315,7 +315,7 @@ export class PropertyInfo<T extends {}> {
         const length = pathArray.length;
         // Fast path for single level properties
         if (length === 1) {
-            (instance as any)[pathArray[0]] = value;
+            instance[pathArray[0]] = value;
             return;
         }
         let current: any = instance;

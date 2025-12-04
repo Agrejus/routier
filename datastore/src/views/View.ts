@@ -1,11 +1,11 @@
 import { CollectionBase } from '../collections/CollectionBase';
-import { Derive, DeriveResponse } from '../view-builder/ViewBuilder';
-import { CollectionOptions, CollectionPipelines } from '../types';
 import { IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
 import { ChangeTrackingType, CompiledSchema, IdType, InferCreateType, InferType, SubscriptionChanges } from '@routier/core/schema';
 import { BulkPersistChanges, SchemaCollection, SchemaPersistChanges } from '@routier/core/collections';
 import { CallbackResult, noop, Result, uuid } from '@routier/core';
 import { QueryableAsync } from '../queryable/QueryableAsync';
+import { Derive, DeriveResponse } from './types';
+import { CollectionDependencies } from '../collections/types';
 
 /**
  * View that only allows data selection. Cannot add, remove, or update data.  Data is computed
@@ -14,20 +14,12 @@ import { QueryableAsync } from '../queryable/QueryableAsync';
 export class View<TEntity extends {}> extends CollectionBase<TEntity> {
 
     protected derive: Derive<TEntity>;
-    protected persist: IDbPlugin["bulkPersist"];
     protected unsubscribe: DeriveResponse;
 
-    constructor(
-        dbPlugin: IDbPlugin,
-        schema: CompiledSchema<TEntity>,
-        options: CollectionOptions,
-        pipelines: CollectionPipelines,
-        schemas: SchemaCollection,
-        scopedQueryOptions: QueryOptionsCollection<InferType<TEntity>>,
-        derive: Derive<TEntity>,
-        persist: IDbPlugin["bulkPersist"]
-    ) {
-        super(dbPlugin, schema, options, pipelines, schemas, scopedQueryOptions);
+    constructor(dependencies: CollectionDependencies<TEntity>, derive: Derive<TEntity>) {
+        super(dependencies);
+
+        const persist: IDbPlugin["bulkPersist"] = dependencies.plugin.bulkPersist.bind(dependencies.plugin);
 
         // Compute the view right away
         this.derive = (cb) => {
@@ -39,11 +31,11 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
 
                 const enriched = new Array<InferType<TEntity>>(data.length);
                 for (let i = 0, length = data.length; i < length; i++) {
-                    enriched[i] = this.schema.postprocess(data[i] as InferType<TEntity>, this.changeTrackingType);
+                    enriched[i] = this.dependencies.schema.postprocess(data[i] as InferType<TEntity>, this.changeTrackingType);
                 }
 
-                const idProperties = this.schema.idProperties;
-                let query: QueryableAsync<InferType<TEntity>, InferType<TEntity>>;
+                const idProperties = this.dependencies.schema.idProperties;
+                let query: QueryableAsync<TEntity, InferType<TEntity>>;
 
                 for (let i = 0, length = idProperties.length; i < length; i++) {
                     const idProperty = idProperties[i];
@@ -60,7 +52,7 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
 
                     const schemas = new SchemaCollection();
 
-                    schemas.set(this.schema.id, this.schema as CompiledSchema<Record<string, unknown>>);
+                    schemas.set(this.dependencies.schema.id, this.dependencies.schema as CompiledSchema<Record<string, unknown>>);
                     const operation = new BulkPersistChanges();
                     const schemaChanges = new SchemaPersistChanges();
 
@@ -71,11 +63,11 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                         // compute changes
                         for (let i = 0, length = enriched.length; i < length; i++) {
                             const item = enriched[i];
-                            const existing = toArrayResult.data.find(x => this.schema.compareIds(item, x))
+                            const existing = toArrayResult.data.find(x => this.dependencies.schema.compareIds(item, x))
 
                             if (existing != null) {
 
-                                if (this.schema.compare(existing, item)) {
+                                if (this.dependencies.schema.compare(existing, item)) {
                                     continue; // Nothing has changed
                                 }
 
@@ -90,7 +82,7 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                         }
                     }
 
-                    operation.set(this.schema.id, schemaChanges);
+                    operation.set(this.dependencies.schema.id, schemaChanges);
 
                     // Automatically save the view
                     persist({
@@ -105,7 +97,7 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                             return;
                         }
 
-                        const resolvedChanges = r.data.get<TEntity>(this.schema.id);
+                        const resolvedChanges = r.data.get<TEntity>(this.dependencies.schema.id);
                         // we only want to notify of changes when an item that was saved matches the query
                         // these get reset each time
                         // send in the resulting adds because properties might have been set from the db operation
@@ -120,7 +112,7 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                             unknown: []
                         };
 
-                        this.subscription.send(subscriptionChanges);
+                        this.dependencies.subscription.send(subscriptionChanges);
                     });
 
                     cb(enriched);
@@ -130,7 +122,6 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
 
         // Need to create a way to unsubscribe from subscriptions in derive
         this.unsubscribe = this.derive(noop);
-        this.persist = persist;
     }
 
     override dispose(): void {
@@ -156,10 +147,10 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
     empty(done: CallbackResult<never>) {
         try {
 
-            this.changeTracker.removeByQuery({
+            this.dependencies.changeTracker.removeByQuery({
                 changeTracking: false,
-                options: this.scopedQueryOptions as unknown as QueryOptionsCollection<TEntity>,
-                schema: this.schema
+                options: this.dependencies.scopedQueryOptions as unknown as QueryOptionsCollection<TEntity>,
+                schema: this.dependencies.schema
             }, null, (result) => {
 
                 if (result.ok === "error") {
@@ -180,7 +171,7 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
     compute(done: CallbackResult<never>) {
         try {
             this.derive((data) => {
-                this.changeTracker.add(data as InferCreateType<TEntity>[], null, (result) => {
+                this.dependencies.changeTracker.add(data as InferCreateType<TEntity>[], null, (result) => {
 
                     if (result.ok === "error") {
                         return done(result);

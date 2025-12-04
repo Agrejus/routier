@@ -60,7 +60,7 @@ export class SchemaString<T extends string, TModifiers extends SchemaModifiers> 
     }
 
     index(...indexes: string[]) {
-        return new SchemaIndex<T, TModifiers>(this as any, ...indexes);
+        return new SchemaIndex<T, TModifiers>(this, ...indexes);
     }
 
     distinct() {

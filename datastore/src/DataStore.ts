@@ -1,7 +1,7 @@
 import { Collection } from './collections/Collection';
 import { CollectionBuilder } from './collection-builder/CollectionBuilder';
 import { CollectionPipelines } from './types';
-import { IDbPlugin } from '@routier/core/plugins';
+import { IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
 import { CompiledSchema, SchemaId } from '@routier/core/schema';
 import { TrampolinePipeline } from '@routier/core/pipeline';
 import { CallbackPartialResult, CallbackResult, PartialResultType, PluginEventResult, Result } from '@routier/core/results';
@@ -10,6 +10,9 @@ import { UnknownRecord, uuid } from '@routier/core/utilities';
 import { View } from './views/View';
 import { ViewBuilder } from './view-builder/ViewBuilder';
 import { CollectionBase } from './collections/CollectionBase';
+import { CollectionDependencies } from './collections/types';
+import { ChangeTracker } from './change-tracking/ChangeTracker';
+import { DataBridge } from './data-access/DataBridge';
 
 /**
  * The main Routier class, providing collection management, change tracking, and persistence for entities.
@@ -67,14 +70,23 @@ export class DataStore implements Disposable {
             this.collections.set(schema.id, collection);
             this._schemas.set(schema.id, schema as CompiledSchema<UnknownRecord>);
         };
+
+        const dependencies = new CollectionDependencies<TEntity>(
+            this.dbPlugin,
+            schema,
+            this._schemas,
+            this.collectionPipelines,
+            this.abortController.signal,
+            new QueryOptionsCollection<TEntity>(),
+            schema.createSubscription(this.abortController.signal),
+            new ChangeTracker<TEntity>(schema),
+            DataBridge.create<TEntity>(this.dbPlugin, schema, this.abortController.signal)
+        );
+
         return new CollectionBuilder<TEntity, Collection<TEntity>>({
-            dbPlugin: this.dbPlugin,
+            dependencies,
             instanceCreator: Collection<TEntity>,
             onCollectionCreated: onCreated.bind(this),
-            schema,
-            pipelines: this.collectionPipelines,
-            signal: this.abortController.signal,
-            schemas: this._schemas
         });
     }
 
@@ -98,16 +110,23 @@ export class DataStore implements Disposable {
             this.collections.set(schema.id, view);
             this._schemas.set(schema.id, schema as CompiledSchema<UnknownRecord>);
         };
+
+        const dependencies = new CollectionDependencies<TEntity>(
+            this.dbPlugin,
+            schema,
+            this._schemas,
+            this.collectionPipelines,
+            this.abortController.signal,
+            new QueryOptionsCollection<TEntity>(),
+            schema.createSubscription(this.abortController.signal),
+            new ChangeTracker<TEntity>(schema),
+            DataBridge.create<TEntity>(this.dbPlugin, schema, this.abortController.signal)
+        );
+
         return new ViewBuilder<TEntity, View<TEntity>>({
-            dbPlugin: this.dbPlugin,
+            dependencies,
             instanceCreator: View<TEntity>,
             onCollectionCreated: onCreated.bind(this),
-            schema,
-            pipelines: this.collectionPipelines,
-            signal: this.abortController.signal,
-            schemas: this._schemas,
-            persistCallback: this.dbPlugin.bulkPersist.bind(this.dbPlugin),
-            deriveCallback: () => void (0)
         });
     }
 

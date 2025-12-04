@@ -4,26 +4,13 @@ import { SkippedQueryableAsync } from "./SkippedQueryableAsync";
 import { TakeQueryableAsync } from "./TakeQueryableAsync";
 import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
-import { QueryOptionsCollection, QueryOrdering } from "@routier/core/plugins";
-import { ChangeTrackingType, CompiledSchema, IdType } from "@routier/core/schema";
-import { SchemaCollection } from "@routier/core/collections";
-import { QuerySource } from "./QuerySource";
-import { DataBridge } from "../data-access/DataBridge";
-import { ChangeTracker } from "../change-tracking/ChangeTracker";
+import { QueryOrdering } from "@routier/core/plugins";
+import { CollectionDependencies, RequestContext } from "../collections/types";
 
 export class QueryableAsync<Root extends {}, Shape> extends SelectionQueryableAsync<Root, Shape> {
 
-    constructor(
-        schema: CompiledSchema<Root>,
-        schemas: SchemaCollection,
-        scopedQueryOptions: QueryOptionsCollection<Root>,
-        changeTrackingType: ChangeTrackingType,
-        options: {
-            queryable?: QuerySource<Root, Shape>,
-            dataBridge?: DataBridge<Root>,
-            changeTracker?: ChangeTracker<Root>
-        }) {
-        super(schema, schemas, scopedQueryOptions, changeTrackingType, options);
+    constructor(dependencies: CollectionDependencies<Root>, request: RequestContext<Root>) {
+        super(dependencies, request);
 
         this.where = this.where.bind(this);
         this.map = this.map.bind(this);
@@ -44,7 +31,6 @@ export class QueryableAsync<Root extends {}, Shape> extends SelectionQueryableAs
     }
 
     map<R extends Shape[keyof Shape] | Partial<Shape>>(expression: GenericFunction<Shape, R>) {
-
         this.setMapQueryOption(expression);
         return this.create(QueryableAsync<Root, R>);
     }
@@ -71,7 +57,7 @@ export class QueryableAsync<Root extends {}, Shape> extends SelectionQueryableAs
 
     // does not allow for async functions due to the subscription
     subscribe() {
-        this.isSubScribed = true;
+        this.request.isSubScribed = true;
         return this.create(Queryable<Root, Shape, () => void>);
     }
 }

@@ -20,7 +20,7 @@ export class TrampolinePipeline<TInitial, TCurrent = TInitial> {
         this._hasErrored = false; // Reset error flag on new execution
 
         if (this._list.length === 0) {
-            queueMicrotask(() => done(initialData as any as TFinal));
+            queueMicrotask(() => done(initialData as unknown as TFinal));
             return;
         }
 

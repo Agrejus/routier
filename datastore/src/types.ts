@@ -81,10 +81,6 @@ export type DeepReadonly<T> = {
     : T[K]; // Keep non-object types as they are
 };
 
-export type CollectionOptions = {
-    signal: AbortSignal
-}
-
 export type CollectionPipelines = {
     prepareChanges: TrampolinePipeline<PartialResultType<BulkPersistChanges>>;
     afterPersist: TrampolinePipeline<PartialResultType<{ changes: BulkPersistChanges, result: BulkPersistResult }>>;

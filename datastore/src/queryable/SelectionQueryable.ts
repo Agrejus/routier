@@ -2,24 +2,13 @@ import { CallbackResult, Result, ResultType } from "@routier/core/results";
 import { QuerySource } from "./QuerySource";
 import { Filter, ParamsFilter, toExpression } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
-import { QueryOptionName, QueryOptionsCollection } from "@routier/core/plugins";
-import { ChangeTrackingType, CompiledSchema, IdType } from "@routier/core/schema";
-import { SchemaCollection } from "@routier/core/collections";
-import { DataBridge } from "../data-access/DataBridge";
-import { ChangeTracker } from "../change-tracking/ChangeTracker";
+import { QueryOptionName } from "@routier/core/plugins";
+import { IdType } from "@routier/core/schema";
+import { CollectionDependencies, RequestContext } from "../collections/types";
 export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<Root, Shape> {
 
-    constructor(
-        schema: CompiledSchema<Root>,
-        schemas: SchemaCollection,
-        scopedQueryOptions: QueryOptionsCollection<Root>,
-        changeTrackingType: ChangeTrackingType,
-        options: {
-            queryable?: QuerySource<Root, Shape>,
-            dataBridge?: DataBridge<Root>,
-            changeTracker?: ChangeTracker<Root>
-        }) {
-        super(schema, schemas, scopedQueryOptions, changeTrackingType, options);
+    constructor(dependencies: CollectionDependencies<Root>, request: RequestContext<Root>) {
+        super(dependencies, request);
 
         this.remove = this.remove.bind(this);
         this.toArray = this.toArray.bind(this);
@@ -79,7 +68,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
             paramsOrDone
         })
 
-        this.queryOptions.add("take", 1); // ensure we only select 1 record
+        this.request.queryOptions.add("take", 1); // ensure we only select 1 record
 
         const shaper = (r: Shape[]) => {
             if (r.length === 0) {
@@ -136,7 +125,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
             paramsOrDone
         })
 
-        this.queryOptions.add("take", 1); // ensure we only select 1 record
+        this.request.queryOptions.add("take", 1); // ensure we only select 1 record
 
         this._query<P, Shape>({
             doneOrSelector: doneOrExpression,
@@ -186,7 +175,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
             paramsOrDone
         })
 
-        this.queryOptions.add("take", 1); // ensure we only select 1 record
+        this.request.queryOptions.add("take", 1); // ensure we only select 1 record
 
         const shaper = (r: Shape[]) => r.length > 0;
 
@@ -255,7 +244,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
     }
 
     count(done: CallbackResult<number>): U {
-        this.queryOptions.add("count", true);
+        this.request.queryOptions.add("count", true);
 
         this.getData<number>(done);
 
@@ -264,7 +253,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
 
     distinct(done: CallbackResult<Shape[]>): U {
 
-        this.queryOptions.add("distinct", true);
+        this.request.queryOptions.add("distinct", true);
 
         this.getData<Shape[]>(done);
 
@@ -296,17 +285,17 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
             // params query
             const selector = doneOrExpression as Filter<Shape> | ParamsFilter<Shape, {}>;
             const params = paramsOrDone as P;
-            const expression = toExpression(this.schema, selector, params);
+            const expression = toExpression(this.dependencies.schema, selector, params);
 
-            this.queryOptions.add("filter", { filter: selector, expression, params });
+            this.request.queryOptions.add("filter", { filter: selector as any, expression, params });
             return;
         }
 
         // regular query
         const selector = doneOrExpression as Filter<Shape>;
-        const expression = toExpression(this.schema, selector);
+        const expression = toExpression(this.dependencies.schema, selector);
 
-        this.queryOptions.add("filter", { filter: selector, expression });
+        this.request.queryOptions.add("filter", { filter: selector as any, expression });
     }
 
     private _query<P extends {}, R extends {}>(options: {
@@ -338,8 +327,8 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
     private _aggregateFunction(selector: GenericFunction<Shape, number>, name: QueryOptionName, done: CallbackResult<number>) {
 
         const fields = this.getFields(selector);
-        this.queryOptions.add("map", { selector, fields });
-        this.queryOptions.add(name, true);
+        this.request.queryOptions.add("map", { selector: selector as any, fields });
+        this.request.queryOptions.add(name, true);
 
         this.getData<number>((result) => {
 

@@ -1,20 +1,13 @@
-import { IDbPlugin, QueryOptionsCollection } from "@routier/core/plugins";
-import { CollectionOptions, CollectionPipelines } from "../types";
 import { RemovableCollection } from './RemovableCollection';
-import { ChangeTrackingType, CompiledSchema, InferType } from "@routier/core/schema";
-import { SchemaCollection } from "@routier/core/collections";
+import { ChangeTrackingType } from "@routier/core/schema";
+import { CollectionDependencies } from "./types";
 
 export class ImmutableCollection<TEntity extends {}> extends RemovableCollection<TEntity> {
 
     constructor(
-        dbPlugin: IDbPlugin,
-        schema: CompiledSchema<TEntity>,
-        options: CollectionOptions,
-        pipelines: CollectionPipelines,
-        schemas: SchemaCollection,
-        queryOptions: QueryOptionsCollection<InferType<TEntity>>
+        dependencies: CollectionDependencies<TEntity>
     ) {
-        super(dbPlugin, schema, options, pipelines, schemas, queryOptions);
+        super(dependencies);
 
         this.mutate = this.mutate.bind(this);
     }
