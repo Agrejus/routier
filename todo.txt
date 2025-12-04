@@ -4,7 +4,5 @@ Readonly collection
 
 TODO:
     Deeply nested schemas
-    Sample App view subscriptions are continuoously running
-    With the IoC container, there is the possiblity of queries overlapping when trying to use the same store in an async manner
-        Need to test this
-    Tests lock up after using IoC container when running in parallel
+    Sample App view subscriptions are continuously running
+    Tests lock up when running in parallel

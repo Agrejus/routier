@@ -127,8 +127,9 @@ export const combineExpressions = (...expressions: Expression[]): Expression => 
 };
 
 export const toExpression = <T extends any, P extends any>(schema: CompiledSchema<any>, fn: Filter<T> | ParamsFilter<T, P>, params?: P) => {
+    const stringifiedFunction = fn.toString();
+
     try {
-        const stringifiedFunction = fn.toString();
 
         // Optimized string parsing
         const arrowIndex = stringifiedFunction.indexOf('=>');
@@ -168,8 +169,13 @@ export const toExpression = <T extends any, P extends any>(schema: CompiledSchem
         }
 
         return parseExpressionToTree(schema, expression, parameterData);
-    } catch (e) {
-        console.warn("Error parsing expression", e);
+    } catch (error) {
+        console.warn("Error parsing expression", {
+            error,
+            collectionName: schema.collectionName,
+            params,
+            selector: stringifiedFunction
+        });
         return Expression.NOT_PARSABLE;
     }
 }
