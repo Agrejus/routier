@@ -41,7 +41,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
 
     destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
         const db = new Dexie(this.dbName);
-        db.delete().then(() => done(PluginEventResult.success(event.id))).catch(e => done(PluginEventResult.error(event.id, event)));
+        db.delete().then(() => done(PluginEventResult.success(event.id))).catch(_ => done(PluginEventResult.error(event.id, event)));
     }
 
     private trySetId<TRoot extends {}>(instance: InferCreateType<TRoot>, stringProperty: PropertyInfo<TRoot>) {

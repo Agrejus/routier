@@ -1,7 +1,9 @@
 import { CollectionBase } from './CollectionBase';
 import { InferType } from "@routier/core/schema";
 import { CallbackResult, Result } from "@routier/core/results";
-import { CollectionDependencies } from "./types";
+import { CollectionDependencies, RequestContext } from "./types";
+import { SelectionQueryable } from '../queryable/SelectionQueryable';
+import { Queryable } from '../queryable/Queryable';
 
 export class RemovableCollection<TEntity extends {}> extends CollectionBase<TEntity> {
 
@@ -22,7 +24,7 @@ export class RemovableCollection<TEntity extends {}> extends CollectionBase<TEnt
      * @param entities Array of entities to remove from the collection
      * @param done Callback function called with the removed entities or error
      */
-    remove(entities: InferType<TEntity>[], done: CallbackResult<InferType<TEntity>[]>) {
+    remove(entities: InferType<TEntity>[], done: CallbackResult<InferType<TEntity>[]>): void {
         const tag = this.getAndDestroyTag();
         this.dependencies.changeTracker.remove(entities, tag, done);
     }
@@ -42,13 +44,10 @@ export class RemovableCollection<TEntity extends {}> extends CollectionBase<TEnt
      * Removes all entities from the collection and persists the changes to the database.
      * @param done Callback function called when the operation completes or with an error
      */
-    removeAll(done: (error?: any) => void) {
-        const tag = this.getAndDestroyTag();
-        this.dependencies.changeTracker.removeByQuery({
-            changeTracking: false,
-            options: this.dependencies.scopedQueryOptions as any,
-            schema: this.dependencies.schema
-        }, tag, done);
+    removeAll(done: CallbackResult<InferType<TEntity>[]>) {
+        const request = new RequestContext<TEntity>();
+        const result = new SelectionQueryable<TEntity, InferType<TEntity>, void>(this.dependencies, request);
+        return result.remove(done);
     }
 
     /**
@@ -56,6 +55,6 @@ export class RemovableCollection<TEntity extends {}> extends CollectionBase<TEnt
      * @returns Promise that resolves when the operation completes or rejects with an error
      */
     removeAllAsync() {
-        return new Promise<void>((resolve, reject) => this.removeAll((r) => Result.resolve(r, resolve, reject)));
+        return new Promise<InferType<TEntity>[]>((resolve, reject) => this.removeAll((r) => Result.resolve(r, resolve, reject)));
     }
 }

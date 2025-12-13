@@ -95,7 +95,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
 
         try {
             if (result.ok === Result.ERROR) {
-                this.dependencies.changeTracker.clearAdditions();
+                this.dependencies.changeTracker.clearChanges();
                 done(result);
                 return;
             }
@@ -116,17 +116,10 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
 
             // Merge changes will unpause any change tracking that was paused previously
             // We should be more declarative about this 
-            this.dependencies.changeTracker.mergeChanges(resolvedChanges);
+            const { updates, adds, removals } = this.dependencies.changeTracker.mergeChanges(resolvedChanges);
 
             // clear after we merge changes
-            this.dependencies.changeTracker.clearAdditions();
-
-            // we only want to notify of changes when an item that was saved matches the query
-            // these get reset each time
-            // send in the resulting adds because properties might have been set from the db operation
-            const updates = this.cloneMany(resolvedChanges.updates);
-            const adds = this.cloneMany(resolvedChanges.adds as InferType<TEntity>[]);
-            const removals = this.cloneMany(changes.removes);
+            this.dependencies.changeTracker.clearChanges();
 
             const subscriptionChanges: SubscriptionChanges<TEntity> = {
                 updates,
@@ -204,34 +197,11 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
             assertIsNotNull(tags, "Could not find tag collection during prepare operation");
 
             changes.tags = tags;
+            changes.adds = this.dependencies.changeTracker.prepareAdditions();
+            changes.updates = this.dependencies.changeTracker.getAttachmentsChanges();
+            changes.removes = this.dependencies.changeTracker.prepareRemovals();
 
-            const adds = this.dependencies.changeTracker.prepareAdditions();
-
-            if (adds.length > 0) {
-                changes.adds = adds;
-            }
-
-            const updates = this.dependencies.changeTracker.getAttachmentsChanges();
-
-            if (updates.length > 0) {
-                changes.updates = updates;
-            }
-
-            const removes = this.dependencies.changeTracker.prepareRemovals();
-
-            this.resolveRemovalQueries(removes.queries, r => {
-
-                if (r.ok !== Result.SUCCESS) {
-                    done(Result.error(r.error));
-                    return;
-                }
-
-                if (removes.entities.length > 0 || r.data.length > 0) {
-                    changes.removes = [...removes.entities, ...r.data as InferType<TEntity>[]];
-                }
-
-                done(result);
-            });
+            done(result);
         } catch (e) {
             done(Result.error(e));
         }

@@ -6,6 +6,7 @@ import { Query } from '../query';
 import { resolveBulkPersistChanges, uuid } from '../../utilities';
 import { BulkPersistChanges, BulkPersistResult } from '../../collections';
 import { ITranslatedValue } from '../translators';
+import { now } from '../../performance';
 
 const getMemoryPluginCollectionSize = <T extends {}>(plugin: IDbPlugin, schema: CompiledSchema<T>): number => {
 
@@ -15,6 +16,9 @@ const getMemoryPluginCollectionSize = <T extends {}>(plugin: IDbPlugin, schema: 
 
     throw new Error("Cannot get size of collection for MemoryPlugin, not an instance of MemoryPlugin");
 }
+
+const MAX_HYDRATION_WAIT_MS = 60_000; // 60 seconds max wait
+const HYDRATION_POLL_INTERVAL_MS = 10; // Check ever 10 ms
 
 type HydrationStatus =
     | "hydration-not-started"
@@ -58,8 +62,6 @@ export class OptimisticReplicationDbPlugin implements IDbPlugin {
                 // Notify the cache that the db was hydrated right away
                 hydrationStatus = "hydration-pending";
 
-                console.log('[ROUTIER] - Optimistic Query', hydrationStatus);
-
                 // nothing is hydrated, let's try and hydrate before querying
                 // Memory plugin might not be hydrated, lets hydrate it for the targeted schema only,
                 // Other queries will do the same and hydrate if needed
@@ -76,23 +78,14 @@ export class OptimisticReplicationDbPlugin implements IDbPlugin {
 
                         // Notify that hydration failed
                         hydrationStatus = "hydration-error";
-                        console.log("[ROUTIER] - Hydration Error - Source Query", sourceResult);
                         done(sourceResult);
                         return;
                     }
 
-                    if (sourceResult == null || (Array.isArray(sourceResult.data) && sourceResult.data.length === 0)) {
-                        // Notify that hydration had no data
-                        hydrationStatus = "hydration-error";
-                        console.log("[ROUTIER] - Hydration Error - No Data", sourceResult);
-                        done(sourceResult);
-                        return;
-                    }
-
-                    if (Array.isArray(sourceResult.data) === false) {
+                    // Source plugin can have no data, still should succeed
+                    if (Array.isArray(sourceResult.data.value) === false) {
                         // Notify that hydration failed
                         hydrationStatus = "hydration-error";
-                        console.log("[ROUTIER] - Hydration Error - Bad Result", sourceResult);
                         done(PluginEventResult.error(event.id, "Query result is not an array"));
                         return;
                     }
@@ -101,7 +94,7 @@ export class OptimisticReplicationDbPlugin implements IDbPlugin {
                     const schemaChanges = changesCollection.resolve(event.operation.schema.id);
 
                     // Add the existing items into the persist payload as adds
-                    schemaChanges.adds = sourceResult.data;
+                    schemaChanges.adds = sourceResult.data.value;
 
                     readPlugin.bulkPersist({
                         id: uuid(8),
@@ -113,7 +106,6 @@ export class OptimisticReplicationDbPlugin implements IDbPlugin {
                         if (readPersistResult.ok === Result.ERROR) {
                             // Notify that hydration failed
                             hydrationStatus = "hydration-error";
-                            console.log("[ROUTIER] - Hydration Error - Could Not Save", readPersistResult);
                             done(readPersistResult);
                             return;
                         }
@@ -125,6 +117,48 @@ export class OptimisticReplicationDbPlugin implements IDbPlugin {
                     });
                 });
 
+                return;
+            }
+
+            if (hydrationStatus === "hydration-error") {
+                done(PluginEventResult.error(event.id, "Hydration failed, unable to query read plugin"));
+                return;
+            }
+
+            // If hydration is pending, do not query empty collection, wait for hydration
+            if (hydrationStatus === "hydration-pending") {
+                const start = now();
+                const pollHydrationStatus = () => {
+                    const delta = now() - start;
+
+                    if (delta > MAX_HYDRATION_WAIT_MS) {
+                        hydrationStatus = "hydration-error";
+                        done(PluginEventResult.error(event.id, `Hydration timeout: exceeded maximum wait time of ${MAX_HYDRATION_WAIT_MS}ms`));
+                        return;
+                    }
+
+                    if (hydrationStatus === "hydration-error") {
+                        done(PluginEventResult.error(event.id, "Hydration failed, unable to query read plugin"));
+                        return;
+                    }
+
+                    if (hydrationStatus === "hydration-success") {
+                        // Hydration completed successfully, proceed with query
+                        readPlugin.query(event, (readResult) => {
+                            if (readResult.ok === Result.ERROR) {
+                                done(readResult);
+                                return;
+                            }
+                            done(readResult);
+                        });
+                        return;
+                    }
+
+                    // Still pending, check again after interval
+                    setTimeout(pollHydrationStatus, HYDRATION_POLL_INTERVAL_MS);
+                }
+
+                pollHydrationStatus();
                 return;
             }
 

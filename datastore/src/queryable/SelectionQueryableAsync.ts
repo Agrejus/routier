@@ -23,10 +23,10 @@ export class SelectionQueryableAsync<Root extends {}, Shape> extends SelectionQu
         this.distinctAsync = this.distinctAsync.bind(this);
     }
 
-    removeAsync(expression: Filter<Shape>): Promise<void>;
-    removeAsync<P extends {}>(expression: ParamsFilter<Shape, P>, params: P): Promise<void>;
-    removeAsync(): Promise<void>;
-    removeAsync<P extends {} = never>(doneOrExpression?: Filter<Shape> | ParamsFilter<Shape, P>, params?: P): Promise<void> {
+    removeAsync(expression: Filter<Shape>): Promise<Shape[]>;
+    removeAsync<P extends {}>(expression: ParamsFilter<Shape, P>, params: P): Promise<Shape[]>;
+    removeAsync(): Promise<Shape[]>;
+    removeAsync<P extends {} = never>(doneOrExpression?: Filter<Shape> | ParamsFilter<Shape, P>, params?: P): Promise<Shape[]> {
 
         if (params != null) {
             const paramsFilter = doneOrExpression as ParamsFilter<Shape, P>;

@@ -3,7 +3,7 @@ import { InferType } from "@routier/core/schema";
 import { CallbackResult, PluginEventCallbackResult, PluginEventResult, PluginEventSuccessType, Result } from "@routier/core/results";
 import { GenericFunction } from "@routier/core/types";
 import { Filter, ParamsFilter, toExpression } from "@routier/core/expressions";
-import { uuid } from "@routier/core/utilities";
+import { unsafeCast, uuid } from "@routier/core/utilities";
 import { CollectionDependencies, RequestContext } from "../collections/types";
 
 export abstract class QuerySource<TRoot extends {}, TShape> {
@@ -44,11 +44,23 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
         return resolvedQueryOptions;
     }
 
-    protected _remove<U>(done: CallbackResult<never>) {
+    protected _remove<U>(done: CallbackResult<TShape[]>) {
 
-        const query = new Query<TRoot, TRoot>(this.resolveQueryOptions<TRoot>(), this.dependencies.schema, false);
+        this.getData<TShape[]>(r => {
 
-        this.dependencies.changeTracker.removeByQuery(query, null, done);
+            if (r.ok === Result.ERROR) {
+                return done(r);
+            }
+
+            this.dependencies.changeTracker.remove(r.data as InferType<TRoot>[], null, removeResult => {
+
+                if (removeResult.ok === Result.ERROR) {
+                    return done(removeResult);
+                }
+
+                return done(Result.success(removeResult.data as TShape[]));
+            });
+        });
 
         return this.subscribeQuery<TShape[]>(done) as U;
     }

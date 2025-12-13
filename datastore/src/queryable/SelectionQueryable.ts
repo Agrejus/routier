@@ -23,10 +23,10 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
         this.distinct = this.distinct.bind(this);
     }
 
-    remove(expression: Filter<Shape>, done: CallbackResult<never>): void;
-    remove<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<never>): void;
-    remove(done: CallbackResult<never>): void;
-    remove<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<never>, paramsOrDone?: P | CallbackResult<never>, done?: CallbackResult<never>): void {
+    remove(expression: Filter<Shape>, done: CallbackResult<Shape[]>): void;
+    remove<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<Shape[]>): void;
+    remove(done: CallbackResult<Shape[]>): void;
+    remove<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<Shape[]>, paramsOrDone?: P | CallbackResult<Shape[]>, done?: CallbackResult<Shape[]>): void {
 
         if (done != null) {
             // params expression

@@ -215,7 +215,14 @@ describe("Product Tests", () => {
             await seedData(dataStore, () => dataStore.products, 20);
 
             // Act
-            await dataStore.products.take(10).removeAsync();
+            const removals = await dataStore.products.take(10).removeAsync();
+
+            expect(removals.length).toBe(10);
+
+            const preview = await dataStore.previewChangesAsync();
+
+            expect(preview.aggregate.removes).toBe(10);
+
             const response = await dataStore.saveChangesAsync();
 
             expect(response.aggregate.size).toBe(10);

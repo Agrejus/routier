@@ -5,7 +5,8 @@ import { BulkPersistChanges, SchemaCollection, SchemaPersistChanges } from '@rou
 import { CallbackResult, noop, Result, uuid } from '@routier/core';
 import { QueryableAsync } from '../queryable/QueryableAsync';
 import { Derive, DeriveResponse } from './types';
-import { CollectionDependencies } from '../collections/types';
+import { CollectionDependencies, RequestContext } from '../collections/types';
+import { SelectionQueryable } from '../queryable/SelectionQueryable';
 
 /**
  * View that only allows data selection. Cannot add, remove, or update data.  Data is computed
@@ -141,27 +142,13 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
     }
 
     emptyAsync() {
-        return new Promise<never>((resolve, reject) => this.empty((r) => Result.resolve(r, resolve, reject)));
+        return new Promise<InferType<TEntity>[]>((resolve, reject) => this.empty((r) => Result.resolve(r, resolve, reject)));
     }
 
-    empty(done: CallbackResult<never>) {
-        try {
-
-            this.dependencies.changeTracker.removeByQuery({
-                changeTracking: false,
-                options: this.dependencies.scopedQueryOptions as unknown as QueryOptionsCollection<TEntity>,
-                schema: this.dependencies.schema
-            }, null, (result) => {
-
-                if (result.ok === "error") {
-                    return done(result);
-                }
-
-                done(Result.success())
-            });
-        } catch (e) {
-            done(Result.error(e));
-        }
+    empty(done: CallbackResult<InferType<TEntity>[]>) {
+        const request = new RequestContext<TEntity>();
+        const result = new SelectionQueryable<TEntity, InferType<TEntity>, void>(this.dependencies, request);
+        return result.remove(done);
     }
 
     computeAsync() {
