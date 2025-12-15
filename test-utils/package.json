@@ -27,7 +27,7 @@
   ],
   "description": "Testing plugin for routier",
   "peerDependencies": {
-    "@routier/core": ">=0.1.0-rc.0"
+    "@routier/core": ">=0.1.0-rc.1"
   },
   "dependencies": {
     "@faker-js/faker": "^9.7.0"

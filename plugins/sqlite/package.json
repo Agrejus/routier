@@ -31,12 +31,12 @@
   ],
   "description": "Dexie plugin for routier",
   "peerDependencies": {
-    "@routier/core": ">=0.1.0-rc.0"
+    "@routier/core": ">=0.1.0-rc.1"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.0.0",
-    "@routier/core": "^0.1.0-rc.0",
-    "@routier/datastore": "^0.1.0-rc.0",
+    "@routier/core": "^0.1.0-rc.1",
+    "@routier/datastore": "^0.1.0-rc.1",
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",
     "ts-loader": "^9.5.2"
