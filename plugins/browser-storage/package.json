@@ -14,7 +14,8 @@
     "tsc": "tsc",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "lint": "eslint . --ext ts --report-unused-disable-directives --max-warnings 0"
   },
   "sideEffects": false,
   "author": "James DeMeuse <james.demeuse@gmail.com>",

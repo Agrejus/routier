@@ -1,11 +1,11 @@
 import { describe, it, expect } from '@jest/globals';
 import { DataStore } from '.';
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin } from '@routier/core/plugins';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
 import { now } from '@routier/core/performance';
 import { BulkPersistResult } from '@routier/core/collections';
 import { InferCreateType, s } from '@routier/core/schema';
-import { uuid, uuidv4 } from '@routier/core';
+import { logger, uuid, uuidv4 } from '@routier/core';
 import { MemoryPlugin } from '@routier/memory-plugin';
 
 const simple = s.define("simple", {
@@ -27,7 +27,7 @@ class GenericPlugin extends MemoryPlugin {
         this.options = options;
     }
 
-    query<TRoot extends {}, TShape extends unknown = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<TShape>): void {
+    query<TRoot extends {}, TShape extends unknown = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
         this.options?.onQuery?.(event);
         super.query(event, done);
     }
@@ -57,6 +57,8 @@ describe('Data Store', () => {
     describe("Tags", () => {
 
         it('should tag added entity', async () => {
+
+            logger.log("test");
 
             let resolve!: () => void;
             const called = new Promise<void>(r => { resolve = r; });
@@ -155,7 +157,7 @@ describe('Data Store', () => {
                 this.id = id;
             }
 
-            query<TRoot extends {}, TShape extends unknown = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<TShape>): void {
+            query<TRoot extends {}, TShape extends unknown = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
                 cache[this.id].end = now();
                 done(PluginEventResult.success(event.id, [] as any));
             }
@@ -218,11 +220,9 @@ describe('Data Store', () => {
             expect(delta).toBeLessThan(1);
         });
 
-        it('Can add 1000 items under 3ms', async () => {
+        it('Can add 1000 items under 1.5ms', async () => {
 
             const id = uuidv4();
-            const store = factory(id);
-
             const items: InferCreateType<typeof simple>[] = [];
 
             for (let i = 0; i < 1000; i++) {
@@ -232,12 +232,13 @@ describe('Data Store', () => {
                 });
             }
 
+            const store = factory(id);
             await store.simple.addPerformanceAsync(...items);
 
             const { start, end } = cache[id];
             const delta = end - start;
 
-            expect(delta).toBeLessThan(3);
+            expect(delta).toBeLessThan(1.5);
         });
 
         it("should query under 1.5ms", async () => {

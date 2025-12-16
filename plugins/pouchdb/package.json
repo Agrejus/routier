@@ -20,7 +20,8 @@
     "tsc": "tsc",
     "test": "vitest --run",
     "test:watch": "vitest --watch",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "lint": "eslint . --ext ts --report-unused-disable-directives --max-warnings 0"
   },
   "sideEffects": false,
   "author": "James DeMeuse <james.demeuse@gmail.com>",

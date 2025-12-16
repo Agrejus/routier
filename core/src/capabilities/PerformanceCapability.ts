@@ -3,6 +3,7 @@ import { Capability } from "./Capability";
 import { PerformanceTracker } from "./performance/PerformanceTracker";
 import { CallTraceManager } from "./tracing/CallTraceManager";
 import { MethodInfoMetadata, MethodInfo } from "./types";
+import { logger } from '../utilities';
 
 export type PerformanceCapabilityOptions = {
     filter: (methodName: string | symbol, methodInfo: MethodInfo, metadata: MethodInfoMetadata) => boolean
@@ -51,12 +52,12 @@ export class PerformanceCapability extends Capability {
 
                         this.performanceTracker.startMethodTiming(operationId, path);
 
-                        console.log(`\n${'═'.repeat(60)}`);
-                        console.log(`▶ ORIGIN [${operationId}] ${path}`);
+                        logger.log(`\n${'═'.repeat(60)}`);
+                        logger.log(`▶ ORIGIN [${operationId}] ${path}`);
                         if (args.length > 0) {
-                            console.log(`  Args:`, stringifyObject(args, 4, 0));
+                            logger.log(`  Args:`, stringifyObject(args, 4, 0));
                         }
-                        console.log(`  Call Stack: ${formattedCallTrace.join(' → ')}`);
+                        logger.log(`  Call Stack: ${formattedCallTrace.join(' → ')}`);
                     } else {
                         operationId = this.callTraceManager.getActiveOperationId();
                         callTrace = this.callTraceManager.addMethodToTrace(path);
@@ -69,9 +70,9 @@ export class PerformanceCapability extends Capability {
 
                         this.performanceTracker.startMethodTiming(operationId, path);
 
-                        console.log(`${indent}└─ CHILD [${operationId}] ${path}`);
+                        logger.log(`${indent}└─ CHILD [${operationId}] ${path}`);
                         if (args.length > 0) {
-                            console.log(`${indent}   Args:`, stringifyObject(args, 4, 0));
+                            logger.log(`${indent}   Args:`, stringifyObject(args, 4, 0));
                         }
                     }
 
@@ -89,14 +90,14 @@ export class PerformanceCapability extends Capability {
                             const overhead = duration - totalChildTime;
                             const formattedOverhead = this.performanceTracker.formatDuration(Math.max(0, overhead));
 
-                            console.log(`\n${'═'.repeat(60)}`);
-                            console.log(`◀ COMPLETE [${operationId}] ${path}`);
-                            console.log(`  Total Duration: ${formattedDuration}`);
+                            logger.log(`\n${'═'.repeat(60)}`);
+                            logger.log(`◀ COMPLETE [${operationId}] ${path}`);
+                            logger.log(`  Total Duration: ${formattedDuration}`);
                             if (childDurations.length > 0) {
-                                console.log(`  Children Duration: ${formattedTotalChildTime} (${childDurations.length} calls)`);
-                                console.log(`  Overhead: ${formattedOverhead}`);
+                                logger.log(`  Children Duration: ${formattedTotalChildTime} (${childDurations.length} calls)`);
+                                logger.log(`  Overhead: ${formattedOverhead}`);
                             }
-                            console.log(`${'═'.repeat(60)}\n`);
+                            logger.log(`${'═'.repeat(60)}\n`);
 
                             this.childDurations.delete(operationId);
                             this.performanceTracker.cleanupOperation(operationId);
@@ -110,9 +111,9 @@ export class PerformanceCapability extends Capability {
                             const overhead = duration - totalChildTime;
                             const formattedOverhead = this.performanceTracker.formatDuration(Math.max(0, overhead));
 
-                            console.log(`${indent}   ✓ ${formattedDuration}`);
+                            logger.log(`${indent}   ✓ ${formattedDuration}`);
                             if (childDurations.length > 0) {
-                                console.log(`${indent}     Children: ${formattedTotalChildTime} (${childDurations.length} calls), Overhead: ${formattedOverhead}`);
+                                logger.log(`${indent}     Children: ${formattedTotalChildTime} (${childDurations.length} calls), Overhead: ${formattedOverhead}`);
                             }
 
                             // Clean up child method tracking

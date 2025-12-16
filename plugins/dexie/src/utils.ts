@@ -1,4 +1,4 @@
-import { CompiledSchema, PropertyInfo, SchemaTypes } from "@routier/core";
+import { CompiledSchema, logger, PropertyInfo, SchemaTypes } from "@routier/core";
 
 export const convertToDexieSchema = <T extends {}>(schema: CompiledSchema<T>) => {
     const schemaProperties: string[] = [];
@@ -8,7 +8,7 @@ export const convertToDexieSchema = <T extends {}>(schema: CompiledSchema<T>) =>
         const property = schema.properties[i];
 
         if (property.level > 1) {
-            console.warn(`Dexie does not support querying on nested objects.  Property: ${property.getPathArray().join(".")}`);
+            logger.warn(`Dexie does not support querying on nested objects.  Property: ${property.getPathArray().join(".")}`);
             continue;
         }
 

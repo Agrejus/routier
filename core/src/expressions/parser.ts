@@ -1,3 +1,4 @@
+import { logger } from "../utilities";
 import { assertString } from "../assertions";
 import { CompiledSchema, SchemaTypes } from "../schema";
 import { Expression, OperatorExpression, ComparatorExpression, ValueExpression, PropertyExpression, Filter, ParamsFilter, Operator } from "./types";
@@ -170,7 +171,7 @@ export const toExpression = <T extends any, P extends any>(schema: CompiledSchem
 
         return parseExpressionToTree(schema, expression, parameterData);
     } catch (error) {
-        console.warn("Error parsing expression", {
+        logger.warn("Error parsing expression", {
             error,
             collectionName: schema.collectionName,
             params,

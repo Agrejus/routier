@@ -1,3 +1,4 @@
+import { logger } from '@routier/core/utilities';
 import { performance } from 'perf_hooks';
 
 export interface BenchmarkResult {
@@ -86,24 +87,24 @@ export class SimpleBenchmark {
     static printResults(results: BenchmarkResult | BenchmarkResult[]): void {
         const resultsArray = Array.isArray(results) ? results : [results];
 
-        console.log('\n📊 Benchmark Results:');
-        console.log('='.repeat(50));
+        logger.log('\n📊 Benchmark Results:');
+        logger.log('='.repeat(50));
 
         resultsArray.forEach(result => {
-            console.log(`\n${result.name}:`);
-            console.log(`  Total time: ${result.totalTime.toFixed(2)}ms`);
-            console.log(`  Iterations: ${result.iterations.toLocaleString()}`);
-            console.log(`  Avg time per operation: ${result.avgTimePerOp.toFixed(4)}μs`);
-            console.log(`  Operations per second: ${result.opsPerSecond.toFixed(0)}`);
+            logger.log(`\n${result.name}:`);
+            logger.log(`  Total time: ${result.totalTime.toFixed(2)}ms`);
+            logger.log(`  Iterations: ${result.iterations.toLocaleString()}`);
+            logger.log(`  Avg time per operation: ${result.avgTimePerOp.toFixed(4)}μs`);
+            logger.log(`  Operations per second: ${result.opsPerSecond.toFixed(0)}`);
 
             if (result.warmupTime) {
-                console.log(`  Warmup time: ${result.warmupTime.toFixed(2)}ms`);
+                logger.log(`  Warmup time: ${result.warmupTime.toFixed(2)}ms`);
             }
         });
 
         // Performance analysis for multiple results
         if (resultsArray.length > 1) {
-            console.log('\n📈 Performance Comparison:');
+            logger.log('\n📈 Performance Comparison:');
             const fastest = resultsArray.reduce((min, result) =>
                 result.avgTimePerOp < min.avgTimePerOp ? result : min
             );
@@ -111,19 +112,16 @@ export class SimpleBenchmark {
                 result.avgTimePerOp > max.avgTimePerOp ? result : max
             );
 
-            console.log(`  Fastest: ${fastest.name} (${fastest.avgTimePerOp.toFixed(2)}μs)`);
-            console.log(`  Slowest: ${slowest.name} (${slowest.avgTimePerOp.toFixed(2)}μs)`);
-            console.log(`  Performance ratio: ${(slowest.avgTimePerOp / fastest.avgTimePerOp).toFixed(2)}x`);
+            logger.log(`  Fastest: ${fastest.name} (${fastest.avgTimePerOp.toFixed(2)}μs)`);
+            logger.log(`  Slowest: ${slowest.name} (${slowest.avgTimePerOp.toFixed(2)}μs)`);
+            logger.log(`  Performance ratio: ${(slowest.avgTimePerOp / fastest.avgTimePerOp).toFixed(2)}x`);
         }
     }
 
-    /**
-     * Print results as a table (if console.table is available)
-     */
     static printTable(results: BenchmarkResult[]): void {
-        if (typeof console.table === 'function') {
-            console.log('\n📊 Benchmark Results Table:');
-            console.table(results.map(result => ({
+        if (typeof logger.table === 'function') {
+            logger.log('\n📊 Benchmark Results Table:');
+            logger.table(results.map(result => ({
                 'Name': result.name,
                 'Total Time (ms)': result.totalTime.toFixed(2),
                 'Iterations': result.iterations.toLocaleString(),

@@ -10,3 +10,4 @@ export * from './queryOptionsCollection';
 export * from './dbPluginEventUtils';
 export * from './functions';
 export * from './unsafeCast';
+export * from './logger';

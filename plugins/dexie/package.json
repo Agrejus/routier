@@ -17,7 +17,8 @@
     "build": "npm run build:bundle && npm run build:types",
     "test": "jest",
     "test:watch": "jest --watch",
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "lint": "eslint . --ext ts --report-unused-disable-directives --max-warnings 0"
   },
   "sideEffects": false,
   "author": "James DeMeuse <james.demeuse@gmail.com>",

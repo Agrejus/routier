@@ -40,12 +40,10 @@ export class DataBridge<T extends {}> {
     subscribe<TShape, U>(event: DbPluginQueryEvent<T, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>) {
         const subscription = event.operation.schema.createSubscription(this.signal);
         subscription.onMessage((changes) => {
-            console.log(this, changes);
             const filters = event.operation.options.get("filter")
 
             // subscription has no filter, automatically run the query
             if (filters.length === 0) {
-                console.log("hi")
                 this.query(event, done);
                 return;
             }

@@ -1,3 +1,4 @@
+import { logger } from "../utilities";
 import { CallbackResult, Result, ResultType } from "../results";
 
 /**
@@ -55,7 +56,7 @@ export class TrampolinePipeline<TInitial, TCurrent = TInitial> {
                         processor(currentData, (result, error) => {
                             // --- Error Handling ---
                             if (error) {
-                                console.error(`Error reported by processor at index ${idx}:`, error);
+                                logger.error(`Error reported by processor at index ${idx}:`, error);
                                 this._hasErrored = true; // Set flag
                                 // Throw the error to be caught by outer try...catch blocks
                                 throw error;
@@ -78,7 +79,7 @@ export class TrampolinePipeline<TInitial, TCurrent = TInitial> {
                         });
                     } catch (error) {
                         if (!this._hasErrored) { // Check flag to avoid double logging if error was from callback
-                            console.error(`Error thrown by processor at index ${idx} or its callback:`, error);
+                            logger.error(`Error thrown by processor at index ${idx} or its callback:`, error);
                             this._hasErrored = true;
                         }
                         // Rethrow to be caught by the trampoline's catch block
@@ -116,7 +117,7 @@ export class TrampolinePipeline<TInitial, TCurrent = TInitial> {
                     } catch (trampolineError) {
                         // Catch errors propagated from step execution (processor or callback errors)
                         if (!this._hasErrored) { // Avoid double logging
-                            console.error("Error during trampoline step execution:", trampolineError);
+                            logger.error("Error during trampoline step execution:", trampolineError);
                             this._hasErrored = true;
                         }
                         currentStep = null; // Stop the loop
@@ -208,7 +209,7 @@ export class WorkPipeline {
                         processor((result) => {
                             // --- Error Handling ---
                             if (result.ok === Result.ERROR) {
-                                console.error(`Error reported by AsyncPipeline at index ${idx}:`, result.error);
+                                logger.error(`Error reported by AsyncPipeline at index ${idx}:`, result.error);
                                 this._hasErrored = true; // Set flag
                                 // Throw the error to be caught by outer try...catch blocks
                                 throw result.error;
@@ -230,7 +231,7 @@ export class WorkPipeline {
                         });
                     } catch (error) {
                         if (!this._hasErrored) { // Check flag to avoid double logging if error was from callback
-                            console.error(`Error thrown by processor at index ${idx} or its callback:`, error);
+                            logger.error(`Error thrown by processor at index ${idx} or its callback:`, error);
                             this._hasErrored = true;
                         }
                         // Rethrow to be caught by the trampoline's catch block
@@ -268,7 +269,7 @@ export class WorkPipeline {
                     } catch (trampolineError) {
                         // Catch errors propagated from step execution (processor or callback errors)
                         if (!this._hasErrored) { // Avoid double logging
-                            console.error("Error during trampoline step execution:", trampolineError);
+                            logger.error("Error during trampoline step execution:", trampolineError);
                             this._hasErrored = true;
                         }
                         currentStep = null; // Stop the loop

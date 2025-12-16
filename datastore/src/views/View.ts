@@ -1,8 +1,9 @@
 import { CollectionBase } from '../collections/CollectionBase';
-import { IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
+import { IDbPlugin } from '@routier/core/plugins';
 import { ChangeTrackingType, CompiledSchema, IdType, InferCreateType, InferType, SubscriptionChanges } from '@routier/core/schema';
 import { BulkPersistChanges, SchemaCollection, SchemaPersistChanges } from '@routier/core/collections';
-import { CallbackResult, noop, Result, uuid } from '@routier/core';
+import { CallbackResult, Result } from '@routier/core/results';
+import { logger, noop, uuid } from '@routier/core/utilities';
 import { QueryableAsync } from '../queryable/QueryableAsync';
 import { Derive, DeriveResponse } from './types';
 import { CollectionDependencies, RequestContext } from '../collections/types';
@@ -94,7 +95,7 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                     }, (r) => {
 
                         if (r.ok === Result.ERROR) {
-                            console.error("Failed to update view", r.error);
+                            logger.error("Failed to update view", r.error);
                             return;
                         }
 

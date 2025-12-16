@@ -72,7 +72,8 @@
     "build:bundle": "rspack build",
     "build": "npm run build:bundle && npm run build:types",
     "tsc": "tsc",
-    "test": "jest"
+    "test": "jest",
+    "lint": "eslint . --ext ts --report-unused-disable-directives --max-warnings 0"
   },
   "sideEffects": false,
   "author": "James DeMeuse <james.demeuse@gmail.com>",

@@ -2,6 +2,7 @@ import { Capability } from "./Capability";
 import { CallTraceManager } from "./tracing/CallTraceManager";
 import { stringifyObject } from "../utilities/strings";
 import { MethodInfo, MethodInfoMetadata } from "./types";
+import { logger } from '../utilities';
 
 export type TracingCapabilityOptions = {
     filter: (methodName: string | symbol, methodInfo: MethodInfo, metadata: MethodInfoMetadata) => boolean
@@ -42,20 +43,20 @@ export class TracingCapability extends Capability {
                         const callTrace = this.callTraceManager.addMethodToTrace(path);
                         const formattedCallTrace = this.callTraceManager.formatMethodPaths(callTrace);
 
-                        console.log(`\n${'═'.repeat(60)}`);
-                        console.log(`▶ ORIGIN [${operationId}] ${path}`);
+                        logger.log(`\n${'═'.repeat(60)}`);
+                        logger.log(`▶ ORIGIN [${operationId}] ${path}`);
                         if (args.length > 0) {
-                            console.log(`  Args:`, stringifyObject(args, 4, 0));
+                            logger.log(`  Args:`, stringifyObject(args, 4, 0));
                         }
-                        console.log(`  Call Stack: ${formattedCallTrace.join(' → ')}`);
+                        logger.log(`  Call Stack: ${formattedCallTrace.join(' → ')}`);
                     } else {
                         operationId = this.callTraceManager.getActiveOperationId();
                         const callTrace = this.callTraceManager.addMethodToTrace(path);
 
                         const indent = '  '.repeat(Math.min(callTrace.length - 1, 4));
-                        console.log(`${indent}└─ CHILD [${operationId}] ${path}`);
+                        logger.log(`${indent}└─ CHILD [${operationId}] ${path}`);
                         if (args.length > 0) {
-                            console.log(`${indent}   Args:`, stringifyObject(args, 4, 0));
+                            logger.log(`${indent}   Args:`, stringifyObject(args, 4, 0));
                         }
                     }
 

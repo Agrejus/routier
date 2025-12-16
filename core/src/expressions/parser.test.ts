@@ -2,6 +2,7 @@ import { describe, it, expect } from '@jest/globals';
 import { toExpression, combineExpressions } from './parser';
 import { CompiledSchema, SchemaTypes } from '../schema';
 import { Expression, ComparatorExpression, OperatorExpression, PropertyExpression, ValueExpression } from './types';
+import { logger } from '../utilities';
 
 describe('Parser', () => {
     const mockSchema = {
@@ -758,8 +759,8 @@ describe('Parser', () => {
             //     const end = performance.now();
             //     const duration = end - start;
 
-            //     console.log(`Parsed ${expressions.length} complex expressions in: ${duration.toFixed(2)}ms`);
-            //     console.log(`Average time per expression: ${(duration / expressions.length).toFixed(2)}ms`);
+            //     logger.log(`Parsed ${expressions.length} complex expressions in: ${duration.toFixed(2)}ms`);
+            //     logger.log(`Average time per expression: ${(duration / expressions.length).toFixed(2)}ms`);
 
             //     parsedExpressions.forEach((expression, index) => {
             //         expect(expression).not.toBeNull();
@@ -846,7 +847,7 @@ describe('Parser', () => {
             const start = performance.now();
             const expression = toExpression(mockSchema, (entity: any) => entity.name === 'test');
             const delta = performance.now() - start;
-            console.log(`Took ${delta}ms`)
+            logger.log(`Took ${delta}ms`)
             expect(delta).toBeLessThan(.05);
             expect(expression).toBeInstanceOf(ComparatorExpression);
             const comp = expression as ComparatorExpression;
@@ -958,7 +959,7 @@ describe('Parser', () => {
             const end = performance.now();
             const duration = end - start;
 
-            console.log(`Complex expression parsing took: ${duration.toFixed(2)}ms`);
+            logger.log(`Complex expression parsing took: ${duration.toFixed(2)}ms`);
 
             expect(expression).not.toBeNull();
             expect(expression).not.toStrictEqual(Expression.NOT_PARSABLE); // Parser can handle this expression

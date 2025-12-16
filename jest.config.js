@@ -19,6 +19,7 @@ module.exports = {
     coverageDirectory: 'coverage',
     coverageReporters: ['text', 'html'],
     moduleFileExtensions: ['ts', 'js', 'json'],
+    setupFiles: ['<rootDir>/test.setup.js'],
     setupFilesAfterEnv: [],
     testTimeout: 10000,
     projects: [
@@ -42,7 +43,27 @@ module.exports = {
             displayName: 'datastore',
             testMatch: ['<rootDir>/datastore/**/*.test.ts'],
             preset: 'ts-jest',
-            testEnvironment: 'node'
+            testEnvironment: 'node',
+            moduleNameMapper: {
+                '^@routier/core$': '<rootDir>/core/src/index.ts',
+                '^@routier/core/(.*)$': '<rootDir>/core/src/$1',
+                '^@routier/memory-plugin$': '<rootDir>/plugins/memory/src/index.ts',
+                '^@routier/test-utils$': '<rootDir>/test-utils/src/index.ts'
+            },
+            transformIgnorePatterns: [
+                'node_modules/(?!(@routier)/)'
+            ],
+            transform: {
+                '^.+\\.ts$': ['ts-jest', {
+                    tsconfig: {
+                        lib: ['ESNext', 'ES2023'],
+                        target: 'ESNext',
+                        moduleResolution: 'node',
+                        esModuleInterop: true,
+                        allowSyntheticDefaultImports: true
+                    }
+                }]
+            }
         },
         {
             displayName: 'react',
