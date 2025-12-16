@@ -4,14 +4,11 @@ import { QueryableAsync } from '../queryable/QueryableAsync';
 import { SelectionQueryable } from "../queryable/SelectionQueryable";
 import { SelectionQueryableAsync } from "../queryable/SelectionQueryableAsync";
 import { ChangeTrackingType, IdType, InferCreateType, InferType, SubscriptionChanges } from "@routier/core/schema";
-import { IQuery, ITranslatedValue } from "@routier/core/plugins";
 import { CallbackPartialResult, CallbackResult, PartialResultType, Result, toPromise } from "@routier/core/results";
 import { BulkPersistChanges, BulkPersistResult } from "@routier/core/collections";
 import { assertIsNotNull } from "@routier/core/assertions";
-import { AsyncPipeline } from "@routier/core/pipeline";
 import { GenericFunction } from "@routier/core/types";
 import { Filter, ParamsFilter } from "@routier/core/expressions";
-import { uuid } from "@routier/core/utilities";
 import { CollectionDependencies, RequestContext } from "./types";
 
 export class CollectionBase<TEntity extends {}> implements Disposable {
@@ -134,48 +131,6 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
         } catch (e) {
             done(Result.error(e));
         }
-    }
-
-    protected resolveRemovalQueries(queries: IQuery<TEntity, TEntity>[], done: CallbackResult<TEntity[]>) {
-
-        if (queries.length === 0) {
-            done(Result.success([]));
-            return;
-        }
-
-        const pipeline = new AsyncPipeline<IQuery<TEntity, TEntity>, ITranslatedValue<TEntity>>();
-
-        pipeline.pipeEach(queries, (operation, done) => {
-            try {
-                this.dependencies.dataBridge.query({
-                    id: uuid(8),
-                    operation,
-                    schemas: this.dependencies.schemas,
-                    source: "data-store"
-                }, done);
-            } catch (e) {
-                done(Result.error(e));
-            }
-        });
-
-        pipeline.filter((result) => {
-            if (result.ok !== Result.SUCCESS) {
-                done(Result.error(result.error));
-                return;
-            }
-
-            const data: TEntity[] = [];
-            for (let i = 0, length = result.data.length; i < length; i++) {
-                const collection = result.data[i];
-
-                collection.forEach(item => {
-                    data.push(item as TEntity);
-                })
-
-            }
-
-            done(Result.success(data));
-        });
     }
 
     protected prepare(result: PartialResultType<BulkPersistChanges>, done: CallbackPartialResult<BulkPersistChanges>) {

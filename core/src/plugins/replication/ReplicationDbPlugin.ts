@@ -1,6 +1,6 @@
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '../../results';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ReplicationPluginOptions } from '../types';
-import { AsyncPipeline, WorkPipeline } from '../../pipeline';
+import { WorkPipeline } from '../../pipeline';
 import { BulkPersistResult } from '../../collections';
 import { resolveBulkPersistChanges } from '../../utilities';
 import { ITranslatedValue } from '../translators';
@@ -41,11 +41,11 @@ export class ReplicationDbPlugin implements IDbPlugin {
     destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
         try {
 
-            const pipeline = new AsyncPipeline<IDbPlugin, never>();
+            const pipeline = new WorkPipeline();
             const plugins = [this.plugins.source, ...this.plugins.replicas];
 
             for (let i = 0, length = plugins.length; i < length; i++) {
-                pipeline.pipe(plugins[i], (plugin, done) => plugin.destroy(event, done));
+                pipeline.pipe((done) => plugins[i].destroy(event, done));
             }
 
             pipeline.filter((result) => {

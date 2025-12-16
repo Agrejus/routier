@@ -2,7 +2,7 @@ import { DbPluginEvent, EphemeralDataPlugin } from '@routier/core/plugins';
 import { PluginEventCallbackResult, PluginEventResult, Result } from '@routier/core/results';
 import { CompiledSchema } from '@routier/core/schema';
 import { BrowserStorageCollection } from './BrowserStorageCollection';
-import { AsyncPipeline } from '@routier/core';
+import { WorkPipeline } from '@routier/core';
 
 export class BrowserStoragePlugin extends EphemeralDataPlugin {
 
@@ -19,11 +19,11 @@ export class BrowserStoragePlugin extends EphemeralDataPlugin {
 
     override destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
         try {
-            const pipeline = new AsyncPipeline<null, never>();
+            const pipeline = new WorkPipeline();
 
             for (const [, schema] of event.schemas) {
                 const collection = this.resolveCollection(schema);
-                pipeline.pipe(null, (_, done) => collection.destroy(done))
+                pipeline.pipe((done) => collection.destroy(done))
             }
 
             pipeline.filter((result) => {

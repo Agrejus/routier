@@ -78,7 +78,6 @@ export class DataBridge<T extends {}> {
                         return;
                     }
 
-                    console.log("we are here");
                     // If the query returns results, we need to query the db to find all records
                     this.query(event, done);
                 });
