@@ -45,7 +45,7 @@ export class SchemaDate<T extends Date, TModifiers extends SchemaModifiers> exte
     }
 
     array() {
-        return new SchemaArray<typeof this, TModifiers>(this as any);
+        return new SchemaArray<typeof this, TModifiers>(this as unknown as SchemaArray<typeof this, TModifiers>);
     }
 
     index(...indexes: string[]) {

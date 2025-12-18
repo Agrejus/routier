@@ -1,5 +1,7 @@
 import { s } from "@routier/core/schema";
 
+type UUID = string & { __brand: 'UUID' };
+
 // String property types within schemas
 const userSchema = s.define("users", {
     // Basic string
@@ -7,6 +9,9 @@ const userSchema = s.define("users", {
 
     // String with literals
     status: s.string("active", "inactive", "pending"),
+
+    // String with type constraint (branded/tagged types)
+    id: s.string().constrain<UUID>().key().identity(),
 
     // String with modifiers
     email: s.string().distinct().optional(),

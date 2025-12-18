@@ -19,6 +19,10 @@ export class SchemaNumber<T extends number, TModifiers extends SchemaModifiers> 
     type = SchemaTypes.Number;
     private _schemaNumber = true;
 
+    constrain<K extends T>() {
+        return new SchemaNumber<K, TModifiers>(this as unknown as SchemaBase<K, TModifiers>);
+    }
+
     from(propertyName: string) {
         return new SchemaFrom<T, TModifiers>(propertyName, this);
     }
@@ -56,7 +60,7 @@ export class SchemaNumber<T extends number, TModifiers extends SchemaModifiers> 
     }
 
     array() {
-        return new SchemaArray<typeof this, TModifiers>(this as any);
+        return new SchemaArray<typeof this, TModifiers>(this as unknown as SchemaArray<typeof this, TModifiers>);
     }
 
     index(...indexes: string[]) {

@@ -23,6 +23,10 @@ export class SchemaString<T extends string, TModifiers extends SchemaModifiers> 
         return new SchemaFrom<T, TModifiers>(propertyName, this);
     }
 
+    constrain<K extends T>() {
+        return new SchemaString<K, TModifiers>(this as unknown as SchemaBase<K, TModifiers>);
+    }
+
     optional() {
         return new SchemaOptional<T, TModifiers | "optional">(this);
     }
@@ -56,7 +60,7 @@ export class SchemaString<T extends string, TModifiers extends SchemaModifiers> 
     }
 
     array() {
-        return new SchemaArray<typeof this, TModifiers>(this as any);
+        return new SchemaArray<typeof this, TModifiers>(this as unknown as SchemaArray<typeof this, TModifiers>);
     }
 
     index(...indexes: string[]) {

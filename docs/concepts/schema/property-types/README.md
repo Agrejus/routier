@@ -17,6 +17,13 @@ Routier provides a comprehensive set of property types for building robust schem
 {% capture snippet_34jf1v %}{% include code/from-docs/concepts/schema/property-types/string-examples.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_34jf1v  | strip }}{% endhighlight %}
 
+#### Type Narrowing with `constrain()`
+
+Use `constrain()` to narrow string types to branded or tagged types:
+
+{% capture snippet_constrain %}{% include code/from-docs/concepts/schema/property-types/string-constrain.ts %}{% endcapture %}
+{% highlight ts %}{{ snippet_constrain  | strip }}{% endhighlight %}
+
 ### Number
 
 {% capture snippet_oempxx %}{% include code/from-docs/concepts/schema/property-types/number-examples.ts %}{% endcapture %}
@@ -52,6 +59,13 @@ Routier's type system allows you to constrain properties to specific literal val
 
 {% capture snippet_sepo73 %}{% include code/from-docs/concepts/schema/property-types/string-literals.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_sepo73  | strip }}{% endhighlight %}
+
+### Type Narrowing with `constrain()`
+
+For string properties, you can use `constrain()` to narrow the type to branded or tagged types. This is useful for creating type-safe identifiers like UUIDs:
+
+{% capture snippet_constrain %}{% include code/from-docs/concepts/schema/property-types/string-constrain.ts %}{% endcapture %}
+{% highlight ts %}{{ snippet_constrain  | strip }}{% endhighlight %}
 
 ### Number Literals
 
@@ -143,6 +157,7 @@ Different types support different modifiers:
 | `.key()`         | ✅     | ✅     | ❌      | ✅   | ❌     | ❌    |
 | `.identity()`    | ✅     | ✅     | ❌      | ✅   | ✅     | ❌    |
 | `.distinct()`    | ✅     | ✅     | ✅      | ✅   | ❌     | ❌    |
+| `.constrain()`   | ✅     | ❌     | ❌      | ❌   | ❌     | ❌    |
 
 ## Summary of Types
 
