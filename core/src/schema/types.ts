@@ -5,11 +5,11 @@ import { SchemaObject } from "./property/types/SchemaObject";
 import { PropertyInfo } from "./PropertyInfo";
 import { DeepPartial } from "../types";
 import { SchemaFunction } from "./table";
-import { SchemaString } from "./property/types";
 import { SchemaOptional } from "./property/modifiers";
+import { Branded } from "../utilities/types";
 
 export type DefaultValue<T, I = never> = T | ((injected: I) => T);
-export type FunctionBody<TEntity, TResult> = (entity: TEntity, collectionName: string) => TResult;
+export type FunctionBody<TEntity, TResult> = (entity: TEntity, collectionName: CollectionName) => TResult;
 export type IdType = string | number;
 
 export enum SchemaTypes {
@@ -158,7 +158,7 @@ export type CompiledSchema<TEntity extends {}> = {
     /** Unique id for the schema. */
     id: SchemaId,
     /** The name of the collection for this schema. */
-    collectionName: string;
+    collectionName: CollectionName;
     /** Returns all IDs for the given entity (usually a single-element tuple). */
     getIds: (entity: InferType<TEntity>) => [IdType];
     /** Enriches the entity with change tracking or other metadata. */
@@ -180,7 +180,8 @@ export type CompiledSchema<TEntity extends {}> = {
 export type PropertySerializer<T extends any> = (value: T) => string | number;
 export type PropertyDeserializer<T extends any> = (value: string | number) => T;
 
-export type SchemaId = number
+export type SchemaId = Branded<number, "SchemaId">;
+export type CollectionName = Branded<string, "CollectionName">;
 
 export type SchemaModifiers = "default" | "deserialize" |
     "identity" | "key" |

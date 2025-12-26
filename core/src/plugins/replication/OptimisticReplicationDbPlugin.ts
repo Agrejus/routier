@@ -7,6 +7,7 @@ import { resolveBulkPersistChanges, uuid } from '../../utilities';
 import { BulkPersistChanges, BulkPersistResult } from '../../collections';
 import { ITranslatedValue } from '../translators';
 import { now } from '../../performance';
+import { HydrationStatus } from './types';
 
 const getMemoryPluginCollectionSize = <T extends {}>(plugin: IDbPlugin, schema: CompiledSchema<T>): number => {
 
@@ -20,17 +21,12 @@ const getMemoryPluginCollectionSize = <T extends {}>(plugin: IDbPlugin, schema: 
 const MAX_HYDRATION_WAIT_MS = 60_000; // 60 seconds max wait
 const HYDRATION_POLL_INTERVAL_MS = 10; // Check ever 10 ms
 
-type HydrationStatus =
-    | "hydration-not-started"
-    | "hydration-pending"
-    | "hydration-error"
-    | "hydration-success";
-
-let hydrationStatus: HydrationStatus = "hydration-not-started";
-
 export class OptimisticReplicationDbPlugin implements IDbPlugin {
 
     protected plugins: OptimisticReplicationPluginOptions;
+    // Give more control over hydration, if the plugin is destroyed, so is the in memory data.
+    // It is up to the dev to control the lifecycle
+    private collectionHydrationStatuses: Map<string, HydrationStatus> = new Map<string, HydrationStatus>();
 
     protected constructor(plugins: OptimisticReplicationPluginOptions) {
         this.plugins = plugins;
@@ -57,10 +53,10 @@ export class OptimisticReplicationDbPlugin implements IDbPlugin {
             const sourcePlugin = this.plugins.source;
             const collectionSize = getMemoryPluginCollectionSize(this.plugins.read, event.operation.schema);
 
-            if (collectionSize === 0 && hydrationStatus === "hydration-not-started") {
+            if (collectionSize === 0 && this.collectionHydrationStatuses.get(event.operation.schema.collectionName) == null) {
 
                 // Notify the cache that the db was hydrated right away
-                hydrationStatus = "hydration-pending";
+                this.collectionHydrationStatuses.set(event.operation.schema.collectionName, "pending");
 
                 // nothing is hydrated, let's try and hydrate before querying
                 // Memory plugin might not be hydrated, lets hydrate it for the targeted schema only,
@@ -77,7 +73,7 @@ export class OptimisticReplicationDbPlugin implements IDbPlugin {
                     if (sourceResult.ok === Result.ERROR) {
 
                         // Notify that hydration failed
-                        hydrationStatus = "hydration-error";
+                        this.collectionHydrationStatuses.set(event.operation.schema.collectionName, "rejected");
                         done(sourceResult);
                         return;
                     }
@@ -85,7 +81,7 @@ export class OptimisticReplicationDbPlugin implements IDbPlugin {
                     // Source plugin can have no data, still should succeed
                     if (Array.isArray(sourceResult.data.value) === false) {
                         // Notify that hydration failed
-                        hydrationStatus = "hydration-error";
+                        this.collectionHydrationStatuses.set(event.operation.schema.collectionName, "rejected");
                         done(PluginEventResult.error(event.id, "Query result is not an array"));
                         return;
                     }
@@ -105,12 +101,12 @@ export class OptimisticReplicationDbPlugin implements IDbPlugin {
 
                         if (readPersistResult.ok === Result.ERROR) {
                             // Notify that hydration failed
-                            hydrationStatus = "hydration-error";
+                            this.collectionHydrationStatuses.set(event.operation.schema.collectionName, "rejected");
                             done(readPersistResult);
                             return;
                         }
 
-                        hydrationStatus = "hydration-success";
+                        this.collectionHydrationStatuses.set(event.operation.schema.collectionName, "fulfilled");
 
                         // requery the read plugin
                         readPlugin.query(event, done);
@@ -120,29 +116,29 @@ export class OptimisticReplicationDbPlugin implements IDbPlugin {
                 return;
             }
 
-            if (hydrationStatus === "hydration-error") {
+            if (this.collectionHydrationStatuses.get(event.operation.schema.collectionName) === "rejected") {
                 done(PluginEventResult.error(event.id, "Hydration failed, unable to query read plugin"));
                 return;
             }
 
             // If hydration is pending, do not query empty collection, wait for hydration
-            if (hydrationStatus === "hydration-pending") {
+            if (this.collectionHydrationStatuses.get(event.operation.schema.collectionName) === "pending") {
                 const start = now();
                 const pollHydrationStatus = () => {
                     const delta = now() - start;
 
                     if (delta > MAX_HYDRATION_WAIT_MS) {
-                        hydrationStatus = "hydration-error";
+                        this.collectionHydrationStatuses.set(event.operation.schema.collectionName, "rejected");
                         done(PluginEventResult.error(event.id, `Hydration timeout: exceeded maximum wait time of ${MAX_HYDRATION_WAIT_MS}ms`));
                         return;
                     }
 
-                    if (hydrationStatus === "hydration-error") {
+                    if (this.collectionHydrationStatuses.get(event.operation.schema.collectionName) === "rejected") {
                         done(PluginEventResult.error(event.id, "Hydration failed, unable to query read plugin"));
                         return;
                     }
 
-                    if (hydrationStatus === "hydration-success") {
+                    if (this.collectionHydrationStatuses.get(event.operation.schema.collectionName) === "fulfilled") {
                         // Hydration completed successfully, proceed with query
                         readPlugin.query(event, (readResult) => {
                             if (readResult.ok === Result.ERROR) {

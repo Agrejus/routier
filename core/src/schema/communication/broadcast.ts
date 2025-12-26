@@ -1,8 +1,8 @@
 import { now } from "../../performance";
-import { Tagged, uuid } from "../../utilities";
-import { CompiledSchema, CompiledSchemaCore, InferType, ISchemaSubscription, SchemaId, SubscriptionChanges } from "../types";
+import { Branded, uuid } from "../../utilities";
+import { CompiledSchemaCore, InferType, ISchemaSubscription, SchemaId, SubscriptionChanges } from "../types";
 
-type BroadcastChannelReceiverId = Tagged<string, "BroadcastChannelReceiverId">;
+type BroadcastChannelReceiverId = Branded<string, "BroadcastChannelReceiverId">;
 type SubscriptionListenerCallback<T> = (changes: StampedChanges<T>) => void;
 interface ISubscriptionAction<T> {
     action(changes: StampedChanges<T>): void

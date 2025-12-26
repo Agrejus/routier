@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import { BulkPersistResult, BulkPersistChanges, SchemaPersistChanges, SchemaPersistResult } from './Changes';
 import { TagCollection } from './TagCollection';
+import { SchemaId } from '../schema';
 
 describe('SchemaPersistChanges', () => {
     let changes: SchemaPersistChanges;
@@ -124,28 +125,28 @@ describe('BulkPersistResult', () => {
     describe('resolve', () => {
         it('should return existing result if schemaId exists', () => {
             const existingResult = new SchemaPersistResult();
-            result.set(1, existingResult);
+            result.set(1 as SchemaId, existingResult);
 
-            const resolved = result.resolve(1);
+            const resolved = result.resolve(1 as SchemaId);
             expect(resolved).toBe(existingResult);
         });
 
         it('should create and return new result if schemaId does not exist', () => {
-            const resolved = result.resolve(1);
+            const resolved = result.resolve(1 as SchemaId);
             expect(resolved).toBeInstanceOf(SchemaPersistResult);
-            expect(result.has(1)).toBe(true);
+            expect(result.has(1 as SchemaId)).toBe(true);
         });
 
         it('should return the same instance when called multiple times', () => {
-            const first = result.resolve(1);
-            const second = result.resolve(1);
+            const first = result.resolve(1 as SchemaId);
+            const second = result.resolve(1 as SchemaId);
             expect(first).toBe(second);
         });
     });
 
     describe('get with generic type', () => {
         it('should return typed result', () => {
-            const typedResult = result.get<{ id: string; name: string }>(1);
+            const typedResult = result.get<{ id: string; name: string }>(1 as SchemaId);
             expect(typedResult).toBeInstanceOf(SchemaPersistResult);
         });
     });
@@ -163,8 +164,8 @@ describe('BulkPersistResult', () => {
             result2.adds.push({ id: '5' } as any);
             result2.updates.push({ id: '6' } as any);
 
-            result.set(1, result1);
-            result.set(2, result2);
+            result.set(1 as SchemaId, result1);
+            result.set(2 as SchemaId, result2);
         });
 
         it('should calculate aggregate size correctly', () => {
@@ -204,28 +205,28 @@ describe('BulkPersistChanges', () => {
     describe('resolve', () => {
         it('should return existing changes if schemaId exists', () => {
             const existingChanges = new SchemaPersistChanges();
-            changes.set(1, existingChanges);
+            changes.set(1 as SchemaId, existingChanges);
 
-            const resolved = changes.resolve(1);
+            const resolved = changes.resolve(1 as SchemaId);
             expect(resolved).toBe(existingChanges);
         });
 
         it('should create and return new changes if schemaId does not exist', () => {
-            const resolved = changes.resolve(1);
+            const resolved = changes.resolve(1 as SchemaId);
             expect(resolved).toBeInstanceOf(SchemaPersistChanges);
-            expect(changes.has(1)).toBe(true);
+            expect(changes.has(1 as SchemaId)).toBe(true);
         });
 
         it('should return the same instance when called multiple times', () => {
-            const first = changes.resolve(1);
-            const second = changes.resolve(1);
+            const first = changes.resolve(1 as SchemaId);
+            const second = changes.resolve(1 as SchemaId);
             expect(first).toBe(second);
         });
     });
 
     describe('get with generic type', () => {
         it('should return typed changes', () => {
-            const typedChanges = changes.get<{ id: string; name: string }>(1);
+            const typedChanges = changes.get<{ id: string; name: string }>(1 as SchemaId);
             expect(typedChanges).toBeInstanceOf(SchemaPersistChanges);
         });
     });
@@ -243,8 +244,8 @@ describe('BulkPersistChanges', () => {
             changes2.adds.push({ id: '5' } as any);
             changes2.updates.push({ entity: { id: '6' }, changeType: 'propertiesChanged', delta: {} } as any);
 
-            changes.set(1, changes1);
-            changes.set(2, changes2);
+            changes.set(1 as SchemaId, changes1);
+            changes.set(2 as SchemaId, changes2);
         });
 
         it('should calculate aggregate size correctly', () => {
@@ -266,21 +267,21 @@ describe('BulkPersistChanges', () => {
 
     describe('toResult', () => {
         it('should create result with same schema IDs', () => {
-            changes.set(1, new SchemaPersistChanges());
-            changes.set(2, new SchemaPersistChanges());
+            changes.set(1 as SchemaId, new SchemaPersistChanges());
+            changes.set(2 as SchemaId, new SchemaPersistChanges());
 
             const result = changes.toResult();
 
-            expect(result.has(1)).toBe(true);
-            expect(result.has(2)).toBe(true);
+            expect(result.has(1 as SchemaId)).toBe(true);
+            expect(result.has(2 as SchemaId)).toBe(true);
             expect(result.size).toBe(2);
         });
 
         it('should create empty SchemaPersistResult instances', () => {
-            changes.set(1, new SchemaPersistChanges());
+            changes.set(1 as SchemaId, new SchemaPersistChanges());
             const result = changes.toResult();
 
-            const schemaResult = result.get(1);
+            const schemaResult = result.get(1 as SchemaId);
             expect(schemaResult).toBeInstanceOf(SchemaPersistResult);
             expect(schemaResult.adds).toEqual([]);
             expect(schemaResult.updates).toEqual([]);
@@ -325,8 +326,8 @@ describe('Edge cases and error scenarios', () => {
 
     it('should handle concurrent modifications', () => {
         const bulkChanges = new BulkPersistChanges();
-        const changes1 = bulkChanges.resolve(1);
-        const changes2 = bulkChanges.resolve(2);
+        const changes1 = bulkChanges.resolve(1 as SchemaId);
+        const changes2 = bulkChanges.resolve(2 as SchemaId);
 
         changes1.adds.push({ id: '1' } as any);
         changes2.adds.push({ id: '2' } as any);

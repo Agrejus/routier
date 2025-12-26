@@ -3,3 +3,5 @@ import { IDbPlugin, ReplicationPluginOptions, OptimisticReplicationPluginOptions
 export type IDbPluginReplicator = IDbPlugin & {
     plugins: ReplicationPluginOptions | OptimisticReplicationPluginOptions;
 }
+
+export type HydrationStatus = "pending" | "fulfilled" | "rejected";
