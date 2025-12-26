@@ -22,7 +22,8 @@ export class MergeDefaultValueHandler extends PropertyInfoHandler {
             const selectorPath = property.getSelectrorPath({ parent: "destination" });
             const assignmentPath = property.getAssignmentPath({ parent: "destination" });
 
-            ifsSlot.if(`${selectorPath} == null`).appendBody(`${assignmentPath} = ${typeof property.defaultValue === "string" ? `"${property.defaultValue}"` : property.defaultValue}`);
+            const defaultValueCode = this.serializeDefaultValue(property.defaultValue);
+            ifsSlot.if(`${selectorPath} == null`).appendBody(`${assignmentPath} = ${defaultValueCode}`);
 
             return builder;
         }

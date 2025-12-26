@@ -371,14 +371,36 @@ export class PropertyInfo<T extends {}> {
         return parts.join("");
     }
 
-    deserialize(value: string | number) {
+    deserialize(value: unknown) {
 
         if (this.valueDeserializer != null) {
-            return this.valueDeserializer(value);
+            return this.valueDeserializer(value as any);
+        }
+
+        if (this.type === SchemaTypes.Array) {
+            if (Array.isArray(value)) {
+                if (this.children.length > 0) {
+                    return value.map(item => {
+                        if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
+                            const deserialized: Record<string, unknown> = {};
+                            this.children.forEach(child => {
+                                const childValue = child.getValue(item as Record<string, unknown>);
+                                if (childValue != null) {
+                                    deserialized[child.name] = child.deserialize(childValue);
+                                }
+                            });
+                            return deserialized;
+                        }
+                        return item;
+                    });
+                }
+                return value;
+            }
+            return value;
         }
 
         if (this.type === SchemaTypes.Date) {
-            return new Date(value);
+            return new Date(value as string | number);
         }
 
         if (this.type === SchemaTypes.String) {
@@ -391,6 +413,20 @@ export class PropertyInfo<T extends {}> {
 
         if (this.type === SchemaTypes.Boolean) {
             return Boolean(value);
+        }
+
+        if (this.type === SchemaTypes.Object) {
+            if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                const deserialized: Record<string, unknown> = {};
+                this.children.forEach(child => {
+                    const childValue = child.getValue(value as Record<string, unknown>);
+                    if (childValue != null) {
+                        deserialized[child.name] = child.deserialize(childValue);
+                    }
+                });
+                return deserialized;
+            }
+            return value;
         }
 
         throw new Error(`Unsupported deserialization for type.  Type: ${this.type}`);

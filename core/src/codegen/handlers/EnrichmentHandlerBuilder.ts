@@ -7,6 +7,7 @@ import { EnrichmentFunctionHandler } from './enrichment/EnrichmentFunctionHandle
 import { EnrichmentDefaultValueHandler } from './enrichment/EnrichmentDefaultValueHandler';
 import { EnrichmentDefaultFunctionHandler } from './enrichment/EnrichmentDefaultFunctionHandler';
 import { EnrichmentComputedValueHandler } from './enrichment/EnrichmentComputedValueHandler';
+import { EnrichmentArrayHandler } from './enrichment/EnrichmentArrayHandler';
 
 /// Purpose: 
 export class EnrichmentHandlerBuilder {
@@ -17,6 +18,7 @@ export class EnrichmentHandlerBuilder {
         handler.setNext(new EnrichmentObjectIdentityHandler())
             .setNext(new EnrichmentObjectHandler())
             .setNext(new EnrichmentNullableObjectHandler())
+            .setNext(new EnrichmentArrayHandler())
             .setNext(new EnrichmentFunctionHandler())
             .setNext(new EnrichmentDefaultValueHandler())
             .setNext(new EnrichmentDefaultFunctionHandler())

@@ -7,25 +7,31 @@ export class CloneArrayHandler extends PropertyInfoHandler {
     override handle(property: PropertyInfo<any>, builder: CodeBuilder): CodeBuilder | null {
 
         if (property.type === SchemaTypes.Array) {
-
-            if (property.isNullable || property.isOptional) {
-                // Child properties will take care of this
-                return builder;
-            }
-
             const entitySelectorPath = property.getSelectrorPath({ parent: "entity" });
+            const resultAssignmentPath = property.getAssignmentPath({ parent: "result" });
+            const slot = builder.get<SlotBlock>("if");
+
+            // Always use JSON.parse(JSON.stringify()) for deep cloning to ensure nested structures are cloned
+            // This handles both arrays of primitives and arrays of objects correctly
+            const cloneCode = `JSON.parse(JSON.stringify(${entitySelectorPath}))`;
 
             if (property.parent == null) {
-
-                const resultAssignmentPath = property.getAssignmentPath({ parent: "result" });
-                const slot = builder.get<SlotBlock>("if");
-
-                slot.if(`${entitySelectorPath} != null`).appendBody(`${resultAssignmentPath} = [...${entitySelectorPath}]`);
+                if (property.isNullable || property.isOptional) {
+                    slot.if(`${entitySelectorPath} != null`).appendBody(`${resultAssignmentPath} = ${entitySelectorPath} != null ? ${cloneCode} : null;`);
+                } else {
+                    slot.if(`${entitySelectorPath} != null`).appendBody(`${resultAssignmentPath} = ${cloneCode};`);
+                }
                 return builder;
             }
-            // slotPath.push(...property.getParentPathArray());
-            // const nestedObjectBuilder = builder.get<ObjectBuilder>(slotPath.get());
-            // nestedObjectBuilder.nested(property.name, property.name)
+
+            const propertyParentPath = ["result", ...property.getParentPathArray()];
+            const ifBuilder = new IfBuilder(`${propertyParentPath.join("?.")} == null`).appendBody(`${propertyParentPath.join(".")} = {};`);
+
+            if (property.isNullable || property.isOptional) {
+                slot.if(`${entitySelectorPath} != null`).appendBody(ifBuilder.toString()).appendBody(`${resultAssignmentPath} = ${entitySelectorPath} != null ? ${cloneCode} : null;`);
+            } else {
+                slot.if(`${entitySelectorPath} != null`).appendBody(ifBuilder.toString()).appendBody(`${resultAssignmentPath} = ${cloneCode};`);
+            }
 
             return builder;
         }

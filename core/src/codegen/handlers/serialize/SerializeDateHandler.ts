@@ -1,4 +1,4 @@
-import { CodeBuilder, ContainerBlock, SlotBlock } from '../../blocks';
+import { CodeBuilder, ContainerBlock, IfBuilder, SlotBlock } from '../../blocks';
 import { SlotPath } from '../../SlotPath';
 import { PropertyInfoHandler } from "../types";
 import { PropertyInfo, SchemaTypes } from "../../../schema";
@@ -30,16 +30,22 @@ export class SerializeDateHandler extends PropertyInfoHandler {
 
             // A date cannot be a nested object, just do the assignment
             if (property.parent == null) {
-                objectBuilder.if(`Object.hasOwn(entity, "${property.name}")`).appendBody(`${entityAssignmentPath} = ${entitySelectorPath}`)
+                objectBuilder.if(`Object.hasOwn(entity, "${property.name}")`).appendBody(`${entityAssignmentPath} = ${entitySelectorPath} instanceof Date ? ${entitySelectorPath}.toISOString() : ${entitySelectorPath}`)
 
                 return builder;
             }
 
-            // TODO: SOLVE THIS, IT IS CLOSE
-            //const slotPath = new SlotPath(...property.getParentPathArray());
-            // slotPath.push(...property.getParentPathArray());
-            // const nestedObjectBuilder = builder.get<ObjectBuilder>(slotPath.get());
-            // nestedObjectBuilder.property(assignment)
+            const parentSelectPath = ["entity", ...property.getParentPathArray()].join(".");
+            const parentAssignPath = ["result", ...property.getParentPathArray()].join(".");
+
+            const ifSlot = objectBuilder.if(`Object.hasOwn(${parentSelectPath}, "${property.name}")`);
+
+            if (property.parent.isNullable || property.parent.isOptional) {
+                const conditionallyCreateParent = new IfBuilder(`${parentAssignPath} == null`).appendBody(`${parentAssignPath} = {}`);
+                ifSlot.appendBody(conditionallyCreateParent.toString());
+            }
+
+            ifSlot.appendBody(`${entityAssignmentPath} = ${entitySelectorPath} instanceof Date ? ${entitySelectorPath}.toISOString() : ${entitySelectorPath}`);
 
             return builder;
         }

@@ -4,6 +4,7 @@ import { PrepareValueHandler } from "./prepare/PrepareValueHandler";
 import { PrepareObjectHandler } from "./prepare/PrepareObjectHandler";
 import { PrepareComputedValueHandler } from "./prepare/PrepareComputedValueHandler";
 import { PrepareFunctionHandler } from "./prepare/PrepareFunctionHandler";
+import { PrepareArrayHandler } from "./prepare/PrepareArrayHandler";
 
 /// Purpose: Called before we save entities to the database.  Responsible for cleaning up
 /// an entity before it is sent to the plugin
@@ -16,6 +17,7 @@ export class PrepareHandlerBuilder {
             .setNext(new PrepareComputedValueHandler())
             .setNext(new PrepareKeyHandler())
             .setNext(new PrepareObjectHandler())
+            .setNext(new PrepareArrayHandler())
             .setNext(new PrepareValueHandler());
 
         return handler;

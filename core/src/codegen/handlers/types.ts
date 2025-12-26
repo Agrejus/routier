@@ -75,6 +75,24 @@ export abstract class PropertyInfoHandler implements IHandler {
         enriched.property(`${property.name}: ${entitySelectorPath}`);
     }
 
+    /**
+     * Serializes a default value to JavaScript code string.
+     * Strings are wrapped in quotes, arrays/objects use JSON.stringify, primitives are used directly.
+     */
+    protected serializeDefaultValue(defaultValue: any): string {
+        if (typeof defaultValue === "string") {
+            return `"${defaultValue}"`;
+        }
+
+        if (typeof defaultValue === "object" && defaultValue !== null) {
+            // Arrays and objects need JSON.stringify to avoid template literal issues
+            return JSON.stringify(defaultValue);
+        }
+
+        // Primitives (number, boolean, null, undefined) can be used directly
+        return String(defaultValue);
+    }
+
     protected toNamedFunction(stringifiedFunction: string, parent: ContainerBlock) {
         const name = `_${uuid()}`;
 

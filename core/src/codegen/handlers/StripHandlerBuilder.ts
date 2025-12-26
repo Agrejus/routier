@@ -2,6 +2,7 @@ import { StripObjectHandler } from "./strip/StripObjectHandler";
 import { StripValueHandler } from "./strip/StripValueHandler";
 import { StripKeyHandler } from "./strip/StripKeyHandler";
 import { StripIdentityHandler } from "./strip/StripIdentityHandler";
+import { StripArrayHandler } from "./strip/StripArrayHandler";
 
 /// Purpose: 
 export class StripHandlerBuilder {
@@ -11,6 +12,7 @@ export class StripHandlerBuilder {
 
         handler.setNext(new StripKeyHandler())
         .setNext(new StripObjectHandler())
+        .setNext(new StripArrayHandler())
         .setNext(new StripValueHandler());
 
         return handler;

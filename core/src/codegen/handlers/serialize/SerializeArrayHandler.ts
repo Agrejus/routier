@@ -1,36 +1,32 @@
 import { CodeBuilder, IfBuilder, SlotBlock } from '../../blocks';
 import { PropertyInfoHandler } from "../types";
-import { PropertyInfo } from "../../../schema";
+import { PropertyInfo, SchemaTypes } from "../../../schema";
 
-export class SerializeSerializerHandler extends PropertyInfoHandler {
+export class SerializeArrayHandler extends PropertyInfoHandler {
 
     override handle(property: PropertyInfo<any>, builder: CodeBuilder): CodeBuilder | null {
 
-        if (property.valueSerializer != null) {
-            const objectBuilder = builder.getOrDefault<SlotBlock>("if");
-            const assignmentBuilder = builder.getOrDefault<SlotBlock>("functions");
+        if (property.type === SchemaTypes.Array) {
+            const slot = builder.getOrDefault<SlotBlock>("if");
             const entitySelectorPath = property.getAssignmentPath({ parent: "entity", useFromPropertyName: property.isRenamed });
             const resultSelectorPath = property.getAssignmentPath({ parent: "result" });
 
-            const defaultFunctionWithParameters = this.toNamedFunction(property.valueSerializer.toString(), assignmentBuilder);
-            defaultFunctionWithParameters.builder.parameters(...defaultFunctionWithParameters.parameters.map((_, i) => ({ name: defaultFunctionWithParameters.parameters[i], callName: entitySelectorPath })));
-
             if (property.parent == null) {
-                objectBuilder.if(`Object.hasOwn(entity, "${property.name}")`).appendBody(`${resultSelectorPath} = ${defaultFunctionWithParameters.builder.toCallable()}`)
+                slot.if(`Object.hasOwn(entity, "${property.name}")`).appendBody(`${resultSelectorPath} = ${entitySelectorPath}`);
                 return builder;
             }
 
             const parentSelectPath = ["entity", ...property.getParentPathArray()].join(".");
             const parentAssignPath = ["result", ...property.getParentPathArray()].join(".");
 
-            const ifSlot = objectBuilder.if(`Object.hasOwn(${parentSelectPath}, "${property.name}")`);
+            const ifSlot = slot.if(`Object.hasOwn(${parentSelectPath}, "${property.name}")`);
 
             if (property.parent.isNullable || property.parent.isOptional) {
                 const conditionallyCreateParent = new IfBuilder(`${parentAssignPath} == null`).appendBody(`${parentAssignPath} = {}`);
                 ifSlot.appendBody(conditionallyCreateParent.toString());
             }
 
-            ifSlot.appendBody(`${resultSelectorPath} = ${defaultFunctionWithParameters.builder.toCallable()}`);
+            ifSlot.appendBody(`${resultSelectorPath} = ${entitySelectorPath}`);
 
             return builder;
         }
@@ -38,3 +34,4 @@ export class SerializeSerializerHandler extends PropertyInfoHandler {
         return super.handle(property, builder);
     }
 }
+

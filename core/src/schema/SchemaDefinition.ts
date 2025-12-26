@@ -340,6 +340,9 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             cloneCodeBuilder.slot("result").raw("const result = {};");;
             cloneCodeBuilder.slot("assignments");
             cloneCodeBuilder.slot("if");
+            // Copy all properties from entity to result (for unmapped properties) after handlers process schema properties
+            // Use deep clone for unmapped properties to ensure nested objects/arrays are cloned
+            cloneCodeBuilder.slot("assignments").raw(`     if (entity != null) { Object.keys(entity).forEach(key => { if (!(key in result)) { const val = entity[key]; result[key] = (typeof val === 'object' && val !== null && !(val instanceof Date)) ? JSON.parse(JSON.stringify(val)) : val; } }); }`);
             cloneCodeBuilder.slot("return").raw(`     return result;`);
 
             const compareCodeBuilder = new CodeBuilder();
@@ -462,13 +465,15 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             preprocessCodeBuilder.get<SlotBlock>("main").insert(serializeCodeBuilder.get<SlotBlock>("functions"));
             preprocessCodeBuilder.get<SlotBlock>("main").insert(serializeCodeBuilder.get<SlotBlock>("if"));
 
-
             const getIdsFunction = Function("entity", idSelectorCodeBuilder.toString()) as (entity: InferType<T>) => [IdType];
             const getHashTypeFunction = Function("entity", hashTypeCodeBuilder.toString()) as GetHashTypeFunction<T>;
-            const prepareFunction = Function("entity", prepareCodeBuilder.toString()) as Prepare<T>;
-            const cloneFunction = Function("entity", cloneCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
+            const prepareFunctionBody = prepareCodeBuilder.toString();
+            const prepareFunction = Function("entity", `if (entity == null) return {}; ${prepareFunctionBody}`) as Prepare<T>;
+            const cloneFunctionBody = cloneCodeBuilder.toString();
+            const cloneFunction = Function("entity", `if (entity == null) return entity; ${cloneFunctionBody}`) as (entity: InferType<T>) => InferType<T>;
             const deserializeFunction = Function("unserialized", deserializeCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
-            const serializeFunction = Function("entity", serializeCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
+            const serializeFunctionBody = serializeCodeBuilder.toString();
+            const serializeFunction = Function("entity", `if (entity == null) return {}; ${serializeFunctionBody}`) as (entity: InferType<T>) => InferType<T>;
             const compareFunction = Function("a", "b", compareCodeBuilder.toString()) as (a: InferType<T>, b: InferType<T>) => boolean;
             const stripFunction = Function("entity", stripCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
             const hashFunction = Function("entity", "type", hashCodeBuilder.toString()) as HashFunction<T>;
@@ -486,6 +491,9 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
             const idPropertyNames = idProperties.map(w => w.name);
             const getId = (entity: InferType<T>) => {
+                if (entity == null) {
+                    return null as any;
+                }
                 if (idPropertyNames.length > 1) {
                     return hashFunction(entity, HashType.Ids) as IdType;
                 }

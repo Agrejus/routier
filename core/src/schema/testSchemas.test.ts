@@ -1,6 +1,6 @@
 import { uuidv4 } from "../utilities";
 import { s } from "./builder";
-import { InferType } from "./types";
+import { CompiledSchema } from "./types";
 
 declare const __brand: unique symbol;
 
@@ -232,7 +232,103 @@ export const complexTwoSchemaFactory = () => s.define("complexTwo", {
     documentType: x.computed((_, collectionName) => collectionName).tracked()
 })).compile();
 
-export const factories = [
+export const arrayOfPrimitivesSchemaFactory = () => s.define("arrayOfPrimitives", {
+    id: s.string().key(),
+    tags: s.string().array(),
+    scores: s.number().array(),
+    flags: s.boolean().array(),
+    dates: s.date().array()
+}).compile();
+
+export const arrayOfObjectsSchemaFactory = () => s.define("arrayOfObjects", {
+    id: s.string().key(),
+    items: s.object({
+        name: s.string(),
+        quantity: s.number(),
+        price: s.number()
+    }).array(),
+    addresses: s.object({
+        street: s.string(),
+        city: s.string(),
+        zip: s.string()
+    }).array()
+}).compile();
+
+export const nestedArraySchemaFactory = () => s.define("nestedArray", {
+    id: s.string().key(),
+    matrix: s.array(s.number().array()),
+    tags: s.array(s.string().array())
+}).compile();
+
+export const arrayInNestedObjectSchemaFactory = () => s.define("arrayInNestedObject", {
+    id: s.string().key(),
+    user: s.object({
+        name: s.string(),
+        tags: s.string().array(),
+        preferences: s.object({
+            colors: s.string().array(),
+            sizes: s.number().array()
+        })
+    })
+}).compile();
+
+export const deeplyNestedWithArraysSchemaFactory = () => s.define("deeplyNestedWithArrays", {
+    id: s.string().key(),
+    company: s.object({
+        name: s.string(),
+        departments: s.object({
+            name: s.string(),
+            employees: s.object({
+                name: s.string(),
+                skills: s.string().array(),
+                projects: s.object({
+                    name: s.string(),
+                    tags: s.string().array()
+                }).array()
+            }).array()
+        }).array()
+    })
+}).compile();
+
+export const nullableOptionalArraySchemaFactory = () => s.define("nullableOptionalArray", {
+    id: s.string().key(),
+    tags: s.string().array().optional(),
+    scores: s.number().array().nullable(),
+    items: s.object({
+        name: s.string()
+    }).array().optional()
+}).compile();
+
+export const arrayWithModifiersSchemaFactory = () => s.define("arrayWithModifiers", {
+    id: s.string().key(),
+    tags: s.string().array().default([]),
+    items: s.object({
+        name: s.string(),
+        count: s.number().default(0)
+    }).array().default([]),
+    metadata: s.object({
+        keys: s.string().array(),
+        values: s.number().array()
+    }).optional()
+}).compile();
+
+export const complexArrayNestingSchemaFactory = () => s.define("complexArrayNesting", {
+    id: s.string().key(),
+    posts: s.object({
+        title: s.string(),
+        comments: s.object({
+            text: s.string(),
+            likes: s.number().array(),
+            replies: s.object({
+                text: s.string(),
+                tags: s.string().array()
+            }).array()
+        }).array(),
+        tags: s.string().array()
+    }).array()
+}).compile();
+
+export const factories: (() => CompiledSchema<any>)[] = [
     optionalObjectSchemaFactory,
     usersSchemaOneFactory,
     oneComputedPropertySchemaFactory,
@@ -242,5 +338,13 @@ export const factories = [
     computedAndFunctionPropertiesSchemaFactory,
     deeplyNestedSchemaFactory,
     complexOneSchemaFactory,
-    complexTwoSchemaFactory
+    complexTwoSchemaFactory,
+    arrayOfPrimitivesSchemaFactory,
+    arrayOfObjectsSchemaFactory,
+    nestedArraySchemaFactory,
+    arrayInNestedObjectSchemaFactory,
+    deeplyNestedWithArraysSchemaFactory,
+    nullableOptionalArraySchemaFactory,
+    arrayWithModifiersSchemaFactory,
+    complexArrayNestingSchemaFactory
 ]
