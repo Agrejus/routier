@@ -25,8 +25,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     ) {
         this.dependencies = dependencies;
 
-        this.dependencies.pipelines.prepareChanges.pipe(this.prepare.bind(this));
-        this.dependencies.pipelines.afterPersist.pipe(this.afterPersist.bind(this));
+        // Pipelines removed - methods are called directly now
 
         // Bind all public methods to ensure 'this' context is preserved
         this.hasChanges = this.hasChanges.bind(this);
@@ -88,13 +87,11 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
         return result;
     }
 
-    protected afterPersist(result: PartialResultType<{ changes: BulkPersistChanges, result: BulkPersistResult }>, done: CallbackPartialResult<{ changes: BulkPersistChanges, result: BulkPersistResult }>) {
-
+    protected async afterPersist(result: PartialResultType<{ changes: BulkPersistChanges, result: BulkPersistResult }>): Promise<PartialResultType<{ changes: BulkPersistChanges, result: BulkPersistResult }>> {
         try {
             if (result.ok === Result.ERROR) {
                 this.dependencies.changeTracker.clearChanges();
-                done(result);
-                return;
+                return result;
             }
 
             // merge only the changes from the collections persist operation
@@ -107,8 +104,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
             assertIsNotNull(resolvedChanges, "Could not find resolved changes during afterPersist operation");
 
             if (changes.hasItems === false) {
-                done(result);
-                return;
+                return result;
             }
 
             // Merge changes will unpause any change tracking that was paused previously
@@ -127,26 +123,23 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
 
             this.dependencies.subscription.send(subscriptionChanges);
 
-            done(result);
+            return result;
         } catch (e) {
-            done(Result.error(e));
+            return Result.error(e);
         }
     }
 
-    protected prepare(result: PartialResultType<BulkPersistChanges>, done: CallbackPartialResult<BulkPersistChanges>) {
-
+    protected async prepare(result: PartialResultType<BulkPersistChanges>): Promise<PartialResultType<BulkPersistChanges>> {
         try {
             if (result.ok === Result.ERROR) {
-                done(result);
-                return;
+                return result;
             }
 
             const tags = this.dependencies.changeTracker.tags.get();
             const changes = result.data.resolve(this.dependencies.schema.id);
 
             if (this.dependencies.changeTracker.hasChanges() === false) {
-                done(result);
-                return
+                return result;
             }
 
             assertIsNotNull(tags, "Could not find tag collection during prepare operation");
@@ -156,9 +149,9 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
             changes.updates = this.dependencies.changeTracker.getAttachmentsChanges();
             changes.removes = this.dependencies.changeTracker.prepareRemovals();
 
-            done(result);
+            return result;
         } catch (e) {
-            done(Result.error(e));
+            return Result.error(e);
         }
     }
 

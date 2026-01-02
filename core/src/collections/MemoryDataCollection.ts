@@ -1,5 +1,5 @@
 import { CompiledSchema, IdType, InferType, PropertyInfo, SchemaTypes } from "../schema";
-import { CallbackResult, Result } from "../results";
+import { Result } from "../results";
 import { uuidv4 } from "../utilities";
 import { IdSet } from "./IdSet";
 
@@ -138,17 +138,16 @@ export class MemoryDataCollection {
         this.data.set(id.toString(), item);
     }
 
-    destroy(done: CallbackResult<never>) {
+    async destroy(): Promise<void> {
         this.nextNumericalIds.clear();
         this.data.clear();
-        done(Result.success());
     }
 
-    load(done: CallbackResult<never>) {
-        done(Result.success())
+    async load(): Promise<void> {
+        // No-op for memory collection
     }
 
-    save(done: CallbackResult<never>) {
-        done(Result.success())
+    async save(): Promise<void> {
+        // No-op for memory collection
     }
 }

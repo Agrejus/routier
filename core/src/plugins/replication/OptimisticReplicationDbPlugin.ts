@@ -1,6 +1,5 @@
-import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '../../results';
+import { PluginEventResult, Result } from '../../results';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, OptimisticReplicationPluginOptions } from '../types';
-import { WorkPipeline } from '../../pipeline'; 7
 import { CompiledSchema } from '../../schema';
 import { Query } from '../query';
 import { resolveBulkPersistChanges, uuid } from '../../utilities';
@@ -46,221 +45,143 @@ export class OptimisticReplicationDbPlugin implements IDbPlugin {
     /**
      * Will query the read plugin if there is one, otherwise the source plugin will be queried
     */
-    query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
+    async query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>): Promise<ITranslatedValue<TShape>> {
         try {
-
             const readPlugin = this.plugins.read;
             const sourcePlugin = this.plugins.source;
             const collectionSize = getMemoryPluginCollectionSize(this.plugins.read, event.operation.schema);
 
             if (collectionSize === 0 && this.collectionHydrationStatuses.get(event.operation.schema.collectionName) == null) {
-
                 // Notify the cache that the db was hydrated right away
                 this.collectionHydrationStatuses.set(event.operation.schema.collectionName, "pending");
 
-                // nothing is hydrated, let's try and hydrate before querying
-                // Memory plugin might not be hydrated, lets hydrate it for the targeted schema only,
-                // Other queries will do the same and hydrate if needed
-                // We want to select all data here
-                sourcePlugin.query<TEntity, TShape>({
-                    id: uuid(8),
-                    schemas: event.schemas,
-                    source: "collection",
-                    // Select All Data
-                    operation: Query.EMPTY<TEntity, TShape>(event.operation.schema)
-                }, (sourceResult) => {
-
-                    if (sourceResult.ok === Result.ERROR) {
-
-                        // Notify that hydration failed
-                        this.collectionHydrationStatuses.set(event.operation.schema.collectionName, "rejected");
-                        done(sourceResult);
-                        return;
-                    }
+                try {
+                    // nothing is hydrated, let's try and hydrate before querying
+                    // Memory plugin might not be hydrated, lets hydrate it for the targeted schema only,
+                    // Other queries will do the same and hydrate if needed
+                    // We want to select all data here
+                    const sourceResult = await sourcePlugin.query<TEntity, TShape>({
+                        id: uuid(8),
+                        schemas: event.schemas,
+                        source: "collection",
+                        // Select All Data
+                        operation: Query.EMPTY<TEntity, TShape>(event.operation.schema)
+                    });
 
                     // Source plugin can have no data, still should succeed
-                    if (Array.isArray(sourceResult.data.value) === false) {
+                    if (Array.isArray(sourceResult.value) === false) {
                         // Notify that hydration failed
                         this.collectionHydrationStatuses.set(event.operation.schema.collectionName, "rejected");
-                        done(PluginEventResult.error(event.id, "Query result is not an array"));
-                        return;
+                        throw new Error("Query result is not an array");
                     }
 
                     const changesCollection = new BulkPersistChanges();
                     const schemaChanges = changesCollection.resolve(event.operation.schema.id);
 
                     // Add the existing items into the persist payload as adds
-                    schemaChanges.adds = sourceResult.data.value;
+                    schemaChanges.adds = sourceResult.value;
 
-                    readPlugin.bulkPersist({
+                    await readPlugin.bulkPersist({
                         id: uuid(8),
                         schemas: event.schemas,
                         operation: changesCollection,
                         source: "collection",
-                    }, (readPersistResult) => {
-
-                        if (readPersistResult.ok === Result.ERROR) {
-                            // Notify that hydration failed
-                            this.collectionHydrationStatuses.set(event.operation.schema.collectionName, "rejected");
-                            done(readPersistResult);
-                            return;
-                        }
-
-                        this.collectionHydrationStatuses.set(event.operation.schema.collectionName, "fulfilled");
-
-                        // requery the read plugin
-                        readPlugin.query(event, done);
                     });
-                });
 
-                return;
+                    this.collectionHydrationStatuses.set(event.operation.schema.collectionName, "fulfilled");
+
+                    // requery the read plugin
+                    return await readPlugin.query(event);
+                } catch (error) {
+                    // Notify that hydration failed
+                    this.collectionHydrationStatuses.set(event.operation.schema.collectionName, "rejected");
+                    throw error;
+                }
             }
 
             if (this.collectionHydrationStatuses.get(event.operation.schema.collectionName) === "rejected") {
-                done(PluginEventResult.error(event.id, "Hydration failed, unable to query read plugin"));
-                return;
+                throw new Error("Hydration failed, unable to query read plugin");
             }
 
             // If hydration is pending, do not query empty collection, wait for hydration
             if (this.collectionHydrationStatuses.get(event.operation.schema.collectionName) === "pending") {
                 const start = now();
-                const pollHydrationStatus = () => {
+
+                while (true) {
                     const delta = now() - start;
 
                     if (delta > MAX_HYDRATION_WAIT_MS) {
                         this.collectionHydrationStatuses.set(event.operation.schema.collectionName, "rejected");
-                        done(PluginEventResult.error(event.id, `Hydration timeout: exceeded maximum wait time of ${MAX_HYDRATION_WAIT_MS}ms`));
-                        return;
+                        throw new Error(`Hydration timeout: exceeded maximum wait time of ${MAX_HYDRATION_WAIT_MS}ms`);
                     }
 
-                    if (this.collectionHydrationStatuses.get(event.operation.schema.collectionName) === "rejected") {
-                        done(PluginEventResult.error(event.id, "Hydration failed, unable to query read plugin"));
-                        return;
+                    const status = this.collectionHydrationStatuses.get(event.operation.schema.collectionName);
+
+                    if (status === "rejected") {
+                        throw new Error("Hydration failed, unable to query read plugin");
                     }
 
-                    if (this.collectionHydrationStatuses.get(event.operation.schema.collectionName) === "fulfilled") {
+                    if (status === "fulfilled") {
                         // Hydration completed successfully, proceed with query
-                        readPlugin.query(event, (readResult) => {
-                            if (readResult.ok === Result.ERROR) {
-                                done(readResult);
-                                return;
-                            }
-                            done(readResult);
-                        });
-                        return;
+                        return await readPlugin.query(event);
                     }
 
-                    // Still pending, check again after interval
-                    setTimeout(pollHydrationStatus, HYDRATION_POLL_INTERVAL_MS);
+                    // Still pending, wait a bit before checking again
+                    await new Promise(resolve => setTimeout(resolve, HYDRATION_POLL_INTERVAL_MS));
                 }
-
-                pollHydrationStatus();
-                return;
             }
 
             // Collection is hydrated for the targeted collection and should be in sync
-            readPlugin.query(event, (readResult) => {
-
-                if (readResult.ok === Result.ERROR) {
-                    done(readResult);
-                    return;
-                }
-
-                done(readResult);
-                return;
-
-            });
+            return await readPlugin.query(event);
         } catch (e: any) {
-            done(PluginEventResult.error(event.id, e));
+            throw e;
         }
     }
 
-    destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
-        try {
+    async destroy(event: DbPluginEvent): Promise<void> {
+        const plugins = [this.plugins.source, ...this.plugins.replicas];
 
-            const workPipeline = new WorkPipeline();
-            const plugins = [this.plugins.source, ...this.plugins.replicas];
+        for (const plugin of plugins) {
+            await plugin.destroy(event);
+        }
+    }
 
-            for (let i = 0, length = plugins.length; i < length; i++) {
-                workPipeline.pipe((done) => plugins[i].destroy(event, done));
+    async bulkPersist(event: DbPluginBulkPersistEvent): Promise<BulkPersistResult> {
+        const deferredPlugins = [this.plugins.source, ...this.plugins.replicas];
+
+        // Since we are doing optimistic, we insert into the read plugin first and assume later plugins will succeed
+        // This means the read plugin will generate ids for the source plugin
+        const readResult = await this.plugins.read.bulkPersist({
+            id: uuid(8),
+            operation: event.operation,
+            schemas: event.schemas,
+            source: "data-store",
+        });
+
+        // optimistically return the result and still continue saving the rest of the data.  We read from the memory
+        // db anyways
+        const optimisticBulkPersistChanges = new BulkPersistChanges();
+
+        // make sure we swap the adds here, that way we can make sure other persist events
+        // don't take their additions and try to change subsequent calls
+        resolveBulkPersistChanges(event, readResult, optimisticBulkPersistChanges);
+
+        // Fire and forget - continue saving to other plugins asynchronously
+        setTimeout(async () => {
+            for (const plugin of deferredPlugins) {
+                try {
+                    await plugin.bulkPersist({
+                        id: uuid(8),
+                        operation: optimisticBulkPersistChanges,
+                        schemas: event.schemas,
+                        source: "data-store",
+                    });
+                } catch (error) {
+                    // Silently fail for now, maybe implement retries?
+                }
             }
+        }, 5);
 
-            workPipeline.filter((result) => {
-
-                if (result.ok === Result.ERROR) {
-                    done(PluginEventResult.error(event.id, result.error));
-                    return;
-                }
-
-                done(PluginEventResult.success(event.id));
-            });
-
-        } catch (e: any) {
-            done(PluginEventResult.error(event.id, e));
-        }
-    }
-
-    bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackPartialResult<BulkPersistResult>): void {
-        try {
-
-            const workPipeline = new WorkPipeline();
-            const deferredPlugins = [this.plugins.source, ... this.plugins.replicas];
-
-            // Since we are doing optimistic, we insert into the read plugin first and assume later plugins will succeed
-            // This means the read plugin will generate ids for the source plugin
-            this.plugins.read.bulkPersist({
-                id: uuid(8),
-                operation: event.operation,
-                schemas: event.schemas,
-                source: "data-store",
-            }, (r) => {
-
-                if (r.ok !== Result.SUCCESS) {
-                    done(r);
-                    return;
-                }
-
-                // optimistically call done and still continue saving the rest of the data.  We read from the memory
-                // db anyways
-                done(r);
-
-                const optimisticBulkPersistChanges = new BulkPersistChanges();
-
-                // make sure we swap the adds here, that way we can make sure other persist events
-                // don't take their additions and try to change subsequent calls
-                resolveBulkPersistChanges(event, r.data, optimisticBulkPersistChanges);
-
-                for (let i = 0, length = deferredPlugins.length; i < length; i++) {
-                    workPipeline.pipe((d) => {
-
-                        const plugin = deferredPlugins[i];
-
-                        plugin.bulkPersist({
-                            id: uuid(8),
-                            operation: optimisticBulkPersistChanges,
-                            schemas: event.schemas,
-                            source: "data-store",
-                        }, (r) => {
-
-                            if (r.ok === Result.ERROR) {
-                                d(r);
-                                return;
-                            }
-
-                            d(Result.success());
-                        });
-                    });
-                }
-
-                setTimeout(() => {
-                    workPipeline.filter((_) => {
-                        // no-op for now, maybe implement retries?
-                    });
-                }, 5);
-            });
-
-        } catch (e: any) {
-            done(PluginEventResult.error(event.id, e));
-        }
+        return readResult;
     }
 }

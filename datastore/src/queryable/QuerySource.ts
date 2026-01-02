@@ -74,13 +74,14 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
         const { databaseEvent, memoryEvent } = this.createQueryPayload<U>();
 
         return this.dependencies.dataBridge.subscribe<U, unknown>(databaseEvent, (r) => {
-
-            if (r.ok === Result.ERROR) {
-                done(r);
-                return;
-            }
-
-            this.postProcessQuery(r, { databaseEvent, memoryEvent }, done);
+            // r is ITranslatedValue<U> directly from subscribe callback
+            // Wrap it in PluginEventSuccessType for postProcessQuery
+            const wrappedResult: PluginEventSuccessType<ITranslatedValue<U>> = {
+                data: r,
+                ok: PluginEventResult.SUCCESS,
+                id: databaseEvent.id
+            };
+            this.postProcessQuery(wrappedResult, { databaseEvent, memoryEvent }, done);
         });
     }
 
@@ -163,7 +164,7 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
         }
     }
 
-    protected getData<TShape>(done: PluginEventCallbackResult<TShape>) {
+    protected async getData<TShape>(done: PluginEventCallbackResult<TShape>): Promise<void> {
 
         if (this.request.skipInitialQuery) {
             // Set to false in case the same query called twice
@@ -175,16 +176,19 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
         const { databaseEvent, memoryEvent } = this.createQueryPayload<TShape>();
 
-        this.dependencies.dataBridge.query<TShape>(databaseEvent, (result) => {
-
-            if (result.ok === PluginEventResult.ERROR) {
-                done(result);
-                return;
-            }
-
-            this.postProcessQuery<TShape>(result, { databaseEvent, memoryEvent }, done);
-
-        });
+        try {
+            const result = await this.dependencies.dataBridge.query<TShape>(databaseEvent);
+            // result is ITranslatedValue<TShape> directly from query
+            // Wrap it in PluginEventSuccessType for postProcessQuery
+            const wrappedResult: PluginEventSuccessType<ITranslatedValue<TShape>> = {
+                data: result,
+                ok: PluginEventResult.SUCCESS,
+                id: databaseEvent.id
+            };
+            this.postProcessQuery<TShape>(wrappedResult, { databaseEvent, memoryEvent }, done);
+        } catch (error) {
+            done(PluginEventResult.error(databaseEvent.id, error));
+        }
     }
 
     private postProcessQuery<TShape>(result: PluginEventSuccessType<ITranslatedValue<TShape>>, payload: { databaseEvent: DbPluginQueryEvent<TRoot, TShape>, memoryEvent: DbPluginQueryEvent<TRoot, TShape> }, done: PluginEventCallbackResult<TShape>) {

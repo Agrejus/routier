@@ -2,7 +2,6 @@ import { DatabaseDataAccessStrategy } from "./strategies/DatabaseDataAccessStrat
 import { IDataAccessStrategy } from "./types";
 import { MemoryPlugin } from "@routier/memory-plugin";
 import { DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue } from "@routier/core/plugins";
-import { PluginEventCallbackResult, Result } from "@routier/core/results";
 import { BulkPersistResult } from "@routier/core/collections";
 import { uuid, uuidv4 } from "@routier/core/utilities";
 import { CompiledSchema } from "@routier/core/schema";
@@ -29,22 +28,27 @@ export class DataBridge<T extends {}> {
         return new DataBridge<T>(strategy, signal);
     }
 
-    bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackResult<BulkPersistResult>) {
-        this.strategy.bulkPersist(event, done);
+    async bulkPersist(event: DbPluginBulkPersistEvent): Promise<BulkPersistResult> {
+        return await this.strategy.bulkPersist(event);
     }
 
-    query<TShape>(event: DbPluginQueryEvent<T, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>) {
-        this.strategy.query(event, done);
+    async query<TShape>(event: DbPluginQueryEvent<T, TShape>): Promise<ITranslatedValue<TShape>> {
+        return await this.strategy.query(event);
     }
 
-    subscribe<TShape, U>(event: DbPluginQueryEvent<T, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>) {
+    subscribe<TShape, U>(event: DbPluginQueryEvent<T, TShape>, done: (result: ITranslatedValue<TShape>) => void) {
         const subscription = event.operation.schema.createSubscription(this.signal);
-        subscription.onMessage((changes) => {
+        subscription.onMessage(async (changes) => {
             const filters = event.operation.options.get("filter")
 
             // subscription has no filter, automatically run the query
             if (filters.length === 0) {
-                this.query(event, done);
+                try {
+                    const result = await this.query(event);
+                    done(result);
+                } catch (error) {
+                    // Error handling is up to the caller
+                }
                 return;
             }
 
@@ -58,27 +62,26 @@ export class DataBridge<T extends {}> {
                 // seed the db, we don't care about bulk operations here, we just want to query the raw data
                 ephemeralPlugin.seed(event.operation.schema, [...changes.adds, ...changes.updates, ...changes.removals]);
 
-                // query the temp db to check and see if items match the query
-                ephemeralPlugin.query(event, (r) => {
+                try {
+                    // query the temp db to check and see if items match the query
+                    const r: ITranslatedValue<TShape> = await ephemeralPlugin.query<T, TShape>(event);
 
-                    ephemeralPlugin.destroy({
+                    await ephemeralPlugin.destroy({
                         id: uuid(8),
                         schemas: event.schemas,
                         source: "collection"
-                    }, () => { /* noop */ });
+                    });
 
-                    if (r.ok === Result.ERROR) {
-                        done(r);
-                        return;
-                    }
-
-                    if (r.data == null || (Array.isArray(r.data) && r.data.length === 0)) {
+                    if (r == null || (Array.isArray(r.value) && r.value.length === 0)) {
                         return;
                     }
 
                     // If the query returns results, we need to query the db to find all records
-                    this.query(event, done);
-                });
+                    const result = await this.query(event);
+                    done(result);
+                } catch (error) {
+                    // Error handling is up to the caller
+                }
             }
         });
 

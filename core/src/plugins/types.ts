@@ -1,4 +1,3 @@
-import { PluginEventCallbackPartialResult, PluginEventCallbackResult } from "../results";
 import { QueryOptionsCollection } from "./query/QueryOptionsCollection";
 import { CompiledSchema, InferType } from '../schema';
 import { BulkPersistChanges, BulkPersistResult, SchemaCollection } from "../collections";
@@ -11,20 +10,24 @@ export interface IDbPlugin {
     /**
      * Executes a query operation on the database.
      * @param event The query event containing schema, parent, and query operation.
-     * @param done Callback with the result or error.
+     * @returns Promise resolving to the query result.
+     * @throws Error if the query fails.
      */
-    query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void;
+    query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>): Promise<ITranslatedValue<TShape>>;
     /**
      * Destroys or cleans up the plugin, closing connections or freeing resources.
-     * @param done Callback with an optional error.
+     * @param event The destroy event.
+     * @returns Promise resolving when destruction is complete.
+     * @throws Error if destruction fails.
      */
-    destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void;
+    destroy(event: DbPluginEvent): Promise<void>;
     /**
      * Executes bulk operations (add, update, remove) on the database.
      * @param event The bulk operations event containing schema, parent, and changes.
-     * @param done Callback with the result or error.
+     * @returns Promise resolving to the result.
+     * @throws Error if the operation fails.
      */
-    bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackPartialResult<BulkPersistResult>): void;
+    bulkPersist(event: DbPluginBulkPersistEvent): Promise<BulkPersistResult>;
 }
 
 /**

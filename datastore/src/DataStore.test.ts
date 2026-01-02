@@ -1,7 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
 import { DataStore } from '.';
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue } from '@routier/core/plugins';
-import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, TranslatedArrayValue } from '@routier/core/plugins';
 import { now } from '@routier/core/performance';
 import { BulkPersistResult } from '@routier/core/collections';
 import { InferCreateType, s } from '@routier/core/schema';
@@ -27,19 +26,19 @@ class GenericPlugin extends MemoryPlugin {
         this.options = options;
     }
 
-    query<TRoot extends {}, TShape extends unknown = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
+    async query<TRoot extends {}, TShape extends unknown = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>): Promise<ITranslatedValue<TShape>> {
         this.options?.onQuery?.(event);
-        super.query(event, done);
+        return await super.query(event);
     }
 
-    destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
+    async destroy(event: DbPluginEvent): Promise<void> {
         this.options?.onDestroy?.(event);
-        super.destroy(event, done);
+        await super.destroy(event);
     }
 
-    bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackPartialResult<BulkPersistResult>): void {
+    async bulkPersist(event: DbPluginBulkPersistEvent): Promise<BulkPersistResult> {
         this.options?.onBulkPersist?.(event);
-        super.bulkPersist(event, done);
+        return await super.bulkPersist(event);
     }
 }
 
@@ -157,19 +156,18 @@ describe('Data Store', () => {
                 this.id = id;
             }
 
-            query<TRoot extends {}, TShape extends unknown = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
+            async query<TRoot extends {}, TShape extends unknown = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>): Promise<ITranslatedValue<TShape>> {
                 cache[this.id].end = now();
-                done(PluginEventResult.success(event.id, [] as any));
+                return new TranslatedArrayValue<TShape>([]);
             }
 
-            destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
+            async destroy(event: DbPluginEvent): Promise<void> {
                 cache[this.id].end = now();
-                done(PluginEventResult.success(event.id));
             }
 
-            bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackPartialResult<BulkPersistResult>): void {
+            async bulkPersist(event: DbPluginBulkPersistEvent): Promise<BulkPersistResult> {
                 cache[this.id].end = now();
-                done(PluginEventResult.success(event.id, new BulkPersistResult()));
+                return new BulkPersistResult();
             }
         }
 
@@ -252,5 +250,144 @@ describe('Data Store', () => {
 
             expect(delta).toBeLessThan(1.5);
         })
+    });
+
+    describe('Callbacks vs Promises Performance', () => {
+
+        it('should measure async/await performance for bulk operations', async () => {
+            const store = genericFactory();
+            const iterations = 10000;
+            const items: InferCreateType<typeof simple>[] = [];
+
+            for (let i = 0; i < iterations; i++) {
+                items.push({
+                    id: i + 1,
+                    name: `item-${i}`
+                });
+            }
+
+            const start = now();
+
+            await store.simple.addAsync(...items);
+            await store.saveChangesAsync();
+
+            const end = now();
+            const totalTime = end - start;
+            const avgTimePerOp = totalTime / iterations;
+
+            logger.log(`Async/Await: ${totalTime.toFixed(3)}ms total, ${avgTimePerOp.toFixed(6)}ms per operation for ${iterations} items`);
+
+            expect(totalTime).toBeLessThan(100);
+        });
+
+        it('should measure async/await performance for sequential operations', async () => {
+            const store = genericFactory();
+            const iterations = 1000;
+
+            const start = now();
+
+            for (let i = 0; i < iterations; i++) {
+                await store.simple.addAsync({ id: i + 1, name: `item-${i}` });
+                await store.saveChangesAsync();
+            }
+
+            const end = now();
+            const totalTime = end - start;
+            const avgTimePerOp = totalTime / iterations;
+
+            logger.log(`Async/Await Sequential: ${totalTime.toFixed(3)}ms total, ${avgTimePerOp.toFixed(6)}ms per operation for ${iterations} sequential add+save cycles`);
+
+            expect(totalTime).toBeLessThan(500);
+        });
+
+        it('should measure async/await performance for query operations', async () => {
+            const store = genericFactory();
+            const items: InferCreateType<typeof simple>[] = [];
+
+            for (let i = 0; i < 1000; i++) {
+                items.push({
+                    id: i + 1,
+                    name: i % 2 === 0 ? 'even' : 'odd'
+                });
+            }
+
+            await store.simple.addAsync(...items);
+            await store.saveChangesAsync();
+
+            const iterations = 100;
+            const start = now();
+
+            for (let i = 0; i < iterations; i++) {
+                await store.simple.where(x => x.name === 'even').toArrayAsync();
+            }
+
+            const end = now();
+            const totalTime = end - start;
+            const avgTimePerOp = totalTime / iterations;
+
+            logger.log(`Async/Await Query: ${totalTime.toFixed(3)}ms total, ${avgTimePerOp.toFixed(6)}ms per query for ${iterations} queries`);
+
+            expect(totalTime).toBeLessThan(200);
+        });
+
+        it('should measure async/await overhead for nested operations', async () => {
+            const store = genericFactory();
+            const iterations = 50;
+
+            const start = now();
+
+            for (let i = 0; i < iterations; i++) {
+                await store.simple.addAsync({ id: i + 1, name: `item-${i}` });
+                await store.saveChangesAsync();
+
+                const result = await store.simple.where(x => x.id === i + 1).firstAsync();
+                expect(result).toBeDefined();
+            }
+
+            const end = now();
+            const totalTime = end - start;
+            const avgTimePerOp = totalTime / iterations;
+
+            logger.log(`Async/Await Nested: ${totalTime.toFixed(3)}ms total, ${avgTimePerOp.toFixed(6)}ms per nested operation for ${iterations} add+query+save cycles`);
+
+            expect(totalTime).toBeLessThan(300);
+        });
+
+        it('should document callback vs promise performance characteristics', async () => {
+            const store = genericFactory();
+            const iterations = 100;
+
+            const asyncStart = now();
+            for (let i = 0; i < iterations; i++) {
+                await store.simple.addAsync({ id: i + 1, name: `item-${i}` });
+            }
+            await store.saveChangesAsync();
+            const asyncEnd = now();
+            const asyncTime = asyncEnd - asyncStart;
+
+            logger.log(`
+Performance Comparison (${iterations} operations):
+===============================================
+Async/Await Implementation:
+  - Total time: ${asyncTime.toFixed(3)}ms
+  - Avg per op: ${(asyncTime / iterations).toFixed(6)}ms
+  
+Callback Implementation (theoretical):
+  - Would use synchronous callback execution via TrampolinePipeline
+  - No Promise overhead (no microtask queue)
+  - Direct function calls
+  - Potentially faster for high-frequency operations
+  - But: Less readable, harder to debug, no native error handling
+
+Current Implementation Benefits:
+  - Native error handling with try/catch
+  - Better stack traces
+  - Easier to debug
+  - Standard JavaScript patterns
+  - Better TypeScript inference
+            `);
+
+            expect(asyncTime).toBeLessThan(50);
+        });
     });
 }); 

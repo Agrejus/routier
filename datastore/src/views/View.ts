@@ -87,35 +87,35 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                     operation.set(this.dependencies.schema.id, schemaChanges);
 
                     // Automatically save the view
-                    persist({
-                        id: uuid(8),
-                        operation,
-                        schemas,
-                        source: "view"
-                    }, (r) => {
+                    (async () => {
+                        try {
+                            const r = await persist({
+                                id: uuid(8),
+                                operation,
+                                schemas,
+                                source: "view"
+                            });
 
-                        if (r.ok === Result.ERROR) {
-                            logger.error("Failed to update view", r.error);
-                            return;
+                            const resolvedChanges = r.get<TEntity>(this.dependencies.schema.id);
+                            // we only want to notify of changes when an item that was saved matches the query
+                            // these get reset each time
+                            // send in the resulting adds because properties might have been set from the db operation
+                            const updates = this.cloneMany(resolvedChanges.updates);
+                            const adds = this.cloneMany(resolvedChanges.adds as InferType<TEntity>[]);
+                            const removals = this.cloneMany(resolvedChanges.removes);
+
+                            const subscriptionChanges: SubscriptionChanges<TEntity> = {
+                                updates,
+                                adds,
+                                removals,
+                                unknown: []
+                            };
+
+                            this.dependencies.subscription.send(subscriptionChanges);
+                        } catch (error) {
+                            logger.error("Failed to update view", error);
                         }
-
-                        const resolvedChanges = r.data.get<TEntity>(this.dependencies.schema.id);
-                        // we only want to notify of changes when an item that was saved matches the query
-                        // these get reset each time
-                        // send in the resulting adds because properties might have been set from the db operation
-                        const updates = this.cloneMany(resolvedChanges.updates);
-                        const adds = this.cloneMany(resolvedChanges.adds as InferType<TEntity>[]);
-                        const removals = this.cloneMany(resolvedChanges.removes);
-
-                        const subscriptionChanges: SubscriptionChanges<TEntity> = {
-                            updates,
-                            adds,
-                            removals,
-                            unknown: []
-                        };
-
-                        this.dependencies.subscription.send(subscriptionChanges);
-                    });
+                    })();
 
                     cb(enriched);
                 });

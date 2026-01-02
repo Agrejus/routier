@@ -1,10 +1,9 @@
 import { Collection } from './collections/Collection';
 import { CollectionBuilder } from './collection-builder/CollectionBuilder';
 import { CollectionPipelines } from './types';
-import { IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
+import { DbPluginBulkPersistEvent, DbPluginEvent, IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
 import { CompiledSchema, SchemaId } from '@routier/core/schema';
-import { TrampolinePipeline } from '@routier/core/pipeline';
-import { CallbackPartialResult, CallbackResult, PartialResultType, PluginEventResult, Result } from '@routier/core/results';
+import { PartialResultType, Result } from '@routier/core/results';
 import { BulkPersistChanges, BulkPersistResult, SchemaCollection, ReadonlySchemaCollection } from '@routier/core/collections';
 import { UnknownRecord, uuid } from '@routier/core/utilities';
 import { View } from './views/View';
@@ -25,7 +24,7 @@ export class DataStore implements Disposable {
     protected readonly dbPlugin: IDbPlugin;
     /** Map of schema key to collection instances. */
     protected readonly collections: Map<SchemaId, CollectionBase<any>>;
-    /** Pipelines for save and hasChanges operations. */
+    /** Pipelines for save and hasChanges operations (no longer used, kept for compatibility). */
     protected readonly collectionPipelines: CollectionPipelines;
     /** AbortController for managing cancellation and disposal. */
     protected readonly abortController: AbortController;
@@ -45,10 +44,7 @@ export class DataStore implements Disposable {
         this.dbPlugin = dbPlugin;
         this.collections = new Map<SchemaId, CollectionBase<any>>();
         this._schemas = new SchemaCollection();
-        this.collectionPipelines = {
-            prepareChanges: new TrampolinePipeline<PartialResultType<BulkPersistChanges>>(),
-            afterPersist: new TrampolinePipeline<PartialResultType<{ changes: BulkPersistChanges, result: BulkPersistResult }>>(),
-        };
+        this.collectionPipelines = {};
     }
 
     getDbPlugin<T extends IDbPlugin>() {
@@ -132,168 +128,120 @@ export class DataStore implements Disposable {
 
     /**
      * Saves all changes in all collections.
-     * @param done Callback with the number of changes saved or an error.
+     * @returns A promise resolving to the result of the save operation.
      */
-    saveChanges(done: CallbackPartialResult<BulkPersistResult>) {
-        this.collectionPipelines.prepareChanges.filter<PartialResultType<BulkPersistChanges>>({
+    async saveChanges(): Promise<BulkPersistResult> {
+        // Prepare changes from all collections
+        const preparedChanges: PartialResultType<BulkPersistChanges> = {
             data: new BulkPersistChanges(),
             ok: Result.SUCCESS
-        }, (preparedChangesResult) => {
+        };
 
-            // fatal error
-            if (preparedChangesResult.ok === PluginEventResult.ERROR) {
-                done(preparedChangesResult);
-                return;
-            }
+        // Call prepare on each collection
+        for (const [, collection] of this.collections) {
+            await collection['prepare'](preparedChanges);
+        }
 
-            try {
-                this.dbPlugin.bulkPersist({
-                    id: uuid(8),
-                    operation: preparedChangesResult.data,
-                    schemas: this._schemas,
-                    source: "data-store"
-                }, (bulkPersistResult) => {
+        // Execute bulk persist
+        const bulkPersistResult: BulkPersistResult = await this.dbPlugin.bulkPersist({
+            id: uuid(8),
+            operation: preparedChanges.data,
+            schemas: this._schemas,
+            source: "data-store"
+        } as DbPluginBulkPersistEvent);
 
-                    if (bulkPersistResult.ok === Result.ERROR) {
-                        done(Result.error(bulkPersistResult.error))
-                        return;
-                    }
+        // Call afterPersist on each collection
+        const afterPersistData: PartialResultType<{ changes: BulkPersistChanges, result: BulkPersistResult }> = {
+            data: { changes: preparedChanges.data, result: bulkPersistResult },
+            ok: Result.SUCCESS
+        };
 
-                    if (bulkPersistResult.ok === Result.PARTIAL) {
-                        done(Result.partial(bulkPersistResult.data, bulkPersistResult.error));
-                        return;
-                    }
+        for (const [, collection] of this.collections) {
+            await collection['afterPersist'](afterPersistData);
+        }
 
-                    this.collectionPipelines.afterPersist.filter<PartialResultType<{ changes: BulkPersistChanges, result: BulkPersistResult }>>({
-                        data: { changes: preparedChangesResult.data, result: bulkPersistResult.data },
-                        ok: Result.SUCCESS
-                    }, (afterPersistResult) => {
-
-                        if (afterPersistResult.ok === PluginEventResult.ERROR) {
-                            done(PluginEventResult.error(bulkPersistResult.id, afterPersistResult.error));
-                            return;
-                        }
-
-                        if (afterPersistResult.ok === PluginEventResult.PARTIAL) {
-                            done(PluginEventResult.partial(bulkPersistResult.id, afterPersistResult.data.result, afterPersistResult.error));
-                            return;
-                        }
-
-                        done(PluginEventResult.success(bulkPersistResult.id, afterPersistResult.data.result))
-                    });
-                });
-            } catch (e) {
-                done(Result.error(e))
-            }
-        });
+        return bulkPersistResult;
     }
 
     /**
      * Saves all changes in all collections asynchronously.
      * @returns A promise resolving to the number of changes saved.
+     * @deprecated Use saveChanges() instead
      */
     saveChangesAsync() {
-        return new Promise<BulkPersistResult>((resolve, reject) => {
-            this.saveChanges((r) => Result.resolve(r, resolve, reject));
-        });
+        return this.saveChanges();
     }
 
     /**
      * Computes and returns the pending changes that would be sent to the database plugin's bulkOperations method.
      * This method allows inspection of changes before they are actually persisted.
-     * @param done Callback with the entity changes or an error.
+     * @returns A promise resolving to the entity changes.
      */
-    previewChanges(done: CallbackPartialResult<BulkPersistChanges>) {
-        this.collectionPipelines.prepareChanges.filter<PartialResultType<BulkPersistChanges>>({
+    async previewChanges(): Promise<BulkPersistChanges> {
+        const preparedChanges: PartialResultType<BulkPersistChanges> = {
             data: new BulkPersistChanges(),
             ok: Result.SUCCESS
-        }, (r, e) => {
-            if (e != null) {
-                done(Result.error(e));
-                return;
-            }
+        };
 
-            done(r);
-        });
+        // Call prepare on each collection
+        for (const [, collection] of this.collections) {
+            await collection['prepare'](preparedChanges);
+        }
+
+        return preparedChanges.data;
     }
 
     /**
      * Computes and returns the pending changes that would be sent to the database plugin's bulkOperations method asynchronously.
      * This method allows inspection of changes before they are actually persisted.
      * @returns A promise resolving to the entity changes.
+     * @deprecated Use previewChanges() instead
      */
     previewChangesAsync() {
-        return new Promise<BulkPersistChanges>((resolve, reject) => {
-            this.previewChanges((r) => Result.resolve(r, resolve, reject));
-        });
+        return this.previewChanges();
     }
 
     /**
      * Checks if there are any unsaved changes in the collections.
-     * @param done Callback with the result (true if there are changes) or an error.
+     * @returns A promise resolving to true if there are changes, false otherwise.
      */
-    hasChanges(done: CallbackResult<boolean>) {
-        try {
-            for (const [, collection] of this.collections) {
-                if (collection.hasChanges()) {
-                    done({
-                        ok: Result.SUCCESS,
-                        data: true
-                    });
-                    return;
-                }
+    async hasChanges(): Promise<boolean> {
+        for (const [, collection] of this.collections) {
+            if (collection.hasChanges()) {
+                return true;
             }
-
-            done({
-                ok: Result.SUCCESS,
-                data: false
-            });
-        } catch (error) {
-            done({
-                ok: Result.ERROR,
-                error
-            });
         }
+        return false;
     }
 
     /**
      * Checks asynchronously if there are any unsaved changes in the collections.
      * @returns A promise resolving to true if there are changes, false otherwise.
+     * @deprecated Use hasChanges() instead
      */
     hasChangesAsync() {
-        return new Promise<boolean>((resolve, reject) => {
-            this.hasChanges((r) => {
-
-                if (r.ok === Result.ERROR) {
-                    reject(r.error);
-                    return;
-                }
-
-                resolve(r.data);
-            })
-        });
+        return this.hasChanges();
     }
 
     /**
      * Destroys the Routier instance and underlying database plugin.
-     * @param done Callback with an optional error.
+     * @returns A promise that resolves when destruction is complete.
      */
-    destroy(done: CallbackResult<never>) {
-        this.dbPlugin.destroy({
+    async destroy(): Promise<void> {
+        await this.dbPlugin.destroy({
             id: uuid(8),
             schemas: this._schemas,
             source: "data-store"
-        }, done);
+        } as DbPluginEvent);
     }
 
     /**
      * Destroys the Routier instance and underlying database plugin asynchronously.
      * @returns A promise that resolves when destruction is complete.
+     * @deprecated Use destroy() instead
      */
     destroyAsync() {
-        return new Promise<void>((resolve, reject) => {
-            this.destroy((r) => Result.resolve(r, resolve, reject))
-        });
+        return this.destroy();
     }
 
     /**

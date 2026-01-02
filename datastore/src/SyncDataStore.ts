@@ -1,7 +1,7 @@
 import { IDbPlugin } from "@routier/core/plugins";
 import { DataStore } from "./DataStore";
 import { CompiledSchema, HashType, InferCreateType, InferType } from "@routier/core/schema";
-import { CallbackPartialResult, CallbackResult, Result, ResultType } from "@routier/core/results";
+import { Result, ResultType } from "@routier/core/results";
 import { BulkPersistResult, SchemaPersistResult } from "@routier/core/collections";
 import { logger, UnknownRecord } from "@routier/core/utilities";
 import { assertIsNotNull } from "@routier/core/assertions";
@@ -13,11 +13,10 @@ export abstract class SyncDataStore extends DataStore {
         super(plugin);
     }
 
-    sync() {
+    async sync() {
         for (const [, schema] of this.schemas) {
-            this.onRequestData(schema, (result) => {
-                this.syncRemoteCollectionData(schema, result);
-            });
+            const result = await this.onRequestData(schema);
+            await this.syncRemoteCollectionData(schema, result);
         }
     }
 
@@ -45,65 +44,57 @@ export abstract class SyncDataStore extends DataStore {
         return result;
     }
 
-    private syncRemoteCollectionData(schema: CompiledSchema<Record<string, unknown>>, result: ResultType<Record<string, unknown>[]>) {
-        if (result.ok === Result.ERROR) {
-            return logger.error(`An error occurred syncing remote data for schema.  Collection Name: ${schema.collectionName}`, result.error);
-        }
-
+    private async syncRemoteCollectionData(schema: CompiledSchema<Record<string, unknown>>, result: Record<string, unknown>[]) {
         const collectionBase = this.collections.get(schema.id);
 
         assertIsNotNull(collectionBase, `Could not find collection for schemaId.  Collection Name: ${schema.collectionName}`);
 
         const collection = collectionBase as Collection<UnknownRecord>;
 
-        collection.toArray(allDataResult => {
-            if (allDataResult.ok === Result.ERROR) {
-                return logger.error(`An error occurred during syncing, could not fetch all data for collection.  Collection Name: ${schema.collectionName}`);
+        const allDataResult = await collection.toArrayAsync();
+
+        const hashedCollectionData = this.toMap(schema, allDataResult);
+        const entityMap = this.toEntityMap(schema, allDataResult);
+        const remoteEntityIdHashes = new Set<string>();
+        const adds: InferCreateType<UnknownRecord>[] = [];
+        const updates: Array<{ local: InferType<UnknownRecord>, remote: InferType<UnknownRecord> }> = [];
+
+        for (let i = 0, length = result.length; i < length; i++) {
+            const remoteEntity = result[i] as InferType<UnknownRecord>;
+            const hashedEntityIds = schema.hash(remoteEntity, HashType.Ids);
+            remoteEntityIdHashes.add(hashedEntityIds);
+
+            const hashedLocalEntity = hashedCollectionData.get(hashedEntityIds);
+
+            if (hashedLocalEntity == null) {
+                adds.push(remoteEntity as InferCreateType<UnknownRecord>);
+                continue;
             }
 
-            const hashedCollectionData = this.toMap(schema, allDataResult.data);
-            const entityMap = this.toEntityMap(schema, allDataResult.data);
-            const remoteEntityIdHashes = new Set<string>();
-            const adds: InferCreateType<UnknownRecord>[] = [];
-            const updates: Array<{ local: InferType<UnknownRecord>, remote: InferType<UnknownRecord> }> = [];
+            const hashedRemoteEntity = schema.hash(remoteEntity, HashType.Object);
 
-            for (let i = 0, length = result.data.length; i < length; i++) {
-                const remoteEntity = result.data[i] as InferType<UnknownRecord>;
-                const hashedEntityIds = schema.hash(remoteEntity, HashType.Ids);
-                remoteEntityIdHashes.add(hashedEntityIds);
-
-                const hashedLocalEntity = hashedCollectionData.get(hashedEntityIds);
-
-                if (hashedLocalEntity == null) {
-                    adds.push(remoteEntity as InferCreateType<UnknownRecord>);
-                    continue;
-                }
-
-                const hashedRemoteEntity = schema.hash(remoteEntity, HashType.Object);
-
-                if (hashedRemoteEntity !== hashedLocalEntity) {
-                    const localEntity = entityMap.get(hashedEntityIds);
-                    if (localEntity) {
-                        updates.push({ local: localEntity, remote: remoteEntity });
-                    }
+            if (hashedRemoteEntity !== hashedLocalEntity) {
+                const localEntity = entityMap.get(hashedEntityIds);
+                if (localEntity) {
+                    updates.push({ local: localEntity, remote: remoteEntity });
                 }
             }
+        }
 
-            const removals: InferType<UnknownRecord>[] = [];
-            for (let i = 0, length = allDataResult.data.length; i < length; i++) {
-                const localEntity = allDataResult.data[i] as InferType<UnknownRecord>;
-                const hashedEntityIds = schema.hash(localEntity, HashType.Ids);
+        const removals: InferType<UnknownRecord>[] = [];
+        for (let i = 0, length = allDataResult.length; i < length; i++) {
+            const localEntity = allDataResult[i] as InferType<UnknownRecord>;
+            const hashedEntityIds = schema.hash(localEntity, HashType.Ids);
 
-                if (!remoteEntityIdHashes.has(hashedEntityIds)) {
-                    removals.push(localEntity);
-                }
+            if (!remoteEntityIdHashes.has(hashedEntityIds)) {
+                removals.push(localEntity);
             }
+        }
 
-            this.processBatches(collection, schema, adds, updates, removals);
-        });
+        await this.processBatches(collection, schema, adds, updates, removals);
     }
 
-    private processBatches(
+    private async processBatches(
         collection: Collection<UnknownRecord>,
         schema: CompiledSchema<Record<string, unknown>>,
         adds: InferCreateType<UnknownRecord>[],
@@ -115,7 +106,7 @@ export abstract class SyncDataStore extends DataStore {
         let updateIndex = 0;
         let removalIndex = 0;
 
-        const processNextBatch = () => {
+        while (true) {
             let hasWork = false;
 
             if (addIndex < adds.length) {
@@ -123,11 +114,11 @@ export abstract class SyncDataStore extends DataStore {
                 const batch = adds.slice(addIndex, addIndex + BATCH_SIZE);
                 addIndex += BATCH_SIZE;
 
-                collection.add(batch, (addResult) => {
-                    if (addResult.ok === Result.ERROR) {
-                        logger.error(`Error adding entities during sync.  Collection Name: ${schema.collectionName}`, addResult.error);
-                    }
-                });
+                try {
+                    await collection.addAsync(...batch);
+                } catch (error) {
+                    logger.error(`Error adding entities during sync.  Collection Name: ${schema.collectionName}`, error);
+                }
             }
 
             if (updateIndex < updates.length) {
@@ -149,61 +140,50 @@ export abstract class SyncDataStore extends DataStore {
                 const batch = removals.slice(removalIndex, removalIndex + BATCH_SIZE);
                 removalIndex += BATCH_SIZE;
 
-                collection.remove(batch, (removeResult) => {
-                    if (removeResult.ok === Result.ERROR) {
-                        logger.error(`Error removing entities during sync.  Collection Name: ${schema.collectionName}`, removeResult.error);
-                    }
-                });
+                try {
+                    await collection.removeAsync(...batch);
+                } catch (error) {
+                    logger.error(`Error removing entities during sync.  Collection Name: ${schema.collectionName}`, error);
+                }
             }
 
-            if (hasWork) {
-                setTimeout(processNextBatch, 5);
+            if (!hasWork) {
+                break;
             }
-        };
 
-        processNextBatch();
+            // Small delay between batches
+            await new Promise(resolve => setTimeout(resolve, 5));
+        }
     }
 
-    abstract onRequestData<T extends {}>(schema: CompiledSchema<T>, done: CallbackResult<T[]>): void
+    abstract onRequestData<T extends {}>(schema: CompiledSchema<T>): Promise<T[]>
     abstract onSendData<T extends {}>(schema: CompiledSchema<T>, data: SchemaPersistResult<T>): void
-    abstract onDestroyDataStore(done: CallbackResult<never>): void
+    abstract onDestroyDataStore(): Promise<void>
 
-    override saveChanges(done: CallbackPartialResult<BulkPersistResult>): void {
-        super.saveChanges(result => {
+    override async saveChanges(): Promise<BulkPersistResult> {
+        const result = await super.saveChanges();
 
-            if (result.ok === Result.ERROR) {
-                return done(result);
-            }
-
-            try {
-                for (const [schemaId, persistResult] of result.data) {
-                    if (persistResult.hasItems === false) {
-                        continue;
-                    }
-
-                    const schema = this.schemas.get<UnknownRecord>(schemaId);
-
-                    assertIsNotNull(schema);
-
-                    this.onSendData(schema, persistResult);
+        try {
+            for (const [schemaId, persistResult] of result) {
+                if (persistResult.hasItems === false) {
+                    continue;
                 }
 
-                done(result);
-            } catch (e) {
-                done(Result.error(e));
+                const schema = this.schemas.get<UnknownRecord>(schemaId);
+
+                assertIsNotNull(schema);
+
+                this.onSendData(schema, persistResult);
             }
-        });
+
+            return result;
+        } catch (e) {
+            throw e;
+        }
     }
 
-    override destroy(done: CallbackResult<never>): void {
-        super.destroy(result => {
-            if (result.ok === Result.ERROR) {
-                return done(result);
-            }
-
-            this.onDestroyDataStore(remoteResult => {
-                done(remoteResult);
-            });
-        });
+    override async destroy(): Promise<void> {
+        await super.destroy();
+        await this.onDestroyDataStore();
     }
 }

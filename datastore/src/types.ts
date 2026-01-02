@@ -1,5 +1,4 @@
 import { BulkPersistChanges, BulkPersistResult } from "@routier/core";
-import { TrampolinePipeline } from "@routier/core/pipeline";
 import { PartialResultType } from "@routier/core/results";
 import { IdType, InferType } from "@routier/core/schema";
 import { GenericFunction } from "@routier/core/types";
@@ -82,6 +81,5 @@ export type DeepReadonly<T> = {
 };
 
 export type CollectionPipelines = {
-    prepareChanges: TrampolinePipeline<PartialResultType<BulkPersistChanges>>;
-    afterPersist: TrampolinePipeline<PartialResultType<{ changes: BulkPersistChanges, result: BulkPersistResult }>>;
+    // No longer needed - collections are called directly
 }

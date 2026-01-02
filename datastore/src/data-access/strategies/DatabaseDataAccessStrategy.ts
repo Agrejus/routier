@@ -1,16 +1,16 @@
 import { IDataAccessStrategy } from "../types";
 import { DataAccessStrategyBase } from "./DataAccessStrategyBase";
 import { DbPluginBulkPersistEvent, DbPluginQueryEvent, ITranslatedValue } from "@routier/core/plugins";
-import { PluginEventCallbackPartialResult, PluginEventCallbackResult } from "@routier/core/results";
 import { BulkPersistResult } from "@routier/core/collections";
 
 export class DatabaseDataAccessStrategy<T extends {}> extends DataAccessStrategyBase<T> implements IDataAccessStrategy<T> {
 
-    bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackPartialResult<BulkPersistResult>) {
-        super._bulkPersist(event, done);
+    async bulkPersist(event: DbPluginBulkPersistEvent): Promise<BulkPersistResult> {
+        return await super._bulkPersist(event);
     }
 
-    query<TShape>(event: DbPluginQueryEvent<T, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>) {
-        this.dbPlugin.query<T, TShape>(event, done);
+    async query<TShape>(event: DbPluginQueryEvent<T, TShape>): Promise<ITranslatedValue<TShape>> {
+        const result: ITranslatedValue<TShape> = await (this.dbPlugin as import("@routier/core/plugins").IDbPlugin).query<T, TShape>(event);
+        return result;
     }
 }

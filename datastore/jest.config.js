@@ -34,5 +34,11 @@ module.exports = {
                 allowSyntheticDefaultImports: true
             }
         }]
-    }
+    },
+    watchPathIgnorePatterns: [
+        '<rootDir>/../plugins/sync'
+    ],
+    modulePathIgnorePatterns: [
+        '<rootDir>/../plugins/sync'
+    ]
 };

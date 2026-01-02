@@ -1,7 +1,6 @@
 import { MemoryDatabase } from ".";
 import { DbPluginEvent, EphemeralDataPlugin } from "@routier/core/plugins";
 import { CompiledSchema } from "@routier/core/schema";
-import { PluginEventCallbackResult, PluginEventResult } from "@routier/core/results";
 import { MemoryDataCollection } from "@routier/core/collections";
 
 const dbs: Record<string, MemoryDatabase> = {};
@@ -48,13 +47,12 @@ export class MemoryPlugin extends EphemeralDataPlugin {
         return this.database[collectionName].size;
     }
 
-    seed<TEntity extends {}>(schema: CompiledSchema<TEntity>, data: Record<string, unknown>[]) {
+    async seed<TEntity extends {}>(schema: CompiledSchema<TEntity>, data: Record<string, unknown>[]): Promise<void> {
         const collection = this.resolveCollection(schema);
         collection.seed(data);
     }
 
-    override destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
+    override async destroy(event: DbPluginEvent): Promise<void> {
         dbs[this.databaseName] = {};
-        done(PluginEventResult.success(event.id));
     }
 }
