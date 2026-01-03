@@ -81,9 +81,13 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
             return items;
         }
 
-        const result: InferType<TEntity>[] = []
+        if (items.length === 0) {
+            return items;
+        }
+
+        const result: InferType<TEntity>[] = new Array(items.length);
         for (let i = 0, length = items.length; i < length; i++) {
-            result.push(this.dependencies.schema.clone(items[i]));
+            result[i] = this.dependencies.schema.clone(items[i]);
         }
         return result;
     }
@@ -118,14 +122,16 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
             // clear after we merge changes
             this.dependencies.changeTracker.clearChanges();
 
-            const subscriptionChanges: SubscriptionChanges<TEntity> = {
-                updates,
-                adds,
-                removals,
-                unknown: []
-            };
-
-            this.dependencies.subscription.send(subscriptionChanges);
+            // Only create and send if there are actual changes
+            if (updates.length > 0 || adds.length > 0 || removals.length > 0) {
+                const subscriptionChanges: SubscriptionChanges<TEntity> = {
+                    updates,
+                    adds,
+                    removals,
+                    unknown: []
+                };
+                this.dependencies.subscription.send(subscriptionChanges);
+            }
 
             done(result);
         } catch (e) {
@@ -137,17 +143,15 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
 
         try {
             if (result.ok === Result.ERROR) {
-                done(result);
-                return;
+                return done(result);
+            }
+
+            if (this.dependencies.changeTracker.hasChanges() === false) {
+                return done(result);
             }
 
             const tags = this.dependencies.changeTracker.tags.get();
             const changes = result.data.resolve(this.dependencies.schema.id);
-
-            if (this.dependencies.changeTracker.hasChanges() === false) {
-                done(result);
-                return
-            }
 
             assertIsNotNull(tags, "Could not find tag collection during prepare operation");
 

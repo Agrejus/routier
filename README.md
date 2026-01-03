@@ -1,6 +1,6 @@
 # Routier Monorepo
 
-> **⚠️ Alpha Release** - This project is currently in alpha. APIs may change between versions. Use with caution in production.
+> **⚠️ Beta Release** - This project is currently in beta. APIs may change between versions. Use with caution in production.
 
 Routier is a reactive data toolkit for building fast, local-first apps. Define schemas, create collections, use live queries, and make optimistic mutations with a plugin model for any storage.
 

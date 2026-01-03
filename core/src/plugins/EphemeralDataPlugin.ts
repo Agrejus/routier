@@ -40,15 +40,15 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                 pipeline.pipe((d) => {
                     try {
                         const collection = this.resolveCollection(schema);
-                        collection.load(readResult => {
-                            if (readResult.ok === Result.ERROR) {
-                                d(readResult);
-                                return;
-                            }
+                        const addsLength = adds.length;
+                        const updatesLength = updates.length;
+                        const removesLength = removes.length;
 
-                            const addsLength = adds.length;
-                            const updatesLength = updates.length;
-                            const removesLength = removes.length;
+                        // Only need to load if we have updates or removes (need existing data)
+                        // For adds-only operations, we can skip load for better performance
+                        const needsLoad = updatesLength > 0 || removesLength > 0;
+
+                        const processChanges = () => {
                             result.adds = new Array(addsLength);
                             result.updates = new Array(updatesLength);
                             result.removes = new Array(removesLength);
@@ -77,7 +77,20 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                                 }
                                 d(Result.success());
                             });
-                        });
+                        };
+
+                        if (needsLoad) {
+                            collection.load(readResult => {
+                                if (readResult.ok === Result.ERROR) {
+                                    d(readResult);
+                                    return;
+                                }
+                                processChanges();
+                            });
+                        } else {
+                            // Skip load for adds-only operations
+                            processChanges();
+                        }
                     } catch (e) {
                         d(Result.error(e));
                     }

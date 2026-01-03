@@ -21,7 +21,7 @@ export class TrampolinePipeline<TInitial, TCurrent = TInitial> {
         this._hasErrored = false; // Reset error flag on new execution
 
         if (this._list.length === 0) {
-            queueMicrotask(() => done(initialData as unknown as TFinal));
+            done(initialData as unknown as TFinal);
             return;
         }
 
@@ -34,7 +34,7 @@ export class TrampolinePipeline<TInitial, TCurrent = TInitial> {
             const finalStepSentinel = (): StepResult<any> => { // A special step function for the very end
                 // Only call done if no error has occurred
                 if (!this._hasErrored) {
-                    queueMicrotask(() => done(currentData as TFinal));
+                    done(currentData as TFinal);
                 }
                 return null; // Stop the trampoline
             };
@@ -106,7 +106,7 @@ export class TrampolinePipeline<TInitial, TCurrent = TInitial> {
                 isRunning = true;
                 let currentStep = step;
 
-                while (typeof currentStep === 'function') {
+                while (currentStep !== null) {
                     try {
                         // Stop immediately if an error was flagged elsewhere
                         if (this._hasErrored) {
@@ -175,7 +175,7 @@ export class WorkPipeline {
         this._hasErrored = false; // Reset error flag on new execution
 
         if (this.unitsOfWork.length === 0) {
-            queueMicrotask(() => done(Result.success()));
+            done(Result.success());
             return;
         }
 
@@ -187,7 +187,7 @@ export class WorkPipeline {
             const finalStepSentinel = (): StepResult<never> => { // A special step function for the very end
                 // Only call done if no error has occurred
                 if (!this._hasErrored) {
-                    queueMicrotask(() => done(Result.success()));
+                    done(Result.success());
                 }
                 return null; // Stop the trampoline
             };
@@ -258,7 +258,7 @@ export class WorkPipeline {
                 isRunning = true;
                 let currentStep = step;
 
-                while (typeof currentStep === 'function') {
+                while (currentStep !== null) {
                     try {
                         // Stop immediately if an error was flagged elsewhere
                         if (this._hasErrored) {

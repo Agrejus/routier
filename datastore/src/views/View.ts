@@ -1,6 +1,6 @@
 import { CollectionBase } from '../collections/CollectionBase';
 import { IDbPlugin } from '@routier/core/plugins';
-import { ChangeTrackingType, CompiledSchema, IdType, InferCreateType, InferType, SubscriptionChanges } from '@routier/core/schema';
+import { ChangeTrackingType, CompiledSchema, HashType, IdType, InferCreateType, InferType, SubscriptionChanges } from '@routier/core/schema';
 import { BulkPersistChanges, SchemaCollection, SchemaPersistChanges } from '@routier/core/collections';
 import { CallbackResult, Result } from '@routier/core/results';
 import { logger, noop, uuid } from '@routier/core/utilities';
@@ -62,10 +62,18 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                         schemaChanges.adds = enriched;
                     } else {
 
+                        // Build lookup map for O(1) lookups instead of O(n) find()
+                        const existingMap = new Map<string, InferType<TEntity>>();
+                        for (const existing of toArrayResult.data) {
+                            const hash = this.dependencies.schema.hash(existing, HashType.Ids);
+                            existingMap.set(hash, existing);
+                        }
+
                         // compute changes
                         for (let i = 0, length = enriched.length; i < length; i++) {
                             const item = enriched[i];
-                            const existing = toArrayResult.data.find(x => this.dependencies.schema.compareIds(item, x))
+                            const hash = this.dependencies.schema.hash(item, HashType.Ids);
+                            const existing = existingMap.get(hash);
 
                             if (existing != null) {
 

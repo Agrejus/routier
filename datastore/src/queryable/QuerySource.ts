@@ -3,7 +3,7 @@ import { InferType } from "@routier/core/schema";
 import { CallbackResult, PluginEventCallbackResult, PluginEventResult, PluginEventSuccessType, Result } from "@routier/core/results";
 import { GenericFunction } from "@routier/core/types";
 import { Filter, ParamsFilter, toExpression } from "@routier/core/expressions";
-import { unsafeCast, uuid } from "@routier/core/utilities";
+import { uuid } from "@routier/core/utilities";
 import { CollectionDependencies, RequestContext } from "../collections/types";
 
 export abstract class QuerySource<TRoot extends {}, TShape> {
@@ -87,11 +87,12 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
     protected getSortPropertyName(selector: GenericFunction<TShape, TShape[keyof TShape]>) {
         const stringified = selector.toString();
 
-        if (stringified.includes("=>") === false) {
+        const arrowIndex = stringified.indexOf("=>");
+        if (arrowIndex < 0) {
             throw new Error("Only arrow functions allowed in .map()")
         }
 
-        const [, body] = stringified.split("=>").map(w => w.trim());
+        const body = stringified.substring(arrowIndex + 2).trim();
 
         return this._extractPropertyName(body);
     }
@@ -99,12 +100,13 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
     protected getFields<TRoot, R>(selector: GenericFunction<TRoot, R>): QueryField[] {
 
         const stringified = selector.toString();
+        const arrowIndex = stringified.indexOf("=>");
 
-        if (stringified.includes("=>") === false) {
+        if (arrowIndex < 0) {
             throw new Error("Only arrow functions allowed in .map()")
         }
 
-        const [, body] = stringified.split("=>").map(w => w.trim());
+        const body = stringified.substring(arrowIndex + 2).trim();
 
 
         if (body.includes("{")) {
@@ -198,8 +200,11 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
             this.dependencies.changeTracker.tags.destroy();
 
             if (databaseEvent.operation.changeTracking === true) {
-                // Post process the db query results
-                result.data.forEach(item => this.dependencies.schema.postprocess(item as InferType<TRoot>, this.request.changeTrackingType));
+                // Post process the db query results - optimized: use for loop instead of forEach
+                const dataArray = result.data.value as unknown[];
+                for (let i = 0, length = dataArray.length; i < length; i++) {
+                    this.dependencies.schema.postprocess(dataArray[i] as InferType<TRoot>, this.request.changeTrackingType);
+                }
             }
 
             // This means we are querying on a computed property that is untracked, need to select
@@ -216,10 +221,13 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
                     return done(PluginEventResult.success(memoryEvent.id, translatedEnrichedData.value));
                 }
 
-                // Resolve the data with the current attachments
-                result.data.forEach(item => this.dependencies.changeTracker.resolve(item as InferType<TRoot>, tags, {
-                    merge: true
-                }));
+                // Resolve the data with the current attachments - optimized: use for loop instead of forEach
+                const dataArray = result.data.value as unknown[];
+                for (let i = 0, length = dataArray.length; i < length; i++) {
+                    this.dependencies.changeTracker.resolve(dataArray[i] as InferType<TRoot>, tags, {
+                        merge: true
+                    });
+                }
 
                 return done(PluginEventResult.success(memoryEvent.id, result.data.value as TShape));
             }
@@ -229,10 +237,13 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
                 return done(PluginEventResult.success(databaseEvent.id, result.data.value as TShape));
             }
 
-            // Resolve the data with the current attachments
-            result.data.forEach(item => this.dependencies.changeTracker.resolve(item as InferType<TRoot>, tags, {
-                merge: true
-            }));
+            // Resolve the data with the current attachments - optimized: use for loop instead of forEach
+            const dataArray = result.data.value as unknown[];
+            for (let i = 0, length = dataArray.length; i < length; i++) {
+                this.dependencies.changeTracker.resolve(dataArray[i] as InferType<TRoot>, tags, {
+                    merge: true
+                });
+            }
 
             done(PluginEventResult.success(databaseEvent.id, result.data.value));
         } catch (e) {

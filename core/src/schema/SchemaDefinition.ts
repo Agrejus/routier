@@ -169,47 +169,47 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                     }
 
                     const resolvedParent: { [key: string]: any } = parent ?? entity;
+                    let tracking = resolvedParent[TRACKING_KEY];
 
-                    if (resolvedParent[TRACKING_KEY] == null) {
-                        resolvedParent[TRACKING_KEY] = {
+                    if (tracking == null) {
+                        tracking = resolvedParent[TRACKING_KEY] = {
                             [CHANGES_ENTITY_KEY]: {},
                             [DIRTY_ENTITY_MARKER]: false,
                             [ORIGINAL_ENTITY_KEY]: {},
                             [PAUSED_ENTITY_KEY]: false
-                        }
+                        };
                     }
 
-                    if (key == TRACKING_KEY) {
+                    if (key === TRACKING_KEY) {
                         return true;
                     }
 
-                    if (resolvedParent[TRACKING_KEY] != null && resolvedParent[TRACKING_KEY][PAUSED_ENTITY_KEY] === true) {
+                    if (tracking[PAUSED_ENTITY_KEY] === true) {
                         Reflect.set(indexableEntity, property, value);
                         return true;
                     }
 
                     const resolvedPath = path == null ? key : `${path}.${key}`;
-                    const changes = resolvedParent[TRACKING_KEY];
+                    const changesMap = tracking[CHANGES_ENTITY_KEY];
+                    const originalMap = tracking[ORIGINAL_ENTITY_KEY];
+                    const existingChange = changesMap[resolvedPath];
 
-                    if (changes[CHANGES_ENTITY_KEY][resolvedPath] != null) {
-
-                        if (changes[ORIGINAL_ENTITY_KEY][resolvedPath] === value) {
+                    if (existingChange != null) {
+                        if (originalMap[resolvedPath] === value) {
                             // we are changing the value back to the original value, remove the change
-                            delete changes[ORIGINAL_ENTITY_KEY][resolvedPath];
-                            delete changes[CHANGES_ENTITY_KEY][resolvedPath];
+                            delete originalMap[resolvedPath];
+                            delete changesMap[resolvedPath];
+                            tracking[DIRTY_ENTITY_MARKER] = Object.keys(originalMap).length > 0;
                         } else {
                             // track the change
-                            changes[CHANGES_ENTITY_KEY][resolvedPath] = value;
+                            changesMap[resolvedPath] = value;
                         }
-
-                    } else if (changes[CHANGES_ENTITY_KEY][resolvedPath] == null) {
+                    } else {
                         // don't keep updating, keep the original value
-                        changes[CHANGES_ENTITY_KEY][resolvedPath] = value;
-                        changes[ORIGINAL_ENTITY_KEY][resolvedPath] = originalValue;
+                        changesMap[resolvedPath] = value;
+                        originalMap[resolvedPath] = originalValue;
+                        tracking[DIRTY_ENTITY_MARKER] = true;
                     }
-
-                    const isDirty = Object.keys(changes[ORIGINAL_ENTITY_KEY]).length > 0;
-                    changes[DIRTY_ENTITY_MARKER] = isDirty;
 
                     Reflect.set(indexableEntity, property, value);
 
@@ -277,13 +277,15 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             freezeCodeBuilder.slot("return").raw('\treturn Object.freeze(entity);');
 
             const enricherCodeBuilder = new CodeBuilder();
+
             const enricherFunctionRoot = enricherCodeBuilder.factory("factory", { name: "factory" }).parameters({ name: "collectionName", value: this.collectionName });
+            enricherFunctionRoot.slot("changeTracker").raw(`\tfunction ${this.createChangeTracker.toString()}`);
+            enricherFunctionRoot.slot("changeTrackerFunction").raw(`\tconst changeTracker = createChangeTracker();`);
             const enricherFunctionBody = enricherFunctionRoot.function(undefined, { name: "function" }).parameters("entity", "changeTrackingType").return();
 
-            enricherFunctionBody.slot("changeTracker").raw(`\tfunction ${this.createChangeTracker.toString()}`);
             enricherFunctionBody.slot("enableChangeTracking")
                 .variable("enableChangeTracking")
-                .value('changeTrackingType === "proxy" ? createChangeTracker() : e => e');
+                .value('changeTrackingType === "proxy" ? changeTracker : e => e');
 
             enricherFunctionBody.slot("append");
             enricherFunctionBody.slot("enriched");
