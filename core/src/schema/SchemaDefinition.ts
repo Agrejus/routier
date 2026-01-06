@@ -17,11 +17,93 @@ import { EnableChangeTrackingHandlerBuilder } from '../codegen/handlers/EnableCh
 import { FreezeHandlerBuilder } from '../codegen/handlers/FreezeHandlerBuilder';
 import { SchemaError } from '../errors/SchemaError';
 import { SerializeHandlerBuilder } from "../codegen/handlers/SerializeHandlerBuilder";
-import { hash } from "../utilities";
+import { hash, logger } from "../utilities";
 import { CollectionName, CompiledSchema, CompiledSchemaCore, GetHashTypeFunction, HashFunction, HashType, IdType, Index, InferCreateType, InferType, Prepare, Preprocess, SchemaId, SchemaTypes } from './types';
 import { DeepPartial } from '../types';
 import { SchemaSubscription } from './communication/broadcast';
 import { CompareIdsHandlerBuilder } from '../codegen/handlers/CompareIdsHandlerBuilder';
+
+function createChangeTracker() {
+    const DIRTY_ENTITY_MARKER: string = "isDirty";
+    const CHANGES_ENTITY_KEY: string = "changes";
+    const ORIGINAL_ENTITY_KEY: string = "original";
+    const PAUSED_ENTITY_KEY: string = "isPaused";
+    const TRACKING_KEY: string = "__tracking__";
+    const PROXY_MARKER: string = "__isProxy__";
+
+    return <TEntity extends {}>(entity: TEntity, path?: string, parent?: TEntity) => {
+
+        const proxyHandler: ProxyHandler<TEntity> = {
+            set(entity, property, value) {
+                const indexableEntity: { [key: string]: any } = entity;
+                const key = String(property);
+                const originalValue = indexableEntity[key];
+
+                // if values are the same, do nothing
+                if (originalValue === value) {
+                    return true;
+                }
+
+                const resolvedParent: { [key: string]: any } = parent ?? entity;
+
+                if (resolvedParent[TRACKING_KEY] == null) {
+                    resolvedParent[TRACKING_KEY] = {
+                        [CHANGES_ENTITY_KEY]: {},
+                        [DIRTY_ENTITY_MARKER]: false,
+                        [ORIGINAL_ENTITY_KEY]: {},
+                        [PAUSED_ENTITY_KEY]: false
+                    }
+                }
+
+                if (key == TRACKING_KEY) {
+                    return true;
+                }
+
+                if (resolvedParent[TRACKING_KEY] != null && resolvedParent[TRACKING_KEY][PAUSED_ENTITY_KEY] === true) {
+                    Reflect.set(indexableEntity, property, value);
+                    return true;
+                }
+
+                const resolvedPath = path == null ? key : `${path}.${key}`;
+                const changes = resolvedParent[TRACKING_KEY];
+
+                if (changes[CHANGES_ENTITY_KEY][resolvedPath] != null) {
+
+                    if (changes[ORIGINAL_ENTITY_KEY][resolvedPath] === value) {
+                        // we are changing the value back to the original value, remove the change
+                        delete changes[ORIGINAL_ENTITY_KEY][resolvedPath];
+                        delete changes[CHANGES_ENTITY_KEY][resolvedPath];
+                    } else {
+                        // track the change
+                        changes[CHANGES_ENTITY_KEY][resolvedPath] = value;
+                    }
+
+                } else if (changes[CHANGES_ENTITY_KEY][resolvedPath] == null) {
+                    // don't keep updating, keep the original value
+                    changes[CHANGES_ENTITY_KEY][resolvedPath] = value;
+                    changes[ORIGINAL_ENTITY_KEY][resolvedPath] = originalValue;
+                }
+
+                const isDirty = Object.keys(changes[ORIGINAL_ENTITY_KEY]).length > 0;
+                changes[DIRTY_ENTITY_MARKER] = isDirty;
+
+                Reflect.set(indexableEntity, property, value);
+
+                return true;
+            },
+            get(target, property, receiver) {
+
+                if (property === PROXY_MARKER) {
+                    return true;
+                }
+
+                return Reflect.get(target, property, receiver);
+            }
+        }
+
+        return new Proxy(entity, proxyHandler) as TEntity;
+    }
+}
 
 export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
@@ -35,6 +117,28 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
         this.instance = schema;
         this.isNullable = false;
         this.isOptional = false;
+    }
+
+    private createReturnFunction<TResult>(builder: CodeBuilder): TResult {
+        const body = builder.toString();
+
+        try {
+            return Function(`return ${body}`) as TResult;
+        } catch (e) {
+            logger.error(`Error compiling schema function.  Function Body: ${body}`)
+            throw e;
+        }
+    }
+
+    private createFunction<TResult>(builder: CodeBuilder, ...fnArgs: string[]): TResult {
+        const body = builder.toString();
+
+        try {
+            return Function(...fnArgs, body) as TResult;
+        } catch (e) {
+            logger.error(`Error compiling schema function.  Function Body: ${body}`)
+            throw e;
+        }
     }
 
     modify<R>(builder: (d: {
@@ -146,89 +250,6 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
         }
     }
 
-    private createChangeTracker() {
-
-        const DIRTY_ENTITY_MARKER: string = "isDirty";
-        const CHANGES_ENTITY_KEY: string = "changes";
-        const ORIGINAL_ENTITY_KEY: string = "original";
-        const PAUSED_ENTITY_KEY: string = "isPaused";
-        const TRACKING_KEY: string = "__tracking__";
-        const PROXY_MARKER: string = "__isProxy__";
-
-        return <TEntity extends {}>(entity: TEntity, path?: string, parent?: TEntity) => {
-
-            const proxyHandler: ProxyHandler<TEntity> = {
-                set: (entity, property, value) => {
-                    const indexableEntity: { [key: string]: any } = entity;
-                    const key = String(property);
-                    const originalValue = indexableEntity[key];
-
-                    // if values are the same, do nothing
-                    if (originalValue === value) {
-                        return true;
-                    }
-
-                    const resolvedParent: { [key: string]: any } = parent ?? entity;
-
-                    if (resolvedParent[TRACKING_KEY] == null) {
-                        resolvedParent[TRACKING_KEY] = {
-                            [CHANGES_ENTITY_KEY]: {},
-                            [DIRTY_ENTITY_MARKER]: false,
-                            [ORIGINAL_ENTITY_KEY]: {},
-                            [PAUSED_ENTITY_KEY]: false
-                        }
-                    }
-
-                    if (key == TRACKING_KEY) {
-                        return true;
-                    }
-
-                    if (resolvedParent[TRACKING_KEY] != null && resolvedParent[TRACKING_KEY][PAUSED_ENTITY_KEY] === true) {
-                        Reflect.set(indexableEntity, property, value);
-                        return true;
-                    }
-
-                    const resolvedPath = path == null ? key : `${path}.${key}`;
-                    const changes = resolvedParent[TRACKING_KEY];
-
-                    if (changes[CHANGES_ENTITY_KEY][resolvedPath] != null) {
-
-                        if (changes[ORIGINAL_ENTITY_KEY][resolvedPath] === value) {
-                            // we are changing the value back to the original value, remove the change
-                            delete changes[ORIGINAL_ENTITY_KEY][resolvedPath];
-                            delete changes[CHANGES_ENTITY_KEY][resolvedPath];
-                        } else {
-                            // track the change
-                            changes[CHANGES_ENTITY_KEY][resolvedPath] = value;
-                        }
-
-                    } else if (changes[CHANGES_ENTITY_KEY][resolvedPath] == null) {
-                        // don't keep updating, keep the original value
-                        changes[CHANGES_ENTITY_KEY][resolvedPath] = value;
-                        changes[ORIGINAL_ENTITY_KEY][resolvedPath] = originalValue;
-                    }
-
-                    const isDirty = Object.keys(changes[ORIGINAL_ENTITY_KEY]).length > 0;
-                    changes[DIRTY_ENTITY_MARKER] = isDirty;
-
-                    Reflect.set(indexableEntity, property, value);
-
-                    return true;
-                },
-                get: (target, property, receiver) => {
-
-                    if (property === PROXY_MARKER) {
-                        return true;
-                    }
-
-                    return Reflect.get(target, property, receiver);
-                }
-            }
-
-            return new Proxy(entity, proxyHandler) as TEntity
-        }
-    }
-
     compile(): CompiledSchema<T> {
 
         try {
@@ -267,7 +288,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const compareIdsHandler = compareIdsHandlerBuilder.build();
 
             const changeTrackingCodeBuilder = new CodeBuilder();
-            changeTrackingCodeBuilder.raw(`function ${this.createChangeTracker.toString()}`);
+            changeTrackingCodeBuilder.raw(`${createChangeTracker.toString()}`);
             changeTrackingCodeBuilder.slot("declarations").variable("enableChangeTracking").value('createChangeTracker()');
             changeTrackingCodeBuilder.slot("assignment");
             changeTrackingCodeBuilder.slot("return").raw('\treturn enableChangeTracking(entity);');
@@ -277,13 +298,15 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             freezeCodeBuilder.slot("return").raw('\treturn Object.freeze(entity);');
 
             const enricherCodeBuilder = new CodeBuilder();
+
             const enricherFunctionRoot = enricherCodeBuilder.factory("factory", { name: "factory" }).parameters({ name: "collectionName", value: this.collectionName });
+            enricherFunctionRoot.slot("changeTracker").raw(`${createChangeTracker.toString()}`);
+            enricherFunctionRoot.slot("changeTrackerFunction").raw(`\tconst changeTracker = createChangeTracker();`);
             const enricherFunctionBody = enricherFunctionRoot.function(undefined, { name: "function" }).parameters("entity", "changeTrackingType").return();
 
-            enricherFunctionBody.slot("changeTracker").raw(`\tfunction ${this.createChangeTracker.toString()}`);
             enricherFunctionBody.slot("enableChangeTracking")
                 .variable("enableChangeTracking")
-                .value('changeTrackingType === "proxy" ? createChangeTracker() : e => e');
+                .value('changeTrackingType === "proxy" ? changeTracker : e => e');
 
             enricherFunctionBody.slot("append");
             enricherFunctionBody.slot("enriched");
@@ -442,8 +465,9 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
             const enrichParams = enricherFunctionRoot.getParameters();
             const mergeParams = mergeFunctionRoot.getParameters();
-            const enrichGenerator = Function(`return ${enricherCodeBuilder.toString()}`);
-            const mergeGenerator = Function(`return ${mergeCodeBuilder.toString()}`);
+
+            const enrichGenerator = this.createReturnFunction<Function>(enricherCodeBuilder);
+            const mergeGenerator = this.createReturnFunction<Function>(mergeCodeBuilder);
 
             // After enricher is used, we modify it to be deserialize and enrich
             enricherFunctionBody.get<SlotBlock>("append").insert(deserializeCodeBuilder.get<SlotBlock>("functions"));
@@ -451,7 +475,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             enricherFunctionBody.get<SlotBlock>("append").insert(deserializeCodeBuilder.get<SlotBlock>("if"));
             enricherFunctionRoot.replace("function", new FunctionBuilder(undefined).parameters("unserialized", "changeTrackingType").return());
 
-            const postProcessGenerator = Function(`return ${enricherCodeBuilder.toString()}`);
+            const postProcessGenerator = this.createReturnFunction<Function>(enricherCodeBuilder);
             const postProcessParams = enricherFunctionRoot.getParameters();
 
             // Combine prepare and serialize
@@ -462,20 +486,19 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             preprocessCodeBuilder.get<SlotBlock>("main").insert(serializeCodeBuilder.get<SlotBlock>("functions"));
             preprocessCodeBuilder.get<SlotBlock>("main").insert(serializeCodeBuilder.get<SlotBlock>("if"));
 
-
-            const getIdsFunction = Function("entity", idSelectorCodeBuilder.toString()) as (entity: InferType<T>) => [IdType];
-            const getHashTypeFunction = Function("entity", hashTypeCodeBuilder.toString()) as GetHashTypeFunction<T>;
-            const prepareFunction = Function("entity", prepareCodeBuilder.toString()) as Prepare<T>;
-            const cloneFunction = Function("entity", cloneCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
-            const deserializeFunction = Function("unserialized", deserializeCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
-            const serializeFunction = Function("entity", serializeCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
-            const compareFunction = Function("a", "b", compareCodeBuilder.toString()) as (a: InferType<T>, b: InferType<T>) => boolean;
-            const stripFunction = Function("entity", stripCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
-            const hashFunction = Function("entity", "type", hashCodeBuilder.toString()) as HashFunction<T>;
-            const enableChangeTrackingFunction = Function("entity", changeTrackingCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
-            const freezeFunction = Function("entity", freezeCodeBuilder.toString()) as (entity: InferType<T>) => InferType<T>;
-            const compareIdsFunction = Function("a", "b", compareIdsCodeBuilder.toString()) as (a: InferType<T>, b: InferType<T>) => boolean;
-            const preprocessFunction = Function("entity", preprocessCodeBuilder.toString()) as Preprocess<T>;
+            const getIdsFunction = this.createFunction<(entity: InferType<T>) => [IdType]>(idSelectorCodeBuilder, "entity");
+            const getHashTypeFunction = this.createFunction<GetHashTypeFunction<T>>(hashTypeCodeBuilder, "entity");
+            const prepareFunction = this.createFunction<Prepare<T>>(prepareCodeBuilder, "entity");
+            const cloneFunction = this.createFunction<(entity: InferType<T>) => InferType<T>>(cloneCodeBuilder, "entity");
+            const deserializeFunction = this.createFunction<(entity: InferType<T>) => InferType<T>>(deserializeCodeBuilder, "unserialized");
+            const serializeFunction = this.createFunction<(entity: InferType<T>) => InferType<T>>(serializeCodeBuilder, "entity");
+            const compareFunction = this.createFunction<(a: InferType<T>, b: InferType<T>) => boolean>(compareCodeBuilder, "a", "b");
+            const stripFunction = this.createFunction<(entity: InferType<T>) => InferType<T>>(stripCodeBuilder, "entity");
+            const hashFunction = this.createFunction<HashFunction<T>>(hashCodeBuilder, "entity", "type");
+            const enableChangeTrackingFunction = this.createFunction<(entity: InferType<T>) => InferType<T>>(changeTrackingCodeBuilder, "entity");
+            const freezeFunction = this.createFunction<(entity: InferType<T>) => InferType<T>>(freezeCodeBuilder, "entity");
+            const compareIdsFunction = this.createFunction<(a: InferType<T>, b: InferType<T>) => boolean>(compareIdsCodeBuilder, "a", "b");
+            const preprocessFunction = this.createFunction<Preprocess<T>>(preprocessCodeBuilder, "entity");
 
             const enricherFactoryFunction = enrichGenerator();
             const postProcessFactoryFunction = postProcessGenerator();
@@ -618,3 +641,4 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
         }
     }
 }
+
