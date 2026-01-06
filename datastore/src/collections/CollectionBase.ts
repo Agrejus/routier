@@ -105,15 +105,16 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
             const resolvedChanges = result.data.result.get<TEntity>(this.dependencies.schema.id);
             const changes = result.data.changes.get<TEntity>(this.dependencies.schema.id);
 
+            // If there are no changes for this schema, we're done
+            if (!changes || changes.hasItems === false) {
+                done(result);
+                return;
+            }
+
             // destroy tags and let go of the references
             changes.tags[Symbol.dispose]();
 
             assertIsNotNull(resolvedChanges, "Could not find resolved changes during afterPersist operation");
-
-            if (changes.hasItems === false) {
-                done(result);
-                return;
-            }
 
             // Merge changes will unpause any change tracking that was paused previously
             // We should be more declarative about this 

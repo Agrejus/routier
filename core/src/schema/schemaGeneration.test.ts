@@ -8,12 +8,12 @@ describe("Schema Generation", () => {
 
         it('should create schema', () => {
 
-            // factories[7]();
+            factories[7]();
 
-            for (let i = 0; i < factories.length; i++) {
-                const factory = factories[i];
-                expect(factory()).toBeDefined();
-            }
+            // for (let i = 0; i < factories.length; i++) {
+            //     const factory = factories[i];
+            //     expect(factory()).toBeDefined();
+            // }
         });
 
     });

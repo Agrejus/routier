@@ -103,23 +103,6 @@ function updatePackageJson(filePath, packageName, newVersion) {
     return false;
 }
 
-/**
- * Update lerna.json version
- */
-function updateLernaJson(packageName, newVersion) {
-    const lernaPath = join(rootDir, 'lerna.json');
-    const content = readFileSync(lernaPath, 'utf8');
-    const lernaJson = JSON.parse(content);
-
-    // Only update if this is the root package version
-    if (packageName === 'routier-collection' || packageName === 'routier') {
-        lernaJson.version = newVersion;
-        writeFileSync(lernaPath, JSON.stringify(lernaJson, null, 2) + '\n');
-        return true;
-    }
-
-    return false;
-}
 
 /**
  * Update any other files that might reference the package version
@@ -248,20 +231,13 @@ function main() {
         }
     }
 
-    // Update lerna.json if needed
-    const lernaUpdated = updateLernaJson(packageName, newVersion);
-    if (lernaUpdated) {
-        console.log('✅ Updated lerna.json');
-        updatedFiles++;
-    }
-
     console.log('');
     console.log(`🎉 Successfully updated ${updatedFiles} files`);
     console.log('');
     console.log('📋 Next steps:');
     console.log('  1. Review the changes: git diff');
     console.log('  2. Commit the changes: git add . && git commit -m "chore: bump ' + packageName + ' to ' + newVersion + '"');
-    console.log('  3. Publish if needed: lerna publish from-git');
+    console.log('  3. Publish if needed: npm publish (from the package directory)');
 }
 
 // Run the script

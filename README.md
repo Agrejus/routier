@@ -8,7 +8,7 @@ Routier is a reactive data toolkit for building fast, local-first apps. Define s
 
 ## Repository Structure
 
-This is a monorepo using [Lerna](https://lerna.js.org/) and npm workspaces. The following packages are included:
+This is a monorepo using npm workspaces. The following packages are included:
 
 ### Core Packages
 
@@ -110,11 +110,7 @@ npm run build
 - **`npm run sync:examples`** - Sync example code to documentation includes
 - **`npm run extract:doc-code`** - Extract code blocks from documentation
 - **`npm run docs:prepare`** - Prepare documentation (extract + sync examples)
-- **`npm run version:patch`** - Bump patch version across all packages
-- **`npm run version:minor`** - Bump minor version across all packages
-- **`npm run version:major`** - Bump major version across all packages
-- **`npm run publish`** - Publish all packages (via Lerna)
-- **`npm run publish:canary`** - Publish canary versions
+- **`npm run bump`** - Bump version for a specific package
 
 ### Working with Packages
 

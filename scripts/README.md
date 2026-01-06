@@ -10,14 +10,13 @@ A comprehensive script for bumping package versions across the entire monorepo.
 
 #### Overview
 
-This script updates all references to a specific package version across all `package.json` files in the monorepo. It's designed to handle the complexity of maintaining consistent versions across multiple packages in a Lerna-managed monorepo.
+This script updates all references to a specific package version across all `package.json` files in the monorepo. It's designed to handle the complexity of maintaining consistent versions across multiple packages in an npm workspace monorepo.
 
 #### Features
 
 - 🔍 **Recursive Discovery**: Automatically finds all `package.json` files in the monorepo
 - 📦 **Multiple Dependency Types**: Updates `dependencies`, `devDependencies`, `peerDependencies`, and `optionalDependencies`
 - 🎯 **Package Self-Versioning**: Updates the package's own version when the package name matches
-- 📋 **Lerna Integration**: Updates `lerna.json` version when appropriate
 - 🔒 **Prefix Preservation**: Maintains version prefixes like `^`, `~`, `>=`, `<=`, etc.
 - 🚫 **File Protocol Skip**: Ignores `file:` protocol dependencies (local development)
 - ✅ **Safe Operation**: Provides detailed output and allows review before committing
@@ -114,7 +113,6 @@ The script updates the following in all relevant `package.json` files:
 3. **Peer Dependencies**: `peerDependencies[packageName] = prefix + newVersion` (preserves `^`, `~`, etc.)
 4. **Optional Dependencies**: `optionalDependencies[packageName] = prefix + newVersion` (preserves `^`, `~`, etc.)
 5. **Package Version**: `version = newVersion` (no prefix for package's own version)
-6. **Lerna Version**: Updates `lerna.json` version for root packages
 
 #### Version Prefix Preservation
 
@@ -154,28 +152,17 @@ $ npm run bump @routier/core 0.0.1-alpha.10
 📋 Next steps:
   1. Review the changes: git diff
   2. Commit the changes: git add . && git commit -m "chore: bump @routier/core to 0.0.1-alpha.10"
-  3. Publish if needed: lerna publish from-git
+  3. Publish if needed: npm publish (from the package directory)
 ```
 
 #### Workflow Integration
 
-This script is designed to work seamlessly with your existing Lerna workflow:
+This script is designed to work seamlessly with your npm workspace workflow:
 
 1. **Development**: Use this script to bump versions during development
 2. **Review**: Always review changes with `git diff` before committing
 3. **Commit**: Commit the version changes
-4. **Publish**: Use `lerna publish from-git` to publish the updated packages
-
-#### Comparison with Lerna
-
-| Feature                   | Lerna `version` | This Script |
-| ------------------------- | --------------- | ----------- |
-| Specific version setting  | ❌              | ✅          |
-| Conventional commits only | ✅              | ❌          |
-| All packages at once      | ❌              | ✅          |
-| Dependency updates        | ✅              | ✅          |
-| Detailed output           | ❌              | ✅          |
-| Safe operation            | ✅              | ✅          |
+4. **Publish**: Use `npm publish` from the package directory to publish the updated packages
 
 #### Error Handling
 
