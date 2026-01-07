@@ -107,7 +107,7 @@ export class SqliteDbPlugin implements IDbPlugin {
 
         for (const [schemaId, changes] of event.operation) {
 
-            if (changes.hasItems === false) {
+            if (!changes || changes.hasItems === false) {
                 continue;
             }
 

@@ -1,17 +1,17 @@
-import { TakeQueryable } from "./TakeQueryable";
-import { SkippedQueryable } from "./SkippedQueryable";
-import { SelectionQueryable } from "./SelectionQueryable";
 import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
-import { QueryOptionsCollection, QueryOrdering } from "@routier/core/plugins";
-import { SubscribedQueryable } from './SubscribedQueryable';
-import { CollectionDependencies, RequestContext } from "../collections/types";
-import { CompiledSchema, InferType } from "@routier/core/schema";
-import { QueryableComposer } from "./composers/QueryableComposer";
+import { QueryOrdering } from "@routier/core/plugins";
+import { ComposerDependencies, RequestContext } from "../../collections/types";
+import { QueryableBuilder } from "./QueryableBuilder";
+import { SkippedQueryableComposer } from './SkippedQueryableComposer';
+import { TakeQueryableComposer } from "./TakeQueryableComposer";
+import { SubscribedQueryableComposer } from './SubscribedQueryableComposer';
 
-export class Queryable<Root extends {}, Shape, U> extends SelectionQueryable<Root, Shape, U> {
 
-    constructor(dependencies: CollectionDependencies<Root>, request: RequestContext<Root>) {
+
+export class QueryableComposer<Root extends {}, Shape, U> extends QueryableBuilder<Root, Shape, U> {
+
+    constructor(dependencies: ComposerDependencies<Root>, request: RequestContext<Root>) {
         super(dependencies, request);
 
         this.where = this.where.bind(this);
@@ -24,55 +24,49 @@ export class Queryable<Root extends {}, Shape, U> extends SelectionQueryable<Roo
         this.defer = this.defer.bind(this);
     }
 
-    static compose<TEntity extends {}>(schema: CompiledSchema<TEntity>) {
-        return new QueryableComposer<TEntity, InferType<TEntity>, void>({
-            schema
-        }, new RequestContext<TEntity>());
-    }
-
-    where(expression: Filter<Shape>): Queryable<Root, Shape, U>;
-    where<P extends {}>(selector: ParamsFilter<Shape, P>, params: P): Queryable<Root, Shape, U>;
+    where(expression: Filter<Shape>): QueryableComposer<Root, Shape, U>;
+    where<P extends {}>(selector: ParamsFilter<Shape, P>, params: P): QueryableComposer<Root, Shape, U>;
     where<P extends {} = never>(selector: ParamsFilter<Shape, P> | Filter<Shape>, params?: P) {
         this.setFiltersQueryOption(selector, params);
         // We don't need a params queryable.  Params are localized to the where clause and do not
         // matter to the rest of the query
-        return this.create(Queryable<Root, Shape, U>);
+        return this.create(QueryableComposer<Root, Shape, U>);
     }
 
     map<R extends Shape[keyof Shape] | Partial<Shape>>(expression: GenericFunction<Shape, R>) {
 
         this.setMapQueryOption(expression);
-        return this.create(Queryable<Root, R, U>);
+        return this.create(QueryableComposer<Root, R, U>);
     }
 
     skip(amount: number) {
         this.setSkipQueryOption(amount);
-        return this.create(SkippedQueryable<Root, Shape, U>);
+        return this.create(SkippedQueryableComposer<Root, Shape, U>);
     }
 
     // cannot to a skip after a take
     take(amount: number) {
         this.setTakeQueryOption(amount);
-        return this.create(TakeQueryable<Root, Shape, U>);
+        return this.create(TakeQueryableComposer<Root, Shape, U>);
     }
 
     sort(expression: GenericFunction<Shape, Shape[keyof Shape]>) {
         this.setSortQueryOption(expression, QueryOrdering.Ascending);
-        return this.create(Queryable<Root, Shape, U>);
+        return this.create(QueryableComposer<Root, Shape, U>);
     }
 
     sortDescending(expression: GenericFunction<Shape, Shape[keyof Shape]>) {
         this.setSortQueryOption(expression, QueryOrdering.Descending);
-        return this.create(Queryable<Root, Shape, U>);
+        return this.create(QueryableComposer<Root, Shape, U>);
     }
 
     subscribe() {
         this.request.isSubScribed = true;
-        return this.create(SubscribedQueryable<Root, Shape, () => void>);
+        return this.create(SubscribedQueryableComposer<Root, Shape, () => void>);
     }
 
     defer() {
         this.request.skipInitialQuery = true;
-        return this.create(Queryable<Root, Shape, () => void>);
+        return this.create(QueryableComposer<Root, Shape, () => void>);
     }
 }

@@ -63,7 +63,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                     const changes = event.operation.get(schemaId);
                     const schemaSpecificResult = operationResult.get(schemaId);
 
-                    if (changes.hasItems === false) {
+                    if (!changes || changes.hasItems === false) {
                         continue;
                     }
 

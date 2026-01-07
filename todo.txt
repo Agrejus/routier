@@ -6,3 +6,6 @@ TODO:
     Deeply nested schemas
     Tests lock up when running in parallel
         Probably something to do with views
+
+Deferred Query using react live useQuery need to return a deferred status when it is deferred, otherwise it will keep loading forever
+    Need a way to check and see if it is deferred

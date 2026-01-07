@@ -152,3 +152,4 @@ This pattern is especially useful when building queries in loops or based on con
 - [Sorting Results](/concepts/queries/sorting/)
 - [Pagination](/concepts/queries/pagination/)
 - [Terminal Methods](/concepts/queries/terminal-methods/)
+- [Query Composer](/concepts/queries/query-composer/) - Build reusable parameterized queries

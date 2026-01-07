@@ -1,23 +1,21 @@
-import { DbPluginQueryEvent, ITranslatedValue, JsonTranslator, Query, QueryField, QueryOptionsCollection, QueryOrdering } from "@routier/core/plugins";
+import { DbPluginQueryEvent, ITranslatedValue, JsonTranslator, Query, QueryOptionsCollection } from "@routier/core/plugins";
 import { InferType } from "@routier/core/schema";
 import { CallbackResult, PluginEventCallbackResult, PluginEventResult, PluginEventSuccessType, Result } from "@routier/core/results";
-import { GenericFunction } from "@routier/core/types";
-import { Filter, ParamsFilter, toExpression } from "@routier/core/expressions";
 import { uuid } from "@routier/core/utilities";
 import { CollectionDependencies, RequestContext } from "../collections/types";
+import { QueryBuilderBase } from "./base/QueryBuilderBase";
 
-export abstract class QuerySource<TRoot extends {}, TShape> {
+export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryBuilderBase<TRoot, TShape, CollectionDependencies<TRoot>> {
 
-    protected readonly request: RequestContext<TRoot>;
-    protected readonly dependencies: CollectionDependencies<TRoot>;
+    protected readonly skippedQueryIds: Set<string>;
 
     constructor(dependencies: CollectionDependencies<TRoot>, request: RequestContext<TRoot>) {
-        this.dependencies = dependencies;
-        this.request = request
+        super(dependencies, request)
+        this.skippedQueryIds = new Set<string>();
     }
 
     // Cannot change the root type, it comes from the collection type, only the resulting type (shape)
-    protected create<Shape, TInstance extends QuerySource<TRoot, Shape>>(
+    protected create<Shape, TInstance extends QueryableExecutor<TRoot, Shape>>(
         Instance: new (dependencies: CollectionDependencies<TRoot>, request: RequestContext<TRoot>) => TInstance) {
         return new Instance(this.dependencies, this.request);
     }
@@ -84,66 +82,6 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
         });
     }
 
-    protected getSortPropertyName(selector: GenericFunction<TShape, TShape[keyof TShape]>) {
-        const stringified = selector.toString();
-
-        const arrowIndex = stringified.indexOf("=>");
-        if (arrowIndex < 0) {
-            throw new Error("Only arrow functions allowed in .map()")
-        }
-
-        const body = stringified.substring(arrowIndex + 2).trim();
-
-        return this._extractPropertyName(body);
-    }
-
-    protected getFields<TRoot, R>(selector: GenericFunction<TRoot, R>): QueryField[] {
-
-        const stringified = selector.toString();
-        const arrowIndex = stringified.indexOf("=>");
-
-        if (arrowIndex < 0) {
-            throw new Error("Only arrow functions allowed in .map()")
-        }
-
-        const body = stringified.substring(arrowIndex + 2).trim();
-
-
-        if (body.includes("{")) {
-            const propertyPaths = body.replace(/{|}|\(|\)/g, "").split(",").map(w => w.trim());
-            return propertyPaths.map(propertyPath => {
-                const [destinationName, sourcePathAndName] = propertyPath.split(":").map(w => w.trim());
-                const sourceName = this._extractPropertyName(sourcePathAndName);
-                const property = this.dependencies.schema.getProperty(sourceName);
-
-                return {
-                    sourceName,
-                    destinationName,
-                    isRename: sourceName === destinationName,
-                    property
-                } as QueryField;
-            })
-        }
-
-        const field = this._extractPropertyName(body);
-        const property = this.dependencies.schema.getProperty(field);
-
-        return [{
-            destinationName: field,
-            sourceName: field,
-            isRename: false,
-            property
-        } as QueryField];
-    }
-
-    private _extractPropertyName(value: string) {
-        const split = value.split(".");
-
-        split.shift();
-
-        return split.join(".")
-    }
-
     protected createQueryPayload<Shape>(): { memoryEvent: DbPluginQueryEvent<TRoot, Shape>, databaseEvent: DbPluginQueryEvent<TRoot, Shape> } {
 
         // send over only the database operations, if there are none its a select all
@@ -167,11 +105,11 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
 
     protected getData<TShape>(done: PluginEventCallbackResult<TShape>) {
 
-        if (this.request.skipInitialQuery) {
-            // Set to false in case the same query called twice
-            // Can happen when a query is saved in a variable and run more than once.
-            // Otherwise each query starts a new request and this is false by default
-            this.request.skipInitialQuery = false;
+        // Use the request id to track if we have skipped the query at least once
+        if (this.request.skipInitialQuery === true && this.skippedQueryIds.has(this.request.id) === false) {
+            // Do not call done, we are skipping the entire invocation
+            // Use a UUID so we can run the same query more than once and defer will work
+            this.skippedQueryIds.add(this.request.id);
             return;
         }
 
@@ -185,7 +123,6 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
             }
 
             this.postProcessQuery<TShape>(result, { databaseEvent, memoryEvent }, done);
-
         });
     }
 
@@ -200,11 +137,8 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
             this.dependencies.changeTracker.tags.destroy();
 
             if (databaseEvent.operation.changeTracking === true) {
-                // Post process the db query results - optimized: use for loop instead of forEach
-                const dataArray = result.data.value as unknown[];
-                for (let i = 0, length = dataArray.length; i < length; i++) {
-                    this.dependencies.schema.postprocess(dataArray[i] as InferType<TRoot>, this.request.changeTrackingType);
-                }
+                // Post process the db query results
+                result.data.forEach(item => this.dependencies.schema.postprocess(item as InferType<TRoot>, this.request.changeTrackingType));
             }
 
             // This means we are querying on a computed property that is untracked, need to select
@@ -237,65 +171,14 @@ export abstract class QuerySource<TRoot extends {}, TShape> {
                 return done(PluginEventResult.success(databaseEvent.id, result.data.value as TShape));
             }
 
-            // Resolve the data with the current attachments - optimized: use for loop instead of forEach
-            const dataArray = result.data.value as unknown[];
-            for (let i = 0, length = dataArray.length; i < length; i++) {
-                this.dependencies.changeTracker.resolve(dataArray[i] as InferType<TRoot>, tags, {
-                    merge: true
-                });
-            }
+            // Resolve the data with the current attachments
+            result.data.forEach(item => this.dependencies.changeTracker.resolve(item as InferType<TRoot>, tags, {
+                merge: true
+            }));
 
             done(PluginEventResult.success(databaseEvent.id, result.data.value));
         } catch (e) {
             done(PluginEventResult.error(databaseEvent.id, e));
         }
-    }
-
-    protected setFiltersQueryOption<P extends {}>(selector: ParamsFilter<TShape, P> | Filter<TShape>, params?: P) {
-
-        const expression = toExpression(this.dependencies.schema, selector, params);
-
-        this.request.queryOptions.add("filter", { filter: selector as Filter<TRoot> | ParamsFilter<TRoot, {}>, expression, params });
-    }
-
-    protected setMapQueryOption<K, R>(selector: GenericFunction<K, R>) {
-
-        const fields = this.getFields(selector);
-
-        this.request.queryOptions.add("map", { selector: selector as GenericFunction<any, any>, fields });
-    }
-
-    protected setGroupQueryOption<K, R>(selector: GenericFunction<K, R>) {
-
-        const [key] = this.getFields(selector);
-        let fields = this.dependencies.schema.properties.map(x => ({
-            destinationName: x.name,
-            getter: x.getValue,
-            isRename: false,
-            sourceName: x.name,
-            property: x
-        } as QueryField));
-        const map = this.request.queryOptions.getLast("map");
-
-        // If we remapped, grab those fields
-        if (map != null) {
-            fields = map.value.fields;
-        }
-
-        this.request.queryOptions.add("group", { selector: selector as GenericFunction<any, any>, key, fields });
-    }
-
-    protected setSortQueryOption(selector: GenericFunction<TShape, TShape[keyof TShape]>, direction: QueryOrdering) {
-        const propertyName = this.getSortPropertyName(selector);
-
-        this.request.queryOptions.add("sort", { selector: selector as any, direction, propertyName });
-    }
-
-    protected setSkipQueryOption(amount: number) {
-        this.request.queryOptions.add("skip", amount);
-    }
-
-    protected setTakeQueryOption(amount: number) {
-        this.request.queryOptions.add("take", amount);
     }
 }   

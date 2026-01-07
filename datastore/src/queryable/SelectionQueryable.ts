@@ -1,11 +1,11 @@
 import { CallbackResult, Result, ResultType } from "@routier/core/results";
-import { QuerySource } from "./QuerySource";
+import { QueryableExecutor } from "./QueryableExecutor";
 import { Filter, ParamsFilter, toExpression } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
 import { QueryOptionName } from "@routier/core/plugins";
 import { IdType } from "@routier/core/schema";
 import { CollectionDependencies, RequestContext } from "../collections/types";
-export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<Root, Shape> {
+export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExecutor<Root, Shape> {
 
     constructor(dependencies: CollectionDependencies<Root>, request: RequestContext<Root>) {
         super(dependencies, request);

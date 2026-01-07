@@ -58,6 +58,8 @@
           url: /concepts/queries/aggregation.md
         - title: Terminal Methods
           url: /concepts/queries/terminal-methods.md
+        - title: Query Composer
+          url: /concepts/queries/query-composer.md
 
 - title: Guides
   url: /guides/

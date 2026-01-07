@@ -10,6 +10,8 @@ import { assertIsNotNull } from "@routier/core/assertions";
 import { GenericFunction } from "@routier/core/types";
 import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { CollectionDependencies, RequestContext } from "./types";
+import { unsafeCast } from "@routier/core";
+import { QueryableBuilder, QueryBuilderContext } from "../queryable/composers/QueryableBuilder";
 
 export class CollectionBase<TEntity extends {}> implements Disposable {
 
@@ -316,6 +318,11 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     toQueryable() {
         const request = new RequestContext<TEntity>();
         return new QueryableAsync<TEntity, InferType<TEntity>>(this.dependencies, request);
+    }
+
+    apply<U, Shape>(composer: QueryableBuilder<TEntity, Shape, U>) {
+        const props = unsafeCast<QueryBuilderContext<TEntity>>(composer);
+        return new QueryableAsync<TEntity, Shape>(this.dependencies, props.request);
     }
 
     /**

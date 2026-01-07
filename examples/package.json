@@ -8,7 +8,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "author": "",
-  "license": "ISC", 
+  "license": "ISC",
   "dependencies": {
     "@routier/datastore": "file://../datastore",
     "@routier/core": "file://../core",
@@ -16,8 +16,8 @@
     "@routier/dexie-plugin": "file://../plugins/dexie",
     "@routier/memory-plugin": "file://../plugins/memory",
     "@routier/pouchdb-plugin": "file://../plugins/pouchdb"
-  }, 
-  "devDependencies" : {
+  },
+  "devDependencies": {
     "typescript": "^5.7.2"
   }
 }

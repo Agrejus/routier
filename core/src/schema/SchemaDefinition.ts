@@ -121,7 +121,6 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
     private createReturnFunction<TResult>(builder: CodeBuilder): TResult {
         const body = builder.toString();
-
         try {
             return Function(`return ${body}`) as TResult;
         } catch (e) {
