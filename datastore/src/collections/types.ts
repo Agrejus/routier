@@ -54,13 +54,11 @@ export class RequestContext<TRoot extends {}> {
     constructor() {
         this.queryOptions = new QueryOptionsCollection<TRoot>();
         this.isSubScribed = false;
-        this.skipInitialQuery = false;
         this.changeTrackingType = "proxy";
         this.id = uuid(8);
     }
 
     isSubScribed: boolean;
-    skipInitialQuery: boolean;
     readonly queryOptions: QueryOptionsCollection<TRoot>;
     readonly changeTrackingType: ChangeTrackingType;
     readonly id: string;

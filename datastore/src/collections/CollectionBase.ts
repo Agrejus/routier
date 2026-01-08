@@ -34,7 +34,6 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
         this.hasChanges = this.hasChanges.bind(this);
         this.instance = this.instance.bind(this);
         this.subscribe = this.subscribe.bind(this);
-        this.defer = this.defer.bind(this);
         this.where = this.where.bind(this);
         this.sort = this.sort.bind(this);
         this.sortDescending = this.sortDescending.bind(this);
@@ -208,15 +207,6 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
         const request = new RequestContext<TEntity>();
         const queryable = new Queryable<TEntity, InferType<TEntity>, () => void>(this.dependencies, request);
         return queryable.subscribe();
-    }
-
-    /**
-     * Ignores the first execution of the resulting query
-     */
-    defer() {
-        const request = new RequestContext<TEntity>();
-        const queryable = new Queryable<TEntity, InferType<TEntity>, () => void>(this.dependencies, request);
-        return queryable.defer();
     }
 
     /**

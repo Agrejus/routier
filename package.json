@@ -3,6 +3,14 @@
   "version": "1.0.0",
   "main": "index.js",
   "private": true,
+  "workspaces": [
+    "core",
+    "datastore",
+    "react",
+    "plugins/*",
+    "test-utils",
+    "benchmark"
+  ],
   "scripts": {
     "build": "npm run build --workspaces",
     "build:core": "cd core && npm run tsc",

@@ -21,7 +21,6 @@ export class Queryable<Root extends {}, Shape, U> extends SelectionQueryable<Roo
         this.sort = this.sort.bind(this);
         this.sortDescending = this.sortDescending.bind(this);
         this.subscribe = this.subscribe.bind(this);
-        this.defer = this.defer.bind(this);
     }
 
     static compose<TEntity extends {}>(schema: CompiledSchema<TEntity>) {
@@ -69,10 +68,5 @@ export class Queryable<Root extends {}, Shape, U> extends SelectionQueryable<Roo
     subscribe() {
         this.request.isSubScribed = true;
         return this.create(SubscribedQueryable<Root, Shape, () => void>);
-    }
-
-    defer() {
-        this.request.skipInitialQuery = true;
-        return this.create(Queryable<Root, Shape, () => void>);
     }
 }

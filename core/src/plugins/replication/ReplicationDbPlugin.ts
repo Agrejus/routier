@@ -9,19 +9,16 @@ export class ReplicationDbPlugin implements IDbPlugin {
 
     plugins: ReplicationPluginOptions;
 
-    protected constructor(plugins: ReplicationPluginOptions) {
-        this.plugins = plugins;
-    }
-
     /**
      * Creates a new DbPluginReplicator that coordinates operations between a source database and its replicas.
      * 
-     * @param source The primary database plugin that will receive all operations first
-     * @param replicas Additional database plugins that will replicate operations from the source
-     * @returns A new DbPluginReplicator instance that manages the source-replica relationship
+     * @param plugins Configuration object containing the source, read (optional), and replica database plugins
+     * @param plugins.source The primary database plugin that will receive all operations first
+     * @param plugins.read Optional read-optimized plugin (typically a memory plugin) used for fast queries
+     * @param plugins.replicas Additional database plugins that will replicate operations from the source
      */
-    static create(plugins: ReplicationPluginOptions) {
-        return new ReplicationDbPlugin(plugins);
+    constructor(plugins: ReplicationPluginOptions) {
+        this.plugins = plugins;
     }
 
     /**

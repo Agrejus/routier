@@ -21,7 +21,6 @@ export class QueryableComposer<Root extends {}, Shape, U> extends QueryableBuild
         this.sort = this.sort.bind(this);
         this.sortDescending = this.sortDescending.bind(this);
         this.subscribe = this.subscribe.bind(this);
-        this.defer = this.defer.bind(this);
     }
 
     where(expression: Filter<Shape>): QueryableComposer<Root, Shape, U>;
@@ -63,10 +62,5 @@ export class QueryableComposer<Root extends {}, Shape, U> extends QueryableBuild
     subscribe() {
         this.request.isSubScribed = true;
         return this.create(SubscribedQueryableComposer<Root, Shape, () => void>);
-    }
-
-    defer() {
-        this.request.skipInitialQuery = true;
-        return this.create(QueryableComposer<Root, Shape, () => void>);
     }
 }

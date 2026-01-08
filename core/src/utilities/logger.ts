@@ -10,7 +10,7 @@ type LogMethods = "log" | "info" | "warn" | "error" | "debug" | "table";
 const shouldLog = isDevelopment();
 const tryLog = (type: LogMethods, ...args: unknown[]) => {
     if (shouldLog) {
-        console[type](...args);
+        (console[type] as (...args: unknown[]) => void)(...args);
     }
 };
 

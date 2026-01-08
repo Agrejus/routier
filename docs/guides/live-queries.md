@@ -34,11 +34,10 @@ Live queries in Routier allow you to subscribe to data changes and automatically
 
 ## Quick Reference
 
-| Method          | Description         | Example                                              |
-| --------------- | ------------------- | ---------------------------------------------------- |
-| `subscribe()`   | Enable live updates | `ctx.products.subscribe().toArray(callback)`         |
-| `defer()`       | Skip initial query  | `ctx.products.defer().subscribe().toArray(callback)` |
-| `unsubscribe()` | Stop live updates   | `query.unsubscribe()`                                |
+| Method          | Description         | Example                                      |
+| --------------- | ------------------- | -------------------------------------------- |
+| `subscribe()`   | Enable live updates | `ctx.products.subscribe().toArray(callback)` |
+| `unsubscribe()` | Stop live updates   | `query.unsubscribe()`                        |
 
 ## Important: Callbacks vs Async
 
@@ -110,127 +109,6 @@ ctx.users
 // - New users are added
 // - User names are updated
 // - Users are removed
-```
-
-## Deferring the Initial Query
-
-The `.defer()` method skips the **first** query execution only, then listens to all subsequent changes. This is useful when you only want to react to new data, not load existing data on initial setup.
-
-### How `.defer()` Works
-
-When you use `.defer()`, the query:
-
-1. Sets up the subscription without executing the query immediately
-2. Waits for the first change event to occur
-3. Executes the query when the first change happens
-4. After the first change, behaves normally—executes on every subsequent change
-
-**Important:** `.defer()` must be called **before** `.subscribe()`:
-
-```ts
-// ✅ Correct: defer() before subscribe()
-ctx.products
-  .defer()
-  .subscribe()
-  .toArray((result) => {
-    if (result.ok === "success") {
-      console.log("Data after first change:", result.data);
-    }
-  });
-
-// ❌ Incorrect: subscribe() before defer() won't work as expected
-ctx.products
-  .subscribe()
-  .defer()
-  .toArray((result) => {
-    // This will still execute the initial query
-  });
-```
-
-### When to Use `.defer()`
-
-Use `.defer()` when you want to:
-
-- **Skip initial data load**: Only react to changes, not current state
-- **Prevent view computation on datastore creation**: In views, prevent the derive function from executing immediately when the datastore is instantiated
-- **Activity feeds**: Show only new items after a component mounts
-- **Notifications**: Display only new notifications, not historical ones
-- **Chat messages**: Show only new messages after joining a chat
-
-### Example: Activity Feed
-
-```ts
-// Skip first query, then show activities on changes
-ctx.activities
-  .defer()
-  .subscribe()
-  .toArray((result) => {
-    if (result.ok === "success") {
-      // This callback is NOT called on initial setup (first execution skipped)
-      // It's called on the first change event
-      // It's called on every subsequent change (normal behavior)
-      console.log("Activities:", result.data);
-    }
-  });
-```
-
-### Example: In Views
-
-When creating views, use `.defer()` to prevent the view from computing immediately when the datastore is created:
-
-```ts
-commentsView = this.view(commentsViewSchema)
-  .derive((done) => {
-    // defer() prevents this query from executing when the datastore is created
-    // The view will only compute when comments actually change
-    const unsubscribe = this.comments
-      .defer()
-      .subscribe()
-      .toArray((response) => {
-        if (response.ok === "error") {
-          return done([]);
-        }
-
-        done(
-          response.data.map((x) => ({
-            id: `view:${x._id}`,
-            content: x.content,
-            // ... transform data
-          }))
-        );
-      });
-
-    return unsubscribe; // Return unsubscribe function for cleanup
-  })
-  .create();
-```
-
-**Why use `.defer()` in views?**
-
-- Without `.defer()`, the view would execute the query immediately when the datastore is instantiated
-- This can cause unnecessary computation if the view is created but not immediately needed
-- With `.defer()`, the view skips the first computation on creation, then computes on the first change and all subsequent changes
-
-### Comparison: With vs Without `.defer()`
-
-```ts
-// Without .defer() - Executes immediately
-ctx.products.subscribe().toArray((result) => {
-  // ✅ Called immediately with current data
-  // ✅ Called again on every subsequent change
-  console.log("Products:", result.data);
-});
-
-// With .defer() - Skips first execution only
-ctx.products
-  .defer()
-  .subscribe()
-  .toArray((result) => {
-    // ❌ NOT called on initial setup (first execution skipped)
-    // ✅ Called on first change event
-    // ✅ Called on every subsequent change (normal behavior)
-    console.log("Products after change:", result.data);
-  });
 ```
 
 ## Advanced Live Query Patterns

@@ -90,36 +90,6 @@ await dataStore.products.addAsync({ name: "New Product" });
 - Performing one-time initialization
 - Loading data for a single render
 
-### Deferring the First Query
-
-Use `.defer()` to skip the initial query and only listen to **changes**:
-
-```tsx
-// Only gets data AFTER the first change, ignores initial state
-// Important: defer() must come before subscribe()
-const products = useQuery(
-  (callback) => dataStore.products.defer().subscribe().toArray(callback),
-  []
-);
-```
-
-**Behavior with `.defer()`:**
-
-1. Component mounts, stays in `pending` state
-2. First query execution is skipped (only the first one)
-3. Waits for the first change event
-4. On first change, queries and updates
-5. On all subsequent changes, queries and updates normally
-
-**Important:** `.defer()` must be called **before** `.subscribe()` in the query chain. The order matters.
-
-**Use `.defer()` when:**
-
-- Building activity feeds or notifications
-- Showing only new items after mount
-- Analytics dashboards that update on events
-- Chat applications (only new messages)
-
 ## Examples
 
 ### Basic List Query
@@ -185,26 +155,17 @@ For static data that doesn't need updates:
 {% capture snippet_react_onetime %}{% include code/from-docs/integrations/react/hooks/block-9.tsx %}{% endcapture %}
 {% highlight tsx %}{{ snippet_react_onetime | strip }}{% endhighlight %}
 
-### Deferred Queries (Change-Only Subscriptions)
-
-Only listen to changes, ignore initial state:
-
-{% capture snippet_react_defer %}{% include code/from-docs/integrations/react/hooks/block-10.tsx %}{% endcapture %}
-{% highlight tsx %}{{ snippet_react_defer | strip }}{% endhighlight %}
-
 ## Quick Reference
 
-| Query Type         | Pattern                                  | When to Use                              |
-| ------------------ | ---------------------------------------- | ---------------------------------------- |
-| **Live Updates**   | `.subscribe().toArray(callback)`         | Data changes, need initial + updates     |
-| **One-Time Fetch** | `.toArray(callback)`                     | Static data, fetch once only             |
-| **Change-Only**    | `.subscribe().defer().toArray(callback)` | Only show new data, ignore current state |
+| Query Type         | Pattern                          | When to Use                          |
+| ------------------ | -------------------------------- | ------------------------------------ |
+| **Live Updates**   | `.subscribe().toArray(callback)` | Data changes, need initial + updates |
+| **One-Time Fetch** | `.toArray(callback)`             | Static data, fetch once only         |
 
 **Examples:**
 
 - Products list (changes) → Use `.subscribe()`
 - App config (static) → No `.subscribe()`
-- Notifications (new only) → Use `.defer()`
 
 ## Patterns and Best Practices
 

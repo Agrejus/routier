@@ -7,11 +7,8 @@ import { QueryBuilderBase } from "./base/QueryBuilderBase";
 
 export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryBuilderBase<TRoot, TShape, CollectionDependencies<TRoot>> {
 
-    protected readonly skippedQueryIds: Set<string>;
-
     constructor(dependencies: CollectionDependencies<TRoot>, request: RequestContext<TRoot>) {
         super(dependencies, request)
-        this.skippedQueryIds = new Set<string>();
     }
 
     // Cannot change the root type, it comes from the collection type, only the resulting type (shape)
@@ -104,14 +101,6 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
     }
 
     protected getData<TShape>(done: PluginEventCallbackResult<TShape>) {
-
-        // Use the request id to track if we have skipped the query at least once
-        if (this.request.skipInitialQuery === true && this.skippedQueryIds.has(this.request.id) === false) {
-            // Do not call done, we are skipping the entire invocation
-            // Use a UUID so we can run the same query more than once and defer will work
-            this.skippedQueryIds.add(this.request.id);
-            return;
-        }
 
         const { databaseEvent, memoryEvent } = this.createQueryPayload<TShape>();
 

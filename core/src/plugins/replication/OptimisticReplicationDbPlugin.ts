@@ -28,19 +28,16 @@ export class OptimisticReplicationDbPlugin implements IDbPlugin {
     // It is up to the dev to control the lifecycle
     private collectionHydrationStatuses: Map<string, HydrationStatus> = new Map<string, HydrationStatus>();
 
-    protected constructor(plugins: OptimisticReplicationPluginOptions) {
-        this.plugins = plugins;
-    }
-
     /**
      * Creates a new OptimisticDbPluginReplicator that coordinates operations between a source database and its replicas.
      * 
-     * @param source The primary database plugin that will receive all operations first
-     * @param replicas Additional database plugins that will replicate operations from the source
-     * @returns A new DbPluginReplicator instance that manages the source-replica relationship
+     * @param plugins Configuration object containing the source, read, and replica database plugins
+     * @param plugins.source The primary database plugin that will receive all operations first
+     * @param plugins.read The read-optimized plugin (typically a memory plugin) used for fast queries
+     * @param plugins.replicas Additional database plugins that will replicate operations from the source
      */
-    static create(plugins: OptimisticReplicationPluginOptions) {
-        return new OptimisticReplicationDbPlugin(plugins);
+    constructor(plugins: OptimisticReplicationPluginOptions) {
+        this.plugins = plugins;
     }
 
     /**
