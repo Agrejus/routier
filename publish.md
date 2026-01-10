@@ -1,1 +1,1 @@
-npm publish --tag alpha
+npm publish

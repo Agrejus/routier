@@ -48,7 +48,7 @@ export type DbPluginEvent = {
     id: string;
 
     /** Source of the request */
-    source: "data-store" | "collection" | "view";
+    source: "data-store" | "collection" | "view" | "capability";
 }
 
 /**

@@ -12,6 +12,11 @@ export class FileSystemPlugin extends EphemeralDataPlugin {
     constructor(path: string, databaseName: string) {
         super(databaseName)
         this.path = path;
+
+        // Create the directory if it doesn't exist
+        if (!fs.existsSync(this.path)) {
+            fs.mkdirSync(this.path, { recursive: true });
+        }
     }
 
     private get databaseFilePath() {

@@ -1,11 +1,13 @@
 import { CollectionBase } from '../collections/CollectionBase';
-import { IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
-import { ChangeTrackingType, CompiledSchema, IdType, InferCreateType, InferType, SubscriptionChanges } from '@routier/core/schema';
+import { IDbPlugin } from '@routier/core/plugins';
+import { ChangeTrackingType, CompiledSchema, HashType, IdType, InferCreateType, InferType, SubscriptionChanges } from '@routier/core/schema';
 import { BulkPersistChanges, SchemaCollection, SchemaPersistChanges } from '@routier/core/collections';
-import { CallbackResult, noop, Result, uuid } from '@routier/core';
+import { CallbackResult, Result } from '@routier/core/results';
+import { logger, noop, uuid } from '@routier/core/utilities';
 import { QueryableAsync } from '../queryable/QueryableAsync';
 import { Derive, DeriveResponse } from './types';
-import { CollectionDependencies } from '../collections/types';
+import { CollectionDependencies, RequestContext } from '../collections/types';
+import { SelectionQueryable } from '../queryable/SelectionQueryable';
 
 /**
  * View that only allows data selection. Cannot add, remove, or update data.  Data is computed
@@ -50,9 +52,6 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                         return cb([]);
                     }
 
-                    const schemas = new SchemaCollection();
-
-                    schemas.set(this.dependencies.schema.id, this.dependencies.schema as CompiledSchema<Record<string, unknown>>);
                     const operation = new BulkPersistChanges();
                     const schemaChanges = new SchemaPersistChanges();
 
@@ -60,10 +59,18 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                         schemaChanges.adds = enriched;
                     } else {
 
+                        // Build lookup map for O(1) lookups instead of O(n) find()
+                        const existingMap = new Map<string, InferType<TEntity>>();
+                        for (const existing of toArrayResult.data) {
+                            const hash = this.dependencies.schema.hash(existing, HashType.Ids);
+                            existingMap.set(hash, existing);
+                        }
+
                         // compute changes
                         for (let i = 0, length = enriched.length; i < length; i++) {
                             const item = enriched[i];
-                            const existing = toArrayResult.data.find(x => this.dependencies.schema.compareIds(item, x))
+                            const hash = this.dependencies.schema.hash(item, HashType.Ids);
+                            const existing = existingMap.get(hash);
 
                             if (existing != null) {
 
@@ -88,12 +95,12 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                     persist({
                         id: uuid(8),
                         operation,
-                        schemas,
+                        schemas: this.dependencies.schemas,
                         source: "view"
                     }, (r) => {
 
                         if (r.ok === Result.ERROR) {
-                            console.error("Failed to update view", r.error);
+                            logger.error("Failed to update view", r.error);
                             return;
                         }
 
@@ -141,27 +148,13 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
     }
 
     emptyAsync() {
-        return new Promise<never>((resolve, reject) => this.empty((r) => Result.resolve(r, resolve, reject)));
+        return new Promise<InferType<TEntity>[]>((resolve, reject) => this.empty((r) => Result.resolve(r, resolve, reject)));
     }
 
-    empty(done: CallbackResult<never>) {
-        try {
-
-            this.dependencies.changeTracker.removeByQuery({
-                changeTracking: false,
-                options: this.dependencies.scopedQueryOptions as unknown as QueryOptionsCollection<TEntity>,
-                schema: this.dependencies.schema
-            }, null, (result) => {
-
-                if (result.ok === "error") {
-                    return done(result);
-                }
-
-                done(Result.success())
-            });
-        } catch (e) {
-            done(Result.error(e));
-        }
+    empty(done: CallbackResult<InferType<TEntity>[]>) {
+        const request = new RequestContext<TEntity>();
+        const result = new SelectionQueryable<TEntity, InferType<TEntity>, void>(this.dependencies, request);
+        return result.remove(done);
     }
 
     computeAsync() {

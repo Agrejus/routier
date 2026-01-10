@@ -1,5 +1,10 @@
 import { uuidv4 } from "../utilities";
 import { s } from "./builder";
+import { InferType } from "./types";
+
+declare const __brand: unique symbol;
+
+export type UUID = string & { readonly [__brand]: 'UUID' };
 
 const isNullOrEmpty = (value: unknown) => {
     return value == null || value == "";
@@ -16,7 +21,7 @@ export const optionalObjectSchemaFactory = () => s.define("optionalObject", {
 }).compile();
 
 export const usersSchemaOneFactory = () => s.define("usersOne", {
-    id: s.string().key().default(x => x.uuid(), { uuid: uuidv4 }),
+    id: s.string().constrain<UUID>().key().default(x => x.uuid() as UUID, { uuid: uuidv4 }),
     firstName: s.string(),
     lastName: s.string(),
     age: s.number(),
@@ -35,7 +40,7 @@ export const usersSchemaTwoFactory = () => s.define("usersTwo", {
     id: s.string().key().default(x => x.uuid(), { uuid: uuidv4 }),
     firstName: s.string(),
     lastName: s.string(),
-    age: s.number(),
+    age: s.number().constrain<1>(),
     createdDate: s.date().default(() => new Date("01/01/1900 8:00 AM")),
     address: s.object({
         street: s.string(),

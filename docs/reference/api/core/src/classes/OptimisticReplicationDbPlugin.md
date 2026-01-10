@@ -14,13 +14,13 @@ Interface for a database plugin, which provides query, destroy, and bulk operati
 
 - [`IDbPlugin`](../interfaces/IDbPlugin.md)
 
-## Methods
+## Constructors
 
-### create()
+### constructor()
 
-> `static` **create**(`plugins`): `OptimisticReplicationDbPlugin`
+> **new OptimisticReplicationDbPlugin**(`plugins`): `OptimisticReplicationDbPlugin`
 
-Defined in: [core/src/plugins/replication/OptimisticReplicationDbPlugin.ts:45](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/replication/OptimisticReplicationDbPlugin.ts#L45)
+Defined in: [core/src/plugins/replication/OptimisticReplicationDbPlugin.ts:39](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/replication/OptimisticReplicationDbPlugin.ts#L39)
 
 Creates a new OptimisticDbPluginReplicator that coordinates operations between a source database and its replicas.
 
@@ -30,13 +30,19 @@ Creates a new OptimisticDbPluginReplicator that coordinates operations between a
 
 [`OptimisticReplicationPluginOptions`](../type-aliases/OptimisticReplicationPluginOptions.md)
 
+Configuration object containing the source, read, and replica database plugins
+
+- `plugins.source` - The primary database plugin that will receive all operations first
+- `plugins.read` - The read-optimized plugin (typically a memory plugin) used for fast queries
+- `plugins.replicas` - Additional database plugins that will replicate operations from the source
+
 #### Returns
 
 `OptimisticReplicationDbPlugin`
 
-A new DbPluginReplicator instance that manages the source-replica relationship
+A new OptimisticReplicationDbPlugin instance that manages the source-replica relationship
 
----
+## Methods
 
 ### query()
 

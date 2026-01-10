@@ -4,15 +4,14 @@ import { QueryableAsync } from '../queryable/QueryableAsync';
 import { SelectionQueryable } from "../queryable/SelectionQueryable";
 import { SelectionQueryableAsync } from "../queryable/SelectionQueryableAsync";
 import { ChangeTrackingType, IdType, InferCreateType, InferType, SubscriptionChanges } from "@routier/core/schema";
-import { IQuery, ITranslatedValue } from "@routier/core/plugins";
 import { CallbackPartialResult, CallbackResult, PartialResultType, Result, toPromise } from "@routier/core/results";
 import { BulkPersistChanges, BulkPersistResult } from "@routier/core/collections";
 import { assertIsNotNull } from "@routier/core/assertions";
-import { AsyncPipeline } from "@routier/core/pipeline";
 import { GenericFunction } from "@routier/core/types";
 import { Filter, ParamsFilter } from "@routier/core/expressions";
-import { uuid } from "@routier/core/utilities";
 import { CollectionDependencies, RequestContext } from "./types";
+import { unsafeCast } from "@routier/core";
+import { QueryableBuilder, QueryBuilderContext } from "../queryable/composers/QueryableBuilder";
 
 export class CollectionBase<TEntity extends {}> implements Disposable {
 
@@ -35,7 +34,6 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
         this.hasChanges = this.hasChanges.bind(this);
         this.instance = this.instance.bind(this);
         this.subscribe = this.subscribe.bind(this);
-        this.defer = this.defer.bind(this);
         this.where = this.where.bind(this);
         this.sort = this.sort.bind(this);
         this.sortDescending = this.sortDescending.bind(this);
@@ -84,9 +82,13 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
             return items;
         }
 
-        const result: InferType<TEntity>[] = []
+        if (items.length === 0) {
+            return items;
+        }
+
+        const result: InferType<TEntity>[] = new Array(items.length);
         for (let i = 0, length = items.length; i < length; i++) {
-            result.push(this.dependencies.schema.clone(items[i]));
+            result[i] = this.dependencies.schema.clone(items[i]);
         }
         return result;
     }
@@ -95,7 +97,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
 
         try {
             if (result.ok === Result.ERROR) {
-                this.dependencies.changeTracker.clearAdditions();
+                this.dependencies.changeTracker.clearChanges();
                 done(result);
                 return;
             }
@@ -104,38 +106,34 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
             const resolvedChanges = result.data.result.get<TEntity>(this.dependencies.schema.id);
             const changes = result.data.changes.get<TEntity>(this.dependencies.schema.id);
 
+            // If there are no changes for this schema, we're done
+            if (!changes || changes.hasItems === false) {
+                done(result);
+                return;
+            }
+
             // destroy tags and let go of the references
             changes.tags[Symbol.dispose]();
 
             assertIsNotNull(resolvedChanges, "Could not find resolved changes during afterPersist operation");
 
-            if (changes.hasItems === false) {
-                done(result);
-                return;
-            }
-
             // Merge changes will unpause any change tracking that was paused previously
             // We should be more declarative about this 
-            this.dependencies.changeTracker.mergeChanges(resolvedChanges);
+            const { updates, adds, removals } = this.dependencies.changeTracker.mergeChanges(resolvedChanges);
 
             // clear after we merge changes
-            this.dependencies.changeTracker.clearAdditions();
+            this.dependencies.changeTracker.clearChanges();
 
-            // we only want to notify of changes when an item that was saved matches the query
-            // these get reset each time
-            // send in the resulting adds because properties might have been set from the db operation
-            const updates = this.cloneMany(resolvedChanges.updates);
-            const adds = this.cloneMany(resolvedChanges.adds as InferType<TEntity>[]);
-            const removals = this.cloneMany(changes.removes);
-
-            const subscriptionChanges: SubscriptionChanges<TEntity> = {
-                updates,
-                adds,
-                removals,
-                unknown: []
-            };
-
-            this.dependencies.subscription.send(subscriptionChanges);
+            // Only create and send if there are actual changes
+            if (updates.length > 0 || adds.length > 0 || removals.length > 0) {
+                const subscriptionChanges: SubscriptionChanges<TEntity> = {
+                    updates,
+                    adds,
+                    removals,
+                    unknown: []
+                };
+                this.dependencies.subscription.send(subscriptionChanges);
+            }
 
             done(result);
         } catch (e) {
@@ -143,95 +141,28 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
         }
     }
 
-    protected resolveRemovalQueries(queries: IQuery<TEntity, TEntity>[], done: CallbackResult<TEntity[]>) {
-
-        if (queries.length === 0) {
-            done(Result.success([]));
-            return;
-        }
-
-        const pipeline = new AsyncPipeline<IQuery<TEntity, TEntity>, ITranslatedValue<TEntity>>();
-
-        pipeline.pipeEach(queries, (operation, done) => {
-            try {
-                this.dependencies.dataBridge.query({
-                    id: uuid(8),
-                    operation,
-                    schemas: this.dependencies.schemas,
-                    source: "data-store"
-                }, done);
-            } catch (e) {
-                done(Result.error(e));
-            }
-        });
-
-        pipeline.filter((result) => {
-            if (result.ok !== Result.SUCCESS) {
-                done(Result.error(result.error));
-                return;
-            }
-
-            const data: TEntity[] = [];
-            for (let i = 0, length = result.data.length; i < length; i++) {
-                const collection = result.data[i];
-
-                collection.forEach(item => {
-                    data.push(item as TEntity);
-                })
-
-            }
-
-            done(Result.success(data));
-        });
-    }
-
     protected prepare(result: PartialResultType<BulkPersistChanges>, done: CallbackPartialResult<BulkPersistChanges>) {
 
         try {
             if (result.ok === Result.ERROR) {
-                done(result);
-                return;
+                return done(result);
+            }
+
+            if (this.dependencies.changeTracker.hasChanges() === false) {
+                return done(result);
             }
 
             const tags = this.dependencies.changeTracker.tags.get();
             const changes = result.data.resolve(this.dependencies.schema.id);
 
-            if (this.dependencies.changeTracker.hasChanges() === false) {
-                done(result);
-                return
-            }
-
             assertIsNotNull(tags, "Could not find tag collection during prepare operation");
 
             changes.tags = tags;
+            changes.adds = this.dependencies.changeTracker.prepareAdditions();
+            changes.updates = this.dependencies.changeTracker.getAttachmentsChanges();
+            changes.removes = this.dependencies.changeTracker.prepareRemovals();
 
-            const adds = this.dependencies.changeTracker.prepareAdditions();
-
-            if (adds.length > 0) {
-                changes.adds = adds;
-            }
-
-            const updates = this.dependencies.changeTracker.getAttachmentsChanges();
-
-            if (updates.length > 0) {
-                changes.updates = updates;
-            }
-
-            const removes = this.dependencies.changeTracker.prepareRemovals();
-
-            this.resolveRemovalQueries(removes.queries, r => {
-
-                if (r.ok !== Result.SUCCESS) {
-                    done(Result.error(r.error));
-                    return;
-                }
-
-                if (removes.entities.length > 0 || r.data.length > 0) {
-                    changes.removes = [...removes.entities, ...r.data as InferType<TEntity>[]];
-                }
-
-                done(result);
-            });
+            done(result);
         } catch (e) {
             done(Result.error(e));
         }
@@ -276,15 +207,6 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
         const request = new RequestContext<TEntity>();
         const queryable = new Queryable<TEntity, InferType<TEntity>, () => void>(this.dependencies, request);
         return queryable.subscribe();
-    }
-
-    /**
-     * Ignores the first execution of the resulting query
-     */
-    defer() {
-        const request = new RequestContext<TEntity>();
-        const queryable = new Queryable<TEntity, InferType<TEntity>, () => void>(this.dependencies, request);
-        return queryable.defer();
     }
 
     /**
@@ -386,6 +308,11 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
     toQueryable() {
         const request = new RequestContext<TEntity>();
         return new QueryableAsync<TEntity, InferType<TEntity>>(this.dependencies, request);
+    }
+
+    apply<U, Shape>(composer: QueryableBuilder<TEntity, Shape, U>) {
+        const props = unsafeCast<QueryBuilderContext<TEntity>>(composer);
+        return new QueryableAsync<TEntity, Shape>(this.dependencies, props.request);
     }
 
     /**

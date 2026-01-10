@@ -38,6 +38,20 @@ export class MemoryDataCollection {
         return nextId;
     }
 
+    private resolveId(property: PropertyInfo<any>, value: unknown) {
+        if (typeof value !== "number") {
+            return;
+        }
+
+        const currentIdForProperty = this.nextNumericalIds.get(property.id);
+
+        if (value <= currentIdForProperty) {
+            return;
+        }
+
+        this.nextNumericalIds.set(property.id, value);
+    }
+
     private getAndSetId(item: Record<string, unknown>, property: PropertyInfo<any>): IdType {
         if (item[property.name] != null) {
             return item[property.name] as IdType;
@@ -86,14 +100,20 @@ export class MemoryDataCollection {
     private resolveIdSet(item: Record<string, unknown>): IdSet {
 
         if (this.schema.hasIdentityKeys) {
-            const ids: IdType[] = [];
             const idProperties = this.schema.idProperties;
+            const ids: IdType[] = new Array<IdType>(idProperties.length);
 
+            // Need to make sure we allow for seeding the collection when we call add vs seed
+            // There will be an existing id, but the id type could still be identity
             if (idProperties.length === 1) {
-                ids.push(this.getAndSetId(item, idProperties[0]));
+                const value = this.getAndSetId(item, idProperties[0]);
+                this.resolveId(idProperties[0], value);
+                ids[0] = value;
             } else {
                 for (let j = 0, l = idProperties.length; j < l; j++) {
-                    ids.push(this.getAndSetId(item, idProperties[j]));
+                    const value = this.getAndSetId(item, idProperties[j]);
+                    this.resolveId(idProperties[j], value);
+                    ids[j] = value;
                 }
             }
 

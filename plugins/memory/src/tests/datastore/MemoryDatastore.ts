@@ -78,7 +78,7 @@ export class TestDataStore extends DataStore {
 
     commentsView = this.view(commentsViewSchema).derive((done) => {
         // defer because we don't want to compute every time we create a datastore
-        const unsubscribe = this.comments.defer().subscribe().toArray(response => {
+        const unsubscribe = this.comments.subscribe().toArray(response => {
 
             if (response.ok === "error") {
                 return done([]);

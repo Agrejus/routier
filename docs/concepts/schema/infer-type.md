@@ -137,6 +137,24 @@ async function updateUser(user: User, updates: Partial<User>) {
 }
 ```
 
+### 4. Use `constrain()` for Branded Types
+
+When working with branded or tagged types (like UUIDs), use `constrain()` to narrow string types:
+
+```typescript
+type UUID = string & { __brand: "UUID" };
+
+const userSchema = s
+  .define("users", {
+    id: s.string().constrain<UUID>().key().identity(),
+    name: s.string(),
+  })
+  .compile();
+
+type User = InferType<typeof userSchema>;
+// User.id is now typed as UUID, not just string
+```
+
 ## Related
 
 - **[Creating A Schema](creating-a-schema.md)** - Learn how to define schemas

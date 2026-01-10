@@ -1,6 +1,6 @@
 [**routier-collection**](../../../README.md)
 
-***
+---
 
 [routier-collection](../../../README.md) / [core/src](../README.md) / SchemaString
 
@@ -16,11 +16,11 @@ Defined in: [core/src/schema/property/types/SchemaString.ts:16](https://github.c
 
 ### T
 
-`T` *extends* `string`
+`T` _extends_ `string`
 
 ### TModifiers
 
-`TModifiers` *extends* [`SchemaModifiers`](../type-aliases/SchemaModifiers.md)
+`TModifiers` _extends_ [`SchemaModifiers`](../type-aliases/SchemaModifiers.md)
 
 ## Constructors
 
@@ -60,7 +60,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:6](https://github.com/A
 
 [`SchemaBase`](SchemaBase.md).[`modifiers`](SchemaBase.md#modifiers)
 
-***
+---
 
 ### isNullable
 
@@ -72,7 +72,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:8](https://github.com/A
 
 [`SchemaBase`](SchemaBase.md).[`isNullable`](SchemaBase.md#isnullable)
 
-***
+---
 
 ### isUnmapped
 
@@ -84,7 +84,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:9](https://github.com/A
 
 [`SchemaBase`](SchemaBase.md).[`isUnmapped`](SchemaBase.md#isunmapped)
 
-***
+---
 
 ### isOptional
 
@@ -96,7 +96,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:10](https://github.com/
 
 [`SchemaBase`](SchemaBase.md).[`isOptional`](SchemaBase.md#isoptional)
 
-***
+---
 
 ### isKey
 
@@ -108,7 +108,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:11](https://github.com/
 
 [`SchemaBase`](SchemaBase.md).[`isKey`](SchemaBase.md#iskey)
 
-***
+---
 
 ### isIdentity
 
@@ -120,7 +120,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:12](https://github.com/
 
 [`SchemaBase`](SchemaBase.md).[`isIdentity`](SchemaBase.md#isidentity)
 
-***
+---
 
 ### isReadonly
 
@@ -132,7 +132,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:13](https://github.com/
 
 [`SchemaBase`](SchemaBase.md).[`isReadonly`](SchemaBase.md#isreadonly)
 
-***
+---
 
 ### isDistict
 
@@ -144,7 +144,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:14](https://github.com/
 
 [`SchemaBase`](SchemaBase.md).[`isDistict`](SchemaBase.md#isdistict)
 
-***
+---
 
 ### indexes
 
@@ -156,7 +156,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:15](https://github.com/
 
 [`SchemaBase`](SchemaBase.md).[`indexes`](SchemaBase.md#indexes)
 
-***
+---
 
 ### fromPropertyName
 
@@ -168,7 +168,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:16](https://github.com/
 
 [`SchemaBase`](SchemaBase.md).[`fromPropertyName`](SchemaBase.md#frompropertyname)
 
-***
+---
 
 ### injected
 
@@ -180,7 +180,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:18](https://github.com/
 
 [`SchemaBase`](SchemaBase.md).[`injected`](SchemaBase.md#injected)
 
-***
+---
 
 ### defaultValue
 
@@ -192,7 +192,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:19](https://github.com/
 
 [`SchemaBase`](SchemaBase.md).[`defaultValue`](SchemaBase.md#defaultvalue)
 
-***
+---
 
 ### valueSerializer
 
@@ -204,7 +204,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:20](https://github.com/
 
 [`SchemaBase`](SchemaBase.md).[`valueSerializer`](SchemaBase.md#valueserializer)
 
-***
+---
 
 ### valueDeserializer
 
@@ -216,7 +216,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:21](https://github.com/
 
 [`SchemaBase`](SchemaBase.md).[`valueDeserializer`](SchemaBase.md#valuedeserializer)
 
-***
+---
 
 ### functionBody
 
@@ -228,7 +228,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:23](https://github.com/
 
 [`SchemaBase`](SchemaBase.md).[`functionBody`](SchemaBase.md#functionbody)
 
-***
+---
 
 ### literals
 
@@ -240,7 +240,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:25](https://github.com/
 
 [`SchemaBase`](SchemaBase.md).[`literals`](SchemaBase.md#literals)
 
-***
+---
 
 ### instance
 
@@ -252,7 +252,7 @@ Defined in: [core/src/schema/property/types/SchemaString.ts:18](https://github.c
 
 [`SchemaBase`](SchemaBase.md).[`instance`](SchemaBase.md#instance)
 
-***
+---
 
 ### type
 
@@ -282,7 +282,44 @@ Defined in: [core/src/schema/property/types/SchemaString.ts:22](https://github.c
 
 [`SchemaFrom`](SchemaFrom.md)\<`T`, `TModifiers`\>
 
-***
+---
+
+### constrain()
+
+> **constrain**\<`K`\>(): [`SchemaString`](SchemaString.md)\<`K`, `TModifiers`\>
+
+Narrows the string type to a more specific type. Useful for branded or tagged types like UUIDs.
+
+Defined in: [core/src/schema/property/types/SchemaString.ts:26](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/types/SchemaString.ts#L26)
+
+#### Type Parameters
+
+##### K
+
+`K` _extends_ `T`
+
+The narrowed type that must extend the current string type `T`.
+
+#### Returns
+
+[`SchemaString`](SchemaString.md)\<`K`, `TModifiers`\>
+
+A new `SchemaString` instance with the narrowed type `K`.
+
+#### Example
+
+```typescript
+type UUID = string & { __brand: "UUID" };
+
+const schema = s
+  .define("users", {
+    id: s.string().constrain<UUID>().key().identity(),
+    name: s.string(),
+  })
+  .compile();
+```
+
+---
 
 ### optional()
 
@@ -294,7 +331,7 @@ Defined in: [core/src/schema/property/types/SchemaString.ts:26](https://github.c
 
 [`SchemaOptional`](SchemaOptional.md)\<`T`, `"optional"` \| `TModifiers`\>
 
-***
+---
 
 ### nullable()
 
@@ -306,7 +343,7 @@ Defined in: [core/src/schema/property/types/SchemaString.ts:30](https://github.c
 
 [`SchemaNullable`](SchemaNullable.md)\<`T`, `"nullable"` \| `TModifiers`\>
 
-***
+---
 
 ### key()
 
@@ -318,7 +355,7 @@ Defined in: [core/src/schema/property/types/SchemaString.ts:34](https://github.c
 
 [`SchemaKey`](SchemaKey.md)\<`T`, `"key"` \| `TModifiers`\>
 
-***
+---
 
 ### default()
 
@@ -346,7 +383,7 @@ Defined in: [core/src/schema/property/types/SchemaString.ts:38](https://github.c
 
 [`SchemaDefault`](SchemaDefault.md)\<`T`, `I`, `"default"` \| `TModifiers`\>
 
-***
+---
 
 ### readonly()
 
@@ -358,7 +395,7 @@ Defined in: [core/src/schema/property/types/SchemaString.ts:42](https://github.c
 
 [`SchemaReadonly`](SchemaReadonly.md)\<`T`, `"readonly"` \| `TModifiers`\>
 
-***
+---
 
 ### deserialize()
 
@@ -376,7 +413,7 @@ Defined in: [core/src/schema/property/types/SchemaString.ts:46](https://github.c
 
 [`SchemaDeserialize`](SchemaDeserialize.md)\<`T`, `"deserialize"` \| `TModifiers`\>
 
-***
+---
 
 ### serialize()
 
@@ -394,7 +431,7 @@ Defined in: [core/src/schema/property/types/SchemaString.ts:50](https://github.c
 
 [`SchemaSerialize`](SchemaSerialize.md)\<`T`, `"serialize"` \| `TModifiers`\>
 
-***
+---
 
 ### identity()
 
@@ -406,7 +443,7 @@ Defined in: [core/src/schema/property/types/SchemaString.ts:54](https://github.c
 
 [`SchemaIdentity`](SchemaIdentity.md)\<`T`, `"identity"` \| `"readonly"` \| `TModifiers`\>
 
-***
+---
 
 ### array()
 
@@ -418,7 +455,7 @@ Defined in: [core/src/schema/property/types/SchemaString.ts:58](https://github.c
 
 [`SchemaArray`](SchemaArray.md)\<`SchemaString`\<`T`, `TModifiers`\>, `TModifiers`\>
 
-***
+---
 
 ### index()
 
@@ -436,7 +473,7 @@ Defined in: [core/src/schema/property/types/SchemaString.ts:62](https://github.c
 
 [`SchemaIndex`](SchemaIndex.md)\<`T`, `TModifiers`\>
 
-***
+---
 
 ### distinct()
 

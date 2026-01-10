@@ -22,15 +22,15 @@ Interface for a database plugin, which provides query, destroy, and bulk operati
 
 Defined in: [core/src/plugins/replication/ReplicationDbPlugin.ts:9](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/replication/ReplicationDbPlugin.ts#L9)
 
-## Methods
+## Constructors
 
-### create()
+### constructor()
 
-> `static` **create**(`plugins`): `ReplicationDbPlugin`
+> **new ReplicationDbPlugin**(`plugins`): `ReplicationDbPlugin`
 
-Defined in: [core/src/plugins/replication/ReplicationDbPlugin.ts:22](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/replication/ReplicationDbPlugin.ts#L22)
+Defined in: [core/src/plugins/replication/ReplicationDbPlugin.ts:20](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/replication/ReplicationDbPlugin.ts#L20)
 
-Creates a new DbPluginReplicator that coordinates operations between a source database and its replicas.
+Creates a new ReplicationDbPlugin that coordinates operations between a source database and its replicas.
 
 #### Parameters
 
@@ -38,13 +38,19 @@ Creates a new DbPluginReplicator that coordinates operations between a source da
 
 [`ReplicationPluginOptions`](../type-aliases/ReplicationPluginOptions.md)
 
+Configuration object containing the source, read (optional), and replica database plugins
+
+- `plugins.source` - The primary database plugin that will receive all operations first
+- `plugins.read` - Optional read-optimized plugin (typically a memory plugin) used for fast queries
+- `plugins.replicas` - Additional database plugins that will replicate operations from the source
+
 #### Returns
 
 `ReplicationDbPlugin`
 
-A new DbPluginReplicator instance that manages the source-replica relationship
+A new ReplicationDbPlugin instance that manages the source-replica relationship
 
----
+## Methods
 
 ### query()
 

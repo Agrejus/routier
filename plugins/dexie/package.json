@@ -1,6 +1,6 @@
 {
   "name": "@routier/dexie-plugin",
-  "version": "0.1.0-rc.0",
+  "version": "0.2.0",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "source": "./src/index.ts",
@@ -17,7 +17,8 @@
     "build": "npm run build:bundle && npm run build:types",
     "test": "jest",
     "test:watch": "jest --watch",
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "lint": "eslint . --ext ts --report-unused-disable-directives --max-warnings 0"
   },
   "sideEffects": false,
   "author": "James DeMeuse <james.demeuse@gmail.com>",
@@ -36,11 +37,11 @@
   ],
   "description": "Dexie plugin for routier",
   "peerDependencies": {
-    "@routier/core": ">=0.1.0-rc.0"
+    "@routier/core": ">=0.2.0"
   },
   "devDependencies": {
-    "@routier/core": "^0.1.0-rc.0",
-    "@routier/test-utils": "^0.0.1-alpha.1",
+    "@routier/core": "^0.2.0",
+    "@routier/test-utils": "file:../../test-utils",
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",
     "fake-indexeddb": "^6.1.0",

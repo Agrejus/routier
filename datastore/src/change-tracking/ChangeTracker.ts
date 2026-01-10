@@ -3,17 +3,16 @@ import { ChangeTrackedEntity } from "../types";
 import { KnownKeyAdditions } from "./additions/KnownKeyAdditions";
 import { IAdditions } from "./additions/types";
 import { UnknownKeyAdditions } from "./additions/UnknownKeyAdditions";
-import { EntityChangeType, EntityUpdateInfo, IQuery } from "@routier/core/plugins";
+import { EntityChangeType, EntityUpdateInfo } from "@routier/core/plugins";
 import { SchemaPersistResult, TagCollection } from "@routier/core/collections";
 import { GenericFunction } from "@routier/core/types";
 import { CallbackResult, Result } from "@routier/core/results";
-import { assertIsNotNull, unsafeCast } from "@routier/core";
+import { assertIsNotNull } from "@routier/core";
 
 
 export class ChangeTracker<TEntity extends {}> {
 
     protected removals: InferType<TEntity>[] = [];
-    protected removalQueries: IQuery<TEntity, TEntity>[] = [];
     protected attachments: Map<IdType, { doc: InferType<TEntity>, changeType: EntityChangeType }> = new Map<IdType, { doc: InferType<TEntity>, changeType: EntityChangeType }>();
     protected schema: CompiledSchema<TEntity>;
     protected _tagCollection: TagCollection | null = null;
@@ -42,7 +41,7 @@ export class ChangeTracker<TEntity extends {}> {
 
         for (const [, attachment] of this.attachments) {
 
-            const changeTrackedDoc = unsafeCast<ChangeTrackedEntity<{}>>(attachment.doc);
+            const changeTrackedDoc = attachment.doc as unknown as ChangeTrackedEntity<{}>;
             const changeType = attachment.changeType;
 
             if (changeTrackedDoc.__tracking__?.isDirty === true || changeType !== "notModified") {
@@ -64,15 +63,27 @@ export class ChangeTracker<TEntity extends {}> {
     }
 
     mergeChanges(changes: SchemaPersistResult<TEntity>) {
-        const { updates, adds } = changes;
+        const { updates, adds, removes } = changes;
+        const result: {
+            updates: InferType<TEntity>[],
+            adds: InferType<TEntity>[],
+            removals: InferType<TEntity>[],
+        } = {
+            updates: new Array<InferType<TEntity>>(updates.length),
+            adds: new Array<InferType<TEntity>>(adds.length),
+            removals: new Array<InferType<TEntity>>(removes.length),
+        }
 
         for (let i = 0, length = updates.length; i < length; i++) {
             const update = updates[i];
             const id = this.schema.getId(update);
             const found = this.attachments.get(id);
+            // Optimized: cache found.doc since it's accessed twice (line 83 and 84)
+            const foundDoc = found.doc;
 
             // Let's only map Ids and identities
-            this.schema.merge(found.doc, update); // merge needs to map children appropriately
+            this.schema.merge(foundDoc, update); // merge needs to map children appropriately
+            result.updates[i] = this.schema.clone(foundDoc);
         }
 
         for (let i = 0, length = adds.length; i < length; i++) {
@@ -98,6 +109,8 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
             // Let's only map Ids and identities
             this.schema.merge(found, deserializedAdd); // merge needs to map children appropriately
 
+            result.adds[i] = this.schema.clone(found as InferType<TEntity>);
+
             const id = this.schema.getId(add);
 
             // Set here, if we never save we should never attach
@@ -106,28 +119,28 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
                 changeType: "notModified" // since we just added it, mark it as not modified
             });
         }
+        // nothing to merge here, use the attached removals
+        result.removals = this.removals;
+
+        return result;
     }
 
-    prepareRemovals(): {
-        entities: InferType<TEntity>[];
-        queries: IQuery<TEntity, TEntity>[];
-    } {
+    prepareRemovals(): InferType<TEntity>[] {
         const entities = new Array<InferType<TEntity>>(this.removals.length);
         for (let i = 0, length = this.removals.length; i < length; i++) {
             entities[i] = this.schema.prepare(this.removals[i]);
         }
 
-        return {
-            entities,
-            queries: this.removalQueries
-        };
+        return entities;
     }
 
     getAttachmentsChanges(): EntityUpdateInfo<TEntity>[] {
         const changes: EntityUpdateInfo<TEntity>[] = [];
 
         for (const [, attachment] of this.attachments) {
-            const changeTrackedDoc = unsafeCast<ChangeTrackedEntity<{}>>(attachment.doc);
+            const changeTrackedDoc = attachment.doc as unknown as ChangeTrackedEntity<{}>;
+            // Optimized: cache __tracking__ since it's accessed twice (line 149 and 158)
+            const tracking = changeTrackedDoc.__tracking__;
 
             let changeType: EntityChangeType = "notModified";
 
@@ -137,7 +150,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
 
             // property changes are marked as not modified, we need to make
             // sure we check before we look at the change type
-            if (changeTrackedDoc.__tracking__?.isDirty === true) {
+            if (tracking?.isDirty === true) {
                 changeType = "propertiesChanged"
             }
 
@@ -146,7 +159,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
             }
 
             const serializedEntity = this.schema.preprocess(changeTrackedDoc as InferCreateType<TEntity>);
-            changes.push({ entity: serializedEntity, delta: this.schema.serialize(changeTrackedDoc.__tracking__.changes as InferType<TEntity>), changeType })
+            changes.push({ entity: serializedEntity, delta: this.schema.serialize(tracking.changes as InferType<TEntity>), changeType })
         }
 
         return changes
@@ -214,7 +227,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     }
 
     private resolveChangeType(entity: InferType<TEntity>): EntityChangeType {
-        const changeTrackedDoc = unsafeCast<ChangeTrackedEntity<{}>>(entity);
+        const changeTrackedDoc = entity as unknown as ChangeTrackedEntity<{}>;
 
         if (changeTrackedDoc.__tracking__?.isDirty === true) {
             return "propertiesChanged"
@@ -279,21 +292,6 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
         }
     }
 
-    removeByQuery(query: IQuery<TEntity, TEntity>, tag: unknown | null, done: CallbackResult<never>) {
-        try {
-            this.removalQueries.push(query);
-
-            if (tag != null) {
-                const tagCollection = this.resolveTagCollection();
-                tagCollection.set(query, tag);
-            }
-
-            done(Result.success());
-        } catch (e) {
-            done(Result.error(e));
-        }
-    }
-
     replaceAttachment(existingEntity: InferType<TEntity> | InferCreateType<TEntity>, newEntity: InferType<TEntity> | InferCreateType<TEntity>) {
         for (const [key, document] of this.attachments) {
 
@@ -308,7 +306,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     }
 
     hasChanges(): boolean {
-        return this.additions.size > 0 || this.removals.length > 0 || this.hasAttachmentsChanges() === true || this.removalQueries.length > 0;
+        return this.additions.size > 0 || this.removals.length > 0 || this.hasAttachmentsChanges() === true;
     }
 
     add(entities: InferCreateType<TEntity>[], tag: unknown | null, done: CallbackResult<InferType<TEntity>[]>) {
@@ -372,6 +370,9 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
             }
 
             const found = this.attachments.get(id);
+
+            assertIsNotNull(found, `Could not find entity to detach for Id. Id: ${id}`);
+
             this.attachments.delete(id);
             result.push(found.doc);
         }
@@ -380,12 +381,13 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     }
 
     prepareAdditions(): InferCreateType<TEntity>[] {
-
-        if (this.additions.size === 0) {
+        const size = this.additions.size;
+        if (size === 0) {
             return [];
         }
 
-        const result: InferCreateType<TEntity>[] = [];
+        const result: InferCreateType<TEntity>[] = new Array(size);
+        let index = 0;
 
         // prepare the items for saving,
         // this will remove any change tracking.  We do
@@ -393,13 +395,14 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
         // because then they will need to worry about lifecycle management
         // Need to make sure we run any serialization changes as well
         for (const item of this.additions.values()) {
-            result.push(this.schema.preprocess(item) as InferCreateType<TEntity>);
+            result[index++] = this.schema.preprocess(item) as InferCreateType<TEntity>;
         }
 
         return result;
     }
 
-    clearAdditions() {
+    clearChanges() {
         this.additions.clear();
+        this.removals = [];
     }
 }   

@@ -1,6 +1,6 @@
 {
   "name": "@routier/pouchdb-plugin",
-  "version": "0.1.0-rc.0",
+  "version": "0.2.0",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "source": "./src/index.ts",
@@ -20,7 +20,8 @@
     "tsc": "tsc",
     "test": "vitest --run",
     "test:watch": "vitest --watch",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "lint": "eslint . --ext ts --report-unused-disable-directives --max-warnings 0"
   },
   "sideEffects": false,
   "author": "James DeMeuse <james.demeuse@gmail.com>",
@@ -43,12 +44,12 @@
     "pouchdb": "^9.0.0"
   },
   "peerDependencies": {
-    "@routier/core": ">=0.1.0-rc.0"
+    "@routier/core": ">=0.2.0"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.0.0",
-    "@routier/core": "^0.1.0-rc.0",
-    "@routier/datastore": "^0.1.0-rc.0",
+    "@routier/core": "^0.2.0",
+    "@routier/datastore": "^0.2.0",
     "@routier/memory-plugin": "file://../memory",
     "@routier/test-utils": "^0.0.1-alpha.1",
     "@rspack/cli": "^1.1.8",

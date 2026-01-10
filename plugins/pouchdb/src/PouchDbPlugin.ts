@@ -168,7 +168,7 @@ export class PouchDbPlugin implements IDbPlugin {
                                 // Optimistically assume that the update worked as expected
                                 const update = updates[updatesIndex];
 
-                                const changesResult = result.get(update.schemaId);
+                                const changesResult = result.resolve(update.schemaId);
 
                                 // Set the new rev
                                 (update.change.entity as UnknownRecord)._rev = doc.rev;
@@ -183,7 +183,7 @@ export class PouchDbPlugin implements IDbPlugin {
 
                                 const remove = removes[removesIndex];
 
-                                const changesResult = result.get(remove.schemaId);
+                                const changesResult = result.resolve(remove.schemaId);
 
                                 changesResult.removes.push(remove.entity);
                             }
@@ -199,9 +199,15 @@ export class PouchDbPlugin implements IDbPlugin {
 
                     for (let i = 0, length = identitySchemaIds.length; i < length; i++) {
                         const schemaId = identitySchemaIds[i];
+                        const schemaAdds = adds.filter(x => x.schemaId === schemaId).map(x => x.entity);
+
+                        // Skip schemas with no adds
+                        if (schemaAdds.length === 0) {
+                            continue;
+                        }
+
                         pipeline.pipe((d) => {
-                            const schemaAdds = adds.filter(x => x.schemaId === schemaId).map(x => x.entity);
-                            const schemaResult = result.get(schemaId);
+                            const schemaResult = result.resolve(schemaId);
 
                             assertIsNotNull(schemaResult);
                             assertIsNotNull(schemaAdds);
@@ -332,7 +338,7 @@ export class PouchDbPlugin implements IDbPlugin {
 
                         if (removesIndex !== -1) {
                             const { schemaId } = removes[removesIndex]
-                            const schemaResult = result.get(schemaId);
+                            const schemaResult = result.resolve(schemaId);
 
                             assertIsNotNull(schemaResult);
 
@@ -346,7 +352,7 @@ export class PouchDbPlugin implements IDbPlugin {
                             // Optimistically assume that the update worked as expected
                             const update = updates[updatesIndex];
 
-                            const changesResult = result.get(update.schemaId);
+                            const changesResult = result.resolve(update.schemaId);
 
                             // Set the new rev
                             (update.change.entity as UnknownRecord)._rev = doc.rev;
@@ -363,9 +369,15 @@ export class PouchDbPlugin implements IDbPlugin {
 
                     for (let i = 0, length = nonIdentitySchemaIds.length; i < length; i++) {
                         const schemaId = nonIdentitySchemaIds[i];
+                        const schemaAdds = adds.filter(x => x.schemaId === schemaId).map(x => x.entity);
+
+                        // Skip schemas with no adds
+                        if (schemaAdds.length === 0) {
+                            continue;
+                        }
+
                         pipeline.pipe((d) => {
-                            const schemaAdds = adds.filter(x => x.schemaId === schemaId).map(x => x.entity);
-                            const schemaResult = result.get(schemaId);
+                            const schemaResult = result.resolve(schemaId);
 
                             assertIsNotNull(schemaResult);
                             assertIsNotNull(schemaAdds);

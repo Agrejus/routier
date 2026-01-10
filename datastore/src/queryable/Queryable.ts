@@ -3,9 +3,11 @@ import { SkippedQueryable } from "./SkippedQueryable";
 import { SelectionQueryable } from "./SelectionQueryable";
 import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
-import { QueryOrdering } from "@routier/core/plugins";
+import { QueryOptionsCollection, QueryOrdering } from "@routier/core/plugins";
 import { SubscribedQueryable } from './SubscribedQueryable';
 import { CollectionDependencies, RequestContext } from "../collections/types";
+import { CompiledSchema, InferType } from "@routier/core/schema";
+import { QueryableComposer } from "./composers/QueryableComposer";
 
 export class Queryable<Root extends {}, Shape, U> extends SelectionQueryable<Root, Shape, U> {
 
@@ -19,7 +21,12 @@ export class Queryable<Root extends {}, Shape, U> extends SelectionQueryable<Roo
         this.sort = this.sort.bind(this);
         this.sortDescending = this.sortDescending.bind(this);
         this.subscribe = this.subscribe.bind(this);
-        this.defer = this.defer.bind(this);
+    }
+
+    static compose<TEntity extends {}>(schema: CompiledSchema<TEntity>) {
+        return new QueryableComposer<TEntity, InferType<TEntity>, void>({
+            schema
+        }, new RequestContext<TEntity>());
     }
 
     where(expression: Filter<Shape>): Queryable<Root, Shape, U>;
@@ -61,10 +68,5 @@ export class Queryable<Root extends {}, Shape, U> extends SelectionQueryable<Roo
     subscribe() {
         this.request.isSubScribed = true;
         return this.create(SubscribedQueryable<Root, Shape, () => void>);
-    }
-
-    defer() {
-        this.request.skipInitialQuery = true;
-        return this.create(Queryable<Root, Shape, () => void>);
     }
 }

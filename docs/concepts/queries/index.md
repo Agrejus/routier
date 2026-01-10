@@ -39,7 +39,6 @@ Routier queries are fluent and can only be performed through a collection. Build
 | `skip(count)`              | Skip first N items      | `ctx.products.skip(10)`                                     |
 | `take(count)`              | Take first N items      | `ctx.products.take(5)`                                      |
 | `subscribe()`              | Enable live updates     | `ctx.products.subscribe().toArray(callback)`                |
-| `defer()`                  | Skip initial query      | `ctx.products.defer().subscribe().toArray(callback)`        |
 
 ## Detailed Examples
 
@@ -237,3 +236,4 @@ const allExpensive = await ctx.products
 - [Pagination](/concepts/queries/pagination/) - Pagination strategies
 - [Aggregation](/concepts/queries/aggregation/) - Aggregation operations
 - [Terminal Methods](/concepts/queries/terminal-methods/) - Query execution methods
+- [Query Composer](/concepts/queries/query-composer/) - Reusable, parameterized queries

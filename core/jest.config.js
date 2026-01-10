@@ -11,6 +11,7 @@ module.exports = {
     coverageReporters: ['text', 'html'],
     moduleFileExtensions: ['ts', 'js', 'json'],
     testTimeout: 10000,
+    setupFiles: ['<rootDir>/../test.setup.js'],
     transform: {
         '^.+\\.ts$': ['ts-jest', {
             tsconfig: {

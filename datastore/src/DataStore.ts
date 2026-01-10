@@ -2,7 +2,7 @@ import { Collection } from './collections/Collection';
 import { CollectionBuilder } from './collection-builder/CollectionBuilder';
 import { CollectionPipelines } from './types';
 import { IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
-import { CompiledSchema, SchemaId } from '@routier/core/schema';
+import { CompiledSchema, InferType, SchemaId } from '@routier/core/schema';
 import { TrampolinePipeline } from '@routier/core/pipeline';
 import { CallbackPartialResult, CallbackResult, PartialResultType, PluginEventResult, Result } from '@routier/core/results';
 import { BulkPersistChanges, BulkPersistResult, SchemaCollection, ReadonlySchemaCollection } from '@routier/core/collections';
@@ -10,9 +10,10 @@ import { UnknownRecord, uuid } from '@routier/core/utilities';
 import { View } from './views/View';
 import { ViewBuilder } from './view-builder/ViewBuilder';
 import { CollectionBase } from './collections/CollectionBase';
-import { CollectionDependencies } from './collections/types';
+import { CollectionDependencies, RequestContext } from './collections/types';
 import { ChangeTracker } from './change-tracking/ChangeTracker';
 import { DataBridge } from './data-access/DataBridge';
+import { QueryableComposer } from './queryable/composers/QueryableComposer';
 
 /**
  * The main Routier class, providing collection management, change tracking, and persistence for entities.
@@ -101,6 +102,12 @@ export class DataStore implements Disposable {
             throw new Error("View cannot have an identty key.  Must be a known/computed key so Routier can find and update the record");
         }
 
+        // Register schema immediately so it's available when derive() runs queries
+        // This prevents timing issues where queries from derive() run before the schema is registered
+        if (!this._schemas.has(schema.id)) {
+            this._schemas.set(schema.id, schema as CompiledSchema<UnknownRecord>);
+        }
+
         const onCreated = (view: View<TEntity>) => {
 
             if (this.collections.has(schema.id)) {
@@ -108,6 +115,7 @@ export class DataStore implements Disposable {
             }
 
             this.collections.set(schema.id, view);
+            // Schema is already registered above, but ensure it's set in case of race conditions
             this._schemas.set(schema.id, schema as CompiledSchema<UnknownRecord>);
         };
 

@@ -1,6 +1,6 @@
 import { generateData } from '@routier/test-utils';
 import { describe, it, expect, afterAll } from '@jest/globals';
-import { IDbPlugin, uuidv4 } from '@routier/core';
+import { IDbPlugin, logger, uuidv4 } from '@routier/core';
 import { MemoryPlugin } from '../MemoryPlugin';
 import { TestDataStore } from './datastore/MemoryDatastore';
 
@@ -36,7 +36,7 @@ describe("Performance Tests", () => {
         expect(avgTimePerOp).toBeLessThan(100); // Should be under 100μs per operation
         expect(totalTime).toBeLessThan(5000); // Should complete in under 5 seconds
 
-        console.log(`Performance: ${avgTimePerOp.toFixed(2)}μs per operation`);
+        logger.log(`Performance: ${avgTimePerOp.toFixed(2)}μs per operation`);
     });
 
     it("should save changes efficiently", async () => {
@@ -55,6 +55,6 @@ describe("Performance Tests", () => {
         const saveTime = endTime - startTime;
         expect(saveTime).toBeLessThan(1000); // Should save in under 1 second
 
-        console.log(`Save time: ${saveTime.toFixed(2)}ms for 1000 items`);
+        logger.log(`Save time: ${saveTime.toFixed(2)}ms for 1000 items`);
     });
 });

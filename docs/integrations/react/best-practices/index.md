@@ -415,11 +415,10 @@ test("useQuery returns data", async () => {
 1. Does my data change during the component's lifetime?
 2. Do I need to show initial data, or only changes?
 
-| Pattern               | Use When                                  | Syntax                             |
-| --------------------- | ----------------------------------------- | ---------------------------------- |
-| **Live subscription** | Data changes, need both initial + updates | `.subscribe().toArray(cb)`         |
-| **One-time query**    | Static data, fetch once                   | `.toArray(cb)` (no subscribe)      |
-| **Defer updates**     | Only show new data, ignore current        | `.subscribe().defer().toArray(cb)` |
+| Pattern               | Use When                                  | Syntax                        |
+| --------------------- | ----------------------------------------- | ----------------------------- |
+| **Live subscription** | Data changes, need both initial + updates | `.subscribe().toArray(cb)`    |
+| **One-time query**    | Static data, fetch once                   | `.toArray(cb)` (no subscribe) |
 
 ### Live Queries vs One-Time Queries
 
@@ -447,88 +446,6 @@ function ConfigDisplay() {
   );
   // Runs once, never updates - perfect for app configuration
 }
-```
-
-### When to Use `.defer()`
-
-The `.defer()` method skips the **first** query execution only, then listens to all subsequent changes:
-
-```tsx
-// Perfect for real-time notifications
-// Important: defer() must come before subscribe()
-function NotificationsFeed() {
-  const notifications = useQuery(
-    (callback) => dataStore.notifications.defer().subscribe().toArray(callback),
-    []
-  );
-
-  // Component mounts with pending state
-  // First query is skipped (only the first execution)
-  // When the first notification arrives, it queries and updates
-  // All subsequent notifications trigger queries normally
-  // User only sees new notifications, not historical ones
-}
-```
-
-**Important:** `.defer()` must be called **before** `.subscribe()` in the query chain. The order matters.
-
-**When to use `.defer()`:**
-
-- Activity feeds and notifications
-- Real-time chat messages (only new messages after mount)
-- Event-driven dashboards
-- Any scenario where you only care about changes, not current state
-
-**Real-world example - Chat Messages:**
-
-```tsx
-function ChatWindow() {
-  const dataStore = useDataStore();
-
-  // Only show NEW messages after user joins the chat
-  // Don't load entire chat history on mount
-  // Note: defer() comes before subscribe()
-  const messages = useQuery(
-    (callback) => dataStore.messages.defer().subscribe().toArray(callback),
-    []
-  );
-
-  return (
-    <div>
-      {messages.status === "pending" && (
-        <div>Joined chat. Waiting for messages...</div>
-      )}
-      {messages.status === "success" && (
-        <ul>
-          {messages.data?.map((msg) => (
-            <li key={msg.id}>{msg.text}</li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
-```
-
-**Comparison:**
-
-```tsx
-// Without .defer() - Loads all messages immediately
-const messages = useQuery(
-  (cb) => dataStore.messages.subscribe().toArray(cb),
-  []
-);
-// Shows: [message1, message2, message3, ...] (entire history)
-
-// With .defer() - Skips first execution, then shows all messages on changes
-// Note: defer() must come before subscribe()
-const messages = useQuery(
-  (cb) => dataStore.messages.defer().subscribe().toArray(cb),
-  []
-);
-// Shows: [] initially (first query skipped)
-// Then on first change: [message4, message5, ...] (all messages at that point)
-// Then on subsequent changes: updates with all current messages
 ```
 
 ## Common Patterns

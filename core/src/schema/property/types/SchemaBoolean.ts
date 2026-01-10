@@ -46,7 +46,7 @@ export class SchemaBoolean<T extends boolean, TModifiers extends SchemaModifiers
     }
 
     array() {
-        return new SchemaArray<typeof this, TModifiers>(this as any);
+        return new SchemaArray<typeof this, TModifiers>(this as unknown as SchemaArray<typeof this, TModifiers>);
     }
 
     index(...indexes: string[]) {

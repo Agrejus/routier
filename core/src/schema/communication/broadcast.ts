@@ -1,9 +1,10 @@
 import { now } from "../../performance";
-import { Tagged, uuid } from "../../utilities";
-import { CompiledSchema, CompiledSchemaCore, InferType, ISchemaSubscription, SchemaId, SubscriptionChanges } from "../types";
+import { Branded, uuid } from "../../utilities";
+import { CompiledSchemaCore, InferType, ISchemaSubscription, SchemaId, SubscriptionChanges } from "../types";
 
-type BroadcastChannelReceiverId = Tagged<string, "BroadcastChannelReceiverId">;
+type BroadcastChannelReceiverId = Branded<string, "BroadcastChannelReceiverId">;
 type SubscriptionListenerCallback<T> = (changes: StampedChanges<T>) => void;
+type BroadcastChannelType = InstanceType<typeof BroadcastChannel>;
 interface ISubscriptionAction<T> {
     action(changes: StampedChanges<T>): void
 }
@@ -38,7 +39,7 @@ class SchemaChannel<T> {
 
 class SchemaChannelSender<T> {
 
-    private readonly broadcastChannel: BroadcastChannel;
+    private readonly broadcastChannel: BroadcastChannelType;
 
     constructor(schemaId: SchemaId) {
         this.broadcastChannel = new BroadcastChannel(`__routier-schema-subscription-channel:${schemaId}`);
@@ -51,7 +52,7 @@ class SchemaChannelSender<T> {
 
 class SchemaChannelReceiver<T> {
 
-    private readonly broadcastChannel: BroadcastChannel;
+    private readonly broadcastChannel: BroadcastChannelType;
     private subscriptions: SubscriptionListener<T>[] = [];
 
     constructor(schemaId: SchemaId) {

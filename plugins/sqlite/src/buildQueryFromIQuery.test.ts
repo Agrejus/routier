@@ -1,6 +1,6 @@
 import { describe, it, expect, jest } from '@jest/globals';
 import { buildFromQueryOperation } from './utils';
-import { DbPluginQueryEvent } from '@routier/core/plugins';
+import { DbPluginQueryEvent, ITranslatedValue } from '@routier/core/plugins';
 import { s } from '@routier/core/schema';
 import { SqliteDbPlugin } from './SqliteDbPlugin';
 import { PluginEventCallbackResult } from '@routier/core/results';
@@ -22,7 +22,7 @@ class SqliteTestPlugin extends SqliteDbPlugin {
         this.onQuery = onQuery;
     }
 
-    override query<TRoot extends {}, TShape extends unknown = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<TShape>): void {
+    override query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
         this.onQuery(event);
         // Don't call done() - we only care about capturing the query structure
     }

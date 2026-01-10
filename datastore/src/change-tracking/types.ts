@@ -23,7 +23,7 @@ export interface IChangeTrackerStrategy<T extends {}> {
     prepareAdditions(): SchemaPersistChanges<T>["adds"];
     getAttachmentsChanges(): SchemaPersistChanges<T>["updates"];
     mergeChanges(changes: SchemaPersistResult<T>): void;
-    clearAdditions(): void;
+    clearChanges(): void;
     instance(entities: InferCreateType<T>[], changeTrackingType: ChangeTrackingType): Generator<InferType<T>, void, unknown>;
     getAndDestroyTags(): TagCollection;
     detach(entities: InferType<T>[]): InferType<T>[];

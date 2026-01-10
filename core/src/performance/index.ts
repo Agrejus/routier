@@ -1,3 +1,5 @@
+import { logger } from "../utilities";
+
 const measurements: Record<string, number> = {}
 
 export const now = (): number => {
@@ -21,6 +23,6 @@ export const measure = {
 
         const delta = now() - start;
 
-        console.log(`[ROUTIER] - Performance: ${name} took ${delta}`);
+        logger.log(`[ROUTIER] - Performance: ${name} took ${delta}`);
     }
 }

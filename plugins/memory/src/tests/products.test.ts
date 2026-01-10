@@ -215,7 +215,14 @@ describe("Product Tests", () => {
             await seedData(dataStore, () => dataStore.products, 20);
 
             // Act
-            await dataStore.products.take(10).removeAsync();
+            const removals = await dataStore.products.take(10).removeAsync();
+
+            expect(removals.length).toBe(10);
+
+            const preview = await dataStore.previewChangesAsync();
+
+            expect(preview.aggregate.removes).toBe(10);
+
             const response = await dataStore.saveChangesAsync();
 
             expect(response.aggregate.size).toBe(10);
@@ -1580,34 +1587,6 @@ describe("Product Tests", () => {
         });
     });
 
-    describe('Defer', () => {
-
-        it('should not query first time when using defer', async () => {
-
-            // FAILING when running concurrently -> hanging
-            const dataStore = factory();
-
-            const cb = jest.fn();
-            dataStore.users.defer().where(x => x.address != null).firstOrUndefined(cb);
-
-            await wait(2000);
-
-            expect(cb).not.toHaveBeenCalled();
-        });
-
-        it('should query first time when not using defer', async () => {
-
-            const dataStore = factory();
-
-            const cb = jest.fn();
-            dataStore.users.where(x => x.address != null).firstOrUndefined(cb);
-
-            await wait(2000);
-
-            expect(cb).toHaveBeenCalled();
-        });
-    });
-
     describe('Method Binding Tests', () => {
         describe('Queryable Method Binding', () => {
             it('should bind where method correctly', async () => {
@@ -1680,17 +1659,6 @@ describe("Product Tests", () => {
 
                 expect(subscribedQuery).toBeDefined();
                 expect(typeof subscribedQuery.toArray).toBe('function');
-            });
-
-            it('should bind defer method correctly', async () => {
-                const dataStore = factory();
-                await seedData(dataStore, () => dataStore.products, 5);
-
-                const deferMethod = dataStore.products.defer;
-                const deferredQuery = deferMethod();
-
-                expect(deferredQuery).toBeDefined();
-                expect(typeof deferredQuery.toArray).toBe('function');
             });
         });
 
@@ -2216,25 +2184,6 @@ describe("Product Tests", () => {
 
                 const result = await parameterizedQuery.toArrayAsync();
                 expect(Array.isArray(result)).toBe(true);
-            });
-
-            it('should maintain method binding with deferred queries', async () => {
-                const dataStore = factory();
-                await seedData(dataStore, () => dataStore.products, 5);
-
-                // Test that defer method is properly bound by calling it
-                const deferMethod = dataStore.products.defer;
-                const deferredQuery = deferMethod();
-
-                // Test that the returned queryable has bound methods by calling them
-                const filteredQuery = deferredQuery.where(p => p.price > 100);
-                const mappedQuery = filteredQuery.map(p => p.name);
-                const sortedQuery = mappedQuery.sort(p => p);
-
-                // Test that the bound methods work correctly by executing the query
-                const callback = jest.fn();
-                sortedQuery.toArray(callback);
-                expect(callback).not.toHaveBeenCalled();
             });
         });
     });

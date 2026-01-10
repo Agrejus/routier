@@ -12,24 +12,18 @@
     "benchmark"
   ],
   "scripts": {
-    "build": "lerna run build",
+    "build": "npm run build --workspaces",
     "build:core": "cd core && npm run tsc",
     "build:routier": "cd routier && npm run tsc",
     "sync:examples": "node scripts/sync-doc-examples.mjs",
     "extract:doc-code": "node scripts/extract-doc-code.mjs",
     "docs:prepare": "npm run extract:doc-code && npm run sync:examples",
     "docs:fix-includes": "node scripts/fix-capture-includes.mjs",
-    "version:patch": "lerna version patch --conventional-commits",
-    "version:minor": "lerna version minor --conventional-commits",
-    "version:major": "lerna version major --conventional-commits",
     "bump": "node scripts/bump-version.mjs",
     "benchmark": "cd benchmark && npm run benchmark",
     "benchmark:memory": "cd benchmark && npm run benchmark:memory",
-    "publish:canary": "lerna publish --canary",
-    "publish": "lerna publish from-git",
-    "clean": "lerna clean",
-    "list": "lerna list",
-    "typedoc": "typedoc"
+    "typedoc": "typedoc",
+    "lint": "npm run lint --workspaces"
   },
   "author": "",
   "license": "ISC",
@@ -40,6 +34,9 @@
   "devDependencies": {
     "@babel/preset-env": "^7.28.3",
     "@types/jest": "^29.5.12",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0",
+    "eslint": "^8.55.0",
     "jest": "^29.7.0",
     "ts-jest": "^29.1.2",
     "typedoc": "^0.28.14",

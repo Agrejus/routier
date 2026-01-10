@@ -1,3 +1,6 @@
 {
-    "jest.runMode": "on-demand"
+    "jest.runMode": "on-demand",
+    "jest.autoRun": "off",
+    "jest.disabledWorkspaceFolders": [],
+    "jest.enable": true
 }

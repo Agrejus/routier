@@ -1,11 +1,11 @@
 import { CallbackResult, Result, ResultType } from "@routier/core/results";
-import { QuerySource } from "./QuerySource";
+import { QueryableExecutor } from "./QueryableExecutor";
 import { Filter, ParamsFilter, toExpression } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
 import { QueryOptionName } from "@routier/core/plugins";
 import { IdType } from "@routier/core/schema";
 import { CollectionDependencies, RequestContext } from "../collections/types";
-export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<Root, Shape> {
+export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExecutor<Root, Shape> {
 
     constructor(dependencies: CollectionDependencies<Root>, request: RequestContext<Root>) {
         super(dependencies, request);
@@ -23,10 +23,10 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QuerySource<R
         this.distinct = this.distinct.bind(this);
     }
 
-    remove(expression: Filter<Shape>, done: CallbackResult<never>): void;
-    remove<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<never>): void;
-    remove(done: CallbackResult<never>): void;
-    remove<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<never>, paramsOrDone?: P | CallbackResult<never>, done?: CallbackResult<never>): void {
+    remove(expression: Filter<Shape>, done: CallbackResult<Shape[]>): void;
+    remove<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<Shape[]>): void;
+    remove(done: CallbackResult<Shape[]>): void;
+    remove<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<Shape[]>, paramsOrDone?: P | CallbackResult<Shape[]>, done?: CallbackResult<Shape[]>): void {
 
         if (done != null) {
             // params expression

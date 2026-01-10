@@ -6,6 +6,7 @@ import { SchemaDefinition } from "./SchemaDefinition";
 import { SchemaNumber } from "./property/types/SchemaNumber";
 import { SchemaObject } from "./property/types/SchemaObject";
 import { SchemaString } from "./property/types/SchemaString";
+import { CollectionName } from "./types";
 
 export const s = {
     number: <T extends number[] = number[]>(...literals: T) => new SchemaNumber<T[number] extends never ? number : T[number], never>(null, literals),
@@ -14,5 +15,5 @@ export const s = {
     date: <T extends Date = Date>() => new SchemaDate<T, never>(),
     array: <T extends any>(schema: SchemaBase<T, never>) => new SchemaArray<SchemaBase<T, never>, never>(schema as any),
     object: <T extends {} = {}>(schema: T) => new SchemaObject<T, never>(schema),
-    define: <T extends {}>(collectionName: string, schema: T) => new SchemaDefinition<T>(collectionName, schema)
+    define: <T extends {}>(collectionName: string, schema: T) => new SchemaDefinition<T>(collectionName as CollectionName, schema)
 }

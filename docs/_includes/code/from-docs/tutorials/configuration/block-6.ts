@@ -7,7 +7,7 @@ const memoryPlugin = new MemoryPlugin("offline");
 const pouchDbPlugin = new PouchDbPlugin("remote");
 
 // Create replication between plugins
-const replicationPlugin = ReplicationDbPlugin.create({
+const replicationPlugin = new ReplicationDbPlugin({
   replicas: [memoryPlugin],
   source: pouchDbPlugin,
   read: memoryPlugin,
