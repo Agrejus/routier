@@ -1,1 +1,1 @@
-npm publish --tag beta
+npm publish

@@ -1,7 +1,7 @@
-import Dexie from 'dexie';
+import Dexie, { Collection, IndexableType } from 'dexie';
 import { convertToDexieSchema } from "./utils";
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue } from '@routier/core/plugins';
-import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
+import { CallbackResult, PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
 import { BulkPersistResult } from '@routier/core/collections';
 import { InferCreateType, PropertyInfo, SchemaTypes } from '@routier/core/schema';
 import { uuidv4 } from '@routier/core/utilities';
@@ -18,7 +18,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
         this.dbName = dbName;
     }
 
-    private _doWork<TResult>(event: DbPluginEvent, work: (db: Dexie, done: (result: TResult, error?: any) => void) => void, done: (result: TResult, error?: any) => void, shouldClose: boolean = true) {
+    private _doWork<TResult>(event: DbPluginEvent, work: (db: Dexie, done: PluginEventCallbackResult<TResult>) => void, done: PluginEventCallbackResult<TResult>, shouldClose: boolean = true) {
         const db = new Dexie(this.dbName);
 
         const stores = this.getSchemas(event);
@@ -26,16 +26,16 @@ export class DexiePlugin implements IDbPlugin, Disposable {
         db.version(1).stores(stores);
 
         try {
-            work(db, (result, error) => {
+            work(db, (result) => {
 
                 if (shouldClose) {
                     db.close();
                 }
 
-                done(result, error);
+                done(result);
             });
         } catch (e) {
-            done(null, e);
+            done(PluginEventResult.error(event.id, e));
         }
     }
 

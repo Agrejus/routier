@@ -1,4 +1,4 @@
-import { fastHash, HashType, IDbPlugin } from "@routier/core";
+import { IDbPlugin } from "@routier/core";
 import { DataStore } from "@routier/datastore";
 import { productsSchema } from "../schemas/product";
 import { commentsSchema, CreateComment } from "../schemas/comments";

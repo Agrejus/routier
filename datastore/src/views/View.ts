@@ -52,9 +52,6 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                         return cb([]);
                     }
 
-                    const schemas = new SchemaCollection();
-
-                    schemas.set(this.dependencies.schema.id, this.dependencies.schema as CompiledSchema<Record<string, unknown>>);
                     const operation = new BulkPersistChanges();
                     const schemaChanges = new SchemaPersistChanges();
 
@@ -98,7 +95,7 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                     persist({
                         id: uuid(8),
                         operation,
-                        schemas,
+                        schemas: this.dependencies.schemas,
                         source: "view"
                     }, (r) => {
 

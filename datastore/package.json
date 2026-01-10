@@ -1,6 +1,6 @@
 {
   "name": "@routier/datastore",
-  "version": "0.1.0-rc.1",
+  "version": "0.2.0",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "source": "./src/index.ts",
@@ -55,13 +55,13 @@
   ],
   "description": "Data abstraction layer that routes all database operations to any ORM or data store",
   "peerDependencies": {
-    "@routier/core": ">=0.1.0-rc.2"
+    "@routier/core": ">=0.2.0"
   },
   "dependencies": {
-    "@routier/memory-plugin": "^0.1.0-rc.1"
+    "@routier/memory-plugin": "^0.2.0"
   },
   "devDependencies": {
-    "@routier/core": "^0.1.0-rc.2",
+    "@routier/core": "^0.2.0",
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",
     "ts-loader": "^9.5.2",

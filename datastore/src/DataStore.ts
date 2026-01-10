@@ -102,6 +102,12 @@ export class DataStore implements Disposable {
             throw new Error("View cannot have an identty key.  Must be a known/computed key so Routier can find and update the record");
         }
 
+        // Register schema immediately so it's available when derive() runs queries
+        // This prevents timing issues where queries from derive() run before the schema is registered
+        if (!this._schemas.has(schema.id)) {
+            this._schemas.set(schema.id, schema as CompiledSchema<UnknownRecord>);
+        }
+
         const onCreated = (view: View<TEntity>) => {
 
             if (this.collections.has(schema.id)) {
@@ -109,6 +115,7 @@ export class DataStore implements Disposable {
             }
 
             this.collections.set(schema.id, view);
+            // Schema is already registered above, but ensure it's set in case of race conditions
             this._schemas.set(schema.id, schema as CompiledSchema<UnknownRecord>);
         };
 

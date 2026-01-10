@@ -2,11 +2,12 @@ import { faker } from '@faker-js/faker';
 import { describe, it, expect, afterAll } from '@jest/globals';
 import { generateData, seedData, wait } from '@routier/test-utils';
 import { CallbackResult, IDbPlugin, UnknownRecord, uuidv4 } from '@routier/core';
-import { MemoryPlugin } from '../MemoryPlugin';
-import { TestDataStore } from './datastore/MemoryDatastore';
+import { FileSystemPlugin } from '../FileSystemPlugin';
+import { TestDataStore } from './datastore/FileSystemDataStore';
+import path from "node:path"
 
 const generateDbName = () => `${uuidv4()}-db`;
-const pluginFactory: (dbname?: string) => IDbPlugin = (dbname?: string) => new MemoryPlugin(dbname ?? generateDbName());
+const pluginFactory: (dbname?: string) => IDbPlugin = (dbname?: string) => new FileSystemPlugin(path.join(__dirname, "../dbs"), dbname ?? generateDbName());
 const stores: TestDataStore[] = [];
 const factory = (dbname?: string) => {
 
