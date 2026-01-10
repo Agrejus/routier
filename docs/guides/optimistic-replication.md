@@ -96,7 +96,7 @@ import { DexiePlugin } from "@routier/dexie-plugin";
 import { DataStore } from "@routier/datastore";
 
 // Create the optimistic replication plugin
-const plugin = OptimisticReplicationDbPlugin.create({
+const plugin = new OptimisticReplicationDbPlugin({
   read: new MemoryPlugin("optimistic-memory"),
   source: new DexiePlugin("optimistic-db"),
   replicas: [], // Add more replica plugins if needed
@@ -147,7 +147,7 @@ const maintenanceSchema = s
   .compile();
 
 // Create the optimistic replication plugin
-const plugin = OptimisticReplicationDbPlugin.create({
+const plugin = new OptimisticReplicationDbPlugin({
   read: new MemoryPlugin("demo-optimistic-memory"),
   source: new DexiePlugin("demo-optimistic-db"),
   replicas: [],

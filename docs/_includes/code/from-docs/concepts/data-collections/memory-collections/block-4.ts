@@ -7,7 +7,7 @@ import { PouchDbPlugin } from "@routier/pouchdb-plugin";
 const memoryPlugin = new MemoryPlugin("offline");
 const pouchDbPlugin = new PouchDbPlugin("remote");
 
-const replicationPlugin = ReplicationDbPlugin.create({
+const replicationPlugin = new ReplicationDbPlugin({
   replicas: [memoryPlugin],
   source: pouchDbPlugin,
   read: memoryPlugin,
