@@ -4,7 +4,7 @@
   <img src="docs/assets/routier.svg" alt="Routier" width="140" height="140" />
 </p>
 
-> **⚠️ Beta Release** - This project is currently in beta. APIs may change between versions. Use with caution in production.
+> **⚠️ Release Candidate** - This project is currently a release candidate. APIs may change between versions. Use with caution in production.
 
 A reactive data toolkit for building fast, local-first apps. Define schemas, create collections, use live queries, and make optimistic mutations with a plugin model for any storage.
 
