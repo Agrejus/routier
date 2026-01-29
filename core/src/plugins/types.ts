@@ -47,8 +47,14 @@ export type DbPluginEvent = {
     /** Unique id of the event. */
     id: string;
 
-    /** Source of the request */
-    source: "data-store" | "collection" | "view" | "capability";
+    /** The class/component that triggered this event */
+    source: string;
+
+    /** The action/operation type being performed */
+    action: "query" | "persist" | "destroy";
+
+    /** Optional context about why this operation is happening */
+    reason?: string;
 }
 
 /**
@@ -75,18 +81,6 @@ export type ReplicationPluginOptions = {
      */
     read?: IDbPlugin;
 }
-
-export type OptimisticReplicationPluginOptions = {
-    /** The primary database plugin that handles all write operations, do not include in the list of replicas. */
-    source: IDbPlugin;
-
-    /** Array of replica database plugins that can be used for read operations. */
-    replicas: IDbPlugin[];
-
-    /** Must be a MemoryPlugin */
-    read: IDbPlugin;
-}
-
 
 export type EntityUpdateInfo<T extends {}> = {
     entity: InferType<T>,

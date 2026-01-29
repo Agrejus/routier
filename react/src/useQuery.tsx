@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Result, type ResultType } from "@routier/core/results";
 
-type LiveQueryState<T> =
+export type LiveQueryState<T> =
   | {
       status: "pending";
       loading: true;

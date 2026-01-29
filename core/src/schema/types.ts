@@ -96,7 +96,7 @@ export interface ISchemaSubscription<T extends {}> extends Disposable {
     onMessage(callback: (changes: SubscriptionChanges<T>) => void): void;
 }
 
-type Enrich<TEntity extends {}> = {
+export type Enrich<TEntity extends {}> = {
     (entity: InferType<TEntity>, changeTrackingType: ChangeTrackingType): InferType<TEntity>;
     (entity: InferCreateType<TEntity>, changeTrackingType: ChangeTrackingType): InferCreateType<TEntity>;
 }

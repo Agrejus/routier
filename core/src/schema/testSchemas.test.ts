@@ -1,6 +1,5 @@
 import { uuidv4 } from "../utilities";
 import { s } from "./builder";
-import { InferType } from "./types";
 
 declare const __brand: unique symbol;
 

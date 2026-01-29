@@ -38,8 +38,14 @@ export function assertInstanceOf<T extends new (...args: any[]) => any>(value: u
     }
 
     if (value != null && typeof value === "object" && "constructor" in value) {
-        throw new TypeError(`Value is not instance of type.  Type: ${value.constructor.name}`);
+        throw new TypeError(`value is not instance of type.  Type: ${value.constructor.name}`);
     }
 
-    throw new TypeError(`Value is not instance of type`);
+    throw new TypeError(`value is not instance of type`);
+}
+
+export function assertIsNumber(value: unknown): asserts value is number {
+    if (typeof value !== "number") {
+        throw new TypeError("value is not of type `number`");
+    }
 }

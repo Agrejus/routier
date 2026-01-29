@@ -74,6 +74,10 @@ describe('Parser', () => {
             {
                 getAssignmentPath: () => 'playerId',
                 type: SchemaTypes.String
+            },
+            {
+                getAssignmentPath: () => 'userId',
+                type: SchemaTypes.String
             }
         ]
     } as CompiledSchema<any>;
@@ -456,6 +460,20 @@ describe('Parser', () => {
                 expect(comp.strict).toBe(false);
                 expect((comp.left as ValueExpression).value).toEqual(['id1', 'id2', 'id3']);
                 expect((comp.right as PropertyExpression).property.getAssignmentPath()).toBe('playerId');
+            });
+
+            it('should parse parameterized filter with includes method using bracket notation with primaryKeyName (ServerDataStore scenario)', () => {
+                const primaryKeyName = "userId";
+                const recordIds = ['user-1', 'user-2', 'user-3'];
+                const expression = toExpression(mockSchema, ([x, p]: [any, { recordIds: string[], primaryKeyName: string }]) => p.recordIds.includes(x[p.primaryKeyName]), { recordIds, primaryKeyName });
+
+                expect(expression).toBeInstanceOf(ComparatorExpression);
+                const comp = expression as ComparatorExpression;
+                expect(comp.comparator).toBe('includes');
+                expect(comp.negated).toBe(false);
+                expect(comp.strict).toBe(false);
+                expect((comp.left as ValueExpression).value).toEqual(recordIds);
+                expect((comp.right as PropertyExpression).property.getAssignmentPath()).toBe('userId');
             });
         });
 

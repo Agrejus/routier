@@ -1,0 +1,75 @@
+# Exclude ALL node_modules to avoid symlink issues
+node_modules/
+**/node_modules/
+
+# Exclude test directories that may have symlinks
+test-utils/
+**/test-utils/
+
+# Exclude build artifacts
+dist/
+**/dist/
+*.log
+
+# Exclude development files
+.env
+.env.local
+.DS_Store
+*.md
+!sync-server/README.md
+
+# Exclude git
+.git/
+.gitignore
+
+# Exclude other packages we don't need for sync-server build
+docs/
+examples/
+react/
+scripts/
+*.config.js
+typedoc.json
+tsconfig*.json
+!sync-server/tsconfig.json
+!core/tsconfig.json
+!datastore/tsconfig.json
+!plugins/*/tsconfig.json
+
+# Exclude rspack configs except for packages we need to build
+*.config.mjs
+!core/rspack.config.mjs
+!datastore/rspack.config.mjs
+!plugins/sqlite/rspack.config.mjs
+!plugins/postgresql/rspack.config.mjs
+!plugins/mysql/rspack.config.mjs
+!plugins/memory/rspack.config.mjs
+
+# Exclude plugins we don't need (only copy what's needed)
+plugins/browser-storage/
+plugins/chrome-extension/
+plugins/dexie/
+plugins/electricsql-pglite/
+plugins/file-system/
+plugins/pouchdb/
+# Keep only the plugins sync-server needs
+!plugins/sqlite/
+!plugins/postgresql/
+!plugins/mysql/
+!plugins/memory/
+
+# Exclude datastore node_modules but keep source
+datastore/node_modules/
+datastore/jest.config.js
+
+# Exclude core node_modules but keep source
+core/node_modules/
+core/jest.config.js
+
+# Exclude plugin node_modules but keep source
+plugins/*/node_modules/
+
+# Keep package files
+!package.json
+!package-lock.json
+!**/package.json
+!**/package-lock.json

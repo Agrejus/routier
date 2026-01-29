@@ -3,12 +3,12 @@ import { InferCreateType, InferType, SchemaId } from "../schema";
 import { TagCollection } from "./TagCollection";
 export class BulkPersistResult extends Map<SchemaId, SchemaPersistResult> {
 
-    resolve(schemaId: SchemaId): SchemaPersistResult {
+    resolve<T extends {} = Record<string, unknown>>(schemaId: SchemaId): SchemaPersistResult<T> {
         if (this.has(schemaId)) {
             return this.get(schemaId);
         }
 
-        this.set(schemaId, new SchemaPersistResult());
+        this.set(schemaId, new SchemaPersistResult<T>());
 
         return this.get(schemaId);
     }
@@ -69,12 +69,12 @@ export class BulkPersistResult extends Map<SchemaId, SchemaPersistResult> {
 
 export class BulkPersistChanges extends Map<SchemaId, SchemaPersistChanges> {
 
-    resolve(schemaId: SchemaId): SchemaPersistChanges {
+    resolve<T extends {} = Record<string, unknown>>(schemaId: SchemaId): SchemaPersistChanges<T> {
         if (this.has(schemaId)) {
             return this.get(schemaId);
         }
 
-        this.set(schemaId, new SchemaPersistChanges());
+        this.set(schemaId, new SchemaPersistChanges<T>());
 
         return this.get(schemaId);
     }

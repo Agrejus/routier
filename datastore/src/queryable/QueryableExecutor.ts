@@ -89,13 +89,15 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
                 operation: new Query<TRoot, Shape>(splitQueryOptions.database as any, this.dependencies.schema),
                 schemas: this.dependencies.schemas,
                 id: uuid(8),
-                source: "collection"
+                source: "Collection",
+                action: "query"
             },
             memoryEvent: {
                 operation: new Query<TRoot, Shape>(splitQueryOptions.memory as any, this.dependencies.schema),
                 schemas: this.dependencies.schemas,
                 id: uuid(8),
-                source: "collection"
+                source: "Collection",
+                action: "query"
             }
         }
     }

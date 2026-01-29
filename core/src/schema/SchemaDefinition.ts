@@ -22,6 +22,7 @@ import { CollectionName, CompiledSchema, CompiledSchemaCore, GetHashTypeFunction
 import { DeepPartial } from '../types';
 import { SchemaSubscription } from './communication/broadcast';
 import { CompareIdsHandlerBuilder } from '../codegen/handlers/CompareIdsHandlerBuilder';
+import { StandardJSONSchemaV1, createStandardJsonSchemaProps, rehydrateSchemaFromJsonString } from './utils/standardJsonSchema';
 
 function createChangeTracker() {
     const DIRTY_ENTITY_MARKER: string = "isDirty";
@@ -105,11 +106,13 @@ function createChangeTracker() {
     }
 }
 
+
 export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
     instance: T;
     type = SchemaTypes.Definition;
     collectionName: CollectionName;
+    protected compiledSchema?: CompiledSchema<T>;
 
     constructor(collectionName: CollectionName, schema: T) {
         super();
@@ -117,6 +120,44 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
         this.instance = schema;
         this.isNullable = false;
         this.isOptional = false;
+    }
+
+    /**
+     * Creates a SchemaDefinition from a JSON string containing a JSON Schema.
+     * Parses the JSON string, rehydrates the schema structure, and compiles it.
+     * 
+     * @param jsonString - The JSON string containing the JSON Schema (typically from `schema['~standard'].jsonSchema.input()` or `output()`)
+     * @param collectionName - Optional collection name override (if not present in JSON Schema metadata)
+     * @returns A compiled schema ready to use
+     * @throws Error if the JSON string is invalid or doesn't contain a valid JSON Schema
+     * 
+     * @example
+     * ```typescript
+     * // Serialize a schema to JSON
+     * const jsonSchema = mySchema['~standard'].jsonSchema.input({ target: 'draft-2020-12' });
+     * const jsonString = JSON.stringify(jsonSchema);
+     * 
+     * // Rehydrate from JSON string
+     * const rehydratedSchema = SchemaDefinition.fromJson(jsonString);
+     * // Schema is already compiled and ready to use
+     * ```
+     */
+    static fromJson(jsonString: string, collectionName?: string): CompiledSchema<any> {
+        const schemaDefinition = rehydrateSchemaFromJsonString(jsonString, collectionName);
+        return schemaDefinition.compile();
+    }
+
+    /**
+     * Standard JSON Schema V1 implementation.
+     * Provides JSON Schema conversion for Routier schemas.
+     */
+    get '~standard'(): StandardJSONSchemaV1.Props<InferCreateType<T>, InferType<T>> {
+        // Lazy compile if needed
+        if (!this.compiledSchema) {
+            this.compiledSchema = this.compile();
+        }
+
+        return createStandardJsonSchemaProps(this.compiledSchema);
     }
 
     private createReturnFunction<TResult>(builder: CodeBuilder): TResult {
@@ -250,6 +291,10 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
     }
 
     compile(): CompiledSchema<T> {
+        // Return cached compiled schema if available
+        if (this.compiledSchema) {
+            return this.compiledSchema;
+        }
 
         try {
             const schema = this;
@@ -631,10 +676,15 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                 }
             };
 
-            return {
+            const compiledSchema = {
                 createSubscription: (signal?: AbortSignal) => new SchemaSubscription(result, signal),
                 ...result
-            }
+            };
+
+            // Cache the compiled schema
+            this.compiledSchema = compiledSchema;
+
+            return compiledSchema;
         } catch (e) {
             throw new SchemaError(e, `Error compiling schema for collection: ${this.collectionName}`);
         }

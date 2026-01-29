@@ -96,7 +96,8 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                         id: uuid(8),
                         operation,
                         schemas: this.dependencies.schemas,
-                        source: "view"
+                        source: "View",
+                        action: "persist"
                     }, (r) => {
 
                         if (r.ok === Result.ERROR) {

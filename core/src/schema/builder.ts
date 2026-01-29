@@ -15,5 +15,5 @@ export const s = {
     date: <T extends Date = Date>() => new SchemaDate<T, never>(),
     array: <T extends any>(schema: SchemaBase<T, never>) => new SchemaArray<SchemaBase<T, never>, never>(schema as any),
     object: <T extends {} = {}>(schema: T) => new SchemaObject<T, never>(schema),
-    define: <T extends {}>(collectionName: string, schema: T) => new SchemaDefinition<T>(collectionName as CollectionName, schema)
+    define: <T extends {}>(collectionName: string, schema: T) => new SchemaDefinition<T>(collectionName as CollectionName, schema),
 }

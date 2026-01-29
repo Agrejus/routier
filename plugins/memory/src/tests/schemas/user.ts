@@ -1,17 +1,24 @@
-import { s, uuidv4 } from '@routier/core';
+import { InferCreateType, InferType, s } from '@routier/core';
 
-export const usersSchema = s.define("users", {
-    id: s.string().key().default(x => x.uuid(), { uuid: uuidv4 }),
-    firstName: s.string(),
-    lastName: s.string(),
-    age: s.number(),
-    createdDate: s.date().default(() => new Date("01/01/1900 8:00 AM")),
-    address: s.object({
-        street: s.string(),
-        city: s.string(),
-        state: s.string(),
-        zip: s.string()
-    })
+// Shared types for the client
+export type UUID = string;
+
+export const userSchema = s.define("users", {
+    id: s.string().constrain<UUID>().key().identity(),
+    userRef: s.string(),
+    isSuperAdmin: s.boolean().default(false),
+    createdAt: s.number(),
+    updatedAt: s.number().optional(),
+    metadataJson: s.object({
+        email: s.string().optional(),
+        firstName: s.string().optional(),
+        lastName: s.string().optional(),
+    }).optional(),
 }).modify(x => ({
-    documentType: x.computed((_, collectionName) => collectionName).tracked()
+    _collectionName: x.computed((_, collectionName) => collectionName).tracked(),
+    createdDate: x.computed(e => new Date(e.createdAt)),
+    updatedDate: x.computed(e => e.updatedAt ? new Date(e.updatedAt) : null),
 })).compile();
+
+export type User = InferType<typeof userSchema>;
+export type CreatableUser = InferCreateType<typeof userSchema>;

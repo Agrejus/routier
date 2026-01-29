@@ -34,6 +34,7 @@ export class DataBridge<T extends {}> {
     }
 
     query<TShape>(event: DbPluginQueryEvent<T, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>) {
+        console.log("[OptimisticReplicationDbPlugin] QUERY", event);
         this.strategy.query(event, done);
     }
 
@@ -64,7 +65,8 @@ export class DataBridge<T extends {}> {
                     ephemeralPlugin.destroy({
                         id: uuid(8),
                         schemas: event.schemas,
-                        source: "collection"
+                        source: "DataBridge",
+                        action: "destroy"
                     }, () => { /* noop */ });
 
                     if (r.ok === Result.ERROR) {
