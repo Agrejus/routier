@@ -5,6 +5,7 @@ import { SchemaFrom } from "../modifiers/SchemaFrom";
 import { SchemaIdentity } from "../modifiers/SchemaIdentity";
 import { SchemaNullable } from "../modifiers/SchemaNullable";
 import { SchemaOptional } from "../modifiers/SchemaOptional";
+import { SchemaTag } from "../modifiers/SchemaTag";
 import { SchemaArray } from "./SchemaArray";
 
 export class SchemaObject<T extends {}, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {
@@ -40,5 +41,9 @@ export class SchemaObject<T extends {}, TModifiers extends SchemaModifiers> exte
 
     array() {
         return new SchemaArray<typeof this, TModifiers>(this as unknown as SchemaArray<typeof this, TModifiers>);
+    }
+
+    tag(...tags: string[]) {
+        return new SchemaTag<T, TModifiers>(tags, this);
     }
 }

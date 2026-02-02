@@ -1,22 +1,25 @@
-import { DefaultValue, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes } from "../../types";
+import { DefaultValue, PropertyDeserializer, PropertySerializer, SchemaModifiers } from "../../types";
 import { SchemaBase } from "../base/SchemaBase";
-import { SchemaDefault } from "../modifiers/SchemaDefault";
-import { SchemaDeserialize } from "../modifiers/SchemaDeserialize";
-import { SchemaDistinct } from "../modifiers/SchemaDistinct";
-import { SchemaFrom } from "../modifiers/SchemaFrom";
-import { SchemaIndex } from "../modifiers/SchemaIndex";
-import { SchemaNullable } from "../modifiers/SchemaNullable";
-import { SchemaOptional } from "../modifiers/SchemaOptional";
-import { SchemaReadonly } from "../modifiers/SchemaReadonly";
-import { SchemaSerialize } from "../modifiers/SchemaSerialize";
-import { SchemaTag } from "../modifiers/SchemaTag";
-import { SchemaArray } from "./SchemaArray";
+import { SchemaArray } from "../types";
+import { SchemaDefault } from "./SchemaDefault";
+import { SchemaDeserialize } from "./SchemaDeserialize";
+import { SchemaDistinct } from "./SchemaDistinct";
+import { SchemaFrom } from "./SchemaFrom";
+import { SchemaIndex } from "./SchemaIndex";
+import { SchemaNullable } from "./SchemaNullable";
+import { SchemaOptional } from "./SchemaOptional";
+import { SchemaReadonly } from "./SchemaReadonly";
+import { SchemaSerialize } from "./SchemaSerialize";
 
-export class SchemaDate<T extends Date, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {
-
+export class SchemaTag<T extends any, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {
     instance: T;
-    type = SchemaTypes.Date;
-    private _schemaDate = true;
+    private _schemaTag = true;
+
+    constructor(tags: string[], current: SchemaBase<T, TModifiers>) {
+        super(current);
+        this.tags = tags;
+        this.instance = current.instance;
+    }
 
     from(propertyName: string) {
         return new SchemaFrom<T, TModifiers>(propertyName, this);
@@ -33,6 +36,7 @@ export class SchemaDate<T extends Date, TModifiers extends SchemaModifiers> exte
     default<I = never>(value: DefaultValue<T, I>, injected?: I) {
         return new SchemaDefault<T, I, TModifiers | "default">(value, injected, this);
     }
+
     readonly() {
         return new SchemaReadonly<T, TModifiers | "readonly">(this);
     }
@@ -55,9 +59,5 @@ export class SchemaDate<T extends Date, TModifiers extends SchemaModifiers> exte
 
     distinct() {
         return new SchemaDistinct<T, TModifiers | "distinct">(this);
-    }
-
-    tag(...tags: string[]) {
-        return new SchemaTag<T, TModifiers>(tags, this);
     }
 }

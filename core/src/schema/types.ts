@@ -202,6 +202,7 @@ type InferPrimitive<T> =
 export type InferType<T> = T extends CompiledSchema<infer R> ? InferCompiledSchema<R> : T extends {} ? InferCompiledSchema<T> : T;
 export type InferCreateType<T> = T extends CompiledSchema<infer R> ? InferCompiledCreateSchema<R> : T extends {} ? InferCompiledCreateSchema<T> : unknown;
 export type InferMappedType<T> = T extends SchemaBase<infer K, infer __> ? InferType<K> : InferCompiledSchema<T>;
+export type InferRoot<T> = T extends CompiledSchema<infer R> ? R : never;
 
 type HasModifier<T, K extends keyof T, M extends SchemaModifiers> =
     T[K] extends SchemaBase<any, infer Mods> ?

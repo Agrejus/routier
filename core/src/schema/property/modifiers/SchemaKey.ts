@@ -3,6 +3,7 @@ import { SchemaIdentity } from "./SchemaIdentity";
 import { SchemaDefault } from "./SchemaDefault";
 import { DefaultValue, IdType, SchemaModifiers } from "../../types";
 import { SchemaFrom } from "./SchemaFrom";
+import { SchemaTag } from "./SchemaTag";
 
 export class SchemaKey<T extends IdType, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {
     instance: T;
@@ -24,5 +25,9 @@ export class SchemaKey<T extends IdType, TModifiers extends SchemaModifiers> ext
 
     from(propertyName: string) {
         return new SchemaFrom<T, TModifiers>(propertyName, this);
+    }
+
+    tag(...tags: string[]) {
+        return new SchemaTag<T, TModifiers>(tags, this);
     }
 }

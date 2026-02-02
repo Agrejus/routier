@@ -65,6 +65,8 @@ export class PropertyInfo<T extends {}> {
     readonly innerSchema?: SchemaBase<unknown, any>;
     /** Literal values allowed for this property. */
     readonly literals: T[];
+    /** Tags passed from the schema */
+    readonly tags: string[];
 
     /** The parent property, if any. */
     readonly parent?: PropertyInfo<T>;
@@ -97,6 +99,7 @@ export class PropertyInfo<T extends {}> {
         this.isDistinct = schema.isDistict;
         this.indexes = schema.indexes;
         this.from = schema.fromPropertyName;
+        this.tags = schema.tags;
 
         this.defaultValue = schema.defaultValue;
         this.valueSerializer = schema.valueSerializer;

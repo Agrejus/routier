@@ -82,8 +82,10 @@ describe('HttpSwrDbPlugin persistToStore', () => {
             done();
         });
 
-        expect(queryCalls).toHaveLength(1);
-        queryCalls[0].callback(PluginEventResult.success(event.id, { value: [] }));
+        setImmediate(() => {
+            expect(queryCalls).toHaveLength(1);
+            queryCalls[0].callback(PluginEventResult.success(event.id, { value: [] }));
+        });
     });
 
     it('classifies rows as adds or updates based on store result', (done) => {
@@ -104,9 +106,11 @@ describe('HttpSwrDbPlugin persistToStore', () => {
             done();
         });
 
-        queryCalls[0].callback(
-            PluginEventResult.success(event.id, { value: [{ id: 'a', name: 'Alice (cached)' }] })
-        );
+        setImmediate(() => {
+            queryCalls[0].callback(
+                PluginEventResult.success(event.id, { value: [{ id: 'a', name: 'Alice (cached)' }] })
+            );
+        });
     });
 
     it('calls applyBulkPersist with empty adds and updates when rows is empty', (done) => {
@@ -115,13 +119,18 @@ describe('HttpSwrDbPlugin persistToStore', () => {
 
         (plugin as any).persistToStore(event, translated, (result: unknown) => {
             expect((result as { ok: string }).ok).toBe(Result.SUCCESS);
-            expect(mockSwrStore.query).not.toHaveBeenCalled();
+            expect(mockSwrStore.query).toHaveBeenCalledTimes(1);
             expect(mockSwrStore.bulkPersist).toHaveBeenCalledTimes(1);
             const bulkEvent = bulkPersistCalls[0].event;
-            const schemaChanges = bulkEvent.operation.get(testSchema.id);
+            const schemaChanges = bulkEvent.operation.get(testSchema.id) as { adds: unknown[]; updates: unknown[]; removes: unknown[] };
             expect(schemaChanges.adds).toHaveLength(0);
             expect(schemaChanges.updates).toHaveLength(0);
+            expect(schemaChanges.removes).toHaveLength(0);
             done();
+        });
+
+        setImmediate(() => {
+            queryCalls[0].callback(PluginEventResult.success(event.id, { value: [] }));
         });
     });
 
@@ -140,7 +149,9 @@ describe('HttpSwrDbPlugin persistToStore', () => {
             done();
         });
 
-        queryCalls[0].callback(PluginEventResult.success(event.id, { value: [] }));
+        setImmediate(() => {
+            queryCalls[0].callback(PluginEventResult.success(event.id, { value: [] }));
+        });
     });
 
     it('reports error when query-by-ids fails', (done) => {
@@ -153,8 +164,10 @@ describe('HttpSwrDbPlugin persistToStore', () => {
             done();
         });
 
-        const err = new Error('store query failed');
-        queryCalls[0].callback(PluginEventResult.error(event.id, err));
+        setImmediate(() => {
+            const err = new Error('store query failed');
+            queryCalls[0].callback(PluginEventResult.error(event.id, err));
+        });
     });
 
     it('when server data has changed (property updated), persists update to SWR store and returns updated value', (done) => {
@@ -175,9 +188,11 @@ describe('HttpSwrDbPlugin persistToStore', () => {
             done();
         });
 
-        queryCalls[0].callback(
-            PluginEventResult.success(event.id, { value: [{ id: 'a', name: 'Alice Old' }] })
-        );
+        setImmediate(() => {
+            queryCalls[0].callback(
+                PluginEventResult.success(event.id, { value: [{ id: 'a', name: 'Alice Old' }] })
+            );
+        });
     });
 
     it('when store has same entity (schema.compare equal), does not add to updates', (done) => {
@@ -195,8 +210,10 @@ describe('HttpSwrDbPlugin persistToStore', () => {
             done();
         });
 
-        queryCalls[0].callback(
-            PluginEventResult.success(event.id, { value: [{ id: 'a', name: 'Alice' }] })
-        );
+        setImmediate(() => {
+            queryCalls[0].callback(
+                PluginEventResult.success(event.id, { value: [{ id: 'a', name: 'Alice' }] })
+            );
+        });
     });
 });

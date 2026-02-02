@@ -64,6 +64,4 @@ export const userProfileSchema = s.define("userProfiles", {
 
     // Computed: Collection metadata (tracked so it saves to the underlying datastore)
     documentType: w.computed((_, collectionName) => collectionName).tracked()
-})).modify(x => ({
-    documentType: x.computed((_, collectionName) => collectionName).tracked()
 })).compile();

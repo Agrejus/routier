@@ -25,7 +25,7 @@ export type LiveQueryState<T> =
 
 export function useQuery<T>(
   query: (callback: (result: ResultType<T>) => void) => void | (() => void),
-  deps: any[] = []
+  deps: unknown[] = [],
 ): LiveQueryState<T> {
   const [state, setState] = useState<LiveQueryState<T>>({
     status: "pending",
@@ -66,11 +66,14 @@ export function useQuery<T>(
 
     if (unsubscribe && typeof unsubscribe === "function") {
       unsubscribeRef.current = unsubscribe;
+    } else {
+      unsubscribeRef.current = null;
     }
 
     return () => {
       if (unsubscribeRef.current) {
         unsubscribeRef.current();
+        unsubscribeRef.current = null;
       }
     };
   }, deps);

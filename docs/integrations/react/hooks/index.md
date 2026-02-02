@@ -28,6 +28,8 @@ type LiveQueryState<T> =
 
 The hook uses `useEffect` internally, re-running your query when dependencies change and calling the cleanup function you return.
 
+**Important:** When you subscribe to a query inside `useQuery`, you **must return the unsubscribe handler** from your callback. The query chain (e.g. `.subscribe().where(...).firstOrUndefined(callback)`) returns that handler. If you use a block body, explicitly `return` it so the hook can clean up on unmount or when dependencies change—otherwise you risk subscription leaks and stale updates.
+
 ## API
 
 ```ts
@@ -39,7 +41,7 @@ function useQuery<T>(
 
 **Parameters:**
 
-- `subscribe` - Function that creates your subscription and calls the callback with results
+- `subscribe` - Function that creates your subscription and calls the callback with results. **Must return** the unsubscribe handler (the return value of the query chain, e.g. `.subscribe().toArray(callback)`) so the hook can clean up.
 - `deps` - Optional dependency array (works like `useEffect` dependencies)
 
 **Returns:** A state object with `status`, `loading`, `error`, and `data` properties
@@ -48,10 +50,10 @@ function useQuery<T>(
 
 ### With `.subscribe()` - Live Updates
 
-Calling `.subscribe()` creates a live query that **automatically re-runs** when data changes:
+Calling `.subscribe()` creates a live query that **automatically re-runs** when data changes. You **must return** the unsubscribe handler so `useQuery` can clean up:
 
 ```tsx
-// ✅ Live updates - re-renders when products change
+// ✅ Live updates - return the query so useQuery can unsubscribe
 const products = useQuery(
   (callback) => dataStore.products.subscribe().toArray(callback),
   []
@@ -60,6 +62,21 @@ const products = useQuery(
 // When you add a product, the component automatically updates
 await dataStore.products.addAsync({ name: "New Product" });
 await dataStore.saveChangesAsync();
+```
+
+With a block body, explicitly return the result of the chain:
+
+```tsx
+// ✅ Return the unsubscribe handler (required for cleanup)
+const currentUserQuery = useQuery<User | undefined>(
+  (callback) => {
+    return dataStore.users
+      .subscribe()
+      .where(([u, p]) => u.userRef === p.sub, { sub: user.sub })
+      .firstOrUndefined(callback);
+  },
+  [dataStore, user?.sub, shouldRunUserQueries]
+);
 ```
 
 **Use `.subscribe()` when:**
@@ -162,9 +179,11 @@ For static data that doesn't need updates:
 | **Live Updates**   | `.subscribe().toArray(callback)` | Data changes, need initial + updates |
 | **One-Time Fetch** | `.toArray(callback)`             | Static data, fetch once only         |
 
+**Rule:** When using `.subscribe()`, **return** the query from your callback (e.g. `return dataStore.users.subscribe().where(...).firstOrUndefined(callback)`) so `useQuery` can unsubscribe on cleanup.
+
 **Examples:**
 
-- Products list (changes) → Use `.subscribe()`
+- Products list (changes) → Use `.subscribe()` and return the query
 - App config (static) → No `.subscribe()`
 
 ## Patterns and Best Practices
@@ -228,9 +247,26 @@ const results = useQuery(
 );
 ```
 
-### Cleanup Functions
+### Return the Unsubscribe Handler
 
-Return a cleanup function from your subscription:
+When you subscribe inside `useQuery`, the query chain returns an unsubscribe function. You **must** return it from your callback so the hook can clean up when the component unmounts or when dependencies change. If you don't, subscriptions leak and the component may not update correctly.
+
+- **Arrow expression:** `(callback) => dataStore.products.subscribe().toArray(callback)` — the return value is implicit.
+- **Block body:** use `return` so the handler is passed to `useQuery`:
+
+```tsx
+const currentUserQuery = useQuery<User | undefined>(
+  (callback) => {
+    return dataStore.users
+      .subscribe()
+      .where(([u, p]) => u.userRef === p.sub, { sub: user.sub })
+      .firstOrUndefined(callback);
+  },
+  [dataStore, user?.sub, shouldRunUserQueries]
+);
+```
+
+For custom subscriptions (e.g. `onChange`), return your cleanup function the same way:
 
 ```tsx
 const data = useQuery((callback) => {
@@ -249,8 +285,8 @@ const data = useQuery((callback) => {
 If your component doesn't re-render when data changes:
 
 - Ensure you're calling `.subscribe()` on your collection
+- **Return the unsubscribe handler** from your query callback (the query chain returns it; with a block body use `return`)
 - Check that dependencies are correctly specified in the deps array
-- Verify the cleanup function is being returned
 
 ### Invalid Hook Call
 
@@ -264,7 +300,7 @@ Common causes:
 
 Prevent leaks by:
 
-- Always returning cleanup functions from subscriptions
+- **Always return the unsubscribe handler** from your query callback—when using `.subscribe()`, return the result of the chain (e.g. `return dataStore.users.subscribe().where(...).firstOrUndefined(callback)`)
 - Not holding references to query results outside the hook
 - Using the deps array to prevent unnecessary re-subscriptions
 
