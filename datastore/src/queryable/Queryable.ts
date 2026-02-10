@@ -1,9 +1,7 @@
-import { TakeQueryable } from "./TakeQueryable";
-import { SkippedQueryable } from "./SkippedQueryable";
 import { SelectionQueryable } from "./SelectionQueryable";
 import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
-import { QueryOptionsCollection, QueryOrdering } from "@routier/core/plugins";
+import { QueryOrdering } from "@routier/core/plugins";
 import { SubscribedQueryable } from './SubscribedQueryable';
 import { CollectionDependencies, RequestContext } from "../collections/types";
 import { CompiledSchema, InferType } from "@routier/core/schema";
@@ -46,13 +44,12 @@ export class Queryable<Root extends {}, Shape, U> extends SelectionQueryable<Roo
 
     skip(amount: number) {
         this.setSkipQueryOption(amount);
-        return this.create(SkippedQueryable<Root, Shape, U>);
+        return this.create(Queryable<Root, Shape, U>);
     }
 
-    // cannot to a skip after a take
     take(amount: number) {
         this.setTakeQueryOption(amount);
-        return this.create(TakeQueryable<Root, Shape, U>);
+        return this.create(Queryable<Root, Shape, U>);
     }
 
     sort(expression: GenericFunction<Shape, Shape[keyof Shape]>) {

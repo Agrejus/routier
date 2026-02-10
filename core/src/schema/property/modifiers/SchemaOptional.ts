@@ -1,5 +1,6 @@
-import { SchemaModifiers } from "../../types";
+import { PropertyDeserializer, SchemaModifiers } from "../../types";
 import { SchemaBase } from "../base/SchemaBase";
+import { SchemaDeserialize } from "./SchemaDeserialize";
 import { SchemaNullable } from "./SchemaNullable";
 
 export class SchemaOptional<T extends any, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {
@@ -15,5 +16,9 @@ export class SchemaOptional<T extends any, TModifiers extends SchemaModifiers> e
 
     nullable() {
         return new SchemaNullable<T, TModifiers | "nullable">(this);
+    }
+
+    deserialize(deserializer: PropertyDeserializer<T | undefined>) {
+        return new SchemaDeserialize<T | undefined, TModifiers | "deserialize">(deserializer, this);
     }
 }

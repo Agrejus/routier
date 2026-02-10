@@ -4,6 +4,7 @@ import { CallbackResult, PluginEventCallbackResult, PluginEventResult, PluginEve
 import { uuid } from "@routier/core/utilities";
 import { CollectionDependencies, RequestContext } from "../collections/types";
 import { QueryBuilderBase } from "./base/QueryBuilderBase";
+import { assertIsArray } from "@routier/core";
 
 export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryBuilderBase<TRoot, TShape, CollectionDependencies<TRoot>> {
 
@@ -146,15 +147,21 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
                     return done(PluginEventResult.success(memoryEvent.id, translatedEnrichedData.value));
                 }
 
+                console.log("POST", {
+                    translated: translatedEnrichedData.value,
+                    original: result.data.value
+                })
+
                 // Resolve the data with the current attachments - optimized: use for loop instead of forEach
-                const dataArray = result.data.value as unknown[];
-                for (let i = 0, length = dataArray.length; i < length; i++) {
-                    this.dependencies.changeTracker.resolve(dataArray[i] as InferType<TRoot>, tags, {
+                assertIsArray(translatedEnrichedData.value);
+
+                for (let i = 0, length = translatedEnrichedData.value.length; i < length; i++) {
+                    this.dependencies.changeTracker.resolve(translatedEnrichedData.value[i] as InferType<TRoot>, tags, {
                         merge: true
                     });
                 }
 
-                return done(PluginEventResult.success(memoryEvent.id, result.data.value as TShape));
+                return done(PluginEventResult.success(memoryEvent.id, translatedEnrichedData.value));
             }
 
             // No change tracking on the result, just return it as is

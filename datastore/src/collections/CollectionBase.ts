@@ -119,6 +119,10 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
 
             // Merge changes will unpause any change tracking that was paused previously
             // We should be more declarative about this 
+            console.log("afterPersist", {
+                resolvedChanges,
+                changeTracker: this.dependencies.changeTracker
+            })
             const { updates, adds, removals } = this.dependencies.changeTracker.mergeChanges(resolvedChanges);
 
             // clear after we merge changes

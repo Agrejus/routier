@@ -134,6 +134,14 @@ describe('Data Store', () => {
             await store.simple.addAsync({ id: 1, name: 'name' });
             await store.saveChangesAsync();
 
+            let query = store.simple.toQueryable();
+
+            query = query.where(x => x.id == 1);
+            query = query.take(1);
+            query = query.skip(1);
+
+            query = query.sort(x => x.id);
+
             const found = await store.simple.tag("test").firstAsync();
 
             found.name = "updated";

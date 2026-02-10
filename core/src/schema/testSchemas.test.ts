@@ -1,5 +1,6 @@
 import { uuidv4 } from "../utilities";
 import { s } from "./builder";
+import { InferCreateType, InferType } from "./types";
 
 declare const __brand: unique symbol;
 
@@ -230,6 +231,39 @@ export const complexTwoSchemaFactory = () => s.define("complexTwo", {
 })).modify(x => ({
     documentType: x.computed((_, collectionName) => collectionName).tracked()
 })).compile();
+
+export const optionalNumberWithDeserializer = () => s.define("optionalDateWithDeserializer", {
+    id: s.string().key(),
+    user: s.object({
+        name: s.string()
+    }).optional(),
+    content: s.string(),
+    replies: s.number().default(0),
+    createdAt: s.number().optional().deserialize(x => x ? Number(x) : undefined)
+}).compile();
+
+export const nullableNumberWithDefault = () => s.define("nullableNumberWithDefault", {
+    id: s.string().key(),
+    user: s.object({
+        name: s.string()
+    }).optional(),
+    content: s.string(),
+    replies: s.number().default(0),
+    createdAt: s.number().nullable().default(null)
+}).compile();
+
+const x = nullableNumberWithDefault();
+
+type C = InferCreateType<typeof x>;
+
+function c(x: C) {
+
+}
+
+c({
+    content: "",
+    id: ""
+})
 
 export const factories = [
     optionalObjectSchemaFactory,

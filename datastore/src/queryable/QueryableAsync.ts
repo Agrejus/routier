@@ -1,7 +1,5 @@
 import { SelectionQueryableAsync } from "./SelectionQueryableAsync";
 import { Queryable } from "./Queryable";
-import { SkippedQueryableAsync } from "./SkippedQueryableAsync";
-import { TakeQueryableAsync } from "./TakeQueryableAsync";
 import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
 import { QueryOrdering } from "@routier/core/plugins";
@@ -37,12 +35,12 @@ export class QueryableAsync<Root extends {}, Shape> extends SelectionQueryableAs
 
     skip(amount: number) {
         this.setSkipQueryOption(amount);
-        return this.create(SkippedQueryableAsync<Root, Shape>);
+        return this.create(QueryableAsync<Root, Shape>);
     }
 
     take(amount: number) {
         this.setTakeQueryOption(amount);
-        return this.create(TakeQueryableAsync<Root, Shape>);
+        return this.create(QueryableAsync<Root, Shape>);
     }
 
     sort(expression: GenericFunction<Shape, Shape[keyof Shape]>) {

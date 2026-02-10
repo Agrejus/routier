@@ -181,4 +181,4 @@ export type Filterable<T extends any, P = any> = {
     filter: CompositeFilter<T, P>;
     /** Optional parameters for the filter. */
     params?: P;
-}
+};

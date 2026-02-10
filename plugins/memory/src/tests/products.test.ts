@@ -938,13 +938,22 @@ describe("Product Tests", () => {
         it("where + firstAsync", async () => {
             const dataStore = factory();
             // Arrange
-            await seedData(dataStore, () => dataStore.products);
+            await seedData(dataStore, () => dataStore.products, 1000);
+
+            await dataStore.products.addAsync({
+                category: "James DeMeuse",
+                inStock: false,
+                name: "test",
+                price: 100,
+                tags: []
+            });
+            await dataStore.saveChangesAsync();
 
             // Act
-            const found = await dataStore.products.where(w => w._id != "").firstAsync();
+            const found = await dataStore.products.where(w => w.category === "James DeMeuse").firstAsync();
 
             // Assert
-            expect(found).toBeDefined();
+            expect(found.category).toBe("James DeMeuse");
         });
 
         it("throws: where + firstAsync", async () => {

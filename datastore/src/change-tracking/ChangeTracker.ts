@@ -1,4 +1,4 @@
-import { ChangeTrackingType, CompiledSchema, IdType, InferCreateType, InferType } from "@routier/core/schema";
+import { ChangeTrackingType, CompiledSchema, HashType, IdType, InferCreateType, InferType } from "@routier/core/schema";
 import { ChangeTrackedEntity } from "../types";
 import { KnownKeyAdditions } from "./additions/KnownKeyAdditions";
 import { IAdditions } from "./additions/types";
@@ -91,6 +91,15 @@ export class ChangeTracker<TEntity extends {}> {
 
             // Need to deserialize so we can match properly
             const deserializedAdd = this.schema.deserialize(add);
+
+            const hash = this.schema.hash(deserializedAdd as any, HashType.Object);
+
+            console.log("HASH", {
+                hash,
+                additions: this.additions,
+                deserializedAdd,
+                add
+            });
 
             const found = this.additions.get(deserializedAdd);
 

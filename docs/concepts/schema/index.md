@@ -79,6 +79,7 @@ Routier provides a fluent, type-safe schema builder API:
 
 - **[Property Types](property-types/README.md)** - Available property types and their capabilities
 - **[Modifiers](modifiers/README.md)** - All available property modifiers and constraints
+- **[Optional vs nullable over HTTP](modifiers/README.md#optional-vs-nullable-over-http)** - Sending missing values safely over JSON
 - **[InferType](infer-type.md)** - Type inference and type safety
 
 ### Reference

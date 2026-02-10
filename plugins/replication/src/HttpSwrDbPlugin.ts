@@ -5,20 +5,24 @@
  * - If cache is empty: fetches from source (HTTP), persists to store, then returns (blocking).
  * - If cache has data: returns it, then revalidates in background when cache is stale (maxAgeMs).
  * - When revalidate completes: compares with schema.compare; if different, persists to store and
- *   calls done() again so the UI updates.
+ *   On revalidate success, persists to store and notifies subscription handlers so the UI updates;
+ *   revalidate failures are not reported via done() (optional onRevalidateError callback for devs).
  */
 
 import {
     IDbPlugin,
+    DbPluginEvent,
     DbPluginQueryEvent,
     DbPluginBulkPersistEvent,
     ITranslatedValue,
 } from '@routier/core/plugins';
 import type { CompiledSchema, SchemaId, SubscriptionChanges } from '@routier/core/schema';
+import { HashType } from '@routier/core/schema';
 import {
     PluginEventCallbackResult,
     PluginEventCallbackPartialResult,
     PluginEventResult,
+    PluginEventResultType,
     Result,
 } from '@routier/core/results';
 import { BulkPersistResult, BulkPersistChanges, SchemaPersistChanges } from '@routier/core/collections';
@@ -41,17 +45,24 @@ export interface HttpSwrDbPluginOptions extends HttpPluginOptions {
     maxAgeMs?: number;
     /** Base delay (ms) for exponential backoff on bulkPersist retry. Default 1000. */
     bulkPersistRetryBaseDelayMs?: number;
-    /** Max delay (ms) between bulkPersist retries when offline. Default 60_000. No max attempt count for non-auth errors. */
+    /** Max delay (ms) between bulkPersist retries. Default 60_000. */
     bulkPersistRetryMaxDelayMs?: number;
-    /** Base delay (ms) for exponential backoff on query retry. Default 1000. */
+    /** Max number of bulkPersist attempts (including initial). Default 10. Auth errors (401/403) stop immediately. */
+    bulkPersistRetryMaxAttempts?: number;
+    /** Passed to HttpDbPlugin (query retry is handled there). Base delay (ms) for backoff. Default 1000. */
     queryRetryBaseDelayMs?: number;
-    /** Max delay (ms) between query retries when offline. Default 60_000. No max attempt count for non-auth errors. */
+    /** Passed to HttpDbPlugin (query retry is handled there). Max delay (ms) between retries. Default 60_000. */
     queryRetryMaxDelayMs?: number;
     /**
      * Called when the remote returns 401 or 403 so higher-level code can trigger re-authentication.
      * Invoked for both query and bulkPersist; use event.context to distinguish.
      */
     onAuthError?: (event: AuthErrorEvent) => void;
+    /**
+     * Called when background revalidate fails (e.g. offline, network error). Use for logging or toasts.
+     * Revalidate failures are not reported back via done(); the UI keeps showing cached data.
+     */
+    onRevalidateError?: (error: Error, context: { collectionName: string; cacheKey?: number }) => void;
     /**
      * IDbPlugin to use for persisting the unsynced queue (e.g. same as swrStore). No datastore required.
      * When set, the queue is stored via query/bulkPersist in a reserved collection (_routier_unsynced).
@@ -67,18 +78,31 @@ interface CacheMetadata {
 /** Result of comparing incoming rows with store + unsynced set during revalidate. */
 interface RevalidateClassification {
     adds: unknown[];
-    updates: { entity: unknown; changeType: 'propertiesChanged'; delta: Record<string, unknown> }[];
+    updates: { entity: unknown; changeType: 'markedDirty'; delta: Record<string, unknown> }[];
     removes: unknown[];
 }
 
-export class HttpSwrDbPlugin extends HttpDbPlugin {
+/** Single-schema task for bulk persist: POST payload + data needed to finalize on success. */
+interface BulkPersistTask {
+    url: string;
+    headers: Record<string, string>;
+    body: string;
+    collectionName: string;
+    schemaId: SchemaId;
+    schema: CompiledSchema<UnknownRecord>;
+    changes: SchemaPersistChanges<UnknownRecord>;
+    entitiesToRemoveFromQueue: unknown[];
+}
+
+export class HttpSwrDbPlugin implements IDbPlugin {
+    private readonly httpPlugin: HttpDbPlugin;
     private readonly swrStore: IDbPlugin;
     private readonly maxAgeMs: number;
     private readonly bulkPersistRetryBaseDelayMs: number;
     private readonly bulkPersistRetryMaxDelayMs: number;
-    private readonly queryRetryBaseDelayMs: number;
-    private readonly queryRetryMaxDelayMs: number;
+    private readonly bulkPersistRetryMaxAttempts: number;
     private readonly onAuthError?: (event: AuthErrorEvent) => void;
+    private readonly onRevalidateError?: (error: Error, context: { collectionName: string; cacheKey?: number }) => void;
     private readonly unsyncedQueue: UnsyncedQueue;
     private readonly cacheMetadata = new Map<number, CacheMetadata>();
     private readonly revalidateInFlight = new Map<number, Promise<void>>();
@@ -87,19 +111,41 @@ export class HttpSwrDbPlugin extends HttpDbPlugin {
         swrStore: IDbPlugin,
         options: HttpSwrDbPluginOptions,
     ) {
-        super(options);
+        this.httpPlugin = new HttpDbPlugin(options);
         this.swrStore = swrStore;
         this.maxAgeMs = options?.maxAgeMs ?? SWR_DEFAULTS.maxAgeMs;
         this.bulkPersistRetryBaseDelayMs = options?.bulkPersistRetryBaseDelayMs ?? SWR_DEFAULTS.bulkPersistRetryBaseDelayMs;
         this.bulkPersistRetryMaxDelayMs = options?.bulkPersistRetryMaxDelayMs ?? SWR_DEFAULTS.bulkPersistRetryMaxDelayMs;
-        this.queryRetryBaseDelayMs = options?.queryRetryBaseDelayMs ?? SWR_DEFAULTS.queryRetryBaseDelayMs;
-        this.queryRetryMaxDelayMs = options?.queryRetryMaxDelayMs ?? SWR_DEFAULTS.queryRetryMaxDelayMs;
+        this.bulkPersistRetryMaxAttempts = options?.bulkPersistRetryMaxAttempts ?? SWR_DEFAULTS.bulkPersistRetryMaxAttempts;
         this.onAuthError = options?.onAuthError;
+        this.onRevalidateError = options?.onRevalidateError;
         this.unsyncedQueue = new UnsyncedQueue(options?.unsyncedQueueStore);
         this.startBackgroundSync();
     }
 
-    /** Started automatically in constructor. Retries flushing unsynced items using bulkPersist retry delays. */
+    query<TRoot extends {}, TShape>(
+        event: DbPluginQueryEvent<TRoot, TShape>,
+        done: PluginEventCallbackResult<ITranslatedValue<TShape>>
+    ): void {
+        this.queryAsync(event, done).catch((err) => {
+            done(PluginEventResult.error(event.id, err instanceof Error ? err : new Error(String(err))));
+        });
+    }
+
+    bulkPersist(
+        event: DbPluginBulkPersistEvent,
+        done: PluginEventCallbackPartialResult<BulkPersistResult>
+    ): void {
+        this.bulkPersistAsync(event, done).catch((err) => {
+            done(PluginEventResult.error(event.id, err instanceof Error ? err : new Error(String(err))));
+        });
+    }
+
+    destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
+        this.httpPlugin.destroy(event, done);
+    }
+
+    /** Retries flushing unsynced items on a timer using bulkPersist retry delays. */
     private startBackgroundSync(): void {
         const run = (attempt: number) => {
             const delayMs = Math.min(
@@ -124,14 +170,14 @@ export class HttpSwrDbPlugin extends HttpDbPlugin {
         const collections = await this.unsyncedQueue.getUnsyncedCollections();
         if (collections.length === 0) return;
 
-        const headers = await this.requestHeaders();
+        const headers = await this.httpPlugin.requestHeaders();
 
         for (const collectionName of collections) {
             const { keys, entities } = await this.unsyncedQueue.getUnsyncedEntitiesForFlush(collectionName);
             if (entities.length === 0) continue;
 
             const body = JSON.stringify({ adds: entities, updates: [], removes: [] });
-            const url = this.collectionUrl(collectionName);
+            const url = this.httpPlugin.collectionUrl(collectionName);
             try {
                 await this.postWithRetry(url, headers, body, collectionName);
                 this.unsyncedQueue.removeByKeys(collectionName, keys);
@@ -140,6 +186,8 @@ export class HttpSwrDbPlugin extends HttpDbPlugin {
             }
         }
     }
+
+    // ─── Auth ─────────────────────────────────────────────────────────────────
 
     private notifyAuthError(event: AuthErrorEvent): void {
         try {
@@ -151,45 +199,6 @@ export class HttpSwrDbPlugin extends HttpDbPlugin {
 
     private getCacheKey<TRoot extends {}, TShape>(event: DbPluginQueryEvent<TRoot, TShape>): number {
         return event.operation.schema.id;
-    }
-
-    private queryRemoteWithRetry<TRoot extends {}, TShape>(
-        event: DbPluginQueryEvent<TRoot, TShape>,
-        onSuccess: (result: { ok: typeof Result.SUCCESS; data: ITranslatedValue<TShape> }) => void,
-        onFinalFailure: () => void
-    ): void {
-        const collectionName = event.operation.schema.collectionName;
-        const tryRemote = (attempt: number) => {
-            super.handleQuery(event, (sourceResult) => {
-                if (sourceResult.ok === Result.SUCCESS) {
-                    onSuccess(sourceResult);
-                    return;
-                }
-                const err = sourceResult.error;
-                if (isAuthError(err)) {
-                    const authEvent = buildAuthErrorEvent(err, 'query');
-                    if (authEvent) this.notifyAuthError(authEvent);
-                    logger.warn('[HttpSwrDbPlugin] query remote failed (auth), not retrying', {
-                        collectionName,
-                        attempt: attempt + 1,
-                    });
-                    onFinalFailure();
-                    return;
-                }
-                const delayMs = Math.min(
-                    this.queryRetryBaseDelayMs * Math.pow(2, attempt),
-                    this.queryRetryMaxDelayMs
-                );
-                logger.warn('[HttpSwrDbPlugin] query remote failed, retrying', {
-                    collectionName,
-                    attempt: attempt + 1,
-                    delayMs,
-                    error: err,
-                });
-                setTimeout(() => tryRemote(attempt + 1), delayMs);
-            });
-        };
-        tryRemote(0);
     }
 
     private isStale(cacheKey: number): boolean {
@@ -204,33 +213,35 @@ export class HttpSwrDbPlugin extends HttpDbPlugin {
         this.cacheMetadata.set(cacheKey, { lastRevalidatedAt: Date.now() });
     }
 
-    /**
-     * Compare incoming rows with store state + unsynced set: classify into adds, updates, removes.
-     */
+    /** Classify incoming server rows vs store + unsynced set into adds, updates, removes. */
     private classifyRevalidateChanges(
         schema: CompiledSchema<Record<string, unknown>>,
         incomingRows: unknown[],
         existingArr: unknown[],
         unsyncedKeys: Set<string>
     ): RevalidateClassification {
-        const existingById = new Map<ReturnType<CompiledSchema<Record<string, unknown>>['getIds']>[0], unknown>();
+        const existingById = new Map<string, unknown>();
         for (const e of existingArr) {
-            existingById.set(schema.getIds(e as never)[0], e);
+            existingById.set(schema.hash(e as never, HashType.Ids), e);
         }
-        const incomingIdSet = new Set(incomingRows.map((r) => schema.getIds(r as never)[0]));
+        const incomingIdSet = new Set(incomingRows.map((r) => schema.hash(r as never, HashType.Ids)));
 
-        const adds = incomingRows.filter((r) => !existingById.has(schema.getIds(r as never)[0]));
+        const adds = incomingRows.filter((r) => !existingById.has(schema.hash(r as never, HashType.Ids)));
         const updates = incomingRows
             .filter((r) => {
-                const id = schema.getIds(r as never)[0];
+                const id = schema.hash(r as never, HashType.Ids);
                 const existing = existingById.get(id);
                 return existing != null && !schema.compare(r as never, existing as never);
             })
-            .map((entity) => ({ entity, changeType: 'propertiesChanged' as const, delta: {} as Record<string, unknown> }));
+            .map((entity) => ({ entity, changeType: 'markedDirty' as const, delta: {} as Record<string, unknown> }));
+
         // Only remove from store if not in server response AND not in unsynced queue
         // (unsynced = written locally but not yet confirmed; keep in store until synced)
         const removes = existingArr.filter((e) => {
-            if (incomingIdSet.has(schema.getIds(e as never)[0])) return false;
+            if (incomingIdSet.has(schema.hash(e as never, HashType.Ids))) {
+                return false;
+            }
+
             return !unsyncedKeys.has(entityIdKey(schema, e));
         });
 
@@ -238,15 +249,14 @@ export class HttpSwrDbPlugin extends HttpDbPlugin {
     }
 
     /**
-     * Persist a revalidate classification to the SWR store and call done.
+     * Persist a revalidate classification to the SWR store. Resolves when the store has been updated.
      */
     private applyRevalidatePersist<TRoot extends {}, TShape>(
         event: DbPluginQueryEvent<TRoot, TShape>,
         schema: CompiledSchema<Record<string, unknown>>,
-        classification: RevalidateClassification,
-        translated: ITranslatedValue<TShape>,
-        done: PluginEventCallbackResult<ITranslatedValue<TShape>>
-    ): void {
+        classification: RevalidateClassification
+    ): Promise<void> {
+        const collectionName = schema.collectionName;
         const { adds, updates, removes } = classification;
         const bulkChanges = new BulkPersistChanges();
         const schemaChanges = bulkChanges.resolve(schema.id);
@@ -262,17 +272,16 @@ export class HttpSwrDbPlugin extends HttpDbPlugin {
             action: 'persist' as const,
             reason: 'revalidate',
         };
-        this.swrStore.bulkPersist(swrEvent, (persistResult) => {
-            if (persistResult.ok === Result.ERROR) {
-                logger.error('[HttpSwrDbPlugin] persistToStore failed', {
-                    collectionName: schema.collectionName,
-                    error: persistResult.error,
-                });
-                done(PluginEventResult.error(event.id, persistResult.error));
-                return;
-            }
-            this.notifySchemaSubscription(schema, classification);
-            done(PluginEventResult.success(event.id, translated));
+        return new Promise((resolve, reject) => {
+            this.swrStore.bulkPersist(swrEvent, (persistResult) => {
+                if (persistResult.ok === Result.ERROR) {
+                    this.onRevalidateError?.(persistResult.error, { collectionName });
+                    reject(persistResult.error);
+                    return;
+                }
+                this.notifySchemaSubscription(schema, classification);
+                resolve();
+            });
         });
     }
 
@@ -293,19 +302,11 @@ export class HttpSwrDbPlugin extends HttpDbPlugin {
         } as SubscriptionChanges<Record<string, unknown>>);
     }
 
-    /**
-     * Revalidate: fetch current from store, classify vs incoming rows (using unsynced set), persist diff to store.
-     */
-    private async persistToStore<TRoot extends {}, TShape>(
-        event: DbPluginQueryEvent<TRoot, TShape>,
-        translated: ITranslatedValue<TShape>,
-        done: PluginEventCallbackResult<ITranslatedValue<TShape>>
-    ): Promise<void> {
-        const schema = event.operation.schema as CompiledSchema<Record<string, unknown>>;
-        const value = translated.value;
-        const incomingRows: unknown[] = Array.isArray(value) ? [...value] : typeof value === 'object' && value != null ? [value] : [];
-
-        const storeQueryEvent: DbPluginQueryEvent<TRoot, TShape> = {
+    /** Builds a query event used to read current store state during revalidate (same operation, new id/source/reason). */
+    private buildRevalidateStoreQueryEvent<TRoot extends {}, TShape>(
+        event: DbPluginQueryEvent<TRoot, TShape>
+    ): DbPluginQueryEvent<TRoot, TShape> {
+        return {
             ...event,
             id: uuid(8),
             source: HttpSwrDbPlugin.name,
@@ -313,33 +314,88 @@ export class HttpSwrDbPlugin extends HttpDbPlugin {
             reason: 'revalidate-sync',
             operation: event.operation,
         };
+    }
 
-        this.swrStore.query(storeQueryEvent, async (queryResult) => {
-            if (queryResult.ok === Result.ERROR) {
-                logger.error('[HttpSwrDbPlugin] persistToStore store query failed', {
-                    collectionName: schema.collectionName,
-                    error: queryResult.error,
-                });
-                done(PluginEventResult.error(event.id, queryResult.error));
-                return;
-            }
+    /**
+     * Compares incoming server rows with current store + unsynced set, then persists the diff to the SWR store.
+     * Resolves when the store has been updated.
+     */
+    private async mergeRevalidateAndPersist<TRoot extends {}, TShape>(
+        event: DbPluginQueryEvent<TRoot, TShape>,
+        schema: CompiledSchema<Record<string, unknown>>,
+        incomingRows: unknown[],
+        currentStoreTranslated: ITranslatedValue<TShape>
+    ): Promise<void> {
+        const currentRows = this.queryResultToArray(currentStoreTranslated);
+        const unsyncedKeys = await this.unsyncedQueue.getUnsyncedIdKeys(schema.collectionName);
+        const classification = this.classifyRevalidateChanges(schema, incomingRows, currentRows, unsyncedKeys);
+        await this.applyRevalidatePersist(event, schema, classification);
+    }
 
-            const existingArr =
-                queryResult.data?.value != null && Array.isArray(queryResult.data.value)
-                    ? (queryResult.data.value as unknown[])
-                    : [];
-            const unsyncedKeys = await this.unsyncedQueue.getUnsyncedIdKeys(schema.collectionName);
-            const classification = this.classifyRevalidateChanges(schema, incomingRows, existingArr, unsyncedKeys);
+    /**
+     * Persist incoming server data when the cache was empty (cache miss). Does not query the store;
+     * we already know current state is empty from the initial swrStore.query. Resolves when the store has been updated.
+     */
+    private async persistOnCacheMiss<TRoot extends {}, TShape>(
+        event: DbPluginQueryEvent<TRoot, TShape>,
+        translated: ITranslatedValue<TShape>
+    ): Promise<void> {
+        const schema = event.operation.schema as CompiledSchema<Record<string, unknown>>;
+        const collectionName = schema.collectionName;
+        const incomingRows = this.queryResultToArray(translated);
+        const unsyncedKeys = await this.unsyncedQueue.getUnsyncedIdKeys(collectionName);
+        const classification = this.classifyRevalidateChanges(schema, incomingRows, [], unsyncedKeys);
+        await this.applyRevalidatePersist(event, schema, classification);
+    }
 
-            this.applyRevalidatePersist(event, schema, classification, translated, done);
+    /**
+     * Revalidate: persist incoming server data into the SWR store when we already have cached data.
+     * Queries the store once to get current state, then merges with incoming and persists the diff.
+     * Resolves when the store has been updated.
+     */
+    private persistToStore<TRoot extends {}, TShape>(
+        event: DbPluginQueryEvent<TRoot, TShape>,
+        translated: ITranslatedValue<TShape>
+    ): Promise<void> {
+        const schema = event.operation.schema as CompiledSchema<Record<string, unknown>>;
+        const collectionName = schema.collectionName;
+        const incomingRows = this.queryResultToArray(translated);
+        const storeQueryEvent = this.buildRevalidateStoreQueryEvent(event);
+
+        return new Promise((resolve, reject) => {
+            this.swrStore.query(storeQueryEvent, async (queryResult) => {
+                if (queryResult.ok === Result.ERROR) {
+                    this.onRevalidateError?.(queryResult.error, { collectionName });
+                    reject(queryResult.error);
+                    return;
+                }
+                try {
+                    await this.mergeRevalidateAndPersist(
+                        event,
+                        schema,
+                        incomingRows,
+                        queryResult.data
+                    );
+                    resolve();
+                } catch (err) {
+                    reject(err);
+                }
+            });
         });
+    }
+
+    private queryResultToArray<T>(translatedValue: ITranslatedValue<T>) {
+        const result: unknown[] = [];
+        translatedValue.forEach(item => {
+            result.push(item)
+        });
+        return result;
     }
 
     private startRevalidate<TRoot extends {}, TShape>(
         cacheKey: number,
         event: DbPluginQueryEvent<TRoot, TShape>,
-        cachedTranslated: ITranslatedValue<TShape>,
-        done: PluginEventCallbackResult<ITranslatedValue<TShape>>
+        cachedTranslated: ITranslatedValue<TShape>
     ): void {
         const collectionName = event.operation.schema.collectionName;
         const existing = this.revalidateInFlight.get(cacheKey);
@@ -350,7 +406,7 @@ export class HttpSwrDbPlugin extends HttpDbPlugin {
         }
 
         logger.debug('[HttpSwrDbPlugin] revalidate started', { collectionName, cacheKey });
-        const promise = this.runRevalidate(cacheKey, event, cachedTranslated, done);
+        const promise = this.runRevalidate(cacheKey, event, cachedTranslated);
         this.revalidateInFlight.set(cacheKey, promise);
         void promise.finally(() => {
             this.revalidateInFlight.delete(cacheKey);
@@ -360,87 +416,96 @@ export class HttpSwrDbPlugin extends HttpDbPlugin {
     private runRevalidate<TRoot extends {}, TShape>(
         cacheKey: number,
         event: DbPluginQueryEvent<TRoot, TShape>,
-        cachedTranslated: ITranslatedValue<TShape>,
-        done: PluginEventCallbackResult<ITranslatedValue<TShape>>
+        cachedTranslated: ITranslatedValue<TShape>
     ): Promise<void> {
         const collectionName = event.operation.schema.collectionName;
         return new Promise((resolve) => {
-            this.queryRemoteWithRetry(
-                event,
-                (sourceResult) => {
+            this.httpPlugin.query(event, (result) => {
+                if (result.ok === Result.SUCCESS) {
                     const schema = event.operation.schema as CompiledSchema<Record<string, unknown>>;
-                    const cachedArr = (cachedTranslated.value as unknown) as unknown[];
-                    const sourceArr = (sourceResult.data.value as unknown) as unknown[];
+                    const cachedArr = this.queryResultToArray(cachedTranslated);
+                    const sourceArr = this.queryResultToArray(result.data);
                     const same = resultSetsEqual(schema, cachedArr, sourceArr);
-                    this.setRevalidated(cacheKey);
-                    if (!same) {
-                        this.persistToStore(event, sourceResult.data, done);
+                    if (same) {
+                        this.setRevalidated(cacheKey);
+                        resolve();
+                    } else {
+                        this.persistToStore(event, result.data).then(
+                            () => {
+                                this.setRevalidated(cacheKey);
+                                resolve();
+                            },
+                            () => resolve()
+                        );
                     }
-                    resolve();
-                },
-                () => {
-                    logger.warn('[HttpSwrDbPlugin] revalidate source query failed, keeping cache', {
-                        collectionName,
-                        cacheKey,
-                    });
+                } else {
+                    this.onRevalidateError?.(result.error, { collectionName, cacheKey });
                     resolve();
                 }
-            );
+            });
         });
     }
 
-    /**
-     * handleQuery flow: 1) Query swrStore. 2) If empty → fetch from remote, persist, return.
-     * 3) If has data → return it; if stale → revalidate in background.
-     */
-    protected override async handleQuery<TRoot extends {}, TShape>(
+    private async queryAsync<TRoot extends {}, TShape>(
         event: DbPluginQueryEvent<TRoot, TShape>,
         done: PluginEventCallbackResult<ITranslatedValue<TShape>>
     ): Promise<void> {
         const cacheKey = this.getCacheKey(event);
-        const collectionName = event.operation.schema.collectionName;
-
         this.swrStore.query(event, (swrResponse) => {
+            const collectionName = event.operation.schema.collectionName;
             if (swrResponse.ok === Result.ERROR) {
                 logger.warn('[HttpSwrDbPlugin] swrStore query failed', { collectionName, error: swrResponse.error });
                 done(swrResponse);
                 return;
             }
 
-            const hasData =
-                swrResponse.data?.value != null &&
-                Array.isArray(swrResponse.data.value) &&
-                swrResponse.data.value.length > 0;
+            const hasData = !swrResponse.data.isEmpty;
 
             if (!hasData) {
-                logger.debug('[HttpSwrDbPlugin] cache miss, fetching from source', { collectionName });
-                this.queryRemoteWithRetry(
-                    event,
-                    (sourceResult) => {
-                        this.setRevalidated(cacheKey);
-                        this.persistToStore(event, sourceResult.data, done);
-                    },
+                this.onCacheMiss(event, cacheKey, done);
+                return;
+            }
+
+            done(swrResponse);
+
+            if (this.isStale(cacheKey)) {
+                setTimeout(() => this.startRevalidate(cacheKey, event, swrResponse.data), 0);
+            }
+        });
+    }
+
+    /**
+     * Cache was empty: fetch from remote, persist to store (no second store query), then complete.
+     */
+    private onCacheMiss<TRoot extends {}, TShape>(
+        event: DbPluginQueryEvent<TRoot, TShape>,
+        cacheKey: number,
+        done: PluginEventCallbackResult<ITranslatedValue<TShape>>
+    ): void {
+        const collectionName = event.operation.schema.collectionName;
+        logger.debug('[HttpSwrDbPlugin] cache miss, fetching from source', { collectionName });
+        this.httpPlugin.query(event, (result) => {
+            if (result.ok === Result.SUCCESS) {
+                this.persistOnCacheMiss(event, result.data).then(
                     () => {
-                        logger.warn('[HttpSwrDbPlugin] query remote failed, falling back to SWR store', {
-                            collectionName,
-                        });
-                        this.swrStore.query(event, (swrResult) => {
-                            done(swrResult);
-                        });
+                        this.setRevalidated(cacheKey);
+                        done(PluginEventResult.success(event.id, result.data));
+                    },
+                    (err) => {
+                        this.onRevalidateError?.(err, { collectionName });
+                        done(PluginEventResult.error(event.id, err instanceof Error ? err : new Error(String(err))));
                     }
                 );
                 return;
             }
-
-            const count = (swrResponse.data.value as unknown[]).length;
-            logger.debug('[HttpSwrDbPlugin] cache hit', { collectionName, count, stale: this.isStale(cacheKey) });
-            done(PluginEventResult.success(event.id, swrResponse.data));
-
-            if (this.isStale(cacheKey)) {
-                setTimeout(() => {
-                    this.startRevalidate(cacheKey, event, swrResponse.data, done);
-                }, 0);
+            if (isAuthError(result.error)) {
+                const authEvent = buildAuthErrorEvent(result.error, 'query');
+                if (authEvent) {
+                    this.notifyAuthError(authEvent);
+                }
             }
+            logger.warn('[HttpSwrDbPlugin] query remote failed, falling back to SWR store', { collectionName });
+            this.swrStore.query(event, done);
         });
     }
 
@@ -454,6 +519,7 @@ export class HttpSwrDbPlugin extends HttpDbPlugin {
                 reason: 'optimistic',
             };
             this.swrStore.bulkPersist(swrEvent, (persistResult) => {
+                console.log("persistToSwrStore", { persistResult })
                 if (persistResult.ok === Result.ERROR) {
                     reject(persistResult.error);
                     return;
@@ -471,8 +537,9 @@ export class HttpSwrDbPlugin extends HttpDbPlugin {
     ): Promise<void> {
         let lastError: Error | null = null;
         let attempt = 0;
+        const maxAttempts = this.bulkPersistRetryMaxAttempts;
 
-        for (; ;) {
+        while (attempt < maxAttempts) {
             try {
                 const res = await fetch(url, {
                     method: 'POST',
@@ -498,18 +565,21 @@ export class HttpSwrDbPlugin extends HttpDbPlugin {
 
             if (lastError != null && isAuthError(lastError)) break;
 
+            attempt++;
+            if (attempt >= maxAttempts) break;
+
             const delayMs = Math.min(
-                this.bulkPersistRetryBaseDelayMs * Math.pow(2, attempt),
+                this.bulkPersistRetryBaseDelayMs * Math.pow(2, attempt - 1),
                 this.bulkPersistRetryMaxDelayMs
             );
             logger.warn('[HttpSwrDbPlugin] bulkPersist failed, retrying', {
                 collectionName,
-                attempt: attempt + 1,
+                attempt,
+                maxAttempts,
                 delayMs,
                 error: lastError,
             });
             await new Promise((r) => setTimeout(r, delayMs));
-            attempt++;
         }
 
         if (lastError != null && isAuthError(lastError)) {
@@ -545,66 +615,84 @@ export class HttpSwrDbPlugin extends HttpDbPlugin {
         persistResult.removes.push(...removes);
     }
 
-    protected override async handleBulkPersist(
+    /**
+     * Persist to SWR store, then build one task per schema that has changes (queue add + POST payload).
+     */
+    private buildBulkPersistTasks(
+        event: DbPluginBulkPersistEvent,
+        headers: Record<string, string>
+    ): BulkPersistTask[] {
+        const tasks: BulkPersistTask[] = [];
+        for (const [schemaId, changes] of event.operation) {
+            if (!changes.hasItems) continue;
+
+            const schema = event.schemas.get<UnknownRecord>(schemaId);
+            assertIsNotNull(schema);
+
+            const { adds, updates, removes } = changes;
+            const collectionName = schema.collectionName;
+            const entitiesToTrack = [...adds, ...updates.map((u) => u.entity)];
+            if (entitiesToTrack.length > 0) {
+                this.unsyncedQueue.addMany(schema, entitiesToTrack);
+            }
+
+            logger.debug('[HttpSwrDbPlugin] bulkPersist', {
+                eventId: event.id,
+                schemaId,
+                collectionName,
+                adds: adds.length,
+                updates: updates.length,
+                removes: removes.length,
+            });
+
+            tasks.push({
+                url: this.httpPlugin.collectionUrl(collectionName),
+                headers,
+                body: this.formatRequestBody(changes, schema),
+                collectionName,
+                schemaId,
+                schema,
+                changes,
+                entitiesToRemoveFromQueue: [...entitiesToTrack, ...(removes as unknown[])],
+            });
+        }
+        return tasks;
+    }
+
+    private async bulkPersistAsync(
         event: DbPluginBulkPersistEvent,
         done: PluginEventCallbackPartialResult<BulkPersistResult>
     ): Promise<void> {
         const result = event.operation.toResult();
 
         try {
+            // We are subscribed to the SWR Store, not to the SWR Plugin,
+            // so we need to manually send back an notification
             await this.persistToSwrStore(event);
 
-            const headers = await this.requestHeaders();
-            const postTasks: Array<{
-                url: string;
-                headers: Record<string, string>;
-                body: string;
-                collectionName: string;
-                schemaId: SchemaId;
-                schema: CompiledSchema<UnknownRecord>;
-                changes: SchemaPersistChanges<UnknownRecord>;
-                entitiesToRemoveFromQueue: unknown[];
-            }> = [];
-
             for (const [schemaId, changes] of event.operation) {
-                if (!changes.hasItems) continue;
-
-                const schema = event.schemas.get<UnknownRecord>(schemaId);
-                assertIsNotNull(schema);
-
-                const { adds, updates, removes } = changes;
-                const collectionName = schema.collectionName;
-                const entitiesToTrack = [...adds, ...updates.map((u) => u.entity)];
-                if (entitiesToTrack.length > 0) {
-                    this.unsyncedQueue.addMany(schema, entitiesToTrack);
+                if (changes.hasItems === false) {
+                    continue;
                 }
 
-                logger.debug('[HttpSwrDbPlugin] bulkPersist', {
-                    eventId: event.id,
-                    schemaId,
-                    collectionName,
-                    adds: adds.length,
-                    updates: updates.length,
-                    removes: removes.length,
-                });
-
-                postTasks.push({
-                    url: this.collectionUrl(collectionName),
-                    headers,
-                    body: this.formatRequestBody(changes, schema),
-                    collectionName,
-                    schemaId,
-                    schema,
-                    changes,
-                    entitiesToRemoveFromQueue: [...entitiesToTrack, ...(removes as unknown[])],
+                const schema = event.schemas.get<UnknownRecord>(schemaId);
+                this.notifySchemaSubscription(schema, {
+                    adds: changes.adds,
+                    removes: changes.removes,
+                    updates: changes.updates.map((entity) => ({ entity, changeType: 'markedDirty' as const, delta: {} }))
                 });
             }
+
+            const headers = await this.httpPlugin.requestHeaders();
+            const postTasks = this.buildBulkPersistTasks(event, headers);
 
             const postResults = await Promise.allSettled(
                 postTasks.map((t) =>
                     this.postWithRetry(t.url, t.headers, t.body, t.collectionName)
                 )
             );
+
+            console.log("postWithRetry", postResults)
 
             for (let i = 0; i < postResults.length; i++) {
                 if (postResults[i].status === 'fulfilled') {

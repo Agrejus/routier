@@ -247,15 +247,20 @@ type InferCompiledSchema<T> = CoalesceEmpty<{
         [K in keyof T as HasModifier<T, K, "nullable"> extends true ? K : never]: null | InferPrimitive<T[K]>
     }>;
 
-type InferCompiledCreateSchema<T> = CoalesceEmpty<{
-    [K in keyof T as IsPlainCreateProperty<T, K> extends true ? K : never]: InferPrimitive<T[K]>
-}, {
+type InferCompiledCreateSchema<T> = CoalesceEmpty<
+    {
+        [K in keyof T as IsPlainCreateProperty<T, K> extends true ? K : never]: InferPrimitive<T[K]>
+    },
+    {
         [K in keyof T as HasModifier<T, K, "optional"> extends true ? K : never]?: InferPrimitive<T[K]>
-    }, {
-        [K in keyof T as HasModifier<T, K, "default"> extends true ? K : never]?: InferPrimitive<T[K]>
-    }, {
+    },
+    {
         [K in keyof T as HasModifier<T, K, "nullable"> extends true ? K : never]: null | InferPrimitive<T[K]>
-    }>;
+    },
+    {
+        [K in keyof T as HasModifier<T, K, "default"> extends true ? K : never]?: InferPrimitive<T[K]>
+    }
+>;
 
 type IsEmptyObject<T> = keyof T extends never ? true : false;
 type CoalesceEmpty<T1 extends {}, T2 extends {}, T3 extends {}, T4 extends {}> = (IsEmptyObject<T1> extends true ? {} : T1) & (IsEmptyObject<T2> extends true ? {} : T2) & (IsEmptyObject<T3> extends true ? {} : T3) & (IsEmptyObject<T4> extends true ? {} : T4);

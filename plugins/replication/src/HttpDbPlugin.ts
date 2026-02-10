@@ -7,7 +7,6 @@
  * Server exposes one controller per collection (e.g. api/data/bookings, api/data/users).
  * Use onGetUrl(collectionName) to override; default is ${baseUrl}/${collectionName}.
  *
- * - Skips client-scope properties in filters (configurable via clientScopePropertyNames; default includes _collectionName)
  * - ignoreQueryForCollections: no query params sent; server returns full allowed set
  */
 
@@ -18,24 +17,21 @@ import {
     DbPluginEvent,
     ITranslatedValue,
     JsonTranslator,
-    IQuery,
 } from '@routier/core/plugins';
-import type {
-    Expression,
-    ComparatorExpression,
-    OperatorExpression,
-    ValueExpression,
-    PropertyExpression,
-} from '@routier/core/expressions';
 import {
     PluginEventCallbackResult,
     PluginEventCallbackPartialResult,
     PluginEventResult,
 } from '@routier/core/results';
 import { BulkPersistResult } from '@routier/core/collections';
-import { logger } from '@routier/core/utilities';
+import { logger, UnknownRecord } from '@routier/core/utilities';
+import { CompiledSchema } from '@routier/core';
 
-type QueryParams = Record<string, string>;
+import {
+    buildQueryParams,
+    buildUrlWithQuery,
+    type QuerySerializationContext,
+} from './queryParamHelpers';
 
 export interface HttpPluginOptions {
     getUrl: (collectionName: string) => string;
@@ -47,209 +43,107 @@ export interface HttpPluginOptions {
      */
     ignoreQueryForCollections?: string[];
     /**
-     * Property names to exclude from the filter sent to the server (client-only scope).
-     * Defaults to ['_collectionName'] if not provided.
+     * Base delay (ms) for exponential backoff on query retry. When 0 or omitted, no retries (single attempt).
+     * 401/403 never retried; other failures retry with delay = min(base * 2^attempt, queryRetryMaxDelayMs).
      */
-    clientScopePropertyNames?: string[];
+    queryRetryBaseDelayMs?: number;
+    /** Max delay (ms) between query retries. Ignored when queryRetryBaseDelayMs is 0. */
+    queryRetryMaxDelayMs?: number;
+    /** Max number of query attempts (including initial). Default 10. 401/403 stop immediately. */
+    queryRetryMaxAttempts?: number;
+
+    translateRemoteResponse?: (schema: CompiledSchema<UnknownRecord>, data: unknown) => unknown
 }
 
-/** Context passed when serializing a query into request params. */
-export interface QuerySerializationContext {
-    ignoreQueryForCollections: string[];
-    clientScopePropertyNames: string[];
-}
+/** Re-export for consumers that need to type query serialization context. */
+export type { QuerySerializationContext } from './queryParamHelpers';
 
-function parseQueryResponse(body: unknown): unknown[] {
-    if (Array.isArray(body)) {
-        return body;
-    }
-    if (body && typeof body === 'object' && 'data' in body) {
-        const data = (body as { data: unknown }).data;
-        if (Array.isArray(data)) {
-            return data;
-        }
-    }
-    return [];
-}
-
-function isClientScopeProperty(expr: Expression, ctx: QuerySerializationContext): boolean {
-    return (
-        expr.type === 'property' &&
-        ctx.clientScopePropertyNames.includes((expr as PropertyExpression).property?.name ?? '')
-    );
-}
-
-/**
- * Converts a Routier Expression to the JSON shape expected by the server filter param.
- * Drops any comparator on client-scope properties (see clientScopePropertyNames).
- */
-function expressionToFilterJson(expr: Expression, ctx: QuerySerializationContext): unknown {
-    if (expr.type === 'operator') {
-        const op = expr as OperatorExpression;
-        const left = op.left ? expressionToFilterJson(op.left, ctx) : undefined;
-        const right = op.right ? expressionToFilterJson(op.right, ctx) : undefined;
-
-        if (left === undefined && right === undefined) {
-            return undefined;
-        }
-
-        if (left === undefined) {
-            return right;
-        }
-
-
-        if (right === undefined) {
-            return left;
-        }
-
-        return { type: 'operator', operator: op.operator ?? '&&', left, right };
-    }
-    if (expr.type === 'comparator') {
-        const cmp = expr as ComparatorExpression;
-        if (cmp.left && isClientScopeProperty(cmp.left, ctx)) {
-            return undefined;
-        }
-        return {
-            type: 'comparator',
-            comparator: cmp.comparator ?? 'equals',
-            negated: cmp.negated,
-            left: cmp.left ? expressionToFilterJson(cmp.left, ctx) : undefined,
-            right: cmp.right ? expressionToFilterJson(cmp.right, ctx) : undefined,
-        };
-    }
-    if (expr.type === 'property') {
-        const prop = expr as PropertyExpression;
-        const path = (prop.property as { getPathArray?: () => string[] })?.getPathArray?.();
-        return {
-            type: 'property',
-            name: prop.property?.name ?? '',
-            ...(path && path.length > 1 ? { path } : {}),
-        };
-    }
-    if (expr.type === 'value') {
-        const val = expr as ValueExpression;
-        const v = val.value instanceof Date ? val.value.toISOString() : val.value;
-        return { type: 'value', value: v };
-    }
-    return { type: 'value', value: (expr as unknown as { value?: unknown }).value };
-}
-
-function combineExpressionsAsAnd(expressions: Expression[], ctx: QuerySerializationContext): unknown {
-    if (expressions.length === 0) {
-        return undefined;
-    }
-    let acc: unknown = expressionToFilterJson(expressions[0], ctx);
-    for (let i = 1; i < expressions.length; i++) {
-        const right = expressionToFilterJson(expressions[i], ctx);
-        if (acc === undefined && right === undefined) {
-            acc = undefined;
-        } else if (acc === undefined) {
-            acc = right;
-        } else if (right === undefined) {
-            acc = acc;
-        } else {
-            acc = { type: 'operator', operator: '&&', left: acc, right };
-        }
-    }
-    return acc;
-}
-
-function getOrderedQueryOptions<TRoot extends {}, TShape>(
-    operation: IQuery<TRoot, TShape>
-): Array<{ name: string; value: unknown; index: number }> {
-    const items: Array<{ name: string; value: unknown; index: number }> = [];
-    for (const [name, collectionItems] of operation.options.items) {
-        for (const item of collectionItems) {
-            items.push({
-                name: name as string,
-                value: (item.option as { value: unknown }).value,
-                index: item.index,
-            });
-        }
-    }
-    items.sort((a, b) => a.index - b.index);
-    return items;
-}
-
-function buildQueryParams<TRoot extends {}, TShape>(
-    operation: IQuery<TRoot, TShape>,
-    ctx: QuerySerializationContext
-): QueryParams {
-    const { schema } = operation;
-    if (ctx.ignoreQueryForCollections.includes(schema.collectionName)) {
-        return {};
-    }
-
-    const params: QueryParams = {};
-    const ops = getOrderedQueryOptions(operation);
-
-    const filterOps = ops.filter((o) => o.name === 'filter' || o.name === 'where');
-    const sortOps = ops.filter((o) => o.name === 'sort');
-    const skipTakeOps = ops.filter((o) => o.name === 'skip' || o.name === 'take');
-
-    if (filterOps.length > 0) {
-        const expressions = filterOps
-            .map((o) => (o.value as { expression?: Expression })?.expression)
-            .filter(Boolean) as Expression[];
-        const filterJson = combineExpressionsAsAnd(expressions, ctx);
-        if (filterJson !== undefined) {
-            params.filter = JSON.stringify(filterJson);
-        }
-    }
-
-    if (sortOps.length > 0) {
-        params.sort = sortOps
-            .map(
-                (o) =>
-                    `${((o.value as { propertyName?: string }).propertyName ?? 'id')}:${((o.value as { direction?: string }).direction ?? 'asc')}`
-            )
-            .join(',');
-    }
-
-    for (const op of skipTakeOps) {
-        if (op.name === 'skip') {
-            params.skip = String(op.value);
-        }
-        if (op.name === 'take') {
-            params.take = String(op.value);
-        }
-    }
-
-    return params;
-}
-
-function buildUrlWithQuery(baseUrl: string, params: QueryParams): string {
-    const search = new URLSearchParams();
-    for (const [k, v] of Object.entries(params)) {
-        if (v !== undefined && v !== '') {
-            search.set(k, String(v));
-        }
-    }
-    const qs = search.toString();
-    return qs ? `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}${qs}` : baseUrl;
-}
+/** Result of a single HTTP query attempt (no retry decision). */
+type QueryAttemptResult<TShape> =
+    | { success: true; data: ITranslatedValue<TShape> }
+    | { success: false; error: Error; isAuthError: boolean; status?: number };
 
 export class HttpDbPlugin implements IDbPlugin {
     protected readonly getUrl: (collectionName: string) => string;
     protected readonly getHeaders?: () => Promise<Record<string, string>> | Record<string, string>;
     protected readonly querySerializationContext: QuerySerializationContext;
+    protected readonly translateRemoteResponse: (schema: CompiledSchema<UnknownRecord>, data: unknown) => unknown;
+    private readonly queryRetryBaseDelayMs: number;
+    private readonly queryRetryMaxDelayMs: number;
+    private readonly queryRetryMaxAttempts: number;
 
     constructor(options: HttpPluginOptions) {
         this.getUrl = options.getUrl;
         this.getHeaders = options.getHeaders;
+        this.translateRemoteResponse = options.translateRemoteResponse;
+        this.queryRetryBaseDelayMs = options.queryRetryBaseDelayMs ?? 0;
+        this.queryRetryMaxDelayMs = options.queryRetryMaxDelayMs ?? 60_000;
+        this.queryRetryMaxAttempts = options.queryRetryMaxAttempts ?? 10;
         this.querySerializationContext = {
             ignoreQueryForCollections: options.ignoreQueryForCollections ?? [],
-            clientScopePropertyNames: options.clientScopePropertyNames ?? ['_collectionName'],
         };
     }
 
-    protected collectionUrl(collectionName: string): string {
+    /** Exposed for composing plugins (e.g. HttpSwrDbPlugin) that need to build request URLs. */
+    collectionUrl(collectionName: string): string {
         return this.getUrl(collectionName);
     }
 
-    protected async requestHeaders(): Promise<Record<string, string>> {
+    /** Exposed for composing plugins that need to add auth or other headers to fetch/HTTP calls. */
+    async requestHeaders(): Promise<Record<string, string>> {
         const h = this.getHeaders?.();
         return h instanceof Promise ? h : (h ?? {});
+    }
+
+    private getRetryDelayMs(attempt: number): number {
+        return Math.min(
+            this.queryRetryBaseDelayMs * Math.pow(2, attempt),
+            this.queryRetryMaxDelayMs
+        );
+    }
+
+    /**
+     * Performs one GET request, parses and translates the response. Does not retry; returns success or failure with isAuthError.
+     */
+    private async executeQueryAttempt<TRoot extends {}, TShape>(
+        event: DbPluginQueryEvent<TRoot, TShape>,
+        url: string,
+        headers: Record<string, string>,
+        attempt: number
+    ): Promise<QueryAttemptResult<TShape>> {
+        const { operation } = event;
+        const { schema } = operation;
+        const collectionName = schema.collectionName;
+
+        try {
+            logger.debug('[HttpDbPlugin] query', { collectionName, eventId: event.id, attempt: attempt + 1 });
+            const res = await fetch(url, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json', ...headers },
+            });
+
+            if (!res.ok) {
+                const err = new Error(`HTTP ${res.status}: ${res.statusText}`);
+                const isAuthError = res.status === 401 || res.status === 403;
+                return {
+                    success: false,
+                    error: err,
+                    isAuthError,
+                    ...(isAuthError && { status: res.status as 401 | 403 }),
+                };
+            }
+
+            const body = await res.json();
+            const rows =
+                this.translateRemoteResponse != null
+                    ? this.translateRemoteResponse(schema as CompiledSchema<UnknownRecord>, body)
+                    : body;
+            const translated = new JsonTranslator(operation).translate(rows);
+            return { success: true, data: translated };
+        } catch (err) {
+            const error = err instanceof Error ? err : new Error(String(err));
+            return { success: false, error, isAuthError: false };
+        }
     }
 
     query<TRoot extends {}, TShape>(
@@ -266,33 +160,47 @@ export class HttpDbPlugin implements IDbPlugin {
         done: PluginEventCallbackResult<ITranslatedValue<TShape>>
     ): Promise<void> {
         const { operation } = event;
-        const { schema } = operation;
-        const collectionName = schema.collectionName;
-        try {
-            const params = buildQueryParams(operation, this.querySerializationContext);
-            const url = buildUrlWithQuery(this.collectionUrl(collectionName), params);
-            console.debug('[HttpDbPlugin] query', { collectionName, eventId: event.id });
+        const collectionName = operation.schema.collectionName;
+        const params = buildQueryParams(operation, this.querySerializationContext);
+        const url = buildUrlWithQuery(this.collectionUrl(collectionName), params);
+        const headers = await this.requestHeaders();
+        const maxAttempts = this.queryRetryMaxAttempts;
 
-            const headers = await this.requestHeaders();
-            const res = await fetch(url, {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json', ...headers },
-            });
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            const result = await this.executeQueryAttempt(event, url, headers, attempt);
 
-            if (!res.ok) {
-                console.warn('[HttpDbPlugin] query HTTP error', { collectionName, status: res.status, statusText: res.statusText });
-                throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+            if (result.success === true) {
+                done(PluginEventResult.success(event.id, result.data));
+                return;
             }
 
-            const body = await res.json();
-            const rows = parseQueryResponse(body);
-            const translated = new JsonTranslator(operation).translate(rows);
-            const count = Array.isArray(translated?.value) ? (translated.value as unknown[]).length : 0;
-            console.debug('[HttpDbPlugin] query success', { collectionName, rowCount: count });
-            done(PluginEventResult.success(event.id, translated));
-        } catch (err) {
-            console.error('[HttpDbPlugin] query failed', { collectionName, eventId: event.id, error: err });
-            done(PluginEventResult.error(event.id, err instanceof Error ? err : new Error(String(err))));
+            const { error, isAuthError, status } = result;
+            if (isAuthError) {
+                logger.warn('[HttpDbPlugin] query auth error, not retrying', {
+                    collectionName,
+                    status,
+                });
+                done(PluginEventResult.error(event.id, error));
+                return;
+            }
+
+            const hasMoreAttempts = attempt < maxAttempts - 1;
+            if (this.queryRetryBaseDelayMs > 0 && hasMoreAttempts) {
+                const delayMs = this.getRetryDelayMs(attempt);
+                logger.warn('[HttpDbPlugin] query failed, retrying', {
+                    collectionName,
+                    attempt: attempt + 1,
+                    maxAttempts,
+                    delayMs,
+                    error,
+                });
+                await new Promise((r) => setTimeout(r, delayMs));
+                continue;
+            }
+
+            logger.error('[HttpDbPlugin] query failed', { collectionName, eventId: event.id, error });
+            done(PluginEventResult.error(event.id, error));
+            return;
         }
     }
 
@@ -322,11 +230,9 @@ export class HttpDbPlugin implements IDbPlugin {
                 }
                 schemaIds.push(schemaId);
 
-                const adds = (changes.adds ?? []) as unknown[];
-                const updates = (changes.updates ?? []).map(
-                    (u: { entity?: unknown }) => u?.entity ?? u
-                ) as unknown[];
-                const removes = (changes.removes ?? []) as unknown[];
+                const adds = changes.adds;
+                const updates = changes.updates.map((u) => u.entity);
+                const removes = changes.removes;
 
                 console.debug('[HttpDbPlugin] bulkPersist', {
                     eventId: event.id,
@@ -344,6 +250,7 @@ export class HttpDbPlugin implements IDbPlugin {
                     headers: { 'Content-Type': 'application/json', ...headers },
                     body: JSON.stringify({ adds, updates, removes }),
                 });
+
                 if (!res.ok) {
                     console.warn('[HttpDbPlugin] bulkPersist HTTP error', {
                         collectionName: schema.collectionName,
@@ -354,9 +261,9 @@ export class HttpDbPlugin implements IDbPlugin {
                 }
 
                 const persistResult = result.get(schemaId);
-                (persistResult.adds as unknown[]).push(...adds);
-                (persistResult.updates as unknown[]).push(...updates);
-                (persistResult.removes as unknown[]).push(...removes);
+                persistResult.adds.push(...adds);
+                persistResult.updates.push(...updates);
+                persistResult.removes.push(...removes);
             }
             if (schemaIds.length > 0) {
                 console.debug('[HttpDbPlugin] bulkPersist success', { eventId: event.id, schemaIds });

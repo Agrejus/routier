@@ -135,6 +135,10 @@ Makes the property optional (can be undefined).
 
 **Available on:** All types
 
+#### Optional vs nullable over HTTP
+
+If a property is `.optional()`, its value can be `undefined`. Many HTTP/JSON serializers drop `undefined` fields, so the value may be omitted in transit. If you need the field to be sent over HTTP, prefer `.nullable().default(null)` so the payload includes an explicit `null`.
+
 ### `.nullable()`
 
 Makes the property nullable (can be null).
