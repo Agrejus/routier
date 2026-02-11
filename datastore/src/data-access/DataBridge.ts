@@ -4,7 +4,7 @@ import { MemoryPlugin } from "@routier/memory-plugin";
 import { DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue } from "@routier/core/plugins";
 import { PluginEventCallbackResult, Result } from "@routier/core/results";
 import { BulkPersistResult } from "@routier/core/collections";
-import { uuid, uuidv4 } from "@routier/core/utilities";
+import { logger, uuid, uuidv4 } from "@routier/core/utilities";
 import { CompiledSchema } from "@routier/core/schema";
 
 // Use a data bridge so we can abstract away some of the stuff
@@ -51,6 +51,13 @@ export class DataBridge<T extends {}> {
             // Has changes: check if any match the filter, then re-query if so
             const hasChanges = changes.adds.length > 0 || changes.updates.length > 0 || changes.removals.length > 0 || changes.unknown.length > 0;
             if (hasChanges) {
+
+                logger.info("[ROUTIER] DataBridge.subscribe() -> onMessage", {
+                    changes,
+                    event,
+                    collectionName: event.operation.schema.collectionName
+                });
+
                 // create a new plugin where we can quickly seed the changes and then query them
                 const ephemeralPlugin = new MemoryPlugin(uuidv4());
 
@@ -59,6 +66,11 @@ export class DataBridge<T extends {}> {
 
                 // query the temp db to check and see if items match the query
                 ephemeralPlugin.query(event, (r) => {
+
+                    logger.info("[ROUTIER] DataBridge.subscribe() -> ephemeralPlugin query result", {
+                        r,
+                        collectionName: event.operation.schema.collectionName
+                    });
 
                     ephemeralPlugin.destroy({
                         id: uuid(8),
@@ -72,7 +84,7 @@ export class DataBridge<T extends {}> {
                         return;
                     }
 
-                    if (r.data == null || (Array.isArray(r.data) && r.data.length === 0)) {
+                    if (r.data.isEmpty) {
                         return;
                     }
 

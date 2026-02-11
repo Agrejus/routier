@@ -92,15 +92,6 @@ export class ChangeTracker<TEntity extends {}> {
             // Need to deserialize so we can match properly
             const deserializedAdd = this.schema.deserialize(add);
 
-            const hash = this.schema.hash(deserializedAdd as any, HashType.Object);
-
-            console.log("HASH", {
-                hash,
-                additions: this.additions,
-                deserializedAdd,
-                add
-            });
-
             const found = this.additions.get(deserializedAdd);
 
             assertIsNotNull(found, () => {
@@ -109,6 +100,7 @@ export class ChangeTracker<TEntity extends {}> {
                 
 1. Entire document must be returned from the plugin for adds
 2. Serialization/deserialization must be set at the schema level if the underlying datastore does not support certain types. Ex.  Sqlite stores booleans as integers
+3. If sending over HTTP, remember, undefined will be serialzied as null over the wire.  Please use .nullable().default(() => null) to replace optional properties
 
 Internal Documents: ${JSON.stringify([...this.attachments.entries()], null, 2)}
 

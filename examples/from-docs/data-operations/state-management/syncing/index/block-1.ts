@@ -1,14 +1,21 @@
-import { PouchDbPlugin } from "routier-plugin-pouchdb";
+import PouchDB from "pouchdb";
+import express from "express";
+import expressPouchDB from "express-pouchdb";
+import cors from "cors";
 
-const plugin = new PouchDbPlugin("myapp", {
-  sync: {
-    remoteDb: "http://localhost:3000/myapp", // Remote database URL
-    live: true, // Enable live synchronization
-    retry: true, // Automatically retry failed syncs
-    onChange: (schemas, change) => {
-      // Handle sync events
-      console.log("Sync change:", change);
-      // Handle schema updates, conflicts, etc.
-    },
-  },
+const app = express();
+
+// Enable CORS for browser connections
+app.use(
+  cors({
+    origin: true,
+    credentials: true,
+  })
+);
+
+// Mount PouchDB at root
+app.use(expressPouchDB(PouchDB));
+
+app.listen(5984, () => {
+  console.log("CouchDB server running on http://127.0.0.1:5984");
 });

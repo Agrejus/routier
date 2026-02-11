@@ -1,16 +1,9 @@
-// Add multiple users at once
-const newUsers = await ctx.users.addAsync(
-  {
-    name: "Jane Smith",
-    email: "jane@example.com",
-    age: 25,
-  },
-  {
-    name: "Bob Johnson",
-    email: "bob@example.com",
-    age: 35,
-  }
+const products = await ctx.products.addAsync(
+  ...productData.map((p) => ({
+    name: p.name,
+    price: p.price,
+    category: p.category,
+    inStock: true,
+  }))
 );
-
-console.log(`Added ${newUsers.length} users`);
-// Output: Added 2 users
+await ctx.saveChangesAsync();

@@ -44,157 +44,63 @@ Routier queries are fluent and can only be performed through a collection. Build
 
 ### Getting All Results
 
-```ts
-// Get all products
-const allProducts = await ctx.products.toArrayAsync();
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-1.ts %}{% endhighlight %}
+
 
 ### Getting Single Items
 
-```ts
-// Get first product (throws if none exist)
-const firstProduct = await ctx.products.firstAsync();
 
-// Get first product or undefined if none exist
-const firstOrUndefined = await ctx.products.firstOrUndefinedAsync();
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-2.ts %}{% endhighlight %}
+
 
 ### Checking Existence
 
-```ts
-// Check if any products exist
-const hasProducts = await ctx.products.someAsync();
 
-// Check if all products are in stock
-const allInStock = await ctx.products.everyAsync((p) => p.inStock);
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-3.ts %}{% endhighlight %}
+
 
 ### Counting Items
 
-```ts
-// Count total products
-const totalCount = await ctx.products.countAsync();
 
-// Count products in specific category
-const electronicsCount = await ctx.products
-  .where((p) => p.category === "electronics")
-  .countAsync();
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-4.ts %}{% endhighlight %}
+
 
 ### Filtering Data
 
-```ts
-// Simple filtering
-const expensiveProducts = await ctx.products
-  .where((p) => p.price > 100)
-  .toArrayAsync();
 
-// Multiple filters
-const activeElectronics = await ctx.products
-  .where((p) => p.category === "electronics")
-  .where((p) => p.inStock === true)
-  .toArrayAsync();
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-5.ts %}{% endhighlight %}
 
-// Parameterized filtering
-const productsInRange = await ctx.products
-  .where((p, params) => p.price >= params.min && p.price <= params.max, {
-    min: 50,
-    max: 200,
-  })
-  .toArrayAsync();
-```
 
 ### Sorting Results
 
-```ts
-// Sort by price (ascending)
-const productsByPrice = await ctx.products.sort((p) => p.price).toArrayAsync();
 
-// Sort by price (descending)
-const expensiveFirst = await ctx.products
-  .orderByDescending((p) => p.price)
-  .toArrayAsync();
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-6.ts %}{% endhighlight %}
 
-// Multiple sort criteria
-const sortedProducts = await ctx.products
-  .sort((p) => p.category)
-  .sort((p) => p.name)
-  .toArrayAsync();
-```
 
 ### Field Selection and Transformation
 
-```ts
-// Select specific fields to reduce data transfer
-const productSummaries = await ctx.products
-  .map((p) => ({
-    id: p.id,
-    name: p.name,
-    price: p.price,
-  }))
-  .toArrayAsync();
 
-// Create computed fields on-the-fly
-const productsWithTax = await ctx.products
-  .map((p) => ({
-    id: p.id,
-    name: p.name,
-    price: p.price,
-    priceWithTax: p.price * 1.1,
-  }))
-  .toArrayAsync();
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-7.ts %}{% endhighlight %}
+
 
 ### Pagination
 
-```ts
-// Get first 10 products
-const firstPage = await ctx.products.take(10).toArrayAsync();
 
-// Get second page (skip first 10, take next 10)
-const secondPage = await ctx.products.skip(10).take(10).toArrayAsync();
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-8.ts %}{% endhighlight %}
 
-// Pagination helper
-const pageSize = 10;
-const pageNumber = 2; // 0-based
-const page = await ctx.products
-  .skip(pageSize * pageNumber)
-  .take(pageSize)
-  .toArrayAsync();
-```
 
 ### Aggregation Operations
 
-```ts
-// Sum prices of in-stock products
-const totalValue = await ctx.products
-  .where((p) => p.inStock === true)
-  .sumAsync((p) => p.price);
 
-// Get minimum and maximum prices
-const minPrice = await ctx.products.minAsync((p) => p.price);
-const maxPrice = await ctx.products.maxAsync((p) => p.price);
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-9.ts %}{% endhighlight %}
 
-// Get distinct categories
-const categories = await ctx.products.map((p) => p.category).distinctAsync();
-```
 
 ### Complex Queries
 
-```ts
-// Complex query with multiple operations
-const topExpensiveElectronics = await ctx.products
-  .where((p) => p.category === "electronics")
-  .where((p) => p.inStock === true)
-  .orderByDescending((p) => p.price)
-  .take(5)
-  .map((p) => ({
-    name: p.name,
-    price: p.price,
-    priceWithTax: p.price * 1.1,
-  }))
-  .toArrayAsync();
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-10.ts %}{% endhighlight %}
+
 
 ## Key Concepts
 
@@ -214,19 +120,9 @@ const topExpensiveElectronics = await ctx.products
 
 When filtering on computed properties (not stored in database), the filter runs in memory:
 
-```ts
-// Good: Database-backed filter first
-const expensiveElectronics = await ctx.products
-  .where((p) => p.category === "electronics") // Database filter
-  .where((p) => p.isExpensive === true) // Computed filter
-  .toArrayAsync();
 
-// Less efficient: Computed filter first
-const allExpensive = await ctx.products
-  .where((p) => p.isExpensive === true) // Loads all records
-  .where((p) => p.category === "electronics") // Then filters
-  .toArrayAsync();
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-11.ts %}{% endhighlight %}
+
 
 ## Related Topics
 

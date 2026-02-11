@@ -105,6 +105,8 @@ Multiple fields can share the same index name for compound indexing.
 
 Sets a default value for the property. Can accept either a direct value or a function that returns a value.
 
+**Note:** If the default value is `null`, return it from a function (e.g. `.default(() => null)`). Passing `null` directly does not work as intended.
+
 **Function Parameters:**
 
 - **`.default((injected) => value, { injected })`** - Function with injected dependencies

@@ -1,0 +1,1 @@
+import { s, InferType, InferCreateType } from "@routier/core/schema";

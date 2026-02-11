@@ -68,6 +68,10 @@
       url: /guides/attachments/
     - title: Overview
       url: /guides/index.md
+    - title: Local-First Apps
+      url: /guides/local-first-apps.md
+    - title: Plugin Compositions
+      url: /guides/plugin-compositions.md
     - title: Live Queries
       url: /guides/live-queries.md
     - title: State Management
@@ -82,10 +86,14 @@
       url: /guides/entity-tagging.md
     - title: Optimistic Replication
       url: /guides/optimistic-replication.md
+    - title: HttpSwrDbPlugin with Optimistic Replication
+      url: /guides/http-swr-with-optimistic.md
 
 - title: How-to Guides
   url: /how-to/
   children:
+    - title: Debug Logging
+      url: /how-to/debug-logging.md
     - title: CRUD Operations
       url: /how-to/crud/
       children:

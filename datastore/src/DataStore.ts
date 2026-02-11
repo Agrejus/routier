@@ -2,18 +2,17 @@ import { Collection } from './collections/Collection';
 import { CollectionBuilder } from './collection-builder/CollectionBuilder';
 import { CollectionPipelines } from './types';
 import { IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
-import { CompiledSchema, InferType, SchemaId } from '@routier/core/schema';
+import { CompiledSchema, SchemaId } from '@routier/core/schema';
 import { TrampolinePipeline } from '@routier/core/pipeline';
 import { CallbackPartialResult, CallbackResult, PartialResultType, PluginEventResult, Result } from '@routier/core/results';
 import { BulkPersistChanges, BulkPersistResult, SchemaCollection, ReadonlySchemaCollection } from '@routier/core/collections';
-import { UnknownRecord, uuid } from '@routier/core/utilities';
+import { logger, UnknownRecord, uuid } from '@routier/core/utilities';
 import { View } from './views/View';
 import { ViewBuilder } from './view-builder/ViewBuilder';
 import { CollectionBase } from './collections/CollectionBase';
-import { CollectionDependencies, RequestContext } from './collections/types';
+import { CollectionDependencies } from './collections/types';
 import { ChangeTracker } from './change-tracking/ChangeTracker';
 import { DataBridge } from './data-access/DataBridge';
-import { QueryableComposer } from './queryable/composers/QueryableComposer';
 
 /**
  * The main Routier class, providing collection management, change tracking, and persistence for entities.
@@ -147,6 +146,13 @@ export class DataStore implements Disposable {
                 source: "DataStore",
                 action: "persist"
             }, (bulkPersistResult) => {
+
+                logger.info("[ROUTIER] DataStore.onSavePreparedChanges() -> Result", {
+                    plugin: this.dbPlugin.constructor.name,
+                    changes,
+                    bulkPersistResult,
+                    schemas: this._schemas
+                });
 
                 if (bulkPersistResult.ok === Result.ERROR) {
                     done(Result.error(bulkPersistResult.error))

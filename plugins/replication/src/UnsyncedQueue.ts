@@ -49,8 +49,8 @@ function recordIdsKey(schema: CompiledSchema<Record<string, unknown>>, entity: u
 export class UnsyncedQueue {
     private readonly store: IDbPlugin;
 
-    constructor(plugin?: IDbPlugin) {
-        this.store = plugin ?? new MemoryPlugin('__routier_unsynced_queue__');
+    constructor(plugin: IDbPlugin) {
+        this.store = plugin;
     }
 
     /**
@@ -211,7 +211,7 @@ export class UnsyncedQueue {
         };
         this.store.bulkPersist(event, (result) => {
             if (result.ok === Result.ERROR) {
-                logger.warn('[UnsyncedQueue] store bulkPersist failed', { error: result.error });
+                logger.warn('[UnsyncedQueue] store bulkPersist failed', { error: result.error, event });
             }
         });
     }

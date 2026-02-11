@@ -47,72 +47,9 @@ Creating a custom plugin is straightforward—implement the `IDbPlugin` interfac
 
 ### Implementing the Interface
 
-```ts
-import {
-  IDbPlugin,
-  DbPluginQueryEvent,
-  DbPluginBulkPersistEvent,
-  DbPluginEvent,
-  ITranslatedValue,
-} from "@routier/core/plugins";
-import {
-  PluginEventCallbackResult,
-  PluginEventCallbackPartialResult,
-  PluginEventResult,
-} from "@routier/core/results";
-import { BulkPersistResult } from "@routier/core/collections";
-import { JsonTranslator } from "@routier/core/plugins/translators";
 
-export class MyCustomPlugin implements IDbPlugin {
-  private options: any;
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/built-in-plugins/index/block-2.ts %}{% endhighlight %}
 
-  constructor(options: any) {
-    this.options = options;
-  }
-
-  query<TRoot extends {}, TShape>(
-    event: DbPluginQueryEvent<TRoot, TShape>,
-    done: PluginEventCallbackResult<ITranslatedValue<TShape>>
-  ): void {
-    // Translate event.operation to your backend's query format
-    // Execute the query and use a translator to wrap results in ITranslatedValue
-    const translator = new JsonTranslator(event.operation);
-    const results: unknown[] = []; // Your query results here
-
-    // translate() automatically wraps results in ITranslatedValue to allow
-    // iteration (for grouped queries) and change tracking
-    const translatedValue = translator.translate(results);
-    done(PluginEventResult.success(event.id, translatedValue));
-  }
-
-  bulkPersist(
-    event: DbPluginBulkPersistEvent,
-    done: PluginEventCallbackPartialResult<BulkPersistResult>
-  ): void {
-    // event.operation contains ALL collections/views with changes
-    // You decide how to handle each schema's adds/updates/removes
-    const result = event.operation.toResult();
-
-    for (const [schemaId, changes] of event.operation) {
-      // Iterate through each schema's changes
-      const { adds, updates, removes, hasItems } = changes;
-      if (!hasItems) continue;
-
-      // Get schema for this collection
-      const schema = event.schemas.get(schemaId);
-
-      // Process adds, updates, removes for this schema
-    }
-
-    done(PluginEventResult.success(event.id, result));
-  }
-
-  destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
-    // Clean up resources, close connections
-    done(PluginEventResult.success(event.id));
-  }
-}
-```
 
 ### Important Considerations
 
@@ -148,22 +85,9 @@ For SQL backends, Routier provides `SqlTranslator` to help translate results bac
 
 The `bulkPersist` method receives **all collections and views** that have changes:
 
-```ts
-for (const [schemaId, changes] of event.operation) {
-  // schemaId is the schema identifier
-  // changes contains adds, updates, removes for this schema
 
-  const schema = event.schemas.get(schemaId);
-  const { adds, updates, removes, hasItems } = changes;
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/built-in-plugins/index/block-3.ts %}{% endhighlight %}
 
-  // hasItems tells you if there are any changes to process
-  if (!hasItems) continue;
-
-  // Process adds, updates, removes as needed
-  // Note: removes are typically executed first when updating
-  // the same collection (to avoid constraint violations)
-}
-```
 
 #### Schema Information
 
@@ -197,25 +121,17 @@ Use `TranslatedArrayValue` for array results or other implementations for differ
 
 For `bulkPersist`: You must populate the result object returned by `event.operation.toResult()`. After persisting, update the result:
 
-```ts
-const result = event.operation.toResult();
 
-// After persisting adds
-const { adds } = result.get(schemaId);
-adds.push(...persistedEntities);
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/built-in-plugins/index/block-4.ts %}{% endhighlight %}
 
-// Similar for updates and removes
-```
 
 #### Single Collection Datastores
 
 If your backend uses a single physical collection for all entities (like PouchDB), you need a way to separate entities by collection. Add a tracked computed property to schemas that stores the collection name:
 
-```ts
-.modify(x => ({
-  documentType: x.computed((_, collectionName) => collectionName).tracked()
-}))
-```
+
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/built-in-plugins/index/block-5.ts %}{% endhighlight %}
+
 
 Then filter by `documentType` when querying to ensure collections don't collide.
 

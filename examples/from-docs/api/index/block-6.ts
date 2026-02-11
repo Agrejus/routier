@@ -1,0 +1,1 @@
+collection.skip(10).take(20);

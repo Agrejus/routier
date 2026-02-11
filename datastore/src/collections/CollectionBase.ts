@@ -10,7 +10,7 @@ import { assertIsNotNull } from "@routier/core/assertions";
 import { GenericFunction } from "@routier/core/types";
 import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { CollectionDependencies, RequestContext } from "./types";
-import { unsafeCast } from "@routier/core";
+import { logger, unsafeCast } from "@routier/core";
 import { QueryableBuilder, QueryBuilderContext } from "../queryable/composers/QueryableBuilder";
 
 export class CollectionBase<TEntity extends {}> implements Disposable {
@@ -119,10 +119,6 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
 
             // Merge changes will unpause any change tracking that was paused previously
             // We should be more declarative about this 
-            console.log("afterPersist", {
-                resolvedChanges,
-                changeTracker: this.dependencies.changeTracker
-            })
             const { updates, adds, removals } = this.dependencies.changeTracker.mergeChanges(resolvedChanges);
 
             // clear after we merge changes
@@ -136,6 +132,11 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
                     removals,
                     unknown: []
                 };
+
+                logger.info("[ROUTIER] CollectionBase.afterPersist() -> Broadcast Changes", {
+                    subscriptionChanges
+                });
+
                 this.dependencies.subscription.send(subscriptionChanges);
             }
 
@@ -145,6 +146,10 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
         }
     }
 
+
+    // Somehow, when we make an update, the wrong record is showing as updated and the correct one as unchanged
+    // add an event, go to pending approval and try to approve.
+    // if we refresh the page it will work
     protected prepare(result: PartialResultType<BulkPersistChanges>, done: CallbackPartialResult<BulkPersistChanges>) {
 
         try {
@@ -165,6 +170,10 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
             changes.adds = this.dependencies.changeTracker.prepareAdditions();
             changes.updates = this.dependencies.changeTracker.getAttachmentsChanges();
             changes.removes = this.dependencies.changeTracker.prepareRemovals();
+
+            logger.info("[ROUTIER] CollectionBase.prepare() -> Changes", {
+                changes
+            });
 
             done(result);
         } catch (e) {

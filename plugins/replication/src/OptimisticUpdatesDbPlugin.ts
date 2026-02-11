@@ -53,7 +53,7 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
     query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
         try {
             const collectionName = event.operation.schema.collectionName;
-            logger.debug('[OptimisticReplicationDbPlugin] query started', { eventId: event.id, collectionName });
+            logger.debug('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.query() -> Start', { eventId: event.id, collectionName });
 
             const readPlugin = this.plugins.read;
             const sourcePlugin = this.plugins.source;
@@ -63,7 +63,7 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
 
                 // Notify the cache that the db was hydrated right away
                 this.collectionHydrationStatuses.set(collectionName, "pending");
-                logger.info('[OptimisticReplicationDbPlugin] Collection empty and not hydrated, starting hydration', { collectionName });
+                logger.info('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.query() -> Hydration never run, starting', { collectionName });
 
                 // nothing is hydrated, let's try and hydrate before querying
                 // Memory plugin might not be hydrated, lets hydrate it for the targeted schema only,
@@ -80,7 +80,7 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
                 }, (sourceResult) => {
 
                     if (sourceResult.ok === Result.ERROR) {
-                        logger.error('[OptimisticReplicationDbPlugin] Hydration source query failed', { collectionName, error: sourceResult.error });
+                        logger.error('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.query() -> Hydration failed', { collectionName, error: sourceResult.error });
                         // Notify that hydration failed
                         this.collectionHydrationStatuses.set(collectionName, "rejected");
                         done(sourceResult);
@@ -89,7 +89,7 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
 
                     // Source plugin can have no data, still should succeed
                     if (Array.isArray(sourceResult.data.value) === false) {
-                        logger.error('[OptimisticReplicationDbPlugin] Hydration source result is not an array', { collectionName });
+                        logger.error('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.query() -> Hydration source result is not an array', { collectionName });
                         // Notify that hydration failed
                         this.collectionHydrationStatuses.set(collectionName, "rejected");
                         done(PluginEventResult.error(event.id, "Query result is not an array"));
@@ -97,7 +97,7 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
                     }
 
                     const itemCount = sourceResult.data.value.length;
-                    logger.debug('[OptimisticReplicationDbPlugin] Hydration source query succeeded, persisting to read plugin', { collectionName, itemCount });
+                    logger.debug('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.query() -> Hydration success, persisting to read plugin', { collectionName, itemCount });
 
                     const changesCollection = new BulkPersistChanges();
                     const schemaChanges = changesCollection.resolve(event.operation.schema.id);
@@ -115,7 +115,7 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
                     }, (readPersistResult) => {
 
                         if (readPersistResult.ok === Result.ERROR) {
-                            logger.error('[OptimisticReplicationDbPlugin] Hydration read-plugin bulkPersist failed', { collectionName, error: readPersistResult.error });
+                            logger.error('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.query() -> Hydration read-plugin bulkPersist failed', { collectionName, error: readPersistResult.error });
                             // Notify that hydration failed
                             this.collectionHydrationStatuses.set(collectionName, "rejected");
                             done(readPersistResult);
@@ -123,12 +123,12 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
                         }
 
                         this.collectionHydrationStatuses.set(collectionName, "fulfilled");
-                        logger.info('[OptimisticReplicationDbPlugin] Hydration complete, requerying read plugin', { collectionName, itemCount, sourceResult, event });
+                        logger.info('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.query() -> Hydration complete, requerying read plugin', { collectionName, itemCount, sourceResult, event });
 
                         // requery the read plugin
                         readPlugin.query(event, r => {
 
-                            logger.info('[OptimisticReplicationDbPlugin] Hydration complete, requerying read plugin RESPONSE', { r });
+                            logger.info('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.query() -> Hydration complete, requerying read plugin', { response: r });
                             done(r);
                         });
                     });
@@ -138,33 +138,33 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
             }
 
             if (this.collectionHydrationStatuses.get(collectionName) === "rejected") {
-                logger.warn('[OptimisticReplicationDbPlugin] Query rejected: hydration previously failed', { collectionName });
+                logger.warn('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.query() -> Query rejected: hydration previously failed', { collectionName });
                 done(PluginEventResult.error(event.id, "Hydration failed, unable to query read plugin"));
                 return;
             }
 
             // If hydration is pending, do not query empty collection, wait for hydration
             if (this.collectionHydrationStatuses.get(collectionName) === "pending") {
-                logger.debug('[OptimisticReplicationDbPlugin] Hydration pending, polling until fulfilled or timeout', { collectionName });
+                logger.debug('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.query() -> Hydration pending, polling until fulfilled or timeout', { collectionName });
                 const start = now();
                 const pollHydrationStatus = () => {
                     const delta = now() - start;
 
                     if (delta > MAX_HYDRATION_WAIT_MS) {
-                        logger.error('[OptimisticReplicationDbPlugin] Hydration timeout', { collectionName, waitedMs: delta, maxMs: MAX_HYDRATION_WAIT_MS });
+                        logger.error('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.query() -> Hydration timeout', { collectionName, waitedMs: delta, maxMs: MAX_HYDRATION_WAIT_MS });
                         this.collectionHydrationStatuses.set(collectionName, "rejected");
                         done(PluginEventResult.error(event.id, `Hydration timeout: exceeded maximum wait time of ${MAX_HYDRATION_WAIT_MS}ms`));
                         return;
                     }
 
                     if (this.collectionHydrationStatuses.get(collectionName) === "rejected") {
-                        logger.warn('[OptimisticReplicationDbPlugin] Hydration rejected while polling', { collectionName, waitedMs: delta });
+                        logger.warn('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.query() -> Hydration rejected while polling', { collectionName, waitedMs: delta });
                         done(PluginEventResult.error(event.id, "Hydration failed, unable to query read plugin"));
                         return;
                     }
 
                     if (this.collectionHydrationStatuses.get(collectionName) === "fulfilled") {
-                        logger.debug('[OptimisticReplicationDbPlugin] Hydration fulfilled while polling, querying read plugin', { collectionName, waitedMs: delta });
+                        logger.debug('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.query() -> Hydration fulfilled while polling, querying read plugin', { collectionName, waitedMs: delta });
                         // Hydration completed successfully, proceed with query
                         readPlugin.query(event, (readResult) => {
                             if (readResult.ok === Result.ERROR) {
@@ -185,22 +185,22 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
             }
 
             // Collection is hydrated for the targeted collection and should be in sync
-            logger.debug('[OptimisticReplicationDbPlugin] Collection hydrated, querying read plugin', { collectionName });
+            logger.debug('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.query() -> Collection is hydrated, querying read plugin', { collectionName });
             readPlugin.query(event, (readResult) => {
 
                 if (readResult.ok === Result.ERROR) {
-                    logger.warn('[OptimisticReplicationDbPlugin] Read plugin query failed', { collectionName, error: readResult.error });
+                    logger.warn('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.query() -> Read plugin query failed', { collectionName, error: readResult.error });
                     done(readResult);
                     return;
                 }
 
-                logger.debug('[OptimisticReplicationDbPlugin] Query completed successfully', { collectionName });
+                logger.debug('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.query() -> Query completed successfully', { collectionName, readResult });
                 done(readResult);
                 return;
 
             });
         } catch (e: any) {
-            logger.error('[OptimisticReplicationDbPlugin] Query threw', { collectionName: event.operation.schema.collectionName, error: e });
+            logger.error('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.query() -> Query threw', { collectionName: event.operation.schema.collectionName, error: e });
             done(PluginEventResult.error(event.id, e));
         }
     }
@@ -236,7 +236,7 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
     bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackPartialResult<BulkPersistResult>): void {
         try {
             const schemaIds = Array.from(event.operation.keys());
-            logger.debug('[OptimisticReplicationDbPlugin] bulkPersist started', { eventId: event.id, schemaIds });
+            logger.debug('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.bulkPersist() -> bulkPersist started', { event, schemaIds });
 
             // Since we are doing optimistic, we insert into the read plugin first and assume later plugins will succeed
             // This means the read plugin will generate ids for the source plugin
@@ -249,12 +249,12 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
             }, (r) => {
 
                 if (r.ok !== Result.SUCCESS) {
-                    logger.error('[OptimisticReplicationDbPlugin] Read plugin bulkPersist failed', { eventId: event.id, error: r.error });
+                    logger.error('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.bulkPersist() -> Read plugin bulkPersist failed', { event, error: r.error });
                     done(r);
                     return;
                 }
 
-                logger.info('[OptimisticReplicationDbPlugin] Read plugin bulkPersist succeeded (optimistic done)', { eventId: event.id });
+                logger.info('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.bulkPersist() -> Read plugin bulkPersist succeeded (optimistic done)', { event });
                 // optimistically call done and still continue saving the rest of the data.  We read from the memory
                 // db anyways
                 done(r);
@@ -266,6 +266,7 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
                 resolveBulkPersistChanges(event, r.data, optimisticBulkPersistChanges);
 
                 setTimeout(() => {
+                    logger.info('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.bulkPersist() -> Persisting to source plugin', { event, operation: optimisticBulkPersistChanges });
                     this.plugins.source.bulkPersist({
                         id: uuid(8),
                         operation: optimisticBulkPersistChanges,
@@ -278,13 +279,13 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
                             return;
                         }
 
-                        logger.debug('[OptimisticReplicationDbPlugin] Deferred plugin bulkPersist succeeded', { eventId: event.id });
+                        logger.debug('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.bulkPersist() -> Deferred plugin bulkPersist succeeded', { event, result: r });
                     });
-                }, 5);
+                }, 0);
             });
 
         } catch (e: any) {
-            logger.error('[OptimisticReplicationDbPlugin] bulkPersist threw', { eventId: event.id, error: e });
+            logger.error('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.bulkPersist() -> bulkPersist threw', { event, error: e });
             done(PluginEventResult.error(event.id, e));
         }
     }

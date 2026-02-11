@@ -19,12 +19,9 @@ The `useQuery` hook connects React components to Routier's live query system, au
 3. **Cleanup**: When dependencies change or the component unmounts, subscriptions are cleaned up
 4. **State**: Returns a discriminated union for safe status checking
 
-```ts
-type LiveQueryState<T> =
-  | { status: "pending"; loading: true; error: null; data: undefined }
-  | { status: "error"; loading: false; error: Error; data: undefined }
-  | { status: "success"; loading: false; error: null; data: T };
-```
+
+{% highlight ts linenos %}{% include code/from-docs/integrations/react/hooks/index/block-1.ts %}{% endhighlight %}
+
 
 The hook uses `useEffect` internally, re-running your query when dependencies change and calling the cleanup function you return.
 
@@ -32,12 +29,9 @@ The hook uses `useEffect` internally, re-running your query when dependencies ch
 
 ## API
 
-```ts
-function useQuery<T>(
-  subscribe: (callback: (result: ResultType<T>) => void) => void | (() => void),
-  deps?: any[]
-): LiveQueryState<T>;
-```
+
+{% highlight ts linenos %}{% include code/from-docs/integrations/react/hooks/index/block-2.ts %}{% endhighlight %}
+
 
 **Parameters:**
 
@@ -52,32 +46,15 @@ function useQuery<T>(
 
 Calling `.subscribe()` creates a live query that **automatically re-runs** when data changes. You **must return** the unsubscribe handler so `useQuery` can clean up:
 
-```tsx
-// ✅ Live updates - return the query so useQuery can unsubscribe
-const products = useQuery(
-  (callback) => dataStore.products.subscribe().toArray(callback),
-  []
-);
 
-// When you add a product, the component automatically updates
-await dataStore.products.addAsync({ name: "New Product" });
-await dataStore.saveChangesAsync();
-```
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/hooks/index/block-3.tsx %}{% endhighlight %}
+
 
 With a block body, explicitly return the result of the chain:
 
-```tsx
-// ✅ Return the unsubscribe handler (required for cleanup)
-const currentUserQuery = useQuery<User | undefined>(
-  (callback) => {
-    return dataStore.users
-      .subscribe()
-      .where(([u, p]) => u.userRef === p.sub, { sub: user.sub })
-      .firstOrUndefined(callback);
-  },
-  [dataStore, user?.sub, shouldRunUserQueries]
-);
-```
+
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/hooks/index/block-4.tsx %}{% endhighlight %}
+
 
 **Use `.subscribe()` when:**
 
@@ -89,17 +66,9 @@ const currentUserQuery = useQuery<User | undefined>(
 
 Omitting `.subscribe()` runs the query **once** when the component mounts:
 
-```tsx
-// ❌ One-time only - never updates
-const products = useQuery(
-  (callback) => dataStore.products.toArray(callback), // No .subscribe()
-  []
-);
 
-// Adding products won't cause a re-render
-await dataStore.products.addAsync({ name: "New Product" });
-// Component stays the same
-```
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/hooks/index/block-5.tsx %}{% endhighlight %}
+
 
 **Use without `.subscribe()` when:**
 
@@ -192,19 +161,9 @@ For static data that doesn't need updates:
 
 Create your DataStore in a simple custom hook:
 
-```tsx
-// hooks/useDataStore.ts
-import { useMemo } from "react";
-import { DataStore } from "@routier/datastore";
-import { MemoryPlugin } from "@routier/plugins-memory";
 
-export function useDataStore() {
-  // This will cause subscriptions to run infinitely if this is not done
-  // Always use useMemo to prevent infinite subscription loops
-  const dataStore = useMemo(() => new DataStore(new MemoryPlugin("app")), []);
-  return dataStore;
-}
-```
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/hooks/index/block-6.tsx %}{% endhighlight %}
+
 
 **Critical:** You **must** use `useMemo` when creating a DataStore instance. Without `useMemo`, a new DataStore is created on every render, which causes subscriptions to be recreated infinitely. Each new datastore instance triggers `useQuery`'s effect to re-run, creating new subscriptions, which can cause performance issues and infinite loops.
 
@@ -216,36 +175,23 @@ Alternatively, you can use Context if you prefer a shared instance across your a
 
 Always check status before accessing data:
 
-```tsx
-if (result.status === "pending") return <Loading />;
-if (result.status === "error") return <Error error={result.error} />;
-return <DataView data={result.data} />;
-```
+
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/hooks/index/block-7.tsx %}{% endhighlight %}
+
 
 TypeScript's discriminated unions make this safe:
 
-```tsx
-// TypeScript knows data is defined when status is 'success'
-if (result.status === "success") {
-  console.log(result.data); // ✅ Safe
-}
-```
+
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/hooks/index/block-8.tsx %}{% endhighlight %}
+
 
 ### Dependencies Array
 
 Use the deps array to control when queries re-run:
 
-```tsx
-// Re-run when searchTerm changes
-const results = useQuery(
-  (cb) =>
-    dataStore.products
-      .where((p) => p.name.includes(searchTerm))
-      .subscribe()
-      .toArray(cb),
-  [searchTerm] // Re-subscribe when searchTerm changes
-);
-```
+
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/hooks/index/block-9.tsx %}{% endhighlight %}
+
 
 ### Return the Unsubscribe Handler
 
@@ -254,29 +200,15 @@ When you subscribe inside `useQuery`, the query chain returns an unsubscribe fun
 - **Arrow expression:** `(callback) => dataStore.products.subscribe().toArray(callback)` — the return value is implicit.
 - **Block body:** use `return` so the handler is passed to `useQuery`:
 
-```tsx
-const currentUserQuery = useQuery<User | undefined>(
-  (callback) => {
-    return dataStore.users
-      .subscribe()
-      .where(([u, p]) => u.userRef === p.sub, { sub: user.sub })
-      .firstOrUndefined(callback);
-  },
-  [dataStore, user?.sub, shouldRunUserQueries]
-);
-```
+
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/hooks/index/block-10.tsx %}{% endhighlight %}
+
 
 For custom subscriptions (e.g. `onChange`), return your cleanup function the same way:
 
-```tsx
-const data = useQuery((callback) => {
-  const sub = dataStore.products.subscribe();
-  const unsub = sub.onChange(() => sub.toArray(callback));
-  sub.toArray(callback);
 
-  return unsub; // Cleanup function
-}, []);
-```
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/hooks/index/block-11.tsx %}{% endhighlight %}
+
 
 ## Troubleshooting
 
@@ -308,41 +240,17 @@ Prevent leaks by:
 
 ### Combining with Other Hooks
 
-```tsx
-function useFilteredProducts(searchTerm: string) {
-  const dataStore = useDataStore();
 
-  const products = useQuery(
-    (cb) =>
-      dataStore.products
-        .where((p) => p.name.includes(searchTerm))
-        .subscribe()
-        .toArray(cb),
-    [searchTerm]
-  );
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/hooks/index/block-12.tsx %}{% endhighlight %}
 
-  const count = useMemo(
-    () => (products.status === "success" ? products.data?.length : 0),
-    [products]
-  );
-
-  return { products, count };
-}
-```
 
 ### Optimistic Updates
 
 Combine with collection mutations for optimistic updates:
 
-```tsx
-async function addProduct(product: Product) {
-  // Optimistic add
-  await dataStore.products.addAsync(product);
-  await dataStore.saveChangesAsync();
 
-  // Query automatically updates with new data
-}
-```
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/hooks/index/block-13.tsx %}{% endhighlight %}
+
 
 ## See Also
 

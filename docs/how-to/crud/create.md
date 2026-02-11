@@ -178,39 +178,21 @@ Use schema features like enums, defaults, and constraints effectively:
 
 ### User Registration
 
-```ts
-const newUser = await ctx.users.addAsync({
-  name: userData.name,
-  email: userData.email,
-  passwordHash: await hashPassword(userData.password),
-});
-await ctx.saveChangesAsync();
-```
+
+{% highlight ts linenos %}{% include code/from-docs/how-to/crud/create/block-1.ts %}{% endhighlight %}
+
 
 ### Product Catalog Management
 
-```ts
-const products = await ctx.products.addAsync(
-  ...productData.map((p) => ({
-    name: p.name,
-    price: p.price,
-    category: p.category,
-    inStock: true,
-  }))
-);
-await ctx.saveChangesAsync();
-```
+
+{% highlight ts linenos %}{% include code/from-docs/how-to/crud/create/block-2.ts %}{% endhighlight %}
+
 
 ### Bulk Data Import
 
-```ts
-const batchSize = 100;
-for (let i = 0; i < data.length; i += batchSize) {
-  const batch = data.slice(i, i + batchSize);
-  await ctx.items.addAsync(...batch);
-  await ctx.saveChangesAsync();
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/how-to/crud/create/block-3.ts %}{% endhighlight %}
+
 
 ## Next Steps
 

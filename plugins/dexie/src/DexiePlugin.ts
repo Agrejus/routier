@@ -163,13 +163,23 @@ export class DexiePlugin implements IDbPlugin, Disposable {
     }
 
     private getSchemas(event: DbPluginEvent): Record<string, string> {
-        if (cache.has(this.dbName)) {
-            return cache.get(this.dbName);
+
+        const cacheResult = cache.get(this.dbName);
+
+        if (cacheResult != null && Object.keys(cacheResult).length === event.schemas.size) {
+            // We might be using the same database for two different datastores
+            // which have different schemas.  E.g. HttpSwrPlugin
+            return cacheResult;
         }
 
-        const result: Record<string, string> = {};
+        const result: Record<string, string> = cacheResult ?? {};
 
         for (const [, schema] of event.schemas) {
+
+            if (result[schema.collectionName]) {
+                continue;
+            }
+
             result[schema.collectionName] = convertToDexieSchema(schema)
         }
 

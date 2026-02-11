@@ -13,7 +13,7 @@ export function FilteredProducts() {
         .where((p) => p.name.includes(searchTerm))
         .subscribe()
         .toArray(callback),
-    [dataStore, searchTerm] // Re-run when store or searchTerm changes
+    [searchTerm] // Re-run when searchTerm changes
   );
 
   if (products.status === "pending") return <div>Loading...</div>;
@@ -27,10 +27,9 @@ export function FilteredProducts() {
         placeholder="Search products..."
       />
       <ul>
-        {products.status === "success" &&
-          products.data.map((product) => (
-            <li key={product.id}>{product.name}</li>
-          ))}
+        {products.data?.map((product) => (
+          <li key={product.id}>{product.name}</li>
+        ))}
       </ul>
     </div>
   );

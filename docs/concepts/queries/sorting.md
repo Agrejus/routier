@@ -36,24 +36,17 @@ Sort data in descending order:
 
 Chain multiple sort operations for complex sorting:
 
-```ts
-// Sort by category first, then by price
-const productsByCategoryAndPrice = await dataStore.products
-  .sort((p) => p.category)
-  .sort((p) => p.price)
-  .toArrayAsync();
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/sorting/block-1.ts %}{% endhighlight %}
+
 
 ## Combined with Filtering
 
 Sort filtered results:
 
-```ts
-const expensiveProductsSorted = await dataStore.products
-  .where((p) => p.price > 100)
-  .orderByDescending((p) => p.price)
-  .toArrayAsync();
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/sorting/block-2.ts %}{% endhighlight %}
+
 
 ## Related
 

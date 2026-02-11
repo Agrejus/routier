@@ -1,15 +1,7 @@
-const ctx = new AppContext();
-
-// Get user and update
-const user = await ctx.users.firstOrUndefinedAsync(
-  (u) => u.email === "john@example.com"
-);
-
-if (user) {
-  // Simple property update
-  user.name = "John Smith";
-  user.age = 31;
-
-  // Changes are tracked automatically
-  console.log("User updated:", user.name);
-}
+const products = await ctx.products
+  .where((p) => p.category === "electronics")
+  .toArrayAsync();
+products.forEach((product) => {
+  product.price = product.price * 1.1; // 10% increase
+});
+await ctx.saveChangesAsync();

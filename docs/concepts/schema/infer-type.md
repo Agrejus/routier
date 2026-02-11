@@ -79,20 +79,15 @@ Routier provides two related type utilities:
 
 ### Compile-Time Type Checking
 
-```typescript
-// ✅ TypeScript will catch this error at compile time
-function processUser(user: User) {
-  console.log(user.email); // ✅ Valid - email exists on User type
-  console.log(user.invalidField); // ❌ Error - property doesn't exist
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/infer-type/block-1.ts %}{% endhighlight %}
+
 
 ### IntelliSense Support
 
-```typescript
-const user: User = await ctx.users.firstAsync();
-user. // ← IntelliSense shows all available properties
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/infer-type/block-2.ts %}{% endhighlight %}
+
 
 ### Refactoring Safety
 
@@ -102,58 +97,29 @@ When you change your schema, TypeScript will show errors everywhere the type is 
 
 ### 1. Use Type Aliases
 
-```typescript
-// ✅ Good - reusable type alias
-type User = InferType<typeof userSchema>;
-type CreateUser = InferCreateType<typeof userSchema>;
 
-// ❌ Avoid - repeating the type everywhere
-function processUser(user: InferType<typeof userSchema>) { ... }
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/infer-type/block-3.ts %}{% endhighlight %}
+
 
 ### 2. Export Types for Reuse
 
-```typescript
-// schema.ts
-export const userSchema = s.define("users", { ... }).compile();
-export type User = InferType<typeof userSchema>;
-export type CreateUser = InferCreateType<typeof userSchema>;
 
-// other-file.ts
-import { User, CreateUser } from './schema';
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/infer-type/block-4.ts %}{% endhighlight %}
+
 
 ### 3. Use Appropriate Type
 
-```typescript
-// ✅ Use InferCreateType for creation
-async function createUser(data: CreateUser) {
-  return await ctx.users.addAsync(data);
-}
 
-// ✅ Use InferType for existing entities
-async function updateUser(user: User, updates: Partial<User>) {
-  return await ctx.users.updateAsync(user, updates);
-}
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/infer-type/block-5.ts %}{% endhighlight %}
+
 
 ### 4. Use `constrain()` for Branded Types
 
 When working with branded or tagged types (like UUIDs), use `constrain()` to narrow string types:
 
-```typescript
-type UUID = string & { __brand: "UUID" };
 
-const userSchema = s
-  .define("users", {
-    id: s.string().constrain<UUID>().key().identity(),
-    name: s.string(),
-  })
-  .compile();
+{% highlight ts linenos %}{% include code/from-docs/concepts/schema/infer-type/block-6.ts %}{% endhighlight %}
 
-type User = InferType<typeof userSchema>;
-// User.id is now typed as UUID, not just string
-```
 
 ## Related
 

@@ -36,27 +36,17 @@ Create computed values and transformations:
 
 Select just one field:
 
-```ts
-// Get only product names
-const productNames = await dataStore.products.map((p) => p.name).toArrayAsync();
 
-// Get only prices
-const productPrices = await dataStore.products
-  .map((p) => p.price)
-  .toArrayAsync();
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/field-selection/block-1.ts %}{% endhighlight %}
+
 
 ## Combined with Other Operations
 
 Use field selection with filtering and sorting:
 
-```ts
-const expensiveProductNames = await dataStore.products
-  .where((p) => p.price > 100)
-  .sortDescending((p) => p.price)
-  .map((p) => p.name)
-  .toArrayAsync();
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/field-selection/block-2.ts %}{% endhighlight %}
+
 
 ## Related
 

@@ -3,11 +3,13 @@ import { MemoryPlugin } from "@routier/memory-plugin";
 import { PouchDbPlugin } from "@routier/pouchdb-plugin";
 
 const isDevelopment = process.env.NODE_ENV === "development";
-const plugin = isDevelopment ? new MemoryPlugin("dev-app") : new PouchDbPlugin("prod-database");
 
-
-class MyContext extends DataStore {
+class DevContext extends DataStore {
   constructor() {
-    super(plugin);
+    if (isDevelopment) {
+      super(new MemoryPlugin("dev-app"));
+    } else {
+      super(new PouchDbPlugin("prod-database"));
+    }
   }
 }

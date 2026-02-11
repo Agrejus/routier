@@ -25,13 +25,9 @@ Change tracking records in-memory modifications to entities returned from collec
 
 ### Basics
 
-```ts
-const product = await ctx.products.firstAsync();
-product.price = 129.99; // tracked in memory
 
-const result = await ctx.saveChangesAsync();
-// result.aggregate.updates === 1
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/change-tracking/block-1.ts %}{% endhighlight %}
+
 
 ### Attachments overview
 

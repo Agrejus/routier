@@ -1,14 +1,4 @@
-// Remove users with parameterized criteria
-async function removeUsersByAgeRange(minAge: number, maxAge: number) {
-  await ctx.users
-    .where(
-      (user, params) => user.age >= params.minAge && user.age <= params.maxAge,
-      { minAge, maxAge }
-    )
-    .removeAsync();
-
-  console.log(`Removed users between ${minAge} and ${maxAge} years old`);
-}
-
-// Usage
-await removeUsersByAgeRange(13, 17); // Remove teenage users
+// Delete user and all related data
+await ctx.userSessions.where((s) => s.userId === userId).removeAsync();
+await ctx.userPosts.where((p) => p.userId === userId).removeAsync();
+await ctx.users.removeAsync(user);

@@ -28,14 +28,9 @@ Both extend `DataTranslator`, which orchestrates the translation process based o
 
 The `DataTranslator.translate()` method processes query results by applying each query option in order:
 
-```ts
-translate(data: unknown): TShape {
-    this.query.options.forEach(item => {
-        data = this.functionMap[item.name](data, item);
-    });
-    return data as TShape;
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-1.ts %}{% endhighlight %}
+
 
 Translation happens in the **order operations were added** to the query, ensuring correct semantics.
 
@@ -47,37 +42,15 @@ Used for backends that **don't support query operations natively**. The plugin r
 
 #### Filtering
 
-```ts
-filter<TResult>(data: unknown, option: QueryOption<TShape, "filter">): TResult {
-    if (option.value.filter) {
-        if (option.value.params == null) {
-            // Standard filtering
-            return data.filter(option.value.filter) as TResult;
-        }
-        // Parameterized filtering
-        const selector = option.value.filter as ParamsFilter<unknown, {}>
-        return data.filter(w => selector([w, option.value.params])) as TResult;
-    }
-    return data as TResult;
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-2.ts %}{% endhighlight %}
+
 
 #### Sorting
 
-```ts
-sort<TResult>(data: unknown, option: QueryOption<TShape, "sort">): TResult {
-    if (Array.isArray(data)) {
-        data.sort((a, b) => {
-            const aVal = option.value.selector(a);
-            const bVal = option.value.selector(b);
-            return option.value.direction === "asc"
-                ? aVal - bVal
-                : bVal - aVal;
-        });
-    }
-    return data as TResult;
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-3.ts %}{% endhighlight %}
+
 
 #### Aggregations
 
@@ -89,32 +62,9 @@ sort<TResult>(data: unknown, option: QueryOption<TShape, "sort">): TResult {
 
 Since the backend doesn't support aggregations natively:
 
-```ts
-count<TResult>(data: unknown, _: QueryOption<TShape, "count">): TResult {
-    if (Array.isArray(data)) {
-        return data.length as TResult; // Count all data in memory
-    }
-    throw new Error("Cannot count resulting data, it must be an array");
-}
 
-sum<TResult>(data: unknown, _: QueryOption<TShape, "sum">): TResult {
-    assertIsArray(data);
-    let sum = 0;
-    for (const value of data) {
-        if (typeof value !== "number") {
-            throw new Error("Cannot sum, property is not a number");
-        }
-        sum += value; // Sum all data in memory
-    }
-    return sum as TResult;
-}
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-4.ts %}{% endhighlight %}
 
-min<TResult>(data: unknown, _: QueryOption<TShape, "min">): TResult {
-    assertIsArray(data);
-    data.sort((a, b) => a - b); // Sort all data in memory
-    return data[0] as TResult; // Return first (minimum) element
-}
-```
 
 **Why**: These backends don't have aggregate functions, so the translator receives all matching data and performs the calculation.
 
@@ -127,21 +77,9 @@ min<TResult>(data: unknown, _: QueryOption<TShape, "min">): TResult {
 
 #### Distinct
 
-```ts
-distinct<TResult>(data: unknown, _: QueryOption<TShape, "distinct">): TResult {
-    const result = new Set<string | number | Date>();
 
-    for (const value of data) {
-        if (typeof value === "number" || typeof value === "string") {
-            result.add(value);
-        } else if (isDate(value)) {
-            result.add(value.toISOString());
-        }
-    }
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-5.ts %}{% endhighlight %}
 
-    return [...result] as TResult;
-}
-```
 
 ### When to Use JsonTranslator
 
@@ -166,81 +104,9 @@ Used for SQL backends where **the database natively supports query operations**.
 
 1. **Count**: SQL already executed `COUNT(*)`, so extract the value
 
-   ```ts
-   count<TResult>(data: unknown, _: QueryOption<TShape, "count">): TResult {
-       if (Array.isArray(data) && data.length > 0) {
-           return data[0].count; // SQL already calculated: { count: number }
-       }
-       return data as TResult;
-   }
-   ```
-
-   **Why**: SQL natively supports COUNT, so the database already performed the operation. We just extract the result.
-
-2. **Filter/Sort/Skip/Take**: No-op since SQL already handled these
-
-   ```ts
-   filter<TResult>(data: unknown, _: QueryOption<TShape, "filter">): TResult {
-       return data as TResult; // SQL WHERE clause already filtered
-   }
-   ```
-
-   **Why**: SQL's WHERE, ORDER BY, LIMIT, and OFFSET already performed these operations. The data is already in the correct shape.
-
-3. **Min/Max/Sum**: Extract from SQL aggregate results
-
-   ```ts
-   min<TResult>(data: unknown, _: QueryOption<TShape, "min">): TResult {
-       if (Array.isArray(data) && data.length > 0) {
-           return data[0]; // SQL already found the min value
-       }
-       return data as TResult;
-   }
-   ```
-
-   **Why**: SQL's `MIN()`, `MAX()`, `SUM()` functions already calculated the values. Just extract them.
-
-4. **Map**: Still needed for field mapping and deserialization
-   ```ts
-   map(data: unknown, option: QueryOption<TShape, "map">): TShape {
-       // Deserialize properties and apply selector
-       for (const field of option.value.fields) {
-           if (field.property != null) {
-               const value = field.property.getValue(data[i]);
-               if (value != null) {
-                   field.property.setValue(data[i], field.property.deserialize(value));
-               }
-           }
-       }
-       response.push(option.value.selector(data[i]));
-   }
-   ```
-
-### When to Use SqlTranslator
-
-Use `SqlTranslator` when your backend:
-
-- **Supports filtering natively** → Database performs WHERE clauses
-- **Supports sorting natively** → Database performs ORDER BY
-- **Supports aggregations natively** → Database performs COUNT, SUM, MIN, MAX, etc.
-- **Supports pagination natively** → Database performs LIMIT/OFFSET
-
-In these cases, the translator's job is to extract and adjust results, not perform the operations.
-
-### Special Handling
-
-- **Count with Map**: If count and map are both present, count takes precedence (SQL already calculated count, mapping not needed)
-- **Min/Max/Sum**: Extract single value from SQL result array (database already calculated the aggregate)
-
-## Map Operation
-
-Both translators handle the `map` operation, which:
-
-1. **Deserializes** property values (e.g., JSON strings → objects, date strings → Date objects)
-2. **Applies** the selector function to transform the shape
-3. **Handles** nested property access and computed properties
-
-```ts
+   
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-6.ts %}{% endhighlight %}
+ts
 map(data: unknown, option: QueryOption<TShape, "map">): TShape {
     const response = [];
 
@@ -287,56 +153,17 @@ Your backend might support some operations but not others. You can create a cust
 
 If your backend needs custom translation logic, extend `DataTranslator` and implement methods based on what your backend supports:
 
-```ts
-import { DataTranslator } from "@routier/core/plugins/translators/DataTranslator";
-import { QueryOption } from "@routier/core/plugins/query/types";
 
-export class MyCustomTranslator<
-  TRoot extends {},
-  TShape
-> extends DataTranslator<TRoot, TShape> {
-  // Override only the methods that need custom behavior
-  count<TResult extends number>(
-    data: unknown,
-    option: QueryOption<TShape, "count">
-  ): TResult {
-    // Custom count handling
-    return data.length as TResult;
-  }
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-7.ts %}{% endhighlight %}
 
-  // Other methods can use base class behavior
-  // or override for backend-specific needs
-}
-```
 
 ### Usage in Plugin
 
 The `DataTranslator.translate()` method automatically wraps results in `ITranslatedValue`, so you don't need to manually wrap them:
 
-```ts
-import { ITranslatedValue } from "@routier/core/plugins";
 
-query<TRoot extends {}, TShape>(
-    event: DbPluginQueryEvent<TRoot, TShape>,
-    done: PluginEventCallbackResult<ITranslatedValue<TShape>>
-): void {
-    const translator = new MyCustomTranslator(event.operation);
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-8.ts %}{% endhighlight %}
 
-    // Execute query against your backend
-    this.executeQuery(event.operation, (result) => {
-        if (result.ok === "error") {
-            done(PluginEventResult.error(event.id, result.error));
-            return;
-        }
-
-        // Translate raw results to expected shape
-        // translate() automatically wraps results in ITranslatedValue to allow
-        // iteration (for grouped queries) and change tracking
-        const translatedValue = translator.translate(result.data);
-        done(PluginEventResult.success(event.id, translatedValue));
-    });
-}
-```
 
 ## Common Patterns
 
@@ -344,18 +171,9 @@ query<TRoot extends {}, TShape>(
 
 The schema handles deserialization automatically through property-level `deserialize()` methods. You don't need to manually deserialize in the translator. The `map` operation already handles deserialization for mapped fields:
 
-```ts
-// Inside map() - deserialization happens automatically
-for (const field of option.value.fields) {
-  if (field.property != null) {
-    const value = field.property.getValue(data[i]);
-    if (value != null) {
-      // Property's deserialize() method is called here
-      field.property.setValue(data[i], field.property.deserialize(value));
-    }
-  }
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-9.ts %}{% endhighlight %}
+
 
 If your backend returns raw data that needs schema-level deserialization, handle it in your plugin's `query` method before passing to the translator, not in the translator itself.
 
@@ -363,43 +181,17 @@ If your backend returns raw data that needs schema-level deserialization, handle
 
 If your backend supports some operations but not others, check what was handled:
 
-```ts
-override count<TResult extends number>(
-    data: unknown,
-    option: QueryOption<TShape, "count">
-): TResult {
-    // If your backend executed COUNT natively
-    if (this.backendPerformedCount) {
-        // Extract the count value (like SqlTranslator)
-        return (data as any)[0].count as TResult;
-    }
 
-    // Otherwise, count in memory (like JsonTranslator)
-    if (Array.isArray(data)) {
-        return data.length as TResult;
-    }
-    throw new Error("Cannot count");
-}
-```
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-10.ts %}{% endhighlight %}
+
 
 ### Filtering After Fetch
 
 If your backend doesn't support certain filters, fetch and filter in memory:
 
-```ts
-override filter<TResult>(
-    data: unknown,
-    option: QueryOption<TShape, "filter">
-): TResult {
-    // If backend handled filtering via WHERE clause, return as-is
-    if (this.queryWasFilteredByBackend) {
-        return data as TResult; // Already filtered
-    }
 
-    // Otherwise, filter in memory (backend doesn't support this filter)
-    return super.filter(data, option); // Use JsonTranslator behavior
-}
-```
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-11.ts %}{% endhighlight %}
+
 
 The key principle: **If your backend already did the work, extract the result. If not, do the work in the translator.**
 
@@ -407,18 +199,9 @@ The key principle: **If your backend already did the work, extract the result. I
 
 Transform backend-specific result structures:
 
-```ts
-override count<TResult extends number>(
-    data: unknown,
-    option: QueryOption<TShape, "count">
-): TResult {
-    // Your backend returns count differently
-    if (Array.isArray(data) && data.length > 0) {
-        return (data[0] as any).totalCount as TResult;
-    }
-    return 0 as TResult;
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-12.ts %}{% endhighlight %}
+
 
 ## Reference Implementations
 

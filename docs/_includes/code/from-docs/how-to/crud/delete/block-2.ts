@@ -1,8 +1,10 @@
-// Get multiple users to remove
-const usersToRemove = await ctx.users
-  .where((user) => user.status === "deleted")
-  .toArrayAsync();
+// Remove old sessions
+const cutoffDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
+await ctx.sessions.where((s) => s.lastActivity < cutoffDate).removeAsync();
 
-// Remove all at once
-await ctx.users.removeAsync(...usersToRemove);
-console.log(`Removed ${usersToRemove.length} deleted users`);
+// Remove inactive users
+await ctx.users
+  .where((u) => u.isActive === false && u.lastLogin < cutoffDate)
+  .removeAsync();
+
+await ctx.saveChangesAsync();

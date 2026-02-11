@@ -1,0 +1,1 @@
+dataStore.products.where((p) => p.price > 100 && p.category === "electronics");

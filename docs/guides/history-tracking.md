@@ -41,33 +41,9 @@ History tracking in Routier can be implemented in different ways. Both approache
 
 When your history table is subscribed to a data source, you can use computed properties with the `tracked()` modifier to automatically insert a new record whenever the subscribed data changes. This approach computes the ID based on the entire entity state, ensuring any change results in a new record:
 
-```ts
-import { s } from "@routier/core/schema";
-import { fastHash } from "@routier/core/utilities";
 
-export const productsHistorySchema = s
-  .define("productsHistory", {
-    productId: s.string(),
-    name: s.string(),
-    price: s.number(),
-    category: s.string(),
-    inStock: s.boolean(),
-    tags: s.string("computer", "accessory").array(),
-    createdDate: s.date().default(() => new Date()),
-  })
-  .modify((x) => ({
-    documentType: x.computed((_, collectionName) => collectionName).tracked(),
-    // Hash the object so we can compare if anything has changed.
-    // This ensures a new record is inserted when anything changes
-    id: x
-      .computed((entity, _, deps) => deps.fastHash(JSON.stringify(entity)), {
-        fastHash,
-      })
-      .tracked()
-      .key(),
-  }))
-  .compile();
-```
+{% highlight ts linenos %}{% include code/from-docs/guides/history-tracking/block-1.ts %}{% endhighlight %}
+
 
 **How this approach works:**
 
@@ -85,67 +61,9 @@ This pattern is particularly useful when your history table is derived from a vi
 
 Another way to implement history tracking is using views with a unique hashing strategy to detect changes and insert new records instead of updating existing ones. This approach uses `fastHash` with the schema's hash function to generate a unique ID based on the entire object:
 
-```ts
-import { DataStore } from "@routier/datastore";
-import { s } from "@routier/core/schema";
-import { fastHash, HashType } from "@routier/core";
 
-const productsSchema = s
-  .define("products", {
-    id: s.string().key().identity(),
-    name: s.string(),
-    price: s.number(),
-    category: s.string(),
-    inStock: s.boolean(),
-    tags: s.array(s.string()),
-    createdDate: s.date(),
-  })
-  .compile();
+{% highlight ts linenos %}{% include code/from-docs/guides/history-tracking/block-2.ts %}{% endhighlight %}
 
-const productsHistorySchema = s
-  .define("productsHistory", {
-    id: s.string().key(),
-    productId: s.string(),
-    name: s.string(),
-    price: s.number(),
-    category: s.string(),
-    inStock: s.boolean(),
-    tags: s.array(s.string()),
-    createdDate: s.date(),
-    documentType: s.string(),
-  })
-  .compile();
-
-export class AppDataStore extends DataStore {
-  products = this.collection(productsSchema).create();
-
-  productsHistory = this.view(productsHistorySchema)
-    .derive((done) => {
-      return this.products.subscribe().toArray((response) => {
-        if (response.ok === "error") {
-          return done([]);
-        }
-
-        done(
-          response.data.map((x) => ({
-            // Hash the object so we can compare if anything has changed
-            // This ensures a new record is inserted when anything changes
-            id: fastHash(productsSchema.hash(x, HashType.Object)),
-            productId: x._id,
-            category: x.category,
-            inStock: x.inStock,
-            name: x.name,
-            price: x.price,
-            tags: x.tags,
-            createdDate: x.createdDate,
-            documentType: productsHistorySchema.collectionName,
-          }))
-        );
-      });
-    })
-    .create();
-}
-```
 
 **How this approach works:**
 
@@ -161,20 +79,9 @@ export class AppDataStore extends DataStore {
 
 Once you have a history table, you can query it to see all historical states of your entities:
 
-```ts
-// Get all history for a specific product
-const productHistory = await ctx.productsHistory
-  .where((p) => p.productId === "product-123")
-  .sort((p) => p.createdDate)
-  .toArrayAsync();
 
-// Get the latest version for a single product
-const latestForOne = await ctx.productsHistory
-  .where((p) => p.productId === "product-123")
-  .sort((p) => p.createdDate)
-  .take(1)
-  .toArrayAsync();
-```
+{% highlight ts linenos %}{% include code/from-docs/guides/history-tracking/block-3.ts %}{% endhighlight %}
+
 
 ### When to Use History Tables
 

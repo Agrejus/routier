@@ -19,24 +19,17 @@ State management in Routier involves managing application state through collecti
 
 Collections act as your primary state containers:
 
-```ts
-class AppContext extends DataStore {
-  users = this.collection(userSchema).create();
-  products = this.collection(productSchema).create();
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/guides/state-management/block-1.ts %}{% endhighlight %}
+
 
 ### Live Queries
 
 Keep UI in sync with data changes automatically:
 
-```ts
-ctx.users.subscribe().toArray((result) => {
-  if (result.ok === "success") {
-    console.log("Users:", result.data); // Automatically updates when users change
-  }
-});
-```
+
+{% highlight ts linenos %}{% include code/from-docs/guides/state-management/block-2.ts %}{% endhighlight %}
+
 
 Note: With `.subscribe()`, you must use callback-based methods (not async methods like `toArrayAsync()`).
 
@@ -44,21 +37,17 @@ Note: With `.subscribe()`, you must use callback-based methods (not async method
 
 All modifications are tracked automatically until saved:
 
-```ts
-user.name = "New Name"; // Tracked automatically
-await ctx.saveChangesAsync(); // Persisted
-```
+
+{% highlight ts linenos %}{% include code/from-docs/guides/state-management/block-3.ts %}{% endhighlight %}
+
 
 ### Derived State
 
 Compute derived data from your collections:
 
-```ts
-const stats = {
-  totalUsers: await ctx.users.countAsync(),
-  activeUsers: await ctx.users.where((u) => u.isActive).countAsync(),
-};
-```
+
+{% highlight ts linenos %}{% include code/from-docs/guides/state-management/block-4.ts %}{% endhighlight %}
+
 
 ## Patterns
 

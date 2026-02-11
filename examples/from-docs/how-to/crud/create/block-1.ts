@@ -1,11 +1,6 @@
-const ctx = new AppContext();
-
-// Add a single user
 const newUser = await ctx.users.addAsync({
-  name: "John Doe",
-  email: "john@example.com",
-  age: 30,
+  name: userData.name,
+  email: userData.email,
+  passwordHash: await hashPassword(userData.password),
 });
-
-console.log(newUser);
-// Output: { id: "generated-uuid", name: "John Doe", email: "john@example.com", age: 30 }
+await ctx.saveChangesAsync();

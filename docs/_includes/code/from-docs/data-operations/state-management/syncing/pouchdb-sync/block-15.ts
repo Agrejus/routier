@@ -1,16 +1,10 @@
-const plugin = new PouchDbPlugin("myapp", {
-  sync: {
-    remoteDb: "http://localhost:3000/myapp",
-    live: true,
-    retry: true,
-    onChange: (schemas, change) => {
-      // Detailed debug logging
-      console.group("PouchDB Sync Event");
-      console.log("Direction:", change.direction);
-      console.log("Change:", change.change);
-      console.log("Schemas:", schemas);
-      console.log("Timestamp:", new Date().toISOString());
-      console.groupEnd();
-    },
-  },
-});
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  onChange: (schemas, change) => {
+    if (change.direction === "pull" && change.change?.docs) {
+      console.log(`Pulled ${change.change.docs.length} documents`);
+    } else if (change.direction === "push" && change.change?.docs) {
+      console.log(`Pushed ${change.change.docs.length} documents`);
+    }
+  }
+}

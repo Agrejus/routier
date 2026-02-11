@@ -41,14 +41,9 @@ Use parameters for dynamic filtering with variables. This is **required** when y
 
 When you need to use variables in your query, you must use parameterized queries. Direct variable usage in predicates will still work, but Routier will fall back to selecting all records because it cannot evaluate the variable values:
 
-```ts
-// ⚠️ This works but selects ALL records first, then filters in memory - less efficient
-const minPrice = 100;
-const maxPrice = 500;
-const products = await dataStore.products
-  .where((p) => p.price >= minPrice && p.price <= maxPrice) // Selects all, filters in memory
-  .toArrayAsync();
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/filtering/block-1.ts %}{% endhighlight %}
+
 
 **Result**: You'll get the correct filtered results, but Routier will first load all records into memory, then apply the filter. This is less efficient than database-level filtering.
 
@@ -63,35 +58,15 @@ Pass variables through a parameters object:
 
 **Dynamic filtering based on user input:**
 
-```ts
-const searchTerm = "laptop";
-const category = "electronics";
-const minPrice = 100;
 
-const results = await dataStore.products
-  .where(
-    ([p, params]) =>
-      p.name.toLowerCase().includes(params.searchTerm.toLowerCase()) &&
-      p.category === params.category &&
-      p.price >= params.minPrice,
-    { searchTerm, category, minPrice }
-  )
-  .toArrayAsync();
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/filtering/block-2.ts %}{% endhighlight %}
+
 
 **Pagination with dynamic page size:**
 
-```ts
-const page = 2;
-const pageSize = 20;
-const offset = (page - 1) * pageSize;
 
-const products = await dataStore.products
-  .where(([p, params]) => p.inStock === true, {})
-  .skip(offset)
-  .take(pageSize)
-  .toArrayAsync();
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/filtering/block-3.ts %}{% endhighlight %}
+
 
 ## Building Queries Conditionally
 
@@ -104,39 +79,17 @@ You can build queries dynamically by assigning query results back to a variable 
 
 Start with a base query and conditionally add filters:
 
-```ts
-// Start with base collection
-let query = dataStore.products;
 
-// Conditionally add filters based on logic
-// Always use parameterized queries when using variables
-if (shouldFilterByCategory) {
-  query = query.where(([p, params]) => p.category === params.category, {
-    category: "electronics",
-  });
-}
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/filtering/block-4.ts %}{% endhighlight %}
 
-if (minPrice > 0) {
-  query = query.where(([p, params]) => p.price >= params.minPrice, {
-    minPrice,
-  });
-}
-
-// Execute after building
-const results = await query.toArrayAsync();
-```
 
 ### Filtering by Arrays
 
 Use parameterized queries with `includes()` to filter by multiple values:
 
-```ts
-const productIds = ["prod-1", "prod-2", "prod-3"];
 
-const products = await dataStore.products
-  .where(([p, params]) => params.ids.includes(p.id), { ids: productIds })
-  .toArrayAsync();
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/filtering/block-5.ts %}{% endhighlight %}
+
 
 This pattern is especially useful when building queries in loops or based on conditional logic, as seen in Routier's internal view computation system.
 

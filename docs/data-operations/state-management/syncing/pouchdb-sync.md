@@ -20,15 +20,9 @@ The PouchDB plugin integrates with PouchDB's replication engine, which provides 
 
 The URL to your remote CouchDB-compatible database. Must be a valid HTTP/HTTPS URL.
 
-```ts
-import { PouchDbPlugin } from "@routier/pouchdb-plugin";
 
-const plugin = new PouchDbPlugin("myapp", {
-  sync: {
-    remoteDb: "http://127.0.0.1:5984/myapp",
-  },
-});
-```
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-1.ts %}{% endhighlight %}
+
 
 ### `live` (Optional)
 
@@ -36,12 +30,9 @@ Enable continuous synchronization. When `true`, the sync will continue running a
 
 **Default:** `false`
 
-```ts
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp",
-  live: true // Continuous sync
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-2.ts %}{% endhighlight %}
+
 
 ### `retry` (Optional)
 
@@ -49,12 +40,9 @@ Enable automatic retry with exponential backoff. When enabled, failed sync opera
 
 **Default:** `false`
 
-```ts
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp",
-  retry: true // Auto-retry failed syncs
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-3.ts %}{% endhighlight %}
+
 
 ### `pull` (Optional)
 
@@ -65,16 +53,9 @@ Configure options for pulling changes from remote. This is an object that can in
 - `filter`: Function to filter documents during pull
 - Any other PouchDB replication options
 
-```ts
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp",
-  pull: {
-    live: true,
-    retry: true,
-    filter: (doc) => doc.collectionName === "public_data"
-  }
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-4.ts %}{% endhighlight %}
+
 
 ### `push` (Optional)
 
@@ -83,37 +64,17 @@ Configure options for pushing changes to remote. Can be set to `false` to disabl
 - Set to `false`: Disable pushing (pull-only sync)
 - Object: Configuration for pushing (similar structure to `pull`)
 
-```ts
-// Pull-only sync
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp",
-  pull: { live: true },
-  push: false
-}
 
-// Configure push options
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp",
-  push: {
-    live: true,
-    retry: true
-  }
-}
-```
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-5.ts %}{% endhighlight %}
+
 
 ### `filter` (Optional)
 
 Function to filter documents during sync. The filter function receives a document and returns `true` to include it or `false` to exclude it.
 
-```ts
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp",
-  filter: (doc) => {
-    // Only sync documents from specific collections
-    return doc.collectionName === "item" || doc.collectionName === "category";
-  }
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-6.ts %}{% endhighlight %}
+
 
 **Note:** Filters apply to both pull and push unless specified separately in `pull` or `push` options.
 
@@ -121,17 +82,9 @@ sync: {
 
 Callback function that receives sync events. Use this to process synced documents manually, track progress, or handle conflicts.
 
-```ts
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp",
-  onChange: (schemas, change) => {
-    if (change.direction === "pull" && change.change?.docs) {
-      // Process pulled documents
-      console.log(`Pulled ${change.change.docs.length} documents`);
-    }
-  }
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-7.ts %}{% endhighlight %}
+
 
 **Parameters:**
 
@@ -144,94 +97,57 @@ sync: {
 
 Callback function called when a sync error occurs.
 
-```ts
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp",
-  onError: (schemas, error) => {
-    console.error("Sync error:", error);
-    // Handle error, notify user, etc.
-  }
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-8.ts %}{% endhighlight %}
+
 
 ### `onComplete` (Optional)
 
 Callback function called when a sync operation completes (only for non-live syncs).
 
-```ts
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp",
-  onComplete: (schemas, event) => {
-    console.log("Sync completed:", event);
-  }
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-9.ts %}{% endhighlight %}
+
 
 ### `onPaused` (Optional)
 
 Callback function called when sync is paused (typically due to network issues).
 
-```ts
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp",
-  onPaused: (schemas, event) => {
-    console.log("Sync paused - network may be unavailable");
-  }
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-10.ts %}{% endhighlight %}
+
 
 ### `onActive` (Optional)
 
 Callback function called when sync becomes active after being paused.
 
-```ts
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp",
-  onActive: (schemas) => {
-    console.log("Sync resumed");
-  }
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-11.ts %}{% endhighlight %}
+
 
 ### `onDenied` (Optional)
 
 Callback function called when sync is denied (typically due to authentication/permission issues).
 
-```ts
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp",
-  onDenied: (schemas, event) => {
-    console.error("Sync denied:", event);
-  }
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-12.ts %}{% endhighlight %}
+
 
 ### `auth` (Optional)
 
 Authentication credentials for the remote database.
 
-```ts
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp",
-  auth: {
-    username: "myuser",
-    password: "mypassword"
-  }
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-13.ts %}{% endhighlight %}
+
 
 ### `headers` (Optional)
 
 Custom HTTP headers to send with sync requests.
 
-```ts
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp",
-  headers: {
-    "X-Custom-Header": "value"
-  }
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-14.ts %}{% endhighlight %}
+
 
 ## Processing Sync Events
 
@@ -244,18 +160,9 @@ The `onChange` callback receives sync events that contain information about what
 
 ### Basic Usage
 
-```ts
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp",
-  onChange: (schemas, change) => {
-    if (change.direction === "pull" && change.change?.docs) {
-      console.log(`Pulled ${change.change.docs.length} documents`);
-    } else if (change.direction === "push" && change.change?.docs) {
-      console.log(`Pushed ${change.change.docs.length} documents`);
-    }
-  }
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-15.ts %}{% endhighlight %}
+
 
 ### Routing Documents by Collection
 
@@ -272,21 +179,9 @@ PouchDB automatically detects conflicts when the same document is modified in bo
 
 Check for conflicts in your `onChange` callback:
 
-```ts
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp",
-  onChange: (schemas, change) => {
-    if (change.change?.docs) {
-      change.change.docs.forEach((doc) => {
-        if (doc._conflicts && doc._conflicts.length > 0) {
-          console.warn(`Conflict detected in document ${doc._id}`);
-          // Handle conflict: merge, use local, use remote, etc.
-        }
-      });
-    }
-  }
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-16.ts %}{% endhighlight %}
+
 
 ### Resolving Conflicts
 
@@ -318,82 +213,41 @@ Common advanced options include:
 
 Use pull-only sync when you want to receive updates from a server but don't want local changes to sync back:
 
-```ts
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp",
-  pull: {
-    live: true,
-    retry: true
-  },
-  push: false
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-17.ts %}{% endhighlight %}
+
 
 ### Push-Only Sync
 
 Use push-only sync to send local changes to a server without receiving updates:
 
-```ts
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp",
-  pull: false,
-  push: {
-    live: true,
-    retry: true
-  }
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-18.ts %}{% endhighlight %}
+
 
 ### Bidirectional Sync
 
 Default behavior when both directions are enabled:
 
-```ts
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp",
-  live: true,
-  retry: true
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-19.ts %}{% endhighlight %}
+
 
 ### One-Time Sync
 
 Perform a single sync operation without live updates:
 
-```ts
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp",
-  live: false
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-20.ts %}{% endhighlight %}
+
 
 ## Starting Sync
 
 After creating the plugin, you need to start the sync process. The plugin provides a `sync()` method that you should call:
 
-```ts
-import { DataStore } from "@routier/datastore";
-import { PouchDbPlugin } from "@routier/pouchdb-plugin";
 
-const plugin = new PouchDbPlugin("myapp", {
-  sync: {
-    remoteDb: "http://127.0.0.1:5984/myapp",
-    live: true,
-    retry: true,
-  },
-});
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-21.ts %}{% endhighlight %}
 
-class AppDataStore extends DataStore {
-  constructor() {
-    super(plugin);
-  }
-}
-
-const store = new AppDataStore();
-
-// Start sync
-plugin.sync(store.schemas);
-```
 
 ## Troubleshooting
 

@@ -28,19 +28,9 @@ You have flexibility in how you provide your DataStore to components. Here are t
 
 Create a custom hook that returns a new DataStore instance:
 
-```tsx
-// hooks/useDataStore.ts
-import { useMemo } from "react";
-import { DataStore } from "@routier/datastore";
-import { MemoryPlugin } from "@routier/memory-plugin";
 
-export function useDataStore() {
-  // This will cause subscriptions to run infinitely if this is not done
-  // Always use useMemo to prevent infinite subscription loops
-  const dataStore = useMemo(() => new DataStore(new MemoryPlugin("app")), []);
-  return dataStore;
-}
-```
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/best-practices/index/block-1.tsx %}{% endhighlight %}
+
 
 **Critical:** You **must** use `useMemo` when creating a DataStore instance. Without `useMemo`, a new DataStore is created on every render, which causes subscriptions to be recreated infinitely. Each new datastore instance triggers `useQuery`'s effect to re-run, creating new subscriptions, which can cause performance issues and infinite loops.
 
@@ -50,36 +40,21 @@ export function useDataStore() {
 
 If you prefer to share a single instance through your component tree:
 
-```tsx
-// DataStoreContext.tsx
-import { createContext, useContext, ReactNode } from "react";
-import { DataStore } from "@routier/datastore";
-import { MemoryPlugin } from "@routier/memory-plugin";
 
-const DataStoreContext = createContext<DataStore | null>(null);
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/best-practices/index/block-2.tsx %}{% endhighlight %}
 
-export function DataStoreProvider({ children }: { children: ReactNode }) {
-  // This will cause subscriptions to run infinitely if this is not done
-  // Always use useMemo to prevent infinite subscription loops
-  const store = useMemo(() => new DataStore(new MemoryPlugin("app")), []);
-
-  return (
-    <DataStoreContext.Provider value={store}>
-      {children}
-    </DataStoreContext.Provider>
-  );
-}
-
-export function useDataStore() {
-  const context = useContext(DataStoreContext);
-  if (!context) {
-    throw new Error("useDataStore must be used within DataStoreProvider");
-  }
-  return context;
-}
-```
 
 **Important:** Routier uses BroadcastChannel for subscriptions, so even different DataStore instances will receive update notifications automatically. Both approaches work seamlessly with live queries.
+
+### Debug Logging in Vite
+
+Routier is built with rspack, which replaces `import.meta.env` with `undefined` in the bundle. In a Vite app, you must enable debug logging explicitly by setting `globalThis.__ROUTIER_DEBUG__` at the top of your entry file (before any routier imports):
+
+
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/best-practices/index/block-3.tsx %}{% endhighlight %}
+
+
+For full details on enabling and disabling logging across all environments, see [Debug Logging](/how-to/debug-logging.md).
 
 ## Common Pitfalls
 
@@ -87,18 +62,9 @@ export function useDataStore() {
 
 **Problem:** Creating a new DataStore instance on every render causes infinite subscription loops.
 
-```tsx
-// ❌ WRONG - This will cause infinite subscriptions
-function ProductsList() {
-  const dataStore = new DataStore(new MemoryPlugin("app")); // New instance every render!
 
-  const products = useQuery(
-    (cb) => dataStore.products.subscribe().toArray(cb),
-    [dataStore] // dataStore reference changes every render
-  );
-  // This causes useQuery's effect to re-run infinitely
-}
-```
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/best-practices/index/block-4.tsx %}{% endhighlight %}
+
 
 **Why this happens:**
 
@@ -110,24 +76,9 @@ function ProductsList() {
 
 **Solution:** Always memoize your DataStore instance:
 
-```tsx
-// ✅ CORRECT - Memoized instance
-function ProductsList() {
-  const dataStore = useDataStore(); // Memoized in hook
 
-  const products = useQuery(
-    (cb) => dataStore.products.subscribe().toArray(cb),
-    [dataStore] // Stable reference
-  );
-}
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/best-practices/index/block-5.tsx %}{% endhighlight %}
 
-// In your useDataStore hook:
-export function useDataStore() {
-  // This will cause subscriptions to run infinitely if this is not done
-  const dataStore = useMemo(() => new DataStore(new MemoryPlugin("app")), []);
-  return dataStore;
-}
-```
 
 **How to identify:** If you see subscriptions firing repeatedly or your component re-rendering continuously, check that your DataStore is memoized with `useMemo`.
 
@@ -137,132 +88,37 @@ export function useDataStore() {
 
 Always check status before accessing data:
 
-```tsx
-const products = useQuery(
-  (cb) => dataStore.products.subscribe().toArray(cb),
-  []
-);
 
-if (products.status === "pending") {
-  return <LoadingSpinner />;
-}
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/best-practices/index/block-6.tsx %}{% endhighlight %}
 
-if (products.status === "error") {
-  return <ErrorMessage error={products.error} />;
-}
-
-return <ProductsList products={products.data} />;
-```
 
 ### Custom Error Component
 
-```tsx
-interface ErrorDisplayProps {
-  error: Error;
-  retry?: () => void;
-}
 
-function ErrorDisplay({ error, retry }: ErrorDisplayProps) {
-  return (
-    <div className="error">
-      <p>Something went wrong: {error.message}</p>
-      {retry && <button onClick={retry}>Retry</button>}
-    </div>
-  );
-}
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/best-practices/index/block-7.tsx %}{% endhighlight %}
 
-// Usage
-if (products.status === "error") {
-  return <ErrorDisplay error={products.error} />;
-}
-```
 
 ### Error Boundary Pattern
 
-```tsx
-import { Component, ReactNode } from "react";
 
-interface Props {
-  children: ReactNode;
-}
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/best-practices/index/block-8.tsx %}{% endhighlight %}
 
-interface State {
-  hasError: boolean;
-  error?: Error;
-}
-
-class QueryErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return <ErrorDisplay error={this.state.error!} />;
-    }
-
-    return this.props.children;
-  }
-}
-
-// Usage
-<QueryErrorBoundary>
-  <ProductsList />
-</QueryErrorBoundary>;
-```
 
 ## Loading States
 
 ### Reusable Loading Component
 
-```tsx
-interface LoadingProps {
-  size?: "small" | "medium" | "large";
-  message?: string;
-}
 
-function Loading({ size = "medium", message = "Loading..." }: LoadingProps) {
-  return (
-    <div className={`loading loading-${size}`}>
-      <Spinner />
-      <p>{message}</p>
-    </div>
-  );
-}
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/best-practices/index/block-9.tsx %}{% endhighlight %}
 
-// Usage
-if (products.status === "pending") {
-  return <Loading message="Loading products..." />;
-}
-```
 
 ### Skeleton Screens
 
 For better UX, show skeleton screens instead of spinners:
 
-```tsx
-function ProductSkeleton() {
-  return (
-    <div className="skeleton">
-      <div className="skeleton-image"></div>
-      <div className="skeleton-title"></div>
-      <div className="skeleton-description"></div>
-    </div>
-  );
-}
 
-// Usage
-if (products.status === "pending") {
-  return Array(3)
-    .fill(0)
-    .map((_, i) => <ProductSkeleton key={i} />);
-}
-```
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/best-practices/index/block-10.tsx %}{% endhighlight %}
+
 
 ## Performance Optimization
 
@@ -270,141 +126,31 @@ if (products.status === "pending") {
 
 ### Debounce Search Inputs
 
-```tsx
-import { useState, useEffect } from "react";
 
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState(value);
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/best-practices/index/block-11.tsx %}{% endhighlight %}
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => clearTimeout(handler);
-  }, [value, delay]);
-
-  return debouncedValue;
-}
-
-function SearchableProducts() {
-  const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 300);
-
-  const products = useQuery(
-    (cb) =>
-      dataStore.products
-        .where((p) => p.name.includes(debouncedSearch))
-        .subscribe()
-        .toArray(cb),
-    [debouncedSearch]
-  );
-
-  return (
-    <>
-      <input value={search} onChange={(e) => setSearch(e.target.value)} />
-      {/* Render products */}
-    </>
-  );
-}
-```
 
 ### Split Components
 
 Keep query logic separate from presentation:
 
-```tsx
-// hooks/useProducts.ts
-export function useProducts(searchTerm: string) {
-  const dataStore = useDataStore();
 
-  return useQuery(
-    (cb) =>
-      dataStore.products
-        .where((p) => p.name.includes(searchTerm))
-        .subscribe()
-        .toArray(cb),
-    [searchTerm]
-  );
-}
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/best-practices/index/block-12.tsx %}{% endhighlight %}
 
-// components/ProductsList.tsx
-export function ProductsList({ searchTerm }: { searchTerm: string }) {
-  const products = useProducts(searchTerm);
-
-  if (products.status === "pending") return <Loading />;
-  if (products.status === "error")
-    return <ErrorDisplay error={products.error} />;
-
-  return (
-    <ul>
-      {products.data?.map((product) => (
-        <ProductCard key={product.id} product={product} />
-      ))}
-    </ul>
-  );
-}
-```
 
 ## Testing
 
 ### Mock DataStore for Testing
 
-```tsx
-// test-utils/mockStore.ts
-import { MemoryPlugin } from "@routier/memory-plugin";
-import { DataStore } from "@routier/datastore";
 
-export function createMockStore() {
-  return new DataStore(new MemoryPlugin("test"));
-}
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/best-practices/index/block-13.tsx %}{% endhighlight %}
 
-// Usage in tests
-import { render } from "@testing-library/react";
-import { DataStoreProvider } from "../contexts/DataStoreContext";
-
-function renderWithStore(component: ReactElement, store: DataStore) {
-  return render(
-    <DataStoreProvider store={store}>{component}</DataStoreProvider>
-  );
-}
-
-test("renders products", () => {
-  const store = createMockStore();
-  // Populate store with test data
-  store.products.addAsync({ name: "Test Product" });
-
-  renderWithStore(<ProductsList />, store);
-  // Assertions...
-});
-```
 
 ### Testing useQuery
 
-```tsx
-import { renderHook, waitFor } from "@testing-library/react";
 
-test("useQuery returns data", async () => {
-  const store = createMockStore();
-  await store.products.addAsync({ name: "Test" });
-  await store.saveChangesAsync();
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/best-practices/index/block-14.tsx %}{% endhighlight %}
 
-  const { result } = renderHook(
-    () => useQuery((cb) => store.products.subscribe().toArray(cb), []),
-    {
-      wrapper: ({ children }) => (
-        <DataStoreProvider store={store}>{children}</DataStoreProvider>
-      ),
-    }
-  );
-
-  await waitFor(() => {
-    expect(result.current.status).toBe("success");
-  });
-
-  expect(result.current.data).toHaveLength(1);
-});
-```
 
 ## Understanding Query Patterns
 
@@ -424,29 +170,15 @@ test("useQuery returns data", async () => {
 
 **With `.subscribe()`** - Dynamic data that changes:
 
-```tsx
-// ✅ Use .subscribe() when data changes
-function ProductsList() {
-  const products = useQuery(
-    (callback) => dataStore.products.subscribe().toArray(callback),
-    []
-  );
-  // Automatically updates when products are added/updated/removed
-}
-```
+
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/best-practices/index/block-15.tsx %}{% endhighlight %}
+
 
 **Without `.subscribe()`** - Static data that doesn't change:
 
-```tsx
-// ✅ Use without .subscribe() for static/one-time data
-function ConfigDisplay() {
-  const config = useQuery(
-    (callback) => dataStore.config.toArray(callback), // No .subscribe()
-    []
-  );
-  // Runs once, never updates - perfect for app configuration
-}
-```
+
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/best-practices/index/block-16.tsx %}{% endhighlight %}
+
 
 ## Common Patterns
 
@@ -454,177 +186,53 @@ function ConfigDisplay() {
 
 Implement a manual refetch:
 
-```tsx
-function RefetchableProducts() {
-  const [key, setKey] = useState(0);
 
-  const products = useQuery(
-    (cb) => dataStore.products.subscribe().toArray(cb),
-    [key] // Re-run when key changes
-  );
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/best-practices/index/block-17.tsx %}{% endhighlight %}
 
-  const refetch = () => setKey((prev) => prev + 1);
-
-  return (
-    <>
-      <button onClick={refetch}>Refresh</button>
-      {/* Render products */}
-    </>
-  );
-}
-```
 
 ### Conditional Queries
 
 Skip queries based on conditions:
 
-```tsx
-function ConditionalQuery({ userId }: { userId?: string }) {
-  const dataStore = useDataStore();
 
-  const orders = useQuery(
-    (cb) => {
-      if (!userId) return; // Skip query
-      return dataStore.orders
-        .where((o) => o.userId === userId)
-        .subscribe()
-        .toArray(cb);
-    },
-    [userId]
-  );
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/best-practices/index/block-18.tsx %}{% endhighlight %}
 
-  if (!userId) return <div>Please select a user</div>;
-  // Rest of component...
-}
-```
 
 ### Optimistic Updates Pattern
 
 Combine queries with mutations:
 
-```tsx
-async function addProduct(product: ProductData) {
-  // Add optimistically
-  await dataStore.products.addAsync(product);
-  await dataStore.saveChangesAsync();
 
-  // Query automatically updates with new data
-}
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/best-practices/index/block-19.tsx %}{% endhighlight %}
 
-function ProductsWithAdd() {
-  const products = useQuery(
-    (cb) => dataStore.products.subscribe().toArray(cb),
-    []
-  );
-
-  const handleAdd = async (product: ProductData) => {
-    await addProduct(product);
-  };
-
-  return (
-    <>
-      <AddProductForm onSubmit={handleAdd} />
-      {/* Render products */}
-    </>
-  );
-}
-```
 
 ### Computed Values
 
 Derive data from queries:
 
-```tsx
-function ProductStats() {
-  const dataStore = useDataStore();
 
-  const products = useQuery(
-    (cb) => dataStore.products.subscribe().toArray(cb),
-    []
-  );
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/best-practices/index/block-20.tsx %}{% endhighlight %}
 
-  const stats = useMemo(() => {
-    if (products.status !== "success") return null;
-
-    return {
-      total: products.data!.length,
-      totalValue: products.data!.reduce((sum, p) => sum + p.price, 0),
-      averagePrice:
-        products.data!.reduce((sum, p) => sum + p.price, 0) /
-        products.data!.length,
-    };
-  }, [products]);
-
-  if (products.status === "pending") return <Loading />;
-  if (!stats) return null;
-
-  return (
-    <div>
-      <p>Total Products: {stats.total}</p>
-      <p>Total Value: ${stats.totalValue}</p>
-      <p>Average Price: ${stats.averagePrice}</p>
-    </div>
-  );
-}
-```
 
 ## Anti-Patterns to Avoid
 
 ### Don't Call Queries Outside Components
 
-```tsx
-// ❌ Bad
-const data = useQuery(/* ... */); // Called outside component
 
-function MyComponent() {
-  return <div>{data.data}</div>;
-}
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/best-practices/index/block-21.tsx %}{% endhighlight %}
 
-// ✅ Good
-function MyComponent() {
-  const data = useQuery(/* ... */); // Inside component
-  return <div>{data.data}</div>;
-}
-```
 
 ### Don't Forget Dependencies
 
-```tsx
-// ❌ Bad - will not update when searchTerm changes
-const products = useQuery(
-  (cb) =>
-    dataStore.products
-      .where((p) => p.name.includes(searchTerm))
-      .subscribe()
-      .toArray(cb),
-  [] // Missing searchTerm
-);
 
-// ✅ Good
-const products = useQuery(
-  (cb) =>
-    dataStore.products
-      .where((p) => p.name.includes(searchTerm))
-      .subscribe()
-      .toArray(cb),
-  [searchTerm] // Include dependencies
-);
-```
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/best-practices/index/block-22.tsx %}{% endhighlight %}
+
 
 ### Don't Access Data Without Status Check
 
-```tsx
-// ❌ Bad
-if (result.data) {
-  // Could be undefined
-  console.log(result.data);
-}
 
-// ✅ Good
-if (result.status === "success") {
-  console.log(result.data); // TypeScript knows data is defined
-}
-```
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/best-practices/index/block-23.tsx %}{% endhighlight %}
+
 
 ## Next Steps
 

@@ -382,7 +382,7 @@ describe('EphemeralDataCollection', () => {
             numericalCollection.add(item2);
 
             expect(item1.id).toBe(5);
-            expect(item2.id).toBe(1);
+            expect(item2.id).toBe(6);
         });
     });
 

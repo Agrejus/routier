@@ -1,11 +1,13 @@
-// Good: DB filter first, then computed filter (runs remaining in memory)
-const found = await ctx.userProfiles
-  .where((u) => u.firstName.startsWith("A")) // database-backed
-  .where((u) => u.age === 0) // computed (in-memory)
-  .firstOrUndefinedAsync();
+// Get first 10 products
+const firstPage = await ctx.products.take(10).toArrayAsync();
 
-// Avoid: starting with a computed filter can lead to a broader load before filtering in memory
-const avoid = await ctx.userProfiles
-  .where((u) => u.age === 0) // computed (in-memory)
-  .where((u) => u.firstName.startsWith("A")) // database-backed
+// Get second page (skip first 10, take next 10)
+const secondPage = await ctx.products.skip(10).take(10).toArrayAsync();
+
+// Pagination helper
+const pageSize = 10;
+const pageNumber = 2; // 0-based
+const page = await ctx.products
+  .skip(pageSize * pageNumber)
+  .take(pageSize)
   .toArrayAsync();

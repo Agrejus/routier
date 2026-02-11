@@ -31,24 +31,9 @@ Data manipulation in Routier covers both querying your data and modifying it thr
 
 All data manipulation operations are built into the query API. Here are common patterns:
 
-```ts
-// Transform data - reshape entities
-const summaries = await ctx.products
-  .map((p) => ({ name: p.name, price: p.price }))
-  .toArrayAsync();
 
-// Aggregate data - calculate totals
-const total = await ctx.products
-  .where((p) => p.inStock)
-  .sumAsync((p) => p.price);
+{% highlight ts linenos %}{% include code/from-docs/guides/data-manipulation/block-1.ts %}{% endhighlight %}
 
-// Combine operations - filter, sort, and transform
-const results = await ctx.products
-  .where((p) => p.category === "electronics")
-  .sort((p) => p.price)
-  .map((p) => ({ id: p.id, name: p.name }))
-  .toArrayAsync();
-```
 
 ## Updating Entities with Proxies
 
@@ -69,41 +54,17 @@ This happens transparently—you write normal JavaScript code and Routier handle
 
 Update properties directly:
 
-```ts
-const user = await ctx.users.firstOrUndefinedAsync((u) => u.id === "user-123");
 
-if (user) {
-  // Direct property updates - automatically tracked
-  user.name = "John Smith";
-  user.age = 31;
-  user.email = "john@example.com";
+{% highlight ts linenos %}{% include code/from-docs/guides/data-manipulation/block-2.ts %}{% endhighlight %}
 
-  // Changes tracked, but not yet persisted
-  await ctx.saveChangesAsync(); // Now saved to storage
-}
-```
 
 ### Updating Nested Objects
 
 Nested objects are also proxied, so changes are tracked automatically:
 
-```ts
-const user = await ctx.users.firstOrUndefinedAsync((u) => u.id === "user-123");
 
-if (user) {
-  // Update nested address
-  user.address.street = "789 Pine Street";
-  user.address.city = "Metropolis";
-  user.address.zipCode = "10001";
+{% highlight ts linenos %}{% include code/from-docs/guides/data-manipulation/block-3.ts %}{% endhighlight %}
 
-  // Update nested profile
-  user.profile.bio = "Updated bio";
-  user.profile.website = "https://johnsmith.com";
-
-  // All nested changes are tracked
-  await ctx.saveChangesAsync();
-}
-```
 
 ### Updating Arrays
 
@@ -111,42 +72,17 @@ Arrays require special handling. Here's what works and what doesn't:
 
 #### ✅ Works: Mutating Arrays Directly
 
-```ts
-const user = await ctx.users.firstOrUndefinedAsync((u) => u.id === "user-123");
 
-if (user) {
-  // Add items to array
-  user.tags.push("premium");
-  user.tags.push("verified");
+{% highlight ts linenos %}{% include code/from-docs/guides/data-manipulation/block-4.ts %}{% endhighlight %}
 
-  // Remove items by replacing the array
-  user.tags = user.tags.filter((tag) => tag !== "temporary");
-
-  // Modify array elements
-  if (user.orders.length > 0) {
-    user.orders[0].status = "shipped";
-    user.orders[0].trackingNumber = "TRK123456";
-  }
-
-  await ctx.saveChangesAsync();
-}
-```
 
 #### ⚠️ Limitation: Replacing Entire Arrays
 
 When you replace an entire array, the change is tracked:
 
-```ts
-// ✅ This works - replaces the entire array
-user.preferences = ["dark-theme", "notifications", "analytics"];
 
-// ❌ This doesn't work - doesn't track individual array mutations
-// user.orders.pop(); // Not tracked
-// user.orders[5] = newOrder; // Not tracked
+{% highlight ts linenos %}{% include code/from-docs/guides/data-manipulation/block-5.ts %}{% endhighlight %}
 
-// ✅ Instead, replace the array
-user.orders = [...user.orders.slice(0, 5), newOrder, ...user.orders.slice(6)];
-```
 
 ### What Works and What Doesn't
 
@@ -168,31 +104,9 @@ user.orders = [...user.orders.slice(0, 5), newOrder, ...user.orders.slice(6)];
 
 Here's a complete example showing proper update patterns:
 
-```ts
-const user = await ctx.users.firstOrUndefinedAsync(
-  (u) => u.email === "john@example.com"
-);
 
-if (user) {
-  // Update simple properties
-  user.firstName = "John";
-  user.lastName = "Smith";
+{% highlight ts linenos %}{% include code/from-docs/guides/data-manipulation/block-6.ts %}{% endhighlight %}
 
-  // Update nested objects
-  user.address.street = "456 Oak Avenue";
-  user.address.city = "New York";
-
-  // Modify arrays
-  user.tags.push("premium");
-  user.tags.push("verified");
-
-  // Replace array entirely
-  user.preferences = ["dark-theme", "notifications"];
-
-  // All changes tracked in memory
-  await ctx.saveChangesAsync(); // Persist to storage
-}
-```
 
 ## Related Guides
 

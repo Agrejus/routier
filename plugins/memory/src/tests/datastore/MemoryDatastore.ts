@@ -16,12 +16,14 @@ import { ordersSchema } from "../schemas/order";
 import { blogPostsSchema } from "../schemas/blogPost";
 import { taskViewSchema } from "../schemas/taskView";
 import { taskSchema } from "../schemas/task";
+import { widgetSchema } from "../schemas/widget";
 
 export class TestDataStore extends DataStore {
     constructor(plugin: IDbPlugin) {
         super(plugin);
     }
 
+    widgets = this.collection(widgetSchema).create();
     products = this.collection(productsSchema).scope(([x, p]) => x.documentType === p.collectionName, productsSchema).create();
     productsView = this.view(productsViewSchema).scope(([x, p]) => x.documentType === p.collectionName, productsViewSchema).derive((done) => {
         return this.products.subscribe().toArray(productsResponse => {

@@ -19,12 +19,9 @@ This document outlines the implementation sketch for a Change Data Capture (CDC)
 
 Stores the last known server timestamp for each schema/collection.
 
-```typescript
-interface SyncMetadata {
-  schemaId: string;              // Collection identifier
-  lastSyncTimestamp: number;     // Server-provided timestamp from last successful sync
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/sync-architecture/block-1.ts %}{% endhighlight %}
+
 
 **Storage Strategy**: Store in the same database as data to enable atomic transactions.
 
@@ -32,18 +29,9 @@ interface SyncMetadata {
 
 Tracks local changes that haven't been sent to the server yet.
 
-```typescript
-interface PendingChange {
-  schemaId: string;
-  entityId: string;              // Hash of entity IDs
-  changeType: 'add' | 'update' | 'remove';
-  localTimestamp: number;        // When change was made locally (for ordering only)
-  serverTimestamp?: number;      // Server-provided timestamp after successful sync
-  entityData?: any;              // Full entity data for adds/updates
-  retryCount?: number;           // Number of retry attempts
-  status: 'pending' | 'syncing' | 'synced' | 'failed';
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/sync-architecture/block-2.ts %}{% endhighlight %}
+
 
 ### Server-Side Infrastructure
 
@@ -51,12 +39,9 @@ interface PendingChange {
 
 Key-value store tracking the latest change timestamp per table.
 
-```typescript
-interface TableChangeTimestamp {
-  tableName: string;
-  lastChangeTimestamp: number;   // Server-generated timestamp (monotonic)
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/sync-architecture/block-3.ts %}{% endhighlight %}
+
 
 **Implementation**: Can be a simple key-value store (Redis, in-memory Map, etc.)
 
@@ -194,62 +179,9 @@ Sends local changes to server.
 
 ### New Methods
 
-```typescript
-export abstract class SyncDataStore extends DataStore {
-  
-  // Get sync metadata for a schema
-  protected getSyncMetadata(schemaId: string): SyncMetadata | null {
-    // Retrieve from CDC table/collection
-  }
-  
-  // Update sync metadata with server-provided timestamp
-  protected updateSyncMetadata(
-    schemaId: string, 
-    serverTimestamp: number,
-    done: CallbackResult<void>
-  ): void {
-    // Update CDC table atomically
-  }
-  
-  // Enhanced fetch with timestamp support
-  abstract fetchRemoteData<T extends {}>(
-    schema: CompiledSchema<T>,
-    sinceTimestamp: number | null,  // Client's last known server timestamp
-    done: CallbackResult<{ data: T[], serverTimestamp: number }>
-  ): void;
-  
-  // Queue local change for later sync
-  protected queueLocalChange(
-    schemaId: string,
-    change: PendingChange
-  ): void {
-    // Add to QUEUE table
-  }
-  
-  // Process queued changes
-  protected processQueuedChanges(
-    schemaId: string,
-    done: CallbackResult<void>
-  ): void {
-    // Send QUEUE items to server
-    // Update CDC with server timestamp on success
-    // Remove from QUEUE on success
-  }
-  
-  // Atomic sync operation
-  private atomicSyncRemoteData<T>(
-    schema: CompiledSchema<T>,
-    remoteData: T[],
-    serverTimestamp: number,
-    done: CallbackResult<void>
-  ): void {
-    // 1. Calculate changes
-    // 2. Apply data changes
-    // 3. Update CDC metadata
-    // 4. Commit atomically (or rollback both on failure)
-  }
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/sync-architecture/block-8.ts %}{% endhighlight %}
+
 
 ### Atomic Operations Strategy
 
@@ -257,24 +189,9 @@ export abstract class SyncDataStore extends DataStore {
 
 If the plugin supports transactions:
 
-```typescript
-// In IDbPlugin interface
-interface IDbPlugin {
-  // ... existing methods ...
-  
-  beginTransaction?(): string | Promise<string>;
-  commitTransaction?(txId: string, done: CallbackResult<void>): void;
-  rollbackTransaction?(txId: string, done: CallbackResult<void>): void;
-  
-  // OR: Atomic bulk operation
-  atomicBulkPersistWithMetadata?(
-    event: DbPluginBulkPersistEvent & { 
-      metadata?: Map<string, SyncMetadata> 
-    },
-    done: PluginEventCallbackPartialResult<BulkPersistResult>
-  ): void;
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/sync-architecture/block-9.ts %}{% endhighlight %}
+
 
 **Implementation Flow:**
 1. Begin transaction
@@ -286,109 +203,17 @@ interface IDbPlugin {
 
 Store CDC metadata as special entities in a metadata collection:
 
-```typescript
-class SyncDataStore {
-  private metadataSchema: CompiledSchema<SyncMetadata>;
-  private metadataCollection: Collection<SyncMetadata>;
-  
-  constructor(plugin: IDbPlugin) {
-    super(plugin);
-    
-    // Create metadata schema
-    this.metadataSchema = s.define("__sync_metadata__", {
-      schemaId: s.string().key(),
-      lastSyncTimestamp: s.number()
-    }).compile();
-    
-    this.metadataCollection = this.collection(this.metadataSchema).create();
-  }
-  
-  private atomicSyncWithMetadata<T>(
-    schema: CompiledSchema<T>,
-    remoteData: T[],
-    serverTimestamp: number,
-    done: CallbackResult<void>
-  ): void {
-    const collection = this.collections.get(schema.id);
-    const { adds, updates, removals } = this.calculateChanges(schema, remoteData);
-    
-    // Create bulk changes including both data AND metadata
-    const bulkChanges = new BulkPersistChanges();
-    
-    // Data changes
-    const schemaChanges = bulkChanges.resolve(schema.id);
-    schemaChanges.adds = adds;
-    schemaChanges.updates = updates.map(u => u.remote);
-    schemaChanges.removes = removals;
-    
-    // Metadata update
-    const metadataChanges = bulkChanges.resolve(this.metadataSchema.id);
-    const existingMetadata = this.getSyncMetadata(schema.id);
-    if (existingMetadata) {
-      metadataChanges.updates = [{
-        schemaId: schema.id,
-        lastSyncTimestamp: serverTimestamp
-      }];
-    } else {
-      metadataChanges.adds = [{
-        schemaId: schema.id,
-        lastSyncTimestamp: serverTimestamp
-      }];
-    }
-    
-    // Single atomic operation via saveChanges
-    this.saveChanges((result) => {
-      if (result.ok === Result.ERROR) {
-        // Everything rolled back automatically
-        return done(result);
-      }
-      
-      // Both data and metadata updated atomically
-      done(Result.success());
-    });
-  }
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/sync-architecture/block-10.ts %}{% endhighlight %}
+
 
 #### Option C: Compensating Transaction Pattern
 
 If transactions aren't available, use compensating transactions:
 
-```typescript
-private atomicSyncWithCompensation<T>(
-  schema: CompiledSchema<T>,
-  remoteData: T[],
-  serverTimestamp: number,
-  done: CallbackResult<void>
-): void {
-  const collection = this.collections.get(schema.id);
-  const { adds, updates, removals } = this.calculateChanges(schema, remoteData);
-  
-  // Store original state for rollback
-  const originalState = this.snapshotCollection(collection);
-  
-  // Step 1: Apply data changes
-  this.applyChanges(collection, adds, updates, removals, (changeResult) => {
-    if (changeResult.ok === Result.ERROR) {
-      return done(changeResult);
-    }
-    
-    // Step 2: Update CDC metadata
-    this.updateSyncMetadata(schema.id, serverTimestamp, (metadataResult) => {
-      if (metadataResult.ok === Result.ERROR) {
-        // CDC update failed - rollback data changes
-        this.rollbackChanges(collection, originalState, () => {
-          done(Result.error("Failed to update CDC metadata"));
-        });
-        return;
-      }
-      
-      // Both succeeded
-      done(Result.success());
-    });
-  });
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/sync-architecture/block-11.ts %}{% endhighlight %}
+
 
 ## Sync Flow Diagrams
 

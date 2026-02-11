@@ -155,6 +155,12 @@ export class SchemaSubscription<T extends {}> implements ISchemaSubscription<T> 
         // Link the callback to an instance
         regisry.receiver.addListener(this.id, ({ data, timestamp }) => {
 
+            console.log("[ROUTIER] broadcast -> listener received message", {
+                data,
+                timestamp,
+                createdAt: this.createdAt
+            });
+
             if (timestamp < this.createdAt) {
                 // Sent before the receiver was even created
                 return;

@@ -1,7 +1,7 @@
 import { DbPluginQueryEvent, ITranslatedValue, JsonTranslator, Query, QueryOptionsCollection } from "@routier/core/plugins";
 import { InferType } from "@routier/core/schema";
 import { CallbackResult, PluginEventCallbackResult, PluginEventResult, PluginEventSuccessType, Result } from "@routier/core/results";
-import { uuid } from "@routier/core/utilities";
+import { logger, uuid } from "@routier/core/utilities";
 import { CollectionDependencies, RequestContext } from "../collections/types";
 import { QueryBuilderBase } from "./base/QueryBuilderBase";
 import { assertIsArray } from "@routier/core";
@@ -146,11 +146,6 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
                 if (memoryEvent.operation.changeTracking === false) {
                     return done(PluginEventResult.success(memoryEvent.id, translatedEnrichedData.value));
                 }
-
-                console.log("POST", {
-                    translated: translatedEnrichedData.value,
-                    original: result.data.value
-                })
 
                 // Resolve the data with the current attachments - optimized: use for loop instead of forEach
                 assertIsArray(translatedEnrichedData.value);

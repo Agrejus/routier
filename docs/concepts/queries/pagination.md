@@ -27,38 +27,25 @@ Implement page-based pagination:
 
 ## Simple Take and Skip
 
-```ts
-// Get first 10 items
-const firstPage = await dataStore.products.take(10).toArrayAsync();
 
-// Skip first 10, get next 10
-const secondPage = await dataStore.products.skip(10).take(10).toArrayAsync();
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/pagination/block-1.ts %}{% endhighlight %}
+
 
 ## Pagination with Filtering
 
 Paginate filtered results:
 
-```ts
-const expensiveProductsPage = await dataStore.products
-  .where((p) => p.price > 100)
-  .sort((p) => p.price)
-  .skip(20)
-  .take(10)
-  .toArrayAsync();
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/pagination/block-2.ts %}{% endhighlight %}
+
 
 ## Pagination with Sorting
 
 Paginate sorted results:
 
-```ts
-const sortedProductsPage = await dataStore.products
-  .sortDescending((p) => p.price)
-  .skip(0)
-  .take(5)
-  .toArrayAsync();
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/pagination/block-3.ts %}{% endhighlight %}
+
 
 ## Related
 
