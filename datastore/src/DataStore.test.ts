@@ -6,6 +6,41 @@ import { s } from '@routier/core/schema';
 import { logger, PluginEventCallbackPartialResult, PluginEventCallbackResult, uuidv4 } from '@routier/core';
 import { MemoryPlugin } from '@routier/memory-plugin';
 
+// Options
+
+// Option 1 -> Classes
+// toJson is needed because we do not have class properties, only getters and setters
+// However, this would allow for immutable objects
+
+class Entity {
+
+    
+    get name() {
+        return "";
+    }
+
+    set name(value:string) {
+
+    }
+
+    toJson() {
+
+    }
+}
+
+// Option 2
+// const [ entity, setter] = await this.store.firstAsync();
+// const [[one, oneSetter], [two, twoSetter]] = await this.store.toArrayAsync();
+
+// Option 3
+// use a mutate function to change any object
+// const { mutate } = this.store;
+// mutate(entity, {
+//   name: "James"
+// })
+
+
+
 const simple = s.define("simple", {
     id: s.number().key(),
     name: s.string(),

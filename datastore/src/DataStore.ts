@@ -13,6 +13,7 @@ import { CollectionBase } from './collections/CollectionBase';
 import { CollectionDependencies } from './collections/types';
 import { ChangeTracker } from './change-tracking/ChangeTracker';
 import { DataBridge } from './data-access/DataBridge';
+import { assertIsNotNull } from '@routier/core';
 
 /**
  * The main Routier class, providing collection management, change tracking, and persistence for entities.
@@ -53,6 +54,14 @@ export class DataStore implements Disposable {
 
     getDbPlugin<T extends IDbPlugin>() {
         return this.dbPlugin as T;
+    }
+
+    getCollection<TEntity extends {}>(schema: CompiledSchema<TEntity>): Collection<TEntity> {
+        const collection = this.collections.get(schema.id);
+
+        assertIsNotNull(collection, `DataStore.getCollection() -> Could not find collection for schema Id.  Id: ${schema.id}, CollectionName: ${schema.collectionName}`);
+
+        return collection as Collection<TEntity>;
     }
 
     /**

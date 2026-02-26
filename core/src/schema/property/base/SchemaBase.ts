@@ -1,4 +1,4 @@
-import { DefaultValue, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes } from "../../types";
+import { DefaultValue, ForeignKey, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes } from "../../types";
 
 export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifiers> {
 
@@ -15,6 +15,7 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
     indexes: string[] = [];
     fromPropertyName: string | null = null;
 
+    foreignKeyDefinition: ForeignKey<unknown> | null = null;
     tags: string[] = [];
     injected: any = null;
     defaultValue: DefaultValue<T> | null = null;

@@ -18,11 +18,12 @@ import { FreezeHandlerBuilder } from '../codegen/handlers/FreezeHandlerBuilder';
 import { SchemaError } from '../errors/SchemaError';
 import { SerializeHandlerBuilder } from "../codegen/handlers/SerializeHandlerBuilder";
 import { hash, logger } from "../utilities";
-import { CollectionName, CompiledSchema, CompiledSchemaCore, GetHashTypeFunction, HashFunction, HashType, IdType, Index, InferCreateType, InferType, Prepare, Preprocess, SchemaId, SchemaTypes } from './types';
+import { CollectionName, CompiledSchema, CompiledSchemaCore, CompiledSchemaWithMetadata, GetHashTypeFunction, HashFunction, HashType, IdType, Index, InferCreateType, InferType, Prepare, Preprocess, SchemaId, SchemaTypes, SetProperties } from './types';
 import { DeepPartial } from '../types';
 import { SchemaSubscription } from './communication/broadcast';
 import { CompareIdsHandlerBuilder } from '../codegen/handlers/CompareIdsHandlerBuilder';
 import { StandardJSONSchemaV1, createStandardJsonSchemaProps, rehydrateSchemaFromJsonString } from './utils/standardJsonSchema';
+import { SetHandlerBuilder } from '../codegen/handlers';
 
 function createChangeTracker() {
     const DIRTY_ENTITY_MARKER: string = "isDirty";
@@ -290,7 +291,9 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
         }
     }
 
-    compile(): CompiledSchema<T> {
+    compile<TMetadata>(metadata: TMetadata): CompiledSchemaWithMetadata<T, TMetadata>
+    compile(): CompiledSchema<T>;
+    compile<TMetadata>(metadata?: TMetadata): CompiledSchema<T> | CompiledSchemaWithMetadata<T, TMetadata> {
         // Return cached compiled schema if available
         if (this.compiledSchema) {
             return this.compiledSchema;
@@ -315,6 +318,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const freezeHandlerBuilder = new FreezeHandlerBuilder();
             const serializeHandlerBuilder = new SerializeHandlerBuilder();
             const compareIdsHandlerBuilder = new CompareIdsHandlerBuilder();
+            const setHandlerBuilder = new SetHandlerBuilder();
 
             const enricher = enrichmentHandlerBuilder.build();
             const merge = mergeHandlerFactory.build();
@@ -330,6 +334,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const freezeHandler = freezeHandlerBuilder.build();
             const serializeHandler = serializeHandlerBuilder.build();
             const compareIdsHandler = compareIdsHandlerBuilder.build();
+            const setHandlerHanlder = setHandlerBuilder.build();
 
             const changeTrackingCodeBuilder = new CodeBuilder();
             changeTrackingCodeBuilder.raw(`${createChangeTracker.toString()}`);
@@ -367,6 +372,10 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const postprocessCodeBuilder = new CodeBuilder();
             postprocessCodeBuilder.slot("main");
             postprocessCodeBuilder.slot("return").raw(`     return result;`);
+
+            const setCodeBuilder = new CodeBuilder();
+            setCodeBuilder.slot("assignments");
+            setCodeBuilder.slot("ifs");
 
             const mergeCodeBuilder = new CodeBuilder();
 
@@ -501,6 +510,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                 enableChangeTrackingHandler.handle(property, changeTrackingCodeBuilder);
                 freezeHandler.handle(property, freezeCodeBuilder);
                 compareIdsHandler.handle(property, compareIdsCodeBuilder);
+                setHandlerHanlder.handle(property, setCodeBuilder);
             });
 
             if (idProperties.length === 0) {
@@ -543,6 +553,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const freezeFunction = this.createFunction<(entity: InferType<T>) => InferType<T>>(freezeCodeBuilder, "entity");
             const compareIdsFunction = this.createFunction<(a: InferType<T>, b: InferType<T>) => boolean>(compareIdsCodeBuilder, "a", "b");
             const preprocessFunction = this.createFunction<Preprocess<T>>(preprocessCodeBuilder, "entity");
+            const setFunction = this.createFunction<SetProperties<T>>(setCodeBuilder, "destination", "source");
 
             const enricherFactoryFunction = enrichGenerator();
             const postProcessFactoryFunction = postProcessGenerator();
@@ -585,6 +596,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const result: CompiledSchemaCore<T> = {
                 preprocess: preprocessFunction,
                 postprocess: postProcessFunction,
+                set: setFunction,
                 getId,
                 getProperty,
                 properties,
@@ -675,6 +687,20 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                     return indexes;
                 }
             };
+
+            if (metadata != null) {
+
+                const compiledSchemaWithMetadata: CompiledSchemaWithMetadata<T, TMetadata> = {
+                    ...result,
+                    createSubscription: (signal?: AbortSignal) => new SchemaSubscription(result, signal),
+                    metadata
+                };
+
+                // Cache the compiled schema with metadata
+                this.compiledSchema = compiledSchemaWithMetadata;
+
+                return compiledSchemaWithMetadata;
+            }
 
             const compiledSchema = {
                 createSubscription: (signal?: AbortSignal) => new SchemaSubscription(result, signal),

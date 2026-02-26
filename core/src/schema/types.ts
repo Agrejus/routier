@@ -11,6 +11,10 @@ import { Branded } from "../utilities/types";
 export type DefaultValue<T, I = never> = T | ((injected: I) => T);
 export type FunctionBody<TEntity, TResult> = (entity: TEntity, collectionName: CollectionName) => TResult;
 export type IdType = string | number;
+export type ForeignKey<T extends {}> = { 
+    schema: CompiledSchema<T>, 
+    property: PropertyInfo<T> 
+};
 
 export enum SchemaTypes {
     Array = "Array",
@@ -109,7 +113,13 @@ export type Preprocess<TEntity extends {}> = {
     (entity: InferType<TEntity>): InferType<TEntity>;
 }
 
-export type CompiledSchemaCore<TEntity extends {}> = Omit<CompiledSchema<TEntity>, "createSubscription">;
+export type SetProperties<TEntity extends {}> = (destination: InferType<TEntity> | InferCreateType<TEntity>, source: InferType<TEntity> | InferCreateType<TEntity>) => void;
+
+export type CompiledSchemaCore<TEntity extends {}, TMetadata = never> = Omit<CompiledSchema<TEntity>, "createSubscription">;
+
+export type CompiledSchemaWithMetadata<TEntity extends {}, TMetadata> = {
+    readonly metadata: TMetadata;
+} & CompiledSchema<TEntity>;
 
 /**
  * Represents a fully compiled schema with all utilities and metadata for an entity type.
@@ -147,7 +157,8 @@ export type CompiledSchema<TEntity extends {}> = {
     compare: (a: InferType<TEntity>, fromDb: InferType<TEntity>) => boolean;
     /** Deserializes an entity from storage format. */
     deserialize: (entity: InferType<TEntity>) => InferType<TEntity>;
-
+    /** Sets 1 or many properties from the source object onto the destination object with change tracking. */
+    set: SetProperties<TEntity>;
     /** Combines serializing and preparing an entity for saving. */
     preprocess: Preprocess<TEntity>;
     /** Combines deserializing and enriching an entity for selection. */

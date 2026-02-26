@@ -1,7 +1,7 @@
 import { UnknownRecord } from '../utilities';
 import { SchemaBase } from './property/base/SchemaBase';
 import { SchemaArray } from './property/types/SchemaArray';
-import { DefaultValue, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaTypes } from './types';
+import { CompiledSchema, DefaultValue, ForeignKey, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaTypes } from './types';
 
 const SUPPORTED_DESERIALIZATION_TYPES = new Set<SchemaTypes>([
     SchemaTypes.Boolean,
@@ -36,6 +36,8 @@ export class PropertyInfo<T extends {}> {
     readonly isOptional: boolean;
     /** Whether the property is a key. */
     readonly isKey: boolean;
+    /** Foreign key schema and property */
+    readonly foreignKeyDefinition: ForeignKey<unknown> | null;
     /** Whether the property is an identity property. */
     readonly isIdentity: boolean;
     /** Whether the property is readonly. */
@@ -100,6 +102,7 @@ export class PropertyInfo<T extends {}> {
         this.indexes = schema.indexes;
         this.from = schema.fromPropertyName;
         this.tags = schema.tags;
+        this.foreignKeyDefinition = schema.foreignKeyDefinition;
 
         this.defaultValue = schema.defaultValue;
         this.valueSerializer = schema.valueSerializer;

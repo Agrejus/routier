@@ -98,10 +98,10 @@ class SubscriptionListener<T> implements ISubscriptionAction<T> {
 export class SchemaSubscription<T extends {}> implements ISchemaSubscription<T> {
 
     private readonly id: BroadcastChannelReceiverId;
-    private readonly schema: CompiledSchemaCore<T>;
+    private readonly schema: CompiledSchemaCore<T, unknown>;
     private readonly createdAt: number;
 
-    constructor(schema: CompiledSchemaCore<T>, signal?: AbortSignal) {
+    constructor(schema: CompiledSchemaCore<T, unknown>, signal?: AbortSignal) {
         this.createdAt = now();
         this.id = uuid(8) as BroadcastChannelReceiverId;
         this.schema = schema;

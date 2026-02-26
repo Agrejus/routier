@@ -1,8 +1,9 @@
-import { DefaultValue, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes } from "../../types";
+import { CompiledSchema, DefaultValue, InferType, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes } from "../../types";
 import { SchemaBase } from "../base/SchemaBase";
 import { SchemaDefault } from "../modifiers/SchemaDefault";
 import { SchemaDeserialize } from "../modifiers/SchemaDeserialize";
 import { SchemaDistinct } from "../modifiers/SchemaDistinct";
+import { SchemaForeignKey } from "../modifiers/SchemaForeignKey";
 import { SchemaFrom } from "../modifiers/SchemaFrom";
 import { SchemaIdentity } from "../modifiers/SchemaIdentity";
 import { SchemaIndex } from "../modifiers/SchemaIndex";
@@ -38,6 +39,10 @@ export class SchemaString<T extends string, TModifiers extends SchemaModifiers> 
 
     key() {
         return new SchemaKey<T, TModifiers | "key">(this);
+    }
+
+    foreignKey<K extends {}>(relatingSchema: CompiledSchema<K>, property: keyof InferType<CompiledSchema<K>>) {
+        return new SchemaForeignKey<T, TModifiers, K>(this, relatingSchema, property);
     }
 
     default<I = never>(value: DefaultValue<T, I>, injected?: I) {

@@ -252,25 +252,6 @@ export const nullableNumberWithDefault = () => s.define("nullableNumberWithDefau
     createdAt: s.number().nullable().default(null)
 }).compile();
 
-// const x = nullableNumberWithDefault();
-
-// type C = InferCreateType<typeof x>;
-
-// function c(x: C) {
-
-// }
-
-// c({
-//     content: "",
-//     id: ""
-// })
-
-// c({
-//     content: "",
-//     id: "",
-//     createdAt: null
-// })
-
 export const factories = [
     optionalObjectSchemaFactory,
     usersSchemaOneFactory,

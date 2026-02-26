@@ -12,3 +12,4 @@ export { PrepareHandlerBuilder } from './PrepareHandlerBuilder';
 export { SerializeHandlerBuilder } from './SerializeHandlerBuilder';
 export { StripHandlerBuilder } from './StripHandlerBuilder';
 export { CompareIdsHandlerBuilder } from './CompareIdsHandlerBuilder';
+export { SetHandlerBuilder } from './SetHandlerBuilder';

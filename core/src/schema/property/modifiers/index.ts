@@ -11,3 +11,4 @@ export * from './SchemaSerialize';
 export * from './SchemaTracked';
 export * from './SchemaFrom';
 export * from './SchemaTag';
+export * from './SchemaForeignKey';
