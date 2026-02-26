@@ -1,7 +1,7 @@
 import { faker } from '@faker-js/faker';
 import { describe, it, expect, afterAll } from '@jest/globals';
 import { generateData, seedData, wait } from '@routier/test-utils';
-import { CallbackResult, IDbPlugin, UnknownRecord, uuidv4 } from '@routier/core';
+import { CallbackResult, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, PluginEventCallbackResult, UnknownRecord, uuidv4 } from '@routier/core';
 import { MemoryPlugin } from '../MemoryPlugin';
 import { TestDataStore } from './datastore/MemoryDatastore';
 
@@ -14,6 +14,34 @@ const factory = (dbname?: string) => {
 
     stores.push(store);
 
+    return store;
+};
+
+class CloneOnReadPlugin implements IDbPlugin {
+    constructor(private readonly inner: IDbPlugin) {}
+
+    query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
+        this.inner.query(event as never, (result) => {
+            if (result.ok === "success") {
+                // Force new object references on each read to simulate plugins that deserialize/clone.
+                result.data.forEach((item) => structuredClone(item));
+            }
+            done(result as never);
+        });
+    }
+
+    bulkPersist(event: Parameters<IDbPlugin["bulkPersist"]>[0], done: Parameters<IDbPlugin["bulkPersist"]>[1]): void {
+        this.inner.bulkPersist(event, done);
+    }
+
+    destroy(event: Parameters<IDbPlugin["destroy"]>[0], done: Parameters<IDbPlugin["destroy"]>[1]): void {
+        this.inner.destroy(event, done);
+    }
+}
+
+const factoryWithReadClones = (dbname?: string) => {
+    const store = new TestDataStore(new CloneOnReadPlugin(pluginFactory(dbname)));
+    stores.push(store);
     return store;
 };
 
@@ -260,6 +288,35 @@ describe("Product Tests", () => {
     });
 
     describe('Update Operations', () => {
+        it("regression: queried entity should be attached by reference so updates persist", async () => {
+            const dataStore = factoryWithReadClones();
+            await seedData(dataStore, () => dataStore.products, 2);
+
+            const initialQuery = await dataStore.products.where(x => x._id != "").firstAsync();
+            const queried = await dataStore.products.where(x => x._id === initialQuery._id).firstAsync();
+            const attached = dataStore.products.attachments.get(queried);
+
+            // With clone-on-read, this should be a different object ref from what the tracker already holds.
+            expect(queried).not.toBe(initialQuery);
+            expect(attached).toBeDefined();
+            expect(attached).not.toBe(queried);
+
+            const nextName = faker.lorem.word();
+            queried.name = nextName;
+
+            const hasChanges = await dataStore.hasChangesAsync();
+            expect(hasChanges).toBe(true);
+
+            const preview = await dataStore.previewChangesAsync();
+            expect(preview.aggregate.updates).toBe(1);
+
+            const response = await dataStore.saveChangesAsync();
+            expect(response.aggregate.updates).toBe(1);
+
+            const foundAfterSave = await dataStore.products.firstAsync(x => x._id === queried._id);
+            expect(foundAfterSave.name).toBe(nextName);
+        });
+
         it("should update one item", async () => {
             const dataStore = factory();
             // Arrange

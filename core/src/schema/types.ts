@@ -1,12 +1,12 @@
-import { SchemaDefinition } from "./SchemaDefinition";
-import { SchemaBase } from "./property/base/SchemaBase";
-import { SchemaArray } from "./property/types/SchemaArray";
-import { SchemaObject } from "./property/types/SchemaObject";
-import { PropertyInfo } from "./PropertyInfo";
-import { DeepPartial } from "../types";
-import { SchemaFunction } from "./table";
-import { SchemaOptional } from "./property/modifiers";
-import { Branded } from "../utilities/types";
+import type { SchemaDefinition } from "./SchemaDefinition";
+import type { SchemaBase } from "./property/base/SchemaBase";
+import type { SchemaArray } from "./property/types/SchemaArray";
+import type { SchemaObject } from "./property/types/SchemaObject";
+import type { PropertyInfo } from "./PropertyInfo";
+import type { DeepPartial } from "../types";
+import type { SchemaFunction } from "./table";
+import type { SchemaOptional } from "./property/modifiers";
+import type { Branded } from "../utilities/types";
 
 export type DefaultValue<T, I = never> = T | ((injected: I) => T);
 export type FunctionBody<TEntity, TResult> = (entity: TEntity, collectionName: CollectionName) => TResult;

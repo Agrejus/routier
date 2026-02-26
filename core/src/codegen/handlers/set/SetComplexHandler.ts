@@ -1,6 +1,7 @@
 import { CodeBuilder, SlotBlock } from '../../blocks';
 import { PropertyInfoHandler } from "../types";
-import { PropertyInfo, SchemaTypes } from "../../../schema";
+import { PropertyInfo } from "../../../schema/PropertyInfo";
+import { SchemaTypes } from "../../../schema/types";
 
 const allowedTypes = new Set<SchemaTypes>([
     SchemaTypes.Array,
