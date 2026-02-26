@@ -13,7 +13,7 @@ import { assertIsNotNull } from "@routier/core";
 export class ChangeTracker<TEntity extends {}> {
 
     protected removals: InferType<TEntity>[] = [];
-    protected attachments: Map<IdType, { doc: InferType<TEntity>, changeType: EntityChangeType }> = new Map<IdType, { doc: InferType<TEntity>, changeType: EntityChangeType }>();
+    protected canonicalAttachments: Map<IdType, { doc: InferType<TEntity>, changeType: EntityChangeType }> = new Map<IdType, { doc: InferType<TEntity>, changeType: EntityChangeType }>();
     protected schema: CompiledSchema<TEntity>;
     protected _tagCollection: TagCollection | null = null;
     protected additions: IAdditions<TEntity>
@@ -39,10 +39,10 @@ export class ChangeTracker<TEntity extends {}> {
 
         let hasChanges = false;
 
-        for (const [, attachment] of this.attachments) {
+        for (const [, canonicalAttachment] of this.canonicalAttachments) {
 
-            const changeTrackedDoc = attachment.doc as unknown as ChangeTrackedEntity<{}>;
-            const changeType = attachment.changeType;
+            const changeTrackedDoc = canonicalAttachment.doc as unknown as ChangeTrackedEntity<{}>;
+            const changeType = canonicalAttachment.changeType;
 
             if (changeTrackedDoc.__tracking__?.isDirty === true || changeType !== "notModified") {
                 hasChanges = true;
@@ -77,7 +77,7 @@ export class ChangeTracker<TEntity extends {}> {
         for (let i = 0, length = updates.length; i < length; i++) {
             const update = updates[i];
             const id = this.schema.getId(update);
-            const found = this.attachments.get(id);
+            const found = this.canonicalAttachments.get(id);
             // Optimized: cache found.doc since it's accessed twice (line 83 and 84)
             const foundDoc = found.doc;
 
@@ -102,7 +102,7 @@ export class ChangeTracker<TEntity extends {}> {
 2. Serialization/deserialization must be set at the schema level if the underlying datastore does not support certain types. Ex.  Sqlite stores booleans as integers
 3. If sending over HTTP, remember, undefined will be serialzied as null over the wire.  Please use .nullable().default(() => null) to replace optional properties
 
-Internal Documents: ${JSON.stringify([...this.attachments.entries()], null, 2)}
+Canonical Documents: ${JSON.stringify([...this.canonicalAttachments.entries()], null, 2)}
 
 Plugin Document: ${JSON.stringify(add, null, 2)}`
             });
@@ -115,7 +115,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
             const id = this.schema.getId(add);
 
             // Set here, if we never save we should never attach
-            this.attachments.set(id, {
+            this.canonicalAttachments.set(id, {
                 doc: found as InferType<TEntity>,
                 changeType: "notModified" // since we just added it, mark it as not modified
             });
@@ -138,14 +138,14 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     getAttachmentsChanges(): EntityUpdateInfo<TEntity>[] {
         const changes: EntityUpdateInfo<TEntity>[] = [];
 
-        for (const [, attachment] of this.attachments) {
-            const changeTrackedDoc = attachment.doc as unknown as ChangeTrackedEntity<{}>;
+        for (const [, canonicalAttachment] of this.canonicalAttachments) {
+            const changeTrackedDoc = canonicalAttachment.doc as unknown as ChangeTrackedEntity<{}>;
             // Optimized: cache __tracking__ since it's accessed twice (line 149 and 158)
             const tracking = changeTrackedDoc.__tracking__;
 
             let changeType: EntityChangeType = "notModified";
 
-            if (attachment.changeType === "markedDirty") {
+            if (canonicalAttachment.changeType === "markedDirty") {
                 changeType = "markedDirty"
             }
 
@@ -170,7 +170,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
         for (let i = 0, length = entities.length; i < length; ++i) {
             const entity = entities[i];
             const key = this.schema.getId(entity);
-            const existing = this.attachments.get(key);
+            const existing = this.canonicalAttachments.get(key);
 
             existing.changeType = "markedDirty";
         }
@@ -178,13 +178,13 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
 
     isAttached(entity: InferType<TEntity>) {
         const key = this.schema.getId(entity);
-        return this.attachments.has(key);
+        return this.canonicalAttachments.has(key);
     }
 
     getAttached(entity: InferType<TEntity>) {
         const key = this.schema.getId(entity);
 
-        const found = this.attachments.get(key);
+        const found = this.canonicalAttachments.get(key);
 
         if (found == null) {
             return undefined;
@@ -203,8 +203,8 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     }
 
     findAttached(selector: GenericFunction<InferType<TEntity>, boolean>) {
-        for (const [, attachment] of this.attachments) {
-            const document = attachment.doc;
+        for (const [, canonicalAttachment] of this.canonicalAttachments) {
+            const document = canonicalAttachment.doc;
             if (selector(document)) {
                 return document;
             }
@@ -215,8 +215,8 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
 
     filterAttached(selector: GenericFunction<InferType<TEntity>, boolean>) {
         const result: InferType<TEntity>[] = [];
-        for (const [, attachment] of this.attachments) {
-            const document = attachment.doc;
+        for (const [, canonicalAttachment] of this.canonicalAttachments) {
+            const document = canonicalAttachment.doc;
             if (selector(document) === false) {
                 continue;
             }
@@ -237,11 +237,11 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
         return "notModified";
     }
 
-    // Checks to see if the item is already attached, if so we merge, if not we attach and return each result
+    // Checks to see if the entity already has a canonical attachment; if so merge, otherwise attach.
     resolve(entity: InferType<TEntity>, tag: unknown | null, options?: { merge?: boolean }) {
 
         const key = this.schema.getId(entity);
-        const existing = this.attachments.get(key);
+        const existing = this.canonicalAttachments.get(key);
 
         if (existing != null) {
             if (options?.merge === true) {
@@ -258,7 +258,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
 
 
         const changeType = this.resolveChangeType(entity);
-        this.attachments.set(key, { doc: entity, changeType });
+        this.canonicalAttachments.set(key, { doc: entity, changeType });
 
         if (tag != null) {
             const tagCollection = this.resolveTagCollection();
@@ -294,12 +294,12 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     }
 
     replaceAttachment(existingEntity: InferType<TEntity> | InferCreateType<TEntity>, newEntity: InferType<TEntity> | InferCreateType<TEntity>) {
-        for (const [key, document] of this.attachments) {
+        for (const [key, canonicalAttachment] of this.canonicalAttachments) {
 
-            if (document.doc === existingEntity) {
-                this.attachments.set(key, {
+            if (canonicalAttachment.doc === existingEntity) {
+                this.canonicalAttachments.set(key, {
                     doc: newEntity as InferType<TEntity>,
-                    changeType: document.changeType
+                    changeType: canonicalAttachment.changeType
                 });
                 return;
             }
@@ -366,15 +366,15 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
             const entity = entities[i];
             const id = this.schema.getId(entity);
 
-            if (this.attachments.has(id) == false) {
+            if (this.canonicalAttachments.has(id) == false) {
                 continue;
             }
 
-            const found = this.attachments.get(id);
+            const found = this.canonicalAttachments.get(id);
 
             assertIsNotNull(found, `Could not find entity to detach for Id. Id: ${id}`);
 
-            this.attachments.delete(id);
+            this.canonicalAttachments.delete(id);
             result.push(found.doc);
         }
 

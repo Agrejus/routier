@@ -156,13 +156,6 @@ export class DataStore implements Disposable {
                 action: "persist"
             }, (bulkPersistResult) => {
 
-                logger.info("[ROUTIER] DataStore.onSavePreparedChanges() -> Result", {
-                    plugin: this.dbPlugin.constructor.name,
-                    changes,
-                    bulkPersistResult,
-                    schemas: this._schemas
-                });
-
                 if (bulkPersistResult.ok === Result.ERROR) {
                     done(Result.error(bulkPersistResult.error))
                     return;

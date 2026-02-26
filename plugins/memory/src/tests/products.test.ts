@@ -296,10 +296,8 @@ describe("Product Tests", () => {
             const queried = await dataStore.products.where(x => x._id === initialQuery._id).firstAsync();
             const attached = dataStore.products.attachments.get(queried);
 
-            // With clone-on-read, this should be a different object ref from what the tracker already holds.
-            expect(queried).not.toBe(initialQuery);
             expect(attached).toBeDefined();
-            expect(attached).not.toBe(queried);
+            expect(queried).toBe(attached);
 
             const nextName = faker.lorem.word();
             queried.name = nextName;
@@ -315,6 +313,38 @@ describe("Product Tests", () => {
 
             const foundAfterSave = await dataStore.products.firstAsync(x => x._id === queried._id);
             expect(foundAfterSave.name).toBe(nextName);
+        });
+
+        it("regression: memory-branch query should return canonical attached reference", async () => {
+            const dataStore = factoryWithReadClones();
+            await seedData(dataStore, () => dataStore.products, 2);
+
+            const initial = await dataStore.products.firstAsync();
+            const queried = await dataStore.products
+                .where(([x, p]) => x._id === p.id && x.name.toLowerCase() === p.lowerName, {
+                    id: initial._id,
+                    lowerName: initial.name.toLowerCase()
+                })
+                .firstAsync();
+            const attached = dataStore.products.attachments.get(queried);
+
+            expect(attached).toBeDefined();
+            expect(queried).toBe(attached);
+
+            const updatedCategory = faker.commerce.department();
+            queried.category = updatedCategory;
+
+            const hasChanges = await dataStore.hasChangesAsync();
+            expect(hasChanges).toBe(true);
+
+            const preview = await dataStore.previewChangesAsync();
+            expect(preview.aggregate.updates).toBe(1);
+
+            const response = await dataStore.saveChangesAsync();
+            expect(response.aggregate.updates).toBe(1);
+
+            const foundAfterSave = await dataStore.products.firstAsync(x => x._id === queried._id);
+            expect(foundAfterSave.category).toBe(updatedCategory);
         });
 
         it("should update one item", async () => {

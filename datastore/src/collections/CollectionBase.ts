@@ -133,16 +133,39 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
                     unknown: []
                 };
 
-                logger.info("[ROUTIER] CollectionBase.afterPersist() -> Broadcast Changes", {
-                    subscriptionChanges
-                });
-
                 this.dependencies.subscription.send(subscriptionChanges);
             }
 
             done(result);
         } catch (e) {
             done(Result.error(e));
+        }
+    }
+
+    private normalizeDetachedUpdates(changes: BulkPersistChanges, tags: unknown) {
+        const schemaChanges = changes.resolve(this.dependencies.schema.id);
+
+        for (const update of schemaChanges.updates) {
+            const trackedEntity = update.entity as InferType<TEntity> & { __tracking__?: unknown };
+
+            // Guard for callers/plugins that might pass detached tracked references into updates.
+            if (trackedEntity.__tracking__ == null) {
+                continue;
+            }
+
+            const attached = this.dependencies.changeTracker.getAttached(update.entity as InferType<TEntity>);
+            if (attached == null || attached.doc === update.entity) {
+                continue;
+            }
+
+            this.dependencies.changeTracker.resolve(trackedEntity, tags, { merge: true });
+
+            const resolved = this.dependencies.changeTracker.getAttached(update.entity as InferType<TEntity>);
+            if (resolved == null) {
+                continue;
+            }
+
+            update.entity = this.dependencies.schema.preprocess(resolved.doc as InferCreateType<TEntity>);
         }
     }
 
@@ -170,10 +193,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
             changes.adds = this.dependencies.changeTracker.prepareAdditions();
             changes.updates = this.dependencies.changeTracker.getAttachmentsChanges();
             changes.removes = this.dependencies.changeTracker.prepareRemovals();
-
-            logger.info("[ROUTIER] CollectionBase.prepare() -> Changes", {
-                changes
-            });
+            this.normalizeDetachedUpdates(result.data, tags);
 
             done(result);
         } catch (e) {

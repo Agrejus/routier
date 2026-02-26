@@ -52,12 +52,6 @@ export class DataBridge<T extends {}> {
             const hasChanges = changes.adds.length > 0 || changes.updates.length > 0 || changes.removals.length > 0 || changes.unknown.length > 0;
             if (hasChanges) {
 
-                logger.info("[ROUTIER] DataBridge.subscribe() -> onMessage", {
-                    changes,
-                    event,
-                    collectionName: event.operation.schema.collectionName
-                });
-
                 // create a new plugin where we can quickly seed the changes and then query them
                 const ephemeralPlugin = new MemoryPlugin(uuidv4());
 
@@ -66,11 +60,6 @@ export class DataBridge<T extends {}> {
 
                 // query the temp db to check and see if items match the query
                 ephemeralPlugin.query(event, (r) => {
-
-                    logger.info("[ROUTIER] DataBridge.subscribe() -> ephemeralPlugin query result", {
-                        r,
-                        collectionName: event.operation.schema.collectionName
-                    });
 
                     ephemeralPlugin.destroy({
                         id: uuid(8),

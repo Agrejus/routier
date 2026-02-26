@@ -4,7 +4,6 @@ import { CallbackResult, PluginEventCallbackResult, PluginEventResult, PluginEve
 import { logger, uuid } from "@routier/core/utilities";
 import { CollectionDependencies, RequestContext } from "../collections/types";
 import { QueryBuilderBase } from "./base/QueryBuilderBase";
-import { assertIsArray } from "@routier/core";
 
 export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryBuilderBase<TRoot, TShape, CollectionDependencies<TRoot>> {
 
@@ -147,14 +146,10 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
                     return done(PluginEventResult.success(memoryEvent.id, translatedEnrichedData.value));
                 }
 
-                // Resolve the data with the current attachments - optimized: use for loop instead of forEach
-                assertIsArray(translatedEnrichedData.value);
-
-                for (let i = 0, length = translatedEnrichedData.value.length; i < length; i++) {
-                    this.dependencies.changeTracker.resolve(translatedEnrichedData.value[i] as InferType<TRoot>, tags, {
-                        merge: true
-                    });
-                }
+                // Normalize to canonical attachment refs regardless of translated value shape.
+                translatedEnrichedData.forEach((item) => this.dependencies.changeTracker.resolve(item as InferType<TRoot>, tags, {
+                    merge: true
+                }));
 
                 return done(PluginEventResult.success(memoryEvent.id, translatedEnrichedData.value));
             }
@@ -164,7 +159,7 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
                 return done(PluginEventResult.success(databaseEvent.id, result.data.value as TShape));
             }
 
-            // Resolve the data with the current attachments
+            // Normalize to canonical attachment refs regardless of translated value shape.
             result.data.forEach(item => this.dependencies.changeTracker.resolve(item as InferType<TRoot>, tags, {
                 merge: true
             }));
