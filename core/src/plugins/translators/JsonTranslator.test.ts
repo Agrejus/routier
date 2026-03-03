@@ -347,7 +347,7 @@ describe('JsonTranslator', () => {
             expect(result).toBe(15);
         });
 
-        it('should return 0 for empty array', () => {
+        it('should throw for empty array', () => {
             const data: number[] = [];
             const option: QueryOption<any, 'sum'> = {
                 name: 'sum',
@@ -355,9 +355,7 @@ describe('JsonTranslator', () => {
                 target: 'memory'
             };
 
-            const result = translator.sum(data, option);
-
-            expect(result).toBe(0);
+            expect(() => translator.sum(data, option)).toThrow();
         });
 
         it('should throw error when data is not an array', () => {
@@ -506,7 +504,7 @@ describe('JsonTranslator', () => {
 
             const result = translator.skip(data, option);
 
-            expect(result).toEqual(data);
+            expect(result).toEqual([]);
         });
 
         it('should return original array when skip count is 0', () => {

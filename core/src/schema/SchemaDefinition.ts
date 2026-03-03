@@ -113,7 +113,6 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
     instance: T;
     type = SchemaTypes.Definition;
     collectionName: CollectionName;
-    protected compiledSchema?: CompiledSchema<T>;
 
     constructor(collectionName: CollectionName, schema: T) {
         super();
@@ -153,12 +152,9 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
      * Provides JSON Schema conversion for Routier schemas.
      */
     get '~standard'(): StandardJSONSchemaV1.Props<InferCreateType<T>, InferType<T>> {
-        // Lazy compile if needed
-        if (!this.compiledSchema) {
-            this.compiledSchema = this.compile();
-        }
+        const schema = this.compile();
 
-        return createStandardJsonSchemaProps(this.compiledSchema);
+        return createStandardJsonSchemaProps(schema);
     }
 
     private createReturnFunction<TResult>(builder: CodeBuilder): TResult {
@@ -294,10 +290,6 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
     compile<TMetadata>(metadata: TMetadata): CompiledSchemaWithMetadata<T, TMetadata>
     compile(): CompiledSchema<T>;
     compile<TMetadata>(metadata?: TMetadata): CompiledSchema<T> | CompiledSchemaWithMetadata<T, TMetadata> {
-        // Return cached compiled schema if available
-        if (this.compiledSchema) {
-            return this.compiledSchema;
-        }
 
         try {
             const schema = this;
@@ -696,9 +688,6 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                     metadata
                 };
 
-                // Cache the compiled schema with metadata
-                this.compiledSchema = compiledSchemaWithMetadata;
-
                 return compiledSchemaWithMetadata;
             }
 
@@ -706,9 +695,6 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                 createSubscription: (signal?: AbortSignal) => new SchemaSubscription(result, signal),
                 ...result
             };
-
-            // Cache the compiled schema
-            this.compiledSchema = compiledSchema;
 
             return compiledSchema;
         } catch (e) {
