@@ -1,3 +1,3 @@
-pull: {
-  retry: true; // Auto-retry failed syncs (default: false)
+{
+  true; // Auto-retry failed syncs (default: false)
 }

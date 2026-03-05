@@ -613,4 +613,73 @@ describe('JsonTranslator', () => {
             expect(result).toBe(data);
         });
     });
+
+    describe('group', () => {
+        it('should group items by selector key', () => {
+            const data = [
+                { id: 1, category: 'a', value: 10 },
+                { id: 2, category: 'a', value: 20 },
+                { id: 3, category: 'b', value: 30 }
+            ];
+            const option: QueryOption<any, 'group'> = {
+                name: 'group',
+                value: {
+                    selector: (item: any) => item.category,
+                    key: {} as any,
+                    fields: []
+                },
+                target: 'memory'
+            };
+
+            const result = translator.group<Record<string, unknown[]>>(data, option);
+
+            expect(Object.keys(result)).toEqual(['a', 'b']);
+            expect(result.a).toHaveLength(2);
+            expect(result.b).toHaveLength(1);
+        });
+
+        it('should hydrate grouped fields through property deserialize when property metadata exists', () => {
+            const data = [
+                { id: 1, category: 'a', amount: '10' },
+                { id: 2, category: 'a', amount: '20' }
+            ];
+
+            const property = {
+                getValue: (item: any) => item.amount,
+                setValue: (item: any, value: unknown) => { item.amount = value; },
+                deserialize: (value: unknown) => Number(value),
+                supportsDeserialization: true,
+            };
+
+            const option: QueryOption<any, 'group'> = {
+                name: 'group',
+                value: {
+                    selector: (item: any) => item.category,
+                    key: {} as any,
+                    fields: [{ property } as any]
+                },
+                target: 'memory'
+            };
+
+            const result = translator.group<Record<string, Array<{ amount: number }>>>(data, option);
+
+            expect(result.a).toHaveLength(2);
+            expect(result.a[0].amount).toBe(10);
+            expect(result.a[1].amount).toBe(20);
+        });
+
+        it('should throw when data is not an array', () => {
+            const option: QueryOption<any, 'group'> = {
+                name: 'group',
+                value: {
+                    selector: (item: any) => item.category,
+                    key: {} as any,
+                    fields: []
+                },
+                target: 'memory'
+            };
+
+            expect(() => translator.group({ id: 1 }, option)).toThrow('Can only group an array of data');
+        });
+    });
 }); 

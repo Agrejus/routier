@@ -1,3 +1,3 @@
-pull: {
-  live: true; // Continuous sync (default: false)
+{
+  true; // Continuous sync (default: false)
 }

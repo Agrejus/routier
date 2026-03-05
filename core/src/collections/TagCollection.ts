@@ -1,26 +1,26 @@
 export class TagCollection implements Disposable {
 
-    private data: Map<Object, unknown> = new Map<Object, unknown>();
+    private data: Map<object, unknown> = new Map<object, unknown>();
     private _size: number = 0;
 
     get size() {
         return this._size;
     }
 
-    get(key: Object) {
+    get(key: object) {
         return this.data.get(key);
     }
 
-    has(key: Object) {
+    has(key: object) {
         return this.data.has(key);
     }
 
-    set(key: Object, tag: unknown) {
+    set(key: object, tag: unknown) {
         this._size++;
         return this.data.set(key, tag);
     }
 
-    delete(key: Object) {
+    delete(key: object) {
         const result = this.data.delete(key);
 
         if (result) {
@@ -30,7 +30,7 @@ export class TagCollection implements Disposable {
         return result;
     }
 
-    setMany(keys: Object[], tag: unknown) {
+    setMany(keys: object[], tag: unknown) {
         this._size += keys.length;
         for (let i = 0, length = keys.length; i < length; i++) {
             const key = keys[i];

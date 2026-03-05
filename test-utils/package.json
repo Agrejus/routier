@@ -9,7 +9,7 @@
     "build:bundle": "rspack build",
     "build": "npm run build:bundle && npm run build:types",
     "tsc": "tsc",
-    "lint": "eslint . --ext ts --report-unused-disable-directives --max-warnings 0"
+    "lint": "oxlint ."
   },
   "sideEffects": false,
   "author": "James DeMeuse <james.demeuse@gmail.com>",

@@ -637,9 +637,9 @@ const getComparator = (value: string): ComparatorExpression => {
 const getValue = <P extends any>(value: string, params?: { name: string, data: P }): ValueExpression => {
 
     // Early return for string literals
-    if (value.startsWith("\'") || value.startsWith("\"")) {
+    if (value.startsWith("'") || value.startsWith("\"")) {
         return new ValueExpression({
-            value: value.replace(/\"|\'/g, "")
+            value: value.replace(/"|'/g, "")
         });
     }
 

@@ -1,5 +1,5 @@
-sync: {
-  onChange: (schemas: SchemaCollection, change) => {
+{
+  (schemas: SchemaCollection, change) => {
     if (change.direction === "pull" && change.change.docs) {
       // Group documents by collection
       const docsByCollection = change.change.docs.reduce(/* ... */);

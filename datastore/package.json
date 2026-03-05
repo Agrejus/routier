@@ -13,7 +13,7 @@
     "build": "npm run build:bundle && npm run build:types",
     "tsc": "tsc",
     "test": "jest",
-    "lint": "eslint . --ext ts --report-unused-disable-directives --max-warnings 0"
+    "lint": "oxlint ."
   },
   "sideEffects": false,
   "files": [
