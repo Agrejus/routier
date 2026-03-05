@@ -6,8 +6,6 @@ import { BulkPersistResult } from '@routier/core/collections';
 import { CompiledSchema } from '@routier/core/schema';
 import { SqlPersistOperation } from './types';
 
-const tableCache: Record<string, string> = {};
-
 export interface PostgresDbPluginConfig {
     host?: string;
     port?: number;

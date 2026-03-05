@@ -115,7 +115,7 @@ export type Preprocess<TEntity extends {}> = {
 
 export type SetProperties<TEntity extends {}> = (destination: InferType<TEntity> | InferCreateType<TEntity>, source: InferType<TEntity> | InferCreateType<TEntity>) => void;
 
-export type CompiledSchemaCore<TEntity extends {}, TMetadata = never> = Omit<CompiledSchema<TEntity>, "createSubscription">;
+export type CompiledSchemaCore<TEntity extends {}> = Omit<CompiledSchema<TEntity>, "createSubscription">;
 
 export type CompiledSchemaWithMetadata<TEntity extends {}, TMetadata> = {
     readonly metadata: TMetadata;
@@ -226,23 +226,6 @@ type IsPlainProperty<T, K extends keyof T> =
         HasModifier<T, K, "optional">,
         HasModifier<T, K, "nullable">
     ] extends [
-        false,
-        false,
-        false
-    ] ? true : false;
-
-type IsPlainCreateProperty<T, K extends keyof T> =
-    [
-        HasModifier<T, K, "identity">,
-        HasModifier<T, K, "default">,
-        HasModifier<T, K, "computed">,
-        HasModifier<T, K, "unmapped">,
-        HasModifier<T, K, "optional">,
-        HasModifier<T, K, "nullable">
-    ] extends [
-        false,
-        false,
-        false,
         false,
         false,
         false

@@ -1,1 +1,1 @@
-export const noop = (...args: any[]) => { };
+export const noop = (..._args: any[]) => { };

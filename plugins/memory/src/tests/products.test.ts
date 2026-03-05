@@ -195,10 +195,10 @@ describe("Product Tests", () => {
                 const responseOne = await dataStore.saveChangesAsync();
                 expect(responseOne.aggregate.size).toBe(1);
 
-                added.name === "CHANGED";
+                added.name = "CHANGED";
 
                 const responseTwo = await dataStore.saveChangesAsync();
-                expect(responseTwo.aggregate.size).toBe(0);
+                expect(responseTwo.aggregate.size).toBe(1);
             });
         });
     });

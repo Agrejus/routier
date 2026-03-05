@@ -36,7 +36,7 @@ export const convertToDexieSchema = <T extends {}>(schema: CompiledSchema<T>) =>
         // Handle single property
         if (property.indexes.length === 0) {
 
-            if (!!modifier) {
+            if (modifier) {
                 // Handle the primary key
                 schemaProperties.push(`${modifier}${property.name}`);
             } else {

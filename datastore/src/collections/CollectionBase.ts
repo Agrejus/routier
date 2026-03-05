@@ -10,7 +10,7 @@ import { assertIsNotNull } from "@routier/core/assertions";
 import { GenericFunction } from "@routier/core/types";
 import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { CollectionDependencies, RequestContext } from "./types";
-import { logger, unsafeCast } from "@routier/core";
+import { unsafeCast } from "@routier/core";
 import { QueryableBuilder, QueryBuilderContext } from "../queryable/composers/QueryableBuilder";
 
 export class CollectionBase<TEntity extends {}> implements Disposable {
@@ -86,7 +86,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
             return items;
         }
 
-        const result: InferType<TEntity>[] = new Array(items.length);
+        const result: InferType<TEntity>[] = Array.from({ length: items.length });
         for (let i = 0, length = items.length; i < length; i++) {
             result[i] = this.dependencies.schema.clone(items[i]);
         }
@@ -608,7 +608,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @param params Parameters to pass to the filter function
      * @param done Callback function called with true if all entities match, false otherwise, or error
      */
-    every<P extends {}>(expression: Filter<InferType<TEntity>>, done: CallbackResult<boolean>): void;
+    every(expression: Filter<InferType<TEntity>>, done: CallbackResult<boolean>): void;
     every<P extends {}>(expression: ParamsFilter<InferType<TEntity>, P>, params: P, done: CallbackResult<boolean>): void;
     every<P extends {} = never>(expression: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P> | CallbackResult<boolean>, paramsOrDone: P | CallbackResult<boolean>, done?: CallbackResult<boolean>) {
 
@@ -639,7 +639,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @param params Parameters to pass to the filter function
      * @returns Promise that resolves with true if all entities match, false otherwise, or rejects with an error
      */
-    everyAsync<P extends {}>(expression: Filter<InferType<TEntity>>): Promise<boolean>;
+    everyAsync(expression: Filter<InferType<TEntity>>): Promise<boolean>;
     everyAsync<P extends {}>(expression: ParamsFilter<InferType<TEntity>, P>, params: P): Promise<boolean>;
     everyAsync<P extends {} = never>(expression?: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P>, params?: P): Promise<boolean> {
 

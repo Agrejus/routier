@@ -648,7 +648,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         throw lastError ?? new Error('bulkPersist failed');
     }
 
-    protected formatRequestBody(changes: SchemaPersistChanges<Record<string, unknown>>, schema: CompiledSchema<UnknownRecord>) {
+    protected formatRequestBody(changes: SchemaPersistChanges<Record<string, unknown>>, _schema: CompiledSchema<UnknownRecord>) {
         const { adds, updates, removes } = changes;
         return JSON.stringify({ adds, updates, removes });
     }

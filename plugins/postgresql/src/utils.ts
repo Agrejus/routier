@@ -562,7 +562,7 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
             // expressionToWhereClause already uses $N placeholders, but we need to renumber them
             let pgWhere = where;
             for (const param of filterParams) {
-                pgWhere = pgWhere.replace(/\$(\d+)/g, (match, num) => {
+                pgWhere = pgWhere.replace(/\$(\d+)/g, () => {
                     return `$${paramCounter++}`;
                 });
                 params.push(param);

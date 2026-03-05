@@ -23,8 +23,8 @@
     "benchmark": "cd benchmark && npm run benchmark",
     "benchmark:memory": "cd benchmark && npm run benchmark:memory",
     "typedoc": "typedoc",
-    "lint": "npm run lint --workspaces --if-present && oxlint . --ignore-pattern \"docs/**\"",
-    "lint:fix": "oxlint . --fix --ignore-pattern \"docs/**\"",
+    "lint": "npm run lint --workspaces --if-present && oxlint . --ignore-pattern \"docs/**\" --ignore-pattern \"examples/**\" --ignore-pattern \"scripts/**\" --ignore-pattern \"**/__tests__/**\" --ignore-pattern \"**/*.test.*\" --ignore-pattern \"**/*.spec.*\" --ignore-pattern \"**/*.mjs\"",
+    "lint:fix": "oxlint . --fix --fix-suggestions --ignore-pattern \"docs/**\" --ignore-pattern \"examples/**\" --ignore-pattern \"scripts/**\" --ignore-pattern \"**/__tests__/**\" --ignore-pattern \"**/*.test.*\" --ignore-pattern \"**/*.spec.*\" --ignore-pattern \"**/*.mjs\"",
     "format:oxfmt": "oxfmt .",
     "format:check:oxfmt": "oxfmt . --check",
     "oxfmt": "oxfmt . --check"

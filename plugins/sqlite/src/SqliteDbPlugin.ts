@@ -54,7 +54,7 @@ export class SqliteDbPlugin implements IDbPlugin {
                 // Database closed successfully, now delete the file
                 this._deleteDatabaseFile(event, done);
             });
-        } catch (error) {
+        } catch  {
             // If we can't even create a connection, try to delete the file anyway
             this._deleteDatabaseFile(event, done);
         }

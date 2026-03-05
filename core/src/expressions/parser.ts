@@ -676,7 +676,7 @@ const getValue = <P extends any>(value: string, params?: { name: string, data: P
                 try {
                     const paramValue = getValueFromParams(`${params.name}.${potentialParamPath}`, params);
                     return new ValueExpression({ value: paramValue });
-                } catch (e) {
+                } catch  {
                     // Not a parameter path, continue with normal parsing
                 }
             }
@@ -778,7 +778,7 @@ const getProperty = <P extends any>(schema: CompiledSchema<any>, value: string, 
                         } else {
                             throw new Error(ERROR_MESSAGES.PROPERTY_NOT_FOUND(value));
                         }
-                    } catch (e) {
+                    } catch  {
                         // Not a valid parameter path, continue to error
                         throw new Error(ERROR_MESSAGES.PROPERTY_NOT_FOUND(value));
                     }

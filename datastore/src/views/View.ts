@@ -1,7 +1,7 @@
 import { CollectionBase } from '../collections/CollectionBase';
 import { IDbPlugin } from '@routier/core/plugins';
-import { ChangeTrackingType, CompiledSchema, HashType, IdType, InferCreateType, InferType, SubscriptionChanges } from '@routier/core/schema';
-import { BulkPersistChanges, SchemaCollection, SchemaPersistChanges } from '@routier/core/collections';
+import { ChangeTrackingType, HashType, IdType, InferCreateType, InferType, SubscriptionChanges } from '@routier/core/schema';
+import { BulkPersistChanges, SchemaPersistChanges } from '@routier/core/collections';
 import { CallbackResult, Result } from '@routier/core/results';
 import { logger, noop, uuid } from '@routier/core/utilities';
 import { QueryableAsync } from '../queryable/QueryableAsync';
@@ -31,7 +31,7 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                     return cb([]);
                 }
 
-                const enriched = new Array<InferType<TEntity>>(data.length);
+                const enriched = Array.from<InferType<TEntity>>({ length: data.length });
                 for (let i = 0, length = data.length; i < length; i++) {
                     enriched[i] = this.dependencies.schema.postprocess(data[i] as InferType<TEntity>, this.changeTrackingType);
                 }

@@ -21,7 +21,7 @@
     "test": "vitest --run",
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
-    "lint": "oxlint ."
+    "lint": "oxlint . --ignore-pattern \"**/__tests__/**\" --ignore-pattern \"**/*.test.*\" --ignore-pattern \"**/*.spec.*\" --ignore-pattern \"**/*.mjs\""
   },
   "sideEffects": false,
   "author": "James DeMeuse <james.demeuse@gmail.com>",

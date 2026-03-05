@@ -31,7 +31,7 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         quoteIdentifier(name) {
             return `"${name.replace(/"/g, '""')}"`;
         },
-        getPlaceholder(i) {
+        getPlaceholder(_i) {
             return "?";
         },
         stringMatchKind: "GLOB",
@@ -55,7 +55,7 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         quoteIdentifier(name) {
             return "`" + name.replace(/`/g, "``") + "`";
         },
-        getPlaceholder(i) {
+        getPlaceholder(_i) {
             return "?";
         },
         stringMatchKind: "LIKE",

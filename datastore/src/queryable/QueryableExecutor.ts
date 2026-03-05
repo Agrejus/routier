@@ -1,7 +1,7 @@
 import { DbPluginQueryEvent, ITranslatedValue, JsonTranslator, Query, QueryOptionsCollection } from "@routier/core/plugins";
 import { InferType } from "@routier/core/schema";
 import { CallbackResult, PluginEventCallbackResult, PluginEventResult, PluginEventSuccessType, Result } from "@routier/core/results";
-import { logger, uuid } from "@routier/core/utilities";
+import { uuid } from "@routier/core/utilities";
 import { CollectionDependencies, RequestContext } from "../collections/types";
 import { QueryBuilderBase } from "./base/QueryBuilderBase";
 

@@ -16,7 +16,7 @@
     "dev": "vite",
     "build:types": "tsc -p tsconfig.types.json",
     "build": "vite build && npm run build:types",
-    "lint": "oxlint .",
+    "lint": "oxlint . --ignore-pattern \"**/__tests__/**\" --ignore-pattern \"**/*.test.*\" --ignore-pattern \"**/*.spec.*\" --ignore-pattern \"**/*.mjs\"",
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui"

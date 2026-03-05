@@ -1,4 +1,4 @@
-import { fastHash, HashType, s } from '@routier/core';
+import { fastHash, s } from '@routier/core';
 
 export const blogPostsSchema = s.define("blogPosts", {
     title: s.string(),

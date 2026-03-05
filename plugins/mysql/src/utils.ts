@@ -327,9 +327,6 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
         return { adds: null, updates: null, removes: null };
     }
 
-    const allColumns = schema.properties.map(p => `\`${p.name}\``);
-    const allColumnStr = allColumns.join(', ');
-
     const insertColumns = schema.properties
         .filter(p => !p.isIdentity)
         .map(p => `\`${p.name}\``);

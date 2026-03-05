@@ -179,7 +179,7 @@ describe('SyncronousQueue', () => {
 
             try {
                 queue.enqueue(errorUnitOfWork);
-            } catch (error) {
+            } catch  {
                 // Error is thrown, queue stops processing
             }
 

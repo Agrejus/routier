@@ -81,7 +81,7 @@ type PropertyConverter = (
 function createPrimitiveConverter(
     jsonType: 'string' | 'number' | 'boolean'
 ): PropertyConverter {
-    return (property, context) => {
+    return (property, _context) => {
         const jsonSchema: Record<string, unknown> = { type: jsonType };
         if (property.literals && property.literals.length > 0) {
             jsonSchema.enum = property.literals;
@@ -268,7 +268,7 @@ const computedConverter: PropertyConverter = (property, context) => {
     if (property.functionBody) {
         try {
             routierMeta.functionSource = property.functionBody.toString();
-        } catch (e) {
+        } catch  {
             // If function can't be serialized, store a placeholder
             routierMeta.functionSource = null;
         }
@@ -280,7 +280,7 @@ const computedConverter: PropertyConverter = (property, context) => {
             // Try to serialize the injected value
             JSON.stringify(property.injected);
             routierMeta.injected = property.injected;
-        } catch (e) {
+        } catch  {
             // If injected value can't be serialized, store null
             routierMeta.injected = null;
         }

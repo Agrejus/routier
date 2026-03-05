@@ -6,7 +6,7 @@ import { CompiledSchema, SchemaId } from '@routier/core/schema';
 import { TrampolinePipeline } from '@routier/core/pipeline';
 import { CallbackPartialResult, CallbackResult, PartialResultType, PluginEventResult, Result } from '@routier/core/results';
 import { BulkPersistChanges, BulkPersistResult, SchemaCollection, ReadonlySchemaCollection } from '@routier/core/collections';
-import { logger, UnknownRecord, uuid } from '@routier/core/utilities';
+import { UnknownRecord, uuid } from '@routier/core/utilities';
 import { View } from './views/View';
 import { ViewBuilder } from './view-builder/ViewBuilder';
 import { CollectionBase } from './collections/CollectionBase';

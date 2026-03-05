@@ -292,7 +292,6 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
     compile<TMetadata>(metadata?: TMetadata): CompiledSchema<T> | CompiledSchemaWithMetadata<T, TMetadata> {
 
         try {
-            const schema = this;
             const properties: PropertyInfo<T>[] = [];
             const propertyMap: Map<string, PropertyInfo<T>> = new Map<string, PropertyInfo<T>>();
 
@@ -470,7 +469,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             let hasIdentities = false;
             let hasIdentityKeys = false;
 
-            this._iterate(schema, (property) => {
+            this._iterate(this, (property) => {
 
                 properties.push(property);
                 propertyMap.set(property.id, property);

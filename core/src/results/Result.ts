@@ -31,7 +31,7 @@ abstract class BaseResult {
 
 export class Result extends BaseResult {
     static success<T>(data: T): ResultType<T>;
-    static success<T>(): ResultType<never>;
+    static success(): ResultType<never>;
     static success<T>(data?: T): ResultType<T> {
         return {
             ok: Result.SUCCESS,
@@ -57,7 +57,7 @@ export class Result extends BaseResult {
 
 export class PluginEventResult extends BaseResult {
     static success<T>(id: string, data: T): PluginEventResultType<T>;
-    static success<T>(id: string): PluginEventResultType<never>;
+    static success(id: string): PluginEventResultType<never>;
     static success<T>(id: string, data?: T): PluginEventResultType<T> {
         return {
             id,

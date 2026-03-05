@@ -17,7 +17,7 @@ export class SerializeDateHandler extends PropertyInfoHandler {
             const entityAssignmentPath = property.getAssignmentPath({
                 parent: "result"
             });
-            const assignment = `${property.name}: ${entitySelectorPath} instanceof Date ? ${entitySelectorPath}.toISOString() : ${entitySelectorPath}`;
+            const _assignment = `${property.name}: ${entitySelectorPath} instanceof Date ? ${entitySelectorPath}.toISOString() : ${entitySelectorPath}`;
 
             // if it is nullable or optional, assign in an if block, otherwise we 
             // could unintentionally assign null/undefined to a property that does not exist

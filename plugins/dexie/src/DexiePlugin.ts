@@ -1,7 +1,7 @@
-import Dexie, { Collection, IndexableType } from 'dexie';
+import Dexie from 'dexie';
 import { convertToDexieSchema } from "./utils";
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue } from '@routier/core/plugins';
-import { CallbackResult, PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
+import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
 import { BulkPersistResult } from '@routier/core/collections';
 import { InferCreateType, PropertyInfo, SchemaTypes } from '@routier/core/schema';
 import { uuidv4 } from '@routier/core/utilities';

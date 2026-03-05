@@ -1,7 +1,7 @@
 import { UnknownRecord } from '../utilities';
 import { SchemaBase } from './property/base/SchemaBase';
 import { SchemaArray } from './property/types/SchemaArray';
-import { CompiledSchema, DefaultValue, ForeignKey, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaTypes } from './types';
+import { DefaultValue, ForeignKey, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaTypes } from './types';
 
 const SUPPORTED_DESERIALIZATION_TYPES = new Set<SchemaTypes>([
     SchemaTypes.Boolean,
@@ -126,6 +126,7 @@ export class PropertyInfo<T extends {}> {
         }
 
         let level = 0;
+        // oxlint-disable-next-line no-this-alias
         let current: PropertyInfo<T> | undefined = this;
 
         while (current) {
@@ -156,6 +157,7 @@ export class PropertyInfo<T extends {}> {
         }
 
         const chain: PropertyInfo<T>[] = [];
+        // oxlint-disable-next-line no-this-alias
         let current: PropertyInfo<T> | undefined = this;
 
         while (current) {

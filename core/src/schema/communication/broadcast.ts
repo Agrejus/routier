@@ -1,6 +1,6 @@
 import { now } from "../../performance";
 import { Branded, uuid } from "../../utilities";
-import { CompiledSchemaCore, InferType, ISchemaSubscription, SchemaId, SubscriptionChanges } from "../types";
+import { CompiledSchemaCore, ISchemaSubscription, SchemaId, SubscriptionChanges } from "../types";
 
 type BroadcastChannelReceiverId = Branded<string, "BroadcastChannelReceiverId">;
 type SubscriptionListenerCallback<T> = (changes: StampedChanges<T>) => void;
@@ -98,10 +98,10 @@ class SubscriptionListener<T> implements ISubscriptionAction<T> {
 export class SchemaSubscription<T extends {}> implements ISchemaSubscription<T> {
 
     private readonly id: BroadcastChannelReceiverId;
-    private readonly schema: CompiledSchemaCore<T, unknown>;
+    private readonly schema: CompiledSchemaCore<T>;
     private readonly createdAt: number;
 
-    constructor(schema: CompiledSchemaCore<T, unknown>, signal?: AbortSignal) {
+    constructor(schema: CompiledSchemaCore<T>, signal?: AbortSignal) {
         this.createdAt = now();
         this.id = uuid(8) as BroadcastChannelReceiverId;
         this.schema = schema;
@@ -116,10 +116,10 @@ export class SchemaSubscription<T extends {}> implements ISchemaSubscription<T> 
 
         // cannot send raw data, needs to be preprocessed
         const preprocessedChanges: SubscriptionChanges<T> = {
-            adds: new Array<InferType<T>>(changes.adds.length),
-            removals: new Array<InferType<T>>(changes.removals.length),
-            unknown: new Array<InferType<T>>(changes.unknown.length),
-            updates: new Array<InferType<T>>(changes.updates.length),
+            adds: Array.from({ length: changes.adds.length }),
+            removals: Array.from({ length: changes.removals.length }),
+            unknown: Array.from({ length: changes.unknown.length }),
+            updates: Array.from({ length: changes.updates.length }),
         };
 
         for (let i = 0, length = changes.adds.length; i < length; i++) {
@@ -162,10 +162,10 @@ export class SchemaSubscription<T extends {}> implements ISchemaSubscription<T> 
 
             // Changes were preprocessed before they were sent, need to postprocess them
             const postProcessedChanges: SubscriptionChanges<T> = {
-                adds: new Array<InferType<T>>(data.adds.length),
-                removals: new Array<InferType<T>>(data.removals.length),
-                unknown: new Array<InferType<T>>(data.unknown.length),
-                updates: new Array<InferType<T>>(data.updates.length),
+                adds: Array.from({ length: data.adds.length }),
+                removals: Array.from({ length: data.removals.length }),
+                unknown: Array.from({ length: data.unknown.length }),
+                updates: Array.from({ length: data.updates.length }),
             };
 
             for (let i = 0, length = data.adds.length; i < length; i++) {

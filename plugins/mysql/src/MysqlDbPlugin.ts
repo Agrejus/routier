@@ -6,8 +6,6 @@ import { BulkPersistResult } from '@routier/core/collections';
 import { CompiledSchema } from '@routier/core/schema';
 import { SqlPersistOperation } from './types';
 
-const tableCache: Record<string, string> = {};
-
 export interface MysqlDbPluginConfig {
     host?: string;
     port?: number;
@@ -250,7 +248,7 @@ export class MysqlDbPlugin implements IDbPlugin {
                 try {
                     await connection.rollback();
                     connection.release();
-                } catch (rollbackErr) {
+                } catch  {
                     // Ignore rollback errors
                 }
             }

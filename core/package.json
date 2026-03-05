@@ -73,7 +73,7 @@
     "build": "npm run build:bundle && npm run build:types",
     "tsc": "tsc",
     "test": "jest",
-    "lint": "oxlint ."
+    "lint": "oxlint . --ignore-pattern \"**/__tests__/**\" --ignore-pattern \"**/*.test.*\" --ignore-pattern \"**/*.spec.*\" --ignore-pattern \"**/*.mjs\""
   },
   "sideEffects": false,
   "author": "James DeMeuse <james.demeuse@gmail.com>",

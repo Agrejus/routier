@@ -4,7 +4,7 @@ import { MemoryPlugin } from "@routier/memory-plugin";
 import { DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue } from "@routier/core/plugins";
 import { PluginEventCallbackResult, Result } from "@routier/core/results";
 import { BulkPersistResult } from "@routier/core/collections";
-import { logger, uuid, uuidv4 } from "@routier/core/utilities";
+import { uuid, uuidv4 } from "@routier/core/utilities";
 import { CompiledSchema } from "@routier/core/schema";
 
 // Use a data bridge so we can abstract away some of the stuff
@@ -37,7 +37,7 @@ export class DataBridge<T extends {}> {
         this.strategy.query(event, done);
     }
 
-    subscribe<TShape, U>(event: DbPluginQueryEvent<T, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>) {
+    subscribe<TShape, _U>(event: DbPluginQueryEvent<T, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>) {
         const subscription = event.operation.schema.createSubscription(this.signal);
         subscription.onMessage((changes) => {
             const filters = event.operation.options.get("filter");

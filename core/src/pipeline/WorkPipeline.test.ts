@@ -360,7 +360,7 @@ describe('WorkPipeline', () => {
                 setTimeout(() => {
                     try {
                         done(Result.error(error));
-                    } catch (e) {
+                    } catch  {
                         // Error is thrown inside async callback but may not reach done properly
                     }
                 }, 10);

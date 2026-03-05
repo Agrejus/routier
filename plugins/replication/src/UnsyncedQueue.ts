@@ -9,11 +9,10 @@
 import { s } from '@routier/core/schema';
 import type { CompiledSchema, InferRoot, InferType } from '@routier/core/schema';
 import { BulkPersistChanges, SchemaCollection } from '@routier/core/collections';
-import type { IDbPlugin, DbPluginQueryEvent, DbPluginBulkPersistEvent, IQuery } from '@routier/core/plugins';
+import type { IDbPlugin, DbPluginQueryEvent, DbPluginBulkPersistEvent } from '@routier/core/plugins';
 import { Query } from '@routier/core/plugins';
 import { Result } from '@routier/core/results';
 import { logger, uuid } from '@routier/core/utilities';
-import { MemoryPlugin } from '@routier/memory-plugin';
 
 const UNSYNCED_COLLECTION_NAME = '_routier_unsynced' as const;
 const ROW_ID_DELIMITER = '\u0000';

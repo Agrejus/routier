@@ -1,4 +1,4 @@
-import { ChangeTrackingType, CompiledSchema, HashType, IdType, InferCreateType, InferType } from "@routier/core/schema";
+import { ChangeTrackingType, CompiledSchema, IdType, InferCreateType, InferType } from "@routier/core/schema";
 import { ChangeTrackedEntity } from "../types";
 import { KnownKeyAdditions } from "./additions/KnownKeyAdditions";
 import { IAdditions } from "./additions/types";
@@ -69,9 +69,9 @@ export class ChangeTracker<TEntity extends {}> {
             adds: InferType<TEntity>[],
             removals: InferType<TEntity>[],
         } = {
-            updates: new Array<InferType<TEntity>>(updates.length),
-            adds: new Array<InferType<TEntity>>(adds.length),
-            removals: new Array<InferType<TEntity>>(removes.length),
+            updates: Array.from({ length: updates.length }),
+            adds: Array.from({ length: adds.length }),
+            removals: Array.from({ length: removes.length }),
         }
 
         for (let i = 0, length = updates.length; i < length; i++) {
@@ -127,7 +127,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     }
 
     prepareRemovals(): InferType<TEntity>[] {
-        const entities = new Array<InferType<TEntity>>(this.removals.length);
+        const entities = Array.from<InferType<TEntity>>({ length: this.removals.length });
         for (let i = 0, length = this.removals.length; i < length; i++) {
             entities[i] = this.schema.prepare(this.removals[i]);
         }
@@ -269,7 +269,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     }
 
     resolveMany(entities: InferType<TEntity>[], tag: unknown | null, options?: { merge?: boolean }) {
-        const result = new Array<InferType<TEntity>>(entities.length);
+        const result = Array.from<InferType<TEntity>>({ length: entities.length });
 
         for (let i = 0, length = entities.length; i < length; i++) {
             result[i] = this.resolve(entities[i], tag, options);
@@ -313,7 +313,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     add(entities: InferCreateType<TEntity>[], tag: unknown | null, done: CallbackResult<InferType<TEntity>[]>) {
         try {
             const length = entities.length;
-            const result: InferType<TEntity>[] = new Array(length);
+            const result: InferType<TEntity>[] = Array.from({ length });
             const tagCollection = tag != null ? this.resolveTagCollection() : null;
 
             for (let i = 0; i < length; i++) {
@@ -340,7 +340,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     }
 
     postprocess(entities: InferType<TEntity>[], changeTrackingType: ChangeTrackingType) {
-        const result = new Array(entities.length);
+        const result = Array.from({ length: entities.length });
 
         for (let i = 0, length = entities.length; i < length; i++) {
             result[i] = this.schema.postprocess(entities[i], changeTrackingType);
@@ -350,7 +350,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     }
 
     enrich(entities: InferType<TEntity>[], changeTrackingType: ChangeTrackingType) {
-        const result = new Array(entities.length);
+        const result = Array.from({ length: entities.length });
 
         for (let i = 0, length = entities.length; i < length; i++) {
             result[i] = this.schema.enrich(entities[i], changeTrackingType);
@@ -387,7 +387,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
             return [];
         }
 
-        const result: InferCreateType<TEntity>[] = new Array(size);
+        const result: InferCreateType<TEntity>[] = Array.from({ length: size });
         let index = 0;
 
         // prepare the items for saving,
