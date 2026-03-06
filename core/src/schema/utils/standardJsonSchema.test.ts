@@ -665,6 +665,43 @@ describe('Standard JSON Schema', () => {
             const rehydrated = SchemaDefinition.fromJson(jsonString);
             expect(rehydrated.collectionName).toBe('users');
         });
+
+        it('should fall back to "unknown" collection name when metadata is missing', () => {
+            const jsonString = JSON.stringify({
+                type: 'object',
+                properties: {
+                    id: {
+                        type: 'string',
+                        'x-routier': {
+                            isKey: true
+                        }
+                    }
+                },
+                required: ['id']
+            });
+
+            const rehydrated = SchemaDefinition.fromJson(jsonString);
+            expect(rehydrated.collectionName).toBe('unknown');
+        });
+
+        it('should preserve key/identity/from/default behavior through fromJson', () => {
+            const originalSchema = s.define('users', {
+                id: s.string().key().identity(),
+                externalId: s.string().from('user_id').default('generated-id'),
+                name: s.string()
+            }).compile();
+
+            const jsonSchema = originalSchema.definition['~standard'].jsonSchema.input({ target: 'draft-2020-12' });
+            const jsonString = JSON.stringify(jsonSchema);
+            const rehydrated = SchemaDefinition.fromJson(jsonString);
+            const idProperty = rehydrated.properties.find(p => p.name === 'id');
+            const externalIdProperty = rehydrated.properties.find(p => p.name === 'externalId');
+
+            expect(idProperty?.isKey).toBe(true);
+            expect(idProperty?.isIdentity).toBe(true);
+            expect(externalIdProperty?.from).toBe('user_id');
+            expect(externalIdProperty?.defaultValue).toBe('generated-id');
+        });
     });
 
     describe('Round-trip serialization', () => {
@@ -779,6 +816,20 @@ describe('Standard JSON Schema', () => {
 
             expect((inputSchema.properties as Record<string, unknown>).computed).toBeUndefined();
             expect((outputSchema.properties as Record<string, unknown>).computed).toBeDefined();
+        });
+
+        it('should keep routier collection metadata on both input and output schemas', () => {
+            const schema = s.define('users', {
+                id: s.string().key(),
+                name: s.string()
+            }).compile();
+
+            const props = createStandardJsonSchemaProps(schema);
+            const inputSchema = props.jsonSchema.input({ target: 'draft-2020-12' });
+            const outputSchema = props.jsonSchema.output({ target: 'draft-2020-12' });
+
+            expect((inputSchema['x-routier'] as Record<string, unknown>).collectionName).toBe('users');
+            expect((outputSchema['x-routier'] as Record<string, unknown>).collectionName).toBe('users');
         });
     });
 });

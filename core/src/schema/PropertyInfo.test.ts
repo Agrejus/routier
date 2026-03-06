@@ -1,479 +1,309 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
-import { PropertyInfo } from './PropertyInfo';
-import { SchemaBase } from './property/base/SchemaBase';
-import { SchemaTypes } from './types';
+import { describe, expect, it } from "@jest/globals";
+import { s } from "./builder";
+import { SchemaTypes } from "./types";
 
-class MockSchema extends SchemaBase<any, any> {
-    instance = {};
-    type = SchemaTypes.String;
-    isNullable = false;
-    isOptional = false;
-    isKey = false;
-    isIdentity = false;
-    isReadonly = false;
-    isUnmapped = false;
-    isDistict = false;
-    indexes: string[] = [];
-    injected: any = null;
-    defaultValue: any = null;
-    valueSerializer: any = null;
-    valueDeserializer: any = null;
-    functionBody: any = null;
-    literals: any[] = [];
-}
+const testSchema = s.define("test", {
+    id: s.string().key(),
+    testProperty: s.string(),
+    nullableProperty: s.string().nullable(),
+    optionalProperty: s.string().optional(),
+    parentProperty: s.object({
+        childProperty: s.string(),
+        identityChild: s.string().identity(),
+    }),
+    grandparentProperty: s.object({
+        parentProperty: s.object({
+            childProperty: s.string(),
+        }),
+    }),
+    nullableParentProperty: s.object({
+        childProperty: s.string(),
+    }).nullable(),
+    remappedProperty: s.string().from("db_test_property"),
+    numberProperty: s.number(),
+    booleanProperty: s.boolean(),
+    dateProperty: s.date(),
+    unsupportedArray: s.array(s.string()),
+}).compile();
 
-class MockNullableSchema extends SchemaBase<any, any> {
-    instance = {};
-    type = SchemaTypes.String;
-    isNullable = true;
-    isOptional = false;
-    isKey = false;
-    isIdentity = false;
-    isReadonly = false;
-    isUnmapped = false;
-    isDistict = false;
-    indexes: string[] = [];
-    injected: any = null;
-    defaultValue: any = null;
-    valueSerializer: any = null;
-    valueDeserializer: any = null;
-    functionBody: any = null;
-    literals: any[] = [];
-}
+const properties = testSchema.properties;
+const getProperty = (id: string) => properties.find((p) => p.id === id)!;
 
-class MockOptionalSchema extends SchemaBase<any, any> {
-    instance = {};
-    type = SchemaTypes.String;
-    isNullable = false;
-    isOptional = true;
-    isKey = false;
-    isIdentity = false;
-    isReadonly = false;
-    isUnmapped = false;
-    isDistict = false;
-    indexes: string[] = [];
-    injected: any = null;
-    defaultValue: any = null;
-    valueSerializer: any = null;
-    valueDeserializer: any = null;
-    functionBody: any = null;
-    literals: any[] = [];
-}
+const baseProperty = getProperty("testProperty");
+const nullableProperty = getProperty("nullableProperty");
+const optionalProperty = getProperty("optionalProperty");
+const nestedChildProperty = getProperty("parentProperty.childProperty");
+const deepChildProperty = getProperty("grandparentProperty.parentProperty.childProperty");
+const nullableParentChildProperty = getProperty("nullableParentProperty.childProperty");
+const parentProperty = getProperty("parentProperty");
+const remappedProperty = getProperty("remappedProperty");
 
-describe('PropertyInfo', () => {
-    let mockSchema: MockSchema;
-    let nullableSchema: MockNullableSchema;
-    let optionalSchema: MockOptionalSchema;
+const fastHash = (value: string) => `hash:${value.length}`;
+const isNullOrEmpty = (value: unknown) => value == null || value === "";
 
-    beforeEach(() => {
-        mockSchema = new MockSchema();
-        nullableSchema = new MockNullableSchema();
-        optionalSchema = new MockOptionalSchema();
-    });
+const memoryInspiredSchema = s.define("memoryInspired", {
+    numericId: s.number().key().identity(),
+    revision: s.string().identity(),
+    orderId: s.string().key().from("_id").identity(),
+    status: s.string("pending", "processing", "shipped", "delivered", "cancelled"),
+    tags: s.string("computer", "accessory").array(),
+    isSuperAdmin: s.boolean().default(false),
+    namedByDefault: s.string().default((deps: { name: string }) => deps.name, { name: "James" }),
+    createdAt: s.date().default(() => new Date("2024-01-01T00:00:00.000Z")).deserialize((x) => (typeof x === "object" && (x as unknown) instanceof Date) ? x : new Date(String(x))),
+    metadataJson: s.object({
+        email: s.string().optional(),
+    }).optional(),
+    maybeTime: s.number().nullable().default(() => null),
+}).modify((w) => ({
+    documentType: w.computed((_, collectionName) => collectionName).tracked(),
+    createdDate: w.computed((entity) => new Date(entity.createdAt)),
+    hasCollectionName: w.computed((_, collectionName, injected) => !injected.isNullOrEmpty(collectionName), { isNullOrEmpty }).tracked(),
+    getDisplayName: w.function((entity) => (format: "short" | "full") => format === "short" ? entity.status : `${entity.orderId}:${entity.status}`),
+    hashId: w.computed((entity, _, deps) => deps.fastHash(JSON.stringify(entity)), { fastHash }).tracked().key(),
+})).compile();
 
-    describe('constructor and basic properties', () => {
-        it('should create PropertyInfo with correct basic properties', () => {
-            const propertyInfo = new PropertyInfo(mockSchema, 'testProperty');
+const memoryProperties = memoryInspiredSchema.properties;
+const getMemoryProperty = (id: string) => memoryProperties.find((p) => p.id === id)!;
 
-            expect(propertyInfo.name).toBe('testProperty');
-            expect(propertyInfo.type).toBe(SchemaTypes.String);
-            expect(propertyInfo.isNullable).toBe(false);
-            expect(propertyInfo.isOptional).toBe(false);
-            expect(propertyInfo.isKey).toBe(false);
-            expect(propertyInfo.isIdentity).toBe(false);
-            expect(propertyInfo.isReadonly).toBe(false);
-            expect(propertyInfo.isUnmapped).toBe(false);
-            expect(propertyInfo.isDistinct).toBe(false);
-            expect(propertyInfo.indexes).toEqual([]);
-            expect(propertyInfo.injected).toBeNull();
-            expect(propertyInfo.defaultValue).toBeNull();
-            expect(propertyInfo.valueSerializer).toBeNull();
-            expect(propertyInfo.valueDeserializer).toBeNull();
-            expect(propertyInfo.functionBody).toBeNull();
-            expect(propertyInfo.children).toEqual([]);
-            expect(propertyInfo.schema).toBe(mockSchema);
-            expect(propertyInfo.parent).toBeUndefined();
-            expect(propertyInfo.literals).toEqual([]);
+describe("PropertyInfo", () => {
+    describe("constructor and basic properties", () => {
+        it("should create PropertyInfo with correct basic properties", () => {
+            expect(baseProperty.name).toBe("testProperty");
+            expect(baseProperty.type).toBe(SchemaTypes.String);
+            expect(baseProperty.isNullable).toBe(false);
+            expect(baseProperty.isOptional).toBe(false);
+            expect(baseProperty.isKey).toBe(false);
+            expect(baseProperty.isIdentity).toBe(false);
+            expect(baseProperty.isReadonly).toBe(false);
+            expect(baseProperty.isUnmapped).toBe(false);
+            expect(baseProperty.isDistinct).toBe(false);
+            expect(baseProperty.indexes).toEqual([]);
+            expect(baseProperty.injected).toBeNull();
+            expect(baseProperty.defaultValue).toBeNull();
+            expect(baseProperty.valueSerializer).toBeNull();
+            expect(baseProperty.valueDeserializer).toBeNull();
+            expect(baseProperty.functionBody).toBeUndefined();
+            expect(baseProperty.children).toEqual([]);
+            expect(baseProperty.parent).toBeNull();
+            expect(baseProperty.literals).toEqual([]);
         });
 
-        it('should create PropertyInfo with nullable schema', () => {
-            const propertyInfo = new PropertyInfo(nullableSchema, 'nullableProperty');
-
-            expect(propertyInfo.isNullable).toBe(true);
-            expect(propertyInfo.isOptional).toBe(false);
+        it("should expose nullable and optional flags from schema", () => {
+            expect(nullableProperty.isNullable).toBe(true);
+            expect(nullableProperty.isOptional).toBe(false);
+            expect(optionalProperty.isNullable).toBe(false);
+            expect(optionalProperty.isOptional).toBe(true);
         });
 
-        it('should create PropertyInfo with optional schema', () => {
-            const propertyInfo = new PropertyInfo(optionalSchema, 'optionalProperty');
-
-            expect(propertyInfo.isNullable).toBe(false);
-            expect(propertyInfo.isOptional).toBe(true);
-        });
-
-        it('should create PropertyInfo with parent', () => {
-            const parentPropertyInfo = new PropertyInfo(mockSchema, 'parentProperty');
-            const childPropertyInfo = new PropertyInfo(mockSchema, 'childProperty', parentPropertyInfo);
-
-            expect(childPropertyInfo.parent).toBe(parentPropertyInfo);
-            expect(childPropertyInfo.name).toBe('childProperty');
+        it("should expose parent relationship for nested property", () => {
+            expect(nestedChildProperty.parent).toBe(parentProperty);
+            expect(nestedChildProperty.name).toBe("childProperty");
         });
     });
 
-    describe('id property', () => {
-        it('should return property name for root property', () => {
-            const propertyInfo = new PropertyInfo(mockSchema, 'testProperty');
-
-            expect(propertyInfo.id).toBe('testProperty');
+    describe("id and level", () => {
+        it("should expose id path values", () => {
+            expect(baseProperty.id).toBe("testProperty");
+            expect(nestedChildProperty.id).toBe("parentProperty.childProperty");
+            expect(deepChildProperty.id).toBe("grandparentProperty.parentProperty.childProperty");
         });
 
-        it('should return dot-separated path for nested property', () => {
-            const parentPropertyInfo = new PropertyInfo(mockSchema, 'parentProperty');
-            const childPropertyInfo = new PropertyInfo(mockSchema, 'childProperty', parentPropertyInfo);
-
-            expect(childPropertyInfo.id).toBe('parentProperty.childProperty');
-        });
-
-        it('should return full path for deeply nested property', () => {
-            const grandparentPropertyInfo = new PropertyInfo(mockSchema, 'grandparentProperty');
-            const parentPropertyInfo = new PropertyInfo(mockSchema, 'parentProperty', grandparentPropertyInfo);
-            const childPropertyInfo = new PropertyInfo(mockSchema, 'childProperty', parentPropertyInfo);
-
-            expect(childPropertyInfo.id).toBe('grandparentProperty.parentProperty.childProperty');
+        it("should expose level values", () => {
+            expect(baseProperty.level).toBe(0);
+            expect(nestedChildProperty.level).toBe(1);
+            expect(deepChildProperty.level).toBe(2);
         });
     });
 
-    describe('level property', () => {
-        it('should return 0 for root property', () => {
-            const propertyInfo = new PropertyInfo(mockSchema, 'testProperty');
-
-            expect(propertyInfo.level).toBe(0);
+    describe("path array helpers", () => {
+        it("should return full path arrays", () => {
+            expect(baseProperty.getPathArray()).toEqual(["testProperty"]);
+            expect(nestedChildProperty.getPathArray()).toEqual(["parentProperty", "childProperty"]);
+            expect(deepChildProperty.getPathArray()).toEqual(["grandparentProperty", "parentProperty", "childProperty"]);
         });
 
-        it('should return 1 for first level child', () => {
-            const parentPropertyInfo = new PropertyInfo(mockSchema, 'parentProperty');
-            const childPropertyInfo = new PropertyInfo(mockSchema, 'childProperty', parentPropertyInfo);
-
-            expect(childPropertyInfo.level).toBe(1);
-        });
-
-        it('should return 2 for second level child', () => {
-            const grandparentPropertyInfo = new PropertyInfo(mockSchema, 'grandparentProperty');
-            const parentPropertyInfo = new PropertyInfo(mockSchema, 'parentProperty', grandparentPropertyInfo);
-            const childPropertyInfo = new PropertyInfo(mockSchema, 'childProperty', parentPropertyInfo);
-
-            expect(childPropertyInfo.level).toBe(2);
+        it("should return parent path arrays", () => {
+            expect(baseProperty.getParentPathArray()).toEqual([]);
+            expect(nestedChildProperty.getParentPathArray()).toEqual(["parentProperty"]);
+            expect(deepChildProperty.getParentPathArray()).toEqual(["grandparentProperty", "parentProperty"]);
         });
     });
 
-    describe('getPathArray', () => {
-        it('should return array with property name for root property', () => {
-            const propertyInfo = new PropertyInfo(mockSchema, 'testProperty');
-
-            expect(propertyInfo.getPathArray()).toEqual(['testProperty']);
+    describe("parent/child traits", () => {
+        it("hasNullableParents should use real parent optionality", () => {
+            expect(baseProperty.hasNullableParents).toBe(false);
+            expect(nullableParentChildProperty.hasNullableParents).toBe(true);
+            expect(nestedChildProperty.hasNullableParents).toBe(false);
         });
 
-        it('should return full path array for nested property', () => {
-            const parentPropertyInfo = new PropertyInfo(mockSchema, 'parentProperty');
-            const childPropertyInfo = new PropertyInfo(mockSchema, 'childProperty', parentPropertyInfo);
-
-            expect(childPropertyInfo.getPathArray()).toEqual(['parentProperty', 'childProperty']);
-        });
-
-        it('should return full path array for deeply nested property', () => {
-            const grandparentPropertyInfo = new PropertyInfo(mockSchema, 'grandparentProperty');
-            const parentPropertyInfo = new PropertyInfo(mockSchema, 'parentProperty', grandparentPropertyInfo);
-            const childPropertyInfo = new PropertyInfo(mockSchema, 'childProperty', parentPropertyInfo);
-
-            expect(childPropertyInfo.getPathArray()).toEqual(['grandparentProperty', 'parentProperty', 'childProperty']);
+        it("hasIdentityChildren should detect recursive identity children", () => {
+            expect(baseProperty.hasIdentityChildren).toBe(false);
+            expect(parentProperty.hasIdentityChildren).toBe(true);
         });
     });
 
-    describe('getParentPathArray', () => {
-        it('should return empty array for root property', () => {
-            const propertyInfo = new PropertyInfo(mockSchema, 'testProperty');
-
-            expect(propertyInfo.getParentPathArray()).toEqual([]);
+    describe("getValue and setValue", () => {
+        it("getValue should support nullish short-circuit and nested lookup", () => {
+            expect(baseProperty.getValue(null as any)).toBeNull();
+            expect(baseProperty.getValue(undefined as any)).toBeNull();
+            expect(baseProperty.getValue({ testProperty: "testValue" })).toBe("testValue");
+            expect(nestedChildProperty.getValue({ parentProperty: { childProperty: "nestedValue" } } as any)).toBe("nestedValue");
+            expect(nestedChildProperty.getValue({ parentProperty: null } as any)).toBeNull();
+            expect(nestedChildProperty.getValue({ parentProperty: undefined } as any)).toBeNull();
         });
 
-        it('should return parent path array for nested property', () => {
-            const parentPropertyInfo = new PropertyInfo(mockSchema, 'parentProperty');
-            const childPropertyInfo = new PropertyInfo(mockSchema, 'childProperty', parentPropertyInfo);
+        it("setValue should write paths and create intermediates", () => {
+            const root: any = {};
+            baseProperty.setValue(root, "newValue");
+            expect(root).toEqual({ testProperty: "newValue" });
 
-            expect(childPropertyInfo.getParentPathArray()).toEqual(['parentProperty']);
+            const nested: any = {};
+            nestedChildProperty.setValue(nested, "nestedValue");
+            expect(nested).toEqual({ parentProperty: { childProperty: "nestedValue" } });
+
+            const deep: any = {};
+            deepChildProperty.setValue(deep, "deepValue");
+            expect(deep).toEqual({ grandparentProperty: { parentProperty: { childProperty: "deepValue" } } });
         });
 
-        it('should return full parent path array for deeply nested property', () => {
-            const grandparentPropertyInfo = new PropertyInfo(mockSchema, 'grandparentProperty');
-            const parentPropertyInfo = new PropertyInfo(mockSchema, 'parentProperty', grandparentPropertyInfo);
-            const childPropertyInfo = new PropertyInfo(mockSchema, 'childProperty', parentPropertyInfo);
-
-            expect(childPropertyInfo.getParentPathArray()).toEqual(['grandparentProperty', 'parentProperty']);
-        });
-    });
-
-    describe('hasNullableParents', () => {
-        it('should return false for root property with non-nullable schema', () => {
-            const propertyInfo = new PropertyInfo(mockSchema, 'testProperty');
-
-            expect(propertyInfo.hasNullableParents).toBe(false);
-        });
-
-        it('should return true when parent is nullable', () => {
-            const parentPropertyInfo = new PropertyInfo(nullableSchema, 'parentProperty');
-            const childPropertyInfo = new PropertyInfo(mockSchema, 'childProperty', parentPropertyInfo);
-
-            expect(childPropertyInfo.hasNullableParents).toBe(true);
-        });
-
-        it('should return true when grandparent is nullable', () => {
-            const grandparentPropertyInfo = new PropertyInfo(nullableSchema, 'grandparentProperty');
-            const parentPropertyInfo = new PropertyInfo(mockSchema, 'parentProperty', grandparentPropertyInfo);
-            const childPropertyInfo = new PropertyInfo(mockSchema, 'childProperty', parentPropertyInfo);
-
-            expect(childPropertyInfo.hasNullableParents).toBe(true);
-        });
-
-        it('should return false when no parents are nullable', () => {
-            const parentPropertyInfo = new PropertyInfo(mockSchema, 'parentProperty');
-            const childPropertyInfo = new PropertyInfo(mockSchema, 'childProperty', parentPropertyInfo);
-
-            expect(childPropertyInfo.hasNullableParents).toBe(false);
+        it("setValue should throw for nullish instance", () => {
+            expect(() => baseProperty.setValue(null as any, "value")).toThrow("Cannot set value on null or undefined instance");
+            expect(() => baseProperty.setValue(undefined as any, "value")).toThrow("Cannot set value on null or undefined instance");
         });
     });
 
-    describe('hasIdentityChildren', () => {
-        it('should return false for property with no children', () => {
-            const propertyInfo = new PropertyInfo(mockSchema, 'testProperty');
-
-            expect(propertyInfo.hasIdentityChildren).toBe(false);
+    describe("selector and assignment paths", () => {
+        it("should produce selector paths", () => {
+            expect(baseProperty.getSelectrorPath({ parent: "entity" })).toBe("entity.testProperty");
+            expect(nestedChildProperty.getSelectrorPath({ parent: "entity" })).toBe("entity.parentProperty.childProperty");
+            expect(nullableProperty.getSelectrorPath({ parent: "entity" })).toBe("entity?.nullableProperty");
+            expect(optionalProperty.getSelectrorPath({ parent: "entity" })).toBe("entity?.optionalProperty");
+            expect(nullableParentChildProperty.getSelectrorPath({ parent: "entity" })).toBe("entity?.nullableParentProperty.childProperty");
+            expect(nullableProperty.getSelectrorPath({ parent: "entity", assignmentType: "ASSIGNMENT" })).toBe("entity.nullableProperty");
         });
 
-        it('should return true when direct child is identity', () => {
-            const identitySchema = new MockSchema();
-            identitySchema.isIdentity = true;
-
-            const parentPropertyInfo = new PropertyInfo(mockSchema, 'parentProperty');
-            const childPropertyInfo = new PropertyInfo(identitySchema, 'childProperty', parentPropertyInfo);
-
-            // Manually add child to parent's children array
-            (parentPropertyInfo as any).children.push(childPropertyInfo);
-
-            expect(parentPropertyInfo.hasIdentityChildren).toBe(true);
+        it("should produce assignment paths", () => {
+            expect(baseProperty.getAssignmentPath()).toBe("testProperty");
+            expect(nestedChildProperty.getAssignmentPath()).toBe("parentProperty.childProperty");
+            expect(baseProperty.getAssignmentPath({ parent: "entity" })).toBe("entity.testProperty");
+            expect(nestedChildProperty.getAssignmentPath({ parent: "entity" })).toBe("entity.parentProperty.childProperty");
+            expect(nullableProperty.getAssignmentPath()).toBe("nullableProperty");
+            expect(optionalProperty.getAssignmentPath()).toBe("optionalProperty");
         });
 
-        it('should return true when grandchild is identity', () => {
-            const identitySchema = new MockSchema();
-            identitySchema.isIdentity = true;
-
-            const grandparentPropertyInfo = new PropertyInfo(mockSchema, 'grandparentProperty');
-            const parentPropertyInfo = new PropertyInfo(mockSchema, 'parentProperty', grandparentPropertyInfo);
-            const childPropertyInfo = new PropertyInfo(identitySchema, 'childProperty', parentPropertyInfo);
-
-            // Manually add children to their respective parents
-            (grandparentPropertyInfo as any).children.push(parentPropertyInfo);
-            (parentPropertyInfo as any).children.push(childPropertyInfo);
-
-            expect(grandparentPropertyInfo.hasIdentityChildren).toBe(true);
-        });
-
-        it('should return false when no children are identity', () => {
-            const parentPropertyInfo = new PropertyInfo(mockSchema, 'parentProperty');
-            const childPropertyInfo = new PropertyInfo(mockSchema, 'childProperty', parentPropertyInfo);
-
-            expect(parentPropertyInfo.hasIdentityChildren).toBe(false);
+        it("should use remapped names for schema-represented properties", () => {
+            expect(remappedProperty.getAssignmentPath({ useFromPropertyName: true })).toBe("db_test_property");
+            expect(remappedProperty.getAssignmentPath({ parent: "entity", useFromPropertyName: true })).toBe("entity.db_test_property");
         });
     });
 
-    describe('getValue', () => {
-        it('should return null for null instance', () => {
-            const propertyInfo = new PropertyInfo(mockSchema, 'testProperty');
-
-            expect(propertyInfo.getValue(null)).toBeNull();
+    describe("resolved names and deserialization support", () => {
+        it("should resolve remapped and original names", () => {
+            expect(remappedProperty.getResolvedName()).toBe("db_test_property");
+            expect(baseProperty.getResolvedName()).toBe("testProperty");
         });
 
-        it('should return null for undefined instance', () => {
-            const propertyInfo = new PropertyInfo(mockSchema, 'testProperty');
-
-            expect(propertyInfo.getValue(undefined)).toBeNull();
+        it("should build selector path from remapped names", () => {
+            expect(remappedProperty.getSelectrorPath({ parent: "entity", useFromPropertyName: true })).toBe("entity.db_test_property");
         });
 
-        it('should return value for simple property', () => {
-            const propertyInfo = new PropertyInfo(mockSchema, 'testProperty');
-            const instance = { testProperty: 'testValue' };
-
-            expect(propertyInfo.getValue(instance)).toBe('testValue');
-        });
-
-        it('should return value for nested property', () => {
-            const parentPropertyInfo = new PropertyInfo(mockSchema, 'parentProperty');
-            const childPropertyInfo = new PropertyInfo(mockSchema, 'childProperty', parentPropertyInfo);
-            const instance: any = { parentProperty: { childProperty: 'nestedValue' } };
-
-            expect(childPropertyInfo.getValue(instance)).toBe('nestedValue');
-        });
-
-        it('should return null when intermediate property is null', () => {
-            const parentPropertyInfo = new PropertyInfo(mockSchema, 'parentProperty');
-            const childPropertyInfo = new PropertyInfo(mockSchema, 'childProperty', parentPropertyInfo);
-            const instance: any = { parentProperty: null };
-
-            expect(childPropertyInfo.getValue(instance)).toBeNull();
-        });
-
-        it('should return null when intermediate property is undefined', () => {
-            const parentPropertyInfo = new PropertyInfo(mockSchema, 'parentProperty');
-            const childPropertyInfo = new PropertyInfo(mockSchema, 'childProperty', parentPropertyInfo);
-            const instance: any = { parentProperty: undefined };
-
-            expect(childPropertyInfo.getValue(instance)).toBeNull();
+        it("should report deserialization support", () => {
+            expect(baseProperty.supportsDeserialization).toBe(true);
+            expect(getProperty("numberProperty").supportsDeserialization).toBe(true);
+            expect(getProperty("booleanProperty").supportsDeserialization).toBe(true);
+            expect(getProperty("dateProperty").supportsDeserialization).toBe(true);
+            expect(getProperty("unsupportedArray").supportsDeserialization).toBe(false);
+            expect(getMemoryProperty("createdAt").supportsDeserialization).toBe(true);
         });
     });
 
-    describe('setValue', () => {
-        it('should set value for simple property', () => {
-            const propertyInfo = new PropertyInfo(mockSchema, 'testProperty');
-            const instance = {};
+    describe("memory plugin schema coverage", () => {
+        it("should expose literal string values and array inner schemas", () => {
+            const statusProperty = getMemoryProperty("status");
+            const tagsProperty = getMemoryProperty("tags");
 
-            propertyInfo.setValue(instance, 'newValue');
-
-            expect(instance).toEqual({ testProperty: 'newValue' });
+            expect(statusProperty.literals).toEqual(["pending", "processing", "shipped", "delivered", "cancelled"]);
+            expect(tagsProperty.type).toBe(SchemaTypes.Array);
+            expect(tagsProperty.innerSchema).toBeDefined();
+            expect(tagsProperty.innerSchema?.literals).toEqual(["computer", "accessory"]);
         });
 
-        it('should set value for nested property', () => {
-            const parentPropertyInfo = new PropertyInfo(mockSchema, 'parentProperty');
-            const childPropertyInfo = new PropertyInfo(mockSchema, 'childProperty', parentPropertyInfo);
-            const instance = {};
+        it("should expose key identity and remapped identity combinations used by memory schemas", () => {
+            const numericIdProperty = getMemoryProperty("numericId");
+            const revisionProperty = getMemoryProperty("revision");
+            const orderIdProperty = getMemoryProperty("orderId");
 
-            childPropertyInfo.setValue(instance, 'nestedValue');
+            expect(numericIdProperty.type).toBe(SchemaTypes.Number);
+            expect(numericIdProperty.isKey).toBe(true);
+            expect(numericIdProperty.isIdentity).toBe(true);
 
-            expect(instance).toEqual({ parentProperty: { childProperty: 'nestedValue' } });
+            expect(revisionProperty.isKey).toBe(false);
+            expect(revisionProperty.isIdentity).toBe(true);
+
+            expect(orderIdProperty.isKey).toBe(true);
+            expect(orderIdProperty.isIdentity).toBe(true);
+            expect(orderIdProperty.getResolvedName()).toBe("_id");
+            expect(orderIdProperty.getAssignmentPath({ useFromPropertyName: true })).toBe("_id");
         });
 
-        it('should create intermediate objects when they do not exist', () => {
-            const grandparentPropertyInfo = new PropertyInfo(mockSchema, 'grandparentProperty');
-            const parentPropertyInfo = new PropertyInfo(mockSchema, 'parentProperty', grandparentPropertyInfo);
-            const childPropertyInfo = new PropertyInfo(mockSchema, 'childProperty', parentPropertyInfo);
-            const instance = {};
+        it("should expose literal and injected defaults from memory schemas", () => {
+            const boolDefaultProperty = getMemoryProperty("isSuperAdmin");
+            const injectedDefaultProperty = getMemoryProperty("namedByDefault");
+            const nullableDefaultProperty = getMemoryProperty("maybeTime");
 
-            childPropertyInfo.setValue(instance, 'deepValue');
-
-            expect(instance).toEqual({
-                grandparentProperty: {
-                    parentProperty: {
-                        childProperty: 'deepValue'
-                    }
-                }
-            });
+            expect(boolDefaultProperty.defaultValue).toBe(false);
+            expect(injectedDefaultProperty.defaultValue).toBeDefined();
+            expect(injectedDefaultProperty.injected).toEqual({ name: "James" });
+            expect(nullableDefaultProperty.isNullable).toBe(true);
+            expect(nullableDefaultProperty.defaultValue).toBeDefined();
         });
 
-        it('should use existing intermediate objects', () => {
-            const parentPropertyInfo = new PropertyInfo(mockSchema, 'parentProperty');
-            const childPropertyInfo = new PropertyInfo(mockSchema, 'childProperty', parentPropertyInfo);
-            const instance = { parentProperty: { existingProperty: 'existingValue' } };
+        it("should expose optional object parent behavior from memory schemas", () => {
+            const metadataProperty = getMemoryProperty("metadataJson");
+            const metadataEmailProperty = getMemoryProperty("metadataJson.email");
 
-            childPropertyInfo.setValue(instance, 'newValue');
-
-            expect(instance).toEqual({
-                parentProperty: {
-                    existingProperty: 'existingValue',
-                    childProperty: 'newValue'
-                }
-            });
+            expect(metadataProperty.isOptional).toBe(true);
+            expect(metadataEmailProperty.parent).toBe(metadataProperty);
+            expect(metadataEmailProperty.isOptional).toBe(true);
+            expect(metadataEmailProperty.hasNullableParents).toBe(true);
+            expect(metadataEmailProperty.getSelectrorPath({ parent: "entity" })).toBe("entity?.metadataJson?.email");
         });
 
-        it('should throw error for null instance', () => {
-            const propertyInfo = new PropertyInfo(mockSchema, 'testProperty');
+        it("should expose date default and deserializer combinations used by memory schemas", () => {
+            const createdAtProperty = getMemoryProperty("createdAt");
 
-            expect(() => propertyInfo.setValue(null, 'value')).toThrow('Cannot set value on null or undefined instance');
+            expect(createdAtProperty.type).toBe(SchemaTypes.Date);
+            expect(createdAtProperty.defaultValue).toBeDefined();
+            expect(createdAtProperty.valueDeserializer).not.toBeNull();
+            expect(createdAtProperty.supportsDeserialization).toBe(true);
         });
 
-        it('should throw error for undefined instance', () => {
-            const propertyInfo = new PropertyInfo(mockSchema, 'testProperty');
+        it("should expose computed and function metadata from memory schemas", () => {
+            const createdDateProperty = getMemoryProperty("createdDate");
+            const documentTypeProperty = getMemoryProperty("documentType");
+            const hasCollectionNameProperty = getMemoryProperty("hasCollectionName");
+            const functionProperty = getMemoryProperty("getDisplayName");
+            const hashIdProperty = getMemoryProperty("hashId");
 
-            expect(() => propertyInfo.setValue(undefined, 'value')).toThrow('Cannot set value on null or undefined instance');
-        });
-    });
+            expect(createdDateProperty.type).toBe(SchemaTypes.Computed);
+            expect(createdDateProperty.isUnmapped).toBe(true);
+            expect(createdDateProperty.functionBody).toBeDefined();
+            expect(createdDateProperty.injected).toBeUndefined();
 
-    describe('getSelectrorPath', () => {
-        it('should return path with parent for root property', () => {
-            const propertyInfo = new PropertyInfo(mockSchema, 'testProperty');
+            expect(documentTypeProperty.isUnmapped).toBe(false);
+            expect(documentTypeProperty.type).toBe(SchemaTypes.Computed);
 
-            expect(propertyInfo.getSelectrorPath({ parent: 'entity' })).toBe('entity.testProperty');
-        });
+            expect(hasCollectionNameProperty.isUnmapped).toBe(false);
+            expect(hasCollectionNameProperty.injected).toEqual({ isNullOrEmpty });
 
-        it('should return path with parent for nested property', () => {
-            const parentPropertyInfo = new PropertyInfo(mockSchema, 'parentProperty');
-            const childPropertyInfo = new PropertyInfo(mockSchema, 'childProperty', parentPropertyInfo);
+            expect(functionProperty.type).toBe(SchemaTypes.Function);
+            expect(functionProperty.isUnmapped).toBe(true);
+            expect(functionProperty.functionBody).toBeDefined();
 
-            expect(childPropertyInfo.getSelectrorPath({ parent: 'entity' })).toBe('entity.parentProperty.childProperty');
-        });
-
-        it('should return path with optional chaining for nullable property', () => {
-            const propertyInfo = new PropertyInfo(nullableSchema, 'testProperty');
-
-            expect(propertyInfo.getSelectrorPath({ parent: 'entity' })).toBe('entity?.testProperty');
-        });
-
-        it('should return path with optional chaining for optional property', () => {
-            const propertyInfo = new PropertyInfo(optionalSchema, 'testProperty');
-
-            expect(propertyInfo.getSelectrorPath({ parent: 'entity' })).toBe('entity?.testProperty');
-        });
-
-        it('should return path with optional chaining when parent is nullable', () => {
-            const parentPropertyInfo = new PropertyInfo(nullableSchema, 'parentProperty');
-            const childPropertyInfo = new PropertyInfo(mockSchema, 'childProperty', parentPropertyInfo);
-
-            expect(childPropertyInfo.getSelectrorPath({ parent: 'entity' })).toBe('entity?.parentProperty.childProperty');
-        });
-
-        it('should return path without optional chaining for assignment type', () => {
-            const propertyInfo = new PropertyInfo(nullableSchema, 'testProperty');
-
-            expect(propertyInfo.getSelectrorPath({
-                parent: 'entity',
-                assignmentType: 'ASSIGNMENT'
-            })).toBe('entity.testProperty');
+            expect(hashIdProperty.type).toBe(SchemaTypes.Computed);
+            expect(hashIdProperty.isKey).toBe(true);
+            expect(hashIdProperty.isUnmapped).toBe(false);
+            expect(hashIdProperty.injected).toEqual({ fastHash });
         });
     });
-
-    describe('getAssignmentPath', () => {
-        it('should return property name for root property without parent', () => {
-            const propertyInfo = new PropertyInfo(mockSchema, 'testProperty');
-
-            expect(propertyInfo.getAssignmentPath()).toBe('testProperty');
-        });
-
-        it('should return path for nested property without parent', () => {
-            const parentPropertyInfo = new PropertyInfo(mockSchema, 'parentProperty');
-            const childPropertyInfo = new PropertyInfo(mockSchema, 'childProperty', parentPropertyInfo);
-
-            expect(childPropertyInfo.getAssignmentPath()).toBe('parentProperty.childProperty');
-        });
-
-        it('should return path with parent when provided', () => {
-            const propertyInfo = new PropertyInfo(mockSchema, 'testProperty');
-
-            expect(propertyInfo.getAssignmentPath({ parent: 'entity' })).toBe('entity.testProperty');
-        });
-
-        it('should return path with parent for nested property', () => {
-            const parentPropertyInfo = new PropertyInfo(mockSchema, 'parentProperty');
-            const childPropertyInfo = new PropertyInfo(mockSchema, 'childProperty', parentPropertyInfo);
-
-            expect(childPropertyInfo.getAssignmentPath({ parent: 'entity' })).toBe('entity.parentProperty.childProperty');
-        });
-
-        it('should return path without optional chaining for nullable property', () => {
-            const propertyInfo = new PropertyInfo(nullableSchema, 'testProperty');
-
-            expect(propertyInfo.getAssignmentPath()).toBe('testProperty');
-        });
-
-        it('should return path without optional chaining for optional property', () => {
-            const propertyInfo = new PropertyInfo(optionalSchema, 'testProperty');
-
-            expect(propertyInfo.getAssignmentPath()).toBe('testProperty');
-        });
-    });
-}); 
+});

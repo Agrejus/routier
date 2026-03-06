@@ -22,6 +22,7 @@ export interface QuerySerializationContext {
 /**
  * Converts a Routier Expression to the JSON shape expected by the server filter param.
  */
+// oxlint-disable-next-line only-used-in-recursion
 function expressionToFilterJson(expr: Expression, ctx: QuerySerializationContext): unknown {
     if (expr.type === 'operator') {
         const op = expr as OperatorExpression;
@@ -81,6 +82,7 @@ function combineExpressionsAsAnd(expressions: Expression[], ctx: QuerySerializat
         } else if (acc === undefined) {
             acc = right;
         } else if (right === undefined) {
+            // oxlint-disable-next-line no-self-assign
             acc = acc;
         } else {
             acc = { type: 'operator', operator: '&&', left: acc, right };

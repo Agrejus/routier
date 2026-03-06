@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { s } from './builder';
 import { PropertyInfo } from './PropertyInfo';
+import { SchemaError } from '../errors';
 
 describe("Schema Generation", () => {
     const getProperty = (schema: { properties: PropertyInfo<any>[] }, id: string): PropertyInfo<any> | undefined => {
@@ -112,6 +113,39 @@ describe("Schema Generation", () => {
             }).compile(metadata);
 
             expect(schema.metadata).toEqual(metadata);
+        });
+
+        it("compile() and compile(metadata) return different schema shapes", () => {
+            const definition = s.define("metadataShape", {
+                id: s.string().key(),
+                name: s.string()
+            });
+
+            const withoutMetadata = definition.compile();
+            const withMetadata = definition.compile({ api: "/users" });
+
+            expect(withoutMetadata).not.toBe(withMetadata);
+            expect((withoutMetadata as any).metadata).toBeUndefined();
+            expect((withMetadata as any).metadata).toEqual({ api: "/users" });
+        });
+    });
+
+    describe("compile edge cases", () => {
+        it("throws SchemaError when no key is defined", () => {
+            expect(() => s.define("missingKey", {
+                name: s.string()
+            }).compile()).toThrow(SchemaError);
+        });
+
+        it("compile() returns a fresh instance on each call", () => {
+            const definition = s.define("freshCompile", {
+                id: s.string().key(),
+                value: s.number()
+            });
+
+            const first = definition.compile();
+            const second = definition.compile();
+            expect(first).not.toBe(second);
         });
     });
 
