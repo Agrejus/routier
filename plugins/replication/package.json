@@ -1,6 +1,6 @@
 {
   "name": "@routier/replication-plugin",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "source": "./src/index.ts",
@@ -39,14 +39,14 @@
   ],
   "description": "Replication plugin for routier",
   "peerDependencies": {
-    "@routier/core": ">=0.2.0"
+    "@routier/core": ">=0.2.1"
   },
   "dependencies": {
     "@routier/memory-plugin": "^0.2.0"
   },
   "devDependencies": {
     "@faker-js/faker": "^10.0.0",
-    "@routier/core": "^0.2.0",
+    "@routier/core": "^0.2.1",
     "@routier/test-utils": "file:../../test-utils",
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",

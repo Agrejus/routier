@@ -144,6 +144,8 @@
           url: /integrations/plugins/built-in-plugins/pouchdb/
         - title: Dexie Plugin
           url: /integrations/plugins/built-in-plugins/dexie/
+        - title: Replication Plugin
+          url: /integrations/plugins/built-in-plugins/replication/
         - title: SQLite Plugin
           url: /integrations/plugins/built-in-plugins/sqlite/
         - title: Create Your Own

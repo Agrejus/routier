@@ -167,7 +167,7 @@ collection.toArray((result) => {
 4. **Consistent error handling** - Use try/catch with async, check `result.ok` with callbacks
 5. **No performance concerns** - Async is just syntactic sugar over callbacks
 
-## Example: Refactored SyncDataStore
+## Example: Refactored Sync Workflow
 
 ```typescript
 // ✅ Async version (cleaner)

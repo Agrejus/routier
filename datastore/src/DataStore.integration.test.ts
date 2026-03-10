@@ -1,30 +1,55 @@
-import { describe, expect, it } from '@jest/globals';
+import { afterEach, describe, expect, it } from '@jest/globals';
 import { DataStore } from './DataStore';
-import { s } from '@routier/core/schema';
+import { InferType, s } from '@routier/core/schema';
 import { BulkPersistResult } from '@routier/core/collections';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, TranslatedArrayValue } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
-import { uuidv4 } from '@routier/core/utilities';
 
 const productSchema = s.define("integrationProducts", {
     id: s.number().key(),
     name: s.string(),
     category: s.string(),
 }).compile();
+type Product = InferType<typeof productSchema>;
+
+const toEchoPersistResult = (changes: DbPluginBulkPersistEvent["operation"]) => {
+    const result = new BulkPersistResult();
+
+    for (const [schemaId, schemaChanges] of changes) {
+        const schemaResult = result.resolve(schemaId);
+        schemaResult.adds = [...schemaChanges.adds] as any[];
+        schemaResult.updates = schemaChanges.updates.map((update) => update.entity) as any[];
+        schemaResult.removes = [...schemaChanges.removes] as any[];
+    }
+
+    return result;
+};
 
 class RoutingProbePlugin implements IDbPlugin {
     queryEvents: DbPluginQueryEvent<any, any>[] = [];
     bulkPersistEvents: DbPluginBulkPersistEvent[] = [];
     destroyEvents: DbPluginEvent[] = [];
+    queryResponseValue: unknown = [];
+    queryResponseFactory?: () => unknown;
+    bulkPersistHandler?: (event: DbPluginBulkPersistEvent) => BulkPersistResult;
+    bulkPersistError?: Error;
 
     query<TRoot extends {}, TShape = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
         this.queryEvents.push(event);
-        done(PluginEventResult.success(event.id, new TranslatedArrayValue<TShape[]>([], false) as unknown as ITranslatedValue<TShape>));
+        const value = this.queryResponseFactory != null ? this.queryResponseFactory() : this.queryResponseValue;
+        done(PluginEventResult.success(event.id, new TranslatedArrayValue(value, false) as unknown as ITranslatedValue<TShape>));
     }
 
     bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackPartialResult<BulkPersistResult>): void {
         this.bulkPersistEvents.push(event);
-        done(PluginEventResult.success(event.id, event.operation.toResult()));
+
+        if (this.bulkPersistError != null) {
+            done(PluginEventResult.error(event.id, this.bulkPersistError));
+            return;
+        }
+
+        const result = this.bulkPersistHandler != null ? this.bulkPersistHandler(event) : toEchoPersistResult(event.operation);
+        done(PluginEventResult.success(event.id, result));
     }
 
     destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
@@ -37,9 +62,20 @@ class IntegrationStore extends DataStore {
     products = this.collection(productSchema).create();
 }
 
-const createStore = (plugin: IDbPlugin) => new IntegrationStore(plugin);
+const stores: DataStore[] = [];
+const createStore = (plugin: IDbPlugin) => {
+    const store = new IntegrationStore(plugin);
+    stores.push(store);
+    return store;
+};
 
 describe("DataStore integration", () => {
+    afterEach(() => {
+        for (const store of stores.splice(0)) {
+            store[Symbol.dispose]();
+        }
+    });
+
     it("routes persist operations to plugin.bulkPersist with datastore context", async () => {
         const plugin = new RoutingProbePlugin();
         const store = createStore(plugin);
@@ -75,6 +111,125 @@ describe("DataStore integration", () => {
         expect(changes).toBeDefined();
         expect(changes?.adds.length).toBe(1);
         expect(plugin.bulkPersistEvents.length).toBe(0);
+    });
+
+    it("previewChangesAsync does not clear dirty updates before save", async () => {
+        const plugin = new RoutingProbePlugin();
+        const store = createStore(plugin);
+        const [added] = await store.products.addAsync({
+            id: 20,
+            name: "Draft",
+            category: "office",
+        });
+
+        await store.saveChangesAsync();
+        added.name = "Updated Draft";
+
+        const firstPreview = await store.previewChangesAsync();
+        const secondPreview = await store.previewChangesAsync();
+        const firstChanges = firstPreview.get(productSchema.id);
+        const secondChanges = secondPreview.get(productSchema.id);
+
+        expect(firstChanges?.updates).toHaveLength(1);
+        expect(secondChanges?.updates).toHaveLength(1);
+        expect(firstChanges?.updates[0].changeType).toBe("propertiesChanged");
+        expect(await store.hasChangesAsync()).toBe(true);
+    });
+
+    it("preserves pending changes when plugin.bulkPersist fails", async () => {
+        const plugin = new RoutingProbePlugin();
+        plugin.bulkPersistError = new Error("persist failed");
+        const store = createStore(plugin);
+
+        await store.products.addAsync({
+            id: 30,
+            name: "Will Retry",
+            category: "office",
+        });
+
+        await expect(store.saveChangesAsync()).rejects.toThrow("persist failed");
+
+        const preview = await store.previewChangesAsync();
+        const changes = preview.get(productSchema.id);
+
+        expect(changes?.adds).toHaveLength(1);
+        expect(await store.hasChangesAsync()).toBe(true);
+    });
+
+    it("merges persisted add results back into tracked entities", async () => {
+        const plugin = new RoutingProbePlugin();
+        plugin.bulkPersistHandler = (event) => {
+            const result = new BulkPersistResult();
+            const schemaResult = result.resolve(productSchema.id);
+            const add = event.operation.get(productSchema.id)?.adds[0] as unknown as Product | undefined;
+
+            schemaResult.adds = [{
+                ...add,
+                name: "Persisted Name",
+                category: "saved",
+            } as any];
+
+            return result;
+        };
+
+        const store = createStore(plugin);
+        const [added] = await store.products.addAsync({
+            id: 40,
+            name: "Pending Name",
+            category: "office",
+        });
+
+        await store.saveChangesAsync();
+
+        expect(added.name).toBe("Persisted Name");
+        expect(added.category).toBe("saved");
+        expect(store.products.attachments.get(added)).toBe(added);
+        expect(await store.hasChangesAsync()).toBe(false);
+    });
+
+    it("stages removals and clears them after a successful save", async () => {
+        const plugin = new RoutingProbePlugin();
+        const store = createStore(plugin);
+        const [added] = await store.products.addAsync({
+            id: 50,
+            name: "To Remove",
+            category: "office",
+        });
+
+        await store.saveChangesAsync();
+        await store.products.removeAsync(added);
+
+        const preview = await store.previewChangesAsync();
+        const changes = preview.get(productSchema.id);
+
+        expect(changes?.removes).toHaveLength(1);
+
+        await store.saveChangesAsync();
+
+        const afterSave = await store.previewChangesAsync();
+        expect(afterSave.get(productSchema.id)).toBeUndefined();
+        expect(await store.hasChangesAsync()).toBe(false);
+    });
+
+    it("reuses canonical attachments when the same entity is attached again", async () => {
+        const plugin = new RoutingProbePlugin();
+        const store = createStore(plugin);
+
+        const [first] = store.products.attachments.set({
+            id: 60,
+            name: "Original",
+            category: "office",
+        } as Product);
+
+        const [second] = store.products.attachments.set({
+            id: 60,
+            name: "Merged",
+            category: "supplies",
+        } as Product);
+
+        expect(second).toBe(first);
+        expect(first.name).toBe("Merged");
+        expect(first.category).toBe("supplies");
     });
 
     it("routes scoped queries with both scope and user filters to plugin.query", async () => {

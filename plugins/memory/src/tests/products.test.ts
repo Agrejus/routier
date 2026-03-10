@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
-import { describe, it, expect, afterAll } from '@jest/globals';
-import { generateData, seedData, wait } from '@routier/test-utils';
+import { describe, it, expect, afterEach } from '@jest/globals';
+import { generateData, seedData } from '@routier/test-utils';
 import { CallbackResult, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, PluginEventCallbackResult, UnknownRecord, uuidv4 } from '@routier/core';
 import { MemoryPlugin } from '../MemoryPlugin';
 import { TestDataStore } from './datastore/MemoryDatastore';
@@ -45,10 +45,27 @@ const factoryWithReadClones = (dbname?: string) => {
     return store;
 };
 
+const waitForAsync = async (assertion: () => Promise<void>, timeoutMs: number = 2000) => {
+    const startedAt = Date.now();
+    let lastError: unknown;
+
+    while (Date.now() - startedAt < timeoutMs) {
+        try {
+            await assertion();
+            return;
+        } catch (error) {
+            lastError = error;
+            await new Promise((resolve) => setTimeout(resolve, 25));
+        }
+    }
+
+    throw lastError;
+};
+
 describe("Product Tests", () => {
 
-    afterAll(async () => {
-        await Promise.all(stores.map(x => x.destroyAsync()));
+    afterEach(async () => {
+        await Promise.all(stores.splice(0).map((x) => x.destroyAsync()));
     });
 
     describe('Save Operations', () => {
@@ -2307,8 +2324,6 @@ describe("Product Tests", () => {
 
     describe('View Test', () => {
         it('history view should add a new record on update', async () => {
-
-            // FAILING when running concurrently, hanging
             const dataStore = factory();
             // Arrange
             const items = generateData(dataStore.products.schema, 2);
@@ -2317,11 +2332,9 @@ describe("Product Tests", () => {
             await dataStore.products.addAsync(...items);
             await dataStore.saveChangesAsync();
 
-            await wait(500);
-
-            const viewItemsCount = await dataStore.productsHistory.countAsync();
-
-            expect(viewItemsCount).toBe(2);
+            await waitForAsync(async () => {
+                expect(await dataStore.productsHistory.countAsync()).toBe(2);
+            });
 
             const firstProduct = await dataStore.products.firstAsync();
 
@@ -2329,11 +2342,9 @@ describe("Product Tests", () => {
 
             await dataStore.saveChangesAsync();
 
-            await wait(200);
-
-            const viewItemsCountAfterChange = await dataStore.productsHistory.countAsync();
-
-            expect(viewItemsCountAfterChange).toBe(3);
+            await waitForAsync(async () => {
+                expect(await dataStore.productsHistory.countAsync()).toBe(3);
+            });
         });
 
         it('products view should update existing and not add a new record', async () => {
@@ -2345,11 +2356,9 @@ describe("Product Tests", () => {
             await dataStore.products.addAsync(...items);
             await dataStore.saveChangesAsync();
 
-            await wait(500);
-
-            const viewItemsCount = await dataStore.productsView.countAsync();
-
-            expect(viewItemsCount).toBe(2);
+            await waitForAsync(async () => {
+                expect(await dataStore.productsView.countAsync()).toBe(2);
+            });
 
             const firstProduct = await dataStore.products.firstAsync();
 
@@ -2357,11 +2366,10 @@ describe("Product Tests", () => {
 
             await dataStore.saveChangesAsync();
 
-            await wait(200);
-
-            const viewItemsCountAfterChange = await dataStore.productsView.firstOrUndefinedAsync(x => x.category === "Changed");
-
-            expect(viewItemsCountAfterChange).toBeDefined();
+            await waitForAsync(async () => {
+                const viewItemsCountAfterChange = await dataStore.productsView.firstOrUndefinedAsync(x => x.category === "Changed");
+                expect(viewItemsCountAfterChange).toBeDefined();
+            });
         });
     });
 });

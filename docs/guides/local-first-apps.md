@@ -3,6 +3,7 @@ title: Local-First Apps
 layout: default
 parent: Guides
 nav_order: 2
+doc_role: guide
 ---
 
 # Local-First Apps
@@ -43,6 +44,8 @@ Routier's plugin architecture makes local-first the default. You choose where da
 2. **Sync when you need it** — Compose with HttpSwrDbPlugin for HTTP sync. Cache-first reads, background revalidate, writes POST to your API. The app works offline and syncs when back online.
 3. **Optional speed boost** — Add OptimisticUpdatesDbPlugin for in-memory reads. Instant queries even when the underlying store is IndexedDB.
 
+The easiest way to build that stack is with `@routier/replication-plugin`. It provides `HttpDbPlugin`, `HttpSwrDbPlugin`, and `OptimisticUpdatesDbPlugin` so you can choose direct HTTP sync, cache-first SWR, or the full local-first composition.
+
 ```
 User Device
 ┌─────────────────────────────────────────────────────────┐
@@ -77,11 +80,14 @@ User Device
 | **HTTP sync + fastest reads** | HttpSwrDbPlugin(OptimisticUpdatesDbPlugin(DexiePlugin)) | [HttpSwrDbPlugin with Optimistic](http-swr-with-optimistic.md) |
 | **Local-only (no sync)** | DexiePlugin or MemoryPlugin | [Plugin Compositions](plugin-compositions.md) |
 
+See [Replication Plugin](/integrations/plugins/built-in-plugins/replication/) for the package-level overview and option reference.
+
 See **[Plugin Compositions](plugin-compositions.md)** for the full map of combinations and when to use each.
 
 ## Related Guides
 
 - [Plugin Compositions](plugin-compositions.md) — Choose your storage and sync combination
+- [Replication Plugin](/integrations/plugins/built-in-plugins/replication/) — HTTP sync, SWR, and optimistic local-first building blocks
 - [Syncing](syncing.md) — Sync patterns and conflict handling
 - [HttpSwrDbPlugin with Optimistic Replication](http-swr-with-optimistic.md) — Maximum speed with HTTP sync
 - [Optimistic Replication](optimistic-replication.md) — In-memory reads with persistent storage

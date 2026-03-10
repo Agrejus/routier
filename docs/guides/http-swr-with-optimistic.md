@@ -3,19 +3,21 @@ title: HttpSwrDbPlugin with Optimistic Replication
 layout: default
 parent: Guides
 nav_order: 9
+doc_role: guide
 ---
 
 # HttpSwrDbPlugin with Optimistic Replication
 
-Combine **HttpSwrDbPlugin** (stale-while-revalidate over HTTP) with **OptimisticUpdatesDbPlugin** for extremely fast reads: IndexedDB cache → in-memory store → instant UI. This pattern is ideal for apps that sync with a remote API and need sub-millisecond query response times.
+Combine **HttpSwrDbPlugin** (stale-while-revalidate over HTTP) with **OptimisticUpdatesDbPlugin** for a local-first data flow: durable local cache, in-memory reads, background revalidation, and optimistic writes. This is the pattern to reach for when you want SWR semantics and optimistic updates without making your UI wait on the network.
 
-For a full map of plugin combinations and when to use each, see **[Plugin Compositions](plugin-compositions.md)**.
+For the package overview, see **[Replication Plugin](/integrations/plugins/built-in-plugins/replication/)**. For a full map of plugin combinations and when to use each, see **[Plugin Compositions](plugin-compositions.md)**.
 
 ## Quick Navigation
 - [Architecture](#architecture)
 - [Critical: Plugin Order](#critical-plugin-order)
 - [Setup](#setup)
 - [Complete Example](#complete-example)
+- [Production Shape](#production-shape)
 - [Customizing the Request Body](#customizing-the-request-body)
 - [Unsynced Queue Storage](#unsynced-queue-storage)
 - [Related Guides](#related-guides)
@@ -49,6 +51,12 @@ For a full map of plugin combinations and when to use each, see **[Plugin Compos
 
 Reads flow: **Memory** → instant. Writes flow: **Memory** → Dexie → HTTP POST. Server updates revalidate the cache and propagate to memory.
 
+This gives you a practical local-first stack:
+
+- **SWR**: cached reads return immediately and stale data is refreshed in the background.
+- **Optimistic updates**: writes land locally first so the UI updates without waiting for the server.
+- **Offline resilience**: the app keeps working from local state and retries sync when connectivity returns.
+
 ## Critical: Plugin Order
 
 **You must pass the OptimisticUpdatesDbPlugin to HttpSwrDbPlugin, not the other way around.**
@@ -71,6 +79,20 @@ npm install @routier/core @routier/datastore @routier/replication-plugin @routie
 
 
 {% highlight ts linenos %}{% include code/from-docs/guides/http-swr-with-optimistic/block-4.ts %}{% endhighlight %}
+
+## Production Shape
+
+A production setup often adds three pieces on top of the minimal example:
+
+- auth headers that can refresh on `401` or `403`
+- tenant or organization headers for server-side scoping
+- a custom `formatRequestBody(...)` to match an existing HTTP contract
+
+The shape below mirrors a real local-first datastore setup:
+
+{% highlight ts linenos %}{% include code/from-docs/guides/http-swr-with-optimistic/block-6.ts %}{% endhighlight %}
+
+This works especially well when your `DataStore` also uses scoped collections for user-specific data. The server remains the source of truth, but the client keeps a fast local working set and synchronizes in the background.
 
 
 ### Key points
@@ -99,6 +121,7 @@ The unsynced queue tracks entities written to the local store but not yet confir
 
 ## Related Guides
 
+- [Replication Plugin](/integrations/plugins/built-in-plugins/replication/) — Package overview and option reference
 - [Plugin Compositions](plugin-compositions.md) — Map of all plugin combinations
 - [Optimistic Replication](optimistic-replication.md) — Base pattern without HTTP
 - [Syncing](syncing.md) — Sync with remote APIs

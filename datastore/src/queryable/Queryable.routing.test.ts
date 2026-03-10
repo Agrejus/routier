@@ -1,10 +1,11 @@
-import { describe, expect, it } from '@jest/globals';
+import { afterEach, describe, expect, it } from '@jest/globals';
 import { DataStore } from '../DataStore';
 import { s } from '@routier/core/schema';
 import { BulkPersistResult } from '@routier/core/collections';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, TranslatedArrayValue } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
 import { Queryable } from './Queryable';
+import { MemoryPlugin } from '@routier/memory-plugin';
 
 const productsSchema = s.define("queryableProducts", {
     id: s.number().key(),
@@ -26,9 +27,22 @@ class QueryRoutingProbePlugin implements IDbPlugin {
     bulkPersistEvents: DbPluginBulkPersistEvent[] = [];
     destroyEvents: DbPluginEvent[] = [];
     queryResponseValue: unknown = [];
+    private readonly memoryPlugin = new MemoryPlugin("query-routing-probe");
+    useMemoryQueryDelegate = false;
+
+    seed<TEntity extends {}>(schema: typeof productsSchema | typeof computedSchema | any, data: TEntity[]) {
+        this.useMemoryQueryDelegate = true;
+        this.memoryPlugin.seed(schema, data);
+    }
 
     query<TRoot extends {}, TShape = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
         this.queryEvents.push(event);
+
+        if (this.useMemoryQueryDelegate) {
+            this.memoryPlugin.query(event, done);
+            return;
+        }
+
         done(PluginEventResult.success(event.id, new TranslatedArrayValue(this.queryResponseValue, false) as unknown as ITranslatedValue<TShape>));
     }
 
@@ -39,7 +53,9 @@ class QueryRoutingProbePlugin implements IDbPlugin {
 
     destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
         this.destroyEvents.push(event);
-        done(PluginEventResult.success(event.id, undefined as never));
+        this.memoryPlugin.destroy(event, () => {
+            done(PluginEventResult.success(event.id, undefined as never));
+        });
     }
 }
 
@@ -54,10 +70,24 @@ const lastQueryEvent = (plugin: QueryRoutingProbePlugin) => {
     return event as DbPluginQueryEvent<any, any>;
 };
 
+const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+const stores: DataStore[] = [];
+
+const trackStore = <T extends DataStore>(store: T) => {
+    stores.push(store);
+    return store;
+};
+
 describe("Queryable routing contracts", () => {
+    afterEach(() => {
+        for (const store of stores.splice(0)) {
+            store[Symbol.dispose]();
+        }
+    });
+
     it("routes where+sort+skip+take options to plugin.query", async () => {
         const plugin = new QueryRoutingProbePlugin();
-        const store = new QueryableStore(plugin);
+        const store = trackStore(new QueryableStore(plugin));
 
         await store.products
             .where(x => x.category === "office")
@@ -77,7 +107,7 @@ describe("Queryable routing contracts", () => {
 
     it("routes parameterized where with params payload", async () => {
         const plugin = new QueryRoutingProbePlugin();
-        const store = new QueryableStore(plugin);
+        const store = trackStore(new QueryableStore(plugin));
 
         await store.products
             .where(([x, p]) => x.category === p.category, { category: "office" })
@@ -91,7 +121,7 @@ describe("Queryable routing contracts", () => {
 
     it("routes aggregate queries with required options", async () => {
         const plugin = new QueryRoutingProbePlugin();
-        const store = new QueryableStore(plugin);
+        const store = trackStore(new QueryableStore(plugin));
 
         plugin.queryResponseValue = 0;
         await store.products.sumAsync(x => x.price);
@@ -112,7 +142,7 @@ describe("Queryable routing contracts", () => {
 
     it("routes first/firstOrUndefined/some with take(1) semantics", async () => {
         const plugin = new QueryRoutingProbePlugin();
-        const store = new QueryableStore(plugin);
+        const store = trackStore(new QueryableStore(plugin));
 
         plugin.queryResponseValue = [{ id: 1, name: "A", category: "office", price: 1 }];
         await store.products.firstAsync();
@@ -132,7 +162,7 @@ describe("Queryable routing contracts", () => {
 
     it("supports detached method usage (method binding contract)", async () => {
         const plugin = new QueryRoutingProbePlugin();
-        const store = new QueryableStore(plugin);
+        const store = trackStore(new QueryableStore(plugin));
         const queryable = store.products.toQueryable();
         const where = queryable.where;
 
@@ -144,7 +174,7 @@ describe("Queryable routing contracts", () => {
 
     it("routes composed query builders through apply()", async () => {
         const plugin = new QueryRoutingProbePlugin();
-        const store = new QueryableStore(plugin);
+        const store = trackStore(new QueryableStore(plugin));
 
         const byCategory = (category: string) =>
             Queryable.compose(store.products.schema)
@@ -160,7 +190,7 @@ describe("Queryable routing contracts", () => {
 
     it("routes unmapped/computed filters to memory (database query has no filter)", async () => {
         const plugin = new QueryRoutingProbePlugin();
-        const store = new QueryableStore(plugin);
+        const store = trackStore(new QueryableStore(plugin));
 
         await store.computedProducts.where(x => x.displayName === "A-office").toArrayAsync();
 
@@ -170,7 +200,7 @@ describe("Queryable routing contracts", () => {
 
     it("subscribe().toArray returns an unsubscribe function", async () => {
         const plugin = new QueryRoutingProbePlugin();
-        const store = new QueryableStore(plugin);
+        const store = trackStore(new QueryableStore(plugin));
         let callbackCalled = false;
 
         const unsub = store.products
@@ -186,5 +216,93 @@ describe("Queryable routing contracts", () => {
         expect(typeof unsub).toBe("function");
         expect(callbackCalled).toBe(true);
         unsub();
+    });
+
+    it("splits scoped database filters from computed memory filters", async () => {
+        const plugin = new QueryRoutingProbePlugin();
+
+        const scopedComputedSchema = s.define("scopedQueryableComputed", {
+            id: s.number().key(),
+            name: s.string(),
+            category: s.string(),
+        }).modify((x) => ({
+            displayName: x.computed((entity) => `${entity.name}-${entity.category}`),
+        })).compile();
+
+        class ScopedComputedStore extends DataStore {
+            products = this.collection(scopedComputedSchema)
+                .scope((x) => x.category === "office")
+                .create();
+        }
+
+        plugin.seed(scopedComputedSchema, [
+            { id: 1, name: "Desk", category: "office" },
+            { id: 2, name: "Chair", category: "office" },
+            { id: 3, name: "Shovel", category: "garden" },
+        ]);
+
+        const store = trackStore(new ScopedComputedStore(plugin));
+        const result = await store.products
+            .where((x) => x.displayName === "Desk-office")
+            .toArrayAsync();
+
+        const event = lastQueryEvent(plugin);
+        expect(event.operation.options.get("filter")).toHaveLength(1);
+        expect(result).toHaveLength(1);
+        expect(result[0].name).toBe("Desk");
+        expect(result[0].category).toBe("office");
+    });
+
+    it("re-queries subscribed results only when incoming changes match the filter", async () => {
+        const plugin = new QueryRoutingProbePlugin();
+        plugin.seed(productsSchema, [
+            { id: 1, name: "Desk", category: "office", price: 10 },
+            { id: 2, name: "Shovel", category: "garden", price: 20 },
+        ]);
+
+        const store = trackStore(new QueryableStore(plugin));
+        let callbackCount = 0;
+        const sender = productsSchema.createSubscription();
+
+        const unsub = store.products
+            .where((x) => x.category === "office")
+            .subscribe()
+            .toArray((r) => {
+                if (r.ok === "error") {
+                    throw r.error;
+                }
+
+                callbackCount++;
+            });
+
+        expect(callbackCount).toBe(1);
+        expect(plugin.queryEvents).toHaveLength(1);
+
+        sender.send({
+            adds: [{ id: 3, name: "Rake", category: "garden", price: 30 }],
+            updates: [],
+            removals: [],
+            unknown: [],
+        });
+
+        await flush();
+
+        expect(callbackCount).toBe(1);
+        expect(plugin.queryEvents).toHaveLength(1);
+
+        sender.send({
+            adds: [{ id: 4, name: "Lamp", category: "office", price: 40 }],
+            updates: [],
+            removals: [],
+            unknown: [],
+        });
+
+        await flush();
+
+        expect(callbackCount).toBe(2);
+        expect(plugin.queryEvents).toHaveLength(2);
+
+        unsub();
+        sender[Symbol.dispose]();
     });
 });

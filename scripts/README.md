@@ -27,11 +27,13 @@ This script updates all references to a specific package version across all `pac
 
 #### Usage
 
+When using the npm script, put `--` before any arguments so npm passes them to the script (otherwise flags like `--next` are consumed by npm and the script will fail with "Version, --next, or --previous flag is required").
+
 ```bash
-# Using npm script (recommended)
-npm run bump <package-name> <new-version>
-npm run bump <package-name> --next
-npm run bump <package-name> --previous
+# Using npm script (recommended) — use -- so flags reach the script
+npm run bump -- <package-name> <new-version>
+npm run bump -- <package-name> --next
+npm run bump -- <package-name> --previous
 
 # Direct execution
 node scripts/bump-version.mjs <package-name> <new-version>
@@ -43,23 +45,23 @@ node scripts/bump-version.mjs <package-name> --previous
 
 ```bash
 # Bump @routier/core to 0.0.1-alpha.10
-npm run bump @routier/core 0.0.1-alpha.10
+npm run bump -- @routier/core 0.0.1-alpha.10
 
 # Bump @routier/datastore to 0.0.1-alpha.5
-npm run bump @routier/datastore 0.0.1-alpha.5
+npm run bump -- @routier/datastore 0.0.1-alpha.5
 
 # Bump @routier/memory-plugin to 0.0.1-alpha.3
-npm run bump @routier/memory-plugin 0.0.1-alpha.3
+npm run bump -- @routier/memory-plugin 0.0.1-alpha.3
 
 # Bump @routier/react to 0.0.1-alpha.2
-npm run bump @routier/react 0.0.1-alpha.2
+npm run bump -- @routier/react 0.0.1-alpha.2
 
 # Auto-bump patch version (increments patch number automatically)
-npm run bump @routier/core --next
+npm run bump -- @routier/core --next
 # If current version is 0.0.1-alpha.5, bumps to 0.0.1-alpha.6
 
 # Decrement patch version (useful if you accidentally bumped)
-npm run bump @routier/core --previous
+npm run bump -- @routier/core --previous
 # If current version is 0.0.1-alpha.6, decrements to 0.0.1-alpha.5
 ```
 
@@ -68,7 +70,7 @@ npm run bump @routier/core --previous
 Instead of specifying an exact version, you can use the `--next` flag to automatically increment the patch version:
 
 ```bash
-npm run bump @routier/core --next
+npm run bump -- @routier/core --next
 ```
 
 This will:
@@ -89,7 +91,7 @@ This is useful for quick patch version bumps during development without needing 
 If you accidentally bumped a package version, you can use the `--previous` flag to decrement the patch version:
 
 ```bash
-npm run bump @routier/core --previous
+npm run bump -- @routier/core --previous
 ```
 
 This will:
@@ -136,7 +138,7 @@ The script automatically skips `file:` protocol dependencies (local development 
 #### Example Output
 
 ```bash
-$ npm run bump @routier/core 0.0.1-alpha.10
+$ npm run bump -- @routier/core 0.0.1-alpha.10
 
 🔄 Bumping @routier/core to version 0.0.1-alpha.10...
 📁 Found 8 package.json files
@@ -199,7 +201,7 @@ The script includes comprehensive error handling:
 ```bash
 # Make sure you're in the monorepo root
 cd /path/to/routier
-npm run bump @routier/core 0.0.1-alpha.10
+npm run bump -- @routier/core 0.0.1-alpha.10
 ```
 
 **Permission denied:**

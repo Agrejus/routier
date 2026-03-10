@@ -5,6 +5,7 @@ parent: Integrations
 has_children: true
 nav_order: 1
 permalink: /integrations/plugins/built-in-plugins/
+doc_role: reference
 ---
 
 ## Built-in Plugins
@@ -25,6 +26,7 @@ Each plugin provides storage capabilities for different environments:
 - **Local Storage**: Persistent browser storage
 - **File System**: File-based storage for Node.js environments
 - **Dexie**: IndexedDB wrapper with advanced querying
+- **Replication**: HTTP sync, stale-while-revalidate caching, and optimistic local-first reads
 - **SQLite**: SQL database for desktop and server applications
 - **PouchDB**: Sync-enabled NoSQL database
 
@@ -37,6 +39,7 @@ npm install @routier/memory-plugin
 npm install @routier/local-storage-plugin
 npm install @routier/file-system-plugin
 npm install @routier/dexie-plugin
+npm install @routier/replication-plugin
 npm install @routier/sqlite-plugin
 npm install @routier/pouchdb-plugin
 ```
@@ -148,3 +151,4 @@ See the [SQLite plugin implementation](https://github.com/agrejus/routier/blob/m
 ## Related
 
 - [Create Your Own Plugin](../create-your-own/) - Detailed guide with more examples
+- [Replication Plugin](./replication/) - Local-first HTTP sync with SWR and optimistic updates
