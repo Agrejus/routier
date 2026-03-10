@@ -37,10 +37,10 @@ export class DataBridge<T extends {}> {
         this.strategy.query(event, done);
     }
 
-    subscribe<TShape, U>(event: DbPluginQueryEvent<T, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>) {
+    subscribe<TShape, _U>(event: DbPluginQueryEvent<T, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>) {
         const subscription = event.operation.schema.createSubscription(this.signal);
         subscription.onMessage((changes) => {
-            const filters = event.operation.options.get("filter")
+            const filters = event.operation.options.get("filter");
 
             // subscription has no filter, automatically run the query
             if (filters.length === 0) {
@@ -48,9 +48,9 @@ export class DataBridge<T extends {}> {
                 return;
             }
 
-            // Make sure something in the subscribed query changed, 
-            // if it has, we need to requery so we can send all changes
-            if (changes.adds.length > 0 || changes.updates.length > 0 || changes.removals.length > 0 || changes.unknown.length > 0) {
+            // Has changes: check if any match the filter, then re-query if so
+            const hasChanges = changes.adds.length > 0 || changes.updates.length > 0 || changes.removals.length > 0 || changes.unknown.length > 0;
+            if (hasChanges) {
 
                 // create a new plugin where we can quickly seed the changes and then query them
                 const ephemeralPlugin = new MemoryPlugin(uuidv4());
@@ -64,7 +64,8 @@ export class DataBridge<T extends {}> {
                     ephemeralPlugin.destroy({
                         id: uuid(8),
                         schemas: event.schemas,
-                        source: "collection"
+                        source: "DataBridge",
+                        action: "destroy"
                     }, () => { /* noop */ });
 
                     if (r.ok === Result.ERROR) {
@@ -72,13 +73,16 @@ export class DataBridge<T extends {}> {
                         return;
                     }
 
-                    if (r.data == null || (Array.isArray(r.data) && r.data.length === 0)) {
+                    if (r.data.isEmpty) {
                         return;
                     }
 
                     // If the query returns results, we need to query the db to find all records
                     this.query(event, done);
                 });
+            } else {
+                // No changes in message (e.g. revalidate "invalidate" or payload lost). Re-query anyway so UI refreshes.
+                this.query(event, done);
             }
         });
 

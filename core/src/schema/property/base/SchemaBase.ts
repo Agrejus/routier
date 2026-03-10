@@ -1,4 +1,4 @@
-import { DefaultValue, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes } from "../../types";
+import { DefaultValue, ForeignKey, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes } from "../../types";
 
 export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifiers> {
 
@@ -15,6 +15,8 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
     indexes: string[] = [];
     fromPropertyName: string | null = null;
 
+    foreignKeyDefinition: ForeignKey<unknown> | null = null;
+    tags: string[] = [];
     injected: any = null;
     defaultValue: DefaultValue<T> | null = null;
     valueSerializer: PropertySerializer<T> | null = null;
@@ -40,6 +42,7 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
             this.injected = entity.injected;
             this.indexes = entity.indexes;
             this.fromPropertyName = entity.fromPropertyName;
+            this.tags = entity.tags;
         }
 
         if (literals) {

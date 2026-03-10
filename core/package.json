@@ -1,6 +1,6 @@
 {
   "name": "@routier/core",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "source": "./src/index.ts",
@@ -73,7 +73,7 @@
     "build": "npm run build:bundle && npm run build:types",
     "tsc": "tsc",
     "test": "jest",
-    "lint": "eslint . --ext ts --report-unused-disable-directives --max-warnings 0"
+    "lint": "oxlint . --ignore-pattern \"**/__tests__/**\" --ignore-pattern \"**/*.test.*\" --ignore-pattern \"**/*.spec.*\" --ignore-pattern \"**/*.mjs\""
   },
   "sideEffects": false,
   "author": "James DeMeuse <james.demeuse@gmail.com>",

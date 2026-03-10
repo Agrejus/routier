@@ -61,15 +61,9 @@ All queries must end with a terminal method to execute:
 
 Queries are lazy and chainable - nothing executes until you call a terminal method:
 
-```ts
-// This query chain doesn't execute until toArrayAsync() is called
-const results = await dataStore.products
-  .where((p) => p.price > 100)
-  .sort((p) => p.name)
-  .skip(10)
-  .take(5)
-  .toArrayAsync();
-```
+
+{% highlight ts linenos %}{% include code/from-docs/how-to/crud/read/block-1.ts %}{% endhighlight %}
+
 
 ### Performance Considerations
 

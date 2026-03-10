@@ -1,15 +1,6 @@
-// Using callback-based API with result pattern
-ctx.users.add(
-  {
-    name: "Alice Brown",
-    email: "alice@example.com",
-    age: 28,
-  },
-  (result) => {
-    if (result.ok === "error") {
-      console.error("Failed to add user:", result.error);
-      return;
-    }
-    console.log("User added successfully:", result.data);
-  }
-);
+const batchSize = 100;
+for (let i = 0; i < data.length; i += batchSize) {
+  const batch = data.slice(i, i + batchSize);
+  await ctx.items.addAsync(...batch);
+  await ctx.saveChangesAsync();
+}

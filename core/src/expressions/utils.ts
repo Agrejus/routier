@@ -28,10 +28,6 @@ export function getProperties(expression: Expression): PropertyInfo<any>[] {
     return properties;
 }
 
-export function isPropertyExpression(expression: Expression): expression is PropertyExpression {
-    return expression.type === "property";
-}
-
 export function forEach(expression: Expression, callback: (expression: Expression) => boolean) {
     function traverse(expr: Expression): boolean {
         // Call the callback for this expression

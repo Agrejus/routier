@@ -46,29 +46,9 @@ This example demonstrates:
 
 To test this example, you'll need a CouchDB-compatible server. You can use express-pouchdb to run a local server:
 
-```ts
-import PouchDB from "pouchdb";
-import express from "express";
-import expressPouchDB from "express-pouchdb";
-import cors from "cors";
 
-const app = express();
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-1.ts %}{% endhighlight %}
 
-// Enable CORS for browser connections
-app.use(
-  cors({
-    origin: true,
-    credentials: true,
-  })
-);
-
-// Mount PouchDB at root
-app.use(expressPouchDB(PouchDB));
-
-app.listen(5984, () => {
-  console.log("CouchDB server running on http://127.0.0.1:5984");
-});
-```
 
 ## How It Works
 
@@ -88,30 +68,17 @@ The PouchDB plugin supports several sync configuration options:
 
 The URL to your remote CouchDB-compatible database:
 
-```ts
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp";
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-2.ts %}{% endhighlight %}
+
 
 ### Pull and Push Configuration
 
 You can configure sync direction separately using `pull` and `push` options:
 
-```ts
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp",
-  pull: {
-    live: true,     // Continuous sync
-    retry: true,    // Auto-retry
-    filter: (doc) => {
-      // Only sync specific documents
-      return doc.collectionName === "season";
-    }
-  },
-  push: false       // Disable pushing (pull-only)
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-3.ts %}{% endhighlight %}
+
 
 - **`pull`**: Configuration for pulling changes from remote
 - **`push`**: Set to `false` for pull-only sync, or configure push options
@@ -120,24 +87,17 @@ sync: {
 
 Use the `filter` function to control which documents are synced:
 
-```ts
-pull: {
-  filter: (doc) => {
-    // Only sync documents from specific collections
-    return doc.collectionName === "item" || doc.collectionName === "category";
-  };
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-4.ts %}{% endhighlight %}
+
 
 ### `live` (Optional)
 
 Enable continuous synchronization:
 
-```ts
-pull: {
-  live: true; // Continuous sync (default: false)
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-5.ts %}{% endhighlight %}
+
 
 With `live: false`, sync happens once on startup. With `live: true`, changes are synchronized in real-time.
 
@@ -145,11 +105,9 @@ With `live: false`, sync happens once on startup. With `live: true`, changes are
 
 Enable automatic retry with exponential backoff:
 
-```ts
-pull: {
-  retry: true; // Auto-retry failed syncs (default: false)
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-6.ts %}{% endhighlight %}
+
 
 When enabled, failed sync operations automatically retry with increasing delays (1s, 2s, 4s, up to 10s max).
 
@@ -157,31 +115,9 @@ When enabled, failed sync operations automatically retry with increasing delays 
 
 Callback function that receives sync events. Use this to process synced documents manually:
 
-```ts
-sync: {
-  onChange: (schemas: SchemaCollection, change) => {
-    if (change.direction === "pull" && change.change.docs) {
-      // Group documents by collection
-      const docsByCollection = change.change.docs.reduce(/* ... */);
 
-      // Process each collection
-      for (const collectionName in docsByCollection) {
-        const schema = schemas.getByName(collectionName);
-        const subscription = schema.createSubscription();
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-7.ts %}{% endhighlight %}
 
-        subscription.send({
-          adds: [],
-          removals: [],
-          updates: [],
-          unknown: docsByCollection[collectionName],
-        });
-
-        subscription[Symbol.dispose]();
-      }
-    }
-  };
-}
-```
 
 Use this callback to:
 
@@ -194,22 +130,9 @@ Use this callback to:
 
 PouchDB automatically detects conflicts when the same document is modified in multiple places. Handle conflicts by checking the change information in your `onChange` callback:
 
-```ts
-sync: {
-  remoteDb: "http://localhost:5984/myapp",
-  onChange: (schemas, change) => {
-    if (change.change && change.change.docs) {
-      change.change.docs.forEach((doc) => {
-        if (doc._conflicts) {
-          // Document has conflicts - handle them
-          console.warn(`Conflict detected in document ${doc._id}`);
-          // Implement your conflict resolution logic
-        }
-      });
-    }
-  }
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-8.ts %}{% endhighlight %}
+
 
 ## Network Handling
 
@@ -227,39 +150,25 @@ You can monitor sync status through the `onChange` callback to inform users abou
 
 For read-only data or when you want to prevent local changes from syncing back:
 
-```ts
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp",
-  pull: { live: true, retry: true },
-  push: false
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-9.ts %}{% endhighlight %}
+
 
 ### Bidirectional Sync
 
 Default behavior when push is not disabled:
 
-```ts
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp",
-  live: true,
-  retry: true
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-10.ts %}{% endhighlight %}
+
 
 ### Filtered Sync
 
 Only sync specific collections or document types:
 
-```ts
-sync: {
-  remoteDb: "http://127.0.0.1:5984/myapp",
-  pull: {
-    live: true,
-    filter: (doc) => doc.collectionName === "public_data"
-  }
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-11.ts %}{% endhighlight %}
+
 
 ## Best Practices
 

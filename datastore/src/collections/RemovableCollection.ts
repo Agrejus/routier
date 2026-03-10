@@ -3,7 +3,6 @@ import { InferType } from "@routier/core/schema";
 import { CallbackResult, Result } from "@routier/core/results";
 import { CollectionDependencies, RequestContext } from "./types";
 import { SelectionQueryable } from '../queryable/SelectionQueryable';
-import { Queryable } from '../queryable/Queryable';
 
 export class RemovableCollection<TEntity extends {}> extends CollectionBase<TEntity> {
 

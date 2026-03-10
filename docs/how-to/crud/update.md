@@ -225,40 +225,21 @@ Handle errors gracefully during update operations:
 
 ### User Profile Updates
 
-```ts
-const user = await ctx.users.where((u) => u.id === userId).firstAsync();
-if (user) {
-  user.name = newData.name;
-  user.email = newData.email;
-  user.updatedAt = new Date();
-  await ctx.saveChangesAsync();
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-1.ts %}{% endhighlight %}
+
 
 ### Status Updates
 
-```ts
-const orders = await ctx.orders
-  .where((o) => o.status === "pending")
-  .toArrayAsync();
-orders.forEach((order) => {
-  order.status = "processing";
-  order.processedAt = new Date();
-});
-await ctx.saveChangesAsync();
-```
+
+{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-2.ts %}{% endhighlight %}
+
 
 ### Batch Price Updates
 
-```ts
-const products = await ctx.products
-  .where((p) => p.category === "electronics")
-  .toArrayAsync();
-products.forEach((product) => {
-  product.price = product.price * 1.1; // 10% increase
-});
-await ctx.saveChangesAsync();
-```
+
+{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-3.ts %}{% endhighlight %}
+
 
 ## Next Steps
 

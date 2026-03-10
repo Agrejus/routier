@@ -308,16 +308,9 @@ A new `SchemaString` instance with the narrowed type `K`.
 
 #### Example
 
-```typescript
-type UUID = string & { __brand: "UUID" };
 
-const schema = s
-  .define("users", {
-    id: s.string().constrain<UUID>().key().identity(),
-    name: s.string(),
-  })
-  .compile();
-```
+{% highlight ts linenos %}{% include code/from-docs/reference/api/core/src/classes/SchemaString/block-1.ts %}{% endhighlight %}
+
 
 ---
 

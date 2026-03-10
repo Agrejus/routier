@@ -1,3 +1,4 @@
+import { logger } from "../../../utilities";
 import { DefaultValue, PropertyDeserializer, PropertySerializer, SchemaModifiers } from "../../types";
 import { SchemaBase } from "../base/SchemaBase";
 import { SchemaDeserialize } from "./SchemaDeserialize";
@@ -10,6 +11,11 @@ export class SchemaDefault<T extends any, I, TModifiers extends SchemaModifiers>
 
     constructor(defaultValue: DefaultValue<T, I>, injected: I, current: SchemaBase<T, TModifiers>) {
         super(current);
+
+        if (defaultValue == null) {
+            logger.warn("Do not use `.default(null)` in your schema, please use `.default(() => null)`")
+        }
+
         this.instance = current.instance;
         this.injected = injected;
         this.defaultValue = defaultValue;

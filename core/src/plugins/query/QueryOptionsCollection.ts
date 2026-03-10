@@ -1,4 +1,5 @@
-import { forEach, isPropertyExpression } from "../../expressions/utils";
+import { isPropertyExpression } from "../../assertions";
+import { forEach } from "../../expressions/utils";
 import { QueryOption, QueryOptionName, QueryOptionExecutionTarget, QueryOptionValueMap } from "./types";
 
 export type QueryCollectionItem<T, K extends QueryOptionName> = { index: number, option: QueryOption<T, K> };
@@ -99,6 +100,11 @@ export class QueryOptionsCollection<T> {
             memory: memoryQueryOptionsCollection,
             database: databaseQueryOptionsCollection
         }
+    }
+
+    hasTransformations(): boolean {
+        const transformationOptions: QueryOptionName[] = ["map", "group", "min", "max", "count", "sum"];
+        return transformationOptions.some((name) => this.options.has(name));
     }
 
     has<K extends QueryOptionName>(name: K): boolean {

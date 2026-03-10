@@ -18,10 +18,12 @@ import { FreezeHandlerBuilder } from '../codegen/handlers/FreezeHandlerBuilder';
 import { SchemaError } from '../errors/SchemaError';
 import { SerializeHandlerBuilder } from "../codegen/handlers/SerializeHandlerBuilder";
 import { hash, logger } from "../utilities";
-import { CollectionName, CompiledSchema, CompiledSchemaCore, GetHashTypeFunction, HashFunction, HashType, IdType, Index, InferCreateType, InferType, Prepare, Preprocess, SchemaId, SchemaTypes } from './types';
+import { CollectionName, CompiledSchema, CompiledSchemaCore, CompiledSchemaWithMetadata, GetHashTypeFunction, HashFunction, HashType, IdType, Index, InferCreateType, InferType, Prepare, Preprocess, SchemaId, SchemaTypes, SetProperties } from './types';
 import { DeepPartial } from '../types';
 import { SchemaSubscription } from './communication/broadcast';
 import { CompareIdsHandlerBuilder } from '../codegen/handlers/CompareIdsHandlerBuilder';
+import { StandardJSONSchemaV1, createStandardJsonSchemaProps, rehydrateSchemaFromJsonString } from './utils/standardJsonSchema';
+import { SetHandlerBuilder } from '../codegen/handlers';
 
 function createChangeTracker() {
     const DIRTY_ENTITY_MARKER: string = "isDirty";
@@ -105,6 +107,7 @@ function createChangeTracker() {
     }
 }
 
+
 export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
     instance: T;
@@ -117,6 +120,41 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
         this.instance = schema;
         this.isNullable = false;
         this.isOptional = false;
+    }
+
+    /**
+     * Creates a SchemaDefinition from a JSON string containing a JSON Schema.
+     * Parses the JSON string, rehydrates the schema structure, and compiles it.
+     * 
+     * @param jsonString - The JSON string containing the JSON Schema (typically from `schema['~standard'].jsonSchema.input()` or `output()`)
+     * @param collectionName - Optional collection name override (if not present in JSON Schema metadata)
+     * @returns A compiled schema ready to use
+     * @throws Error if the JSON string is invalid or doesn't contain a valid JSON Schema
+     * 
+     * @example
+     * ```typescript
+     * // Serialize a schema to JSON
+     * const jsonSchema = mySchema['~standard'].jsonSchema.input({ target: 'draft-2020-12' });
+     * const jsonString = JSON.stringify(jsonSchema);
+     * 
+     * // Rehydrate from JSON string
+     * const rehydratedSchema = SchemaDefinition.fromJson(jsonString);
+     * // Schema is already compiled and ready to use
+     * ```
+     */
+    static fromJson(jsonString: string, collectionName?: string): CompiledSchema<any> {
+        const schemaDefinition = rehydrateSchemaFromJsonString(jsonString, collectionName);
+        return schemaDefinition.compile();
+    }
+
+    /**
+     * Standard JSON Schema V1 implementation.
+     * Provides JSON Schema conversion for Routier schemas.
+     */
+    get '~standard'(): StandardJSONSchemaV1.Props<InferCreateType<T>, InferType<T>> {
+        const schema = this.compile();
+
+        return createStandardJsonSchemaProps(schema);
     }
 
     private createReturnFunction<TResult>(builder: CodeBuilder): TResult {
@@ -249,10 +287,11 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
         }
     }
 
-    compile(): CompiledSchema<T> {
+    compile<TMetadata>(metadata: TMetadata): CompiledSchemaWithMetadata<T, TMetadata>
+    compile(): CompiledSchema<T>;
+    compile<TMetadata>(metadata?: TMetadata): CompiledSchema<T> | CompiledSchemaWithMetadata<T, TMetadata> {
 
         try {
-            const schema = this;
             const properties: PropertyInfo<T>[] = [];
             const propertyMap: Map<string, PropertyInfo<T>> = new Map<string, PropertyInfo<T>>();
 
@@ -270,6 +309,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const freezeHandlerBuilder = new FreezeHandlerBuilder();
             const serializeHandlerBuilder = new SerializeHandlerBuilder();
             const compareIdsHandlerBuilder = new CompareIdsHandlerBuilder();
+            const setHandlerBuilder = new SetHandlerBuilder();
 
             const enricher = enrichmentHandlerBuilder.build();
             const merge = mergeHandlerFactory.build();
@@ -285,6 +325,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const freezeHandler = freezeHandlerBuilder.build();
             const serializeHandler = serializeHandlerBuilder.build();
             const compareIdsHandler = compareIdsHandlerBuilder.build();
+            const setHandlerHanlder = setHandlerBuilder.build();
 
             const changeTrackingCodeBuilder = new CodeBuilder();
             changeTrackingCodeBuilder.raw(`${createChangeTracker.toString()}`);
@@ -322,6 +363,10 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const postprocessCodeBuilder = new CodeBuilder();
             postprocessCodeBuilder.slot("main");
             postprocessCodeBuilder.slot("return").raw(`     return result;`);
+
+            const setCodeBuilder = new CodeBuilder();
+            setCodeBuilder.slot("assignments");
+            setCodeBuilder.slot("ifs");
 
             const mergeCodeBuilder = new CodeBuilder();
 
@@ -424,7 +469,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             let hasIdentities = false;
             let hasIdentityKeys = false;
 
-            this._iterate(schema, (property) => {
+            this._iterate(this, (property) => {
 
                 properties.push(property);
                 propertyMap.set(property.id, property);
@@ -456,6 +501,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                 enableChangeTrackingHandler.handle(property, changeTrackingCodeBuilder);
                 freezeHandler.handle(property, freezeCodeBuilder);
                 compareIdsHandler.handle(property, compareIdsCodeBuilder);
+                setHandlerHanlder.handle(property, setCodeBuilder);
             });
 
             if (idProperties.length === 0) {
@@ -498,6 +544,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const freezeFunction = this.createFunction<(entity: InferType<T>) => InferType<T>>(freezeCodeBuilder, "entity");
             const compareIdsFunction = this.createFunction<(a: InferType<T>, b: InferType<T>) => boolean>(compareIdsCodeBuilder, "a", "b");
             const preprocessFunction = this.createFunction<Preprocess<T>>(preprocessCodeBuilder, "entity");
+            const setFunction = this.createFunction<SetProperties<T>>(setCodeBuilder, "destination", "source");
 
             const enricherFactoryFunction = enrichGenerator();
             const postProcessFactoryFunction = postProcessGenerator();
@@ -540,6 +587,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const result: CompiledSchemaCore<T> = {
                 preprocess: preprocessFunction,
                 postprocess: postProcessFunction,
+                set: setFunction,
                 getId,
                 getProperty,
                 properties,
@@ -631,10 +679,23 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                 }
             };
 
-            return {
+            if (metadata != null) {
+
+                const compiledSchemaWithMetadata: CompiledSchemaWithMetadata<T, TMetadata> = {
+                    ...result,
+                    createSubscription: (signal?: AbortSignal) => new SchemaSubscription(result, signal),
+                    metadata
+                };
+
+                return compiledSchemaWithMetadata;
+            }
+
+            const compiledSchema = {
                 createSubscription: (signal?: AbortSignal) => new SchemaSubscription(result, signal),
                 ...result
-            }
+            };
+
+            return compiledSchema;
         } catch (e) {
             throw new SchemaError(e, `Error compiling schema for collection: ${this.collectionName}`);
         }

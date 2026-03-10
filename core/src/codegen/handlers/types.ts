@@ -1,4 +1,4 @@
-import { AssignmentBuilder, CodeBuilder, ContainerBlock, ObjectBuilder, SlotBlock } from '..';
+import { CodeBuilder, ContainerBlock, ObjectBuilder, SlotBlock } from '..';
 import { PropertyInfo } from '../../schema/PropertyInfo';
 import { SlotPath } from '../SlotPath';
 import { SchemaError } from '../../errors/SchemaError';

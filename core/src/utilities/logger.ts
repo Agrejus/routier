@@ -1,15 +1,25 @@
-const isDevelopment = (): boolean => {
-    if (typeof process === 'undefined' || process.env == null) {
-        return false;
+/**
+ * Enable logging by setting `globalThis.__ROUTIER_DEBUG__ = true` before any routier code runs.
+ */
+const shouldLog = (): boolean => {
+    if (typeof globalThis !== 'undefined') {
+        const g = globalThis as { __ROUTIER_DEBUG__?: boolean };
+        if (g.__ROUTIER_DEBUG__ === true) return true;
     }
-    const env = process.env.NODE_ENV?.toLowerCase();
-    return env === 'dev' || env === 'development' || env === 'test';
+
+    if (typeof process !== 'undefined' && process.env != null) {
+        const debug = process.env.DEBUG;
+        if (debug === 'routier' || debug === '*') return true;
+        const env = process.env.NODE_ENV?.toLowerCase();
+        if (env === 'dev' || env === 'development' || env === 'test') return true;
+    }
+
+    return false;
 };
 
 type LogMethods = "log" | "info" | "warn" | "error" | "debug" | "table";
-const shouldLog = isDevelopment();
 const tryLog = (type: LogMethods, ...args: unknown[]) => {
-    if (shouldLog) {
+    if (shouldLog()) {
         (console[type] as (...args: unknown[]) => void)(...args);
     }
 };

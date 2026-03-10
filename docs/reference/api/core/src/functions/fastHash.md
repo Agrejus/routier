@@ -36,7 +36,6 @@ A positive 32-bit integer hash value
 
 ## Example
 
-```ts
-fastHash("test") === fastHash("test") // true
-fastHash("test") !== fastHash("test2") // true
-```
+
+{% highlight ts linenos %}{% include code/from-docs/reference/api/core/src/functions/fastHash/block-1.ts %}{% endhighlight %}
+

@@ -7,5 +7,5 @@
       "message": "chore(release): publish"
     }
   },
-  "packages": ["core", "datastore", "react", "plugins/*", "test-utils"]
+  "packages": ["core", "datastore", "react", "plugins/*", "test-utils", "sync-server"]
 }

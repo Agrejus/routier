@@ -1,6 +1,15 @@
-onChange: (schemas, change) => {
-  // Handle sync events
-  console.log("Sync direction:", change.direction);
-  console.log("Change count:", change.change?.docs?.length || 0);
-  console.log("Affected schemas:", Array.from(schemas.keys()));
-};
+// Pull-only sync
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  pull: { live: true },
+  push: false
+}
+
+// Configure push options
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  push: {
+    live: true,
+    retry: true
+  }
+}

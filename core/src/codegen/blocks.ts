@@ -54,6 +54,7 @@ export abstract class Block {
         }
 
         const split = name.match(/(\[[^\]]+\]|[^.]+)/g);
+        // oxlint-disable-next-line no-this-alias
         let result: Block = this;
 
         for (const item of split) {

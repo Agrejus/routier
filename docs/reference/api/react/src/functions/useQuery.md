@@ -22,6 +22,8 @@ Defined in: [react/src/useQuery.tsx:9](https://github.com/Agrejus/routier/blob/a
 
 (`callback`) => `void` \| () => `void`
 
+Function that sets up the subscription and invokes the callback with results. **Must return** the unsubscribe handler (the return value of the query chain, e.g. `.subscribe().where(...).firstOrUndefined(callback)`) so the hook can clean up on unmount or when dependencies change.
+
 ### deps
 
 `any`[] = `[]`

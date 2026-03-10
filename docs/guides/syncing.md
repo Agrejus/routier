@@ -120,6 +120,8 @@ Robust sync implementations include:
 
 ## Related Guides
 
+- **[Local-First Apps](local-first-apps.md)** — Build offline-capable apps that sync when online
+- **[Plugin Compositions](plugin-compositions.md)** — Map of plugin combinations for HTTP sync, optimistic replication, and more
 - **[PouchDB Syncing]({{ site.baseurl }}/data-operations/state-management/syncing/pouchdb-sync)** - Practical example with PouchDB
 - **[Change Tracking](/concepts/change-tracking/)** - Understanding how Routier tracks changes
 - **[State Management](state-management.md)** - Managing application state

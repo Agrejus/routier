@@ -21,7 +21,9 @@ export class SerializeValueHandler extends PropertyInfoHandler {
             const parentSelectPath = ["entity", ...property.getParentPathArray()].join(".");
             const parentAssignPath = ["result", ...property.getParentPathArray()].join(".");
 
-            const ifSlot = slot.if(`Object.hasOwn(${parentSelectPath}, "${property.name}")`);
+            // We need to handle serializing delta changes in getChanges, there is the possibility that child objects are null 
+            // and we need to handle that scenario
+            const ifSlot = slot.if(`${parentSelectPath} != null && Object.hasOwn(${parentSelectPath}, "${property.name}")`);
 
             if (property.parent.isNullable || property.parent.isOptional) {
                 // Do this for nullable/optional parents.  Parent will be null if its nullable/optional

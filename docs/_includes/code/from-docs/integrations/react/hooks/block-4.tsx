@@ -11,7 +11,7 @@ export function SingleProduct({ productId }: { productId: string }) {
         .where((p) => p.id === productId)
         .subscribe()
         .first(callback),
-    [dataStore, productId] // Re-run when store or productId changes
+    [productId] // Re-run when productId changes
   );
 
   if (product.status === "pending") return <div>Loading...</div>;
@@ -19,12 +19,8 @@ export function SingleProduct({ productId }: { productId: string }) {
 
   return (
     <div>
-      {product.status === "success" && (
-        <>
-          <h1>{product.data.name}</h1>
-          <p>{product.data.description}</p>
-        </>
-      )}
+      <h1>{product.data?.name}</h1>
+      <p>{product.data?.description}</p>
     </div>
   );
 }

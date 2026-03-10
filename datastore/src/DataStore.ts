@@ -2,7 +2,7 @@ import { Collection } from './collections/Collection';
 import { CollectionBuilder } from './collection-builder/CollectionBuilder';
 import { CollectionPipelines } from './types';
 import { IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
-import { CompiledSchema, InferType, SchemaId } from '@routier/core/schema';
+import { CompiledSchema, SchemaId } from '@routier/core/schema';
 import { TrampolinePipeline } from '@routier/core/pipeline';
 import { CallbackPartialResult, CallbackResult, PartialResultType, PluginEventResult, Result } from '@routier/core/results';
 import { BulkPersistChanges, BulkPersistResult, SchemaCollection, ReadonlySchemaCollection } from '@routier/core/collections';
@@ -10,10 +10,10 @@ import { UnknownRecord, uuid } from '@routier/core/utilities';
 import { View } from './views/View';
 import { ViewBuilder } from './view-builder/ViewBuilder';
 import { CollectionBase } from './collections/CollectionBase';
-import { CollectionDependencies, RequestContext } from './collections/types';
+import { CollectionDependencies } from './collections/types';
 import { ChangeTracker } from './change-tracking/ChangeTracker';
 import { DataBridge } from './data-access/DataBridge';
-import { QueryableComposer } from './queryable/composers/QueryableComposer';
+import { assertIsNotNull } from '@routier/core';
 
 /**
  * The main Routier class, providing collection management, change tracking, and persistence for entities.
@@ -54,6 +54,14 @@ export class DataStore implements Disposable {
 
     getDbPlugin<T extends IDbPlugin>() {
         return this.dbPlugin as T;
+    }
+
+    getCollection<TEntity extends {}>(schema: CompiledSchema<TEntity>): Collection<TEntity> {
+        const collection = this.collections.get(schema.id);
+
+        assertIsNotNull(collection, `DataStore.getCollection() -> Could not find collection for schema Id.  Id: ${schema.id}, CollectionName: ${schema.collectionName}`);
+
+        return collection as Collection<TEntity>;
     }
 
     /**
@@ -138,6 +146,49 @@ export class DataStore implements Disposable {
         });
     }
 
+    protected onSavePreparedChanges(changes: BulkPersistChanges, done: CallbackPartialResult<BulkPersistResult>) {
+        try {
+            this.dbPlugin.bulkPersist({
+                id: uuid(8),
+                operation: changes,
+                schemas: this._schemas,
+                source: "DataStore",
+                action: "persist"
+            }, (bulkPersistResult) => {
+
+                if (bulkPersistResult.ok === Result.ERROR) {
+                    done(Result.error(bulkPersistResult.error))
+                    return;
+                }
+
+                if (bulkPersistResult.ok === Result.PARTIAL) {
+                    done(Result.partial(bulkPersistResult.data, bulkPersistResult.error));
+                    return;
+                }
+
+                this.collectionPipelines.afterPersist.filter<PartialResultType<{ changes: BulkPersistChanges, result: BulkPersistResult }>>({
+                    data: { changes: changes, result: bulkPersistResult.data },
+                    ok: Result.SUCCESS
+                }, (afterPersistResult) => {
+
+                    if (afterPersistResult.ok === PluginEventResult.ERROR) {
+                        done(PluginEventResult.error(bulkPersistResult.id, afterPersistResult.error));
+                        return;
+                    }
+
+                    if (afterPersistResult.ok === PluginEventResult.PARTIAL) {
+                        done(PluginEventResult.partial(bulkPersistResult.id, afterPersistResult.data.result, afterPersistResult.error));
+                        return;
+                    }
+
+                    done(PluginEventResult.success(bulkPersistResult.id, afterPersistResult.data.result))
+                });
+            });
+        } catch (e) {
+            done(Result.error(e))
+        }
+    }
+
     /**
      * Saves all changes in all collections.
      * @param done Callback with the number of changes saved or an error.
@@ -154,45 +205,7 @@ export class DataStore implements Disposable {
                 return;
             }
 
-            try {
-                this.dbPlugin.bulkPersist({
-                    id: uuid(8),
-                    operation: preparedChangesResult.data,
-                    schemas: this._schemas,
-                    source: "data-store"
-                }, (bulkPersistResult) => {
-
-                    if (bulkPersistResult.ok === Result.ERROR) {
-                        done(Result.error(bulkPersistResult.error))
-                        return;
-                    }
-
-                    if (bulkPersistResult.ok === Result.PARTIAL) {
-                        done(Result.partial(bulkPersistResult.data, bulkPersistResult.error));
-                        return;
-                    }
-
-                    this.collectionPipelines.afterPersist.filter<PartialResultType<{ changes: BulkPersistChanges, result: BulkPersistResult }>>({
-                        data: { changes: preparedChangesResult.data, result: bulkPersistResult.data },
-                        ok: Result.SUCCESS
-                    }, (afterPersistResult) => {
-
-                        if (afterPersistResult.ok === PluginEventResult.ERROR) {
-                            done(PluginEventResult.error(bulkPersistResult.id, afterPersistResult.error));
-                            return;
-                        }
-
-                        if (afterPersistResult.ok === PluginEventResult.PARTIAL) {
-                            done(PluginEventResult.partial(bulkPersistResult.id, afterPersistResult.data.result, afterPersistResult.error));
-                            return;
-                        }
-
-                        done(PluginEventResult.success(bulkPersistResult.id, afterPersistResult.data.result))
-                    });
-                });
-            } catch (e) {
-                done(Result.error(e))
-            }
+            this.onSavePreparedChanges(preparedChangesResult.data, done);
         });
     }
 
@@ -290,7 +303,8 @@ export class DataStore implements Disposable {
         this.dbPlugin.destroy({
             id: uuid(8),
             schemas: this._schemas,
-            source: "data-store"
+            source: "DataStore",
+            action: "destroy"
         }, done);
     }
 

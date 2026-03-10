@@ -27,9 +27,9 @@ The primary class for managing collections and data persistence.
 
 **Import:**
 
-```typescript
-import { DataStore } from "@routier/datastore";
-```
+
+{% highlight ts linenos %}{% include code/from-docs/api/index/block-1.ts %}{% endhighlight %}
+
 
 **Main Methods:**
 
@@ -47,9 +47,9 @@ Represents a collection of entities with full CRUD operations.
 
 **Import:**
 
-```typescript
-import { Collection } from "@routier/datastore";
-```
+
+{% highlight ts linenos %}{% include code/from-docs/api/index/block-2.ts %}{% endhighlight %}
+
 
 **Main Methods:**
 
@@ -98,9 +98,9 @@ Core utilities, schema definitions, and shared types.
 
 **Import:**
 
-```typescript
-import { s, InferType, InferCreateType } from "@routier/core/schema";
-```
+
+{% highlight ts linenos %}{% include code/from-docs/api/index/block-3.ts %}{% endhighlight %}
+
 
 **Schema Builder:**
 
@@ -137,33 +137,27 @@ import { s, InferType, InferCreateType } from "@routier/core/schema";
 
 **Filtering:**
 
-```typescript
-collection.where((entity) => entity.field === value);
-collection.where(([entity, params]) => entity.field === params.value, {
-  value,
-});
-```
+
+{% highlight ts linenos %}{% include code/from-docs/api/index/block-4.ts %}{% endhighlight %}
+
 
 **Sorting:**
 
-```typescript
-collection.sort((entity) => entity.field);
-collection.sortDescending((entity) => entity.field);
-```
+
+{% highlight ts linenos %}{% include code/from-docs/api/index/block-5.ts %}{% endhighlight %}
+
 
 **Pagination:**
 
-```typescript
-collection.skip(10).take(20);
-```
+
+{% highlight ts linenos %}{% include code/from-docs/api/index/block-6.ts %}{% endhighlight %}
+
 
 **Terminal Operations:**
 
-```typescript
-await collection.toArrayAsync();
-await collection.firstAsync();
-collection.subscribe().toArray(callback);
-```
+
+{% highlight ts linenos %}{% include code/from-docs/api/index/block-7.ts %}{% endhighlight %}
+
 
 ## @routier/react
 
@@ -175,40 +169,27 @@ React hook for subscribing to live queries.
 
 **Import:**
 
-```typescript
-import { useQuery } from "@routier/react";
-```
+
+{% highlight ts linenos %}{% include code/from-docs/api/index/block-8.ts %}{% endhighlight %}
+
 
 **Signature:**
 
-```typescript
-function useQuery<T>(
-  query: (callback: (result: ResultType<T>) => void) => void | (() => void),
-  deps: any[] = []
-): LiveQueryState<T>;
-```
+
+{% highlight ts linenos %}{% include code/from-docs/api/index/block-9.ts %}{% endhighlight %}
+
 
 **Return Type:**
 
-```typescript
-type LiveQueryState<T> =
-  | { status: "pending"; loading: true; error: null; data: undefined }
-  | { status: "error"; loading: false; error: Error; data: undefined }
-  | { status: "success"; loading: false; error: null; data: T };
-```
+
+{% highlight ts linenos %}{% include code/from-docs/api/index/block-10.ts %}{% endhighlight %}
+
 
 **Usage:**
 
-```typescript
-const products = useQuery(
-  c => dataStore.products.subscribe().toArray(c),
-  [dataStore]
-);
 
-if (products.status === "loading") return <div>Loading...</div>;
-if (products.status === "error") return <div>Error: {products.error.message}</div>;
-return <div>{products.data.map(...)}</div>;
-```
+{% highlight ts linenos %}{% include code/from-docs/api/index/block-11.ts %}{% endhighlight %}
+
 
 ## Core Utilities
 

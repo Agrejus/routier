@@ -1,6 +1,6 @@
 {
   "name": "@routier/datastore",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "source": "./src/index.ts",
@@ -13,7 +13,7 @@
     "build": "npm run build:bundle && npm run build:types",
     "tsc": "tsc",
     "test": "jest",
-    "lint": "eslint . --ext ts --report-unused-disable-directives --max-warnings 0"
+    "lint": "oxlint . --ignore-pattern \"**/__tests__/**\" --ignore-pattern \"**/*.test.*\" --ignore-pattern \"**/*.spec.*\" --ignore-pattern \"**/*.mjs\""
   },
   "sideEffects": false,
   "files": [
@@ -55,13 +55,14 @@
   ],
   "description": "Data abstraction layer that routes all database operations to any ORM or data store",
   "peerDependencies": {
-    "@routier/core": ">=0.2.0"
+    "@routier/core": ">=0.2.1"
   },
   "dependencies": {
     "@routier/memory-plugin": "^0.2.0"
   },
   "devDependencies": {
-    "@routier/core": "^0.2.0",
+    "@routier/core": "^0.2.1",
+    "@routier/test-utils": "^0.0.1-alpha.1",
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",
     "ts-loader": "^9.5.2",

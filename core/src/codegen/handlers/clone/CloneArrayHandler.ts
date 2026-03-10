@@ -1,4 +1,4 @@
-import { CodeBuilder, IfBuilder, SlotBlock } from '../../blocks';
+import { CodeBuilder, SlotBlock } from '../../blocks';
 import { PropertyInfoHandler } from "../types";
 import { PropertyInfo, SchemaTypes } from "../../../schema";
 

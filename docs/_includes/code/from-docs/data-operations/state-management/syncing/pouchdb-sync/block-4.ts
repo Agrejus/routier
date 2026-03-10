@@ -1,2 +1,8 @@
-retry: true; // Auto-retry with backoff (recommended)
-retry: false; // No automatic retries
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  pull: {
+    live: true,
+    retry: true,
+    filter: (doc) => doc.collectionName === "public_data"
+  }
+}

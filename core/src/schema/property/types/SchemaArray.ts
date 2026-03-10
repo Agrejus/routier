@@ -7,6 +7,7 @@ import { SchemaSerialize } from '../modifiers/SchemaSerialize';
 import { SchemaIndex } from "../modifiers/SchemaIndex";
 import { DefaultValue, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes } from "../../types";
 import { SchemaFrom } from "../modifiers/SchemaFrom";
+import { SchemaTag } from "../modifiers/SchemaTag";
 
 export class SchemaArray<T extends any, TModifiers extends SchemaModifiers> extends SchemaBase<T[], TModifiers> {
 
@@ -46,5 +47,9 @@ export class SchemaArray<T extends any, TModifiers extends SchemaModifiers> exte
 
     index(...indexes: string[]) {
         return new SchemaIndex<T[], TModifiers>(this, ...indexes);
+    }
+
+    tag(...tags: string[]) {
+        return new SchemaTag<T[], TModifiers>(tags, this);
     }
 }

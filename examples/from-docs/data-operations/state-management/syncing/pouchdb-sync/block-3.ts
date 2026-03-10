@@ -1,2 +1,4 @@
-live: true; // Continuous sync (recommended for most apps)
-live: false; // One-time sync only
+sync: {
+  remoteDb: "http://127.0.0.1:5984/myapp",
+  retry: true // Auto-retry failed syncs
+}

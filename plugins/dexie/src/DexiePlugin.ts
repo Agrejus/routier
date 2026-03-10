@@ -1,7 +1,7 @@
-import Dexie, { Collection, IndexableType } from 'dexie';
+import Dexie from 'dexie';
 import { convertToDexieSchema } from "./utils";
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue } from '@routier/core/plugins';
-import { CallbackResult, PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
+import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
 import { BulkPersistResult } from '@routier/core/collections';
 import { InferCreateType, PropertyInfo, SchemaTypes } from '@routier/core/schema';
 import { uuidv4 } from '@routier/core/utilities';
@@ -163,13 +163,23 @@ export class DexiePlugin implements IDbPlugin, Disposable {
     }
 
     private getSchemas(event: DbPluginEvent): Record<string, string> {
-        if (cache.has(this.dbName)) {
-            return cache.get(this.dbName);
+
+        const cacheResult = cache.get(this.dbName);
+
+        if (cacheResult != null && Object.keys(cacheResult).length === event.schemas.size) {
+            // We might be using the same database for two different datastores
+            // which have different schemas.  E.g. HttpSwrPlugin
+            return cacheResult;
         }
 
-        const result: Record<string, string> = {};
+        const result: Record<string, string> = cacheResult ?? {};
 
         for (const [, schema] of event.schemas) {
+
+            if (result[schema.collectionName]) {
+                continue;
+            }
+
             result[schema.collectionName] = convertToDexieSchema(schema)
         }
 

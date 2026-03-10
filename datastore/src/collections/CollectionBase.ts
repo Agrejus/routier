@@ -86,7 +86,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
             return items;
         }
 
-        const result: InferType<TEntity>[] = new Array(items.length);
+        const result: InferType<TEntity>[] = Array.from({ length: items.length });
         for (let i = 0, length = items.length; i < length; i++) {
             result[i] = this.dependencies.schema.clone(items[i]);
         }
@@ -132,6 +132,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
                     removals,
                     unknown: []
                 };
+
                 this.dependencies.subscription.send(subscriptionChanges);
             }
 
@@ -141,6 +142,37 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
         }
     }
 
+    private normalizeDetachedUpdates(changes: BulkPersistChanges, tags: unknown) {
+        const schemaChanges = changes.resolve(this.dependencies.schema.id);
+
+        for (const update of schemaChanges.updates) {
+            const trackedEntity = update.entity as InferType<TEntity> & { __tracking__?: unknown };
+
+            // Guard for callers/plugins that might pass detached tracked references into updates.
+            if (trackedEntity.__tracking__ == null) {
+                continue;
+            }
+
+            const attached = this.dependencies.changeTracker.getAttached(update.entity as InferType<TEntity>);
+            if (attached == null || attached.doc === update.entity) {
+                continue;
+            }
+
+            this.dependencies.changeTracker.resolve(trackedEntity, tags, { merge: true });
+
+            const resolved = this.dependencies.changeTracker.getAttached(update.entity as InferType<TEntity>);
+            if (resolved == null) {
+                continue;
+            }
+
+            update.entity = this.dependencies.schema.preprocess(resolved.doc as InferCreateType<TEntity>);
+        }
+    }
+
+
+    // Somehow, when we make an update, the wrong record is showing as updated and the correct one as unchanged
+    // add an event, go to pending approval and try to approve.
+    // if we refresh the page it will work
     protected prepare(result: PartialResultType<BulkPersistChanges>, done: CallbackPartialResult<BulkPersistChanges>) {
 
         try {
@@ -161,6 +193,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
             changes.adds = this.dependencies.changeTracker.prepareAdditions();
             changes.updates = this.dependencies.changeTracker.getAttachmentsChanges();
             changes.removes = this.dependencies.changeTracker.prepareRemovals();
+            this.normalizeDetachedUpdates(result.data, tags);
 
             done(result);
         } catch (e) {
@@ -575,7 +608,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @param params Parameters to pass to the filter function
      * @param done Callback function called with true if all entities match, false otherwise, or error
      */
-    every<P extends {}>(expression: Filter<InferType<TEntity>>, done: CallbackResult<boolean>): void;
+    every(expression: Filter<InferType<TEntity>>, done: CallbackResult<boolean>): void;
     every<P extends {}>(expression: ParamsFilter<InferType<TEntity>, P>, params: P, done: CallbackResult<boolean>): void;
     every<P extends {} = never>(expression: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P> | CallbackResult<boolean>, paramsOrDone: P | CallbackResult<boolean>, done?: CallbackResult<boolean>) {
 
@@ -606,7 +639,7 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
      * @param params Parameters to pass to the filter function
      * @returns Promise that resolves with true if all entities match, false otherwise, or rejects with an error
      */
-    everyAsync<P extends {}>(expression: Filter<InferType<TEntity>>): Promise<boolean>;
+    everyAsync(expression: Filter<InferType<TEntity>>): Promise<boolean>;
     everyAsync<P extends {}>(expression: ParamsFilter<InferType<TEntity>, P>, params: P): Promise<boolean>;
     everyAsync<P extends {} = never>(expression?: Filter<InferType<TEntity>> | ParamsFilter<InferType<TEntity>, P>, params?: P): Promise<boolean> {
 

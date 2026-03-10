@@ -23,24 +23,9 @@ Routier's query architecture enables you to write plain JavaScript queries that 
 
 Routier allows you to write queries using familiar JavaScript syntax:
 
-```ts
-// Simple filtering
-const expensiveProducts = await dataStore.products
-  .where((p) => p.price > 100)
-  .toArrayAsync();
 
-// Complex queries with multiple conditions
-const electronicsInStock = await dataStore.products
-  .where((p) => p.category === "electronics" && p.inStock === true)
-  .sort((p) => p.price)
-  .take(10)
-  .toArrayAsync();
+{% highlight ts linenos %}{% include code/from-docs/concepts/query-architecture/block-1.ts %}{% endhighlight %}
 
-// String operations
-const laptopProducts = await dataStore.products
-  .where((p) => p.name.toLowerCase().includes("laptop"))
-  .toArrayAsync();
-```
 
 These queries work identically regardless of whether you're using SQLite, IndexedDB, PouchDB, or in-memory storage.
 
@@ -52,9 +37,9 @@ Routier transforms JavaScript queries into agnostic expressions that plugins can
 
 Expression trees represent code as data structures rather than executable code. In Routier, when you write:
 
-```ts
-dataStore.products.where((p) => p.price > 100 && p.category === "electronics");
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/query-architecture/block-2.ts %}{% endhighlight %}
+
 
 Routier parses this into an abstract syntax tree (AST) that represents the logical structure:
 
@@ -108,42 +93,17 @@ This abstraction means you can write the same query syntax regardless of your un
 
 ### Write Once, Run Anywhere
 
-```ts
-// This exact same query works across all storage backends
-const query = dataStore.products
-  .where((p) => p.price > 50 && p.category === "electronics")
-  .sort((p) => p.price)
-  .take(20);
 
-// Works with SQLite
-const sqliteResults = await query.toArrayAsync();
+{% highlight ts linenos %}{% include code/from-docs/concepts/query-architecture/block-3.ts %}{% endhighlight %}
 
-// Works with IndexedDB (Dexie)
-const dexieResults = await query.toArrayAsync();
-
-// Works with PouchDB
-const pouchResults = await query.toArrayAsync();
-
-// Works with in-memory storage
-const memoryResults = await query.toArrayAsync();
-```
 
 ### Seamless Migration
 
 You can switch storage backends without changing your query code:
 
-```ts
-// Start with in-memory for development
-const dataStore = new DataStore(new MemoryPlugin("dev"));
 
-// Later switch to SQLite for production
-const dataStore = new DataStore(new SqlitePlugin("production.db"));
+{% highlight ts linenos %}{% include code/from-docs/concepts/query-architecture/block-4.ts %}{% endhighlight %}
 
-// All your queries remain unchanged
-const products = await dataStore.products
-  .where((p) => p.inStock === true)
-  .toArrayAsync();
-```
 
 ## Performance Considerations
 
@@ -151,23 +111,17 @@ const products = await dataStore.products
 
 When Routier can parse your JavaScript expressions, it translates them to optimized database queries:
 
-```ts
-// This gets translated to: SELECT id, name, price, category FROM products WHERE price > 100 AND category = 'electronics'
-const optimized = await dataStore.products
-  .where((p) => p.price > 100 && p.category === "electronics")
-  .toArrayAsync();
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/query-architecture/block-5.ts %}{% endhighlight %}
+
 
 ### Fallback Behavior
 
 When expressions cannot be parsed (returns `NOT_PARSABLE`), Routier falls back to selecting all data and filtering in memory:
 
-```ts
-// Complex expression that can't be parsed - falls back to memory filtering
-const complex = await dataStore.products
-  .where((p) => someComplexFunction(p) === true)
-  .toArrayAsync();
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/query-architecture/block-6.ts %}{% endhighlight %}
+
 
 **Best Practice**: Use parameterized queries and avoid complex expressions that cannot be parsed to maintain optimal performance.
 
@@ -175,24 +129,9 @@ const complex = await dataStore.products
 
 For dynamic filtering with variables, use parameterized queries to ensure database-level optimization:
 
-```ts
-const minPrice = 100;
-const category = "electronics";
 
-// ✅ Optimized - translated to database query
-const optimized = await dataStore.products
-  .where(
-    ([p, params]) =>
-      p.price >= params.minPrice && p.category === params.category,
-    { minPrice, category }
-  )
-  .toArrayAsync();
+{% highlight ts linenos %}{% include code/from-docs/concepts/query-architecture/block-7.ts %}{% endhighlight %}
 
-// ⚠️ Falls back to memory filtering
-const fallback = await dataStore.products
-  .where((p) => p.price >= minPrice && p.category === category)
-  .toArrayAsync();
-```
 
 ## Related Topics
 

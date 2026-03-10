@@ -9,7 +9,7 @@
     "build:bundle": "rspack build",
     "build": "npm run build:bundle && npm run build:types",
     "tsc": "tsc",
-    "lint": "eslint . --ext ts --report-unused-disable-directives --max-warnings 0"
+    "lint": "oxlint . --ignore-pattern \"**/__tests__/**\" --ignore-pattern \"**/*.test.*\" --ignore-pattern \"**/*.spec.*\" --ignore-pattern \"**/*.mjs\""
   },
   "sideEffects": false,
   "author": "James DeMeuse <james.demeuse@gmail.com>",
@@ -28,7 +28,7 @@
   ],
   "description": "Testing plugin for routier",
   "peerDependencies": {
-    "@routier/core": ">=0.2.0"
+    "@routier/core": ">=0.2.1"
   },
   "dependencies": {
     "@faker-js/faker": "^9.7.0"

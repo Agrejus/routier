@@ -662,7 +662,7 @@ export class PouchDbPlugin implements IDbPlugin {
     }
 
     private _doWork<TResult, TEntity>(work: (db: PouchDB.Database<TEntity>, done: CallbackResult<TResult>) => void, done: CallbackResult<TResult>, shouldClose: boolean = false) {
-        const { sync, queryType, ...rest } = this._options ?? {};
+        const { sync: _sync, queryType: _queryType, ...rest } = this._options ?? {};
         const db = new PouchDB<TEntity>(this._name, rest);
 
         work(db, (result) => {

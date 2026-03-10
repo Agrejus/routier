@@ -14,7 +14,7 @@ export function RecentOrders({ days }: { days: number }) {
         .sort((o) => o.createdAt)
         .take(10)
         .toArray(callback),
-    [dataStore, cutoffDate, days] // Re-run when store or days changes
+    [cutoffDate, days] // Re-run when days changes
   );
 
   if (orders.status === "pending") return <div>Loading recent orders...</div>;
@@ -24,12 +24,11 @@ export function RecentOrders({ days }: { days: number }) {
     <div>
       <h2>Recent Orders (Last {days} days)</h2>
       <ul>
-        {orders.status === "success" &&
-          orders.data.map((order) => (
-            <li key={order.id}>
-              {order.total} - {new Date(order.createdAt).toLocaleDateString()}
-            </li>
-          ))}
+        {orders.data?.map((order) => (
+          <li key={order.id}>
+            {order.total} - {new Date(order.createdAt).toLocaleDateString()}
+          </li>
+        ))}
       </ul>
     </div>
   );

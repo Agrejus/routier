@@ -101,7 +101,7 @@ export class MemoryDataCollection {
 
         if (this.schema.hasIdentityKeys) {
             const idProperties = this.schema.idProperties;
-            const ids: IdType[] = new Array<IdType>(idProperties.length);
+            const ids: IdType[] = Array.from({ length: idProperties.length });
 
             // Need to make sure we allow for seeding the collection when we call add vs seed
             // There will be an existing id, but the id type could still be identity

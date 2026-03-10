@@ -42,14 +42,9 @@ All reads happen in memory, avoiding the latency of disk-based storage like Inde
 
 Writes go to the persistent source plugin, but since reads come from memory, write latency doesn't affect your UI:
 
-```ts
-// User action → Write to Dexie (slow, but doesn't block UI)
-await ctx.vehicles.addAsync({ make: "Tesla", model: "Model 3" });
-await ctx.saveChangesAsync();
 
-// UI continues to be responsive because reads are from memory
-const vehicles = await ctx.vehicles.toArrayAsync(); // Instant!
-```
+{% highlight ts linenos %}{% include code/from-docs/guides/optimistic-replication/block-1.ts %}{% endhighlight %}
+
 
 ## When to Use It
 
@@ -89,107 +84,17 @@ The optimistic replication plugin coordinates three components:
 
 ## Basic Setup
 
-```ts
-import { OptimisticReplicationDbPlugin } from "@routier/core/plugins/replication";
-import { MemoryPlugin } from "@routier/memory-plugin";
-import { DexiePlugin } from "@routier/dexie-plugin";
-import { DataStore } from "@routier/datastore";
 
-// Create the optimistic replication plugin
-const plugin = new OptimisticReplicationDbPlugin({
-  read: new MemoryPlugin("optimistic-memory"),
-  source: new DexiePlugin("optimistic-db"),
-  replicas: [], // Add more replica plugins if needed
-});
+{% highlight ts linenos %}{% include code/from-docs/guides/optimistic-replication/block-2.ts %}{% endhighlight %}
 
-// Create your DataStore
-export class AppDataStore extends DataStore {
-  constructor() {
-    super(plugin);
-  }
-
-  // Define your collections
-  vehicles = this.collection(vehicleSchema).create();
-  tasks = this.collection(taskSchema).create();
-}
-
-export const ctx = new AppDataStore();
-```
 
 ## Complete Example
 
 Here's a complete example using multiple collections:
 
-```ts
-import { OptimisticReplicationDbPlugin } from "@routier/core/plugins/replication";
-import { MemoryPlugin } from "@routier/memory-plugin";
-import { DexiePlugin } from "@routier/dexie-plugin";
-import { DataStore } from "@routier/datastore";
-import { s } from "@routier/core/schema";
 
-// Define schemas
-const vehicleSchema = s
-  .define("vehicles", {
-    id: s.string().key().identity(),
-    make: s.string(),
-    model: s.string(),
-    year: s.number(),
-  })
-  .compile();
+{% highlight ts linenos %}{% include code/from-docs/guides/optimistic-replication/block-3.ts %}{% endhighlight %}
 
-const maintenanceSchema = s
-  .define("maintenance", {
-    id: s.string().key().identity(),
-    vehicleId: s.string(),
-    description: s.string(),
-    cost: s.number(),
-  })
-  .compile();
-
-// Create the optimistic replication plugin
-const plugin = new OptimisticReplicationDbPlugin({
-  read: new MemoryPlugin("demo-optimistic-memory"),
-  source: new DexiePlugin("demo-optimistic-db"),
-  replicas: [],
-});
-
-export class VehicleDataStore extends DataStore {
-  constructor() {
-    super(plugin);
-  }
-
-  // Collections use scoping for single-store backends
-  vehicles = this.collection(vehicleSchema)
-    .scope(([x, p]) => x.collectionName === p.collectionName, vehicleSchema)
-    .create();
-
-  maintenance = this.collection(maintenanceSchema)
-    .scope(([x, p]) => x.collectionName === p.collectionName, maintenanceSchema)
-    .create();
-}
-
-export const ctx = new VehicleDataStore();
-
-// Use it like a normal DataStore
-async function example() {
-  // Add a vehicle
-  const vehicle = await ctx.vehicles.addAsync({
-    make: "Tesla",
-    model: "Model 3",
-    year: 2023,
-  });
-  await ctx.saveChangesAsync(); // Persists to Dexie, replicates to memory
-
-  // Read is lightning fast from memory!
-  const allVehicles = await ctx.vehicles.toArrayAsync();
-
-  // Queries are instant
-  const teslaVehicles = await ctx.vehicles
-    .where((v) => v.make === "Tesla")
-    .sort((v) => v.year)
-    .toArrayAsync();
-}
-```
 
 ## Performance Considerations
 
@@ -201,12 +106,9 @@ Since data is stored in both memory and persistent storage, memory usage increas
 
 On first load, the memory store is hydrated from the source plugin. This is a one-time cost:
 
-```ts
-// On app startup
-// 1. Memory store is empty
-// 2. All data loads from Dexie into memory (hydration)
-// 3. Subsequent reads are from memory (fast!)
-```
+
+{% highlight ts linenos %}{% include code/from-docs/guides/optimistic-replication/block-4.ts %}{% endhighlight %}
+
 
 ### Write Latency
 
@@ -224,6 +126,8 @@ Writes still go to the persistent source plugin, so they have the same latency a
 
 ## Related Guides
 
+- **[Plugin Compositions](plugin-compositions.md)** — Map of all plugin combinations and when to use each
+- **[HttpSwrDbPlugin with Optimistic Replication](http-swr-with-optimistic.md)** — Combine with HTTP sync for maximum speed
 - **[Live Queries](live-queries.md)** - Reactive data that updates automatically
 - **[State Management](state-management.md)** - Managing application state
 - **[Dexie Plugin](/integrations/plugins/built-in-plugins/dexie/)** - IndexedDB integration

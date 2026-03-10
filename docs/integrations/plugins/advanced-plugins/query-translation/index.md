@@ -23,25 +23,9 @@ The `compiledSchemaToSqliteTable` function demonstrates how to convert a Compile
 
 ### Schema Type Mapping
 
-```ts
-const schemaTypeToSqliteType = (type: SchemaTypes): string => {
-  switch (type) {
-    case SchemaTypes.String:
-      return "TEXT";
-    case SchemaTypes.Number:
-      return "REAL";
-    case SchemaTypes.Boolean:
-      return "INTEGER"; // SQLite uses INTEGER for booleans
-    case SchemaTypes.Date:
-      return "TEXT"; // Stored as ISO string
-    case SchemaTypes.Object:
-    case SchemaTypes.Array:
-      return "JSON"; // Deeply nested structures
-    default:
-      return "TEXT";
-  }
-};
-```
+
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/query-translation/index/block-1.ts %}{% endhighlight %}
+
 
 ### Key Considerations
 
@@ -61,53 +45,9 @@ const schemaTypeToSqliteType = (type: SchemaTypes): string => {
 
 ### Example Table Creation
 
-```ts
-export function compiledSchemaToSqliteTable(
-  schema: CompiledSchema<any>
-): string {
-  const columns: string[] = [];
-  const idProps = schema.idProperties;
-  const identityProps = idProps.filter((p) => p.isIdentity);
 
-  // Handle single identity PK
-  let singleIdentityPK: PropertyInfo<any> | undefined;
-  if (identityProps.length === 1 && idProps.length === 1) {
-    singleIdentityPK = identityProps[0];
-  }
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/query-translation/index/block-2.ts %}{% endhighlight %}
 
-  // Build column definitions
-  for (const prop of schema.properties) {
-    let colDef: string;
-
-    if (singleIdentityPK && prop.name === singleIdentityPK.name) {
-      // Handle identity primary key
-      if (prop.type === SchemaTypes.Number) {
-        colDef = `"${prop.name}" INTEGER PRIMARY KEY AUTOINCREMENT`;
-      } else if (prop.type === SchemaTypes.String) {
-        colDef = `"${prop.name}" TEXT PRIMARY KEY DEFAULT (uuid_function())`;
-      }
-    } else if (isDeeplyNested(prop)) {
-      colDef = `"${prop.name}" JSON`;
-    } else {
-      colDef = `"${prop.name}" ${schemaTypeToSqliteType(prop.type)}`;
-    }
-
-    columns.push(colDef);
-  }
-
-  // Handle composite primary keys
-  let pkClause = "";
-  if (!singleIdentityPK && idProps.length > 0) {
-    const pkCols = idProps.map((p) => `"${p.name}"`);
-    pkClause = `, PRIMARY KEY (${pkCols.join(", ")})`;
-  }
-
-  // Build CREATE TABLE statement
-  return `CREATE TABLE IF NOT EXISTS "${schema.collectionName}" (
-  ${columns.join(",\n  ")}${pkClause}
-);`;
-}
-```
 
 ## Expression Translation
 
@@ -124,53 +64,9 @@ Routier uses an Expression tree structure:
 
 ### Translation Pattern
 
-```ts
-export function expressionToWhereClause(expr: Expression): {
-  where: string;
-  params: any[];
-} {
-  const params: any[] = [];
 
-  function walk(e: Expression): string {
-    if (e.type === "operator") {
-      const op = (e as OperatorExpression).operator;
-      const left = walk(e.left);
-      const right = walk(e.right);
-      const sqlOp = op === "&&" ? "AND" : op === "||" ? "OR" : op;
-      return `(${left} ${sqlOp} ${right})`;
-    }
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/query-translation/index/block-3.ts %}{% endhighlight %}
 
-    if (e.type === "comparator") {
-      const cmp = e as ComparatorExpression;
-      const leftExpr = walk(cmp.left);
-      const rightExpr = walk(cmp.right);
-
-      // Translate comparator to SQL operator
-      switch (cmp.comparator) {
-        case "equals":
-          return `${leftExpr} = ${rightExpr}`;
-        case "greater-than":
-          return `${leftExpr} > ${rightExpr}`;
-        // ... etc
-      }
-    }
-
-    if (e.type === "property") {
-      return `"${(e as PropertyExpression).property.name}"`;
-    }
-
-    if (e.type === "value") {
-      params.push((e as ValueExpression).value);
-      return "?"; // Parameter placeholder
-    }
-
-    throw new Error(`Unknown expression type: ${(e as any).type}`);
-  }
-
-  const where = walk(expr);
-  return { where, params };
-}
-```
 
 ### Special Cases
 
@@ -198,51 +94,9 @@ The `buildFromQueryOperation` function constructs complete SQL queries from Rout
 
 ### Key Pattern
 
-```ts
-export function buildFromQueryOperation<TEntity, TShape>(
-  query: IQuery<TEntity, TShape>
-): SqlOperation {
-  const { schema, options } = query;
-  let currentQuery = `SELECT ${columnsStr} FROM "${schema.collectionName}"`;
-  const params: any[] = [];
 
-  // Collect and categorize operations
-  const filterOps = [];
-  const sortOps = [];
-  const skipTakeOps = [];
+{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/query-translation/index/block-4.ts %}{% endhighlight %}
 
-  // Process filters
-  for (const op of filterOps) {
-    const { where, params: filterParams } = expressionToWhereClause(
-      op.value.expression
-    );
-    params.push(...filterParams);
-    currentQuery += ` WHERE ${where}`;
-  }
-
-  // Process sorts
-  for (const op of sortOps) {
-    currentQuery += ` ORDER BY "${op.value.propertyName}" ${op.value.direction}`;
-  }
-
-  // Process pagination
-  if (skipValue !== null || takeValue !== null) {
-    if (skipValue !== null && takeValue !== null) {
-      currentQuery += ` LIMIT ${takeValue} OFFSET ${skipValue}`;
-    }
-  }
-
-  // Process aggregations
-  if (hasCount) {
-    currentQuery = currentQuery.replace(
-      /SELECT .*? FROM/,
-      'SELECT COUNT(*) AS "count" FROM'
-    );
-  }
-
-  return { sql: currentQuery, params };
-}
-```
 
 ## Common Gotchas
 

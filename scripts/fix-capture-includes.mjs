@@ -23,14 +23,14 @@ function transform(content) {
     // Match blocks of the form:
     // {% highlight ts linenos %}{% include code/... %}{% endhighlight %}
     // and replace with capture + highlight
-    const re = /\{\%\s*highlight\s+([^%]+?)\s*\%\}\s*\{\%\s*include\s+([^%]+?)\s*\%\}\s*\{\%\s*endhighlight\s*\%\}/g;
+    const re = /\{%\s*highlight\s+([^%]+?)\s*%\}\s*\{%\s*include\s+([^%]+?)\s*%\}\s*\{%\s*endhighlight\s*%\}/g;
     let out = content.replace(re, (_m, lang, inc) => {
         const captureVar = 'snippet_' + Math.random().toString(36).slice(2, 8);
         return `\n{% capture ${captureVar} %}{% include ${inc.trim()} %}{% endcapture %}\n{% highlight ${lang.trim()} %}{{ ${captureVar} | strip }}{% endhighlight %}\n`;
     });
     // Transform capture+highlight to fenced code blocks to avoid theme parsing quirks
     // Fix any accidental placeholders like {% include code/%} created by earlier passes
-    out = out.replace(/\{\%\s*include\s+code\/\%\s*\}/g, '{% include code/from-docs/index/block-1.ts %}');
+    out = out.replace(/\{%\s*include\s+code\/%\s*\}/g, '{% include code/from-docs/index/block-1.ts %}');
     // Keep capture+highlight; do not convert to fenced blocks to avoid breaking includes
     return out;
 }

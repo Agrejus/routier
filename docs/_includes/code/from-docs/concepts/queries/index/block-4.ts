@@ -1,7 +1,7 @@
-// Single field
-const names = await ctx.users.map((u) => u.name).toArrayAsync();
+// Count total products
+const totalCount = await ctx.products.countAsync();
 
-// Reshape into a custom object
-const summaries = await ctx.users
-  .map((u) => ({ id: u.id, fullName: `${u.firstName} ${u.lastName}` }))
-  .toArrayAsync();
+// Count products in specific category
+const electronicsCount = await ctx.products
+  .where((p) => p.category === "electronics")
+  .countAsync();

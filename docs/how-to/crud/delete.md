@@ -220,48 +220,21 @@ Implement logging for deletion operations:
 
 ### User Account Deletion
 
-```ts
-const user = await ctx.users.where((u) => u.id === userId).firstAsync();
-if (user) {
-  // Delete related data first
-  await ctx.userSessions.where((s) => s.userId === userId).removeAsync();
-  await ctx.userPreferences.where((p) => p.userId === userId).removeAsync();
 
-  // Delete the user
-  await ctx.users.removeAsync(user);
-  await ctx.saveChangesAsync();
-}
-```
+{% highlight ts linenos %}{% include code/from-docs/how-to/crud/delete/block-1.ts %}{% endhighlight %}
+
 
 ### Cleanup Operations
 
-```ts
-// Remove old sessions
-const cutoffDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
-await ctx.sessions.where((s) => s.lastActivity < cutoffDate).removeAsync();
 
-// Remove inactive users
-await ctx.users
-  .where((u) => u.isActive === false && u.lastLogin < cutoffDate)
-  .removeAsync();
+{% highlight ts linenos %}{% include code/from-docs/how-to/crud/delete/block-2.ts %}{% endhighlight %}
 
-await ctx.saveChangesAsync();
-```
 
 ### Batch Cleanup with Confirmation
 
-```ts
-const itemsToDelete = await ctx.items
-  .where((i) => i.status === "archived")
-  .toArrayAsync();
-if (itemsToDelete.length > 0) {
-  const confirmed = await confirmDeletion(itemsToDelete.length);
-  if (confirmed) {
-    await ctx.items.removeAsync(itemsToDelete);
-    await ctx.saveChangesAsync();
-  }
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/how-to/crud/delete/block-3.ts %}{% endhighlight %}
+
 
 ## Deletion Strategies
 
@@ -269,36 +242,29 @@ if (itemsToDelete.length > 0) {
 
 **Hard Delete**: Permanently removes entities from the database
 
-```ts
-await ctx.users.removeAsync(user);
-await ctx.saveChangesAsync();
-```
+
+{% highlight ts linenos %}{% include code/from-docs/how-to/crud/delete/block-4.ts %}{% endhighlight %}
+
 
 **Soft Delete**: Marks entities as deleted without removing them
 
-```ts
-user.isDeleted = true;
-user.deletedAt = new Date();
-await ctx.saveChangesAsync();
-```
+
+{% highlight ts linenos %}{% include code/from-docs/how-to/crud/delete/block-5.ts %}{% endhighlight %}
+
 
 ### Cascade Delete Patterns
 
 **Manual Cascade**: Explicitly delete related entities
 
-```ts
-// Delete user and all related data
-await ctx.userSessions.where((s) => s.userId === userId).removeAsync();
-await ctx.userPosts.where((p) => p.userId === userId).removeAsync();
-await ctx.users.removeAsync(user);
-```
+
+{% highlight ts linenos %}{% include code/from-docs/how-to/crud/delete/block-6.ts %}{% endhighlight %}
+
 
 **Database Cascade**: Let the database handle cascading (plugin-dependent)
 
-```ts
-// If your plugin supports cascade delete
-await ctx.users.removeAsync(user); // Related data deleted automatically
-```
+
+{% highlight ts linenos %}{% include code/from-docs/how-to/crud/delete/block-7.ts %}{% endhighlight %}
+
 
 ## Next Steps
 

@@ -14,6 +14,7 @@ For single-table/collection backends (e.g., PouchDB, Local Storage), scope each 
 ## Quick Navigation
 
 - [Steps](#steps)
+- [Runtime Scope + Inferred Types](#runtime-scope--inferred-types)
 - [Why Use Scoping](#why)
 - [Related Topics](#related)
 
@@ -24,6 +25,14 @@ For single-table/collection backends (e.g., PouchDB, Local Storage), scope each 
 
 {% capture snippet_scope_single_db %}{% include code/how-to/collections/scope-single-db.ts %}{% endcapture %}
 {% highlight ts %}{{ snippet_scope_single_db | strip }}{% endhighlight %}
+
+### Runtime Scope + Inferred Types
+
+When the scope value is only known at runtime (for example, current `userSub`), initialize those collections in the constructor via factory functions.  
+Use `ReturnType<...>` on the collection properties to keep the same inferred collection types you would get from direct property initialization.
+
+{% capture snippet_scope_runtime_factory %}{% include code/how-to/collections/scope-runtime-param-factory.ts %}{% endcapture %}
+{% highlight ts %}{{ snippet_scope_runtime_factory | strip }}{% endhighlight %}
 
 ### Why
 

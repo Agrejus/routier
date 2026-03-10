@@ -60,7 +60,8 @@ describe('EphemeralDataPlugin', () => {
                 id: 'test-event',
                 operation,
                 schemas,
-                source: 'data-store'
+                source: 'EphemeralDataPlugin',
+                action: "persist"
             };
 
             plugin.bulkPersist(event, (result) => {
@@ -84,7 +85,8 @@ describe('EphemeralDataPlugin', () => {
                 id: 'test-event',
                 operation,
                 schemas,
-                source: 'data-store'
+                source: 'EphemeralDataPlugin',
+                action: "persist"
             };
 
             plugin.bulkPersist(event, (result) => {
@@ -115,7 +117,8 @@ describe('EphemeralDataPlugin', () => {
                 id: 'test-event',
                 operation,
                 schemas, // This doesn't contain 'non-existent-schema'
-                source: 'data-store'
+                source: 'EphemeralDataPlugin',
+                action: "persist"
             };
 
             plugin.bulkPersist(event, (result) => {
@@ -137,7 +140,8 @@ describe('EphemeralDataPlugin', () => {
                 id: 'test-event',
                 operation,
                 schemas,
-                source: 'data-store'
+                source: 'EphemeralDataPlugin',
+                action: "persist"
             };
 
             plugin.bulkPersist(event, (result) => {

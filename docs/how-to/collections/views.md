@@ -54,64 +54,17 @@ Views are ideal for:
 
 Views are created using `.view()` followed by `.derive()` to specify how data is computed:
 
-```ts
-import { DataStore } from "@routier/datastore";
-import { productsSchema } from "./schemas/product";
-import { productsViewSchema } from "./schemas/productsView";
 
-export class AppDataStore extends DataStore {
-  products = this.collection(productsSchema).create();
+{% highlight ts linenos %}{% include code/from-docs/how-to/collections/views/block-1.ts %}{% endhighlight %}
 
-  productsView = this.view(productsViewSchema)
-    .scope(([x, p]) => x.documentType === p.collectionName, productsViewSchema)
-    .derive((done) => {
-      return this.products.subscribe().toArray((productsResponse) => {
-        if (productsResponse.ok === "error") {
-          return done([]);
-        }
-
-        done(
-          productsResponse.data.map((x) => ({
-            id: `view:${x._id}`, // Predictable ID for updates
-            category: x.category,
-            inStock: x.inStock,
-            name: x.name,
-            price: x.price,
-            tags: x.tags,
-            createdDate: x.createdDate,
-            documentType: productsViewSchema.collectionName,
-          }))
-        );
-      });
-    })
-    .create();
-}
-```
 
 ## One-to-One Views
 
 One-to-one views maintain a predictable mapping between source entities and view entities. Use a predictable ID pattern like `view:${originalId}`:
 
-```ts
-productsView = this.view(productsViewSchema)
-  .derive((done) => {
-    return this.products.subscribe().toArray((response) => {
-      if (response.ok === "error") {
-        return done([]);
-      }
 
-      done(
-        response.data.map((x) => ({
-          id: `view:${x._id}`, // Predictable ID - view updates existing records
-          name: x.name,
-          price: x.price,
-          // ... other fields
-        }))
-      );
-    });
-  })
-  .create();
-```
+{% highlight ts linenos %}{% include code/from-docs/how-to/collections/views/block-2.ts %}{% endhighlight %}
+
 
 **Key points:**
 
@@ -138,78 +91,25 @@ For complete implementation details, examples, and best practices, see the **[Hi
 
 Views can reshape data from source collections:
 
-```ts
-commentsView = this.view(commentsViewSchema)
-  .derive((done) => {
-    return this.comments.subscribe().toArray((response) => {
-      if (response.ok === "error") {
-        return done([]);
-      }
 
-      done(
-        response.data.map((x) => ({
-          id: `view:${x._id}`,
-          content: x.content,
-          user: {
-            name: x.author, // Flattened structure
-          },
-          createdAt: new Date(),
-          replies: x.replies,
-        }))
-      );
-    });
-  })
-  .create();
-```
+{% highlight ts linenos %}{% include code/from-docs/how-to/collections/views/block-3.ts %}{% endhighlight %}
+
 
 ### Combining Multiple Sources
 
 You can subscribe to multiple collections and combine their data:
 
-```ts
-combinedView = this.view(combinedViewSchema)
-  .derive((done) => {
-    let usersData: User[] = [];
-    let postsData: Post[] = [];
-    let subscriptionCount = 0;
 
-    const checkAndCombine = () => {
-      subscriptionCount++;
-      if (subscriptionCount === 2) {
-        // Combine users and posts
-        done(combineUsersAndPosts(usersData, postsData));
-      }
-    };
+{% highlight ts linenos %}{% include code/from-docs/how-to/collections/views/block-4.ts %}{% endhighlight %}
 
-    this.users.subscribe().toArray((response) => {
-      if (response.ok === "success") {
-        usersData = response.data;
-      }
-      checkAndCombine();
-    });
-
-    this.posts.subscribe().toArray((response) => {
-      if (response.ok === "success") {
-        postsData = response.data;
-      }
-      checkAndCombine();
-    });
-  })
-  .create();
-```
 
 ### Scoped Views
 
 Use `.scope()` to filter view data, especially useful for single-store backends:
 
-```ts
-productsView = this.view(productsViewSchema)
-  .scope(([x, p]) => x.documentType === p.collectionName, productsViewSchema)
-  .derive((done) => {
-    // View logic here
-  })
-  .create();
-```
+
+{% highlight ts linenos %}{% include code/from-docs/how-to/collections/views/block-5.ts %}{% endhighlight %}
+
 
 ## View Lifecycle
 
@@ -224,17 +124,9 @@ productsView = this.view(productsViewSchema)
 
 Views automatically compute when source data changes, but you can also manually trigger computation using `compute()` or `computeAsync()`:
 
-```ts
-// Trigger view computation manually (callback-based)
-ctx.productsView.compute((result) => {
-  if (result.ok === "success") {
-    console.log("View computed successfully");
-  }
-});
 
-// Trigger view computation manually (async)
-await ctx.productsView.computeAsync();
-```
+{% highlight ts linenos %}{% include code/from-docs/how-to/collections/views/block-6.ts %}{% endhighlight %}
+
 
 **When to use:**
 

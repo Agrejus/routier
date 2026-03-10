@@ -1,9 +1,9 @@
-import { fastHash, HashType, IDbPlugin } from "@routier/core";
+import { IDbPlugin } from "@routier/core";
 import { DataStore } from "@routier/datastore";
 import { productsSchema } from "../schemas/product";
-import { commentsSchema, CreateComment } from "../schemas/comments";
+import { commentsSchema } from "../schemas/comments";
 import { eventsSchema } from "../schemas/event";
-import { usersSchema } from "../schemas/user";
+import { userSchema } from "../schemas/user";
 import { userProfileSchema } from "../schemas/userProfile";
 import { inventoryItemsSchema } from "../schemas/inventoryItem";
 import { playerSchema } from "../schemas/player";
@@ -16,12 +16,14 @@ import { ordersSchema } from "../schemas/order";
 import { blogPostsSchema } from "../schemas/blogPost";
 import { taskViewSchema } from "../schemas/taskView";
 import { taskSchema } from "../schemas/task";
+import { widgetSchema } from "../schemas/widget";
 
 export class TestDataStore extends DataStore {
     constructor(plugin: IDbPlugin) {
         super(plugin);
     }
 
+    widgets = this.collection(widgetSchema).create();
     products = this.collection(productsSchema).scope(([x, p]) => x.documentType === p.collectionName, productsSchema).create();
     productsView = this.view(productsViewSchema).scope(([x, p]) => x.documentType === p.collectionName, productsViewSchema).derive((done) => {
         return this.products.subscribe().toArray(productsResponse => {
@@ -66,7 +68,7 @@ export class TestDataStore extends DataStore {
     }).create();
     comments = this.collection(commentsSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...commentsSchema }).create();
     events = this.collection(eventsSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...eventsSchema }).create();
-    users = this.collection(usersSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...usersSchema }).create();
+    users = this.collection(userSchema).scope(([x, p]) => x._collectionName === p.collectionName, { ...userSchema }).create();
     userProfiles = this.collection(userProfileSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...userProfileSchema }).create();
     inventoryItems = this.collection(inventoryItemsSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...inventoryItemsSchema }).create();
 

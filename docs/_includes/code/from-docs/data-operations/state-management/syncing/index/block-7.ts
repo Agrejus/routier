@@ -1,12 +1,23 @@
-// Check connectivity before enabling sync
-if (navigator.onLine) {
-  // Enable sync based on your plugin's API
-  plugin.startSync();
-} else {
-  // Disable sync based on your plugin's API
-  plugin.stopSync();
-}
+sync: {
+  onChange: (schemas: SchemaCollection, change) => {
+    if (change.direction === "pull" && change.change.docs) {
+      // Group documents by collection
+      const docsByCollection = change.change.docs.reduce(/* ... */);
 
-// Listen for connectivity changes
-window.addEventListener("online", () => plugin.startSync());
-window.addEventListener("offline", () => plugin.stopSync());
+      // Process each collection
+      for (const collectionName in docsByCollection) {
+        const schema = schemas.getByName(collectionName);
+        const subscription = schema.createSubscription();
+
+        subscription.send({
+          adds: [],
+          removals: [],
+          updates: [],
+          unknown: docsByCollection[collectionName],
+        });
+
+        subscription[Symbol.dispose]();
+      }
+    }
+  };
+}

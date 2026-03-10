@@ -3,9 +3,13 @@ import { ITranslatedValue } from './types';
 export class TranslatedArrayValue<T> implements ITranslatedValue<T> {
 
     readonly value: T;
+    readonly isTransformed: boolean;
+    readonly isEmpty: boolean;
 
-    constructor(value: unknown,) {
+    constructor(value: unknown, isTransformed: boolean) {
         this.value = value as T;
+        this.isEmpty = value == null || (Array.isArray(value) && value.length === 0);
+        this.isTransformed = isTransformed;
     }
 
     forEach(callback: (item: unknown) => unknown): void {

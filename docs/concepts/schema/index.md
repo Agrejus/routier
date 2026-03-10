@@ -62,6 +62,56 @@ Routier provides a fluent, type-safe schema builder API:
 - **Tracked**: `tracked()` on a computed property persists the derived value to storage for faster reads and indexing.
 - **Function**: `function(fn)` attaches non-persisted methods to entities.
 
+### Schema Metadata
+
+Sometimes you need information **about a collection**, not about individual fields—for example:
+
+- API routes or HTTP headers for that collection
+- Feature flags (e.g., “orders are read-only in production”)
+- UI hints such as display labels, default sort, or grouping
+
+Routier supports this via **schema metadata**. When you call `compile`, you can pass an arbitrary metadata object, and the compiled schema will expose it as a typed `metadata` property:
+
+```ts
+import { s } from '@routier/core/schema';
+
+type OrdersMetadata = {
+  http: {
+    baseUrl: string;
+    timeoutMs: number;
+  };
+  ui: {
+    displayName: string;
+    defaultSort: 'createdAt' | 'total';
+  };
+};
+
+export const ordersSchema = s
+  .define('orders', {
+    id: s.string().key().identity(),
+    customerId: s.string(),
+    total: s.number(),
+    status: s.string('pending', 'paid', 'shipped'),
+    createdAt: s.date().default(() => new Date()),
+  })
+  .compile<OrdersMetadata>({
+    http: {
+      baseUrl: '/api/orders',
+      timeoutMs: 5000,
+    },
+    ui: {
+      displayName: 'Orders',
+      defaultSort: 'createdAt',
+    },
+  });
+
+// Later in your app or plugins:
+ordersSchema.metadata.http.baseUrl;   // '/api/orders'
+ordersSchema.metadata.ui.displayName; // 'Orders'
+```
+
+This keeps **collection-level configuration** colocated with the schema and strongly typed, without polluting the entity shape itself. Plugins (for example, HTTP or sync plugins) can also read this metadata from the compiled schema to drive behavior such as routing, indexing strategy, or conflict resolution.
+
 ### Rich Type System
 
 - **Primitives**: `string`, `number`, `boolean`, `date`
@@ -79,6 +129,7 @@ Routier provides a fluent, type-safe schema builder API:
 
 - **[Property Types](property-types/README.md)** - Available property types and their capabilities
 - **[Modifiers](modifiers/README.md)** - All available property modifiers and constraints
+- **[Optional vs nullable over HTTP](modifiers/README.md#optional-vs-nullable-over-http)** - Sending missing values safely over JSON
 - **[InferType](infer-type.md)** - Type inference and type safety
 
 ### Reference

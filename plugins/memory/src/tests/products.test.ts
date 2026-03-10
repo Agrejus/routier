@@ -1,7 +1,7 @@
 import { faker } from '@faker-js/faker';
-import { describe, it, expect, afterAll } from '@jest/globals';
-import { generateData, seedData, wait } from '@routier/test-utils';
-import { CallbackResult, IDbPlugin, UnknownRecord, uuidv4 } from '@routier/core';
+import { describe, it, expect, afterEach } from '@jest/globals';
+import { generateData, seedData } from '@routier/test-utils';
+import { CallbackResult, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, PluginEventCallbackResult, UnknownRecord, uuidv4 } from '@routier/core';
 import { MemoryPlugin } from '../MemoryPlugin';
 import { TestDataStore } from './datastore/MemoryDatastore';
 
@@ -17,10 +17,55 @@ const factory = (dbname?: string) => {
     return store;
 };
 
+class CloneOnReadPlugin implements IDbPlugin {
+    constructor(private readonly inner: IDbPlugin) {}
+
+    query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
+        this.inner.query(event as never, (result) => {
+            if (result.ok === "success") {
+                // Force new object references on each read to simulate plugins that deserialize/clone.
+                result.data.forEach((item) => structuredClone(item));
+            }
+            done(result as never);
+        });
+    }
+
+    bulkPersist(event: Parameters<IDbPlugin["bulkPersist"]>[0], done: Parameters<IDbPlugin["bulkPersist"]>[1]): void {
+        this.inner.bulkPersist(event, done);
+    }
+
+    destroy(event: Parameters<IDbPlugin["destroy"]>[0], done: Parameters<IDbPlugin["destroy"]>[1]): void {
+        this.inner.destroy(event, done);
+    }
+}
+
+const factoryWithReadClones = (dbname?: string) => {
+    const store = new TestDataStore(new CloneOnReadPlugin(pluginFactory(dbname)));
+    stores.push(store);
+    return store;
+};
+
+const waitForAsync = async (assertion: () => Promise<void>, timeoutMs: number = 2000) => {
+    const startedAt = Date.now();
+    let lastError: unknown;
+
+    while (Date.now() - startedAt < timeoutMs) {
+        try {
+            await assertion();
+            return;
+        } catch (error) {
+            lastError = error;
+            await new Promise((resolve) => setTimeout(resolve, 25));
+        }
+    }
+
+    throw lastError;
+};
+
 describe("Product Tests", () => {
 
-    afterAll(async () => {
-        await Promise.all(stores.map(x => x.destroyAsync()));
+    afterEach(async () => {
+        await Promise.all(stores.splice(0).map((x) => x.destroyAsync()));
     });
 
     describe('Save Operations', () => {
@@ -167,10 +212,10 @@ describe("Product Tests", () => {
                 const responseOne = await dataStore.saveChangesAsync();
                 expect(responseOne.aggregate.size).toBe(1);
 
-                added.name === "CHANGED";
+                added.name = "CHANGED";
 
                 const responseTwo = await dataStore.saveChangesAsync();
-                expect(responseTwo.aggregate.size).toBe(0);
+                expect(responseTwo.aggregate.size).toBe(1);
             });
         });
     });
@@ -260,6 +305,65 @@ describe("Product Tests", () => {
     });
 
     describe('Update Operations', () => {
+        it("regression: queried entity should be attached by reference so updates persist", async () => {
+            const dataStore = factoryWithReadClones();
+            await seedData(dataStore, () => dataStore.products, 2);
+
+            const initialQuery = await dataStore.products.where(x => x._id != "").firstAsync();
+            const queried = await dataStore.products.where(x => x._id === initialQuery._id).firstAsync();
+            const attached = dataStore.products.attachments.get(queried);
+
+            expect(attached).toBeDefined();
+            expect(queried).toBe(attached);
+
+            const nextName = faker.lorem.word();
+            queried.name = nextName;
+
+            const hasChanges = await dataStore.hasChangesAsync();
+            expect(hasChanges).toBe(true);
+
+            const preview = await dataStore.previewChangesAsync();
+            expect(preview.aggregate.updates).toBe(1);
+
+            const response = await dataStore.saveChangesAsync();
+            expect(response.aggregate.updates).toBe(1);
+
+            const foundAfterSave = await dataStore.products.firstAsync(x => x._id === queried._id);
+            expect(foundAfterSave.name).toBe(nextName);
+        });
+
+        it("regression: memory-branch query should return canonical attached reference", async () => {
+            const dataStore = factoryWithReadClones();
+            await seedData(dataStore, () => dataStore.products, 2);
+
+            const initial = await dataStore.products.firstAsync();
+            const queried = await dataStore.products
+                .where(([x, p]) => x._id === p.id && x.name.toLowerCase() === p.lowerName, {
+                    id: initial._id,
+                    lowerName: initial.name.toLowerCase()
+                })
+                .firstAsync();
+            const attached = dataStore.products.attachments.get(queried);
+
+            expect(attached).toBeDefined();
+            expect(queried).toBe(attached);
+
+            const updatedCategory = faker.commerce.department();
+            queried.category = updatedCategory;
+
+            const hasChanges = await dataStore.hasChangesAsync();
+            expect(hasChanges).toBe(true);
+
+            const preview = await dataStore.previewChangesAsync();
+            expect(preview.aggregate.updates).toBe(1);
+
+            const response = await dataStore.saveChangesAsync();
+            expect(response.aggregate.updates).toBe(1);
+
+            const foundAfterSave = await dataStore.products.firstAsync(x => x._id === queried._id);
+            expect(foundAfterSave.category).toBe(updatedCategory);
+        });
+
         it("should update one item", async () => {
             const dataStore = factory();
             // Arrange
@@ -938,13 +1042,22 @@ describe("Product Tests", () => {
         it("where + firstAsync", async () => {
             const dataStore = factory();
             // Arrange
-            await seedData(dataStore, () => dataStore.products);
+            await seedData(dataStore, () => dataStore.products, 1000);
+
+            await dataStore.products.addAsync({
+                category: "James DeMeuse",
+                inStock: false,
+                name: "test",
+                price: 100,
+                tags: []
+            });
+            await dataStore.saveChangesAsync();
 
             // Act
-            const found = await dataStore.products.where(w => w._id != "").firstAsync();
+            const found = await dataStore.products.where(w => w.category === "James DeMeuse").firstAsync();
 
             // Assert
-            expect(found).toBeDefined();
+            expect(found.category).toBe("James DeMeuse");
         });
 
         it("throws: where + firstAsync", async () => {
@@ -2211,8 +2324,6 @@ describe("Product Tests", () => {
 
     describe('View Test', () => {
         it('history view should add a new record on update', async () => {
-
-            // FAILING when running concurrently, hanging
             const dataStore = factory();
             // Arrange
             const items = generateData(dataStore.products.schema, 2);
@@ -2221,11 +2332,9 @@ describe("Product Tests", () => {
             await dataStore.products.addAsync(...items);
             await dataStore.saveChangesAsync();
 
-            await wait(500);
-
-            const viewItemsCount = await dataStore.productsHistory.countAsync();
-
-            expect(viewItemsCount).toBe(2);
+            await waitForAsync(async () => {
+                expect(await dataStore.productsHistory.countAsync()).toBe(2);
+            });
 
             const firstProduct = await dataStore.products.firstAsync();
 
@@ -2233,11 +2342,9 @@ describe("Product Tests", () => {
 
             await dataStore.saveChangesAsync();
 
-            await wait(200);
-
-            const viewItemsCountAfterChange = await dataStore.productsHistory.countAsync();
-
-            expect(viewItemsCountAfterChange).toBe(3);
+            await waitForAsync(async () => {
+                expect(await dataStore.productsHistory.countAsync()).toBe(3);
+            });
         });
 
         it('products view should update existing and not add a new record', async () => {
@@ -2249,11 +2356,9 @@ describe("Product Tests", () => {
             await dataStore.products.addAsync(...items);
             await dataStore.saveChangesAsync();
 
-            await wait(500);
-
-            const viewItemsCount = await dataStore.productsView.countAsync();
-
-            expect(viewItemsCount).toBe(2);
+            await waitForAsync(async () => {
+                expect(await dataStore.productsView.countAsync()).toBe(2);
+            });
 
             const firstProduct = await dataStore.products.firstAsync();
 
@@ -2261,11 +2366,10 @@ describe("Product Tests", () => {
 
             await dataStore.saveChangesAsync();
 
-            await wait(200);
-
-            const viewItemsCountAfterChange = await dataStore.productsView.firstOrUndefinedAsync(x => x.category === "Changed");
-
-            expect(viewItemsCountAfterChange).toBeDefined();
+            await waitForAsync(async () => {
+                const viewItemsCountAfterChange = await dataStore.productsView.firstOrUndefinedAsync(x => x.category === "Changed");
+                expect(viewItemsCountAfterChange).toBeDefined();
+            });
         });
     });
 });

@@ -1,10 +1,21 @@
-// Check sync status
-console.log("Plugin options:", plugin._options);
+import { DataStore } from "@routier/datastore";
+import { PouchDbPlugin } from "@routier/pouchdb-plugin";
 
-// Check database connection
-const db = new PouchDB("myapp");
-db.info().then((info) => console.log("DB info:", info));
+const plugin = new PouchDbPlugin("myapp", {
+  sync: {
+    remoteDb: "http://127.0.0.1:5984/myapp",
+    live: true,
+    retry: true,
+  },
+});
 
-// Check remote connection
-const remoteDb = new PouchDB("http://localhost:3000/myapp");
-remoteDb.info().then((info) => console.log("Remote DB info:", info));
+class AppDataStore extends DataStore {
+  constructor() {
+    super(plugin);
+  }
+}
+
+const store = new AppDataStore();
+
+// Start sync
+plugin.sync(store.schemas);

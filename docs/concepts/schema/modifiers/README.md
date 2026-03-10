@@ -105,6 +105,8 @@ Multiple fields can share the same index name for compound indexing.
 
 Sets a default value for the property. Can accept either a direct value or a function that returns a value.
 
+**Note:** If the default value is `null`, return it from a function (e.g. `.default(() => null)`). Passing `null` directly does not work as intended.
+
 **Function Parameters:**
 
 - **`.default((injected) => value, { injected })`** - Function with injected dependencies
@@ -134,6 +136,10 @@ Makes the property optional (can be undefined).
 {% highlight ts %}{{ snippet_eimzso  | strip }}{% endhighlight %}
 
 **Available on:** All types
+
+#### Optional vs nullable over HTTP
+
+If a property is `.optional()`, its value can be `undefined`. Many HTTP/JSON serializers drop `undefined` fields, so the value may be omitted in transit. If you need the field to be sent over HTTP, prefer `.nullable().default(null)` so the payload includes an explicit `null`.
 
 ### `.nullable()`
 

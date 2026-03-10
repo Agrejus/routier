@@ -1,13 +1,14 @@
-// Handle sync errors based on your plugin's implementation
-onSyncError: (error) => {
-  console.error("Sync error:", error);
-
-  // Handle specific error types based on your plugin
-  if (error.type === "unauthorized") {
-    // Re-authenticate user
-  } else if (error.type === "conflict") {
-    // Handle conflicts
-  } else if (error.code === "NETWORK_ERROR") {
-    // Handle network issues
+sync: {
+  remoteDb: "http://localhost:5984/myapp",
+  onChange: (schemas, change) => {
+    if (change.change && change.change.docs) {
+      change.change.docs.forEach((doc) => {
+        if (doc._conflicts) {
+          // Document has conflicts - handle them
+          console.warn(`Conflict detected in document ${doc._id}`);
+          // Implement your conflict resolution logic
+        }
+      });
+    }
   }
-};
+}

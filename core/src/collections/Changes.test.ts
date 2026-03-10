@@ -146,6 +146,7 @@ describe('BulkPersistResult', () => {
 
     describe('get with generic type', () => {
         it('should return typed result', () => {
+            result.resolve(1 as SchemaId);
             const typedResult = result.get<{ id: string; name: string }>(1 as SchemaId);
             expect(typedResult).toBeInstanceOf(SchemaPersistResult);
         });
@@ -226,6 +227,7 @@ describe('BulkPersistChanges', () => {
 
     describe('get with generic type', () => {
         it('should return typed changes', () => {
+            changes.resolve(1 as SchemaId);
             const typedChanges = changes.get<{ id: string; name: string }>(1 as SchemaId);
             expect(typedChanges).toBeInstanceOf(SchemaPersistChanges);
         });

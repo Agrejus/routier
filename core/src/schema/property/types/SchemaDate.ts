@@ -9,6 +9,7 @@ import { SchemaNullable } from "../modifiers/SchemaNullable";
 import { SchemaOptional } from "../modifiers/SchemaOptional";
 import { SchemaReadonly } from "../modifiers/SchemaReadonly";
 import { SchemaSerialize } from "../modifiers/SchemaSerialize";
+import { SchemaTag } from "../modifiers/SchemaTag";
 import { SchemaArray } from "./SchemaArray";
 
 export class SchemaDate<T extends Date, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {
@@ -54,5 +55,9 @@ export class SchemaDate<T extends Date, TModifiers extends SchemaModifiers> exte
 
     distinct() {
         return new SchemaDistinct<T, TModifiers | "distinct">(this);
+    }
+
+    tag(...tags: string[]) {
+        return new SchemaTag<T, TModifiers>(tags, this);
     }
 }

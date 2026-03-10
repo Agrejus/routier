@@ -1,16 +1,20 @@
-import { SchemaDefinition } from "./SchemaDefinition";
-import { SchemaBase } from "./property/base/SchemaBase";
-import { SchemaArray } from "./property/types/SchemaArray";
-import { SchemaObject } from "./property/types/SchemaObject";
-import { PropertyInfo } from "./PropertyInfo";
-import { DeepPartial } from "../types";
-import { SchemaFunction } from "./table";
-import { SchemaOptional } from "./property/modifiers";
-import { Branded } from "../utilities/types";
+import type { SchemaDefinition } from "./SchemaDefinition";
+import type { SchemaBase } from "./property/base/SchemaBase";
+import type { SchemaArray } from "./property/types/SchemaArray";
+import type { SchemaObject } from "./property/types/SchemaObject";
+import type { PropertyInfo } from "./PropertyInfo";
+import type { DeepPartial } from "../types";
+import type { SchemaFunction } from "./table";
+import type { SchemaOptional } from "./property/modifiers";
+import type { Branded } from "../utilities/types";
 
 export type DefaultValue<T, I = never> = T | ((injected: I) => T);
 export type FunctionBody<TEntity, TResult> = (entity: TEntity, collectionName: CollectionName) => TResult;
 export type IdType = string | number;
+export type ForeignKey<T extends {}> = { 
+    schema: CompiledSchema<T>, 
+    property: PropertyInfo<T> 
+};
 
 export enum SchemaTypes {
     Array = "Array",
@@ -96,7 +100,7 @@ export interface ISchemaSubscription<T extends {}> extends Disposable {
     onMessage(callback: (changes: SubscriptionChanges<T>) => void): void;
 }
 
-type Enrich<TEntity extends {}> = {
+export type Enrich<TEntity extends {}> = {
     (entity: InferType<TEntity>, changeTrackingType: ChangeTrackingType): InferType<TEntity>;
     (entity: InferCreateType<TEntity>, changeTrackingType: ChangeTrackingType): InferCreateType<TEntity>;
 }
@@ -109,7 +113,13 @@ export type Preprocess<TEntity extends {}> = {
     (entity: InferType<TEntity>): InferType<TEntity>;
 }
 
+export type SetProperties<TEntity extends {}> = (destination: InferType<TEntity> | InferCreateType<TEntity>, source: InferType<TEntity> | InferCreateType<TEntity>) => void;
+
 export type CompiledSchemaCore<TEntity extends {}> = Omit<CompiledSchema<TEntity>, "createSubscription">;
+
+export type CompiledSchemaWithMetadata<TEntity extends {}, TMetadata> = {
+    readonly metadata: TMetadata;
+} & CompiledSchema<TEntity>;
 
 /**
  * Represents a fully compiled schema with all utilities and metadata for an entity type.
@@ -147,7 +157,8 @@ export type CompiledSchema<TEntity extends {}> = {
     compare: (a: InferType<TEntity>, fromDb: InferType<TEntity>) => boolean;
     /** Deserializes an entity from storage format. */
     deserialize: (entity: InferType<TEntity>) => InferType<TEntity>;
-
+    /** Sets 1 or many properties from the source object onto the destination object with change tracking. */
+    set: SetProperties<TEntity>;
     /** Combines serializing and preparing an entity for saving. */
     preprocess: Preprocess<TEntity>;
     /** Combines deserializing and enriching an entity for selection. */
@@ -202,6 +213,7 @@ type InferPrimitive<T> =
 export type InferType<T> = T extends CompiledSchema<infer R> ? InferCompiledSchema<R> : T extends {} ? InferCompiledSchema<T> : T;
 export type InferCreateType<T> = T extends CompiledSchema<infer R> ? InferCompiledCreateSchema<R> : T extends {} ? InferCompiledCreateSchema<T> : unknown;
 export type InferMappedType<T> = T extends SchemaBase<infer K, infer __> ? InferType<K> : InferCompiledSchema<T>;
+export type InferRoot<T> = T extends CompiledSchema<infer R> ? R : never;
 
 type HasModifier<T, K extends keyof T, M extends SchemaModifiers> =
     T[K] extends SchemaBase<any, infer Mods> ?
@@ -219,22 +231,31 @@ type IsPlainProperty<T, K extends keyof T> =
         false
     ] ? true : false;
 
-type IsPlainCreateProperty<T, K extends keyof T> =
+type IsCreateExcluded<T, K extends keyof T> =
     [
         HasModifier<T, K, "identity">,
-        HasModifier<T, K, "default">,
         HasModifier<T, K, "computed">,
-        HasModifier<T, K, "unmapped">,
-        HasModifier<T, K, "optional">,
-        HasModifier<T, K, "nullable">
+        HasModifier<T, K, "unmapped">
     ] extends [
         false,
         false,
-        false,
-        false,
+        false
+    ] ? false : true;
+
+type IsCreateOptional<T, K extends keyof T> =
+    [
+        HasModifier<T, K, "optional">,
+        HasModifier<T, K, "default">
+    ] extends [
         false,
         false
-    ] ? true : false;
+    ] ? false : true;
+
+type IsCreateNullable<T, K extends keyof T> =
+    HasModifier<T, K, "nullable"> extends true ? true : false;
+
+type InferCreateProperty<T, K extends keyof T> =
+    IsCreateNullable<T, K> extends true ? null | InferPrimitive<T[K]> : InferPrimitive<T[K]>;
 
 type InferCompiledSchema<T> = CoalesceEmpty<{
     [K in keyof T as IsPlainProperty<T, K> extends true ? K : never]: InferPrimitive<T[K]>
@@ -244,17 +265,15 @@ type InferCompiledSchema<T> = CoalesceEmpty<{
         [K in keyof T as HasModifier<T, K, "optional"> extends true ? K : never]?: InferPrimitive<T[K]>
     }, {
         [K in keyof T as HasModifier<T, K, "nullable"> extends true ? K : never]: null | InferPrimitive<T[K]>
-    }>;
+}>;
 
-type InferCompiledCreateSchema<T> = CoalesceEmpty<{
-    [K in keyof T as IsPlainCreateProperty<T, K> extends true ? K : never]: InferPrimitive<T[K]>
-}, {
-        [K in keyof T as HasModifier<T, K, "optional"> extends true ? K : never]?: InferPrimitive<T[K]>
-    }, {
-        [K in keyof T as HasModifier<T, K, "default"> extends true ? K : never]?: InferPrimitive<T[K]>
-    }, {
-        [K in keyof T as HasModifier<T, K, "nullable"> extends true ? K : never]: null | InferPrimitive<T[K]>
-    }>;
+type InferCompiledCreateSchema<T> = {
+    [K in keyof T as IsCreateExcluded<T, K> extends true ? never
+        : IsCreateOptional<T, K> extends true ? K : never]?: InferCreateProperty<T, K>
+} & {
+    [K in keyof T as IsCreateExcluded<T, K> extends true ? never
+        : IsCreateOptional<T, K> extends true ? never : K]: InferCreateProperty<T, K>
+};
 
 type IsEmptyObject<T> = keyof T extends never ? true : false;
 type CoalesceEmpty<T1 extends {}, T2 extends {}, T3 extends {}, T4 extends {}> = (IsEmptyObject<T1> extends true ? {} : T1) & (IsEmptyObject<T2> extends true ? {} : T2) & (IsEmptyObject<T3> extends true ? {} : T3) & (IsEmptyObject<T4> extends true ? {} : T4);

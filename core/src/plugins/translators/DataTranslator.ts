@@ -43,18 +43,20 @@ export abstract class DataTranslator<TRoot extends {}, TShape> {
 
     translate(data: unknown): ITranslatedValue<TShape> {
 
+        const isTransformed = this.query.options.hasTransformations();
+
         this.query.options.forEach(item => {
             data = this.functionMap[item.name](data, item);
         });
 
         if (Array.isArray(data)) {
-            return new TranslatedArrayValue<TShape>(data);
+            return new TranslatedArrayValue<TShape>(data, isTransformed);
         }
 
         if (this.query.options.has("group")) {
-            return new TranslatedGroupValue<TShape>(data);
+            return new TranslatedGroupValue<TShape>(data, isTransformed);
         }
 
-        return new TranslatedSingleValue<TShape>(data);
+        return new TranslatedSingleValue<TShape>(data, isTransformed);
     }
 }

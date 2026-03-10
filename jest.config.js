@@ -84,6 +84,13 @@ module.exports = {
                 '^@routier/memory-plugin$': '<rootDir>/plugins/memory/src/index.ts',
                 '^@routier/test-utils$': '<rootDir>/test-utils/src/index.ts'
             },
+            // Avoid duplicate @routier/memory-plugin in Haste map: replication (and others) depend on it,
+            // so nested or hoisted node_modules can provide a second path for the same package name.
+            modulePathIgnorePatterns: [
+                '<rootDir>/plugins/replication/node_modules',
+                '<rootDir>/plugins/pouchdb/node_modules',
+                '<rootDir>/node_modules/@routier/memory-plugin'
+            ],
             transformIgnorePatterns: [
                 'node_modules/(?!(@routier|@faker-js)/)'
             ],

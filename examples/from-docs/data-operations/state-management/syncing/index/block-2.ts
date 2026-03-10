@@ -1,4 +1,3 @@
-// Examples of different connection approaches
-remoteUrl: "http://localhost:3000/myapp";
-database: "myapp";
-endpoint: "https://api.example.com/sync";
+{
+  "http://127.0.0.1:5984/myapp";
+}

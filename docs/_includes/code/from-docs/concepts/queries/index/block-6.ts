@@ -1,10 +1,13 @@
-// Count
-const count = await ctx.users.countAsync();
+// Sort by price (ascending)
+const productsByPrice = await ctx.products.sort((p) => p.price).toArrayAsync();
 
-// Min/Max/Sum over a numeric projection
-const minAge = await ctx.users.minAsync((u) => u.age);
-const maxAge = await ctx.users.maxAsync((u) => u.age);
-const totalAge = await ctx.users.sumAsync((u) => u.age);
+// Sort by price (descending)
+const expensiveFirst = await ctx.products
+  .orderByDescending((p) => p.price)
+  .toArrayAsync();
 
-// Distinct values: project first, then distinct
-const distinctAges = await ctx.users.map((u) => u.age).distinctAsync();
+// Multiple sort criteria
+const sortedProducts = await ctx.products
+  .sort((p) => p.category)
+  .sort((p) => p.name)
+  .toArrayAsync();

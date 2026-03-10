@@ -47,6 +47,8 @@ Before you begin, make sure you have:
 
 ## Quick Overview
 
+Routier is built for **local-first** apps: data lives on the device first, the app works offline, and syncs when online. See [Local-First Apps](/guides/local-first-apps.md) for the full picture.
+
 Routier works by:
 
 1. **Defining schemas** - Type-safe data structures with defaults, indexes, and computed properties
@@ -85,6 +87,7 @@ If you need custom configuration:
 
 Once you've completed the getting started guide:
 
+- **Build offline-first**: [Local-First Apps]({{ site.baseurl }}/guides/local-first-apps) - Work offline, sync when online
 - **Learn the concepts**: [Schema Guide]({{ site.baseurl }}/concepts/schema/) - Deep dive into data modeling
 - **Explore features**: [Live Queries]({{ site.baseurl }}/guides/live-queries) - Reactive data patterns
 - **Check out React**: [React Integration]({{ site.baseurl }}/integrations/react/) - Use Routier with React

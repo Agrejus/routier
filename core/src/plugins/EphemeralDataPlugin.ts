@@ -49,9 +49,9 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                         const needsLoad = updatesLength > 0 || removesLength > 0;
 
                         const processChanges = () => {
-                            result.adds = new Array(addsLength);
-                            result.updates = new Array(updatesLength);
-                            result.removes = new Array(removesLength);
+                            result.adds = Array.from({ length: addsLength });
+                            result.updates = Array.from({ length: updatesLength });
+                            result.removes = Array.from({ length: removesLength });
 
                             for (let j = 0; j < addsLength; j++) {
                                 const item = adds[j];
@@ -130,7 +130,7 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
 
                 const records = collection.records;
                 const length = records.length;
-                const cloned: Record<string, unknown>[] = new Array(length);
+                const cloned: Record<string, unknown>[] = Array.from({ length });
 
                 for (let i = 0; i < length; i++) {
                     cloned[i] = schema.clone(records[i] as InferType<TEntity>);

@@ -39,148 +39,55 @@ All queries must end with a terminal method to execute. These methods actually p
 
 ### Getting All Results
 
-```ts
-// Get all products
-const allProducts = await ctx.products.toArrayAsync();
 
-// Get all products with filtering
-const expensiveProducts = await ctx.products
-  .where((p) => p.price > 100)
-  .toArrayAsync();
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-1.ts %}{% endhighlight %}
+
 
 ### Getting Single Items
 
-```ts
-// Get first product (throws if none exist)
-const firstProduct = await ctx.products.firstAsync();
 
-// Get first product or undefined if none exist
-const firstOrUndefined = await ctx.products.firstOrUndefinedAsync();
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-2.ts %}{% endhighlight %}
 
-// Get first expensive product
-const firstExpensive = await ctx.products
-  .where((p) => p.price > 100)
-  .firstOrUndefinedAsync();
-```
 
 ### Checking Existence
 
-```ts
-// Check if any products exist
-const hasProducts = await ctx.products.someAsync();
 
-// Check if any expensive products exist
-const hasExpensiveProducts = await ctx.products
-  .where((p) => p.price > 100)
-  .someAsync();
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-3.ts %}{% endhighlight %}
 
-// Check if all products are in stock
-const allInStock = await ctx.products.everyAsync((p) => p.inStock);
-
-// Check if all electronics are in stock
-const allElectronicsInStock = await ctx.products
-  .where((p) => p.category === "electronics")
-  .everyAsync((p) => p.inStock);
-```
 
 ### Counting Items
 
-```ts
-// Count all products
-const totalCount = await ctx.products.countAsync();
 
-// Count products in specific category
-const electronicsCount = await ctx.products
-  .where((p) => p.category === "electronics")
-  .countAsync();
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-4.ts %}{% endhighlight %}
 
-// Count expensive products
-const expensiveCount = await ctx.products
-  .where((p) => p.price > 100)
-  .countAsync();
-```
 
 ### Aggregation Operations
 
-```ts
-// Sum all product prices
-const totalValue = await ctx.products.sumAsync((p) => p.price);
 
-// Sum prices of electronics
-const electronicsValue = await ctx.products
-  .where((p) => p.category === "electronics")
-  .sumAsync((p) => p.price);
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-5.ts %}{% endhighlight %}
 
-// Get minimum price
-const minPrice = await ctx.products.minAsync((p) => p.price);
-
-// Get maximum price
-const maxPrice = await ctx.products.maxAsync((p) => p.price);
-
-// Get minimum price of electronics
-const minElectronicsPrice = await ctx.products
-  .where((p) => p.category === "electronics")
-  .minAsync((p) => p.price);
-```
 
 ### Distinct Values
 
-```ts
-// Get unique categories
-const uniqueCategories = await ctx.products
-  .map((p) => p.category)
-  .distinctAsync();
 
-// Get unique prices
-const uniquePrices = await ctx.products.map((p) => p.price).distinctAsync();
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-6.ts %}{% endhighlight %}
 
-// Get unique product names
-const uniqueNames = await ctx.products.map((p) => p.name).distinctAsync();
-```
 
 ### Grouping Data
 
 Group items by a key value, returning a record where keys are the grouped values and values are arrays of items with that key:
 
-```ts
-// Group products by category
-const productsByCategory = await ctx.products.toGroupAsync((p) => p.category);
-// Result: { "electronics": Product[], "clothing": Product[], "books": Product[] }
 
-// Group products by status
-const productsByStatus = await ctx.products.toGroupAsync((p) => p.status);
-// Result: { "active": Product[], "inactive": Product[] }
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-7.ts %}{% endhighlight %}
 
-// Group with filtering
-const expensiveByCategory = await ctx.products
-  .where((p) => p.price > 100)
-  .toGroupAsync((p) => p.category);
-
-// Group by numeric field
-const productsByPriceRange = await ctx.products.toGroupAsync((p) =>
-  p.price < 50 ? "budget" : p.price < 200 ? "mid" : "premium"
-);
-// Result: { "budget": Product[], "mid": Product[], "premium": Product[] }
-```
 
 The selector function must return a value that can be used as an object key (string, number, or Date). Each group contains an array of all items that share the same key value.
 
 ### Removal Operations
 
-```ts
-// Remove all products
-await ctx.products.removeAsync();
 
-// Remove expensive products
-await ctx.products.where((p) => p.price > 100).removeAsync();
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-8.ts %}{% endhighlight %}
 
-// Remove products in specific category
-await ctx.products.where((p) => p.category === "electronics").removeAsync();
-
-// Remove out of stock products
-await ctx.products.where((p) => p.inStock === false).removeAsync();
-```
 
 ## Important Notes
 
@@ -194,86 +101,43 @@ await ctx.products.where((p) => p.inStock === false).removeAsync();
 
 Both async Promises and callback styles are supported:
 
-```ts
-// Async style (recommended)
-const products = await ctx.products.toArrayAsync();
 
-// Callback style
-ctx.products.toArray((result) => {
-  if (result.ok === "success") {
-    console.log("Products:", result.data);
-  } else {
-    console.error("Error:", result.error);
-  }
-});
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-9.ts %}{% endhighlight %}
+
 
 ### Live Queries
 
 For live results that update automatically, you can chain `.subscribe()` before a terminal method:
 
-```ts
-// Live query - will update when data changes
-ctx.products
-  .where((p) => p.price > 100)
-  .subscribe()
-  .toArrayAsync();
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-10.ts %}{% endhighlight %}
+
 
 ## Common Patterns
 
 ### Data Validation
 
-```ts
-// Check if user exists before creating
-const userExists = await ctx.users.where((u) => u.email === email).someAsync();
 
-if (userExists) {
-  throw new Error("User already exists");
-}
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-11.ts %}{% endhighlight %}
+
 
 ### Pagination with Count
 
-```ts
-// Get page data and total count
-const pageSize = 10;
-const page = 1;
-const offset = (page - 1) * pageSize;
 
-const [products, totalCount] = await Promise.all([
-  ctx.products.skip(offset).take(pageSize).toArrayAsync(),
-  ctx.products.countAsync(),
-]);
-```
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-12.ts %}{% endhighlight %}
+
 
 ### Conditional Operations
 
-```ts
-// Only proceed if data exists
-const hasData = await ctx.products.someAsync();
-if (hasData) {
-  const firstProduct = await ctx.products.firstAsync();
-  // Process first product
-}
-```
+
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-13.ts %}{% endhighlight %}
+
 
 ### Organizing Data by Category
 
-```ts
-// Group products by category for display
-const productsByCategory = await ctx.products.toGroupAsync((p) => p.category);
 
-// Iterate over groups
-for (const [category, products] of Object.entries(productsByCategory)) {
-  console.log(`${category}: ${products.length} products`);
-}
+{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-14.ts %}{% endhighlight %}
 
-// Group with filtering
-const activeProductsByStatus = await ctx.products
-  .where((p) => p.active)
-  .toGroupAsync((p) => p.status);
-```
 
 ## Related Topics
 

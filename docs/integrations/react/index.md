@@ -28,31 +28,9 @@ Routier provides first-class support for React through the `useQuery` hook, enab
 
 ## Quick Start
 
-```tsx
-import { useQuery } from "@routier/react";
-import { useDataStore } from "./hooks/useDataStore";
 
-function ProductsList() {
-  const dataStore = useDataStore(); // Must be memoized in useDataStore hook
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/index/block-1.tsx %}{% endhighlight %}
 
-  const products = useQuery(
-    (callback) => dataStore.products.subscribe().toArray(callback),
-    [dataStore]
-  );
-
-  if (products.status === "pending") return <div>Loading...</div>;
-  if (products.status === "error") return <div>Error!</div>;
-
-  return (
-    <ul>
-      {products.status === "success" &&
-        products.data.map((product) => (
-          <li key={product.id}>{product.name}</li>
-        ))}
-    </ul>
-  );
-}
-```
 
 **Important:** Your `useDataStore` hook must use `useMemo` to memoize the DataStore instance. Creating a new DataStore on every render will cause infinite subscription loops. See the [Best Practices](./best-practices/) guide for details.
 
@@ -70,42 +48,25 @@ npm install react react-dom
 
 The `useQuery` hook subscribes to Routier collections and returns loading, error, and success states:
 
-```tsx
-const result = useQuery(
-  (callback) => collection.subscribe().toArray(callback),
-  [
-    /* dependencies */
-  ]
-);
 
-// result.status: 'pending' | 'success' | 'error'
-// result.loading: boolean
-// result.error: Error | null
-// result.data: T | undefined
-```
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/index/block-3.tsx %}{% endhighlight %}
+
 
 ### Automatic Updates
 
 Queries automatically re-render when your data changes:
 
-```tsx
-// Add a product
-await dataStore.products.addAsync({ name: "New Product" });
-await dataStore.saveChangesAsync();
 
-// Component automatically re-renders with new data!
-```
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/index/block-4.tsx %}{% endhighlight %}
+
 
 ### Type Safety
 
 TypeScript knows exactly what state your component is in:
 
-```tsx
-if (products.status === "success") {
-  // TypeScript knows products.data is defined here
-  console.log(products.data); // ✅ Safe
-}
-```
+
+{% highlight tsx linenos %}{% include code/from-docs/integrations/react/index/block-5.tsx %}{% endhighlight %}
+
 
 ## Related Topics
 

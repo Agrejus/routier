@@ -89,13 +89,15 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
                 operation: new Query<TRoot, Shape>(splitQueryOptions.database as any, this.dependencies.schema),
                 schemas: this.dependencies.schemas,
                 id: uuid(8),
-                source: "collection"
+                source: "Collection",
+                action: "query"
             },
             memoryEvent: {
                 operation: new Query<TRoot, Shape>(splitQueryOptions.memory as any, this.dependencies.schema),
                 schemas: this.dependencies.schemas,
                 id: uuid(8),
-                source: "collection"
+                source: "Collection",
+                action: "query"
             }
         }
     }
@@ -144,15 +146,12 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
                     return done(PluginEventResult.success(memoryEvent.id, translatedEnrichedData.value));
                 }
 
-                // Resolve the data with the current attachments - optimized: use for loop instead of forEach
-                const dataArray = result.data.value as unknown[];
-                for (let i = 0, length = dataArray.length; i < length; i++) {
-                    this.dependencies.changeTracker.resolve(dataArray[i] as InferType<TRoot>, tags, {
-                        merge: true
-                    });
-                }
+                // Normalize to canonical attachment refs regardless of translated value shape.
+                translatedEnrichedData.forEach((item) => this.dependencies.changeTracker.resolve(item as InferType<TRoot>, tags, {
+                    merge: true
+                }));
 
-                return done(PluginEventResult.success(memoryEvent.id, result.data.value as TShape));
+                return done(PluginEventResult.success(memoryEvent.id, translatedEnrichedData.value));
             }
 
             // No change tracking on the result, just return it as is
@@ -160,7 +159,7 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
                 return done(PluginEventResult.success(databaseEvent.id, result.data.value as TShape));
             }
 
-            // Resolve the data with the current attachments
+            // Normalize to canonical attachment refs regardless of translated value shape.
             result.data.forEach(item => this.dependencies.changeTracker.resolve(item as InferType<TRoot>, tags, {
                 merge: true
             }));

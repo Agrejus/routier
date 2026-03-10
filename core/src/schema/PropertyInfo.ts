@@ -1,7 +1,7 @@
 import { UnknownRecord } from '../utilities';
 import { SchemaBase } from './property/base/SchemaBase';
 import { SchemaArray } from './property/types/SchemaArray';
-import { DefaultValue, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaTypes } from './types';
+import { DefaultValue, ForeignKey, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaTypes } from './types';
 
 const SUPPORTED_DESERIALIZATION_TYPES = new Set<SchemaTypes>([
     SchemaTypes.Boolean,
@@ -36,6 +36,8 @@ export class PropertyInfo<T extends {}> {
     readonly isOptional: boolean;
     /** Whether the property is a key. */
     readonly isKey: boolean;
+    /** Foreign key schema and property */
+    readonly foreignKeyDefinition: ForeignKey<unknown> | null;
     /** Whether the property is an identity property. */
     readonly isIdentity: boolean;
     /** Whether the property is readonly. */
@@ -65,6 +67,8 @@ export class PropertyInfo<T extends {}> {
     readonly innerSchema?: SchemaBase<unknown, any>;
     /** Literal values allowed for this property. */
     readonly literals: T[];
+    /** Tags passed from the schema */
+    readonly tags: string[];
 
     /** The parent property, if any. */
     readonly parent?: PropertyInfo<T>;
@@ -97,6 +101,8 @@ export class PropertyInfo<T extends {}> {
         this.isDistinct = schema.isDistict;
         this.indexes = schema.indexes;
         this.from = schema.fromPropertyName;
+        this.tags = schema.tags;
+        this.foreignKeyDefinition = schema.foreignKeyDefinition;
 
         this.defaultValue = schema.defaultValue;
         this.valueSerializer = schema.valueSerializer;
@@ -120,6 +126,7 @@ export class PropertyInfo<T extends {}> {
         }
 
         let level = 0;
+        // oxlint-disable-next-line no-this-alias
         let current: PropertyInfo<T> | undefined = this;
 
         while (current) {
@@ -150,6 +157,7 @@ export class PropertyInfo<T extends {}> {
         }
 
         const chain: PropertyInfo<T>[] = [];
+        // oxlint-disable-next-line no-this-alias
         let current: PropertyInfo<T> | undefined = this;
 
         while (current) {
