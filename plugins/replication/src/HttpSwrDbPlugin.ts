@@ -568,7 +568,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         });
     }
 
-    private persistToSwrStore(event: DbPluginBulkPersistEvent): Promise<void> {
+    private persistToSwrStore(event: DbPluginBulkPersistEvent): Promise<BulkPersistResult> {
         return new Promise((resolve, reject) => {
             const swrEvent: DbPluginBulkPersistEvent = {
                 ...event,
@@ -583,7 +583,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
                     reject(persistResult.error);
                     return;
                 }
-                resolve();
+                resolve(persistResult.data);
             });
         });
     }
@@ -595,10 +595,10 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         collectionName: string,
     ): Promise<void> {
         let lastError: Error | null = null;
-        let attempt = 0;
+
         const maxAttempts = this.bulkPersistRetryMaxAttempts;
 
-        while (attempt < maxAttempts) {
+        for(let attempt = 1; attempt < this.bulkPersistRetryMaxAttempts; attempt++) {
             try {
                 const res = await fetch(url, {
                     method: 'POST',
@@ -617,15 +617,17 @@ export class HttpSwrDbPlugin implements IDbPlugin {
                 }
 
                 lastError = new Error(`HTTP ${res.status}: ${res.statusText}`);
-                if (res.status === 401 || res.status === 403) break;
+
+                if (res.status === 401 || res.status === 403) {
+                    break;
+                }
             } catch (err) {
                 lastError = err instanceof Error ? err : new Error(String(err));
             }
 
-            if (lastError != null && isAuthError(lastError)) break;
-
-            attempt++;
-            if (attempt >= maxAttempts) break;
+            if (lastError != null && isAuthError(lastError)) {
+                break;
+            }
 
             const delayMs = Math.min(
                 this.bulkPersistRetryBaseDelayMs * Math.pow(2, attempt - 1),
@@ -730,7 +732,24 @@ export class HttpSwrDbPlugin implements IDbPlugin {
 
             // We are subscribed to the SWR Store, not to the SWR Plugin,
             // so we need to manually send back an notification
-            await this.persistToSwrStore(event);
+            const localPersistResult = await this.persistToSwrStore(event);
+
+            for(const [schemaId, changes] of localPersistResult) {
+                const { adds, removes, updates, hasItems } = changes;
+
+                if (hasItems === false) {
+                    continue;
+                }
+
+                const schemaResult = result.get(schemaId);
+
+                schemaResult.adds.push(...adds);
+                schemaResult.removes.push(...removes);
+                schemaResult.updates.push(...updates);
+            }
+
+            // Report back success from local result, do not surface HTTP errors
+            done(PluginEventResult.success(event.id, result));
 
             for (const [schemaId, changes] of event.operation) {
                 if (changes.hasItems === false) {
@@ -770,6 +789,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
             const rejected = postResults
                 .map((outcome, i) => (outcome.status === 'rejected' ? { index: i, reason: outcome.reason } : null))
                 .filter((r): r is { index: number; reason: unknown } => r != null);
+                
             if (rejected.length > 0) {
                 if (rejected.length > 1) {
                     logger.warn('[HttpSwrDbPlugin] bulkPersist multiple POSTs failed', {
@@ -782,7 +802,6 @@ export class HttpSwrDbPlugin implements IDbPlugin {
                 throw err instanceof Error ? err : new Error(String(err));
             }
 
-            done(PluginEventResult.success(event.id, result));
         } catch (err) {
             logger.error('[HttpSwrDbPlugin] bulkPersist failed', { eventId: event.id, error: err });
             done(PluginEventResult.error(event.id, err instanceof Error ? err : new Error(String(err))));

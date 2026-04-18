@@ -1,4 +1,4 @@
-import { CodeBuilder, ContainerBlock, SlotBlock } from '../../blocks';
+import { CodeBuilder, ContainerBlock, IfBuilder, SlotBlock } from '../../blocks';
 import { SlotPath } from '../../SlotPath';
 import { PropertyInfoHandler } from "../types";
 import { PropertyInfo, SchemaTypes } from "../../../schema";
@@ -17,7 +17,6 @@ export class SerializeDateHandler extends PropertyInfoHandler {
             const entityAssignmentPath = property.getAssignmentPath({
                 parent: "result"
             });
-            const _assignment = `${property.name}: ${entitySelectorPath} instanceof Date ? ${entitySelectorPath}.toISOString() : ${entitySelectorPath}`;
 
             // if it is nullable or optional, assign in an if block, otherwise we 
             // could unintentionally assign null/undefined to a property that does not exist
@@ -25,22 +24,27 @@ export class SerializeDateHandler extends PropertyInfoHandler {
                 const ifAssignment = `${entityAssignmentPath} = ${entitySelectorPath} instanceof Date ? ${entitySelectorPath}.toISOString() : ${entitySelectorPath}`;
                 const rootPath = new SlotPath("if");
                 builder.get<ContainerBlock>(rootPath.get()).if(`${entitySelectorPath} != null`).appendBody(ifAssignment);
-                return;
-            }
-
-            // A date cannot be a nested object, just do the assignment
-            if (property.parent == null) {
-                objectBuilder.if(`Object.hasOwn(entity, "${property.name}")`).appendBody(`${entityAssignmentPath} = ${entitySelectorPath}`)
-
                 return builder;
             }
 
-            // TODO: SOLVE THIS, IT IS CLOSE
-            //const slotPath = new SlotPath(...property.getParentPathArray());
-            // slotPath.push(...property.getParentPathArray());
-            // const nestedObjectBuilder = builder.get<ObjectBuilder>(slotPath.get());
-            // nestedObjectBuilder.property(assignment)
+            if (property.parent == null) {
+                const dateExpr = `${entitySelectorPath} instanceof Date ? ${entitySelectorPath}.toISOString() : ${entitySelectorPath}`;
+                objectBuilder.if(`Object.hasOwn(entity, "${property.name}")`).appendBody(`${entityAssignmentPath} = ${dateExpr}`);
+                return builder;
+            }
 
+            // Nested date: same pattern as SerializeValueHandler — if block for parent existence, then assign with toISOString
+            const parentSelectPath = ["entity", ...property.getParentPathArray()].join(".");
+            const parentAssignPath = ["result", ...property.getParentPathArray()].join(".");
+            const dateExprNested = `${entitySelectorPath} instanceof Date ? ${entitySelectorPath}.toISOString() : ${entitySelectorPath}`;
+            const ifSlot = objectBuilder.if(`${parentSelectPath} != null && Object.hasOwn(${parentSelectPath}, "${property.name}")`);
+
+            if (property.parent.isNullable || property.parent.isOptional) {
+                const conditionallyCreateParent = new IfBuilder(`${parentAssignPath} == null`).appendBody(`${parentAssignPath} = {}`);
+                ifSlot.appendBody(conditionallyCreateParent.toString());
+            }
+
+            ifSlot.appendBody(`${entityAssignmentPath} = ${dateExprNested}`);
             return builder;
         }
 

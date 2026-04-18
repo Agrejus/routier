@@ -113,7 +113,7 @@ export type Preprocess<TEntity extends {}> = {
     (entity: InferType<TEntity>): InferType<TEntity>;
 }
 
-export type SetProperties<TEntity extends {}> = (destination: InferType<TEntity> | InferCreateType<TEntity>, source: InferType<TEntity> | InferCreateType<TEntity>) => void;
+export type SetProperties<TEntity extends {}> = (destination: DeepPartial<InferType<TEntity> | InferCreateType<TEntity>>, source: DeepPartial<InferType<TEntity> | InferCreateType<TEntity>>) => void;
 
 export type CompiledSchemaCore<TEntity extends {}> = Omit<CompiledSchema<TEntity>, "createSubscription">;
 

@@ -1,11 +1,11 @@
 import { BulkPersistChanges, BulkPersistResult } from "@routier/core/collections";
 import { now } from "@routier/core/performance";
-import { WorkPipeline } from "@routier/core/pipeline";
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, Query } from "@routier/core/plugins";
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from "@routier/core/results";
 import { CompiledSchema } from "@routier/core/schema";
-import { logger, resolveBulkPersistChanges, uuid } from "@routier/core/utilities";
+import { logger, uuid } from "@routier/core/utilities";
 import { MemoryPlugin } from "@routier/memory-plugin";
+import { PluginSyncEngine } from "./PluginSyncEngine";
 
 const getMemoryPluginCollectionSize = <T extends {}>(plugin: IDbPlugin, schema: CompiledSchema<T>): number => {
 
@@ -34,6 +34,7 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
     // Give more control over hydration, if the plugin is destroyed, so is the in memory data.
     // It is up to the dev to control the lifecycle
     private collectionHydrationStatuses: Map<string, HydrationStatus> = new Map<string, HydrationStatus>();
+    private readonly syncEngine: PluginSyncEngine;
 
     /**
      * Creates a new OptimisticDbPluginReplicator that coordinates operations between a source database and its in memory store.
@@ -45,6 +46,14 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
             source,
             read: new MemoryPlugin("__optimistic-updates-memory-plugin-db__")
         };
+        this.syncEngine = new PluginSyncEngine({
+            // For optimistic behavior, source in sync engine is the fast read plugin.
+            source: this.plugins.read,
+            mirrorPlugins: [this.plugins.source],
+            persistAckMode: "after-source",
+            mirrorFailureMode: "swallow",
+            mirrorPersistPayloadMode: "resolve-from-source-result",
+        });
     }
 
     /**
@@ -206,87 +215,15 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
     }
 
     destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
-        try {
-
-            const workPipeline = new WorkPipeline();
-            const plugins = [this.plugins.source, this.plugins.read];
-
-            for (let i = 0, length = plugins.length; i < length; i++) {
-                workPipeline.pipe((done) => this.plugins.source.destroy(event, done));
-            }
-
-            workPipeline.filter((result) => {
-
-                if (result.ok === Result.ERROR) {
-                    logger.error('[OptimisticReplicationDbPlugin] destroy failed', { eventId: event.id, error: result.error });
-                    done(PluginEventResult.error(event.id, result.error));
-                    return;
-                }
-
-                logger.info('[OptimisticReplicationDbPlugin] destroy completed successfully', { eventId: event.id });
-                done(PluginEventResult.success(event.id));
-            });
-
-        } catch (e: any) {
-            logger.error('[OptimisticReplicationDbPlugin] destroy threw', { eventId: event.id, error: e });
-            done(PluginEventResult.error(event.id, e));
-        }
+        this.syncEngine.destroy(event, done);
     }
 
     bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackPartialResult<BulkPersistResult>): void {
-        try {
-            const schemaIds = Array.from(event.operation.keys());
-            logger.debug('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.bulkPersist() -> bulkPersist started', { event, schemaIds });
-
-            // Since we are doing optimistic, we insert into the read plugin first and assume later plugins will succeed
-            // This means the read plugin will generate ids for the source plugin
-            this.plugins.read.bulkPersist({
-                id: uuid(8),
-                operation: event.operation,
-                schemas: event.schemas,
-                source: "OptimisticReplicationDbPlugin",
-                action: "persist"
-            }, (r) => {
-
-                if (r.ok !== Result.SUCCESS) {
-                    logger.error('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.bulkPersist() -> Read plugin bulkPersist failed', { event, error: r.error });
-                    done(r);
-                    return;
-                }
-
-                logger.info('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.bulkPersist() -> Read plugin bulkPersist succeeded (optimistic done)', { event });
-                // optimistically call done and still continue saving the rest of the data.  We read from the memory
-                // db anyways
-                done(r);
-
-                const optimisticBulkPersistChanges = new BulkPersistChanges();
-
-                // make sure we swap the adds here, that way we can make sure other persist events
-                // don't take their additions and try to change subsequent calls
-                resolveBulkPersistChanges(event, r.data, optimisticBulkPersistChanges);
-
-                setTimeout(() => {
-                    logger.info('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.bulkPersist() -> Persisting to source plugin', { event, operation: optimisticBulkPersistChanges });
-                    this.plugins.source.bulkPersist({
-                        id: uuid(8),
-                        operation: optimisticBulkPersistChanges,
-                        schemas: event.schemas,
-                        source: "OptimisticReplicationDbPlugin",
-                        action: "persist"
-                    }, (r) => {
-
-                        if (r.ok === Result.ERROR) {
-                            return;
-                        }
-
-                        logger.debug('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.bulkPersist() -> Deferred plugin bulkPersist succeeded', { event, result: r });
-                    });
-                }, 0);
-            });
-
-        } catch (e: any) {
-            logger.error('[OptimisticReplicationDbPlugin] OptimisticUpdatesDbPlugin.bulkPersist() -> bulkPersist threw', { event, error: e });
-            done(PluginEventResult.error(event.id, e));
-        }
+        this.syncEngine.bulkPersist({
+            ...event,
+            id: uuid(8),
+            source: "OptimisticReplicationDbPlugin",
+            action: "persist"
+        }, done);
     }
 }

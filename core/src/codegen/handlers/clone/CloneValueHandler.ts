@@ -1,4 +1,4 @@
-import { CodeBuilder, IfBuilder, SlotBlock } from '../../blocks';
+import { CodeBuilder, SlotBlock } from '../../blocks';
 import { PropertyInfoHandler } from "../types";
 import { PropertyInfo, SchemaTypes } from "../../../schema";
 
@@ -17,12 +17,15 @@ export class CloneValueHandler extends PropertyInfoHandler {
                 return builder;
             }
 
-            // Second level or more property
-            // Need to ensure parent is assigned
-            const propertyParentPath = ["result", ...property.getParentPathArray()]
-            const ifBuilder = new IfBuilder(`${propertyParentPath.join("?.")} == null`).appendBody(`${propertyParentPath.join(".")} = {};`);
+            // Nested property: ensure every ancestor object exists, then assign (handles depth > 2)
+            const parentPathArray = property.getParentPathArray();
+            const ifSlot = slot.if(`${entitySelectorPath} != null`);
 
-            slot.if(`${entitySelectorPath} != null`).appendBody(ifBuilder.toString()).appendBody(`${resultAssignmentPath} = ${entitySelectorPath}`);
+            for (let i = 0; i < parentPathArray.length; i++) {
+                const pathSoFar = ["result", ...parentPathArray.slice(0, i + 1)].join(".");
+                ifSlot.appendBody(`if (${pathSoFar} == null) ${pathSoFar} = {};`);
+            }
+            ifSlot.appendBody(`${resultAssignmentPath} = ${entitySelectorPath}`);
             return builder;
         }
 

@@ -15,18 +15,23 @@ export class CloneArrayHandler extends PropertyInfoHandler {
 
             const entitySelectorPath = property.getSelectrorPath({ parent: "entity" });
 
+            const slot = builder.get<SlotBlock>("if");
+            const resultAssignmentPath = property.getAssignmentPath({ parent: "result" });
+
             if (property.parent == null) {
-
-                const resultAssignmentPath = property.getAssignmentPath({ parent: "result" });
-                const slot = builder.get<SlotBlock>("if");
-
                 slot.if(`${entitySelectorPath} != null`).appendBody(`${resultAssignmentPath} = [...${entitySelectorPath}]`);
                 return builder;
             }
-            // slotPath.push(...property.getParentPathArray());
-            // const nestedObjectBuilder = builder.get<ObjectBuilder>(slotPath.get());
-            // nestedObjectBuilder.nested(property.name, property.name)
 
+            // Nested array: ensure parent exists, then assign spread copy (same pattern as CloneValueHandler)
+            const parentPathArray = property.getParentPathArray();
+            const ifSlot = slot.if(`${entitySelectorPath} != null`);
+
+            for (let i = 0; i < parentPathArray.length; i++) {
+                const pathSoFar = ["result", ...parentPathArray.slice(0, i + 1)].join(".");
+                ifSlot.appendBody(`if (${pathSoFar} == null) ${pathSoFar} = {};`);
+            }
+            ifSlot.appendBody(`${resultAssignmentPath} = [...${entitySelectorPath}];`);
             return builder;
         }
 

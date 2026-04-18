@@ -23,7 +23,7 @@ export class DeserializeDateHandler extends PropertyInfoHandler {
                 const ifAssignment = `${entityAssignmentPath} = typeof ${entitySelectorPath} === "string" ? new Date(${entitySelectorPath}) : ${entitySelectorPath}`;
                 const rootPath = new SlotPath("if");
                 builder.get<ContainerBlock>(rootPath.get()).if(`${entitySelectorPath} != null`).appendBody(ifAssignment);
-                return;
+                return builder;
             }
 
             // A date cannot be a nested object, just do the assignment
