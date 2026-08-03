@@ -1,0 +1,1 @@
+(globalThis as any).__ROUTIER_LOG_LEVEL__ = "error";

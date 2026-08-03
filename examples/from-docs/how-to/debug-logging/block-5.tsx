@@ -1,3 +1,1 @@
-if (import.meta.env?.DEV) {
-  (globalThis as any).__ROUTIER_DEBUG__ = true;
-}
+(globalThis as any).__ROUTIER_LOG_LEVEL__ = import.meta.env?.DEV ? "debug" : "silent";
