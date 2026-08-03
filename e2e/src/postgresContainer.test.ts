@@ -16,24 +16,15 @@ import { PostgresDbPlugin } from '@routier/postgresql-plugin';
  * Opt-in: containers need a Docker daemon and a multi-second startup, so this suite is
  * gated behind E2E_CONTAINERS. CI runs it nightly and on release, not on every PR.
  *
- * CURRENTLY FAILING — and the failure is the point of having this suite.
+ * The suite's original reason for existing was defect #4 — lazy table creation could not work
+ * inside the plugin's own transaction, so every first write to a fresh database failed. **That
+ * is fixed**, and the cases below pass.
  *
- * PostgresDbPlugin creates tables lazily by attempting the write first and issuing the
- * CREATE TABLE only if that write fails (PostgresDbPlugin.ts: run op.sql at ~170, CREATE
- * TABLE at ~173, retry at ~188). Outside a transaction that works. Inside the BEGIN opened
- * at ~136 it cannot: PostgreSQL aborts the whole transaction on the first error, so the
- * CREATE TABLE and the retry both come back 25P02 "current transaction is aborted", and
- * that cascade is what surfaces to the caller instead of the original
- * "relation does not exist".
- *
- * Consequences: every first write to a collection fails against a fresh database, and the
- * reported error points away from the cause. A fix needs a SAVEPOINT before the attempted
- * write and a ROLLBACK TO SAVEPOINT before the DDL, or the table check hoisted out of the
- * transaction entirely.
- *
- * Left failing rather than skipped: this is a real defect against a real server, and the
- * suite exists to keep saying so. No in-process plugin test can reproduce it, because the
- * SQLite path takes the non-transactional branch.
+ * What replaces it: four defects that S8 found by running real *loads* against a server
+ * (`stress/src/s8-real-databases.test.ts`). Each is reduced to its smallest form here, pinned
+ * with `it.failing`, so the day one is fixed the pin fails rather than the fix landing
+ * silently. All four are invisible to every in-process backend — see `specs/known-defects.md`
+ * entries 19 through 22 for the causes.
  */
 
 const shouldRun = process.env.E2E_CONTAINERS === '1';
@@ -137,5 +128,108 @@ suite('PostgreSQL via testcontainers', () => {
         await store.saveChangesAsync();
 
         expect(await connect().products.countAsync()).toBe(2);
+    });
+
+    /**
+     * Reductions of the four defects S8 found. Pinned with `it.failing`: each PASSES while the
+     * defect exists and FAILS the moment it is fixed, so a fix cannot land unnoticed.
+     *
+     * These use their own schemas and tables rather than `products`, so a failure names one
+     * defect and the passing cases above stay independent of them.
+     */
+    describe('defects found by S8, pinned', () => {
+        const arraySchema = s.define('e2e_pg_defect_array', {
+            _id: s.string().key().identity(),
+            values: s.array(s.string()),
+        }).compile();
+
+        const collisionSchema = s.define('e2e_pg_defect_collision', {
+            _id: s.string().key().identity(),
+            value: s.string(),
+            nested: s.object({ value: s.string() }),
+        }).compile();
+
+        const heteroSchema = s.define('e2e_pg_defect_hetero', {
+            id: s.string().key(),
+            a: s.string(),
+            b: s.number(),
+        }).compile();
+
+        class ArrayStore extends DataStore {
+            rows = this.collection(arraySchema).create();
+        }
+
+        class CollisionStore extends DataStore {
+            rows = this.collection(collisionSchema).create();
+        }
+
+        class HeteroStore extends DataStore {
+            rows = this.collection(heteroSchema).create();
+        }
+
+        const open = <T extends DataStore>(Ctor: new (plugin: PostgresDbPlugin) => T): T =>
+            new Ctor(new PostgresDbPlugin({
+                host: container.getHost(),
+                port: container.getPort(),
+                database: container.getDatabase(),
+                user: container.getUsername(),
+                password: container.getPassword(),
+            }));
+
+        // Defect #19. `pg` encodes a JS array as a PostgreSQL array literal, which a json
+        // column rejects. The value needs stringifying before it is bound.
+        it.failing('writes an array property [pinned: known defect #19]', async () => {
+            const store = open(ArrayStore);
+
+            await store.rows.addAsync({ values: ['x', 'y'] } as any);
+            await store.saveChangesAsync();
+
+            expect((await store.rows.toArrayAsync())[0].values).toEqual(['x', 'y']);
+        });
+
+        // Defect #20. A nested object emits a top-level column per descendant, so this INSERT
+        // names "value" twice.
+        it.failing('keeps a nested descendant distinct from a top-level property of the same name [pinned: known defect #20]', async () => {
+            const store = open(CollisionStore);
+
+            await store.rows.addAsync({ value: 'TOP', nested: { value: 'INNER' } } as any);
+            await store.saveChangesAsync();
+
+            const [row] = await store.rows.toArrayAsync();
+
+            expect(row.value).toBe('TOP');
+            expect(row.nested.value).toBe('INNER');
+        });
+
+        // Defect #22. Two changed-column groups become two `;`-joined statements in one
+        // prepared statement, which PostgreSQL refuses.
+        it.failing('updates two entities whose changed columns differ in one save [pinned: known defect #22]', async () => {
+            const store = open(HeteroStore);
+
+            await store.rows.addAsync(
+                { id: 'x', a: 'a1', b: 1 } as any,
+                { id: 'y', a: 'a2', b: 2 } as any,
+            );
+            await store.saveChangesAsync();
+
+            const rows = await store.rows.toArrayAsync();
+            const x = rows.find(r => r.id === 'x')!;
+            const y = rows.find(r => r.id === 'y')!;
+
+            x.a = 'x-new';
+            y.a = 'y-new';
+            y.b = 99;
+
+            await store.saveChangesAsync();
+
+            const after = await store.rows.toArrayAsync();
+
+            expect(after.find(r => r.id === 'x')!.a).toBe('x-new');
+            expect(after.find(r => r.id === 'y')!.b).toBe(99);
+        });
+
+        // Defect #21 is not pinned here. It needs five concurrent plugin instances racing to
+        // create one table, which is a load rather than an operation — it lives in S8, where
+        // the harness prints the seed and scale that make the race reproducible.
     });
 });

@@ -1,16 +1,19 @@
-import { afterAll, afterEach, expect } from '@jest/globals';
+import { afterAll, afterEach } from '@jest/globals';
 import { IDbPlugin } from '@routier/core';
 import { DataStore } from '@routier/datastore';
 import { contractProductSchema } from '@routier/test-utils';
 import {
     ALL_BACKENDS,
     Backend,
-    Oracle,
+    Product,
     cleanupBackendArtifacts,
-    compareToOracle,
-    describeComparison,
+    productFactory,
+    productShape,
+    runVolumeWorkload,
     stressDescribe,
     stressIt,
+    volumePlanFor,
+    volumeScale,
 } from './harness';
 
 /**
@@ -35,23 +38,15 @@ import {
  * no boolean or date column type and declines rich types in its own contract run. Richer
  * shapes are S2's job, on the backends that can store them. Its key is `identity()`, so
  * the store assigns ids and the collision hunt above is live rather than theoretical.
+ *
+ * The load itself lives in `harness/workloads.ts` and its entity shape in `harness/shapes.ts`,
+ * because S8 runs this same load against real Postgres at a smaller scale. What stays here is
+ * the schema, the backend list, and the budget.
  */
 
 class ProductStore extends DataStore {
     products = this.collection(contractProductSchema).create();
 }
-
-type Product = { _id: string; name: string; category: string; price: number };
-
-const keyOf = (product: Product) => product._id;
-
-/** Plain snapshots, detached from the tracked proxies the store handed back. */
-const snapshot = (product: Product): Product => ({
-    _id: product._id,
-    name: product.name,
-    category: product.category,
-    price: product.price,
-});
 
 const stores: { store: ProductStore; plugin: IDbPlugin }[] = [];
 
@@ -73,160 +68,28 @@ afterEach(async () => {
 
 afterAll(cleanupBackendArtifacts);
 
-/**
- * Scales the whole scenario off one number so a backend's budget (see backends.ts) sets
- * every phase consistently. The spec's shape at the memory budget of 100k: 1k-entity add
- * batches, then 10k updates and 10k removals spread over mixed batches.
- */
-const planFor = (budget: number) => ({
-    adds: budget,
-    addBatchSize: Math.max(1, Math.round(budget / 100)),
-    mixedBatches: 20,
-    /** Per mixed batch, of each kind. Updates and removes each total budget/10. */
-    updatesPerBatch: Math.max(1, Math.round(budget / 10 / 20)),
-    removesPerBatch: Math.max(1, Math.round(budget / 10 / 20)),
-    addsPerBatch: Math.max(1, Math.round(budget / 20 / 20)),
-});
-
 stressDescribe('S1 volume: single store, single collection', () => {
     for (const backend of ALL_BACKENDS) {
-        const plan = planFor(backend.volumeBudget);
+        const plan = volumePlanFor(backend.volumeBudget);
 
         stressIt(
             `${backend.name}: survives ${plan.adds.toLocaleString('en-US')} adds then mixed churn without losing a row`,
             {
                 seed: 20260802,
-                scale: {
-                    backend: backend.name,
-                    entities: plan.adds,
-                    addBatchSize: plan.addBatchSize,
-                    mixedBatches: plan.mixedBatches,
-                    updatesPerBatch: plan.updatesPerBatch,
-                    removesPerBatch: plan.removesPerBatch,
-                    addsPerBatch: plan.addsPerBatch,
-                },
+                scale: volumeScale(backend.name, plan),
             },
             async ({ rng, note }) => {
                 const store = openStore(backend);
-                const oracle = new Oracle<Product>(keyOf);
 
-                let nextValue = 0;
-                /** Deterministic content, so a divergence names a specific generated row. */
-                const newProduct = () => {
-                    const n = nextValue++;
-                    return {
-                        name: `product-${n}`,
-                        category: `category-${n % 25}`,
-                        price: n % 1000,
-                    };
-                };
-
-                // ---- Phase 1: adds -------------------------------------------------
-                for (let batch = 0; batch * plan.addBatchSize < plan.adds; batch++) {
-                    const size = Math.min(plan.addBatchSize, plan.adds - batch * plan.addBatchSize);
-
-                    const added = await store.products.addAsync(
-                        ...Array.from({ length: size }, newProduct) as any[]
-                    );
-                    const result = await store.saveChangesAsync();
-
-                    expect(result.aggregate.adds).toBe(size);
-                    expect(result.aggregate.updates).toBe(0);
-                    expect(result.aggregate.removes).toBe(0);
-
-                    // Ids are assigned by the store, so the oracle can only learn them
-                    // after the save that generated them.
-                    added.forEach(entity => oracle.set(snapshot(entity as Product)));
-
-                    const count = await store.products.countAsync();
-
-                    if (count !== oracle.size) {
-                        note(`diverged at add batch ${batch} (${(batch + 1) * plan.addBatchSize} entities in)`);
-                    }
-
-                    expect(count).toBe(oracle.size);
-                }
-
-                // A collision anywhere in phase 1 shows up as an oracle smaller than the
-                // number of entities added — the Map overwrote the earlier row.
-                expect(oracle.size).toBe(plan.adds);
-
-                // ---- Phase 2: mixed batches ---------------------------------------
-                // One read attaches every entity to the change tracker; mutations then run
-                // against those proxies. Re-querying per batch would make the scenario a
-                // query benchmark instead of a persistence one, and at this volume it
-                // would not finish.
-                const tracked = (await store.products.toArrayAsync()) as Product[];
-
-                // Length, never the array itself. A failed `toHaveLength` prints the whole
-                // received value, and pretty-formatting a hundred thousand change-tracked
-                // proxies takes longer than the scenario it was reporting on — the failure
-                // looks like a hang. Every assertion in this file stays scalar for that
-                // reason; collection-level divergence goes through `compareToOracle`,
-                // which reports a bounded sample.
-                expect(tracked.length).toBe(oracle.size);
-
-                const live = new Map(tracked.map(entity => [keyOf(entity), entity]));
-
-                for (let batch = 0; batch < plan.mixedBatches; batch++) {
-                    const available = [...live.values()];
-                    const targets = rng.sample(available, plan.updatesPerBatch + plan.removesPerBatch);
-                    const toUpdate = targets.slice(0, plan.updatesPerBatch);
-                    const toRemove = targets.slice(plan.updatesPerBatch);
-
-                    for (const entity of toUpdate) {
-                        entity.price = 10_000 + batch;
-                        entity.category = `churned-${batch}`;
-                    }
-
-                    await store.products.removeAsync(...(toRemove as any[]));
-
-                    const added = await store.products.addAsync(
-                        ...Array.from({ length: plan.addsPerBatch }, newProduct) as any[]
-                    );
-
-                    const result = await store.saveChangesAsync();
-
-                    // The whole hunt in one place: three kinds of change in one save, each
-                    // counted separately, none allowed to absorb another.
-                    expect({
-                        adds: result.aggregate.adds,
-                        updates: result.aggregate.updates,
-                        removes: result.aggregate.removes,
-                    }).toEqual({
-                        adds: plan.addsPerBatch,
-                        updates: toUpdate.length,
-                        removes: toRemove.length,
-                    });
-
-                    toUpdate.forEach(entity => oracle.set(snapshot(entity)));
-                    toRemove.forEach(entity => {
-                        oracle.delete(keyOf(entity));
-                        live.delete(keyOf(entity));
-                    });
-                    added.forEach(entity => {
-                        oracle.set(snapshot(entity as Product));
-                        live.set(keyOf(entity as Product), entity as Product);
-                    });
-
-                    const count = await store.products.countAsync();
-
-                    if (count !== oracle.size) {
-                        note(`diverged at mixed batch ${batch}`);
-                    }
-
-                    expect(count).toBe(oracle.size);
-                }
-
-                // ---- Final: full read versus the oracle ----------------------------
-                const final = (await store.products.toArrayAsync()) as Product[];
-                const comparison = compareToOracle(oracle, final, keyOf, {
-                    fields: ['name', 'category', 'price'],
+                await runVolumeWorkload<Product>({
+                    store,
+                    collection: store.products as any,
+                    plan,
+                    rng,
+                    note,
+                    newEntity: productFactory(),
+                    ...productShape,
                 });
-
-                note(describeComparison(comparison));
-
-                expect(describeComparison(comparison)).toBe('oracle matches');
             }
         );
     }

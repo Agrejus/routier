@@ -1,12 +1,17 @@
 # Known defects
 
-Status: 14 of 18 fixed. Open and pinned: #12, #13, #18. Open and worked around: #14.
-Date: 2026-08-02
+Status: 14 of 22 fixed. Open and pinned: #12, #13, #18, #19, #20, #21, #22.
+Open and worked around: #14.
+Date: 2026-08-03
 
 Defects 1–10 came from the functional test program. #11–#13 came from the stress program
 (`stress/`, see `specs/stress-testing.md`) and are the reason it exists: all three are
 change-tracker state bugs that a single-operation test cannot see, because each needs a
-*second* save to become observable.
+*second* save to become observable. #18–#22 came from the same program later, once it grew
+scenarios for concurrency (#18, #21) and real databases (#19, #20, #22).
+
+Keep this line current. It said "14 of 18" while eight defects were open, which is the one
+error in this file a reader cannot detect without reading the whole thing.
 
 Ten defects were found by the test program, each reproduced and diagnosed. All ten are now
 fixed and their pinning tests flipped to regular assertions, along with the four
@@ -422,6 +427,114 @@ per save rather than per row.
 **Pinned by:** the `file-system` case of `stress/src/s5-many-stores-one-database.test.ts`,
 via the scenario harness's `knownFailing`.
 
+### 19. An `s.array()` property cannot be written to PostgreSQL — **OPEN, pinned**
+
+Found by S8. The first insert of an entity holding an array is rejected by the server:
+`invalid input syntax for type json`. No workload runs; the row never lands.
+
+**Reproduction** — two lines, one entity:
+
+```ts
+const schema = s.define('probe', { id: s.string().key(), values: s.array(s.string()) }).compile();
+await store.rows.addAsync({ id: 'a', values: ['x', 'y'] });
+await store.saveChangesAsync();   // rejected
+```
+
+**Cause:** the array is bound as a query parameter to a `json` column, and `pg` encodes a
+JavaScript array as a *PostgreSQL array literal* (`{x,y}`), not as JSON. `{x,y}` is not valid
+JSON, so the server rejects the value. The emitted SQL is correct; the parameter encoding is
+not. A `json`/`jsonb` parameter has to be `JSON.stringify`-ed before it is bound.
+
+Invisible to SQLite, which stores JSON as text and receives an already-serialized value.
+
+**Pinned by:** the churn scenario in `stress/src/s8-real-databases.test.ts`, and
+`'rejects an array property'` in `e2e/src/postgresContainer.test.ts`.
+
+### 20. A nested object still emits a column per descendant on the PostgreSQL path — **OPEN, pinned**
+
+Found by S8. This is the shape of defect #15, which was recorded as fixed. It was fixed for
+SQLite; the PostgreSQL path still does it.
+
+```ts
+s.define('probe', { id: s.string().key(), nested: s.object({ value: s.string() }) })
+// INSERT INTO "probe" ("id", "nested", "value") VALUES ($1, $2, $3)
+//                                       ^^^^^^^  phantom column, parameter `undefined`
+```
+
+With unique names the extra column is merely spurious — the data round-trips correctly,
+because `nested` carries the real value. It becomes data loss the moment a descendant shares a
+name with a top-level property, because the statement then names one column twice and the
+server rejects it: `column "value" specified more than once`.
+
+**Reproduction:** a schema with both `value: s.string()` and `nested: s.object({ value: ... })`,
+one entity, one save.
+
+**Pinned by:** `'a nested descendant may share a name with a top-level property'` in
+`stress/src/s8-real-databases.test.ts`, and the matching case in
+`e2e/src/postgresContainer.test.ts`.
+
+### 21. The first concurrent write to a new collection loses all but one — **OPEN, pinned**
+
+Found by S8. Five plugin instances over one database, each inserting into a collection whose
+table does not exist yet: **one succeeds, four are rejected** with
+`duplicate key value violates unique constraint "pg_type_typname_nsp_index"`, and their rows
+are gone. A second round, with the table now present, has all five succeed.
+
+**Cause:** `PostgresDbPlugin` creates tables lazily — attempt the write, and on failure issue
+`CREATE TABLE` and retry (`PostgresDbPlugin.ts` ~170–190). Nothing serialises that against
+another connection doing the same thing, so four instances issue a `CREATE TABLE` for a table
+the fifth is committing, and collide in the system catalog. The error surfaces as a failed
+save rather than as a retry.
+
+The fix looks contained: `CREATE TABLE IF NOT EXISTS`, plus treating a `23505` on the create as
+"someone else won, retry the write".
+
+**Why no other backend sees it:** in-process plugins have no DDL, and SQLite serialises writers
+at the file level.
+
+Note this is the *deployment* shape, not an exotic one — several processes starting against a
+fresh database do exactly this.
+
+**Pinned by:** the multi-instance scenario in `stress/src/s8-real-databases.test.ts`.
+
+### 22. One save cannot update two entities whose changed columns differ — **OPEN, pinned**
+
+Found by S8, and the broadest of the four: it needs no nested types, no arrays, and no
+concurrency.
+
+**Reproduction** — two entities, one save:
+
+```ts
+x.a = 'x-new';              // one changed column
+y.a = 'y-new'; y.b = 99;    // two changed columns
+await store.saveChangesAsync();   // rejected
+```
+
+`cannot insert multiple commands into a prepared statement`.
+
+**Cause:** the builder groups updates by which columns changed and emits one `UPDATE ... SET
+"col" = CASE "id" WHEN ... END WHERE "id" IN (...)` per group, then joins the groups with `;`
+into a single parameterised query. PostgreSQL permits exactly one command per prepared
+statement. SQLite's driver accepts multi-statement input, which is why every in-process run has
+been green.
+
+**What makes it dangerous:** the trigger is invisible at the call site. Nobody writes a
+"heterogeneous update batch" on purpose — the groups diverge whenever one entity's new value
+happens to equal its old one, so that property is not dirty and that entity lands in a
+different group. This was found exactly that way: 50 churn targets, of which one already held
+the value being written.
+
+It also explains why S1's volume load passes against PostgreSQL: its `mutate` always writes the
+same two properties, so every update falls into one group and one statement.
+
+**Fix direction:** issue one query per group rather than concatenating them, or build a single
+statement covering all groups (every column in one `SET`, with `ELSE "col"` preserving the
+untouched ones — which is already the per-group shape).
+
+**Pinned by:** `'one save may update two entities whose changed columns differ'` in
+`stress/src/s8-real-databases.test.ts`, and the matching case in
+`e2e/src/postgresContainer.test.ts`.
+
 ### The `--forceExit` question, answered
 
 S5 also asserts directly against `process.getActiveResourcesInfo()` that ten stores with live
@@ -509,6 +622,14 @@ Still deliberately open:
 2. **`schema.clone` operates on application-shaped keys.** Cloning a wire-shaped object
    (post-`preprocess`) silently drops renamed properties. Use a plain structural copy when
    preparing test inputs, or you will misattribute the loss.
+
+3. **A green SQLite run says almost nothing about PostgreSQL.** Defects #19 through #22 were all
+   present while every SQLite suite was green, and each one is a place where SQLite is the more
+   forgiving engine: it stores JSON as text (so a mis-encoded array parameter still round-trips),
+   its driver accepts several `;`-joined statements in one call (so the multi-statement UPDATE
+   works), and it serialises writers at the file level (so the create-table race cannot happen).
+   Any change to the SQL builders or to parameter binding needs
+   `STRESS=1 E2E_CONTAINERS=1 npx jest --selectProjects stress` before it is believed.
 
 **Commands**
 

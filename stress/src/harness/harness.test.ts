@@ -1,4 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
+import { LaggingPlugin } from './lagging-plugin';
 import { MemoryTrace } from './memory';
 import { Oracle, compareToOracle } from './oracle';
 import { PollTimeoutError, pollUntil } from './poll';
@@ -199,5 +200,197 @@ describe('MemoryTrace', () => {
 
     it('reports the trend even when it passes', () => {
         expect(traceOf(Array.from({ length: 30 }, () => 100 * MB)).verdict().report).toContain('RSS trace: 30 samples');
+    });
+});
+
+describe('LaggingPlugin', () => {
+    /**
+     * A stand-in for a real plugin. The events are not inspected — what is under test is the
+     * wrapper's timing and bookkeeping, not any plugin's behaviour — so the fake records what
+     * it was asked to do and hands back a recognisable result.
+     */
+    const fake = () => {
+        const calls: string[] = [];
+
+        return {
+            calls,
+            identity: 'fake-identity',
+            query: (_event: any, done: any) => { calls.push('query'); done('query-result'); },
+            bulkPersist: (_event: any, done: any) => { calls.push('persist'); done('persist-result'); },
+            destroy: (_event: any, done: any) => { calls.push('destroy'); done('destroy-result'); },
+        };
+    };
+
+    const wrap = (inner: any, options?: Partial<ConstructorParameters<typeof LaggingPlugin>[2]>) =>
+        new LaggingPlugin(inner as any, new Rng(4242), { minMs: 10, maxMs: 20, ...options });
+
+    it('passes the wrapped plugin identity through', () => {
+        // Channels are scoped by schema plus identity. A wrapper that dropped it would put a
+        // lagged plugin on a different subscription channel from an unlagged one over the
+        // same database.
+        expect(wrap(fake()).identity).toBe('fake-identity');
+    });
+
+    it('runs the wrapped operation immediately and delays only the callback', () => {
+        const inner = fake();
+        const plugin = wrap(inner);
+        let answered = false;
+
+        plugin.bulkPersist({} as any, (() => { answered = true; }) as any);
+
+        // The work has happened; only the answer is outstanding. Delaying the call instead
+        // would serialise operations the real system runs concurrently.
+        expect(inner.calls).toEqual(['persist']);
+        expect(answered).toBe(false);
+        expect(plugin.inFlight).toBe(1);
+
+        plugin.cancel();
+    });
+
+    it('eventually delivers the wrapped result unchanged', async () => {
+        const plugin = wrap(fake());
+
+        const result = await new Promise(resolve => plugin.bulkPersist({} as any, resolve as any));
+
+        expect(result).toBe('persist-result');
+        expect(plugin.inFlight).toBe(0);
+    });
+
+    it('leaves queries undelayed by default', () => {
+        const plugin = wrap(fake());
+        let answered = false;
+
+        plugin.query({} as any, (() => { answered = true; }) as any);
+
+        expect(answered).toBe(true);
+        expect(plugin.inFlight).toBe(0);
+    });
+
+    it('delays queries when asked to', () => {
+        const plugin = wrap(fake(), { delay: { query: true } });
+        let answered = false;
+
+        plugin.query({} as any, (() => { answered = true; }) as any);
+
+        expect(answered).toBe(false);
+        expect(plugin.inFlight).toBe(1);
+
+        plugin.cancel();
+    });
+
+    it('draws delays from the seed, so a run replays', () => {
+        const delaysFor = () => {
+            const plugin = new LaggingPlugin(fake() as any, new Rng(1234), { minMs: 5, maxMs: 50 });
+
+            for (let i = 0; i < 5; i++) {
+                plugin.bulkPersist({} as any, (() => undefined) as any);
+            }
+
+            const total = plugin.stats.totalDelayMs;
+            plugin.cancel();
+            return total;
+        };
+
+        expect(delaysFor()).toBe(delaysFor());
+    });
+
+    it('keeps every delay inside the configured bounds', () => {
+        const plugin = new LaggingPlugin(fake() as any, new Rng(7), { minMs: 10, maxMs: 12 });
+
+        for (let i = 0; i < 100; i++) {
+            plugin.bulkPersist({} as any, (() => undefined) as any);
+        }
+
+        // Only the aggregate is observable, which is enough: 100 draws averaging inside
+        // [10, 12] cannot contain a draw outside it without another compensating for it, and
+        // the generator has no negative range to compensate with.
+        expect(plugin.stats.totalDelayMs).toBeGreaterThanOrEqual(1000);
+        expect(plugin.stats.totalDelayMs).toBeLessThanOrEqual(1200);
+
+        plugin.cancel();
+    });
+
+    it('rejects bounds it cannot draw from', () => {
+        expect(() => new LaggingPlugin(fake() as any, new Rng(1), { minMs: 50, maxMs: 10 })).toThrow();
+        expect(() => new LaggingPlugin(fake() as any, new Rng(1), { minMs: -1, maxMs: 10 })).toThrow();
+    });
+
+    it('drain resolves only once nothing is outstanding', async () => {
+        const plugin = wrap(fake());
+        const answered: number[] = [];
+
+        for (let i = 0; i < 5; i++) {
+            plugin.bulkPersist({} as any, (() => answered.push(i)) as any);
+        }
+
+        expect(plugin.inFlight).toBe(5);
+
+        await plugin.drain();
+
+        expect(plugin.inFlight).toBe(0);
+        expect(answered).toHaveLength(5);
+    });
+
+    it('drain fails loudly rather than hanging', async () => {
+        const plugin = new LaggingPlugin(fake() as any, new Rng(1), { minMs: 5_000, maxMs: 5_000 });
+        plugin.bulkPersist({} as any, (() => undefined) as any);
+
+        await expect(plugin.drain(50)).rejects.toThrow('still pending');
+
+        plugin.cancel();
+    });
+
+    it('counts callbacks that actually landed, separately from those merely scheduled', async () => {
+        // The distinction a scenario needs to tell a stalled mirror from a trailing one. A
+        // pending callback is scheduled but has changed nothing yet.
+        const plugin = wrap(fake());
+
+        plugin.bulkPersist({} as any, (() => undefined) as any);
+
+        expect(plugin.stats.delayedCallbacks).toBe(1);
+        expect(plugin.stats.completedCallbacks).toBe(0);
+
+        await plugin.drain();
+
+        expect(plugin.stats.completedCallbacks).toBe(1);
+    });
+
+    it('yieldToTimers lets an elapsed callback fire', async () => {
+        const plugin = new LaggingPlugin(fake() as any, new Rng(3), { minMs: 0, maxMs: 0 });
+        let answered = false;
+
+        plugin.bulkPersist({} as any, (() => { answered = true; }) as any);
+
+        // Awaiting a resolved promise is not enough — that stays in the microtask queue, which
+        // is the whole reason this method exists.
+        await Promise.resolve();
+        expect(answered).toBe(false);
+
+        await plugin.yieldToTimers();
+        expect(answered).toBe(true);
+    });
+
+    it('cancel drops pending callbacks so no timer outlives the test', () => {
+        const plugin = wrap(fake());
+        let answered = false;
+
+        plugin.bulkPersist({} as any, (() => { answered = true; }) as any);
+        plugin.cancel();
+
+        expect(plugin.inFlight).toBe(0);
+        expect(answered).toBe(false);
+    });
+
+    it('destroy cancels pending callbacks and reaches the wrapped plugin', async () => {
+        const inner = fake();
+        const plugin = wrap(inner);
+
+        plugin.bulkPersist({} as any, (() => undefined) as any);
+
+        const result = await new Promise(resolve => plugin.destroy({} as any, resolve as any));
+
+        expect(result).toBe('destroy-result');
+        expect(plugin.inFlight).toBe(0);
+        expect(inner.calls).toContain('destroy');
     });
 });

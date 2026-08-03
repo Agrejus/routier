@@ -1,26 +1,35 @@
 # Stress-testing spec
 
-Status: **Partially implemented** — S1, S2, S3, S4, S9 built and green; S5–S8 not started
-Date: 2026-08-02
+Status: **Fully implemented** — S1–S11 built; S8 additionally needs Docker
+Date: 2026-08-03
 Audience: an agent with no prior context on this repository.
 
-## Implementation status (2026-08-02)
+## Implementation status (2026-08-03)
 
-`STRESS=1 npx jest --selectProjects stress --forceExit` — 35 tests, ~93s.
+`STRESS=1 npx jest --selectProjects stress --forceExit`.
+Add `E2E_CONTAINERS=1` for S8.
 
 | Scenario | State | Notes |
 | --- | --- | --- |
 | S1 volume, single collection | Done | memory 100k, file-system 5k, sqlite 20k — see the budget note below |
 | S2 wide schemas / deep nesting | Done | 2 of 8 cases pinned to defects #12 and #13 |
-| S3 churn | Done | 10k cycles, ~93s, no leak detected |
+| S3 churn | Done | 10k cycles, ~87s, no leak detected |
 | S4 concurrency, one store | Done | 20 workers x 200 saves, no race found |
 | S5 many stores, one database | Done | memory passes; file-system pinned to defect #18. Handle-leak invariant passes. |
-| S6 subscriptions and views | **Not started** | |
-| S7 replication under lag | **Not started** | |
-| S8 real databases | **Not started** | |
-| S9 throughput floor | Done | baseline in `stress/src/throughput-baseline.json` |
+| S6 subscriptions and views | Done | 5k products, ~58s. Nothing broken; measured the derive cost, below |
+| S7 replication under lag | Done | 2k saves against a source lagging 10–50ms. Nothing broken |
+| S8 real databases | Done | **Found defects #19, #20, #21, #22.** The volume load passes; everything else is pinned |
+| S9 throughput floor | Done, **flaky in a full run** | baseline in `stress/src/throughput-baseline.json`. Reliable alone; see the deviation note |
 | S10 immutable stale refs | Done | 10k generations through first-generation references |
 | S11 immutable volume + churn | Done | S1 and S3 workloads through `.immutable()` |
+
+**Where the loads live.** S1's volume load and S3's churn load are in
+`stress/src/harness/workloads.ts`, and their entity shapes in `stress/src/harness/shapes.ts`,
+because S8 re-runs both against PostgreSQL at a smaller scale. A second hand-written copy of a
+load drifts, and once it drifts the two scenarios stop hunting the same defect. The shapes sit in
+the harness rather than in S1/S3 for a mechanical reason: importing them from a `.test.ts` file
+would execute that file's `describe` and `afterEach` registrations in the importer's scope, and
+Jest would run S1 twice with the wrong teardown.
 
 **Defects found so far** (all recorded in `specs/known-defects.md`, all reducible to a
 handful of entities once found):
@@ -32,6 +41,42 @@ handful of entities once found):
   Silent data loss on in-place array writes.
 - **#13 — saving a mutation two or more levels deep throws. OPEN, pinned.** The delta is a
   flat dotted-path map, and the delta serializer walks it as if it were an entity.
+- **#19 — an `s.array()` property cannot be written to PostgreSQL. OPEN, pinned.** The array is
+  bound to a `json` column and `pg` encodes it as a PostgreSQL array literal, which is not JSON.
+- **#20 — a nested object still emits a column per descendant on the PostgreSQL path. OPEN,
+  pinned.** Spurious when names are unique; a rejected statement when a descendant name collides
+  with a top-level property. Same shape as #15, which was fixed only for SQLite.
+- **#21 — the first concurrent write to a new collection loses all but one. OPEN, pinned.** Five
+  instances race to `CREATE TABLE` the same table; four collide in the system catalog and their
+  rows are gone.
+- **#22 — one save cannot update two entities whose changed columns differ. OPEN, pinned.** The
+  builder `;`-joins one UPDATE per changed-column group into a single prepared statement, which
+  PostgreSQL forbids. The broadest of the four: no nested types, no arrays, no concurrency.
+
+**What S6 and S7 found: nothing broken, and two measurements worth keeping.**
+
+*A view derive is O(all rows), not O(the change.)* `derive` receives the source collection's
+entire result set on every notification, re-enriches all of it, re-queries the view by every id,
+and hashes each row to diff it. So one 50-entity save costs whatever the collection it lands in
+costs. Convergence after 100 batches of 50, memory plugin:
+
+| products | writes | convergence |
+| --- | --- | --- |
+| 500 | 14ms | 270ms |
+| 2,000 | 83ms | 5.3s |
+| 5,000 | 213ms | 61s |
+
+Writes stay linear and cheap; convergence is roughly quadratic. A property of the full-recompute
+design rather than a defect, but it caps how large a view can be while its source is under
+sustained write pressure, and it is why S6 runs at 5,000 — the next power up does not fit the
+5-minute per-file budget.
+
+*View notifications are heavily coalesced, and that is fine.* 100 view-changing saves produce
+**two** notifications per subscriber, because a send arriving while a subscriber's re-query is in
+flight folds into that query's result rather than queuing another. So S6's notification bound
+passes by a wide margin and is not a tight check — what holds the coalescing honest is the
+separate assertion that a subscriber's LAST notification reflects the settled data. Without that
+one, the bound is vacuous: a subscriber that fires twice and then goes stale would pass it.
 
 **Performance work it turned up:**
 
@@ -85,14 +130,57 @@ needs a real profile, not a comparison read.
   cause: ten stores with live subscriptions release every handle they opened. Whatever holds
   the loop open is elsewhere — the memory-plugin `dbs` registry and the sqlite driver are the
   next suspects.
+- *S8 does not run the churn load against SQLite*, which the spec asks for. The volume half is
+  already covered — `sqliteBackend` is a real file and S1 drives the same load through it at 20k.
+  The churn half cannot be: its shape holds a boolean, a date, an array and a nested object, and
+  SQLite has a column type for none of them and declines rich types in its own contract run.
+  Running it there would exercise the fallback path rather than SQLite.
+- *S8's churn scenario has an unverified budget.* Its entity count is reduced from S3's 1,000 to
+  200 because every cycle re-reads the whole collection and that multiplies round trips to a real
+  server. But #19 rejects its first insert and #22 would reject its first save, so 2,000 cycles
+  against PostgreSQL has never actually run — the reduction is a projection, not a measurement.
+  Whoever fixes #19 and #22 should time it before trusting the 5-minute budget.
+- **S9 is flaky in a full-suite run. OPEN — this is the one known-unreliable scenario.**
+  Observed twice in roughly nine runs of
+  `STRESS=1 E2E_CONTAINERS=1 npx jest --selectProjects stress`, and never in isolation (three
+  consecutive clean solo runs). It measures wall-clock throughput inside a Jest worker while up to
+  eleven other stress suites saturate every core, so the measurement collapses below its 50% floor
+  for reasons that have nothing to do with Routier.
+
+  Its header already anticipates the general problem and answers it with a loose floor and
+  best-of-3 rounds. Neither is enough against this much contention, and loosening the floor
+  further would leave a check that cannot detect what it exists to detect.
+
+  The fix is the one this file's own gotchas already prescribe for timing: **normalise instead of
+  using an absolute.** Measure a fixed reference workload — plain `Map` inserts and reads, no
+  Routier involved — in the same process and the same round, and compare the *ratio* of Routier
+  throughput to reference throughput against a recorded baseline ratio. Contention scales both
+  numbers, so it cancels. Alternatives, both worse: run the stress project with `maxWorkers: 1`
+  (costs the whole suite its parallelism for one scenario), or run S9 in its own invocation.
+
+  Until then: a lone S9 failure in a full run is contention, not a regression. Re-run it alone
+  before believing it — and do not "fix" it by lowering the floor.
+
+- *S7 must yield to the timer queue explicitly.* An `await` chain over in-process plugins resolves
+  through microtasks and never reaches the macrotask queue, so delayed mirror callbacks do not
+  fire at all during the run. Measured before the fix: a backlog of 2,000 out of 2,000, meaning
+  the scenario tested a mirror that was **stopped** rather than one that was behind, and the
+  mirror-ordering hunt was silently vacuous. With a yield every 10 saves the backlog peaks at 88
+  and 1,950 of 2,000 callbacks land mid-run. `LaggingPlugin.stats.completedCallbacks` exists so a
+  scenario can assert the difference instead of assuming it.
 
 ## Goal
 
 Find defects that the functional suite cannot see: data loss under volume, races under
-concurrency, unbounded memory growth, and throughput collapse. The functional suite
-(5,364 tests) is green and stable. All 14 defects in `specs/known-defects.md` are fixed.
-Do not re-test single-operation correctness — stress the system until it breaks, then
-pin what broke.
+concurrency, unbounded memory growth, and throughput collapse. The functional suite is green and
+stable, which is the point: it was green while every defect this suite has found was already
+present. `specs/known-defects.md` now holds 22 entries; #12, #13, #14, #18, #19, #20, #21 and #22
+are open and pinned. Do not re-test single-operation correctness — stress the system until it
+breaks, then pin what broke.
+
+(The line this paragraph replaces said "all 14 defects are fixed", which was true the day the
+spec was written and has been wrong since. Treat the table at the top as the current state, not
+this section.)
 
 ## Prior art in this repository
 
@@ -212,6 +300,12 @@ Invariants:
 Hunts: view derive feedback loops, notification amplification, the empty-send guard
 regressing, history id churn (compute-once identity is new — stress it).
 
+*As built:* `stress/src/s6-views-under-write-pressure.test.ts`, at the specified scale. Two
+additions the spec could not have anticipated — an assertion that view reads are frozen (views
+are `"immutable"` since defect #17), and one that each subscriber's last notification reflects the
+settled data, without which the notification bound is vacuous. A no-op save is also asserted to
+produce no notification at all, which is the empty-send guard stated directly.
+
 ### S7. Replication: OptimisticUpdatesDbPlugin under lag
 
 Load: `OptimisticUpdatesDbPlugin` over a deliberately slow source plugin (wrap
@@ -226,6 +320,14 @@ Invariants:
 Hunts: re-hydration resurrection (fixed once — guard the fix), mirror-order bugs,
 `writtenCollections` gaps for collections first touched by a query.
 
+*As built:* `stress/src/s7-replication-under-lag.test.ts`, over `LaggingPlugin`
+(`stress/src/harness/lagging-plugin.ts`), which is self-tested in `harness.test.ts`. It delays the
+*callback*, not the operation — delaying the call would serialise work the real system runs
+concurrently. The resurrection invariant is asserted in the only shape that can reach the
+hydration branch: remove **every** row, then read. Anything smaller leaves the read plugin
+non-empty and the branch untaken. See the yield note in the deviations above — without it the
+scenario silently measured a stopped mirror rather than a lagging one.
+
 ### S8. Real databases
 
 Gate behind `STRESS=1 E2E_CONTAINERS=1`. Run S1 (scaled to 10k) and S3 (scaled to 2k
@@ -235,6 +337,16 @@ oracle equality at the end.
 
 Hunts: savepoint/transaction bugs under concurrency, pool exhaustion, the flattened
 persist loop under real I/O.
+
+*As built:* `stress/src/s8-real-databases.test.ts`, with the container lifecycle in
+`stress/src/harness/postgres.ts` (deliberately **not** re-exported from `harness/index.ts`, so
+testcontainers stays out of every other scenario's module graph). One container per file, reused
+across scenarios, with isolation by collection name — a Postgres start is several seconds and
+paying it per scenario would spend the budget on setup.
+
+This is the scenario that paid for itself: the volume load passes, and the other four cases are
+each pinned to a defect no in-process backend can see (#19–#22). Two deviations are recorded
+above — no SQLite churn run, and an unverified budget for the Postgres churn scenario.
 
 ### S9. Throughput regression floor
 
@@ -274,11 +386,26 @@ Follow the workflow in `specs/known-defects.md`:
   object elements of arrays, identity objects.
 - Single-file jest runs often need `--forceExit` today. S5 is the scenario that makes
   leaked handles a tested invariant instead.
+- **Routier's logger used to be ON in every Jest run — this is now FIXED**, and the fix is worth
+  knowing about because it changes how you debug a scenario. `shouldLog()` returned true whenever
+  `NODE_ENV` was `test`, which Jest always sets, and nothing could switch it off:
+  `globalThis.__ROUTIER_DEBUG__` was only ever compared against `true`, so the `= false` that
+  `docs/how-to/debug-logging.md` documented did nothing. `OptimisticUpdatesDbPlugin` logs three
+  debug lines per query, so S7 spent more wall clock on console records than on saving — **12.4s
+  with logging, ~6s without** — and the seed-and-scale banner was buried under the output.
+  The logger now has real levels and defaults to `silent`. To see plugin logging while working on
+  a scenario: `ROUTIER_LOG_LEVEL=debug STRESS=1 npx jest --selectProjects stress -t 'S7'`.
+  Measured cost of the gate: an emitted call ~70ns, a suppressed one ~3ns, of which building the
+  payload object is ~0.2ns — which is why the logger kept its eager signature instead of taking
+  a thunk.
+- **Views hand back frozen objects.** `View.changeTrackingType` is `"immutable"`, so since
+  defect #17 was fixed anything read from a view is frozen and a write to it throws under a
+  module's strict mode. Snapshot before annotating.
 
 ## Acceptance criteria
 
 1. `npx jest` (default run) is unchanged and green.
-2. `STRESS=1 npx jest --selectProjects stress` runs S1–S7 and S9 in under 30 minutes.
+2. `STRESS=1 npx jest --selectProjects stress` runs S1–S7 and S9–S11 in under 30 minutes.
 3. `STRESS=1 E2E_CONTAINERS=1 npx jest --selectProjects stress` adds S8 (requires Docker).
 4. Every scenario prints its seed and scale on failure.
 5. Every defect found has a reproduction, a `known-defects.md` entry, and a pin.
@@ -287,6 +414,6 @@ Follow the workflow in `specs/known-defects.md`:
 
 ```
 npx jest                                          # functional suite, must stay green
-STRESS=1 npx jest --selectProjects stress         # stress scenarios S1–S7, S9
+STRESS=1 npx jest --selectProjects stress         # stress scenarios S1–S7, S9–S11
 STRESS=1 E2E_CONTAINERS=1 npx jest --selectProjects stress   # + S8, needs Docker
 ```
