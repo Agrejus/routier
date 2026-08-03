@@ -2,7 +2,7 @@ import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema'
 import { Expression, ComparatorExpression, OperatorExpression, ValueExpression, PropertyExpression } from '@routier/core/expressions';
 import { IQuery, QueryField } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
-import { getDialect, toColumnValueMap } from '@routier/sql-plugin-core';
+import { getDialect, sqlColumnProperties, toColumnValueMap } from '@routier/sql-plugin-core';
 import { SqlOperation } from './types';
 
 /**
@@ -56,22 +56,24 @@ export function compiledSchemaToMysqlTable(schema: CompiledSchema<any>, tableNam
         singleIdentityPK = identityProps[0];
     }
 
-    for (const prop of schema.properties) {
+    // Root properties only: a nested subtree is ONE JSON column named for its root.
+    // Iterating every property would emit a column per descendant, named by its leaf.
+    for (const prop of sqlColumnProperties(schema)) {
         let colDef: string;
 
         if (singleIdentityPK && prop.name === singleIdentityPK.name) {
             if (prop.type === SchemaTypes.Number) {
-                colDef = `\`${prop.name}\` INT AUTO_INCREMENT PRIMARY KEY`;
+                colDef = `\`${prop.getResolvedName()}\` INT AUTO_INCREMENT PRIMARY KEY`;
             } else if (prop.type === SchemaTypes.String) {
                 // Use UUID() function for string identity keys
-                colDef = `\`${prop.name}\` VARCHAR(36) PRIMARY KEY DEFAULT (UUID())`;
+                colDef = `\`${prop.getResolvedName()}\` VARCHAR(36) PRIMARY KEY DEFAULT (UUID())`;
             } else {
-                colDef = `\`${prop.name}\` ${schemaTypeToMysqlType(prop.type)} PRIMARY KEY`;
+                colDef = `\`${prop.getResolvedName()}\` ${schemaTypeToMysqlType(prop.type)} PRIMARY KEY`;
             }
         } else if (isDeeplyNested(prop)) {
-            colDef = `\`${prop.name}\` JSON`;
+            colDef = `\`${prop.getResolvedName()}\` JSON`;
         } else {
-            colDef = `\`${prop.name}\` ${schemaTypeToMysqlType(prop.type)}`;
+            colDef = `\`${prop.getResolvedName()}\` ${schemaTypeToMysqlType(prop.type)}`;
         }
 
         columns.push(colDef);
@@ -80,7 +82,7 @@ export function compiledSchemaToMysqlTable(schema: CompiledSchema<any>, tableNam
     // Composite PK logic
     let pkClause = '';
     if ((!singleIdentityPK) && idProps.length > 0) {
-        const pkCols = idProps.map(p => `\`${p.name}\``);
+        const pkCols = idProps.map(p => `\`${p.getResolvedName()}\``);
         pkClause = `, PRIMARY KEY (${pkCols.join(', ')})`;
     }
 
@@ -297,8 +299,10 @@ export function buildSelectFromExpression<TEntity extends {}, TShape>(options: {
     schema: CompiledSchema<TEntity>
 }): { sql: string, params: any[] } {
     const { schema, query } = options;
-    const columns = schema.properties && schema.properties.length > 0
-        ? schema.properties.map(p => `\`${p.name}\``)
+    // Root properties only, storage-side names — same layout the DDL creates
+    const columnProperties = sqlColumnProperties(schema);
+    const columns = columnProperties.length > 0
+        ? columnProperties.map(p => `\`${p.getResolvedName()}\``)
         : ['*'];
 
     const filterOptions = query.options.get('filter');
@@ -330,9 +334,11 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
         return { adds: null, updates: null, removes: null };
     }
 
-    const insertColumns = schema.properties
-        .filter(p => !p.isIdentity)
-        .map(p => `\`${p.name}\``);
+    // Column identifiers are storage-side names (PropertyInfo.from ?? name), one column per
+    // ROOT property: a nested subtree is stored as a single JSON column named for its root.
+    const columnProperties = sqlColumnProperties(schema);
+    const insertProperties = columnProperties.filter(p => !p.isIdentity);
+    const insertColumns = insertProperties.map(p => `\`${p.getResolvedName()}\``);
     const insertColumnStr = insertColumns.join(', ');
 
     // Handle INSERT operations (adds)
@@ -349,10 +355,12 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 
         const addParams: any[] = [];
         for (const add of adds) {
-            for (const col of schema.properties) {
-                if (!col.isIdentity) {
-                    addParams.push(add[col.name]);
-                }
+            // Routed through the same column resolution the UPDATE path uses, so a nested
+            // object or array is JSON-encoded rather than handed to the driver as a structure.
+            const values = toColumnValueMap(add as Record<string, unknown>, schema, getDialect('mysql'));
+
+            for (const col of insertProperties) {
+                addParams.push(values.get(col.getResolvedName()));
             }
         }
 
@@ -408,7 +416,7 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
             const deltaKeys = [...columnValues.get(firstUpdate)!.keys()];
 
             const setClauses: string[] = [];
-            const idColumns = schema.idProperties.map(p => p.name);
+            const idColumns = schema.idProperties.map(p => p.getResolvedName());
             const idColumn = idColumns[0];
 
             for (const key of deltaKeys) {
@@ -455,7 +463,7 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 
             for (const idProperty of idProperties) {
                 const idValue = idProperty.getValue(remove);
-                entityWhereClauses.push(`\`${idProperty.name}\` = ?`);
+                entityWhereClauses.push(`\`${idProperty.getResolvedName()}\` = ?`);
                 allParams.push(idValue);
             }
 
@@ -500,14 +508,17 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
             columnsStr += `, \`${mapFields[i].sourceName}\``;
         }
     } else {
-        const columnCount = schema.properties.length;
+        // Root properties only, storage-side names — the layout the DDL creates. A column
+        // per descendant would select phantom columns the table does not have.
+        const columnProperties = sqlColumnProperties(schema);
+        const columnCount = columnProperties.length;
         if (columnCount === 0) {
             throw new Error("Need to select at least one column, found zero");
         }
 
-        columnsStr = `\`${schema.properties[0].name}\``;
+        columnsStr = `\`${columnProperties[0].getResolvedName()}\``;
         for (let i = 1; i < columnCount; i++) {
-            columnsStr += `, \`${schema.properties[i].name}\``;
+            columnsStr += `, \`${columnProperties[i].getResolvedName()}\``;
         }
     }
 

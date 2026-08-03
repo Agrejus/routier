@@ -21,6 +21,9 @@ export class CloneArrayHandler extends PropertyInfoHandler {
             // clone shares element references with the source. Dates get an explicit
             // per-element copy rather than structuredClone: structuredClone can return
             // Dates from a foreign realm (e.g. under jest), which fail `instanceof Date`.
+            // Deep copies go per ELEMENT, never structuredClone on the array itself: a
+            // change-tracked entity's array is wrapped in a Proxy (and stays wrapped
+            // across merges), and a Proxy cannot pass a structured-clone boundary.
             const elementType = property.innerSchema?.type;
             const isPrimitiveElement = elementType === SchemaTypes.String ||
                 elementType === SchemaTypes.Number ||
@@ -31,7 +34,7 @@ export class CloneArrayHandler extends PropertyInfoHandler {
             } else if (elementType === SchemaTypes.Date) {
                 copyExpression = `${entitySelectorPath}.map(function (v) { return v == null ? v : new Date(v); })`;
             } else {
-                copyExpression = `structuredClone(${entitySelectorPath})`;
+                copyExpression = `${entitySelectorPath}.map(function (v) { return v == null ? v : structuredClone(v); })`;
             }
 
             if (property.parent == null) {

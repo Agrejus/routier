@@ -169,12 +169,11 @@ describe("ChangeTracker dirty detection", () => {
         expect(arrayTracker.hasChanges()).toBe(true);
     });
 
-    // PINS DEFECT #12 (specs/known-defects.md): the array's tracking proxy does not
-    // survive a merge. The test above proves in-place array mutation IS tracked on a
-    // freshly enriched entity; this one takes the same entity through the merge that
-    // afterPersist performs on every save, and the next push goes unnoticed. Passing
-    // means the defect is still present — flip to `it` when it is fixed.
-    it.failing("detects an in-place array mutation after the entity has been merged", () => {
+    // Guards the fix for defect #12: merge used to replace the array REFERENCE
+    // (`destination.values = source.values`), discarding the tracking proxy, so every
+    // in-place array mutation made after the entity's first save was silently lost.
+    // MergeArrayHandler now copies elements into the destination's existing array.
+    it("detects an in-place array mutation after the entity has been merged", () => {
         const arrayTracker = new ChangeTracker(arraySchema as any);
         const tracked: any = arraySchema.enrich({ id: "a", values: ["one"] } as any, "proxy");
         arrayTracker.resolve(tracked, null);
@@ -187,11 +186,33 @@ describe("ChangeTracker dirty detection", () => {
         expect(arrayTracker.hasChanges()).toBe(true);
     });
 
-    // PINS DEFECT #13 (specs/known-defects.md): `__tracking__.changes` is keyed by dotted
-    // path, but `getAttachmentsChanges` feeds it to the entity-shaped `serialize`, which
-    // walks `changes.nested.inner` and finds nothing. Depth 1 tolerates it; depth 2 throws
-    // and takes the whole save down with it.
-    it.failing("serializes the delta for a mutation two levels deep", () => {
+    // Companion to the defect-#12 fix, the re-query flavor: resolving a fresh read into an
+    // already-attached entity merges through the same path, and the source there is itself
+    // a proxy — bound to the throwaway enriched object, not to the canonical. Adopting that
+    // reference would record mutations on an object nobody holds.
+    it("detects an in-place array mutation after a re-query has been merged in", () => {
+        const arrayTracker = new ChangeTracker(arraySchema as any);
+        const tracked: any = arraySchema.enrich({ id: "a", values: ["one"] } as any, "proxy");
+        arrayTracker.resolve(tracked, null);
+
+        // What QueryableExecutor.attachResults does on a re-read of an attached row.
+        const fresh: any = arraySchema.enrich({ id: "a", values: ["one"] } as any, "proxy");
+        (arraySchema as any).merge(tracked, fresh);
+
+        expect(tracked.values).not.toBe(fresh.values);
+
+        tracked.values.push("two");
+
+        expect(arrayTracker.hasChanges()).toBe(true);
+        // The mutation must land on the canonical's array, not the throwaway's.
+        expect(fresh.values).toEqual(["one"]);
+    });
+
+    // Guards the fix for defect #13: `__tracking__.changes` is keyed by dotted path, and
+    // `getAttachmentsChanges` used to feed it to the entity-shaped `serialize`, which threw
+    // at depth 2. The delta is now selected out of the complete serialized entity, with a
+    // dotted key resolved by its root segment.
+    it("serializes the delta for a mutation two levels deep", () => {
         const deepSchema = s.define("tracker_deep2", {
             id: s.string().key(),
             nested: s.object({ inner: s.object({ value: s.string() }) }),
@@ -202,9 +223,46 @@ describe("ChangeTracker dirty detection", () => {
 
         tracked.nested.inner.value = "after";
 
-        // The tracking itself is correct — it is only the serialization that fails.
+        // The tracking itself is correct — it is only the serialization that failed.
         expect(tracked.__tracking__.changes).toEqual({ "nested.inner.value": "after" });
-        expect(() => deepTracker.getAttachmentsChanges()).not.toThrow();
+
+        const changes = deepTracker.getAttachmentsChanges();
+
+        expect(changes).toHaveLength(1);
+        // A dotted change key selects its ROOT column, and the subtree is sent whole —
+        // a partial subtree in a JSON column would drop the siblings that did not change.
+        expect(changes[0].delta).toEqual({ nested: { inner: { value: "after" } } });
+    });
+
+    // Companion to the defect-#13 fix: depth 1 used to produce a silently WRONG delta
+    // ({ nested: {} } — the value dropped), masked only because JSON-column consumers take
+    // values from the entity rather than the delta.
+    it("serializes the delta for a mutation one level deep", () => {
+        const nestedTracker = new ChangeTracker(nestedSchema as any);
+        const tracked: any = nestedSchema.enrich({ id: "a", nested: { value: "before" } } as any, "proxy");
+        nestedTracker.resolve(tracked, null);
+
+        tracked.nested.value = "after";
+
+        const changes = nestedTracker.getAttachmentsChanges();
+
+        expect(changes).toHaveLength(1);
+        expect(changes[0].delta).toEqual({ nested: { value: "after" } });
+    });
+
+    // Companion to the defect-#13 fix: an in-place array mutation used to serialize to an
+    // empty delta ({}), persisting only via the SQL layer's whole-entity fallback.
+    it("serializes the delta for an in-place array mutation", () => {
+        const arrayTracker = new ChangeTracker(arraySchema as any);
+        const tracked: any = arraySchema.enrich({ id: "a", values: ["one"] } as any, "proxy");
+        arrayTracker.resolve(tracked, null);
+
+        tracked.values.push("two");
+
+        const changes = arrayTracker.getAttachmentsChanges();
+
+        expect(changes).toHaveLength(1);
+        expect(changes[0].delta).toEqual({ values: ["one", "two"] });
     });
 
     // Guards the fix for defect #11: an entity that has been persisted must go clean, or

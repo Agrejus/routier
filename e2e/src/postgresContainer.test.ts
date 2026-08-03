@@ -21,10 +21,10 @@ import { PostgresDbPlugin } from '@routier/postgresql-plugin';
  * is fixed**, and the cases below pass.
  *
  * What replaces it: four defects that S8 found by running real *loads* against a server
- * (`stress/src/s8-real-databases.test.ts`). Each is reduced to its smallest form here, pinned
- * with `it.failing`, so the day one is fixed the pin fails rather than the fix landing
- * silently. All four are invisible to every in-process backend — see `specs/known-defects.md`
- * entries 19 through 22 for the causes.
+ * (`stress/src/s8-real-databases.test.ts`). Each is reduced to its smallest form here —
+ * originally pinned with `it.failing`, now regular guards since all four are fixed. All four
+ * were invisible to every in-process backend — see `specs/known-defects.md` entries 19
+ * through 22 for the causes and fixes.
  */
 
 const shouldRun = process.env.E2E_CONTAINERS === '1';
@@ -131,13 +131,13 @@ suite('PostgreSQL via testcontainers', () => {
     });
 
     /**
-     * Reductions of the four defects S8 found. Pinned with `it.failing`: each PASSES while the
-     * defect exists and FAILS the moment it is fixed, so a fix cannot land unnoticed.
+     * Reductions of the four defects S8 found, all fixed — kept as regression guards against
+     * a real server.
      *
      * These use their own schemas and tables rather than `products`, so a failure names one
      * defect and the passing cases above stay independent of them.
      */
-    describe('defects found by S8, pinned', () => {
+    describe('defects found by S8, guarded', () => {
         const arraySchema = s.define('e2e_pg_defect_array', {
             _id: s.string().key().identity(),
             values: s.array(s.string()),
@@ -176,9 +176,10 @@ suite('PostgreSQL via testcontainers', () => {
                 password: container.getPassword(),
             }));
 
-        // Defect #19. `pg` encodes a JS array as a PostgreSQL array literal, which a json
-        // column rejects. The value needs stringifying before it is bound.
-        it.failing('writes an array property [pinned: known defect #19]', async () => {
+        // Guards the fix for defect #19: `pg` encodes a JS array as a PostgreSQL array
+        // literal, which a json column rejects. Insert params now go through
+        // toColumnValueMap, which JSON-encodes structures before they are bound.
+        it('writes an array property', async () => {
             const store = open(ArrayStore);
 
             await store.rows.addAsync({ values: ['x', 'y'] } as any);
@@ -187,9 +188,10 @@ suite('PostgreSQL via testcontainers', () => {
             expect((await store.rows.toArrayAsync())[0].values).toEqual(['x', 'y']);
         });
 
-        // Defect #20. A nested object emits a top-level column per descendant, so this INSERT
-        // names "value" twice.
-        it.failing('keeps a nested descendant distinct from a top-level property of the same name [pinned: known defect #20]', async () => {
+        // Guards the fix for defect #20: a nested object used to emit a top-level column per
+        // descendant, so this INSERT named "value" twice. Columns now come from
+        // sqlColumnProperties — one JSON column per root property.
+        it('keeps a nested descendant distinct from a top-level property of the same name', async () => {
             const store = open(CollisionStore);
 
             await store.rows.addAsync({ value: 'TOP', nested: { value: 'INNER' } } as any);
@@ -201,9 +203,10 @@ suite('PostgreSQL via testcontainers', () => {
             expect(row.nested.value).toBe('INNER');
         });
 
-        // Defect #22. Two changed-column groups become two `;`-joined statements in one
-        // prepared statement, which PostgreSQL refuses.
-        it.failing('updates two entities whose changed columns differ in one save [pinned: known defect #22]', async () => {
+        // Guards the fix for defect #22: two changed-column groups used to become two
+        // `;`-joined statements in one prepared statement, which PostgreSQL refuses. Each
+        // group is now its own operation in the transaction.
+        it('updates two entities whose changed columns differ in one save', async () => {
             const store = open(HeteroStore);
 
             await store.rows.addAsync(

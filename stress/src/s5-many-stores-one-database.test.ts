@@ -43,11 +43,10 @@ import {
  * each. Pinned rather than skipped so the day it is fixed, the case fails "because it
  * passed" and this table has to be updated.
  */
-const KNOWN_FAILING: Partial<Record<string, number>> = {
-    // Every save rewrites the whole collection file from one store's in-memory view, so the
-    // last writer clobbers the other nine.
-    'file-system': 18,
-};
+// Defect #18 (file-system last-writer-wins) is fixed: the plugin keeps one collection
+// instance per database path process-wide, so concurrent writers mutate one shared view
+// and every save writes a superset of earlier ones. Empty until a new defect earns a row.
+const KNOWN_FAILING: Partial<Record<string, number>> = {};
 
 const STORES = 10;
 const KEYS_PER_STORE = 20;

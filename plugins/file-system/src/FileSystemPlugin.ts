@@ -5,6 +5,23 @@ import { PluginEventCallbackResult, PluginEventResult } from '@routier/core/resu
 import { CompiledSchema } from '@routier/core/schema';
 import { FileSystemDbCollection } from './FileSystemDbCollection';
 
+/**
+ * One collection instance per (database path, collection name), process-wide — the same
+ * registry MemoryPlugin keeps by database name.
+ *
+ * The registry is what makes concurrent writers converge. A save is a read-modify-write of
+ * the whole collection file, and a per-persist collection instance gives every concurrent
+ * writer its own view of the "read" step: ten stores over one database each read the empty
+ * file, write their own rows, and the last write wins the whole file (defect #18). With one
+ * shared in-memory collection per file, every writer mutates the same map and stringifies it
+ * after its own mutation, so any later write is a superset of every earlier one.
+ *
+ * The boundary this creates: a file-system database belongs to ONE process. After the first
+ * read the in-memory view is authoritative and the file is write-only, so rows written by
+ * another process are never observed. Cross-process sharing needs a real database.
+ */
+const databases: Record<string, Record<string, FileSystemDbCollection>> = {};
+
 export class FileSystemPlugin extends EphemeralDataPlugin {
 
     private path: string;
@@ -23,8 +40,23 @@ export class FileSystemPlugin extends EphemeralDataPlugin {
         return path.join(this.path, this.databaseName);
     }
 
+    /** Registry key: the resolved path, so two spellings of one directory share a database. */
+    private get databaseKey() {
+        return path.resolve(this.databaseFilePath);
+    }
+
     protected override resolveCollection<TEntity extends {}>(schema: CompiledSchema<TEntity>) {
-        return new FileSystemDbCollection(this.databaseFilePath, schema);
+        const key = this.databaseKey;
+
+        if (databases[key] == null) {
+            databases[key] = {};
+        }
+
+        if (databases[key][schema.collectionName] == null) {
+            databases[key][schema.collectionName] = new FileSystemDbCollection(this.databaseFilePath, schema);
+        }
+
+        return databases[key][schema.collectionName];
     }
 
     /**
@@ -65,6 +97,10 @@ export class FileSystemPlugin extends EphemeralDataPlugin {
                     done(PluginEventResult.error(event.id, e));
                     return;
                 }
+
+                // The shared in-memory view goes with the files, or the next store over
+                // this database would resurrect every destroyed row from the registry.
+                delete databases[this.databaseKey];
 
                 done(PluginEventResult.success(event.id));
             });

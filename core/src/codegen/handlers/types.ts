@@ -86,21 +86,41 @@ export abstract class PropertyInfoHandler implements IHandler {
     }
 
     /**
-     * Emits `if (destination.a == null) destination.a = {};` for every ancestor of a
-     * nested property, so assignments through the destination never throw when the
-     * parent object is absent.
+     * Emits `if (<root>.a == null) <root>.a = {};` for every ancestor of a
+     * nested property, so assignments through the target object never throw when a
+     * parent object is absent. The guards run root-down, so grandparents are
+     * materialized before their children.
      */
-    protected emitDestinationAncestorGuards(property: PropertyInfo<any>, block: IfBuilder) {
+    protected emitDestinationAncestorGuards(property: PropertyInfo<any>, block: IfBuilder, options?: { root?: string, useFromPropertyName?: boolean }) {
         if (property.parent == null) {
             return;
         }
 
-        const parentPathArray = property.getParentPathArray();
+        const root = options?.root ?? "destination";
+        const parentPathArray = property.getParentPathArray({ useFromPropertyName: options?.useFromPropertyName });
 
         for (let i = 0; i < parentPathArray.length; i++) {
-            const pathSoFar = ["destination", ...parentPathArray.slice(0, i + 1)].join(".");
+            const pathSoFar = [root, ...parentPathArray.slice(0, i + 1)].join(".");
             block.appendBody(`if (${pathSoFar} == null) ${pathSoFar} = {};`);
         }
+    }
+
+    /**
+     * Emits the guarded nested-property assignment shared by the serialize handlers:
+     * reads the parent through an optional-chained selector (the entity may be a
+     * partial — a delta payload or a create payload with absent nested parents),
+     * materializes every `result` ancestor, then assigns `valueExpression` to the
+     * property's storage-side path.
+     */
+    protected emitSerializeNestedAssignment(property: PropertyInfo<any>, slot: SlotBlock, valueExpression: string) {
+        const parentSelectPath = property.parent!.getSelectrorPath({ parent: "entity", assignmentType: "FORCE_NULLABLE_OR_OPTIONAL" });
+        const resultSelectorPath = property.getAssignmentPath({ parent: "result", useFromPropertyName: true });
+
+        const ifSlot = slot.if(`${parentSelectPath} != null && Object.hasOwn(${parentSelectPath}, "${property.name}")`);
+
+        this.emitDestinationAncestorGuards(property, ifSlot, { root: "result", useFromPropertyName: true });
+
+        ifSlot.appendBody(`${resultSelectorPath} = ${valueExpression}`);
     }
 
     /**

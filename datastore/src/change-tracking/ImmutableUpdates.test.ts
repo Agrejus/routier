@@ -7,11 +7,11 @@ import { DataStore } from '../DataStore';
  * The immutable `update()` path — see specs/immutable-updates.md.
  *
  * These are the spike's acceptance tests, and the first two blocks are the reason it
- * exists. Defects #12 and #13 in specs/known-defects.md are OPEN against the proxy path
- * and pinned there with `it.failing`; the same scenarios pass here with no other change.
- * That is the evidence that they are proxy-lifecycle bugs rather than bugs in the save
- * pipeline: an array is a value a patch replaces, so there is no array proxy to lose, and
- * a patch is a partial entity, so the entity's own serializer handles it at any depth.
+ * exists. Defects #12 and #13 in specs/known-defects.md passed here first, with no other
+ * change, while still open on the proxy path — the evidence that they were proxy-lifecycle
+ * bugs rather than bugs in the save pipeline: an array is a value a patch replaces, so
+ * there is no array proxy to lose, and a patch is a partial entity, so the entity's own
+ * serializer handles it at any depth. Both are now fixed on the proxy path too.
  *
  * The third block is the design's own risk. Returning new values instead of mutating in
  * place means a caller's reference goes stale, so the collection resolves references by
@@ -314,14 +314,15 @@ describe('unsaved rows', () => {
     });
 
     /**
-     * PINNED — defect #23. Passes while the defect exists; fails when it is fixed.
+     * Guards the fix for defect #23: `UnknownKeyAdditions` keyed pending adds by content
+     * hash in a plain map, so two rows equal in content collapsed into one — the second
+     * was never inserted at all. The map is now a multimap whose `take` consumes on match.
      *
      * Written against a plain add rather than through `update()`, because `update()` is not
-     * what breaks it: `UnknownKeyAdditions` keys pending adds by content hash, so two rows
-     * equal in content collapse whether a patch made them equal or they started that way.
-     * Pinning the narrower route would have credited the bug to the wrong code.
+     * what breaks it: two rows equal in content collapsed whether a patch made them equal
+     * or they started that way.
      */
-    it.failing('collapses two identical unsaved rows with identity keys [pinned: known defect #23]', async () => {
+    it('inserts two identical unsaved rows with identity keys as two rows', async () => {
         const store = open(IdentityStore);
 
         await store.items.addAsync({ name: 'b', n: 2 } as any);
@@ -329,6 +330,22 @@ describe('unsaved rows', () => {
         await store.saveChangesAsync();
 
         expect(await store.items.countAsync()).toBe(2);
+    });
+
+    it('assigns distinct identities to two identical unsaved rows', async () => {
+        const store = open(IdentityStore);
+
+        const [a]: any[] = await store.items.addAsync({ name: 'b', n: 2 } as any);
+        const [b]: any[] = await store.items.addAsync({ name: 'b', n: 2 } as any);
+
+        await store.saveChangesAsync();
+
+        // Each caller's own reference must receive an identity — which returned row pairs
+        // with which pending object is unobservable (they are equal on every hashed
+        // property), but neither may be left without one, and they must differ.
+        expect(a.id).toBeDefined();
+        expect(b.id).toBeDefined();
+        expect(a.id).not.toBe(b.id);
     });
 
     it('keeps two unsaved rows distinct when they differ in any property', async () => {

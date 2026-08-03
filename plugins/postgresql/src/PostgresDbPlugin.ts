@@ -136,8 +136,11 @@ export class PostgresDbPlugin implements IDbPlugin {
                     operations.push({ op: { ...persistOperations.removes, createTableSql, schemaId }, type: 'removes' });
                 }
 
-                if (persistOperations.updates != null) {
-                    operations.push({ op: { ...persistOperations.updates, createTableSql, schemaId }, type: 'updates' });
+                // One operation PER GROUP: PostgreSQL permits exactly one command per
+                // parameterized statement, so heterogeneous update batches cannot be
+                // joined with ';' — each group runs as its own query in the transaction.
+                for (const updateOperation of persistOperations.updates) {
+                    operations.push({ op: { ...updateOperation, createTableSql, schemaId }, type: 'updates' });
                 }
 
                 if (persistOperations.adds != null) {
@@ -178,6 +181,52 @@ export class PostgresDbPlugin implements IDbPlugin {
                             schemaId: op.schemaId,
                         });
 
+                        const fail = (error: unknown) => {
+                            client.query('ROLLBACK', () => {
+                                release();
+                                done(Result.error(error));
+                            });
+                        };
+
+                        // Nested objects and arrays come back from RETURNING as JSON —
+                        // decode before the rows are echoed to mergeChanges, or the entity
+                        // is handed a string where a structure belongs. Same rule as the
+                        // query path; skips properties whose schema deserializes itself.
+                        const collectRows = (rows: unknown[]) => {
+                            const schema = event.schemas.get(op.schemaId);
+                            const decoded = decodeJsonColumns(rows, schema) as { [x: string]: never; }[];
+                            const bucket = result.get(op.schemaId);
+
+                            if (type === "adds") {
+                                bucket.adds.push(...decoded);
+                            }
+
+                            if (type === "updates") {
+                                bucket.updates.push(...decoded);
+                            }
+
+                            if (type === "removes") {
+                                bucket.removes.push(...decoded);
+                            }
+                        };
+
+                        const retryWrite = () => {
+                            console.log(`[DB] PostgreSQL ${type} retry after table creation:`, {
+                                sql: op.sql,
+                                params: op.params || [],
+                                paramsCount: (op.params || []).length,
+                            });
+                            client.query(op.sql, op.params || [], (retryErr, retryResult) => {
+                                if (retryErr) {
+                                    fail(retryErr);
+                                    return;
+                                }
+
+                                collectRows(retryResult.rows);
+                                executeNext(index + 1);
+                            });
+                        };
+
                         // PostgreSQL aborts the whole transaction on the first error, so the
                         // create-table-on-demand recovery below can only work if the failed
                         // write is rolled back to a savepoint first. Without it, the CREATE
@@ -186,95 +235,73 @@ export class PostgresDbPlugin implements IDbPlugin {
 
                         client.query(`SAVEPOINT ${savepoint}`, (savepointErr) => {
                             if (savepointErr) {
-                                client.query('ROLLBACK', () => {
-                                    release();
-                                    done(Result.error(savepointErr));
-                                });
+                                fail(savepointErr);
                                 return;
                             }
 
-                        client.query(op.sql, op.params || [], (err, queryResult) => {
-                            if (err && err.message.includes('relation') && err.message.includes('does not exist')) {
-                                // Table doesn't exist: roll back the failed write, then
-                                // create the table and retry inside the same transaction
-                                client.query(`ROLLBACK TO SAVEPOINT ${savepoint}`, (rollbackToErr) => {
-                                if (rollbackToErr) {
-                                    client.query('ROLLBACK', () => {
-                                        release();
-                                        done(Result.error(rollbackToErr));
-                                    });
-                                    return;
-                                }
-
-                                client.query(op.createTableSql, (createErr) => {
-                                    if (createErr) {
-                                        client.query('ROLLBACK', () => {
-                                            release();
-                                            done(Result.error(createErr));
-                                        });
-                                        return;
-                                    }
-
-                                    // Retry the operation after table creation
-                                    console.log(`[DB] PostgreSQL ${type} retry after table creation:`, {
-                                        sql: op.sql,
-                                        params: op.params || [],
-                                        paramsCount: (op.params || []).length,
-                                    });
-                                    client.query(op.sql, op.params || [], (retryErr, retryResult) => {
-                                        if (retryErr) {
-                                            client.query('ROLLBACK', () => {
-                                                release();
-                                                done(Result.error(retryErr));
-                                            });
+                            client.query(op.sql, op.params || [], (err, queryResult) => {
+                                // 42P01 undefined_table — by code, not message text
+                                if (err && (err as { code?: string }).code === '42P01') {
+                                    // Table doesn't exist: roll back the failed write, then
+                                    // create the table and retry inside the same transaction
+                                    client.query(`ROLLBACK TO SAVEPOINT ${savepoint}`, (rollbackToErr) => {
+                                        if (rollbackToErr) {
+                                            fail(rollbackToErr);
                                             return;
                                         }
 
-                                        if (type === "adds") {
-                                            const { adds } = result.get(op.schemaId);
-                                            adds.push(...retryResult.rows as { [x: string]: never; }[]);
-                                        }
+                                        // The DDL gets its own savepoint: CREATE TABLE IF NOT
+                                        // EXISTS is not atomic against a concurrent creator,
+                                        // and a failed create with no savepoint would abort
+                                        // the whole transaction with no way back.
+                                        const ddlSavepoint = `${savepoint}_ddl`;
 
-                                        if (type === "updates") {
-                                            const { updates } = result.get(op.schemaId);
-                                            updates.push(...retryResult.rows as { [x: string]: never; }[]);
-                                        }
+                                        client.query(`SAVEPOINT ${ddlSavepoint}`, (ddlSavepointErr) => {
+                                            if (ddlSavepointErr) {
+                                                fail(ddlSavepointErr);
+                                                return;
+                                            }
 
-                                        if (type === "removes") {
-                                            const { removes } = result.get(op.schemaId);
-                                            removes.push(...retryResult.rows as { [x: string]: never; }[]);
-                                        }
+                                            client.query(op.createTableSql, (createErr) => {
+                                                if (createErr == null) {
+                                                    retryWrite();
+                                                    return;
+                                                }
 
-                                        executeNext(index + 1);
+                                                // Two connections creating the same table at
+                                                // once collide in the system catalog even with
+                                                // IF NOT EXISTS: 23505 on
+                                                // pg_type_typname_nsp_index, or 42P07
+                                                // duplicate_table. Either way the other
+                                                // connection won and the table exists — roll
+                                                // back the DDL and retry the write.
+                                                const code = (createErr as { code?: string }).code;
+
+                                                if (code === '23505' || code === '42P07') {
+                                                    client.query(`ROLLBACK TO SAVEPOINT ${ddlSavepoint}`, (ddlRollbackErr) => {
+                                                        if (ddlRollbackErr) {
+                                                            fail(ddlRollbackErr);
+                                                            return;
+                                                        }
+
+                                                        retryWrite();
+                                                    });
+                                                    return;
+                                                }
+
+                                                fail(createErr);
+                                            });
+                                        });
                                     });
-                                });
-                                });
-                            } else if (err) {
-                                // Other error, rollback
-                                client.query('ROLLBACK', () => {
-                                    release();
-                                    done(Result.error(err));
-                                });
-                            } else {
-                                // Success, continue to next operation
-                                if (type === "adds") {
-                                    const { adds } = result.get(op.schemaId);
-                                    adds.push(...queryResult.rows as { [x: string]: never; }[]);
+                                } else if (err) {
+                                    // Other error, rollback
+                                    fail(err);
+                                } else {
+                                    // Success, continue to next operation
+                                    collectRows(queryResult.rows);
+                                    executeNext(index + 1);
                                 }
-
-                                if (type === "updates") {
-                                    const { updates } = result.get(op.schemaId);
-                                    updates.push(...queryResult.rows as { [x: string]: never; }[]);
-                                }
-
-                                if (type === "removes") {
-                                    const { removes } = result.get(op.schemaId);
-                                    removes.push(...queryResult.rows as { [x: string]: never; }[]);
-                                }
-
-                                executeNext(index + 1);
-                            }
-                        });
+                            });
                         });
                     };
 
@@ -323,7 +350,7 @@ export class PostgresDbPlugin implements IDbPlugin {
             });
 
             client.query(sql, params || [], (queryErr, queryResult) => {
-                if (queryErr && queryErr.message.includes('relation') && queryErr.message.includes('does not exist')) {
+                if (queryErr && (queryErr as { code?: string }).code === '42P01') {
                     // Table doesn't exist, create it and retry
                     client.query(createTableSQL, (createErr) => {
                         if (createErr) {

@@ -1,7 +1,6 @@
 # Known defects
 
-Status: 14 of 23 fixed. Open and pinned: #12, #13, #18, #19, #20, #21, #22, #23.
-Open and worked around: #14.
+Status: 23 of 23 fixed. No open defects.
 Date: 2026-08-03
 
 Defects 1–10 came from the functional test program. #11–#13 came from the stress program
@@ -221,21 +220,16 @@ merged" in `ChangeTracker.test.ts`.
 
 ---
 
-## Open defects
+## Later defects (#12–#23) — all fixed
 
-Both were found by the stress program on 2026-08-02, both reduce to a single entity with
-no volume, and both reproduce identically on the memory and file-system plugins — so
-neither is plugin-specific. Neither fix is contained (each is codegen work), so they are
-pinned and recorded rather than fixed.
+#12 and #13 were found by the stress program on 2026-08-02; both reduced to a single entity
+with no volume and reproduced identically on the memory and file-system plugins. Both were
+also independently fixed on the immutable `update()` path first (see
+`specs/immutable-updates.md`), which was the evidence that they were proxy-*lifecycle* bugs
+rather than save-pipeline bugs. The codegen fixes below (2026-08-03) close them on the
+default proxy path too.
 
-**Both are already fixed on the immutable `update()` path** (see
-`specs/immutable-updates.md`). The same scenarios pass in
-`datastore/src/change-tracking/ImmutableUpdates.test.ts` with no other change, which is the
-evidence that these are proxy-*lifecycle* bugs rather than save-pipeline bugs. If that path
-graduates and the proxies are removed, both entries close by construction rather than by a
-targeted fix — so weigh a codegen fix here against just finishing that migration.
-
-### 12. An array stops being change-tracked once its entity has been merged — **OPEN**
+### 12. An array stops being change-tracked once its entity has been merged — **FIXED**
 
 Silent data loss. An in-place array mutation made after the entity's first save is
 discarded with no error and no failed assertion; the next read returns the old value.
@@ -260,15 +254,29 @@ Which paths keep tracking and which lose it:
 | — whole-array replacement (`e.strings = [...]`), any path | yes (control) |
 
 **Cause:** the root entity keeps its proxy — replacing the whole array is still detected —
-but the array's own tracking proxy is not reinstalled when the array is rebuilt. Both
-losing paths rebuild it: `schema.merge` during `afterPersist`, and the enrich/resolve
-performed on query results. This narrows the "Arrays are change-tracked" decision recorded
-below: it holds only until the entity's first merge.
+but merge had NO array handler: arrays fell through to `MergePrimitiveHandler`, which emits
+a plain reference assignment (`destination.values = source.values`), discarding the
+destination array's tracking proxy. Both losing paths merge: `schema.merge` during
+`afterPersist`, and the resolve of query results into an attached entity.
 
-**Pinned by:** `it.failing("detects an in-place array mutation after the entity has been
-merged")` in `ChangeTracker.test.ts`.
+**Fix:** `MergeArrayHandler` (`core/src/codegen/handlers/merge/`), registered before the
+primitive handler — it copies elements INTO the destination's existing array
+(`length = 0`, then index-assign), preserving the proxy, keeping the caller's array
+reference stable, and sharing no reference with the source. Two consequences landed with
+it:
 
-### 13. Saving a mutation two or more levels deep throws — **OPEN**
+- `CloneArrayHandler` deep-copies per ELEMENT rather than `structuredClone` on the whole
+  array — the array wrapper is now a live Proxy after merges, and a Proxy cannot pass a
+  structured-clone boundary.
+- Five plugin test suites carried a `QUIRK: should not update a nested array if it is not
+  set through assignment` test that *asserted the buggy behaviour*; each is rewritten to
+  assert the mutation is tracked and persisted.
+
+Guarded by `"detects an in-place array mutation after the entity has been merged"` and the
+re-query companion `"detects an in-place array mutation after a re-query has been merged
+in"` in `ChangeTracker.test.ts`, plus the re-enabled `array-of-date` shape in S2.
+
+### 13. Saving a mutation two or more levels deep throws — **FIXED**
 
 Not silent — the save rejects with
 `TypeError: Cannot read properties of undefined (reading 'inner')`, thrown from generated
@@ -295,16 +303,22 @@ Depth 1 (`nested.value`) works; depth 2 and depth 3 both throw.
 `changes.nested.inner`. `changes.nested` is undefined, so depth 2 dereferences undefined.
 Depth 1 survives only because it stops one level short.
 
-The tracking itself is correct: `tracked.__tracking__.changes` holds exactly
-`{ "nested.inner.value": "after" }`. Only the serialization of the delta is wrong. A fix
-needs either an un-flattening step before `serialize`, or a delta-shaped serializer that
-walks dotted paths. Note that defect #1 fixed the same depth-2 blind spot in `enrich`; this
-is the matching gap on the delta path.
+The tracking itself was correct: `tracked.__tracking__.changes` held exactly
+`{ "nested.inner.value": "after" }`. Only the serialization of the delta was wrong — and
+worse than the throw suggested: depth 1 did not "survive", it silently produced a wrong
+delta (`{ "nested": {} }`, the value dropped), masked only because JSON-column consumers
+take values from the entity rather than the delta, and an in-place array mutation
+serialized to an empty delta.
 
-**Pinned by:** `it.failing("serializes the delta for a mutation two levels deep")` in
-`ChangeTracker.test.ts`.
+**Fix:** the proxy loop in `getAttachmentsChanges` routes through `serializeDelta`, which
+now selects changed ROOT columns out of the already-preprocessed complete entity (no second
+serialization pass) and resolves a dotted change key by its root segment
+(`key.split(".")[0]`). A nested subtree is therefore always sent whole — which is what the
+JSON-column consumers require — and the proxy and immutable delta paths are unified.
+Guarded by `"serializes the delta for a mutation two levels deep"` plus depth-1 and array
+companions in `ChangeTracker.test.ts`, and the re-enabled `object-depth-3` shape in S2.
 
-### 14. `schema.serialize` throws on a partial entity with an absent nested parent — **OPEN, worked around**
+### 14. `schema.serialize` throws on a partial entity with an absent nested parent — **FIXED**
 
 Surfaced while making SQL plugins store nested objects as JSON. Patching only `tags` on a
 schema that also declares `nested: { inner: ... }` threw
@@ -314,14 +328,21 @@ schema that also declares `nested: { inner: ... }` threw
 it dereference branches the patch omits. This is the same blind spot defect #6 fixed for
 `enrich` and `merge` via guarded selectors — the serializer never received them.
 
-**Worked around, not fixed.** `ChangeTracker.serializeDelta` serializes the COMPLETE entity
-(every nested parent present, so nothing absent is dereferenced) and then selects the changed
-top-level keys. That is arguably better regardless — each value goes through its property's
-real serializer rather than a partial reimplementation — but the codegen gap is still there
-for any other caller who hands `serialize` a partial entity.
+**The workaround was also not sufficient.** `ChangeTracker.serializeDelta` serialized the
+COMPLETE entity and selected changed top-level keys — but the generated serializer's
+`conditionallyCreateParent` only materialized the IMMEDIATE parent, never grandparents, so
+any schema with an optional/nullable nested object at depth 2+ could not be serialized *at
+all*, complete entity or not. That made #14 a live bug on the immutable path too, and the
+one of the three tracker defects the immutable migration would not have retired.
 
-**Fix would be:** apply #6's `emitDestinationAncestorGuards` treatment to the serialize
-handlers.
+**Fix:** exactly #6's treatment, applied to codegen. `emitDestinationAncestorGuards` in
+`core/src/codegen/handlers/types.ts` is generalized to take a root (`"result"`) and
+`useFromPropertyName`; the four serialize handlers (value, array, date, serializer) share
+one `emitSerializeNestedAssignment` helper that reads the parent through an optional-chained
+selector (`entity?.nested?.inner`) and materializes every `result` ancestor before
+assigning. Selecting the delta out of the preprocessed entity (see #13) still stands — it
+is the better shape regardless — but `schema.serialize` no longer throws on partial
+entities either.
 
 ### 15. SQL plugins emitted a column per nested descendant — **FIXED**
 
@@ -402,32 +423,38 @@ Guarded by `"freezes what it returns"` and `"does not treat a plain mutation as 
 `ImmutableCollection.test.ts`, plus the rewritten `plugins/memory/src/tests/immutableItem.test.ts`
 (which had asserted the buggy behaviour — a bare mutation with no assertion at all).
 
-### 18. Concurrent stores on one file-system database lose data — **OPEN, pinned**
+### 18. Concurrent stores on one file-system database lose data — **FIXED**
 
 Found by S5. Ten `DataStore` instances over one FileSystemPlugin database, each writing its
 own key range: the union should be 200 rows and is **20** — exactly one store's worth. Nine
 stores' writes are gone, silently, with every save reporting success.
 
-**Cause:** `FileSystemPlugin` rewrites the entire collection file from its own plugin
-instance's in-memory view on every save, and `createShared(name)` gives each store a separate
-plugin instance with a separate view. Instance B never observes A's writes, so B's save
-overwrites them wholesale. Last writer wins the whole file.
+**Cause** (sharper than first recorded — there was no per-instance cache at all):
+`FileSystemPlugin.resolveCollection` constructed a FRESH, EMPTY collection on every persist,
+and `save()` performed a non-atomic read-modify-write (`readFile` → mutate → `writeFile`)
+with nothing serializing it. Ten concurrent savers all read the empty file and the last
+`writeFile` won the whole file. Not even multi-instance-specific: two overlapping saves
+through ONE plugin instance raced identically.
 
-The memory backend passes the same scenario, because `MemoryPlugin`'s `dbs` registry is
-process-global by name — the ten stores genuinely share one collection object.
+**Fix:** the same registry `MemoryPlugin` keeps, at the collection level — one
+`FileSystemDbCollection` per (resolved database path, collection name), process-wide, in a
+module-global map. Every writer mutates the shared in-memory view and stringifies it after
+its own mutation, so any later write is a superset of every earlier one. With it:
 
-**Not obviously a bug to fix so much as a boundary to state.** Two honest options: document
-that a file-system database belongs to one store per process (and make a second instance
-fail loudly rather than corrupt), or give the plugin read-modify-write semantics with file
-locking. The second is real work and platform-specific.
+- **Load-once.** The file is read exactly once per process (concurrent first loads
+  coalesce on a waiter queue); after that the in-memory view is authoritative and the file
+  is write-only. Re-reading on later saves would resurrect rows another writer removed.
+- **Atomic writes.** Write-to-temp then `rename`, so a reader or a crash sees the old file
+  or the new one, never a torn write.
+- **The boundary, stated:** a file-system database belongs to ONE process. Rows written by
+  another process after the first read are never observed. Cross-process sharing needs a
+  real database.
 
-Worth noting the same shape would affect any future plugin that persists a whole collection
-per save rather than per row.
+The same shape still applies to any future plugin that persists a whole collection per save
+rather than per row. Guarded by the `file-system` case of
+`stress/src/s5-many-stores-one-database.test.ts`, no longer `knownFailing`.
 
-**Pinned by:** the `file-system` case of `stress/src/s5-many-stores-one-database.test.ts`,
-via the scenario harness's `knownFailing`.
-
-### 19. An `s.array()` property cannot be written to PostgreSQL — **OPEN, pinned**
+### 19. An `s.array()` property cannot be written to PostgreSQL — **FIXED**
 
 Found by S8. The first insert of an entity holding an array is rejected by the server:
 `invalid input syntax for type json`. No workload runs; the row never lands.
@@ -447,10 +474,13 @@ not. A `json`/`jsonb` parameter has to be `JSON.stringify`-ed before it is bound
 
 Invisible to SQLite, which stores JSON as text and receives an already-serialized value.
 
-**Pinned by:** the churn scenario in `stress/src/s8-real-databases.test.ts`, and
-`'rejects an array property'` in `e2e/src/postgresContainer.test.ts`.
+**Fix:** one change with #20 — see there. The INSERT param builder routes every value
+through `toColumnValueMap`, whose `needsJsonEncoding` JSON-stringifies structures bound to
+JSON columns (encoding on runtime shape, so schemas with their own `.serialize()` are not
+double-encoded). Guarded by `'writes an array property'` in
+`e2e/src/postgresContainer.test.ts` and the re-enabled churn scenario in S8.
 
-### 20. A nested object still emits a column per descendant on the PostgreSQL path — **OPEN, pinned**
+### 20. A nested object still emits a column per descendant on the PostgreSQL path — **FIXED**
 
 Found by S8. This is the shape of defect #15, which was recorded as fixed. It was fixed for
 SQLite; the PostgreSQL path still does it.
@@ -469,11 +499,26 @@ server rejects it: `column "value" specified more than once`.
 **Reproduction:** a schema with both `value: s.string()` and `nested: s.object({ value: ... })`,
 one entity, one save.
 
-**Pinned by:** `'a nested descendant may share a name with a top-level property'` in
-`stress/src/s8-real-databases.test.ts`, and the matching case in
-`e2e/src/postgresContainer.test.ts`.
+**Fix:** `plugins/postgresql/src/utils.ts` was only HALF migrated onto
+`@routier/sql-plugin-core`'s column layer when #15 fixed SQLite — it used
+`toColumnValueMap` on the UPDATE path but still iterated the flat `schema.properties` (and
+used `p.name` instead of `p.getResolvedName()`) in the DDL, INSERT column lists, INSERT
+params, and SELECT column lists. The fix is the port SQLite already carried:
+`sqlColumnProperties(schema)` at every column-list site, resolved (storage-side) names
+throughout, `toColumnValueMap` for INSERT params (which is also #19), and the hand-rolled
+WHERE builder replaced with the shared `toSql(expr, 'postgresql')`. Two follow-ons landed
+with it:
 
-### 21. The first concurrent write to a new collection loses all but one — **OPEN, pinned**
+- **`RETURNING` rows are decoded** (`decodeJsonColumns`) before being echoed to
+  `mergeChanges`, as `SqliteDbPlugin.collect` already did — without this the fix surfaces
+  as a throw on the first nested read after a save.
+- **`plugins/mysql/src/utils.ts` had the identical defects** at its corresponding sites
+  (DDL, INSERT, SELECT); swept in the same pass.
+
+Guarded by `'keeps a nested descendant distinct from a top-level property of the same
+name'` in `e2e/src/postgresContainer.test.ts` and the matching S8 scenario.
+
+### 21. The first concurrent write to a new collection loses all but one — **FIXED**
 
 Found by S8. Five plugin instances over one database, each inserting into a collection whose
 table does not exist yet: **one succeeds, four are rejected** with
@@ -486,18 +531,26 @@ another connection doing the same thing, so four instances issue a `CREATE TABLE
 the fifth is committing, and collide in the system catalog. The error surfaces as a failed
 save rather than as a retry.
 
-The fix looks contained: `CREATE TABLE IF NOT EXISTS`, plus treating a `23505` on the create as
-"someone else won, retry the write".
+**The first-guess fix was already in place and insufficient:** the DDL already used
+`CREATE TABLE IF NOT EXISTS` — which is NOT atomic in PostgreSQL against a concurrent
+creator; two simultaneous creates still collide in the system catalog. The real gap was
+that the savepoint from #4 wrapped the *write*, not the DDL, so a failed `CREATE TABLE`
+had no recovery path and aborted the whole save.
+
+**Fix** (`PostgresDbPlugin._doPersistWork`): the DDL runs inside its own savepoint; a
+create failing with `42P07` (duplicate_table) or `23505` (the catalog collision) means the
+other connection won and the table exists — roll back to the DDL savepoint and retry the
+original write. Missing-table detection switched from `err.message` string-matching to
+`err.code === '42P01'` (persist and query paths both).
 
 **Why no other backend sees it:** in-process plugins have no DDL, and SQLite serialises writers
 at the file level.
 
 Note this is the *deployment* shape, not an exotic one — several processes starting against a
-fresh database do exactly this.
+fresh database do exactly this. Guarded by the multi-instance scenario in
+`stress/src/s8-real-databases.test.ts`, no longer `knownFailing`.
 
-**Pinned by:** the multi-instance scenario in `stress/src/s8-real-databases.test.ts`.
-
-### 22. One save cannot update two entities whose changed columns differ — **OPEN, pinned**
+### 22. One save cannot update two entities whose changed columns differ — **FIXED**
 
 Found by S8, and the broadest of the four: it needs no nested types, no arrays, and no
 concurrency.
@@ -527,15 +580,14 @@ the value being written.
 It also explains why S1's volume load passes against PostgreSQL: its `mutate` always writes the
 same two properties, so every update falls into one group and one statement.
 
-**Fix direction:** issue one query per group rather than concatenating them, or build a single
-statement covering all groups (every column in one `SET`, with `ELSE "col"` preserving the
-untouched ones — which is already the per-group shape).
+**Fix:** one query per group. `buildFromPersistOperation` returns `updates:
+SqlOperation[]` — one entry per changed-column group, each numbering its own parameters
+from `$1` — and the plugin pushes each group as its own operation into the already-flat,
+sequential, per-savepoint execution list inside the one transaction. No new transaction
+machinery was needed. Guarded by `'updates two entities whose changed columns differ in one
+save'` in `e2e/src/postgresContainer.test.ts` and the matching S8 scenario.
 
-**Pinned by:** `'one save may update two entities whose changed columns differ'` in
-`stress/src/s8-real-databases.test.ts`, and the matching case in
-`e2e/src/postgresContainer.test.ts`.
-
-### 23. Two identical unsaved rows with identity keys collapse into one — **OPEN, pinned**
+### 23. Two identical unsaved rows with identity keys collapse into one — **FIXED**
 
 Silent data loss on the add path, on every plugin. Adding two rows that are equal in content
 to a schema whose key is an identity, in one save, inserts one row.
@@ -569,18 +621,33 @@ way out, so content is the only thing the two sides share. With two identical ro
 genuinely nothing to tell the returned rows apart — the correlation problem, not just the map,
 is what needs replacing.
 
-**Fix direction:** correlate by position or by a per-add correlation token carried through
-`preprocess` and returned by the plugin, rather than by content. That is a change to the
-plugin contract (`test-utils/src/pluginContract.ts` documents the "entire document must be
-returned for adds" rule this depends on), so it is not contained.
+**Fix — neither of the directions first considered.** Correlating by position converts an
+ordering assumption several plugins do not honor (mysql re-SELECTs, dexie's numeric-id
+branch pushes in completion order, pouchdb re-fetches) into a load-bearing contract that
+corrupts *silently* where the content hash at least throws loudly; a correlation token is
+correct but touches every plugin's add path and `BulkPersistResult`. Instead the hash map
+became a **multimap with take semantics**: `UnknownKeyAdditions.data` is
+`Map<hash, entity[]>`, `set` pushes onto the bucket, and the correlation lookup — renamed
+`take` on `IAdditions`, so the destructive semantics live in the type — removes and returns
+one entry. Semantically sufficient, not a workaround: rows in one bucket are equal on every
+hashed property and have no identity yet, so which returned row pairs with which pending
+object is unobservable — but each caller's own reference receives an identity and both rows
+insert. `replace` removes the caller's specific reference (identity `indexOf`), never the
+whole bucket. No plugin-contract change, no ordering assumption, and the
+`update()`-into-identical-row route is fixed by the same change.
+
+One correction for the record: the "entire document must be returned for adds" rule lives
+in the runtime assertion in `ChangeTracker.mergeChanges`, not in
+`test-utils/src/pluginContract.ts` as this entry previously claimed.
 
 **Found:** while adding unsaved-row support to the immutable `update()` path — a patch that
 makes one pending row identical to another reaches the same collapse. The route is new; the
-defect is not, and the pin is written against the plain add so it does not depend on
+defect is not, and the guard is written against the plain add so it does not depend on
 `update()` at all.
 
-**Pinned by:** `'collapses two identical unsaved rows with identity keys [pinned: known
-defect #23]'` in `datastore/src/change-tracking/ImmutableUpdates.test.ts`.
+**Guarded by:** `'inserts two identical unsaved rows with identity keys as two rows'` and
+`'assigns distinct identities to two identical unsaved rows'` in
+`datastore/src/change-tracking/ImmutableUpdates.test.ts`.
 
 ### The `--forceExit` question, answered
 

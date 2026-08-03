@@ -243,7 +243,7 @@ export class ChangeTracker<TEntity extends {}> {
             // Need to deserialize so we can match properly
             const deserializedAdd = this.schema.deserialize(add);
 
-            const found = this.additions.get(deserializedAdd);
+            const found = this.additions.take(deserializedAdd);
 
             assertIsNotNull(found, () => {
 
@@ -329,7 +329,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
             }
 
             const serializedEntity = this.schema.preprocess(canonicalAttachment.doc as InferCreateType<TEntity>);
-            changes.push({ entity: serializedEntity, delta: this.schema.serialize(tracking.changes as InferType<TEntity>), changeType })
+            changes.push({ entity: serializedEntity, delta: this.serializeDelta(serializedEntity, tracking.changes), changeType })
         }
 
         // An immutably-updated row is normally invisible to the loop above: `update()` never
@@ -346,9 +346,10 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
         }
 
         for (const [, update] of this.immutable.entries()) {
+            const serializedEntity = this.schema.preprocess(update.current as InferCreateType<TEntity>);
             changes.push({
-                entity: this.schema.preprocess(update.current as InferCreateType<TEntity>),
-                delta: this.serializeDelta(update.current, update.patch),
+                entity: serializedEntity,
+                delta: this.serializeDelta(serializedEntity, update.patch),
                 changeType: "propertiesChanged",
             });
         }
@@ -357,34 +358,35 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     }
 
     /**
-     * The changed properties of `current`, serialized, keyed by storage-side name.
+     * The changed properties of the entity, keyed by storage-side name, selected from the
+     * COMPLETE already-serialized entity.
      *
-     * Deliberately NOT `schema.serialize(patch)`. The generated serializer walks the whole
-     * entity shape, so handing it a partial entity makes it dereference branches the patch
-     * omits: patching only `tags` on a schema that also has `nested.inner` throws
-     * `Cannot read properties of undefined (reading 'inner')`. That is the same blind spot
-     * defect #6 fixed for `enrich`/`merge` and #13 hit on the delta path — the serializer
-     * never received the equivalent guards.
-     *
-     * Serializing the COMPLETE entity sidesteps it entirely: every nested parent is present,
-     * so nothing is dereferenced that does not exist. The changed subset is then selected
-     * from the result, which also means each value goes through its property's real
-     * serializer rather than a reimplementation of one.
+     * Deliberately NOT `schema.serialize(patch)`. A patch is partial (and on the proxy path
+     * it is a FLAT map keyed by dotted path, e.g. `{ "nested.inner.value": "y" }`), so
+     * handing it to the generated serializer walks branches the patch omits — the depth-2
+     * throw of defect #13 — and a dotted key never matches an entity-shaped walk at all.
+     * Selecting changed roots out of the complete serialized entity sidesteps both: every
+     * value has already been through its property's real serializer, and a dotted path only
+     * needs its root segment to select the right storage key. A nested subtree is therefore
+     * always sent whole, which is also what the JSON-column consumers require (a partial
+     * subtree would overwrite the siblings that did not change).
      */
-    private serializeDelta(current: InferType<TEntity>, patch: Record<string, any>) {
-        const serialized = this.schema.serialize(current) as unknown as Record<string, unknown>;
+    private serializeDelta(serializedEntity: Record<string, unknown>, patch: Record<string, any>) {
         const roots = this.schema.properties.filter(p => p.parent == null);
         const delta: Record<string, unknown> = {};
 
         for (const key of Object.keys(patch)) {
-            const property = roots.find(p => p.name === key) ?? roots.find(p => p.getResolvedName() === key);
+            // Proxy-path change keys are dotted paths ("nested.inner.value", "values.2");
+            // only the root segment names a storage column
+            const rootKey = key.split(".")[0];
+            const property = roots.find(p => p.name === rootKey) ?? roots.find(p => p.getResolvedName() === rootKey);
 
             if (property == null) {
                 continue;
             }
 
             const column = property.getResolvedName();
-            delta[column] = serialized[column];
+            delta[column] = serializedEntity[column];
         }
 
         return delta as any;

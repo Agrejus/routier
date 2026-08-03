@@ -14,9 +14,15 @@ export class KnownKeyAdditions<T extends {}> implements IAdditions<T> {
         this.schema = schema;
     }
 
-    get(entity: InferCreateType<T>): InferCreateType<T> | undefined {
+    take(entity: InferCreateType<T>): InferCreateType<T> | undefined {
         const id = this.schema.getId(entity as InferType<T>);
-        return this.data.get(id);
+        const found = this.data.get(id);
+
+        // Destructive to honor the interface contract; with unique ids per pending row it
+        // makes no behavioral difference, since each id is resolved at most once per save.
+        this.data.delete(id);
+
+        return found;
     }
 
     values(): InferCreateType<T>[] {

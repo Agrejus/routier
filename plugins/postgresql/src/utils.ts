@@ -1,8 +1,8 @@
 import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema';
-import { Expression, ComparatorExpression, OperatorExpression, ValueExpression, PropertyExpression } from '@routier/core/expressions';
+import { Expression } from '@routier/core/expressions';
 import { IQuery, QueryField } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
-import { getDialect, toColumnValueMap } from '@routier/sql-plugin-core';
+import { getDialect, sqlColumnProperties, toColumnValueMap, toSql, SqlDialect } from '@routier/sql-plugin-core';
 import { SqlOperation } from './types';
 
 /**
@@ -39,7 +39,7 @@ const isDeeplyNested = (prop: PropertyInfo<any>): boolean => {
 
 /**
  * Converts a CompiledSchema to a PostgreSQL CREATE TABLE statement and index statements.
- * 
+ *
  * PostgreSQL-specific features:
  * - Uses SERIAL/BIGSERIAL for auto-incrementing integers
  * - Uses UUID extension for string identity keys
@@ -58,22 +58,24 @@ export function compiledSchemaToPostgresTable(schema: CompiledSchema<any>, table
         singleIdentityPK = identityProps[0];
     }
 
-    for (const prop of schema.properties) {
+    // Root properties only: a nested subtree is ONE JSON column named for its root.
+    // Iterating every property would emit a column per descendant, named by its leaf.
+    for (const prop of sqlColumnProperties(schema)) {
         let colDef: string;
 
         if (singleIdentityPK && prop.name === singleIdentityPK.name) {
             if (prop.type === SchemaTypes.Number) {
-                colDef = `"${prop.name}" SERIAL PRIMARY KEY`;
+                colDef = `"${prop.getResolvedName()}" SERIAL PRIMARY KEY`;
             } else if (prop.type === SchemaTypes.String) {
                 // Use UUID extension for string identity keys
-                colDef = `"${prop.name}" UUID PRIMARY KEY DEFAULT gen_random_uuid()`;
+                colDef = `"${prop.getResolvedName()}" UUID PRIMARY KEY DEFAULT gen_random_uuid()`;
             } else {
-                colDef = `"${prop.name}" ${schemaTypeToPostgresType(prop.type)} PRIMARY KEY`;
+                colDef = `"${prop.getResolvedName()}" ${schemaTypeToPostgresType(prop.type)} PRIMARY KEY`;
             }
         } else if (isDeeplyNested(prop)) {
-            colDef = `"${prop.name}" JSONB`;
+            colDef = `"${prop.getResolvedName()}" JSONB`;
         } else {
-            colDef = `"${prop.name}" ${schemaTypeToPostgresType(prop.type)}`;
+            colDef = `"${prop.getResolvedName()}" ${schemaTypeToPostgresType(prop.type)}`;
         }
 
         columns.push(colDef);
@@ -82,7 +84,7 @@ export function compiledSchemaToPostgresTable(schema: CompiledSchema<any>, table
     // Composite PK logic
     let pkClause = '';
     if ((!singleIdentityPK) && idProps.length > 0) {
-        const pkCols = idProps.map(p => `"${p.name}"`);
+        const pkCols = idProps.map(p => `"${p.getResolvedName()}"`);
         pkClause = `, PRIMARY KEY (${pkCols.join(', ')})`;
     }
 
@@ -96,7 +98,7 @@ export function compiledSchemaToPostgresTable(schema: CompiledSchema<any>, table
         if (prop.isDistinct) {
             const idxName = `${table}_${prop.name}_unique_idx`;
             if (!usedIndexNames.has(idxName)) {
-                indexStatements.push(`CREATE UNIQUE INDEX IF NOT EXISTS "${idxName}" ON "${table}" ("${prop.name}");`);
+                indexStatements.push(`CREATE UNIQUE INDEX IF NOT EXISTS "${idxName}" ON "${table}" ("${prop.getResolvedName()}");`);
                 usedIndexNames.add(idxName);
             }
         }
@@ -120,16 +122,16 @@ export function compiledSchemaToPostgresTable(schema: CompiledSchema<any>, table
             if (!usedIndexNames.has(idxSqlName)) {
                 if (isDeeplyNested(prop)) {
                     // GIN index for JSONB
-                    indexStatements.push(`CREATE INDEX IF NOT EXISTS "${idxSqlName}" ON "${table}" USING GIN ("${prop.name}");`);
+                    indexStatements.push(`CREATE INDEX IF NOT EXISTS "${idxSqlName}" ON "${table}" USING GIN ("${prop.getResolvedName()}");`);
                 } else {
-                    indexStatements.push(`CREATE INDEX IF NOT EXISTS "${idxSqlName}" ON "${table}" ("${prop.name}");`);
+                    indexStatements.push(`CREATE INDEX IF NOT EXISTS "${idxSqlName}" ON "${table}" ("${prop.getResolvedName()}");`);
                 }
                 usedIndexNames.add(idxSqlName);
             }
         } else if (props.length > 1) {
             // Composite index
             const idxSqlName = `${table}_${idxName}_clustered_idx`;
-            const colList = props.map(p => `"${p.name}"`).join(', ');
+            const colList = props.map(p => `"${p.getResolvedName()}"`).join(', ');
             if (!usedIndexNames.has(idxSqlName)) {
                 indexStatements.push(`CREATE INDEX IF NOT EXISTS "${idxSqlName}" ON "${table}" (${colList});`);
                 usedIndexNames.add(idxSqlName);
@@ -145,163 +147,24 @@ ${indexStatements.join('\n')}`;
 }
 
 /**
+ * A postgres dialect whose placeholders start after `offset` already-bound parameters,
+ * so several WHERE fragments can share one parameter list without renumbering.
+ */
+const offsetPostgresDialect = (offset: number): SqlDialect => {
+    const base = getDialect('postgresql');
+    return {
+        ...base,
+        getPlaceholder: (i: number) => `$${offset + i + 1}`,
+    };
+};
+
+/**
  * Translates an Expression tree to a SQL WHERE clause and parameters.
- * PostgreSQL-specific: Uses ILIKE for case-insensitive string matching, LIKE for case-sensitive.
+ * @deprecated Use `toSql(expr, 'postgresql')` from `@routier/sql-plugin-core` for dialect-agnostic SQL.
  */
 export function expressionToWhereClause(expr: Expression): { where: string, params: any[] } {
-    const params: any[] = [];
-    function walk(e: Expression): string {
-        if (e.type === 'operator') {
-            const op = (e as OperatorExpression).operator;
-            const left = e.left ? walk(e.left) : '';
-            const right = e.right ? walk(e.right) : '';
-
-            let sqlOp: string;
-            switch (op) {
-                case '&&':
-                    sqlOp = 'AND';
-                    break;
-                case '||':
-                    sqlOp = 'OR';
-                    break;
-                default:
-                    sqlOp = op;
-                    break;
-            }
-
-            return `(${left} ${sqlOp} ${right})`;
-        }
-        if (e.type === 'comparator') {
-            const cmp = e as ComparatorExpression;
-
-            // Handle string operations - PostgreSQL uses LIKE/ILIKE
-            if (cmp.comparator === 'starts-with' || cmp.comparator === 'ends-with' || cmp.comparator === 'includes') {
-                if (cmp.comparator === 'includes') {
-                    if (cmp.left.type === 'property' && cmp.right.type === 'value') {
-                        const col = `"${(cmp.left as PropertyExpression).property.name}"`;
-                        const value = (cmp.right as ValueExpression).value;
-
-                        if (Array.isArray(value)) {
-                            const placeholders = value.map((_, idx) => `$${params.length + idx + 1}`).join(', ');
-                            params.push(...value);
-                            return cmp.negated ? `${col} NOT IN (${placeholders})` : `${col} IN (${placeholders})`;
-                        } else {
-                            // PostgreSQL uses ILIKE for case-insensitive, LIKE for case-sensitive
-                            params.push(`%${value}%`);
-                            return cmp.negated ? `${col} NOT ILIKE $${params.length}` : `${col} ILIKE $${params.length}`;
-                        }
-                    } else if (cmp.left.type === 'value' && cmp.right.type === 'property') {
-                        const col = `"${(cmp.right as PropertyExpression).property.name}"`;
-                        const value = (cmp.left as ValueExpression).value;
-
-                        if (Array.isArray(value)) {
-                            const placeholders = value.map((_, idx) => `$${params.length + idx + 1}`).join(', ');
-                            params.push(...value);
-                            return cmp.negated ? `${col} NOT IN (${placeholders})` : `${col} IN (${placeholders})`;
-                        } else {
-                            params.push(`%${value}%`);
-                            return cmp.negated ? `$${params.length} NOT ILIKE ${col}` : `$${params.length} ILIKE ${col}`;
-                        }
-                    }
-                }
-
-                // starts-with and ends-with
-                if (cmp.left.type === 'property' && cmp.right.type === 'value') {
-                    const col = `"${(cmp.left as PropertyExpression).property.name}"`;
-                    const value = (cmp.right as ValueExpression).value;
-                    let pattern: string;
-
-                    switch (cmp.comparator) {
-                        case 'starts-with':
-                            pattern = `${value}%`;
-                            break;
-                        case 'ends-with':
-                            pattern = `%${value}`;
-                            break;
-                        default:
-                            pattern = `%${value}%`;
-                    }
-
-                    params.push(pattern);
-                    return cmp.negated ? `${col} NOT ILIKE $${params.length}` : `${col} ILIKE $${params.length}`;
-                } else if (cmp.left.type === 'value' && cmp.right.type === 'property') {
-                    const col = `"${(cmp.right as PropertyExpression).property.name}"`;
-                    const value = (cmp.left as ValueExpression).value;
-                    let pattern: string;
-
-                    switch (cmp.comparator) {
-                        case 'starts-with':
-                            pattern = `${value}%`;
-                            break;
-                        case 'ends-with':
-                            pattern = `%${value}`;
-                            break;
-                        default:
-                            pattern = `%${value}%`;
-                    }
-
-                    params.push(pattern);
-                    return cmp.negated ? `$${params.length} NOT ILIKE ${col}` : `$${params.length} ILIKE ${col}`;
-                }
-            }
-
-            // Handle null comparisons
-            if (cmp.comparator === 'equals') {
-                if (cmp.left.type === 'property' && cmp.right.type === 'value') {
-                    const col = `"${(cmp.left as PropertyExpression).property.name}"`;
-                    const value = (cmp.right as ValueExpression).value;
-
-                    if (value === null) {
-                        return cmp.negated ? `${col} IS NOT NULL` : `${col} IS NULL`;
-                    }
-                    params.push(value);
-                    const paramNum = params.length;
-                    return cmp.negated ? `${col} != $${paramNum}` : `${col} = $${paramNum}`;
-                } else if (cmp.left.type === 'value' && cmp.right.type === 'property') {
-                    const col = `"${(cmp.right as PropertyExpression).property.name}"`;
-                    const value = (cmp.left as ValueExpression).value;
-
-                    if (value === null) {
-                        params.push(null); // Push null to maintain param count
-                        const paramNum = params.length;
-                        return cmp.negated ? `$${paramNum} IS NOT NULL` : `$${paramNum} IS NULL`;
-                    }
-                    params.push(value);
-                    const paramNum = params.length;
-                    return cmp.negated ? `$${paramNum} != ${col}` : `$${paramNum} = ${col}`;
-                }
-            }
-
-            // Generic comparison
-            const leftExpr = walk(cmp.left);
-            const rightExpr = walk(cmp.right);
-
-            switch (cmp.comparator) {
-                case 'equals':
-                    return cmp.negated ? `${leftExpr} != ${rightExpr}` : `${leftExpr} = ${rightExpr}`;
-                case 'greater-than':
-                    return cmp.negated ? `${leftExpr} <= ${rightExpr}` : `${leftExpr} > ${rightExpr}`;
-                case 'greater-than-equals':
-                    return cmp.negated ? `${leftExpr} < ${rightExpr}` : `${leftExpr} >= ${rightExpr}`;
-                case 'less-than':
-                    return cmp.negated ? `${leftExpr} >= ${rightExpr}` : `${leftExpr} < ${rightExpr}`;
-                case 'less-than-equals':
-                    return cmp.negated ? `${leftExpr} > ${rightExpr}` : `${leftExpr} <= ${rightExpr}`;
-                default:
-                    throw new Error(`Unsupported comparator: ${cmp.comparator}`);
-            }
-        }
-        if (e.type === 'property') {
-            return `"${(e as PropertyExpression).property.name}"`;
-        }
-        if (e.type === 'value') {
-            params.push((e as ValueExpression).value);
-            return `$${params.length}`;
-        }
-        throw new Error(`Unknown expression type: ${e.type}`);
-    }
-    const where = walk(expr);
-    return { where, params };
+    const { where, params } = toSql(expr, 'postgresql');
+    return { where, params: params as any[] };
 }
 
 /**
@@ -312,8 +175,10 @@ export function buildSelectFromExpression<TEntity extends {}, TShape>(options: {
     schema: CompiledSchema<TEntity>
 }): { sql: string, params: any[] } {
     const { schema, query } = options;
-    const columns = schema.properties && schema.properties.length > 0
-        ? schema.properties.map(p => `"${p.name}"`)
+    // Root properties only, storage-side names — same layout the DDL creates
+    const columnProperties = sqlColumnProperties(schema);
+    const columns = columnProperties.length > 0
+        ? columnProperties.map(p => `"${p.getResolvedName()}"`)
         : ['*'];
 
     const filterOptions = query.options.get('filter');
@@ -330,7 +195,7 @@ export function buildSelectFromExpression<TEntity extends {}, TShape>(options: {
 
 export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSchema<TEntity>, changes: SchemaPersistChanges<Record<string, unknown>>): {
     adds: SqlOperation | null;
-    updates: SqlOperation | null;
+    updates: SqlOperation[];
     removes: SqlOperation | null;
 } {
     const collectionName = schema.collectionName;
@@ -342,15 +207,19 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
     } = changes;
 
     if (!hasItems) {
-        return { adds: null, updates: null, removes: null };
+        return { adds: null, updates: [], removes: null };
     }
 
-    const allColumns = schema.properties.map(p => `"${p.name}"`);
+    // Column identifiers are storage-side names (PropertyInfo.from ?? name), one column per
+    // ROOT property: the entities handed to bulkPersist are wire-shaped, and a nested
+    // subtree is stored as a single JSON column named for its root.
+    const columnProperties = sqlColumnProperties(schema);
+    const allColumns = columnProperties.map(p => `"${p.getResolvedName()}"`);
     const allColumnStr = allColumns.join(', ');
 
-    const insertColumns = schema.properties
-        .filter(p => !p.isIdentity)
-        .map(p => `"${p.name}"`);
+    // For INSERT operations, exclude identity columns (they're auto-generated)
+    const insertProperties = columnProperties.filter(p => !p.isIdentity);
+    const insertColumns = insertProperties.map(p => `"${p.getResolvedName()}"`);
     const insertColumnStr = insertColumns.join(', ');
 
     // Handle INSERT operations (adds)
@@ -365,18 +234,28 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 
         const addParams: any[] = [];
         for (const add of adds) {
-            for (const col of schema.properties) {
-                if (!col.isIdentity) {
-                    addParams.push(add[col.name]);
-                }
+            // Routed through the same column resolution the UPDATE path uses, so a nested
+            // object or array is JSON-encoded here too rather than handed to the driver as
+            // a structure — `pg` encodes a JS array as a Postgres array literal (`{x,y}`),
+            // which a json/jsonb column rejects.
+            const values = toColumnValueMap(add as Record<string, unknown>, schema, getDialect('postgresql'));
+
+            for (const col of insertProperties) {
+                addParams.push(values.get(col.getResolvedName()));
             }
         }
 
         addsOperation = { sql: insertSql, params: addParams };
     }
 
-    // Handle UPDATE operations (updates)
-    let updatesOperation: SqlOperation | null = null;
+    // Handle UPDATE operations (updates).
+    //
+    // One SqlOperation PER GROUP, not one joined statement: PostgreSQL's extended query
+    // protocol (any parameterized query) permits exactly one command per statement, so
+    // `join('; ')` is rejected with "cannot insert multiple commands into a prepared
+    // statement" the moment two entities' changed-column sets differ. Each group numbers
+    // its own parameters from $1.
+    const updatesOperations: SqlOperation[] = [];
     if (updates.length > 0) {
         // The delta is a partial ENTITY (core's EntityDelta) and has to be resolved to
         // columns before it can be grouped or bound: renames become storage-side names, and
@@ -415,17 +294,16 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
             updateGroups.get(deltaKeys)!.push(update);
         }
 
-        const statements: string[] = [];
-        const allParams: any[] = [];
-        let paramCounter = 1;
-
         for (const [, groupUpdates] of updateGroups) {
             const firstUpdate = groupUpdates[0];
             // Already resolved to columns above, empty-delta fallback included.
             const deltaKeys = [...columnValues.get(firstUpdate)!.keys()];
 
             const setClauses: string[] = [];
-            const idColumns = schema.idProperties.map(p => p.name);
+            const groupParams: any[] = [];
+            let paramCounter = 1;
+
+            const idColumns = schema.idProperties.map(p => p.getResolvedName());
             const idColumn = idColumns[0];
 
             for (const key of deltaKeys) {
@@ -434,9 +312,9 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
                 for (const update of groupUpdates) {
                     const idValue = schema.idProperties[0].getValue(update.entity);
                     caseStatement += ` WHEN $${paramCounter++} THEN $${paramCounter++}`;
-                    allParams.push(idValue);
+                    groupParams.push(idValue);
 
-                    allParams.push(columnValues.get(update)!.get(key));
+                    groupParams.push(columnValues.get(update)!.get(key));
                 }
 
                 caseStatement += ` ELSE "${key}" END`;
@@ -450,15 +328,11 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 
             for (const update of groupUpdates) {
                 const idValue = schema.idProperties[0].getValue(update.entity);
-                allParams.push(idValue);
+                groupParams.push(idValue);
             }
 
             const updateSql = `UPDATE "${collectionName}" SET ${setClauses.join(', ')} WHERE "${idColumn}" IN (${idPlaceholders}) RETURNING ${allColumnStr}`;
-            statements.push(updateSql);
-        }
-
-        if (statements.length > 0) {
-            updatesOperation = { sql: statements.join('; '), params: allParams };
+            updatesOperations.push({ sql: updateSql, params: groupParams });
         }
     }
 
@@ -475,7 +349,7 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 
             for (const idProperty of idProperties) {
                 const idValue = idProperty.getValue(remove);
-                entityWhereClauses.push(`"${idProperty.name}" = $${paramCounter++}`);
+                entityWhereClauses.push(`"${idProperty.getResolvedName()}" = $${paramCounter++}`);
                 allParams.push(idValue);
             }
 
@@ -489,7 +363,7 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 
     return {
         adds: addsOperation,
-        updates: updatesOperation,
+        updates: updatesOperations,
         removes: removesOperation
     };
 }
@@ -519,19 +393,21 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
             columnsStr += `, "${mapFields[i].sourceName}"`;
         }
     } else {
-        const columnCount = schema.properties.length;
+        // Root properties only, storage-side names — the layout the DDL creates. A column
+        // per descendant would select phantom columns the table does not have.
+        const columnProperties = sqlColumnProperties(schema);
+        const columnCount = columnProperties.length;
         if (columnCount === 0) {
             throw new Error("Need to select at least one column, found zero");
         }
 
-        columnsStr = `"${schema.properties[0].name}"`;
+        columnsStr = `"${columnProperties[0].getResolvedName()}"`;
         for (let i = 1; i < columnCount; i++) {
-            columnsStr += `, "${schema.properties[i].name}"`;
+            columnsStr += `, "${columnProperties[i].getResolvedName()}"`;
         }
     }
 
     const params: any[] = [];
-    let paramCounter = 1;
     let currentQuery = `SELECT ${columnsStr} FROM "${tableName}"`;
 
     const operations: Array<{ type: string, value: any, index: number }> = [];
@@ -582,21 +458,16 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
     for (const op of filterOps) {
         const filterExpr = op.value.expression;
         if (filterExpr) {
-            const { where, params: filterParams } = expressionToWhereClause(filterExpr);
-            // expressionToWhereClause already uses $N placeholders, but we need to renumber them
-            let pgWhere = where;
-            for (const param of filterParams) {
-                pgWhere = pgWhere.replace(/\$(\d+)/g, () => {
-                    return `$${paramCounter++}`;
-                });
-                params.push(param);
-            }
+            // Placeholders are numbered after the params already bound, so several filter
+            // fragments can share one parameter list without renumbering.
+            const { where, params: filterParams } = toSql(filterExpr, offsetPostgresDialect(params.length));
+            params.push(...filterParams);
 
             if (!hasWhereClause) {
-                currentQuery += ` WHERE ${pgWhere}`;
+                currentQuery += ` WHERE ${where}`;
                 hasWhereClause = true;
             } else {
-                currentQuery += ` AND ${pgWhere}`;
+                currentQuery += ` AND ${where}`;
             }
         }
     }

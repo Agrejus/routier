@@ -1,7 +1,16 @@
 import { InferCreateType, InferType } from "@routier/core/schema";
 
 export interface IAdditions<T extends {}> {
-    get(entity: InferCreateType<T> | InferType<T>): InferCreateType<T> | undefined;
+    /**
+     * Resolves the pending addition a plugin-returned row corresponds to and REMOVES it —
+     * a take, not a peek.
+     *
+     * Destructive on purpose: `UnknownKeyAdditions` keys by content hash, so two identical
+     * pending rows share a key, and consuming on match is what pairs each returned row
+     * with a distinct pending entry. `mergeChanges` calls this exactly once per returned
+     * add.
+     */
+    take(entity: InferCreateType<T> | InferType<T>): InferCreateType<T> | undefined;
     set(entity: InferCreateType<T>): void;
     /**
      * Swaps a pending addition for a new value of the same row.

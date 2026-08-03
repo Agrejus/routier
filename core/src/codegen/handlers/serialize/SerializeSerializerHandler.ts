@@ -1,4 +1,4 @@
-import { CodeBuilder, IfBuilder, SlotBlock } from '../../blocks';
+import { CodeBuilder, SlotBlock } from '../../blocks';
 import { PropertyInfoHandler } from "../types";
 import { PropertyInfo } from "../../../schema";
 
@@ -23,16 +23,7 @@ export class SerializeSerializerHandler extends PropertyInfoHandler {
             }
 
             // Nested serializer: same pattern as SerializeValueHandler — if block for parent existence, then assign via serializer
-            const parentSelectPath = ["entity", ...property.getParentPathArray()].join(".");
-            const parentAssignPath = ["result", ...property.getParentPathArray({ useFromPropertyName: true })].join(".");
-            const ifSlot = slot.if(`${parentSelectPath} != null && Object.hasOwn(${parentSelectPath}, "${property.name}")`);
-
-            if (property.parent.isNullable || property.parent.isOptional) {
-                const conditionallyCreateParent = new IfBuilder(`${parentAssignPath} == null`).appendBody(`${parentAssignPath} = {}`);
-                ifSlot.appendBody(conditionallyCreateParent.toString());
-            }
-
-            ifSlot.appendBody(`${resultSelectorPath} = ${defaultFunctionWithParameters.builder.toCallable()}`);
+            this.emitSerializeNestedAssignment(property, slot, defaultFunctionWithParameters.builder.toCallable());
             return builder;
         }
 

@@ -200,9 +200,6 @@ containerStressDescribe('S8 real databases: PostgreSQL via testcontainers', () =
         {
             seed: 20260810,
             scale: churnScale('postgres', churnPlan),
-            // The array property never reaches the server at all — the insert is rejected
-            // before any cycle runs.
-            knownFailing: 19,
         },
         async ({ rng, note }) => {
             const store = track(new ChurnStore(postgres.createPlugin(), churnShapeCase().schema));
@@ -221,11 +218,12 @@ containerStressDescribe('S8 real databases: PostgreSQL via testcontainers', () =
     /**
      * Two entities, one save, different sets of changed columns.
      *
-     * The reduction of defect #22, and the reason the churn load above cannot even be timed.
-     * The SQL builder groups updates by which columns changed and emits one UPDATE per group,
-     * joined with `;` into a single parameterised query — which PostgreSQL rejects outright,
-     * because a prepared statement may carry only one command. SQLite's driver accepts
-     * multi-statement input, which is why no in-process backend has ever seen this.
+     * The reduction of defect #22 (fixed). The SQL builder groups updates by which columns
+     * changed and emits one UPDATE per group; those used to be joined with `;` into a single
+     * parameterised query, which PostgreSQL rejects outright because a prepared statement may
+     * carry only one command. Each group is now its own operation in the transaction.
+     * SQLite's driver accepts multi-statement input, which is why no in-process backend ever
+     * saw this.
      *
      * Nothing exotic is required to trigger it: two rows whose dirty columns differ. That
      * happens in ordinary use whenever one entity's new value equals its old one, so the write
@@ -246,7 +244,6 @@ containerStressDescribe('S8 real databases: PostgreSQL via testcontainers', () =
         {
             seed: 20260813,
             scale: { backend: 'postgres', entities: 2 },
-            knownFailing: 22,
         },
         async ({ note }) => {
             const store = track(new HeteroStore(postgres.createPlugin()));
@@ -283,10 +280,10 @@ containerStressDescribe('S8 real databases: PostgreSQL via testcontainers', () =
      * A schema whose nested object has a descendant named like a top-level property.
      *
      * Not a load, and deliberately not part of the churn scenario above — it is the two-entity
-     * reduction of defect #20, kept here because S8 is the only place a real server runs. The
-     * Postgres plugin emits a top-level column per nested descendant, so this shape asks for
-     * `"value"` twice in one INSERT. With unique names the extra column is merely spurious;
-     * with a collision the statement is rejected, which is what makes the severity visible.
+     * reduction of defect #20 (fixed), kept here because S8 is the only place a real server
+     * runs. The Postgres plugin used to emit a top-level column per nested descendant, so this
+     * shape asked for `"value"` twice in one INSERT; columns now come from sqlColumnProperties,
+     * one JSON column per root property.
      */
     const collisionSchema = s.define('stress_pg_collision', {
         id: s.string().key(),
@@ -303,7 +300,6 @@ containerStressDescribe('S8 real databases: PostgreSQL via testcontainers', () =
         {
             seed: 20260812,
             scale: { backend: 'postgres', entities: 1 },
-            knownFailing: 20,
         },
         async ({ note }) => {
             const store = track(new CollisionStore(postgres.createPlugin()));
@@ -333,8 +329,6 @@ containerStressDescribe('S8 real databases: PostgreSQL via testcontainers', () =
                 rounds: ROUNDS,
                 totalEntities: INSTANCES * KEYS_PER_INSTANCE,
             },
-            // Four of the five instances lose their first write to a create-table race.
-            knownFailing: 21,
         },
         async ({ note }) => {
             // Five independent plugins, each with its own connection pool, over one database.

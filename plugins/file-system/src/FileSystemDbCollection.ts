@@ -4,10 +4,17 @@ import { CompiledSchema } from "@routier/core/schema";
 import { CallbackResult, Result } from "@routier/core/results";
 import { MemoryDataCollection } from '@routier/core/collections';
 
+// Distinct temp-file names per write, so overlapping saves never write the same temp file.
+let temporaryFileCounter = 0;
+
 export class FileSystemDbCollection extends MemoryDataCollection {
 
     private path: string;
-    private loaded: boolean = false;
+    // The instance is shared process-wide (see FileSystemPlugin's registry), so the file is
+    // read exactly once and the in-memory view is authoritative from then on. Re-reading on
+    // a later save would resurrect rows another writer removed after the file was written.
+    private loadState: 'unloaded' | 'loading' | 'loaded' = 'unloaded';
+    private loadWaiters: CallbackResult<never>[] = [];
 
     constructor(path: string, schema: CompiledSchema<any>) {
         super(schema);
@@ -44,6 +51,11 @@ export class FileSystemDbCollection extends MemoryDataCollection {
                     return;
                 }
 
+                // A destroyed collection may be reused (the registry entry can outlive the
+                // file when destroy comes through the collection); the next load must
+                // re-read rather than trust the emptied view.
+                this.loadState = 'unloaded';
+
                 super.destroy(done)
             });
         } catch (e: any) {
@@ -53,8 +65,35 @@ export class FileSystemDbCollection extends MemoryDataCollection {
 
     override load(done: CallbackResult<never>) {
 
-        this.loaded = true;
+        if (this.loadState === 'loaded') {
+            done(Result.success());
+            return;
+        }
 
+        // Loads coalesce: whoever arrives while a read is in flight waits for that read
+        // instead of starting another, so a save never runs against a half-hydrated view.
+        this.loadWaiters.push(done);
+
+        if (this.loadState === 'loading') {
+            return;
+        }
+
+        this.loadState = 'loading';
+
+        this.readAndHydrate(result => {
+            // An error leaves the collection unloaded so the next attempt re-reads;
+            // success makes the in-memory view authoritative for the process lifetime.
+            this.loadState = result.ok === Result.ERROR ? 'unloaded' : 'loaded';
+
+            const waiters = this.loadWaiters.splice(0, this.loadWaiters.length);
+
+            for (const waiter of waiters) {
+                waiter(result);
+            }
+        });
+    }
+
+    private readAndHydrate(done: CallbackResult<never>) {
         if (fs.existsSync(this.fileNameAndPath) === false) {
             done(Result.success());
             return;
@@ -90,11 +129,11 @@ export class FileSystemDbCollection extends MemoryDataCollection {
 
     override save(done: CallbackResult<never>) {
 
-        // Each persist resolves a fresh collection instance, and adds-only persists
-        // skip load() as an optimization. Writing this.records without first merging
-        // what is already on disk would replace the whole file with just the new adds.
-        // Removals and updates always load() first, so their deletions stay deleted.
-        if (this.loaded === false) {
+        // Adds-only persists skip load() as an optimization, so the first save must merge
+        // what is already on disk before writing — this.records alone would replace the
+        // whole file with just the new adds. Later saves see loadState === 'loaded' and the
+        // shared in-memory view is already the whole collection.
+        if (this.loadState !== 'loaded') {
             this.load(loadResult => {
                 if (loadResult.ok === Result.ERROR) {
                     done(loadResult);
@@ -115,12 +154,26 @@ export class FileSystemDbCollection extends MemoryDataCollection {
                 return;
             }
 
-            fs.writeFile(this.fileNameAndPath, stringifiedData, 'utf8', (error) => {
+            // Write-to-temp then rename: rename is atomic on POSIX, so a reader (or a
+            // crash) sees the old file or the new one, never a torn write. Overlapping
+            // saves each rename a complete snapshot; the later one is a superset because
+            // both stringified the same shared collection after their own mutation.
+            const temporaryPath = `${this.fileNameAndPath}.${process.pid}.${++temporaryFileCounter}.tmp`;
+
+            fs.writeFile(temporaryPath, stringifiedData, 'utf8', (error) => {
                 if (error) {
                     done(Result.error(error));
                     return;
                 }
-                done(Result.success());
+
+                fs.rename(temporaryPath, this.fileNameAndPath, (renameError) => {
+                    if (renameError) {
+                        done(Result.error(renameError));
+                        return;
+                    }
+
+                    done(Result.success());
+                });
             });
         });
     }

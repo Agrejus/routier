@@ -189,12 +189,9 @@ const firstFailure = <T>(items: readonly T[], predicate: (item: T, index: number
  * an array element, and the nested write alone is enough to mark the entity dirty, so it
  * still runs end to end and guards everything the other two cannot reach.
  */
-const KNOWN_FAILING: Partial<Record<(typeof SHAPE_NAMES)[number], number>> = {
-    // Depth-3 writes throw inside the generated delta serializer.
-    'object-depth-3': 13,
-    // Array element writes stop being tracked once the entity has been merged.
-    'array-of-date': 12,
-};
+// Defects #12 (array proxy lost on merge) and #13 (deep delta serialization) are fixed;
+// every shape runs end to end. Empty until a new defect earns a row.
+const KNOWN_FAILING: Partial<Record<(typeof SHAPE_NAMES)[number], number>> = {};
 
 stressDescribe('S2 volume: wide schemas and deep nesting', () => {
     for (const backend of RICH_BACKENDS) {
