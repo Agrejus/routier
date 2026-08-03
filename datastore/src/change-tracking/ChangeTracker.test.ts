@@ -417,3 +417,79 @@ describe("ChangeTracker tags", () => {
         expect(changeTracker.tags.get().has(attached as object)).toBe(false);
     });
 });
+
+/**
+ * Updating a row that has been added but not yet saved.
+ *
+ * These rows cannot be resolved by id — an identity-keyed one has no id until the database
+ * assigns it — so they are keyed by object reference. The risk that keying buys is a slot
+ * that outlives the additions it names: patching one of those would put the row back into
+ * `additions` and insert something the caller had already been told was gone.
+ */
+describe("ChangeTracker unsaved-row updates", () => {
+    const added = (changeTracker: ChangeTracker<any>, value: any) => {
+        let result: any;
+        changeTracker.add([value], null, r => { result = (r as any).data[0]; }, "immutable");
+        return result;
+    };
+
+    it("patches a pending addition in place of recording an update", () => {
+        const changeTracker = tracker();
+        const first = added(changeTracker, entity("a", "first"));
+
+        changeTracker.updateImmutable(first, { text: "second" });
+
+        // One pending add carrying the new value, and no pending update beside it.
+        expect(changeTracker.prepareAdditions()).toEqual([
+            expect.objectContaining({ id: "a", text: "second" }),
+        ]);
+        expect(changeTracker.getAttachmentsChanges()).toHaveLength(0);
+    });
+
+    it("resolves every generation of the reference to the same row", () => {
+        const changeTracker = tracker();
+        const v1 = added(changeTracker, entity("a", "first"));
+
+        const v2 = changeTracker.updateImmutable(v1, { text: "second" }) as any;
+        changeTracker.updateImmutable(v1, { count: 9 });
+
+        expect(changeTracker.prepareAdditions()).toHaveLength(1);
+        expect(changeTracker.currentOf(v1)).toEqual(expect.objectContaining({ text: "second", count: 9 }));
+        expect(changeTracker.currentOf(v2)).toBe(changeTracker.currentOf(v1));
+    });
+
+    it("does not modify the reference it was given", () => {
+        const changeTracker = tracker();
+        const first = added(changeTracker, entity("a", "first"));
+
+        changeTracker.updateImmutable(first, { text: "second" });
+
+        expect(first.text).toBe("first");
+    });
+
+    it("refuses to patch a pending addition that was dropped", () => {
+        const changeTracker = tracker();
+        const first = added(changeTracker, entity("a", "first"));
+
+        // What a failed save does: the row never reached the database.
+        changeTracker.clearChanges();
+
+        expect(() => changeTracker.updateImmutable(first, { text: "second" }))
+            .toThrow(/not attached/);
+        // And the refusal must not have re-entered it as an addition.
+        expect(changeTracker.prepareAdditions()).toHaveLength(0);
+        expect(changeTracker.hasChanges()).toBe(false);
+    });
+
+    it("leaves an unsaved row unfrozen, as the add path requires", () => {
+        const changeTracker = tracker();
+        const first = added(changeTracker, entity("a", "first"));
+
+        // Freezing is deliberately kept off the add path: `mergeChanges` writes the
+        // database's assigned identity into the entity it just persisted, which a frozen
+        // object would reject. Reads are frozen; a row still being composed is not — and a
+        // patch must not quietly change that.
+        expect(Object.isFrozen(first)).toBe(false);
+        expect(Object.isFrozen(changeTracker.updateImmutable(first, { text: "second" }))).toBe(false);
+    });
+});

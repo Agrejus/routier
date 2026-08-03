@@ -196,6 +196,21 @@ describe('stale references', () => {
         expect(await store.items.countAsync()).toBe(1);
     });
 
+    it('resolves a reference taken BEFORE the first save, once the row is saved', async () => {
+        const store = new ArrayStore(plugin());
+
+        const [added]: any[] = await store.items.addAsync(
+            { id: 'a', strings: ['p'], dates: [new Date(0)] } as any
+        );
+        await store.saveChangesAsync();
+
+        // `added` is pre-save. The row it names exists now, so patching it is an update.
+        store.items.update(added, { strings: ['after-save'] });
+        await store.saveChangesAsync();
+
+        expect(((await store.items.toArrayAsync())[0] as any).strings).toEqual(['after-save']);
+    });
+
     it('current() resolves a stale reference and isCurrent() reports honestly', async () => {
         const store = new ArrayStore(plugin());
         await store.items.addAsync({ id: 'a', strings: ['p'], dates: [new Date(0)] } as any);
@@ -208,4 +223,138 @@ describe('stale references', () => {
         expect(store.items.isCurrent(v2)).toBe(true);
         expect((store.items.current(v1) as any).strings).toEqual(['next']);
     });
+});
+
+/**
+ * Updating a row that has been added but not yet saved.
+ *
+ * The spike could not do this: `update()` resolved a row by reading its id, and an
+ * identity-keyed row has no id until the database assigns one. It threw, which was honest
+ * but made the immutable path unusable for the ordinary "add a row, then adjust it before
+ * saving" flow — and that gap is the reason the path could not become the default.
+ *
+ * The fix keys unsaved rows by object reference instead. What these tests hold to is that
+ * keying that way does not cost the guarantees the id path provides: one INSERT rather than
+ * an insert-then-update, every generation of the reference resolving to the same row, and
+ * nothing resurrected after the changes are dropped.
+ */
+describe('unsaved rows', () => {
+    const identity = s.define('spike_identity', {
+        id: s.string().key().identity(),
+        name: s.string(),
+        n: s.number(),
+    }).compile();
+
+    class IdentityStore extends DataStore { items = this.collection(identity).create(); }
+
+    it('patches an unsaved row with an identity key', async () => {
+        const store = new IdentityStore(plugin());
+
+        const [added]: any[] = await store.items.addAsync({ name: 'first', n: 1 } as any);
+
+        const patched: any = store.items.update(added, { name: 'second' });
+
+        expect(patched.name).toBe('second');
+        // Unchanged properties survive, and the caller's copy is not touched.
+        expect(patched.n).toBe(1);
+        expect(added.name).toBe('first');
+
+        await store.saveChangesAsync();
+
+        const [row]: any[] = await store.items.toArrayAsync();
+        expect(row.name).toBe('second');
+    });
+
+    it('sends ONE insert, not an insert followed by an update', async () => {
+        const store = new IdentityStore(plugin());
+
+        const [added]: any[] = await store.items.addAsync({ name: 'first', n: 1 } as any);
+        store.items.update(added, { name: 'second' });
+
+        const result = await store.saveChangesAsync();
+
+        expect(result.aggregate.adds).toBe(1);
+        expect(result.aggregate.updates).toBe(0);
+        expect(await store.items.countAsync()).toBe(1);
+    });
+
+    it('accumulates successive patches through the original reference', async () => {
+        const store = new IdentityStore(plugin());
+
+        const [v1]: any[] = await store.items.addAsync({ name: 'first', n: 1 } as any);
+
+        store.items.update(v1, { name: 'second' });
+        store.items.update(v1, prev => ({ ...prev, n: prev.n + 10 } as any));
+
+        await store.saveChangesAsync();
+
+        const [row]: any[] = await store.items.toArrayAsync();
+        expect(row.name).toBe('second');
+        expect(row.n).toBe(11);
+        expect(await store.items.countAsync()).toBe(1);
+    });
+
+    /**
+     * PINNED — defect #23. Passes while the defect exists; fails when it is fixed.
+     *
+     * Written against a plain add rather than through `update()`, because `update()` is not
+     * what breaks it: `UnknownKeyAdditions` keys pending adds by content hash, so two rows
+     * equal in content collapse whether a patch made them equal or they started that way.
+     * Pinning the narrower route would have credited the bug to the wrong code.
+     */
+    it.failing('collapses two identical unsaved rows with identity keys [pinned: known defect #23]', async () => {
+        const store = new IdentityStore(plugin());
+
+        await store.items.addAsync({ name: 'b', n: 2 } as any);
+        await store.items.addAsync({ name: 'b', n: 2 } as any);
+        await store.saveChangesAsync();
+
+        expect(await store.items.countAsync()).toBe(2);
+    });
+
+    it('keeps two unsaved rows distinct when they differ in any property', async () => {
+        // The re-key path: patching one pending row must move its hash without disturbing
+        // the other's. Anything short of delete-then-set leaves the row under both keys.
+        const store = new IdentityStore(plugin());
+
+        const [a]: any[] = await store.items.addAsync({ name: 'a', n: 1 } as any);
+        await store.items.addAsync({ name: 'b', n: 2 } as any);
+
+        store.items.update(a, { name: 'patched' });
+
+        await store.saveChangesAsync();
+
+        const names = (await store.items.toArrayAsync() as any[]).map(r => r.name).sort();
+        expect(names).toEqual(['b', 'patched']);
+    });
+
+    it('patches an unsaved row with a caller-supplied key', async () => {
+        const store = new ArrayStore(plugin());
+
+        const [added]: any[] = await store.items.addAsync(
+            { id: 'a', strings: ['p'], dates: [new Date(0)] } as any
+        );
+
+        store.items.update(added, { strings: ['patched'] });
+        await store.saveChangesAsync();
+
+        const rows: any[] = await store.items.toArrayAsync();
+        expect(rows).toHaveLength(1);
+        expect(rows[0].strings).toEqual(['patched']);
+    });
+
+    it('current() reports the pending value of an unsaved row', async () => {
+        const store = new IdentityStore(plugin());
+
+        const [v1]: any[] = await store.items.addAsync({ name: 'first', n: 1 } as any);
+        const v2 = store.items.update(v1, { name: 'second' }) as any;
+
+        expect((store.items.current(v1) as any).name).toBe('second');
+        expect(store.items.isCurrent(v1)).toBe(false);
+        expect(store.items.isCurrent(v2)).toBe(true);
+    });
+
+    // The matching case for a pending add that is DROPPED rather than saved lives in
+    // ChangeTracker.test.ts — a store has no public way to discard changes, so the only
+    // honest way to reach it is through the tracker.
 });

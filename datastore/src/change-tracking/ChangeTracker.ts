@@ -8,7 +8,7 @@ import { SchemaPersistResult, TagCollection } from "@routier/core/collections";
 import { GenericFunction } from "@routier/core/types";
 import { CallbackResult, Result } from "@routier/core/results";
 import { assertIsNotNull } from "@routier/core";
-import { ImmutableUpdates, UpdateRecipe } from "./ImmutableUpdates";
+import { applyPatch, ImmutableUpdates, UpdateRecipe } from "./ImmutableUpdates";
 
 
 /**
@@ -54,6 +54,21 @@ type Attachment<TEntity extends {}> = {
     tracking?: ChangeTrackedEntity<{}>["__tracking__"];
 };
 
+/**
+ * A row added through `add()`, tracked by object reference rather than by id.
+ *
+ * `state` is what a caller's reference means at the moment it is used again:
+ *  - `pending` — still an unsaved addition; a patch rewrites it in place of an INSERT.
+ *  - `saved` — persisted; `current` now carries the assigned identity, so a patch becomes
+ *    an ordinary update against the attachment.
+ *  - `discarded` — its save failed, or the changes were cleared. Patching it must not
+ *    resurrect the row, so it falls through to the "not attached" error.
+ */
+type UnsavedRow<TEntity extends {}> = {
+    current: InferCreateType<TEntity>;
+    state: "pending" | "saved" | "discarded";
+};
+
 export class ChangeTracker<TEntity extends {}> {
 
     protected removals: InferType<TEntity>[] = [];
@@ -68,6 +83,36 @@ export class ChangeTracker<TEntity extends {}> {
      * twice.
      */
     readonly immutable: ImmutableUpdates<TEntity>
+    /**
+     * Every generation of an added-but-unsaved row, mapped to the slot holding its current
+     * value.
+     *
+     * An unsaved row cannot be resolved the way `update()` resolves a saved one. That path
+     * reads the id and looks the row up, and an identity-keyed row has no id until the
+     * database assigns one — which is why updating one used to throw. There is also nothing
+     * else stable to key on: `UnknownKeyAdditions` keys pending adds by content hash, so the
+     * first patch moves the key.
+     *
+     * The object reference is the only stable handle, so it is the key. Each `update()`
+     * registers the value it returns against the SAME slot, which is what keeps a stale
+     * reference working here as well: generation 1 and generation 7 both resolve to the row.
+     * A WeakMap so an abandoned generation is collectable — a long chain of updates before a
+     * save would otherwise pin every intermediate value for the life of the collection.
+     *
+     * The slot outlives the save deliberately. Once the row is persisted it flips to
+     * `"saved"` and later updates route to the ordinary id-based path — but they route there
+     * through `slot.current`, which is the generation that actually received the assigned
+     * identity. Without that hop a reference taken before the save could never be resolved
+     * again, because it has no id and never will.
+     */
+    private readonly unsavedRows = new WeakMap<object, UnsavedRow<TEntity>>();
+    /**
+     * The slots created since the last save, so they can be invalidated when their pending
+     * additions are dropped. A WeakMap cannot be enumerated, and a stale slot is not merely
+     * useless: patching one would put its row back into `additions` and insert a row the
+     * caller had every reason to think was gone.
+     */
+    private unsavedSlots: UnsavedRow<TEntity>[] = [];
 
     constructor(
         schema: CompiledSchema<TEntity>,
@@ -223,6 +268,17 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
             // Set here, if we never save we should never attach
             // notModified: it was just added, so there is nothing pending for it.
             this.attach(id, found as InferType<TEntity>, "notModified");
+
+            // `found` is the generation the merge just gave the assigned identity to, so it
+            // is the only one a later `update()` can resolve by id. Point the slot at it and
+            // every reference the caller holds — including the one from before the save —
+            // keeps working.
+            const slot = this.unsavedRows.get(found as object);
+
+            if (slot != null) {
+                slot.current = found;
+                slot.state = "saved";
+            }
         }
         // nothing to merge here, use the attached removals
         result.removals = this.removals;
@@ -341,16 +397,73 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
      * ImmutableUpdates.update.
      */
     updateImmutable(entity: InferType<TEntity>, recipe: UpdateRecipe<TEntity>) {
+        const unsaved = this.unsavedRows.get(entity as object);
+
+        if (unsaved?.state === "pending") {
+            return this.updateUnsaved(unsaved, recipe);
+        }
+
+        // A saved row is resolved through the slot rather than through the caller's
+        // reference: an identity-keyed row only ever received its id on ONE generation, and
+        // that is the one the slot holds.
+        const resolvable = unsaved?.state === "saved"
+            ? unsaved.current as InferType<TEntity>
+            : entity;
+
         return this.immutable.update(
-            entity,
+            resolvable,
             recipe,
             id => this.canonicalAttachments.get(id)?.doc
         );
     }
 
+    /** Registers the first generation of an added row. */
+    private trackUnsaved(entity: InferCreateType<TEntity>) {
+        const slot: UnsavedRow<TEntity> = { current: entity, state: "pending" };
+
+        this.unsavedRows.set(entity as object, slot);
+        this.unsavedSlots.push(slot);
+    }
+
+    /**
+     * Patches a row that has been added but not yet saved.
+     *
+     * The new value replaces the pending addition outright — there is no delta to record,
+     * because an unsaved row is sent to the plugin whole. That also means a patch and a
+     * later save produce one INSERT with the final values rather than an INSERT followed by
+     * an UPDATE.
+     *
+     * The result is NOT frozen, even on an immutable collection. Freezing is deliberately
+     * kept off the add path (see `QueryableExecutor.attachResults`) because `mergeChanges`
+     * has to write the database's assigned identity back into the entity it just persisted.
+     * Reads are frozen; a row you are still composing is not.
+     */
+    private updateUnsaved(slot: UnsavedRow<TEntity>, recipe: UpdateRecipe<TEntity>) {
+        const base = slot.current;
+
+        const next = typeof recipe === "function"
+            ? recipe(base as InferType<TEntity>)
+            : applyPatch(base as Record<string, any>, recipe) as InferType<TEntity>;
+
+        this.additions.replace(base, next as InferCreateType<TEntity>);
+
+        slot.current = next as InferCreateType<TEntity>;
+        this.unsavedRows.set(next as object, slot);
+
+        return next;
+    }
+
     /** The current value of a row: its pending version if any, otherwise the attached one. */
     currentOf(entity: InferType<TEntity>) {
-        const id = this.schema.getId(entity);
+        const unsaved = this.unsavedRows.get(entity as object);
+
+        if (unsaved?.state === "pending") {
+            return unsaved.current as InferType<TEntity>;
+        }
+
+        const id = this.schema.getId(
+            unsaved?.state === "saved" ? unsaved.current as InferType<TEntity> : entity
+        );
 
         return this.immutable.current(id) ?? this.canonicalAttachments.get(id)?.doc;
     }
@@ -538,6 +651,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
             for (let i = 0; i < length; i++) {
                 const entity = this.schema.enrich(entities[i], changeTrackingType);
                 this.additions.set(entity);
+                this.trackUnsaved(entity);
                 result[i] = entity as InferType<TEntity>;
 
                 if (tagCollection != null) {
@@ -624,6 +738,18 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     clearChanges() {
         this.additions.clear();
         this.removals = [];
+
+        // Whatever is still pending here never made it to the database — either the save
+        // failed or the changes were dropped. Its slot has to stop accepting patches, or the
+        // next `update()` through a reference to it would re-enter it into `additions`.
+        // Slots the merge already flipped to "saved" are left alone: those rows exist.
+        for (const slot of this.unsavedSlots) {
+            if (slot.state === "pending") {
+                slot.state = "discarded";
+            }
+        }
+
+        this.unsavedSlots = [];
         // Pending patches are discarded here rather than per-entity. There is no dirty flag
         // to reset, which is the whole reason defect #11 cannot recur on this path.
         this.immutable.clear();

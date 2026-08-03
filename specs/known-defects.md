@@ -1,6 +1,6 @@
 # Known defects
 
-Status: 14 of 22 fixed. Open and pinned: #12, #13, #18, #19, #20, #21, #22.
+Status: 14 of 23 fixed. Open and pinned: #12, #13, #18, #19, #20, #21, #22, #23.
 Open and worked around: #14.
 Date: 2026-08-03
 
@@ -534,6 +534,53 @@ untouched ones — which is already the per-group shape).
 **Pinned by:** `'one save may update two entities whose changed columns differ'` in
 `stress/src/s8-real-databases.test.ts`, and the matching case in
 `e2e/src/postgresContainer.test.ts`.
+
+### 23. Two identical unsaved rows with identity keys collapse into one — **OPEN, pinned**
+
+Silent data loss on the add path, on every plugin. Adding two rows that are equal in content
+to a schema whose key is an identity, in one save, inserts one row.
+
+**Reproduction** — no volume, no update, no concurrency:
+
+```ts
+const schema = s.define('t', {
+    id: s.string().key().identity(),
+    name: s.string(),
+    n: s.number(),
+}).compile();
+
+await store.items.addAsync({ name: 'b', n: 2 });
+await store.items.addAsync({ name: 'b', n: 2 });
+await store.saveChangesAsync();
+
+await store.items.countAsync();   // 1
+```
+
+**Cause:** `UnknownKeyAdditions` (`datastore/src/change-tracking/additions/`) keys pending
+additions by `schema.hash(entity, HashType.Object)` — a hash of the content with ids and
+identities excluded. Two rows equal in content therefore hash equal, and the second `set`
+overwrites the first. Identical rows are the *only* case, which is why nothing has hit it: the
+rows differ in practice, and one differing property is enough.
+
+**Why the key is a content hash at all**, which is what makes this awkward: `mergeChanges` has
+to match each row the plugin returns back to the pending addition it came from, so it can
+write the assigned identity into the caller's entity. An identity-keyed row has no id on the
+way out, so content is the only thing the two sides share. With two identical rows there is
+genuinely nothing to tell the returned rows apart — the correlation problem, not just the map,
+is what needs replacing.
+
+**Fix direction:** correlate by position or by a per-add correlation token carried through
+`preprocess` and returned by the plugin, rather than by content. That is a change to the
+plugin contract (`test-utils/src/pluginContract.ts` documents the "entire document must be
+returned for adds" rule this depends on), so it is not contained.
+
+**Found:** while adding unsaved-row support to the immutable `update()` path — a patch that
+makes one pending row identical to another reaches the same collapse. The route is new; the
+defect is not, and the pin is written against the plain add so it does not depend on
+`update()` at all.
+
+**Pinned by:** `'collapses two identical unsaved rows with identity keys [pinned: known
+defect #23]'` in `datastore/src/change-tracking/ImmutableUpdates.test.ts`.
 
 ### The `--forceExit` question, answered
 

@@ -1,7 +1,28 @@
-# Immutable updates — spike
+# Immutable updates
 
-Status: **Spike landed, additive.** Runs alongside proxy change tracking; nothing removed.
-Date: 2026-08-02
+Status: **Graduated from spike to supported, still opt-in via `.immutable()`.** Runs
+alongside proxy change tracking; nothing removed. **Not the default — see the decision
+below.**
+Date: 2026-08-03
+
+## The graduation decision (2026-08-03)
+
+**Close the gaps first; flip the default later, deliberately, in a major version.**
+
+Flipping `CollectionBase.changeTrackingType` from `"proxy"` to `"immutable"` was tried as a
+measurement, not as a change: **133 of 5,549 tests fail**, every one of them an in-place
+mutation (`entity.price = 5`) that a frozen read now rejects. So the flip is mechanical but
+genuinely breaking, and 2.4% of a suite is a fair proxy for how much caller code it moves.
+
+What settled the sequencing is not that number, though — it is that the immutable path had a
+functional hole. Updating a row that had been added but not yet saved **threw**, because
+`update()` resolves rows by id and an identity-keyed row has no id until the database assigns
+one. Shipping that as the default would have made "add a row, then adjust it before saving"
+an error, so the hole had to close first. It now has (below).
+
+What is still open before the flip is defensible: adds and removes still take the proxy path,
+and `saveChangesAsync` does not yet return fresh instances. Neither blocks correctness on an
+immutable collection today; both change what "the default" means.
 
 ## Why
 
@@ -63,6 +84,34 @@ Unattached rows throw rather than silently no-op, and a pending patch is dropped
 row is removed — otherwise replaying it after the delete would reinsert the row, which is
 the resurrection half of defect #11.
 
+### Rows that have not been saved yet
+
+A row from `addAsync` has no id to resolve when the key is an identity, so it is tracked by
+**object reference** instead — a `WeakMap` from every generation of the row to one slot
+holding its current value (`ChangeTracker.unsavedRows`). Patching one rewrites the pending
+addition, so an add followed by three patches is still one INSERT carrying the final values.
+
+The slot has three states, and the last two are the ones that matter:
+
+- `pending` — an unsaved addition. A patch rewrites it.
+- `saved` — persisted. Later patches route to the ordinary id-based path, but *through the
+  slot*, because the assigned identity landed on exactly one generation and the caller may
+  be holding a different one. Without that hop a reference taken before the save could never
+  be resolved again.
+- `discarded` — the save failed, or changes were cleared. Patching it must not put the row
+  back into `additions` and insert something the caller was told was gone, so it falls
+  through to the "not attached" error.
+
+The result of patching an unsaved row is deliberately **not frozen**, unlike a read. Freezing
+is kept off the add path because `mergeChanges` writes the database's assigned identity back
+into the entity it just persisted.
+
+This turned up **defect #23**: two rows equal in content, on a schema with an identity key,
+collapse into one on save. `UnknownKeyAdditions` keys pending adds by content hash, and that
+hash is how `mergeChanges` matches a returned row back to the add it came from — so the fix
+is a change to the plugin correlation contract, not to the map. Recorded and pinned against a
+plain add, since `update()` is only a second route to it.
+
 ## Delta shape, and why it is flat at the top
 
 The delta is a partial entity, **flat at the top level**. A nested change looks like
@@ -94,19 +143,14 @@ patch. ~6s.
   entities every cycle and S10 never re-reads, so the two are not comparable. The read-path
   win from dropping proxy installation is still an estimate.
 - **`removeAsync` and adds still take the proxy path.** Only updates are patched.
-- **Identity-keyed rows cannot be updated before their first save.** `getId` has nothing to
-  resolve. The eventual fix is the `WeakMap` for unsaved rows that
-  `additions`/`canonicalAttachments` already implies, and the spike throws clearly instead.
-- **Nothing is frozen yet.** Reads still hand back proxies, so an accidental
-  `entity.price = 5` still "works" and takes the old path. Freezing belongs with removing
-  the proxies, not before.
 
-## If this graduates
+## What is left
 
-In rough dependency order:
+In rough dependency order. 1 and 2 are done; the rest are what "flip the default" means.
 
-1. Freeze query results and drop `enableChangeTracking` / proxy installation from codegen.
-2. Add the unsaved-row `WeakMap` so `update` works before the first save.
+1. ~~Freeze query results~~ — done (defect #17). Dropping `enableChangeTracking` / proxy
+   installation from codegen is still outstanding, and is the flip itself.
+2. ~~Add the unsaved-row `WeakMap` so `update` works before the first save.~~ Done, above.
 3. Return fresh instances from `saveChangesAsync` (needed anyway for assigned identities).
 4. Route subscriptions and views to push new instances — this is what removes the need for
    callers to hold references at all, and what lets React use referential equality.

@@ -28,6 +28,13 @@ export class UnknownKeyAdditions<T extends {}> implements IAdditions<T> {
         this.data.set(hash, entity);
     }
 
+    replace(existing: InferCreateType<T>, next: InferCreateType<T>) {
+        // The key is a hash of the CONTENT, so any patch moves it. Deleting under the old
+        // hash first is what keeps one row from appearing twice in `values()`.
+        this.data.delete(this.schema.hash(existing, HashType.Object));
+        this.set(next);
+    }
+
     clear(): void {
         this.data.clear();
     }

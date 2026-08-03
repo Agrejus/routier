@@ -28,6 +28,12 @@ export class KnownKeyAdditions<T extends {}> implements IAdditions<T> {
         this.data.set(id, entity);
     }
 
+    replace(existing: InferCreateType<T>, next: InferCreateType<T>) {
+        // The key is the id, so it only moves when the patch changed the key itself.
+        this.data.delete(this.schema.getId(existing as InferType<T>));
+        this.set(next);
+    }
+
     clear(): void {
         this.data.clear();
     }
