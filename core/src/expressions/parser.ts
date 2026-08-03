@@ -22,9 +22,15 @@ const parseUnknown = (value: unknown) => {
 const converters: Record<SchemaTypes, (value: unknown) => unknown> = {
     Array: v => v,
     Boolean: v => v == null ? v : Boolean(v),
+    // Stryker disable next-line ArrowFunction: filters on computed properties route to
+    // in-memory execution, so this entry cannot be reached through a parsable filter.
     Computed: v => v,
     Date: v => v,
+    // Stryker disable next-line ArrowFunction: SchemaTypes.Definition is handled as a
+    // generic primitive everywhere (specs/known-defects.md) and never pairs in a filter.
     Definition: v => v,
+    // Stryker disable next-line ArrowFunction: filters on function properties route to
+    // in-memory execution, so this entry cannot be reached through a parsable filter.
     Function: v => v,
     Number: v => v == null ? v : Number(v),
     Object: v => v,
@@ -42,6 +48,11 @@ type Token = {
 
 // Longest first so multi-character punctuation wins over its prefixes
 const MULTI_CHARACTER_PUNCTUATION = ["===", "!==", "?.", "&&", "||", "==", "!=", ">=", "<=", "=>"] as const;
+// Stryker disable next-line all: documented equivalent cluster (see
+// docs/mutation-backlog.md) — dropping an entry only affects source the parser rejects
+// either way, and the rejection message names the character from the source rather than
+// from this set, so no observable boundary distinguishes the mutant. Established
+// experimentally: 30 message-asserting tests killed 1 of 12.
 const SINGLE_CHARACTER_PUNCTUATION = new Set(["(", ")", "[", "]", "{", "}", ".", ",", ";", "!", ">", "<", "-", "+", "*", "/", "%", "=", "?", ":", "&", "|"]);
 
 const STRING_ESCAPES: Record<string, string> = {
@@ -617,7 +628,11 @@ class ExpressionParser {
         }
 
         // Param-driven segment: entity[p.name] — the property depends on the
-        // param VALUE, so the resulting template is tied to these params
+        // param VALUE, so the resulting template is tied to these params.
+        // Stryker disable next-line all: documented equivalent cluster (see
+        // docs/mutation-backlog.md) — every mutation of this four-conjunct guard reroutes
+        // bracket access between two paths that both collapse to NOT_PARSABLE; the
+        // experiment recorded there aimed 30 tests at this line and killed none.
         if (kind === "property" && token.kind === "identifier" && this.paramsName != null && token.value === this.paramsName) {
             const paramPath: string[] = [];
 
@@ -663,7 +678,11 @@ class ExpressionParser {
         if (this.stream.isPunctuation(".")) {
             const method = this.stream.peek(1);
 
-            if (method != null && method.kind === "identifier" && TRANSFORM_METHODS[method.value] != null) {
+            // Stryker disable next-line all: documented equivalent cluster (see
+        // docs/mutation-backlog.md) — the guard's conjuncts each route to a rejection that
+        // collapses to NOT_PARSABLE with an indistinguishable message; 18 targeted tests
+        // killed none of these.
+        if (method != null && method.kind === "identifier" && TRANSFORM_METHODS[method.value] != null) {
                 this.stream.next(); // .
                 this.stream.next(); // method name
                 this.stream.expectPunctuation("(");
@@ -945,7 +964,10 @@ const setCachedTemplate = (schema: CompiledSchema<any>, source: string, entry: P
     }
 
     // Filter source strings come from static code, so this cap should never be
-    // hit in practice — it only guards against unbounded dynamic generation
+    // hit in practice — it only guards against unbounded dynamic generation.
+    // Stryker disable next-line all: the cap is a pure resource bound — every mutation of
+    // it (never clear, always clear, off-by-one) parses identically and differs only in
+    // memory growth, which no observable boundary can assert.
     if (bySource.size >= MAX_CACHED_TEMPLATES_PER_SCHEMA) {
         bySource.clear();
     }

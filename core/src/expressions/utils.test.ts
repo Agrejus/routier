@@ -412,3 +412,32 @@ describe('forEach', () => {
         expect(calls).toHaveLength(1);
     });
 });
+
+describe('forEach right-link failure propagation', () => {
+    it('a stop inside a RIGHT subtree prevents visits to everything after it', () => {
+        // The failure has to travel back through a right-child link (the `expr.right`
+        // early-return), so the stopping node sits in a right subtree and a later sibling
+        // exists to observe the stop.
+        const stopHere = new ValueExpression({ value: 'stop' });
+        const inner = new OperatorExpression({
+            operator: '&&',
+            left: new PropertyExpression({ property: createMockProperty('a') }),
+            right: stopHere,
+        });
+        const after = new PropertyExpression({ property: createMockProperty('after') });
+        const root = new OperatorExpression({ operator: '&&', left: inner, right: after });
+
+        const visited: string[] = [];
+
+        forEach(root, expr => {
+            if (expr === stopHere) {
+                visited.push('stop');
+                return false;
+            }
+            visited.push(expr.type === 'property' ? (expr as PropertyExpression).property.name : expr.type);
+            return true;
+        });
+
+        expect(visited).toEqual(['operator', 'operator', 'a', 'stop']);
+    });
+});

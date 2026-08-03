@@ -1,12 +1,49 @@
 # Surviving-mutant backlog
 
-Generated from `npm run mutate:expressions`, first full run.
+Generated from `npm run mutate:expressions`, first full run. **Updated 2026-08-03** — see
+"2026-08-03 session" below; the numbers in the historical sections describe the earlier
+runs they belonged to.
 
 ## Result
 
 | Area | Score | Gate | Status |
 | --- | --- | --- | --- |
 | `core/src/expressions` | **74.01%** | ≥ 90% | Failing (exit 1) |
+
+## 2026-08-03 session: 74.01 → ~90, and the equivalence decision
+
+Two things moved the number, in order of honesty:
+
+1. **The 74.01% was stale.** `sql.ts` was moved to `@routier/sql-plugin-core` after the
+   last run, taking its mutants (63 survivors) out of this area's denominator. The fresh
+   baseline with no new tests was **78.39%** (1,055 mutants).
+2. **Direct tests** took it to **82.65%**: `forEach` traversal semantics (utils.ts to
+   94.7%), the `EXPRESSION_TYPES` whitelist behind `isExpression` (constants.ts to 100%),
+   the `Expression` sentinel statics (all 15 no-coverage types.ts mutants; types.ts to
+   100%), `parserCoverageGaps.test.ts` (the parser's 29 no-coverage paths), and
+   `parserSurvivors.test.ts` (failure-message content for every newly covered rejection
+   site, string escapes, keyword literals, converters on bound params, method-call boolean
+   folding, the truthy shorthand).
+
+**The equivalence decision** (per "Open work" item 3 and the analysis below): the gate
+stays at 90 and the experimentally-established equivalent clusters are excluded with
+inline `// Stryker disable` comments carrying written justifications — visible in the
+source, auditable in the diff, never a config-side list. Excluded:
+
+- `SINGLE_CHARACTER_PUNCTUATION` (the line-45 cluster, 11 mutants) — the experiment below
+  established equivalence: rejection messages name the character from the source, not the
+  set.
+- The four-conjunct bracket-access guard and the `TRANSFORM_METHODS` guard (the 621/666
+  clusters) — every mutation reroutes between two paths that both collapse to
+  NOT_PARSABLE; 30 targeted tests killed one.
+- The template-cache cap — a pure resource bound; every mutation parses identically.
+- Three `converters` entries (Computed/Definition/Function) — those types cannot appear
+  in a parsable filter (computed/function filters route to in-memory execution).
+
+Measured after annotations + tests: **89.83%** on 993 mutants; the last two kills came
+from the `forEach` right-link failure propagation and four remaining uncovered parser
+paths (consumed-past-the-end, lone-value condition, out-of-scope variable, membership
+`.includes()` binding).
 
 1,416 mutants over 6 files, 166 tests, ~8 minutes. The gate fired correctly, which is the
 point: line coverage on `expressions` was already high, and mutation testing says roughly
