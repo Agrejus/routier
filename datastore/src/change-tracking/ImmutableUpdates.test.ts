@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@jest/globals";
+import { afterEach, describe, expect, it } from "@jest/globals";
 import { s } from '@routier/core/schema';
 import { MemoryPlugin } from '@routier/memory-plugin';
 import { DataStore } from '../DataStore';
@@ -33,11 +33,30 @@ const deep3 = s.define('spike_deep3', {
 class ArrayStore extends DataStore { items = this.collection(arrays).create(); }
 class DeepStore extends DataStore { items = this.collection(deep3).create(); }
 
-const plugin = () => new MemoryPlugin(`spike-${Math.random()}`);
+/**
+ * Every store opened by a test, so `afterEach` can dispose it.
+ *
+ * Not optional bookkeeping: constructing a DataStore opens a BroadcastChannel pair per
+ * collection — two MessagePort handles that hold the Node event loop open whether or not
+ * anything ever subscribes. Leaving them is what makes a run need `--forceExit`.
+ */
+const stores: DataStore[] = [];
+
+const open = <TStore extends DataStore>(Store: new (plugin: MemoryPlugin) => TStore) => {
+    const store = new Store(new MemoryPlugin(`spike-${Math.random()}`));
+    stores.push(store);
+    return store;
+};
+
+afterEach(() => {
+    for (const store of stores.splice(0)) {
+        store[Symbol.dispose]();
+    }
+});
 
 describe('DEFECT #12 — array updates through update()', () => {
     it('detects and persists an array element change after the first save', async () => {
-        const store = new ArrayStore(plugin());
+        const store = open(ArrayStore);
         await store.items.addAsync({ id: 'a', strings: ['p', 'q'], dates: [new Date(0)] } as any);
         await store.saveChangesAsync();
 
@@ -50,7 +69,7 @@ describe('DEFECT #12 — array updates through update()', () => {
     });
 
     it('persists an appended element', async () => {
-        const store = new ArrayStore(plugin());
+        const store = open(ArrayStore);
         await store.items.addAsync({ id: 'a', strings: ['p'], dates: [new Date(0)] } as any);
         await store.saveChangesAsync();
 
@@ -63,7 +82,7 @@ describe('DEFECT #12 — array updates through update()', () => {
     });
 
     it('persists a date array element', async () => {
-        const store = new ArrayStore(plugin());
+        const store = open(ArrayStore);
         await store.items.addAsync({ id: 'a', strings: ['p'], dates: [new Date(0)] } as any);
         await store.saveChangesAsync();
 
@@ -79,7 +98,7 @@ describe('DEFECT #12 — array updates through update()', () => {
 
 describe('DEFECT #13 — depth-3 updates through update()', () => {
     it('saves a depth-3 change without throwing', async () => {
-        const store = new DeepStore(plugin());
+        const store = open(DeepStore);
         await store.items.addAsync({ id: 'a', nested: { inner: { deepest: { value: 'x' } } } } as any);
         await store.saveChangesAsync();
 
@@ -99,7 +118,7 @@ describe('DEFECT #13 — depth-3 updates through update()', () => {
         }).compile();
         class WideStore extends DataStore { items = this.collection(wide).create(); }
 
-        const store = new WideStore(plugin());
+        const store = open(WideStore);
         await store.items.addAsync({ id: 'a', keep: 'untouched', nested: { inner: { a: '1', b: '2' } } } as any);
         await store.saveChangesAsync();
 
@@ -116,7 +135,7 @@ describe('DEFECT #13 — depth-3 updates through update()', () => {
 
 describe('stale references', () => {
     it('applies a patch through a stale reference to the CURRENT value', async () => {
-        const store = new ArrayStore(plugin());
+        const store = open(ArrayStore);
         await store.items.addAsync({ id: 'a', strings: ['p'], dates: [new Date(0)] } as any);
         await store.saveChangesAsync();
 
@@ -137,7 +156,7 @@ describe('stale references', () => {
         const counter = s.define('spike_counter', { id: s.string().key(), n: s.number() }).compile();
         class CounterStore extends DataStore { items = this.collection(counter).create(); }
 
-        const store = new CounterStore(plugin());
+        const store = open(CounterStore);
         await store.items.addAsync({ id: 'a', n: 0 } as any);
         await store.saveChangesAsync();
 
@@ -153,7 +172,7 @@ describe('stale references', () => {
     });
 
     it('reports zero pending after a save and does not replay', async () => {
-        const store = new ArrayStore(plugin());
+        const store = open(ArrayStore);
         await store.items.addAsync({ id: 'a', strings: ['p'], dates: [new Date(0)] } as any);
         await store.saveChangesAsync();
 
@@ -166,14 +185,14 @@ describe('stale references', () => {
     });
 
     it('refuses to update a row that is not attached', async () => {
-        const store = new ArrayStore(plugin());
+        const store = open(ArrayStore);
 
         expect(() => store.items.update({ id: 'ghost' } as any, { strings: ['x'] }))
             .toThrow(/not attached/);
     });
 
     it('drops a pending patch when the row is removed, and does not resurrect it', async () => {
-        const store = new ArrayStore(plugin());
+        const store = open(ArrayStore);
         await store.items.addAsync(
             { id: 'a', strings: ['p'], dates: [new Date(0)] } as any,
             { id: 'b', strings: ['q'], dates: [new Date(0)] } as any,
@@ -197,7 +216,7 @@ describe('stale references', () => {
     });
 
     it('resolves a reference taken BEFORE the first save, once the row is saved', async () => {
-        const store = new ArrayStore(plugin());
+        const store = open(ArrayStore);
 
         const [added]: any[] = await store.items.addAsync(
             { id: 'a', strings: ['p'], dates: [new Date(0)] } as any
@@ -212,7 +231,7 @@ describe('stale references', () => {
     });
 
     it('current() resolves a stale reference and isCurrent() reports honestly', async () => {
-        const store = new ArrayStore(plugin());
+        const store = open(ArrayStore);
         await store.items.addAsync({ id: 'a', strings: ['p'], dates: [new Date(0)] } as any);
         await store.saveChangesAsync();
 
@@ -248,7 +267,7 @@ describe('unsaved rows', () => {
     class IdentityStore extends DataStore { items = this.collection(identity).create(); }
 
     it('patches an unsaved row with an identity key', async () => {
-        const store = new IdentityStore(plugin());
+        const store = open(IdentityStore);
 
         const [added]: any[] = await store.items.addAsync({ name: 'first', n: 1 } as any);
 
@@ -266,7 +285,7 @@ describe('unsaved rows', () => {
     });
 
     it('sends ONE insert, not an insert followed by an update', async () => {
-        const store = new IdentityStore(plugin());
+        const store = open(IdentityStore);
 
         const [added]: any[] = await store.items.addAsync({ name: 'first', n: 1 } as any);
         store.items.update(added, { name: 'second' });
@@ -279,7 +298,7 @@ describe('unsaved rows', () => {
     });
 
     it('accumulates successive patches through the original reference', async () => {
-        const store = new IdentityStore(plugin());
+        const store = open(IdentityStore);
 
         const [v1]: any[] = await store.items.addAsync({ name: 'first', n: 1 } as any);
 
@@ -303,7 +322,7 @@ describe('unsaved rows', () => {
      * Pinning the narrower route would have credited the bug to the wrong code.
      */
     it.failing('collapses two identical unsaved rows with identity keys [pinned: known defect #23]', async () => {
-        const store = new IdentityStore(plugin());
+        const store = open(IdentityStore);
 
         await store.items.addAsync({ name: 'b', n: 2 } as any);
         await store.items.addAsync({ name: 'b', n: 2 } as any);
@@ -315,7 +334,7 @@ describe('unsaved rows', () => {
     it('keeps two unsaved rows distinct when they differ in any property', async () => {
         // The re-key path: patching one pending row must move its hash without disturbing
         // the other's. Anything short of delete-then-set leaves the row under both keys.
-        const store = new IdentityStore(plugin());
+        const store = open(IdentityStore);
 
         const [a]: any[] = await store.items.addAsync({ name: 'a', n: 1 } as any);
         await store.items.addAsync({ name: 'b', n: 2 } as any);
@@ -329,7 +348,7 @@ describe('unsaved rows', () => {
     });
 
     it('patches an unsaved row with a caller-supplied key', async () => {
-        const store = new ArrayStore(plugin());
+        const store = open(ArrayStore);
 
         const [added]: any[] = await store.items.addAsync(
             { id: 'a', strings: ['p'], dates: [new Date(0)] } as any
@@ -344,7 +363,7 @@ describe('unsaved rows', () => {
     });
 
     it('current() reports the pending value of an unsaved row', async () => {
-        const store = new IdentityStore(plugin());
+        const store = open(IdentityStore);
 
         const [v1]: any[] = await store.items.addAsync({ name: 'first', n: 1 } as any);
         const v2 = store.items.update(v1, { name: 'second' }) as any;

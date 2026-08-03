@@ -1,4 +1,4 @@
-import { describe, expect, it } from '@jest/globals';
+import { afterEach, describe, expect, it } from '@jest/globals';
 import { s } from '@routier/core/schema';
 import { MemoryPlugin } from '@routier/memory-plugin';
 import { DataStore } from '../DataStore';
@@ -32,8 +32,27 @@ class ProxyStore extends DataStore {
     products = this.collection(schema).create();
 }
 
-const immutableStore = () => new ImmutableStore(new MemoryPlugin(`imm-${Math.random()}`));
-const proxyStore = () => new ProxyStore(new MemoryPlugin(`prx-${Math.random()}`));
+/**
+ * Opened stores, so `afterEach` can dispose them. A DataStore opens a BroadcastChannel pair
+ * per collection at construction — two MessagePort handles that hold the event loop open
+ * whether or not anything subscribes — and leaving them is what makes a run need
+ * `--forceExit`.
+ */
+const stores: DataStore[] = [];
+
+const track = <TStore extends DataStore>(store: TStore) => {
+    stores.push(store);
+    return store;
+};
+
+afterEach(() => {
+    for (const store of stores.splice(0)) {
+        store[Symbol.dispose]();
+    }
+});
+
+const immutableStore = () => track(new ImmutableStore(new MemoryPlugin(`imm-${Math.random()}`)));
+const proxyStore = () => track(new ProxyStore(new MemoryPlugin(`prx-${Math.random()}`)));
 
 const seedOne = async (store: ImmutableStore | ProxyStore) => {
     await store.products.addAsync({

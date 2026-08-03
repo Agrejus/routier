@@ -6,7 +6,7 @@ Audience: an agent with no prior context on this repository.
 
 ## Implementation status (2026-08-03)
 
-`STRESS=1 npx jest --selectProjects stress --forceExit`.
+`STRESS=1 npx jest --selectProjects stress`. No `--forceExit` — see the deviation note.
 Add `E2E_CONTAINERS=1` for S8.
 
 | Scenario | State | Notes |
@@ -19,7 +19,7 @@ Add `E2E_CONTAINERS=1` for S8.
 | S6 subscriptions and views | Done | 5k products, ~58s. Nothing broken; measured the derive cost, below |
 | S7 replication under lag | Done | 2k saves against a source lagging 10–50ms. Nothing broken |
 | S8 real databases | Done | **Found defects #19, #20, #21, #22.** The volume load passes; everything else is pinned |
-| S9 throughput floor | Done, **flaky in a full run** | baseline in `stress/src/throughput-baseline.json`. Reliable alone; see the deviation note |
+| S9 throughput floor | Done | ratio against an in-process reference workload; baseline in `stress/src/throughput-baseline.json`. Was flaky in a full run, fixed by normalising |
 | S10 immutable stale refs | Done | 10k generations through first-generation references |
 | S11 immutable volume + churn | Done | S1 and S3 workloads through `.immutable()` |
 
@@ -126,10 +126,13 @@ needs a real profile, not a comparison read.
   `stress/src/harness/backends.ts` and are printed in every failure banner.
 - *S3 samples `previewChangesAsync` every 25 cycles* rather than after every save; the
   cheap equivalent (`hasChangesAsync`) runs after every save. Rationale in the file.
-- *`--forceExit` is still required*, but S5 now proves subscription channels are NOT the
-  cause: ten stores with live subscriptions release every handle they opened. Whatever holds
-  the loop open is elsewhere — the memory-plugin `dbs` registry and the sqlite driver are the
-  next suspects.
+- *`--forceExit` is no longer required* (2026-08-03). Both `npx jest` and
+  `STRESS=1 npx jest --selectProjects stress` exit on their own. S5 was right that
+  subscription channels release correctly when a store is torn down — what it could not see
+  is that a channel pair is opened per collection **at construction**, so a store nobody
+  disposes leaks two `MessagePort` handles whether or not it ever subscribed. Two production
+  defects and seven undisposed test files; the full account is in `known-defects.md` under
+  "The `--forceExit` question, answered".
 - *S8 does not run the churn load against SQLite*, which the spec asks for. The volume half is
   already covered — `sqliteBackend` is a real file and S1 drives the same load through it at 20k.
   The churn half cannot be: its shape holds a boolean, a date, an array and a nested object, and
@@ -140,26 +143,24 @@ needs a real profile, not a comparison read.
   server. But #19 rejects its first insert and #22 would reject its first save, so 2,000 cycles
   against PostgreSQL has never actually run — the reduction is a projection, not a measurement.
   Whoever fixes #19 and #22 should time it before trusting the 5-minute budget.
-- **S9 is flaky in a full-suite run. OPEN — this is the one known-unreliable scenario.**
-  Observed twice in roughly nine runs of
-  `STRESS=1 E2E_CONTAINERS=1 npx jest --selectProjects stress`, and never in isolation (three
-  consecutive clean solo runs). It measures wall-clock throughput inside a Jest worker while up to
-  eleven other stress suites saturate every core, so the measurement collapses below its 50% floor
-  for reasons that have nothing to do with Routier.
+- **S9 was flaky in a full-suite run. FIXED (2026-08-03) by normalising.** It failed twice in
+  roughly nine full runs and never in isolation, because it measured wall-clock throughput inside
+  a Jest worker while up to eleven other stress suites saturated every core. A loose floor and
+  best-of-3 rounds were not enough, and loosening the floor further would have left a check that
+  could no longer detect what it exists for.
 
-  Its header already anticipates the general problem and answers it with a loose floor and
-  best-of-3 rounds. Neither is enough against this much contention, and loosening the floor
-  further would leave a check that cannot detect what it exists to detect.
+  It now measures a **reference workload** — plain `Map` inserts and reads, no Routier involved —
+  in the same process and the same round, and compares the *ratio* of Routier throughput to
+  reference throughput against a recorded baseline ratio. Contention scales both numbers, so it
+  cancels; a real regression moves only the numerator. The rates are still recorded and printed,
+  because a human reading a failure wants them, but nothing compares against them.
 
-  The fix is the one this file's own gotchas already prescribe for timing: **normalise instead of
-  using an absolute.** Measure a fixed reference workload — plain `Map` inserts and reads, no
-  Routier involved — in the same process and the same round, and compare the *ratio* of Routier
-  throughput to reference throughput against a recorded baseline ratio. Contention scales both
-  numbers, so it cancels. Alternatives, both worse: run the stress project with `maxWorkers: 1`
-  (costs the whole suite its parallelism for one scenario), or run S9 in its own invocation.
+  Three consecutive full-suite runs pass. That is not proof against a failure that appeared twice
+  in nine — if it recurs, the thing to check is whether the reference workload is still measuring
+  contention rather than something else, not whether the floor is too tight.
 
-  Until then: a lone S9 failure in a full run is contention, not a regression. Re-run it alone
-  before believing it — and do not "fix" it by lowering the floor.
+  The baseline file changed shape, and a pre-ratio baseline is treated as absent and re-recorded
+  rather than compared against — a ratio checked against a rate would fail every run.
 
 - *S7 must yield to the timer queue explicitly.* An `await` chain over in-process plugins resolves
   through microtasks and never reaches the macrotask queue, so delayed mirror callbacks do not
@@ -384,8 +385,10 @@ Follow the workflow in `specs/known-defects.md`:
 - **Do not "fix" these known-open gaps** if a scenario trips on them; report instead:
   `SchemaTypes.Definition` as generic primitive, renamed key properties, Dates inside
   object elements of arrays, identity objects.
-- Single-file jest runs often need `--forceExit` today. S5 is the scenario that makes
-  leaked handles a tested invariant instead.
+- **Constructing a DataStore opens a BroadcastChannel pair per collection**, whether or not
+  anything subscribes — two `MessagePort` handles that hold the Node event loop open. Dispose
+  every store a scenario opens (`destroy` now does it too). This is what made runs need
+  `--forceExit`; they no longer do, and a scenario that leaks will bring it back.
 - **Routier's logger used to be ON in every Jest run — this is now FIXED**, and the fix is worth
   knowing about because it changes how you debug a scenario. `shouldLog()` returned true whenever
   `NODE_ENV` was `test`, which Jest always sets, and nothing could switch it off:
@@ -404,7 +407,7 @@ Follow the workflow in `specs/known-defects.md`:
 
 ## Acceptance criteria
 
-1. `npx jest` (default run) is unchanged and green.
+1. `npx jest` (default run) is unchanged and green, and exits without `--forceExit`.
 2. `STRESS=1 npx jest --selectProjects stress` runs S1–S7 and S9–S11 in under 30 minutes.
 3. `STRESS=1 E2E_CONTAINERS=1 npx jest --selectProjects stress` adds S8 (requires Docker).
 4. Every scenario prints its seed and scale on failure.
@@ -417,3 +420,6 @@ npx jest                                          # functional suite, must stay 
 STRESS=1 npx jest --selectProjects stress         # stress scenarios S1–S7, S9–S11
 STRESS=1 E2E_CONTAINERS=1 npx jest --selectProjects stress   # + S8, needs Docker
 ```
+
+Neither needs `--forceExit`. If one starts to, a store somewhere is not being disposed —
+run the suspect test files one at a time and see which never exits.

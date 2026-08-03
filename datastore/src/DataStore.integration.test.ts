@@ -252,7 +252,11 @@ describe("DataStore integration", () => {
                 .create();
         }
 
+        // Tracked like every other store here: an undisposed one holds a BroadcastChannel
+        // pair open and the run needs --forceExit.
         const store = new ScopedStore(plugin);
+        stores.push(store);
+
         await store.products.where(x => x.category === "office").toArrayAsync();
 
         expect(plugin.queryEvents.length).toBe(1);

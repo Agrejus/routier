@@ -592,6 +592,38 @@ So the reason a stress run still needs `--forceExit` is NOT leaked subscription 
 Something else in the suite holds the loop open; the memory-plugin `dbs` registry and the
 sqlite driver are the obvious next suspects. Narrowed, not solved.
 
+**Solved (2026-08-03). Neither suspect was right.** `npx jest` and
+`STRESS=1 npx jest --selectProjects stress` both exit on their own now.
+
+The thing S5 could not see is that a channel pair is opened **at construction**, one per
+collection, whether or not anything ever subscribes. S5 only ever measured stores it had
+already torn down correctly, so it proved teardown works — not that anything performs it.
+`process.getActiveResourcesInfo()` on a bare store shows the shape plainly: two
+`MessagePort` handles appear when the store is constructed and are still there after
+`destroyAsync`.
+
+Three causes, two of them production defects rather than test hygiene:
+
+1. **`destroy` did not dispose the store.** It destroyed the database and left the store's
+   channels open, while being the call that reads like teardown; only `[Symbol.dispose]`
+   released them, and nothing said so. `DataStore.destroy` now disposes after the plugin
+   callback returns — after, because disposing aborts the AbortController the destroy is
+   running under.
+2. **`HttpSwrDbPlugin` held the event loop open forever.** `startBackgroundSync` schedules a
+   retry that reschedules itself, with no `unref` and no stored handle, so the chain
+   outlived the plugin and nothing could stop it. Any *application* using that plugin could
+   not exit either — the test suite is just where it was visible. Now unref'd, and stopped
+   by `destroy`.
+3. **`HttpSwrDbPlugin.notifySchemaSubscription` leaked a subscription per notification.**
+   Creating a `SchemaSubscription` retains the shared channel, and this one was created to
+   carry a single `send` and never disposed, so each revalidation raised the refcount
+   permanently and the channel could never close.
+
+The rest was test teardown: seven files constructed stores and never disposed them. The
+per-file hunt is worth repeating rather than describing — run each test file on its own
+without `--forceExit` and see which never exits. A file that leaks hangs outright; the
+"worker failed to exit gracefully" warning only shows up in a multi-file run.
+
 ---
 
 ## Contract-kit defects — **FIXED** (2026-08-02)

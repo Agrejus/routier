@@ -108,6 +108,9 @@ export class HttpSwrDbPlugin implements IDbPlugin {
     private readonly onRevalidateError?: (error: Error, context: { collectionName: string; cacheKey?: number }) => void;
     private readonly unsyncedQueue: UnsyncedQueue;
     private readonly revalidateInFlight = new Map<number, Promise<void>>();
+    /** The pending background-sync retry, so `destroy` can stop the chain. */
+    private backgroundSyncTimer: ReturnType<typeof setTimeout> | null = null;
+    private isDestroyed = false;
 
     constructor(
         swrStore: IDbPlugin,
@@ -147,25 +150,56 @@ export class HttpSwrDbPlugin implements IDbPlugin {
     }
 
     destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
+        this.stopBackgroundSync();
         this.httpPlugin.destroy(event, done);
     }
 
-    /** Retries flushing unsynced items on a timer using bulkPersist retry delays. */
+    /**
+     * Retries flushing unsynced items on a timer using bulkPersist retry delays.
+     *
+     * The chain reschedules itself forever, which is the intent — there is always more to
+     * retry later. Two things follow from that, and neither used to be true:
+     *
+     *  - **The timer is unref'd.** A pending retry is not a reason to keep the process
+     *    alive. Without it, constructing this plugin means Node can never exit on its own:
+     *    every test run needs `--forceExit`, and a CLI using it hangs after its work is
+     *    done. `unref` is Node-only, so it is called defensively — in a browser the timer
+     *    does not hold anything open in the first place.
+     *  - **`destroy` stops it.** Nothing else could: the handle was a local, so the chain
+     *    outlived the plugin that started it.
+     */
     private startBackgroundSync(): void {
         const run = (attempt: number) => {
+            if (this.isDestroyed) {
+                return;
+            }
+
             const delayMs = Math.min(
                 this.bulkPersistRetryBaseDelayMs * Math.pow(2, attempt),
                 this.bulkPersistRetryMaxDelayMs
             );
-            setTimeout(() => {
+
+            this.backgroundSyncTimer = setTimeout(() => {
                 void this.flushUnsynced()
                     .catch((err) => {
                         logger.warn('[HttpSwrDbPlugin] background flushUnsynced failed', { error: err });
                     })
                     .finally(() => run(attempt + 1));
             }, delayMs);
+
+            (this.backgroundSyncTimer as { unref?: () => void }).unref?.();
         };
         run(0);
+    }
+
+    /** Ends the background-sync chain. Idempotent. */
+    private stopBackgroundSync(): void {
+        this.isDestroyed = true;
+
+        if (this.backgroundSyncTimer != null) {
+            clearTimeout(this.backgroundSyncTimer);
+            this.backgroundSyncTimer = null;
+        }
     }
 
     /**
@@ -326,13 +360,23 @@ export class HttpSwrDbPlugin implements IDbPlugin {
             collectionName: schema.collectionName
         });
 
+        // Disposed in a `finally`, and that is not tidiness. Creating a SchemaSubscription
+        // retains the schema's shared BroadcastChannel, so one that is never disposed
+        // raises the refcount permanently and the channel can never close — two MessagePort
+        // handles held for the life of the process, per revalidation. This one exists only
+        // to carry a single send.
         const subscription = schema.createSubscription();
-        subscription.send({
-            adds: classification.adds,
-            updates: classification.updates.map((u) => u.entity),
-            removals: classification.removes,
-            unknown: [],
-        } as SubscriptionChanges<Record<string, unknown>>);
+
+        try {
+            subscription.send({
+                adds: classification.adds,
+                updates: classification.updates.map((u) => u.entity),
+                removals: classification.removes,
+                unknown: [],
+            } as SubscriptionChanges<Record<string, unknown>>);
+        } finally {
+            subscription[Symbol.dispose]();
+        }
     }
 
     /** Builds a query event used to read current store state during revalidate (same operation, new id/source/reason). */

@@ -297,6 +297,18 @@ export class DataStore implements Disposable {
 
     /**
      * Destroys the Routier instance and underlying database plugin.
+     *
+     * Disposes the store as well, once the plugin is done. It used to destroy only the
+     * database, which left every store this process had built holding an open
+     * BroadcastChannel pair — two `MessagePort` handles that keep the Node event loop alive
+     * on their own. That is a large part of why test runs need `--forceExit`: a channel pair
+     * is opened eagerly for each collection, whether or not anything ever subscribes, and
+     * `destroyAsync` is the call that reads like teardown. Only `[Symbol.dispose]` released
+     * them, and nothing said so.
+     *
+     * Disposing AFTER the plugin callback rather than before it, because disposing aborts
+     * this store's AbortController and the destroy operation is running under it.
+     *
      * @param done Callback with an optional error.
      */
     destroy(done: CallbackResult<never>) {
@@ -305,7 +317,10 @@ export class DataStore implements Disposable {
             schemas: this._schemas,
             source: "DataStore",
             action: "destroy"
-        }, done);
+        }, result => {
+            this[Symbol.dispose]();
+            done(result);
+        });
     }
 
     /**

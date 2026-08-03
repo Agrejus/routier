@@ -1,4 +1,4 @@
-import { describe, expect, it } from '@jest/globals';
+import { afterEach, describe, expect, it } from '@jest/globals';
 import { uuidv4 } from '@routier/core';
 import { s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
@@ -68,8 +68,25 @@ class ProductStore extends DataStore {
 }
 
 describe('browser-storage persistence', () => {
-    const open = (dbName: string, storage: Storage) =>
-        new ProductStore(new BrowserStoragePlugin(dbName, storage));
+    /**
+     * Opened stores, disposed after every test. A DataStore opens a BroadcastChannel pair
+     * per collection at construction — two MessagePort handles that hold the Node event
+     * loop open whether or not anything ever subscribes. This file was the last one in the
+     * repository leaking them, and a leak here is what a `--forceExit` covers up.
+     */
+    const stores: ProductStore[] = [];
+
+    const open = (dbName: string, storage: Storage) => {
+        const store = new ProductStore(new BrowserStoragePlugin(dbName, storage));
+        stores.push(store);
+        return store;
+    };
+
+    afterEach(() => {
+        for (const store of stores.splice(0)) {
+            store[Symbol.dispose]();
+        }
+    });
 
     it('writes entries into the supplied storage', async () => {
         const storage = new FakeStorage();

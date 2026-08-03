@@ -43,9 +43,24 @@ const databaseFile = () => {
     return file;
 };
 
-const open = (file: string) => new JsonStore(new SqliteDbPlugin(file));
+/**
+ * Opened stores, disposed in `afterEach`. Constructing a DataStore opens a BroadcastChannel
+ * pair per collection — two MessagePort handles that hold the Node event loop open whether
+ * or not anything subscribes — so leaving them is what makes a run need `--forceExit`.
+ */
+const stores: JsonStore[] = [];
+
+const open = (file: string) => {
+    const store = new JsonStore(new SqliteDbPlugin(file));
+    stores.push(store);
+    return store;
+};
 
 afterEach(() => {
+    for (const store of stores.splice(0)) {
+        store[Symbol.dispose]();
+    }
+
     for (const file of files.splice(0)) {
         fs.rmSync(path.dirname(file), { recursive: true, force: true });
     }
