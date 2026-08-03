@@ -18,12 +18,40 @@ e8274f2  Safety point (this session's work + the pre-existing uncommitted tree)
 
 - **`stress/`** — new workspace, gated on `STRESS=1`. Harness (seeded RNG, independent Map
   oracle, poll-with-deadline, RSS growth-rate leak detection, per-backend volume budgets) is
-  self-tested. Scenarios S1–S5, S9–S11 built. **S6, S7, S8 are NOT built.**
+  self-tested. **8 of 11 scenarios built** — see below.
 - **An immutable write path** — `collection.update(entity, patch)`, `.immutable()` collections
   with frozen un-proxied reads. ~3x faster reads than the proxy default. Proxy remains the
   default; both paths coexist.
 - **`@routier/sql-plugin-core`** — SQL dialects moved out of core. Core now contains no engine
   name; `specs/core-agnosticism.md` has the rule and the grep that enforces it.
+
+## The S-numbered scenarios
+
+"S" = scenario. **S1–S9 come from `specs/stress-testing.md`**, which already existed before this
+work. **S10 and S11 were added here** to cover the immutable path, which the spec predates.
+
+| | Stresses | Status | Found |
+| --- | --- | --- | --- |
+| S1 | Volume: 100k adds + mixed churn, one collection | Done | **#11** — a persisted entity never went clean; a removed row was resurrected. Fixed. |
+| S2 | Wide and deeply-nested shapes, 10k each | Done | **#12**, **#13**. Both open; 2 of 8 cases pinned. |
+| S3 | Churn: 10k mutation cycles + RSS leak bound | Done | No leak. Guards the #11 fix over 10k cycles. |
+| S4 | Concurrency: 20 workers x 200 saves, one store | Done | Nothing. Hunted the `SelectionQueryable` snapshot/restore race and pipeline reentrancy — clean. |
+| S5 | Many stores on one database; leaked handles | Done | **#18**. Also proved subscription channels do *not* leak. |
+| S6 | Views and subscriptions under write pressure | **Not built** | |
+| S7 | `OptimisticUpdatesDbPlugin` under lag | **Not built** | |
+| S8 | Real databases via testcontainers | **Not built** | |
+| S9 | Throughput regression floor | Done | Baseline recorded (123k inserts/s, 370k reads/s). |
+| S10 | Immutable path driven via stale references | Done | 500k increments through first-generation refs, none lost. |
+| S11 | S1 and S3 workloads through `.immutable()` | Done | Passes; ~9x faster per churn cycle. |
+
+Two things about this table that are easy to get wrong:
+
+- **S-numbers and #-numbers are unrelated sequences.** S2 has nothing to do with defect #2.
+  Defects #1–#10 predate this work; #11–#18 came out of it.
+- **The performance wins did not come from a scenario.** They came from debugging why S1
+  appeared to hang (it was Jest pretty-formatting 100k proxies in a failure message), which led
+  to measuring the save path. The scenarios found the correctness defects; the perf findings
+  were a side effect.
 
 ## Read these three specs first
 
