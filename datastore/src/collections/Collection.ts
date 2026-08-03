@@ -113,51 +113,6 @@ export class Collection<TEntity extends {}> extends RemovableCollection<TEntity>
     }
 
     /**
-     * Applies a patch — or an updater function — to a row, returning the new value.
-     *
-     * SPIKE (specs/immutable-updates.md). The immutable alternative to mutating a
-     * change-tracked proxy. Two things make it different from `entity.price = 9`:
-     *
-     * 1. **It returns the new value; it does not modify the one you passed.**
-     * 2. **Your reference only has to identify the row, not be current.** The patch is
-     *    applied to whatever the collection holds now, so handing it a stale entity is
-     *    safe — which is the failure mode that actually loses data. It also makes
-     *    read-modify-write correct, because the updater receives the current value:
-     *
-     * ```ts
-     * // +2, as intended. With a stale `prev` captured by the caller this would be +1.
-     * store.products.update(p, prev => ({ ...prev, price: prev.price + 1 }));
-     * store.products.update(p, prev => ({ ...prev, price: prev.price + 1 }));
-     * ```
-     *
-     * Arrays and Dates are values: a patch replaces them rather than merging into them.
-     * That is deliberate — element-wise array merging makes "drop the last tag"
-     * inexpressible, and it is the ambiguity that made in-place array mutation unreliable
-     * under proxies (defect #12).
-     *
-     * @param entity Any generation of the row. Only its id is read.
-     * @param recipe A partial entity to merge, or `current => next`.
-     */
-    update(entity: InferType<TEntity>, recipe: Record<string, any> | ((current: InferType<TEntity>) => InferType<TEntity>)) {
-        return this.dependencies.changeTracker.updateImmutable(entity, recipe);
-    }
-
-    /**
-     * The current value of a row, given any generation of it.
-     *
-     * The escape hatch for imperative code holding a reference across updates. Component
-     * code should not need it — subscriptions hand out fresh values on every change.
-     */
-    current(entity: InferType<TEntity>) {
-        return this.dependencies.changeTracker.currentOf(entity);
-    }
-
-    /** Whether the given reference is the row's current value. */
-    isCurrent(entity: InferType<TEntity>) {
-        return this.current(entity) === entity;
-    }
-
-    /**
      * Sets a tag for the next operation. The tag will be used to group related operations.
      * @param tag The tag to associate with the next operation
      * @returns The collection instance for method chaining

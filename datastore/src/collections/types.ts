@@ -51,10 +51,16 @@ export class CollectionDependencies<TRoot extends {}> extends ComposerDependenci
 
 export class RequestContext<TRoot extends {}> {
 
-    constructor() {
+    /**
+     * @param changeTrackingType how entities from this request are tracked. Supplied by the
+     *   collection rather than defaulted here: `ImmutableCollection` and `DiffCollection`
+     *   override it, and hardcoding "proxy" meant their queries installed tracking proxies
+     *   anyway — so those modes only ever applied to writes, never to reads.
+     */
+    constructor(changeTrackingType: ChangeTrackingType = "proxy") {
         this.queryOptions = new QueryOptionsCollection<TRoot>();
         this.isSubScribed = false;
-        this.changeTrackingType = "proxy";
+        this.changeTrackingType = changeTrackingType;
         this.id = uuid(8);
     }
 
