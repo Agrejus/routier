@@ -68,6 +68,8 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
 
         const { databaseEvent, memoryEvent } = this.createQueryPayload<U>();
 
+        // The membership getter is what lets the bridge detect rows LEAVING this
+        // subscriber's result set (defect #24) — the filter alone only sees rows entering.
         return this.dependencies.dataBridge.subscribe<U, unknown>(databaseEvent, (r) => {
 
             if (r.ok === Result.ERROR) {
@@ -76,7 +78,7 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
             }
 
             this.postProcessQuery(r, { databaseEvent, memoryEvent }, done);
-        });
+        }, () => this.lastDeliveredIds);
     }
 
     protected createQueryPayload<Shape>(): { memoryEvent: DbPluginQueryEvent<TRoot, Shape>, databaseEvent: DbPluginQueryEvent<TRoot, Shape> } {
@@ -155,6 +157,48 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
         });
     }
 
+    /**
+     * Ids of the rows this executor last delivered — the subscriber's view of its own
+     * result set, kept for leave-detection (defect #24). `null` means membership is
+     * unknowable (scalar, aggregate, or projected results), in which case the bridge falls
+     * back to filter-only matching.
+     */
+    private lastDeliveredIds: ReadonlySet<unknown> | null = null;
+
+    /** Records which rows a delivery contained, when the delivered shape allows it. */
+    private captureDeliveredMembership(value: unknown) {
+        if (this.request.isSubScribed === false) {
+            return;
+        }
+
+        try {
+            if (Array.isArray(value)) {
+                const ids = new Set<unknown>();
+
+                for (const item of value) {
+                    if (item == null || typeof item !== "object") {
+                        this.lastDeliveredIds = null;
+                        return;
+                    }
+
+                    ids.add(this.dependencies.schema.getId(item as InferType<TRoot>));
+                }
+
+                this.lastDeliveredIds = ids;
+                return;
+            }
+
+            if (value != null && typeof value === "object") {
+                this.lastDeliveredIds = new Set([this.dependencies.schema.getId(value as InferType<TRoot>)]);
+                return;
+            }
+
+            this.lastDeliveredIds = null;
+        } catch {
+            this.lastDeliveredIds = null;
+        }
+    }
+
     private postProcessQuery<TShape>(result: PluginEventSuccessType<ITranslatedValue<TShape>>, payload: { databaseEvent: DbPluginQueryEvent<TRoot, TShape>, memoryEvent: DbPluginQueryEvent<TRoot, TShape> }, done: PluginEventCallbackResult<TShape>) {
 
         const { databaseEvent, memoryEvent } = payload;
@@ -181,23 +225,27 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
                 const translatedEnrichedData = translator.translate(enriched);
 
                 if (memoryEvent.operation.changeTracking === false) {
+                    this.captureDeliveredMembership(translatedEnrichedData.value);
                     return done(PluginEventResult.success(memoryEvent.id, translatedEnrichedData.value));
                 }
 
                 // Normalize to canonical attachment refs regardless of translated value shape.
                 this.attachResults(translatedEnrichedData, tags);
 
+                this.captureDeliveredMembership(translatedEnrichedData.value);
                 return done(PluginEventResult.success(memoryEvent.id, translatedEnrichedData.value));
             }
 
             // No change tracking on the result, just return it as is
             if (databaseEvent.operation.changeTracking === false) {
+                this.captureDeliveredMembership(result.data.value);
                 return done(PluginEventResult.success(databaseEvent.id, result.data.value as TShape));
             }
 
             // Normalize to canonical attachment refs regardless of translated value shape.
             this.attachResults(result.data, tags);
 
+            this.captureDeliveredMembership(result.data.value);
             done(PluginEventResult.success(databaseEvent.id, result.data.value));
         } catch (e) {
             done(PluginEventResult.error(databaseEvent.id, e));

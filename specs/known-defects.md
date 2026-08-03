@@ -1,6 +1,6 @@
 # Known defects
 
-Status: 23 of 23 fixed. No open defects.
+Status: 24 of 24 fixed. No open defects.
 Date: 2026-08-03
 
 Defects 1–10 came from the functional test program. #11–#13 came from the stress program
@@ -648,6 +648,38 @@ defect is not, and the guard is written against the plain add so it does not dep
 **Guarded by:** `'inserts two identical unsaved rows with identity keys as two rows'` and
 `'assigns distinct identities to two identical unsaved rows'` in
 `datastore/src/change-tracking/ImmutableUpdates.test.ts`.
+
+### 24. A filtered subscription misses updates that remove a row from its result set — **FIXED**
+
+Found in design discussion (2026-08-03), verified by test before recorded. A subscriber on
+`where(t => !t.done)` renders active tasks; another component marks one done and saves. The
+task should disappear from the subscriber's list — instead the subscriber was never
+notified and kept rendering the stale row until an unrelated change fired the query.
+
+**Cause:** `DataBridge.subscribe` match-checks changed rows against the subscription's
+filter using their NEW values (seeded into an ephemeral memory db and queried). A row
+*entering* the set matches; a *deleted* row matches by its final content; but a row updated
+so it STOPS matching fails the check, so the subscriber's shrunken result set was never
+re-queried. Enter notifies, delete notifies, leave-via-update was silent — the asymmetry
+is the tell.
+
+**Fix:** the subscriber's executor remembers the ids of its last delivered result
+(`QueryableExecutor.captureDeliveredMembership`, fed from every delivery including the
+initial one) and hands the bridge a membership getter. A changed row whose id is in that
+set either changed or left — both re-query. Old values are never needed, which also keeps
+the fix correct for diff-tracked collections where per-property history does not exist.
+Cost: one `Set` per subscribed query (the size of its result) and one lookup per changed
+row per save; the subscriber's callback still fires only when its data actually changed.
+
+**Residue, documented:** membership is unknowable for scalar, aggregate, and projected
+subscriptions (`count`, `min`, projections without the key), so those keep filter-only
+matching — a `count` subscription can still miss a leave-the-set update. Recorded rather
+than fixed: those results carry no ids to track, and the fix would be re-querying on every
+update-bearing save.
+
+**Guarded by:** `subscriptionMembership.test.ts` — full-array delivery on a matching
+change, notification when a row leaves the set via update, and silence for updates to rows
+that were never in the set.
 
 ### The `--forceExit` question, answered
 

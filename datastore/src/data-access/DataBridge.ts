@@ -5,7 +5,7 @@ import { DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedVal
 import { PluginEventCallbackResult, Result } from "@routier/core/results";
 import { BulkPersistResult } from "@routier/core/collections";
 import { uuid, uuidv4 } from "@routier/core/utilities";
-import { CompiledSchema } from "@routier/core/schema";
+import { CompiledSchema, InferType } from "@routier/core/schema";
 
 // Use a data bridge so we can abstract away some of the stuff
 // a new collection should not need to worry about
@@ -39,7 +39,11 @@ export class DataBridge<T extends {}> {
         this.strategy.query(event, done);
     }
 
-    subscribe<TShape, _U>(event: DbPluginQueryEvent<T, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>) {
+    subscribe<TShape, _U>(
+        event: DbPluginQueryEvent<T, TShape>,
+        done: PluginEventCallbackResult<ITranslatedValue<TShape>>,
+        lastDeliveredIds?: () => ReadonlySet<unknown> | null
+    ) {
         const subscription = event.operation.schema.createSubscription(this.signal, this.scope);
         subscription.onMessage((changes) => {
             const filters = event.operation.options.get("filter");
@@ -48,6 +52,22 @@ export class DataBridge<T extends {}> {
             if (filters.length === 0) {
                 this.query(event, done);
                 return;
+            }
+
+            // Leave-detection (defect #24): the filter check below sees only a changed
+            // row's NEW value, so an update that makes a row STOP matching never fired and
+            // the subscriber kept rendering a row that had left its result set. Any changed
+            // row whose id was in the LAST DELIVERED result either changed or left — both
+            // require a re-query. Entering rows are still caught by the filter check.
+            const membership = lastDeliveredIds?.();
+            if (membership != null && membership.size > 0) {
+                const schema = event.operation.schema;
+                const changed = [...changes.adds, ...changes.updates, ...changes.removals, ...changes.unknown];
+
+                if (changed.some(entity => membership.has(schema.getId(entity as InferType<T>)))) {
+                    this.query(event, done);
+                    return;
+                }
             }
 
             // Has changes: check if any match the filter, then re-query if so
