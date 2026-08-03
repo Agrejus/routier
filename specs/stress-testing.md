@@ -19,6 +19,8 @@ Audience: an agent with no prior context on this repository.
 | S7 replication under lag | **Not started** | |
 | S8 real databases | **Not started** | |
 | S9 throughput floor | Done | baseline in `stress/src/throughput-baseline.json` |
+| S10 immutable stale refs | Done | 10k generations through first-generation references |
+| S11 immutable volume + churn | Done | S1 and S3 workloads through `.immutable()` |
 
 **Defects found so far** (all recorded in `specs/known-defects.md`, all reducible to a
 handful of entities once found):
