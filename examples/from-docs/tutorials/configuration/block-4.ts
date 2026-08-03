@@ -12,7 +12,7 @@ const userSchema = s
     .compile();
 
 class Ctx extends DataStore {
-    users = this.collection(userSchema).create();
+    users = this.collection(userSchema).proxy().create();
     constructor() {
         super(new PouchDbPlugin("myapp"));
     }

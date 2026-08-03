@@ -29,7 +29,7 @@ class ImmutableStore extends DataStore {
 }
 
 class ProxyStore extends DataStore {
-    products = this.collection(schema).create();
+    products = this.collection(schema).proxy().create();
 }
 
 /**

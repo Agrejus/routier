@@ -3,7 +3,7 @@ import { productsSchema } from "./schemas/product";
 import { productsViewSchema } from "./schemas/productsView";
 
 export class AppDataStore extends DataStore {
-  products = this.collection(productsSchema).create();
+  products = this.collection(productsSchema).proxy().create();
 
   productsView = this.view(productsViewSchema)
     .scope(([x, p]) => x.documentType === p.collectionName, productsViewSchema)

@@ -67,7 +67,7 @@ class SharedStore extends DataStore {
 
     constructor(plugin: IDbPlugin, schema: CompiledSchema<any>) {
         super(plugin);
-        this.entities = this.collection(schema).create();
+        this.entities = this.collection(schema).proxy().create();
     }
 }
 

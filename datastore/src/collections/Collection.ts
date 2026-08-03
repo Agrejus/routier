@@ -1,10 +1,14 @@
 import { RemovableCollection } from './RemovableCollection';
-import { InferCreateType, InferType } from "@routier/core/schema";
+import { ChangeTrackingType, InferCreateType, InferType } from "@routier/core/schema";
 import { CallbackResult, Result } from "@routier/core/results";
 import { GenericFunction } from "@routier/core/types";
 import { CollectionDependencies } from "./types";
 
 export class Collection<TEntity extends {}> extends RemovableCollection<TEntity> {
+
+    protected override get changeTrackingType(): ChangeTrackingType {
+        return "proxy";
+    }
 
     constructor(
         dependencies: CollectionDependencies<TEntity>

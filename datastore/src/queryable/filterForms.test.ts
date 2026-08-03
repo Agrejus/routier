@@ -34,7 +34,7 @@ const schema = s.define('filter_forms', {
 }).compile();
 
 class Store extends DataStore {
-    rows = this.collection(schema).create();
+    rows = this.collection(schema).proxy().create();
 }
 
 type Row = { name: string; category: string; price: number; ratio: number; active: boolean };

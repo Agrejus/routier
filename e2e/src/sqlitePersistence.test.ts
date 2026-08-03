@@ -24,7 +24,7 @@ const schema = s.define('e2e_products', {
 }).compile();
 
 class ProductStore extends DataStore {
-    products = this.collection(schema).create();
+    products = this.collection(schema).proxy().create();
 }
 
 const files: string[] = [];

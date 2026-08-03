@@ -30,8 +30,8 @@ class BlogContext extends DataStore {
     super(new MemoryPlugin("blog-app"));
   }
 
-  users = this.collection(userSchema).create();
-  posts = this.collection(postSchema).create();
+  users = this.collection(userSchema).proxy().create();
+  posts = this.collection(postSchema).proxy().create();
 }
 
 // Usage example

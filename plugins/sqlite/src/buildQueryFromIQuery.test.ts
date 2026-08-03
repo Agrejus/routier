@@ -29,7 +29,7 @@ class SqliteTestPlugin extends SqliteDbPlugin {
 }
 
 class TestDataStore extends DataStore {
-    users = this.collection(compiledUserSchema).create();
+    users = this.collection(compiledUserSchema).proxy().create();
 }
 
 describe('buildQueryFromIQuery Integration Tests', () => {

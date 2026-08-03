@@ -63,10 +63,10 @@ class ContractDataStore extends DataStore {
         super(plugin);
     }
 
-    products = this.collection(contractProductSchema).create();
-    rich = this.collection(contractRichSchema).create();
-    composites = this.collection(contractCompositeSchema).create();
-    renamed = this.collection(contractRenamedSchema).create();
+    products = this.collection(contractProductSchema).proxy().create();
+    rich = this.collection(contractRichSchema).proxy().create();
+    composites = this.collection(contractCompositeSchema).proxy().create();
+    renamed = this.collection(contractRenamedSchema).proxy().create();
 }
 
 type Product = { name: string; category: string; price: number };

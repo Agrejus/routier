@@ -16,5 +16,5 @@ class TestContext extends DataStore {
     super(new MemoryPlugin("test"));
   }
 
-  users = this.collection(userSchema).create();
+  users = this.collection(userSchema).proxy().create();
 }

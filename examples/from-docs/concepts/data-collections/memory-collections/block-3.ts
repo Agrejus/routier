@@ -18,5 +18,5 @@ class PerformanceContext extends DataStore {
     super(new MemoryPlugin("performance"));
   }
 
-  cache = this.collection(cacheSchema).create();
+  cache = this.collection(cacheSchema).proxy().create();
 }

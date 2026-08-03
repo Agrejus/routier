@@ -60,8 +60,8 @@ class QueryRoutingProbePlugin implements IDbPlugin {
 }
 
 class QueryableStore extends DataStore {
-    products = this.collection(productsSchema).create();
-    computedProducts = this.collection(computedSchema).create();
+    products = this.collection(productsSchema).proxy().create();
+    computedProducts = this.collection(computedSchema).proxy().create();
 }
 
 const lastQueryEvent = (plugin: QueryRoutingProbePlugin) => {
@@ -232,7 +232,7 @@ describe("Queryable routing contracts", () => {
         class ScopedComputedStore extends DataStore {
             products = this.collection(scopedComputedSchema)
                 .scope((x) => x.category === "office")
-                .create();
+                .proxy().create();
         }
 
         plugin.seed(scopedComputedSchema, [

@@ -70,13 +70,13 @@ export class DataStore implements Disposable {
      * @returns A CollectionBuilder for the entity type.
      */
     protected collection<TEntity extends {}>(schema: CompiledSchema<TEntity>) {
-        const onCreated = (collection: Collection<TEntity>) => {
+        const onCreated = (collection: CollectionBase<TEntity>) => {
 
             if (this.collections.has(schema.id)) {
                 throw new Error(`Cannot have two collections/views with the same schema.  Schema Collection Name: ${schema.collectionName}`);
             }
 
-            this.collections.set(schema.id, collection);
+            this.collections.set(schema.id, collection as Collection<TEntity>);
             this._schemas.set(schema.id, schema as CompiledSchema<UnknownRecord>);
         };
 
@@ -92,9 +92,11 @@ export class DataStore implements Disposable {
             DataBridge.create<TEntity>(this.dbPlugin, schema, this.abortController.signal)
         );
 
-        return new CollectionBuilder<TEntity, Collection<TEntity>>({
+        // No mode is chosen here on purpose: the returned builder has no create() until
+        // the caller declares HOW mutations are tracked — proxy(), diff(), immutable(),
+        // or readonly().
+        return new CollectionBuilder<TEntity>({
             dependencies,
-            instanceCreator: Collection<TEntity>,
             onCollectionCreated: onCreated.bind(this),
         });
     }

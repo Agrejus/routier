@@ -10,7 +10,7 @@ const userSchema = s
   .compile();
 
 class AppContext extends DataStore {
-  users = this.collection(userSchema).create();
+  users = this.collection(userSchema).proxy().create();
 
   constructor() {
     super(new MemoryPlugin("my-app"));

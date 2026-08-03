@@ -17,7 +17,7 @@ const productSchema = s.define("products", {
 })).compile();
 
 class AppDataStore extends DataStore {
-    products = this.collection(productSchema).create();
+    products = this.collection(productSchema).proxy().create();
     constructor() {
         super(new MemoryPlugin("app"));
     }

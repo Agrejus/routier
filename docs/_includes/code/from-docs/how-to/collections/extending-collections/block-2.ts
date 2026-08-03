@@ -14,7 +14,7 @@ const productSchema = s
     .compile();
 
 class AppDataStore extends DataStore {
-    products = this.collection(productSchema).create((Instance, ...args) => {
+    products = this.collection(productSchema).proxy().create((Instance, ...args) => {
         return new (class extends Instance {
             constructor() {
                 super(...args);

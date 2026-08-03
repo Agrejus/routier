@@ -6,7 +6,7 @@ const userSchema = s.object({
 });
 
 // In your data store
-const users = dataStore.collection(userSchema).create();
+const users = dataStore.collection(userSchema).proxy().create();
 
 // In your API layer
 app.post("/users", (req, res) => {

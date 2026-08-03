@@ -30,8 +30,8 @@ const deep3 = s.define('spike_deep3', {
     nested: s.object({ inner: s.object({ deepest: s.object({ value: s.string() }) }) }),
 }).compile();
 
-class ArrayStore extends DataStore { items = this.collection(arrays).create(); }
-class DeepStore extends DataStore { items = this.collection(deep3).create(); }
+class ArrayStore extends DataStore { items = this.collection(arrays).proxy().create(); }
+class DeepStore extends DataStore { items = this.collection(deep3).proxy().create(); }
 
 /**
  * Every store opened by a test, so `afterEach` can dispose it.
@@ -116,7 +116,7 @@ describe('DEFECT #13 — depth-3 updates through update()', () => {
             keep: s.string(),
             nested: s.object({ inner: s.object({ a: s.string(), b: s.string() }) }),
         }).compile();
-        class WideStore extends DataStore { items = this.collection(wide).create(); }
+        class WideStore extends DataStore { items = this.collection(wide).proxy().create(); }
 
         const store = open(WideStore);
         await store.items.addAsync({ id: 'a', keep: 'untouched', nested: { inner: { a: '1', b: '2' } } } as any);
@@ -154,7 +154,7 @@ describe('stale references', () => {
 
     it('gives an updater function the current value, not the caller reference', async () => {
         const counter = s.define('spike_counter', { id: s.string().key(), n: s.number() }).compile();
-        class CounterStore extends DataStore { items = this.collection(counter).create(); }
+        class CounterStore extends DataStore { items = this.collection(counter).proxy().create(); }
 
         const store = open(CounterStore);
         await store.items.addAsync({ id: 'a', n: 0 } as any);
@@ -264,7 +264,7 @@ describe('unsaved rows', () => {
         n: s.number(),
     }).compile();
 
-    class IdentityStore extends DataStore { items = this.collection(identity).create(); }
+    class IdentityStore extends DataStore { items = this.collection(identity).proxy().create(); }
 
     it('patches an unsaved row with an identity key', async () => {
         const store = open(IdentityStore);

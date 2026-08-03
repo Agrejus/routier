@@ -64,7 +64,7 @@ const schema = s.define('bs_products', {
 }).compile();
 
 class ProductStore extends DataStore {
-    products = this.collection(schema).create();
+    products = this.collection(schema).proxy().create();
 }
 
 describe('browser-storage persistence', () => {

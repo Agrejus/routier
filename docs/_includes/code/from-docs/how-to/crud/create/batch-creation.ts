@@ -17,7 +17,7 @@ class AppContext extends DataStore {
         super(new MemoryPlugin("app-db"));
     }
 
-    products = this.collection(productSchema).create();
+    products = this.collection(productSchema).proxy().create();
 }
 
 const ctx = new AppContext();

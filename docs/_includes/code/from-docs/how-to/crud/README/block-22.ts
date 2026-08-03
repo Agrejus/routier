@@ -20,7 +20,7 @@ class ProductStore extends DataStore {
     super(new MemoryPlugin("products"));
   }
 
-  products = this.collection(productSchema).create();
+  products = this.collection(productSchema).proxy().create();
 }
 
 // Usage

@@ -59,7 +59,7 @@ class RoutingProbePlugin implements IDbPlugin {
 }
 
 class IntegrationStore extends DataStore {
-    products = this.collection(productSchema).create();
+    products = this.collection(productSchema).proxy().create();
 }
 
 const stores: DataStore[] = [];
@@ -249,7 +249,7 @@ describe("DataStore integration", () => {
         class ScopedStore extends DataStore {
             products = this.collection(scopedSchema)
                 .scope(x => x.documentType === "products")
-                .create();
+                .proxy().create();
         }
 
         // Tracked like every other store here: an undisposed one holds a BroadcastChannel

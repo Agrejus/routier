@@ -27,7 +27,7 @@ const schema = s.define('prop_rows', {
 }).compile();
 
 class PropertyDataStore extends DataStore {
-    rows = this.collection(schema).create();
+    rows = this.collection(schema).proxy().create();
 }
 
 type Row = { name: string; category: string; price: number; quantity: number };

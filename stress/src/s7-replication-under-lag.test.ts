@@ -72,7 +72,7 @@ const LAG_MAX_MS = 50;
 const YIELD_EVERY = 10;
 
 class ProductStore extends DataStore {
-    products = this.collection(contractProductSchema).create();
+    products = this.collection(contractProductSchema).proxy().create();
 }
 
 const { keyOf, snapshot, fields } = productShape;

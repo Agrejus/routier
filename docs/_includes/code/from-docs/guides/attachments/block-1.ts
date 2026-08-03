@@ -13,7 +13,7 @@ const productSchema = s
     .compile();
 
 class Ctx extends DataStore {
-    products = this.collection(productSchema).create();
+    products = this.collection(productSchema).proxy().create();
     constructor(dbName: string) {
         super(new MemoryPlugin(dbName));
     }

@@ -30,7 +30,7 @@ class OracleDataStore extends DataStore {
         super(plugin);
     }
 
-    rows = this.collection(oracleSchema).create();
+    rows = this.collection(oracleSchema).proxy().create();
 }
 
 export type OracleRow = {

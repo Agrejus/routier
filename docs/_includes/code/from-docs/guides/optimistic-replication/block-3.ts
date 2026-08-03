@@ -38,11 +38,11 @@ export class VehicleDataStore extends DataStore {
   // Collections use scoping for single-store backends
   vehicles = this.collection(vehicleSchema)
     .scope(([x, p]) => x.collectionName === p.collectionName, vehicleSchema)
-    .create();
+    .proxy().create();
 
   maintenance = this.collection(maintenanceSchema)
     .scope(([x, p]) => x.collectionName === p.collectionName, maintenanceSchema)
-    .create();
+    .proxy().create();
 }
 
 export const ctx = new VehicleDataStore();

@@ -17,8 +17,8 @@ export class AppDataStore extends DataStore {
   }
 
   // Define your collections
-  vehicles = this.collection(vehicleSchema).create();
-  tasks = this.collection(taskSchema).create();
+  vehicles = this.collection(vehicleSchema).proxy().create();
+  tasks = this.collection(taskSchema).proxy().create();
 }
 
 export const ctx = new AppDataStore();

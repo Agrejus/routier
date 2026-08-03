@@ -1,4 +1,4 @@
-import { ChangeTrackingType, CompiledSchema, IdType, InferCreateType, InferType } from "@routier/core/schema";
+import { ChangeTrackingType, CompiledSchema, HashType, IdType, InferCreateType, InferType } from "@routier/core/schema";
 import { ChangeTrackedEntity } from "../types";
 import { KnownKeyAdditions } from "./additions/KnownKeyAdditions";
 import { IAdditions } from "./additions/types";
@@ -52,6 +52,14 @@ type Attachment<TEntity extends {}> = {
     changeType: EntityChangeType;
     /** `doc.__tracking__` at attach time. Absent for entities tracked without a proxy. */
     tracking?: ChangeTrackedEntity<{}>["__tracking__"];
+    /**
+     * Content hash of `doc` at attach / last persist — present only on diff-tracked
+     * collections, where it IS the change detection: the caller's reference is the
+     * canonical instance and mutations land on it directly, so "dirty" means the current
+     * hash no longer matches this baseline. Keys and identities are excluded by
+     * `HashType.Object`, which is exactly right — they cannot change.
+     */
+    snapshotHash?: string;
 };
 
 /**
@@ -71,6 +79,12 @@ type UnsavedRow<TEntity extends {}> = {
 
 export class ChangeTracker<TEntity extends {}> {
 
+    /**
+     * The owning collection's tracking mode, set by CollectionBase at construction. The
+     * tracker needs it in exactly one place: `attach`, which snapshots a content hash for
+     * diff-tracked entities so saves can detect mutations made through plain references.
+     */
+    changeTrackingType: ChangeTrackingType = "proxy";
     protected removals: InferType<TEntity>[] = [];
     protected canonicalAttachments: Map<IdType, Attachment<TEntity>> = new Map<IdType, Attachment<TEntity>>();
     protected schema: CompiledSchema<TEntity>;
@@ -144,7 +158,30 @@ export class ChangeTracker<TEntity extends {}> {
             doc,
             changeType,
             tracking: (doc as unknown as ChangeTrackedEntity<{}>).__tracking__,
+            // Diff tracking baselines the entity's content at attach time; everything
+            // else about the identity map is shared with the other modes.
+            snapshotHash: this.changeTrackingType === "diff"
+                ? this.contentHash(doc)
+                : undefined,
         });
+    }
+
+    /** Content hash of an attached entity — the diff-tracking baseline currency. */
+    private contentHash(doc: InferType<TEntity>) {
+        return this.schema.hash(doc as unknown as InferCreateType<TEntity>, HashType.Object);
+    }
+
+    /** Re-baselines a diff-tracked attachment after its current state has been persisted. */
+    private refreshSnapshot(attachment: Attachment<TEntity>) {
+        if (attachment.snapshotHash != null) {
+            attachment.snapshotHash = this.contentHash(attachment.doc);
+        }
+    }
+
+    /** True when a diff-tracked attachment's content no longer matches its baseline. */
+    private isSnapshotDirty(attachment: Attachment<TEntity>) {
+        return attachment.snapshotHash != null
+            && this.contentHash(attachment.doc) !== attachment.snapshotHash;
     }
 
     /**
@@ -170,7 +207,9 @@ export class ChangeTracker<TEntity extends {}> {
 
             const tracking = ChangeTracker.trackingOf(canonicalAttachment);
 
-            if (tracking?.isDirty === true || canonicalAttachment.changeType !== "notModified") {
+            if (tracking?.isDirty === true
+                || canonicalAttachment.changeType !== "notModified"
+                || this.isSnapshotDirty(canonicalAttachment)) {
                 hasChanges = true;
                 break
             }
@@ -225,6 +264,9 @@ export class ChangeTracker<TEntity extends {}> {
             // Let's only map Ids and identities
             this.schema.merge(foundDoc, deserializedUpdate); // merge needs to map children appropriately
             result.updates[i] = this.schema.clone(foundDoc);
+
+            // The persisted state is the new baseline for diff tracking.
+            this.refreshSnapshot(found);
 
             // The update is now persisted, so the entity is no longer dirty. Without this
             // the proxy's accumulated `changes`/`original` survive the save and
@@ -324,12 +366,27 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
                 changeType = "propertiesChanged"
             }
 
+            // Diff tracking: the caller mutated the canonical instance directly, so the
+            // only evidence is the content hash diverging from the attach-time baseline.
+            const snapshotDirty = changeType === "notModified" && this.isSnapshotDirty(canonicalAttachment);
+
+            if (snapshotDirty) {
+                changeType = "propertiesChanged";
+            }
+
             if (changeType === "notModified") {
                 continue;
             }
 
             const serializedEntity = this.schema.preprocess(canonicalAttachment.doc as InferCreateType<TEntity>);
-            changes.push({ entity: serializedEntity, delta: this.serializeDelta(serializedEntity, tracking.changes), changeType })
+            // A hash comparison says THAT the entity changed, not WHICH properties did, so
+            // a diff-tracked change ships an empty delta — the convention every plugin
+            // already implements as "no tracked change list: write the whole entity"
+            // (see the empty-delta fallback in the SQL builders).
+            const delta = snapshotDirty || tracking == null
+                ? ({} as InferType<TEntity>)
+                : this.serializeDelta(serializedEntity, tracking.changes);
+            changes.push({ entity: serializedEntity, delta, changeType })
         }
 
         // An immutably-updated row is normally invisible to the loop above: `update()` never
@@ -495,11 +552,13 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
         }
 
         if (found.changeType === "notModified") {
-            const resolvedChangeType = this.resolveChangeType(found.doc);
+            const resolvedChangeType = this.resolveChangeType(found.doc) === "propertiesChanged" || this.isSnapshotDirty(found)
+                ? "propertiesChanged"
+                : "notModified";
 
             return {
                 doc: found.doc,
-                changeType: resolvedChangeType
+                changeType: resolvedChangeType as EntityChangeType
             }
         }
 
@@ -565,7 +624,23 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
             }
 
             if (options?.merge === true) {
+                // A diff-tracked attachment with unsaved local edits keeps them: merging a
+                // re-read over the canonical would silently absorb the caller's mutations
+                // into a fresh baseline, and there is no per-property record to protect
+                // them the way the proxy's paused merge does. Local state wins until saved.
+                if (this.isSnapshotDirty(existing)) {
+                    if (tag != null) {
+                        this.resolveTagCollection().set(existing, tag);
+                    }
+
+                    return existing.doc;
+                }
+
                 this.schema.merge(existing.doc, entity); // merge needs to map children appropriately
+
+                // The merged read is database truth over a clean entity — re-baseline, or
+                // the merged-in values would read as local edits on the next save.
+                this.refreshSnapshot(existing);
             }
 
             if (tag != null) {

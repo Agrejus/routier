@@ -407,20 +407,32 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const mergeFunctionRoot = mergeCodeBuilder.factory("factory", { name: "factory" }).parameters({ name: "collectionName", value: this.collectionName });
             const mergeFunctionBody = mergeFunctionRoot.function(undefined, { name: "function" }).parameters("destination", "source").return();
 
+            // The pause bootstrap exists so a PROXIED destination does not record the
+            // merge's own writes as changes. A destination with no tracking (diff and
+            // immutable modes) gets a temporary bootstrap so the same generated code runs —
+            // and unpause() DELETES it again, because leaving it behind is the
+            // `{ isPaused: false }` residue of defect #16, this time on the merge path.
             const pauseFunctionBody = mergeFunctionBody.function("pause")
                 .appendBody("// initiate change tracking if needed");
 
             pauseFunctionBody.if("destination.__tracking__ == null")
-                .appendBody("destination.__tracking__ = {};");
+                .appendBody("destination.__tracking__ = {};")
+                .appendBody("installedTrackingBootstrap = true;");
 
             pauseFunctionBody.appendBody("destination.__tracking__.isPaused = true;");
 
-            mergeFunctionBody.function("unpause")
-                .appendBody("// unpause change tracking if needed")
-                .if("destination.__tracking__ != null")
+            const unpauseFunctionBody = mergeFunctionBody.function("unpause")
+                .appendBody("// unpause change tracking, removing a bootstrap this merge installed");
+
+            unpauseFunctionBody.if("installedTrackingBootstrap === true")
+                .appendBody("delete destination.__tracking__;")
+                .appendBody("return;");
+
+            unpauseFunctionBody.if("destination.__tracking__ != null")
                 .appendBody("destination.__tracking__.isPaused  = false;");
 
-            mergeFunctionBody.slot("header").raw(`pause()`);
+            mergeFunctionBody.slot("header").raw(`let installedTrackingBootstrap = false;
+    pause()`);
             mergeFunctionBody.slot("assignments");
             mergeFunctionBody.slot("ifs");
             mergeFunctionBody.slot("return").raw(`

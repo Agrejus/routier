@@ -15,7 +15,7 @@ class RenamedDataStore extends DataStore {
         super(plugin);
     }
 
-    items = this.collection(renamedSchema).create();
+    items = this.collection(renamedSchema).proxy().create();
 }
 
 const stores: RenamedDataStore[] = [];

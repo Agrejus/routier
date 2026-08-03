@@ -29,7 +29,7 @@ const productsHistorySchema = s
   .compile();
 
 export class AppDataStore extends DataStore {
-  products = this.collection(productsSchema).create();
+  products = this.collection(productsSchema).proxy().create();
 
   productsHistory = this.view(productsHistorySchema)
     .derive((done) => {

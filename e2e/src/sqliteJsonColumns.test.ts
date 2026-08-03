@@ -32,7 +32,7 @@ const schema = s.define('e2e_json_columns', {
 }).compile();
 
 class JsonStore extends DataStore {
-    items = this.collection(schema).create();
+    items = this.collection(schema).proxy().create();
 }
 
 const files: string[] = [];

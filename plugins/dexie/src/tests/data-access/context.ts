@@ -8,6 +8,6 @@ export class DexieDataStore extends DataStore {
         super(plugin);
     }
 
-    products = this.collection(productsSchema).scope(([x, p]) => x.collectionName === p.collectionName, { ...productsSchema }).create();
-    users = this.collection(usersSchema).scope(([x, p]) => x.collectionName === p.collectionName, { ...productsSchema }).create();
+    products = this.collection(productsSchema).scope(([x, p]) => x.collectionName === p.collectionName, { ...productsSchema }).proxy().create();
+    users = this.collection(usersSchema).scope(([x, p]) => x.collectionName === p.collectionName, { ...productsSchema }).proxy().create();
 }

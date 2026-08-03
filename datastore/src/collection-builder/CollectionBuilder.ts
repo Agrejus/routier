@@ -1,5 +1,6 @@
 import { InferType } from '@routier/core/schema';
 import { CollectionInstanceCreator } from './types';
+import { Collection } from '../collections/Collection';
 import { ImmutableCollection } from '../collections/ImmutableCollection';
 import { ReadonlyCollection } from '../collections/ReadonlyCollection';
 import { DiffCollection } from '../collections/DiffCollection';
@@ -7,37 +8,85 @@ import { Filter, ParamsFilter, toExpression } from '@routier/core/expressions';
 import { CollectionBase } from '../collections/CollectionBase';
 import { CollectionDependencies } from '../collections/types';
 
-type CollectionBuilderProps<TEntity extends {}, TCollection extends CollectionBase<TEntity>> = {
+type ModelessProps<TEntity extends {}> = {
     dependencies: CollectionDependencies<TEntity>;
-    instanceCreator: CollectionInstanceCreator<TEntity, TCollection>;
     onCollectionCreated: (collection: CollectionBase<TEntity>) => void;
 }
-export class CollectionBuilder<TEntity extends {}, TCollection extends CollectionBase<TEntity>> {
+
+type ConfiguredProps<TEntity extends {}, TCollection extends CollectionBase<TEntity>> = ModelessProps<TEntity> & {
+    instanceCreator: CollectionInstanceCreator<TEntity, TCollection>;
+}
+
+/** Shared by both builder stages — a scope is mode-independent. */
+function addScope<TEntity extends {}, P extends {}>(
+    dependencies: CollectionDependencies<TEntity>,
+    selector: ParamsFilter<InferType<TEntity>, P> | Filter<InferType<TEntity>>,
+    params?: P
+) {
+    const schema = dependencies.schema
+
+    const expression = toExpression(schema, selector, params);
+
+    dependencies.scopedQueryOptions.add("filter", { filter: selector as Filter<TEntity> | ParamsFilter<TEntity, {}>, expression, params });
+}
+
+/**
+ * The entry builder for a collection. It has NO `create()` — a change-tracking mode must
+ * be chosen first, and there is deliberately no default: how mutations are detected is the
+ * most consequential fact about a collection, so every declaration states it, and wrong
+ * code does not compile.
+ *
+ *  - `proxy()`     — entities are wrapped in a tracking Proxy; every write is recorded as
+ *                    it happens. Precise per-property deltas; per-write overhead; proxies
+ *                    cannot cross structured-clone boundaries.
+ *  - `diff()`      — entities are plain objects and the store's memory holds the canonical
+ *                    instances: a reference you hold IS the store's instance. Saves detect
+ *                    mutations by comparing a content-hash snapshot taken at attach time.
+ *                    No proxies anywhere; changed entities are written whole.
+ *  - `immutable()` — reads are frozen; changes go through `update()` patches producing new
+ *                    instances. A plain mutation throws instead of being silently lost.
+ *  - `readonly()`  — data can only be read.
+ */
+export class CollectionBuilder<TEntity extends {}> {
 
     private _onCollectionCreated: (collection: CollectionBase<TEntity>) => void;
-    private instanceCreator: CollectionInstanceCreator<TEntity, TCollection>;
     private dependencies: CollectionDependencies<TEntity>;
 
-    constructor(props: CollectionBuilderProps<TEntity, TCollection>) {
+    constructor(props: ModelessProps<TEntity>) {
         this.dependencies = props.dependencies;
         this._onCollectionCreated = props.onCollectionCreated;
-        this.instanceCreator = props.instanceCreator;
     }
 
-    immutable() {
-        return new CollectionBuilder<TEntity, ImmutableCollection<TEntity>>({
+    private configure<TCollection extends CollectionBase<TEntity>>(instanceCreator: CollectionInstanceCreator<TEntity, TCollection>) {
+        return new ConfiguredCollectionBuilder<TEntity, TCollection>({
             onCollectionCreated: this._onCollectionCreated,
-            instanceCreator: ImmutableCollection,
+            instanceCreator,
             dependencies: this.dependencies
         });
     }
 
+    /** Live change tracking through a Proxy: every write is recorded as it happens. */
+    proxy() {
+        return this.configure<Collection<TEntity>>(Collection);
+    }
+
+    /**
+     * Snapshot change tracking: entities are plain objects, the reference you hold is the
+     * store's canonical instance, and saves detect changes by comparing against a
+     * content-hash baseline taken when the entity was attached.
+     */
     diff() {
-        return new CollectionBuilder<TEntity, DiffCollection<TEntity>>({
-            onCollectionCreated: this._onCollectionCreated,
-            instanceCreator: DiffCollection,
-            dependencies: this.dependencies
-        });
+        return this.configure<DiffCollection<TEntity>>(DiffCollection);
+    }
+
+    /** Frozen reads; changes go through `update()` patches producing new instances. */
+    immutable() {
+        return this.configure<ImmutableCollection<TEntity>>(ImmutableCollection);
+    }
+
+    /** Data can only be read. */
+    readonly() {
+        return this.configure<ReadonlyCollection<TEntity>>(ReadonlyCollection);
     }
 
     /**
@@ -52,12 +101,13 @@ export class CollectionBuilder<TEntity extends {}, TCollection extends Collectio
      * Example:
      * comments = this.collection(commentSchema)
      *   .scope((e, { collectionName }) => e.collectionName === collectionName)
+     *   .proxy()
      *   .create();
      *
      * @param expression A filter expression that will be AND-ed with all user queries
      * @returns A builder for chaining additional configuration
      */
-    scope(expression: Filter<InferType<TEntity>>): CollectionBuilder<TEntity, TCollection>;
+    scope(expression: Filter<InferType<TEntity>>): CollectionBuilder<TEntity>;
     /**
      * Apply a global, parameterized filter (scope) to the collection.
      *
@@ -71,26 +121,44 @@ export class CollectionBuilder<TEntity extends {}, TCollection extends Collectio
      * @param params Parameters passed to the selector (excluding `collectionName`, which is auto‑injected)
      * @returns A builder for chaining additional configuration
      */
-    scope<P extends {}>(selector: ParamsFilter<InferType<TEntity>, P>, params: P): CollectionBuilder<TEntity, TCollection>;
-    scope<P extends {} = never>(selector: ParamsFilter<InferType<TEntity>, P> | Filter<InferType<TEntity>>, params?: P): CollectionBuilder<TEntity, TCollection> {
+    scope<P extends {}>(selector: ParamsFilter<InferType<TEntity>, P>, params: P): CollectionBuilder<TEntity>;
+    scope<P extends {} = never>(selector: ParamsFilter<InferType<TEntity>, P> | Filter<InferType<TEntity>>, params?: P): CollectionBuilder<TEntity> {
 
-        const schema = this.dependencies.schema
+        addScope(this.dependencies, selector, params);
 
-        const expression = toExpression(schema, selector, params);
-
-        this.dependencies.scopedQueryOptions.add("filter", { filter: selector as Filter<TEntity> | ParamsFilter<TEntity, {}>, expression, params });
-
-        return new CollectionBuilder<TEntity, TCollection>({
+        return new CollectionBuilder<TEntity>({
             onCollectionCreated: this._onCollectionCreated,
-            instanceCreator: this.instanceCreator,
             dependencies: this.dependencies
         });
     }
+}
 
-    readonly() {
-        return new CollectionBuilder<TEntity, ReadonlyCollection<TEntity>>({
+/**
+ * A collection builder whose change-tracking mode has been chosen — the only builder with
+ * `create()`.
+ */
+export class ConfiguredCollectionBuilder<TEntity extends {}, TCollection extends CollectionBase<TEntity>> {
+
+    private _onCollectionCreated: (collection: CollectionBase<TEntity>) => void;
+    private instanceCreator: CollectionInstanceCreator<TEntity, TCollection>;
+    private dependencies: CollectionDependencies<TEntity>;
+
+    constructor(props: ConfiguredProps<TEntity, TCollection>) {
+        this.dependencies = props.dependencies;
+        this._onCollectionCreated = props.onCollectionCreated;
+        this.instanceCreator = props.instanceCreator;
+    }
+
+    /** See CollectionBuilder.scope — a scope may also be added after the mode is chosen. */
+    scope(expression: Filter<InferType<TEntity>>): ConfiguredCollectionBuilder<TEntity, TCollection>;
+    scope<P extends {}>(selector: ParamsFilter<InferType<TEntity>, P>, params: P): ConfiguredCollectionBuilder<TEntity, TCollection>;
+    scope<P extends {} = never>(selector: ParamsFilter<InferType<TEntity>, P> | Filter<InferType<TEntity>>, params?: P): ConfiguredCollectionBuilder<TEntity, TCollection> {
+
+        addScope(this.dependencies, selector, params);
+
+        return new ConfiguredCollectionBuilder<TEntity, TCollection>({
             onCollectionCreated: this._onCollectionCreated,
-            instanceCreator: ReadonlyCollection,
+            instanceCreator: this.instanceCreator,
             dependencies: this.dependencies
         });
     }

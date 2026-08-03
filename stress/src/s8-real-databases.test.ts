@@ -120,7 +120,7 @@ afterAll(async () => {
 });
 
 class ProductStore extends DataStore {
-    products = this.collection(contractProductSchema).create();
+    products = this.collection(contractProductSchema).proxy().create();
 }
 
 class ChurnStore extends DataStore {
@@ -128,7 +128,7 @@ class ChurnStore extends DataStore {
 
     constructor(plugin: any, schema: CompiledSchema<any>) {
         super(plugin);
-        this.entities = this.collection(schema).create();
+        this.entities = this.collection(schema).proxy().create();
     }
 }
 
@@ -147,7 +147,7 @@ const multiInstanceSchema = s.define('stress_pg_multi', {
 }).compile();
 
 class MultiInstanceStore extends DataStore {
-    rows = this.collection(multiInstanceSchema).create();
+    rows = this.collection(multiInstanceSchema).proxy().create();
 }
 
 type Row = { id: string; owner: number; text: string; count: number };
@@ -236,7 +236,7 @@ containerStressDescribe('S8 real databases: PostgreSQL via testcontainers', () =
     }).compile();
 
     class HeteroStore extends DataStore {
-        rows = this.collection(heteroSchema).create();
+        rows = this.collection(heteroSchema).proxy().create();
     }
 
     stressIt(
@@ -292,7 +292,7 @@ containerStressDescribe('S8 real databases: PostgreSQL via testcontainers', () =
     }).compile();
 
     class CollisionStore extends DataStore {
-        rows = this.collection(collisionSchema).create();
+        rows = this.collection(collisionSchema).proxy().create();
     }
 
     stressIt(

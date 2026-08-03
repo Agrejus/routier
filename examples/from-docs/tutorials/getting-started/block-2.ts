@@ -20,7 +20,7 @@ class AppContext extends DataStore {
   }
 
   // Create collections from schemas
-  users = this.collection(userSchema).create();
+  users = this.collection(userSchema).proxy().create();
 }
 
 // Use the context

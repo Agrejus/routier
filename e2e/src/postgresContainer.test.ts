@@ -41,7 +41,7 @@ const schema = s.define('e2e_pg_products', {
 }).compile();
 
 class ProductStore extends DataStore {
-    products = this.collection(schema).create();
+    products = this.collection(schema).proxy().create();
 }
 
 suite('PostgreSQL via testcontainers', () => {
@@ -156,15 +156,15 @@ suite('PostgreSQL via testcontainers', () => {
         }).compile();
 
         class ArrayStore extends DataStore {
-            rows = this.collection(arraySchema).create();
+            rows = this.collection(arraySchema).proxy().create();
         }
 
         class CollisionStore extends DataStore {
-            rows = this.collection(collisionSchema).create();
+            rows = this.collection(collisionSchema).proxy().create();
         }
 
         class HeteroStore extends DataStore {
-            rows = this.collection(heteroSchema).create();
+            rows = this.collection(heteroSchema).proxy().create();
         }
 
         const open = <T extends DataStore>(Ctor: new (plugin: PostgresDbPlugin) => T): T =>

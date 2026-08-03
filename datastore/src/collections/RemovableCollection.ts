@@ -4,7 +4,7 @@ import { CallbackResult, Result } from "@routier/core/results";
 import { CollectionDependencies, RequestContext } from "./types";
 import { SelectionQueryable } from '../queryable/SelectionQueryable';
 
-export class RemovableCollection<TEntity extends {}> extends CollectionBase<TEntity> {
+export abstract class RemovableCollection<TEntity extends {}> extends CollectionBase<TEntity> {
 
     constructor(
         dependencies: CollectionDependencies<TEntity>

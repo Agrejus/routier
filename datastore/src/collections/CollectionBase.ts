@@ -13,7 +13,7 @@ import { CollectionDependencies, RequestContext } from "./types";
 import { unsafeCast } from "@routier/core";
 import { QueryableBuilder, QueryBuilderContext } from "../queryable/composers/QueryableBuilder";
 
-export class CollectionBase<TEntity extends {}> implements Disposable {
+export abstract class CollectionBase<TEntity extends {}> implements Disposable {
 
     protected readonly dependencies: CollectionDependencies<TEntity>;
     protected _tag: unknown;
@@ -26,6 +26,14 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
         dependencies: CollectionDependencies<TEntity>
     ) {
         this.dependencies = dependencies;
+
+        // The tracker needs the mode for exactly one decision — whether attach() snapshots
+        // a content-hash baseline for diff tracking. The getter is abstract, so reading it
+        // here is reading the subclass's declaration. The cast is for TS2715 only: every
+        // implementation is a prototype GETTER, which exists before any constructor runs —
+        // an implementation as an instance field would not, so keep it a getter.
+        this.dependencies.changeTracker.changeTrackingType =
+            (this as unknown as { changeTrackingType: ChangeTrackingType }).changeTrackingType;
 
         this.dependencies.pipelines.prepareChanges.pipe(this.prepare.bind(this));
         this.dependencies.pipelines.afterPersist.pipe(this.afterPersist.bind(this));
@@ -72,9 +80,13 @@ export class CollectionBase<TEntity extends {}> implements Disposable {
         // Noop for now
     }
 
-    protected get changeTrackingType(): ChangeTrackingType {
-        return "proxy";
-    }
+    /**
+     * The collection's change-tracking mode. Abstract on purpose — there is no default:
+     * every collection class declares how mutations are detected, and the builder makes
+     * the caller pick one before `create()` exists. An implicit default here is exactly
+     * the kind of you-just-have-to-know fact this codebase works to eliminate.
+     */
+    protected abstract get changeTrackingType(): ChangeTrackingType;
 
     protected cloneMany(items: InferType<TEntity>[]) {
 

@@ -75,7 +75,7 @@ type Baseline = {
 };
 
 class ProductStore extends DataStore {
-    products = this.collection(contractProductSchema).create();
+    products = this.collection(contractProductSchema).proxy().create();
 }
 
 const stores: ProductStore[] = [];

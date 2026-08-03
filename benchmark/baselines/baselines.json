@@ -6,14 +6,16 @@
   },
   "toleranceRatio": 0.15,
   "medians": {
-    "insert-1000": 2.9666,
-    "update-1000": 1.8511,
-    "full-scan-10000": 7.2604,
-    "filtered-query-10000": 3.8236,
-    "point-lookup-10000": 0.0166,
-    "count-10000": 0.7727,
+    "insert-1000": 3.7315,
+    "update-1000": 1.8564,
+    "full-scan-10000": 11.4748,
+    "filtered-query-10000": 5.9345,
+    "point-lookup-10000": 0.0196,
+    "count-10000": 0.7693,
+    "diff-update-1000": 1.0208,
+    "diff-clean-sweep-10000": 1.3382,
     "parse-simple-filter": 0.0012,
-    "parse-complex-filter": 0.0068,
-    "compile-schema": 0.2459
+    "parse-complex-filter": 0.008,
+    "compile-schema": 0.2746
   }
 }

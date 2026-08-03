@@ -1,9 +1,17 @@
 # Immutable updates
 
-Status: **Graduated from spike to supported, still opt-in via `.immutable()`.** Runs
-alongside proxy change tracking; nothing removed. **Not the default — see the decision
-below.**
+Status: **Graduated from spike to supported, opt-in via `.immutable()`.** Runs
+alongside proxy change tracking; nothing removed.
 Date: 2026-08-03
+
+**Superseded question (2026-08-03, later the same day): "what should the default be" no
+longer has to be answered — there is no default.** The collection builder now requires an
+explicit mode before `create()` exists: `.proxy()`, `.diff()`, `.immutable()`, or
+`.readonly()`. The `diff` mode was finished as part of the same change (snapshot change
+tracking: plain objects, the store's memory holds the canonical instances, saves compare a
+content hash against an attach-time baseline — see `DiffCollection.test.ts`). The
+"flip the default" plan below is kept as the record of how the decision looked when a
+default still existed.
 
 ## The graduation decision (2026-08-03)
 

@@ -19,7 +19,7 @@ class AppContext extends DataStore {
     super(new MemoryPlugin("routier-docs"));
   }
 
-  users = this.collection(userSchema).create();
+  users = this.collection(userSchema).proxy().create();
 }
 
 export const ctx = new AppContext();

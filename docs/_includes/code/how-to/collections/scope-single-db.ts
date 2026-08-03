@@ -17,7 +17,7 @@ export const productsSchema = s
 export class AppDataStore extends DataStore {
     products = this.collection(productsSchema)
         .scope(([e, p]) => e.documentType === p.collectionName, { ...productsSchema })
-        .create();
+        .proxy().create();
 }
 
 

@@ -12,12 +12,12 @@ export class AppDataStore extends DataStore {
     usersFactory = (userSub: string) =>
         this.collection(userSchema)
             .scope(([x, p]) => x.userRef === p.userSub, { userSub })
-            .create();
+            .proxy().create();
 
     userOrganizationsFactory = (userSub: string) =>
         this.collection(userOrganizationSchema)
             .scope(([x, p]) => x.userRef === p.userSub, { userSub })
-            .create();
+            .proxy().create();
 
     // Keep strong inferred collection types from the factory return types.
     users: ReturnType<AppDataStore["usersFactory"]>;

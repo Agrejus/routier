@@ -35,7 +35,11 @@ const productSchema = s.define('bench_products', {
 }).compile();
 
 class BenchStore extends DataStore {
-    products = this.collection(productSchema).create();
+    products = this.collection(productSchema).proxy().create();
+}
+
+class DiffBenchStore extends DataStore {
+    products = this.collection(productSchema).diff().create();
 }
 
 let storeCounter = 0;
@@ -47,6 +51,12 @@ const openStores: BenchStore[] = [];
 const newStore = () => {
     const store = new BenchStore(new MemoryPlugin(`bench-${storeCounter++}`));
     openStores.push(store);
+    return store;
+};
+
+const newDiffStore = () => {
+    const store = new DiffBenchStore(new MemoryPlugin(`bench-diff-${storeCounter++}`));
+    openStores.push(store as unknown as BenchStore);
     return store;
 };
 
@@ -119,6 +129,38 @@ const SCENARIOS: Scenario[] = [
         reuseSetup: true,
         setup: () => seeded(10_000),
         run: (store: BenchStore) => store.products.countAsync(),
+    },
+    {
+        // Diff tracking has no per-write cost; its price is paid at save time, when every
+        // attachment is content-hashed against its baseline. This is that sweep with work
+        // to find: every entity dirty.
+        name: 'diff-update-1000',
+        setup: async () => {
+            const store = newDiffStore();
+            await store.products.addAsync(...(rows(1000) as any));
+            await store.saveChangesAsync();
+            return { store, all: await store.products.toArrayAsync() };
+        },
+        run: async ({ store, all }: any) => {
+            for (const product of all) {
+                product.price = product.price + 1;
+            }
+            await store.saveChangesAsync();
+        },
+    },
+    {
+        // The same sweep with nothing to find — the fixed overhead every diff-mode save
+        // pays just to learn that 10,000 clean attachments are clean.
+        name: 'diff-clean-sweep-10000',
+        reuseSetup: true,
+        setup: async () => {
+            const store = newDiffStore();
+            await store.products.addAsync(...(rows(10_000) as any));
+            await store.saveChangesAsync();
+            await store.products.toArrayAsync();
+            return store;
+        },
+        run: (store: DiffBenchStore) => store.hasChangesAsync(),
     },
     {
         name: 'parse-simple-filter',

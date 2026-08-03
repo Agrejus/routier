@@ -69,7 +69,7 @@ class ShapeStore extends DataStore {
 
     constructor(plugin: any, schema: CompiledSchema<any>) {
         super(plugin);
-        this.entities = this.collection(schema).create();
+        this.entities = this.collection(schema).proxy().create();
     }
 }
 

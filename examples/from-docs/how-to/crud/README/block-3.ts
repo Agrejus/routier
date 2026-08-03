@@ -7,7 +7,7 @@ class MemoryContext extends DataStore {
   constructor() {
     super(new MemoryPlugin("my-app"));
   }
-  users = this.collection(userSchema).create();
+  users = this.collection(userSchema).proxy().create();
 }
 
 // Dexie (IndexedDB, browser persistence)
@@ -15,7 +15,7 @@ class DexieContext extends DataStore {
   constructor() {
     super(new DexiePlugin("my-database"));
   }
-  users = this.collection(userSchema).create();
+  users = this.collection(userSchema).proxy().create();
 }
 
 // PouchDB (sync-capable)
@@ -23,5 +23,5 @@ class PouchContext extends DataStore {
   constructor() {
     super(new PouchDbPlugin("my-sync-db"));
   }
-  users = this.collection(userSchema).create();
+  users = this.collection(userSchema).proxy().create();
 }
