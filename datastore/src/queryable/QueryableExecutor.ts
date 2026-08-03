@@ -117,6 +117,44 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
         });
     }
 
+    /**
+     * Attaches query results, and for immutable collections hands back frozen values.
+     *
+     * **The callback's return value matters.** `TranslatedArrayValue.forEach` reassigns each
+     * slot to whatever the callback returns — it is a map-in-place, which is how results get
+     * normalized to canonical attachment refs. A block body that returns nothing silently
+     * leaves the plugin's own objects in the array, so later mutations land on something the
+     * change tracker has never seen and the save reports zero changes.
+     *
+     * Two things differ by mode, and the second depends on the first:
+     *
+     *  - **adopt, not merge.** The proxy path merges a re-read into the canonical instance so
+     *    callers holding it observe fresh data. Merging writes into that object, which cannot
+     *    work once it is frozen — so the immutable path adopts the freshly read value as the
+     *    new canonical instead. That is also the right semantics for it: an immutable read
+     *    produces a new value and there is nothing to merge into. `update()` is unaffected,
+     *    because it resolves rows by id rather than by object identity.
+     *  - **freeze.** `changeTrackingType === "immutable"` never actually froze anything
+     *    (defect #17): the enricher builds a `"freeze"` block that nothing fills. Doing it
+     *    here rather than in codegen keeps it off the add path, where `mergeChanges` has to
+     *    write assigned identities back into the entity it just persisted.
+     *
+     * Without freezing, a plain `entity.price = 5` on an immutable collection was silently
+     * lost — untracked because there is no proxy, unrejected because nothing was frozen.
+     */
+    private attachResults(items: { forEach(callback: (item: unknown) => unknown): void }, tags: unknown) {
+        const immutable = this.request.changeTrackingType === "immutable";
+        const options = immutable ? { adopt: true } : { merge: true };
+
+        // `forEach` rather than for..of: the translated values expose that and are not
+        // iterable, and the shape differs between array, group and single results.
+        items.forEach(item => {
+            const attached = this.dependencies.changeTracker.resolve(item as InferType<TRoot>, tags, options);
+
+            return immutable ? this.dependencies.schema.freeze(attached) : attached;
+        });
+    }
+
     private postProcessQuery<TShape>(result: PluginEventSuccessType<ITranslatedValue<TShape>>, payload: { databaseEvent: DbPluginQueryEvent<TRoot, TShape>, memoryEvent: DbPluginQueryEvent<TRoot, TShape> }, done: PluginEventCallbackResult<TShape>) {
 
         const { databaseEvent, memoryEvent } = payload;
@@ -147,9 +185,7 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
                 }
 
                 // Normalize to canonical attachment refs regardless of translated value shape.
-                translatedEnrichedData.forEach((item) => this.dependencies.changeTracker.resolve(item as InferType<TRoot>, tags, {
-                    merge: true
-                }));
+                this.attachResults(translatedEnrichedData, tags);
 
                 return done(PluginEventResult.success(memoryEvent.id, translatedEnrichedData.value));
             }
@@ -160,9 +196,7 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
             }
 
             // Normalize to canonical attachment refs regardless of translated value shape.
-            result.data.forEach(item => this.dependencies.changeTracker.resolve(item as InferType<TRoot>, tags, {
-                merge: true
-            }));
+            this.attachResults(result.data, tags);
 
             done(PluginEventResult.success(databaseEvent.id, result.data.value));
         } catch (e) {

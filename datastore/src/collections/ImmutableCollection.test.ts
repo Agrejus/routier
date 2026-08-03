@@ -110,22 +110,18 @@ describe('ImmutableCollection reads', () => {
         expect(tracking?.isDirty).toBeUndefined();
     });
 
-    // PINS DEFECT #16: a `{ isPaused: false }` residue survives on non-proxy reads. The
-    // enricher's pause bootstrap installs `__tracking__` on the INPUT object and the
-    // deletion at return targets the OUTPUT, so they miss each other. Cosmetic — the
-    // property is non-enumerable and nothing reads it — but it should not be there.
-    it.failing('installs no __tracking__ bookkeeping at all', async () => {
+    // Guards the fix for defect #16 — the pause bootstrap's `__tracking__` used to survive
+    // on non-proxy reads as a stray `{ isPaused: false }`.
+    it('installs no __tracking__ bookkeeping at all', async () => {
         const store = immutableStore();
         const row = await seedOne(store);
 
         expect((row as any).__tracking__).toBeUndefined();
     });
 
-    // PINS DEFECT #17: "immutable" mode does not freeze. SchemaDefinition.ts creates an
-    // `if (changeTrackingType === "immutable")` block named "freeze" that NOTHING ever fills,
-    // so the mode has always been a no-freeze mode. `schema.freeze` exists and works
-    // (FreezeHandlerBuilder) — it is simply never called from the enricher.
-    it.failing('freezes what it returns', async () => {
+    // Guards the fix for defect #17. Freezing is what makes a plain mutation loud instead of
+    // silently lost, so this is the assertion that makes the mode safe to recommend.
+    it('freezes what it returns', async () => {
         const store = immutableStore();
         const row = await seedOne(store);
 
@@ -222,14 +218,11 @@ describe('ImmutableCollection writes go through update()', () => {
         const store = immutableStore();
         const row = await seedOne(store);
 
-        (row as any).price = 12345;
+        // Rejected, not silently dropped. Before freezing was wired this write vanished:
+        // untracked because there is no proxy, unrejected because nothing was frozen. A lost
+        // write that nobody is told about is the worst of the available behaviours.
+        expect(() => { (row as any).price = 12345; }).toThrow(TypeError);
 
-        // No proxy, so the write is not tracked and the save carries nothing.
-        //
-        // Note what this does NOT assert: that the write threw. Until defect #17 is fixed
-        // the object is not frozen, so a plain mutation is silently LOST rather than
-        // rejected — the one genuinely bad failure mode of this mode today, and the reason
-        // freezing is worth finishing.
         expect(await store.hasChangesAsync()).toBe(false);
         expect((await store.saveChangesAsync()).aggregate.size).toBe(0);
         expect((await store.products.firstAsync() as any).price).toBe(10);

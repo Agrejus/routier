@@ -388,7 +388,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             // Proxy mode recreates it lazily on the first tracked write (see defect #2); the
             // non-proxy modes never wanted it, and gating the delete on "proxy" left them
             // carrying a stray `{ isPaused: false }` on every entity.
-            enricherFunctionBody.slot("return").raw('\tdelete enriched.__tracking__;\n\treturn enableChangeTracking(enriched);');
+            enricherFunctionBody.slot("return").raw('\tif (changeTrackingType !== "immutable") { delete enriched.__tracking__; }\n\treturn enableChangeTracking(enriched);');
 
             const preprocessCodeBuilder = new CodeBuilder();
             preprocessCodeBuilder.slot("main");

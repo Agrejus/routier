@@ -1,6 +1,6 @@
 # Known defects
 
-Status: 12 of 17 fixed. Open and pinned: #12, #13, #16, #17. Open and worked around: #14.
+Status: 14 of 17 fixed. Open and pinned: #12, #13. Open and worked around: #14.
 Date: 2026-08-02
 
 Defects 1–10 came from the functional test program. #11–#13 came from the stress program
@@ -345,7 +345,7 @@ Two follow-on rules landed with it, both load-bearing:
 Pinned by `e2e/src/sqliteJsonColumns.test.ts` — a real SQLite file, a schema with no
 serializers anywhere.
 
-### 16. A `{ isPaused: false }` residue survives on non-proxy reads — **OPEN, pinned, cosmetic**
+### 16. A `{ isPaused: false }` residue survived on non-proxy reads — **FIXED**
 
 The enricher's pause bootstrap installs `__tracking__` on the **input** object; the deletion
 at return targets the **output**. They miss each other, so `.immutable()` and `.diff()` reads
@@ -355,10 +355,11 @@ Harmless — it is non-enumerable and nothing reads it, and none of the state th
 a save persists (`changes`, `original`, `isDirty`) is present. Recorded because it is
 confusing to find and trivially wrong.
 
-**Pinned by:** `it.failing("installs no __tracking__ bookkeeping at all")` in
+**Fix:** the bootstrap is deleted for every mode except `"immutable"`, which never installs
+one. Guarded by `"installs no __tracking__ bookkeeping at all"` in
 `ImmutableCollection.test.ts`.
 
-### 17. `"immutable"` change tracking does not freeze — **OPEN, pinned**
+### 17. `"immutable"` change tracking did not freeze — **FIXED**
 
 `SchemaDefinition.ts` builds an `if (changeTrackingType === "immutable")` block named
 `"freeze"` — and **nothing ever fills it**. The mode has never frozen anything.
@@ -376,7 +377,25 @@ assigned identities back into the added entity. Freezing likely belongs on the r
 Measurement note: freezing is not a performance concern. Over 50,000 entities the frozen and
 unfrozen non-proxy modes were within noise of each other (46.7ms vs 47.3ms on a re-read).
 
-**Pinned by:** `it.failing("freezes what it returns")` in `ImmutableCollection.test.ts`.
+**Fix:** `QueryableExecutor.attachResults` freezes on the read path — deliberately not in
+codegen, which would also freeze on add, where `mergeChanges` must write assigned identities
+back into the entity it just persisted. Two consequences had to land with it:
+
+- **Immutable reads adopt rather than merge.** Merging a re-read into the canonical instance
+  writes into it, which is impossible once frozen. Adopting the fresh value is also the right
+  semantics — an immutable read produces a new value and there is nothing to merge into.
+- **A row changed through `update()` has its persisted value adopted in `mergeChanges`**, for
+  the same reason.
+
+Watch out for `TranslatedArrayValue.forEach`: it reassigns each slot to whatever the callback
+returns, so it is a map-in-place, not a plain forEach. Refactoring that callback into a block
+body that returns nothing leaves the plugin's own objects in the result array, and every later
+mutation lands on something the change tracker has never seen — the save then reports zero
+changes. That cost 13 sqlite tests during this fix.
+
+Guarded by `"freezes what it returns"` and `"does not treat a plain mutation as a change"` in
+`ImmutableCollection.test.ts`, plus the rewritten `plugins/memory/src/tests/immutableItem.test.ts`
+(which had asserted the buggy behaviour — a bare mutation with no assertion at all).
 
 ---
 

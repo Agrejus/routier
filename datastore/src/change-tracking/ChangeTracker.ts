@@ -166,6 +166,17 @@ export class ChangeTracker<TEntity extends {}> {
             // deserialize before merging so wire values never leak into tracked entities
             const deserializedUpdate = this.schema.deserialize(update);
 
+            // A row changed through `update()` gets its persisted value ADOPTED as the new
+            // canonical rather than merged into the old one. Two reasons, and the second is
+            // fatal without this: merging is pointless when the new value is already
+            // complete, and on an immutable collection the old canonical is frozen, so
+            // writing into it throws.
+            if (this.immutable.has(id)) {
+                this.attach(id, deserializedUpdate as InferType<TEntity>, "notModified");
+                result.updates[i] = this.schema.clone(deserializedUpdate as InferType<TEntity>);
+                continue;
+            }
+
             // Let's only map Ids and identities
             this.schema.merge(foundDoc, deserializedUpdate); // merge needs to map children appropriately
             result.updates[i] = this.schema.clone(foundDoc);
