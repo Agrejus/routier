@@ -659,9 +659,6 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                 enrich: enricherFunction,
                 collectionName: this.collectionName,
                 hasIdentityKeys,
-                // Root only: a nested concurrency token has no conditional-update
-                // representation in any plugin
-                concurrencyProperty: properties.find(p => p.parent == null && p.isConcurrency === true) ?? null,
                 freeze: freezeFunction,
                 enableChangeTracking: enableChangeTrackingFunction,
                 definition: this,

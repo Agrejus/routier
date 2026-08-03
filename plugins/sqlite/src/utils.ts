@@ -239,7 +239,8 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
     // Schemas with a `.concurrency()` token take one CONDITIONAL statement per row
     // instead of the grouped CASE form, so a stale write affects zero rows and is
     // reported as a conflict on that exact row.
-    const updatesOperations: SqlOperation[] = schema.concurrencyProperty != null
+    const hasConcurrencyChecks = updates.some(u => (u as { concurrency?: unknown }).concurrency != null);
+    const updatesOperations: SqlOperation[] = hasConcurrencyChecks
         ? buildConditionalUpdateOperations(
             schema,
             updates as { entity: Record<string, unknown>; delta: Record<string, unknown> }[],

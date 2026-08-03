@@ -12,7 +12,7 @@ export const accountSchema = s.define('accounts', {
     name: s.string(),
     kind: s.string('checking', 'savings', 'credit'),
     balance: s.number(),
-    version: s.number().concurrency(),
+    version: s.number(),
 }).compile();
 
 export const transactionSchema = s.define('transactions', {

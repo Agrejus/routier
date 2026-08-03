@@ -15,15 +15,33 @@ belongs in routier, not in every caller.
 
 ## The API
 
+The schema stays pure data — the token is an ordinary number property. The COLLECTION
+declares that it is the concurrency token, in the same builder chain where every other
+write behavior lives:
+
 ```ts
 const account = s.define('accounts', {
     id: s.string().key().identity(),
     balance: s.number(),
-    version: s.number().concurrency(),   // the whole opt-in
+    version: s.number(),                    // plain data
 }).compile();
+
+class Bank extends DataStore {
+    accounts = this.collection(account)
+        .diff()
+        .concurrency(x => x.version)        // the whole opt-in
+        .create();
+}
 ```
 
-- **Add** → the token starts at 1 (an ordinary schema default, so the enricher does it).
+(An earlier revision used a schema modifier, `s.number().concurrency()`. It was replaced:
+the schema describes shape, the builder describes behavior — the same split as tracking
+modes. The consistency rule is also the same as tracking modes: every store class writing
+a database must declare it identically; a writer without the declaration bypasses the
+checks.)
+
+- **Add** → the token starts at 1 (stamped by the tracker; a caller-supplied value is
+  kept, so imports can carry tokens).
 - **Update** → the save carries `{ column, expected }` (the token as read) and stores
   `expected + 1`. The plugin applies the update ONLY IF the stored token still equals
   `expected`.
@@ -34,8 +52,8 @@ const account = s.define('accounts', {
 
 ## How it flows
 
-1. `SchemaConcurrency` modifier → `PropertyInfo.isConcurrency` →
-   `CompiledSchema.concurrencyProperty` (root properties only).
+1. `ConfiguredCollectionBuilder.concurrency(selector)` resolves the root property
+   (validated: number, not key/identity) and sets `ChangeTracker.concurrencyProperty`.
 2. `ChangeTracker.stampConcurrency` runs in every update path (proxy, diff, immutable):
    `expected` is read from the serialized entity, the wire payload gets the bumped value,
    and the canonical is NOT mutated — a failed save leaves it accurate. The bump is written

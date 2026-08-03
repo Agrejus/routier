@@ -1,6 +1,5 @@
 export * from './SchemaDefault';
 export * from './SchemaDeserialize';
-export * from './SchemaConcurrency';
 export * from './SchemaDistinct';
 export * from './SchemaIdentity';
 export * from './SchemaIndex';

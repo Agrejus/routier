@@ -16,15 +16,15 @@ import { DataStore } from '../DataStore';
 const schema = s.define('occ_accounts', {
     id: s.string().key().identity(),
     balance: s.number(),
-    version: s.number().concurrency(),
+    version: s.number(),
 }).compile();
 
 class Store extends DataStore {
-    accounts = this.collection(schema).proxy().create();
+    accounts = this.collection(schema).proxy().concurrency(x => (x as any).version).create();
 }
 
 class DiffStore extends DataStore {
-    accounts = this.collection(schema).diff().create();
+    accounts = this.collection(schema).diff().concurrency(x => (x as any).version).create();
 }
 
 const stores: DataStore[] = [];

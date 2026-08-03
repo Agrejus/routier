@@ -1,6 +1,5 @@
 import { CompiledSchema, DefaultValue, InferType, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes } from "../../types";
 import { SchemaBase } from "../base/SchemaBase";
-import { SchemaConcurrency } from "../modifiers/SchemaConcurrency";
 import { SchemaDefault } from "../modifiers/SchemaDefault";
 import { SchemaDeserialize } from "../modifiers/SchemaDeserialize";
 import { SchemaDistinct } from "../modifiers/SchemaDistinct";
@@ -76,15 +75,6 @@ export class SchemaNumber<T extends number, TModifiers extends SchemaModifiers> 
 
     distinct() {
         return new SchemaDistinct<T, TModifiers | "distinct">(this);
-    }
-
-    /**
-     * Marks this property as the row's optimistic-concurrency token. The datastore
-     * manages the value; a save whose read is stale fails with a concurrency error
-     * instead of silently overwriting another writer.
-     */
-    concurrency() {
-        return new SchemaConcurrency<T, TModifiers | "default">(this);
     }
 
     tag(...tags: string[]) {

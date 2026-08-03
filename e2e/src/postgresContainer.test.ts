@@ -241,11 +241,11 @@ suite('PostgreSQL via testcontainers', () => {
         const occSchema = s.define('e2e_pg_occ', {
             id: s.string().key().identity(),
             balance: s.number(),
-            version: s.number().concurrency(),
+            version: s.number(),
         }).compile();
 
         class OccStore extends DataStore {
-            accounts = this.collection(occSchema).proxy().create();
+            accounts = this.collection(occSchema).proxy().concurrency(x => (x as any).version).create();
         }
 
         const open = (): OccStore =>

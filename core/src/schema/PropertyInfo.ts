@@ -46,7 +46,6 @@ export class PropertyInfo<T extends {}> {
     readonly isUnmapped: boolean;
     /** Whether the property is distinct. */
     readonly isDistinct: boolean;
-    readonly isConcurrency: boolean;
     /** Indexes associated with the property. */
     readonly indexes: string[];
 
@@ -101,7 +100,6 @@ export class PropertyInfo<T extends {}> {
         this.isUnmapped = schema.isUnmapped;
         this.injected = schema.injected;
         this.isDistinct = schema.isDistict;
-        this.isConcurrency = schema.isConcurrency;
         this.indexes = schema.indexes;
         this.from = schema.fromPropertyName;
         this.tags = schema.tags;

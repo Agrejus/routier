@@ -17,7 +17,7 @@ export const DATABASE = 'finance-stress-bank';
 
 export class FinanceStore extends DataStore {
     users = this.collection(userSchema).proxy().create();
-    accounts = this.collection(accountSchema).diff().create();
+    accounts = this.collection(accountSchema).diff().concurrency(x => x.version).create();
     transactions = this.collection(transactionSchema).immutable().create();
 
     constructor() {

@@ -1,4 +1,4 @@
-import { ChangeTrackingType, CompiledSchema, HashType, IdType, InferCreateType, InferType } from "@routier/core/schema";
+import { ChangeTrackingType, CompiledSchema, HashType, IdType, InferCreateType, InferType, PropertyInfo } from "@routier/core/schema";
 import { ChangeTrackedEntity } from "../types";
 import { KnownKeyAdditions } from "./additions/KnownKeyAdditions";
 import { IAdditions } from "./additions/types";
@@ -85,6 +85,11 @@ export class ChangeTracker<TEntity extends {}> {
      * diff-tracked entities so saves can detect mutations made through plain references.
      */
     changeTrackingType: ChangeTrackingType = "proxy";
+    /**
+     * The property serving as this collection's optimistic-concurrency token, set by the
+     * collection builder's `.concurrency(x => x.token)`. Null means no conflict detection.
+     */
+    concurrencyProperty: PropertyInfo<TEntity> | null = null;
     protected removals: InferType<TEntity>[] = [];
     protected canonicalAttachments: Map<IdType, Attachment<TEntity>> = new Map<IdType, Attachment<TEntity>>();
     protected schema: CompiledSchema<TEntity>;
@@ -432,7 +437,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
      * against — the write initializes the token instead).
      */
     private stampConcurrency(serializedEntity: Record<string, unknown>, delta: Record<string, unknown>): { column: string; expected: number } | undefined {
-        const property = this.schema.concurrencyProperty;
+        const property = this.concurrencyProperty;
 
         if (property == null) {
             return undefined;
@@ -775,6 +780,14 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
 
             for (let i = 0; i < length; i++) {
                 const entity = this.schema.enrich(entities[i], changeTrackingType);
+
+                // The concurrency token is system-managed: rows start at version 1. Set
+                // BEFORE the addition is registered so content-hash keying sees the final
+                // value. A caller-supplied value is kept — imports need to carry tokens.
+                if (this.concurrencyProperty != null && (entity as Record<string, unknown>)[this.concurrencyProperty.name] == null) {
+                    (entity as Record<string, unknown>)[this.concurrencyProperty.name] = 1;
+                }
+
                 this.additions.set(entity);
                 this.trackUnsaved(entity);
                 result[i] = entity as InferType<TEntity>;

@@ -14,11 +14,11 @@ import fs from 'fs';
 const schema = s.define('occ_sqlite_accounts', {
     id: s.string().key().identity(),
     balance: s.number(),
-    version: s.number().concurrency(),
+    version: s.number(),
 }).compile();
 
 class Store extends DataStore {
-    accounts = this.collection(schema).proxy().create();
+    accounts = this.collection(schema).proxy().concurrency(x => (x as any).version).create();
 }
 
 const files: string[] = [];
