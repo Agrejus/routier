@@ -39,7 +39,16 @@ class BenchStore extends DataStore {
 }
 
 let storeCounter = 0;
-const newStore = () => new BenchStore(new MemoryPlugin(`bench-${storeCounter++}`));
+// Every store constructed during a run, so main() can dispose them. A DataStore opens a
+// broadcast-channel port pair per collection AT CONSTRUCTION, so an undisposed store holds
+// the event loop open and the process never exits after printing its results.
+const openStores: BenchStore[] = [];
+
+const newStore = () => {
+    const store = new BenchStore(new MemoryPlugin(`bench-${storeCounter++}`));
+    openStores.push(store);
+    return store;
+};
 
 const rows = (count: number) =>
     Array.from({ length: count }, (_, i) => ({
@@ -137,6 +146,17 @@ const SCENARIOS: Scenario[] = [
 ];
 
 async function main() {
+    try {
+        await runScenarios();
+    } finally {
+        // Release the channel ports every store opened, or the run hangs after the table.
+        for (const store of openStores) {
+            store[Symbol.dispose]();
+        }
+    }
+}
+
+async function runScenarios() {
     const updateBaseline = process.argv.includes('--update-baseline');
 
     const baselines: Record<string, number> = fs.existsSync(baselineFile)

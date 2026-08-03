@@ -2,8 +2,9 @@ import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema'
 import { Expression, ComparatorExpression, OperatorExpression, ValueExpression, PropertyExpression } from '@routier/core/expressions';
 import { IQuery, QueryField } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
-import { getDialect, sqlColumnProperties, toColumnValueMap } from '@routier/sql-plugin-core';
-import { SqlOperation } from './types';
+import { buildGroupedUpdateOperations, getDialect, sqlColumnProperties, toColumnValueMap } from '@routier/sql-plugin-core';
+import { uuidv4 } from '@routier/core/utilities';
+import { MysqlAddsOperation, MysqlRemovesOperation, MysqlSelectBack, MysqlUpdatesOperation, SqlOperation } from './types';
 
 /**
  * Maps schema types to MySQL column types.
@@ -318,9 +319,9 @@ export function buildSelectFromExpression<TEntity extends {}, TShape>(options: {
 }
 
 export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSchema<TEntity>, changes: SchemaPersistChanges<Record<string, unknown>>): {
-    adds: SqlOperation | null;
-    updates: SqlOperation | null;
-    removes: SqlOperation | null;
+    adds: MysqlAddsOperation | null;
+    updates: MysqlUpdatesOperation[];
+    removes: MysqlRemovesOperation | null;
 } {
     const collectionName = schema.collectionName;
     const {
@@ -331,130 +332,94 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
     } = changes;
 
     if (!hasItems) {
-        return { adds: null, updates: null, removes: null };
+        return { adds: null, updates: [], removes: null };
     }
 
     // Column identifiers are storage-side names (PropertyInfo.from ?? name), one column per
     // ROOT property: a nested subtree is stored as a single JSON column named for its root.
     const columnProperties = sqlColumnProperties(schema);
-    const insertProperties = columnProperties.filter(p => !p.isIdentity);
-    const insertColumns = insertProperties.map(p => `\`${p.getResolvedName()}\``);
-    const insertColumnStr = insertColumns.join(', ');
+    const allColumnStr = columnProperties.map(p => `\`${p.getResolvedName()}\``).join(', ');
+    const idProperties = schema.idProperties;
+    const singleIdentity = idProperties.length === 1 && idProperties[0].isIdentity ? idProperties[0] : undefined;
+    // A string identity has a server-side DEFAULT (UUID()), but a value the server generates
+    // cannot be read back without RETURNING — so this plugin generates it client-side and
+    // sends it, which makes the inserted keys knowable and the echo exact.
+    const clientGeneratedIdentity = singleIdentity != null && singleIdentity.type === SchemaTypes.String
+        ? singleIdentity
+        : undefined;
 
-    // Handle INSERT operations (adds)
-    // MySQL doesn't support RETURNING, so we need to SELECT after INSERT
-    let addsOperation: SqlOperation | null = null;
+    // Handle INSERT operations (adds).
+    // MySQL has no RETURNING; each add operation carries how to select its rows back.
+    let addsOperation: MysqlAddsOperation | null = null;
     if (adds.length > 0) {
+        const insertProperties = columnProperties.filter(p => !p.isIdentity || p === clientGeneratedIdentity);
+        const insertColumns = insertProperties.map(p => `\`${p.getResolvedName()}\``);
+        const insertColumnStr = insertColumns.join(', ');
+
         const placeholders = adds.map(() =>
             `(${insertColumns.map(() => '?').join(', ')})`
         ).join(', ');
 
-        // MySQL doesn't have RETURNING, so we'll need to handle this differently
-        // For now, insert and then select back
         const insertSql = `INSERT INTO \`${collectionName}\` (${insertColumnStr}) VALUES ${placeholders}`;
 
+        const generatedIds: unknown[] = [];
         const addParams: any[] = [];
         for (const add of adds) {
             // Routed through the same column resolution the UPDATE path uses, so a nested
             // object or array is JSON-encoded rather than handed to the driver as a structure.
             const values = toColumnValueMap(add as Record<string, unknown>, schema, getDialect('mysql'));
+            const generatedId = clientGeneratedIdentity != null ? uuidv4() : undefined;
+
+            if (generatedId != null) {
+                generatedIds.push(generatedId);
+            }
 
             for (const col of insertProperties) {
-                addParams.push(values.get(col.getResolvedName()));
-            }
-        }
-
-        addsOperation = { sql: insertSql, params: addParams };
-    }
-
-    // Handle UPDATE operations (updates)
-    let updatesOperation: SqlOperation | null = null;
-    if (updates.length > 0) {
-        // The delta is a partial ENTITY (core's EntityDelta) and has to be resolved to
-        // columns before it can be grouped or bound: renames become storage-side names, and
-        // nested objects/arrays become JSON. Core does not know what a column is by design.
-        const dialect = getDialect('mysql');
-        const identityNames = schema.idProperties.map(p => p.getResolvedName());
-
-        /** Column -> already-encoded parameter value, per update. */
-        const columnValues = new Map<(typeof updates)[number], Map<string, unknown>>();
-
-        for (const update of updates) {
-            let resolved = toColumnValueMap(update.delta as Record<string, unknown>, schema, dialect, update.entity as Record<string, unknown>);
-
-            // An empty delta means "no tracked change list", not "nothing changed" — fall
-            // back to every non-identity property, through the same resolution so nested
-            // values are still encoded.
-            if (resolved.size === 0) {
-                const wholeEntity = Object.fromEntries(
-                    Object.keys(update.entity as Record<string, unknown>)
-                        .filter(key => identityNames.includes(key) === false)
-                        .map(key => [key, (update.entity as Record<string, unknown>)[key]])
-                );
-                resolved = toColumnValueMap(wholeEntity, schema, dialect);
-            }
-
-            columnValues.set(update, resolved);
-        }
-
-        const updateGroups = new Map<string, typeof updates>();
-
-        for (const update of updates) {
-            const deltaKeys = [...columnValues.get(update)!.keys()].sort().join(',');
-            if (!updateGroups.has(deltaKeys)) {
-                updateGroups.set(deltaKeys, []);
-            }
-            updateGroups.get(deltaKeys)!.push(update);
-        }
-
-        const statements: string[] = [];
-        const allParams: any[] = [];
-
-        for (const [, groupUpdates] of updateGroups) {
-            const firstUpdate = groupUpdates[0];
-            // Already resolved to columns above, empty-delta fallback included.
-            const deltaKeys = [...columnValues.get(firstUpdate)!.keys()];
-
-            const setClauses: string[] = [];
-            const idColumns = schema.idProperties.map(p => p.getResolvedName());
-            const idColumn = idColumns[0];
-
-            for (const key of deltaKeys) {
-                let caseStatement = `\`${key}\` = CASE \`${idColumn}\``;
-
-                for (const update of groupUpdates) {
-                    const idValue = schema.idProperties[0].getValue(update.entity);
-                    caseStatement += ` WHEN ? THEN ?`;
-                    allParams.push(idValue);
-
-                    allParams.push(columnValues.get(update)!.get(key));
+                if (col === clientGeneratedIdentity) {
+                    addParams.push(generatedId);
+                } else {
+                    addParams.push(values.get(col.getResolvedName()));
                 }
-
-                caseStatement += ` ELSE \`${key}\` END`;
-                setClauses.push(caseStatement);
             }
-
-            const idPlaceholders = groupUpdates.map(() => '?').join(', ');
-
-            for (const update of groupUpdates) {
-                const idValue = schema.idProperties[0].getValue(update.entity);
-                allParams.push(idValue);
-            }
-
-            // MySQL doesn't support RETURNING, so we'll need to SELECT separately
-            const updateSql = `UPDATE \`${collectionName}\` SET ${setClauses.join(', ')} WHERE \`${idColumn}\` IN (${idPlaceholders})`;
-            statements.push(updateSql);
         }
 
-        if (statements.length > 0) {
-            updatesOperation = { sql: statements.join('; '), params: allParams };
+        let selectBack: MysqlSelectBack;
+
+        if (clientGeneratedIdentity != null) {
+            selectBack = { mode: 'by-key', ids: generatedIds };
+        } else if (singleIdentity != null) {
+            // Single numeric AUTO_INCREMENT key: a simple multi-row INSERT allocates a
+            // consecutive id block (even under innodb_autoinc_lock_mode=2), so the rows
+            // are insertId .. insertId + rowCount - 1.
+            selectBack = { mode: 'insert-id', rowCount: adds.length };
+        } else if (idProperties.length === 1) {
+            const keyColumn = idProperties[0].getResolvedName();
+            selectBack = { mode: 'by-key', ids: adds.map(add => add[keyColumn]) };
+        } else {
+            selectBack = {
+                mode: 'by-composite-key',
+                keyTuples: adds.map(add => Object.fromEntries(
+                    idProperties.map(p => [p.getResolvedName(), add[p.getResolvedName()]])
+                )),
+            };
         }
+
+        addsOperation = { sql: insertSql, params: addParams, selectBack };
     }
+
+    // Handle UPDATE operations (updates). One operation per changed-column group — the
+    // shared builder resolves deltas to columns (renames, JSON encoding, empty-delta
+    // fallback) and never joins groups with ';', which mysql2 rejects by default
+    // (multipleStatements is off). Each group carries its row ids for the select-back.
+    const updatesOperations: MysqlUpdatesOperation[] = buildGroupedUpdateOperations(
+        schema,
+        updates as { entity: Record<string, unknown>; delta: Record<string, unknown> }[],
+        getDialect('mysql')
+    );
 
     // Handle DELETE operations (removes)
-    let removesOperation: SqlOperation | null = null;
+    let removesOperation: MysqlRemovesOperation | null = null;
     if (removes.length > 0) {
-        const idProperties = schema.idProperties;
         const whereClauses: string[] = [];
         const allParams: any[] = [];
 
@@ -471,14 +436,18 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
         }
 
         const whereClause = whereClauses.join(' OR ');
-        // MySQL doesn't support RETURNING
-        const deleteSql = `DELETE FROM \`${collectionName}\` WHERE ${whereClause}`;
-        removesOperation = { sql: deleteSql, params: allParams };
+        // MySQL has no RETURNING: the plugin runs selectSql (same params) BEFORE the
+        // delete, because afterwards the rows are gone and the echo would be empty.
+        removesOperation = {
+            sql: `DELETE FROM \`${collectionName}\` WHERE ${whereClause}`,
+            params: allParams,
+            selectSql: `SELECT ${allColumnStr} FROM \`${collectionName}\` WHERE ${whereClause}`,
+        };
     }
 
     return {
         adds: addsOperation,
-        updates: updatesOperation,
+        updates: updatesOperations,
         removes: removesOperation
     };
 }

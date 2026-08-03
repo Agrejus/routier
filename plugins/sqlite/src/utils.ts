@@ -1,6 +1,6 @@
 import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema';
 import { Expression } from '@routier/core/expressions';
-import { getDialect, sqlColumnProperties, toColumnValueMap, toSql } from '@routier/sql-plugin-core';
+import { buildGroupedUpdateOperations, getDialect, sqlColumnProperties, toColumnValueMap, toSql } from '@routier/sql-plugin-core';
 import { IQuery, QueryField } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
 import { SqlOperation } from './types';
@@ -183,7 +183,7 @@ export function buildSelectFromExpression<TEntity extends {}, TShape>(options: {
 
 export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSchema<TEntity>, changes: SchemaPersistChanges<Record<string, unknown>>): {
     adds: SqlOperation | null;
-    updates: SqlOperation | null;
+    updates: SqlOperation[];
     removes: SqlOperation | null;
 } {
     const collectionName = schema.collectionName;
@@ -195,7 +195,7 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
     } = changes;
 
     if (!hasItems) {
-        return { adds: null, updates: null, removes: null };
+        return { adds: null, updates: [], removes: null };
     }
 
     // Column identifiers are storage-side names (PropertyInfo.from ?? name): the entities
@@ -233,97 +233,15 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
         addsOperation = { sql: insertSql, params: addParams };
     }
 
-    // Handle UPDATE operations (updates)
-    let updatesOperation: SqlOperation | null = null;
-    if (updates.length > 0) {
-        // The delta arrives as a partial ENTITY (core's EntityDelta), so it has to be
-        // resolved to columns before anything can be grouped or bound: renamed properties
-        // become their storage-side name, and nested objects/arrays become JSON. That
-        // decision belongs to this layer — core deliberately does not know what a column is.
-        const dialect = getDialect('sqlite');
-        const identityNames = schema.idProperties.map(p => p.getResolvedName());
-
-        /** Column -> already-encoded parameter value, per update. */
-        const columnValues = new Map<(typeof updates)[number], Map<string, unknown>>();
-
-        for (const update of updates) {
-            let resolved = toColumnValueMap(update.delta as Record<string, unknown>, schema, dialect, update.entity as Record<string, unknown>);
-
-            // An empty delta means "no tracked change list" rather than "nothing changed" —
-            // fall back to every non-identity property, routed through the same resolution
-            // so nested values are still JSON-encoded.
-            if (resolved.size === 0) {
-                const wholeEntity = Object.fromEntries(
-                    Object.keys(update.entity as Record<string, unknown>)
-                        .filter(key => identityNames.includes(key) === false)
-                        .map(key => [key, (update.entity as Record<string, unknown>)[key]])
-                );
-                resolved = toColumnValueMap(wholeEntity, schema, dialect);
-            }
-
-            columnValues.set(update, resolved);
-        }
-
-        // Group updates by which columns they're changing
-        const updateGroups = new Map<string, typeof updates>();
-
-        for (const update of updates) {
-            const deltaKeys = [...columnValues.get(update)!.keys()].sort().join(',');
-            if (!updateGroups.has(deltaKeys)) {
-                updateGroups.set(deltaKeys, []);
-            }
-            updateGroups.get(deltaKeys)!.push(update);
-        }
-
-        // Build a separate UPDATE statement for each group
-        const statements: string[] = [];
-        const allParams: any[] = [];
-
-        for (const [, groupUpdates] of updateGroups) {
-            const firstUpdate = groupUpdates[0];
-            // Already resolved to columns above, empty-delta fallback included.
-            const deltaKeys = [...columnValues.get(firstUpdate)!.keys()];
-
-            // Build SET clause with CASE statements for each column
-            const setClauses: string[] = [];
-
-            // Get ID column names
-            const idColumns = schema.idProperties.map(p => p.getResolvedName());
-            const idColumn = idColumns[0]; // Use first ID for CASE matching
-
-            for (const key of deltaKeys) {
-                let caseStatement = `"${key}" = CASE "${idColumn}"`;
-
-                for (const update of groupUpdates) {
-                    const idValue = schema.idProperties[0].getValue(update.entity);
-                    caseStatement += ` WHEN ? THEN ?`;
-                    allParams.push(idValue);
-
-                    allParams.push(columnValues.get(update)!.get(key));
-                }
-
-                caseStatement += ` ELSE "${key}" END`;
-                setClauses.push(caseStatement);
-            }
-
-            // Build WHERE clause for all IDs in this group
-            const idPlaceholders = groupUpdates.map(() => '?').join(', ');
-
-            // Add IDs for WHERE clause (they're already in CASE statements, but WHERE needs them too)
-            for (const update of groupUpdates) {
-                const idValue = schema.idProperties[0].getValue(update.entity);
-                allParams.push(idValue);
-            }
-
-            const updateSql = `UPDATE "${collectionName}" SET ${setClauses.join(', ')} WHERE "${idColumn}" IN (${idPlaceholders}) RETURNING ${allColumnStr}`;
-            statements.push(updateSql);
-        }
-
-        if (statements.length > 0) {
-            // Join multiple statements with semicolon only if there are multiple groups
-            updatesOperation = { sql: statements.join('; '), params: allParams };
-        }
-    }
+    // Handle UPDATE operations (updates). One SqlOperation per changed-column group — the
+    // shared builder resolves deltas to columns (renames, JSON encoding, empty-delta
+    // fallback) and never joins groups with ';' (defect #22).
+    const updatesOperations: SqlOperation[] = buildGroupedUpdateOperations(
+        schema,
+        updates as { entity: Record<string, unknown>; delta: Record<string, unknown> }[],
+        getDialect('sqlite'),
+        { suffix: ` RETURNING ${allColumnStr}` }
+    ).map(({ sql, params }) => ({ sql, params }));
 
     // Handle DELETE operations (removes)
     let removesOperation: SqlOperation | null = null;
@@ -354,7 +272,7 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 
     return {
         adds: addsOperation,
-        updates: updatesOperation,
+        updates: updatesOperations,
         removes: removesOperation
     };
 }

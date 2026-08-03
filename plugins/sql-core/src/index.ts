@@ -21,3 +21,4 @@
  */
 export * from './sql';
 export * from './columns';
+export * from './updates';

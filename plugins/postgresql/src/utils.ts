@@ -2,7 +2,7 @@ import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema'
 import { Expression } from '@routier/core/expressions';
 import { IQuery, QueryField } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
-import { getDialect, sqlColumnProperties, toColumnValueMap, toSql, SqlDialect } from '@routier/sql-plugin-core';
+import { buildGroupedUpdateOperations, getDialect, sqlColumnProperties, toColumnValueMap, toSql, SqlDialect } from '@routier/sql-plugin-core';
 import { SqlOperation } from './types';
 
 /**
@@ -248,93 +248,16 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
         addsOperation = { sql: insertSql, params: addParams };
     }
 
-    // Handle UPDATE operations (updates).
-    //
-    // One SqlOperation PER GROUP, not one joined statement: PostgreSQL's extended query
-    // protocol (any parameterized query) permits exactly one command per statement, so
-    // `join('; ')` is rejected with "cannot insert multiple commands into a prepared
-    // statement" the moment two entities' changed-column sets differ. Each group numbers
-    // its own parameters from $1.
-    const updatesOperations: SqlOperation[] = [];
-    if (updates.length > 0) {
-        // The delta is a partial ENTITY (core's EntityDelta) and has to be resolved to
-        // columns before it can be grouped or bound: renames become storage-side names, and
-        // nested objects/arrays become JSON. Core does not know what a column is by design.
-        const dialect = getDialect('postgresql');
-        const identityNames = schema.idProperties.map(p => p.getResolvedName());
-
-        /** Column -> already-encoded parameter value, per update. */
-        const columnValues = new Map<(typeof updates)[number], Map<string, unknown>>();
-
-        for (const update of updates) {
-            let resolved = toColumnValueMap(update.delta as Record<string, unknown>, schema, dialect, update.entity as Record<string, unknown>);
-
-            // An empty delta means "no tracked change list", not "nothing changed" — fall
-            // back to every non-identity property, through the same resolution so nested
-            // values are still encoded.
-            if (resolved.size === 0) {
-                const wholeEntity = Object.fromEntries(
-                    Object.keys(update.entity as Record<string, unknown>)
-                        .filter(key => identityNames.includes(key) === false)
-                        .map(key => [key, (update.entity as Record<string, unknown>)[key]])
-                );
-                resolved = toColumnValueMap(wholeEntity, schema, dialect);
-            }
-
-            columnValues.set(update, resolved);
-        }
-
-        const updateGroups = new Map<string, typeof updates>();
-
-        for (const update of updates) {
-            const deltaKeys = [...columnValues.get(update)!.keys()].sort().join(',');
-            if (!updateGroups.has(deltaKeys)) {
-                updateGroups.set(deltaKeys, []);
-            }
-            updateGroups.get(deltaKeys)!.push(update);
-        }
-
-        for (const [, groupUpdates] of updateGroups) {
-            const firstUpdate = groupUpdates[0];
-            // Already resolved to columns above, empty-delta fallback included.
-            const deltaKeys = [...columnValues.get(firstUpdate)!.keys()];
-
-            const setClauses: string[] = [];
-            const groupParams: any[] = [];
-            let paramCounter = 1;
-
-            const idColumns = schema.idProperties.map(p => p.getResolvedName());
-            const idColumn = idColumns[0];
-
-            for (const key of deltaKeys) {
-                let caseStatement = `"${key}" = CASE "${idColumn}"`;
-
-                for (const update of groupUpdates) {
-                    const idValue = schema.idProperties[0].getValue(update.entity);
-                    caseStatement += ` WHEN $${paramCounter++} THEN $${paramCounter++}`;
-                    groupParams.push(idValue);
-
-                    groupParams.push(columnValues.get(update)!.get(key));
-                }
-
-                caseStatement += ` ELSE "${key}" END`;
-                setClauses.push(caseStatement);
-            }
-
-            const idPlaceholders = groupUpdates.map(() => {
-                const placeholder = `$${paramCounter++}`;
-                return placeholder;
-            }).join(', ');
-
-            for (const update of groupUpdates) {
-                const idValue = schema.idProperties[0].getValue(update.entity);
-                groupParams.push(idValue);
-            }
-
-            const updateSql = `UPDATE "${collectionName}" SET ${setClauses.join(', ')} WHERE "${idColumn}" IN (${idPlaceholders}) RETURNING ${allColumnStr}`;
-            updatesOperations.push({ sql: updateSql, params: groupParams });
-        }
-    }
+    // Handle UPDATE operations (updates). One SqlOperation per changed-column group — the
+    // shared builder resolves deltas to columns (renames, JSON encoding, empty-delta
+    // fallback) and never joins groups with ';', which PostgreSQL's extended query protocol
+    // rejects outright (defect #22).
+    const updatesOperations: SqlOperation[] = buildGroupedUpdateOperations(
+        schema,
+        updates as { entity: Record<string, unknown>; delta: Record<string, unknown> }[],
+        getDialect('postgresql'),
+        { suffix: ` RETURNING ${allColumnStr}` }
+    ).map(({ sql, params }) => ({ sql, params }));
 
     // Handle DELETE operations (removes)
     let removesOperation: SqlOperation | null = null;

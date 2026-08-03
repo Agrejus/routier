@@ -128,8 +128,9 @@ export class SqliteDbPlugin implements IDbPlugin {
                 operations.push({ op: { ...persistOperations.removes, createTableSql, schemaId }, type: 'removes' });
             }
 
-            if (persistOperations.updates != null) {
-                operations.push({ op: { ...persistOperations.updates, createTableSql, schemaId }, type: 'updates' });
+            // One operation per changed-column group (see buildGroupedUpdateOperations)
+            for (const updateOperation of persistOperations.updates) {
+                operations.push({ op: { ...updateOperation, createTableSql, schemaId }, type: 'updates' });
             }
 
             if (persistOperations.adds != null) {

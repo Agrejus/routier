@@ -4,7 +4,7 @@
   "private": true,
   "description": "Performance regression harness",
   "scripts": {
-    "benchmark": "node --import tsx/esm src/run.ts",
-    "benchmark:update": "node --import tsx/esm src/run.ts --update-baseline"
+    "benchmark": "tsx src/run.ts",
+    "benchmark:update": "tsx src/run.ts --update-baseline"
   }
 }

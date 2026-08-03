@@ -1,11 +1,10 @@
 import { createPool, Pool, PoolConnection } from 'mysql2/promise';
-import { decodeJsonColumns } from '@routier/sql-plugin-core';
+import { decodeJsonColumns, sqlColumnProperties } from '@routier/sql-plugin-core';
 import { buildFromPersistOperation, buildFromQueryOperation, compiledSchemaToMysqlTable } from './utils';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, SqlTranslator } from '@routier/core/plugins';
 import { CallbackResult, PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '@routier/core/results';
 import { BulkPersistResult } from '@routier/core/collections';
-import { CompiledSchema } from '@routier/core/schema';
-import { SqlPersistOperation } from './types';
+import { CompiledSchema, SchemaId } from '@routier/core/schema';
 
 export interface MysqlDbPluginConfig {
     host?: string;
@@ -105,7 +104,29 @@ export class MysqlDbPlugin implements IDbPlugin {
             await connection.beginTransaction();
 
             const result = event.operation.toResult();
-            const operations: { adds: SqlPersistOperation | null, updates: SqlPersistOperation | null, removes: SqlPersistOperation | null }[] = [];
+
+            const ensureTable = async (schemaId: SchemaId, createTableSql: string) => {
+                const [tables] = await connection!.execute(
+                    `SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?`,
+                    [event.schemas.get(schemaId)!.collectionName]
+                ) as [Array<{ TABLE_NAME: string }>, any];
+
+                if (tables.length === 0) {
+                    await connection!.query(createTableSql);
+                }
+            };
+
+            /** Storage-side column list — one column per root property, like the DDL. */
+            const selectColumns = (schemaId: SchemaId) =>
+                sqlColumnProperties(event.schemas.get(schemaId)!).map(p => `\`${p.getResolvedName()}\``).join(', ');
+
+            // Echoed rows go through decodeJsonColumns before mergeChanges sees them: a
+            // JSON column returned as a raw string reaches the entity's deserializer as a
+            // string and throws on the first nested property access.
+            const collect = (schemaId: SchemaId, bucket: 'adds' | 'updates' | 'removes', rows: unknown[]) => {
+                const decoded = decodeJsonColumns(rows, event.schemas.get(schemaId)!) as { [x: string]: never; }[];
+                result.get(schemaId)[bucket].push(...decoded);
+            };
 
             for (const [schemaId, changes] of event.operation) {
                 if (!changes || changes.hasItems === false) {
@@ -113,135 +134,59 @@ export class MysqlDbPlugin implements IDbPlugin {
                 }
 
                 const schema = event.schemas.get(schemaId);
-                const persistOperations = buildFromPersistOperation(schema, changes);
+                const { adds, updates, removes } = buildFromPersistOperation(schema, changes);
                 const createTableSql = compiledSchemaToMysqlTable(schema);
+                const table = `\`${schema.collectionName}\``;
+                const idColumn = `\`${schema.idProperties[0].getResolvedName()}\``;
 
-                operations.push({
-                    adds: persistOperations.adds != null ? {
-                        ...persistOperations.adds,
-                        createTableSql,
-                        schemaId
-                    } : null,
-                    updates: persistOperations.updates != null ? {
-                        ...persistOperations.updates,
-                        createTableSql,
-                        schemaId
-                    } : null,
-                    removes: persistOperations.removes != null ? {
-                        ...persistOperations.removes,
-                        createTableSql,
-                        schemaId
-                    } : null
-                });
-            }
+                await ensureTable(schemaId, createTableSql);
 
-            // Execute operations sequentially
-            for (let index = 0; index < operations.length; index++) {
-                const operationGroup = operations[index];
+                // Removes first, then updates, then adds — same order as the other SQL
+                // plugins. The echo is read BEFORE the delete; afterwards the rows are gone.
+                if (removes != null) {
+                    const [rows] = await connection.execute(removes.selectSql, removes.params);
+                    collect(schemaId, 'removes', rows as unknown[]);
+                    await connection.execute(removes.sql, removes.params);
+                }
 
-                const executeOperation = async (op: SqlPersistOperation, type: 'adds' | 'updates' | 'removes') => {
-                    try {
-                        // Check if table exists, create if not
-                        const [tables] = await connection!.execute(
-                            `SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?`,
-                            [event.schemas.get(op.schemaId)!.collectionName]
-                        ) as [Array<{ TABLE_NAME: string }>, any];
+                for (const update of updates) {
+                    await connection.execute(update.sql, update.params);
 
-                        if (tables.length === 0) {
-                            // Table doesn't exist, create it
-                            await connection!.query(op.createTableSql);
-                        }
+                    const placeholders = update.ids.map(() => '?').join(', ');
+                    const [rows] = await connection.execute(
+                        `SELECT ${selectColumns(schemaId)} FROM ${table} WHERE ${idColumn} IN (${placeholders})`,
+                        update.ids
+                    );
+                    collect(schemaId, 'updates', rows as unknown[]);
+                }
 
-                        // Execute the operation
-                        const [rows] = await connection!.execute(op.sql, op.params || []);
+                if (adds != null) {
+                    const [insertResult] = await connection.execute(adds.sql, adds.params);
+                    const selectBack = adds.selectBack;
 
-                        // MySQL doesn't support RETURNING, so we need to SELECT back the inserted/updated rows
-                        if (type === "adds" || type === "updates") {
-                            const schema = event.schemas.get(op.schemaId);
-                            const idProperties = schema.idProperties;
+                    let selectSql: string;
+                    let selectParams: unknown[];
 
-                            // For adds, get the last insert ID or select by inserted values
-                            // For updates, select by IDs
-                            let selectSql: string;
-                            let selectParams: any[] = [];
-
-                            if (type === "adds") {
-                                // Get inserted rows - MySQL returns insertId for AUTO_INCREMENT
-                                // For non-AUTO_INCREMENT, we need to select by the inserted values
-                                const insertId = (rows as any).insertId;
-                                if (insertId) {
-                                    selectSql = `SELECT * FROM \`${schema.collectionName}\` WHERE \`${idProperties[0].name}\` = ?`;
-                                    selectParams = [insertId];
-                                } else {
-                                    // Select all inserted rows (this is approximate - may need refinement)
-                                    const allColumns = schema.properties.map(p => `\`${p.name}\``).join(', ');
-                                    selectSql = `SELECT ${allColumns} FROM \`${schema.collectionName}\` ORDER BY \`${idProperties[0].name}\` DESC LIMIT ${op.params!.length / (schema.properties.length - schema.idProperties.filter(p => p.isIdentity).length)}`;
-                                }
-                            } else {
-                                // For updates, select by IDs
-                                const idColumn = idProperties[0].name;
-                                const idValues: any[] = [];
-                                for (let i = 0; i < op.params!.length; i += 2) {
-                                    idValues.push(op.params![i]);
-                                }
-                                const placeholders = idValues.map(() => '?').join(', ');
-                                selectSql = `SELECT * FROM \`${schema.collectionName}\` WHERE \`${idColumn}\` IN (${placeholders})`;
-                                selectParams = idValues;
-                            }
-
-                            const [selectedRows] = await connection!.execute(selectSql, selectParams);
-
-                            if (type === "adds") {
-                                const { adds } = result.get(op.schemaId);
-                                adds.push(...(selectedRows as { [x: string]: never; }[]));
-                            }
-
-                            if (type === "updates") {
-                                const { updates } = result.get(op.schemaId);
-                                updates.push(...(selectedRows as { [x: string]: never; }[]));
-                            }
-                        }
-
-                        if (type === "removes") {
-                            const { removes } = result.get(op.schemaId);
-                            // MySQL doesn't support RETURNING, so select before delete
-                            const schema = event.schemas.get(op.schemaId);
-                            const idProperties = schema.idProperties;
-                            const idColumn = idProperties[0].name;
-
-                            // Extract ID values from params (they're in the WHERE clause)
-                            const idValues: any[] = [];
-                            for (let i = 0; i < op.params!.length; i++) {
-                                idValues.push(op.params![i]);
-                            }
-
-                            if (idValues.length > 0) {
-                                const placeholders = idValues.map(() => '?').join(', ');
-                                const selectSql = `SELECT * FROM \`${schema.collectionName}\` WHERE \`${idColumn}\` IN (${placeholders})`;
-                                const [selectedRows] = await connection!.execute(selectSql, idValues);
-                                removes.push(...(selectedRows as { [x: string]: never; }[]));
-                            }
-                        }
-                    } catch (err: any) {
-                        if (err.message && err.message.includes("doesn't exist")) {
-                            // Table doesn't exist, create it and retry
-                            await connection!.query(op.createTableSql);
-                            // Retry the operation
-                            return executeOperation(op, type);
-                        }
-                        throw err;
+                    if (selectBack.mode === 'insert-id') {
+                        // A simple multi-row INSERT allocates a consecutive AUTO_INCREMENT
+                        // block, so the inserted rows are insertId .. insertId + n - 1.
+                        const firstId = (insertResult as { insertId: number }).insertId;
+                        selectSql = `SELECT ${selectColumns(schemaId)} FROM ${table} WHERE ${idColumn} BETWEEN ? AND ?`;
+                        selectParams = [firstId, firstId + selectBack.rowCount - 1];
+                    } else if (selectBack.mode === 'by-key') {
+                        const placeholders = selectBack.ids.map(() => '?').join(', ');
+                        selectSql = `SELECT ${selectColumns(schemaId)} FROM ${table} WHERE ${idColumn} IN (${placeholders})`;
+                        selectParams = selectBack.ids;
+                    } else {
+                        const clauses = selectBack.keyTuples.map(tuple =>
+                            `(${Object.keys(tuple).map(column => `\`${column}\` = ?`).join(' AND ')})`
+                        );
+                        selectSql = `SELECT ${selectColumns(schemaId)} FROM ${table} WHERE ${clauses.join(' OR ')}`;
+                        selectParams = selectBack.keyTuples.flatMap(tuple => Object.values(tuple));
                     }
-                };
 
-                // Always execute removes first
-                if (operationGroup.removes) {
-                    await executeOperation(operationGroup.removes, 'removes');
-                }
-                if (operationGroup.updates) {
-                    await executeOperation(operationGroup.updates, 'updates');
-                }
-                if (operationGroup.adds) {
-                    await executeOperation(operationGroup.adds, 'adds');
+                    const [rows] = await connection.execute(selectSql, selectParams);
+                    collect(schemaId, 'adds', rows as unknown[]);
                 }
             }
 

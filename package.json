@@ -23,7 +23,7 @@
     "docs:prepare": "npm run extract:doc-code && npm run sync:examples",
     "docs:fix-includes": "node scripts/fix-capture-includes.mjs",
     "bump": "node scripts/bump-version.mjs",
-    "benchmark": "node --import tsx/esm benchmark/src/run.ts",
+    "benchmark": "tsx benchmark/src/run.ts",
     "typedoc": "typedoc",
     "lint": "npm run lint --workspaces --if-present && oxlint . --ignore-pattern \"docs/**\" --ignore-pattern \"examples/**\" --ignore-pattern \"scripts/**\" --ignore-pattern \"**/__tests__/**\" --ignore-pattern \"**/*.test.*\" --ignore-pattern \"**/*.spec.*\" --ignore-pattern \"**/*.mjs\"",
     "lint:fix": "oxlint . --fix --fix-suggestions --ignore-pattern \"docs/**\" --ignore-pattern \"examples/**\" --ignore-pattern \"scripts/**\" --ignore-pattern \"**/__tests__/**\" --ignore-pattern \"**/*.test.*\" --ignore-pattern \"**/*.spec.*\" --ignore-pattern \"**/*.mjs\"",
@@ -40,7 +40,7 @@
     "test:e2e:containers": "E2E_CONTAINERS=1 jest --selectProjects e2e",
     "test:stress": "STRESS=1 jest --selectProjects stress",
     "test:stress:containers": "STRESS=1 E2E_CONTAINERS=1 jest --selectProjects stress",
-    "benchmark:update": "node --import tsx/esm benchmark/src/run.ts --update-baseline"
+    "benchmark:update": "tsx benchmark/src/run.ts --update-baseline"
   },
   "author": "",
   "license": "ISC",
