@@ -14,7 +14,7 @@ Audience: an agent with no prior context on this repository.
 | S2 wide schemas / deep nesting | Done | 2 of 8 cases pinned to defects #12 and #13 |
 | S3 churn | Done | 10k cycles, ~93s, no leak detected |
 | S4 concurrency, one store | Done | 20 workers x 200 saves, no race found |
-| S5 many stores, one database | **Not started** | |
+| S5 many stores, one database | Done | memory passes; file-system pinned to defect #18. Handle-leak invariant passes. |
 | S6 subscriptions and views | **Not started** | |
 | S7 replication under lag | **Not started** | |
 | S8 real databases | **Not started** | |
@@ -81,8 +81,10 @@ needs a real profile, not a comparison read.
   `stress/src/harness/backends.ts` and are printed in every failure banner.
 - *S3 samples `previewChangesAsync` every 25 cycles* rather than after every save; the
   cheap equivalent (`hasChangesAsync`) runs after every save. Rationale in the file.
-- *`--forceExit` is required.* Leaked handles keep Jest alive after the run completes;
-  without it a passing run looks like a hang. Making this a tested invariant is S5's job.
+- *`--forceExit` is still required*, but S5 now proves subscription channels are NOT the
+  cause: ten stores with live subscriptions release every handle they opened. Whatever holds
+  the loop open is elsewhere — the memory-plugin `dbs` registry and the sqlite driver are the
+  next suspects.
 
 ## Goal
 

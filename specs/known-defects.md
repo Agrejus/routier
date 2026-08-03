@@ -1,6 +1,6 @@
 # Known defects
 
-Status: 14 of 17 fixed. Open and pinned: #12, #13. Open and worked around: #14.
+Status: 14 of 18 fixed. Open and pinned: #12, #13, #18. Open and worked around: #14.
 Date: 2026-08-02
 
 Defects 1–10 came from the functional test program. #11–#13 came from the stress program
@@ -396,6 +396,41 @@ changes. That cost 13 sqlite tests during this fix.
 Guarded by `"freezes what it returns"` and `"does not treat a plain mutation as a change"` in
 `ImmutableCollection.test.ts`, plus the rewritten `plugins/memory/src/tests/immutableItem.test.ts`
 (which had asserted the buggy behaviour — a bare mutation with no assertion at all).
+
+### 18. Concurrent stores on one file-system database lose data — **OPEN, pinned**
+
+Found by S5. Ten `DataStore` instances over one FileSystemPlugin database, each writing its
+own key range: the union should be 200 rows and is **20** — exactly one store's worth. Nine
+stores' writes are gone, silently, with every save reporting success.
+
+**Cause:** `FileSystemPlugin` rewrites the entire collection file from its own plugin
+instance's in-memory view on every save, and `createShared(name)` gives each store a separate
+plugin instance with a separate view. Instance B never observes A's writes, so B's save
+overwrites them wholesale. Last writer wins the whole file.
+
+The memory backend passes the same scenario, because `MemoryPlugin`'s `dbs` registry is
+process-global by name — the ten stores genuinely share one collection object.
+
+**Not obviously a bug to fix so much as a boundary to state.** Two honest options: document
+that a file-system database belongs to one store per process (and make a second instance
+fail loudly rather than corrupt), or give the plugin read-modify-write semantics with file
+locking. The second is real work and platform-specific.
+
+Worth noting the same shape would affect any future plugin that persists a whole collection
+per save rather than per row.
+
+**Pinned by:** the `file-system` case of `stress/src/s5-many-stores-one-database.test.ts`,
+via the scenario harness's `knownFailing`.
+
+### The `--forceExit` question, answered
+
+S5 also asserts directly against `process.getActiveResourcesInfo()` that ten stores with live
+subscriptions release every handle they opened once each is unsubscribed, `destroyAsync`-ed
+and `[Symbol.dispose]`-ed. **It passes** — no handles leak.
+
+So the reason a stress run still needs `--forceExit` is NOT leaked subscription channels.
+Something else in the suite holds the loop open; the memory-plugin `dbs` registry and the
+sqlite driver are the obvious next suspects. Narrowed, not solved.
 
 ---
 
