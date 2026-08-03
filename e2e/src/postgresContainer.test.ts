@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { uuidv4 } from '@routier/core';
 import { s } from '@routier/core/schema';
+import { OptimisticConcurrencyError } from '@routier/core';
 import { DataStore } from '@routier/datastore';
 import { PostgresDbPlugin } from '@routier/postgresql-plugin';
 
@@ -234,5 +235,61 @@ suite('PostgreSQL via testcontainers', () => {
         // Defect #21 is not pinned here. It needs five concurrent plugin instances racing to
         // create one table, which is a load rather than an operation — it lives in S8, where
         // the harness prints the seed and scale that make the race reproducible.
+    });
+
+    describe('optimistic concurrency', () => {
+        const occSchema = s.define('e2e_pg_occ', {
+            id: s.string().key().identity(),
+            balance: s.number(),
+            version: s.number().concurrency(),
+        }).compile();
+
+        class OccStore extends DataStore {
+            accounts = this.collection(occSchema).proxy().create();
+        }
+
+        const open = (): OccStore =>
+            new OccStore(new PostgresDbPlugin({
+                host: container.getHost(),
+                port: container.getPort(),
+                database: container.getDatabase(),
+                user: container.getUsername(),
+                password: container.getPassword(),
+            }));
+
+        it('rejects a stale write against a real server and allows a retry', async () => {
+            const writerA = open();
+            const writerB = open();
+
+            const [seeded] = await writerA.accounts.addAsync({ balance: 1000 } as any);
+            await writerA.saveChangesAsync();
+            const id = (seeded as any).id;
+
+            const a: any = await writerA.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
+            const b: any = await writerB.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
+            expect(a.version).toBe(1);
+            expect(b.version).toBe(1);
+
+            a.balance = 900;
+            await writerA.saveChangesAsync();
+
+            b.balance = 1100;
+            const error = await writerB.saveChangesAsync().then(() => null, e => e);
+
+            expect(OptimisticConcurrencyError.is(error)).toBe(true);
+            expect(error.conflicts).toEqual([id]);
+
+            // The conflicted save rolled back as a unit; the winner's write survived
+            const fresh: any = await writerB.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
+            expect(fresh.balance).toBe(900);
+            expect(fresh.version).toBe(2);
+
+            fresh.balance = fresh.balance - 250;
+            await writerB.saveChangesAsync();
+
+            const final: any = await writerA.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
+            expect(final.balance).toBe(650);
+            expect(final.version).toBe(3);
+        });
     });
 });

@@ -127,6 +127,14 @@ export type EntityUpdateInfo<T extends {}> = {
     entity: InferType<T>,
     changeType: EntityChangeType;
     delta: EntityDelta<T>
+    /**
+     * Present when the schema declares a `.concurrency()` token: the update must be
+     * applied ONLY IF the stored row's `column` still equals `expected` (the value the
+     * writer read). The entity/delta already carry the bumped value to store on success.
+     * A plugin that finds a mismatch must fail the whole save with an
+     * OptimisticConcurrencyError naming the conflicted rows — never apply partially.
+     */
+    concurrency?: { column: string; expected: number };
 }
 
 export type TaggedEntity<T> = {

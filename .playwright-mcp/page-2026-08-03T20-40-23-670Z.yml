@@ -1,0 +1,67 @@
+- generic [ref=f2e2]:
+  - banner [ref=f2e3]:
+    - heading "Routier Finance" [level=1] [ref=f2e4]
+    - navigation [ref=f2e5]:
+      - button "Dashboard" [ref=f2e6] [cursor=pointer]
+      - button "Accounts" [ref=f2e7] [cursor=pointer]
+      - button "Transactions" [ref=f2e8] [cursor=pointer]
+    - generic [ref=f2e9]:
+      - generic [ref=f2e10]:
+        - text: users
+        - slider "users 10" [ref=f2e11]: "10"
+        - generic [ref=f2e12]: "10"
+      - generic [ref=f2e13]:
+        - text: tx/s
+        - slider "tx/s 50" [ref=f2e14]: "50"
+        - generic [ref=f2e15]: "50"
+      - button "Start load" [ref=f2e16] [cursor=pointer]
+  - main [ref=f2e17]:
+    - generic [ref=f2e18]:
+      - generic [ref=f2e19]:
+        - generic [ref=f2e20]:
+          - heading "Total balance" [level=3] [ref=f2e21]
+          - generic [ref=f2e22]: $75,000.00
+        - generic [ref=f2e23]:
+          - heading "Invariant drift (must be $0.00)" [level=3] [ref=f2e24]
+          - generic [ref=f2e25]: $0.00
+        - generic [ref=f2e26]:
+          - heading "Accounts" [level=3] [ref=f2e27]
+          - generic [ref=f2e28]: "75"
+        - generic [ref=f2e29]:
+          - heading "Ledger rows" [level=3] [ref=f2e30]
+          - generic [ref=f2e31]: "0"
+      - generic [ref=f2e32]:
+        - heading "Latest transactions (live)" [level=3] [ref=f2e33]
+        - table [ref=f2e34]:
+          - rowgroup [ref=f2e35]:
+            - row "When Category Memo Amount" [ref=f2e36]:
+              - columnheader "When" [ref=f2e37]
+              - columnheader "Category" [ref=f2e38]
+              - columnheader "Memo" [ref=f2e39]
+              - columnheader "Amount" [ref=f2e40]
+          - rowgroup
+  - generic [ref=f2e41]:
+    - generic [ref=f2e42]:
+      - generic [ref=f2e43]: committed tx
+      - generic [ref=f2e44]: "0"
+    - generic [ref=f2e45]:
+      - generic [ref=f2e46]: tx / sec
+      - generic [ref=f2e47]: "0.0"
+    - generic [ref=f2e48]:
+      - generic [ref=f2e49]: save p50
+      - generic [ref=f2e50]: 0.0 ms
+    - generic [ref=f2e51]:
+      - generic [ref=f2e52]: save p95
+      - generic [ref=f2e53]: 0.0 ms
+    - generic [ref=f2e54]:
+      - generic [ref=f2e55]: save p99
+      - generic [ref=f2e56]: 0.0 ms
+    - generic [ref=f2e57]:
+      - generic [ref=f2e58]: deliveries / sec
+      - generic [ref=f2e59]: "0.0"
+    - generic [ref=f2e60]:
+      - generic [ref=f2e61]: failed saves
+      - generic [ref=f2e62]: "0"
+    - generic [ref=f2e63]:
+      - generic [ref=f2e64]: fps
+      - generic [ref=f2e65]: "0"

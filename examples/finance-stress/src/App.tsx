@@ -92,6 +92,7 @@ export function App() {
                 <Metric label="save p95" value={`${snap.saveP95.toFixed(1)} ms`} tone={snap.saveP95 > 100 ? 'bad' : snap.saveP95 > 50 ? 'warn' : 'good'} />
                 <Metric label="save p99" value={`${snap.saveP99.toFixed(1)} ms`} />
                 <Metric label="deliveries / sec" value={snap.deliveriesPerSecond.toFixed(1)} />
+                <Metric label="conflicts (retried)" value={snap.concurrencyConflicts.toLocaleString()} tone={snap.concurrencyConflicts > 0 ? 'warn' : 'good'} />
                 <Metric label="failed saves" value={String(snap.failedSaves)} tone={snap.failedSaves > 0 ? 'bad' : 'good'} />
                 <Metric label="fps" value={String(snap.fps)} tone={snap.fps < 30 ? 'bad' : snap.fps < 50 ? 'warn' : 'good'} />
             </div>

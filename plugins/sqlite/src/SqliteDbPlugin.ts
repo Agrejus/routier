@@ -1,5 +1,6 @@
 import sqlite3 from 'sqlite3';
 import { decodeJsonColumns } from '@routier/sql-plugin-core';
+import { OptimisticConcurrencyError } from '@routier/core';
 import fs from 'fs';
 import { buildFromPersistOperation, buildFromQueryOperation, compiledSchemaToSqliteTable } from './utils';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, SqlTranslator } from '@routier/core/plugins';
@@ -179,6 +180,22 @@ export class SqliteDbPlugin implements IDbPlugin {
                 };
 
                 // Execute one operation
+                // A token-checked UPDATE that matched no row lost the race: another writer
+                // changed the row after this one read it. Roll everything back and name it.
+                const conflictOn = (op: SqlPersistOperation, rows: unknown[]) => {
+                    if (op.conflictCheck == null || rows.length > 0) {
+                        return false;
+                    }
+
+                    db.run('ROLLBACK', () => {
+                        db.close(() => done(Result.error(
+                            new OptimisticConcurrencyError(event.schemas.get(op.schemaId).collectionName, [op.conflictCheck!.id as never])
+                        )));
+                    });
+
+                    return true;
+                };
+
                 const executeOperation = (op: SqlPersistOperation, type: 'adds' | 'updates' | 'removes') => {
                     db.all(op.sql, op.params || [], (err, rows) => {
                         if (err && err.message.includes('no such table')) {
@@ -200,6 +217,10 @@ export class SqliteDbPlugin implements IDbPlugin {
                                         return;
                                     }
 
+                                    if (conflictOn(op, retryRows)) {
+                                        return;
+                                    }
+
                                     collect(op, type, retryRows);
 
                                     executeNext(index + 1);
@@ -211,6 +232,10 @@ export class SqliteDbPlugin implements IDbPlugin {
                                 db.close(() => done(Result.error(err)));
                             });
                         } else {
+                            if (conflictOn(op, rows)) {
+                                return;
+                            }
+
                             // Success, continue to next operation
                             collect(op, type, rows);
 

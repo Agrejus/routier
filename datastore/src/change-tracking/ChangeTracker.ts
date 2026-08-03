@@ -386,7 +386,13 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
             const delta = snapshotDirty || tracking == null
                 ? ({} as InferType<TEntity>)
                 : this.serializeDelta(serializedEntity, tracking.changes);
-            changes.push({ entity: serializedEntity, delta, changeType })
+
+            changes.push({
+                entity: serializedEntity,
+                delta,
+                changeType,
+                concurrency: this.stampConcurrency(serializedEntity, delta),
+            })
         }
 
         // An immutably-updated row is normally invisible to the loop above: `update()` never
@@ -404,14 +410,56 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
 
         for (const [, update] of this.immutable.entries()) {
             const serializedEntity = this.schema.preprocess(update.current as InferCreateType<TEntity>);
+            const delta = this.serializeDelta(serializedEntity, update.patch);
             changes.push({
                 entity: serializedEntity,
-                delta: this.serializeDelta(serializedEntity, update.patch),
+                delta,
                 changeType: "propertiesChanged",
+                concurrency: this.stampConcurrency(serializedEntity, delta),
             });
         }
 
         return changes
+    }
+
+    /**
+     * Stamps the optimistic-concurrency token onto an outgoing update.
+     *
+     * `expected` is the token as READ (what the serialized entity still holds — the
+     * canonical is never mutated here, so a failed save leaves it accurate); the wire
+     * payload gets the bumped value to store on success. Returns undefined when the
+     * schema declares no token, or for a legacy row that predates it (nothing to check
+     * against — the write initializes the token instead).
+     */
+    private stampConcurrency(serializedEntity: Record<string, unknown>, delta: Record<string, unknown>): { column: string; expected: number } | undefined {
+        const property = this.schema.concurrencyProperty;
+
+        if (property == null) {
+            return undefined;
+        }
+
+        const column = property.getResolvedName();
+        const expected = serializedEntity[column];
+
+        // An EMPTY delta means "write the whole entity" (the SQL builders' fallback), and
+        // the entity already carries the bumped token — adding the token to the delta
+        // would make it non-empty and silently narrow the write to the token column alone.
+        const deltaCarriesColumns = Object.keys(delta).length > 0;
+
+        if (typeof expected !== "number") {
+            serializedEntity[column] = 1;
+            if (deltaCarriesColumns) {
+                delta[column] = 1;
+            }
+            return undefined;
+        }
+
+        serializedEntity[column] = expected + 1;
+        if (deltaCarriesColumns) {
+            delta[column] = expected + 1;
+        }
+
+        return { column, expected };
     }
 
     /**

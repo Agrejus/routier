@@ -12,6 +12,7 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
     isIdentity: boolean = false;
     isReadonly: boolean = false;
     isDistict: boolean = false;
+    isConcurrency: boolean = false;
     indexes: string[] = [];
     fromPropertyName: string | null = null;
 
@@ -37,6 +38,7 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
             this.isKey = entity.isKey;
             this.isIdentity = entity.isIdentity;
             this.isReadonly = entity.isReadonly;
+            this.isConcurrency = entity.isConcurrency;
             this.defaultValue = entity.defaultValue;
             this.type = entity.type;
             this.injected = entity.injected;

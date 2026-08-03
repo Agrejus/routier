@@ -21,7 +21,86 @@ import { toColumnValueMap } from './columns';
 export type EntityUpdate = {
     entity: Record<string, unknown>;
     delta: Record<string, unknown>;
+    /** Present when the row carries an optimistic-concurrency token — see EntityUpdateInfo. */
+    concurrency?: { column: string; expected: number };
 };
+
+/**
+ * One conditional UPDATE per row, for schemas with a `.concurrency()` token.
+ *
+ * Token-checked rows cannot ride the grouped CASE statement: each row's WHERE carries its
+ * own `AND token = expected`, and the caller must be able to tell WHICH row a zero-row
+ * result belongs to. `id` identifies the row so an empty result (or RETURNING set) can be
+ * reported as a conflict on that row. Rows without a token (they predate it — the write
+ * initializes it) get the same per-row statement without the token clause.
+ */
+export type ConditionalUpdateOperation = {
+    sql: string;
+    params: unknown[];
+    id: unknown;
+    /** True when the statement carries a token check — a zero-row result is a CONFLICT. */
+    checked: boolean;
+};
+
+export function buildConditionalUpdateOperations<T extends {}>(
+    schema: CompiledSchema<T>,
+    updates: readonly EntityUpdate[],
+    dialect: SqlDialect,
+    options?: { suffix?: string }
+): ConditionalUpdateOperation[] {
+    if (updates.length === 0) {
+        return [];
+    }
+
+    const table = dialect.quoteIdentifier(schema.collectionName);
+    const identityNames = schema.idProperties.map(p => p.getResolvedName());
+    const idProperty = schema.idProperties[0];
+    const idColumn = dialect.quoteIdentifier(idProperty.getResolvedName());
+    const suffix = options?.suffix ?? '';
+
+    const operations: ConditionalUpdateOperation[] = [];
+
+    for (const update of updates) {
+        let resolved = toColumnValueMap(update.delta, schema, dialect, update.entity);
+
+        if (resolved.size === 0) {
+            const wholeEntity = Object.fromEntries(
+                Object.keys(update.entity)
+                    .filter(key => identityNames.includes(key) === false)
+                    .map(key => [key, update.entity[key]])
+            );
+            resolved = toColumnValueMap(wholeEntity, schema, dialect);
+        }
+
+        const params: unknown[] = [];
+        let paramIndex = 0;
+        const placeholder = () => dialect.getPlaceholder(paramIndex++);
+
+        const setClauses: string[] = [];
+        for (const [column, value] of resolved) {
+            setClauses.push(`${dialect.quoteIdentifier(column)} = ${placeholder()}`);
+            params.push(value);
+        }
+
+        const id = idProperty.getValue(update.entity as any);
+        let where = `${idColumn} = ${placeholder()}`;
+        params.push(id);
+
+        if (update.concurrency != null) {
+            where += ` AND ${dialect.quoteIdentifier(update.concurrency.column)} = ${placeholder()}`;
+            params.push(update.concurrency.expected);
+        }
+
+        operations.push({
+            sql: `UPDATE ${table} SET ${setClauses.join(', ')} WHERE ${where}${suffix}`,
+            params,
+            id,
+            checked: update.concurrency != null,
+        });
+    }
+
+    return operations;
+}
 
 export type GroupedUpdateOperation = {
     sql: string;

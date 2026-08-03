@@ -1,6 +1,6 @@
 import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema';
 import { Expression } from '@routier/core/expressions';
-import { buildGroupedUpdateOperations, getDialect, sqlColumnProperties, toColumnValueMap, toSql } from '@routier/sql-plugin-core';
+import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, getDialect, sqlColumnProperties, toColumnValueMap, toSql } from '@routier/sql-plugin-core';
 import { IQuery, QueryField } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
 import { SqlOperation } from './types';
@@ -236,12 +236,22 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
     // Handle UPDATE operations (updates). One SqlOperation per changed-column group — the
     // shared builder resolves deltas to columns (renames, JSON encoding, empty-delta
     // fallback) and never joins groups with ';' (defect #22).
-    const updatesOperations: SqlOperation[] = buildGroupedUpdateOperations(
-        schema,
-        updates as { entity: Record<string, unknown>; delta: Record<string, unknown> }[],
-        getDialect('sqlite'),
-        { suffix: ` RETURNING ${allColumnStr}` }
-    ).map(({ sql, params }) => ({ sql, params }));
+    // Schemas with a `.concurrency()` token take one CONDITIONAL statement per row
+    // instead of the grouped CASE form, so a stale write affects zero rows and is
+    // reported as a conflict on that exact row.
+    const updatesOperations: SqlOperation[] = schema.concurrencyProperty != null
+        ? buildConditionalUpdateOperations(
+            schema,
+            updates as { entity: Record<string, unknown>; delta: Record<string, unknown> }[],
+            getDialect('sqlite'),
+            { suffix: ` RETURNING ${allColumnStr}` }
+        ).map(({ sql, params, id, checked }) => ({ sql, params, conflictCheck: checked ? { id } : undefined }))
+        : buildGroupedUpdateOperations(
+            schema,
+            updates as { entity: Record<string, unknown>; delta: Record<string, unknown> }[],
+            getDialect('sqlite'),
+            { suffix: ` RETURNING ${allColumnStr}` }
+        ).map(({ sql, params }) => ({ sql, params }));
 
     // Handle DELETE operations (removes)
     let removesOperation: SqlOperation | null = null;

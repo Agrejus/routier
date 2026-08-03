@@ -1,5 +1,6 @@
 import { Pool } from 'pg';
 import { decodeJsonColumns } from '@routier/sql-plugin-core';
+import { OptimisticConcurrencyError } from '@routier/core';
 import { buildFromPersistOperation, buildFromQueryOperation, compiledSchemaToPostgresTable } from './utils';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue } from '@routier/core/plugins';
 import { PostgresSqlTranslator } from './PostgresSqlTranslator';
@@ -210,6 +211,22 @@ export class PostgresDbPlugin implements IDbPlugin {
                             }
                         };
 
+                        // A token-checked UPDATE that matched no row lost the race:
+                        // another writer changed the row after this one read it. The
+                        // transaction rolls back and the conflict names the row.
+                        const conflictOn = (rows: unknown[]) => {
+                            if (op.conflictCheck == null || rows.length > 0) {
+                                return false;
+                            }
+
+                            fail(new OptimisticConcurrencyError(
+                                event.schemas.get(op.schemaId).collectionName,
+                                [op.conflictCheck.id as never]
+                            ));
+
+                            return true;
+                        };
+
                         const retryWrite = () => {
                             console.log(`[DB] PostgreSQL ${type} retry after table creation:`, {
                                 sql: op.sql,
@@ -219,6 +236,10 @@ export class PostgresDbPlugin implements IDbPlugin {
                             client.query(op.sql, op.params || [], (retryErr, retryResult) => {
                                 if (retryErr) {
                                     fail(retryErr);
+                                    return;
+                                }
+
+                                if (conflictOn(retryResult.rows)) {
                                     return;
                                 }
 
@@ -297,6 +318,10 @@ export class PostgresDbPlugin implements IDbPlugin {
                                     // Other error, rollback
                                     fail(err);
                                 } else {
+                                    if (conflictOn(queryResult.rows)) {
+                                        return;
+                                    }
+
                                     // Success, continue to next operation
                                     collectRows(queryResult.rows);
                                     executeNext(index + 1);

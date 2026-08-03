@@ -8,6 +8,7 @@ type Listener = () => void;
 const saveLatencies: number[] = [];
 let committedTransactions = 0;
 let failedSaves = 0;
+let concurrencyConflicts = 0;
 let subscriptionDeliveries = 0;
 let windowStart = performance.now();
 let windowTx = 0;
@@ -36,6 +37,10 @@ export const metrics = {
         failedSaves++;
     },
 
+    noteConflict() {
+        concurrencyConflicts++;
+    },
+
     noteDelivery() {
         subscriptionDeliveries++;
         windowDeliveries++;
@@ -48,6 +53,7 @@ export const metrics = {
         return {
             committedTransactions,
             failedSaves,
+            concurrencyConflicts,
             subscriptionDeliveries,
             txPerSecond,
             deliveriesPerSecond,

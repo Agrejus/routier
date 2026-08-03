@@ -21,7 +21,8 @@ export function Dashboard(props: { onOpenAccount: (id: string) => void }) {
     const accountList = accounts.status === 'success' ? accounts.data : [];
     const total = accountList.reduce((sum, account) => sum + account.balance, 0);
     const expected = accountList.length * 1000;
-    const drift = Math.round((total - expected) * 100) / 100;
+    // `|| 0` normalizes float negative-zero so a perfect ledger never renders -$0.00
+    const drift = (Math.round((total - expected) * 100) / 100) || 0;
 
     return (
         <div>

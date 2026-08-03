@@ -1,5 +1,6 @@
+import { OptimisticConcurrencyError } from '@routier/core';
 import { FinanceStore } from './store';
-import { Account, CATEGORIES } from './schemas';
+import { CATEGORIES } from './schemas';
 import { metrics } from './metrics';
 
 /**
@@ -26,14 +27,16 @@ export type SimulatorState = {
 
 class Bot {
     private store = new FinanceStore();
-    private accounts: Account[] = [];
+    private accountIds: string[] = [];
     private timer: ReturnType<typeof setTimeout> | null = null;
     private stopped = false;
 
     constructor(private readonly id: number) { }
 
     async start(intervalMs: number) {
-        this.accounts = await this.store.accounts.toArrayAsync() as Account[];
+        const accounts = await this.store.accounts.toArrayAsync() as { id: string }[];
+        this.accountIds = accounts.map(account => account.id);
+
         const loop = async () => {
             if (this.stopped) {
                 return;
@@ -52,38 +55,67 @@ class Bot {
         this.timer = setTimeout(loop, rand(intervalMs));
     }
 
+    /**
+     * One business transaction, with optimistic-concurrency retry.
+     *
+     * Balances are ALWAYS computed from a fresh read inside the attempt. When another
+     * writer wins the race, the save throws OptimisticConcurrencyError — the stale local
+     * state is discarded (a dirty diff-tracked attachment deliberately keeps local edits,
+     * so it must be detached to accept database truth) and the whole intent is reapplied
+     * against fresh values. Nothing is ever silently lost, which is what keeps the
+     * dashboard's invariant drift at exactly $0.00 no matter how many writers race.
+     */
     private async transferOnce() {
-        if (this.accounts.length < 2) {
+        if (this.accountIds.length < 2) {
             return;
         }
 
-        const from = pick(this.accounts);
-        let to = pick(this.accounts);
-        while (to === from) {
-            to = pick(this.accounts);
+        const fromId = pick(this.accountIds);
+        let toId = pick(this.accountIds);
+        while (toId === fromId) {
+            toId = pick(this.accountIds);
         }
 
         const amount = Math.round((5 + Math.random() * 245) * 100) / 100;
-
         const started = performance.now();
 
-        // Ledger row (immutable collection) + two balance updates (diff collection),
-        // one save.
-        await this.store.transactions.addAsync({
-            fromAccountId: from.id,
-            toAccountId: to.id,
-            amount,
-            category: pick([...CATEGORIES]),
-            memo: `bot ${this.id}`,
-            at: new Date(),
-        } as any);
+        for (let attempt = 0; attempt < 50; attempt++) {
+            const from: any = await this.store.accounts.firstAsync(([a, p]) => a.id === p.id, { id: fromId });
+            const to: any = await this.store.accounts.firstAsync(([a, p]) => a.id === p.id, { id: toId });
 
-        from.balance = Math.round((from.balance - amount) * 100) / 100;
-        to.balance = Math.round((to.balance + amount) * 100) / 100;
+            // Ledger row (immutable collection) + two balance updates (diff collection),
+            // one save. A failed save drops the pending ledger row too, so the retry
+            // re-creates the whole transaction — exactly one ledger row per commit.
+            await this.store.transactions.addAsync({
+                fromAccountId: fromId,
+                toAccountId: toId,
+                amount,
+                category: pick([...CATEGORIES]),
+                memo: `bot ${this.id}`,
+                at: new Date(),
+            } as any);
 
-        await this.store.saveChangesAsync();
+            from.balance = Math.round((from.balance - amount) * 100) / 100;
+            to.balance = Math.round((to.balance + amount) * 100) / 100;
 
-        metrics.noteSave(performance.now() - started);
+            try {
+                await this.store.saveChangesAsync();
+                metrics.noteSave(performance.now() - started);
+                return;
+            } catch (error) {
+                if (!OptimisticConcurrencyError.is(error)) {
+                    throw error;
+                }
+
+                metrics.noteConflict();
+
+                // Diff-mode conflict recovery: detach the stale instances so the next
+                // read adopts database truth instead of protecting the losing edits.
+                this.store.accounts.attachments.remove(from, to);
+            }
+        }
+
+        metrics.noteFailedSave();
     }
 
     stop() {

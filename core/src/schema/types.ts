@@ -176,6 +176,8 @@ export type CompiledSchema<TEntity extends {}> = {
     enrich: Enrich<TEntity>;
     /** Indicates if the schema has identity keys. */
     hasIdentityKeys: boolean;
+    /** The root property marked `.concurrency()`, or null — the row's optimistic-concurrency token. */
+    concurrencyProperty: PropertyInfo<TEntity> | null;
     /** Returns a deeply frozen (immutable) version of the entity. */
     freeze: (entity: InferType<TEntity>) => InferType<TEntity>;
     /** Enables change tracking on the entity. */

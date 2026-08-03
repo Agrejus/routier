@@ -1,4 +1,5 @@
 import { assertIsNotNull } from '../assertions';
+import { OptimisticConcurrencyError } from '../errors';
 import { BulkPersistResult } from '../collections';
 import { WorkPipeline } from '../pipeline';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, JsonTranslator } from '.';
@@ -86,6 +87,33 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                         const needsLoad = updatesLength > 0 || removesLength > 0;
 
                         const processChanges = () => {
+                            // Optimistic concurrency: verify EVERY conditional update
+                            // against the stored rows before anything is applied, so a
+                            // conflict aborts this collection's save with nothing written.
+                            const conflicts: IdType[] = [];
+
+                            for (let j = 0; j < updatesLength; j++) {
+                                const { entity, concurrency } = updates[j];
+
+                                if (concurrency == null) {
+                                    continue;
+                                }
+
+                                const id = schema.getId(entity as never);
+                                const stored = collection.getByIds([id]) as Record<string, unknown> | null;
+
+                                // A missing row is not a token conflict — it falls through
+                                // to the same no-op an unconditional update would be.
+                                if (stored != null && stored[concurrency.column] !== concurrency.expected) {
+                                    conflicts.push(id);
+                                }
+                            }
+
+                            if (conflicts.length > 0) {
+                                d(Result.error(new OptimisticConcurrencyError(schema.collectionName, conflicts)));
+                                return;
+                            }
+
                             result.adds = Array.from({ length: addsLength });
                             result.updates = Array.from({ length: updatesLength });
                             result.removes = Array.from({ length: removesLength });
