@@ -7,7 +7,13 @@ export class SqlTranslator<TRoot extends {}, TShape> extends DataTranslator<TRoo
 
     count<TResult extends number>(data: unknown, _: QueryOption<TShape, "count">): TResult {
         if (Array.isArray(data) && data.length > 0) {
-            // Count should be returned as the property alias on the query
+            // Count is returned as the property alias on the query.
+            //
+            // Driver-specific coercion does NOT belong here. Some drivers return COUNT(*)
+            // as a bigint string rather than a number; which ones is a fact about those
+            // drivers, so a plugin whose driver deviates overrides this method. Naming them
+            // here is how engine knowledge starts accumulating in a storage-agnostic
+            // package — one bug fix at a time.
             return data[0].count;
         }
 

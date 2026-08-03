@@ -20,9 +20,14 @@ export class MergeDefaultFunctionHandler extends PropertyInfoHandler {
                 defaultFunctionParameters.push(parameter.name);
             }
 
+            // A defaulted property still merges from the source; the default only fills
+            // the gap when neither side has a value
+            this.emitMergeCopy(property, builder, { onlyWhenChanged: true });
+
             const ifsSlot = builder.get<SlotBlock>("factory.function.ifs");
-            // we only want to run if the destination is null
-            const selectorPath = property.getSelectrorPath({ parent: "destination" });
+            // we only want to run if the destination is null; the guarded selector keeps
+            // the check from throwing when a destination ancestor is absent
+            const selectorPath = property.getSelectrorPath({ parent: "destination", assignmentType: "FORCE_NULLABLE_OR_OPTIONAL" });
             const assignmentPath = property.getAssignmentPath({ parent: "destination" });
 
             const declarationsSlot = builder.get<SlotBlock>("factory.function.header");
@@ -30,8 +35,9 @@ export class MergeDefaultFunctionHandler extends PropertyInfoHandler {
 
             defaultFunctionWithParameters.builder.parameters(...defaultFunctionParameters.map((w, i) => ({ name: defaultFunctionWithParameters.parameters[i], callName: w })));
 
-
-            ifsSlot.if(`${selectorPath} == null`).appendBody(`${assignmentPath} = ${defaultFunctionWithParameters.builder.toCallable()}`);
+            const defaultIf = ifsSlot.if(`${selectorPath} == null`);
+            this.emitDestinationAncestorGuards(property, defaultIf);
+            defaultIf.appendBody(`${assignmentPath} = ${defaultFunctionWithParameters.builder.toCallable()}`);
             return builder;
         }
 

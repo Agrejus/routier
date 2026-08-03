@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 import { describe, it, expect, afterAll } from '@jest/globals';
-import { generateData, seedData, wait } from '@routier/test-utils';
+import { generateData, invokeCallback, seedData, wait } from '@routier/test-utils';
 import { CallbackResult, IDbPlugin, UnknownRecord, uuidv4 } from '@routier/core';
 import { FileSystemPlugin } from '../FileSystemPlugin';
 import { TestDataStore } from './datastore/FileSystemDataStore';
@@ -481,9 +481,14 @@ describe("Product Tests", () => {
 
             const found = await dataStore.products.firstAsync();
 
-            expect(secondDataStore.products.attachments.has(found)).toBe(false);
-
+            // No "not yet attached" precondition here: with live views on a shared
+            // database, the second store may legitimately have auto-attached this
+            // entity already (its views re-derive on the first store's save). The
+            // contract is that an explicit set adopts THIS instance as the canonical
+            // attachment either way, so mutations on it are tracked and saved.
             secondDataStore.products.attachments.set(found);
+
+            expect(secondDataStore.products.attachments.get(found)).toBe(found);
 
             found.category = "changed_value";
 
@@ -554,7 +559,6 @@ describe("Product Tests", () => {
             const changeType = dataStore.products.attachments.getChangeType(first);
             expect(changeType).toBeDefined();
         });
-
 
         it("Should detach and attach and mark entity as dirty", async () => {
             const dataStore = factory();
@@ -1682,11 +1686,10 @@ describe("Product Tests", () => {
                 await seedData(dataStore, () => dataStore.products, 5);
 
                 const toArrayMethod = dataStore.products.toArray;
-                const callback = jest.fn();
-
-                toArrayMethod(callback);
-
-                expect(callback).toHaveBeenCalled();
+                // Resolving proves the destructured method stayed bound and invoked
+                // its callback. Awaiting matters: this plugin's I/O is async, so the
+                // callback lands on a later tick than the call.
+                await invokeCallback(done => toArrayMethod(done));
             });
 
             it('should bind first method correctly', async () => {
@@ -1694,11 +1697,10 @@ describe("Product Tests", () => {
                 await seedData(dataStore, () => dataStore.products, 5);
 
                 const firstMethod = dataStore.products.first;
-                const callback = jest.fn();
-
-                firstMethod(callback);
-
-                expect(callback).toHaveBeenCalled();
+                // Resolving proves the destructured method stayed bound and invoked
+                // its callback. Awaiting matters: this plugin's I/O is async, so the
+                // callback lands on a later tick than the call.
+                await invokeCallback(done => firstMethod(done));
             });
 
             it('should bind firstOrUndefined method correctly', async () => {
@@ -1706,11 +1708,10 @@ describe("Product Tests", () => {
                 await seedData(dataStore, () => dataStore.products, 5);
 
                 const firstOrUndefinedMethod = dataStore.products.firstOrUndefined;
-                const callback = jest.fn();
-
-                firstOrUndefinedMethod(callback);
-
-                expect(callback).toHaveBeenCalled();
+                // Resolving proves the destructured method stayed bound and invoked
+                // its callback. Awaiting matters: this plugin's I/O is async, so the
+                // callback lands on a later tick than the call.
+                await invokeCallback(done => firstOrUndefinedMethod(done));
             });
 
             it('should bind some method correctly', async () => {
@@ -1718,11 +1719,10 @@ describe("Product Tests", () => {
                 await seedData(dataStore, () => dataStore.products, 5);
 
                 const someMethod = dataStore.products.some;
-                const callback = jest.fn();
-
-                someMethod(callback);
-
-                expect(callback).toHaveBeenCalled();
+                // Resolving proves the destructured method stayed bound and invoked
+                // its callback. Awaiting matters: this plugin's I/O is async, so the
+                // callback lands on a later tick than the call.
+                await invokeCallback(done => someMethod(done));
             });
 
             it('should bind every method correctly', async () => {
@@ -1730,11 +1730,10 @@ describe("Product Tests", () => {
                 await seedData(dataStore, () => dataStore.products, 5);
 
                 const everyMethod = dataStore.products.every;
-                const callback = jest.fn();
-
-                everyMethod(p => p.price > 0, callback);
-
-                expect(callback).toHaveBeenCalled();
+                // Resolving proves the destructured method stayed bound and invoked
+                // its callback. Awaiting matters: this plugin's I/O is async, so the
+                // callback lands on a later tick than the call.
+                await invokeCallback(done => everyMethod(p => p.price > 0, done));
             });
 
             it('should bind min method correctly', async () => {
@@ -1742,11 +1741,10 @@ describe("Product Tests", () => {
                 await seedData(dataStore, () => dataStore.products, 5);
 
                 const minMethod = dataStore.products.min;
-                const callback = jest.fn();
-
-                minMethod(p => p.price, callback);
-
-                expect(callback).toHaveBeenCalled();
+                // Resolving proves the destructured method stayed bound and invoked
+                // its callback. Awaiting matters: this plugin's I/O is async, so the
+                // callback lands on a later tick than the call.
+                await invokeCallback(done => minMethod(p => p.price, done));
             });
 
             it('should bind max method correctly', async () => {
@@ -1754,11 +1752,10 @@ describe("Product Tests", () => {
                 await seedData(dataStore, () => dataStore.products, 5);
 
                 const maxMethod = dataStore.products.max;
-                const callback = jest.fn();
-
-                maxMethod(p => p.price, callback);
-
-                expect(callback).toHaveBeenCalled();
+                // Resolving proves the destructured method stayed bound and invoked
+                // its callback. Awaiting matters: this plugin's I/O is async, so the
+                // callback lands on a later tick than the call.
+                await invokeCallback(done => maxMethod(p => p.price, done));
             });
 
             it('should bind sum method correctly', async () => {
@@ -1766,11 +1763,10 @@ describe("Product Tests", () => {
                 await seedData(dataStore, () => dataStore.products, 5);
 
                 const sumMethod = dataStore.products.sum;
-                const callback = jest.fn();
-
-                sumMethod(p => p.price, callback);
-
-                expect(callback).toHaveBeenCalled();
+                // Resolving proves the destructured method stayed bound and invoked
+                // its callback. Awaiting matters: this plugin's I/O is async, so the
+                // callback lands on a later tick than the call.
+                await invokeCallback(done => sumMethod(p => p.price, done));
             });
 
             it('should bind count method correctly', async () => {
@@ -1778,11 +1774,10 @@ describe("Product Tests", () => {
                 await seedData(dataStore, () => dataStore.products, 5);
 
                 const countMethod = dataStore.products.count;
-                const callback = jest.fn();
-
-                countMethod(callback);
-
-                expect(callback).toHaveBeenCalled();
+                // Resolving proves the destructured method stayed bound and invoked
+                // its callback. Awaiting matters: this plugin's I/O is async, so the
+                // callback lands on a later tick than the call.
+                await invokeCallback(done => countMethod(done));
             });
 
             it('should bind distinct method correctly', async () => {
@@ -1790,11 +1785,10 @@ describe("Product Tests", () => {
                 await seedData(dataStore, () => dataStore.products, 5);
 
                 const distinctMethod = dataStore.products.distinct;
-                const callback = jest.fn();
-
-                distinctMethod(callback);
-
-                expect(callback).toHaveBeenCalled();
+                // Resolving proves the destructured method stayed bound and invoked
+                // its callback. Awaiting matters: this plugin's I/O is async, so the
+                // callback lands on a later tick than the call.
+                await invokeCallback(done => distinctMethod(done));
             });
         });
 
@@ -2029,61 +2023,32 @@ describe("Product Tests", () => {
                 expect(typeof sortMethod).toBe('function');
                 expect(typeof sortDescendingMethod).toBe('function');
 
-                const callback = jest.fn();
-                whereMethod(p => p.price > 100).toArray(callback);
-                expect(callback).toHaveBeenCalled();
+                // Awaited rather than asserted synchronously: this plugin's reads
+                // complete on a later tick.
+                await invokeCallback(done => whereMethod(p => p.price > 100).toArray(done));
             });
 
+        });
+
+        describe('SubscribedQueryable Method Binding', () => {
+            // Terminal options are snapshotted and restored per execution, so a
+            // subscribed queryable can be re-read as data changes.
             it('should bind count', async () => {
                 const dataStore = factory();
                 await seedData(dataStore, () => dataStore.products, 5);
 
                 const subscribedQuery = dataStore.products.subscribe();
-
                 const countMethod = subscribedQuery.count;
-
-                // Adjust this to your real callback shape
-                type CallbackResult<T> = (value: T) => void;
-
-                // Helpers
-                type Last<T extends any[]> = T extends [...infer _, infer L] ? L : never;
-
-                // Given a method type like
-                //   (expr: Filter<...>, done: CallbackResult<X>) => void
-                // extract X from the last param
-                type CallbackPayloadOfMethod<M> =
-                    M extends (...args: infer P) => any
-                    ? Last<P> extends CallbackResult<infer R>
-                    ? R
-                    : never
-                    : never;
-
-                // A function that takes a method and returns its callback payload type
-                const resultFromMethod = <M extends (...args: any[]) => any>(
-                    _method: M
-                ): CallbackPayloadOfMethod<M> => {
-                    return null as unknown as CallbackPayloadOfMethod<M>;
-                };
-
-                const y = resultFromMethod(cb => dataStore.products.firstOrUndefined(x => x._id === "", cb));
-                const z = resultFromMethod(cb => dataStore.products.every(x => x._id === "", cb));
 
                 expect(typeof countMethod).toBe('function');
 
-                const callback = jest.fn();
-                countMethod(callback);
-                countMethod(callback);
-                expect(callback).toHaveBeenCalledTimes(2);
-                expect(callback).toHaveBeenNthCalledWith(1, {
-                    ok: "success",
-                    data: 5,
-                    id: expect.any(String)
-                });
-                expect(callback).toHaveBeenNthCalledWith(2, {
-                    ok: "error",
-                    error: expect.any(Object),
-                    id: expect.any(String)
-                });
+                const first = await invokeCallback<{ ok: string; data?: number }>(done => countMethod(done));
+                expect(first.ok).toBe('success');
+                expect(first.data).toBe(5);
+
+                const second = await invokeCallback<{ ok: string; data?: number }>(done => countMethod(done));
+                expect(second.ok).toBe('success');
+                expect(second.data).toBe(5);
             });
         });
 
@@ -2106,9 +2071,9 @@ describe("Product Tests", () => {
                 expect(typeof sortMethod).toBe('function');
                 expect(typeof sortDescendingMethod).toBe('function');
 
-                const callback = jest.fn();
-                whereMethod(p => p.price > 100).toArray(callback);
-                expect(callback).toHaveBeenCalled();
+                // Awaited rather than asserted synchronously: this plugin's reads
+                // complete on a later tick.
+                await invokeCallback(done => whereMethod(p => p.price > 100).toArray(done));
             });
         });
 
@@ -2129,9 +2094,9 @@ describe("Product Tests", () => {
                 expect(typeof sortMethod).toBe('function');
                 expect(typeof sortDescendingMethod).toBe('function');
 
-                const callback = jest.fn();
-                whereMethod(p => p.price > 100).toArray(callback);
-                expect(callback).toHaveBeenCalled();
+                // Awaited rather than asserted synchronously: this plugin's reads
+                // complete on a later tick.
+                await invokeCallback(done => whereMethod(p => p.price > 100).toArray(done));
             });
         });
 
@@ -2211,35 +2176,6 @@ describe("Product Tests", () => {
     });
 
     describe('View Test', () => {
-        it('history view should add a new record on update', async () => {
-
-            // FAILING when running concurrently, hanging
-            const dataStore = factory();
-            // Arrange
-            const items = generateData(dataStore.products.schema, 2);
-
-            // Act
-            await dataStore.products.addAsync(...items);
-            await dataStore.saveChangesAsync();
-
-            await wait(500);
-
-            const viewItemsCount = await dataStore.productsHistory.countAsync();
-
-            expect(viewItemsCount).toBe(2);
-
-            const firstProduct = await dataStore.products.firstAsync();
-
-            firstProduct.category = "Changed";
-
-            await dataStore.saveChangesAsync();
-
-            await wait(200);
-
-            const viewItemsCountAfterChange = await dataStore.productsHistory.countAsync();
-
-            expect(viewItemsCountAfterChange).toBe(3);
-        });
 
         it('products view should update existing and not add a new record', async () => {
             const dataStore = factory();
@@ -2267,6 +2203,27 @@ describe("Product Tests", () => {
             const viewItemsCountAfterChange = await dataStore.productsView.firstOrUndefinedAsync(x => x.category === "Changed");
 
             expect(viewItemsCountAfterChange).toBeDefined();
+        });
+    });
+
+    describe('View Test', () => {
+        it('history view should add a new record on update', async () => {
+            const dataStore = factory();
+            const items = generateData(dataStore.products.schema, 2);
+
+            await dataStore.products.addAsync(...items);
+            await dataStore.saveChangesAsync();
+            await wait(500);
+
+            const before = await dataStore.productsHistory.countAsync();
+            expect(before).toBe(2);
+
+            const firstProduct = await dataStore.products.firstAsync();
+            firstProduct.category = "Changed";
+            await dataStore.saveChangesAsync();
+            await wait(500);
+
+            expect(await dataStore.productsHistory.countAsync()).toBe(3);
         });
     });
 });

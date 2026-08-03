@@ -1,15 +1,12 @@
 import { describe, it, expect, afterAll } from '@jest/globals';
 import { generateData } from '@routier/test-utils';
-import { IDbPlugin, OptimisticReplicationDbPlugin, uuidv4 } from '@routier/core';
+import { IDbPlugin, uuidv4 } from '@routier/core';
+import { OptimisticUpdatesDbPlugin } from '@routier/replication-plugin';
 import { PouchDbPlugin } from '../PouchDbPlugin';
 import { TestDataStore } from './datastore/PouchDbDatastore';
-import { MemoryPlugin } from '@routier/memory-plugin';
 
-const pluginFactory: () => IDbPlugin = () => OptimisticReplicationDbPlugin.create({
-    source: new PouchDbPlugin(uuidv4()),
-    replicas: [],
-    read: new MemoryPlugin()
-});
+// The plugin owns its read-side MemoryPlugin now — callers supply only the source.
+const pluginFactory: () => IDbPlugin = () => new OptimisticUpdatesDbPlugin(new PouchDbPlugin(uuidv4()));
 const stores: TestDataStore[] = [];
 const factory = () => {
 
@@ -28,6 +25,9 @@ describe("Optimistic Update Tests", () => {
 
 
     describe('Update Tests', () => {
+        // The read plugin is authoritative for collections this instance has written:
+        // an emptied collection must not re-hydrate from the source (whose mirrored
+        // removals may still be in flight), which used to resurrect removed entities.
         it("Can add and remove data properly", async () => {
             const dataStore = factory();
             // Arrange

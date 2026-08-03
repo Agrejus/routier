@@ -3,10 +3,42 @@ import { BulkPersistResult } from '../collections';
 import { WorkPipeline } from '../pipeline';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, JsonTranslator } from '.';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '../results';
-import { CompiledSchema, InferCreateType, InferType } from '../schema';
+import { CompiledSchema, IdType, InferCreateType } from '../schema';
+import { isComparatorExpression, isPropertyExpression, isValueExpression } from '../assertions';
 import { DeepPartial } from '../types';
 import { MemoryDataCollection } from '../collections/MemoryDataCollection';
 import { UnknownRecord } from '../utilities';
+
+/**
+ * Extracts the key value from a parsed filter expression when the whole filter
+ * is a single non-negated equality on the schema's key property.  Returns null
+ * for anything else — compound filters, transformed properties, or filters that
+ * could not be parsed.
+ */
+const getKeyEqualityValue = (expression: unknown): { value: IdType } | null => {
+
+    // Type guards over the `type` discriminant, not instanceof — expression
+    // instances can originate from a different bundled copy of the classes
+    if (!isComparatorExpression(expression)) {
+        return null;
+    }
+
+    if (expression.comparator !== "equals" || expression.negated === true) {
+        return null;
+    }
+
+    const { left, right } = expression;
+
+    if (!isPropertyExpression(left) || !isValueExpression(right)) {
+        return null;
+    }
+
+    if (left.property.isKey !== true || left.transformer != null || right.value == null) {
+        return null;
+    }
+
+    return { value: right.value as IdType };
+}
 
 export abstract class EphemeralDataPlugin implements IDbPlugin {
 
@@ -14,6 +46,11 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
 
     constructor(databaseName: string) {
         this.databaseName = databaseName;
+    }
+
+    /** Scopes subscription channels to this database — see IDbPlugin.identity. */
+    get identity(): string {
+        return this.databaseName;
     }
 
     protected abstract resolveCollection<TEntity extends {}>(schema: CompiledSchema<TEntity>): MemoryDataCollection;
@@ -122,18 +159,75 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
             const translator = new JsonTranslator<TEntity, TShape>(operation);
             const collection = this.resolveCollection(schema);
 
+            // Stored records use the storage shape (`from` names).  The generated
+            // clone reads in-memory property names and would silently drop renamed
+            // fields, so schemas with renames deep-copy structurally instead
+            const hasRenamedProperties = schema.properties.some(w => w.from != null);
+            const cloneRecord = (hasRenamedProperties
+                ? structuredClone
+                : schema.clone) as (record: Record<string, unknown>) => Record<string, unknown>;
+
             collection.load(r => {
                 if (r.ok === Result.ERROR) {
                     done(PluginEventResult.error(event.id, r.error));
                     return;
                 }
 
-                const records = collection.records;
-                const length = records.length;
+                const orderedOptions: { name: string, value: any }[] = [];
+                operation.options.forEach(o => orderedOptions.push(o));
+
+                let leadingFilterCount = 0;
+
+                while (leadingFilterCount < orderedOptions.length && orderedOptions[leadingFilterCount].name === "filter") {
+                    leadingFilterCount++;
+                }
+
+                // Key-equality fast path: when a leading filter's parsed expression pins
+                // the key property to a single value, resolve that record directly from
+                // the collection instead of scanning everything
+                let source: Record<string, unknown>[] | null = null;
+
+                if (schema.idProperties.length === 1) {
+                    for (let i = 0; i < leadingFilterCount; i++) {
+                        const id = getKeyEqualityValue(orderedOptions[i].value.expression);
+
+                        if (id == null) {
+                            continue;
+                        }
+
+                        const found = collection.getByIds([id.value]);
+                        source = found == null ? [] : [found];
+                        break;
+                    }
+                }
+
+                if (source == null) {
+                    source = collection.records;
+                }
+
+                // Apply the leading filter options against the raw records before cloning
+                // so only surviving rows pay the clone cost.  Filter predicates are pure,
+                // so re-running them inside translate() is a no-op pass over the survivors.
+                for (let i = 0; i < leadingFilterCount; i++) {
+                    const value = orderedOptions[i].value;
+
+                    if (value.filter == null) {
+                        continue;
+                    }
+
+                    if (value.params == null) {
+                        source = source.filter(value.filter);
+                        continue;
+                    }
+
+                    source = source.filter(w => value.filter([w, value.params]));
+                }
+
+                const length = source.length;
                 const cloned: Record<string, unknown>[] = Array.from({ length });
 
                 for (let i = 0; i < length; i++) {
-                    cloned[i] = schema.clone(records[i] as InferType<TEntity>);
+                    cloned[i] = cloneRecord(source[i]);
                 }
 
                 done(PluginEventResult.success(event.id, translator.translate(cloned)));

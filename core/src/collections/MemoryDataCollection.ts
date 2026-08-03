@@ -128,6 +128,29 @@ export class MemoryDataCollection {
         this.data.set(id.toString(), item);
     }
 
+    /**
+     * Adds a record only when no record with the same key is present. Durable
+     * collections use this to hydrate stored records around in-memory mutations
+     * without clobbering them.
+     */
+    addIfAbsent(item: Record<string, unknown>) {
+        const id = this.resolveIdSet(item);
+        const key = id.toString();
+
+        if (this.data.has(key) === false) {
+            this.data.set(key, item);
+        }
+    }
+
+    /**
+     * Looks up a single record by its key values without scanning the collection.
+     * @param ids Key values in schema id property order
+     * @returns The matching record or undefined when no record has the given key
+     */
+    getByIds(ids: IdType[]): Record<string, unknown> | undefined {
+        return this.data.get(new IdSet(...ids).toString());
+    }
+
     remove(item: Record<string, unknown>) {
         const id = this.resolveCurrentIdSet(item);
         this.data.delete(id.toString());

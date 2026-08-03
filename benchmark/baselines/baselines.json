@@ -1,0 +1,19 @@
+{
+  "recordedOn": {
+    "platform": "darwin",
+    "arch": "arm64",
+    "node": "v22.22.0"
+  },
+  "toleranceRatio": 0.15,
+  "medians": {
+    "insert-1000": 2.9666,
+    "update-1000": 1.8511,
+    "full-scan-10000": 7.2604,
+    "filtered-query-10000": 3.8236,
+    "point-lookup-10000": 0.0166,
+    "count-10000": 0.7727,
+    "parse-simple-filter": 0.0012,
+    "parse-complex-filter": 0.0068,
+    "compile-schema": 0.2459
+  }
+}

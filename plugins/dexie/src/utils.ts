@@ -4,8 +4,23 @@ export const convertToDexieSchema = <T extends {}>(schema: CompiledSchema<T>) =>
     const schemaProperties: string[] = [];
     const existingIndexes: PropertyInfo<any>[] = [];
 
+    // Dexie's primary key is the FIRST entry in the stores string. A schema with
+    // multiple key properties needs a compound primary key ([a+b]) emitted first —
+    // listing the keys as plain entries makes only the first one the primary key,
+    // collapsing entities that differ in a later key component.
+    const compositeKey = schema.idProperties.length > 1;
+
+    if (compositeKey) {
+        schemaProperties.push(`[${schema.idProperties.map(p => p.name).join("+")}]`);
+    }
+
     for (let i = 0, length = schema.properties.length; i < length; i++) {
         const property = schema.properties[i];
+
+        if (compositeKey && property.isKey) {
+            // Already part of the compound primary key
+            continue;
+        }
 
         if (property.level > 1) {
             logger.warn(`Dexie does not support querying on nested objects.  Property: ${property.getPathArray().join(".")}`);

@@ -28,12 +28,15 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExec
     remove(done: CallbackResult<Shape[]>): void;
     remove<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<Shape[]>, paramsOrDone?: P | CallbackResult<Shape[]>, done?: CallbackResult<Shape[]>): void {
 
+        const restore = this.request.queryOptions.snapshot();
+
         if (done != null) {
             // params expression
             const paramsFilter = doneOrExpression as ParamsFilter<Shape, P>;
             const paramsData = paramsOrDone as P;
             this.setFiltersQueryOption(paramsFilter, paramsData);
             this._remove(done);
+            restore();
             return;
         }
 
@@ -43,12 +46,14 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExec
             const genericFilter = doneOrExpression as Filter<Shape>;
             this.setFiltersQueryOption(genericFilter);
             this._remove(d);
+            restore();
             return
         }
 
         // no expression, just remove
         const d = doneOrExpression as CallbackResult<never>;
         this._remove(d);
+        restore();
     }
 
     toArray(done: CallbackResult<Shape[]>): U {
@@ -60,6 +65,8 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExec
     first<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<Shape>): U;
     first(done: CallbackResult<Shape>): U;
     first<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<Shape>, paramsOrDone?: P | CallbackResult<Shape>, done?: CallbackResult<Shape>): U {
+
+        const restore = this.request.queryOptions.snapshot();
 
         // Need to set the filter before we take one
         this._setQueryExpression({
@@ -100,7 +107,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExec
         });
 
         const d = done != null ? done : paramsOrDone != null ? paramsOrDone as CallbackResult<Shape> : doneOrExpression as CallbackResult<Shape>;
-        return this.subscribeQuery<Shape[]>((r) => {
+        const subscription = this.subscribeQuery<Shape[]>((r) => {
 
             if (r.ok === Result.ERROR) {
                 d(r);
@@ -111,12 +118,17 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExec
 
             d(Result.success(result))
         }) as U;
+
+        restore();
+        return subscription;
     }
 
     firstOrUndefined(expression: Filter<Shape>, done: CallbackResult<Shape | undefined>): U;
     firstOrUndefined<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<Shape | undefined>): U;
     firstOrUndefined(done: CallbackResult<Shape | undefined>): U;
     firstOrUndefined<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<Shape | undefined>, paramsOrDone?: P | CallbackResult<Shape | undefined>, done?: CallbackResult<Shape | undefined>): U {
+
+        const restore = this.request.queryOptions.snapshot();
 
         // Need to set the filter before we take one
         this._setQueryExpression({
@@ -148,7 +160,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExec
         });
 
         const d = done != null ? done : paramsOrDone != null ? paramsOrDone as CallbackResult<Shape> : doneOrExpression as CallbackResult<Shape>;
-        return this.subscribeQuery<Shape[]>((r) => {
+        const subscription = this.subscribeQuery<Shape[]>((r) => {
             if (r.ok === Result.ERROR) {
                 d(r);
                 return;
@@ -161,12 +173,17 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExec
 
             d(Result.success(r.data[0]));
         }) as U;
+
+        restore();
+        return subscription;
     }
 
     some(expression: Filter<Shape>, done: CallbackResult<boolean>): U;
     some<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<boolean>): U;
     some(done: CallbackResult<boolean>): U;
     some<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<boolean>, paramsOrDone?: P | CallbackResult<boolean>, done?: CallbackResult<boolean>): U {
+
+        const restore = this.request.queryOptions.snapshot();
 
         // Need to set the filter before we take one
         this._setQueryExpression({
@@ -194,7 +211,10 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExec
         });
 
         const d = done != null ? done : paramsOrDone != null ? paramsOrDone as CallbackResult<boolean> : doneOrExpression as CallbackResult<boolean>;
-        return this.subscribeQuery<boolean>(d) as U;
+        const subscription = this.subscribeQuery<boolean>(d) as U;
+
+        restore();
+        return subscription;
     }
 
     every(expression: Filter<Shape>, done: CallbackResult<boolean>): U;
@@ -244,29 +264,40 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExec
     }
 
     count(done: CallbackResult<number>): U {
+        // Terminal options are restored after execution so the queryable stays
+        // re-executable (subscribed queryables re-run as data changes)
+        const restore = this.request.queryOptions.snapshot();
         this.request.queryOptions.add("count", true);
 
         this.getData<number>(done);
 
-        return this.subscribeQuery<number>(done) as U;
+        const result = this.subscribeQuery<number>(done) as U;
+        restore();
+        return result;
     }
 
     distinct(done: CallbackResult<Shape[]>): U {
 
+        const restore = this.request.queryOptions.snapshot();
         this.request.queryOptions.add("distinct", true);
 
         this.getData<Shape[]>(done);
 
-        return this.subscribeQuery<Shape[]>(done) as U;
+        const result = this.subscribeQuery<Shape[]>(done) as U;
+        restore();
+        return result;
     }
 
     toGroup<R extends Shape[keyof Shape] & IdType>(selector: GenericFunction<Shape, R>, done: CallbackResult<Record<R, Shape[]>>): U {
 
+        const restore = this.request.queryOptions.snapshot();
         this.setGroupQueryOption(selector);
 
         this.getData<Record<R, Shape[]>>(done);
 
-        return this.subscribeQuery<Record<R, Shape[]>>(done) as U;
+        const result = this.subscribeQuery<Record<R, Shape[]>>(done) as U;
+        restore();
+        return result;
     }
 
     private _setQueryExpression<P extends {}, R extends {}>(options: {
@@ -326,6 +357,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExec
 
     private _aggregateFunction(selector: GenericFunction<Shape, number>, name: QueryOptionName, done: CallbackResult<number>) {
 
+        const restore = this.request.queryOptions.snapshot();
         const fields = this.getFields(selector);
         this.request.queryOptions.add("map", { selector: selector as any, fields });
         this.request.queryOptions.add(name, true);
@@ -343,6 +375,9 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExec
             return done(result);
         });
 
-        return this.subscribeQuery<number>(done) as U;
+        const subscription = this.subscribeQuery<number>(done) as U;
+
+        restore();
+        return subscription;
     }
 }

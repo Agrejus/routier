@@ -5,13 +5,13 @@
  * Uses a **Visitor** over the expression AST. Equals comparison uses a Strategy
  * per (column-side, null vs value) case.
  */
-import type { ComparatorExpression, Expression, PropertyExpression } from "./types";
+import type { ComparatorExpression, Expression, PropertyExpression } from "@routier/core/expressions";
 import {
     isComparatorExpression,
     isOperatorExpression,
     isPropertyExpression,
     isValueExpression,
-} from "../assertions";
+} from "@routier/core";
 
 /** Supported SQL dialect names. */
 export type SqlDialectName = "sqlite" | "postgresql" | "mysql" | "mssql";
@@ -24,6 +24,23 @@ export interface SqlDialect {
     getPlaceholder(paramIndex: number): string;
     stringMatchKind: "LIKE" | "GLOB";
     likeEscapeClause(): string;
+    /**
+     * Column type for a nested object or array held in a single column.
+     *
+     * Nested structures have no native column type in any SQL engine, so each one gets
+     * stored as JSON in whatever form that engine offers. Core never sees this — it hands
+     * plugins a partial entity and the plugin decides how a nested value becomes a column.
+     */
+    jsonColumnType: string;
+    /**
+     * Encodes a nested object or array for a `jsonColumnType` parameter.
+     *
+     * Every dialect stringifies today. It is a dialect method anyway because it is exactly
+     * the kind of thing that diverges — `pg` can bind a JS object straight to `jsonb`, and
+     * a driver that prefers that should be able to say so here rather than somewhere a
+     * caller has to remember.
+     */
+    encodeJson(value: unknown): unknown;
 }
 
 const DIALECTS: Record<SqlDialectName, SqlDialect> = {
@@ -38,6 +55,10 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         likeEscapeClause() {
             return "";
         },
+        jsonColumnType: "JSON",
+        encodeJson(value) {
+            return JSON.stringify(value);
+        },
     },
     postgresql: {
         quoteIdentifier(name) {
@@ -49,6 +70,10 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         stringMatchKind: "LIKE",
         likeEscapeClause() {
             return " ESCAPE E'\\\\'";
+        },
+        jsonColumnType: "JSONB",
+        encodeJson(value) {
+            return JSON.stringify(value);
         },
     },
     mysql: {
@@ -62,6 +87,10 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         likeEscapeClause() {
             return " ESCAPE '\\\\'";
         },
+        jsonColumnType: "JSON",
+        encodeJson(value) {
+            return JSON.stringify(value);
+        },
     },
     mssql: {
         quoteIdentifier(name) {
@@ -73,6 +102,10 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         stringMatchKind: "LIKE",
         likeEscapeClause() {
             return " ESCAPE '\\\\'";
+        },
+        jsonColumnType: "NVARCHAR(MAX)",
+        encodeJson(value) {
+            return JSON.stringify(value);
         },
     },
 };
@@ -203,9 +236,9 @@ function renderStringPatternComparison(
     if (cmp.comparator === "includes") {
         const col =
             propLeft && valRight !== null
-                ? d.quoteIdentifier(propLeft.property.name)
+                ? d.quoteIdentifier(propLeft.property.getResolvedName())
                 : propRight && valLeft !== null
-                  ? d.quoteIdentifier(propRight.property.name)
+                  ? d.quoteIdentifier(propRight.property.getResolvedName())
                   : null;
         const value = valRight !== null ? valRight : valLeft;
 
@@ -233,9 +266,9 @@ function renderStringPatternComparison(
 
     const col =
         propLeft && valRight !== null
-            ? d.quoteIdentifier(propLeft.property.name)
+            ? d.quoteIdentifier(propLeft.property.getResolvedName())
             : propRight && valLeft !== null
-              ? d.quoteIdentifier(propRight.property.name)
+              ? d.quoteIdentifier(propRight.property.getResolvedName())
               : null;
     const value = valRight !== null ? String(valRight) : valLeft !== null ? String(valLeft) : null;
 
@@ -332,9 +365,9 @@ export function toSql(
                 const { propLeft, propRight, valLeft, valRight } = getPropertyValueSides(cmp);
                 const col =
                     propLeft && (valRight !== undefined || propRight)
-                        ? d.quoteIdentifier(propLeft.property.name)
+                        ? d.quoteIdentifier(propLeft.property.getResolvedName())
                         : propRight && (valLeft !== undefined || propLeft)
-                          ? d.quoteIdentifier(propRight.property.name)
+                          ? d.quoteIdentifier(propRight.property.getResolvedName())
                           : null;
                 const value = valRight !== undefined ? valRight : valLeft;
                 const columnOnLeft = Boolean(propLeft && cmp.right && isValueExpression(cmp.right));
@@ -360,7 +393,7 @@ export function toSql(
         }
 
         if (isPropertyExpression(e)) {
-            return d.quoteIdentifier(e.property.name);
+            return d.quoteIdentifier(e.property.getResolvedName());
         }
 
         if (isValueExpression(e)) {

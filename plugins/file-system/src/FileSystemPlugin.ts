@@ -27,9 +27,40 @@ export class FileSystemPlugin extends EphemeralDataPlugin {
         return new FileSystemDbCollection(this.databaseFilePath, schema);
     }
 
+    /**
+     * True when the database path is a direct child of the configured directory.
+     *
+     * destroy() removes the database recursively, because a database is a directory of
+     * per-collection files. That makes an unexpected path destructive in a way the previous
+     * non-recursive delete was not: an empty, "." or "..-containing database name collapses
+     * under path.join and would target the parent directory, taking every other database
+     * with it. Anything that does not resolve to a direct child is refused.
+     */
+    private get isDatabasePathSafeToRemove() {
+        const parent = path.resolve(this.path);
+        const target = path.resolve(this.databaseFilePath);
+
+        return path.dirname(target) === parent && target !== parent;
+    }
+
     override destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
         try {
-            fs.unlink(this.databaseFilePath, (e) => {
+            if (this.isDatabasePathSafeToRemove === false) {
+                done(PluginEventResult.error(
+                    event.id,
+                    new Error(
+                        `Refusing to destroy database: "${this.databaseFilePath}" is not a direct child of "${this.path}". ` +
+                        `A recursive delete outside the configured directory would remove unrelated databases.`
+                    )
+                ));
+                return;
+            }
+
+            // databaseFilePath is a directory: resolveCollection writes one JSON file per
+            // collection inside it. `unlink` fails on a directory (EPERM on macOS,
+            // EISDIR on Linux), so destroy has to remove the tree. `force` additionally
+            // makes an already-absent database a success, which is destroy's goal anyway.
+            fs.rm(this.databaseFilePath, { recursive: true, force: true }, (e) => {
                 if (e) {
                     done(PluginEventResult.error(event.id, e));
                     return;

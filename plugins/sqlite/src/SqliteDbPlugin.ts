@@ -1,4 +1,5 @@
 import sqlite3 from 'sqlite3';
+import { decodeJsonColumns } from '@routier/sql-plugin-core';
 import fs from 'fs';
 import { buildFromPersistOperation, buildFromQueryOperation, compiledSchemaToSqliteTable } from './utils';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, SqlTranslator } from '@routier/core/plugins';
@@ -33,7 +34,12 @@ export class SqliteDbPlugin implements IDbPlugin {
                 return;
             }
 
-            const data = translator.translate(result.data);
+            // Nested objects and arrays are stored as JSON columns (see
+            // toColumnAssignments); decode them before translation so the entity gets a
+            // structure back rather than a JSON string. Skips properties whose schema
+            // does its own deserialization.
+            const decoded = decodeJsonColumns(result.data, event.operation.schema);
+            const data = translator.translate(decoded);
 
             done(PluginEventResult.success(event.id, data));
         });
@@ -103,7 +109,10 @@ export class SqliteDbPlugin implements IDbPlugin {
 
         const db = new sqlite3.Database(this.fileName);
         const result = event.operation.toResult();
-        const operations: { adds: SqlPersistOperation | null, updates: SqlPersistOperation | null, removes: SqlPersistOperation | null }[] = [];
+        // Flattened: one entry per operation, removes before updates before adds within
+        // a schema, so a save mixing all three applies all three (grouping them and
+        // executing only one per group silently dropped the rest)
+        const operations: { op: SqlPersistOperation, type: 'adds' | 'updates' | 'removes' }[] = [];
 
         for (const [schemaId, changes] of event.operation) {
 
@@ -115,23 +124,17 @@ export class SqliteDbPlugin implements IDbPlugin {
             const persistOperations = buildFromPersistOperation(schema, changes);
             const createTableSql = compiledSchemaToSqliteTable(schema);
 
-            operations.push({
-                adds: persistOperations.adds != null ? {
-                    ...persistOperations.adds,
-                    createTableSql,
-                    schemaId
-                } : null,
-                updates: persistOperations.updates != null ? {
-                    ...persistOperations.updates,
-                    createTableSql,
-                    schemaId
-                } : null,
-                removes: persistOperations.removes != null ? {
-                    ...persistOperations.removes,
-                    createTableSql,
-                    schemaId
-                } : null
-            });
+            if (persistOperations.removes != null) {
+                operations.push({ op: { ...persistOperations.removes, createTableSql, schemaId }, type: 'removes' });
+            }
+
+            if (persistOperations.updates != null) {
+                operations.push({ op: { ...persistOperations.updates, createTableSql, schemaId }, type: 'updates' });
+            }
+
+            if (persistOperations.adds != null) {
+                operations.push({ op: { ...persistOperations.adds, createTableSql, schemaId }, type: 'adds' });
+            }
         }
 
         db.serialize(() => {
@@ -153,9 +156,28 @@ export class SqliteDbPlugin implements IDbPlugin {
                     return;
                 }
 
-                const operationGroup = operations[index];
+                /**
+                 * Files RETURNING rows into the result for their schema.
+                 *
+                 * Decoding happens here and not only on the query path: `mergeChanges`
+                 * deserializes what a plugin echoes back, so a JSON column returned as a raw
+                 * string reaches the entity's deserializer as a string and throws on the
+                 * first nested property access.
+                 */
+                const collect = (op: SqlPersistOperation, type: 'adds' | 'updates' | 'removes', rows: unknown[]) => {
+                    const decoded = decodeJsonColumns(rows, event.schemas.get(op.schemaId)) as { [x: string]: never; }[];
+                    const bucket = result.get(op.schemaId);
 
-                // Execute adds operation
+                    if (type === "adds") {
+                        bucket.adds.push(...decoded);
+                    } else if (type === "updates") {
+                        bucket.updates.push(...decoded);
+                    } else {
+                        bucket.removes.push(...decoded);
+                    }
+                };
+
+                // Execute one operation
                 const executeOperation = (op: SqlPersistOperation, type: 'adds' | 'updates' | 'removes') => {
                     db.all(op.sql, op.params || [], (err, rows) => {
                         if (err && err.message.includes('no such table')) {
@@ -177,20 +199,7 @@ export class SqliteDbPlugin implements IDbPlugin {
                                         return;
                                     }
 
-                                    if (type === "adds") {
-                                        const { adds } = result.get(op.schemaId);
-                                        adds.push(...retryRows as { [x: string]: never; }[]);
-                                    }
-
-                                    if (type === "updates") {
-                                        const { updates } = result.get(op.schemaId);
-                                        updates.push(...retryRows as { [x: string]: never; }[]);
-                                    }
-
-                                    if (type === "removes") {
-                                        const { removes } = result.get(op.schemaId);
-                                        removes.push(...retryRows as { [x: string]: never; }[]);
-                                    }
+                                    collect(op, type, retryRows);
 
                                     executeNext(index + 1);
                                 });
@@ -202,37 +211,14 @@ export class SqliteDbPlugin implements IDbPlugin {
                             });
                         } else {
                             // Success, continue to next operation
-                            if (type === "adds") {
-                                const { adds } = result.get(op.schemaId);
-                                adds.push(...rows as { [x: string]: never; }[]);
-                            }
-
-                            if (type === "updates") {
-                                const { updates } = result.get(op.schemaId);
-                                updates.push(...rows as { [x: string]: never; }[]);
-                            }
-
-                            if (type === "removes") {
-                                const { removes } = result.get(op.schemaId);
-                                removes.push(...rows as { [x: string]: never; }[]);
-                            }
+                            collect(op, type, rows);
 
                             executeNext(index + 1);
                         }
                     });
                 };
 
-                // Always execute removes first in case we are removing and adding to the same collection
-                if (operationGroup.removes) {
-                    executeOperation(operationGroup.removes, 'removes');
-                } else if (operationGroup.updates) {
-                    executeOperation(operationGroup.updates, 'updates');
-                } else if (operationGroup.adds) {
-                    executeOperation(operationGroup.adds, 'adds');
-                } else {
-                    // No operations for this group, move to next
-                    executeNext(index + 1);
-                }
+                executeOperation(operations[index].op, operations[index].type);
             };
 
             // Start executing operations

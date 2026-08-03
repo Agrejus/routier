@@ -2,6 +2,7 @@ import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema'
 import { Expression, ComparatorExpression, OperatorExpression, ValueExpression, PropertyExpression } from '@routier/core/expressions';
 import { IQuery, QueryField } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
+import { getDialect, toColumnValueMap } from '@routier/sql-plugin-core';
 import { SqlOperation } from './types';
 
 /**
@@ -19,7 +20,9 @@ const schemaTypeToMysqlType = (type: SchemaTypes): string => {
             return 'DATETIME';
         case SchemaTypes.Object:
         case SchemaTypes.Array:
-            return 'JSON'; // MySQL 5.7+ has native JSON support
+            // One source of truth for this engine's JSON type: the same dialect value
+            // toColumnAssignments encodes against, so DDL and DML cannot drift apart.
+            return getDialect('mysql').jsonColumnType;
         default:
             return 'TEXT';
     }
@@ -359,10 +362,37 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
     // Handle UPDATE operations (updates)
     let updatesOperation: SqlOperation | null = null;
     if (updates.length > 0) {
+        // The delta is a partial ENTITY (core's EntityDelta) and has to be resolved to
+        // columns before it can be grouped or bound: renames become storage-side names, and
+        // nested objects/arrays become JSON. Core does not know what a column is by design.
+        const dialect = getDialect('mysql');
+        const identityNames = schema.idProperties.map(p => p.getResolvedName());
+
+        /** Column -> already-encoded parameter value, per update. */
+        const columnValues = new Map<(typeof updates)[number], Map<string, unknown>>();
+
+        for (const update of updates) {
+            let resolved = toColumnValueMap(update.delta as Record<string, unknown>, schema, dialect, update.entity as Record<string, unknown>);
+
+            // An empty delta means "no tracked change list", not "nothing changed" — fall
+            // back to every non-identity property, through the same resolution so nested
+            // values are still encoded.
+            if (resolved.size === 0) {
+                const wholeEntity = Object.fromEntries(
+                    Object.keys(update.entity as Record<string, unknown>)
+                        .filter(key => identityNames.includes(key) === false)
+                        .map(key => [key, (update.entity as Record<string, unknown>)[key]])
+                );
+                resolved = toColumnValueMap(wholeEntity, schema, dialect);
+            }
+
+            columnValues.set(update, resolved);
+        }
+
         const updateGroups = new Map<string, typeof updates>();
 
         for (const update of updates) {
-            const deltaKeys = Object.keys(update.delta).sort().join(',');
+            const deltaKeys = [...columnValues.get(update)!.keys()].sort().join(',');
             if (!updateGroups.has(deltaKeys)) {
                 updateGroups.set(deltaKeys, []);
             }
@@ -374,13 +404,8 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 
         for (const [, groupUpdates] of updateGroups) {
             const firstUpdate = groupUpdates[0];
-            let deltaKeys = Object.keys(firstUpdate.delta);
-
-            if (deltaKeys.length === 0) {
-                const entityKeys = Object.keys(firstUpdate.entity);
-                const identityKeys = schema.idProperties.map(p => p.name);
-                deltaKeys = entityKeys.filter(key => !identityKeys.includes(key));
-            }
+            // Already resolved to columns above, empty-delta fallback included.
+            const deltaKeys = [...columnValues.get(firstUpdate)!.keys()];
 
             const setClauses: string[] = [];
             const idColumns = schema.idProperties.map(p => p.name);
@@ -394,10 +419,7 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
                     caseStatement += ` WHEN ? THEN ?`;
                     allParams.push(idValue);
 
-                    const value = Object.keys(update.delta).length === 0
-                        ? update.entity[key]
-                        : update.delta[key];
-                    allParams.push(value);
+                    allParams.push(columnValues.get(update)!.get(key));
                 }
 
                 caseStatement += ` ELSE \`${key}\` END`;

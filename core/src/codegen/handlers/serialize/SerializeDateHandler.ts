@@ -13,9 +13,12 @@ export class SerializeDateHandler extends PropertyInfoHandler {
 
         if (property.type === SchemaTypes.Date) {
             let objectBuilder = builder.get<SlotBlock>("if");
-            const entitySelectorPath = property.getSelectrorPath({ parent: "entity", useFromPropertyName: property.isRenamed });
+            // Serialize maps in-memory shape -> storage shape: read the entity by
+            // property name, write the result by `from` (storage) name
+            const entitySelectorPath = property.getSelectrorPath({ parent: "entity" });
             const entityAssignmentPath = property.getAssignmentPath({
-                parent: "result"
+                parent: "result",
+                useFromPropertyName: true
             });
 
             // if it is nullable or optional, assign in an if block, otherwise we 
@@ -35,7 +38,7 @@ export class SerializeDateHandler extends PropertyInfoHandler {
 
             // Nested date: same pattern as SerializeValueHandler — if block for parent existence, then assign with toISOString
             const parentSelectPath = ["entity", ...property.getParentPathArray()].join(".");
-            const parentAssignPath = ["result", ...property.getParentPathArray()].join(".");
+            const parentAssignPath = ["result", ...property.getParentPathArray({ useFromPropertyName: true })].join(".");
             const dateExprNested = `${entitySelectorPath} instanceof Date ? ${entitySelectorPath}.toISOString() : ${entitySelectorPath}`;
             const ifSlot = objectBuilder.if(`${parentSelectPath} != null && Object.hasOwn(${parentSelectPath}, "${property.name}")`);
 

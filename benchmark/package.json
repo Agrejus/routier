@@ -1,0 +1,10 @@
+{
+  "name": "@routier/benchmark",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Performance regression harness",
+  "scripts": {
+    "benchmark": "node --import tsx/esm src/run.ts",
+    "benchmark:update": "node --import tsx/esm src/run.ts --update-baseline"
+  }
+}

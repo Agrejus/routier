@@ -43,13 +43,13 @@ describe('TagCollection (object keys)', () => {
         expect(tagCollection.size).toBe(2);
     });
 
-    it('increments size even when setting same key again (current behavior)', () => {
+    it('overwrites the value without growing size when setting the same key again', () => {
         const k = key('dup');
         tagCollection.set(k, 'old');
         tagCollection.set(k, 'new');
 
         expect(tagCollection.get(k)).toBe('new');
-        expect(tagCollection.size).toBe(2);
+        expect(tagCollection.size).toBe(1);
     });
 
     it('deletes object keys and updates size', () => {
@@ -69,20 +69,10 @@ describe('TagCollection (object keys)', () => {
         const keys = [key('a'), key('b'), key('c')];
         tagCollection.setMany(keys, 'shared');
 
-        // Current implementation increments _size in setMany and set().
-        expect(tagCollection.size).toBe(6);
+        expect(tagCollection.size).toBe(3);
         expect(tagCollection.get(key('a'))).toBe('shared');
         expect(tagCollection.get(key('b'))).toBe('shared');
         expect(tagCollection.get(key('c'))).toBe('shared');
-    });
-
-    it('tracks _size independently from underlying map cardinality', () => {
-        const dup = key('dup');
-        tagCollection.set(dup, 'v1');
-        tagCollection.set(dup, 'v2');
-
-        expect(Array.from(tagCollection.keys())).toHaveLength(1);
-        expect(tagCollection.size).toBe(2);
     });
 
     it('combines with another collection using object keys', () => {
@@ -99,8 +89,7 @@ describe('TagCollection (object keys)', () => {
         expect(tagCollection.get(k1)).toBe('one');
         expect(tagCollection.get(k2)).toBe('two');
         expect(tagCollection.get(k3)).toBe('three');
-        // combine() does not alter _size directly.
-        expect(tagCollection.size).toBe(1);
+        expect(tagCollection.size).toBe(3);
     });
 
     it('iterates keys/values/entries with object keys', () => {
@@ -119,7 +108,7 @@ describe('TagCollection (object keys)', () => {
         expect(entries).toEqual(expect.arrayContaining([[k1, 'v1'], [k2, 'v2']]));
     });
 
-    it('clears map data on dispose (size counter remains unchanged)', () => {
+    it('clears map data and reported size on dispose', () => {
         const k1 = key('k1');
         const k2 = key('k2');
         tagCollection.set(k1, 'v1');
@@ -130,15 +119,15 @@ describe('TagCollection (object keys)', () => {
         expect(tagCollection.has(k1)).toBe(false);
         expect(tagCollection.has(k2)).toBe(false);
         expect(Array.from(tagCollection.keys())).toEqual([]);
-        expect(tagCollection.size).toBe(2);
+        expect(tagCollection.size).toBe(0);
     });
 
-    it('setMany double-increments _size relative to map entries (current behavior)', () => {
+    it('reports size as map cardinality after setMany', () => {
         const keys = [key('x'), key('y')];
         tagCollection.setMany(keys, 'v');
 
         expect(Array.from(tagCollection.keys())).toHaveLength(2);
-        expect(tagCollection.size).toBe(4);
+        expect(tagCollection.size).toBe(2);
     });
 
     it('supports function keys (functions are objects)', () => {

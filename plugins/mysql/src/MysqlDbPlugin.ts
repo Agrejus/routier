@@ -1,4 +1,5 @@
 import { createPool, Pool, PoolConnection } from 'mysql2/promise';
+import { decodeJsonColumns } from '@routier/sql-plugin-core';
 import { buildFromPersistOperation, buildFromQueryOperation, compiledSchemaToMysqlTable } from './utils';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, SqlTranslator } from '@routier/core/plugins';
 import { CallbackResult, PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '@routier/core/results';
@@ -52,7 +53,12 @@ export class MysqlDbPlugin implements IDbPlugin {
                 return;
             }
 
-            const data = translator.translate(result.data);
+            // Nested objects and arrays are stored as JSON columns (see
+            // toColumnAssignments); decode them before translation so the entity gets a
+            // structure back rather than a JSON string. Skips properties whose schema
+            // does its own deserialization.
+            const decoded = decodeJsonColumns(result.data, event.operation.schema);
+            const data = translator.translate(decoded);
 
             done(PluginEventResult.success(event.id, data));
         });

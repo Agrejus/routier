@@ -128,7 +128,7 @@ export type CompiledSchema<TEntity extends {}> = {
 
     deserializePartial: (item: Record<string, unknown>, properties: PropertyInfo<TEntity>[]) => DeepPartial<InferType<TEntity>>;
 
-    createSubscription: (abortSignal?: AbortSignal) => ISchemaSubscription<TEntity>;
+    createSubscription: (abortSignal?: AbortSignal, scope?: string) => ISchemaSubscription<TEntity>;
     /** Returns the property info for a given id (full path) */
     getProperty: (id: string) => PropertyInfo<TEntity>;
     /** Returns the ID of the given entity. */

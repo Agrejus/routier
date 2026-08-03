@@ -11,7 +11,9 @@ export class EnableChangeTrackingObjectHandler extends PropertyInfoHandler {
             const childSelectorPath = property.getSelectrorPath({ parent: "entity" });
             const childAssignmentPath = property.getAssignmentPath({ parent: "entity" });
 
-            assignmentSlot.if(`${childSelectorPath} != null`).appendBody(`${childAssignmentPath} = enableChangeTracking(${childAssignmentPath});`);
+            // Pass the root as parent so nested writes mark the root entity dirty,
+            // and the full dotted path so the change is recorded under it
+            assignmentSlot.if(`${childSelectorPath} != null`).appendBody(`${childAssignmentPath} = enableChangeTracking(${childAssignmentPath}, "${this.getTrackingPath(property)}", entity);`);
             return builder;
         }
 

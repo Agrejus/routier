@@ -14,7 +14,9 @@ export class CompareArrayHandler extends PropertyInfoHandler {
             if (compare == null) {
                 compare = builder.get<SlotBlock>("result")
                     .assign("const result", { name: "variable" })
-                    .and(`JSON.stringify(${leftCompare}) === JSON.stringify(${rightCompare})`, { name: "compareArray" });
+                    // Named "compare" so every compare handler finds the same block
+                    // regardless of which property type is iterated first
+                    .and(`JSON.stringify(${leftCompare}) === JSON.stringify(${rightCompare})`, { name: "compare" });
                 return builder;
             }
 

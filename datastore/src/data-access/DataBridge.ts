@@ -13,10 +13,12 @@ export class DataBridge<T extends {}> {
 
     private readonly signal: AbortSignal;
     private readonly strategy: IDataAccessStrategy<T>;
+    private readonly scope?: string;
 
-    private constructor(strategy: IDataAccessStrategy<T>, signal: AbortSignal) {
+    private constructor(strategy: IDataAccessStrategy<T>, signal: AbortSignal, scope?: string) {
         this.strategy = strategy;
         this.signal = signal;
+        this.scope = scope;
     }
 
     private static createStrategy<T extends {}>(dbPlugin: IDbPlugin, schema: CompiledSchema<T>) {
@@ -26,7 +28,7 @@ export class DataBridge<T extends {}> {
     static create<T extends {}>(dbPlugin: IDbPlugin, schema: CompiledSchema<T>, signal: AbortSignal) {
         const strategy = DataBridge.createStrategy<T>(dbPlugin, schema);
 
-        return new DataBridge<T>(strategy, signal);
+        return new DataBridge<T>(strategy, signal, dbPlugin.identity);
     }
 
     bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackResult<BulkPersistResult>) {
@@ -38,7 +40,7 @@ export class DataBridge<T extends {}> {
     }
 
     subscribe<TShape, _U>(event: DbPluginQueryEvent<T, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>) {
-        const subscription = event.operation.schema.createSubscription(this.signal);
+        const subscription = event.operation.schema.createSubscription(this.signal, this.scope);
         subscription.onMessage((changes) => {
             const filters = event.operation.options.get("filter");
 

@@ -4,8 +4,9 @@ import { SerializeValueHandler } from "./serialize/SerializeValueHandler";
 import { SerializeSerializerHandler } from "./serialize/SerializeSerializerHandler";
 import { SerializeFunctionHandler } from "./serialize/SerializeFunctionHandler";
 import { SerializeComputedHandler } from "./serialize/SerializeComputedHandler";
+import { SerializeArrayHandler } from "./serialize/SerializeArrayHandler";
 
-/// Purpose: 
+/// Purpose:
 export class SerializeHandlerBuilder {
 
     build() {
@@ -14,6 +15,7 @@ export class SerializeHandlerBuilder {
             .setNext(new SerializeComputedHandler())
             .setNext(new SerializeFunctionHandler())
             .setNext(new SerializeDateHandler())
+            .setNext(new SerializeArrayHandler())
             .setNext(new SerializeValueHandler())
             .setNext(new SerializeObjectHandler());
 

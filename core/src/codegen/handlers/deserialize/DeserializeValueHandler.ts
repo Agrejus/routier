@@ -9,7 +9,10 @@ export class DeserializeValueHandler extends PropertyInfoHandler {
 
         if (property.type != SchemaTypes.Object && property.type != SchemaTypes.Date) {
             let objectBuilder = builder.getOrDefault<ObjectBuilder>("result.variable.object");
-            const entitySelectorPath = property.getAssignmentPath({ parent: "unserialized", useFromPropertyName: property.isRenamed });
+            // Deserialize maps storage shape -> in-memory shape: read the incoming
+            // record by `from` (storage) name; the selector path adds `?.` so
+            // absent nullable parents read as undefined instead of throwing
+            const entitySelectorPath = property.getSelectrorPath({ parent: "unserialized", useFromPropertyName: true });
 
             if (objectBuilder == null) {
                 objectBuilder = builder.get<SlotBlock>("result")

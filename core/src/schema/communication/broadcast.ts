@@ -10,17 +10,26 @@ interface ISubscriptionAction<T> {
 }
 type StampedChanges<T> = { data: SubscriptionChanges<T>, timestamp: number };
 
-const registry: Record<SchemaId, SchemaChannel<unknown>> = {};
+const registry: Record<string, SchemaChannel<unknown>> = {};
 
-const getChannelRegistry = <T>(schemaId: SchemaId): SchemaChannel<T> => {
+/**
+ * Channels are scoped by schema AND database identity (when the plugin provides one):
+ * two databases holding the same schema must not see each other's change notifications.
+ * Instances of the same database (e.g. another tab) share a scope and stay connected.
+ */
+const getChannelKey = (schemaId: SchemaId, scope?: string) => scope == null ? String(schemaId) : `${schemaId}|${scope}`;
 
-    if (registry[schemaId]) {
-        return registry[schemaId] as SchemaChannel<T>;
+const getChannelRegistry = <T>(schemaId: SchemaId, scope?: string): SchemaChannel<T> => {
+
+    const key = getChannelKey(schemaId, scope);
+
+    if (registry[key]) {
+        return registry[key] as SchemaChannel<T>;
     }
 
-    const channel = new SchemaChannel<T>(schemaId);
+    const channel = new SchemaChannel<T>(key);
 
-    registry[schemaId] = channel;
+    registry[key] = channel;
 
     return channel;
 }
@@ -31,9 +40,29 @@ class SchemaChannel<T> {
     readonly sender: SchemaChannelSender<T>;
     readonly receiver: SchemaChannelReceiver<T>;
 
-    constructor(schemaId: SchemaId) {
-        this.sender = new SchemaChannelSender<T>(schemaId);
-        this.receiver = new SchemaChannelReceiver<T>(schemaId);
+    // An open BroadcastChannel keeps the event loop alive. Channels are shared per schema,
+    // so the pair can only close once every subscription using them has been disposed —
+    // hence a count rather than a boolean.
+    private subscribers: number = 0;
+
+    constructor(channelKey: string) {
+        this.sender = new SchemaChannelSender<T>(channelKey);
+        this.receiver = new SchemaChannelReceiver<T>(channelKey);
+    }
+
+    retain() {
+        this.subscribers++;
+    }
+
+    /** Returns true when the last subscriber released the channel. */
+    release() {
+        this.subscribers--;
+        return this.subscribers <= 0;
+    }
+
+    close() {
+        this.sender.close();
+        this.receiver.close();
     }
 }
 
@@ -41,12 +70,16 @@ class SchemaChannelSender<T> {
 
     private readonly broadcastChannel: BroadcastChannelType;
 
-    constructor(schemaId: SchemaId) {
-        this.broadcastChannel = new BroadcastChannel(`__routier-schema-subscription-channel:${schemaId}`);
+    constructor(channelKey: string) {
+        this.broadcastChannel = new BroadcastChannel(`__routier-schema-subscription-channel:${channelKey}`);
     }
 
     send(changes: StampedChanges<T>) {
         this.broadcastChannel.postMessage(changes)
+    }
+
+    close() {
+        this.broadcastChannel.close();
     }
 }
 
@@ -55,8 +88,8 @@ class SchemaChannelReceiver<T> {
     private readonly broadcastChannel: BroadcastChannelType;
     private subscriptions: SubscriptionListener<T>[] = [];
 
-    constructor(schemaId: SchemaId) {
-        this.broadcastChannel = new BroadcastChannel(`__routier-schema-subscription-channel:${schemaId}`);
+    constructor(channelKey: string) {
+        this.broadcastChannel = new BroadcastChannel(`__routier-schema-subscription-channel:${channelKey}`);
 
         this.broadcastChannel.onmessage = (e) => {
 
@@ -77,6 +110,12 @@ class SchemaChannelReceiver<T> {
 
     removeListeners(id: BroadcastChannelReceiverId) {
         this.subscriptions = this.subscriptions.filter(w => w.id !== id);
+    }
+
+    close() {
+        this.subscriptions = [];
+        this.broadcastChannel.onmessage = null;
+        this.broadcastChannel.close();
     }
 }
 
@@ -99,12 +138,17 @@ export class SchemaSubscription<T extends {}> implements ISchemaSubscription<T> 
 
     private readonly id: BroadcastChannelReceiverId;
     private readonly schema: CompiledSchemaCore<T>;
+    private readonly scope?: string;
     private readonly createdAt: number;
+    private isDisposed: boolean = false;
 
-    constructor(schema: CompiledSchemaCore<T>, signal?: AbortSignal) {
+    constructor(schema: CompiledSchemaCore<T>, signal?: AbortSignal, scope?: string) {
         this.createdAt = now();
         this.id = uuid(8) as BroadcastChannelReceiverId;
         this.schema = schema;
+        this.scope = scope;
+
+        getChannelRegistry<T>(schema.id, scope).retain();
 
         signal?.addEventListener("abort", () => {
             this.dispose();
@@ -112,7 +156,7 @@ export class SchemaSubscription<T extends {}> implements ISchemaSubscription<T> 
     }
 
     send(changes: SubscriptionChanges<T>) {
-        const regisry = getChannelRegistry<T>(this.schema.id);
+        const regisry = getChannelRegistry<T>(this.schema.id, this.scope);
 
         // cannot send raw data, needs to be preprocessed
         const preprocessedChanges: SubscriptionChanges<T> = {
@@ -150,7 +194,7 @@ export class SchemaSubscription<T extends {}> implements ISchemaSubscription<T> 
 
     onMessage(callback: (changes: SubscriptionChanges<T>) => void) {
 
-        const regisry = getChannelRegistry<T>(this.schema.id);
+        const regisry = getChannelRegistry<T>(this.schema.id, this.scope);
 
         // Link the callback to an instance
         regisry.receiver.addListener(this.id, ({ data, timestamp }) => {
@@ -160,7 +204,11 @@ export class SchemaSubscription<T extends {}> implements ISchemaSubscription<T> 
                 return;
             }
 
-            // Changes were preprocessed before they were sent, need to postprocess them
+            // Changes were preprocessed before they were sent, need to postprocess them.
+            // "diff" enriches and deserializes without attaching a change-tracking proxy
+            // or freezing: these entities belong to another instance's unit of work, and
+            // subscribers only read them (or reseed them to re-run a query), never persist
+            // mutations through them.
             const postProcessedChanges: SubscriptionChanges<T> = {
                 adds: Array.from({ length: data.adds.length }),
                 removals: Array.from({ length: data.removals.length }),
@@ -169,19 +217,19 @@ export class SchemaSubscription<T extends {}> implements ISchemaSubscription<T> 
             };
 
             for (let i = 0, length = data.adds.length; i < length; i++) {
-                postProcessedChanges.adds[i] = this.schema.preprocess(data.adds[i]);
+                postProcessedChanges.adds[i] = this.schema.postprocess(data.adds[i], "diff");
             }
 
             for (let i = 0, length = data.removals.length; i < length; i++) {
-                postProcessedChanges.removals[i] = this.schema.preprocess(data.removals[i]);
+                postProcessedChanges.removals[i] = this.schema.postprocess(data.removals[i], "diff");
             }
 
             for (let i = 0, length = data.unknown.length; i < length; i++) {
-                postProcessedChanges.unknown[i] = this.schema.preprocess(data.unknown[i]);
+                postProcessedChanges.unknown[i] = this.schema.postprocess(data.unknown[i], "diff");
             }
 
             for (let i = 0, length = data.updates.length; i < length; i++) {
-                postProcessedChanges.updates[i] = this.schema.preprocess(data.updates[i]);
+                postProcessedChanges.updates[i] = this.schema.postprocess(data.updates[i], "diff");
             }
 
             callback(postProcessedChanges);
@@ -193,9 +241,23 @@ export class SchemaSubscription<T extends {}> implements ISchemaSubscription<T> 
     }
 
     [Symbol.dispose](): void {
-        const regisry = getChannelRegistry<T>(this.schema.id);
+        // Dispose is idempotent, and it must be: a second release would drop the shared
+        // channel's count below zero and close it out from under live subscriptions.
+        if (this.isDisposed) {
+            return;
+        }
+        this.isDisposed = true;
+
+        const regisry = getChannelRegistry<T>(this.schema.id, this.scope);
 
         // Remove listeners for this instance only
         regisry.receiver.removeListeners(this.id);
+
+        // An open BroadcastChannel holds the event loop open, so the last subscription out
+        // closes the pair and drops it from the registry.
+        if (regisry.release()) {
+            regisry.close();
+            delete registry[getChannelKey(this.schema.id, this.scope)];
+        }
     }
 }

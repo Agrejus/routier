@@ -87,7 +87,7 @@ export class DataStore implements Disposable {
             this.collectionPipelines,
             this.abortController.signal,
             new QueryOptionsCollection<TEntity>(),
-            schema.createSubscription(this.abortController.signal),
+            schema.createSubscription(this.abortController.signal, this.dbPlugin.identity),
             new ChangeTracker<TEntity>(schema),
             DataBridge.create<TEntity>(this.dbPlugin, schema, this.abortController.signal)
         );
@@ -134,7 +134,7 @@ export class DataStore implements Disposable {
             this.collectionPipelines,
             this.abortController.signal,
             new QueryOptionsCollection<TEntity>(),
-            schema.createSubscription(this.abortController.signal),
+            schema.createSubscription(this.abortController.signal, this.dbPlugin.identity),
             new ChangeTracker<TEntity>(schema),
             DataBridge.create<TEntity>(this.dbPlugin, schema, this.abortController.signal)
         );

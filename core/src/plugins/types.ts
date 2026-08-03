@@ -9,6 +9,14 @@ import { ITranslatedValue } from "./translators";
  */
 export interface IDbPlugin {
     /**
+     * Optional stable identity for the underlying database (e.g. its name). Used to scope
+     * schema subscription channels: instances sharing an identity (same database in
+     * another tab or context) see each other's change notifications, while unrelated
+     * databases holding the same schema do not. When omitted, channels are scoped by
+     * schema alone and every instance of the schema shares one channel.
+     */
+    readonly identity?: string;
+    /**
      * Executes a query operation on the database.
      * @param event The query event containing schema, parent, and query operation.
      * @param done Callback with the result or error.
@@ -82,10 +90,43 @@ export type ReplicationPluginOptions = {
     read?: IDbPlugin;
 }
 
+/**
+ * A value inside a delta. Arrays and Dates are values, not sub-structures to descend into.
+ *
+ * Descending into them would be both wrong and useless: an element-wise array delta cannot
+ * express "the last element was removed", and a partial Date is meaningless.
+ */
+type DeltaValue<V> =
+    V extends readonly unknown[] ? V
+    : V extends Date ? V
+    : V extends object ? DeltaProperties<V>
+    : V;
+
+type DeltaProperties<T> = { [K in keyof T]?: DeltaValue<T[K]> };
+
+/**
+ * What changed about an entity, expressed as a **partial entity**.
+ *
+ * A change two levels deep appears where it actually lives —
+ * `{ nested: { inner: { value } } }` — not as a flattened key.
+ *
+ * This deliberately carries no storage vocabulary. It used to be typed
+ * `{ [key: string]: string | number | Date }`, which was wrong twice over: it excluded
+ * booleans, nulls, arrays and objects that the schema happily allows, and its flat
+ * scalar shape was really a SQL `SET column = ?` list — one storage family's concern
+ * leaking into the contract every plugin sees.
+ *
+ * Translating this into storage terms belongs to the plugin. A document store can merge it
+ * as-is; a SQL plugin decides which columns it touches and how a nested value is encoded
+ * (see `toColumnAssignments` in `@routier/sql-plugin-core`, which stores nested objects and
+ * arrays as JSON). Core does not need to know, and must not.
+ */
+export type EntityDelta<T extends {}> = DeltaProperties<InferType<T>>;
+
 export type EntityUpdateInfo<T extends {}> = {
     entity: InferType<T>,
     changeType: EntityChangeType;
-    delta: { [key: string]: string | number | Date }
+    delta: EntityDelta<T>
 }
 
 export type TaggedEntity<T> = {

@@ -42,7 +42,7 @@ export class QueryOptionsCollection<T> {
         }
 
         if (name === "filter") {
-            // Need to check for unmapped properties
+            // Need to check for unmapped and renamed properties
             const filterValue = value as QueryOptionValueMap<T>["filter"];
 
             if (filterValue.expression.type === "not-parsable") {
@@ -57,8 +57,27 @@ export class QueryOptionsCollection<T> {
                         return false;
                     }
 
+                    if (isPropertyExpression(expression) && expression.property.hasRenamedSegments) {
+                        // Cut over to memory execution: the plugin stores data under the
+                        // `from` (storage) names, but filter selectors reference the
+                        // in-memory names.  Memory execution runs after deserialization,
+                        // where the in-memory names exist
+                        this.nextExecutionTarget = "memory";
+                        return false;
+                    }
+
                     return true;
                 });
+            }
+        }
+
+        if (name === "sort") {
+            const sortValue = value as QueryOptionValueMap<T>["sort"];
+
+            // Same rule as filters: sort selectors reference in-memory names, which
+            // only exist after deserialization when the property is renamed or unmapped
+            if (sortValue.property != null && (sortValue.property.isUnmapped || sortValue.property.hasRenamedSegments)) {
+                this.nextExecutionTarget = "memory";
             }
         }
 
@@ -76,6 +95,27 @@ export class QueryOptionsCollection<T> {
         const found = this.options.get(name);
 
         this.options.set(name, [...found ?? [], item]);
+    }
+
+    /**
+     * Captures the collection's current state and returns a function that restores it.
+     *
+     * Terminal queryable operations (count, first, aggregates, …) record their option on
+     * the shared collection before executing. Without restoring, a re-executed terminal —
+     * the whole point of a subscribed queryable — stacks its option a second time and
+     * runs it over the first execution's scalar result.
+     */
+    snapshot(): () => void {
+        const options = new Map([...this.options.entries()].map(([key, items]): [QueryOptionName, QueryCollectionItem<any, any>[]] => [key, [...items]]));
+        const nextExecutionTarget = this.nextExecutionTarget;
+        const nextIndex = this.nextIndex;
+
+        return () => {
+            this.options = new Map(options);
+            this.nextExecutionTarget = nextExecutionTarget;
+            this.nextIndex = nextIndex;
+            this.enumeratedItems = [];
+        };
     }
 
     split(): { memory: QueryOptionsCollection<T>, database: QueryOptionsCollection<T> } {

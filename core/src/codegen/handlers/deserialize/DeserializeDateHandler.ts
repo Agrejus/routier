@@ -1,4 +1,4 @@
-import { CodeBuilder, ContainerBlock, ObjectBuilder } from '../../blocks';
+import { CodeBuilder, ContainerBlock, ObjectBuilder, SlotBlock } from '../../blocks';
 import { SlotPath } from '../../SlotPath';
 import { PropertyInfoHandler } from "../types";
 import { PropertyInfo, SchemaTypes } from "../../../schema";
@@ -12,9 +12,20 @@ export class DeserializeDateHandler extends PropertyInfoHandler {
 
         if (property.type === SchemaTypes.Date) {
             const slotPath = new SlotPath("result.variable.object");
-            let objectBuilder = builder.get<ObjectBuilder>(slotPath.get());
-            const entitySelectorPath = property.getSelectrorPath({ parent: "unserialized" });
-            const entityAssignmentPath = property.getAssignmentPath({ parent: "entity", useFromPropertyName: property.isRenamed });
+
+            // Create the result object when this is the first property iterated —
+            // handler output cannot depend on schema property order
+            let objectBuilder = builder.getOrDefault<ObjectBuilder>(slotPath.get());
+
+            if (objectBuilder == null) {
+                objectBuilder = builder.get<SlotBlock>("result")
+                    .assign("const entity", { name: "variable" })
+                    .object({ name: "object" });
+            }
+            // Deserialize maps storage shape -> in-memory shape: read the incoming
+            // record by `from` (storage) name, write the entity by property name
+            const entitySelectorPath = property.getSelectrorPath({ parent: "unserialized", useFromPropertyName: true });
+            const entityAssignmentPath = property.getAssignmentPath({ parent: "entity" });
             const assignment = `${property.name}: typeof ${entitySelectorPath} === "string" ? new Date(${entitySelectorPath}) : ${entitySelectorPath}`;
 
             // if it is nullable or optional, assign in an if block, otherwise we 

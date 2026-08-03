@@ -1,4 +1,5 @@
 import { MergeDefaultFunctionHandler } from "./merge/MergeDefaultFunctionHandler";
+import { MergeObjectHandler } from "./merge/MergeObjectHandler";
 import { MergePrimitiveHandler } from "./merge/MergePrimitiveHandler";
 import { MergeComputedValueHandler } from "./merge/MergeComputedValueHandler";
 import { MergeDefaultValueHandler } from "./merge/MergeDefaultValueHandler";
@@ -12,7 +13,8 @@ export class MergeHandlerBuilder {
         handler.setNext(new MergeDefaultValueHandler())
             .setNext(new MergeFunctionHandler())
             .setNext(new MergeComputedValueHandler())
-            .setNext(new MergePrimitiveHandler());
+            .setNext(new MergePrimitiveHandler())
+            .setNext(new MergeObjectHandler());
 
         return handler;
     }

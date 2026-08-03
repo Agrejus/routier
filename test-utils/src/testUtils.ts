@@ -16,6 +16,29 @@ export const wait = (ms: number) => new Promise<void>((resolve) => {
     run();
 });
 
+/**
+ * Invokes a callback-style query and resolves with what the callback received.
+ *
+ * Whether a plugin calls back synchronously is a property of its storage, not of the
+ * query API: in-memory plugins land on the same tick, while file-system, IndexedDB, and
+ * SQL plugins cannot. Asserting `toHaveBeenCalled()` directly after the call therefore
+ * tests the backend's timing rather than the binding, and passes only on memory. Use
+ * this to await the callback so the same assertion holds for every plugin.
+ */
+export const invokeCallback = <TResult>(
+    invoke: (callback: (result: TResult) => void) => void,
+    timeoutMs: number = 5000
+) => new Promise<TResult>((resolve, reject) => {
+    const timer = setTimeout(() => {
+        reject(new Error(`Callback was not invoked within ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    invoke((result) => {
+        clearTimeout(timer);
+        resolve(result);
+    });
+});
+
 export const seedData = async<T extends {}>(routier: DataStore, collectionSelector: () => Collection<T>, count: number = 2) => {
 
     const collection = collectionSelector();

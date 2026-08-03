@@ -436,9 +436,14 @@ describe("Product Tests", () => {
 
             const found = await dataStore.products.firstAsync();
 
-            expect(secondDataStore.products.attachments.has(found)).toBe(false);
-
+            // No "not yet attached" precondition here: with live views on a shared
+            // database, the second store may legitimately have auto-attached this
+            // entity already (its views re-derive on the first store's save). The
+            // contract is that an explicit set adopts THIS instance as the canonical
+            // attachment either way, so mutations on it are tracked and saved.
             secondDataStore.products.attachments.set(found);
+
+            expect(secondDataStore.products.attachments.get(found)).toBe(found);
 
             found.category = "changed_value";
 

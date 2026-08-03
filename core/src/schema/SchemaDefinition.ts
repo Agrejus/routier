@@ -25,6 +25,12 @@ import { CompareIdsHandlerBuilder } from '../codegen/handlers/CompareIdsHandlerB
 import { StandardJSONSchemaV1, createStandardJsonSchemaProps, rehydrateSchemaFromJsonString } from './utils/standardJsonSchema';
 import { SetHandlerBuilder } from '../codegen/handlers';
 
+function assertPropertyHandled(generatorName: string, property: PropertyInfo<any>, result: unknown): asserts result is {} {
+    if (result == null) {
+        throw new Error(`Schema compilation failed: no '${generatorName}' code generator handles property '${property.getAssignmentPath()}' (type: ${property.type}). Add a handler for this property shape or mark it not applicable in the ${generatorName} chain.`);
+    }
+}
+
 function createChangeTracker() {
     const DIRTY_ENTITY_MARKER: string = "isDirty";
     const CHANGES_ENTITY_KEY: string = "changes";
@@ -38,14 +44,26 @@ function createChangeTracker() {
         const proxyHandler: ProxyHandler<TEntity> = {
             set(entity, property, value) {
                 const indexableEntity: { [key: string]: any } = entity;
-                const key = String(property);
-                const originalValue = indexableEntity[key];
 
                 // if values are the same, do nothing
+                //
+                // Checked before `String(property)` on purpose. A write that changes
+                // nothing is the common case, not the exception: `schema.merge` copies
+                // every property of a re-read row into the attached entity, and on an
+                // unchanged row every one of those writes lands here and returns.
+                // Building the string key first made that path cost 156ns a write, of
+                // which 125ns was the `String()` call alone; checking first takes it to
+                // 31ns, against a 14ns floor for the same writes on a plain object.
+                // Indexing by `property` rather than by `key` reads the same slot for
+                // string keys, and the correct one for symbols (which `String()` would
+                // have mangled into a "Symbol(x)" lookup).
+                const originalValue = indexableEntity[property as string];
+
                 if (originalValue === value) {
                     return true;
                 }
 
+                const key = String(property);
                 const resolvedParent: { [key: string]: any } = parent ?? entity;
 
                 if (resolvedParent[TRACKING_KEY] == null) {
@@ -330,8 +348,13 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const changeTrackingCodeBuilder = new CodeBuilder();
             changeTrackingCodeBuilder.raw(`${createChangeTracker.toString()}`);
             changeTrackingCodeBuilder.slot("declarations").variable("enableChangeTracking").value('createChangeTracker()');
+            // Nested proxies are installed by assigning through already-proxied parents;
+            // pause tracking during setup so those writes don't register as changes
+            changeTrackingCodeBuilder.slot("pause").raw('\tconst hadTracking = entity.__tracking__ != null;\n\tif (!hadTracking) { Object.defineProperty(entity, "__tracking__", { value: { changes: {}, isDirty: false, original: {}, isPaused: false }, configurable: true, writable: true, enumerable: false }); }\n\tconst wasPaused = entity.__tracking__.isPaused;\n\tentity.__tracking__.isPaused = true;');
             changeTrackingCodeBuilder.slot("assignment");
-            changeTrackingCodeBuilder.slot("return").raw('\treturn enableChangeTracking(entity);');
+            // Tracking metadata is created lazily on the first real write; only restore
+            // what already existed, never leave the bootstrap behind
+            changeTrackingCodeBuilder.slot("return").raw('\tif (hadTracking) { entity.__tracking__.isPaused = wasPaused; } else { delete entity.__tracking__; }\n\treturn enableChangeTracking(entity);');
 
             const freezeCodeBuilder = new CodeBuilder();
             freezeCodeBuilder.slot("assignment");
@@ -350,11 +373,18 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
             enricherFunctionBody.slot("append");
             enricherFunctionBody.slot("enriched");
-            enricherFunctionBody.slot("declarations");
+            // Nested proxies are installed by assigning through already-proxied parents;
+            // pause tracking during setup so those writes don't register as changes.
+            // Non-enumerable: computed properties run after this and may JSON.stringify
+            // the entity (e.g. content-hash ids) — the bootstrap must not change their input
+            enricherFunctionBody.slot("declarations").raw('\tif (changeTrackingType === "proxy") { Object.defineProperty(enriched, "__tracking__", { value: { changes: {}, isDirty: false, original: {}, isPaused: true }, configurable: true, writable: true, enumerable: false }); }');
             enricherFunctionBody.slot("assignment");
             enricherFunctionBody.slot("ifs");
             enricherFunctionBody.slot("tracking").if('changeTrackingType === "immutable"', { name: "freeze" });
-            enricherFunctionBody.slot("return").raw('\treturn enableChangeTracking(enriched);');
+            // The paused bootstrap tracking is deleted rather than unpaused: tracking
+            // metadata is created lazily on the first real write, and callers assert
+            // an untouched entity carries none
+            enricherFunctionBody.slot("return").raw('\tif (changeTrackingType === "proxy") { delete enriched.__tracking__; }\n\treturn enableChangeTracking(enriched);');
 
             const preprocessCodeBuilder = new CodeBuilder();
             preprocessCodeBuilder.slot("main");
@@ -450,8 +480,8 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             return d;
         }
 
-        if (d.toISOString != null) {
-            return d.toISOString();
+        if (d.getTime != null) {
+            return "" + d.getTime();
         }
 
         return d.toString();
@@ -487,21 +517,24 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                     hasIdentityKeys = true;
                 }
 
-                enricher.handle(property, enricherCodeBuilder);
-                merge.handle(property, mergeCodeBuilder);
-                prepare.handle(property, prepareCodeBuilder);
-                strip.handle(property, stripCodeBuilder);
-                clone.handle(property, cloneCodeBuilder);
-                compare.handle(property, compareCodeBuilder);
-                deserialize.handle(property, deserializeCodeBuilder);
-                serializeHandler.handle(property, serializeCodeBuilder)
-                hashTypeHandler.handle(property, hashTypeCodeBuilder);
-                idSelectorHandler.handle(property, idSelectorCodeBuilder);
-                hashHandler.handle(property, hashCodeBuilder);
-                enableChangeTrackingHandler.handle(property, changeTrackingCodeBuilder);
-                freezeHandler.handle(property, freezeCodeBuilder);
-                compareIdsHandler.handle(property, compareIdsCodeBuilder);
-                setHandlerHanlder.handle(property, setCodeBuilder);
+                // Every chain must claim every property.  A null return means no
+                // handler matched, and silently omitting the property from the
+                // generated function corrupts data — fail the compile instead.
+                assertPropertyHandled("enrich", property, enricher.handle(property, enricherCodeBuilder));
+                assertPropertyHandled("merge", property, merge.handle(property, mergeCodeBuilder));
+                assertPropertyHandled("prepare", property, prepare.handle(property, prepareCodeBuilder));
+                assertPropertyHandled("strip", property, strip.handle(property, stripCodeBuilder));
+                assertPropertyHandled("clone", property, clone.handle(property, cloneCodeBuilder));
+                assertPropertyHandled("compare", property, compare.handle(property, compareCodeBuilder));
+                assertPropertyHandled("deserialize", property, deserialize.handle(property, deserializeCodeBuilder));
+                assertPropertyHandled("serialize", property, serializeHandler.handle(property, serializeCodeBuilder))
+                assertPropertyHandled("hashType", property, hashTypeHandler.handle(property, hashTypeCodeBuilder));
+                assertPropertyHandled("idSelector", property, idSelectorHandler.handle(property, idSelectorCodeBuilder));
+                assertPropertyHandled("hash", property, hashHandler.handle(property, hashCodeBuilder));
+                assertPropertyHandled("enableChangeTracking", property, enableChangeTrackingHandler.handle(property, changeTrackingCodeBuilder));
+                assertPropertyHandled("freeze", property, freezeHandler.handle(property, freezeCodeBuilder));
+                assertPropertyHandled("compareIds", property, compareIdsHandler.handle(property, compareIdsCodeBuilder));
+                assertPropertyHandled("set", property, setHandlerHanlder.handle(property, setCodeBuilder));
             });
 
             if (idProperties.length === 0) {
@@ -683,7 +716,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
                 const compiledSchemaWithMetadata: CompiledSchemaWithMetadata<T, TMetadata> = {
                     ...result,
-                    createSubscription: (signal?: AbortSignal) => new SchemaSubscription(result, signal),
+                    createSubscription: (signal?: AbortSignal, scope?: string) => new SchemaSubscription(result, signal, scope),
                     metadata
                 };
 
@@ -691,7 +724,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             }
 
             const compiledSchema = {
-                createSubscription: (signal?: AbortSignal) => new SchemaSubscription(result, signal),
+                createSubscription: (signal?: AbortSignal, scope?: string) => new SchemaSubscription(result, signal, scope),
                 ...result
             };
 

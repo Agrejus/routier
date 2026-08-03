@@ -9,8 +9,10 @@ export class SerializeSerializerHandler extends PropertyInfoHandler {
         if (property.valueSerializer != null) {
             const slot = builder.getOrDefault<SlotBlock>("if");
             const assignmentBuilder = builder.getOrDefault<SlotBlock>("functions");
-            const entitySelectorPath = property.getSelectrorPath({ parent: "entity", useFromPropertyName: property.isRenamed });
-            const resultSelectorPath = property.getAssignmentPath({ parent: "result" });
+            // Serialize maps in-memory shape -> storage shape: read the entity by
+            // property name, write the result by `from` (storage) name
+            const entitySelectorPath = property.getSelectrorPath({ parent: "entity" });
+            const resultSelectorPath = property.getAssignmentPath({ parent: "result", useFromPropertyName: true });
 
             const defaultFunctionWithParameters = this.toNamedFunction(property.valueSerializer.toString(), assignmentBuilder);
             defaultFunctionWithParameters.builder.parameters(...defaultFunctionWithParameters.parameters.map((_, i) => ({ name: defaultFunctionWithParameters.parameters[i], callName: entitySelectorPath })));
@@ -22,7 +24,7 @@ export class SerializeSerializerHandler extends PropertyInfoHandler {
 
             // Nested serializer: same pattern as SerializeValueHandler — if block for parent existence, then assign via serializer
             const parentSelectPath = ["entity", ...property.getParentPathArray()].join(".");
-            const parentAssignPath = ["result", ...property.getParentPathArray()].join(".");
+            const parentAssignPath = ["result", ...property.getParentPathArray({ useFromPropertyName: true })].join(".");
             const ifSlot = slot.if(`${parentSelectPath} != null && Object.hasOwn(${parentSelectPath}, "${property.name}")`);
 
             if (property.parent.isNullable || property.parent.isOptional) {

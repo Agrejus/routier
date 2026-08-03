@@ -20,15 +20,18 @@ export class PrepareObjectHandler extends PropertyInfoHandler {
                     .object({ name: "object" });
             }
 
+            // Prepare emits the storage shape — renamed object containers keep
+            // their `from` (storage) key; the block name stays the property name
+            // so child lookups by name still resolve
             if (property.parent == null) {
-                objectBuilder.nested(property.name, property.name)
+                objectBuilder.nested(property.getResolvedName(), property.name)
 
                 return builder;
             }
 
             slotPath.push(...property.getParentPathArray());
             const nestedObjectBuilder = builder.get<ObjectBuilder>(slotPath.get());
-            nestedObjectBuilder.nested(property.name, property.name)
+            nestedObjectBuilder.nested(property.getResolvedName(), property.name)
 
             return builder;
         }

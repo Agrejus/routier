@@ -30,7 +30,7 @@ export type QueryOption<T, K extends QueryOptionName> = {
 export type QueryOptionValueMap<T extends {}> = {
     skip: number;
     take: number;
-    sort: { selector: GenericFunction<T, T[keyof T]>, direction: QueryOrdering, propertyName: string };
+    sort: { selector: GenericFunction<T, T[keyof T]>, direction: QueryOrdering, propertyName: string, property?: PropertyInfo<T> | null };
     map: { selector: GenericFunction<T, any>, fields: QueryField[] };
     group: { selector: GenericFunction<T, any>, key: QueryField, fields: QueryField[] };
     filter: { params?: {}, filter: ParamsFilter<T, {}> | Filter<T>, expression: Expression };

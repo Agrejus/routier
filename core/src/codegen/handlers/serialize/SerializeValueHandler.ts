@@ -8,8 +8,10 @@ export class SerializeValueHandler extends PropertyInfoHandler {
 
         if (property.type != SchemaTypes.Object && property.type != SchemaTypes.Date) {
             const slot = builder.getOrDefault<SlotBlock>("if");
-            const entitySelectorPath = property.getAssignmentPath({ parent: "entity", useFromPropertyName: property.isRenamed });
-            const resultSelectorPath = property.getAssignmentPath({ parent: "result" });
+            // Serialize maps in-memory shape -> storage shape: read the entity by
+            // property name, write the result by `from` (storage) name
+            const entitySelectorPath = property.getAssignmentPath({ parent: "entity" });
+            const resultSelectorPath = property.getAssignmentPath({ parent: "result", useFromPropertyName: true });
 
             if (property.parent == null) {
                 // Only assign if the incoming entity has the property, this allows partial serialization
@@ -19,7 +21,7 @@ export class SerializeValueHandler extends PropertyInfoHandler {
             }
 
             const parentSelectPath = ["entity", ...property.getParentPathArray()].join(".");
-            const parentAssignPath = ["result", ...property.getParentPathArray()].join(".");
+            const parentAssignPath = ["result", ...property.getParentPathArray({ useFromPropertyName: true })].join(".");
 
             // We need to handle serializing delta changes in getChanges, there is the possibility that child objects are null 
             // and we need to handle that scenario

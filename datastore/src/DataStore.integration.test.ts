@@ -211,7 +211,7 @@ describe("DataStore integration", () => {
         expect(await store.hasChangesAsync()).toBe(false);
     });
 
-    it("reuses canonical attachments when the same entity is attached again", async () => {
+    it("adopts the caller's instance when the same entity is attached again", async () => {
         const plugin = new RoutingProbePlugin();
         const store = createStore(plugin);
 
@@ -227,9 +227,13 @@ describe("DataStore integration", () => {
             category: "supplies",
         } as Product);
 
-        expect(second).toBe(first);
-        expect(first.name).toBe("Merged");
-        expect(first.category).toBe("supplies");
+        // An explicit set means the caller will mutate THIS instance: it replaces the
+        // previous canonical (which would otherwise silently swallow those mutations)
+        // and its values are authoritative.
+        expect(second).not.toBe(first);
+        expect(second.name).toBe("Merged");
+        expect(second.category).toBe("supplies");
+        expect(store.products.attachments.get(second)).toBe(second);
     });
 
     it("routes scoped queries with both scope and user filters to plugin.query", async () => {

@@ -1,10 +1,10 @@
 import { describe, expect, it } from "@jest/globals";
-import { ComparatorExpression, OperatorExpression, PropertyExpression, ValueExpression } from "./types";
+import { ComparatorExpression, OperatorExpression, PropertyExpression, ValueExpression } from "@routier/core/expressions";
 import { getDialect, toSql } from "./sql";
 
-const prop = (name: string) =>
+const prop = (name: string, from?: string) =>
     new PropertyExpression({
-        property: { name } as any,
+        property: { name, from: from ?? null, getResolvedName: () => from ?? name } as any,
     });
 
 const val = (value: unknown) =>
@@ -137,5 +137,20 @@ describe("sql expression translator", () => {
 
     it("throws on unknown dialect at runtime", () => {
         expect(() => getDialect("oracle" as any)).toThrow("Unknown SQL dialect: oracle");
+    });
+
+    it("renders renamed properties using the storage column name", () => {
+        const expr = new ComparatorExpression({
+            comparator: "equals",
+            negated: false,
+            strict: true,
+            left: prop("city", "c"),
+            right: val("NYC"),
+        });
+
+        const result = toSql(expr, "sqlite");
+
+        expect(result.where).toBe(`"c" = ?`);
+        expect(result.params).toEqual(["NYC"]);
     });
 });

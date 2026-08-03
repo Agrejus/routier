@@ -110,7 +110,11 @@ export abstract class QueryBuilderBase<TRoot extends {}, TShape, TDeps extends C
     protected setSortQueryOption(selector: GenericFunction<TShape, TShape[keyof TShape]>, direction: QueryOrdering) {
         const propertyName = this.getSortPropertyName(selector);
 
-        this.request.queryOptions.add("sort", { selector: selector as any, direction, propertyName });
+        // Resolve the PropertyInfo so execution targeting can detect unmapped or
+        // renamed properties, which must sort in memory after deserialization
+        const property = this.dependencies.schema.getProperty(propertyName);
+
+        this.request.queryOptions.add("sort", { selector: selector as any, direction, propertyName, property });
     }
 
     protected setSkipQueryOption(amount: number) {

@@ -14,7 +14,9 @@ export class CompareDateHandler extends PropertyInfoHandler {
             if (compare == null) {
                 compare = builder.get<SlotBlock>("result")
                     .assign("const result", { name: "variable" })
-                    .and(`${leftCompare}?.toISOString() === ${rightCompare}?.toISOString()`, { name: "compareDate" });
+                    // Named "compare" so every compare handler finds the same block
+                    // regardless of which property type is iterated first
+                    .and(`${leftCompare}?.toISOString() === ${rightCompare}?.toISOString()`, { name: "compare" });
                 return builder;
             }
 

@@ -1,0 +1,41 @@
+{
+    "compilerOptions": {
+        "lib": ["ESNext", "ES2023"],
+        "target": "ESNext",
+        "module": "ESNext",
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "resolveJsonModule": true,
+        "jsx": "react-jsx",
+        "skipLibCheck": true,
+        "baseUrl": ".",
+        // Workspace packages publish `types: ./dist/index.d.ts`, which does not exist
+        // until a build runs. Tests resolve to source instead so `npx jest` works on a
+        // clean checkout with no build step.
+        "paths": {
+            "@routier/core": ["./core/src/index.ts"],
+            "@routier/core/*": ["./core/src/*"],
+            "@routier/datastore": ["./datastore/src/index.ts"],
+            "@routier/datastore/*": ["./datastore/src/*"],
+            "@routier/test-utils": ["./test-utils/src/index.ts"],
+            "@routier/test-utils/*": ["./test-utils/src/*"],
+            "@routier/memory-plugin": ["./plugins/memory/src/index.ts"],
+            "@routier/memory-plugin/*": ["./plugins/memory/src/*"],
+            "@routier/dexie-plugin": ["./plugins/dexie/src/index.ts"],
+            "@routier/browser-storage-plugin": ["./plugins/browser-storage/src/index.ts"],
+            "@routier/file-system-plugin": ["./plugins/file-system/src/index.ts"],
+            "@routier/sql-plugin-core": ["./plugins/sql-core/src/index.ts"],
+            "@routier/sqlite-plugin": ["./plugins/sqlite/src/index.ts"],
+            "@routier/pouchdb-plugin": ["./plugins/pouchdb/src/index.ts"],
+            "@routier/postgresql-plugin": ["./plugins/postgresql/src/index.ts"],
+            "@routier/mysql-plugin": ["./plugins/mysql/src/index.ts"],
+            "@routier/replication-plugin": ["./plugins/replication/src/index.ts"],
+            "@routier/react": ["./react/src/index.ts"]
+        }
+    },
+    // ts-jest reads only `compilerOptions` from this file. An empty `include` keeps
+    // editors and `tsc -b` from adopting it as the project config for source files,
+    // where its test-only paths would mask the real package boundaries.
+    "include": []
+}

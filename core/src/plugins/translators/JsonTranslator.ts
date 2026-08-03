@@ -120,13 +120,27 @@ export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRo
     override sort<TResult>(data: unknown, option: QueryOption<TShape, "sort">): TResult {
 
         if (Array.isArray(data)) {
+            const direction = option.value.direction === "asc" ? 1 : -1;
 
-            data.sort((a, b) => {
-                if (option.value.direction === "asc") {
-                    return (option.value.selector(a) as any) - (option.value.selector(b) as any);
+            // Relational comparison instead of subtraction — subtraction is NaN
+            // for strings, which leaves the array unsorted
+            data.sort((x, y) => {
+                const a = option.value.selector(x) as any;
+                const b = option.value.selector(y) as any;
+
+                if (a === b) {
+                    return 0;
                 }
 
-                return (option.value.selector(b) as any) - (option.value.selector(a) as any);
+                if (a == null) {
+                    return -1 * direction;
+                }
+
+                if (b == null) {
+                    return 1 * direction;
+                }
+
+                return (a < b ? -1 : 1) * direction;
             });
         }
 

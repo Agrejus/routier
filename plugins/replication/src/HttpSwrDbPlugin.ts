@@ -64,8 +64,10 @@ export interface HttpSwrDbPluginOptions extends HttpPluginOptions {
     onRevalidateError?: (error: Error, context: { collectionName: string; cacheKey?: number }) => void;
     /**
      * IDbPlugin to use for persisting the unsynced queue (e.g. same as swrStore). No datastore required.
-     * When set, the queue is stored via query/bulkPersist in a reserved collection (_routier_unsynced).
-     * If not set, UnsyncedQueue uses the memory plugin (in-memory only; unsynced items cleared on refresh).
+     * The queue is stored via query/bulkPersist in a reserved collection (_routier_unsynced).
+     *
+     * Required: UnsyncedQueue has no default store. Pass a durable plugin to survive a
+     * refresh with unsynced items intact, or a MemoryPlugin to accept losing them.
      */
     unsyncedQueueStore: IDbPlugin;
 }

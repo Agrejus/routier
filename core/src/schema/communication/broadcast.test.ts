@@ -37,6 +37,16 @@ class MockBroadcastChannel {
     }
 }
 
+// A compiled schema always exposes both halves of the wire pipeline: `preprocess`
+// (prepare + serialize) on send and `postprocess` (deserialize + enrich) on receive.
+// Mocks must carry both, or a receive-path regression looks like a passing test.
+const mockSchema = (id: string, overrides: Record<string, unknown> = {}) => ({
+    id,
+    preprocess: (x: unknown) => x,
+    postprocess: (x: unknown) => x,
+    ...overrides,
+}) as any;
+
 describe("SchemaSubscription broadcast contract", () => {
     const originalBroadcastChannel = globalThis.BroadcastChannel;
 
@@ -51,10 +61,7 @@ describe("SchemaSubscription broadcast contract", () => {
     });
 
     it("does not deliver messages after subscription is disposed", () => {
-        const schema = {
-            id: "schema-1",
-            preprocess: (x: unknown) => x,
-        } as any;
+        const schema = mockSchema("schema-1");
 
         const sender = new SchemaSubscription(schema);
         const receiver = new SchemaSubscription(schema);
@@ -73,10 +80,7 @@ describe("SchemaSubscription broadcast contract", () => {
     });
 
     it("dispose is idempotent and remains unsubscribed", () => {
-        const schema = {
-            id: "schema-idempotent",
-            preprocess: (x: unknown) => x,
-        } as any;
+        const schema = mockSchema("schema-idempotent");
 
         const sender = new SchemaSubscription(schema);
         const receiver = new SchemaSubscription(schema);
@@ -97,8 +101,8 @@ describe("SchemaSubscription broadcast contract", () => {
     });
 
     it("isolates channels by schema id", () => {
-        const schemaA = { id: "schema-A", preprocess: (x: unknown) => x } as any;
-        const schemaB = { id: "schema-B", preprocess: (x: unknown) => x } as any;
+        const schemaA = mockSchema("schema-A");
+        const schemaB = mockSchema("schema-B");
 
         const senderA = new SchemaSubscription(schemaA);
         const receiverB = new SchemaSubscription(schemaB);
@@ -116,7 +120,7 @@ describe("SchemaSubscription broadcast contract", () => {
     });
 
     it("fans out to multiple listeners for same schema channel", () => {
-        const schema = { id: "schema-fanout", preprocess: (x: unknown) => x } as any;
+        const schema = mockSchema("schema-fanout");
 
         const sender = new SchemaSubscription(schema);
         const receiverA = new SchemaSubscription(schema);
@@ -140,11 +144,7 @@ describe("SchemaSubscription broadcast contract", () => {
     it("should postprocess incoming changes before delivering to listeners", () => {
         const preprocess = jest.fn((x: any) => ({ ...x, _stage: "pre" }));
         const postprocess = jest.fn((x: any) => ({ ...x, _stage: "post" }));
-        const schema = {
-            id: "schema-postprocess",
-            preprocess,
-            postprocess,
-        } as any;
+        const schema = mockSchema("schema-postprocess", { preprocess, postprocess });
 
         const sender = new SchemaSubscription(schema);
         const receiver = new SchemaSubscription(schema);
@@ -177,11 +177,7 @@ describe("SchemaSubscription broadcast contract", () => {
             }
             return x;
         });
-        const schema = {
-            id: "schema-date-roundtrip",
-            preprocess,
-            postprocess,
-        } as any;
+        const schema = mockSchema("schema-date-roundtrip", { preprocess, postprocess });
 
         const sender = new SchemaSubscription(schema);
         const receiver = new SchemaSubscription(schema);

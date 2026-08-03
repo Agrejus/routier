@@ -89,6 +89,12 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                         }
                     }
 
+                    if (schemaChanges.adds.length === 0 && schemaChanges.updates.length === 0) {
+                        // Nothing to persist — the derived data already matches the view.
+                        // Skipping also prevents an empty notification round trip
+                        return cb(enriched);
+                    }
+
                     operation.set(this.dependencies.schema.id, schemaChanges);
 
                     // Automatically save the view
@@ -106,9 +112,11 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                         }
 
                         const resolvedChanges = r.data.get<TEntity>(this.dependencies.schema.id);
-                        // we only want to notify of changes when an item that was saved matches the query
-                        // these get reset each time
-                        // send in the resulting adds because properties might have been set from the db operation
+                        // Send the resolved adds/updates because properties might have been
+                        // set by the db operation. Match-filtering per subscriber happens in
+                        // DataBridge.subscribe (filtered subscriptions check changes against
+                        // their filter before re-querying); unfiltered subscriptions re-query
+                        // on any non-empty change, which is the accepted behavior.
                         const updates = this.cloneMany(resolvedChanges.updates);
                         const adds = this.cloneMany(resolvedChanges.adds as InferType<TEntity>[]);
                         const removals = this.cloneMany(resolvedChanges.removes);
@@ -120,7 +128,12 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                             unknown: []
                         };
 
-                        this.dependencies.subscription.send(subscriptionChanges);
+                        // Guarded like CollectionBase.saveChanges. This used to be
+                        // unconditional because view change-resolution returned empty
+                        // change sets; resolution works now, so empty rounds stay silent
+                        if (updates.length > 0 || adds.length > 0 || removals.length > 0) {
+                            this.dependencies.subscription.send(subscriptionChanges);
+                        }
                     });
 
                     cb(enriched);

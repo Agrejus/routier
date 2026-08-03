@@ -127,7 +127,10 @@ describe('buildQueryFromIQuery Integration Tests', () => {
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
-        expect(result.sql).toBe('SELECT COUNT(*) AS "count" FROM "users"');
+        // Count wraps the built query in a subquery so windowing (skip/take) inside the
+        // query counts correctly — a rewritten SELECT kept its LIMIT/OFFSET, which then
+        // applied to the single count row
+        expect(result.sql).toBe('SELECT COUNT(*) AS "count" FROM (SELECT "id", "name", "age" FROM "users") AS count_subquery');
         expect(result.params).toEqual([]);
     });
 

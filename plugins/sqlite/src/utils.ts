@@ -1,5 +1,6 @@
 import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema';
-import { Expression, toSql } from '@routier/core/expressions';
+import { Expression } from '@routier/core/expressions';
+import { getDialect, sqlColumnProperties, toColumnValueMap, toSql } from '@routier/sql-plugin-core';
 import { IQuery, QueryField } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
 import { SqlOperation } from './types';
@@ -19,7 +20,9 @@ const schemaTypeToSqliteType = (type: SchemaTypes): string => {
             return 'TEXT'; // ISO string
         case SchemaTypes.Object:
         case SchemaTypes.Array:
-            return 'JSON'; // Use JSON for deeply nested structures
+            // One source of truth for this engine's JSON type: the same dialect value
+            // toColumnAssignments encodes against, so DDL and DML cannot drift apart.
+            return getDialect('sqlite').jsonColumnType;
         default:
             return 'TEXT';
     }
@@ -59,21 +62,23 @@ export function compiledSchemaToSqliteTable(schema: CompiledSchema<any>, tableNa
         singleIdentityPK = identityProps[0];
     }
 
-    for (const prop of schema.properties) {
+    // Root properties only: a nested subtree is ONE JSON column named for its root.
+    // Iterating every property would emit a column per descendant, named by its leaf.
+    for (const prop of sqlColumnProperties(schema)) {
         let colDef: string;
 
         if (singleIdentityPK && prop.name === singleIdentityPK.name) {
             if (prop.type === SchemaTypes.Number) {
-                colDef = `"${prop.name}" INTEGER PRIMARY KEY AUTOINCREMENT`;
+                colDef = `"${prop.getResolvedName()}" INTEGER PRIMARY KEY AUTOINCREMENT`;
             } else if (prop.type === SchemaTypes.String) {
-                colDef = `"${prop.name}" TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)),2) || '-' || hex(randomblob(6))))`;
+                colDef = `"${prop.getResolvedName()}" TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)),2) || '-' || hex(randomblob(6))))`;
             } else {
-                colDef = `"${prop.name}" ${schemaTypeToSqliteType(prop.type)} PRIMARY KEY`;
+                colDef = `"${prop.getResolvedName()}" ${schemaTypeToSqliteType(prop.type)} PRIMARY KEY`;
             }
         } else if (isDeeplyNested(prop)) {
-            colDef = `"${prop.name}" JSON`;
+            colDef = `"${prop.getResolvedName()}" JSON`;
         } else {
-            colDef = `"${prop.name}" ${schemaTypeToSqliteType(prop.type)}`;
+            colDef = `"${prop.getResolvedName()}" ${schemaTypeToSqliteType(prop.type)}`;
         }
 
         columns.push(colDef);
@@ -82,7 +87,7 @@ export function compiledSchemaToSqliteTable(schema: CompiledSchema<any>, tableNa
     // Composite PK logic
     let pkClause = '';
     if ((!singleIdentityPK) && idProps.length > 0) {
-        const pkCols = idProps.map(p => `"${p.name}"`);
+        const pkCols = idProps.map(p => `"${p.getResolvedName()}"`);
         pkClause = `, PRIMARY KEY (${pkCols.join(', ')})`;
     }
 
@@ -96,7 +101,7 @@ export function compiledSchemaToSqliteTable(schema: CompiledSchema<any>, tableNa
         if (prop.isDistinct) {
             const idxName = `${table}_${prop.name}_unique_idx`;
             if (!usedIndexNames.has(idxName)) {
-                indexStatements.push(`CREATE UNIQUE INDEX IF NOT EXISTS "${idxName}" ON "${table}" ("${prop.name}");`);
+                indexStatements.push(`CREATE UNIQUE INDEX IF NOT EXISTS "${idxName}" ON "${table}" ("${prop.getResolvedName()}");`);
                 usedIndexNames.add(idxName);
             }
         }
@@ -117,13 +122,13 @@ export function compiledSchemaToSqliteTable(schema: CompiledSchema<any>, tableNa
             // Single-column index
             const idxSqlName = `${table}_${props[0].name}_idx`;
             if (!usedIndexNames.has(idxSqlName)) {
-                indexStatements.push(`CREATE INDEX IF NOT EXISTS "${idxSqlName}" ON "${table}" ("${props[0].name}");`);
+                indexStatements.push(`CREATE INDEX IF NOT EXISTS "${idxSqlName}" ON "${table}" ("${props[0].getResolvedName()}");`);
                 usedIndexNames.add(idxSqlName);
             }
         } else if (props.length > 1) {
             // Composite (clustered) index
             const idxSqlName = `${table}_${idxName}_clustered_idx`;
-            const colList = props.map(p => `"${p.name}"`).join(', ');
+            const colList = props.map(p => `"${p.getResolvedName()}"`).join(', ');
             if (!usedIndexNames.has(idxSqlName)) {
                 indexStatements.push(`CREATE INDEX IF NOT EXISTS "${idxSqlName}" ON "${table}" (${colList});`);
                 usedIndexNames.add(idxSqlName);
@@ -160,7 +165,7 @@ export function buildSelectFromExpression<TEntity extends {}, TShape>(options: {
 }): { sql: string, params: any[] } {
     const { schema, query } = options;
     const columns = schema.properties && schema.properties.length > 0
-        ? schema.properties.map(p => `"${p.name}"`)
+        ? schema.properties.map(p => `"${p.getResolvedName()}"`)
         : ['*'];
 
     // Get the first filter expression from the query options
@@ -193,14 +198,15 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
         return { adds: null, updates: null, removes: null };
     }
 
-    // Get column names from schema properties, excluding identity columns for INSERT
-    const allColumns = schema.properties.map(p => `"${p.name}"`);
+    // Column identifiers are storage-side names (PropertyInfo.from ?? name): the entities
+    // handed to bulkPersist are wire-shaped, so both the DDL and the DML must use them
+    const columnProperties = sqlColumnProperties(schema);
+    const allColumns = columnProperties.map(p => `"${p.getResolvedName()}"`);
     const allColumnStr = allColumns.join(', ');
 
     // For INSERT operations, exclude identity columns (they're auto-generated)
-    const insertColumns = schema.properties
-        .filter(p => !p.isIdentity)
-        .map(p => `"${p.name}"`);
+    const insertProperties = columnProperties.filter(p => !p.isIdentity);
+    const insertColumns = insertProperties.map(p => `"${p.getResolvedName()}"`);
     const insertColumnStr = insertColumns.join(', ');
 
     // Handle INSERT operations (adds)
@@ -215,10 +221,12 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
         // Flatten all add parameters (excluding identity columns)
         const addParams: any[] = [];
         for (const add of adds) {
-            for (const col of schema.properties) {
-                if (!col.isIdentity) {
-                    addParams.push(add[col.name]);
-                }
+            // Routed through the same column resolution the UPDATE path uses, so a nested
+            // object is JSON-encoded here too rather than handed to the driver as an object.
+            const values = toColumnValueMap(add as Record<string, unknown>, schema, getDialect('sqlite'));
+
+            for (const col of insertProperties) {
+                addParams.push(values.get(col.getResolvedName()));
             }
         }
 
@@ -228,11 +236,39 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
     // Handle UPDATE operations (updates)
     let updatesOperation: SqlOperation | null = null;
     if (updates.length > 0) {
+        // The delta arrives as a partial ENTITY (core's EntityDelta), so it has to be
+        // resolved to columns before anything can be grouped or bound: renamed properties
+        // become their storage-side name, and nested objects/arrays become JSON. That
+        // decision belongs to this layer — core deliberately does not know what a column is.
+        const dialect = getDialect('sqlite');
+        const identityNames = schema.idProperties.map(p => p.getResolvedName());
+
+        /** Column -> already-encoded parameter value, per update. */
+        const columnValues = new Map<(typeof updates)[number], Map<string, unknown>>();
+
+        for (const update of updates) {
+            let resolved = toColumnValueMap(update.delta as Record<string, unknown>, schema, dialect, update.entity as Record<string, unknown>);
+
+            // An empty delta means "no tracked change list" rather than "nothing changed" —
+            // fall back to every non-identity property, routed through the same resolution
+            // so nested values are still JSON-encoded.
+            if (resolved.size === 0) {
+                const wholeEntity = Object.fromEntries(
+                    Object.keys(update.entity as Record<string, unknown>)
+                        .filter(key => identityNames.includes(key) === false)
+                        .map(key => [key, (update.entity as Record<string, unknown>)[key]])
+                );
+                resolved = toColumnValueMap(wholeEntity, schema, dialect);
+            }
+
+            columnValues.set(update, resolved);
+        }
+
         // Group updates by which columns they're changing
         const updateGroups = new Map<string, typeof updates>();
 
         for (const update of updates) {
-            const deltaKeys = Object.keys(update.delta).sort().join(',');
+            const deltaKeys = [...columnValues.get(update)!.keys()].sort().join(',');
             if (!updateGroups.has(deltaKeys)) {
                 updateGroups.set(deltaKeys, []);
             }
@@ -245,20 +281,14 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 
         for (const [, groupUpdates] of updateGroups) {
             const firstUpdate = groupUpdates[0];
-            let deltaKeys = Object.keys(firstUpdate.delta);
-
-            // If delta is empty, use all properties from the entity (except identity columns)
-            if (deltaKeys.length === 0) {
-                const entityKeys = Object.keys(firstUpdate.entity);
-                const identityKeys = schema.idProperties.map(p => p.name);
-                deltaKeys = entityKeys.filter(key => !identityKeys.includes(key));
-            }
+            // Already resolved to columns above, empty-delta fallback included.
+            const deltaKeys = [...columnValues.get(firstUpdate)!.keys()];
 
             // Build SET clause with CASE statements for each column
             const setClauses: string[] = [];
 
             // Get ID column names
-            const idColumns = schema.idProperties.map(p => p.name);
+            const idColumns = schema.idProperties.map(p => p.getResolvedName());
             const idColumn = idColumns[0]; // Use first ID for CASE matching
 
             for (const key of deltaKeys) {
@@ -269,11 +299,7 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
                     caseStatement += ` WHEN ? THEN ?`;
                     allParams.push(idValue);
 
-                    // Use entity value if delta is empty, otherwise use delta value
-                    const value = Object.keys(update.delta).length === 0
-                        ? update.entity[key]
-                        : update.delta[key];
-                    allParams.push(value);
+                    allParams.push(columnValues.get(update)!.get(key));
                 }
 
                 caseStatement += ` ELSE "${key}" END`;
@@ -313,7 +339,7 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 
             for (const idProperty of idProperties) {
                 const idValue = idProperty.getValue(remove);
-                entityWhereClauses.push(`"${idProperty.name}" = ?`);
+                entityWhereClauses.push(`"${idProperty.getResolvedName()}" = ?`);
                 allParams.push(idValue);
 
             }
@@ -373,9 +399,9 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
         }
 
         // Use string concatenation instead of array join for better performance
-        columnsStr = `"${schema.properties[0].name}"`;
+        columnsStr = `"${schema.properties[0].getResolvedName()}"`;
         for (let i = 1; i < columnCount; i++) {
-            columnsStr += `, "${schema.properties[i].name}"`;
+            columnsStr += `, "${schema.properties[i].getResolvedName()}"`;
         }
     }
 
@@ -498,8 +524,10 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
                 break;
 
             case 'count':
-                // Replace SELECT with COUNT and rename the column to "count"
-                currentQuery = currentQuery.replace(/SELECT .*? FROM/, 'SELECT COUNT(*) AS "count" FROM');
+                // Wrap rather than rewrite the SELECT: a rewritten query keeps its
+                // LIMIT/OFFSET, which then applies to the single count row (OFFSET
+                // skips it entirely). Wrapping counts whatever the built query yields
+                currentQuery = `SELECT COUNT(*) AS "count" FROM (${currentQuery}) AS count_subquery`;
                 break;
 
             case 'min':

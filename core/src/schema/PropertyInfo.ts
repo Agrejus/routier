@@ -80,6 +80,7 @@ export class PropertyInfo<T extends {}> {
     private _idCache?: string;
     private _levelCache?: number;
     private _hasNullableParentsCache?: boolean;
+    private _hasRenamedSegmentsCache?: boolean;
 
     constructor(schema: SchemaBase<T, any>, name: string, parent?: PropertyInfo<T> | null) {
         this.schema = schema;
@@ -169,12 +170,22 @@ export class PropertyInfo<T extends {}> {
         return chain;
     }
 
-    private _needsOptionalChaining(prop: PropertyInfo<T>, assignmentType?: AssignmentType): boolean {
+    private _needsOptionalChaining(precedingProp: PropertyInfo<T> | null, assignmentType?: AssignmentType): boolean {
         if (assignmentType === "ASSIGNMENT") {
             return false;
         }
 
-        return assignmentType === "FORCE_NULLABLE_OR_OPTIONAL" || prop.isNullable || prop.isOptional;
+        if (assignmentType === "FORCE_NULLABLE_OR_OPTIONAL") {
+            return true;
+        }
+
+        // The accessor guards the value it follows: entity.a?.c is safe when `a`
+        // is nullable, entity?.a.c is not.  The root can never be null.
+        if (precedingProp == null) {
+            return false;
+        }
+
+        return precedingProp.isNullable || precedingProp.isOptional;
     }
 
     private _resolvePathArray(options?: {
@@ -185,10 +196,14 @@ export class PropertyInfo<T extends {}> {
         const propertyChain = this._getPropertyChain();
         const hasRoot = options?.root != null;
         const path: string[] = hasRoot ? [options!.root!] : [];
+        let precedingProp: PropertyInfo<T> | null = null;
 
         for (const prop of propertyChain) {
-            const accessor = this._needsOptionalChaining(prop, options?.assignmentType) ? '?.' : '.';
-            path.push(accessor, options?.useFromPropertyName ? prop.from : prop.name);
+            const accessor = this._needsOptionalChaining(precedingProp, options?.assignmentType) ? '?.' : '.';
+            // Storage-side paths use `from` per segment; segments that were never
+            // renamed keep their property name
+            path.push(accessor, options?.useFromPropertyName ? (prop.from ?? prop.name) : prop.name);
+            precedingProp = prop;
         }
 
         return path;
@@ -224,7 +239,21 @@ export class PropertyInfo<T extends {}> {
      *
      * @returns {string[]} The property path as an array of names, excluding this property.
      */
-    getParentPathArray() {
+    getParentPathArray(options?: { useFromPropertyName?: boolean }) {
+        if (options?.useFromPropertyName === true) {
+            // Storage-side variant is uncached: `from` falls back to the property
+            // name per segment
+            const fromPath: string[] = [];
+            const chain = this._getPropertyChain();
+
+            for (let i = 0; i < chain.length - 1; i++) {
+                const prop = chain[i];
+                fromPath.push(prop.from ?? prop.name);
+            }
+
+            return fromPath;
+        }
+
         if (this._parentPathArrayCache) {
             return this._parentPathArrayCache;
         }
@@ -261,6 +290,31 @@ export class PropertyInfo<T extends {}> {
         }
 
         this._hasNullableParentsCache = false;
+        return false;
+    }
+
+    /**
+     * Returns true if this property or any parent is renamed with from().
+     * Storage paths for such properties differ from their in-memory paths.
+     *
+     * @returns {boolean} True if any segment of the path is renamed, false otherwise.
+     */
+    get hasRenamedSegments(): boolean {
+        if (this._hasRenamedSegmentsCache !== undefined) {
+            return this._hasRenamedSegmentsCache;
+        }
+
+        // oxlint-disable-next-line no-this-alias
+        let current: PropertyInfo<T> | undefined = this;
+        while (current != null) {
+            if (current.from != null) {
+                this._hasRenamedSegmentsCache = true;
+                return true;
+            }
+            current = current.parent;
+        }
+
+        this._hasRenamedSegmentsCache = false;
         return false;
     }
 

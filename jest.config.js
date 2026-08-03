@@ -1,119 +1,142 @@
-module.exports = {
+// Workspace packages point `main`/`types` at ./dist, which only exists after a build.
+// Tests resolve every @routier/* import to source so `npx jest` works on a clean
+// checkout with no build step. The runtime side is `moduleNameMapper`; the type side is
+// tsconfig.test.json's `paths`. Both lists must stay in sync — a name present in one but
+// not the other fails at either runtime or typecheck.
+const moduleNameMapper = {
+    '^@routier/core$': '<rootDir>/core/src/index.ts',
+    '^@routier/core/(.*)$': '<rootDir>/core/src/$1',
+    '^@routier/datastore$': '<rootDir>/datastore/src/index.ts',
+    '^@routier/datastore/(.*)$': '<rootDir>/datastore/src/$1',
+    '^@routier/test-utils$': '<rootDir>/test-utils/src/index.ts',
+    '^@routier/test-utils/(.*)$': '<rootDir>/test-utils/src/$1',
+    '^@routier/memory-plugin$': '<rootDir>/plugins/memory/src/index.ts',
+    '^@routier/memory-plugin/(.*)$': '<rootDir>/plugins/memory/src/$1',
+    '^@routier/dexie-plugin$': '<rootDir>/plugins/dexie/src/index.ts',
+    '^@routier/browser-storage-plugin$': '<rootDir>/plugins/browser-storage/src/index.ts',
+    '^@routier/file-system-plugin$': '<rootDir>/plugins/file-system/src/index.ts',
+    '^@routier/sql-plugin-core$': '<rootDir>/plugins/sql-core/src/index.ts',
+    '^@routier/sqlite-plugin$': '<rootDir>/plugins/sqlite/src/index.ts',
+    '^@routier/pouchdb-plugin$': '<rootDir>/plugins/pouchdb/src/index.ts',
+    '^@routier/postgresql-plugin$': '<rootDir>/plugins/postgresql/src/index.ts',
+    '^@routier/mysql-plugin$': '<rootDir>/plugins/mysql/src/index.ts',
+    '^@routier/replication-plugin$': '<rootDir>/plugins/replication/src/index.ts',
+    '^@routier/react$': '<rootDir>/react/src/index.ts',
+};
+
+const tsTransform = {
+    '^.+\\.tsx?$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.test.json' }],
+};
+
+// Some workspace packages and @faker-js ship ESM-only .js that Jest cannot parse
+// without a downlevel pass.
+const babelTransform = {
+    '^.+\\.js$': ['babel-jest', {
+        presets: [['@babel/preset-env', { targets: { node: 'current' } }]],
+    }],
+};
+
+/** Shared settings every project spreads over. */
+const base = {
     preset: 'ts-jest',
     testEnvironment: 'node',
-    roots: ['<rootDir>/core', '<rootDir>/datastore', '<rootDir>/react', '<rootDir>/plugins', '<rootDir>/test-utils'],
-    testMatch: [
-        '**/__tests__/**/*.ts',
-        '**/?(*.)+(spec|test).ts'
-    ],
-    transform: {
-        '^.+\\.ts$': 'ts-jest',
-    },
+    transform: tsTransform,
+    moduleNameMapper,
+    transformIgnorePatterns: ['node_modules/(?!(@routier|@faker-js)/)'],
+    // StrykerJS copies the whole repo into .stryker-tmp sandboxes. Without this, a Jest run
+    // started while a mutation run is in progress sees two package.json files claiming the
+    // same module name and refuses to start.
+    modulePathIgnorePatterns: ['<rootDir>/.stryker-tmp'],
+};
+
+module.exports = {
+    moduleFileExtensions: ['ts', 'tsx', 'js', 'json'],
+    setupFiles: ['<rootDir>/test.setup.js'],
+    testTimeout: 10000,
     collectCoverageFrom: [
         '**/*.ts',
         '!**/*.d.ts',
+        '!**/*.test.ts',
         '!**/node_modules/**',
         '!**/dist/**',
-        '!**/coverage/**'
+        '!**/coverage/**',
     ],
     coverageDirectory: 'coverage',
     coverageReporters: ['text', 'html'],
-    moduleFileExtensions: ['ts', 'js', 'json'],
-    setupFiles: ['<rootDir>/test.setup.js'],
-    setupFilesAfterEnv: [],
-    testTimeout: 10000,
     projects: [
         {
+            ...base,
             displayName: 'core',
             testMatch: ['<rootDir>/core/**/*.test.ts'],
-            preset: 'ts-jest',
-            testEnvironment: 'node',
-            transform: {
-                '^.+\\.ts$': ['ts-jest', {
-                    tsconfig: {
-                        lib: ['ESNext', 'ES2023'],
-                        target: 'ESNext',
-                        esModuleInterop: true,
-                        allowSyntheticDefaultImports: true
-                    }
-                }]
-            }
         },
         {
+            ...base,
             displayName: 'datastore',
             testMatch: ['<rootDir>/datastore/**/*.test.ts'],
-            preset: 'ts-jest',
-            testEnvironment: 'node',
-            moduleNameMapper: {
-                '^@routier/core$': '<rootDir>/core/src/index.ts',
-                '^@routier/core/(.*)$': '<rootDir>/core/src/$1',
-                '^@routier/memory-plugin$': '<rootDir>/plugins/memory/src/index.ts',
-                '^@routier/test-utils$': '<rootDir>/test-utils/src/index.ts'
-            },
-            transformIgnorePatterns: [
-                'node_modules/(?!(@routier)/)'
-            ],
-            transform: {
-                '^.+\\.ts$': ['ts-jest', {
-                    tsconfig: {
-                        lib: ['ESNext', 'ES2023'],
-                        target: 'ESNext',
-                        moduleResolution: 'node',
-                        esModuleInterop: true,
-                        allowSyntheticDefaultImports: true
-                    }
-                }]
-            }
         },
         {
+            ...base,
             displayName: 'react',
-            testMatch: ['<rootDir>/react/**/*.test.ts'],
-            preset: 'ts-jest',
-            testEnvironment: 'node'
+            testMatch: ['<rootDir>/react/**/*.test.ts?(x)'],
+            // Hooks need a DOM. React Testing Library renders into document.body, so this
+            // project is the one place the suite departs from the node environment.
+            testEnvironment: 'jsdom',
+            transform: { ...tsTransform, ...babelTransform },
         },
         {
+            ...base,
             displayName: 'plugins',
             testMatch: ['<rootDir>/plugins/*/**/*.test.ts'],
-            preset: 'ts-jest',
-            testEnvironment: 'node',
-            moduleNameMapper: {
-                '^@routier/core$': '<rootDir>/core/src/index.ts',
-                '^@routier/core/(.*)$': '<rootDir>/core/src/$1',
-                '^@routier/datastore$': '<rootDir>/datastore/src/index.ts',
-                '^@routier/datastore/(.*)$': '<rootDir>/datastore/src/$1',
-                '^@routier/memory-plugin$': '<rootDir>/plugins/memory/src/index.ts',
-                '^@routier/test-utils$': '<rootDir>/test-utils/src/index.ts'
-            },
-            // Avoid duplicate @routier/memory-plugin in Haste map: replication (and others) depend on it,
-            // so nested or hoisted node_modules can provide a second path for the same package name.
+            transform: { ...tsTransform, ...babelTransform },
+            // Avoid duplicate @routier/memory-plugin in the Haste map: replication (and
+            // others) depend on it, so nested or hoisted node_modules can provide a second
+            // path for the same package name.
             modulePathIgnorePatterns: [
+                ...base.modulePathIgnorePatterns,
                 '<rootDir>/plugins/replication/node_modules',
                 '<rootDir>/plugins/pouchdb/node_modules',
-                '<rootDir>/node_modules/@routier/memory-plugin'
+                '<rootDir>/node_modules/@routier/memory-plugin',
             ],
-            transformIgnorePatterns: [
-                'node_modules/(?!(@routier|@faker-js)/)'
-            ],
-            transform: {
-                '^.+\\.ts$': ['ts-jest', {
-                    tsconfig: {
-                        lib: ['ESNext', 'ES2023'],
-                        target: 'ESNext',
-                        esModuleInterop: true,
-                        allowSyntheticDefaultImports: true
-                    }
-                }],
-                '^.+\\.js$': ['babel-jest', {
-                    presets: [['@babel/preset-env', { targets: { node: 'current' } }]]
-                }]
+            setupFilesAfterEnv: ['<rootDir>/plugins/dexie/jest.setup.js'],
+            moduleNameMapper: {
+                ...moduleNameMapper,
+                // The `pouchdb` meta-package loads leveldown at require time, which has
+                // no prebuilt binary for current Node. Swap in a core+memory-adapter
+                // build so these suites run without a native toolchain.
+                '^pouchdb$': '<rootDir>/test-utils/src/pouchdbMemory.ts',
             },
-            setupFilesAfterEnv: ['<rootDir>/plugins/dexie/jest.setup.js']
         },
         {
+            ...base,
+            displayName: 'e2e',
+            testMatch: ['<rootDir>/e2e/**/*.test.ts'],
+            // Real storage engines and containers are slower than in-process plugins.
+            // The timeout lives in the setup file because Jest ignores `testTimeout` in a
+            // per-project config.
+            setupFilesAfterEnv: ['<rootDir>/e2e/jest.setup.js'],
+        },
+        {
+            ...base,
+            displayName: 'stress',
+            testMatch: ['<rootDir>/stress/**/*.test.ts'],
+            // Volume and churn scenarios run for minutes, not milliseconds. Same reason as
+            // e2e: `testTimeout` is a root-level option Jest ignores per project.
+            //
+            // The suites themselves are gated on STRESS=1 (see stress/src/harness/scenario.ts),
+            // so the default `npx jest` run lists them as skipped rather than executing them.
+            setupFilesAfterEnv: ['<rootDir>/stress/jest.setup.js'],
+        },
+        {
+            ...base,
+            displayName: 'benchmark',
+            // Only the harness logic is unit tested here. The benchmarks themselves are run
+            // by `npm run benchmark`, not by Jest — a timing measurement is not a test.
+            testMatch: ['<rootDir>/benchmark/**/*.test.ts'],
+        },
+        {
+            ...base,
             displayName: 'test-utils',
             testMatch: ['<rootDir>/test-utils/**/*.test.ts'],
-            preset: 'ts-jest',
-            testEnvironment: 'node'
-        }
-    ]
+        },
+    ],
 };

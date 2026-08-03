@@ -15,7 +15,18 @@ const UUID_TEMPLATE = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx';
 const hasCrypto =
     typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function';
 
+const hasRandomUUID =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function';
+
 export const uuidv4 = (): string => {
+    if (hasRandomUUID) {
+        return crypto.randomUUID();
+    }
+
+    return uuidv4Fallback();
+};
+
+const uuidv4Fallback = (): string => {
     let randomBytes: Uint8Array | null = null;
     if (hasCrypto) {
         randomBytes = crypto.getRandomValues(new Uint8Array(16));

@@ -212,6 +212,28 @@ export class DexiePlugin implements IDbPlugin, Disposable {
             // Start with the base collection
             let collection = db.table(collectionName).toCollection();
 
+            // A window may only be pushed down to Dexie when nothing else reorders or
+            // reduces the rows first:
+            //
+            // - Dexie applies `offset`/`limit` while walking the index cursor, before the
+            //   JS callbacks added by `filter`. `where(...).skip(2)` therefore skips two
+            //   rows of the whole table and filters what remains, rather than skipping two
+            //   of the matches.
+            // - Sorting is not pushed down at all (there is no `sort` branch below); the
+            //   translator sorts in memory after this query returns. Offsetting here would
+            //   window the unsorted rows and sort only the survivors.
+            //
+            // In either case the window has to be applied in memory, after filtering and
+            // sorting, so the translator is told to take it over.
+            const hasFilter = options.get("filter").length > 0;
+            const hasSort = options.get("sort").length > 0;
+            const canPushDownWindow = hasFilter === false && hasSort === false;
+
+            if (canPushDownWindow === false) {
+                translator.options.useTranslatorSkip = true;
+                translator.options.useTranslatorTake = true;
+            }
+
             options.forEach(option => {
 
                 if (option.name === "filter") {
@@ -227,12 +249,16 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                 }
 
                 if (option.name === "skip") {
-                    collection = collection.offset(option.value);
+                    if (canPushDownWindow) {
+                        collection = collection.offset(option.value);
+                    }
                     return
                 }
 
                 if (option.name === "take") {
-                    collection = collection.limit(option.value);
+                    if (canPushDownWindow) {
+                        collection = collection.limit(option.value);
+                    }
                     return
                 }
 

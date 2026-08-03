@@ -3,7 +3,7 @@ import { now } from "@routier/core/performance";
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, Query } from "@routier/core/plugins";
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from "@routier/core/results";
 import { CompiledSchema } from "@routier/core/schema";
-import { logger, uuid } from "@routier/core/utilities";
+import { logger, uuid, uuidv4 } from "@routier/core/utilities";
 import { MemoryPlugin } from "@routier/memory-plugin";
 import { PluginSyncEngine } from "./PluginSyncEngine";
 
@@ -34,6 +34,12 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
     // Give more control over hydration, if the plugin is destroyed, so is the in memory data.
     // It is up to the dev to control the lifecycle
     private collectionHydrationStatuses: Map<string, HydrationStatus> = new Map<string, HydrationStatus>();
+
+    // Collections this instance has persisted to. The read plugin is authoritative for
+    // them: a size of 0 after a remove-all is real data, not a missed hydration, and
+    // re-hydrating from the source (whose mirrored writes may still be in flight)
+    // would resurrect removed entities.
+    private writtenCollections: Set<string> = new Set<string>();
     private readonly syncEngine: PluginSyncEngine;
 
     /**
@@ -44,7 +50,9 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
     constructor(source: IDbPlugin) {
         this.plugins = {
             source,
-            read: new MemoryPlugin("__optimistic-updates-memory-plugin-db__")
+            // Unique per instance: a shared read database would leak data between
+            // unrelated source databases in the same process
+            read: new MemoryPlugin(`__optimistic-updates-memory-plugin-db-${uuidv4()}__`)
         };
         this.syncEngine = new PluginSyncEngine({
             // For optimistic behavior, source in sync engine is the fast read plugin.
@@ -68,7 +76,7 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
             const sourcePlugin = this.plugins.source;
             const collectionSize = getMemoryPluginCollectionSize(this.plugins.read, event.operation.schema);
 
-            if (collectionSize === 0 && this.collectionHydrationStatuses.get(collectionName) == null) {
+            if (collectionSize === 0 && this.collectionHydrationStatuses.get(collectionName) == null && this.writtenCollections.has(collectionName) === false) {
 
                 // Notify the cache that the db was hydrated right away
                 this.collectionHydrationStatuses.set(collectionName, "pending");
@@ -219,6 +227,18 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
     }
 
     bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackPartialResult<BulkPersistResult>): void {
+        for (const [schemaId, changes] of event.operation) {
+            if (changes.hasItems === false) {
+                continue;
+            }
+
+            const schema = event.schemas.get(schemaId);
+
+            if (schema != null) {
+                this.writtenCollections.add(schema.collectionName);
+            }
+        }
+
         this.syncEngine.bulkPersist({
             ...event,
             id: uuid(8),
