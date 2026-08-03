@@ -1,6 +1,6 @@
 # Known defects
 
-Status: 12 of 15 fixed; #12 and #13 open and pinned, #14 open and worked around (2026-08-02)
+Status: 12 of 17 fixed. Open and pinned: #12, #13, #16, #17. Open and worked around: #14.
 Date: 2026-08-02
 
 Defects 1–10 came from the functional test program. #11–#13 came from the stress program
@@ -344,6 +344,39 @@ Two follow-on rules landed with it, both load-bearing:
 
 Pinned by `e2e/src/sqliteJsonColumns.test.ts` — a real SQLite file, a schema with no
 serializers anywhere.
+
+### 16. A `{ isPaused: false }` residue survives on non-proxy reads — **OPEN, pinned, cosmetic**
+
+The enricher's pause bootstrap installs `__tracking__` on the **input** object; the deletion
+at return targets the **output**. They miss each other, so `.immutable()` and `.diff()` reads
+carry a stray `__tracking__` holding nothing but `isPaused`.
+
+Harmless — it is non-enumerable and nothing reads it, and none of the state that decides what
+a save persists (`changes`, `original`, `isDirty`) is present. Recorded because it is
+confusing to find and trivially wrong.
+
+**Pinned by:** `it.failing("installs no __tracking__ bookkeeping at all")` in
+`ImmutableCollection.test.ts`.
+
+### 17. `"immutable"` change tracking does not freeze — **OPEN, pinned**
+
+`SchemaDefinition.ts` builds an `if (changeTrackingType === "immutable")` block named
+`"freeze"` — and **nothing ever fills it**. The mode has never frozen anything.
+
+Consequence, and it is the one genuinely bad failure mode of the immutable path today: a
+plain `entity.price = 5` is **silently lost**. It is not tracked (no proxy) and not rejected
+(not frozen), so the write vanishes with no error. Freezing turns that into a throw, which is
+the whole point.
+
+`schema.freeze` already exists and works (`FreezeHandlerBuilder`, and defect #7 fixed its
+array handler). It is simply never called from the enricher, so the fix is wiring rather than
+new code — but it needs care: freezing on **add** would break `mergeChanges`, which writes
+assigned identities back into the added entity. Freezing likely belongs on the read path only.
+
+Measurement note: freezing is not a performance concern. Over 50,000 entities the frozen and
+unfrozen non-proxy modes were within noise of each other (46.7ms vs 47.3ms on a re-read).
+
+**Pinned by:** `it.failing("freezes what it returns")` in `ImmutableCollection.test.ts`.
 
 ---
 

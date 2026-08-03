@@ -166,7 +166,7 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
     }
 
     empty(done: CallbackResult<InferType<TEntity>[]>) {
-        const request = new RequestContext<TEntity>();
+        const request = new RequestContext<TEntity>(this.changeTrackingType);
         const result = new SelectionQueryable<TEntity, InferType<TEntity>, void>(this.dependencies, request);
         return result.remove(done);
     }

@@ -507,14 +507,25 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
         return this.additions.size > 0 || this.removals.length > 0 || this.immutable.hasChanges() || this.hasAttachmentsChanges() === true;
     }
 
-    add(entities: InferCreateType<TEntity>[], tag: unknown | null, done: CallbackResult<InferType<TEntity>[]>) {
+    /**
+     * @param changeTrackingType supplied by the collection. It used to be hardcoded to
+     *   "proxy", which made `.immutable()` and `.diff()` leak proxies through the back door:
+     *   an added entity became the canonical attachment, so every later read of that row
+     *   handed back the proxy no matter what the query asked for.
+     */
+    add(
+        entities: InferCreateType<TEntity>[],
+        tag: unknown | null,
+        done: CallbackResult<InferType<TEntity>[]>,
+        changeTrackingType: ChangeTrackingType = "proxy"
+    ) {
         try {
             const length = entities.length;
             const result: InferType<TEntity>[] = Array.from({ length });
             const tagCollection = tag != null ? this.resolveTagCollection() : null;
 
             for (let i = 0; i < length; i++) {
-                const entity = this.schema.enrich(entities[i], "proxy");
+                const entity = this.schema.enrich(entities[i], changeTrackingType);
                 this.additions.set(entity);
                 result[i] = entity as InferType<TEntity>;
 

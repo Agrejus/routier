@@ -384,7 +384,11 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             // The paused bootstrap tracking is deleted rather than unpaused: tracking
             // metadata is created lazily on the first real write, and callers assert
             // an untouched entity carries none
-            enricherFunctionBody.slot("return").raw('\tif (changeTrackingType === "proxy") { delete enriched.__tracking__; }\n\treturn enableChangeTracking(enriched);');
+            // The __tracking__ bootstrap is temporary in EVERY mode, so it is always removed.
+            // Proxy mode recreates it lazily on the first tracked write (see defect #2); the
+            // non-proxy modes never wanted it, and gating the delete on "proxy" left them
+            // carrying a stray `{ isPaused: false }` on every entity.
+            enricherFunctionBody.slot("return").raw('\tdelete enriched.__tracking__;\n\treturn enableChangeTracking(enriched);');
 
             const preprocessCodeBuilder = new CodeBuilder();
             preprocessCodeBuilder.slot("main");

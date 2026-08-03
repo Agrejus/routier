@@ -100,7 +100,7 @@ export class Collection<TEntity extends {}> extends RemovableCollection<TEntity>
      */
     add(entities: InferCreateType<TEntity>[], done: CallbackResult<InferType<TEntity>[]>) {
         const tag = this.getAndDestroyTag();
-        this.dependencies.changeTracker.add(entities, tag, done);
+        this.dependencies.changeTracker.add(entities, tag, done, this.changeTrackingType);
     }
 
     /**

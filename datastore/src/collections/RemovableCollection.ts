@@ -44,7 +44,7 @@ export class RemovableCollection<TEntity extends {}> extends CollectionBase<TEnt
      * @param done Callback function called when the operation completes or with an error
      */
     removeAll(done: CallbackResult<InferType<TEntity>[]>) {
-        const request = new RequestContext<TEntity>();
+        const request = new RequestContext<TEntity>(this.changeTrackingType);
         const result = new SelectionQueryable<TEntity, InferType<TEntity>, void>(this.dependencies, request);
         return result.remove(done);
     }
