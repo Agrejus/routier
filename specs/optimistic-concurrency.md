@@ -90,11 +90,17 @@ The conditional check is performed by the INNER plugin via the
   the lazy CREATE TABLE pattern, is the natural future improvement.
 - **Cross-store entities**: observations live in the wrapper instance, so an entity
   attached into a DIFFERENT store has no expected value there until that store reads it.
+- **A failed save applies nothing and KEEPS the pending intent** — queued adds/removals
+  and dirty state survive in the tracker, so a retry refreshes the stale rows and simply
+  saves again. Do not re-create the intent on retry; that doubles it.
 - **Diff-mode conflict recovery needs a detach** before the re-read
   (`attachments.remove(...)`) — a dirty diff attachment deliberately protects local edits
   from re-reads. Proxy mode just re-reads.
-- **In-process atomicity is per collection** (pre-existing plugin semantics); SQL saves
-  roll back as one transaction.
+- **Saves are all-or-nothing across collections everywhere.** SQL rolls back as one
+  transaction; the in-process plugins validate every collection before applying anything
+  and revert via an undo log on failure (this closed the orphan-ledger-row-per-conflict
+  gap the finance A/B exposed). The remaining in-process honesty gap is crash-safety
+  across FILES — a process dying between two file writes can leave disk partial.
 
 ## Measured
 

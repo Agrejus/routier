@@ -84,20 +84,21 @@ class Bot {
         const amount = Math.round((5 + Math.random() * 245) * 100) / 100;
         const started = performance.now();
 
+        // The ledger row is added ONCE: a failed save applies nothing AND keeps the
+        // pending intent, so the queued add rides along into every retry — re-adding it
+        // would double the ledger.
+        await this.store.transactions.addAsync({
+            fromAccountId: fromId,
+            toAccountId: toId,
+            amount,
+            category: pick([...CATEGORIES]),
+            memo: `bot ${this.id}`,
+            at: new Date(),
+        } as any);
+
         for (let attempt = 0; attempt < 50; attempt++) {
             const from = this.cache.get(fromId);
             const to = this.cache.get(toId);
-
-            // Ledger row (immutable collection) + two balance updates (diff collection),
-            // one save — computed from the CACHED entities, stale or not.
-            await this.store.transactions.addAsync({
-                fromAccountId: fromId,
-                toAccountId: toId,
-                amount,
-                category: pick([...CATEGORIES]),
-                memo: `bot ${this.id}`,
-                at: new Date(),
-            } as any);
 
             from.balance = Math.round((from.balance - amount) * 100) / 100;
             to.balance = Math.round((to.balance + amount) * 100) / 100;

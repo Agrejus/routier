@@ -168,3 +168,81 @@ describe('unaffected paths', () => {
         await expect(writerB.saveChangesAsync()).resolves.toBeDefined();
     });
 });
+
+describe('cross-collection atomicity', () => {
+    // The finance-app shape that exposed the gap: one save carries a LEDGER ADD and a
+    // conflicting ACCOUNT UPDATE. Per-collection persistence committed the ledger row
+    // before the account collection rejected — one orphan ledger row per conflict.
+    const ledgerSchema = s.define('occ_ledger', {
+        id: s.string().key().identity(),
+        amount: s.number(),
+    }).compile();
+
+    class BankStore extends DataStore {
+        accounts = this.collection(schema).diff().create();
+        ledger = this.collection(ledgerSchema).immutable().create();
+    }
+
+    it('a conflicted save applies NOTHING in any collection', async () => {
+        const db = database();
+        const writerA = track(new BankStore(guarded(db)));
+        const writerB = track(new BankStore(guarded(db)));
+
+        const [seeded]: any[] = await writerA.accounts.addAsync({ balance: 1000 } as any);
+        await writerA.saveChangesAsync();
+        const id = (seeded as any).id;
+
+        const a: any = await writerA.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
+        const b: any = await writerB.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
+
+        a.balance = 900;
+        await writerA.saveChangesAsync();
+
+        // B's save carries BOTH a ledger add and the (stale) balance update
+        await writerB.ledger.addAsync({ amount: 100 } as any);
+        b.balance = 1100;
+
+        await expect(writerB.saveChangesAsync()).rejects.toThrow(OptimisticConcurrencyError);
+
+        // Nothing from the failed save may exist: no orphan ledger row, no balance change
+        expect(await writerA.ledger.countAsync()).toBe(0);
+        const fresh: any = await writerA.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
+        expect(fresh.balance).toBe(900);
+    });
+
+    it('a retried transaction lands exactly once in every collection', async () => {
+        const db = database();
+        const writerA = track(new BankStore(guarded(db)));
+        const writerB = track(new BankStore(guarded(db)));
+
+        const [seeded]: any[] = await writerA.accounts.addAsync({ balance: 1000 } as any);
+        await writerA.saveChangesAsync();
+        const id = (seeded as any).id;
+
+        const a: any = await writerA.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
+        const b: any = await writerB.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
+
+        a.balance = 900;
+        await writerA.saveChangesAsync();
+
+        // First attempt conflicts...
+        await writerB.ledger.addAsync({ amount: 100 } as any);
+        b.balance = 1100;
+        await expect(writerB.saveChangesAsync()).rejects.toThrow(OptimisticConcurrencyError);
+
+        // ...and because the save applied NOTHING, the pending intent SURVIVES in the
+        // tracker — the ledger add is still queued. The retry refreshes only the stale
+        // account and re-saves; re-adding the ledger row would double it.
+        expect(writerB.ledger.hasChanges()).toBe(true);
+
+        writerB.accounts.attachments.remove(b);
+        const retried: any = await writerB.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
+        retried.balance = retried.balance + 100;
+        await writerB.saveChangesAsync();
+
+        // Exactly one ledger row, and the balance reflects both writers
+        expect(await writerA.ledger.countAsync()).toBe(1);
+        const final: any = await writerA.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
+        expect(final.balance).toBe(1000);
+    });
+});

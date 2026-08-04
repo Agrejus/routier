@@ -1,6 +1,6 @@
 import { assertIsNotNull } from '../assertions';
 import { OptimisticConcurrencyError } from '../errors';
-import { BulkPersistResult } from '../collections';
+import { BulkPersistResult, SchemaPersistChanges } from '../collections';
 import { WorkPipeline } from '../pipeline';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, JsonTranslator } from '.';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '../results';
@@ -56,117 +56,189 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
 
     protected abstract resolveCollection<TEntity extends {}>(schema: CompiledSchema<TEntity>): MemoryDataCollection;
 
+    /**
+     * All-or-nothing across every collection in the save.
+     *
+     * The naive shape — validate/apply/save one schema at a time — leaks partial saves:
+     * a conflict in the SECOND collection left the first collection's changes applied
+     * (measured in the finance stress app as one orphan ledger row per conflict). So the
+     * work is phased: every collection loads and validates BEFORE anything is applied,
+     * mutations apply with an undo log, and a failure anywhere reverts the memory state
+     * (and re-saves any files already written) so the caller sees a save that did nothing.
+     *
+     * The remaining honesty gap is crash-safety across FILES: a process dying between two
+     * file writes can leave disk partially updated. Guarding that needs a journal, which
+     * a memory-first plugin does not pretend to have.
+     */
     bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackPartialResult<BulkPersistResult>) {
         try {
             const bulkPersistResult = event.operation.toResult();
             const schemas = event.schemas;
-            const pipeline = new WorkPipeline();
-            let hasWork = false;
+
+            type StagedSchema = {
+                schema: CompiledSchema<UnknownRecord>;
+                collection: MemoryDataCollection;
+                changes: SchemaPersistChanges<Record<string, unknown>>;
+                result: ReturnType<BulkPersistResult["get"]>;
+            };
+
+            const staged: StagedSchema[] = [];
 
             for (const [schemaId, changes] of event.operation) {
-                const { adds, hasItems, removes, updates } = changes;
-
-                if (!hasItems) {
+                if (!changes.hasItems) {
                     continue;
                 }
 
-                hasWork = true;
-                const result = bulkPersistResult.get(schemaId);
                 const schema = schemas.get(schemaId);
                 assertIsNotNull(schema);
 
-                pipeline.pipe((d) => {
-                    try {
-                        const collection = this.resolveCollection(schema);
-                        const addsLength = adds.length;
-                        const updatesLength = updates.length;
-                        const removesLength = removes.length;
-
-                        // Only need to load if we have updates or removes (need existing data)
-                        // For adds-only operations, we can skip load for better performance
-                        const needsLoad = updatesLength > 0 || removesLength > 0;
-
-                        const processChanges = () => {
-                            // Optimistic concurrency: verify EVERY conditional update
-                            // against the stored rows before anything is applied, so a
-                            // conflict aborts this collection's save with nothing written.
-                            const conflicts: IdType[] = [];
-
-                            for (let j = 0; j < updatesLength; j++) {
-                                const { entity, concurrency } = updates[j];
-
-                                if (concurrency == null) {
-                                    continue;
-                                }
-
-                                const id = schema.getId(entity as never);
-                                const stored = collection.getByIds([id]) as Record<string, unknown> | null;
-
-                                // A missing row is not a token conflict — it falls through
-                                // to the same no-op an unconditional update would be.
-                                if (stored != null && stored[concurrency.column] !== concurrency.expected) {
-                                    conflicts.push(id);
-                                }
-                            }
-
-                            if (conflicts.length > 0) {
-                                d(Result.error(new OptimisticConcurrencyError(schema.collectionName, conflicts)));
-                                return;
-                            }
-
-                            result.adds = Array.from({ length: addsLength });
-                            result.updates = Array.from({ length: updatesLength });
-                            result.removes = Array.from({ length: removesLength });
-
-                            for (let j = 0; j < addsLength; j++) {
-                                const item = adds[j];
-                                collection.add(item);
-                                result.adds[j] = item as DeepPartial<InferCreateType<UnknownRecord>>;
-                            }
-
-                            for (let j = 0; j < updatesLength; j++) {
-                                const item = updates[j].entity;
-                                collection.update(item);
-                                result.updates[j] = item;
-                            }
-
-                            for (let j = 0; j < removesLength; j++) {
-                                collection.remove(removes[j]);
-                                result.removes[j] = removes[j];
-                            }
-
-                            collection.save(saveResult => {
-                                if (saveResult.ok === Result.ERROR) {
-                                    d(saveResult);
-                                    return;
-                                }
-                                d(Result.success());
-                            });
-                        };
-
-                        if (needsLoad) {
-                            collection.load(readResult => {
-                                if (readResult.ok === Result.ERROR) {
-                                    d(readResult);
-                                    return;
-                                }
-                                processChanges();
-                            });
-                        } else {
-                            // Skip load for adds-only operations
-                            processChanges();
-                        }
-                    } catch (e) {
-                        d(Result.error(e));
-                    }
+                staged.push({
+                    schema: schema as CompiledSchema<UnknownRecord>,
+                    collection: this.resolveCollection(schema),
+                    changes: changes as SchemaPersistChanges<Record<string, unknown>>,
+                    result: bulkPersistResult.get(schemaId),
                 });
             }
 
-            // If there is no work, just return the result
-            if (!hasWork) {
+            if (staged.length === 0) {
                 done(PluginEventResult.success(event.id, bulkPersistResult));
                 return;
             }
+
+            const pipeline = new WorkPipeline();
+
+            // Phase 1 — load every collection that needs its stored data (updates/removes,
+            // and any conditional update), before anything is validated or applied.
+            for (const { collection, changes } of staged) {
+                if (changes.updates.length === 0 && changes.removes.length === 0) {
+                    continue;
+                }
+
+                pipeline.pipe((d) => {
+                    collection.load(readResult => {
+                        if (readResult.ok === Result.ERROR) {
+                            d(readResult);
+                            return;
+                        }
+                        d(Result.success());
+                    });
+                });
+            }
+
+            // Phase 2 — validate everything, then apply everything, then save everything.
+            pipeline.pipe((d) => {
+                try {
+                    // Validate: optimistic-concurrency checks for EVERY collection run
+                    // before ANY collection is touched, so a conflict rejects the whole
+                    // save with nothing written anywhere.
+                    for (const { schema, collection, changes } of staged) {
+                        const conflicts: IdType[] = [];
+
+                        for (const { entity, concurrency } of changes.updates) {
+                            if (concurrency == null) {
+                                continue;
+                            }
+
+                            const id = schema.getId(entity as never);
+                            const stored = collection.getByIds([id]) as Record<string, unknown> | null;
+
+                            // A missing row is not a token conflict — it falls through
+                            // to the same no-op an unconditional update would be.
+                            if (stored != null && stored[concurrency.column] !== concurrency.expected) {
+                                conflicts.push(id);
+                            }
+                        }
+
+                        if (conflicts.length > 0) {
+                            d(Result.error(new OptimisticConcurrencyError(schema.collectionName, conflicts)));
+                            return;
+                        }
+                    }
+
+                    // Apply, recording the inverse of every mutation. The in-memory maps
+                    // make undo exact: an add is removed, an update or remove restores the
+                    // captured prior record.
+                    const undo: (() => void)[] = [];
+
+                    const revert = () => {
+                        for (let i = undo.length - 1; i >= 0; i--) {
+                            undo[i]();
+                        }
+                    };
+
+                    try {
+                        for (const { schema, collection, changes, result } of staged) {
+                            const { adds, updates, removes } = changes;
+
+                            result.adds = Array.from({ length: adds.length });
+                            result.updates = Array.from({ length: updates.length });
+                            result.removes = Array.from({ length: removes.length });
+
+                            for (let j = 0; j < adds.length; j++) {
+                                const item = adds[j];
+                                collection.add(item);
+                                undo.push(() => collection.remove(item));
+                                result.adds[j] = item as DeepPartial<InferCreateType<UnknownRecord>>;
+                            }
+
+                            for (let j = 0; j < updates.length; j++) {
+                                const item = updates[j].entity;
+                                const prior = collection.getByIds(schema.getIds(item as never)) as Record<string, unknown> | undefined;
+                                collection.update(item);
+                                undo.push(prior != null ? () => collection.update(prior) : () => collection.remove(item));
+                                result.updates[j] = item;
+                            }
+
+                            for (let j = 0; j < removes.length; j++) {
+                                const item = removes[j];
+                                const prior = collection.getByIds(schema.getIds(item as never)) as Record<string, unknown> | undefined;
+                                collection.remove(item);
+                                if (prior != null) {
+                                    undo.push(() => collection.update(prior));
+                                }
+                                result.removes[j] = item;
+                            }
+                        }
+                    } catch (applyError) {
+                        revert();
+                        d(Result.error(applyError));
+                        return;
+                    }
+
+                    // Save every collection. A failure reverts the memory state and
+                    // re-saves the files already written so disk follows it back.
+                    const saveNext = (index: number) => {
+                        if (index >= staged.length) {
+                            d(Result.success());
+                            return;
+                        }
+
+                        staged[index].collection.save(saveResult => {
+                            if (saveResult.ok === Result.ERROR) {
+                                revert();
+
+                                const resaveNext = (k: number) => {
+                                    if (k >= index) {
+                                        d(saveResult);
+                                        return;
+                                    }
+
+                                    staged[k].collection.save(() => resaveNext(k + 1));
+                                };
+
+                                resaveNext(0);
+                                return;
+                            }
+
+                            saveNext(index + 1);
+                        });
+                    };
+
+                    saveNext(0);
+                } catch (e) {
+                    d(Result.error(e));
+                }
+            });
 
             pipeline.filter((result) => {
                 if (result.ok === Result.ERROR) {
