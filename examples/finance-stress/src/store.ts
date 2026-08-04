@@ -1,3 +1,4 @@
+import { ConcurrencyDbPlugin } from '@routier/core/plugins';
 import { DataStore } from '@routier/datastore';
 import { MemoryPlugin } from '@routier/memory-plugin';
 import { accountSchema, transactionSchema, userSchema } from './schemas';
@@ -17,11 +18,13 @@ export const DATABASE = 'finance-stress-bank';
 
 export class FinanceStore extends DataStore {
     users = this.collection(userSchema).proxy().create();
-    accounts = this.collection(accountSchema).diff().concurrency(x => x.version).create();
+    accounts = this.collection(accountSchema).diff().create();
     transactions = this.collection(transactionSchema).immutable().create();
 
     constructor() {
-        super(new MemoryPlugin(DATABASE));
+        // One wrap = optimistic concurrency for every collection: a hidden __version
+        // token per row, conflicts rejected instead of silently overwritten.
+        super(new ConcurrencyDbPlugin(new MemoryPlugin(DATABASE)));
     }
 }
 

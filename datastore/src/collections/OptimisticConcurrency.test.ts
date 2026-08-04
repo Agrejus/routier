@@ -1,30 +1,31 @@
 import { afterEach, describe, expect, it } from '@jest/globals';
 import { s } from '@routier/core/schema';
-import { OptimisticConcurrencyError } from '@routier/core';
+import { ConcurrencyDbPlugin, OptimisticConcurrencyError } from '@routier/core';
 import { MemoryPlugin } from '@routier/memory-plugin';
 import { DataStore } from '../DataStore';
 
 /**
- * `.concurrency()` end to end — the feature the finance stress app proved missing.
+ * Optimistic concurrency as a wrapper plugin — the feature the finance stress app proved
+ * missing, with ZERO schema/builder surface: wrap the storage plugin and every row gets a
+ * hidden `__version` token.
  *
- * Two writers read the same row; both write. Without a token the second write silently
- * overwrites the first (the lost update that showed up as invariant drift). With a token
- * the second save FAILS with a conflict naming the row, the caller re-reads and retries,
- * and no write is ever silently lost.
+ * Two writers read the same row; both write. Without the wrapper the second write silently
+ * overwrites the first (the lost update that showed up as invariant drift). With it the
+ * second save FAILS with a conflict naming the row, the caller re-reads and retries, and
+ * no write is ever silently lost.
  */
 
 const schema = s.define('occ_accounts', {
     id: s.string().key().identity(),
     balance: s.number(),
-    version: s.number(),
 }).compile();
 
 class Store extends DataStore {
-    accounts = this.collection(schema).proxy().concurrency(x => (x as any).version).create();
+    accounts = this.collection(schema).proxy().create();
 }
 
 class DiffStore extends DataStore {
-    accounts = this.collection(schema).diff().concurrency(x => (x as any).version).create();
+    accounts = this.collection(schema).diff().create();
 }
 
 const stores: DataStore[] = [];
@@ -32,39 +33,36 @@ const track = <T extends DataStore>(store: T) => { stores.push(store); return st
 afterEach(() => { for (const store of stores.splice(0)) store[Symbol.dispose](); });
 
 const database = () => `occ-${Math.random()}`;
+const guarded = (db: string) => new ConcurrencyDbPlugin(new MemoryPlugin(db));
 
-describe('token lifecycle', () => {
-    it('starts at 1 on add and bumps on every saved update', async () => {
-        const store = track(new Store(new MemoryPlugin(database())));
+describe('invisibility', () => {
+    it('entities never carry the hidden token', async () => {
+        const store = track(new Store(guarded(database())));
 
-        const [account]: any[] = await store.accounts.addAsync({ balance: 100 } as any);
+        const [added]: any[] = await store.accounts.addAsync({ balance: 100 } as any);
         await store.saveChangesAsync();
-        expect(account.version).toBe(1);
 
-        account.balance = 90;
-        await store.saveChangesAsync();
-        expect(account.version).toBe(2);
+        expect(added.__version).toBeUndefined();
 
-        account.balance = 80;
-        await store.saveChangesAsync();
-        expect(account.version).toBe(3);
+        const [read]: any[] = await store.accounts.toArrayAsync();
+        expect(read.__version).toBeUndefined();
+        expect(Object.keys(read).sort()).toEqual(['balance', 'id']);
     });
 });
 
 describe('conflict detection (proxy mode)', () => {
     it('rejects the second writer and preserves the first write', async () => {
         const db = database();
-        const writerA = track(new Store(new MemoryPlugin(db)));
-        const writerB = track(new Store(new MemoryPlugin(db)));
+        const writerA = track(new Store(guarded(db)));
+        const writerB = track(new Store(guarded(db)));
 
         const [seeded]: any[] = await writerA.accounts.addAsync({ balance: 1000 } as any);
         await writerA.saveChangesAsync();
+        const id = (seeded as any).id;
 
-        // Both writers read version 1
-        const a: any = await writerA.accounts.firstAsync(x => x.id === (seeded as any).id);
-        const b: any = await writerB.accounts.firstAsync(x => x.id === (seeded as any).id);
-        expect(a.version).toBe(1);
-        expect(b.version).toBe(1);
+        // Both writers read the row
+        const a: any = await writerA.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
+        const b: any = await writerB.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
 
         // A wins the race
         a.balance = 900;
@@ -75,15 +73,14 @@ describe('conflict detection (proxy mode)', () => {
         await expect(writerB.saveChangesAsync()).rejects.toThrow(OptimisticConcurrencyError);
 
         // A's write survived
-        const fresh: any = await writerA.accounts.firstAsync(x => x.id === (seeded as any).id);
+        const fresh: any = await writerA.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
         expect(fresh.balance).toBe(900);
-        expect(fresh.version).toBe(2);
     });
 
     it('the loser retries from a fresh read and succeeds', async () => {
         const db = database();
-        const writerA = track(new Store(new MemoryPlugin(db)));
-        const writerB = track(new Store(new MemoryPlugin(db)));
+        const writerA = track(new Store(guarded(db)));
+        const writerB = track(new Store(guarded(db)));
 
         const [seeded]: any[] = await writerA.accounts.addAsync({ balance: 1000 } as any);
         await writerA.saveChangesAsync();
@@ -98,21 +95,19 @@ describe('conflict detection (proxy mode)', () => {
         b.balance = b.balance - 250; // B: -250, from a stale base — rejected
         await expect(writerB.saveChangesAsync()).rejects.toThrow(OptimisticConcurrencyError);
 
-        // Retry: re-read (merges fresh values into the canonical), reapply the INTENT
+        // Retry: re-read (re-arms the observation), reapply the INTENT
         const retried: any = await writerB.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
-        expect(retried.version).toBe(2);
         retried.balance = retried.balance - 250;
         await writerB.saveChangesAsync();
 
         const final: any = await writerA.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
         expect(final.balance).toBe(650); // both writes landed: 1000 - 100 - 250
-        expect(final.version).toBe(3);
     });
 
     it('names the conflicted rows on the error', async () => {
         const db = database();
-        const writerA = track(new Store(new MemoryPlugin(db)));
-        const writerB = track(new Store(new MemoryPlugin(db)));
+        const writerA = track(new Store(guarded(db)));
+        const writerB = track(new Store(guarded(db)));
 
         const [seeded]: any[] = await writerA.accounts.addAsync({ balance: 1000 } as any);
         await writerA.saveChangesAsync();
@@ -136,8 +131,8 @@ describe('conflict detection (proxy mode)', () => {
 describe('conflict detection (diff mode)', () => {
     it('a stale snapshot-tracked write is rejected too', async () => {
         const db = database();
-        const writerA = track(new DiffStore(new MemoryPlugin(db)));
-        const writerB = track(new DiffStore(new MemoryPlugin(db)));
+        const writerA = track(new DiffStore(guarded(db)));
+        const writerB = track(new DiffStore(guarded(db)));
 
         const [seeded]: any[] = await writerA.accounts.addAsync({ balance: 1000 } as any);
         await writerA.saveChangesAsync();
@@ -155,19 +150,10 @@ describe('conflict detection (diff mode)', () => {
 });
 
 describe('unaffected paths', () => {
-    it('a schema without a token keeps last-writer-wins (no behavior change)', async () => {
-        const plain = s.define('occ_plain', {
-            id: s.string().key().identity(),
-            balance: s.number(),
-        }).compile();
-
-        class PlainStore extends DataStore {
-            accounts = this.collection(plain).proxy().create();
-        }
-
+    it('an unwrapped plugin keeps last-writer-wins (no behavior change)', async () => {
         const db = database();
-        const writerA = track(new PlainStore(new MemoryPlugin(db)));
-        const writerB = track(new PlainStore(new MemoryPlugin(db)));
+        const writerA = track(new Store(new MemoryPlugin(db)));
+        const writerB = track(new Store(new MemoryPlugin(db)));
 
         const [seeded]: any[] = await writerA.accounts.addAsync({ balance: 1000 } as any);
         await writerA.saveChangesAsync();

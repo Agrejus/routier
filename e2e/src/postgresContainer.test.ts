@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { uuidv4 } from '@routier/core';
 import { s } from '@routier/core/schema';
-import { OptimisticConcurrencyError } from '@routier/core';
+import { ConcurrencyDbPlugin, OptimisticConcurrencyError } from '@routier/core';
 import { DataStore } from '@routier/datastore';
 import { PostgresDbPlugin } from '@routier/postgresql-plugin';
 
@@ -241,21 +241,20 @@ suite('PostgreSQL via testcontainers', () => {
         const occSchema = s.define('e2e_pg_occ', {
             id: s.string().key().identity(),
             balance: s.number(),
-            version: s.number(),
         }).compile();
 
         class OccStore extends DataStore {
-            accounts = this.collection(occSchema).proxy().concurrency(x => (x as any).version).create();
+            accounts = this.collection(occSchema).proxy().create();
         }
 
         const open = (): OccStore =>
-            new OccStore(new PostgresDbPlugin({
+            new OccStore(new ConcurrencyDbPlugin(new PostgresDbPlugin({
                 host: container.getHost(),
                 port: container.getPort(),
                 database: container.getDatabase(),
                 user: container.getUsername(),
                 password: container.getPassword(),
-            }));
+            })));
 
         it('rejects a stale write against a real server and allows a retry', async () => {
             const writerA = open();
@@ -267,8 +266,8 @@ suite('PostgreSQL via testcontainers', () => {
 
             const a: any = await writerA.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
             const b: any = await writerB.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
-            expect(a.version).toBe(1);
-            expect(b.version).toBe(1);
+            expect(a.__version).toBeUndefined();
+            expect(b.__version).toBeUndefined();
 
             a.balance = 900;
             await writerA.saveChangesAsync();
@@ -282,14 +281,12 @@ suite('PostgreSQL via testcontainers', () => {
             // The conflicted save rolled back as a unit; the winner's write survived
             const fresh: any = await writerB.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
             expect(fresh.balance).toBe(900);
-            expect(fresh.version).toBe(2);
 
             fresh.balance = fresh.balance - 250;
             await writerB.saveChangesAsync();
 
             const final: any = await writerA.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
             expect(final.balance).toBe(650);
-            expect(final.version).toBe(3);
         });
     });
 });

@@ -12,7 +12,6 @@ export const accountSchema = s.define('accounts', {
     name: s.string(),
     kind: s.string('checking', 'savings', 'credit'),
     balance: s.number(),
-    version: s.number(),
 }).compile();
 
 export const transactionSchema = s.define('transactions', {
@@ -26,7 +25,7 @@ export const transactionSchema = s.define('transactions', {
 }).compile();
 
 export type User = { id: string; name: string; email: string };
-export type Account = { id: string; ownerId: string; name: string; kind: 'checking' | 'savings' | 'credit'; balance: number; version: number };
+export type Account = { id: string; ownerId: string; name: string; kind: 'checking' | 'savings' | 'credit'; balance: number };
 export type Transaction = {
     id: string; fromAccountId: string; toAccountId: string; amount: number;
     category: 'transfer' | 'payroll' | 'groceries' | 'rent' | 'utilities' | 'entertainment';

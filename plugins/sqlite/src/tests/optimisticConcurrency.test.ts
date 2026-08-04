@@ -1,24 +1,24 @@
 import { afterAll, describe, expect, it } from '@jest/globals';
 import { s } from '@routier/core/schema';
-import { OptimisticConcurrencyError } from '@routier/core';
+import { ConcurrencyDbPlugin, OptimisticConcurrencyError } from '@routier/core';
 import { DataStore } from '@routier/datastore';
 import { SqliteDbPlugin } from '../SqliteDbPlugin';
 import { uuidv4 } from '@routier/core';
 import fs from 'fs';
 
 /**
- * `.concurrency()` against a real SQLite file: the token-checked UPDATE affects zero rows
- * when the stored token moved, and the plugin reports the conflict instead of committing.
+ * ConcurrencyDbPlugin against a real SQLite file: the hidden `__version` column lands in
+ * the DDL via the augmented schema view, the token-checked UPDATE affects zero rows when
+ * the stored token moved, and the save reports the conflict instead of committing.
  */
 
 const schema = s.define('occ_sqlite_accounts', {
     id: s.string().key().identity(),
     balance: s.number(),
-    version: s.number(),
 }).compile();
 
 class Store extends DataStore {
-    accounts = this.collection(schema).proxy().concurrency(x => (x as any).version).create();
+    accounts = this.collection(schema).proxy().create();
 }
 
 const files: string[] = [];
@@ -37,8 +37,8 @@ afterAll(() => {
 describe('sqlite optimistic concurrency', () => {
     it('rejects a stale write, preserves the winner, and allows a retry', async () => {
         const file = database();
-        const writerA = new Store(new SqliteDbPlugin(file));
-        const writerB = new Store(new SqliteDbPlugin(file));
+        const writerA = new Store(new ConcurrencyDbPlugin(new SqliteDbPlugin(file)));
+        const writerB = new Store(new ConcurrencyDbPlugin(new SqliteDbPlugin(file)));
 
         const [seeded]: any[] = await writerA.accounts.addAsync({ balance: 1000 } as any);
         await writerA.saveChangesAsync();
@@ -46,8 +46,8 @@ describe('sqlite optimistic concurrency', () => {
 
         const a: any = await writerA.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
         const b: any = await writerB.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
-        expect(a.version).toBe(1);
-        expect(b.version).toBe(1);
+        expect(a.__version).toBeUndefined();
+        expect(b.__version).toBeUndefined();
 
         a.balance = 900;
         await writerA.saveChangesAsync();
@@ -61,7 +61,6 @@ describe('sqlite optimistic concurrency', () => {
         // The winner's write survived the loser's rolled-back save
         const fresh: any = await writerB.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
         expect(fresh.balance).toBe(900);
-        expect(fresh.version).toBe(2);
 
         // Retry from the fresh read succeeds
         fresh.balance = fresh.balance - 250;
@@ -69,7 +68,6 @@ describe('sqlite optimistic concurrency', () => {
 
         const final: any = await writerA.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
         expect(final.balance).toBe(650);
-        expect(final.version).toBe(3);
 
         writerA[Symbol.dispose]();
         writerB[Symbol.dispose]();

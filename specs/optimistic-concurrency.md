@@ -1,6 +1,6 @@
 # Optimistic concurrency
 
-Status: **Shipped, opt-in per schema.**
+Status: **Shipped as a wrapper plugin — zero schema/builder surface.**
 Date: 2026-08-03
 
 ## Why it exists
@@ -13,96 +13,101 @@ control run drifted $0.00 at the same rate, isolating concurrency as the cause. 
 data loss is the one failure mode a data layer is never allowed to have, so detection
 belongs in routier, not in every caller.
 
-## The API
-
-The schema stays pure data — the token is an ordinary number property. The COLLECTION
-declares that it is the concurrency token, in the same builder chain where every other
-write behavior lives:
+## The API — one wrap
 
 ```ts
-const account = s.define('accounts', {
-    id: s.string().key().identity(),
-    balance: s.number(),
-    version: s.number(),                    // plain data
-}).compile();
+import { ConcurrencyDbPlugin } from '@routier/core/plugins';
 
 class Bank extends DataStore {
-    accounts = this.collection(account)
-        .diff()
-        .concurrency(x => x.version)        // the whole opt-in
-        .create();
+    constructor() {
+        super(new ConcurrencyDbPlugin(new SqlitePlugin('bank.db')));
+    }
+    accounts = this.collection(accountSchema).diff().create();   // nothing declared
 }
 ```
 
-(An earlier revision used a schema modifier, `s.number().concurrency()`. It was replaced:
-the schema describes shape, the builder describes behavior — the same split as tracking
-modes. The consistency rule is also the same as tracking modes: every store class writing
-a database must declare it identically; a writer without the declaration bypasses the
-checks.)
+Nothing on the schema, nothing on the collection builder, nothing on the entity. The
+plugin maintains a hidden `__version` column in the same tables/records as the data:
 
-- **Add** → the token starts at 1 (stamped by the tracker; a caller-supplied value is
-  kept, so imports can carry tokens).
-- **Update** → the save carries `{ column, expected }` (the token as read) and stores
-  `expected + 1`. The plugin applies the update ONLY IF the stored token still equals
-  `expected`.
+- **Add** → the row's token starts at 1.
+- **Update** → applied ONLY IF the stored token still equals the version this store last
+  observed for the row (from a query or a persist echo); bumped on success.
 - **Lost the race** → `saveChangesAsync()` rejects with `OptimisticConcurrencyError`
-  (exported from `@routier/core`), carrying `collectionName` and `conflicts` (the row ids).
-  Recovery is always: re-read, reapply the intent, save again.
-- No `.concurrency()` on the schema → nothing changes anywhere.
+  (exported from `@routier/core`), carrying `collectionName` and `conflicts` (row ids).
+  Recovery: re-read (which re-arms the observation), reapply the intent, save again.
+- **Unwrapped plugin** → last-writer-wins, exactly as before. Fully opt-in by construction.
 
-## How it flows
+Design history, for the record: this went through a schema modifier
+(`s.number().concurrency()`), a builder chain method, and a builder options bag before
+landing here. Each made the *user* declare and wire a token; the wrapper makes concurrency
+what it architecturally is — a persistence-layer behavior, living in the persistence
+layer, invisible above it.
 
-1. `ConfiguredCollectionBuilder.concurrency(selector)` resolves the root property
-   (validated: number, not key/identity) and sets `ChangeTracker.concurrencyProperty`.
-2. `ChangeTracker.stampConcurrency` runs in every update path (proxy, diff, immutable):
-   `expected` is read from the serialized entity, the wire payload gets the bumped value,
-   and the canonical is NOT mutated — a failed save leaves it accurate. The bump is written
-   into the delta only when the delta carries columns; an EMPTY delta means "write the
-   whole entity" and making it non-empty would narrow the write to the token alone.
-3. `EntityUpdateInfo.concurrency` carries `{ column, expected }` to the plugin.
+## How the hidden column exists without schema changes
 
-## Enforcement by plugin
+The wrapper hands the inner plugin an **augmented view** of each compiled schema — the
+same object via prototype delegation, with one synthetic `__version` property appended to
+`properties`. That list is what the storage plugins read to build DDL, INSERT and SELECT
+column lists, so the column materializes and round-trips through unmodified plugin code.
+Above the wrapper the real schema is untouched, and the datastore's generated
+deserialize/enrich drop undeclared fields, so `__version` never appears on an entity.
 
-| Plugin | Enforced | How |
+Two load-bearing subtleties:
+
+- The synthetic property carries `from: '__version'`, which flips EphemeralDataPlugin's
+  query cloning to `structuredClone` (the generated clone drops undeclared fields) — that
+  is what lets the wrapper observe the token on reads from the in-process plugins.
+- Persist echoes from the in-process plugins are the stored records BY REFERENCE, so the
+  wrapper records the token from echoes but never strips it there — deleting it would
+  erase the stored token itself. Query results are plugin-made copies and are stripped.
+
+## What "expected" means
+
+Per store instance: the version this wrapper last observed for the row (query result or
+persist echo), keyed `collection → id`. A row updated without ever being read through the
+store (rare — attaching a foreign instance) has no observation; its write is applied
+unchecked and initializes the token, and the row is protected from the next read on. A
+conflict invalidates the losing observations so the retry's re-read re-arms cleanly.
+
+## Enforcement by inner plugin
+
+The conditional check is performed by the INNER plugin via the
+`EntityUpdateInfo.concurrency` contract field — the wrapper stamps
+`{ column: '__version', expected }` and composes with the enforcement machinery:
+
+| Inner plugin | Enforced | How |
 | --- | --- | --- |
-| memory, file-system (EphemeralDataPlugin) | ✅ | all conditional updates verified against stored rows BEFORE anything is applied; conflicts abort the collection's save with nothing written |
-| sqlite | ✅ | one conditional `UPDATE ... WHERE id = ? AND token = ? RETURNING ...` per row (`buildConditionalUpdateOperations` in sql-plugin-core); zero returned rows → ROLLBACK + error |
+| memory, file-system (EphemeralDataPlugin) | ✅ | all conditional updates verified against stored rows BEFORE anything is applied |
+| sqlite | ✅ | one conditional `UPDATE ... WHERE id = ? AND "__version" = ? RETURNING ...` per row (`buildConditionalUpdateOperations`, chosen when any update carries a concurrency payload); zero returned rows → ROLLBACK + error |
 | postgresql | ✅ | same, verified against a real server (`e2e/src/postgresContainer.test.ts`) |
-| dexie, pouchdb, mysql, replication | ❌ **not yet** | the `concurrency` field is ignored — a token-carrying schema on these plugins gets last-writer-wins with no error. PouchDB's `_rev` is the natural implementation; mysql needs the conditional per-row form + affected-rows |
+| dexie, pouchdb, mysql, replication | ❌ **not yet** | the contract field is ignored — a wrapped store on these gets the token stored but not checked. PouchDB's `_rev` is the natural implementation |
 
-**The unenforced list is the sharp edge.** A schema with `.concurrency()` on dexie today
-looks protected and is not. Before publicizing the feature, either implement those plugins
-or make an unenforcing plugin REJECT token-carrying schemas loudly.
+## Limits, stated
 
-## Semantics worth knowing
-
-- **Whole-save failure.** A conflict rejects the save; for SQL the transaction rolls back
-  as a unit. For the in-process plugins atomicity is per collection — a multi-schema save
-  where an earlier schema already applied is not unwound (pre-existing plugin semantics).
-- **A failed save clears pending adds/removals** (existing behavior). Retries re-create
-  the whole intent — which is what keeps ledger-row counts exact in the finance app.
-- **Diff-mode recovery needs a detach.** A dirty diff-tracked attachment deliberately
-  protects local edits from re-reads, so after a conflict the caller must
-  `attachments.remove(...)` the stale instances (or the re-read hands back the same stale
-  values). Proxy mode just re-reads.
-- **Legacy rows** (no token value yet): the write initializes the token to 1
-  unconditionally rather than failing rows that predate the schema change.
-- **Zero-row ambiguity (SQL):** a checked update that matches nothing is reported as a
-  conflict even if the row was deleted rather than changed — both mean "your read is
-  stale", and the recovery is identical.
+- **Existing SQL tables** created before adopting the wrapper lack the column; new tables
+  get it from the augmented DDL automatically. Migration: `ALTER TABLE ... ADD COLUMN
+  "__version"` (number type for the engine). A lazy-ALTER on column-missing errors, like
+  the lazy CREATE TABLE pattern, is the natural future improvement.
+- **Cross-store entities**: observations live in the wrapper instance, so an entity
+  attached into a DIFFERENT store has no expected value there until that store reads it.
+- **Diff-mode conflict recovery needs a detach** before the re-read
+  (`attachments.remove(...)`) — a dirty diff attachment deliberately protects local edits
+  from re-reads. Proxy mode just re-reads.
+- **In-process atomicity is per collection** (pre-existing plugin semantics); SQL saves
+  roll back as one transaction.
 
 ## Measured
 
-Finance app, 50 simulated users, ~230–500 tx/s, 26k+ committed transactions: invariant
-drift **$0.00**, zero failed saves, save p99 ≤ 0.3ms. In-process the natural conflict rate
-is near zero (each retry re-reads microtasks before saving on one event loop); a forced
-two-writer race in the live browser bundle throws `OptimisticConcurrencyError` naming the
-row. Against a network backend, the read-to-save window is real latency and the token is
-what turns lost updates into retries.
+Finance app (`ConcurrencyDbPlugin(MemoryPlugin)`), 50 simulated users, thousands of
+committed transactions: invariant drift **$0.00**, zero failed saves, save p99 ≤ 0.3ms,
+and account entities carry exactly their declared keys — no token visible anywhere. A
+forced two-writer race in the live browser bundle throws `OptimisticConcurrencyError`
+naming the row.
 
 ## Guarded by
 
-- `datastore/src/collections/OptimisticConcurrency.test.ts` — lifecycle, proxy + diff
-  conflicts, retry, error payload, opt-out unaffected.
-- `plugins/sqlite/src/tests/optimisticConcurrency.test.ts` — real file, rollback, retry.
+- `datastore/src/collections/OptimisticConcurrency.test.ts` — invisibility, proxy + diff
+  conflicts, retry, error payload, unwrapped-plugin opt-out.
+- `plugins/sqlite/src/tests/optimisticConcurrency.test.ts` — hidden column in real DDL,
+  rollback, retry.
 - `e2e/src/postgresContainer.test.ts` `optimistic concurrency` — real server.

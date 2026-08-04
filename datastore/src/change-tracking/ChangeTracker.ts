@@ -1,4 +1,4 @@
-import { ChangeTrackingType, CompiledSchema, HashType, IdType, InferCreateType, InferType, PropertyInfo } from "@routier/core/schema";
+import { ChangeTrackingType, CompiledSchema, HashType, IdType, InferCreateType, InferType } from "@routier/core/schema";
 import { ChangeTrackedEntity } from "../types";
 import { KnownKeyAdditions } from "./additions/KnownKeyAdditions";
 import { IAdditions } from "./additions/types";
@@ -85,11 +85,6 @@ export class ChangeTracker<TEntity extends {}> {
      * diff-tracked entities so saves can detect mutations made through plain references.
      */
     changeTrackingType: ChangeTrackingType = "proxy";
-    /**
-     * The property serving as this collection's optimistic-concurrency token, set by the
-     * collection builder's `.concurrency(x => x.token)`. Null means no conflict detection.
-     */
-    concurrencyProperty: PropertyInfo<TEntity> | null = null;
     protected removals: InferType<TEntity>[] = [];
     protected canonicalAttachments: Map<IdType, Attachment<TEntity>> = new Map<IdType, Attachment<TEntity>>();
     protected schema: CompiledSchema<TEntity>;
@@ -392,12 +387,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
                 ? ({} as InferType<TEntity>)
                 : this.serializeDelta(serializedEntity, tracking.changes);
 
-            changes.push({
-                entity: serializedEntity,
-                delta,
-                changeType,
-                concurrency: this.stampConcurrency(serializedEntity, delta),
-            })
+            changes.push({ entity: serializedEntity, delta, changeType })
         }
 
         // An immutably-updated row is normally invisible to the loop above: `update()` never
@@ -415,56 +405,14 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
 
         for (const [, update] of this.immutable.entries()) {
             const serializedEntity = this.schema.preprocess(update.current as InferCreateType<TEntity>);
-            const delta = this.serializeDelta(serializedEntity, update.patch);
             changes.push({
                 entity: serializedEntity,
-                delta,
+                delta: this.serializeDelta(serializedEntity, update.patch),
                 changeType: "propertiesChanged",
-                concurrency: this.stampConcurrency(serializedEntity, delta),
             });
         }
 
         return changes
-    }
-
-    /**
-     * Stamps the optimistic-concurrency token onto an outgoing update.
-     *
-     * `expected` is the token as READ (what the serialized entity still holds — the
-     * canonical is never mutated here, so a failed save leaves it accurate); the wire
-     * payload gets the bumped value to store on success. Returns undefined when the
-     * schema declares no token, or for a legacy row that predates it (nothing to check
-     * against — the write initializes the token instead).
-     */
-    private stampConcurrency(serializedEntity: Record<string, unknown>, delta: Record<string, unknown>): { column: string; expected: number } | undefined {
-        const property = this.concurrencyProperty;
-
-        if (property == null) {
-            return undefined;
-        }
-
-        const column = property.getResolvedName();
-        const expected = serializedEntity[column];
-
-        // An EMPTY delta means "write the whole entity" (the SQL builders' fallback), and
-        // the entity already carries the bumped token — adding the token to the delta
-        // would make it non-empty and silently narrow the write to the token column alone.
-        const deltaCarriesColumns = Object.keys(delta).length > 0;
-
-        if (typeof expected !== "number") {
-            serializedEntity[column] = 1;
-            if (deltaCarriesColumns) {
-                delta[column] = 1;
-            }
-            return undefined;
-        }
-
-        serializedEntity[column] = expected + 1;
-        if (deltaCarriesColumns) {
-            delta[column] = expected + 1;
-        }
-
-        return { column, expected };
     }
 
     /**
@@ -780,14 +728,6 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
 
             for (let i = 0; i < length; i++) {
                 const entity = this.schema.enrich(entities[i], changeTrackingType);
-
-                // The concurrency token is system-managed: rows start at version 1. Set
-                // BEFORE the addition is registered so content-hash keying sees the final
-                // value. A caller-supplied value is kept — imports need to carry tokens.
-                if (this.concurrencyProperty != null && (entity as Record<string, unknown>)[this.concurrencyProperty.name] == null) {
-                    (entity as Record<string, unknown>)[this.concurrencyProperty.name] = 1;
-                }
-
                 this.additions.set(entity);
                 this.trackUnsaved(entity);
                 result[i] = entity as InferType<TEntity>;

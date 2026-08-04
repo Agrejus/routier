@@ -1,4 +1,4 @@
-import { InferType, SchemaTypes } from '@routier/core/schema';
+import { InferType } from '@routier/core/schema';
 import { CollectionInstanceCreator } from './types';
 import { Collection } from '../collections/Collection';
 import { ImmutableCollection } from '../collections/ImmutableCollection';
@@ -147,57 +147,6 @@ export class ConfiguredCollectionBuilder<TEntity extends {}, TCollection extends
         this.dependencies = props.dependencies;
         this._onCollectionCreated = props.onCollectionCreated;
         this.instanceCreator = props.instanceCreator;
-    }
-
-    /**
-     * Enables optimistic concurrency on this collection, using an existing NUMBER property
-     * of the schema as the token.
-     *
-     * The datastore manages the value from here on: it is set to 1 when a row is added,
-     * every update applies ONLY IF the stored value still matches what this store read
-     * (bumped on success), and a save that lost the race rejects with
-     * `OptimisticConcurrencyError` naming the rows — never a silent overwrite. Recovery is
-     * always: re-read, reapply the intent, save again (diff-mode collections must
-     * `attachments.remove(...)` the stale instances first, since a dirty diff attachment
-     * deliberately protects local edits from re-reads).
-     *
-     * Declare it on EVERY collection that writes this schema, the same way tracking modes
-     * must agree across stores sharing a database: a writer without the declaration
-     * bypasses the checks.
-     *
-     * ```ts
-     * accounts = this.collection(accountSchema)
-     *     .diff()
-     *     .concurrency(x => x.version)   // version: s.number() in the schema
-     *     .create();
-     * ```
-     */
-    concurrency(selector: (entity: InferType<TEntity>) => number): ConfiguredCollectionBuilder<TEntity, TCollection> {
-        const source = selector.toString();
-        const match = /\.\s*([A-Za-z_$][\w$]*)\s*;?\s*\}?\s*$/.exec(source.trim());
-
-        if (match == null) {
-            throw new Error(`concurrency() requires a simple property selector, e.g. x => x.version. Received: ${source}`);
-        }
-
-        const name = match[1];
-        const property = this.dependencies.schema.properties.find(p => p.parent == null && p.name === name);
-
-        if (property == null) {
-            throw new Error(`concurrency() selector '${name}' does not match a root property of '${this.dependencies.schema.collectionName}'`);
-        }
-
-        if (property.type !== SchemaTypes.Number) {
-            throw new Error(`concurrency() token '${name}' on '${this.dependencies.schema.collectionName}' must be a number property`);
-        }
-
-        if (property.isKey === true || property.isIdentity === true) {
-            throw new Error(`concurrency() token '${name}' on '${this.dependencies.schema.collectionName}' cannot be a key or identity property`);
-        }
-
-        this.dependencies.changeTracker.concurrencyProperty = property;
-
-        return this;
     }
 
     /** See CollectionBuilder.scope — a scope may also be added after the mode is chosen. */
