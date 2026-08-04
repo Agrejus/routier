@@ -129,3 +129,35 @@ tr.clickable:hover td { background: var(--panel-2); }
 .back { background: none; border: 0; color: var(--accent); cursor: pointer; padding: 0; font-size: 13px; margin-bottom: 10px; }
 
 .pill { font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+
+.instrument-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px;
+}
+
+.card.instrument {
+    padding: 10px;
+    text-align: left;
+    transition: border-color 400ms ease, box-shadow 400ms ease;
+    position: relative;
+}
+
+.card.instrument.up { border-color: var(--good); box-shadow: 0 0 0 1px var(--good) inset; }
+.card.instrument.down { border-color: var(--bad); box-shadow: 0 0 0 1px var(--bad) inset; }
+
+.instrument .symbol { font-size: 11px; color: var(--muted); letter-spacing: 0.06em; }
+.instrument .price { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; margin: 2px 0; }
+.instrument .delta { font-size: 11px; font-variant-numeric: tabular-nums; }
+.instrument .renders { position: absolute; top: 8px; right: 10px; font-size: 10px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.feed-toggle {
+    background: var(--accent);
+    color: white;
+    border: 0;
+    border-radius: 6px;
+    padding: 7px 16px;
+    cursor: pointer;
+    font-weight: 600;
+}
+.feed-toggle.stop { background: var(--bad); }

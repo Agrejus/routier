@@ -24,6 +24,16 @@ export const transactionSchema = s.define('transactions', {
     at: s.date(),
 }).compile();
 
+export const instrumentSchema = s.define('instruments', {
+    id: s.string().key().identity(),
+    symbol: s.string(),
+    price: s.number(),
+    change: s.number(),
+    updatedAt: s.date(),
+}).compile();
+
+export type Instrument = { id: string; symbol: string; price: number; change: number; updatedAt: Date };
+
 export type User = { id: string; name: string; email: string };
 export type Account = { id: string; ownerId: string; name: string; kind: 'checking' | 'savings' | 'credit'; balance: number };
 export type Transaction = {

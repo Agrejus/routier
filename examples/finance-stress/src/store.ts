@@ -1,7 +1,7 @@
 import { ConcurrencyDbPlugin } from '@routier/core/plugins';
 import { DataStore } from '@routier/datastore';
 import { MemoryPlugin } from '@routier/memory-plugin';
-import { accountSchema, transactionSchema, userSchema } from './schemas';
+import { accountSchema, instrumentSchema, transactionSchema, userSchema } from './schemas';
 
 /**
  * One shared database name: every FinanceStore (the UI's, and one per simulated user)
@@ -30,6 +30,9 @@ export class FinanceStore extends DataStore {
     users = this.collection(userSchema).proxy().create();
     accounts = this.collection(accountSchema).diff().create();
     transactions = this.collection(transactionSchema).immutable().create();
+    /** The market board: one writer updates through update() recipes; every component
+     * reads frozen instances and detects change by reference equality. */
+    instruments = this.collection(instrumentSchema).immutable().create();
 
     constructor() {
         super(UNPROTECTED

@@ -6,6 +6,7 @@
 type Listener = () => void;
 
 const saveLatencies: number[] = [];
+const propagationLatencies: number[] = [];
 let committedTransactions = 0;
 let failedSaves = 0;
 let concurrencyConflicts = 0;
@@ -41,6 +42,16 @@ export const metrics = {
         concurrencyConflicts++;
     },
 
+    /** Time from the writer stamping a row to a COMPONENT receiving it via subscription. */
+    notePropagation(ms: number) {
+        if (ms >= 0 && ms < 60_000) {
+            propagationLatencies.push(ms);
+            if (propagationLatencies.length > 5000) {
+                propagationLatencies.splice(0, propagationLatencies.length - 5000);
+            }
+        }
+    },
+
     noteDelivery() {
         subscriptionDeliveries++;
         windowDeliveries++;
@@ -49,6 +60,8 @@ export const metrics = {
     snapshot() {
         const sorted = [...saveLatencies].sort((a, b) => a - b);
         const at = (q: number) => sorted.length === 0 ? 0 : sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))];
+        const props = [...propagationLatencies].sort((a, b) => a - b);
+        const propAt = (q: number) => props.length === 0 ? 0 : props[Math.min(props.length - 1, Math.floor(q * props.length))];
 
         return {
             committedTransactions,
@@ -60,6 +73,9 @@ export const metrics = {
             saveP50: at(0.5),
             saveP95: at(0.95),
             saveP99: at(0.99),
+            propagationP50: propAt(0.5),
+            propagationP95: propAt(0.95),
+            propagationSamples: props.length,
             fps,
         };
     },
