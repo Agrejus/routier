@@ -27,7 +27,19 @@ export type SimulatorState = {
 
 class Bot {
     private store = new FinanceStore();
-    private accountIds: string[] = [];
+    /**
+     * The bot's WORKING SET: account entities read once and mutated repeatedly — the
+     * realistic pattern of an app that caches what it read (or sits behind network
+     * latency). Between this bot's saves, OTHER bots keep changing the same rows, so
+     * every write here is computed from a stale base:
+     *
+     *  - UNPROTECTED: those writes silently overwrite the other bots' — money vanishes
+     *    and the dashboard's drift climbs.
+     *  - Wrapped in ConcurrencyDbPlugin: the stale save is REJECTED, the bot refreshes
+     *    the two accounts and reapplies — drift stays $0.00 and the conflict counter
+     *    shows the mechanism firing.
+     */
+    private cache = new Map<string, any>();
     private timer: ReturnType<typeof setTimeout> | null = null;
     private stopped = false;
 
@@ -35,7 +47,9 @@ class Bot {
 
     async start(intervalMs: number) {
         const accounts = await this.store.accounts.toArrayAsync() as { id: string }[];
-        this.accountIds = accounts.map(account => account.id);
+        for (const account of accounts) {
+            this.cache.set(account.id, account);
+        }
 
         const loop = async () => {
             if (this.stopped) {
@@ -55,37 +69,27 @@ class Bot {
         this.timer = setTimeout(loop, rand(intervalMs));
     }
 
-    /**
-     * One business transaction, with optimistic-concurrency retry.
-     *
-     * Balances are ALWAYS computed from a fresh read inside the attempt. When another
-     * writer wins the race, the save throws OptimisticConcurrencyError — the stale local
-     * state is discarded (a dirty diff-tracked attachment deliberately keeps local edits,
-     * so it must be detached to accept database truth) and the whole intent is reapplied
-     * against fresh values. Nothing is ever silently lost, which is what keeps the
-     * dashboard's invariant drift at exactly $0.00 no matter how many writers race.
-     */
     private async transferOnce() {
-        if (this.accountIds.length < 2) {
+        const ids = [...this.cache.keys()];
+        if (ids.length < 2) {
             return;
         }
 
-        const fromId = pick(this.accountIds);
-        let toId = pick(this.accountIds);
+        const fromId = pick(ids);
+        let toId = pick(ids);
         while (toId === fromId) {
-            toId = pick(this.accountIds);
+            toId = pick(ids);
         }
 
         const amount = Math.round((5 + Math.random() * 245) * 100) / 100;
         const started = performance.now();
 
         for (let attempt = 0; attempt < 50; attempt++) {
-            const from: any = await this.store.accounts.firstAsync(([a, p]) => a.id === p.id, { id: fromId });
-            const to: any = await this.store.accounts.firstAsync(([a, p]) => a.id === p.id, { id: toId });
+            const from = this.cache.get(fromId);
+            const to = this.cache.get(toId);
 
             // Ledger row (immutable collection) + two balance updates (diff collection),
-            // one save. A failed save drops the pending ledger row too, so the retry
-            // re-creates the whole transaction — exactly one ledger row per commit.
+            // one save — computed from the CACHED entities, stale or not.
             await this.store.transactions.addAsync({
                 fromAccountId: fromId,
                 toAccountId: toId,
@@ -109,9 +113,12 @@ class Bot {
 
                 metrics.noteConflict();
 
-                // Diff-mode conflict recovery: detach the stale instances so the next
-                // read adopts database truth instead of protecting the losing edits.
+                // Conflict recovery: discard the stale local state (a dirty diff-tracked
+                // attachment deliberately protects local edits from re-reads) and refresh
+                // the working set with database truth before reapplying.
                 this.store.accounts.attachments.remove(from, to);
+                this.cache.set(fromId, await this.store.accounts.firstAsync(([a, p]) => a.id === p.id, { id: fromId }));
+                this.cache.set(toId, await this.store.accounts.firstAsync(([a, p]) => a.id === p.id, { id: toId }));
             }
         }
 

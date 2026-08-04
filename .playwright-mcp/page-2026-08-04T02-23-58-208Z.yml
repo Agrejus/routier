@@ -1,0 +1,196 @@
+- generic [ref=f8e2]:
+  - banner [ref=f8e3]:
+    - heading "Routier Finance" [level=1] [ref=f8e4]
+    - generic [ref=f8e5]: UNPROTECTED
+    - navigation [ref=f8e6]:
+      - button "Dashboard" [ref=f8e7] [cursor=pointer]
+      - button "Accounts" [ref=f8e8] [cursor=pointer]
+      - button "Transactions" [ref=f8e9] [cursor=pointer]
+    - generic [ref=f8e10]:
+      - generic [ref=f8e11]:
+        - text: users
+        - slider "users 50" [disabled] [ref=f8e70]: "50"
+        - generic [ref=f8e13]: "50"
+      - generic [ref=f8e14]:
+        - text: tx/s
+        - slider "tx/s 500" [disabled] [ref=f8e71]: "500"
+        - generic [ref=f8e16]: "500"
+      - button "Stop" [ref=f8e72] [cursor=pointer]
+  - main [ref=f8e18]:
+    - generic [ref=f8e19]:
+      - generic [ref=f8e20]:
+        - generic [ref=f8e21]:
+          - heading "Total balance" [level=3] [ref=f8e22]
+          - generic [ref=f8e23]: $72,159.81
+        - generic [ref=f8e24]:
+          - heading "Invariant drift (must be $0.00)" [level=3] [ref=f8e25]
+          - generic [ref=f8e26]: "-$2,840.19"
+        - generic [ref=f8e27]:
+          - heading "Accounts" [level=3] [ref=f8e28]
+          - generic [ref=f8e29]: "75"
+        - generic [ref=f8e30]:
+          - heading "Ledger rows" [level=3] [ref=f8e31]
+          - generic [ref=f8e32]: 14,379
+      - generic [ref=f8e33]:
+        - heading "Latest transactions (live)" [level=3] [ref=f8e34]
+        - table [ref=f8e35]:
+          - rowgroup [ref=f8e36]:
+            - row "When Category Memo Amount" [ref=f8e37]:
+              - columnheader "When" [ref=f8e38]
+              - columnheader "Category" [ref=f8e39]
+              - columnheader "Memo" [ref=f8e40]
+              - columnheader "Amount" [ref=f8e41]
+          - rowgroup [ref=f8e73]:
+            - row "9:23:57 PM rent bot 15 $122.05" [ref=f8e199] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e200]
+              - cell "rent" [ref=f8e201]
+              - cell "bot 15" [ref=f8e202]
+              - cell "$122.05" [ref=f8e203]
+            - row "9:23:57 PM rent bot 27 $157.28" [ref=f8e204] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e205]
+              - cell "rent" [ref=f8e206]
+              - cell "bot 27" [ref=f8e207]
+              - cell "$157.28" [ref=f8e208]
+            - row "9:23:57 PM utilities bot 20 $225.17" [ref=f8e209] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e210]
+              - cell "utilities" [ref=f8e211]
+              - cell "bot 20" [ref=f8e212]
+              - cell "$225.17" [ref=f8e213]
+            - row "9:23:57 PM transfer bot 31 $242.75" [ref=f8e214] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e215]
+              - cell "transfer" [ref=f8e216]
+              - cell "bot 31" [ref=f8e217]
+              - cell "$242.75" [ref=f8e218]
+            - row "9:23:57 PM payroll bot 19 $227.47" [ref=f8e219] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e220]
+              - cell "payroll" [ref=f8e221]
+              - cell "bot 19" [ref=f8e222]
+              - cell "$227.47" [ref=f8e223]
+            - row "9:23:57 PM transfer bot 7 $168.24" [ref=f8e224] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e225]
+              - cell "transfer" [ref=f8e226]
+              - cell "bot 7" [ref=f8e227]
+              - cell "$168.24" [ref=f8e228]
+            - row "9:23:57 PM groceries bot 48 $174.72" [ref=f8e229] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e230]
+              - cell "groceries" [ref=f8e231]
+              - cell "bot 48" [ref=f8e232]
+              - cell "$174.72" [ref=f8e233]
+            - row "9:23:57 PM transfer bot 4 $134.93" [ref=f8e234] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e235]
+              - cell "transfer" [ref=f8e236]
+              - cell "bot 4" [ref=f8e237]
+              - cell "$134.93" [ref=f8e238]
+            - row "9:23:57 PM rent bot 13 $108.24" [ref=f8e239] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e240]
+              - cell "rent" [ref=f8e241]
+              - cell "bot 13" [ref=f8e242]
+              - cell "$108.24" [ref=f8e243]
+            - row "9:23:57 PM entertainment bot 25 $43.80" [ref=f8e244] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e245]
+              - cell "entertainment" [ref=f8e246]
+              - cell "bot 25" [ref=f8e247]
+              - cell "$43.80" [ref=f8e248]
+            - row "9:23:57 PM rent bot 6 $161.68" [ref=f8e249] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e250]
+              - cell "rent" [ref=f8e251]
+              - cell "bot 6" [ref=f8e252]
+              - cell "$161.68" [ref=f8e253]
+            - row "9:23:57 PM payroll bot 0 $198.32" [ref=f8e254] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e255]
+              - cell "payroll" [ref=f8e256]
+              - cell "bot 0" [ref=f8e257]
+              - cell "$198.32" [ref=f8e258]
+            - row "9:23:57 PM transfer bot 1 $162.58" [ref=f8e259] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e260]
+              - cell "transfer" [ref=f8e261]
+              - cell "bot 1" [ref=f8e262]
+              - cell "$162.58" [ref=f8e263]
+            - row "9:23:57 PM groceries bot 26 $147.29" [ref=f8e264] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e265]
+              - cell "groceries" [ref=f8e266]
+              - cell "bot 26" [ref=f8e267]
+              - cell "$147.29" [ref=f8e268]
+            - row "9:23:57 PM payroll bot 23 $78.36" [ref=f8e269] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e270]
+              - cell "payroll" [ref=f8e271]
+              - cell "bot 23" [ref=f8e272]
+              - cell "$78.36" [ref=f8e273]
+            - row "9:23:57 PM entertainment bot 2 $176.09" [ref=f8e274] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e275]
+              - cell "entertainment" [ref=f8e276]
+              - cell "bot 2" [ref=f8e277]
+              - cell "$176.09" [ref=f8e278]
+            - row "9:23:57 PM utilities bot 3 $61.39" [ref=f8e279] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e280]
+              - cell "utilities" [ref=f8e281]
+              - cell "bot 3" [ref=f8e282]
+              - cell "$61.39" [ref=f8e283]
+            - row "9:23:57 PM rent bot 33 $151.44" [ref=f8e284] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e285]
+              - cell "rent" [ref=f8e286]
+              - cell "bot 33" [ref=f8e287]
+              - cell "$151.44" [ref=f8e288]
+            - row "9:23:57 PM groceries bot 14 $103.01" [ref=f8e289] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e290]
+              - cell "groceries" [ref=f8e291]
+              - cell "bot 14" [ref=f8e292]
+              - cell "$103.01" [ref=f8e293]
+            - row "9:23:57 PM entertainment bot 36 $118.91" [ref=f8e294] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e295]
+              - cell "entertainment" [ref=f8e296]
+              - cell "bot 36" [ref=f8e297]
+              - cell "$118.91" [ref=f8e298]
+            - row "9:23:57 PM rent bot 28 $221.57" [ref=f8e299] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e300]
+              - cell "rent" [ref=f8e301]
+              - cell "bot 28" [ref=f8e302]
+              - cell "$221.57" [ref=f8e303]
+            - row "9:23:57 PM entertainment bot 18 $225.36" [ref=f8e304] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e305]
+              - cell "entertainment" [ref=f8e306]
+              - cell "bot 18" [ref=f8e307]
+              - cell "$225.36" [ref=f8e308]
+            - row "9:23:57 PM rent bot 46 $114.36" [ref=f8e309] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e310]
+              - cell "rent" [ref=f8e311]
+              - cell "bot 46" [ref=f8e312]
+              - cell "$114.36" [ref=f8e313]
+            - row "9:23:57 PM groceries bot 10 $68.76" [ref=f8e314] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e315]
+              - cell "groceries" [ref=f8e316]
+              - cell "bot 10" [ref=f8e317]
+              - cell "$68.76" [ref=f8e318]
+            - row "9:23:57 PM payroll bot 22 $101.10" [ref=f8e319] [cursor=pointer]:
+              - cell "9:23:57 PM" [ref=f8e320]
+              - cell "payroll" [ref=f8e321]
+              - cell "bot 22" [ref=f8e322]
+              - cell "$101.10" [ref=f8e323]
+  - generic [ref=f8e42]:
+    - generic [ref=f8e43]:
+      - generic [ref=f8e44]: committed tx
+      - generic [ref=f8e45]: 14,279
+    - generic [ref=f8e46]:
+      - generic [ref=f8e47]: tx / sec
+      - generic [ref=f8e48]: "220.7"
+    - generic [ref=f8e49]:
+      - generic [ref=f8e50]: save p50
+      - generic [ref=f8e51]: 0.1 ms
+    - generic [ref=f8e52]:
+      - generic [ref=f8e53]: save p95
+      - generic [ref=f8e54]: 0.2 ms
+    - generic [ref=f8e55]:
+      - generic [ref=f8e56]: save p99
+      - generic [ref=f8e57]: 0.2 ms
+    - generic [ref=f8e58]:
+      - generic [ref=f8e59]: deliveries / sec
+      - generic [ref=f8e60]: "713.8"
+    - generic [ref=f8e61]:
+      - generic [ref=f8e62]: conflicts (retried)
+      - generic [ref=f8e63]: "0"
+    - generic [ref=f8e64]:
+      - generic [ref=f8e65]: failed saves
+      - generic [ref=f8e66]: "0"
+    - generic [ref=f8e67]:
+      - generic [ref=f8e68]: fps
+      - generic [ref=f8e69]: "14"

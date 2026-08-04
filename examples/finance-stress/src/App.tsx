@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { uiStore } from './store';
+import { UNPROTECTED, uiStore } from './store';
 import { simulator } from './simulator';
 import { metrics } from './metrics';
 import { Dashboard } from './pages/Dashboard';
@@ -53,6 +53,9 @@ export function App() {
         <>
             <header>
                 <h1>Routier Finance</h1>
+                <span className="pill" style={{ color: UNPROTECTED ? 'var(--bad)' : 'var(--good)', borderColor: 'currentColor' }} data-testid="protection">
+                    {UNPROTECTED ? 'UNPROTECTED' : 'ConcurrencyDbPlugin'}
+                </span>
                 <nav>
                     <button className={tab === 'dashboard' ? 'active' : ''} onClick={() => { setTab('dashboard'); }}>Dashboard</button>
                     <button className={tab === 'accounts' ? 'active' : ''} onClick={() => { setTab('accounts'); setAccountId(null); }}>Accounts</button>

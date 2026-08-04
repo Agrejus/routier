@@ -16,15 +16,25 @@ import { accountSchema, transactionSchema, userSchema } from './schemas';
  */
 export const DATABASE = 'finance-stress-bank';
 
+/**
+ * The A/B switch this example exists to demonstrate: open `/?unprotected` and the store
+ * runs on the bare MemoryPlugin — concurrent writers silently lose updates and the
+ * dashboard's invariant drift climbs. The default (protected) build wraps the same plugin
+ * in ConcurrencyDbPlugin: one wrap, a hidden per-row __version token, and stale writes are
+ * rejected with OptimisticConcurrencyError instead of overwriting — the bots retry and
+ * drift stays $0.00 at any user count.
+ */
+export const UNPROTECTED = new URLSearchParams(window.location.search).has('unprotected');
+
 export class FinanceStore extends DataStore {
     users = this.collection(userSchema).proxy().create();
     accounts = this.collection(accountSchema).diff().create();
     transactions = this.collection(transactionSchema).immutable().create();
 
     constructor() {
-        // One wrap = optimistic concurrency for every collection: a hidden __version
-        // token per row, conflicts rejected instead of silently overwritten.
-        super(new ConcurrencyDbPlugin(new MemoryPlugin(DATABASE)));
+        super(UNPROTECTED
+            ? new MemoryPlugin(DATABASE)
+            : new ConcurrencyDbPlugin(new MemoryPlugin(DATABASE)));
     }
 }
 
