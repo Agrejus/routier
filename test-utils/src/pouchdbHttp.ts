@@ -35,7 +35,7 @@ class HttpCapablePouchDB extends (Base as any) {
     constructor(name?: unknown, options?: Record<string, unknown>) {
         super(name, {
             adapter: isRemoteName(name) ? 'http' : 'memory',
-            ...(options ?? {}),
+            ...options,
         });
     }
 }

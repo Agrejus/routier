@@ -1,100 +1,102 @@
 {
-  "name": "@routier/core",
-  "version": "0.2.1",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "source": "./src/index.ts",
-  "publishConfig": {
-    "access": "public"
-  },
-  "files": [
-    "dist/**/*",
-    "README.md",
-    "LICENSE"
-  ],
-  "exports": {
-    ".": "./dist/index.js",
-    "./utilities": "./dist/utilities/index.js",
-    "./results": "./dist/results/index.js",
-    "./schema": "./dist/schema/index.js",
-    "./pipeline": "./dist/pipeline/index.js",
-    "./collections": "./dist/collections/index.js",
-    "./assertions": "./dist/assertions/index.js",
-    "./plugins": "./dist/plugins/index.js",
-    "./expressions": "./dist/expressions/index.js",
-    "./errors": "./dist/errors/index.js",
-    "./performance": "./dist/performance/index.js",
-    "./capabilities": "./dist/capabilities/index.js",
-    "./types": "./dist/types/index.js"
-  },
-  "typesVersions": {
-    "*": {
-      "utilities": [
-        "./dist/utilities/index.d.ts"
-      ],
-      "results": [
-        "./dist/results/index.d.ts"
-      ],
-      "schema": [
-        "./dist/schema/index.d.ts"
-      ],
-      "pipeline": [
-        "./dist/pipeline/index.d.ts"
-      ],
-      "collections": [
-        "./dist/collections/index.d.ts"
-      ],
-      "plugins": [
-        "./dist/plugins/index.d.ts"
-      ],
-      "expressions": [
-        "./dist/expressions/index.d.ts"
-      ],
-      "errors": [
-        "./dist/errors/index.d.ts"
-      ],
-      "performance": [
-        "./dist/performance/index.d.ts"
-      ],
-      "assertions": [
-        "./dist/assertions/index.d.ts"
-      ],
-      "capabilities": [
-        "./dist/capabilities/index.d.ts"
-      ],
-      "types": [
-        "./dist/types/index.d.ts"
-      ]
+    "name": "@routier/core",
+    "version": "0.2.1",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "source": "./src/index.ts",
+    "publishConfig": {
+        "access": "public"
+    },
+    "files": [
+        "dist/**/*",
+        "!dist/**/*.test.*",
+        "!dist/**/*.spec.*",
+        "README.md",
+        "LICENSE"
+    ],
+    "exports": {
+        ".": "./dist/index.js",
+        "./utilities": "./dist/utilities/index.js",
+        "./results": "./dist/results/index.js",
+        "./schema": "./dist/schema/index.js",
+        "./pipeline": "./dist/pipeline/index.js",
+        "./collections": "./dist/collections/index.js",
+        "./assertions": "./dist/assertions/index.js",
+        "./plugins": "./dist/plugins/index.js",
+        "./expressions": "./dist/expressions/index.js",
+        "./errors": "./dist/errors/index.js",
+        "./performance": "./dist/performance/index.js",
+        "./capabilities": "./dist/capabilities/index.js",
+        "./types": "./dist/types/index.js"
+    },
+    "typesVersions": {
+        "*": {
+            "utilities": [
+                "./dist/utilities/index.d.ts"
+            ],
+            "results": [
+                "./dist/results/index.d.ts"
+            ],
+            "schema": [
+                "./dist/schema/index.d.ts"
+            ],
+            "pipeline": [
+                "./dist/pipeline/index.d.ts"
+            ],
+            "collections": [
+                "./dist/collections/index.d.ts"
+            ],
+            "plugins": [
+                "./dist/plugins/index.d.ts"
+            ],
+            "expressions": [
+                "./dist/expressions/index.d.ts"
+            ],
+            "errors": [
+                "./dist/errors/index.d.ts"
+            ],
+            "performance": [
+                "./dist/performance/index.d.ts"
+            ],
+            "assertions": [
+                "./dist/assertions/index.d.ts"
+            ],
+            "capabilities": [
+                "./dist/capabilities/index.d.ts"
+            ],
+            "types": [
+                "./dist/types/index.d.ts"
+            ]
+        }
+    },
+    "scripts": {
+        "build:types": "tsc --emitDeclarationOnly",
+        "build:bundle": "rspack build",
+        "build": "npm run build:bundle && npm run build:types",
+        "tsc": "tsc",
+        "test": "jest",
+        "lint": "oxlint . --ignore-pattern \"**/__tests__/**\" --ignore-pattern \"**/*.test.*\" --ignore-pattern \"**/*.spec.*\" --ignore-pattern \"**/*.mjs\""
+    },
+    "sideEffects": false,
+    "author": "James DeMeuse <james.demeuse@gmail.com>",
+    "license": "MIT",
+    "repository": "Agrejus/routier",
+    "keywords": [
+        "orm",
+        "typescript",
+        "web",
+        "indexeddb",
+        "electron",
+        "data access layer",
+        "entities",
+        "entity framework",
+        "database"
+    ],
+    "description": "Core functionality for routier",
+    "devDependencies": {
+        "@rspack/cli": "^1.1.8",
+        "@rspack/core": "^1.1.8",
+        "ts-loader": "^9.5.2",
+        "typescript": "^5.7.2"
     }
-  },
-  "scripts": {
-    "build:types": "tsc --emitDeclarationOnly",
-    "build:bundle": "rspack build",
-    "build": "npm run build:bundle && npm run build:types",
-    "tsc": "tsc",
-    "test": "jest",
-    "lint": "oxlint . --ignore-pattern \"**/__tests__/**\" --ignore-pattern \"**/*.test.*\" --ignore-pattern \"**/*.spec.*\" --ignore-pattern \"**/*.mjs\""
-  },
-  "sideEffects": false,
-  "author": "James DeMeuse <james.demeuse@gmail.com>",
-  "license": "MIT",
-  "repository": "Agrejus/routier",
-  "keywords": [
-    "orm",
-    "typescript",
-    "web",
-    "indexeddb",
-    "electron",
-    "data access layer",
-    "entities",
-    "entity framework",
-    "database"
-  ],
-  "description": "Core functionality for routier",
-  "devDependencies": {
-    "@rspack/cli": "^1.1.8",
-    "@rspack/core": "^1.1.8",
-    "ts-loader": "^9.5.2",
-    "typescript": "^5.7.2"
-  }
 }

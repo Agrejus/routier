@@ -20,9 +20,15 @@ export default defineConfig({
             {
                 test: /\.ts$/, // Match TypeScript files
                 use: {
-                    loader: "ts-loader",
+                    // Rspack ships this loader with its native binding. Using ts-loader here
+                    // unnecessarily requires webpack itself to be installed as a peer and makes
+                    // an otherwise-Rspack-only package fail to build in a clean workspace.
+                    loader: "builtin:swc-loader",
                     options: {
-                        transpileOnly: false, // Ensure type-checking is performed
+                        jsc: {
+                            parser: { syntax: "typescript" },
+                            target: "es2022",
+                        },
                     },
                 },
                 exclude: [

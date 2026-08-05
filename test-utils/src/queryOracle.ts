@@ -193,7 +193,8 @@ export function describeQueryOracle(
         });
 
         afterAll(async () => {
-            await dataStore?.destroyAsync().catch(() => undefined);
+            // Annotated because tsc emits TS7011 on a bare `() => undefined` here.
+            await dataStore?.destroyAsync().catch((): void => undefined);
         });
 
         const build = (predicate: Predicate, ordering: Ordering, window: Window) => {

@@ -79,8 +79,23 @@ const PRODUCTS: Product[] = [
     { name: "Delta", category: "toys", price: 40 },
 ];
 
-/** Richer-typed rows, used only by the "rich types" section. */
-const RICH = [
+/**
+ * Richer-typed rows, used only by the "rich types" section.
+ *
+ * Annotated rather than inferred: the third row has an empty `tags` and a null `note`, so
+ * inference widens those to `any[]` and `any` and the array stops type-checking anything.
+ */
+type RichRow = {
+    name: string;
+    inStock: boolean;
+    createdDate: Date;
+    tags: string[];
+    note: string | null;
+    rating?: number;
+    dimensions: { width: number; height: number };
+};
+
+const RICH: RichRow[] = [
     { name: "Alpha", inStock: true, createdDate: new Date("2024-01-01T00:00:00.000Z"), tags: ["a"], note: null, rating: 5, dimensions: { width: 1, height: 2 } },
     { name: "Bravo", inStock: false, createdDate: new Date("2024-02-01T00:00:00.000Z"), tags: ["a", "b"], note: "second", rating: 3, dimensions: { width: 3, height: 4 } },
     { name: "Charlie", inStock: true, createdDate: new Date("2024-03-01T00:00:00.000Z"), tags: [], note: null, dimensions: { width: 5, height: 6 } },
@@ -662,7 +677,8 @@ export function describePluginContract(
                 const dataStore = await seeded();
 
                 await withTimeout(dataStore.products.firstAsync(p => p.name === "Nope"), "firstAsync(no match)")
-                    .catch(() => undefined);
+                    // Annotated because tsc emits TS7011 on a bare `() => undefined` here.
+                    .catch((): void => undefined);
 
                 expect(await dataStore.products.countAsync()).toBe(PRODUCTS.length);
             });

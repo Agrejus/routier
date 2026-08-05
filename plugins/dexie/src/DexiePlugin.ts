@@ -266,7 +266,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
         // does this), so the union is what Dexie has to be given — a stores spec naming only
         // this event's collections would drop the other datastore's tables. Merged over the
         // cached entry, with this event's freshly derived specs winning.
-        const merged = { ...(cached?.stores ?? {}), ...derived };
+        const merged = { ...cached?.stores, ...derived };
 
         cache.set(this.dbName, { fingerprint: fingerprintOf(merged), stores: merged });
 
