@@ -101,7 +101,23 @@ The Memory Plugin implements all standard plugin methods:
 - `update()` - Update existing entities
 - `remove()` - Remove entities
 - `query()` - Query collections
-- `destroy()` - Clean up resources
+- `destroy()` - Clear the named database
+
+## Shared Named Databases
+
+The plugin keeps one database per NAME, shared by every `MemoryPlugin` instance in the
+process. Two `new MemoryPlugin("app")` instances read and write the same records, which is
+what lets a multi-store test behave like several connections to one database.
+
+This has one consequence to plan for: `destroy()` clears the named database for **every** user
+of that name, not only for the instance you call it on. A test that destroys its store empties
+the database out from under any other store that named it.
+
+Give each test its own database name when the tests run in one process:
+
+```ts
+const store = new AppStore(new MemoryPlugin(`test-${crypto.randomUUID()}`));
+```
 
 ## Next Steps
 

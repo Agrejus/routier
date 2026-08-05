@@ -53,6 +53,16 @@ export class MemoryPlugin extends EphemeralDataPlugin {
         collection.seed(data);
     }
 
+    /**
+     * Clears the named database — for EVERY plugin instance using that name, not just this one.
+     *
+     * The registry is keyed by database name and shared process-wide, which is what makes two
+     * `MemoryPlugin("app")` instances behave like two connections to one database. The other
+     * side of that: destroy is not scoped to the instance it is called on. A test that
+     * destroys its store empties the database out from under every other store that named it.
+     *
+     * Give each test its own database name if they run in one process.
+     */
     override destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
         dbs[this.databaseName] = {};
         done(PluginEventResult.success(event.id));

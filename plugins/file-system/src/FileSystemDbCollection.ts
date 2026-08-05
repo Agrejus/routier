@@ -160,19 +160,44 @@ export class FileSystemDbCollection extends MemoryDataCollection {
             // both stringified the same shared collection after their own mutation.
             const temporaryPath = `${this.fileNameAndPath}.${process.pid}.${++temporaryFileCounter}.tmp`;
 
-            fs.writeFile(temporaryPath, stringifiedData, 'utf8', (error) => {
-                if (error) {
-                    done(Result.error(error));
+            // Written through an explicit handle so the contents can be flushed before the
+            // rename. `writeFile` alone only guarantees the bytes reached the OS page cache:
+            // the rename is atomic with respect to READERS, but a power loss can still land
+            // the new name over an empty or partial file. `fsync` first makes the rename
+            // atomic with respect to CRASHES as well.
+            fs.open(temporaryPath, 'w', (openError, fd) => {
+                if (openError) {
+                    done(Result.error(openError));
                     return;
                 }
 
-                fs.rename(temporaryPath, this.fileNameAndPath, (renameError) => {
-                    if (renameError) {
-                        done(Result.error(renameError));
+                const finish = (error: NodeJS.ErrnoException | null) => {
+                    fs.close(fd, () => {
+                        if (error) {
+                            // Leave no half-written temp file behind; a failed save should
+                            // not accumulate debris next to the real one.
+                            fs.unlink(temporaryPath, () => done(Result.error(error)));
+                            return;
+                        }
+
+                        fs.rename(temporaryPath, this.fileNameAndPath, (renameError) => {
+                            if (renameError) {
+                                done(Result.error(renameError));
+                                return;
+                            }
+
+                            done(Result.success());
+                        });
+                    });
+                };
+
+                fs.writeFile(fd, stringifiedData, 'utf8', (writeError) => {
+                    if (writeError) {
+                        finish(writeError);
                         return;
                     }
 
-                    done(Result.success());
+                    fs.fsync(fd, (syncError) => finish(syncError));
                 });
             });
         });
