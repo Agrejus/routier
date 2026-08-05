@@ -1,6 +1,6 @@
 # Known defects
 
-Status: 29 of 29 fixed. No open defects.
+Status: 30 of 30 fixed. No open defects.
 Date: 2026-08-05
 
 Defects 1–10 came from the functional test program. #11–#13 came from the stress program
@@ -833,6 +833,38 @@ row's full identity, and MySQL's select-back uses it as an OR of per-row conjunc
 Thirteen tests in `updates.test.ts`, every one using rows that share their first key component.
 
 **Found by** the plugin production-readiness audit (`PLUGIN_AUDIT.md`, High).
+
+### 30. browser-storage lost every persisted row on an add-only save — **FIXED**
+
+The same defect as #18, in the other plugin that serializes a whole collection over one
+value. Persist three rows, reload the page, add a fourth: the storage key now holds only the
+fourth. Nothing errored — the add succeeded, and the rows it replaced were simply gone.
+
+**Cause:** two halves that were each individually reasonable.
+`BrowserStoragePlugin.resolveCollection` returned `new BrowserStorageCollection(...)` on
+every call, so no state survived between operations; and `EphemeralDataPlugin` skips `load()`
+for an add-only batch, because an add needs no prior state. Together, a fresh collection
+holding one add serialized itself over the complete stored value in `save()`.
+
+**Fix:** the file-system template, ported. A module-level registry returns one collection per
+(Storage object, database name, collection name) — keyed by the Storage OBJECT as well, since
+`localStorage` and `sessionStorage` can hold the same database name. `save()` hydrates first
+when it has not loaded, merging with `addIfAbsent` so stored rows never clobber pending
+mutations. `EphemeralDataPlugin`'s load-skip now carries a warning naming this exact trap,
+since it has caused a data-loss defect in two separate plugins.
+
+Also in this fix, from the same audit finding: an unparseable stored value now produces an
+error that names the storage key, and is left in place rather than being reset to empty —
+"recovering" by discarding turns data that could not be read into data that was deleted. An
+empty-string value is tolerated as an empty collection. `JSON.stringify` moved inside the try
+(a cycle previously threw past the callback), and the output is no longer pretty-printed,
+which was doubling the bytes against a ~5MB quota.
+
+**Not fixed, documented instead:** two tabs writing one database still race — each is an
+independent read-modify-write owner of the key and the last save wins. CAS/revision is out of
+scope; the single-writer boundary is stated in the plugin README.
+
+**Found by** the plugin production-readiness audit (`PLUGIN_AUDIT.md`, Critical).
 
 ### The `--forceExit` question, answered
 

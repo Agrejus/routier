@@ -183,6 +183,87 @@ describe('browser-storage persistence', () => {
         expect((await open('db-update', storage).products.firstAsync(p => p.name === 'Alpha')).price).toBe(99);
     });
 
+    // An add-only batch is the one shape that skips load() (EphemeralDataPlugin only
+    // hydrates when a batch has updates or removes), so a fresh plugin instance starts from
+    // an empty collection and then serializes that empty view over the whole storage value.
+    // Nothing errors: the add succeeds and the rows that were already there are gone.
+    it('keeps existing rows when a fresh instance performs an add-only save', async () => {
+        const storage = new FakeStorage();
+
+        const first = open('db-add-only', storage);
+        await first.products.addAsync({ name: 'Alpha', price: 10 } as any);
+        await first.saveChangesAsync();
+
+        // A new plugin over the same storage — a page reload — that only ADDS.
+        const second = open('db-add-only', storage);
+        await second.products.addAsync({ name: 'Beta', price: 20 } as any);
+        await second.saveChangesAsync();
+
+        const names = (await open('db-add-only', storage).products.toArrayAsync())
+            .map(p => p.name)
+            .sort();
+
+        expect(names).toEqual(['Alpha', 'Beta']);
+    });
+
+    it('shares one collection view across plugin instances over the same storage', async () => {
+        // Two stores, no reload between them: both must resolve to the SAME in-memory
+        // collection, or each is an independent read-modify-write owner of one key.
+        const storage = new FakeStorage();
+
+        const a = open('db-shared', storage);
+        const b = open('db-shared', storage);
+
+        await a.products.addAsync({ name: 'Alpha', price: 10 } as any);
+        await a.saveChangesAsync();
+        await b.products.addAsync({ name: 'Beta', price: 20 } as any);
+        await b.saveChangesAsync();
+
+        expect(await open('db-shared', storage).products.countAsync()).toBe(2);
+    });
+
+    it('keeps the same database name in two different Storage objects separate', async () => {
+        const local = new FakeStorage();
+        const session = new FakeStorage();
+
+        const first = open('db-two-storages', local);
+        await first.products.addAsync({ name: 'Alpha', price: 10 } as any);
+        await first.saveChangesAsync();
+
+        expect(await open('db-two-storages', session).products.countAsync()).toBe(0);
+    });
+
+    it('treats an empty stored value as an empty collection', async () => {
+        const storage = new FakeStorage();
+        storage.setItem('db-blank__bs_products', '');
+
+        expect(await open('db-blank', storage).products.countAsync()).toBe(0);
+    });
+
+    it('fails loudly on an unparseable value instead of discarding it', async () => {
+        const storage = new FakeStorage();
+        storage.setItem('db-corrupt__bs_products', '{not json');
+
+        const error = await open('db-corrupt', storage).products.toArrayAsync().then(() => null, e => e);
+
+        expect(error).not.toBeNull();
+        // The message has to name the key: the user's only recovery is to go and look at it.
+        expect(String(error.message)).toContain('db-corrupt__bs_products');
+    });
+
+    it('leaves an unparseable value in place rather than overwriting it', async () => {
+        // The dangerous recovery is "reset to empty and carry on" — that converts data the
+        // plugin could not read into data the plugin deleted.
+        const storage = new FakeStorage();
+        storage.setItem('db-corrupt-keep__bs_products', '{not json');
+
+        const store = open('db-corrupt-keep', storage);
+        await store.products.addAsync({ name: 'Alpha', price: 10 } as any).catch(() => undefined);
+        await store.saveChangesAsync().catch(() => undefined);
+
+        expect(storage.getItem('db-corrupt-keep__bs_products')).toBe('{not json');
+    });
+
     it('stores values as strings, as the Storage contract requires', async () => {
         const storage = new FakeStorage();
         const store = open('db-strings', storage);

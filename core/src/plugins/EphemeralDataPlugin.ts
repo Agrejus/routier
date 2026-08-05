@@ -109,6 +109,21 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
 
             // Phase 1 — load every collection that needs its stored data (updates/removes,
             // and any conditional update), before anything is validated or applied.
+            //
+            // An ADD-ONLY batch is skipped: an add needs no prior state, and for the memory
+            // backing this class was written against, loading is free anyway.
+            //
+            // ⚠ SUBCLASSES THAT PERSIST WHOLE COLLECTIONS MUST HYDRATE IN `save()`.
+            // If `save()` serializes `this.records` over the entire stored value — a JSON
+            // file, one localStorage key, a blob — then a collection instance that has
+            // never loaded holds only this batch's adds, and writing it DELETES everything
+            // previously persisted. The skip above means `save()` cannot assume `load()`
+            // ran. Hydrate first (load-once, then `addIfAbsent` so stored rows never
+            // clobber pending mutations); `FileSystemDbCollection.save` and
+            // `BrowserStorageCollection.save` both do exactly that.
+            //
+            // This has now been a data-loss defect twice — known-defects #18
+            // (file-system) and #30 (browser-storage).
             for (const { collection, changes } of staged) {
                 if (changes.updates.length === 0 && changes.removes.length === 0) {
                     continue;
