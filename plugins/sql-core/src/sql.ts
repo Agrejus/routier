@@ -210,7 +210,14 @@ function renderColumn(prop: PropertyExpression, d: SqlDialect): string {
     return col;
 }
 
-/** Result of splitting a comparator into left/right property and value sides. */
+/**
+ * Result of splitting a comparator into left/right property and value sides.
+ *
+ * The absent-side sentinel is `undefined`, never `null`: `null` is a legitimate
+ * operand (`entity.deletedAt == null`), so using it to mean "this side is not a
+ * value expression" makes a real null indistinguishable from a property side.
+ * That collision rendered `"x" == entity.prop` as `prop IS NULL`.
+ */
 interface PropertyValueSides {
     propLeft: PropertyExpression | null;
     propRight: PropertyExpression | null;
@@ -221,8 +228,8 @@ interface PropertyValueSides {
 function getPropertyValueSides(cmp: ComparatorExpression): PropertyValueSides {
     const propLeft = cmp.left && isPropertyExpression(cmp.left) ? cmp.left : null;
     const propRight = cmp.right && isPropertyExpression(cmp.right) ? cmp.right : null;
-    const valLeft = cmp.left && isValueExpression(cmp.left) ? applyValueTransformer(cmp.left.value, cmp.left.transformer) : null;
-    const valRight = cmp.right && isValueExpression(cmp.right) ? applyValueTransformer(cmp.right.value, cmp.right.transformer) : null;
+    const valLeft = cmp.left && isValueExpression(cmp.left) ? applyValueTransformer(cmp.left.value, cmp.left.transformer) : undefined;
+    const valRight = cmp.right && isValueExpression(cmp.right) ? applyValueTransformer(cmp.right.value, cmp.right.transformer) : undefined;
     return { propLeft, propRight, valLeft, valRight };
 }
 
@@ -254,10 +261,15 @@ function equalsNullColumnLeft(ctx: EqualsRenderContext): string {
     return ctx.negated ? `${ctx.col} IS NOT NULL` : `${ctx.col} IS NULL`;
 }
 
+/**
+ * `null == entity.prop` — the operand order is reversed but the meaning is not.
+ * A null test is not a binary comparison, so unlike the value cases there is no
+ * mirrored form to emit: `? IS NULL` with a bound null is the tautology
+ * `NULL IS NULL`, true for every row. This renders the column form, identical
+ * to {@link equalsNullColumnLeft}, and binds no parameter.
+ */
 function equalsNullColumnRight(ctx: EqualsRenderContext): string {
-    ctx.params.push(null);
-    const ph = ctx.placeholder();
-    return ctx.negated ? `${ph} IS NOT NULL` : `${ph} IS NULL`;
+    return ctx.negated ? `${ctx.col} IS NOT NULL` : `${ctx.col} IS NULL`;
 }
 
 function equalsValueColumnLeft(ctx: EqualsRenderContext): string {
@@ -292,14 +304,16 @@ function renderStringPatternComparison(
 
     if (cmp.comparator === "includes") {
         const col =
-            propLeft && valRight !== null
+            propLeft && valRight !== undefined
                 ? renderColumn(propLeft, d)
-                : propRight && valLeft !== null
+                : propRight && valLeft !== undefined
                   ? renderColumn(propRight, d)
                   : null;
-        const value = valRight !== null ? valRight : valLeft;
+        const value = valRight !== undefined ? valRight : valLeft;
 
-        if (col === null) {
+        // A null operand is rejected rather than stringified: `LIKE '%null%'` is
+        // never what the caller meant.
+        if (col === null || value == null) {
             throw new Error("Complex expressions not supported for includes operations");
         }
 
@@ -315,19 +329,20 @@ function renderStringPatternComparison(
         const ph = placeholder();
         const op = kind === "GLOB" ? "GLOB" : "LIKE";
         const escape = kind === "LIKE" ? d.likeEscapeClause() : "";
-        if (propLeft && valRight !== null) {
+        if (propLeft && valRight !== undefined) {
             return cmp.negated ? `${col} NOT ${op} ${ph}${escape}` : `${col} ${op} ${ph}${escape}`;
         }
         return cmp.negated ? `${ph} NOT ${op} ${col}${escape}` : `${ph} ${op} ${col}${escape}`;
     }
 
     const col =
-        propLeft && valRight !== null
+        propLeft && valRight !== undefined
             ? renderColumn(propLeft, d)
-            : propRight && valLeft !== null
+            : propRight && valLeft !== undefined
               ? renderColumn(propRight, d)
               : null;
-    const value = valRight !== null ? String(valRight) : valLeft !== null ? String(valLeft) : null;
+    const rawValue = valRight !== undefined ? valRight : valLeft;
+    const value = rawValue == null ? null : String(rawValue);
 
     if (col === null || value === null) {
         throw new Error(`Complex expressions not supported for ${cmp.comparator} operations`);
@@ -344,7 +359,7 @@ function renderStringPatternComparison(
     const op = kind === "GLOB" ? "GLOB" : "LIKE";
     const escape = kind === "LIKE" ? d.likeEscapeClause() : "";
 
-    if (propLeft && valRight !== null) {
+    if (propLeft && valRight !== undefined) {
         return cmp.negated ? `${col} NOT ${op} ${ph}${escape}` : `${col} ${op} ${ph}${escape}`;
     }
     return cmp.negated ? `${ph} NOT ${op} ${col}${escape}` : `${ph} ${op} ${col}${escape}`;

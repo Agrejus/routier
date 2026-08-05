@@ -1,13 +1,15 @@
 # Known defects
 
-Status: 24 of 24 fixed. No open defects.
-Date: 2026-08-03
+Status: 29 of 29 fixed. No open defects.
+Date: 2026-08-05
 
 Defects 1–10 came from the functional test program. #11–#13 came from the stress program
 (`stress/`, see `specs/stress-testing.md`) and are the reason it exists: all three are
 change-tracker state bugs that a single-operation test cannot see, because each needs a
 *second* save to become observable. #18–#22 came from the same program later, once it grew
-scenarios for concurrency (#18, #21) and real databases (#19, #20, #22).
+scenarios for concurrency (#18, #21) and real databases (#19, #20, #22). #27 and #29 came from the
+plugin production-readiness audit (`PLUGIN_AUDIT.md`); #28 came from the test matrix written to
+verify the #27 fix, which is the usual way the second bug in a family turns up.
 
 Keep this line current. It said "14 of 18" while eight defects were open, which is the one
 error in this file a reader cannot detect without reading the whole thing.
@@ -771,6 +773,66 @@ Three tests in `ChangeTracker.test.ts`.
 
 **Found by** the field-by-field audit in the same page, which reported five `__tracking__`
 discrepancies against the server and nothing else.
+
+### 27. A reversed null comparison matched every row — **FIXED**
+
+`null == entity.deletedAt` rendered `$1 IS NULL` with a bound `null`. That is the tautology
+`NULL IS NULL`: true for every row, independent of the column. The predicate did not error and
+did not return zero rows — it returned *all* of them, so a filtered query silently became an
+unfiltered one. `entity.deletedAt == null` rendered correctly, so the defect only appeared with
+the operands the other way round.
+
+**Cause:** `equalsNullColumnRight` in `plugins/sql-core/src/sql.ts` was written as a mirror of
+`equalsValueColumnRight`, which is right for a binary comparison (`? = "col"` really is `"col" = ?`
+reversed) and wrong for a null test, which has no mirrored form.
+
+**Fix:** it now emits `"col" IS [NOT] NULL` and binds no parameter — byte-identical to
+`equalsNullColumnLeft`. The sibling test that asserted `$1 IS NULL` (`sql.test.ts`) was rewritten
+per the #3 pattern. A matrix covers both operand orders and both polarities on sqlite, postgresql
+and mysql.
+
+**Found by** the plugin production-readiness audit (`PLUGIN_AUDIT.md`, High).
+
+### 28. `"value" == entity.prop` rendered as `prop IS NULL` — **FIXED**
+
+Worse than #27 and found while fixing it. Any equals comparison with the VALUE on the left and a
+non-null value — `"Ada" == entity.name` — rendered `"name" IS NULL`, dropping the value entirely.
+The comparison did not merely return the wrong rows, it tested a different column property.
+
+**Cause:** a sentinel collision. `getPropertyValueSides` returned `null` to mean "this side is not
+a value expression", but the equals renderer was written against an `undefined` sentinel
+(`valRight !== undefined ? valRight : valLeft`). With the value on the left, `valRight` was the
+absent-side `null`, which is `!== undefined`, so `value` became `null` and the null strategy ran.
+A genuine `null` operand and an absent side were indistinguishable.
+
+**Fix:** the absent-side sentinel is now `undefined`, which cannot be a legitimate operand.
+`renderStringPatternComparison` moved to the same sentinel and rejects a null operand explicitly
+rather than stringifying it into `LIKE '%null%'`.
+
+**Found by** the all-dialect matrix written for #27 — the "still binds a parameter for a non-null
+value in either order" control case, which existed only to prove the #27 fix had not over-reached.
+
+### 29. Composite-key updates overwrote sibling rows — **FIXED**
+
+Both SQL update builders matched rows on `schema.idProperties[0]` alone. For a schema keyed
+`(tenant, id)`, updating `("acme", "shared")` emitted `WHERE "tenant" = ?` — which also matches
+`("acme", "other")`. The grouped form was worse: `SET "a" = CASE "tenant" WHEN ? THEN ?` applied
+one row's new values to every row sharing its first component. Rows affected was non-zero and no
+error was raised. MySQL's select-back after an update repeated the assumption, so the echo
+returned the wrong rows too.
+
+**Cause:** `identityNames` (all id properties) already existed in both builders but was used only
+to exclude ids from the empty-delta fallback; every WHERE and CASE used `idProperties[0]`.
+
+**Fix:** single-key schemas keep the grouped-CASE statement unchanged — byte-identical output, the
+existing tests pin it. Composite-key schemas take a new branch: one UPDATE per row with a full-key
+WHERE, each its own operation, reusing the one-statement-per-operation shape from #22 rather than
+dialect-specific row-value syntax (SQLite has none). Conditional (token-checked) updates AND every
+identity column ahead of the token. Both operation types now carry a `keyTuples` field with each
+row's full identity, and MySQL's select-back uses it as an OR of per-row conjunctions.
+Thirteen tests in `updates.test.ts`, every one using rows that share their first key component.
+
+**Found by** the plugin production-readiness audit (`PLUGIN_AUDIT.md`, High).
 
 ### The `--forceExit` question, answered
 

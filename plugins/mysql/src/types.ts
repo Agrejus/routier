@@ -18,6 +18,11 @@ export type MysqlSelectBack =
     | { mode: 'by-composite-key'; keyTuples: Record<string, unknown>[] };
 
 export type MysqlAddsOperation = SqlOperation & { selectBack: MysqlSelectBack };
-export type MysqlUpdatesOperation = SqlOperation & { ids: unknown[] };
+/**
+ * MySQL has no RETURNING, so the updated rows are selected back afterwards. `keyTuples`
+ * carries each row's FULL identity — selecting back on one component of a composite key
+ * echoes the wrong rows.
+ */
+export type MysqlUpdatesOperation = SqlOperation & { ids: unknown[]; keyTuples: Record<string, unknown>[] };
 /** The echo must be read BEFORE the delete runs; selectSql shares the delete's params. */
 export type MysqlRemovesOperation = SqlOperation & { selectSql: string };

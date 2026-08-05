@@ -41,7 +41,10 @@ describe("sql expression translator", () => {
         expect(result.params).toEqual([]);
     });
 
-    it("renders value-on-left null equals with placeholder", () => {
+    // Previously asserted `$1 IS NULL` with a bound null — the tautology
+    // `NULL IS NULL`, true for every row. A null test has no mirrored form, so
+    // the reversed operand order must render exactly the column-on-left output.
+    it("renders value-on-left null equals as the column test, no params", () => {
         const expr = new ComparatorExpression({
             comparator: "equals",
             negated: false,
@@ -51,8 +54,8 @@ describe("sql expression translator", () => {
         });
 
         const result = toSql(expr, "postgresql");
-        expect(result.where).toBe(`$1 IS NULL`);
-        expect(result.params).toEqual([null]);
+        expect(result.where).toBe(`"deletedAt" IS NULL`);
+        expect(result.params).toEqual([]);
     });
 
     it("renders includes array as IN clause", () => {
@@ -283,5 +286,107 @@ describe("sql expression translator — expanded syntax", () => {
         const result = toSql(expr, "postgresql");
         expect(result.where).toBe(`"id" NOT IN ($1, $2)`);
         expect(result.params).toEqual([1, 2]);
+    });
+});
+
+// A null comparison is the one equals case with no mirrored form: reversing the
+// operands must not change the SQL. The matrix runs both operand orders and both
+// polarities against every dialect, because the bug it guards against —
+// `? IS NULL`, a row-independent tautology — is silent. It returns every row
+// instead of erroring, so only an assertion on the rendered text catches it.
+describe("null comparisons render identically in both operand orders", () => {
+    const dialects = [
+        { name: "sqlite" as const, quoted: `"deletedAt"` },
+        { name: "postgresql" as const, quoted: `"deletedAt"` },
+        { name: "mysql" as const, quoted: "`deletedAt`" },
+    ];
+
+    for (const { name, quoted } of dialects) {
+        describe(name, () => {
+            const cases = [
+                { label: "column on left", left: prop("deletedAt"), right: val(null) },
+                { label: "column on right", left: val(null), right: prop("deletedAt") },
+            ];
+
+            for (const { label, left, right } of cases) {
+                it(`renders IS NULL with ${label}`, () => {
+                    const result = toSql(
+                        new ComparatorExpression({
+                            comparator: "equals",
+                            negated: false,
+                            strict: false,
+                            left,
+                            right,
+                        }),
+                        name
+                    );
+
+                    expect(result.where).toBe(`${quoted} IS NULL`);
+                    expect(result.params).toEqual([]);
+                });
+
+                it(`renders IS NOT NULL with ${label}, negated`, () => {
+                    const result = toSql(
+                        new ComparatorExpression({
+                            comparator: "equals",
+                            negated: true,
+                            strict: false,
+                            left,
+                            right,
+                        }),
+                        name
+                    );
+
+                    expect(result.where).toBe(`${quoted} IS NOT NULL`);
+                    expect(result.params).toEqual([]);
+                });
+            }
+
+            it("still binds a parameter for a non-null value in either order", () => {
+                const ph = name === "postgresql" ? "$1" : "?";
+
+                const columnLeft = toSql(
+                    new ComparatorExpression({
+                        comparator: "equals",
+                        negated: false,
+                        strict: false,
+                        left: prop("deletedAt"),
+                        right: val("x"),
+                    }),
+                    name
+                );
+                expect(columnLeft.where).toBe(`${quoted} = ${ph}`);
+                expect(columnLeft.params).toEqual(["x"]);
+
+                const columnRight = toSql(
+                    new ComparatorExpression({
+                        comparator: "equals",
+                        negated: false,
+                        strict: false,
+                        left: val("x"),
+                        right: prop("deletedAt"),
+                    }),
+                    name
+                );
+                expect(columnRight.where).toBe(`${ph} = ${quoted}`);
+                expect(columnRight.params).toEqual(["x"]);
+            });
+        });
+    }
+
+    it("renders a renamed column, not the property name", () => {
+        const result = toSql(
+            new ComparatorExpression({
+                comparator: "equals",
+                negated: false,
+                strict: false,
+                left: val(null),
+                right: prop("deletedAt", "deleted_at"),
+            }),
+            "postgresql"
+        );
+
+        expect(result.where).toBe(`"deleted_at" IS NULL`);
+        expect(result.params).toEqual([]);
     });
 });

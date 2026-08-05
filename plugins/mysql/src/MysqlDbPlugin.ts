@@ -152,10 +152,16 @@ export class MysqlDbPlugin implements IDbPlugin {
                 for (const update of updates) {
                     await connection.execute(update.sql, update.params);
 
-                    const placeholders = update.ids.map(() => '?').join(', ');
+                    // Select back on the FULL key of each row — an OR of per-row
+                    // conjunctions, the same shape the composite add path uses below.
+                    // `id IN (...)` over one component of a composite key echoes every
+                    // row that shares it.
+                    const clauses = update.keyTuples.map(tuple =>
+                        `(${Object.keys(tuple).map(column => `\`${column}\` = ?`).join(' AND ')})`
+                    );
                     const [rows] = await connection.execute(
-                        `SELECT ${selectColumns(schemaId)} FROM ${table} WHERE ${idColumn} IN (${placeholders})`,
-                        update.ids
+                        `SELECT ${selectColumns(schemaId)} FROM ${table} WHERE ${clauses.join(' OR ')}`,
+                        update.keyTuples.flatMap(tuple => Object.values(tuple))
                     );
                     collect(schemaId, 'updates', rows as unknown[]);
                 }
