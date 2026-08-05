@@ -31,7 +31,17 @@
             "@routier/postgresql-plugin": ["./plugins/postgresql/src/index.ts"],
             "@routier/mysql-plugin": ["./plugins/mysql/src/index.ts"],
             "@routier/replication-plugin": ["./plugins/replication/src/index.ts"],
-            "@routier/react": ["./react/src/index.ts"]
+            "@routier/react": ["./react/src/index.ts"],
+
+            // `baseUrl` is the repo root, which contains a directory named `react`. TS tries
+            // baseUrl-relative resolution before node_modules for a non-relative import, so
+            // once `react/dist/index.d.ts` exists — it does after `npm run build` — the bare
+            // specifier `react` resolves to THIS WORKSPACE instead of the React package, and
+            // every hook import fails with "has no exported member". It only looked fine on an
+            // unbuilt checkout, where the workspace had no types to find. Pinned explicitly.
+            "react": ["./node_modules/react"],
+            "react-dom": ["./node_modules/react-dom"],
+            "react-dom/*": ["./node_modules/react-dom/*"]
         }
     },
     // ts-jest reads only `compilerOptions` from this file. An empty `include` keeps

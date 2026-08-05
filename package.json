@@ -15,7 +15,7 @@
         "benchmark"
     ],
     "scripts": {
-        "build": "npm run build --workspaces",
+        "build": "npm run build --workspaces --if-present",
         "typecheck": "npm run tsc --workspaces --if-present",
         "build:core": "cd core && npm run tsc",
         "build:routier": "cd routier && npm run tsc",

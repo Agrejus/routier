@@ -38,7 +38,6 @@
     "@routier/datastore": "file://../../datastore",
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",
-    "ts-loader": "^9.5.2",
     "vitest": "^3.2.4"
   }
 }

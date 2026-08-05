@@ -96,7 +96,6 @@
     "devDependencies": {
         "@rspack/cli": "^1.1.8",
         "@rspack/core": "^1.1.8",
-        "ts-loader": "^9.5.2",
         "typescript": "^5.7.2"
     }
 }
