@@ -361,7 +361,7 @@ These were decided as out of scope and are stated in the package READMEs:
 | `E2E_CONTAINERS=1 npx jest --selectProjects e2e` | 202 passing across SQLite, PostgreSQL, MySQL and CouchDB |
 | `STRESS=1 E2E_CONTAINERS=1 npx jest --selectProjects stress` | 65 passing, including S8 against both servers |
 | `npm run release:pack-check` | Twelve of thirteen packages pack correctly. `@routier/react` needs a bundle, which only CI can build |
-| `npm run build` | Not verifiable locally — no `@rspack/binding` for this platform. CI job 1 is where it runs |
+| `npm run build` | Green, and now runnable locally — see below |
 | `npm run benchmark` | **Two pre-existing regressions**, see below |
 
 ### The benchmark result, honestly
@@ -377,3 +377,45 @@ signal, and deciding whether that regression is acceptable is a separate call fr
 Benchmarks run against `MemoryPlugin` only, so none of the SQL builder changes are exercised
 by them. The SQL hot paths are covered by the stress program instead: S8's volume and churn
 scenarios run against real PostgreSQL and MySQL servers and pass.
+
+### The build, which had never run
+
+`npm run build` had never completed successfully in this repository. Nothing verified bundle
+output, so three defects sat in it untouched. CI found all three, one per push:
+
+1. **`core`, `datastore` and `test-utils` still used `ts-loader`.** The Phase 9 sweep covered
+   `plugins/*`, which is what the plan enumerated. ts-loader needs webpack as a peer, so the
+   first build ever attempted failed with `Cannot find module 'webpack'`.
+2. **`npm run build --workspaces` builds alphabetically**, which violates the dependency graph:
+   `datastore` imports `@routier/memory-plugin`, and mysql/postgresql/sqlite import
+   `@routier/sql-plugin-core`. Packages resolve siblings through `main: dist/index.js`, so an
+   unbuilt dependency is missing. Stale `dist/` folders hid it locally.
+3. **`tsconfig.test.json` sets `baseUrl` to the repo root, which contains a directory named
+   `react`.** TypeScript prefers baseUrl-relative resolution for a bare specifier, so once
+   `react/dist/index.d.ts` existed — after any build — `import { useEffect } from "react"`
+   resolved to the workspace and every hook import failed. It only looked fine on an unbuilt
+   checkout. CI builds before it tests, so it would have failed on every run.
+
+It is now runnable locally. npm's optional-dependency bug (npm/cli#4828) drops the platform
+binaries; install them together, since installing one with `--no-save` prunes the other:
+
+```
+npm install --no-save --ignore-scripts @rspack/binding-darwin-arm64@<@rspack/core version> @rollup/rollup-darwin-arm64
+npm rebuild sqlite3   # --ignore-scripts skips its native build; ~21 suites fail without it
+```
+
+### The stress gate on CI
+
+`STRESS=1 E2E_CONTAINERS=1` passes locally in full — 65 of 65, including S8 against real
+PostgreSQL and MySQL. On GitHub runners one scenario fails:
+`s3-churn-mutation-cycles` → "memory: 10,000 cycles over 1,000 entities leave no residue".
+
+It asserts an RSS decay ratio below 0.85 and reported 0.95 and 1.00 on two runs, with RSS
+starting around 1.08GB on a 2-core runner. The scenario uses the memory backend, on a code
+path this work did not touch, and it passes locally on every attempt including under a 1GB
+heap cap. The assertion measures resident set size, which depends on when the collector
+returns pages, and a shared runner under memory pressure never shows the decay.
+
+Left as is. Loosening a leak detector to make a pipeline green is the wrong trade, and whether
+to re-tune the heuristic — or force a collection before sampling — is a decision for whoever
+owns the stress program.
