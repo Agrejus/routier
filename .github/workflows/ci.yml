@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # test.setup.js sets NODE_ENV=development, which turns the logger to debug and buries the
+  # output of a failing test under it.
+  ROUTIER_LOG_LEVEL: silent
+
+jobs:
+  # Runs on every push and pull request. This is also the only place bundle builds are
+  # verified: `npm run build` needs a platform-specific @rspack/binding, which is not
+  # installable on every contributor machine.
+  verify:
+    name: Build, lint, typecheck, test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npx jest
+
+      # After the build, because a `files` entry naming a file that does not exist yet is
+      # dropped silently and every package would report a missing bundle.
+      - name: Pack check
+        run: npm run release:pack-check
+
+  # Containers are slow and need Docker, so they run on the default branch, on release
+  # branches, and on demand — not on every pull request. Ubuntu runners have Docker, so
+  # testcontainers needs no setup.
+  containers:
+    name: Container and stress suites
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/heads/v')
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      # PostgreSQL, MySQL and CouchDB, plus the dialect conformance matrix against all three
+      # SQL engines. A green SQLite run says nothing about the others — see
+      # specs/known-defects.md, "things that will mislead you" #3.
+      - name: E2E with containers
+        run: E2E_CONTAINERS=1 npx jest --selectProjects e2e
+
+      - name: Stress with containers
+        run: STRESS=1 E2E_CONTAINERS=1 npx jest --selectProjects stress
+
+# Mutation testing (`npm run mutate:*`) stays manual. A full run takes hours, which is too
+# slow for a pull-request gate.
