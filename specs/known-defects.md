@@ -1,6 +1,6 @@
 # Known defects
 
-Status: 43 of 43 fixed. No open defects.
+Status: 47 of 47 fixed. No open defects.
 Date: 2026-08-05
 
 Defects 1–10 came from the functional test program. #11–#13 came from the stress program
@@ -1043,6 +1043,57 @@ The documented call in `docs/.../pouchdb-sync` could not compile: `sync()` deman
 `SchemaCollection` while a store exposes `ReadonlySchemaCollection`. The plugin only reads the
 schemas — it hands them to the caller's own event callbacks — so the parameter and the
 callback signatures widened to the readonly type.
+
+### 44. A Dexie save spanning two collections was not one transaction — **FIXED**
+
+Each collection's writes were pushed into a `jobs: Promise[]` array and awaited with
+`Promise.all`, so every collection got its own concurrent IndexedDB transaction. A save
+across two collections could commit the first and fail the second: `saveChanges` reported
+failure while half of it was already durable, which contradicts the datastore's own
+all-or-nothing contract. The identity-add path also opened a *nested* transaction of its own,
+so generated ids could survive a save that failed.
+
+**Fix:** one `db.transaction('rw', [...every affected table])` per persist event, ordered
+removes → updates → adds to match the SQL plugins, with the identity-add path inside it.
+
+**Found by** the plugin production-readiness audit; pinned by "rolls the first collection back
+when the second collection fails".
+
+### 45. Dexie's schema cache was validated by counting entries — **FIXED**
+
+`getSchemas` returned the cached stores whenever
+`Object.keys(cached).length === event.schemas.size`, so two different schema sets of the same
+size got the first one's index layout. The rebuild path compounded it by skipping any
+collection name already present, so a *changed* definition for an existing name was never
+re-derived. Either way the database's indexes stop matching its schema, with no error.
+
+**Fix:** keyed by `dbName` and validated by a fingerprint — every collection name with its
+full stores spec, sorted. Specs are always re-derived; the cache avoids repeating the string
+work, it no longer decides what the schema is.
+
+### 46. Dexie had no way to evolve a schema — **FIXED**
+
+`db.version(1)` was hard-coded, and IndexedDB treats redefining one version with a different
+index layout as an error rather than a migration. There was no supported way to add a
+collection or an index to a shipped database.
+
+**Fix:** `new DexiePlugin(name, { version })`, defaulting to 1. When Dexie rejects a layout,
+its `VersionError`/`SchemaError` is rewritten into a message that names the database, the
+version in use, and the option to raise — Dexie's own text mentions none of them. Dexie
+absorbs purely ADDITIVE changes itself (it logs "Schema was extended without increasing the
+number…" and adds the index); the message covers what it will not.
+
+**Optimistic concurrency stays unsupported on Dexie** and is documented as a limitation
+rather than implemented — there is no conditional-update primitive to build it on.
+
+### 47. Dexie leaked a connection whenever setup threw — **FIXED**
+
+`new Dexie`, `getSchemas` and `.stores()` all ran BEFORE the `try`, so a throw from any of
+them escaped `_doWork` synchronously instead of reaching `done` — the caller saw a raw
+exception rather than a failed event. The `catch` also called `done` without closing, so the
+handle stayed open and blocked a later version upgrade of the same database.
+
+**Fix:** all three inside the `try`, and `db.close()` on the error path.
 
 ### The `--forceExit` question, answered
 
