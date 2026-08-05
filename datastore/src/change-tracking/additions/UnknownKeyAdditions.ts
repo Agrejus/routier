@@ -85,6 +85,24 @@ export class UnknownKeyAdditions<T extends {}> implements IAdditions<T> {
         this.set(next);
     }
 
+    /**
+     * Rebuilds the buckets from the entities' current content.
+     *
+     * Cheap on purpose: one pass, reusing the same entity references, so the ids `mergeChanges`
+     * writes back still land in the caller's objects. Rows that are equal in content share a
+     * bucket exactly as they did before, which is what keeps defect #23 fixed.
+     */
+    reindex(): void {
+        const entities = this.values();
+
+        this.data.clear();
+        this.count = 0;
+
+        for (const entity of entities) {
+            this.set(entity);
+        }
+    }
+
     clear(): void {
         this.data.clear();
         this.count = 0;

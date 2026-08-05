@@ -214,3 +214,71 @@ were killable, that is one test per mutant with no leverage left.
 - The run executes all 469 core + datastore tests. Narrowing `testMatch` per area would
   speed it up, but `perTest` coverage already attributes correctly, so this is a runtime
   concern rather than a correctness one.
+
+---
+
+# Area: `plugins/replication` — 2026-08-04
+
+New area. Config: `stryker/replication.mjs` (+ `stryker/jest.replication.js`,
+`stryker/replication.setup.js`), script `npm run mutate:replication`, gate 80.
+
+Runtime is the binding constraint here, so the setup file caps the chaos suite at 3 seeds
+(`CHAOS_SEEDS=3`) and silences the plugin logger for mutant runs. Budget ~3 minutes per 100
+mutants at ~15 tests/mutant. Run per file, not per package.
+
+## Result
+
+| Scope | Mutants | Before | After | Notes |
+| --- | --- | --- | --- | --- |
+| `httpUtils.ts` | 104 | 85.05% | **99.01%** | 1 survivor, equivalent-only |
+| `UnsyncedQueue.ts` | 269 | 63.68% | **83.96%** | 30 survivors, 4 no-coverage |
+| `auth.ts` | 35 | 27.78% | **88.89%** | 2 survivors, both the documented redundancy |
+| `HttpSwrDbPlugin.ts`, `HttpDbPlugin.ts`, `PluginSyncEngine.ts`, `OptimisticUpdatesDbPlugin.ts` | — | — | not yet run | `HttpSwrDbPlugin.ts` alone is ~1 200 lines |
+
+The gains came from tests, not exclusions: `KeyedMutex` behavior (mutual exclusion, arrival
+order, key cleanup, lock release on failure), Retry-After parsing edges, the status
+predicates, jitter *spread* rather than just its bounds, `UnsyncedQueue`'s failure paths (store
+query fails, store persist fails, unparseable `entityJson`, legacy rows, single-row and null
+store responses, empty-work short-circuits), coalescing order under both row orders, and
+`buildAuthErrorEvent` in full.
+
+**Mutation testing found a real bug** while doing it: `readRetryAfterMs` sent a negative
+`Retry-After` through `Date.parse`, which accepts `"-5"` as a year, so a malformed header meant
+"retry immediately" instead of "use the computed backoff".
+
+## Remaining survivors, classified
+
+Of the 32 in `UnsyncedQueue.ts` + `auth.ts`:
+
+- **18 log-message and log-payload mutants** (`logger.warn("")`, `logger.debug(..., {})` at
+  lines 244, 258, 343, 389, 449, 506, plus the `source`/`action` strings on the store events
+  the queue builds). Unobservable through any boundary the queue exposes. **Decision: recorded
+  here, not annotated inline.** Eighteen `// Stryker disable` comments through the durability
+  core would cost more readability than the annotations buy, and the class is uniform enough to
+  describe once. This is the same call the expressions area faced with its 87 `ERROR_MESSAGES`
+  StringLiteral survivors.
+- **~8 equivalent guards.** `if (changes.length === 0) return` (lines 183, 403) — `persistToStore`
+  has its own empty guard, so the outer one only saves work; `confirmedSeq == null` / `<=` vs `<`
+  (254, 257) — seq is unique per change, so the boundary case cannot occur; `if (c.seq != null)`
+  (230) — the mutant produces `NaN`, which fails every comparison, reaching the same outcome;
+  `Math.max` → `Math.min` (231) — only differs when one call confirms several changes for one
+  entity, and the mutant retires *less*, which is safe by construction; `newest == null` (146) and
+  `group[0]?.recordIds` (343) — groups are built by pushing and are never empty.
+- **4 store-tolerance mutants.** `removeRowIds: ["Stryker was here"]` (199, 236, 382, 408) and
+  `collectionName: "Stryker was here!"` (395, 406). Removing a row id that does not exist is a
+  no-op in `MemoryPlugin`, and `collectionName` on a remove is cosmetic — the row id is the key.
+  A store that errored on unknown ids would kill these.
+- **2 in `auth.ts`**, annotated inline: the `instanceof HttpStatusError` branch is deliberately
+  redundant with the message fallback below it, which parses the same status out of the same
+  message. No test can separate them.
+
+## Open work
+
+1. **Run the four remaining files.** This is where the interesting logic lives — the SWR
+   read/write paths, retry loops and the composition engine. Expect it to take hours; run one
+   file at a time and add a row to the table above for each.
+2. **Then tighten the gate.** 80 was picked before any score existed. Once the package has a
+   number, set `break` just under it, the way expressions sits at 90.
+3. **The 74 "errors" in `UnsyncedQueue.ts`** are mutants that break the schema definition at
+   module load, so they never reach a test. They are excluded from the score denominator, which
+   is correct, but worth confirming none of them hides a real gap.

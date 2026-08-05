@@ -92,15 +92,26 @@ describe('HttpSwrDbPlugin persistToStore', () => {
     });
 
     /**
-     * `persistToStore` returns a promise and queries the SWR store synchronously inside
-     * the promise executor, so the pending query is available as soon as it is called.
-     * Feeding that query is what lets the returned promise settle.
+     * `persistToStore` runs under the per-collection store mutex, so the store query
+     * fires a microtask after the call. Waiting for it is what lets the returned
+     * promise settle.
      */
     function persistToStore(event: DbPluginQueryEvent<any, unknown>, translated: ITranslatedValue<unknown>) {
         return (plugin as any).persistToStore(event, translated) as Promise<void>;
     }
 
-    function respondToStoreQuery(event: DbPluginQueryEvent<any, unknown>, rows: unknown[]) {
+    async function waitForStoreQuery(): Promise<void> {
+        const start = Date.now();
+        while (queryCalls.length === 0) {
+            if (Date.now() - start > 1000) {
+                throw new Error('store query never fired');
+            }
+            await new Promise((r) => setTimeout(r, 5));
+        }
+    }
+
+    async function respondToStoreQuery(event: DbPluginQueryEvent<any, unknown>, rows: unknown[]) {
+        await waitForStoreQuery();
         expect(queryCalls).toHaveLength(1);
         // The store's result is read through queryResultToArray too, so it has to be a
         // real ITranslatedValue rather than a bare { value } object.
@@ -118,7 +129,7 @@ describe('HttpSwrDbPlugin persistToStore', () => {
         const row2 = { id: 'b', name: 'Bob' };
 
         const persisted = persistToStore(event, createTranslated([row1, row2]));
-        respondToStoreQuery(event, []);
+        await respondToStoreQuery(event, []);
         await persisted;
 
         expect(mockSwrStore.query).toHaveBeenCalledTimes(1);
@@ -135,7 +146,7 @@ describe('HttpSwrDbPlugin persistToStore', () => {
         const row2 = { id: 'b', name: 'Bob' };
 
         const persisted = persistToStore(event, createTranslated([row1, row2]));
-        respondToStoreQuery(event, [{ id: 'a', name: 'Alice (cached)' }]);
+        await respondToStoreQuery(event, [{ id: 'a', name: 'Alice (cached)' }]);
         await persisted;
 
         expect(mockSwrStore.bulkPersist).toHaveBeenCalledTimes(1);
@@ -150,7 +161,7 @@ describe('HttpSwrDbPlugin persistToStore', () => {
         const event = createEvent();
 
         const persisted = persistToStore(event, createTranslated([]));
-        respondToStoreQuery(event, []);
+        await respondToStoreQuery(event, []);
         await persisted;
 
         expect(mockSwrStore.query).toHaveBeenCalledTimes(1);
@@ -164,7 +175,7 @@ describe('HttpSwrDbPlugin persistToStore', () => {
         const row = { id: 'only', name: 'Solo' };
 
         const persisted = persistToStore(event, createTranslated(row));
-        respondToStoreQuery(event, []);
+        await respondToStoreQuery(event, []);
         await persisted;
 
         expect(mockSwrStore.query).toHaveBeenCalledTimes(1);
@@ -179,7 +190,7 @@ describe('HttpSwrDbPlugin persistToStore', () => {
         const err = new Error('store query failed');
 
         const persisted = persistToStore(event, createTranslated([{ id: 'x', name: 'X' }]));
-        expect(queryCalls).toHaveLength(1);
+        await waitForStoreQuery();
         queryCalls[0].callback(PluginEventResult.error(event.id, err));
 
         await expect(persisted).rejects.toThrow('store query failed');
@@ -191,7 +202,7 @@ describe('HttpSwrDbPlugin persistToStore', () => {
         const serverRow = { id: 'a', name: 'Alice Updated' };
 
         const persisted = persistToStore(event, createTranslated([serverRow]));
-        respondToStoreQuery(event, [{ id: 'a', name: 'Alice Old' }]);
+        await respondToStoreQuery(event, [{ id: 'a', name: 'Alice Old' }]);
         await persisted;
 
         expect(mockSwrStore.bulkPersist).toHaveBeenCalledTimes(1);
@@ -206,7 +217,7 @@ describe('HttpSwrDbPlugin persistToStore', () => {
         const serverRow = { id: 'a', name: 'Alice' };
 
         const persisted = persistToStore(event, createTranslated([serverRow]));
-        respondToStoreQuery(event, [{ id: 'a', name: 'Alice' }]);
+        await respondToStoreQuery(event, [{ id: 'a', name: 'Alice' }]);
         await persisted;
 
         // Identical entity classifies as neither add nor update, which leaves the

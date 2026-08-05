@@ -75,6 +75,13 @@ export type PluginSyncEngineOptions = {
      * @default "original-event"
      */
     mirrorPersistPayloadMode?: MirrorPersistPayloadMode;
+    /**
+     * Max time (ms) to wait for a composed plugin to call done() before treating the call
+     * as failed. Guards the engine against a plugin that never completes — otherwise one
+     * hung plugin stalls every operation routed through it forever. 0 disables.
+     * @default 60_000
+     */
+    pluginCallTimeoutMs?: number;
 };
 
 export class PluginSyncEngine implements IDbPlugin {
@@ -87,6 +94,7 @@ export class PluginSyncEngine implements IDbPlugin {
     private readonly destroyFailureMode: DestroyFailureMode;
     private readonly onMirrorError?: (error: Error, context: { pluginIndex: number; eventId: string }) => void;
     private readonly mirrorPersistPayloadMode: MirrorPersistPayloadMode;
+    private readonly pluginCallTimeoutMs: number;
 
     constructor(options: PluginSyncEngineOptions) {
         this.source = options.source;
@@ -98,6 +106,7 @@ export class PluginSyncEngine implements IDbPlugin {
         this.destroyFailureMode = options.destroyFailureMode ?? "surface-last";
         this.onMirrorError = options.onMirrorError;
         this.mirrorPersistPayloadMode = options.mirrorPersistPayloadMode ?? "original-event";
+        this.pluginCallTimeoutMs = options.pluginCallTimeoutMs ?? 60_000;
 
         if (this.persistAckMode === "after-source" && this.mirrorFailureMode === "surface") {
             logger.warn("[PluginSyncEngine] mirrorFailureMode=surface has no synchronous effect when persistAckMode=after-source; mirror failures are observed via onMirrorError/logging.");
@@ -196,26 +205,26 @@ export class PluginSyncEngine implements IDbPlugin {
 
         // after-all mode
         const mirrorResults = await Promise.allSettled(mirrorTasks);
-        const errors: Error[] = [];
-        mirrorResults.forEach((outcome) => {
+        const errors: Array<{ error: Error; pluginIndex: number }> = [];
+        mirrorResults.forEach((outcome, taskIndex) => {
             if (outcome.status === "rejected") {
-                errors.push(this.toError(outcome.reason));
+                errors.push({ error: this.toError(outcome.reason), pluginIndex: taskIndex });
                 return;
             }
 
             if (outcome.value.result.ok !== Result.SUCCESS) {
-                errors.push(this.toError(outcome.value.result.error));
+                errors.push({ error: this.toError(outcome.value.result.error), pluginIndex: outcome.value.pluginIndex });
             }
         });
 
         if (errors.length > 0) {
             if (this.mirrorFailureMode === "swallow") {
-                errors.forEach((err, idx) => this.reportMirrorError(err, idx, event.id));
+                errors.forEach(({ error, pluginIndex }) => this.reportMirrorError(error, pluginIndex, event.id));
                 done(sourceResult);
                 return;
             }
 
-            done(PluginEventResult.error(event.id, errors[0]));
+            done(PluginEventResult.error(event.id, errors[0].error));
             return;
         }
 
@@ -291,28 +300,79 @@ export class PluginSyncEngine implements IDbPlugin {
         };
     }
 
+    /**
+     * Promisifies a plugin call with two guards:
+     *  - once: the first done() wins; a plugin that calls back twice cannot double-settle.
+     *  - timeout: a plugin that never calls done() resolves to an error result instead of
+     *    hanging the engine (and everything awaiting it) forever.
+     */
+    private guardedCall<T>(
+        eventId: string,
+        label: string,
+        run: (cb: (result: T) => void) => void,
+        timeoutResult: (message: string) => T
+    ): Promise<T> {
+        return new Promise((resolve) => {
+            let settled = false;
+
+            const settle = (result: T) => {
+                if (settled) {
+                    logger.warn("[PluginSyncEngine] plugin called done() more than once; ignoring", { eventId, label });
+                    return;
+                }
+                settled = true;
+                if (timer != null) {
+                    clearTimeout(timer);
+                }
+                resolve(result);
+            };
+
+            const timer = this.pluginCallTimeoutMs > 0
+                ? setTimeout(() => {
+                    settle(timeoutResult(`Plugin ${label} did not complete within ${this.pluginCallTimeoutMs}ms`));
+                }, this.pluginCallTimeoutMs)
+                : null;
+            (timer as { unref?: () => void } | null)?.unref?.();
+
+            try {
+                run(settle);
+            } catch (err) {
+                settle(timeoutResult(String(err)));
+            }
+        });
+    }
+
     private queryPlugin<TRoot extends {}, TShape extends any = TRoot>(
         plugin: IDbPlugin,
         event: DbPluginQueryEvent<TRoot, TShape>
     ): Promise<PluginEventResultType<ITranslatedValue<TShape>>> {
-        return new Promise((resolve) => {
-            plugin.query(event, (result) => resolve(result));
-        });
+        return this.guardedCall(
+            event.id,
+            "query",
+            (cb) => plugin.query(event, cb),
+            (message) => PluginEventResult.error(event.id, new Error(message)) as PluginEventResultType<ITranslatedValue<TShape>>
+        );
     }
 
     private persistPlugin(
         plugin: IDbPlugin,
         event: DbPluginBulkPersistEvent
     ): Promise<PluginEventPartialResultType<BulkPersistResult>> {
-        return new Promise((resolve) => {
-            plugin.bulkPersist(event, (result) => resolve(result));
-        });
+        return this.guardedCall(
+            event.id,
+            "bulkPersist",
+            (cb) => plugin.bulkPersist(event, cb),
+            (message) => PluginEventResult.error(event.id, new Error(message)) as PluginEventPartialResultType<BulkPersistResult>
+        );
     }
 
     private destroyPlugin(plugin: IDbPlugin, event: DbPluginEvent): Promise<PluginEventResultType<never>> {
-        return new Promise((resolve) => {
-            plugin.destroy(event, (result) => resolve(result));
-        });
+        return this.guardedCall(
+            event.id,
+            "destroy",
+            (cb) => plugin.destroy(event, cb),
+            (message) => PluginEventResult.error(event.id, new Error(message)) as PluginEventResultType<never>
+        );
     }
 }
 

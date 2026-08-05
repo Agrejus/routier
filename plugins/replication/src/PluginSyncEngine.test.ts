@@ -242,3 +242,33 @@ describe("PluginSyncEngine", () => {
     });
 });
 
+
+describe("PluginSyncEngine mirror error reporting", () => {
+    it("reports the failing mirror's index, not the error-array index", (done) => {
+        const source = createPluginMock();
+        const okMirror = createPluginMock();
+        const failingMirror = createPluginMock();
+        const event = createPersistEvent();
+        const onMirrorError = jest.fn();
+
+        (source.bulkPersist as any).mockImplementation((_event: any, cb: any) => cb(PluginEventResult.success(event.id, new Map())));
+        (okMirror.bulkPersist as any).mockImplementation((_event: any, cb: any) => cb(PluginEventResult.success(event.id, new Map())));
+        (failingMirror.bulkPersist as any).mockImplementation((_event: any, cb: any) => cb(PluginEventResult.error(event.id, new Error("mirror 1 failed"))));
+
+        const engine = new PluginSyncEngine({
+            source,
+            mirrorPlugins: [okMirror, failingMirror],
+            persistAckMode: "after-all",
+            mirrorFailureMode: "swallow",
+            onMirrorError,
+        });
+
+        engine.bulkPersist(event, (result) => {
+            expect(result.ok).toBe(Result.SUCCESS);
+            expect(onMirrorError).toHaveBeenCalledTimes(1);
+            const [, context] = onMirrorError.mock.calls[0] as [Error, { pluginIndex: number }];
+            expect(context.pluginIndex).toBe(1);
+            done();
+        });
+    });
+});

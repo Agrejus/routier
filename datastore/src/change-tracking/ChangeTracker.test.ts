@@ -1,6 +1,9 @@
 import { describe, expect, it } from "@jest/globals";
 import { s } from "@routier/core/schema";
+import { uuidv4 } from "@routier/core";
+import { MemoryPlugin } from "@routier/memory-plugin";
 import { ChangeTracker } from "./ChangeTracker";
+import { DataStore } from "../DataStore";
 
 /**
  * Coverage for the change tracker's attachment identity, dirty detection, tag lifecycle,
@@ -549,5 +552,178 @@ describe("ChangeTracker unsaved-row updates", () => {
         // patch must not quietly change that.
         expect(Object.isFrozen(first)).toBe(false);
         expect(Object.isFrozen(changeTracker.updateImmutable(first, { text: "second" }))).toBe(false);
+    });
+});
+
+/**
+ * Defect #25 — fixed. See specs/known-defects.md.
+ *
+ * A pending addition is keyed by a hash of its content, so mutating the row after adding it left
+ * the key describing content the row no longer had, and `mergeChanges` could not pair the
+ * plugin's returned row back to it. `prepareAdditions` now re-keys from current content.
+ */
+describe('defect #25: mutating a pending addition before saving', () => {
+    const schema = s.define('defect25Projects', {
+        _id: s.string().key().identity(),
+        name: s.string(),
+        taskCount: s.number(),
+    }).compile();
+
+    class ProjectStore extends DataStore {
+        projects = this.collection(schema).proxy().create();
+    }
+
+    const createStore = () => new ProjectStore(new MemoryPlugin(`defect25-${uuidv4()}`));
+
+    it('saves an entity that was mutated after being added', async () => {
+        const store = createStore();
+
+        // Utterly ordinary: create the row, then set a field derived from work that follows
+        const [project] = await store.projects.addAsync({ name: 'Project', taskCount: 0 } as never);
+        project.taskCount = 4;
+
+        await expect(store.saveChangesAsync()).resolves.not.toThrow();
+
+        const [saved] = await store.projects.toArrayAsync();
+        expect(saved.taskCount).toBe(4);
+
+        store[Symbol.dispose]();
+    });
+
+    it('writes the assigned identity back into the mutated entity', async () => {
+        // The reason the correlation exists at all: an identity-keyed row gets its id on the way
+        // back, and it has to land in the object the caller is still holding.
+        const store = createStore();
+        const [project] = await store.projects.addAsync({ name: 'Project', taskCount: 0 } as never);
+        project.taskCount = 4;
+
+        await store.saveChangesAsync();
+
+        expect(project._id).toEqual(expect.any(String));
+        const [saved] = await store.projects.toArrayAsync();
+        expect(saved._id).toBe(project._id);
+
+        store[Symbol.dispose]();
+    });
+
+    it('keeps two identical mutated rows distinct', async () => {
+        // Re-keying must not undo defect #23: rows equal in content share a bucket, and both
+        // must still be inserted.
+        const store = createStore();
+        const [a] = await store.projects.addAsync({ name: 'Same', taskCount: 0 } as never);
+        const [b] = await store.projects.addAsync({ name: 'Same', taskCount: 0 } as never);
+        a.taskCount = 7;
+        b.taskCount = 7;
+
+        await store.saveChangesAsync();
+
+        const rows = await store.projects.toArrayAsync();
+        expect(rows).toHaveLength(2);
+        expect(rows.map((r) => r.taskCount)).toEqual([7, 7]);
+        expect(new Set(rows.map((r) => r._id)).size).toBe(2);
+
+        store[Symbol.dispose]();
+    });
+
+    it('handles a mutation that makes one pending row identical to another', async () => {
+        // The awkward case for a content hash: two rows that differed when added and collide by
+        // the time they are sent.
+        const store = createStore();
+        const [a] = await store.projects.addAsync({ name: 'A', taskCount: 1 } as never);
+        await store.projects.addAsync({ name: 'B', taskCount: 2 } as never);
+        a.name = 'B';
+        a.taskCount = 2;
+
+        await store.saveChangesAsync();
+
+        const rows = await store.projects.toArrayAsync();
+        expect(rows).toHaveLength(2);
+        expect(new Set(rows.map((r) => r._id)).size).toBe(2);
+
+        store[Symbol.dispose]();
+    });
+
+    it('is avoided by setting the field before adding', async () => {
+        // The workaround, and why this has gone unnoticed: the natural one-liner is fine
+        const store = createStore();
+
+        await store.projects.addAsync({ name: 'Project', taskCount: 4 } as never);
+        await store.saveChangesAsync();
+
+        const [saved] = await store.projects.toArrayAsync();
+        expect(saved.taskCount).toBe(4);
+
+        store[Symbol.dispose]();
+    });
+});
+
+/**
+ * Defect #26 — fixed. See specs/known-defects.md.
+ *
+ * Change-tracking state is bookkeeping, not data. It has to be reachable by name and invisible to
+ * everything that treats an entity as a value.
+ */
+describe('defect #26: __tracking__ must not be enumerable', () => {
+    const schema = s.define('defect26Items', {
+        _id: s.string().key().identity(),
+        name: s.string(),
+        n: s.number(),
+    }).compile();
+
+    class ItemStore extends DataStore {
+        items = this.collection(schema).proxy().create();
+    }
+
+    const createStore = () => new ItemStore(new MemoryPlugin(`defect26-${uuidv4()}`));
+
+    it('hides tracking state from a row that has been edited', async () => {
+        const store = createStore();
+        await store.items.addAsync({ name: 'a', n: 1 } as never);
+        await store.saveChangesAsync();
+
+        // The lazy path: tracking is installed by the proxy on the first real write, and that
+        // assignment was the one place it was created enumerable
+        const found = await store.items.firstAsync((x) => x.name === 'a');
+        found.n = 2;
+        await store.saveChangesAsync();
+
+        const [row] = await store.items.toArrayAsync();
+
+        expect(Object.keys(row)).toEqual(expect.not.arrayContaining(['__tracking__']));
+        expect(JSON.parse(JSON.stringify(row))).toEqual({
+            _id: row._id,
+            name: 'a',
+            n: 2,
+        });
+    });
+
+    it('still tracks the change it is hiding', async () => {
+        // Non-enumerable must not mean absent — the save path reads this
+        const store = createStore();
+        await store.items.addAsync({ name: 'a', n: 1 } as never);
+        await store.saveChangesAsync();
+
+        const found = await store.items.firstAsync((x) => x.name === 'a');
+        found.n = 5;
+
+        expect((found as never as { __tracking__?: { isDirty: boolean } }).__tracking__?.isDirty).toBe(true);
+        await store.saveChangesAsync();
+
+        const [row] = await store.items.toArrayAsync();
+        expect(row.n).toBe(5);
+    });
+
+    it('leaves a spread copy free of tracking state', async () => {
+        // What an app does when it hands a row to a component or another API
+        const store = createStore();
+        await store.items.addAsync({ name: 'a', n: 1 } as never);
+        await store.saveChangesAsync();
+        const found = await store.items.firstAsync((x) => x.name === 'a');
+        found.n = 3;
+        await store.saveChangesAsync();
+
+        const copy = { ...(await store.items.firstAsync((x) => x.name === 'a')) };
+
+        expect(Object.keys(copy).sort()).toEqual(['_id', 'n', 'name']);
     });
 });

@@ -69,6 +69,7 @@ That gives you SWR semantics, optimistic local UX, and offline resilience withou
 - `ignoreQueryForCollections`: skips query serialization for collections the server always scopes itself.
 - `queryRetryBaseDelayMs`, `queryRetryMaxDelayMs`, `queryRetryMaxAttempts`: control retry backoff for reads.
 - `translateRemoteResponse(schema, data)`: adapts your API payload to the array shape Routier expects.
+- `writeBatchDelayMs`: debounce window for combining rapid writes to one URL (default `25`; `0` disables batching).
 
 ### `HttpSwrDbPlugin`
 
@@ -79,6 +80,30 @@ That gives you SWR semantics, optimistic local UX, and offline resilience withou
 - `onAuthError(event)`: lets you trigger token refresh or sign-out on `401` and `403`.
 - `onRevalidateError(error, context)`: log or surface background refresh failures without breaking the current UI.
 - `unsyncedQueueStore`: where pending writes are persisted until the server confirms them.
+
+## Structured Permanent Rejections
+
+A legacy permanent `4xx` response does not say whether the whole request is invalid or one entity
+poisoned the batch. To preserve valid writes, `HttpSwrDbPlugin` falls back to sending each entity
+alone. That is safe but costs `N` requests.
+
+Servers can avoid that fan-out by returning one of these JSON bodies with the permanent status:
+
+```json
+{ "error": "account is read-only", "rejectionScope": "batch" }
+```
+
+The entire batch is dead-lettered without probes. Use this only when no entity in the request could
+succeed.
+
+```json
+{ "error": "validation failed", "rejectedOpIds": ["operation-id-2"] }
+```
+
+The listed operations are dead-lettered and all unlisted operations are retried together in one
+request. Operation IDs come from `meta.opIds`, parallel to the `adds`, `updates`, and `removes`
+arrays. An unstructured response retains the per-item isolation fallback for compatibility and to
+avoid discarding valid writes.
 
 ## Operational Notes
 

@@ -40,6 +40,13 @@ export class KnownKeyAdditions<T extends {}> implements IAdditions<T> {
         this.set(next);
     }
 
+    /**
+     * Nothing to do: the key is the row's own id, and mutating other properties cannot move it.
+     * A caller that changes the id itself has changed which row this is, which `replace` covers.
+     */
+    reindex(): void {
+    }
+
     clear(): void {
         this.data.clear();
     }

@@ -798,6 +798,13 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
             return [];
         }
 
+        // Re-key from current content before anything leaves. A pending row can have been
+        // mutated since it was added — `project.taskCount = 4` on a proxy collection — and the
+        // content-hash key would still describe the row as it was, so `mergeChanges` could not
+        // pair the plugin's returned row back to it and threw (defect #25). Doing it here, rather
+        // than on every write, means one pass per save and no hook into the proxy.
+        this.additions.reindex();
+
         const result: InferCreateType<TEntity>[] = Array.from({ length: size });
         let index = 0;
 

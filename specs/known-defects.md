@@ -681,6 +681,97 @@ update-bearing save.
 change, notification when a row leaves the set via update, and silence for updates to rows
 that were never in the set.
 
+## Later defects (#25–#26) — both fixed
+
+Found 2026-08-04 by a browser workload built to stress replication
+(`examples/sync-engine-dexie/browser/complex.ts`). Both were in `datastore`/core, not in the
+replication plugins, and neither corrupted replicated data.
+
+### 25. Mutating a pending addition before saving throws — **FIXED**
+
+Every plugin. A save that has already written its data reports failure.
+
+**Reproduction** — no volume, no concurrency, one collection:
+
+```ts
+const schema = s.define('t', {
+    _id: s.string().key().identity(),
+    name: s.string(),
+    taskCount: s.number(),
+}).compile();
+
+const [project] = await store.projects.addAsync({ name: 'Project', taskCount: 0 });
+project.taskCount = 4;                 // set a field derived from work that follows
+await store.saveChangesAsync();        // throws TypeError: Cannot find internal addition
+```
+
+The row **is** persisted, with `taskCount: 4`. Only the post-save correlation fails, so the
+caller sees a rejected save for a write that succeeded — the dangerous half.
+
+**Cause:** the sibling of #23, same subsystem. `UnknownKeyAdditions` keys pending additions by
+`schema.hash(entity, HashType.Object)` — a content hash, because an identity-keyed row has no id
+on the way out and content is the only thing the two sides share. The hash is computed at
+`addAsync` time, but the bucket holds the **live** entity: mutating it changes the content, so
+`mergeChanges` re-hashes the returned document into a different bucket and `additions.take`
+returns nothing.
+
+**Why it has gone unnoticed:** the natural spelling is fine — pass the value to `addAsync` and
+never touch the row. It needs a create-then-derive shape to trigger, which is exactly what a
+"create the parent, count the children, write the count" flow produces.
+
+**Note the asymmetry:** the immutable path already handles this. `ChangeTracker.updateImmutable`
+checks `unsavedRows` and, for a pending row, replaces the addition outright — there is even a test
+for it ("patches a pending addition in place of recording an update"). The proxy path has no
+equivalent, so a proxy mutation leaves the index keyed by stale content.
+
+**Fix:** `IAdditions.reindex()`, called once per save at the top of `prepareAdditions()` — the
+moment before rows are handed to the plugin, so the keys describe exactly what goes over the wire.
+`UnknownKeyAdditions` rebuilds its buckets from the entities' current content, reusing the same
+references so `mergeChanges` still writes assigned ids into the caller's objects;
+`KnownKeyAdditions` is a documented no-op, since its key is the row's own id.
+
+The alternative — having the proxy re-key on write, mirroring `updateUnsaved` — was rejected as
+more invasive for no benefit: it needs a hook in the proxy's `set` trap, on the hot path, to fix
+something that only matters once per save.
+
+Covered by five tests in `datastore/src/change-tracking/ChangeTracker.test.ts`, including the two
+collision cases re-keying could plausibly break: two identical mutated rows staying distinct
+(#23's guarantee), and a mutation that makes one pending row identical to another.
+
+**Found by** the multi-collection browser workload in
+`examples/sync-engine-dexie/browser/complex.ts`, which does exactly this in its seed.
+
+### 26. A proxy collection's query results carry `__tracking__` — **FIXED**
+
+Reading from a `proxy()` collection returns entities with an own, enumerable `__tracking__`
+property holding the change tracker's state:
+
+```json
+{ "changes": { "name": "Project 1*" }, "isDirty": true, "original": { … }, "isPaused": false }
+```
+
+So `Object.entries(row)` and `JSON.stringify(row)` both include it. Anything that treats a query
+result as data — a deep compare, a snapshot, forwarding the object to another API — sees internal
+state. This is the same family as #16 (`{ isPaused: false }` residue on non-proxy reads, fixed);
+the proxy path still leaks, and leaks more.
+
+Replication is **not** affected: the wire bodies are built from prepared entities, and the POST
+bodies observed in the demo are clean.
+
+**Cause:** the proxy's `set` trap created the tracking object with a plain assignment, which is
+enumerable. Both codegen bootstrap paths already used `Object.defineProperty(..., enumerable:
+false)` — one for the enricher, with a comment explaining that computed properties may
+`JSON.stringify` the entity and must not see it — so the lazy path, the one that runs on the first
+real write, was the outlier.
+
+**Fix:** `Object.defineProperty` in the `set` trap, and the same for the merge/pause bootstrap in
+the codegen, which had the same plain assignment. Tracking is still reachable by name and still
+drives the save path; it is now invisible to `Object.keys`, `JSON.stringify` and object spread.
+Three tests in `ChangeTracker.test.ts`.
+
+**Found by** the field-by-field audit in the same page, which reported five `__tracking__`
+discrepancies against the server and nothing else.
+
 ### The `--forceExit` question, answered
 
 S5 also asserts directly against `process.getActiveResourcesInfo()` that ten stores with live
@@ -722,6 +813,28 @@ The rest was test teardown: seven files constructed stores and never disposed th
 per-file hunt is worth repeating rather than describing — run each test file on its own
 without `--forceExit` and see which never exits. A file that leaks hangs outright; the
 "worker failed to exit gracefully" warning only shows up in a multi-file run.
+
+---
+
+## Replication durable-queue re-enqueue — **FIXED** (2026-08-05)
+
+The browser stress example (`examples/sync-engine-dexie/browser/complex.ts`) found a storage-engine
+mismatch hidden by the unit suite. Repeatedly editing the same entity before its prior change had
+flushed reuses the queue key `(collection, change kind, entity ids)`. `UnsyncedQueue.addMany` always
+sent that row through `changes.adds`; MemoryPlugin treats add as an upsert, while Dexie's `bulkAdd`
+is insert-only and rejected the second edit with:
+
+```
+ConstraintError: Key already exists in the object store
+```
+
+The local entity had already been persisted, but recording its new sync obligation failed. After
+several cross-collection churns the queue reported zero pending while the audit found local/server
+drift. Queue writes are now serialized, candidate rows are classified against durable queue state,
+and an existing key goes through `updates` (`bulkPut`) rather than `adds`. A strict insert-only
+store regression test covers the exact mismatch, and the Playwright workload now converges after
+online churn, offline edits, reload, recovery, five repeated cross-collection saves, and rapid
+multi-click churn.
 
 ---
 

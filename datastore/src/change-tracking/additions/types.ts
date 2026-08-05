@@ -21,6 +21,19 @@ export interface IAdditions<T extends {}> {
      * the implementation that owns the key, not at the call site.
      */
     replace(existing: InferCreateType<T>, next: InferCreateType<T>): void;
+    /**
+     * Re-derives every key from the entities currently held.
+     *
+     * `replace` covers a patch that produces a NEW value, which is how the immutable path
+     * updates an unsaved row. It cannot cover a mutation of the stored object itself — a proxy
+     * collection's `entity.field = x` — because nothing is swapped and no call site exists to
+     * re-key from. The keys then describe content the entity no longer has, and `take` cannot
+     * find the row the plugin returns (defect #25).
+     *
+     * Called once per save, immediately before the rows are handed to the plugin, so the keys
+     * describe exactly what goes over the wire.
+     */
+    reindex(): void;
     size: number;
     values(): InferCreateType<T>[];
     clear(): void;
