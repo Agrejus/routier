@@ -137,8 +137,9 @@ export type ExpressionType = "operator" | "comparator" | "property" | "value" | 
 
 /**
  * Supported value transformations that can be applied to values.
+ * `length` reads the length of a string or array property.
  */
-export type Transformer = "to-lower-case" | "to-upper-case";
+export type Transformer = "to-lower-case" | "to-upper-case" | "length";
 
 /**
  * Supported comparator operations for expressions.

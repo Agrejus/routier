@@ -83,9 +83,9 @@ describe('shapes that are not a schema comparison', () => {
         expectRejected(fromSource('1 === 1'));
     });
 
-    it('rejects a comparison with a schema property on both sides', () => {
-        // Two properties compared to each other cannot become a value predicate.
-        expectRejected(fromSource('r.name === r.other'));
+    it('accepts a comparison with a schema property on both sides', () => {
+        // Property-to-property comparison translates directly (e.g. `col_a = col_b`).
+        expectParsed(fromSource('r.name === r.other'));
     });
 
     it('accepts a comparison with a property on exactly one side', () => {
@@ -108,8 +108,12 @@ describe('shapes that are not a schema comparison', () => {
 });
 
 describe('unary and negation forms', () => {
-    it("rejects '!' applied to a compound expression", () => {
-        expectRejected(fromSource('!(r.price > 1 && r.name === "x")'));
+    it("accepts '!' applied to a compound expression via De Morgan", () => {
+        expectParsed(fromSource('!(r.price > 1 && r.name === "x")'));
+    });
+
+    it("rejects '!' applied to a constant", () => {
+        expectRejected(fromSource('!true'));
     });
 
     it("accepts '!' applied to a single property", () => {
@@ -190,8 +194,8 @@ describe('rejection never yields a partial tree', () => {
     // to the fragment the parser did manage to understand. A tree built from half the
     // expression would run as a valid query returning the wrong rows.
     const unsupported = [
-        'r.price > 1 && r.name === r.other',
-        'r.name === r.other || r.price > 1',
+        'r.price > 1 && r.name.padStart(3) === "x"',
+        'r.name.padStart(3) === "x" || r.price > 1',
         'r.price === (1 + 2) && r.active === true',
         'r.name.padStart(3) === "x" && r.price > 1',
     ];

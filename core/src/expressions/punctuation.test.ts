@@ -18,7 +18,9 @@ import { toExpression } from './parser';
  * character it choked on is a poor diagnostic.
  */
 
-const schema = s.define('punctuation_target', {
+// Compiled fresh per messageFor call: parse failures are cached per schema and
+// logged only on first discovery, and several tests below share filter source.
+const freshSchema = () => s.define('punctuation_target', {
     id: s.string().key(),
     name: s.string(),
     price: s.number(),
@@ -37,7 +39,7 @@ afterEach(() => {
 /** The failure message for raw filter source, supplied via toString so invalid JS is allowed. */
 function messageFor(source: string): string {
     warn.mockClear();
-    toExpression(schema as any, { toString: () => source } as any);
+    toExpression(freshSchema() as any, { toString: () => source } as any);
 
     expect(warn).toHaveBeenCalled();
     const [, context] = warn.mock.calls[warn.mock.calls.length - 1] as [string, any];

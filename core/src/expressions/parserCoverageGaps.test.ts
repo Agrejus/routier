@@ -41,6 +41,14 @@ function expectRejected(fn: any, params?: any, target: any = schema) {
     expect(result).toStrictEqual(Expression.NOT_PARSABLE);
 }
 
+function expectParsed(fn: any, params?: any, target: any = schema) {
+    const result = params === undefined
+        ? toExpression(target as any, fn)
+        : toExpression(target as any, fn, params);
+
+    expect(result).not.toStrictEqual(Expression.NOT_PARSABLE);
+}
+
 describe('tokenizer guards', () => {
     it('rejects a character outside the token tables', () => {
         // `~` is valid JavaScript but not part of the filter language.
@@ -55,10 +63,14 @@ describe('tokenizer guards', () => {
         expectRejected(withSource('(r) => (r.price === 1'));
     });
 
-    it('rejects a callable whose source is not an arrow function', () => {
-        // A classic function has no `=>` for the shape resolver to split on.
+    it('accepts a classic function expression', () => {
+        // What ES5-targeting transpilers rewrite every arrow filter into.
         // eslint-disable-next-line prefer-arrow-callback
-        expectRejected(function classic(r: any) { return r.name === 'a'; });
+        expectParsed(function classic(r: any) { return r.name === 'a'; });
+    });
+
+    it('rejects a callable whose source is neither an arrow nor a function', () => {
+        expectRejected(withSource('nonsense source'));
     });
 });
 

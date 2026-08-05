@@ -143,6 +143,40 @@ ${indexStatements.join('\n')}`;
  */
 export function expressionToWhereClause(expr: Expression): { where: string, params: any[] } {
     const params: any[] = [];
+
+    // Wraps a column in the SQL function its parsed transformer calls for —
+    // ignoring the transformer would silently return wrong rows
+    function column(prop: PropertyExpression): string {
+        const col = `\`${prop.property.name}\``;
+
+        if (prop.transformer === "to-lower-case") {
+            return `LOWER(${col})`;
+        }
+
+        if (prop.transformer === "to-upper-case") {
+            return `UPPER(${col})`;
+        }
+
+        if (prop.transformer === "length") {
+            return prop.property.type === SchemaTypes.Array ? `JSON_LENGTH(${col})` : `CHAR_LENGTH(${col})`;
+        }
+
+        return col;
+    }
+
+    // Value transformers (e.g. `p.name.toLowerCase()`) are applied before binding
+    function toValue(expr: ValueExpression): unknown {
+        if (expr.transformer === "to-lower-case" && typeof expr.value === "string") {
+            return expr.value.toLowerCase();
+        }
+
+        if (expr.transformer === "to-upper-case" && typeof expr.value === "string") {
+            return expr.value.toUpperCase();
+        }
+
+        return expr.value;
+    }
+
     function walk(e: Expression): string {
         if (e.type === 'operator') {
             const op = (e as OperatorExpression).operator;
@@ -171,8 +205,8 @@ export function expressionToWhereClause(expr: Expression): { where: string, para
             if (cmp.comparator === 'starts-with' || cmp.comparator === 'ends-with' || cmp.comparator === 'includes') {
                 if (cmp.comparator === 'includes') {
                     if (cmp.left.type === 'property' && cmp.right.type === 'value') {
-                        const col = `\`${(cmp.left as PropertyExpression).property.name}\``;
-                        const value = (cmp.right as ValueExpression).value;
+                        const col = column(cmp.left as PropertyExpression);
+                        const value = toValue(cmp.right as ValueExpression);
 
                         if (Array.isArray(value)) {
                             const placeholders = value.map(() => '?').join(', ');
@@ -183,8 +217,8 @@ export function expressionToWhereClause(expr: Expression): { where: string, para
                             return cmp.negated ? `${col} NOT LIKE ?` : `${col} LIKE ?`;
                         }
                     } else if (cmp.left.type === 'value' && cmp.right.type === 'property') {
-                        const col = `\`${(cmp.right as PropertyExpression).property.name}\``;
-                        const value = (cmp.left as ValueExpression).value;
+                        const col = column(cmp.right as PropertyExpression);
+                        const value = toValue(cmp.left as ValueExpression);
 
                         if (Array.isArray(value)) {
                             const placeholders = value.map(() => '?').join(', ');
@@ -199,8 +233,8 @@ export function expressionToWhereClause(expr: Expression): { where: string, para
 
                 // starts-with and ends-with
                 if (cmp.left.type === 'property' && cmp.right.type === 'value') {
-                    const col = `\`${(cmp.left as PropertyExpression).property.name}\``;
-                    const value = (cmp.right as ValueExpression).value;
+                    const col = column(cmp.left as PropertyExpression);
+                    const value = toValue(cmp.right as ValueExpression);
                     let pattern: string;
 
                     switch (cmp.comparator) {
@@ -217,8 +251,8 @@ export function expressionToWhereClause(expr: Expression): { where: string, para
                     params.push(pattern);
                     return cmp.negated ? `${col} NOT LIKE ?` : `${col} LIKE ?`;
                 } else if (cmp.left.type === 'value' && cmp.right.type === 'property') {
-                    const col = `\`${(cmp.right as PropertyExpression).property.name}\``;
-                    const value = (cmp.left as ValueExpression).value;
+                    const col = column(cmp.right as PropertyExpression);
+                    const value = toValue(cmp.left as ValueExpression);
                     let pattern: string;
 
                     switch (cmp.comparator) {
@@ -240,8 +274,8 @@ export function expressionToWhereClause(expr: Expression): { where: string, para
             // Handle null comparisons
             if (cmp.comparator === 'equals') {
                 if (cmp.left.type === 'property' && cmp.right.type === 'value') {
-                    const col = `\`${(cmp.left as PropertyExpression).property.name}\``;
-                    const value = (cmp.right as ValueExpression).value;
+                    const col = column(cmp.left as PropertyExpression);
+                    const value = toValue(cmp.right as ValueExpression);
 
                     if (value === null) {
                         return cmp.negated ? `${col} IS NOT NULL` : `${col} IS NULL`;
@@ -249,8 +283,8 @@ export function expressionToWhereClause(expr: Expression): { where: string, para
                     params.push(value);
                     return cmp.negated ? `${col} != ?` : `${col} = ?`;
                 } else if (cmp.left.type === 'value' && cmp.right.type === 'property') {
-                    const col = `\`${(cmp.right as PropertyExpression).property.name}\``;
-                    const value = (cmp.left as ValueExpression).value;
+                    const col = column(cmp.right as PropertyExpression);
+                    const value = toValue(cmp.left as ValueExpression);
 
                     if (value === null) {
                         return cmp.negated ? `? IS NOT NULL` : `? IS NULL`;
@@ -280,14 +314,19 @@ export function expressionToWhereClause(expr: Expression): { where: string, para
             }
         }
         if (e.type === 'property') {
-            return `\`${(e as PropertyExpression).property.name}\``;
+            return column(e as PropertyExpression);
         }
         if (e.type === 'value') {
-            params.push((e as ValueExpression).value);
+            params.push(toValue(e as ValueExpression));
             return '?';
         }
         throw new Error(`Unknown expression type: ${e.type}`);
     }
+    // A tautology (`x => true`) — no rows are excluded
+    if (expr.type === "empty") {
+        return { where: "1 = 1", params: [] };
+    }
+
     const where = walk(expr);
     return { where, params };
 }

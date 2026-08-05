@@ -56,13 +56,15 @@ describe('parse failures report why', () => {
     it('never reports an empty reason', () => {
         // The weakest useful guarantee, asserted across a spread of failure kinds: whatever
         // went wrong, the developer gets words.
+        // Sources are unique within this file: a repeated source would hit the
+        // parse-failure cache, which logs only on first discovery.
         const failures = [
-            fromSource('r.name === `x-${r.other}`'),
-            fromSource('1 === 1'),
-            fromSource('r.name === r.other'),
-            fromSource('r.price === (1 + 2)'),
-            fromSource('r.name.padStart(3) === "x"'),
-            fromSource('!(r.price > 1 && r.name === "x")'),
+            fromSource('r.name === `y-${r.other}`'),
+            fromSource('2 === 2'),
+            fromSource('r.name.trim() === "x"'),
+            fromSource('r.price === (2 + 3)'),
+            fromSource('r.name.padStart(4) === "x"'),
+            fromSource('!(r.price > someVar)'),
         ];
 
         for (const failure of failures) {
@@ -78,8 +80,8 @@ describe('parse failures report why', () => {
         expect(failureMessage(fromSource('1 === 1'))).toMatch(/schema property/i);
     });
 
-    it('names the one-side-only requirement when both sides are properties', () => {
-        expect(failureMessage(fromSource('r.name === r.other'))).toMatch(/exactly one side/i);
+    it('names the at-least-one-side requirement when neither side is a property', () => {
+        expect(failureMessage(fromSource('1 === 2'))).toMatch(/at least one side/i);
     });
 
     it('reports the offending token for a parenthesized right-hand side', () => {
@@ -94,8 +96,8 @@ describe('parse failures report why', () => {
         expect(failureMessage(fromSource('r.name.padStart(3) === "x"'))).toMatch(/padStart/);
     });
 
-    it('names the compound-negation restriction', () => {
-        expect(failureMessage(fromSource('!(r.price > 1 && r.name === "x")'))).toMatch(/compound/i);
+    it("names the negation restriction for '!' on a constant", () => {
+        expect(failureMessage(fromSource('!true'))).toMatch(/'!' on this expression/);
     });
 
     it('names property access after a transform method', () => {
@@ -146,7 +148,7 @@ describe('parse failures report why', () => {
 describe('logging context', () => {
     it('includes the collection name so the schema is identifiable', () => {
         warn.mockClear();
-        toExpression(schema as any, fromSource('1 === 1'));
+        toExpression(schema as any, fromSource('3 === 3'));
 
         const [, context] = warn.mock.calls[0] as [string, any];
 
@@ -155,12 +157,12 @@ describe('logging context', () => {
 
     it('includes the offending selector source', () => {
         warn.mockClear();
-        toExpression(schema as any, fromSource('1 === 1'));
+        toExpression(schema as any, fromSource('4 === 4'));
 
         const [, context] = warn.mock.calls[0] as [string, any];
 
         // Without the source text the log names a failure but not which filter caused it.
-        expect(String(context.selector)).toContain('1 === 1');
+        expect(String(context.selector)).toContain('4 === 4');
     });
 
     it('does not log for a filter that parses', () => {

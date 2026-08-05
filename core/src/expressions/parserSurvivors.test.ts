@@ -133,11 +133,11 @@ describe('failure messages name their cause', () => {
     });
 
     it('a transform method on a params path used with .includes()', () => {
-        expect(failureMessage(fromSource('p.list.toLowerCase().includes(r.name)', '[r, p]'), { list: 'abc' })).toMatch(/transform method on a params path used with \.includes\(\)/);
+        expect(failureMessage(fromSource('p.list.toLowerCase().includes(r.name)', '[r, p]'), { list: 'abc' })).toMatch(/transform method on a collection used with \.includes\(\)/);
     });
 
     it('a non-includes method on a params path, naming the method', () => {
-        expect(failureMessage(fromSource('p.v.startsWith(r.name)', '[r, p]'), { v: 'abc' })).toMatch(/\.startsWith\(\) on a params path/);
+        expect(failureMessage(fromSource('p.v.startsWith(r.name)', '[r, p]'), { v: 'abc' })).toMatch(/\.startsWith\(\) on a non-property target/);
     });
 
     it('a transform method outside string matching', () => {
@@ -148,9 +148,8 @@ describe('failure messages name their cause', () => {
         expect(failureMessage(fromSource('r.name.startsWith("x") === 1'))).toMatch(/comparing a method call to a non-boolean/);
     });
 
-    it('a callable that is not an arrow function', () => {
-        // eslint-disable-next-line prefer-arrow-callback
-        expect(failureMessage(function classic(r: any) { return r.name === 'a'; })).toBe('Invalid Function');
+    it('a callable that is neither an arrow nor a function expression', () => {
+        expect(failureMessage(withSource('not a function at all'))).toBe('Invalid Function');
     });
 
     it('an arrow function with no entity parameter', () => {

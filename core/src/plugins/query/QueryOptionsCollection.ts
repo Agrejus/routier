@@ -45,6 +45,12 @@ export class QueryOptionsCollection<T> {
             // Need to check for unmapped and renamed properties
             const filterValue = value as QueryOptionValueMap<T>["filter"];
 
+            // A tautology (`x => true`) filters nothing — skip it entirely so
+            // plugins never see it
+            if (filterValue.expression.type === "empty") {
+                return;
+            }
+
             if (filterValue.expression.type === "not-parsable") {
                 this.nextExecutionTarget = "memory";
             } else {

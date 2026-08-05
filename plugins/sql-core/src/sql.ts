@@ -5,12 +5,13 @@
  * Uses a **Visitor** over the expression AST. Equals comparison uses a Strategy
  * per (column-side, null vs value) case.
  */
-import type { ComparatorExpression, Expression, PropertyExpression } from "@routier/core/expressions";
+import type { ComparatorExpression, Expression, PropertyExpression, Transformer } from "@routier/core/expressions";
 import {
     isComparatorExpression,
     isOperatorExpression,
     isPropertyExpression,
     isValueExpression,
+    SchemaTypes,
 } from "@routier/core";
 
 /** Supported SQL dialect names. */
@@ -41,6 +42,11 @@ export interface SqlDialect {
      * caller has to remember.
      */
     encodeJson(value: unknown): unknown;
+    /**
+     * SQL expression for the length of a column: character count for strings,
+     * element count for arrays (which are stored as `jsonColumnType`).
+     */
+    lengthExpression(column: string, isJsonArray: boolean): string;
 }
 
 const DIALECTS: Record<SqlDialectName, SqlDialect> = {
@@ -59,6 +65,9 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         encodeJson(value) {
             return JSON.stringify(value);
         },
+        lengthExpression(column, isJsonArray) {
+            return isJsonArray ? `json_array_length(${column})` : `LENGTH(${column})`;
+        },
     },
     postgresql: {
         quoteIdentifier(name) {
@@ -74,6 +83,9 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         jsonColumnType: "JSONB",
         encodeJson(value) {
             return JSON.stringify(value);
+        },
+        lengthExpression(column, isJsonArray) {
+            return isJsonArray ? `jsonb_array_length(${column})` : `LENGTH(${column})`;
         },
     },
     mysql: {
@@ -91,6 +103,9 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         encodeJson(value) {
             return JSON.stringify(value);
         },
+        lengthExpression(column, isJsonArray) {
+            return isJsonArray ? `JSON_LENGTH(${column})` : `CHAR_LENGTH(${column})`;
+        },
     },
     mssql: {
         quoteIdentifier(name) {
@@ -106,6 +121,9 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         jsonColumnType: "NVARCHAR(MAX)",
         encodeJson(value) {
             return JSON.stringify(value);
+        },
+        lengthExpression(column, isJsonArray) {
+            return isJsonArray ? `(SELECT COUNT(*) FROM OPENJSON(${column}))` : `LEN(${column})`;
         },
     },
 };
@@ -153,6 +171,45 @@ function buildPattern(
     }
 }
 
+/**
+ * Applies a parsed value transformer (e.g. `p.name.toLowerCase()`) to the value
+ * before it is bound — SQL never sees value transformers, only their result.
+ */
+function applyValueTransformer(value: unknown, transformer: Transformer | null): unknown {
+    if (transformer === "to-lower-case" && typeof value === "string") {
+        return value.toLowerCase();
+    }
+
+    if (transformer === "to-upper-case" && typeof value === "string") {
+        return value.toUpperCase();
+    }
+
+    return value;
+}
+
+/**
+ * Renders a property reference as a column, wrapping it in the SQL function the
+ * parsed transformer calls for (LOWER/UPPER/length). Ignoring the transformer
+ * here would silently return wrong rows.
+ */
+function renderColumn(prop: PropertyExpression, d: SqlDialect): string {
+    const col = d.quoteIdentifier(prop.property.getResolvedName());
+
+    if (prop.transformer === "to-lower-case") {
+        return `LOWER(${col})`;
+    }
+
+    if (prop.transformer === "to-upper-case") {
+        return `UPPER(${col})`;
+    }
+
+    if (prop.transformer === "length") {
+        return d.lengthExpression(col, prop.property.type === SchemaTypes.Array);
+    }
+
+    return col;
+}
+
 /** Result of splitting a comparator into left/right property and value sides. */
 interface PropertyValueSides {
     propLeft: PropertyExpression | null;
@@ -164,8 +221,8 @@ interface PropertyValueSides {
 function getPropertyValueSides(cmp: ComparatorExpression): PropertyValueSides {
     const propLeft = cmp.left && isPropertyExpression(cmp.left) ? cmp.left : null;
     const propRight = cmp.right && isPropertyExpression(cmp.right) ? cmp.right : null;
-    const valLeft = cmp.left && isValueExpression(cmp.left) ? cmp.left.value : null;
-    const valRight = cmp.right && isValueExpression(cmp.right) ? cmp.right.value : null;
+    const valLeft = cmp.left && isValueExpression(cmp.left) ? applyValueTransformer(cmp.left.value, cmp.left.transformer) : null;
+    const valRight = cmp.right && isValueExpression(cmp.right) ? applyValueTransformer(cmp.right.value, cmp.right.transformer) : null;
     return { propLeft, propRight, valLeft, valRight };
 }
 
@@ -236,9 +293,9 @@ function renderStringPatternComparison(
     if (cmp.comparator === "includes") {
         const col =
             propLeft && valRight !== null
-                ? d.quoteIdentifier(propLeft.property.getResolvedName())
+                ? renderColumn(propLeft, d)
                 : propRight && valLeft !== null
-                  ? d.quoteIdentifier(propRight.property.getResolvedName())
+                  ? renderColumn(propRight, d)
                   : null;
         const value = valRight !== null ? valRight : valLeft;
 
@@ -266,9 +323,9 @@ function renderStringPatternComparison(
 
     const col =
         propLeft && valRight !== null
-            ? d.quoteIdentifier(propLeft.property.getResolvedName())
+            ? renderColumn(propLeft, d)
             : propRight && valLeft !== null
-              ? d.quoteIdentifier(propRight.property.getResolvedName())
+              ? renderColumn(propRight, d)
               : null;
     const value = valRight !== null ? String(valRight) : valLeft !== null ? String(valLeft) : null;
 
@@ -365,9 +422,9 @@ export function toSql(
                 const { propLeft, propRight, valLeft, valRight } = getPropertyValueSides(cmp);
                 const col =
                     propLeft && (valRight !== undefined || propRight)
-                        ? d.quoteIdentifier(propLeft.property.getResolvedName())
+                        ? renderColumn(propLeft, d)
                         : propRight && (valLeft !== undefined || propLeft)
-                          ? d.quoteIdentifier(propRight.property.getResolvedName())
+                          ? renderColumn(propRight, d)
                           : null;
                 const value = valRight !== undefined ? valRight : valLeft;
                 const columnOnLeft = Boolean(propLeft && cmp.right && isValueExpression(cmp.right));
@@ -393,15 +450,20 @@ export function toSql(
         }
 
         if (isPropertyExpression(e)) {
-            return d.quoteIdentifier(e.property.getResolvedName());
+            return renderColumn(e, d);
         }
 
         if (isValueExpression(e)) {
-            params.push(e.value);
+            params.push(applyValueTransformer(e.value, e.transformer));
             return placeholder();
         }
 
         throw new Error(`Unknown expression type: ${(e as Expression).type}`);
+    }
+
+    // A tautology (`x => true`) — no rows are excluded
+    if (expr.type === "empty") {
+        return { where: "1 = 1", params: [] };
     }
 
     const where = walk(expr);

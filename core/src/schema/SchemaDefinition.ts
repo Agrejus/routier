@@ -67,12 +67,23 @@ function createChangeTracker() {
                 const resolvedParent: { [key: string]: any } = parent ?? entity;
 
                 if (resolvedParent[TRACKING_KEY] == null) {
-                    resolvedParent[TRACKING_KEY] = {
-                        [CHANGES_ENTITY_KEY]: {},
-                        [DIRTY_ENTITY_MARKER]: false,
-                        [ORIGINAL_ENTITY_KEY]: {},
-                        [PAUSED_ENTITY_KEY]: false
-                    }
+                    // defineProperty, not assignment: a plain assignment creates an ENUMERABLE
+                    // property, and this is the lazy path that runs on the first tracked write —
+                    // so every entity the caller had edited came back from a query with
+                    // `__tracking__` visible to Object.entries, JSON.stringify and any deep
+                    // compare (defect #26). Both bootstrap paths below already define it
+                    // non-enumerable; this one was the outlier.
+                    Object.defineProperty(resolvedParent, TRACKING_KEY, {
+                        value: {
+                            [CHANGES_ENTITY_KEY]: {},
+                            [DIRTY_ENTITY_MARKER]: false,
+                            [ORIGINAL_ENTITY_KEY]: {},
+                            [PAUSED_ENTITY_KEY]: false
+                        },
+                        configurable: true,
+                        writable: true,
+                        enumerable: false
+                    });
                 }
 
                 if (key == TRACKING_KEY) {
@@ -416,7 +427,10 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                 .appendBody("// initiate change tracking if needed");
 
             pauseFunctionBody.if("destination.__tracking__ == null")
-                .appendBody("destination.__tracking__ = {};")
+                // Non-enumerable for the same reason the enricher's bootstrap is: computed
+                // properties can JSON.stringify the entity while this is installed, and the
+                // bootstrap must not change their input. It is removed again below either way.
+                .appendBody('Object.defineProperty(destination, "__tracking__", { value: {}, configurable: true, writable: true, enumerable: false });')
                 .appendBody("installedTrackingBootstrap = true;");
 
             pauseFunctionBody.appendBody("destination.__tracking__.isPaused = true;");
