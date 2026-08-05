@@ -2,9 +2,9 @@ import Dexie from 'dexie';
 import { convertToDexieSchema } from "./utils";
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
-import { BulkPersistResult } from '@routier/core/collections';
-import { InferCreateType, PropertyInfo, SchemaTypes } from '@routier/core/schema';
-import { uuidv4 } from '@routier/core/utilities';
+import { BulkPersistResult, SchemaPersistChanges } from '@routier/core/collections';
+import { CompiledSchema, InferCreateType, PropertyInfo, SchemaId, SchemaTypes } from '@routier/core/schema';
+import { UnknownRecord, uuidv4 } from '@routier/core/utilities';
 import { ParamsFilter } from '@routier/core/expressions';
 import { DexieTranslator } from './DexieTranslator';
 
@@ -22,6 +22,13 @@ const cache = new Map<string, { fingerprint: string; stores: Record<string, stri
 /** Order-independent identity of a schema set: names plus their full stores specs. */
 const fingerprintOf = (stores: Record<string, string>): string =>
     Object.keys(stores).sort().map(name => `${name}=${stores[name]}`).join('|');
+
+/** One collection with pending work, resolved before the transaction opens. */
+type TouchedCollection = {
+    schemaId: SchemaId;
+    schema: CompiledSchema<UnknownRecord>;
+    changes: SchemaPersistChanges<Record<string, unknown>>;
+};
 
 export type DexiePluginOptions = {
     /**
@@ -122,7 +129,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
             try {
                 // Every collection this event touches, resolved up front: Dexie needs the
                 // full table list when the transaction opens and cannot be given more later.
-                const touched: { schemaId: typeof event.schemas extends Map<infer K, any> ? K : never; schema: any; changes: any }[] = [];
+                const touched: TouchedCollection[] = [];
 
                 for (const [schemaId, schema] of event.schemas) {
                     const changes = event.operation.get(schemaId);
@@ -131,7 +138,11 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                         continue;
                     }
 
-                    touched.push({ schemaId, schema, changes } as never);
+                    touched.push({
+                        schemaId,
+                        schema: schema as CompiledSchema<UnknownRecord>,
+                        changes: changes as SchemaPersistChanges<Record<string, unknown>>,
+                    });
                 }
 
                 if (touched.length === 0) {
@@ -157,10 +168,10 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                 await db.transaction('rw', tables, async () => {
                     for (const { schemaId, schema, changes } of touched) {
                         const collection = db.table(schema.collectionName);
-                        const schemaSpecificResult = operationResult.get(schemaId as never);
+                        const schemaSpecificResult = operationResult.get(schemaId);
 
                         if (changes.removes.length > 0) {
-                            const ids = changes.removes.map((x: any) => {
+                            const ids = changes.removes.map(x => {
 
                                 if (schema.idProperties.length === 1) {
                                     // Handle single key, return the value
@@ -178,10 +189,10 @@ export class DexiePlugin implements IDbPlugin, Disposable {
 
                     for (const { schemaId, schema, changes } of touched) {
                         const collection = db.table(schema.collectionName);
-                        const schemaSpecificResult = operationResult.get(schemaId as never);
+                        const schemaSpecificResult = operationResult.get(schemaId);
 
                         if (changes.updates.length > 0) {
-                            const updatedDocuments = changes.updates.map((x: any) => x.entity);
+                            const updatedDocuments = changes.updates.map(x => x.entity);
 
                             await collection.bulkPut(updatedDocuments);
                             schemaSpecificResult.updates.push(...updatedDocuments);
@@ -190,7 +201,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
 
                     for (const { schemaId, schema, changes } of touched) {
                         const collection = db.table(schema.collectionName);
-                        const schemaSpecificResult = operationResult.get(schemaId as never);
+                        const schemaSpecificResult = operationResult.get(schemaId);
 
                         if (changes.adds.length === 0) {
                             continue;
@@ -203,7 +214,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                         }
 
                         // generate UUID's, Dexie does not generate them
-                        const stringIds = schema.idProperties.filter((x: any) => x.type === SchemaTypes.String);
+                        const stringIds = schema.idProperties.filter(x => x.type === SchemaTypes.String);
                         const hasAllStringIds = schema.idProperties.length === stringIds.length;
 
                         for (let i = 0, length = changes.adds.length; i < length; i++) {
