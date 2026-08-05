@@ -1,6 +1,6 @@
 # Known defects
 
-Status: 30 of 30 fixed. No open defects.
+Status: 34 of 34 fixed. No open defects.
 Date: 2026-08-05
 
 Defects 1–10 came from the functional test program. #11–#13 came from the stress program
@@ -865,6 +865,61 @@ independent read-modify-write owner of the key and the last save wins. CAS/revis
 scope; the single-writer boundary is stated in the plugin README.
 
 **Found by** the plugin production-readiness audit (`PLUGIN_AUDIT.md`, Critical).
+
+### 31. Every SQLite query leaked a file handle — **FIXED**
+
+`_doQueryWork` opened a `sqlite3.Database` per query and closed it only when a `shouldClose`
+parameter was true. The parameter defaulted to false and the single caller never passed it,
+so no query ever closed its connection. Nothing failed — a leaked handle still answers — it
+just accumulated one open file per query for the life of the process.
+
+**Fix:** `shouldClose` is gone. Every exit routes through one `finish()` that closes first, so
+a path added later cannot forget. Deliberately still one connection per operation rather than
+a long-lived shared handle: per-operation connections are what let SQLite's file locking
+serialize concurrent writers, and a shared handle would make disposal every caller's problem.
+
+**Found by** the plugin production-readiness audit (`PLUGIN_AUDIT.md`, High).
+
+### 32. A SQLite transaction that failed to begin ran anyway — **FIXED**
+
+`db.run('BEGIN IMMEDIATE TRANSACTION')` was issued with no callback, so its error was
+discarded. BEGIN IMMEDIATE is the statement that takes the RESERVED lock, and therefore the
+one that fails with SQLITE_BUSY when another writer holds the file. On that failure execution
+fell straight through to the batch, which then ran with **no transaction open**: a mid-batch
+failure left the earlier writes committed, and the ROLLBACK on the error path had nothing to
+undo. Partial saves, silently.
+
+**Fix:** BEGIN takes an error callback and fails the save, matching how COMMIT was already
+handled two lines below.
+
+**Found by** the plugin production-readiness audit (`PLUGIN_AUDIT.md`, High).
+
+### 33. Two SQLite files sharing a collection name shared their DDL — **FIXED**
+
+The CREATE TABLE cache was a module-global keyed by `schema.collectionName` alone. Two plugin
+instances over different files with the same collection name served each other's statement, so
+the second file's table could be created with the first schema's columns.
+
+**Fix:** the cache is an instance field. The cost is re-deriving one string per collection per
+plugin.
+
+**Found by** the plugin production-readiness audit (`PLUGIN_AUDIT.md`, High).
+
+### 34. An unopenable SQLite file hung the save and crashed the process — **FIXED**
+
+Found while writing the test for #32. `new sqlite3.Database(file)` was called with no open
+callback. When the open fails — a directory where the file should be, a permissions failure, a
+missing parent — `sqlite3` reports it by emitting `error` on the Database object, which with no
+listener attached Node throws as an uncaught exception, and *none* of the statement callbacks
+queued against that handle ever fire. So the failure both crashed the process and left the
+caller's `saveChangesAsync` pending forever.
+
+**Fix:** opens go through `openDatabase(onOpenError)`, which supplies the callback and routes
+the failure to `done`. Both work paths guard `done` behind a settled flag, since a failed open
+and a failed statement can now both report (the #3 "calls done exactly once" pattern).
+
+**Found by** the `it('fails the save when the transaction cannot begin')` test written for #32,
+which timed out instead of failing — the test for one defect landing on another.
 
 ### The `--forceExit` question, answered
 
