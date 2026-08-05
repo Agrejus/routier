@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@jest/globals";
+import { afterEach, describe, expect, it } from "@jest/globals";
 import { s } from "@routier/core/schema";
 import { uuidv4 } from "@routier/core";
 import { MemoryPlugin } from "@routier/memory-plugin";
@@ -674,7 +674,26 @@ describe('defect #26: __tracking__ must not be enumerable', () => {
         items = this.collection(schema).proxy().create();
     }
 
-    const createStore = () => new ItemStore(new MemoryPlugin(`defect26-${uuidv4()}`));
+    /**
+     * Disposed after each test. A DataStore opens a BroadcastChannel pair per collection at
+     * construction — two MessagePort handles that hold the Node event loop open whether or
+     * not anything subscribes. Three undisposed stores here were the last leak in the
+     * repository, and the reason `npx jest` reported a worker that "failed to exit
+     * gracefully" while still exiting 0.
+     */
+    const stores: ItemStore[] = [];
+
+    const createStore = () => {
+        const store = new ItemStore(new MemoryPlugin(`defect26-${uuidv4()}`));
+        stores.push(store);
+        return store;
+    };
+
+    afterEach(() => {
+        for (const store of stores.splice(0)) {
+            store[Symbol.dispose]();
+        }
+    });
 
     it('hides tracking state from a row that has been edited', async () => {
         const store = createStore();

@@ -1137,6 +1137,12 @@ per-file hunt is worth repeating rather than describing — run each test file o
 without `--forceExit` and see which never exits. A file that leaks hangs outright; the
 "worker failed to exit gracefully" warning only shows up in a multi-file run.
 
+**An eighth file (2026-08-05).** `ChangeTracker.test.ts`'s defect-26 block constructed three
+stores and disposed none, so `npx jest` still exited 0 while reporting a force-exited worker.
+The per-file hunt above found it exactly as described: the file hangs on its own, and the
+warning only appears in a multi-file run. Disposed in an `afterEach`; the whole suite now
+reports nothing.
+
 ---
 
 ## Replication durable-queue re-enqueue — **FIXED** (2026-08-05)

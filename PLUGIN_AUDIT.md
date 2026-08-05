@@ -283,3 +283,97 @@ A plugin should not be labeled production-ready until it has:
 - deterministic disposal with no open handles;
 - documentation of durability and process/tab boundaries;
 - no dependency on unresolved framework defects for its advertised feature set.
+
+---
+
+# Remediation status — 2026-08-05
+
+Every finding above was worked through `PRODUCTION-RELEASE-PLAN.md`. This section records
+what happened to each one. Nineteen defects were fixed and recorded as `specs/known-defects.md`
+#27 through #47; six of them were found by the new tests rather than by the audit.
+
+## Readiness matrix, after
+
+| Plugin | Before | After | What changed |
+|---|---|---|---|
+| Memory | Ready for ephemeral use | Ready for ephemeral use | Shared-name `destroy()` documented at the call site, in the docs page, and in the package README |
+| File system | Conditional / limited | **Ready, single-process** | `fsync` before the rename; single-process boundary documented |
+| Browser storage | **Not production-ready** | **Ready, single-writer** | #30 — the data-loss defect is fixed; multi-tab writing documented as unsupported |
+| Dexie | **Not production-ready** | **Ready** | #44–#47 — one transaction per save, `version` option, fingerprinted cache, lifecycle in `try` |
+| SQLite | Needs fixes | **Ready** | #31–#34 — connection leak, BEGIN errors, cache scope, unopenable-file hang |
+| PostgreSQL | Beta / closest to ready | **Ready** | Parameters no longer logged; pool disposal in tests; failure paths covered |
+| MySQL | **Not production-ready** | **Ready** | #35–#38 — first run against a real server; DDL, four type mappings, `count()`, pool release |
+| PouchDB | **Not production-ready** | **Ready** | #39–#43 — instance-scoped state, replication fixed, sync cancelled on destroy |
+| SQL core | **Not production-ready** | **Ready** | #27–#29 — reversed-null, sentinel collision, composite keys |
+| Chrome extension | Not implemented | **Removed** | The directory held one orphaned jest config |
+
+## Finding-by-finding
+
+| Finding | Status |
+|---|---|
+| Critical: browser-storage loses rows on a later add | **Fixed** — #30. Collection registry plus hydrate-in-`save()`, the file-system template |
+| High: shared SQL update generation assumes one ID column | **Fixed** — #29. Composite keys take one full-key `UPDATE` per row; single-key output is byte-identical |
+| High: reversed null comparisons generate incorrect SQL | **Fixed** — #27, and #28 behind it: the same sentinel collision made `"x" == p.prop` render `prop IS NULL` |
+| High: PouchDB state is global rather than database-scoped | **Fixed** — #39. Queue, index cache and sync handle are instance fields |
+| High: SQLite connection lifecycle | **Fixed** — #31. `shouldClose` removed; every path closes |
+| High: SQLite ignores transaction-start errors | **Fixed** — #32 |
+| High: SQLite table cache is module-global | **Fixed** — #33 |
+| High: Dexie multi-schema saves are not one transaction | **Fixed** — #44 |
+| High: Dexie schema version is fixed at 1 | **Fixed** — #46. `version` constructor option, with a message naming it when Dexie refuses |
+| High: MySQL has no real-server validation | **Fixed** — `e2e/src/mysqlContainer.test.ts`, 24 cases plus the contract kit. It failed 81 of 86 on its first run |
+| High: MySQL ignores `connectionString` and `pool.min` | **Fixed** — `connectionString` honoured and mutually exclusive with the discrete fields; `pool.min` removed from the type |
+| High: MySQL creates tables inside the transaction | **Fixed** — #35. DDL runs before `beginTransaction` |
+| High: MySQL has no optimistic-concurrency path | **Fixed** — wired to the shared conditional-update builder, detecting conflicts from `affectedRows` |
+| Medium: PostgreSQL logs SQL parameters | **Fixed** — gated logger; parameter values are never logged at any level |
+| Medium: PostgreSQL container suite hangs | **Fixed** — per-test pool disposal. The suite finishes in 7s with `--detectOpenHandles` clean |
+| Medium: PouchDB duplicate IDs | **Fixed** — #42, both copies of the block |
+| Medium: PouchDB possible double callback | **Fixed** — #41 |
+| Medium: `ts-loader` in Rspack builds | **Fixed** — all ten configs use `builtin:swc-loader`; the devDependency is gone |
+| Medium: missing LICENSE and README in packages | **Fixed** — both present in all ten, enforced by `npm run release:pack-check` |
+| Medium: missing `files` allowlists | **Fixed** — five packages were publishing `src/` and tests |
+| Medium: no CI | **Fixed** — `.github/workflows/ci.yml`, two jobs |
+| Chrome extension is not a plugin | **Removed**, as planned |
+
+## Documented limitations, not fixed
+
+These were decided as out of scope and are stated in the package READMEs:
+
+- **Browser storage: multi-tab writing.** Two tabs are independent read-modify-write owners
+  of one key and the last save wins. CAS or revisions would be the fix.
+- **Dexie: optimistic concurrency.** Dexie offers no conditional-update primitive to build it
+  on, so `ConcurrencyDbPlugin` cannot detect a stale write there.
+- **SQL schema migrations.** All three SQL plugins create a missing table and never alter an
+  existing one. A migration design is its own project.
+- **MySQL auto-increment select-back.** Requires `innodb_autoinc_lock_mode` 0 or 1. Under
+  mode 2 the plugin fails the save with both settings named rather than echoing wrong rows.
+- **Rich types on SQL plugins.** SQLite and MySQL run the contract kit with
+  `supportsRichTypes: false`: a SQL column cannot distinguish an absent optional property
+  from one explicitly set to null.
+
+## Release gates — measured
+
+| Gate | Result |
+|---|---|
+| `npx tsc --noEmit` per package | Clean. `npm run typecheck` covers every workspace |
+| `npm run lint` | Clean — 0 warnings, 0 errors |
+| Unit and contract suites | 5,981 passing, 141 skipped |
+| Jest exits without `--forceExit` | Yes. The last leaked handle — three undisposed stores in `ChangeTracker.test.ts` — is fixed, and no worker warning remains |
+| `E2E_CONTAINERS=1 npx jest --selectProjects e2e` | 202 passing across SQLite, PostgreSQL, MySQL and CouchDB |
+| `STRESS=1 E2E_CONTAINERS=1 npx jest --selectProjects stress` | 65 passing, including S8 against both servers |
+| `npm run release:pack-check` | Twelve of thirteen packages pack correctly. `@routier/react` needs a bundle, which only CI can build |
+| `npm run build` | Not verifiable locally — no `@rspack/binding` for this platform. CI job 1 is where it runs |
+| `npm run benchmark` | **Two pre-existing regressions**, see below |
+
+### The benchmark result, honestly
+
+`update-1000` and `diff-update-1000` exceed the 15% gate. They are **not** caused by this
+work. Running the same benchmark at `8aba2a3`, the commit before any of it, reproduces both
+(`+20.8%` and `+15.8%`), so the recorded baseline is stale relative to change-tracking work
+that landed earlier.
+
+The baseline was deliberately NOT re-recorded. `npm run benchmark:update` would erase a real
+signal, and deciding whether that regression is acceptable is a separate call from this one.
+
+Benchmarks run against `MemoryPlugin` only, so none of the SQL builder changes are exercised
+by them. The SQL hot paths are covered by the stress program instead: S8's volume and churn
+scenarios run against real PostgreSQL and MySQL servers and pass.
