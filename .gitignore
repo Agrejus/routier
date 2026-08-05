@@ -11,3 +11,7 @@ node_modules/
 .stryker-tmp/
 reports/
 .stryker-tmp/
+
+# Playwright MCP page snapshots — debugging artifacts from browser-driven
+# stress runs, regenerated on every session. Never part of the source tree.
+.playwright-mcp/
