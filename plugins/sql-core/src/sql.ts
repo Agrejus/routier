@@ -43,11 +43,49 @@ export interface SqlDialect {
      */
     encodeJson(value: unknown): unknown;
     /**
+     * Bindable form of a value for a `s.date()` property.
+     *
+     * Most engines accept an ISO-8601 string, which is what a serialized entity carries, so
+     * the default is to pass it through. MySQL's DATETIME does not — it rejects both the `T`
+     * separator and the `Z` suffix — so that dialect rewrites it.
+     */
+    encodeDate(value: unknown): unknown;
+    /**
      * SQL expression for the length of a column: character count for strings,
      * element count for arrays (which are stored as `jsonColumnType`).
      */
     lengthExpression(column: string, isJsonArray: boolean): string;
 }
+
+/** Engines that accept ISO-8601 directly. */
+const passThroughDate = (value: unknown): unknown => value;
+
+/** ISO-8601 with a `T` separator, which is what a serialized `s.date()` carries. */
+const ISO_DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
+
+/**
+ * `YYYY-MM-DD HH:MM:SS.mmm` in UTC — the only datetime literal MySQL accepts.
+ *
+ * MySQL rejects ISO-8601 outright ("Incorrect datetime value") because of the `T` separator
+ * and the `Z` suffix, so every `s.date()` write failed against a real server. UTC rather than
+ * local time, matching the `timezone: 'Z'` the plugin sets on its pool, so the value read
+ * back is the value written.
+ *
+ * A value that is neither a Date nor an ISO string is left alone: the property may carry its
+ * own `.serialize()` producing some other agreed format, and rewriting that would break a
+ * schema that was working.
+ */
+const mysqlDate = (value: unknown): unknown => {
+    if (value instanceof Date) {
+        return Number.isNaN(value.getTime()) ? value : value.toISOString().replace('T', ' ').replace('Z', '');
+    }
+
+    if (typeof value === 'string' && ISO_DATE_TIME.test(value)) {
+        return value.replace('T', ' ').replace(/Z$/, '');
+    }
+
+    return value;
+};
 
 const DIALECTS: Record<SqlDialectName, SqlDialect> = {
     sqlite: {
@@ -65,6 +103,7 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         encodeJson(value) {
             return JSON.stringify(value);
         },
+        encodeDate: passThroughDate,
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `json_array_length(${column})` : `LENGTH(${column})`;
         },
@@ -84,6 +123,7 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         encodeJson(value) {
             return JSON.stringify(value);
         },
+        encodeDate: passThroughDate,
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `jsonb_array_length(${column})` : `LENGTH(${column})`;
         },
@@ -103,6 +143,7 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         encodeJson(value) {
             return JSON.stringify(value);
         },
+        encodeDate: mysqlDate,
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `JSON_LENGTH(${column})` : `CHAR_LENGTH(${column})`;
         },
@@ -122,6 +163,7 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         encodeJson(value) {
             return JSON.stringify(value);
         },
+        encodeDate: passThroughDate,
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `(SELECT COUNT(*) FROM OPENJSON(${column}))` : `LEN(${column})`;
         },

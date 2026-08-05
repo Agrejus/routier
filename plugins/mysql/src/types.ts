@@ -23,6 +23,15 @@ export type MysqlAddsOperation = SqlOperation & { selectBack: MysqlSelectBack };
  * carries each row's FULL identity — selecting back on one component of a composite key
  * echoes the wrong rows.
  */
-export type MysqlUpdatesOperation = SqlOperation & { ids: unknown[]; keyTuples: Record<string, unknown>[] };
+export type MysqlUpdatesOperation = SqlOperation & {
+    ids: unknown[];
+    keyTuples: Record<string, unknown>[];
+    /**
+     * Present on a token-checked UPDATE. MySQL has no RETURNING, so a conflict shows up as
+     * `affectedRows === 0` rather than an empty result set — the statement is valid and
+     * succeeds, it simply matches no row because the token moved.
+     */
+    conflictCheck?: { id: unknown };
+};
 /** The echo must be read BEFORE the delete runs; selectSql shares the delete's params. */
 export type MysqlRemovesOperation = SqlOperation & { selectSql: string };

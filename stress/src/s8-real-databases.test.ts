@@ -24,6 +24,7 @@ import {
     volumeScale,
 } from './harness';
 import { PostgresHarness } from './harness/postgres';
+import { MysqlHarness } from './harness/mysql';
 
 /**
  * S8 — the loads from S1 and S3 against a real PostgreSQL server.
@@ -91,6 +92,7 @@ import { PostgresHarness } from './harness/postgres';
  */
 
 const postgres = new PostgresHarness();
+const mysql = new MysqlHarness();
 
 /** Every store opened by a scenario in this file, destroyed after each one. */
 const stores: DataStore[] = [];
@@ -105,7 +107,10 @@ beforeAll(async () => {
     // `beforeAll` still runs — so starting a container here unconditionally would pay for
     // Docker on every default `npx jest`.
     if (process.env.STRESS === '1' && process.env.E2E_CONTAINERS === '1') {
+        // Sequential, not concurrent: two servers booting at once on a laptop or a CI runner
+        // contend for the same cores and both time out rather than one being slow.
         await postgres.start();
+        await mysql.start();
     }
 });
 
@@ -116,6 +121,10 @@ afterAll(async () => {
 
     if (postgres.started) {
         await postgres.stop();
+    }
+
+    if (mysql.started) {
+        await mysql.stop();
     }
 });
 
@@ -372,6 +381,148 @@ containerStressDescribe('S8 real databases: PostgreSQL via testcontainers', () =
 
             // Each instance owns a disjoint key range, so the final value of any row is
             // whatever its owner wrote last, regardless of which transaction committed first.
+            const union = new Oracle<Row>(row => row.id);
+
+            for (let owner = 0; owner < instances.length; owner++) {
+                ((await instances[owner].rows.toArrayAsync()) as Row[])
+                    .filter(row => row.id.startsWith(mine(owner)))
+                    .forEach(row => union.set({ id: row.id, owner: row.owner, text: row.text, count: row.count }));
+            }
+
+            const expectedTotal = INSTANCES * KEYS_PER_INSTANCE;
+
+            note(`union oracle holds ${union.size} of an expected ${expectedTotal} rows`);
+
+            expect(union.size).toBe(expectedTotal);
+
+            // Every instance sees the whole database, not only its own writes.
+            for (let owner = 0; owner < instances.length; owner++) {
+                const seen = (await instances[owner].rows.toArrayAsync()) as Row[];
+                const comparison = compareToOracle(union, seen, row => row.id, {
+                    fields: ['owner', 'text', 'count'],
+                });
+
+                if (comparison.matches === false) {
+                    note(`instance ${owner}: ${describeComparison(comparison)}`);
+                }
+
+                expect(comparison.matches ? 'oracle matches' : `instance ${owner}: ${describeComparison(comparison)}`)
+                    .toBe('oracle matches');
+            }
+        }
+    );
+});
+
+/**
+ * The same loads against MySQL.
+ *
+ * A separate block rather than a parameterisation over both servers, because the point is
+ * not that the loads pass twice — it is that MySQL fails differently, and a green PostgreSQL
+ * run says nothing about it. DDL implicitly commits here, so a table created inside a save
+ * ends that save's transaction; there is no RETURNING, so every written row is read back by
+ * a second statement whose correctness rests on an assumption about what the server just
+ * did; and a stale conditional update is `affectedRows === 0` rather than an empty result.
+ *
+ * The multi-instance scenario is the one that earns its runtime: five plugins racing through
+ * table creation on one database is exactly where implicit-commit DDL corrupts a *concurrent*
+ * writer's rollback rather than only its own.
+ */
+containerStressDescribe('S8 real databases: MySQL via testcontainers', () => {
+    const volumePlan = volumePlanFor(VOLUME_BUDGET);
+
+    stressIt(
+        `mysql: the volume load at ${VOLUME_BUDGET.toLocaleString('en-US')} entities loses nothing to real I/O`,
+        {
+            seed: 20260809,
+            scale: volumeScale('mysql', volumePlan),
+        },
+        async ({ rng, note }) => {
+            const store = track(new ProductStore(mysql.createPlugin()));
+
+            await runVolumeWorkload<Product>({
+                store,
+                collection: store.products as any,
+                plan: volumePlan,
+                rng,
+                note,
+                newEntity: productFactory(),
+                ...productShape,
+            });
+        }
+    );
+
+    stressIt(
+        `mysql: the churn load survives ${churnPlan.cycles.toLocaleString('en-US')} cycles over nested and array columns`,
+        {
+            seed: 20260810,
+            scale: churnScale('mysql', churnPlan),
+        },
+        async ({ rng, note }) => {
+            const store = track(new ChurnStore(mysql.createPlugin(), churnShapeCase().schema));
+
+            await runChurnWorkload<Churned>({
+                store,
+                collection: store.entities,
+                plan: churnPlan,
+                rng,
+                note,
+                ...churnShape,
+            });
+        }
+    );
+
+    stressIt(
+        `mysql: ${INSTANCES} plugin instances on one database converge on the union of their writes`,
+        {
+            seed: 20260812,
+            scale: {
+                backend: 'mysql',
+                instances: INSTANCES,
+                keysPerInstance: KEYS_PER_INSTANCE,
+                rounds: ROUNDS,
+                totalEntities: INSTANCES * KEYS_PER_INSTANCE,
+            },
+        },
+        async ({ note }) => {
+            const instances = Array.from({ length: INSTANCES }, () =>
+                track(new MultiInstanceStore(mysql.createPlugin()))
+            );
+
+            // A distinct key prefix from the PostgreSQL scenario: both write to a collection
+            // of the same name, and reusing the prefix would make a leak between the two
+            // blocks look like convergence.
+            const keyFor = (owner: number, index: number) => `m${String(owner).padStart(2, '0')}-${index}`;
+            const mine = (owner: number) => `m${String(owner).padStart(2, '0')}-`;
+
+            for (let round = 0; round < ROUNDS; round++) {
+                // No awaiting between instances: the transactions overlap on the server,
+                // which is the entire point of running this against one.
+                await Promise.all(instances.map(async (store, owner) => {
+                    const rng = new Rng(20260812 + owner * 31 + round);
+
+                    if (round === 0) {
+                        await store.rows.addAsync(
+                            ...Array.from({ length: KEYS_PER_INSTANCE }, (_, k) => ({
+                                id: keyFor(owner, k),
+                                owner,
+                                text: `seed-${owner}-${k}`,
+                                count: 0,
+                            })) as any[]
+                        );
+                    } else {
+                        const owned = ((await store.rows.toArrayAsync()) as Row[])
+                            .filter(row => row.id.startsWith(mine(owner)));
+
+                        for (const row of rng.sample(owned, Math.max(1, Math.floor(owned.length / 2)))) {
+                            row.text = `m${owner}-r${round}`;
+                            row.count = round;
+                        }
+                    }
+
+                    await store.saveChangesAsync();
+                }));
+            }
+
             const union = new Oracle<Row>(row => row.id);
 
             for (let owner = 0; owner < instances.length; owner++) {

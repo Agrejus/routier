@@ -2,7 +2,7 @@ import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema'
 import { Expression, ComparatorExpression, OperatorExpression, ValueExpression, PropertyExpression } from '@routier/core/expressions';
 import { IQuery, QueryField } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
-import { buildGroupedUpdateOperations, getDialect, sqlColumnProperties, toColumnValueMap } from '@routier/sql-plugin-core';
+import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, getDialect, sqlColumnProperties, toColumnValueMap } from '@routier/sql-plugin-core';
 import { uuidv4 } from '@routier/core/utilities';
 import { MysqlAddsOperation, MysqlRemovesOperation, MysqlSelectBack, MysqlUpdatesOperation, SqlOperation } from './types';
 
@@ -14,7 +14,13 @@ const schemaTypeToMysqlType = (type: SchemaTypes): string => {
         case SchemaTypes.String:
             return 'VARCHAR(255)';
         case SchemaTypes.Number:
-            return 'DECIMAL(20, 10)';
+            // DOUBLE, not DECIMAL. mysql2 returns DECIMAL as a STRING to preserve exact
+            // precision, so a `s.number()` property came back as "20.0000000000" and the
+            // echoed row no longer matched the pending addition — every add failed in
+            // `mergeChanges` with "Cannot find internal addition". DOUBLE arrives as a JS
+            // number, which is what the schema type means. Identical reasoning to the
+            // PostgreSQL NUMERIC → DOUBLE PRECISION change in known-defects #4.
+            return 'DOUBLE';
         case SchemaTypes.Boolean:
             return 'BOOLEAN';
         case SchemaTypes.Date:
@@ -449,12 +455,30 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
     // Handle UPDATE operations (updates). One operation per changed-column group — the
     // shared builder resolves deltas to columns (renames, JSON encoding, empty-delta
     // fallback) and never joins groups with ';', which mysql2 rejects by default
-    // (multipleStatements is off). Each group carries its row ids for the select-back.
-    const updatesOperations: MysqlUpdatesOperation[] = buildGroupedUpdateOperations(
-        schema,
-        updates as { entity: Record<string, unknown>; delta: Record<string, unknown> }[],
-        getDialect('mysql')
-    );
+    // (multipleStatements is off). Each group carries its row keys for the select-back.
+    //
+    // Schemas with a `.concurrency()` token take one CONDITIONAL statement per row instead
+    // of the grouped CASE form, so a stale write matches zero rows and is reported as a
+    // conflict on that exact row. Same wiring as the PostgreSQL plugin; MySQL has no
+    // RETURNING, so the conflict is detected from affectedRows rather than an empty result.
+    const hasConcurrencyChecks = updates.some(u => (u as { concurrency?: unknown }).concurrency != null);
+    const updatesOperations: MysqlUpdatesOperation[] = hasConcurrencyChecks
+        ? buildConditionalUpdateOperations(
+            schema,
+            updates as { entity: Record<string, unknown>; delta: Record<string, unknown> }[],
+            getDialect('mysql')
+        ).map(({ sql, params, id, keyTuple, checked }) => ({
+            sql,
+            params,
+            ids: [id],
+            keyTuples: [keyTuple],
+            conflictCheck: checked ? { id } : undefined,
+        }))
+        : buildGroupedUpdateOperations(
+            schema,
+            updates as { entity: Record<string, unknown>; delta: Record<string, unknown> }[],
+            getDialect('mysql')
+        );
 
     // Handle DELETE operations (removes)
     let removesOperation: MysqlRemovesOperation | null = null;
@@ -634,7 +658,12 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
                 break;
 
             case 'count':
-                currentQuery = currentQuery.replace(/SELECT .*? FROM/, 'SELECT COUNT(*) AS `count` FROM');
+                // Wrap rather than rewrite the SELECT: a rewritten query keeps its
+                // LIMIT/OFFSET, which then applies to the single count row — `OFFSET 1`
+                // skips it entirely and the query returns no rows at all, so `countAsync()`
+                // handed back `[]` instead of a number. Wrapping counts whatever the built
+                // query yields. Same fix SQLite already carries.
+                currentQuery = `SELECT COUNT(*) AS \`count\` FROM (${currentQuery}) AS count_subquery`;
                 break;
 
             case 'min':
@@ -657,4 +686,45 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
     }
 
     return { sql: currentQuery, params };
+}
+
+/**
+ * Restores the JS types MySQL's column types cannot carry, on rows coming back out.
+ *
+ * The plugin's DDL declares `BOOLEAN`, but that is a synonym for `TINYINT(1)` and mysql2
+ * returns it as `0`/`1`. A round-tripped entity therefore had `inStock: 0` where the schema
+ * says `boolean`, which fails an identity comparison against the pending addition and makes
+ * `false` indistinguishable from `0` for anything downstream. Since the plugin knows the
+ * declared type, honouring its own DDL is its job rather than the caller's.
+ *
+ * Only `s.boolean()` properties are touched, and only when the stored value really is 0 or 1
+ * — a column written by something else, or already boolean, is left alone.
+ */
+export function decodeBooleanColumns<T extends {}>(rows: unknown, schema: CompiledSchema<T>): unknown {
+    const booleanProperties = sqlColumnProperties(schema).filter(
+        p => p.type === SchemaTypes.Boolean && p.valueDeserializer == null
+    );
+
+    if (booleanProperties.length === 0 || Array.isArray(rows) === false) {
+        return rows;
+    }
+
+    for (const row of rows as Record<string, unknown>[]) {
+        if (row == null || typeof row !== 'object') {
+            continue;
+        }
+
+        for (const property of booleanProperties) {
+            // Projection and aggregate rows are not entities; a column that is not there is
+            // simply skipped.
+            const column = property.getResolvedName();
+            const value = row[column];
+
+            if (value === 0 || value === 1) {
+                row[column] = value === 1;
+            }
+        }
+    }
+
+    return rows;
 }

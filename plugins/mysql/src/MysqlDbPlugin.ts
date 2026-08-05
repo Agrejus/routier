@@ -1,23 +1,51 @@
 import { createPool, Pool, PoolConnection } from 'mysql2/promise';
 import { decodeJsonColumns, sqlColumnProperties } from '@routier/sql-plugin-core';
-import { buildFromPersistOperation, buildFromQueryOperation, compiledSchemaToMysqlTable } from './utils';
+import { buildFromPersistOperation, buildFromQueryOperation, compiledSchemaToMysqlTable, decodeBooleanColumns } from './utils';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, SqlTranslator } from '@routier/core/plugins';
 import { CallbackResult, PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '@routier/core/results';
 import { BulkPersistResult } from '@routier/core/collections';
 import { CompiledSchema, SchemaId } from '@routier/core/schema';
+import { OptimisticConcurrencyError } from '@routier/core';
 
 export interface MysqlDbPluginConfig {
     host?: string;
     port?: number;
-    database: string;
+    /** Required unless `connectionString` is given, which carries the database itself. */
+    database?: string;
     user?: string;
     password?: string;
+    /**
+     * A `mysql://user:password@host:port/database` URI, passed straight to mysql2.
+     *
+     * Mutually exclusive with the discrete fields above — supplying both throws rather than
+     * silently picking one. There is no correct precedence to guess: a connection string
+     * that disagrees with an explicit `host` means the caller believes something untrue
+     * about where their data is going.
+     */
     connectionString?: string;
     pool?: {
-        min?: number;
+        /**
+         * Maximum pooled connections (mysql2's `connectionLimit`). Default 10.
+         *
+         * There is no `min`: mysql2 opens connections on demand and has no minimum-size
+         * concept. The field used to exist here and was silently discarded, which is worse
+         * than not offering it.
+         */
         max?: number;
     };
 }
+
+/**
+ * mysql2 throws on an `undefined` bind parameter ("Bind parameters must not contain
+ * undefined. To pass SQL NULL specify JS null"). Every other driver the repo targets binds
+ * it as NULL, and the builders emit `undefined` for an absent optional property — so without
+ * this, an entity that simply omits an optional field fails to insert at all.
+ *
+ * NULL is the right reading: the column is in the INSERT's column list, so the row needs a
+ * value for it, and "no value supplied" is exactly what NULL means.
+ */
+const bindable = (params: readonly unknown[] | undefined): unknown[] =>
+    (params ?? []).map(value => (value === undefined ? null : value));
 
 export class MysqlDbPlugin implements IDbPlugin {
 
@@ -25,15 +53,45 @@ export class MysqlDbPlugin implements IDbPlugin {
     private tableCache: Record<string, string> = {};
 
     constructor(config: MysqlDbPluginConfig) {
-        this.pool = createPool({
-            host: config.host || 'localhost',
-            port: config.port || 3306,
-            database: config.database,
-            user: config.user,
-            password: config.password,
-            connectionLimit: config.pool?.max || 10,
-            waitForConnections: true,
-        });
+        const hasDiscreteTarget = config.host != null
+            || config.port != null
+            || config.database != null
+            || config.user != null
+            || config.password != null;
+
+        if (config.connectionString != null && hasDiscreteTarget) {
+            throw new Error(
+                'MysqlDbPlugin: `connectionString` and the discrete connection fields ' +
+                '(host, port, database, user, password) are mutually exclusive. ' +
+                'Supply one or the other — silently preferring either would connect somewhere ' +
+                'the configuration says it should not.'
+            );
+        }
+
+        if (config.connectionString == null && config.database == null) {
+            throw new Error('MysqlDbPlugin: `database` is required when `connectionString` is not given.');
+        }
+
+        this.pool = config.connectionString != null
+            ? createPool({
+                uri: config.connectionString,
+                connectionLimit: config.pool?.max || 10,
+                waitForConnections: true,
+                timezone: 'Z',
+            })
+            : createPool({
+                host: config.host || 'localhost',
+                port: config.port || 3306,
+                database: config.database,
+                user: config.user,
+                password: config.password,
+                connectionLimit: config.pool?.max || 10,
+                waitForConnections: true,
+                // DATETIME columns are written as UTC (see the dialect's encodeDate), so
+                // mysql2 has to read them back as UTC too. Its default is the process's
+                // local zone, which silently shifts every date by the machine's offset.
+                timezone: 'Z',
+            });
     }
 
     private resolveSchema<TEntity extends {}>(schema: CompiledSchema<TEntity>) {
@@ -56,7 +114,10 @@ export class MysqlDbPlugin implements IDbPlugin {
             // toColumnAssignments); decode them before translation so the entity gets a
             // structure back rather than a JSON string. Skips properties whose schema
             // does its own deserialization.
-            const decoded = decodeJsonColumns(result.data, event.operation.schema);
+            const decoded = decodeBooleanColumns(
+                decodeJsonColumns(result.data, event.operation.schema),
+                event.operation.schema
+            );
             const data = translator.translate(decoded);
 
             done(PluginEventResult.success(event.id, data));
@@ -101,7 +162,6 @@ export class MysqlDbPlugin implements IDbPlugin {
         let connection: PoolConnection | undefined;
         try {
             connection = await this.pool.getConnection();
-            await connection.beginTransaction();
 
             const result = event.operation.toResult();
 
@@ -116,6 +176,23 @@ export class MysqlDbPlugin implements IDbPlugin {
                 }
             };
 
+            // DDL BEFORE the transaction, for every collection in the event.
+            //
+            // MySQL commits the open transaction implicitly when it runs DDL. Creating a
+            // table from inside the transaction therefore committed whatever had already
+            // been written and started an untracked one, so a later failure rolled back
+            // nothing — the partial save was already durable. Table creation is idempotent
+            // and independent of the batch's data, so it belongs outside.
+            for (const [schemaId, changes] of event.operation) {
+                if (!changes || changes.hasItems === false) {
+                    continue;
+                }
+
+                await ensureTable(schemaId, compiledSchemaToMysqlTable(event.schemas.get(schemaId)!));
+            }
+
+            await connection.beginTransaction();
+
             /** Storage-side column list — one column per root property, like the DDL. */
             const selectColumns = (schemaId: SchemaId) =>
                 sqlColumnProperties(event.schemas.get(schemaId)!).map(p => `\`${p.getResolvedName()}\``).join(', ');
@@ -124,7 +201,11 @@ export class MysqlDbPlugin implements IDbPlugin {
             // JSON column returned as a raw string reaches the entity's deserializer as a
             // string and throws on the first nested property access.
             const collect = (schemaId: SchemaId, bucket: 'adds' | 'updates' | 'removes', rows: unknown[]) => {
-                const decoded = decodeJsonColumns(rows, event.schemas.get(schemaId)!) as { [x: string]: never; }[];
+                const schema = event.schemas.get(schemaId)!;
+                const decoded = decodeBooleanColumns(
+                    decodeJsonColumns(rows, schema),
+                    schema
+                ) as { [x: string]: never; }[];
                 result.get(schemaId)[bucket].push(...decoded);
             };
 
@@ -135,22 +216,32 @@ export class MysqlDbPlugin implements IDbPlugin {
 
                 const schema = event.schemas.get(schemaId);
                 const { adds, updates, removes } = buildFromPersistOperation(schema, changes);
-                const createTableSql = compiledSchemaToMysqlTable(schema);
                 const table = `\`${schema.collectionName}\``;
                 const idColumn = `\`${schema.idProperties[0].getResolvedName()}\``;
-
-                await ensureTable(schemaId, createTableSql);
 
                 // Removes first, then updates, then adds — same order as the other SQL
                 // plugins. The echo is read BEFORE the delete; afterwards the rows are gone.
                 if (removes != null) {
-                    const [rows] = await connection.execute(removes.selectSql, removes.params);
+                    const [rows] = await connection.execute(removes.selectSql, bindable(removes.params));
                     collect(schemaId, 'removes', rows as unknown[]);
-                    await connection.execute(removes.sql, removes.params);
+                    await connection.execute(removes.sql, bindable(removes.params));
                 }
 
                 for (const update of updates) {
-                    await connection.execute(update.sql, update.params);
+                    const [updateResult] = await connection.execute(update.sql, bindable(update.params));
+
+                    // A token-checked UPDATE that matched no row lost the race: another
+                    // writer changed the row after this one read it. Postgres detects this
+                    // from an empty RETURNING set; MySQL has none, so it comes from
+                    // affectedRows. Throwing rolls the whole transaction back, which is the
+                    // contract — a conflicted save writes nothing anywhere.
+                    if (update.conflictCheck != null
+                        && (updateResult as { affectedRows?: number }).affectedRows === 0) {
+                        throw new OptimisticConcurrencyError(
+                            schema.collectionName,
+                            [update.conflictCheck.id as never]
+                        );
+                    }
 
                     // Select back on the FULL key of each row — an OR of per-row
                     // conjunctions, the same shape the composite add path uses below.
@@ -167,7 +258,7 @@ export class MysqlDbPlugin implements IDbPlugin {
                 }
 
                 if (adds != null) {
-                    const [insertResult] = await connection.execute(adds.sql, adds.params);
+                    const [insertResult] = await connection.execute(adds.sql, bindable(adds.params));
                     const selectBack = adds.selectBack;
 
                     let selectSql: string;
@@ -176,6 +267,14 @@ export class MysqlDbPlugin implements IDbPlugin {
                     if (selectBack.mode === 'insert-id') {
                         // A simple multi-row INSERT allocates a consecutive AUTO_INCREMENT
                         // block, so the inserted rows are insertId .. insertId + n - 1.
+                        //
+                        // This holds for `innodb_autoinc_lock_mode` 0 or 1 with one INSERT
+                        // statement per batch, which is what the plugin emits. Under mode 2
+                        // (interleaved) or a non-1 `auto_increment_increment`, the block is
+                        // not contiguous — see the row-count assertion below, which is what
+                        // turns that configuration into a loud failure instead of a
+                        // silently wrong echo. The supported configuration is documented in
+                        // the plugin README.
                         const firstId = (insertResult as { insertId: number }).insertId;
                         selectSql = `SELECT ${selectColumns(schemaId)} FROM ${table} WHERE ${idColumn} BETWEEN ? AND ?`;
                         selectParams = [firstId, firstId + selectBack.rowCount - 1];
@@ -191,8 +290,25 @@ export class MysqlDbPlugin implements IDbPlugin {
                         selectParams = selectBack.keyTuples.flatMap(tuple => Object.values(tuple));
                     }
 
-                    const [rows] = await connection.execute(selectSql, selectParams);
-                    collect(schemaId, 'adds', rows as unknown[]);
+                    const [rows] = await connection.execute(selectSql, bindable(selectParams));
+                    const echoed = rows as unknown[];
+
+                    // MySQL has no RETURNING, so the echo is a second statement whose result
+                    // is only ASSUMED to be the rows just written. Where that assumption can
+                    // break — the contiguous auto-increment block above — say so loudly.
+                    // The alternative is a save that reports success while handing the
+                    // change tracker somebody else's rows, or too few of them.
+                    if (selectBack.mode === 'insert-id' && echoed.length !== selectBack.rowCount) {
+                        throw new Error(
+                            `MySQL select-back returned ${echoed.length} row(s) for an INSERT of ` +
+                            `${selectBack.rowCount}. The plugin reads inserted rows back by their ` +
+                            `AUTO_INCREMENT range, which requires a contiguous block: set ` +
+                            `innodb_autoinc_lock_mode to 0 or 1 and auto_increment_increment to 1. ` +
+                            `Nothing was committed.`
+                        );
+                    }
+
+                    collect(schemaId, 'adds', echoed);
                 }
             }
 
@@ -204,9 +320,14 @@ export class MysqlDbPlugin implements IDbPlugin {
             if (connection) {
                 try {
                     await connection.rollback();
+                } catch {
+                    // The original error is the one worth reporting; a rollback that also
+                    // fails does not change what the caller has to do.
+                } finally {
+                    // In `finally`, because a throwing rollback used to skip the release
+                    // entirely — every failed save then permanently cost the pool one
+                    // connection, and enough of them deadlocked the plugin.
                     connection.release();
-                } catch  {
-                    // Ignore rollback errors
                 }
             }
             done(Result.error(err));
@@ -236,7 +357,7 @@ export class MysqlDbPlugin implements IDbPlugin {
             }
 
             // Execute query
-            const [rows] = await connection.execute(sql, params || []);
+            const [rows] = await connection.execute(sql, bindable(params));
             connection.release();
             done(Result.success(rows as TShape));
         } catch (err) {

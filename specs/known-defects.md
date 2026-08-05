@@ -1,6 +1,6 @@
 # Known defects
 
-Status: 34 of 34 fixed. No open defects.
+Status: 38 of 38 fixed. No open defects.
 Date: 2026-08-05
 
 Defects 1–10 came from the functional test program. #11–#13 came from the stress program
@@ -920,6 +920,68 @@ and a failed statement can now both report (the #3 "calls done exactly once" pat
 
 **Found by** the `it('fails the save when the transaction cannot begin')` test written for #32,
 which timed out instead of failing — the test for one defect landing on another.
+
+### 35. MySQL committed half a save whenever it created a table — **FIXED**
+
+`ensureTable` ran from inside the transaction opened at the top of the save. MySQL commits
+the open transaction *implicitly* when it executes DDL, so the first save to touch a new
+collection committed everything written before it and continued in an untracked transaction.
+A later failure in the same save then rolled back nothing — the partial write was already
+durable, and the plugin still reported the save as failed.
+
+**Fix:** table creation happens for every collection in the event BEFORE `beginTransaction`.
+It is idempotent and independent of the batch's data, so it does not belong inside.
+
+**Found by** the plugin production-readiness audit; guarded by
+`e2e/src/mysqlContainer.test.ts` ("rolls the whole batch back when one row fails") and by the
+five-instance S8 scenario, where racing table creation corrupts a *concurrent* writer's
+rollback rather than only its own.
+
+### 36. Four MySQL type mappings never round-tripped — **FIXED**
+
+The plugin had never run against MySQL — everything it was judged on was a string-shape test
+over its builders. Pointing the contract kit and a container suite at a real server failed 81
+of 86 cases. Four distinct causes:
+
+**Numbers arrived back as strings.** `s.number()` mapped to `DECIMAL(20, 10)`, and mysql2
+returns DECIMAL as a string to preserve exact precision, so a saved `20` echoed as
+`"20.0000000000"`. The echo no longer matched the pending addition and *every add* failed in
+`mergeChanges` with "Cannot find internal addition". Now `DOUBLE` — the same reasoning that
+moved PostgreSQL off NUMERIC in #4.
+
+**Dates were rejected outright.** A serialized `s.date()` is ISO-8601, and MySQL's DATETIME
+accepts neither the `T` separator nor the `Z` suffix ("Incorrect datetime value"). `SqlDialect`
+gains an `encodeDate` hook — pass-through for the engines that accept ISO, and
+`YYYY-MM-DD HH:MM:SS.mmm` in UTC for MySQL. The pool sets `timezone: 'Z'` to read them back
+the same way, since mysql2 otherwise interprets DATETIME in the process's local zone and
+shifts every date by the machine's offset.
+
+**An absent optional property could not be bound.** mysql2 throws on an `undefined` parameter
+where every other driver binds NULL, so an entity that merely omitted an optional field
+failed to insert. Parameters now go through `bindable()`, which maps `undefined` to `null`.
+
+**Booleans came back as 0 and 1.** MySQL's BOOLEAN is a synonym for TINYINT(1). The plugin
+declares the column, so honouring its own DDL is its job: `decodeBooleanColumns` restores
+them on both read paths, mirroring `decodeJsonColumns`.
+
+### 37. MySQL's `count()` returned `[]` after `skip()` — **FIXED**
+
+`count` was built by regex-replacing the SELECT list, which leaves the query's LIMIT/OFFSET in
+place — so `OFFSET 1` skipped the single count row and the query returned nothing at all.
+`countAsync()` handed back `[]` where a number belonged.
+
+**Fix:** wrap instead of rewrite, `SELECT COUNT(*) FROM (<query>) AS count_subquery`. SQLite
+already carried exactly this fix, with a comment explaining it; MySQL was written from the
+older shape and never revisited. The regex was also fragile independently of the LIMIT bug —
+`/SELECT .*? FROM/` matches inside a subquery and against a column named `from`.
+
+### 38. A failed MySQL save could permanently cost the pool a connection — **FIXED**
+
+The rollback path released the connection only if the rollback itself succeeded. A throwing
+rollback skipped the release, so the connection was gone for the pool's lifetime; enough
+failures deadlocked the plugin. The release moved into a `finally`.
+
+**Found by** writing the pool-of-one failure-path case for the container suite.
 
 ### The `--forceExit` question, answered
 

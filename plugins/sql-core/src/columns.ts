@@ -80,6 +80,25 @@ const needsJsonEncoding = (property: PropertyInfo<any>, value: unknown) =>
     isJsonColumn(property) && value != null && typeof value === "object";
 
 /**
+ * Binds a value for one column, letting the dialect rewrite the shapes its engine refuses.
+ *
+ * Two hooks, both gated on the DECLARED property type so a scalar column is never touched by
+ * accident, and both leaving `null` alone — a NULL column is not the same as one holding an
+ * encoded null, and only the former is found by `IS NULL`.
+ */
+const encodeForColumn = (property: PropertyInfo<any>, value: unknown, dialect: SqlDialect): unknown => {
+    if (needsJsonEncoding(property, value)) {
+        return dialect.encodeJson(value);
+    }
+
+    if (property.type === SchemaTypes.Date && value != null) {
+        return dialect.encodeDate(value);
+    }
+
+    return value;
+};
+
+/**
  * Maps a delta to the columns it assigns.
  *
  * Unknown keys are skipped rather than thrown on: a delta is data arriving from another
@@ -116,7 +135,7 @@ export function toColumnAssignments<T extends {}>(
 
         assignments.push({
             column,
-            value: needsJsonEncoding(property, value) ? dialect.encodeJson(value) : value,
+            value: encodeForColumn(property, value, dialect),
         });
     }
 
