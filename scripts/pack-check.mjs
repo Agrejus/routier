@@ -20,6 +20,30 @@ import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
+/**
+ * Paths git tracks, exactly as git spells them.
+ *
+ * macOS resolves `README.md` to a file recorded as `readme.md`, so `npm pack` run there
+ * reports a README that a Linux runner will not find. This repository has shipped that bug
+ * in three packages — pouchdb, core and datastore — and each time it was invisible until CI.
+ * Checking against the index rather than the filesystem catches it everywhere.
+ */
+const trackedPaths = (() => {
+    try {
+        return new Set(
+            execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' })
+                .split('\n')
+                .filter(Boolean)
+        );
+    } catch {
+        // Not a git checkout (an unpacked tarball, say). The pack list is still checked.
+        return null;
+    }
+})();
+
+/** Case-sensitive names a package must have committed, not merely present on disk. */
+const CASE_SENSITIVE_FILES = ['README.md', 'LICENSE'];
+
 /** Directories that hold publishable workspaces. A private package is skipped by name. */
 const WORKSPACE_ROOTS = ['plugins'];
 const STANDALONE = ['core', 'datastore', 'react'];
@@ -112,6 +136,26 @@ for (const directory of packageDirectories()) {
 
         if (offenders.length > 0) {
             problems.push(`publishes ${label} (${offenders.length}, e.g. ${offenders[0]})`);
+        }
+    }
+
+    // Checked against git rather than the filesystem, so a case-insensitive machine reports
+    // the same result a Linux runner will.
+    if (trackedPaths != null) {
+        for (const name of CASE_SENSITIVE_FILES) {
+            const expected = `${directory}/${name}`;
+
+            if (trackedPaths.has(expected)) {
+                continue;
+            }
+
+            const wrongCase = [...trackedPaths].find(
+                p => p.toLowerCase() === expected.toLowerCase()
+            );
+
+            problems.push(wrongCase == null
+                ? `${name} is not committed`
+                : `${name} is committed as '${wrongCase.split('/').pop()}' — the wrong case is dropped from the pack on a case-sensitive filesystem`);
         }
     }
 
