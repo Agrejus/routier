@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
 import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { uuidv4 } from '@routier/core';
 import { s } from '@routier/core/schema';
@@ -49,17 +49,44 @@ suite('PostgreSQL via testcontainers', () => {
     let container: StartedPostgreSqlContainer;
     let store: ProductStore;
 
-    const connect = () => new ProductStore(new PostgresDbPlugin({
+    /**
+     * Every store opened INSIDE a test, disposed after it.
+     *
+     * Each `connect()` builds a new plugin and therefore a new `pg` Pool, and a Pool holds
+     * its idle clients — sockets — open until it is ended. Tests below call `connect()`
+     * freely to prove a read came off the server rather than out of a client cache, and none
+     * of those stores used to be destroyed. The pools kept the event loop alive after the
+     * last assertion, which is the five-minute hang the audit recorded and the reason this
+     * project could not drop `--forceExit`.
+     */
+    const opened: DataStore[] = [];
+
+    const pluginConfig = () => ({
         host: container.getHost(),
         port: container.getPort(),
         database: container.getDatabase(),
         user: container.getUsername(),
         password: container.getPassword(),
-    }));
+    });
+
+    const connect = () => {
+        const created = new ProductStore(new PostgresDbPlugin(pluginConfig()));
+        opened.push(created);
+        return created;
+    };
+
+    afterEach(async () => {
+        for (const created of opened.splice(0)) {
+            await created.destroyAsync().catch(() => undefined);
+        }
+    });
 
     beforeAll(async () => {
         container = await new PostgreSqlContainer('postgres:16-alpine').start();
-        store = connect();
+        // NOT tracked in `opened`: this one is shared by every test and lives until
+        // afterAll. `destroy()` here only ends the pool — it does not drop tables — so
+        // disposing the per-test stores leaves the seeded rows on the server.
+        store = new ProductStore(new PostgresDbPlugin(pluginConfig()));
         await store.products.addAsync(
             { name: 'apple', category: 'fruit', price: 10 } as any,
             { name: 'Banana', category: 'fruit', price: 30 } as any,
@@ -168,14 +195,11 @@ suite('PostgreSQL via testcontainers', () => {
             rows = this.collection(heteroSchema).proxy().create();
         }
 
-        const open = <T extends DataStore>(Ctor: new (plugin: PostgresDbPlugin) => T): T =>
-            new Ctor(new PostgresDbPlugin({
-                host: container.getHost(),
-                port: container.getPort(),
-                database: container.getDatabase(),
-                user: container.getUsername(),
-                password: container.getPassword(),
-            }));
+        const open = <T extends DataStore>(Ctor: new (plugin: PostgresDbPlugin) => T): T => {
+            const created = new Ctor(new PostgresDbPlugin(pluginConfig()));
+            opened.push(created);
+            return created;
+        };
 
         // Guards the fix for defect #19: `pg` encodes a JS array as a PostgreSQL array
         // literal, which a json column rejects. Insert params now go through
@@ -247,14 +271,11 @@ suite('PostgreSQL via testcontainers', () => {
             accounts = this.collection(occSchema).proxy().create();
         }
 
-        const open = (): OccStore =>
-            new OccStore(new ConcurrencyDbPlugin(new PostgresDbPlugin({
-                host: container.getHost(),
-                port: container.getPort(),
-                database: container.getDatabase(),
-                user: container.getUsername(),
-                password: container.getPassword(),
-            })));
+        const open = (): OccStore => {
+            const created = new OccStore(new ConcurrencyDbPlugin(new PostgresDbPlugin(pluginConfig())));
+            opened.push(created);
+            return created;
+        };
 
         it('rejects a stale write against a real server and allows a retry', async () => {
             const writerA = open();
@@ -288,5 +309,206 @@ suite('PostgreSQL via testcontainers', () => {
             const final: any = await writerA.accounts.firstAsync(([x, p]) => x.id === p.id, { id });
             expect(final.balance).toBe(650);
         });
+
+        it('leaves an unrelated row untouched when another row conflicts', async () => {
+            // The conflicted save must roll back as a unit, including writes to rows that
+            // had no conflict of their own.
+            const writerA = open();
+            const writerB = open();
+
+            const [one, two] = await writerA.accounts.addAsync(
+                { balance: 10 } as any,
+                { balance: 20 } as any,
+            );
+            await writerA.saveChangesAsync();
+
+            const contested = (one as any).id;
+            const bystander = (two as any).id;
+
+            // B reads BEFORE A writes — that is what makes B's copy stale. Reading after
+            // A's save would give B a current row and no conflict to detect.
+            const bContested: any = await writerB.accounts.firstAsync(([x, p]) => x.id === p.id, { id: contested });
+            const bBystander: any = await writerB.accounts.firstAsync(([x, p]) => x.id === p.id, { id: bystander });
+
+            const aRow: any = await writerA.accounts.firstAsync(([x, p]) => x.id === p.id, { id: contested });
+            aRow.balance = 11;
+            await writerA.saveChangesAsync();
+
+            bContested.balance = 999;
+            bBystander.balance = 888;
+
+            const error = await writerB.saveChangesAsync().then(() => null, e => e);
+            expect(OptimisticConcurrencyError.is(error)).toBe(true);
+
+            const after: any = await open().accounts.firstAsync(([x, p]) => x.id === p.id, { id: bystander });
+            expect(after.balance).toBe(20);
+        });
+    });
+
+    /**
+     * What the plugin does when the server says no.
+     *
+     * The audit's gap: every existing case was a happy path against a healthy server, so
+     * nothing proved that a failure mid-transaction rolls back, that a constraint violation
+     * surfaces as a rejected save rather than a hang, or that an exhausted pool queues
+     * instead of deadlocking. Each of these has a failure mode — hanging — that a suite
+     * without them reports as a pass.
+     */
+    describe('failure paths', () => {
+        const failSchema = s.define('e2e_pg_failures', {
+            id: s.string().key(),
+            value: s.string(),
+        }).compile();
+
+        class FailStore extends DataStore {
+            rows = this.collection(failSchema).proxy().create();
+        }
+
+        const open = (poolMax?: number): FailStore => {
+            const created = new FailStore(new PostgresDbPlugin({
+                ...pluginConfig(),
+                ...(poolMax == null ? {} : { pool: { max: poolMax } }),
+            }));
+            opened.push(created);
+            return created;
+        };
+
+        it('rejects a duplicate primary key instead of hanging', async () => {
+            const store = open();
+            await store.rows.addAsync({ id: 'dup', value: 'first' } as any);
+            await store.saveChangesAsync();
+
+            const second = open();
+            await second.rows.addAsync({ id: 'dup', value: 'second' } as any);
+
+            // A rejection, not a timeout. The plugin's error path has to release the client
+            // and call back — an unreleased client would drain the pool and hang the next
+            // test instead of this one.
+            const outcome = await second.saveChangesAsync().then(() => 'resolved', e => e);
+
+            expect(outcome).not.toBe('resolved');
+        });
+
+        it('rolls the whole transaction back when one row in the batch fails', async () => {
+            const store = open();
+            await store.rows.addAsync({ id: 'existing', value: 'original' } as any);
+            await store.saveChangesAsync();
+
+            // One good row and one that collides, in a single save.
+            const writer = open();
+            await writer.rows.addAsync(
+                { id: 'newcomer', value: 'should not survive' } as any,
+                { id: 'existing', value: 'collides' } as any,
+            );
+
+            await writer.saveChangesAsync().catch(() => undefined);
+
+            // Asserted per id rather than by count: this table is shared with the other
+            // cases in this block, so a total is not this test's to claim.
+            const reader = open();
+            const present = (await reader.rows.toArrayAsync()).map(r => r.id);
+
+            expect(present).not.toContain('newcomer');
+            expect((await reader.rows.firstAsync(r => r.id === 'existing')).value).toBe('original');
+        });
+
+        it('returns its client to the pool after a failed save', async () => {
+            // A pool of one: if the failed save below does not release its client, the
+            // query afterwards has nothing to run on and waits forever.
+            const store = open(1);
+            await store.rows.addAsync({ id: 'usable', value: 'seed' } as any);
+            await store.saveChangesAsync();
+
+            const writer = open(1);
+            await writer.rows.addAsync({ id: 'usable', value: 'collides' } as any);
+            await writer.saveChangesAsync().catch(() => undefined);
+
+            // Not another save: a failed save leaves its changes pending, so retrying
+            // would collide a second time and prove nothing about the pool.
+            expect(await writer.rows.countAsync()).toBeGreaterThan(0);
+        });
+
+        it('serializes concurrent saves through a pool of one', async () => {
+            // max: 1 means the second save waits for the first client to be released.
+            // Anything that forgets to release turns this into a deadlock.
+            //
+            // Two STORES, not two saves on one store: concurrent saves on a single store
+            // flush the same pending set twice, which is a change-tracker question rather
+            // than a pool one.
+            const a = open(1);
+            const b = open(1);
+
+            await Promise.all([
+                a.rows.addAsync({ id: 'pool-a', value: 'a' } as any).then(() => a.saveChangesAsync()),
+                b.rows.addAsync({ id: 'pool-b', value: 'b' } as any).then(() => b.saveChangesAsync()),
+            ]);
+
+            const ids = (await open().rows.toArrayAsync()).map(r => r.id).filter(id => id.startsWith('pool-'));
+            expect(ids.sort()).toEqual(['pool-a', 'pool-b']);
+        });
+
+        it('answers queries through a pool of one', async () => {
+            const store = open(1);
+
+            const counts = await Promise.all(
+                Array.from({ length: 5 }, () => store.rows.countAsync())
+            );
+
+            expect(counts.every(c => typeof c === 'number')).toBe(true);
+        });
+    });
+});
+
+/**
+ * The server going away mid-flight, in its own container.
+ *
+ * Separate because the test stops the server, and every case above shares one container.
+ * Without the pool `error` handler added for defect #4 this crashed the process rather than
+ * rejecting the save.
+ */
+const disconnectSuite = shouldRun ? describe : describe.skip;
+
+disconnectSuite('PostgreSQL disconnect during use', () => {
+    const schema = s.define('e2e_pg_disconnect', {
+        id: s.string().key(),
+        value: s.string(),
+    }).compile();
+
+    class Store extends DataStore {
+        rows = this.collection(schema).proxy().create();
+    }
+
+    let container: StartedPostgreSqlContainer;
+    let store: Store;
+
+    beforeAll(async () => {
+        container = await new PostgreSqlContainer('postgres:16-alpine').start();
+        store = new Store(new PostgresDbPlugin({
+            host: container.getHost(),
+            port: container.getPort(),
+            database: container.getDatabase(),
+            user: container.getUsername(),
+            password: container.getPassword(),
+        }));
+
+        await store.rows.addAsync({ id: 'before', value: 'v' } as any);
+        await store.saveChangesAsync();
+    });
+
+    afterAll(async () => {
+        await store?.destroyAsync().catch(() => undefined);
+        await container?.stop().catch(() => undefined);
+    });
+
+    it('rejects the save and keeps the process alive when the server stops', async () => {
+        await container.stop();
+
+        await store.rows.addAsync({ id: 'after', value: 'v' } as any);
+
+        const outcome = await store.saveChangesAsync().then(() => 'resolved', () => 'rejected');
+
+        // Rejected, not resolved, and above all not an uncaught 'error' event on an idle
+        // client taking the process down with it.
+        expect(outcome).toBe('rejected');
     });
 });

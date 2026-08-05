@@ -174,10 +174,12 @@ export class PostgresDbPlugin implements IDbPlugin {
                     }
 
                     const executeOperation = (op: SqlPersistOperation, type: 'adds' | 'updates' | 'removes') => {
-                        // Log SQL and parameters for debugging
-                        console.log(`[DB] PostgreSQL ${type} operation:`, {
+                        // SQL text only. Parameter VALUES are row data — names, emails,
+                        // tokens, anything the caller stored — and a plugin must not put
+                        // them on stdout. The count is enough to diagnose a binding
+                        // mismatch, which is what these logs were actually for.
+                        logger.debug(`[DB] PostgreSQL ${type} operation:`, {
                             sql: op.sql,
-                            params: op.params || [],
                             paramsCount: (op.params || []).length,
                             schemaId: op.schemaId,
                         });
@@ -228,9 +230,8 @@ export class PostgresDbPlugin implements IDbPlugin {
                         };
 
                         const retryWrite = () => {
-                            console.log(`[DB] PostgreSQL ${type} retry after table creation:`, {
+                            logger.debug(`[DB] PostgreSQL ${type} retry after table creation:`, {
                                 sql: op.sql,
-                                params: op.params || [],
                                 paramsCount: (op.params || []).length,
                             });
                             client.query(op.sql, op.params || [], (retryErr, retryResult) => {
@@ -351,13 +352,12 @@ export class PostgresDbPlugin implements IDbPlugin {
                                          nodeErr.code === 'ECONNREFUSED';
                 
                 if (isConnectionError) {
-                    console.error('[DB] PostgreSQL connection error:', {
+                    // The pg error carries everything a reader needs. Host, port, database
+                    // and user are deployment topology and were being written to stdout on
+                    // every failed connection — dropped, not downgraded.
+                    logger.error('[DB] PostgreSQL connection error:', {
                         code: nodeErr.code,
                         message: nodeErr.message,
-                        host: this.pool.options.host,
-                        port: this.pool.options.port,
-                        database: this.pool.options.database,
-                        user: this.pool.options.user,
                     });
                 }
                 return done(Result.error(err));
@@ -366,10 +366,8 @@ export class PostgresDbPlugin implements IDbPlugin {
             const createTableSQL = this.resolveTableCreateStatement(event.operation.schema);
             const { params, sql } = buildFromQueryOperation(event.operation);
 
-            // Log SQL and parameters for debugging
-            console.log('[DB] PostgreSQL query:', {
+            logger.debug('[DB] PostgreSQL query:', {
                 sql,
-                params: params || [],
                 paramsCount: (params || []).length,
                 table: event.operation.schema.collectionName,
             });
@@ -384,9 +382,8 @@ export class PostgresDbPlugin implements IDbPlugin {
                         }
 
                         // Retry the SELECT after table creation
-                        console.log('[DB] PostgreSQL query retry after table creation:', {
+                        logger.debug('[DB] PostgreSQL query retry after table creation:', {
                             sql,
-                            params: params || [],
                             paramsCount: (params || []).length,
                         });
                         client.query(sql, params || [], (retryErr, retryResult) => {
