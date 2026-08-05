@@ -110,6 +110,14 @@ module.exports = {
             ...base,
             displayName: 'e2e',
             testMatch: ['<rootDir>/e2e/**/*.test.ts'],
+            moduleNameMapper: {
+                ...moduleNameMapper,
+                // Same reason as the `plugins` project: the `pouchdb` meta-package loads
+                // leveldown at require time and it has no prebuilt binary for current Node.
+                // This build adds the http adapter, which the CouchDB replication suite
+                // needs to address a remote by URL.
+                '^pouchdb$': '<rootDir>/test-utils/src/pouchdbHttp.ts',
+            },
             // Real storage engines and containers are slower than in-process plugins.
             // The timeout lives in the setup file because Jest ignores `testTimeout` in a
             // per-project config.

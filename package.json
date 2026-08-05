@@ -64,6 +64,7 @@
     "jest-environment-jsdom": "^30.4.1",
     "oxfmt": "^0.36.0",
     "oxlint": "^1.51.0",
+    "pouchdb-adapter-http": "^9.0.0",
     "pouchdb-adapter-memory": "^9.0.0",
     "pouchdb-core": "^9.0.0",
     "pouchdb-mapreduce": "^9.0.0",

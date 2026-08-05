@@ -1,6 +1,6 @@
 # Known defects
 
-Status: 38 of 38 fixed. No open defects.
+Status: 43 of 43 fixed. No open defects.
 Date: 2026-08-05
 
 Defects 1–10 came from the functional test program. #11–#13 came from the stress program
@@ -982,6 +982,67 @@ rollback skipped the release, so the connection was gone for the pool's lifetime
 failures deadlocked the plugin. The release moved into a `finally`.
 
 **Found by** writing the pool-of-one failure-path case for the container suite.
+
+### 39. PouchDB kept every plugin's state at module level — **FIXED**
+
+The work queue, the index cache and the sync handle were module-level, so every
+`PouchDbPlugin` in a process shared one database's state whatever its name. The sync handle
+was the worst: it lived under the literal key `"sync"`, so only the FIRST plugin in a process
+could establish replication and every later one silently received the first one's handle,
+pointed at a different remote. The index cache was keyed by nothing at all, so the first
+database's design document answered for every database. The queue serialized unrelated
+databases behind each other.
+
+The sync path also wrote a `{}` placeholder into the cache before doing its work, so if
+constructing either database threw, the cache kept the placeholder forever and every later
+call returned an empty object cast as a `Sync` — no replication, no error, no recovery
+without restarting the process.
+
+**Fix:** all three are instance fields, and the placeholder is gone. Seven tests in
+`plugins/pouchdb/src/tests/isolation.test.ts` — none of which a single-store test could
+have caught, which is how this survived a 119-case suite.
+
+### 40. PouchDB replication was wired to a different database than the plugin's data — **FIXED**
+
+`_doWork` built a fresh `new PouchDB(name)` per operation, and `sync()` built yet another one
+of its own. Two PouchDB objects over one name behave as a single database only when the
+ADAPTER broadcasts changes between them. IndexedDB does, which is why this ships and works in
+a browser. Adapters that do not — the in-memory one, for instance — leave a live replication
+unable to observe the plugin's own writes and the plugin unable to observe what replication
+pulls in.
+
+**Fix:** one local handle per plugin, used by every operation and by `sync()`, closed and
+cleared by `destroy()`. It also removes a `new PouchDB` per operation.
+
+**Found by** `e2e/src/couchdbReplication.test.ts`, the first time this plugin's sync path had
+executed against anything.
+
+### 41. PouchDB `destroy()` left replication running and the handle open — **FIXED**
+
+`destroy()` called `_doWork` with `shouldClose: false`, so the database it opened to destroy
+the database was itself left open, and a live sync kept polling the remote after the caller
+had finished with the plugin.
+
+Underneath that, `_doWork`'s close branch had no `return`: with `shouldClose` true it called
+`done` synchronously AND again from the close callback. So the one caller that would have
+exposed the double-callback was the one caller passing `false`.
+
+**Fix:** `destroy()` cancels the retained sync handle, clears the index cache, and closes.
+`_doWork` returns after the close branch — the "calls done exactly once" pattern from #3.
+
+### 42. PouchDB asked for every added document twice — **FIXED**
+
+Both bulk-add paths initialised `ids` from *every* response entry and then pushed each ok id
+again, so `_bulkGetAdditions` received each id twice and the echo carried duplicates into the
+change tracker. Two near-identical copies of the block, both fixed: `ids` starts empty and is
+filled only from the ok entries.
+
+### 43. `plugin.sync(store.schemas)` did not typecheck — **FIXED**
+
+The documented call in `docs/.../pouchdb-sync` could not compile: `sync()` demanded a mutable
+`SchemaCollection` while a store exposes `ReadonlySchemaCollection`. The plugin only reads the
+schemas — it hands them to the caller's own event callbacks — so the parameter and the
+callback signatures widened to the readonly type.
 
 ### The `--forceExit` question, answered
 
