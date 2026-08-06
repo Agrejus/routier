@@ -5,7 +5,7 @@ Hand-written, one section per release, grouped by package with breaking changes 
 
 ## Unreleased
 
-Twenty-one defects fixed, recorded as `specs/known-defects.md` #27 through #49, plus the first
+Twenty-three defects fixed, recorded as `specs/known-defects.md` #27 through #49, plus the first
 CI this repository has had. Every publishable package changed.
 
 Most of these were found by pointing tests at something real for the first time — a MySQL
@@ -13,31 +13,69 @@ server, a CouchDB server, three SQL engines answering the same question, and a s
 can change its data behind the client's back. None of them were visible to the suites that
 existed.
 
-**Suggested version: 0.3.0 across the board.** There are breaking changes below, and on `0.x` a
-minor bump is how that is said.
+### Versions
+
+Independent, not lockstep. On `0.x` a minor bump means a breaking change, so bumping an
+unaffected package to `0.3.0` would claim a break that did not happen.
+
+| Package | From | To | Why |
+| --- | --- | --- | --- |
+| `@routier/pouchdb-plugin` | 0.2.0 | **0.3.0** | breaking: sync callback types |
+| `@routier/replication-plugin` | 0.2.1 | **0.3.0** | breaking: no `skip`/`take` pushdown |
+| `@routier/core` | 0.2.1 | 0.2.2 | fixes, additive parser grammar |
+| `@routier/datastore` | 0.2.1 | 0.2.2 | fixes |
+| `@routier/postgresql-plugin` | 0.2.1 | 0.2.2 | fixes, republish (see below) |
+| `@routier/browser-storage-plugin` | 0.2.0 | 0.2.1 | fixes, republish (see below) |
+| `@routier/sqlite-plugin` | 0.2.0 | 0.2.1 | fixes, republish (see below) |
+| `@routier/dexie-plugin` | 0.2.0 | 0.2.1 | fixes, additive option |
+| `@routier/file-system-plugin` | 0.2.0 | 0.2.1 | fixes |
+| `@routier/memory-plugin` | 0.2.0 | 0.2.1 | packaging, docs |
+| `@routier/react` | 0.2.0 | 0.2.1 | packaging |
+| `@routier/mysql-plugin` | — | 0.2.0 | first publish |
+| `@routier/sql-plugin-core` | — | 0.2.0 | first publish |
+
+### Republish required
+
+`@routier/sqlite-plugin`, `@routier/postgresql-plugin` and `@routier/browser-storage-plugin` are
+**unusable as currently published**. Each declares `main: ./dist/index.js` and shipped no `dist/`
+directory at all — the tarballs hold `src/`, `tsconfig.json` and `jest.config.js`. Any install
+fails on first import. They had no `files` allowlist, so the pack took whatever was on disk.
+
+`npm run release:pack-check` now reads each manifest's `main`, `types`, `module`, `browser` and
+every path in `exports`, and fails if the tarball does not contain them. All three of the broken
+releases fail the new check.
 
 ### Breaking
 
-- **`@routier/mysql-plugin`** — `s.number()` now maps to `DOUBLE` instead of `DECIMAL(20, 10)`.
-  mysql2 returns DECIMAL as a *string*, so every add failed to match its echo and threw "Cannot
-  find internal addition". **A table created by an earlier version still has DECIMAL columns and
-  the plugin does not migrate it** — recreate the table or alter the column type.
-- **`@routier/mysql-plugin`** — `pool.min` removed from `MysqlDbPluginConfig`. mysql2 has no
-  minimum-pool concept and the field was silently discarded.
-- **`@routier/mysql-plugin`** — passing both `connectionString` and any discrete connection
-  field now throws. There is no correct precedence to guess between them.
-- **`@routier/sql-plugin-core`** — `SqlDialect` gains a required `encodeDate`. Custom dialects
-  must implement it; pass the value through for engines that accept ISO-8601.
-- **`@routier/sql-plugin-core`** — `GroupedUpdateOperation` gains `keyTuples` and
-  `ConditionalUpdateOperation` gains `keyTuple`. Consumers building select-back queries should
-  use them rather than `ids`, which is only meaningful for single-key schemas.
+Two packages. Both are published, so both can break a real installation.
+
 - **`@routier/pouchdb-plugin`** — `sync()` and every sync callback now take
-  `ReadonlySchemaCollection`. The documented call `plugin.sync(store.schemas)` did not compile
-  before, because a store exposes the readonly type.
+  `ReadonlySchemaCollection` instead of `SchemaCollection`. The documented call
+  `plugin.sync(store.schemas)` did not compile before, because a store exposes the readonly type.
+  This only breaks a handler that annotates its parameter explicitly, and only under
+  `strictFunctionTypes`. Drop the annotation and let it infer.
 - **`@routier/replication-plugin`** — `HttpSwrDbPlugin` no longer sends `skip`/`take` to the
-  server; windows are applied locally. A windowed read now syncs the whole filtered set. Bound
-  what you sync with `where(...)`. Use `HttpDbPlugin` directly if you need the server to
+  server; windows are applied locally. No compile error: a paginated read that returned `[]`
+  before now returns rows, and a windowed read syncs the whole filtered set rather than one page.
+  Bound what you sync with `where(...)`. Use `HttpDbPlugin` directly if you need the server to
   paginate.
+
+### Behaviour changes that are not breaking
+
+Neither changes an API, and neither can break code that was already correct. Both change what
+happens on a path that was previously wrong.
+
+- **`@routier/dexie-plugin`** — one save is now one `db.transaction`. A save spanning two
+  collections used to be two concurrent transactions and could half-commit; it now fails whole.
+- **`@routier/sqlite-plugin`** — a `BEGIN IMMEDIATE` that fails now fails the save. It was
+  discarded, so the batch ran with no transaction at all.
+
+### Not breaking: new packages
+
+`@routier/mysql-plugin` and `@routier/sql-plugin-core` have never been published. Their
+`SqlDialect.encodeDate` requirement, `GroupedUpdateOperation.keyTuples`, the removal of
+`pool.min`, the `connectionString` exclusivity check and the `DECIMAL` → `DOUBLE` mapping are all
+part of a first release. There is no earlier version for them to break.
 
 ### Fixed
 

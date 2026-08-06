@@ -1,8 +1,12 @@
 # Releasing
 
 Routier publishes 13 packages from one repository. They are versioned **independently** —
-`@routier/core` is at 0.2.1 while `@routier/memory-plugin` is at 0.2.0 — and each is published
+`@routier/core` is at 0.2.2 while `@routier/memory-plugin` is at 0.2.1 — and each is published
 with npm workspaces.
+
+Independent versioning is the point, not an accident. On `0.x` a minor bump claims a breaking
+change, so raising an unaffected package in lockstep tells every consumer to read a migration
+note that does not exist.
 
 There is no release automation. This file is the procedure.
 
@@ -18,7 +22,8 @@ npm run build              # required first: `files` entries pointing at a missi
 npm run lint
 npm run typecheck
 npx jest
-npm run release:pack-check # proves every package ships dist/, README.md and LICENSE
+npm run release:pack-check # proves every package ships dist/, README.md and LICENSE,
+                           # and that main/types/exports resolve inside the tarball
 ```
 
 Container suites are not part of the fast gate but should pass before a release:
@@ -32,6 +37,11 @@ NODE_OPTIONS=--expose-gc STRESS=1 E2E_CONTAINERS=1 npx jest --selectProjects str
 
 Packages are on `0.x`, where **a minor bump signals a breaking change** and a patch bump
 signals a fix. Read the diff, not the commit count.
+
+Check whether the package is published at all: `npm view <name> versions`. A change to a
+package that has never shipped is part of its first release, not a breaking change — there is
+no earlier version to break. Two of this repository's 13 packages were unpublished at 0.2.x,
+and counting their changes as breaking overstated the release.
 
 Something is breaking if it changes a **published type**, a **constructor option**, a **column
 type the plugin writes**, or the shape of data already stored by a previous version. A removed
@@ -53,8 +63,24 @@ dependencies. Bump dependencies before dependents so the references land correct
 `@routier/core` first, then `@routier/sql-plugin-core` and `@routier/memory-plugin`, then
 everything else.
 
-The script writes `package.json` with two-space indentation. Some manifests in this repository
-use four, so check `git diff` for reformatting noise before committing.
+The script keeps each manifest's own indentation, so a bump is a one-line diff per file.
+
+Quote each argument. In zsh an unquoted `$spec` does not word-split, so a loop that passes
+`"<name> <version>"` as one word makes the script a silent no-op.
+
+Then update the lockfile:
+
+```
+npm install --package-lock-only --ignore-scripts
+```
+
+`npm` rewrites `package-lock.json` at the indentation it infers from `package.json`, which can
+re-indent all 34,000 lines. Normalise it back to two spaces before committing, or the real
+change is unreviewable:
+
+```
+node -e 'const f=require("fs");const p=JSON.parse(f.readFileSync("package-lock.json","utf8"));f.writeFileSync("package-lock.json",JSON.stringify(p,null,2)+"\n")'
+```
 
 ## 3. Write the changelog
 

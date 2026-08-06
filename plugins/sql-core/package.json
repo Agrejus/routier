@@ -29,10 +29,10 @@
     ],
     "description": "Shared SQL dialect and result-translation building blocks for routier SQL plugins. Keeps engine-specific knowledge out of @routier/core.",
     "peerDependencies": {
-        "@routier/core": ">=0.2.1"
+        "@routier/core": ">=0.2.2"
     },
     "devDependencies": {
-        "@routier/core": "^0.2.1",
+        "@routier/core": "^0.2.2",
         "@rspack/cli": "^1.1.8",
         "@rspack/core": "^1.1.8"
     },

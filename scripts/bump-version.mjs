@@ -8,6 +8,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = join(__dirname, '..');
 
+/** Directories that never hold a package this repository publishes. */
+const IGNORED_DIRECTORIES = new Set([
+    'node_modules',
+    '.git',
+    'dist',
+    '.stryker-tmp',
+    'reports',
+    'coverage',
+]);
+
 /**
  * Recursively find all package.json files in the monorepo
  */
@@ -19,8 +29,10 @@ function findPackageJsonFiles(dir, files = []) {
         const stat = statSync(fullPath);
 
         if (stat.isDirectory()) {
-            // Skip node_modules and .git directories
-            if (item === 'node_modules' || item === '.git' || item === 'dist') {
+            // Anything not under version control is a copy, not a package. `.stryker-tmp` holds
+            // a full sandbox per mutation-run worker, so bumping through it rewrites the same
+            // manifest a dozen times and buries the real ones in the output.
+            if (IGNORED_DIRECTORIES.has(item)) {
                 continue;
             }
             findPackageJsonFiles(fullPath, files);
@@ -96,7 +108,13 @@ function updatePackageJson(filePath, packageName, newVersion) {
     }
 
     if (updated) {
-        writeFileSync(filePath, JSON.stringify(packageJson, null, 2) + '\n');
+        // Preserve the file's own indentation. Some manifests here use four spaces and some
+        // two; rewriting every one at a fixed width buries a one-line version change in a
+        // hundred lines of reformatting, which is how a bump becomes unreviewable.
+        const indentMatch = content.match(/\n(\s+)"/);
+        const indent = indentMatch ? indentMatch[1].length : 2;
+
+        writeFileSync(filePath, JSON.stringify(packageJson, null, indent) + '\n');
         return true;
     }
 

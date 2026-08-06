@@ -1,6 +1,6 @@
 {
     "name": "@routier/postgresql-plugin",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
     "source": "./src/index.ts",
@@ -33,13 +33,13 @@
     ],
     "description": "PostgreSQL plugin for Routier",
     "peerDependencies": {
-        "@routier/core": ">=0.2.1",
+        "@routier/core": ">=0.2.2",
         "@routier/sql-plugin-core": ">=0.2.0"
     },
     "devDependencies": {
         "@faker-js/faker": "^10.0.0",
-        "@routier/core": "^0.2.1",
-        "@routier/datastore": "^0.2.1",
+        "@routier/core": "^0.2.2",
+        "@routier/datastore": "^0.2.2",
         "@rspack/cli": "^1.1.8",
         "@rspack/core": "^1.1.8",
         "@types/pg": "8.18.0",

@@ -55,6 +55,55 @@ const REQUIRED = [
     { label: 'LICENSE', matches: (files) => files.includes('LICENSE') },
 ];
 
+/**
+ * Every path the manifest promises, so each can be checked against what the tarball holds.
+ *
+ * `main`, `types`, `module` and every string in `exports`. npm does not verify any of them:
+ * a package whose `main` points at a file it did not pack installs cleanly and fails on the
+ * consumer's first `import`.
+ *
+ * This is not hypothetical. `@routier/sqlite-plugin`, `@routier/postgresql-plugin` and
+ * `@routier/browser-storage-plugin` are all published at 0.2.x with `main: ./dist/index.js`
+ * and **no `dist/` in the tarball at all** — they shipped `src/`, `tsconfig.json` and
+ * `jest.config.js` instead. All three are unusable as published. The `files` allowlist that
+ * would have prevented it was missing, so the pack took whatever happened to be on disk.
+ */
+const entryPoints = (manifest) => {
+    const found = [];
+
+    const push = (field, value) => {
+        if (typeof value === 'string' && value.startsWith('.')) {
+            found.push({ field, path: value.replace(/^\.\//, '') });
+        }
+    };
+
+    push('main', manifest.main);
+    push('types', manifest.types);
+    push('typings', manifest.typings);
+    push('module', manifest.module);
+    push('browser', typeof manifest.browser === 'string' ? manifest.browser : undefined);
+
+    // `exports` nests arbitrarily: "." -> { import, require, types } and so on.
+    const walkExports = (node, trail) => {
+        if (typeof node === 'string') {
+            push(`exports${trail}`, node);
+            return;
+        }
+
+        if (node == null || typeof node !== 'object') {
+            return;
+        }
+
+        for (const [key, child] of Object.entries(node)) {
+            walkExports(child, `${trail}[${key}]`);
+        }
+    };
+
+    walkExports(manifest.exports, '');
+
+    return found;
+};
+
 /** These must never be published. */
 const FORBIDDEN = [
     { label: 'source files', matches: (files) => files.filter(f => f.startsWith('src/')) },
@@ -129,6 +178,17 @@ for (const directory of packageDirectories()) {
         if (matches(files) === false) {
             problems.push(`missing ${label}`);
         }
+    }
+
+    // The manifest's own promises. A missing bundle is caught by REQUIRED, but a bundle that
+    // exists under a name `main` does not point at is not, and reads identically to a working
+    // package until someone imports it.
+    for (const { field, path } of entryPoints(manifest)) {
+        if (files.includes(path)) {
+            continue;
+        }
+
+        problems.push(`${field} points at '${path}', which is not in the tarball`);
     }
 
     for (const { label, matches } of FORBIDDEN) {
