@@ -22,6 +22,7 @@ const moduleNameMapper = {
     '^@routier/mysql-plugin$': '<rootDir>/plugins/mysql/src/index.ts',
     '^@routier/replication-plugin$': '<rootDir>/plugins/replication/src/index.ts',
     '^@routier/react$': '<rootDir>/react/src/index.ts',
+    '^@routier/sync-server$': '<rootDir>/sync-server/src/index.ts',
 };
 
 const tsTransform = {
@@ -145,6 +146,11 @@ module.exports = {
             ...base,
             displayName: 'test-utils',
             testMatch: ['<rootDir>/test-utils/**/*.test.ts'],
+        },
+        {
+            ...base,
+            displayName: 'sync-server',
+            testMatch: ['<rootDir>/sync-server/**/*.test.ts'],
         },
     ],
 };

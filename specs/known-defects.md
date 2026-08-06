@@ -1,7 +1,7 @@
 # Known defects
 
-Status: 47 of 47 fixed. No open defects.
-Date: 2026-08-05
+Status: 47 fixed, 2 open (#48, #49 — SWR pagination).
+Date: 2026-08-06
 
 Defects 1–10 came from the functional test program. #11–#13 came from the stress program
 (`stress/`, see `specs/stress-testing.md`) and are the reason it exists: all three are
@@ -1094,6 +1094,63 @@ exception rather than a failed event. The `catch` also called `done` without clo
 handle stayed open and blocked a later version upgrade of the same database.
 
 **Fix:** all three inside the `try`, and `db.close()` on the error path.
+
+## Open
+
+### 48. Any paginated SWR read with `skip > 0` returns nothing — **OPEN**
+
+`store.products.sort(p => p.price).skip(3).take(3).toArrayAsync()` through `HttpSwrDbPlugin`
+returns `[]`. Not the wrong page — an empty one. `skip(0).take(n)` works, so the whole first
+page of every list is fine and page two onwards is blank.
+
+**Cause: the window is applied twice.** The client correctly serializes `skip`/`take` into the
+GET (verified — the request carries `skip=3&take=3`) and the server correctly answers with
+that page (verified independently against `@routier/sync-server`). Then
+`HttpSwrDbPlugin.onCacheMiss` answers the caller with `this.swrStore.query(event, done)` —
+the *same event*, `skip` included — against a store that now holds only the three rows just
+fetched. Skipping three of three leaves none.
+
+Re-reading the store rather than handing back the fetched result is deliberate and the
+comment above it explains why: an `ITranslatedValue` is consumed by reading, so one fetch
+cannot be shared across concurrent callers. The defect is not the re-read; it is re-applying
+a window the server already applied.
+
+**Not a simple revert.** Three shapes have to hold at once:
+
+- cold cache, windowed query — the server windowed it, the store holds only that page, so the
+  window must NOT be reapplied;
+- warm cache holding the whole collection, windowed query — the store holds everything, so the
+  window MUST be applied;
+- warm cache holding some other page — neither is right, which is #49.
+
+The underlying mismatch: **freshness is tracked per cache key, storage is one shared
+collection.** Options are to key the SWR store per query window, to strip pushed-down options
+from the store re-read and accept that a warm cache over-returns, or to stop pushing windows
+down and slice locally. All three are design calls, so this is recorded rather than patched.
+
+**Pinned by** `e2e/src/swrServerToClient.test.ts` → "returns the requested page rather than an
+empty result", with sibling tests proving the request and the server response are both
+correct.
+
+### 49. A revalidate of one page deletes another page's rows — **OPEN, blocked by #48**
+
+Same root mismatch. `classifyRevalidateChanges` computes removes as "rows the store returned
+for this query that the server's response did not contain". For a windowed query those two
+sets describe different slices, so revalidating page one concludes page two's rows were
+deleted server-side and removes them locally — while they are still on the server.
+
+Unreachable today because #48 empties the store's page first. It becomes live the moment #48
+is fixed, which is why it is recorded now rather than discovered later.
+
+**Pinned by** `e2e/src/swrServerToClient.test.ts` → "keeps rows from one page when another
+page is revalidated".
+
+**Found by** the first tests to point a real server at the SWR read path
+(`@routier/sync-server`), rather than a fetch mock driven by the client's own writes.
+
+---
+
+## Fixed (continued)
 
 ### The `--forceExit` question, answered
 

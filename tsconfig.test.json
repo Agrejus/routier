@@ -32,6 +32,7 @@
             "@routier/mysql-plugin": ["./plugins/mysql/src/index.ts"],
             "@routier/replication-plugin": ["./plugins/replication/src/index.ts"],
             "@routier/react": ["./react/src/index.ts"],
+            "@routier/sync-server": ["./sync-server/src/index.ts"],
 
             // `baseUrl` is the repo root, which contains a directory named `react`. TS tries
             // baseUrl-relative resolution before node_modules for a non-relative import, so

@@ -1,0 +1,20 @@
+{
+    "name": "@routier/sync-server",
+    "version": "0.0.1-alpha.1",
+    "private": true,
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "source": "./src/index.ts",
+    "scripts": {
+        "tsc": "tsc",
+        "lint": "oxlint . --ignore-pattern \"**/*.test.*\" --ignore-pattern \"**/*.mjs\""
+    },
+    "sideEffects": false,
+    "author": "James DeMeuse <james.demeuse@gmail.com>",
+    "license": "MIT",
+    "repository": "routier",
+    "description": "A real HTTP server implementing the Routier replication wire contract, for tests that need a server that can change underneath the client",
+    "devDependencies": {
+        "typescript": "^5.5.4"
+    }
+}
