@@ -2,7 +2,7 @@ import { afterEach, describe, it, expect, jest } from '@jest/globals';
 import { buildFromQueryOperation } from './utils';
 import { DbPluginQueryEvent, ITranslatedValue } from '@routier/core/plugins';
 import { s } from '@routier/core/schema';
-import { SqliteDbPlugin } from './SqliteDbPlugin';
+import { SqliteDbPlugin } from './index';
 import { PluginEventCallbackResult } from '@routier/core/results';
 import { DataStore } from '@routier/datastore';
 

@@ -1,6 +1,6 @@
 import { describePluginContract } from '@routier/test-utils';
 import { uuidv4 } from '@routier/core';
-import { SqliteDbPlugin } from '../SqliteDbPlugin';
+import { SqliteDbPlugin } from '../index';
 
 describePluginContract(
     'sqlite',

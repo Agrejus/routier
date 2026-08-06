@@ -5,7 +5,7 @@ import path from 'node:path';
 import { uuidv4 } from '@routier/core';
 import { s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
-import { SqliteDbPlugin } from '../SqliteDbPlugin';
+import { SqliteDbPlugin } from '../index';
 
 /**
  * Connection, transaction and cache lifecycle — the three things the plugin got wrong in

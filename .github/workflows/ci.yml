@@ -91,5 +91,15 @@ jobs:
       - name: Stress with containers
         run: NODE_OPTIONS=--expose-gc STRESS=1 E2E_CONTAINERS=1 npx jest --selectProjects stress
 
+      # The browser build of the SQLite plugin. Nothing else executes it: OPFS exists only in
+      # a browser, and the synchronous access handle it needs exists only inside a worker, so
+      # neither Jest nor jsdom can stand in. Runs here rather than in the fast job because it
+      # downloads a browser.
+      - name: Install Chromium
+        run: npm install --no-save playwright && npx playwright install --with-deps chromium
+
+      - name: Browser check
+        run: npm run test:browser
+
 # Mutation testing (`npm run mutate:*`) stays manual. A full run takes hours, which is too
 # slow for a pull-request gate.

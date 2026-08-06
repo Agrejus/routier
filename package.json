@@ -45,7 +45,8 @@
         "benchmark:update": "tsx --tsconfig benchmark/tsconfig.json benchmark/src/run.ts --update-baseline",
         "test": "jest",
         "release:pack-check": "node scripts/pack-check.mjs",
-        "release:consumer-check": "node scripts/consumer-check.mjs"
+        "release:consumer-check": "node scripts/consumer-check.mjs",
+        "test:browser": "node e2e/browser/run.mjs"
     },
     "author": "",
     "license": "MIT",

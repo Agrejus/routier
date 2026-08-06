@@ -44,7 +44,10 @@ const externalsFor = (manifest) => {
     const names = externalPackages(manifest);
 
     return ({ request }, callback) => {
-        const isExternal = names.some(
+        // Anything `node:`-prefixed is a built-in by definition, including ones not in the
+        // list above. `node:sqlite` is the default engine of the SQLite plugin and must never
+        // be bundled — nor even resolved, since a browser bundler cannot resolve it at all.
+        const isExternal = request.startsWith('node:') || names.some(
             name => request === name || request.startsWith(`${name}/`)
         );
 
@@ -93,10 +96,47 @@ export function libraryConfig({ dirname, target = "web", entry = { index: "./src
 
     const shared = {
         entry,
-        module: { rules: [swcRule] },
+        module: {
+            rules: [swcRule],
+            parser: {
+                javascript: {
+                    // Leave `new URL('./x.js', import.meta.url)` exactly as written.
+                    //
+                    // Rspack would otherwise resolve it at build time, against `src/`, where
+                    // the target is still TypeScript. In a library the expression is not ours
+                    // to resolve: it has to reach the published file so the consumer's bundler
+                    // can emit the worker, or so a browser loading the package unbundled can
+                    // resolve it relative to the real URL. Both work; build-time rewriting
+                    // breaks both.
+                    url: false,
+
+                    // Same reasoning for workers, and here it is not optional: combined with
+                    // `asyncChunks: false` below, Rspack's worker handling panics outright
+                    // ("failed to get json stringified chunk id"). A library should not be
+                    // deciding how a worker is emitted anyway — the application's bundler
+                    // owns output layout, and it sees the same literal expression we do.
+                    worker: false,
+
+                    // And leave `import.meta.url` alone. Rspack resolves it at build time to
+                    // the absolute path of the source file on the build machine, so the
+                    // published bundle carried a `file:///Users/...` URL that exists nowhere
+                    // else. It has to stay a runtime value.
+                    importMeta: false,
+                },
+            },
+        },
         resolve: { extensions: [".ts", ".tsx", ".js", ".jsx"] },
         externals,
         target,
+        output: {
+            // No async chunks. A dynamic import of an external — `import('node:sqlite')` in
+            // the SQLite plugin — otherwise emits a separate chunk file plus a runtime chunk
+            // loader built on `import("../" + id + ".js")`. That expression is not statically
+            // resolvable, so a consumer's bundler tries to enumerate the directory and chokes
+            // on whatever else is in it. Inlining keeps the import lazy at runtime (the
+            // external is still imported on demand) while leaving one file per entry point.
+            asyncChunks: false,
+        },
         // Production, unlike every config this replaces, which shipped the full development
         // module map. Nearly all of the size win comes from externalising dependencies
         // rather than from minification, which is off — see below.
@@ -122,8 +162,15 @@ export function libraryConfig({ dirname, target = "web", entry = { index: "./src
             ...shared,
             name: "esm",
             output: {
+                ...shared.output,
                 path: resolve(dirname, "dist"),
                 filename: "[name].js",
+                // Async chunks need a per-format name too. A dynamic import — every driver in
+                // the SQLite plugin is one — emits a chunk, and with the default `[id].js`
+                // both builds write the same filenames into the same directory. Whichever
+                // finishes second wins, and the other format then loads chunks in a syntax it
+                // cannot parse.
+                chunkFilename: "[id].js",
                 library: { type: "module" },
                 chunkFormat: "module",
             },
@@ -134,8 +181,10 @@ export function libraryConfig({ dirname, target = "web", entry = { index: "./src
             ...shared,
             name: "cjs",
             output: {
+                ...shared.output,
                 path: resolve(dirname, "dist"),
                 filename: "[name].cjs",
+                chunkFilename: "[id].cjs",
                 library: { type: "commonjs2" },
                 chunkFormat: "commonjs",
             },

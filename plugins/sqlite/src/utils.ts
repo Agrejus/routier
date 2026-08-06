@@ -164,8 +164,12 @@ export function buildSelectFromExpression<TEntity extends {}, TShape>(options: {
     schema: CompiledSchema<TEntity>
 }): { sql: string, params: any[] } {
     const { schema, query } = options;
-    const columns = schema.properties && schema.properties.length > 0
-        ? schema.properties.map(p => `"${p.getResolvedName()}"`)
+    // Root properties only. `schema.properties` includes the children of a nested object,
+    // and those are not columns — the whole object is stored in one JSON column. Selecting
+    // them produced `SELECT "nested", "inner", "value" ...` where only `nested` exists.
+    const rootProperties = sqlColumnProperties(schema);
+    const columns = rootProperties.length > 0
+        ? rootProperties.map(p => `"${p.getResolvedName()}"`)
         : ['*'];
 
     // Get the first filter expression from the query options
@@ -321,16 +325,32 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
             columnsStr += `, "${fieldName}"`;
         }
     } else {
-        // Use all schema properties
-        const columnCount = schema.properties.length;
+        /**
+         * Root properties only.
+         *
+         * `schema.properties` is every property in the schema, including the children of a
+         * nested object. Those children are not columns: the object is stored whole in one
+         * JSON column. Using the unfiltered list emitted
+         * `SELECT "nested", "inner", "value", "count" ...` for a schema with one nested
+         * object, naming three columns that do not exist.
+         *
+         * That went unnoticed because `sqlite3` enables SQLite's double-quoted-string
+         * misfeature, which silently reinterprets an unknown `"inner"` as the string literal
+         * `'inner'`. The query then returned three constant columns, which the decoder
+         * ignored, and every test passed. `node:sqlite` compiles with `SQLITE_DQS=0` and
+         * reports it properly.
+         */
+        const rootProperties = sqlColumnProperties(schema);
+        const columnCount = rootProperties.length;
+
         if (columnCount === 0) {
             throw new Error("Need to select at least one column, found zero");
         }
 
         // Use string concatenation instead of array join for better performance
-        columnsStr = `"${schema.properties[0].getResolvedName()}"`;
+        columnsStr = `"${rootProperties[0].getResolvedName()}"`;
         for (let i = 1; i < columnCount; i++) {
-            columnsStr += `, "${schema.properties[i].getResolvedName()}"`;
+            columnsStr += `, "${rootProperties[i].getResolvedName()}"`;
         }
     }
 

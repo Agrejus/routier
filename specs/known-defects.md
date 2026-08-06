@@ -1,6 +1,6 @@
 # Known defects
 
-Status: 55 of 56 fixed. #55 is a documented constraint, not a defect: the schema
+Status: 58 of 59 fixed. #55 is a documented constraint, not a defect: the schema
 codegen cannot survive minification, so minification stays off.
 Date: 2026-08-06
 
@@ -1347,6 +1347,48 @@ This is not fixed, only stated. Fixing it means the codegen must stop depending 
 names — emitting `${createChangeTracker.name}()` instead of a literal would survive
 minification, because `.name` is renamed to match `.toString()`. Every generated call site
 needs the same treatment before minification can be turned on.
+
+---
+
+## SQLite defects found by changing engine (#57–#59) — all **FIXED** (2026-08-06)
+
+Making the plugin run in both Node and the browser meant running the same SQL through three
+engines instead of one. Two engines disagreeing is the cheapest bug detector this repository
+has; each of these had been passing every test for as long as the plugin existed.
+
+### #57 — every query selected columns that do not exist
+
+`buildFromQueryOperation` built its column list from `schema.properties`, which includes the
+children of a nested object. Those children are not columns — the object is stored whole in
+one JSON column. A schema with one nested object produced:
+
+```sql
+SELECT "_id", "name", "nested", "inner", "value", "count", "tags", "scores" FROM ...
+```
+
+naming three columns that do not exist. `sqlColumnProperties` — the helper for exactly this,
+already imported in the same file — was not used. `buildSelectFromExpression` had it too.
+
+It went unnoticed because `sqlite3` enables SQLite's double-quoted-string misfeature: an
+unknown `"inner"` is silently reinterpreted as the string literal `'inner'`, so the query
+returned three constant columns that the decoder ignored, and the tests passed.
+`node:sqlite` compiles with `SQLITE_DQS=0` and reports it as the error it always was.
+
+**Any engine with DQS disabled would have failed every nested-object query.**
+
+### #58 — a parameterless read returned no rows
+
+The WASM worker routed every statement with no parameters through `exec`, which reports
+nothing. `SELECT * FROM users` takes no parameters, so it came back empty while the same
+query *with* a parameter came back correctly. Queries now always prepare; `exec` is used only
+for statements whose rows are not wanted.
+
+### #59 — destroy silently did nothing from a cold start
+
+The WASM driver unlinked through a cached OPFS pool handle, and the cache is populated by
+`open`. A destroy that ran before any database had been opened — a test clearing state before
+it starts, which is the common case — found the cache empty and unlinked nothing. It reported
+success. `deleteDatabase` now installs the pool rather than reusing whatever is cached.
 
 ---
 

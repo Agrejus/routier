@@ -5,7 +5,7 @@ Hand-written, one section per release, grouped by package with breaking changes 
 
 ## Unreleased
 
-Thirty defects fixed, recorded as `specs/known-defects.md` #27 through #56, plus the first
+Thirty-three defects fixed, recorded as `specs/known-defects.md` #27 through #59, plus the first
 CI this repository has had. Every publishable package changed.
 
 Most of these were found by pointing tests at something real for the first time — a MySQL
@@ -26,7 +26,7 @@ unaffected package to `0.3.0` would claim a break that did not happen.
 | `@routier/datastore` | 0.2.1 | 0.2.2 | fixes |
 | `@routier/postgresql-plugin` | 0.2.1 | 0.2.2 | fixes, republish (see below) |
 | `@routier/browser-storage-plugin` | 0.2.0 | 0.2.1 | fixes, republish (see below) |
-| `@routier/sqlite-plugin` | 0.2.0 | 0.2.1 | fixes, republish (see below) |
+| `@routier/sqlite-plugin` | 0.2.0 | **0.3.0** | breaking: default engine, Node floor |
 | `@routier/dexie-plugin` | 0.2.0 | 0.2.1 | fixes, additive option |
 | `@routier/file-system-plugin` | 0.2.0 | 0.2.1 | fixes |
 | `@routier/memory-plugin` | 0.2.0 | 0.2.1 | packaging, docs |
@@ -59,6 +59,33 @@ Three consequences worth knowing:
   calls it by name, so any minifier breaks the first schema compile. `scripts/rspack.library.mjs`
   states the constraint that ten `mode: "development"` configs had been satisfying by accident.
 
+### `@routier/sqlite-plugin` runs in the browser
+
+The plugin talks to SQLite through a small driver interface — `all`, `run`, `close`,
+`deleteDatabase` — and ships three implementations. The same
+`new SqliteDbPlugin('app.sqlite')` now works in Node and in a web application; the package's
+`browser` and `node` conditions pick the engine.
+
+| Driver | Where | Storage | Install |
+| --- | --- | --- | --- |
+| `node:sqlite` (default in Node) | Node 22.5+ | a file | nothing |
+| `wasmDriver()` (default in a browser) | modern browsers | OPFS | `@sqlite.org/sqlite-wasm` |
+| `sqlite3Driver()` | Node 18+ | a file | `sqlite3` |
+
+**The default Node engine changed** from `sqlite3` to `node:sqlite`, and `sqlite3` is now an
+optional peer dependency rather than a dependency. Nothing compiles on install, so the package
+no longer fails on a machine without a build toolchain — it was the one package the consumer
+check could not cover. This raises the plugin's floor to **Node 22.5**; on Node 18 or 20, pass
+`sqlite3Driver()` and install `sqlite3` yourself.
+
+The browser driver runs SQLite in a worker it spawns. That is forced, not stylistic:
+`createSyncAccessHandle` is undefined on the main thread, and every OPFS VFS is built on it.
+It uses the `opfs-sahpool` VFS, so **no COOP or COEP headers are required** — the plain OPFS
+VFS needs `SharedArrayBuffer` and therefore cross-origin isolation.
+
+Verified in a real browser by `npm run test:browser`, which builds a page through the `browser`
+condition, saves, queries, and reloads to prove the data came off disk.
+
 ### Republish required
 
 `@routier/sqlite-plugin`, `@routier/postgresql-plugin` and `@routier/browser-storage-plugin` are
@@ -84,6 +111,11 @@ Two packages. Both are published, so both can break a real installation.
   before now returns rows, and a windowed read syncs the whole filtered set rather than one page.
   Bound what you sync with `where(...)`. Use `HttpDbPlugin` directly if you need the server to
   paginate.
+- **`@routier/sqlite-plugin`** — the default engine is `node:sqlite` instead of `sqlite3`, and
+  `sqlite3` moved from a dependency to an optional peer dependency. The plugin needs **Node
+  22.5** by default; on Node 18 or 20, install `sqlite3` and pass `sqlite3Driver()`. Nothing
+  about the constructor or the stored data changed, and a database written by the old version
+  opens unchanged.
 
 ### Behaviour changes that are not breaking
 
@@ -123,6 +155,16 @@ running. Every added document was requested twice.
 **`@routier/dexie-plugin`** — a save spanning two collections was two concurrent transactions, so
 it could half-commit (#44–#47). The schema cache was validated by counting entries. There was no
 way to evolve a schema; the constructor now takes `{ version }`.
+
+**`@routier/sqlite-plugin`** — every query selected columns that do not exist (#57). The
+column list came from `schema.properties`, which includes the children of a nested object;
+those are not columns, since the object is stored whole in one JSON column. A schema with one
+nested object emitted `SELECT "nested", "inner", "value", "count" ...`. It passed for as long
+as the plugin existed because `sqlite3` enables SQLite's double-quoted-string misfeature,
+which reinterprets an unknown `"inner"` as the literal `'inner'`; any engine with `SQLITE_DQS=0`
+would have failed every nested-object query. Also fixed: a parameterless read returned no rows
+from the WASM engine (#58), and `destroy` silently did nothing when it ran before anything had
+been opened (#59).
 
 **Every package** — `npm run typecheck` overwrote the bundles (#56). The `tsc` script was plain
 `tsc`, and each `tsconfig.json` sets `declaration` and `outDir: ./dist` with no `noEmit`, so

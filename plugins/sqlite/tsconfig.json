@@ -19,11 +19,15 @@
         "resolveJsonModule": true
     },
     "include": [
-        "./src/index.ts"
+        "./src/index.ts",
+        "./src/index.browser.ts",
+        "./src/drivers/sqlite3.ts",
+        "./src/drivers/wasmWorker.ts"
     ],
     "exclude": [
         "node_modules",
         "dist",
-        "./src/__tests__/*"
+        "./src/tests/**",
+        "**/*.test.ts"
     ]
 }

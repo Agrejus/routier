@@ -46,18 +46,20 @@ const EXPECTED_EXPORT = {
     '@routier/pouchdb-plugin': 'PouchDbPlugin',
     '@routier/replication-plugin': 'HttpDbPlugin',
     '@routier/sql-plugin-core': 'getDialect',
+    '@routier/sqlite-plugin': 'SqliteDbPlugin',
 };
 
 /**
- * `@routier/sqlite-plugin` is not here.
+ * Every publishable package, `@routier/sqlite-plugin` included.
  *
- * `sqlite3` builds a native binding on install, which needs a toolchain this check should not
- * require. Its bundle is covered by `e2e/src/sqlitePersistence.test.ts` instead.
+ * It used to be excluded: `sqlite3` was a hard dependency and built a native binding on
+ * install, which needs a toolchain this check should not require. The default engine is now
+ * `node:sqlite`, which ships with Node, and `sqlite3` is an optional peer. Nothing compiles.
  */
 const PACKAGE_DIRECTORIES = [
     'core', 'datastore', 'plugins/memory', 'plugins/file-system', 'plugins/browser-storage',
     'plugins/dexie', 'plugins/postgresql', 'plugins/mysql', 'plugins/pouchdb',
-    'plugins/replication', 'plugins/sql-core',
+    'plugins/replication', 'plugins/sql-core', 'plugins/sqlite',
 ];
 
 const run = (command, args, cwd) =>

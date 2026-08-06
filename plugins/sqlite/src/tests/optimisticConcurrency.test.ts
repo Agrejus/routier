@@ -2,7 +2,7 @@ import { afterAll, describe, expect, it } from '@jest/globals';
 import { s } from '@routier/core/schema';
 import { ConcurrencyDbPlugin, OptimisticConcurrencyError } from '@routier/core';
 import { DataStore } from '@routier/datastore';
-import { SqliteDbPlugin } from '../SqliteDbPlugin';
+import { SqliteDbPlugin } from '../index';
 import { uuidv4 } from '@routier/core';
 import fs from 'fs';
 
