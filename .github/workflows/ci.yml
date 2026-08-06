@@ -52,6 +52,13 @@ jobs:
       - name: Pack check
         run: npm run release:pack-check
 
+      # Pack check reads the tarball's file list; it cannot tell whether the code inside runs.
+      # This installs the tarballs into a throwaway project and uses them, which is the only
+      # thing that exercises the bundle rather than `src/`. It is how known defects #50-#54
+      # were found, all of which a green `npx jest` had been reporting as fine.
+      - name: Consumer check
+        run: npm run release:consumer-check
+
   # Containers are slow and need Docker, so they run on the default branch, on release
   # branches, and on demand — not on every pull request. Ubuntu runners have Docker, so
   # testcontainers needs no setup.

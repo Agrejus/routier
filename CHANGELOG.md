@@ -5,7 +5,7 @@ Hand-written, one section per release, grouped by package with breaking changes 
 
 ## Unreleased
 
-Twenty-three defects fixed, recorded as `specs/known-defects.md` #27 through #49, plus the first
+Thirty defects fixed, recorded as `specs/known-defects.md` #27 through #56, plus the first
 CI this repository has had. Every publishable package changed.
 
 Most of these were found by pointing tests at something real for the first time — a MySQL
@@ -33,6 +33,31 @@ unaffected package to `0.3.0` would claim a break that did not happen.
 | `@routier/react` | 0.2.0 | 0.2.1 | packaging |
 | `@routier/mysql-plugin` | — | 0.2.0 | first publish |
 | `@routier/sql-plugin-core` | — | 0.2.0 | first publish |
+
+### Every package now ships both module formats
+
+Installing the tarballs into a clean project and running them — which nothing here had done —
+found that no package was correctly consumable, in one of two ways (#50, #51).
+
+Six emitted ESM while declaring `"type": "commonjs"`, so `require()` threw `ERR_REQUIRE_ESM` on
+Node 18 and 20, both inside the range the READMEs state. The other six emitted CommonJS, which
+Node's ESM interop exposes only as a default export, so the `import { MysqlDbPlugin } from ...`
+in their own READMEs bound `undefined`.
+
+Every package now builds twice from one shared config — ESM at `dist/index.js`, CommonJS at
+`dist/index.cjs` — declared through `exports`. Both entry points are verified by
+`npm run release:pack-check`.
+
+Three consequences worth knowing:
+
+- `@routier/pouchdb-plugin` could not be loaded in Node at all (#52). `target: "web"` inlined
+  pouchdb's browser build, which reads `self` at module scope.
+- Dependencies are no longer bundled (#53). `@routier/core` is a `peerDependency` of all eleven
+  plugins and ten of them bundled it anyway, so a consumer of the datastore and two plugins
+  loaded three copies. Bundles were up to 1.4 MB and are now 1–45 KB.
+- Minification stays off, deliberately (#55). The schema codegen embeds a function's source and
+  calls it by name, so any minifier breaks the first schema compile. `scripts/rspack.library.mjs`
+  states the constraint that ten `mode: "development"` configs had been satisfying by accident.
 
 ### Republish required
 
@@ -99,6 +124,18 @@ running. Every added document was requested twice.
 it could half-commit (#44–#47). The schema cache was validated by counting entries. There was no
 way to evolve a schema; the constructor now takes `{ version }`.
 
+**Every package** — `npm run typecheck` overwrote the bundles (#56). The `tsc` script was plain
+`tsc`, and each `tsconfig.json` sets `declaration` and `outDir: ./dist` with no `noEmit`, so
+type checking emitted unbundled JavaScript over the Rspack output. Because the gate order was
+build, lint, typecheck, test, pack-check, every later gate was inspecting tsc's output. A
+publish after a green run would have shipped an `index.js` full of extensionless relative
+imports that Node's ESM loader rejects. All thirteen now run `tsc --noEmit`.
+
+**`@routier/core`** — a program that finished its work never exited (#54). A DataStore opens a
+BroadcastChannel sender and receiver per collection, and in Node an open channel is a referenced
+handle, so any script that did not call `destroyAsync()` hung forever after its last line — the
+README quick start included. Both channels are now `unref`ed.
+
 **`@routier/browser-storage-plugin`** — an add-only save from a fresh instance deleted every
 previously persisted row (#30). Unparseable values are now reported with the storage key named
 and left in place rather than discarded.
@@ -124,9 +161,15 @@ reconciles the server's echo instead of discarding it.
 - `e2e/src/swrServerToClient.test.ts`, `e2e/src/mysqlContainer.test.ts`,
   `e2e/src/couchdbReplication.test.ts`.
 - GitHub Actions CI, and `npm run typecheck` / `npm run test` / `npm run release:pack-check`.
+- `npm run release:consumer-check` — packs every package, installs the tarballs into a
+  throwaway project, and imports, requires and uses them. It is the only gate that exercises
+  the built bundle rather than `src/`, and it found #50 through #54 and #56.
 
 ### Changed
 
+- The README quick start, and the same example in `core/` and `datastore/`, called
+  `this.collection(schema).create()`. `create()` moved to the configured builder, so the first
+  code a new user runs threw `create is not a function`. They now call `.proxy().create()`.
 - Licensing reconciled to MIT everywhere; root `package.json` said ISC.
 - All ten plugin rspack configs use `builtin:swc-loader`; `ts-loader` needed webpack as a peer
   and made a clean-workspace build fail.

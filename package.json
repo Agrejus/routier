@@ -44,7 +44,8 @@
         "test:stress:containers": "STRESS=1 E2E_CONTAINERS=1 jest --selectProjects stress",
         "benchmark:update": "tsx --tsconfig benchmark/tsconfig.json benchmark/src/run.ts --update-baseline",
         "test": "jest",
-        "release:pack-check": "node scripts/pack-check.mjs"
+        "release:pack-check": "node scripts/pack-check.mjs",
+        "release:consumer-check": "node scripts/consumer-check.mjs"
     },
     "author": "",
     "license": "MIT",

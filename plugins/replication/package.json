@@ -1,7 +1,7 @@
 {
     "name": "@routier/replication-plugin",
     "version": "0.3.0",
-    "main": "./dist/index.js",
+    "main": "./dist/index.cjs",
     "types": "./dist/index.d.ts",
     "source": "./src/index.ts",
     "publishConfig": {
@@ -14,9 +14,9 @@
     ],
     "scripts": {
         "build:types": "tsc --emitDeclarationOnly",
-        "build:bundle": "rspack build",
+        "build:bundle": "node ../../scripts/clean-dist.mjs && rspack build",
         "build": "npm run build:bundle && npm run build:types",
-        "tsc": "tsc",
+        "tsc": "tsc --noEmit",
         "test": "jest",
         "test:watch": "jest --watch",
         "test:coverage": "jest --coverage",
@@ -50,5 +50,13 @@
         "@routier/test-utils": "file:../../test-utils",
         "@rspack/cli": "^1.1.8",
         "@rspack/core": "^1.1.8"
-    }
+    },
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs"
+        }
+    },
+    "module": "./dist/index.js"
 }

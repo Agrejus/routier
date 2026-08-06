@@ -1,6 +1,7 @@
 # Known defects
 
-Status: 49 of 49 fixed. No open defects.
+Status: 55 of 56 fixed. #55 is a documented constraint, not a defect: the schema
+codegen cannot survive minification, so minification stays off.
 Date: 2026-08-06
 
 Defects 1–10 came from the functional test program. #11–#13 came from the stress program
@@ -1255,6 +1256,97 @@ Still deliberately open:
 - `SchemaTypes.Definition` handled as generic primitive everywhere.
 - `EnrichmentObjectIdentityHandler` is an explicit "do nothing right now".
 - Renamed KEY properties (MemoryDataCollection addresses records by in-memory key name).
+
+---
+
+## Packaging and lifecycle defects (#50–#54) — all **FIXED** (2026-08-06)
+
+Found by installing the real tarballs into a clean project and running them, which nothing in
+the repository had ever done. Every one of these is invisible to `npx jest`, because the test
+suites import from `src/` and Jest supplies a module loader and a teardown that Node does not.
+
+### #50 — six packages could not be `require`d on Node 18 or 20
+
+`core`, `datastore`, `dexie`, `memory`, `pouchdb` and `replication` emitted ESM while their
+manifests said `"type": "commonjs"`. `require()` worked only on Node 22, which supports
+`require(esm)`. On Node 18 and 20 — both inside the range every README states — it threw
+`ERR_REQUIRE_ESM`.
+
+Reproduce on Node 22 with `node --no-experimental-require-module`, which restores the old
+behaviour: `SyntaxError: Unexpected token 'export'`.
+
+### #51 — six packages could not be imported by name
+
+`browser-storage`, `file-system`, `mysql`, `postgresql`, `sql-core` and `sqlite` emitted
+`commonjs2`, which Node's ESM interop exposes only as a default export. The
+`import { MysqlDbPlugin } from '@routier/mysql-plugin'` written in their own READMEs bound
+`undefined`.
+
+**Fix for both:** `scripts/rspack.library.mjs` builds every package twice, ESM to
+`dist/index.js` and CommonJS to `dist/index.cjs`, declared through `exports`.
+
+### #52 — `@routier/pouchdb-plugin` could not be loaded in Node at all
+
+`target: "web"` made Rspack resolve pouchdb's `browser` field and inline `index-browser.es.js`,
+which reads `self` at module scope. Importing the plugin threw `ReferenceError: self is not
+defined` in any Node process. Fixed by externalising dependencies, which leaves the driver's
+own conditional exports to resolve at runtime where they can be resolved correctly.
+
+### #53 — every bundle inlined its peer dependencies
+
+`@routier/core` is a `peerDependency` of all eleven plugins, which is a promise not to bundle
+it. Only `mysql` externalised it. A consumer of the datastore and two plugins loaded three
+separate copies of core. Bundles ran to 1.4 MB; the same builds are now 1–45 KB.
+
+### #54 — a program that finished its work never exited
+
+A DataStore opens a BroadcastChannel sender and receiver per collection, and in Node an open
+channel is a referenced handle. Any script that built a store and did not call `destroyAsync()`
+ran to the end of its code and then hung forever — including the README quick start, which has
+no `destroyAsync()` in it.
+
+Jest never saw it: it tears down its own environment, so a referenced handle reads as a slow
+exit rather than a failure. Fixed by `unref()`ing both channels, which is a no-op in browsers.
+Pinned by `e2e/src/processExit.test.ts`, which runs a real script in a real process — the only
+place this is observable.
+
+---
+
+## #56 — `npm run typecheck` overwrote every bundle — **FIXED** (2026-08-06)
+
+Every package's `tsc` script was plain `tsc`, and every `tsconfig.json` sets `declaration`
+and `outDir: ./dist` with no `noEmit`. Type checking therefore *emitted* — unbundled
+JavaScript, on top of the Rspack output, in the same directory.
+
+The gate order in `RELEASING.md` and in CI was build, lint, typecheck, test, pack-check. So
+the artifact every later gate inspected was tsc's output, not the bundle that was built. A
+publish immediately after a green run would have shipped `dist/index.js` containing
+`export { DataStore } from './DataStore';` — an extensionless relative specifier that Node's
+ESM loader rejects outright.
+
+`pack-check` did not catch it: `main` points at `dist/index.cjs`, which tsc does not emit and
+therefore did not overwrite. Half the package stayed correct, which is why `require` worked
+and `import` did not.
+
+Fixed by `tsc --noEmit` in all thirteen. Pinned by `scripts/consumer-check.mjs`, which found
+it — running immediately after a typecheck, from a real install.
+
+---
+
+## #55 — the codegen breaks under any minifier — **DOCUMENTED CONSTRAINT** (2026-08-06)
+
+`SchemaDefinition.ts:360` embeds `createChangeTracker.toString()` into generated source and
+then emits a call to `createChangeTracker()` written as a literal string. A minifier renames
+the declaration and cannot see inside the string, so the generated function throws
+`createChangeTracker is not defined` the first time any schema is compiled.
+
+Every rspack config used `mode: "development"`, which avoided this by accident. The shared
+config sets `mode: "production"` with `optimization.minimize: false` and says why.
+
+This is not fixed, only stated. Fixing it means the codegen must stop depending on identifier
+names — emitting `${createChangeTracker.name}()` instead of a literal would survive
+minification, because `.name` is renamed to match `.toString()`. Every generated call site
+needs the same treatment before minification can be turned on.
 
 ---
 

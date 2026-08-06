@@ -66,12 +66,34 @@ class SchemaChannel<T> {
     }
 }
 
+/**
+ * Stops a channel from holding the process open.
+ *
+ * A DataStore opens a sender and a receiver per collection, and in Node an open
+ * BroadcastChannel is a referenced handle. Without this, any script that builds a store and
+ * does not call `destroyAsync()` runs to the end of its code and then hangs forever with two
+ * live MessagePorts per collection — including the example in the README.
+ *
+ * `unref` is Node-only; the browser's BroadcastChannel has no such method and needs none.
+ * A channel that is unreferenced still sends and receives normally. It only stops being a
+ * reason for the process to stay alive, which is the correct default for a library: a program
+ * with no work left should exit.
+ */
+const unreference = (channel: BroadcastChannelType) => {
+    const maybeUnref = (channel as { unref?: () => void }).unref;
+
+    if (typeof maybeUnref === 'function') {
+        maybeUnref.call(channel);
+    }
+};
+
 class SchemaChannelSender<T> {
 
     private readonly broadcastChannel: BroadcastChannelType;
 
     constructor(channelKey: string) {
         this.broadcastChannel = new BroadcastChannel(`__routier-schema-subscription-channel:${channelKey}`);
+        unreference(this.broadcastChannel);
     }
 
     send(changes: StampedChanges<T>) {
@@ -90,6 +112,7 @@ class SchemaChannelReceiver<T> {
 
     constructor(channelKey: string) {
         this.broadcastChannel = new BroadcastChannel(`__routier-schema-subscription-channel:${channelKey}`);
+        unreference(this.broadcastChannel);
 
         this.broadcastChannel.onmessage = (e) => {
 

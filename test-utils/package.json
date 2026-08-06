@@ -8,7 +8,7 @@
     "build:types": "tsc --emitDeclarationOnly",
     "build:bundle": "rspack build",
     "build": "npm run build:bundle && npm run build:types",
-    "tsc": "tsc",
+    "tsc": "tsc --noEmit",
     "lint": "oxlint . --ignore-pattern \"**/__tests__/**\" --ignore-pattern \"**/*.test.*\" --ignore-pattern \"**/*.spec.*\" --ignore-pattern \"**/*.mjs\""
   },
   "sideEffects": false,

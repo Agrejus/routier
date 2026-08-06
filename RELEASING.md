@@ -22,9 +22,13 @@ npm run build              # required first: `files` entries pointing at a missi
 npm run lint
 npm run typecheck
 npx jest
-npm run release:pack-check # proves every package ships dist/, README.md and LICENSE,
-                           # and that main/types/exports resolve inside the tarball
+npm run release:pack-check     # proves every package ships dist/, README.md and LICENSE,
+                               # and that main/types/exports resolve inside the tarball
+npm run release:consumer-check # installs the tarballs in a clean project and runs them
 ```
+
+`release:consumer-check` is the only gate that exercises the built bundle. Every other gate
+reads `src/`, so a package can pass all of them and still fail on a user's first `import`.
 
 Container suites are not part of the fast gate but should pass before a release:
 

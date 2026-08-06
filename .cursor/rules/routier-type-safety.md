@@ -19,12 +19,12 @@
 ## Creating Collections
 
 ### Use `collection().create()` for Type Inference
-**Always use `this.collection(schema).create()` instead of constructors** - This allows Routier to properly infer types from the schema.
+**Always use `this.collection(schema).proxy().create()` instead of constructors** - This allows Routier to properly infer types from the schema.
 
 ```typescript
 // ✅ CORRECT: Use collection().create() for proper type inference
-private metadataCollection = this.collection(metadataSchema).create();
-private queueCollection = this.collection(queueSchema).create();
+private metadataCollection = this.collection(metadataSchema).proxy().create();
+private queueCollection = this.collection(queueSchema).proxy().create();
 
 // The collection type is automatically inferred from the schema
 // metadataCollection is Collection<SyncMetadata>
