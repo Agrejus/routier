@@ -7,7 +7,8 @@ Audience: an agent with no prior context on this repository.
 ## Implementation status (2026-08-03)
 
 `STRESS=1 npx jest --selectProjects stress`. No `--forceExit` — see the deviation note.
-Add `E2E_CONTAINERS=1` for S8.
+Add `E2E_CONTAINERS=1` for S8, and `NODE_OPTIONS=--expose-gc` for the memory verdict in S3 —
+without it that assertion is skipped rather than guessed at (see "Measuring memory" below).
 
 | Scenario | State | Notes |
 | --- | --- | --- |
@@ -22,6 +23,30 @@ Add `E2E_CONTAINERS=1` for S8.
 | S9 throughput floor | Done | ratio against an in-process reference workload; baseline in `stress/src/throughput-baseline.json`. Was flaky in a full run, fixed by normalising |
 | S10 immutable stale refs | Done | 10k generations through first-generation references |
 | S11 immutable volume + churn | Done | S1 and S3 workloads through `.immutable()` |
+
+## Measuring memory (2026-08-06)
+
+S3's leak check samples **retained heap after a forced collection**, not RSS.
+
+It used to sample RSS with no collection and compare the growth rate of the last third
+against the first. That measured when V8 chose to collect, not what the run held, and it was
+wrong in both directions. On CI it reported LEAKING every time — RSS climbed 233MB to 491MB
+with a decay ratio of 0.95 to 1.00, because a runner with headroom defers collection and RSS
+rises linearly. Locally it passed, but only by abstaining: a collection landed early, the
+first-third slope went negative, and the `firstThird <= 0` guard returned "undecidable" while
+the last third was climbing at 65KB/cycle. A green tick meaning "could not measure" is worse
+than a red one.
+
+Forcing a collection settles it. On the workload that showed +206MB of RSS growth, retained
+heap moved 294.0MB → 294.5MB over 10,000 cycles. There is no leak; there never was.
+
+Two consequences for anyone reading a result:
+
+- **`NODE_OPTIONS=--expose-gc` is required for the assertion to run at all.** Without it
+  `verdict()` reports `measurable: false`, the scenario notes that it did not assert, and it
+  passes. Do not read that pass as evidence.
+- **Flat is a verdict, not an absence of one.** A steady working set is the healthy shape and
+  is now reported as such, rather than as "no early growth to compare".
 
 **Where the loads live.** S1's volume load and S3's churn load are in
 `stress/src/harness/workloads.ts`, and their entity shapes in `stress/src/harness/shapes.ts`,
@@ -417,7 +442,7 @@ Follow the workflow in `specs/known-defects.md`:
 
 ```
 npx jest                                          # functional suite, must stay green
-STRESS=1 npx jest --selectProjects stress         # stress scenarios S1–S7, S9–S11
+NODE_OPTIONS=--expose-gc STRESS=1 npx jest --selectProjects stress   # S1–S7, S9–S11
 STRESS=1 E2E_CONTAINERS=1 npx jest --selectProjects stress   # + S8, needs Docker
 ```
 

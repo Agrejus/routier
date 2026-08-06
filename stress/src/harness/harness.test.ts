@@ -162,16 +162,26 @@ describe('pollUntil', () => {
 });
 
 describe('MemoryTrace', () => {
+    /**
+     * Drives the trace with a scripted retained-heap series.
+     *
+     * The collector is injected as "succeeded" because these tests are about the arithmetic,
+     * not about whether `--expose-gc` was passed — that refusal has its own test below. It is
+     * injected rather than stubbed on `globalThis` because `--expose-gc` defines `gc` as
+     * non-configurable, so under the flag the suite actually runs with, deleting or assigning
+     * it throws.
+     */
     const traceOf = (values: number[]) => {
-        const trace = new MemoryTrace();
-        const spy = jest.spyOn(process, 'memoryUsage');
+        const trace = new MemoryTrace(() => true);
+        const usage = jest.spyOn(process, 'memoryUsage');
 
-        values.forEach((rss, i) => {
-            spy.mockReturnValue({ rss } as NodeJS.MemoryUsage);
+        values.forEach((heapUsed, i) => {
+            usage.mockReturnValue({ heapUsed, rss: heapUsed } as NodeJS.MemoryUsage);
             trace.sample(i);
         });
 
-        spy.mockRestore();
+        usage.mockRestore();
+
         return trace;
     };
 
@@ -194,12 +204,53 @@ describe('MemoryTrace', () => {
         expect(traceOf(Array.from({ length: 30 }, () => 100 * MB)).verdict().leaking).toBe(false);
     });
 
+    it('calls a flat run flat rather than undecidable', () => {
+        // The bug this replaced: a run whose retained heap barely moves is the HEALTHY shape,
+        // and the old code reported it as "no early growth to compare" and passed by
+        // abstaining — indistinguishable from having measured nothing.
+        const flat = Array.from({ length: 30 }, (_, i) => 100 * MB + (i % 2 === 0 ? 0 : 64 * 1024));
+        const verdict = traceOf(flat).verdict();
+
+        expect(verdict.leaking).toBe(false);
+        expect(verdict.report).toContain('retained heap is flat');
+    });
+
+    it('calls a run that only starts growing late a leak', () => {
+        // Flat, then climbing. There is no early rate to decay from, and the old ratio test
+        // divided by a non-positive first third and gave up.
+        const lateGrowth = Array.from({ length: 30 }, (_, i) => 100 * MB + Math.max(0, i - 15) * 4 * MB);
+
+        expect(traceOf(lateGrowth).verdict().leaking).toBe(true);
+    });
+
     it('does not call too few samples a leak', () => {
         expect(traceOf([100 * MB, 200 * MB, 300 * MB]).verdict().leaking).toBe(false);
     });
 
     it('reports the trend even when it passes', () => {
-        expect(traceOf(Array.from({ length: 30 }, () => 100 * MB)).verdict().report).toContain('RSS trace: 30 samples');
+        expect(traceOf(Array.from({ length: 30 }, () => 100 * MB)).verdict().report)
+            .toContain('Retained heap (post-GC): 30 samples');
+    });
+
+    it('refuses to conclude anything when no collection can be forced', () => {
+        // Without --expose-gc the samples describe GC scheduling, not retention. Reporting
+        // `measurable: false` is what stops the caller asserting on noise.
+        const trace = new MemoryTrace(() => false);
+        const usage = jest.spyOn(process, 'memoryUsage');
+
+        for (let i = 0; i < 30; i++) {
+            usage.mockReturnValue({ heapUsed: 100 * MB + i * 4 * MB, rss: 0 } as NodeJS.MemoryUsage);
+            trace.sample(i);
+        }
+
+        usage.mockRestore();
+
+        const verdict = trace.verdict();
+
+        // The series is a textbook leak, and it still must not be called one.
+        expect(verdict.measurable).toBe(false);
+        expect(verdict.leaking).toBe(false);
+        expect(verdict.report).toContain('NOT MEASURED');
     });
 });
 

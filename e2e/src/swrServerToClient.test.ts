@@ -266,6 +266,85 @@ describe('SWR server-to-client', () => {
         });
     });
 
+    describe('the background flush echo', () => {
+        // Was handoff §7d, recorded as a limitation: the flush has queue rows and no event, so
+        // it had no schema to translate the response with and threw the echo away. The plugin
+        // now remembers the schemas it has been handed, so the flush can look one up.
+        //
+        // These use `postOnPersist: false` and `autoSync: false`, which is the shape that
+        // isolates the flush: a save acknowledges locally, nothing is sent, and `syncNow()`
+        // drains the queue.
+        const connectFlushOnly = () => {
+            const swrStore = new MemoryPlugin(`swr-${uuid(8)}`);
+            const queueStore = new MemoryPlugin(`queue-${uuid(8)}`);
+
+            const plugin = new HttpSwrDbPlugin(swrStore, {
+                getUrl: collection => server.url(collection),
+                unsyncedQueueStore: queueStore,
+                maxAgeMs: 60_000,
+                postOnPersist: false,
+                autoSync: false,
+                translatePersistResponse: (_schema, body) => (body as { saved?: unknown[] }).saved ?? null,
+            });
+
+            const store = new ProductStore(plugin);
+            stores.push(store);
+
+            return { store, plugin };
+        };
+
+        it("applies the server's canonical copy after a flush", async () => {
+            // The server stamps what it stored. If the echo is dropped, the local copy keeps
+            // the name the client sent and silently disagrees with the server.
+            const stamping = await startSyncServer({
+                stamp: row => ({ ...row, name: `${row.name} [server]` }),
+            });
+
+            const swrStore = new MemoryPlugin(`swr-${uuid(8)}`);
+            const plugin = new HttpSwrDbPlugin(swrStore, {
+                getUrl: collection => stamping.url(collection),
+                unsyncedQueueStore: new MemoryPlugin(`queue-${uuid(8)}`),
+                maxAgeMs: 60_000,
+                postOnPersist: false,
+                autoSync: false,
+                translatePersistResponse: (_schema, body) => (body as { saved?: unknown[] }).saved ?? null,
+            });
+            const store = new ProductStore(plugin);
+            stores.push(store);
+
+            try {
+                await store.products.addAsync({ id: 'flushed', name: 'Local', price: 1 } as never);
+                await store.saveChangesAsync();
+
+                // Nothing has been sent yet — this is the flush-only shape.
+                expect(stamping.requestLog.filter(entry => entry.method === 'POST')).toHaveLength(0);
+
+                await plugin.syncNow();
+
+                const [row] = await store.products.toArrayAsync();
+
+                expect(row.name).toBe('Local [server]');
+            } finally {
+                await stamping.stop();
+            }
+        }, 30_000);
+
+        it('leaves the store alone when no translator is configured', async () => {
+            // The echo is opt-in. Without `translatePersistResponse` the response is not
+            // interpreted, and the local copy stands.
+            const { store, plugin } = connectFlushOnly();
+            (plugin as unknown as { translatePersistResponse?: unknown }).translatePersistResponse = undefined;
+
+            await store.products.addAsync({ id: 'untouched', name: 'Local', price: 1 } as never);
+            await store.saveChangesAsync();
+            await plugin.syncNow();
+
+            const [row] = await store.products.toArrayAsync();
+
+            expect(row.name).toBe('Local');
+        }, 30_000);
+    });
+
     describe('paginated reads', () => {
         const seedTen = () => {
             server.admin.seed(

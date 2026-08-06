@@ -78,8 +78,11 @@ jobs:
       - name: E2E with containers
         run: E2E_CONTAINERS=1 npx jest --selectProjects e2e
 
+      # --expose-gc so the memory scenarios can force a collection and measure what the run
+      # RETAINS. Without it they sample whatever V8 has not got round to collecting, which on
+      # a runner with headroom climbs linearly and reads as a leak on every run.
       - name: Stress with containers
-        run: STRESS=1 E2E_CONTAINERS=1 npx jest --selectProjects stress
+        run: NODE_OPTIONS=--expose-gc STRESS=1 E2E_CONTAINERS=1 npx jest --selectProjects stress
 
 # Mutation testing (`npm run mutate:*`) stays manual. A full run takes hours, which is too
 # slow for a pull-request gate.

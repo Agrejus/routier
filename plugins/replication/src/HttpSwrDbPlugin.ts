@@ -229,6 +229,21 @@ export class HttpSwrDbPlugin implements IDbPlugin {
     private readonly onConflict?: (context: { collectionName: string; entities: unknown[]; error: Error }) => void;
     private readonly translatePersistResponse?: (schema: CompiledSchema<UnknownRecord>, responseBody: unknown) => unknown[] | null;
     private readonly unsyncedQueue: UnsyncedQueue;
+    /**
+     * Schemas this plugin has been handed, keyed by collection name.
+     *
+     * The background flush has queue rows, not an event — so it had no `CompiledSchema` and no
+     * `SchemaCollection`, and therefore could not reconcile the echo the server returned. That
+     * was recorded as a limitation (handoff §7d). It does not have to be one: the plugin sees
+     * every schema it will ever need on the first query or save for that collection, so it
+     * remembers them and the flush looks them up.
+     *
+     * Remembering rather than requiring them up front keeps the constructor unchanged, and a
+     * collection that has never been read or written has nothing queued to flush either.
+     */
+    private readonly schemasByCollection = new Map<string, CompiledSchema<UnknownRecord>>();
+    private lastSeenSchemas: SchemaCollection | null = null;
+
     /** Serializes SWR-store mutations per collection so a revalidate diff can never interleave with a user write. */
     private readonly storeMutex = new KeyedMutex();
     /** Resolved background-sync policy; null when the caller turned it off. */
@@ -512,9 +527,15 @@ export class HttpSwrDbPlugin implements IDbPlugin {
             const url = this.httpPlugin.collectionUrl(collectionName);
 
             try {
-                await this.postWithRetry(url, body, collectionName);
+                const responseBody = await this.postWithRetry(url, body, collectionName);
                 await this.unsyncedQueue.removeRows(payload.rows);
                 outcome.flushed += payload.units.length;
+
+                // The flush echoes back like any other POST; it just had no schema to
+                // translate with until the plugin started remembering them (§7d).
+                await this.reconcileFlushResponse(collectionName, responseBody).catch((err) =>
+                    logger.warn('[HttpSwrDbPlugin] flush echo reconciliation failed', { collectionName, error: err })
+                );
             } catch (err) {
                 if (err instanceof HttpStatusError && isPermanentStatus(err.status)) {
                     const structured = this.parseStructuredBatchRejection(err);
@@ -648,9 +669,13 @@ export class HttpSwrDbPlugin implements IDbPlugin {
             const body = this.bodyForUnits([unit]);
 
             try {
-                await this.httpPlugin.postJson(url, body, collectionName);
+                const responseBody = await this.httpPlugin.postJson(url, body, collectionName);
                 await this.unsyncedQueue.removeRows(unit.rows);
                 outcome.flushed++;
+
+                await this.reconcileFlushResponse(collectionName, responseBody).catch((err) =>
+                    logger.warn('[HttpSwrDbPlugin] isolated flush echo reconciliation failed', { collectionName, error: err })
+                );
             } catch (err) {
                 const error = err instanceof Error ? err : new Error(String(err));
 
@@ -709,6 +734,40 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         } catch (err) {
             logger.error('[HttpSwrDbPlugin] onConflict threw', { error: err });
         }
+    }
+
+    /** Records the schemas an event carried, so the flush can resolve one later. */
+    private rememberSchemas(schemas: SchemaCollection): void {
+        this.lastSeenSchemas = schemas;
+
+        for (const [, schema] of schemas) {
+            this.schemasByCollection.set(schema.collectionName, schema as CompiledSchema<UnknownRecord>);
+        }
+    }
+
+    /**
+     * Reconciles the echo from a background flush, the same way the direct POST path does.
+     *
+     * Called after the rows are dequeued, matching the direct path: while a change is still
+     * queued its entity is shielded from being overwritten, so reconciling first would be a
+     * no-op for exactly the rows the response is about.
+     */
+    private async reconcileFlushResponse(collectionName: string, responseBody: unknown): Promise<void> {
+        if (this.translatePersistResponse == null || responseBody == null) {
+            return;
+        }
+
+        const schema = this.schemasByCollection.get(collectionName);
+        const schemas = this.lastSeenSchemas;
+
+        if (schema == null || schemas == null) {
+            // Nothing has read or written this collection through this plugin, so there is no
+            // schema to translate with — and nothing could have been queued for it either.
+            logger.debug('[HttpSwrDbPlugin] no schema known for flushed collection; echo not reconciled', { collectionName });
+            return;
+        }
+
+        await this.reconcilePersistResponse(schema, schemas, responseBody);
     }
 
     /**
@@ -1116,6 +1175,8 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         event: DbPluginQueryEvent<TRoot, TShape>,
         done: PluginEventCallbackResult<ITranslatedValue<TShape>>
     ): Promise<void> {
+        this.rememberSchemas(event.schemas);
+
         const cacheKey = this.getCacheKey(event);
         this.swrStore.query(event, (swrResponse) => {
             const collectionName = event.operation.schema.collectionName;
@@ -1416,6 +1477,8 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         event: DbPluginBulkPersistEvent,
         done: PluginEventCallbackPartialResult<BulkPersistResult>
     ): Promise<void> {
+        this.rememberSchemas(event.schemas);
+
         const result = event.operation.toResult();
 
         logger.debug('[HttpSwrDbPlugin] bulkPersistAsync() -> start', { eventId: event.id });

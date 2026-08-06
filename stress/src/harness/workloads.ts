@@ -393,5 +393,14 @@ export async function runChurnWorkload<T extends Record<string, any>>(
 
     note(verdict.report);
 
+    // Without `--expose-gc` the samples describe when V8 chose to collect rather than what the
+    // run retained, and a verdict from that is a coin flip in both directions — it reported
+    // LEAKING on every CI run and passed locally only by abstaining. Say so and skip, rather
+    // than assert on noise. The stress job sets NODE_OPTIONS=--expose-gc.
+    if (verdict.measurable === false) {
+        note('memory growth NOT asserted: re-run with NODE_OPTIONS=--expose-gc to measure retention');
+        return;
+    }
+
     expect(verdict.leaking ? verdict.report : 'growth decays').toBe('growth decays');
 }
