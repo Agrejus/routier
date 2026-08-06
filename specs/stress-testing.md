@@ -1,6 +1,6 @@
 # Stress-testing spec
 
-Status: **Fully implemented** — S1–S11 built; S8 additionally needs Docker
+Status: **Fully implemented** — S1–S12 built; S8 additionally needs Docker
 Date: 2026-08-03
 Audience: an agent with no prior context on this repository.
 
@@ -23,6 +23,45 @@ without it that assertion is skipped rather than guessed at (see "Measuring memo
 | S9 throughput floor | Done | ratio against an in-process reference workload; baseline in `stress/src/throughput-baseline.json`. Was flaky in a full run, fixed by normalising |
 | S10 immutable stale refs | Done | 10k generations through first-generation references |
 | S11 immutable volume + churn | Done | S1 and S3 workloads through `.immutable()` |
+| S12 application session | Done | 12 related collections, 6 screens, a 400-step journey. The first scenario with more than one collection or more than one query shape |
+
+## S12: an application, not a load (2026-08-06)
+
+S1 through S11 all drive ONE collection through ONE kind of work at the highest rate they can.
+That shape finds volume and churn defects and structurally cannot find anything that needs a
+second collection or a second query shape — which is most of what an application is. Before
+S12: no scenario had two related collections, none paginated, `specs/joins.md` had never been
+stressed, and defect #48 (a paginated read returning `[]`) needed nothing more exotic than a
+second query shape to exist.
+
+S12 is twelve collections with real references, six screens with distinct query shapes, and a
+seeded journey that moves between them the way a person does. It is deliberately smaller and
+slower than S1 — the subject is the ORDER of operations across collections, not the rate.
+
+**What it asserts** (`stress/src/harness/application/invariants.ts`). Each claim needs either
+two collections or two query shapes, which is why none could be made before:
+
+| Invariant | The failure it catches |
+| --- | --- |
+| Referential integrity | A remove that leaves children pointing at a parent that is gone |
+| Pagination completeness | Pages that do not add up to the unpaged answer — gaps, duplicates, or lost ordering |
+| Denormalised counts | A cached aggregate drifting from the rows it counts |
+| Model agreement | The store and a plain-Map reference diverging, including on composite keys |
+| Collection isolation | A save reaching a collection it was not given |
+
+The last one compares content FINGERPRINTS rather than counts. An update never changes a count,
+so a count comparison there would look like a check while checking nothing.
+
+**The invariants have their own tests**, ungated, in
+`stress/src/harness/application/invariants.test.ts`. Each breaks the store in one specific way
+and asserts the matching invariant fires and the others stay quiet. A green check that cannot
+go red is not a check, and S12 passed on its first run — which was worth nothing until each
+claim had been shown to fail on the corruption it exists to catch.
+
+**The model is deliberately scalar-only.** No booleans, dates, arrays or nested objects, so the
+same session runs unchanged on memory, file-system and SQLite and a divergence between them is
+a finding rather than a known limitation. Ids are derived from the seed rather than `uuidv4()`,
+so a failing run replays.
 
 ## Measuring memory (2026-08-06)
 
