@@ -14,7 +14,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 rspack({
     entry: resolve(here, 'app.js'),
-    output: { path: here, filename: 'bundle.js', module: true, chunkFormat: 'module' },
+    output: { path: resolve(here, 'dist'), filename: 'bundle.js', module: true, chunkFormat: 'module' },
     experiments: { outputModule: true },
     resolve: { extensions: ['.js', '.ts'], conditionNames: ['browser', 'import', 'default'] },
     target: 'web',
