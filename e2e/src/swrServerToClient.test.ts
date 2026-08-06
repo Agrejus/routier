@@ -278,9 +278,11 @@ describe('SWR server-to-client', () => {
             );
         };
 
-        it('sends the window to the server', async () => {
-            // The request half is correct, and asserting it separately from the result half
-            // is what localises defect #48: the client asks the right question.
+        // Rewritten when #48 was fixed. It used to assert that the window was sent, which was
+        // true and was the defect: the server applied it, the store then held only that page,
+        // and the plugin applied it a second time when answering the caller. The window is now
+        // deliberately withheld and applied once, locally.
+        it('does not send the window to the server', async () => {
             seedTen();
 
             const client = connect();
@@ -288,28 +290,31 @@ describe('SWR server-to-client', () => {
 
             const get = server.requestLog.filter(entry => entry.method === 'GET').at(-1)!;
 
-            expect(get.query.skip).toBe('3');
-            expect(get.query.take).toBe('3');
+            expect(get.query.skip).toBeUndefined();
+            expect(get.query.take).toBeUndefined();
         });
 
-        it('the server answers the window correctly', async () => {
-            // And the server half is correct too, so the rows are lost on the client.
+        it('still sends the sort and the filter, which survive being applied twice', async () => {
+            // The distinction the fix rests on: a predicate re-applied over the rows it
+            // already selected gives the same answer, so pushing it down is free. A window
+            // does not, so it cannot be pushed down.
             seedTen();
 
             const client = connect();
-            await client.products.sort(p => p.price).skip(3).take(3).toArrayAsync();
+            await client.products.where(p => p.price > 4).sort(p => p.price).skip(1).take(2).toArrayAsync();
 
-            const response = await fetch(`${server.url(COLLECTION)}?sort=price:asc&skip=3&take=3`);
-            const rows = await response.json() as { id: string }[];
+            const get = server.requestLog.filter(entry => entry.method === 'GET').at(-1)!;
 
-            expect(rows.map(r => r.id)).toEqual(['p03', 'p04', 'p05']);
+            expect(get.query.sort).toBe('price:asc');
+            expect(get.query.filter).toBeDefined();
+            expect(get.query.skip).toBeUndefined();
         });
 
-        // Pinned: defect #48. The window is applied TWICE — once by the server, which returns
-        // the right page, and again when the plugin answers the caller by re-querying its own
-        // store with the same event. The store holds only the page just fetched, so `skip(3)`
-        // over three rows yields nothing. Any paginated read with skip > 0 returns [].
-        it.failing('returns the requested page rather than an empty result', async () => {
+        // Was defect #48: the window was applied twice — once by the server, which returned
+        // the right page, and again when the plugin answered the caller by re-querying its own
+        // store, which by then held only that page. `skip(3)` over three rows yielded nothing,
+        // so every paginated read past page one returned [].
+        it('returns the requested page', async () => {
             seedTen();
 
             const client = connect();
@@ -318,13 +323,11 @@ describe('SWR server-to-client', () => {
             expect(page.map(p => p.id)).toEqual(['p03', 'p04', 'p05']);
         });
 
-        // Pinned: defect #49, which sits behind #48 and cannot be reached until it is fixed.
-        // Freshness is per CACHE KEY (query + parameters) but the SWR store is one collection
-        // shared by every query. A revalidate computes removes as "rows the store returned for
-        // this query that the server did not", and for two different windows those sets
-        // describe different slices of the world — so revalidating page one concludes that
-        // page two's rows were deleted.
-        it.failing('keeps rows from one page when another page is revalidated', async () => {
+        // Was defect #49. Freshness was keyed per query INCLUDING its window while the store
+        // is one shared collection, so revalidating page one computed its removes against page
+        // two's rows and deleted them locally. The cache key is now the candidate set, so both
+        // pages are one key and there is no second window to disagree with.
+        it('keeps rows from one page when another page is revalidated', async () => {
             seedTen();
 
             const client = connect();

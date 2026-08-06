@@ -47,6 +47,23 @@ A write applies locally first and reaches the server later.
 The server is the authority. When a response echoes entities back, they upsert into the local
 store under the collection's mutex, and subscribers are notified.
 
+### Pagination
+
+`HttpSwrDbPlugin` pushes `filter` and `sort` down to the server. It does **not** push `skip`
+and `take` — those are applied locally, to the rows it holds.
+
+The reason is that a predicate survives being applied twice and a window does not. The plugin
+answers a read from its local store, so anything it pushes down gets applied a second time
+when that store is queried. Re-filtering rows the server already filtered gives the same
+answer; re-skipping a page the server already skipped gives an empty one.
+
+So a windowed read syncs the whole filtered set and pages it locally. Bound what you sync with
+`where(...)`, not with `take(...)`.
+
+**If you need the server to paginate,** use `HttpDbPlugin` directly. It pushes the window down
+and keeps no local copy, which is the right shape for a large collection you do not want on
+the client — at the cost of a round trip per page and no offline reads.
+
 ### Offline and retry
 
 Unsynced changes retry on a backing-off timer, from 1 second to 60 seconds, and immediately on

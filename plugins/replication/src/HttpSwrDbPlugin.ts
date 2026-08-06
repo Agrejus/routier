@@ -15,7 +15,10 @@ import {
     DbPluginQueryEvent,
     DbPluginBulkPersistEvent,
     ITranslatedValue,
+    IQuery,
     Query,
+    QueryOptionsCollection,
+    QueryOptionName,
 } from '@routier/core/plugins';
 import type { CompiledSchema, SchemaId, SubscriptionChanges } from '@routier/core/schema';
 import { HashType } from '@routier/core/schema';
@@ -708,9 +711,83 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         }
     }
 
+    /**
+     * The same query with `skip` and `take` removed — the CANDIDATE SET the window selects from.
+     *
+     * A predicate survives being applied twice; a window does not. `filter` and `sort` can be
+     * pushed to the server and re-applied locally over the rows that come back, and the answer
+     * is the same. `skip(3)` cannot: the server applies it to the collection, the store then
+     * holds only that page, and applying it again to three rows yields nothing (defect #48).
+     *
+     * So the window stays local. Everything that has to describe "the set the server and the
+     * store should agree on" — the fetch, the revalidate comparison, and the cache key — uses
+     * this; only the caller's own read keeps the window, and applies it exactly once.
+     *
+     * The cost is that the plugin syncs the whole filtered set rather than a page of it. That
+     * is what a local-first cache is: it answers from rows it holds. Use `HttpDbPlugin`
+     * directly when you want the server to paginate and no local copy.
+     */
+    private windowlessOperation<TRoot extends {}, TShape>(operation: IQuery<TRoot, TShape>): IQuery<TRoot, TShape> {
+        const ordered: { name: QueryOptionName; value: unknown; index: number }[] = [];
+
+        for (const [name, items] of operation.options.items) {
+            if (name === 'skip' || name === 'take') {
+                continue;
+            }
+
+            for (const item of items) {
+                ordered.push({ name, value: (item.option as { value: unknown }).value, index: item.index });
+            }
+        }
+
+        if (ordered.length === operation.options.items.size && this.hasNoWindow(operation)) {
+            // Nothing to strip — hand back the original so the common case allocates nothing.
+            return operation;
+        }
+
+        // Re-added in the original order: options are index-ordered and the execution-target
+        // decision in `add` depends on what it has already seen.
+        ordered.sort((left, right) => left.index - right.index);
+
+        const options = QueryOptionsCollection.EMPTY<TShape>();
+
+        for (const { name, value } of ordered) {
+            options.add(name as never, value as never);
+        }
+
+        return new Query<TRoot, TShape>(options, operation.schema, operation.changeTracking);
+    }
+
+    private hasNoWindow<TRoot extends {}, TShape>(operation: IQuery<TRoot, TShape>): boolean {
+        return operation.options.items.has('skip') === false && operation.options.items.has('take') === false;
+    }
+
+    /**
+     * Keyed on the candidate set, not the window.
+     *
+     * Freshness is a property of "what the server holds for this filter", and every page of a
+     * list is the same answer sliced differently. Keying per window would make page two refetch
+     * data page one had just brought down, and would let one page's revalidate compute its
+     * removes against another page's rows (defect #49).
+     */
     private getCacheKey<TRoot extends {}, TShape>(event: DbPluginQueryEvent<TRoot, TShape>): string {
-        const queryParams = buildQueryParams(event.operation, { ignoreQueryForCollections: [] });
+        const queryParams = buildQueryParams(this.windowlessOperation(event.operation), { ignoreQueryForCollections: [] });
         return `${event.operation.schema.id}|${JSON.stringify(queryParams)}`;
+    }
+
+    /** The event used to talk to the server and to read the store for comparison. */
+    private candidateSetEvent<TRoot extends {}, TShape>(
+        event: DbPluginQueryEvent<TRoot, TShape>,
+        reason: string
+    ): DbPluginQueryEvent<TRoot, TShape> {
+        return {
+            ...event,
+            id: uuid(8),
+            source: HttpSwrDbPlugin.name,
+            action: 'query' as const,
+            reason,
+            operation: this.windowlessOperation(event.operation),
+        };
     }
 
     private isStale(cacheKey: string): boolean {
@@ -871,7 +948,10 @@ export class HttpSwrDbPlugin implements IDbPlugin {
             source: HttpSwrDbPlugin.name,
             action: 'query' as const,
             reason: 'revalidate-sync',
-            operation: event.operation,
+            // Windowless, so `existing` and `incoming` describe the same set. Comparing a
+            // page of the store against the whole server response would classify every row
+            // outside the page as an add, and every row outside the response as a remove.
+            operation: this.windowlessOperation(event.operation),
         };
     }
 
@@ -997,8 +1077,10 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         cachedTranslated: ITranslatedValue<TShape>
     ): Promise<void> {
         const collectionName = event.operation.schema.collectionName;
+        // The candidate set, not the page: see windowlessOperation.
+        const remoteEvent = this.candidateSetEvent(event, 'revalidate');
         return new Promise((resolve) => {
-            this.httpPlugin.query(event, (result) => {
+            this.httpPlugin.query(remoteEvent, (result) => {
                 logger.debug('[HttpSwrDbPlugin] runRevalidate() -> httpPlugin query result', { collectionName, result });
                 if (result.ok === Result.SUCCESS) {
                     const schema = event.operation.schema as CompiledSchema<Record<string, unknown>>;
@@ -1111,8 +1193,10 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         cacheKey: string
     ): Promise<'stored' | 'remote-failed' | 'store-failed'> {
         const collectionName = event.operation.schema.collectionName;
+        // The candidate set, not the page: see windowlessOperation.
+        const remoteEvent = this.candidateSetEvent(event, 'cache-miss');
         const result = await new Promise<PluginEventResultType<ITranslatedValue<TShape>>>((resolve) => {
-            this.httpPlugin.query(event, resolve);
+            this.httpPlugin.query(remoteEvent, resolve);
         });
 
         if (result.ok !== Result.SUCCESS) {
