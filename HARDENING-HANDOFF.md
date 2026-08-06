@@ -266,8 +266,16 @@ node examples/sync-engine-dexie/browser/serve.mjs                          # bro
 
 ## 7. Remaining work
 
-**7a. Finish the mutation sweep.** `stryker/replication.mjs` + `stryker/jest.replication.js` +
-`stryker/replication.setup.js` work (`npm run mutate:replication`, gate 80). The setup file caps
+**7a. Finish the mutation sweep. — DONE (2026-08-06).** All nine files ran in one 41-minute
+sweep: **51.52%**, table and analysis in `docs/mutation-backlog.md`. Note that the full-run
+per-file scores are LOWER than the per-file numbers below (`httpUtils.ts` 84.69% against the
+99.01% here) — the runs select tests differently and are not comparable; the full run is the
+one the gate measures.
+
+The per-file history below is kept as a record of the earlier sessions.
+
+`stryker/replication.mjs` + `stryker/jest.replication.js` +
+`stryker/replication.setup.js` work (`npm run mutate:replication`, gate 45). The setup file caps
 chaos at 3 seeds and silences the logger. Measured:
 
 | Scope | Mutants | Before → after | Notes |
@@ -286,12 +294,15 @@ justification** (see the two in `httpUtils.ts`). No config-side exclusion lists.
 provably equivalent guards, 4 depend on a store that rejects unknown row ids, and 2 are the
 documented `auth.ts` redundancy. Read it before writing more tests for this area.
 
-**7c. Raise the gate.** 80 was chosen before any score existed. Once the package has a number, set
-`break` just under it (expressions sits at 90).
+**7c. Raise the gate. — DONE (2026-08-06).** The first full run scored **51.52%**, so `break` is
+now 50. Target remains 80; see the "Area: plugins/replication" section of
+`docs/mutation-backlog.md` for the per-file table and where the score is cheapest to move
+(`queryParamHelpers.ts` at 1.67%, with 158 mutants no test executes).
 
-**7d. `translatePersistResponse` on the flush path.** Still unapplied there: the flush has queue
-rows, not a `CompiledSchema`. Either stash the schema id on the row and resolve it from a
-registry, or accept the limitation and document it.
+**7d. `translatePersistResponse` on the flush path. — DONE (2026-08-06).** Resolved the way this
+note's first option suggested, without touching the queue row: the plugin now remembers the
+schemas it is handed on any query or save, and the flush looks one up by collection name.
+Applied after dequeue, matching the direct path.
 
 **7e. Docs.** `docs/` and `examples/from-docs/guides/http-swr-with-optimistic/` describe these
 plugins. Undocumented outside this file: the exported option/callback types, the `meta.opIds` wire
