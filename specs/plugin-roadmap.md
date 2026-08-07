@@ -23,9 +23,21 @@ Both wrappers that augment storage use the same technique: hand the inner plugin
 compiled schema with synthetic properties appended. Read `ConcurrencyDbPlugin` before writing a
 new one.
 
+## Built
+
+### Encryption wrapper — shipped 2026-08-07
+
+`@routier/encryption-plugin`. Randomised by default; `encrypted(s.string(), { searchable: true })`
+is deterministic and keeps equality filters working in the database. Keys are held in a keyring
+with ids, so rotation adds a key rather than replacing one. A filter that cannot be answered
+correctly throws instead of falling back to an in-memory scan.
+
+Answered as: randomised default with per-property opt-in, key provider with ids, throw on an
+unanswerable filter.
+
 ## Ready to build
 
-### 1. Encryption wrapper
+### 1. Encryption wrapper — DONE, see above
 
 Encrypt field values before they reach the backend. One wrapper covers all nine.
 

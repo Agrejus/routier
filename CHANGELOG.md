@@ -225,6 +225,14 @@ reconciles the server's echo instead of discarding it.
   at all. A file is a leaf, so the value passes through untouched, and `BlobDbPlugin` swaps it
   for a reference during `bulkPersist`, the only place an upload can happen because
   `preprocess` is synchronous.
+- **`@routier/encryption-plugin`** (new, 0.1.0) — field-level encryption as a wrapper, so one
+  implementation covers all nine backends. `encrypted(s.string())` is randomised: a fresh IV
+  per write, nothing leaks, and a filter on it throws rather than quietly becoming a full
+  scan. `encrypted(s.string(), { searchable: true })` is deterministic, so an equality filter
+  still runs in the database against an index — at the cost of revealing which rows share a
+  value, which is why it is opt-in. Keys live in a keyring with ids and every value records
+  the id that wrote it, so rotation adds a key instead of replacing one. AES-GCM authenticates,
+  so a value altered in the database fails to decrypt rather than reading back as anything.
 - **`@routier/blob-plugin`** (new, 0.1.0) — files and media: metadata in your database, bytes
   in blob storage. A `BlobStore` is five operations (`put`, `has`, `get`, `delete`, and
   optionally `url` and `list`), with stores for memory and the local filesystem; S3, R2, GCS
