@@ -15,7 +15,7 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
     /** Set by `.encrypted()`. `null` when the property is stored as it is. */
     encryption: EncryptionMode | null = null;
     /** Set by `.modify(x => x.transform(...))`. A live reference, never stringified. */
-    transform: PropertyTransform<unknown, unknown> | null = null;
+    transform: PropertyTransform<unknown> | null = null;
     indexes: string[] = [];
     fromPropertyName: string | null = null;
 

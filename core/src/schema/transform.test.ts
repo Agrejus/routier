@@ -11,20 +11,27 @@ import type { InferCreateType, InferType } from './types';
  * supply and hand it to the layer that runs it.
  */
 
-/** A caller's own "encryption" — deliberately trivial, to make the point that it is theirs. */
-const reversibleCipher = {
-    to: (value: string, salt: string) => `${salt}:${[...value].reverse().join('')}`,
-    from: (stored: unknown, salt: string) => [...String(stored).slice(salt.length + 1)].reverse().join(''),
+/**
+ * A caller's own cipher, deliberately trivial to make the point that it is theirs.
+ *
+ * Note what the CALLER writes at the schema: `x.transform(cipher)`. The `stores` and
+ * `comparable` settings live in the cipher, written once by whoever provides it.
+ */
+const makeCipher = (salt: string) => ({
+    to: (value: string) => `${salt}:${[...value].reverse().join('')}`,
+    from: (stored: unknown) => [...String(stored).slice(salt.length + 1)].reverse().join(''),
     stores: SchemaTypes.String,
     comparable: 'equality' as const,
-};
+});
+
+const cipher = makeCipher('my-salt');
 
 const userSchema = s.define('users', {
     id: s.string().key().identity(),
     name: s.string(),
     ssn: s.string(),
 }).modify(x => ({
-    ssn: x.transform(s.string(), reversibleCipher, 'my-salt'),
+    ssn: x.transform(cipher),
 })).compile();
 
 describe('a transform declared in modify()', () => {
@@ -45,7 +52,7 @@ describe('a transform declared in modify()', () => {
             id: s.string().key().identity(),
             value: s.string(),
         }).modify(x => ({
-            value: x.transform(s.string(), {
+            value: x.transform({
                 to: (v: string) => `${captured}|${v}`,
                 from: (stored: unknown) => String(stored).split('|')[1],
             }),
@@ -53,21 +60,23 @@ describe('a transform declared in modify()', () => {
 
         const transform = schema.properties.find(p => p.name === 'value')!.transform!;
 
-        expect(transform.to('secret', undefined as never)).toBe('captured-by-closure|secret');
+        expect(transform.to('secret', {})).toBe('captured-by-closure|secret');
     });
 
-    it('carries the injected value the caller supplied', () => {
+    it('keeps the underlying property intact', () => {
+        // A transform replaces a property with a transformed version of ITSELF, so the type,
+        // the key flags and every modifier survive.
         const property = userSchema.properties.find(p => p.name === 'ssn');
 
-        expect(property?.injected).toBe('my-salt');
+        expect(property?.type).toBe(SchemaTypes.String);
     });
 
     it('round-trips through the caller functions', async () => {
         const property = userSchema.properties.find(p => p.name === 'ssn')!;
-        const stored = await property.transform!.to('123-45-6789', property.injected);
+        const stored = await property.transform!.to('123-45-6789', {});
 
         expect(stored).toBe('my-salt:9876-54-321');
-        expect(await property.transform!.from(stored, property.injected)).toBe('123-45-6789');
+        expect(await property.transform!.from!(stored)).toBe('123-45-6789');
     });
 
     it('declares what the column becomes', () => {
@@ -82,7 +91,7 @@ describe('a transform declared in modify()', () => {
             id: s.string().key().identity(),
             value: s.string(),
         }).modify(x => ({
-            value: x.transform(s.string(), {
+            value: x.transform({
                 to: async (v: string) => `async:${v}`,
                 from: async (stored: unknown) => String(stored).slice(6),
             }),
@@ -90,7 +99,7 @@ describe('a transform declared in modify()', () => {
 
         const transform = schema.properties.find(p => p.name === 'value')!.transform!;
 
-        expect(await transform.to('x', undefined as never)).toBe('async:x');
+        expect(await transform.to('x', {})).toBe('async:x');
     });
 
     it('leaves the entity type alone', () => {

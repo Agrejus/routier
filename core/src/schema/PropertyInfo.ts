@@ -62,7 +62,7 @@ export class PropertyInfo<T extends {}> {
      * held as-is so it can close over a key, a client, or anything else a caller needs — and
      * so it can be async, which generated code cannot be.
      */
-    readonly transform: PropertyTransform<unknown, unknown> | null;
+    readonly transform: PropertyTransform<unknown> | null;
     /** Indexes associated with the property. */
     readonly indexes: string[];
 

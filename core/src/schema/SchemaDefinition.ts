@@ -231,18 +231,39 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
          * over whatever they need. `injected` is there for when passing it explicitly reads
          * better than capturing it.
          */
-        transform: <UU, I = never>(underlying: SchemaBase<UU, any>, transform: PropertyTransform<UU, I>, injected?: I) => SchemaTransform<UU, I>;
+        transform: <UU>(transform: PropertyTransform<UU>) => SchemaTransform<UU>;
     }) => R) {
 
         const b = {
             function: <UU, I = never>(fn: (entity: InferType<CompiledSchema<T>>, collectionName: CollectionName, injected?: I) => UU, injected?: I) => new SchemaFunction<UU, I, "unmapped">(fn as any, injected),
             computed: <UU, I = never>(fn: (entity: InferType<CompiledSchema<T>>, collectionName: CollectionName, injected?: I) => UU, injected?: I) => new SchemaComputed<UU, I, "computed" | "unmapped">(fn as any, injected),
-            transform: <UU, I = never>(underlying: SchemaBase<UU, any>, transform: PropertyTransform<UU, I>, injected?: I) => new SchemaTransform<UU, I>(underlying as never, transform, injected)
+            transform: <UU>(transform: PropertyTransform<UU>) => new SchemaTransform<UU>(transform)
         }
 
-        const r = builder(b)
+        const r = builder(b) as Record<string, unknown>;
 
-        return new SchemaDefinition<R & T>(this.collectionName, { ...this.instance, ...r });
+        /**
+         * A transform replaces the property it was assigned to, so it is bound here rather
+         * than being handed its own property to repeat. `.modify()` already knows which one
+         * is meant — it is the key.
+         */
+        for (const [name, value] of Object.entries(r)) {
+            if (value instanceof SchemaTransform) {
+                const underlying = (this.instance as Record<string, unknown>)[name];
+
+                if (underlying == null) {
+                    throw new Error(
+                        `transform() was assigned to '${name}', which is not a property of ` +
+                        `'${this.collectionName}'. A transform replaces an existing property; ` +
+                        'to add a new one, use computed().'
+                    );
+                }
+
+                value.bindTo(underlying as never);
+            }
+        }
+
+        return new SchemaDefinition<R & T>(this.collectionName, { ...this.instance, ...r } as R & T);
     }
 
     private _iterate(

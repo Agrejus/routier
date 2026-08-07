@@ -243,27 +243,36 @@ export type PropertyDeserializer<T extends any> = (value: string | number) => T;
  * Both directions may be async. Held as a live reference rather than stringified, so a
  * closure works and `injected` is a convenience rather than the only way in.
  */
-export type PropertyTransform<T extends any, I = never> = {
-    /** Application value to stored value. Runs before the plugin sees it. */
-    to: (value: T, injected: I) => unknown | Promise<unknown>;
+export type PropertyTransform<T extends any> = {
+    /**
+     * Application value to stored value. Runs before the plugin sees it. May be async.
+     *
+     * `entity` is there for the one-way case: a transform with no `from` derives a value
+     * rather than converting one, which is what `computed` does.
+     */
+    to: (value: T, entity: Record<string, unknown>) => unknown | Promise<unknown>;
 
-    /** Stored value back to application value. Runs after the plugin returns it. */
-    from: (value: unknown, injected: I) => T | Promise<T>;
+    /**
+     * Stored value back to application value. Runs after the plugin returns it.
+     *
+     * Optional. Leave it out and the transform is one-way: the stored value is the value.
+     */
+    from?: (value: unknown) => T | Promise<T>;
 
     /**
      * What the column becomes, when the stored form is not the property's own type.
      *
-     * A transform that produces text from a number has to say so, or a plugin builds a
-     * numeric column and the write fails on the engines that care.
+     * Defaults to the property's own type, so nothing changes unless you say it does. A
+     * library that always produces text — a cipher, a compressor — sets this once, and the
+     * caller who uses that library never writes it.
      */
     stores?: SchemaTypes;
 
     /**
      * Whether a filter on this property can still run in the database.
      *
-     * `equality` means `to` is deterministic, so a comparison value can be transformed and
-     * matched against the stored form. Anything else must not be pushed down — a transformed
-     * value does not order or match like the value it replaced.
+     * Defaults to `none`, which rejects the filter rather than returning wrong rows. Set
+     * `equality` only when `to` is deterministic.
      */
     comparable?: 'equality' | 'none';
 };
