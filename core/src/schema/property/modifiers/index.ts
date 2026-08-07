@@ -12,3 +12,4 @@ export * from './SchemaTracked';
 export * from './SchemaFrom';
 export * from './SchemaTag';
 export * from './SchemaForeignKey';
+export * from './SchemaEncrypted';

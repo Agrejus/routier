@@ -6,13 +6,13 @@ database and decrypted on the way back. **The backend never sees a plaintext val
 ```ts
 import { DataStore } from "@routier/datastore";
 import { s } from "@routier/core/schema";
-import { EncryptionDbPlugin, createKeyring, encrypted } from "@routier/encryption-plugin";
+import { EncryptionDbPlugin, createKeyring } from "@routier/encryption-plugin";
 
 const userSchema = s.define("users", {
   id: s.string().key().identity(),
   tenant: s.string().index(),
-  email: encrypted(s.string(), { searchable: true }),
-  notes: encrypted(s.string()),
+  email: s.string().encrypted({ searchable: true }),
+  notes: s.string().encrypted(),
 }).compile();
 
 const keyring = await createKeyring({
@@ -27,6 +27,18 @@ class AppStore extends DataStore {
 ```
 
 Your application sees plain strings. Only storage changes.
+
+## Declared on the schema, performed by the plugin
+
+`.encrypted()` is a core modifier, alongside `.index()`, `.distinct()` and `.readonly()`.
+Encryption does not change what a value IS — an encrypted number is still a number to your
+application — so it is a modifier rather than a type, and it lives where every other property
+declaration lives.
+
+Core stores the declaration on `PropertyInfo.encryption` and does nothing with it. The work
+has to be a plugin: `crypto.subtle` is asynchronous and a property serializer is not, and a
+key is a runtime secret while a compiled schema is a static artifact shared across every store
+in the process.
 
 ## It is a wrapper, and works with every backend
 
@@ -116,10 +128,10 @@ Numbers, dates, booleans and objects encrypt as readily as strings, and come bac
 themselves:
 
 ```ts
-salary:  encrypted(s.number()),
-bornOn:  encrypted(s.date()),
-active:  encrypted(s.boolean()),
-profile: encrypted(s.object({ city: s.string(), score: s.number() })),
+salary:  s.number().encrypted(),
+bornOn:  s.date().encrypted(),
+active:  s.boolean().encrypted(),
+profile: s.object({ city: s.string(), score: s.number() }).encrypted(),
 ```
 
 A ciphertext is text, so the column cannot be the one the schema would otherwise produce. The
@@ -129,7 +141,7 @@ as a string — through completely unmodified code. The same prototype-delegatio
 `ConcurrencyDbPlugin` uses, applied to replacing a property rather than appending one.
 
 Your entity types are untouched: `salary` is still a `number` to your application, and
-`encrypted()` does not change what `InferType` reports.
+`.encrypted()` does not change what `InferType` reports.
 
 ## Contracts
 

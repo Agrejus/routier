@@ -36,6 +36,15 @@ export enum SchemaTypes {
 export type ArrayShape = string | number | Date | {};
 
 /**
+ * How an encrypted property is encrypted.
+ *
+ * `randomised` uses a fresh initialisation vector per write: nothing leaks and nothing can be
+ * filtered. `deterministic` derives the vector from the value, so equality filters run in the
+ * database and rows holding the same value are visibly equal in storage.
+ */
+export type EncryptionMode = 'randomised' | 'deterministic';
+
+/**
  * What a file property gives back: where the bytes are and what they are.
  *
  * Declared in core so `InferType` can name it. Core never reads or writes the bytes — it only

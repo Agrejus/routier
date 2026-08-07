@@ -1,4 +1,4 @@
-import { DefaultValue, ForeignKey, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes } from "../../types";
+import { DefaultValue, ForeignKey, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes, EncryptionMode } from "../../types";
 
 export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifiers> {
 
@@ -12,6 +12,8 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
     isIdentity: boolean = false;
     isReadonly: boolean = false;
     isDistict: boolean = false;
+    /** Set by `.encrypted()`. `null` when the property is stored as it is. */
+    encryption: EncryptionMode | null = null;
     indexes: string[] = [];
     fromPropertyName: string | null = null;
 
@@ -43,6 +45,7 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
             this.indexes = entity.indexes;
             this.fromPropertyName = entity.fromPropertyName;
             this.tags = entity.tags;
+            this.encryption = entity.encryption;
         }
 
         if (literals) {

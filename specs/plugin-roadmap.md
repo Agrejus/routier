@@ -27,8 +27,8 @@ new one.
 
 ### Encryption wrapper — shipped 2026-08-07
 
-`@routier/encryption-plugin`. Randomised by default; `encrypted(s.string(), { searchable: true })`
-is deterministic and keeps equality filters working in the database. Keys are held in a keyring
+`@routier/encryption-plugin`, declared with the core `.encrypted()` modifier. Randomised by
+default; `s.string().encrypted({ searchable: true })` is deterministic and keeps equality filters working in the database. Keys are held in a keyring
 with ids, so rotation adds a key rather than replacing one. A filter that cannot be answered
 correctly throws instead of falling back to an in-memory scan.
 

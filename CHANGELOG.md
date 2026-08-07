@@ -214,6 +214,12 @@ reconciles the server's echo instead of discarding it.
 
 ### Added
 
+- **`.encrypted()`** — a schema modifier, alongside `.index()`, `.distinct()` and
+  `.readonly()`. `s.string().encrypted({ searchable: true })`, `s.number().encrypted()`.
+  Encryption does not change what a value is — an encrypted number is still a number to the
+  application — so it is a modifier rather than a type, and it surfaces on
+  `PropertyInfo.encryption` rather than through a string tag. Core stores the declaration and
+  does nothing with it; `@routier/encryption-plugin` performs the work.
 - **`s.file()`** — a schema primitive whose write shape differs from its read shape. Assign a
   `File`, `Blob`, `Uint8Array` or string; store and read back a reference (key, size, content
   type, checksum, name). `InferCreateType` accepts content and `InferType` gives the

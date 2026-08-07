@@ -5,7 +5,7 @@ import { uuidv4 } from '@routier/core';
 import { MemoryPlugin } from '@routier/memory-plugin';
 import { DexiePlugin } from '@routier/dexie-plugin';
 import type { IDbPlugin } from '@routier/core/plugins';
-import { EncryptionDbPlugin, createKeyring, encrypted, isEnvelope } from '../index';
+import { EncryptionDbPlugin, createKeyring, isEnvelope } from '../index';
 
 /**
  * Field-level encryption, end to end.
@@ -18,8 +18,8 @@ import { EncryptionDbPlugin, createKeyring, encrypted, isEnvelope } from '../ind
 const userSchema = s.define('users', {
     id: s.string().key().identity(),
     tenant: s.string().index(),
-    email: encrypted(s.string(), { searchable: true }),
-    notes: encrypted(s.string()),
+    email: s.string().encrypted({ searchable: true }),
+    notes: s.string().encrypted(),
     plain: s.string(),
 }).compile();
 

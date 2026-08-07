@@ -13,7 +13,7 @@ import { Query } from '@routier/core/plugins';
 import { decrypt, encrypt, isEnvelope } from './cipher';
 import { fromText, isEncryptable, toText } from './codec';
 import type { Keyring } from './keyring';
-import { encryptionMode, type EncryptionMode } from './schema';
+import type { EncryptionMode } from '@routier/core/schema';
 
 /**
  * Encrypts marked properties before they reach the database, and decrypts them on the way back.
@@ -579,7 +579,7 @@ export const encryptedProperties = <T extends {}>(schema: CompiledSchema<T>): En
             continue;
         }
 
-        const mode = encryptionMode(property);
+        const mode = property.encryption;
 
         if (mode == null) {
             continue;

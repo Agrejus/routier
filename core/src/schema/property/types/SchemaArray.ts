@@ -1,3 +1,4 @@
+import { SchemaEncrypted } from "../modifiers/SchemaEncrypted";
 import { SchemaBase } from "../base/SchemaBase";
 import { SchemaDefault } from "../modifiers/SchemaDefault";
 import { SchemaNullable } from "../modifiers/SchemaNullable";
@@ -52,4 +53,18 @@ export class SchemaArray<T extends any, TModifiers extends SchemaModifiers> exte
     tag(...tags: string[]) {
         return new SchemaTag<T[], TModifiers>(tags, this);
     }
+
+    /**
+     * Encrypts this property before it reaches the database. See `SchemaEncrypted`.
+     *
+     * `searchable: true` keeps equality filters working, at the cost of revealing which rows
+     * hold the same value. The unsafe option is the one you have to ask for.
+     */
+    encrypted(options: { searchable?: boolean } = {}) {
+        return new SchemaEncrypted<T[], TModifiers>(
+            options.searchable === true ? 'deterministic' : 'randomised',
+            this as unknown as SchemaBase<T[], TModifiers>
+        );
+    }
+
 }

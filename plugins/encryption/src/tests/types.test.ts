@@ -6,7 +6,7 @@ import { MemoryPlugin } from '@routier/memory-plugin';
 import { DexiePlugin } from '@routier/dexie-plugin';
 import { SqliteDbPlugin } from '@routier/sqlite-plugin';
 import type { IDbPlugin } from '@routier/core/plugins';
-import { EncryptionDbPlugin, createKeyring, encrypted, isEnvelope } from '../index';
+import { EncryptionDbPlugin, createKeyring, isEnvelope } from '../index';
 
 /**
  * Encrypting properties that are not strings.
@@ -23,10 +23,10 @@ import { EncryptionDbPlugin, createKeyring, encrypted, isEnvelope } from '../ind
 const recordSchema = s.define('records', {
     id: s.string().key().identity(),
     label: s.string(),
-    salary: encrypted(s.number()),
-    bornOn: encrypted(s.date()),
-    active: encrypted(s.boolean()),
-    profile: encrypted(s.object({ city: s.string(), score: s.number() })),
+    salary: s.number().encrypted(),
+    bornOn: s.date().encrypted(),
+    active: s.boolean().encrypted(),
+    profile: s.object({ city: s.string(), score: s.number() }).encrypted(),
 }).compile();
 
 class RecordStore extends DataStore {
