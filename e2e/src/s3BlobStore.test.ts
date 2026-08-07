@@ -5,7 +5,7 @@ import { uuidv4 } from '@routier/core';
 import { s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
 import { MemoryPlugin } from '@routier/memory-plugin';
-import { createFiles, fileRef } from '@routier/blob-plugin';
+import { createDirectUploader, createFiles, fileRef } from '@routier/blob-plugin';
 import { s3BlobStore } from '@routier/blob-plugin/stores/s3';
 
 /**
@@ -32,6 +32,16 @@ const SECRET_KEY = 'routiersecret';
 const BUCKET = 'routier-test';
 
 const bytesOf = (text: string) => new TextEncoder().encode(text);
+
+/** The same digest the uploader computes, for tests that drive the handshake by hand. */
+const sha256Hex = async (bytes: Uint8Array) => {
+    const copy = new Uint8Array(bytes.byteLength);
+    copy.set(bytes);
+
+    const digest = await crypto.subtle.digest('SHA-256', copy);
+
+    return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
+};
 
 suite('the S3 blob store against MinIO', () => {
     let container: StartedTestContainer;
@@ -176,6 +186,137 @@ suite('the S3 blob store against MinIO', () => {
         expect(result.deleted).toEqual([orphan.key]);
         expect(await scoped.text(kept)).toBe('referenced');
         await expect(scoped.bytes(orphan)).rejects.toThrow();
+    });
+
+    describe('direct upload, the way a browser does it', () => {
+
+        /**
+         * The full handshake against a real service. The "browser" here holds no credentials
+         * and never constructs an S3 client — it hashes, asks for a grant, and PUTs with
+         * `fetch`, which is exactly what a page would do.
+         */
+        const browser = () => createDirectUploader({
+            requestUpload: request => files.createUploadUrl(request),
+        });
+
+        it('uploads with a presigned PUT and reads back what it sent', async () => {
+            const reference = await browser().upload(bytesOf('sent by the browser'), {
+                contentType: 'text/plain',
+                fileName: 'browser.txt',
+            });
+
+            // Read through the credentialed client: the object really is in the bucket.
+            expect(await files.text(reference)).toBe('sent by the browser');
+            expect(reference.fileName).toBe('browser.txt');
+        });
+
+        it('transfers nothing when the service already holds the content', async () => {
+            await files.upload(bytesOf('deduplicated'), { contentType: 'text/plain' });
+
+            let transfers = 0;
+            const uploader = createDirectUploader({
+                requestUpload: request => files.createUploadUrl(request),
+                fetch: (async (...args: Parameters<typeof fetch>) => {
+                    transfers++;
+                    return fetch(...args);
+                }) as typeof fetch,
+            });
+
+            const reference = await uploader.upload(bytesOf('deduplicated'), { contentType: 'text/plain' });
+
+            expect(transfers).toBe(0);
+            expect(await files.text(reference)).toBe('deduplicated');
+        });
+
+        it('rejects a PUT whose bytes do not match the signed checksum', async () => {
+            // The security property. The digest is signed into the request, so a client that
+            // claims one checksum and sends different bytes is refused by the SERVICE — the
+            // key cannot end up lying about what it holds.
+            const honest = bytesOf('the real content');
+            const digest = await sha256Hex(honest);
+
+            const grant = await files.createUploadUrl({
+                checksum: digest,
+                size: honest.byteLength,
+                contentType: 'text/plain',
+                fileName: 'swapped.txt',
+            });
+
+            const response = await fetch(grant.upload!.url, {
+                method: 'PUT',
+                headers: grant.upload!.headers,
+                body: bytesOf('COMPLETELY different bytes'),
+            });
+
+            expect(response.ok).toBe(false);
+            expect(await files.bytes(grant.reference).then(() => 'stored', () => 'absent')).toBe('absent');
+        });
+
+        it('rejects a PUT that drops the checksum header', async () => {
+            /**
+             * The hole this closes, found by probing rather than by reasoning.
+             *
+             * The presigner signs `host` and nothing else by default, so the content type and
+             * the checksum travelled as ordinary headers a client could simply omit. Dropping
+             * `x-amz-checksum-sha256` stored completely different bytes at a content-addressed
+             * key and returned **200** — the key then lied about its own content, and because
+             * identical content is deduplicated, that poisoned object would be served to every
+             * record referencing the hash.
+             *
+             * Closed by signing both headers. See the note in `stores/s3.ts` for why that
+             * needs `signableHeaders` AND `unhoistableHeaders`.
+             */
+            const honest = bytesOf('the real content, again');
+            const digest = await sha256Hex(honest);
+
+            const grant = await files.createUploadUrl({
+                checksum: digest, size: honest.byteLength, contentType: 'text/plain', fileName: 'x',
+            });
+
+            const { 'x-amz-checksum-sha256': _dropped, ...withoutChecksum } = grant.upload!.headers;
+
+            const response = await fetch(grant.upload!.url, {
+                method: 'PUT', headers: withoutChecksum, body: bytesOf('ATTACKER CONTENT'),
+            });
+
+            expect(response.ok).toBe(false);
+            expect(await files.bytes(grant.reference).then(() => 'stored', () => 'absent')).toBe('absent');
+        });
+
+        it('rejects a PUT that changes the signed content type', async () => {
+            const bytes = bytesOf('typed');
+            const digest = await sha256Hex(bytes);
+
+            const grant = await files.createUploadUrl({
+                checksum: digest, size: bytes.byteLength, contentType: 'text/plain', fileName: 't',
+            });
+
+            const response = await fetch(grant.upload!.url, {
+                method: 'PUT',
+                headers: { ...grant.upload!.headers, 'content-type': 'text/html' },
+                body: bytes,
+            });
+
+            expect(response.ok).toBe(false);
+        });
+
+        it('rejects an expired URL', async () => {
+            const bytes = bytesOf('too late');
+            const digest = await sha256Hex(bytes);
+
+            const grant = await files.createUploadUrl(
+                { checksum: digest, size: bytes.byteLength, contentType: 'text/plain', fileName: 'x' },
+                { expiresIn: 1 }
+            );
+
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            const response = await fetch(grant.upload!.url, {
+                method: 'PUT', headers: grant.upload!.headers, body: bytes,
+            });
+
+            expect(response.ok).toBe(false);
+        });
     });
 
     it('carries a reference through a datastore and back', async () => {

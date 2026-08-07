@@ -76,6 +76,19 @@ const loadSdk = async () => {
     }
 };
 
+/** The presigner is a second optional package, needed only for signed URLs. */
+const loadPresigner = async () => {
+    try {
+        return await import('@aws-sdk/s3-request-presigner');
+    } catch (error) {
+        throw new Error(
+            '@aws-sdk/s3-request-presigner is not installed. It is an optional peer ' +
+            'dependency of @routier/blob-plugin, needed only for signed URLs. ' +
+            `Original error: ${(error as Error).message}`
+        );
+    }
+};
+
 /** Reads a response body into bytes, whichever shape the runtime gave it. */
 const bodyToBytes = async (body: unknown): Promise<Uint8Array> => {
     const candidate = body as {
@@ -194,18 +207,7 @@ export const s3BlobStore = (options: S3BlobStoreOptions): BlobStore => {
         },
 
         async url(key, urlOptions) {
-            let presigner;
-
-            try {
-                presigner = await import('@aws-sdk/s3-request-presigner');
-            } catch (error) {
-                throw new Error(
-                    '@aws-sdk/s3-request-presigner is not installed. It is an optional peer ' +
-                    'dependency of @routier/blob-plugin, needed only for url(). ' +
-                    `Original error: ${(error as Error).message}`
-                );
-            }
-
+            const presigner = await loadPresigner();
             const { GetObjectCommand } = await loadSdk();
 
             return presigner.getSignedUrl(
@@ -213,6 +215,64 @@ export const s3BlobStore = (options: S3BlobStoreOptions): BlobStore => {
                 new GetObjectCommand({ Bucket: bucket, Key: objectKey(key) }) as never,
                 { expiresIn: urlOptions?.expiresIn ?? 300 }
             );
+        },
+
+        async uploadUrl(key, urlOptions) {
+            const presigner = await loadPresigner();
+            const { PutObjectCommand } = await loadSdk();
+
+            const digest = urlOptions.checksum == null
+                ? checksumHeader(key)
+                : base64Digest(urlOptions.checksum);
+
+            const headers: Record<string, string> = { 'content-type': urlOptions.contentType };
+
+            if (digest != null) {
+                headers['x-amz-checksum-sha256'] = digest;
+            }
+
+            /**
+             * `signableHeaders` is not optional here, and getting this wrong is a hole rather
+             * than an inefficiency.
+             *
+             * By default the presigner signs `host` and nothing else, even when the command
+             * carries a content type and a checksum. Those then travel as ordinary headers the
+             * client may omit or change at will. Verified against MinIO: dropping
+             * `x-amz-checksum-sha256` from a signed PUT stored completely different bytes at a
+             * content-addressed key and returned 200. The key then lies about its own content
+             * — and because identical content is deduplicated, the poisoned object is served to
+             * every record that references that hash.
+             *
+             * Naming them here puts both in `X-Amz-SignedHeaders`, so omitting or altering
+             * either is a signature mismatch and the service refuses the upload.
+             */
+            const url = await presigner.getSignedUrl(
+                client as never,
+                new PutObjectCommand({
+                    Bucket: bucket,
+                    Key: objectKey(key),
+                    ContentType: urlOptions.contentType,
+                    ChecksumSHA256: digest,
+                }) as never,
+                {
+                    expiresIn: urlOptions.expiresIn ?? 300,
+                    // Both options, and both are needed. `signableHeaders` covers
+                    // `content-type`. It does NOT cover `x-amz-checksum-sha256`, because
+                    // `x-amz-*` headers are HOISTED into the query string by default, and a
+                    // hoisted header is not in `X-Amz-SignedHeaders` — so it stays a value the
+                    // client can change. `unhoistableHeaders` keeps it in the signature.
+                    //
+                    // Measured, not assumed:
+                    //   default              -> host
+                    //   signableHeaders      -> content-type;host
+                    //   unhoistableHeaders   -> host;x-amz-checksum-sha256
+                    //   both                 -> content-type;host;x-amz-checksum-sha256
+                    signableHeaders: new Set(Object.keys(headers)),
+                    unhoistableHeaders: new Set(Object.keys(headers)),
+                }
+            );
+
+            return { url, headers };
         },
 
         async *list(listPrefix) {
@@ -261,7 +321,15 @@ const checksumHeader = (key: string): string | undefined => {
         return undefined;
     }
 
-    const hex = match[2];
+    return base64Digest(match[2]);
+};
+
+/** Hex SHA-256 as the base64 the S3 API expects. */
+const base64Digest = (hex: string): string | undefined => {
+    if (/^[0-9a-f]{64}$/.test(hex) === false) {
+        return undefined;
+    }
+
     const bytes = new Uint8Array(32);
 
     for (let i = 0; i < 32; i++) {

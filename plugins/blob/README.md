@@ -102,6 +102,52 @@ Verified against MinIO in a container — real HTTP, real 404 semantics, real pa
 presigned URL fetched with no credentials. Run it with
 `E2E_CONTAINERS=1 npx jest --selectProjects e2e`.
 
+## Direct upload: the browser sends bytes to storage, not to you
+
+Your API signs a URL; the browser PUTs to S3, R2 or GCS. A ten-gigabyte upload costs your
+server one small JSON response, and the bytes never pass through it.
+
+```ts
+// --- your server, where the credentials are ---
+app.post('/uploads', async (request, response) => {
+  // Authorise here. Signing IS the authorisation decision.
+  response.json(await files.createUploadUrl(request.body));
+});
+
+// --- the browser, which has none ---
+const uploader = createDirectUploader({
+  requestUpload: (descriptor) =>
+    fetch('/uploads', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(descriptor),
+    }).then(response => response.json()),
+});
+
+const reference = await uploader.upload(fileFromInput);
+
+await store.documents.addAsync({ ownerId, title, file: reference });
+await store.saveChangesAsync();
+```
+
+The browser hashes first, because a content-addressed key cannot be chosen until the content
+is known. That ordering pays for itself: the server answers "already stored" for content it
+already has, and **the browser then transfers nothing at all**.
+
+### What makes it safe
+
+The signature covers the content type and the SHA-256, not just the path. A client that omits
+or alters either gets a 403 from the service.
+
+That is not the default and it is not cosmetic. With the presigner's defaults only `host` is
+signed, and dropping the checksum header from a signed PUT stored **completely different bytes
+at a content-addressed key and returned 200** — verified against MinIO. The key would then lie
+about its own content, and since identical content is deduplicated, the poisoned object would
+be served to every record referencing that hash. Four tests hold that shut: mismatched bytes,
+a dropped checksum header, a changed content type, and an expired URL.
+
+Keep `expiresIn` short. A presigned URL is a bearer token for one object.
+
 ## Content addressing
 
 A key is the SHA-256 of the bytes: `sha256/ab/abcdef…`. That buys three things.
@@ -164,9 +210,7 @@ Not applicable. A reference is five plain fields.
 
 - **Whole-file only.** Content is read into memory to be hashed and uploaded. Streaming and
   multipart uploads are not implemented, so this is not yet the tool for multi-gigabyte video.
-- **Presigned downloads only.** `url()` signs a GET, which is what lets a browser download
-  bytes without proxying them through your server. Signing a PUT, so a browser can upload
-  directly to S3, is the natural next step and is not built.
+- **No multipart.** A direct upload is a single PUT, which S3 caps at 5 GB.
 - **`file: someFile` does not work.** You upload explicitly and store what you get back. A
   schema's generated `preprocess` runs before any plugin sees an entity and keeps only what the
   schema declares, so raw content assigned to a property does not arrive mangled — it does not

@@ -1,5 +1,6 @@
 import { CompiledSchema, PropertyInfo } from '@routier/core/schema';
 import { blobKey, checksum, resolveContentType, resolveFileName, toBytes, type FileContent, type UploadOptions } from './content';
+import { referenceFor, type UploadGrant, type UploadRequest } from './direct';
 import { FILE_TAG, type FileReference } from './schema';
 import type { BlobStore } from './stores/types';
 
@@ -53,6 +54,57 @@ export const createFiles = (store: BlobStore) => ({
             checksum: digest,
             fileName: resolveFileName(content, options) ?? '',
         };
+    },
+
+    /**
+     * Signs an upload so a client can send bytes straight to storage.
+     *
+     * The server half of the direct-upload flow; `createDirectUploader` is the browser half.
+     * Call it from an endpoint your users are authenticated against — a presigned URL is a
+     * bearer token for one object, so signing is the authorisation decision.
+     *
+     * Returns no URL at all when the content is already stored. Keys are content-addressed,
+     * so "already stored" means the bytes are known to be identical, and the client uploads
+     * nothing: re-attaching a file someone else uploaded transfers zero bytes.
+     *
+     * The digest the client claims is signed into the request, so the service verifies the
+     * body against it. A client cannot take a URL signed for one checksum and store different
+     * bytes under a key that promises to be their hash.
+     *
+     * Enforce your own limits before calling this — `request.size` and `request.contentType`
+     * are the client's claims, and refusing to sign is how you reject an upload.
+     */
+    async createUploadUrl(
+        request: UploadRequest,
+        options: { expiresIn?: number } = {}
+    ): Promise<UploadGrant> {
+        if (/^[0-9a-f]{64}$/.test(request.checksum) === false) {
+            throw new Error(
+                `'${request.checksum}' is not a SHA-256 digest. The key is derived from it, ` +
+                'so a malformed digest would sign a URL for a key that means nothing.'
+            );
+        }
+
+        const reference = referenceFor(request);
+
+        if (await store.has(reference.key)) {
+            return { reference };
+        }
+
+        if (store.uploadUrl == null) {
+            throw new Error(
+                `The ${store.name} blob store cannot sign uploads, so bytes cannot be sent to ` +
+                'it directly. Upload through your server with `upload()` instead.'
+            );
+        }
+
+        const upload = await store.uploadUrl(reference.key, {
+            contentType: request.contentType,
+            checksum: request.checksum,
+            expiresIn: options.expiresIn,
+        });
+
+        return { upload, reference };
     },
 
     /** Reads the bytes for a reference. */

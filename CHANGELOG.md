@@ -215,7 +215,11 @@ reconciles the server's echo instead of discarding it.
   and Azure are the same interface. `s3BlobStore` covers AWS, Cloudflare R2 and Google Cloud
   Storage — all three speak the S3 API and differ only in the endpoint — and is verified
   against MinIO in a container, including a presigned URL fetched with no credentials. Keys
-  are the SHA-256 of the content, which makes uploads
+  are the SHA-256 of the content. Direct upload is supported: your server signs, the browser
+  PUTs straight to storage, and content the service already holds transfers nothing at all.
+  The signature covers the content type and the checksum — with the AWS presigner's defaults
+  only `host` is signed, and a client could drop the checksum header to store arbitrary bytes
+  at a content-addressed key. Keys, which makes uploads
   idempotent and dedupes identical files — and means removing a record must never delete its
   bytes, so storage is reclaimed by an explicit `sweepOrphans(live)` instead. A blob store and
   a database cannot be written atomically, so the upload happens first and a failed save leaves
