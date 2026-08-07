@@ -150,6 +150,9 @@ export class DataStore implements Disposable {
         });
     }
 
+    /** Whether any schema declares a transform. See `onSavePreparedChanges`. */
+    private _transforming?: boolean;
+
     protected onSavePreparedChanges(changes: BulkPersistChanges, done: CallbackPartialResult<BulkPersistResult>) {
         try {
             /**
@@ -160,7 +163,12 @@ export class DataStore implements Disposable {
              * a transformed property reports the type it stores, so it builds the right
              * column without knowing a transform exists.
              */
-            const transforming = hasTransforms(this._schemas);
+            // Computed once. The answer only changes when a collection is added, which
+            // happens at construction, and recomputing it per save walks every property of
+            // every schema and allocates on the hot path for a question with a fixed answer.
+            this._transforming ??= hasTransforms(this._schemas);
+
+            const transforming = this._transforming;
 
             const event: DbPluginBulkPersistEvent = {
                 id: uuid(8),
