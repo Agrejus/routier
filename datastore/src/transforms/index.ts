@@ -36,7 +36,10 @@ export const transformedProperties = <T extends {}>(schema: CompiledSchema<T>): 
 
 /** Whether any schema in play declares a transform, so the common case costs nothing. */
 export const hasTransforms = (schemas: SchemaCollection): boolean => {
-    for (const schema of schemas as unknown as Iterable<CompiledSchema<any>>) {
+    // `values()`, not the collection itself: a SchemaCollection is not iterable, and treating
+    // it as one yielded something whose `.properties` did not exist — which surfaced only
+    // under the stress suite, as `schema.properties is not iterable`.
+    for (const schema of schemas.values()) {
         if (transformedProperties(schema).length > 0) {
             return true;
         }

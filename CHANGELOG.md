@@ -5,7 +5,7 @@ Hand-written, one section per release, grouped by package with breaking changes 
 
 ## Unreleased
 
-Thirty-eight defects fixed, recorded as `specs/known-defects.md` #27 through #64, plus the first
+Thirty-nine defects fixed, recorded as `specs/known-defects.md` #27 through #65, plus the first
 CI this repository has had. Every publishable package changed.
 
 Most of these were found by pointing tests at something real for the first time — a MySQL

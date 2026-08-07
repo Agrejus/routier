@@ -1,6 +1,6 @@
 # Known defects
 
-Status: 63 of 64 fixed. #55 is a documented constraint, not a defect: the schema
+Status: 64 of 65 fixed. #55 is a documented constraint, not a defect: the schema
 codegen cannot survive minification, so minification stays off.
 Date: 2026-08-06
 
@@ -1514,6 +1514,30 @@ and which keeps it a single idempotent statement.
 Found while adding PostgreSQL and MySQL to the transform e2e suite. PostgreSQL passed the same
 schema on the first run, which is what made it clear the fault was the engine's DDL and not
 the transform.
+
+---
+
+## #65 — an unconditional await broke concurrent saves — **FIXED** (2026-08-07)
+
+Running transforms made `onSavePreparedChanges` await before calling the plugin. It awaited
+even when there was nothing to transform, because the check came after the promise rather than
+before it.
+
+That cost one microtask tick between preparing the changes and handing them over. With one
+save in flight it is invisible. With twenty workers saving in parallel it is enough for
+another save to interleave, and the change tracker could no longer correlate an addition with
+its echo: S4 failed with "Cannot find internal addition" on most of its workers.
+
+A save with nothing to transform is synchronous to the plugin again, exactly as before.
+
+**Found by CI, not locally, and not by the suite I was watching.** The stress suite is gated
+behind `STRESS=1` and runs only in the container job, and I read the pull-request run — which
+skips that job by design — and called the commit green. The failing push run for the same
+commit was sitting beside it.
+
+A second fault was hiding behind the first: `hasTransforms` iterated the `SchemaCollection`
+directly, which is not iterable, so the fast path threw `schema.properties is not iterable`
+once it started running. `values()` is the accessor.
 
 ---
 

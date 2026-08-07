@@ -5,7 +5,7 @@ import { IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
 import { CompiledSchema, SchemaId } from '@routier/core/schema';
 import { TrampolinePipeline } from '@routier/core/pipeline';
 import type { DbPluginBulkPersistEvent } from '@routier/core/plugins';
-import { applyFromPersistResult, applyToChanges, schemaCollectionView } from './transforms';
+import { applyFromPersistResult, applyToChanges, hasTransforms, schemaCollectionView } from './transforms';
 import { CallbackPartialResult, CallbackResult, PartialResultType, PluginEventResult, Result } from '@routier/core/results';
 import { BulkPersistChanges, BulkPersistResult, SchemaCollection, ReadonlySchemaCollection } from '@routier/core/collections';
 import { UnknownRecord, uuid } from '@routier/core/utilities';
@@ -160,15 +160,28 @@ export class DataStore implements Disposable {
              * a transformed property reports the type it stores, so it builds the right
              * column without knowing a transform exists.
              */
+            const transforming = hasTransforms(this._schemas);
+
             const event: DbPluginBulkPersistEvent = {
                 id: uuid(8),
                 operation: changes,
-                schemas: schemaCollectionView(this._schemas),
+                schemas: transforming ? schemaCollectionView(this._schemas) : this._schemas,
                 source: "DataStore",
                 action: "persist"
             };
 
-            applyToChanges(event).then(() => this.dbPlugin.bulkPersist(event, (bulkPersistResult) => {
+            /**
+             * A save with nothing to transform stays SYNCHRONOUS to this point.
+             *
+             * Awaiting unconditionally cost a microtask tick before the plugin was called,
+             * even when there was no transform to run. Under twenty workers saving in
+             * parallel that tick was enough for another save to interleave between preparing
+             * the changes and handing them over, and the change tracker could no longer
+             * correlate an addition with its echo: S4 failed with "Cannot find internal
+             * addition" on most workers. The stress suite is the only place that shows it,
+             * because it is the only place with real concurrency.
+             */
+            const persist = () => this.dbPlugin.bulkPersist(event, (bulkPersistResult) => {
 
                 if (bulkPersistResult.ok === Result.ERROR) {
                     done(Result.error(bulkPersistResult.error))
@@ -182,7 +195,7 @@ export class DataStore implements Disposable {
 
                 // The echo carries stored values, and the change tracker compares it against
                 // what the entity holds. Reversing it keeps the two sides equal.
-                applyFromPersistResult(event, bulkPersistResult.data).then(() =>
+                const afterPersist = () =>
                 this.collectionPipelines.afterPersist.filter<PartialResultType<{ changes: BulkPersistChanges, result: BulkPersistResult }>>({
                     data: { changes: changes, result: bulkPersistResult.data },
                     ok: Result.SUCCESS
@@ -199,8 +212,24 @@ export class DataStore implements Disposable {
                     }
 
                     done(PluginEventResult.success(bulkPersistResult.id, afterPersistResult.data.result))
-                })).catch(error => done(Result.error(error)));
-            })).catch(error => done(Result.error(error)));
+                });
+
+                if (transforming === false) {
+                    afterPersist();
+                    return;
+                }
+
+                applyFromPersistResult(event, bulkPersistResult.data)
+                    .then(afterPersist)
+                    .catch(error => done(Result.error(error)));
+            });
+
+            if (transforming === false) {
+                persist();
+                return;
+            }
+
+            applyToChanges(event).then(persist).catch(error => done(Result.error(error)));
         } catch (e) {
             done(Result.error(e))
         }
