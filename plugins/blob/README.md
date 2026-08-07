@@ -63,10 +63,44 @@ any `BlobStore`.
 | --- | --- |
 | `memoryBlobStore()` | tests and demos |
 | `fileSystemBlobStore(root)` | Node — desktop apps, single-server deployments |
-| S3, R2, GCS, Azure | *not yet built* — the same five-method interface |
+| `s3BlobStore({ bucket, client })` | AWS S3, Cloudflare R2, Google Cloud Storage |
+| Azure Blob Storage | *not yet built* — it does not speak the S3 API |
 
 `BlobStore` is five operations: `put`, `has`, `get`, `delete`, and optionally `url` and `list`.
-R2 and GCS both speak the S3 API, so one driver covers three of them.
+
+### S3, R2 and GCS
+
+One driver, three services. You construct the client, so the endpoint, region and credentials
+are yours:
+
+```ts
+import { S3Client } from '@aws-sdk/client-s3';
+import { s3BlobStore } from '@routier/blob-plugin/stores/s3';
+
+// AWS
+s3BlobStore({ bucket: 'uploads', client: new S3Client({ region: 'us-east-1' }) });
+
+// Cloudflare R2
+s3BlobStore({ bucket: 'uploads', client: new S3Client({
+    region: 'auto',
+    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+    credentials: { accessKeyId, secretAccessKey },
+}) });
+```
+
+`@aws-sdk/client-s3` is an optional peer dependency, and `@aws-sdk/s3-request-presigner` is a
+second one needed only by `url()`. Neither is downloaded by an application that does not use
+this store.
+
+`keyPrefix` puts several applications in one bucket and lets a lifecycle rule target this
+plugin's objects and nothing else.
+
+The driver hands S3 the SHA-256 already embedded in the content-addressed key, so the service
+verifies each upload rather than trusting the transfer.
+
+Verified against MinIO in a container — real HTTP, real 404 semantics, real pagination, and a
+presigned URL fetched with no credentials. Run it with
+`E2E_CONTAINERS=1 npx jest --selectProjects e2e`.
 
 ## Content addressing
 
@@ -130,8 +164,9 @@ Not applicable. A reference is five plain fields.
 
 - **Whole-file only.** Content is read into memory to be hashed and uploaded. Streaming and
   multipart uploads are not implemented, so this is not yet the tool for multi-gigabyte video.
-- **No presigned browser uploads yet.** Direct browser-to-S3 upload is the design goal and is
-  what the `url` hook exists for; it is not built.
+- **Presigned downloads only.** `url()` signs a GET, which is what lets a browser download
+  bytes without proxying them through your server. Signing a PUT, so a browser can upload
+  directly to S3, is the natural next step and is not built.
 - **`file: someFile` does not work.** You upload explicitly and store what you get back. A
   schema's generated `preprocess` runs before any plugin sees an entity and keeps only what the
   schema declares, so raw content assigned to a property does not arrive mangled — it does not

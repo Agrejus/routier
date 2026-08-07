@@ -19,7 +19,8 @@
     },
     "include": [
         "./src/index.ts",
-        "./src/stores/fileSystem.ts"
+        "./src/stores/fileSystem.ts",
+        "./src/stores/s3.ts"
     ],
     "exclude": [
         "node_modules",

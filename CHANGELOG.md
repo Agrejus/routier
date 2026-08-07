@@ -212,7 +212,10 @@ reconciles the server's echo instead of discarding it.
 - **`@routier/blob-plugin`** (new, 0.1.0) — files and media: metadata in your database, bytes
   in blob storage. A `BlobStore` is five operations (`put`, `has`, `get`, `delete`, and
   optionally `url` and `list`), with stores for memory and the local filesystem; S3, R2, GCS
-  and Azure are the same interface. Keys are the SHA-256 of the content, which makes uploads
+  and Azure are the same interface. `s3BlobStore` covers AWS, Cloudflare R2 and Google Cloud
+  Storage — all three speak the S3 API and differ only in the endpoint — and is verified
+  against MinIO in a container, including a presigned URL fetched with no credentials. Keys
+  are the SHA-256 of the content, which makes uploads
   idempotent and dedupes identical files — and means removing a record must never delete its
   bytes, so storage is reclaimed by an explicit `sweepOrphans(live)` instead. A blob store and
   a database cannot be written atomically, so the upload happens first and a failed save leaves
