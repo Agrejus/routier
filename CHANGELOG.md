@@ -214,12 +214,21 @@ reconciles the server's echo instead of discarding it.
 
 ### Added
 
-- **`.encrypted()`** — a schema modifier, alongside `.index()`, `.distinct()` and
-  `.readonly()`. `s.string().encrypted({ searchable: true })`, `s.number().encrypted()`.
-  Encryption does not change what a value is — an encrypted number is still a number to the
-  application — so it is a modifier rather than a type, and it surfaces on
-  `PropertyInfo.encryption` rather than through a string tag. Core stores the declaration and
-  does nothing with it; `@routier/encryption-plugin` performs the work.
+- **`transform`** — a two-way transform declared in `.modify()`, beside `computed` and
+  `function`. `computed` derives a value one way and cannot come back; a transform declares
+  both directions, so the property keeps its type and only its stored form changes.
+
+  ```ts
+  .modify(x => ({ ssn: x.transform(myCipher) }))
+  ```
+
+  `to` and `from` may be async and are held as live references, never stringified into
+  generated code the way `computed` is — so they close over whatever they need, and there is
+  no property to repeat and no value to inject. A transform declares `stores` and `comparable`
+  itself, so a caller writes neither.
+
+  Core ships no transform of its own. Encryption is one thing a caller might write here;
+  compression, redaction and a custom codec are others.
 - **`s.file()`** — a schema primitive whose write shape differs from its read shape. Assign a
   `File`, `Blob`, `Uint8Array` or string; store and read back a reference (key, size, content
   type, checksum, name). `InferCreateType` accepts content and `InferType` gives the
@@ -231,17 +240,15 @@ reconciles the server's echo instead of discarding it.
   at all. A file is a leaf, so the value passes through untouched, and `BlobDbPlugin` swaps it
   for a reference during `bulkPersist`, the only place an upload can happen because
   `preprocess` is synchronous.
-- **`@routier/encryption-plugin`** (new, 0.1.0) — field-level encryption as a wrapper, so one
-  implementation covers all nine backends. `encrypted(s.string())` is randomised: a fresh IV
-  per write, nothing leaks, and a filter on it throws rather than quietly becoming a full
-  scan. `encrypted(s.string(), { searchable: true })` is deterministic, so an equality filter
-  still runs in the database against an index — at the cost of revealing which rows share a
-  value, which is why it is opt-in. Keys live in a keyring with ids and every value records
-  the id that wrote it, so rotation adds a key instead of replacing one. AES-GCM authenticates,
-  so a value altered in the database fails to decrypt rather than reading back as anything.
-  Numbers, dates, booleans and objects encrypt as readily as strings: the wrapper hands the
-  inner plugin a view of the schema in which those properties say `String`, so every backend
-  builds a TEXT column through unmodified code, and entity types are unchanged.
+- **`@routier/encryption`** (new, 0.1.0) — AES-GCM as a schema transform, not a plugin.
+  `x.transform(encryption(keyring))` and your database plugin never learns it happened.
+  Randomised by default; `{ searchable: true }` is deterministic and keeps equality filters
+  working, at the cost of revealing which rows share a value. Keys live in a keyring with ids
+  so rotation adds a key rather than replacing one, and AES-GCM authenticates, so a value
+  altered in the database fails to decrypt rather than reading back as anything. Nothing about
+  the package is privileged: a transform of your own with the same two functions works
+  identically.
+
 - **`@routier/blob-plugin`** (new, 0.1.0) — files and media: metadata in your database, bytes
   in blob storage. A `BlobStore` is five operations (`put`, `has`, `get`, `delete`, and
   optionally `url` and `list`), with stores for memory and the local filesystem; S3, R2, GCS

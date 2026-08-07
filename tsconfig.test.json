@@ -27,7 +27,7 @@
             "@routier/file-system-plugin": ["./plugins/file-system/src/index.ts"],
             "@routier/sql-plugin-core": ["./plugins/sql-core/src/index.ts"],
             "@routier/blob-plugin": ["./plugins/blob/src/index.ts"],
-            "@routier/encryption-plugin": ["./plugins/encryption/src/index.ts"],
+            "@routier/encryption": ["./plugins/encryption/src/index.ts"],
             "@routier/blob-plugin/*": ["./plugins/blob/src/*"],
             "@routier/sqlite-plugin": ["./plugins/sqlite/src/index.ts"],
             "@routier/pouchdb-plugin": ["./plugins/pouchdb/src/index.ts"],

@@ -1,7 +1,7 @@
 import { UnknownRecord } from '../utilities';
 import { SchemaBase } from './property/base/SchemaBase';
 import { SchemaArray } from './property/types/SchemaArray';
-import { DefaultValue, EncryptionMode, ForeignKey, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaTypes, PropertyTransform } from './types';
+import { DefaultValue, ForeignKey, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaTypes, PropertyTransform } from './types';
 
 const SUPPORTED_DESERIALIZATION_TYPES = new Set<SchemaTypes>([
     SchemaTypes.Boolean,
@@ -47,13 +47,6 @@ export class PropertyInfo<T extends {}> {
     /** Whether the property is distinct. */
     readonly isDistinct: boolean;
 
-    /**
-     * How this property is encrypted, or `null` when it is not.
-     *
-     * First-class rather than a tag so a plugin reads a value instead of parsing a string,
-     * and so the store can tell that a schema needs an encryption plugin at all.
-     */
-    readonly encryption: EncryptionMode | null;
 
     /**
      * A two-way transform between the application value and the stored value, or `null`.
@@ -117,7 +110,6 @@ export class PropertyInfo<T extends {}> {
         this.isUnmapped = schema.isUnmapped;
         this.injected = schema.injected;
         this.isDistinct = schema.isDistict;
-        this.encryption = schema.encryption;
         this.transform = schema.transform;
         this.indexes = schema.indexes;
         this.from = schema.fromPropertyName;

@@ -1,4 +1,3 @@
-import { SchemaEncrypted } from "./SchemaEncrypted";
 import { PropertyDeserializer, SchemaModifiers } from "../../types";
 import { SchemaBase } from "../base/SchemaBase";
 import { SchemaDeserialize } from "./SchemaDeserialize";
@@ -23,17 +22,5 @@ export class SchemaOptional<T extends any, TModifiers extends SchemaModifiers> e
         return new SchemaDeserialize<T | undefined, TModifiers | "deserialize">(deserializer, this);
     }
 
-    /**
-     * Encrypts this property before it reaches the database. See `SchemaEncrypted`.
-     *
-     * `searchable: true` keeps equality filters working, at the cost of revealing which rows
-     * hold the same value. The unsafe option is the one you have to ask for.
-     */
-    encrypted(options: { searchable?: boolean } = {}) {
-        return new SchemaEncrypted<T, TModifiers>(
-            options.searchable === true ? 'deterministic' : 'randomised',
-            this
-        );
-    }
 
 }

@@ -48,7 +48,7 @@ const EXPECTED_EXPORT = {
     '@routier/sql-plugin-core': 'getDialect',
     '@routier/sqlite-plugin': 'SqliteDbPlugin',
     '@routier/blob-plugin': 'createFiles',
-    '@routier/encryption-plugin': 'EncryptionDbPlugin',
+    '@routier/encryption': 'encryption',
 };
 
 /**

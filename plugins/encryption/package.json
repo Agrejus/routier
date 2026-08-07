@@ -1,5 +1,5 @@
 {
-    "name": "@routier/encryption-plugin",
+    "name": "@routier/encryption",
     "version": "0.1.0",
     "main": "./dist/index.cjs",
     "module": "./dist/index.js",
@@ -26,15 +26,14 @@
     "license": "MIT",
     "repository": "routier",
     "keywords": [
-        "orm",
-        "typescript",
+        "routier",
         "encryption",
         "aes-gcm",
         "pii",
         "field level encryption",
-        "data access layer"
+        "schema transform"
     ],
-    "description": "Field-level encryption for Routier: values are encrypted before they reach any backend",
+    "description": "AES-GCM encryption as a Routier schema transform. Not a plugin: your database never sees it.",
     "peerDependencies": {
         "@routier/core": ">=0.3.0"
     },
