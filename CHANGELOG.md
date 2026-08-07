@@ -233,6 +233,9 @@ reconciles the server's echo instead of discarding it.
   value, which is why it is opt-in. Keys live in a keyring with ids and every value records
   the id that wrote it, so rotation adds a key instead of replacing one. AES-GCM authenticates,
   so a value altered in the database fails to decrypt rather than reading back as anything.
+  Numbers, dates, booleans and objects encrypt as readily as strings: the wrapper hands the
+  inner plugin a view of the schema in which those properties say `String`, so every backend
+  builds a TEXT column through unmodified code, and entity types are unchanged.
 - **`@routier/blob-plugin`** (new, 0.1.0) — files and media: metadata in your database, bytes
   in blob storage. A `BlobStore` is five operations (`put`, `has`, `get`, `delete`, and
   optionally `url` and `list`), with stores for memory and the local filesystem; S3, R2, GCS

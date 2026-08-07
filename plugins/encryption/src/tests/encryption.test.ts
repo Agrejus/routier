@@ -383,23 +383,4 @@ describe('encryption', () => {
         });
     });
 
-    describe('schema validation', () => {
-
-        it('refuses to encrypt a property that is not a string', async () => {
-            const bad = s.define('bad', {
-                id: s.string().key().identity(),
-                amount: encrypted(s.number()),
-            }).compile();
-
-            class BadStore extends DataStore {
-                rows = this.collection(bad).proxy().create();
-            }
-
-            const store = track(new BadStore(new EncryptionDbPlugin(new MemoryPlugin(uuidv4()), await keyring())));
-
-            await store.rows.addAsync({ amount: 1 } as never);
-
-            await expect(store.saveChangesAsync()).rejects.toThrow(/only a string property can be encrypted/);
-        });
-    });
 });

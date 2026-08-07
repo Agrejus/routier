@@ -8,8 +8,10 @@ import type {
     ITranslatedValue,
 } from '@routier/core/plugins';
 import { PluginEventResult, type PluginEventCallbackPartialResult, type PluginEventCallbackResult } from '@routier/core/results';
-import type { BulkPersistResult } from '@routier/core/collections';
+import type { BulkPersistResult, SchemaCollection } from '@routier/core/collections';
+import { Query } from '@routier/core/plugins';
 import { decrypt, encrypt, isEnvelope } from './cipher';
+import { fromText, isEncryptable, toText } from './codec';
 import type { Keyring } from './keyring';
 import { encryptionMode, type EncryptionMode } from './schema';
 
@@ -71,9 +73,19 @@ export class EncryptionDbPlugin implements IDbPlugin {
             return;
         }
 
+        const viewed: DbPluginQueryEvent<TRoot, TShape> = {
+            ...event,
+            schemas: this.viewOfAll(event.schemas),
+            operation: new Query<TRoot, TShape>(
+                event.operation.options,
+                this.viewOf(event.operation.schema),
+                (event.operation as unknown as { enableChangeTrackingOverride?: boolean }).enableChangeTrackingOverride
+            ),
+        };
+
         this.prepareFilters(event, properties)
             .then(() => {
-                this.plugin.query(event, result => {
+                this.plugin.query(viewed, result => {
                     if (result.ok === 'error') {
                         done(result);
                         return;
@@ -95,9 +107,14 @@ export class EncryptionDbPlugin implements IDbPlugin {
         event: DbPluginBulkPersistEvent,
         done: PluginEventCallbackPartialResult<BulkPersistResult>
     ): void {
+        const viewed: DbPluginBulkPersistEvent = {
+            ...event,
+            schemas: this.viewOfAll(event.schemas),
+        };
+
         this.encryptChanges(event)
             .then(() => {
-                this.plugin.bulkPersist(event, (result) => {
+                this.plugin.bulkPersist(viewed, (result) => {
                     if (result.ok === 'error') {
                         done(result);
                         return;
@@ -111,6 +128,112 @@ export class EncryptionDbPlugin implements IDbPlugin {
                 });
             })
             .catch(error => done(PluginEventResult.error(event.id, error)));
+    }
+
+    /**
+     * The schema the inner plugin sees: encrypted properties typed as strings.
+     *
+     * A ciphertext is text, so an encrypted number cannot live in the column its own schema
+     * would produce. Rather than teaching nine plugins about encryption, they are handed a
+     * view of the compiled schema in which those properties say `String` — and every one of
+     * them then builds a TEXT column, skips JSON encoding, and indexes it as a string,
+     * through completely unmodified code.
+     *
+     * The same prototype-delegation technique as `ConcurrencyDbPlugin`, applied to REPLACING
+     * a property rather than appending one. `Object.defineProperty` on the derived object is
+     * what makes it safe: it defines an own property that shadows the original, so the real
+     * `PropertyInfo` is untouched — and would stay untouched even if it were frozen, because
+     * an assignment would throw there and this does not assign.
+     */
+    private readonly views = new Map<unknown, CompiledSchema<any>>();
+
+    private viewOf<T extends {}>(schema: CompiledSchema<T>): CompiledSchema<T> {
+        const cached = this.views.get(schema.id);
+
+        if (cached != null) {
+            return cached as CompiledSchema<T>;
+        }
+
+        const encrypted = new Set(encryptedProperties(schema).map(e => e.property.name));
+
+        if (encrypted.size === 0) {
+            return schema;
+        }
+
+        const view = Object.create(schema) as CompiledSchema<T>;
+
+        /**
+         * A property that becomes a string has no children, and its children must go with it.
+         *
+         * `profile: encrypted(s.object({ city, score }))` is one TEXT column holding a
+         * ciphertext. Leaving `city` and `score` in the list left the plugin still trying to
+         * rebuild a nested object from them, and it read them off the ciphertext string: the
+         * whole property came back `undefined`, and the failure surfaced far away, in the
+         * datastore's generated postprocess reading `.city` off nothing.
+         */
+        const isUnderEncrypted = (property: { name: string; parent?: unknown }) => {
+            let current = property as { name: string; parent?: { name: string; parent?: unknown } } | undefined;
+
+            while (current?.parent != null) {
+                current = current.parent as typeof current;
+            }
+
+            return current != null && current !== property && encrypted.has(current.name);
+        };
+
+        Object.defineProperty(view, 'properties', {
+            value: schema.properties
+                .filter(property => isUnderEncrypted(property) === false)
+                .map(property => {
+                    if (property.parent != null || encrypted.has(property.name) === false) {
+                        return property;
+                    }
+
+                    const asString = Object.create(property);
+
+                    Object.defineProperty(asString, 'type', {
+                        value: SchemaTypes.String,
+                        enumerable: true,
+                    });
+
+                    return asString;
+                }),
+            enumerable: true,
+        });
+
+        /**
+         * A deep copy, rather than the schema's generated `clone`.
+         *
+         * The generated one is built from the REAL schema and rebuilds a nested object from
+         * the children it declares. An encrypted object has no children any more — it is one
+         * ciphertext string — so it reconstructed the property from fields of a string and
+         * produced `undefined`. The in-process plugin already reaches for `structuredClone`
+         * when it cannot trust the generated clone; this is the same situation.
+         */
+        Object.defineProperty(view, 'clone', {
+            value: (record: unknown) => structuredClone(record),
+            enumerable: true,
+        });
+
+        this.views.set(schema.id, view);
+
+        return view;
+    }
+
+    /** A SchemaCollection whose every schema is the view. */
+    private viewOfAll(schemas: SchemaCollection): SchemaCollection {
+        const viewOf = (schema: CompiledSchema<any>) => this.viewOf(schema);
+
+        return new Proxy(schemas, {
+            get(target, property, receiver) {
+                if (property === 'get') {
+                    return (id: never) =>
+                        viewOf((target as unknown as { get(id: never): CompiledSchema<any> }).get(id));
+                }
+
+                return Reflect.get(target, property, receiver);
+            },
+        });
     }
 
     /** Encrypts every marked property of every entity about to be written. */
@@ -132,8 +255,20 @@ export class EncryptionDbPlugin implements IDbPlugin {
                     await this.encryptValue(entity, property, mode);
                 }
 
-                for (const update of changes.updates as { entity: Record<string, unknown> }[]) {
+                for (const update of changes.updates as UpdateInfo[]) {
                     await this.encryptValue(update.entity, property, mode);
+
+                    /**
+                     * The delta as well as the entity, because the SQL builders write the
+                     * DELTA — `toColumnValueMap(update.delta, ...)` — and only fall back to
+                     * the entity for columns the delta does not mention. Encrypting one and
+                     * not the other wrote a raw number into a column the view had already
+                     * declared TEXT, and SQLite coerced it: a salary of 2 came back as the
+                     * string "2.0".
+                     */
+                    if (update.delta != null && property.name in update.delta) {
+                        await this.encryptValue(update.delta, property, mode);
+                    }
                 }
 
                 // Removes are matched by key, and a key is never encrypted, so they need
@@ -155,16 +290,14 @@ export class EncryptionDbPlugin implements IDbPlugin {
             return;
         }
 
-        if (typeof value !== 'string') {
+        if (isEncryptable(value, property) === false) {
             throw new Error(
-                `Cannot encrypt '${property.name}': it holds a ${typeof value}, and only ` +
-                'string properties can be encrypted today. A ciphertext is text, so an ' +
-                'encrypted number would have to be stored in a column its own schema says is ' +
-                'numeric. Declare the property as a string if it must be encrypted.'
+                `Cannot encrypt '${property.name}': it is declared ${property.type} and holds ` +
+                `a ${typeof value}.`
             );
         }
 
-        entity[property.name] = await encrypt(this.keyring, value, {
+        entity[property.name] = await encrypt(this.keyring, toText(value, property), {
             deterministic: mode === 'deterministic',
         });
     }
@@ -385,7 +518,7 @@ export class EncryptionDbPlugin implements IDbPlugin {
             }
 
             copy ??= { ...row };
-            copy[property.name] = await decrypt(this.keyring, value);
+            copy[property.name] = fromText(await decrypt(this.keyring, value), property);
         }
 
         return copy ?? row;
@@ -415,6 +548,8 @@ export class EncryptionDbPlugin implements IDbPlugin {
 }
 
 type EncryptedProperty = { property: PropertyInfo<any>; mode: EncryptionMode };
+
+type UpdateInfo = { entity: Record<string, unknown>; delta?: Record<string, unknown> };
 
 /** The minimum an expression node has to look like for this to walk it. */
 type FilterOption = {
@@ -448,13 +583,6 @@ export const encryptedProperties = <T extends {}>(schema: CompiledSchema<T>): En
 
         if (mode == null) {
             continue;
-        }
-
-        if (property.type !== SchemaTypes.String) {
-            throw new Error(
-                `'${property.name}' is marked encrypted but is declared as ${property.type}. ` +
-                'A ciphertext is text, so only a string property can be encrypted today.'
-            );
         }
 
         found.push({ property, mode });

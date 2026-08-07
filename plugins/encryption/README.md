@@ -110,6 +110,27 @@ renc1.k2.qX7f…iv….yTn2…ciphertext…
 The prefix is what distinguishes an encrypted value from a plaintext one that happens to look
 like base64, which is what makes a partial migration readable in both directions.
 
+## Any property type
+
+Numbers, dates, booleans and objects encrypt as readily as strings, and come back as
+themselves:
+
+```ts
+salary:  encrypted(s.number()),
+bornOn:  encrypted(s.date()),
+active:  encrypted(s.boolean()),
+profile: encrypted(s.object({ city: s.string(), score: s.number() })),
+```
+
+A ciphertext is text, so the column cannot be the one the schema would otherwise produce. The
+wrapper hands the inner plugin a **view** of the compiled schema in which encrypted properties
+say `String`, and every backend then builds a TEXT column, skips JSON encoding and indexes it
+as a string — through completely unmodified code. The same prototype-delegation technique
+`ConcurrencyDbPlugin` uses, applied to replacing a property rather than appending one.
+
+Your entity types are untouched: `salary` is still a `number` to your application, and
+`encrypted()` does not change what `InferType` reports.
+
 ## Contracts
 
 ### What an attacker with the database gets
@@ -136,10 +157,8 @@ between the change tracker and the plugin.
 
 ## Limitations
 
-- **Strings only.** A ciphertext is text, so an encrypted number would have to live in a column
-  its own schema calls numeric. Declare the property as a string if it must be encrypted.
-- **Root properties only.** A nested object is stored whole; encrypting one of its children
-  would mean rewriting the parent's JSON.
+- **Root properties only.** Encrypt `profile`, not `profile.city`. A nested object is encrypted
+  whole, as one ciphertext.
 - **No re-encryption pass.** Rotation makes new writes use the new key and leaves old rows
   readable. Rewriting them is your job, and a query-and-save loop does it.
 - **A value used against both an encrypted and a plain property in one filter** throws. Params
