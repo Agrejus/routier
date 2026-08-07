@@ -1,7 +1,7 @@
 import { UnknownRecord } from '../utilities';
 import { SchemaBase } from './property/base/SchemaBase';
 import { SchemaArray } from './property/types/SchemaArray';
-import { DefaultValue, EncryptionMode, ForeignKey, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaTypes } from './types';
+import { DefaultValue, EncryptionMode, ForeignKey, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaTypes, PropertyTransform } from './types';
 
 const SUPPORTED_DESERIALIZATION_TYPES = new Set<SchemaTypes>([
     SchemaTypes.Boolean,
@@ -54,6 +54,15 @@ export class PropertyInfo<T extends {}> {
      * and so the store can tell that a schema needs an encryption plugin at all.
      */
     readonly encryption: EncryptionMode | null;
+
+    /**
+     * A two-way transform between the application value and the stored value, or `null`.
+     *
+     * A LIVE reference. Unlike `computed`, which is stringified into generated code, this is
+     * held as-is so it can close over a key, a client, or anything else a caller needs — and
+     * so it can be async, which generated code cannot be.
+     */
+    readonly transform: PropertyTransform<unknown, unknown> | null;
     /** Indexes associated with the property. */
     readonly indexes: string[];
 
@@ -109,6 +118,7 @@ export class PropertyInfo<T extends {}> {
         this.injected = schema.injected;
         this.isDistinct = schema.isDistict;
         this.encryption = schema.encryption;
+        this.transform = schema.transform;
         this.indexes = schema.indexes;
         this.from = schema.fromPropertyName;
         this.tags = schema.tags;

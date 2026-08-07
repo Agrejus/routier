@@ -237,6 +237,37 @@ export type CompiledSchema<TEntity extends {}> = {
 export type PropertySerializer<T extends any> = (value: T) => string | number;
 export type PropertyDeserializer<T extends any> = (value: string | number) => T;
 
+/**
+ * A two-way transform between the application value and the stored value.
+ *
+ * Both directions may be async. Held as a live reference rather than stringified, so a
+ * closure works and `injected` is a convenience rather than the only way in.
+ */
+export type PropertyTransform<T extends any, I = never> = {
+    /** Application value to stored value. Runs before the plugin sees it. */
+    to: (value: T, injected: I) => unknown | Promise<unknown>;
+
+    /** Stored value back to application value. Runs after the plugin returns it. */
+    from: (value: unknown, injected: I) => T | Promise<T>;
+
+    /**
+     * What the column becomes, when the stored form is not the property's own type.
+     *
+     * A transform that produces text from a number has to say so, or a plugin builds a
+     * numeric column and the write fails on the engines that care.
+     */
+    stores?: SchemaTypes;
+
+    /**
+     * Whether a filter on this property can still run in the database.
+     *
+     * `equality` means `to` is deterministic, so a comparison value can be transformed and
+     * matched against the stored form. Anything else must not be pushed down — a transformed
+     * value does not order or match like the value it replaced.
+     */
+    comparable?: 'equality' | 'none';
+};
+
 export type SchemaId = Branded<number, "SchemaId">;
 export type CollectionName = Branded<string, "CollectionName">;
 

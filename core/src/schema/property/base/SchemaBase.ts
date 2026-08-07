@@ -1,4 +1,4 @@
-import { DefaultValue, ForeignKey, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes, EncryptionMode } from "../../types";
+import { DefaultValue, ForeignKey, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes, EncryptionMode, PropertyTransform } from "../../types";
 
 export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifiers> {
 
@@ -14,6 +14,8 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
     isDistict: boolean = false;
     /** Set by `.encrypted()`. `null` when the property is stored as it is. */
     encryption: EncryptionMode | null = null;
+    /** Set by `.modify(x => x.transform(...))`. A live reference, never stringified. */
+    transform: PropertyTransform<unknown, unknown> | null = null;
     indexes: string[] = [];
     fromPropertyName: string | null = null;
 
@@ -46,6 +48,7 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
             this.fromPropertyName = entity.fromPropertyName;
             this.tags = entity.tags;
             this.encryption = entity.encryption;
+            this.transform = entity.transform;
         }
 
         if (literals) {

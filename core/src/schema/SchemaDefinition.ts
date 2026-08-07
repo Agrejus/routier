@@ -1,4 +1,5 @@
 import { SchemaFunction } from './table/SchemaFunction';
+import { SchemaTransform } from './table/SchemaTransform';
 import { SchemaComputed } from './table/SchemaComputed';
 import { SchemaBase } from "./property/base/SchemaBase";
 import { PropertyInfo } from './PropertyInfo';
@@ -18,7 +19,7 @@ import { FreezeHandlerBuilder } from '../codegen/handlers/FreezeHandlerBuilder';
 import { SchemaError } from '../errors/SchemaError';
 import { SerializeHandlerBuilder } from "../codegen/handlers/SerializeHandlerBuilder";
 import { hash, logger } from "../utilities";
-import { CollectionName, CompiledSchema, CompiledSchemaCore, CompiledSchemaWithMetadata, GetHashTypeFunction, HashFunction, HashType, IdType, Index, InferCreateType, InferType, Prepare, Preprocess, SchemaId, SchemaTypes, SetProperties } from './types';
+import { CollectionName, CompiledSchema, CompiledSchemaCore, CompiledSchemaWithMetadata, GetHashTypeFunction, HashFunction, HashType, IdType, Index, InferCreateType, InferType, Prepare, Preprocess, SchemaId, SchemaTypes, SetProperties, PropertyTransform } from './types';
 import { DeepPartial } from '../types';
 import { SchemaSubscription } from './communication/broadcast';
 import { CompareIdsHandlerBuilder } from '../codegen/handlers/CompareIdsHandlerBuilder';
@@ -210,11 +211,33 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
     modify<R>(builder: (d: {
         function: <UU, I = never>(fn: (entity: InferType<CompiledSchema<T>>, collectionName: CollectionName, injected: I) => UU, injected?: I) => SchemaFunction<UU, I, "unmapped">;
         computed: <UU, I = never>(fn: (entity: InferType<CompiledSchema<T>>, collectionName: CollectionName, injected: I) => UU, injected?: I) => SchemaComputed<UU, I, "computed" | "unmapped">;
+        /**
+         * Replaces a property with a transformed version of itself.
+         *
+         * `computed` derives a value one way and cannot come back. A transform declares both
+         * directions, so the property keeps its type and only its STORED form changes.
+         *
+         * ```ts
+         * .modify(x => ({
+         *     ssn: x.transform(s.string(), {
+         *         to:   (value, keys) => myEncrypt(value, keys),
+         *         from: (text,  keys) => myDecrypt(text,  keys),
+         *         stores: SchemaTypes.String,
+         *     }, myKeys),
+         * }))
+         * ```
+         *
+         * `to` and `from` may be async and are held as live references, so they can close
+         * over whatever they need. `injected` is there for when passing it explicitly reads
+         * better than capturing it.
+         */
+        transform: <UU, I = never>(underlying: SchemaBase<UU, any>, transform: PropertyTransform<UU, I>, injected?: I) => SchemaTransform<UU, I>;
     }) => R) {
 
         const b = {
             function: <UU, I = never>(fn: (entity: InferType<CompiledSchema<T>>, collectionName: CollectionName, injected?: I) => UU, injected?: I) => new SchemaFunction<UU, I, "unmapped">(fn as any, injected),
-            computed: <UU, I = never>(fn: (entity: InferType<CompiledSchema<T>>, collectionName: CollectionName, injected?: I) => UU, injected?: I) => new SchemaComputed<UU, I, "computed" | "unmapped">(fn as any, injected)
+            computed: <UU, I = never>(fn: (entity: InferType<CompiledSchema<T>>, collectionName: CollectionName, injected?: I) => UU, injected?: I) => new SchemaComputed<UU, I, "computed" | "unmapped">(fn as any, injected),
+            transform: <UU, I = never>(underlying: SchemaBase<UU, any>, transform: PropertyTransform<UU, I>, injected?: I) => new SchemaTransform<UU, I>(underlying as never, transform, injected)
         }
 
         const r = builder(b)
