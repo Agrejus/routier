@@ -22,7 +22,7 @@ unaffected package to `0.3.0` would claim a break that did not happen.
 | --- | --- | --- | --- |
 | `@routier/pouchdb-plugin` | 0.2.0 | **0.3.0** | breaking: sync callback types |
 | `@routier/replication-plugin` | 0.2.1 | **0.3.0** | breaking: no `skip`/`take` pushdown |
-| `@routier/core` | 0.2.1 | 0.2.3 | fixes, additive parser grammar, `s.file()` |
+| `@routier/core` | 0.2.1 | **0.3.0** | `s.file()`, corrected wrapper inference |
 | `@routier/datastore` | 0.2.1 | 0.2.2 | fixes |
 | `@routier/postgresql-plugin` | 0.2.1 | 0.2.2 | fixes, republish (see below) |
 | `@routier/browser-storage-plugin` | 0.2.0 | 0.2.1 | fixes, republish (see below) |
