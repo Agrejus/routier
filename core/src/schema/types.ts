@@ -5,7 +5,7 @@ import type { SchemaObject } from "./property/types/SchemaObject";
 import type { PropertyInfo } from "./PropertyInfo";
 import type { DeepPartial } from "../types";
 import type { SchemaFunction } from "./table";
-import type { SchemaOptional } from "./property/modifiers";
+import type { SchemaOptional, SchemaTag } from "./property/modifiers";
 import type { Branded } from "../utilities/types";
 
 export type DefaultValue<T, I = never> = T | ((injected: I) => T);
@@ -201,8 +201,27 @@ export type SchemaModifiers = "default" | "deserialize" |
     "unmapped" | "computed" |
     "distinct";
 
+/**
+ * What a tagged property infers to.
+ *
+ * `tag()` is metadata and must not change a type, but `SchemaTag<T>` carries the same `T` as
+ * whatever it wrapped without carrying which class that was. For a string `T` is already
+ * `string`; for an object `T` is the map of child schemas, which only the `SchemaObject`
+ * branch below knows how to unwrap. Falling through to the generic `SchemaBase` branch
+ * therefore handed the raw map back, so `s.object({ key: s.string() }).tag('x')` typed
+ * `key` as `SchemaString` instead of `string` — everything ran, and only the types lied.
+ *
+ * An array is distinguishable because `SchemaArray`'s parameter is the ELEMENT schema, so a
+ * tagged array arrives here as a `SchemaBase` rather than a plain map.
+ */
+type InferTagged<C> =
+    C extends string | number | boolean | Date ? C :
+    C extends SchemaBase<any, any> ? InferPrimitive<C>[] :
+    { [K in keyof C]: InferPrimitive<C[K]> };
+
 type InferPrimitive<T> =
     T extends SchemaOptional<infer C, infer __> ? C extends (string | number | Date) ? C : { [K in keyof C]: InferPrimitive<C[K]> } :
+    T extends SchemaTag<infer C, infer __> ? InferTagged<C> :
     T extends SchemaArray<infer Y, infer __> ? InferPrimitive<Y>[]
     : T extends SchemaObject<infer Obj, infer _> ?
     { [K in keyof Obj]: InferPrimitive<Obj[K]> } : // Process nested objects

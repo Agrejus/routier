@@ -1,6 +1,6 @@
 # Known defects
 
-Status: 59 of 60 fixed. #55 is a documented constraint, not a defect: the schema
+Status: 60 of 61 fixed. #55 is a documented constraint, not a defect: the schema
 codegen cannot survive minification, so minification stays off.
 Date: 2026-08-06
 
@@ -1419,6 +1419,32 @@ every property in the tree, where only root properties were meant. The SQL side 
 
 Found by probing whether the planned blob/file plugin could store its reference on Dexie. It
 could not, and nothing in the suite covered a schema with two nested objects.
+
+---
+
+## #61 — `tag()` on an object broke the entity's type — **FIXED** (2026-08-06)
+
+`InferPrimitive` special-cases `SchemaObject` to unwrap its children into value types.
+`SchemaTag<T>` carries the same `T` as whatever it wrapped without carrying which class that
+was, so a tagged object fell through to the generic `SchemaBase` branch and the raw map of
+child schemas came back as the type.
+
+```ts
+s.object({ key: s.string() }).tag('x')   // entity typed { key: SchemaString<string, never> }
+s.object({ key: s.string() })            // entity typed { key: string }
+```
+
+Nothing failed at runtime — tags are metadata and the values were always correct. Only the
+types lied, which is why it survived: every existing use of `tag()` was on a string or a
+number, where `T` is already the value type and the bug is invisible.
+
+Tagged arrays were wrong too, and differently: `SchemaArray`'s parameter is the ELEMENT schema,
+so a tagged array inferred as neither the element nor the array.
+
+Found by `@routier/blob-plugin`, which tags a file reference so a sweeper can find every
+file-bearing property of a schema without being told where they are. Pinned by a test that
+asserts a plain typed assignment for each of string, number, boolean, Date, array and object —
+a regression fails to compile rather than failing at runtime.
 
 ---
 

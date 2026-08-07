@@ -1,0 +1,65 @@
+{
+    "name": "@routier/blob-plugin",
+    "version": "0.1.0",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "source": "./src/index.ts",
+    "publishConfig": {
+        "access": "public"
+    },
+    "files": [
+        "dist/**/*",
+        "README.md",
+        "LICENSE"
+    ],
+    "scripts": {
+        "build:types": "tsc --emitDeclarationOnly",
+        "build:bundle": "node ../../scripts/clean-dist.mjs && rspack build",
+        "build": "npm run build:bundle && npm run build:types",
+        "tsc": "tsc --noEmit",
+        "test": "jest",
+        "lint": "oxlint . --ignore-pattern \"**/*.test.*\" --ignore-pattern \"**/*.mjs\""
+    },
+    "sideEffects": false,
+    "author": "James DeMeuse <james.demeuse@gmail.com>",
+    "license": "MIT",
+    "repository": "routier",
+    "keywords": [
+        "orm",
+        "typescript",
+        "files",
+        "media",
+        "uploads",
+        "s3",
+        "r2",
+        "gcs",
+        "azure",
+        "blob storage",
+        "data access layer"
+    ],
+    "description": "File and media storage for Routier: metadata in your database, bytes in blob storage",
+    "peerDependencies": {
+        "@routier/core": ">=0.2.2"
+    },
+    "devDependencies": {
+        "@routier/core": "^0.2.2",
+        "@routier/datastore": "^0.2.2",
+        "@routier/dexie-plugin": "^0.3.0",
+        "@routier/memory-plugin": "^0.2.1",
+        "@rspack/cli": "^1.1.8",
+        "@rspack/core": "^1.1.8"
+    },
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs"
+        },
+        "./stores/fileSystem": {
+            "types": "./dist/stores/fileSystem.d.ts",
+            "import": "./dist/stores/fileSystem.js",
+            "require": "./dist/stores/fileSystem.cjs"
+        }
+    }
+}

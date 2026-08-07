@@ -47,6 +47,7 @@ const EXPECTED_EXPORT = {
     '@routier/replication-plugin': 'HttpDbPlugin',
     '@routier/sql-plugin-core': 'getDialect',
     '@routier/sqlite-plugin': 'SqliteDbPlugin',
+    '@routier/blob-plugin': 'createFiles',
 };
 
 /**
@@ -59,7 +60,7 @@ const EXPECTED_EXPORT = {
 const PACKAGE_DIRECTORIES = [
     'core', 'datastore', 'plugins/memory', 'plugins/file-system', 'plugins/browser-storage',
     'plugins/dexie', 'plugins/postgresql', 'plugins/mysql', 'plugins/pouchdb',
-    'plugins/replication', 'plugins/sql-core', 'plugins/sqlite',
+    'plugins/replication', 'plugins/sql-core', 'plugins/sqlite', 'plugins/blob',
 ];
 
 const run = (command, args, cwd) =>

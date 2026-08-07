@@ -5,7 +5,7 @@ Hand-written, one section per release, grouped by package with breaking changes 
 
 ## Unreleased
 
-Thirty-four defects fixed, recorded as `specs/known-defects.md` #27 through #60, plus the first
+Thirty-five defects fixed, recorded as `specs/known-defects.md` #27 through #61, plus the first
 CI this repository has had. Every publishable package changed.
 
 Most of these were found by pointing tests at something real for the first time — a MySQL
@@ -180,6 +180,13 @@ build, lint, typecheck, test, pack-check, every later gate was inspecting tsc's 
 publish after a green run would have shipped an `index.js` full of extensionless relative
 imports that Node's ESM loader rejects. All thirteen now run `tsc --noEmit`.
 
+**`@routier/core`** — `tag()` on an object property broke the entity's inferred type (#61).
+`SchemaTag<T>` carries the same `T` as whatever it wrapped without carrying which class that
+was, so a tagged object fell through to the generic branch and typed its children as
+`SchemaString` rather than `string`. Runtime was always correct; only the types lied, which is
+why it survived — every existing use of `tag()` was on a string or number, where the bug is
+invisible. Tagged arrays were wrong too.
+
 **`@routier/core`** — a program that finished its work never exited (#54). A DataStore opens a
 BroadcastChannel sender and receiver per collection, and in Node an open channel is a referenced
 handle, so any script that did not call `destroyAsync()` hung forever after its last line — the
@@ -202,6 +209,14 @@ reconciles the server's echo instead of discarding it.
 
 ### Added
 
+- **`@routier/blob-plugin`** (new, 0.1.0) — files and media: metadata in your database, bytes
+  in blob storage. A `BlobStore` is five operations (`put`, `has`, `get`, `delete`, and
+  optionally `url` and `list`), with stores for memory and the local filesystem; S3, R2, GCS
+  and Azure are the same interface. Keys are the SHA-256 of the content, which makes uploads
+  idempotent and dedupes identical files — and means removing a record must never delete its
+  bytes, so storage is reclaimed by an explicit `sweepOrphans(live)` instead. A blob store and
+  a database cannot be written atomically, so the upload happens first and a failed save leaves
+  a sweepable orphan rather than a row pointing at bytes that were never written.
 - **`@routier/sync-server`** (private) — a server implementing the replication wire contract
   with an admin channel, so a test can change data with the client uninvolved.
 - Per-plugin `README.md` stating durability, process/tab boundary, concurrency, migration
