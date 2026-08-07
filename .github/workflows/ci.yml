@@ -82,6 +82,13 @@ jobs:
       # PostgreSQL, MySQL and CouchDB, plus the dialect conformance matrix against all three
       # SQL engines. A green SQLite run says nothing about the others — see
       # specs/known-defects.md, "things that will mislead you" #3.
+      # Most suites here resolve @routier/* to `src/` through Jest's moduleNameMapper and
+      # need no build. Two things do not: `e2e/src/processExit.test.ts` spawns a real child
+      # process, and the browser check bundles the package entry points — both resolve through
+      # node_modules exactly as a user would, and find nothing without a build.
+      - name: Build
+        run: npm run build
+
       - name: E2E with containers
         run: E2E_CONTAINERS=1 npx jest --selectProjects e2e
 
