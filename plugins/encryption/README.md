@@ -118,12 +118,6 @@ to decrypt rather than reading back as something.
 
 **Durability, concurrency, transactions.** Unchanged, and not this package's business.
 
-## Status
-
-The transform is complete and tested. **Applying it during a save is not built yet** — that
-belongs to the datastore, which does not yet run transforms. Until it does, this package
-encrypts and decrypts on demand but nothing calls it automatically.
-
 ## Supported versions
 
 Node 18 or later, and any modern browser. `crypto.subtle` provides HKDF, AES-GCM and HMAC in

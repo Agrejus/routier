@@ -4,6 +4,8 @@ import { CollectionPipelines } from './types';
 import { IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
 import { CompiledSchema, SchemaId } from '@routier/core/schema';
 import { TrampolinePipeline } from '@routier/core/pipeline';
+import type { DbPluginBulkPersistEvent } from '@routier/core/plugins';
+import { applyFromPersistResult, applyToChanges, schemaCollectionView } from './transforms';
 import { CallbackPartialResult, CallbackResult, PartialResultType, PluginEventResult, Result } from '@routier/core/results';
 import { BulkPersistChanges, BulkPersistResult, SchemaCollection, ReadonlySchemaCollection } from '@routier/core/collections';
 import { UnknownRecord, uuid } from '@routier/core/utilities';
@@ -150,13 +152,23 @@ export class DataStore implements Disposable {
 
     protected onSavePreparedChanges(changes: BulkPersistChanges, done: CallbackPartialResult<BulkPersistResult>) {
         try {
-            this.dbPlugin.bulkPersist({
+            /**
+             * Transforms run here, between the change tracker and the plugin.
+             *
+             * Everything above works on the value your application holds; everything below
+             * works on the value that is stored. The plugin is handed a schema view in which
+             * a transformed property reports the type it stores, so it builds the right
+             * column without knowing a transform exists.
+             */
+            const event: DbPluginBulkPersistEvent = {
                 id: uuid(8),
                 operation: changes,
-                schemas: this._schemas,
+                schemas: schemaCollectionView(this._schemas),
                 source: "DataStore",
                 action: "persist"
-            }, (bulkPersistResult) => {
+            };
+
+            applyToChanges(event).then(() => this.dbPlugin.bulkPersist(event, (bulkPersistResult) => {
 
                 if (bulkPersistResult.ok === Result.ERROR) {
                     done(Result.error(bulkPersistResult.error))
@@ -168,6 +180,9 @@ export class DataStore implements Disposable {
                     return;
                 }
 
+                // The echo carries stored values, and the change tracker compares it against
+                // what the entity holds. Reversing it keeps the two sides equal.
+                applyFromPersistResult(event, bulkPersistResult.data).then(() =>
                 this.collectionPipelines.afterPersist.filter<PartialResultType<{ changes: BulkPersistChanges, result: BulkPersistResult }>>({
                     data: { changes: changes, result: bulkPersistResult.data },
                     ok: Result.SUCCESS
@@ -184,8 +199,8 @@ export class DataStore implements Disposable {
                     }
 
                     done(PluginEventResult.success(bulkPersistResult.id, afterPersistResult.data.result))
-                });
-            });
+                })).catch(error => done(Result.error(error)));
+            })).catch(error => done(Result.error(error)));
         } catch (e) {
             done(Result.error(e))
         }

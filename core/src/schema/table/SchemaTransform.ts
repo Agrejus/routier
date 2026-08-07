@@ -1,5 +1,5 @@
 import { SchemaBase } from "../property/base/SchemaBase";
-import { PropertyTransform, SchemaModifiers, SchemaTypes } from "../types";
+import { PropertyTransform, SchemaModifiers } from "../types";
 
 /**
  * A two-way transform between the value your application holds and the value that is stored.

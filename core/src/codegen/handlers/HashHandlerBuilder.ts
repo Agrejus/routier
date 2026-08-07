@@ -7,11 +7,13 @@ import { HashComputedValueHandler } from "./hash/HashComputedValueHandler";
 import { HashArrayHandler } from "./hash/HashArrayHandler";
 import { HashObjectHandler } from "./hash/HashObjectHandler";
 import { HashFileHandler } from "./hash/HashFileHandler";
+import { HashTransformHandler } from "./hash/HashTransformHandler";
 
 /// Purpose:
 // Should ignore Id's and Identities for type Object because we want
 // to comare a new addition with what was saved in the database.
 // Files are ignored for the same reason: content goes in, a reference comes back.
+// So are transformed properties, whose stored form differs from the value submitted.
 export class HashHandlerBuilder {
 
     build() {
@@ -22,6 +24,7 @@ export class HashHandlerBuilder {
             .setNext(new HashFunctionHandler())
             .setNext(new HashIdentityHandler())
             .setNext(new HashFileHandler())
+            .setNext(new HashTransformHandler())
             .setNext(new HashDateHandler())
             .setNext(new HashArrayHandler())
             .setNext(new HashObjectHandler())

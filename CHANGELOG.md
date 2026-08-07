@@ -227,6 +227,13 @@ reconciles the server's echo instead of discarding it.
   no property to repeat and no value to inject. A transform declares `stores` and `comparable`
   itself, so a caller writes neither.
 
+  Transforms are applied by the datastore, between the change tracker and the plugin. `to`
+  runs on the way down and `from` on the way back; a filter on a transformed property is
+  rewritten to compare against the stored form when the transform declares
+  `comparable: 'equality'`, and rejected otherwise rather than returning wrong rows. The
+  plugin receives a schema view in which a transformed property reports the type it stores, so
+  it builds the right column through unmodified code.
+
   Core ships no transform of its own. Encryption is one thing a caller might write here;
   compression, redaction and a custom codec are others.
 - **`s.file()`** — a schema primitive whose write shape differs from its read shape. Assign a
