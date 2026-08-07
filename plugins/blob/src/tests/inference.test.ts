@@ -11,7 +11,7 @@ import { uuidv4 } from '@routier/core';
  * that was, and only the `SchemaObject` branch of `InferPrimitive` knows how to unwrap a map
  * of child schemas. A tagged object therefore typed its children as `SchemaString` rather
  * than `string` — the code ran correctly and only the types were wrong, which is why nothing
- * caught it until `fileRef()` needed a tag.
+ * caught it until the blob plugin needed a tagged property.
  *
  * Every assertion here is the plain typed assignment. A regression fails at compile time.
  */

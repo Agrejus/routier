@@ -39,14 +39,14 @@
     ],
     "description": "Replication plugin for routier",
     "peerDependencies": {
-        "@routier/core": ">=0.2.2"
+        "@routier/core": ">=0.2.3"
     },
     "dependencies": {
         "@routier/memory-plugin": "^0.2.1"
     },
     "devDependencies": {
         "@faker-js/faker": "^10.0.0",
-        "@routier/core": "^0.2.2",
+        "@routier/core": "^0.2.3",
         "@routier/test-utils": "file:../../test-utils",
         "@rspack/cli": "^1.1.8",
         "@rspack/core": "^1.1.8"

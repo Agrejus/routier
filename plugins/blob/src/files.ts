@@ -1,7 +1,6 @@
-import { CompiledSchema, PropertyInfo } from '@routier/core/schema';
 import { blobKey, checksum, resolveContentType, resolveFileName, toBytes, type FileContent, type UploadOptions } from './content';
 import { referenceFor, type UploadGrant, type UploadRequest } from './direct';
-import { FILE_TAG, type FileReference } from './schema';
+import type { FileReference } from './schema';
 import type { BlobStore } from './stores/types';
 
 /**
@@ -184,15 +183,3 @@ export const createFiles = (store: BlobStore) => ({
 });
 
 export type Files = ReturnType<typeof createFiles>;
-
-/**
- * Every property of a schema that holds a file reference.
- *
- * Found by tag rather than by name, so assembling the live set for a sweep does not mean
- * hard-coding which properties happen to be files. Root properties only: a reference is one
- * property, and its children are the fields inside it.
- */
-export const fileProperties = <T extends {}>(schema: CompiledSchema<T>): PropertyInfo<T>[] =>
-    schema.properties.filter(property =>
-        property.parent == null && property.tags.includes(FILE_TAG)
-    );

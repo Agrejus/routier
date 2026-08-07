@@ -5,7 +5,7 @@ Hand-written, one section per release, grouped by package with breaking changes 
 
 ## Unreleased
 
-Thirty-five defects fixed, recorded as `specs/known-defects.md` #27 through #61, plus the first
+Thirty-seven defects fixed, recorded as `specs/known-defects.md` #27 through #63, plus the first
 CI this repository has had. Every publishable package changed.
 
 Most of these were found by pointing tests at something real for the first time — a MySQL
@@ -22,7 +22,7 @@ unaffected package to `0.3.0` would claim a break that did not happen.
 | --- | --- | --- | --- |
 | `@routier/pouchdb-plugin` | 0.2.0 | **0.3.0** | breaking: sync callback types |
 | `@routier/replication-plugin` | 0.2.1 | **0.3.0** | breaking: no `skip`/`take` pushdown |
-| `@routier/core` | 0.2.1 | 0.2.2 | fixes, additive parser grammar |
+| `@routier/core` | 0.2.1 | 0.2.3 | fixes, additive parser grammar, `s.file()` |
 | `@routier/datastore` | 0.2.1 | 0.2.2 | fixes |
 | `@routier/postgresql-plugin` | 0.2.1 | 0.2.2 | fixes, republish (see below) |
 | `@routier/browser-storage-plugin` | 0.2.0 | 0.2.1 | fixes, republish (see below) |
@@ -180,6 +180,11 @@ build, lint, typecheck, test, pack-check, every later gate was inspecting tsc's 
 publish after a green run would have shipped an `index.js` full of extensionless relative
 imports that Node's ESM loader rejects. All thirteen now run `tsc --noEmit`.
 
+**`@routier/core`** — an optional object inferred `never` for every one of its fields (#62),
+and a schema whose only contributing properties were files could not be added at all (#63).
+Both were found by adding `s.file()`; the first is a type-only fault of the same family as
+#61, the second a `ReferenceError` in generated code.
+
 **`@routier/core`** — `tag()` on an object property broke the entity's inferred type (#61).
 `SchemaTag<T>` carries the same `T` as whatever it wrapped without carrying which class that
 was, so a tagged object fell through to the generic branch and typed its children as
@@ -209,6 +214,17 @@ reconciles the server's echo instead of discarding it.
 
 ### Added
 
+- **`s.file()`** — a schema primitive whose write shape differs from its read shape. Assign a
+  `File`, `Blob`, `Uint8Array` or string; store and read back a reference (key, size, content
+  type, checksum, name). `InferCreateType` accepts content and `InferType` gives the
+  reference, through every modifier.
+
+  It had to be in core rather than the blob plugin: the generated `preprocess` rebuilds an
+  object property field by field from its declared children, so content assigned to one is
+  discarded before any plugin sees the entity — it does not arrive mangled, it does not arrive
+  at all. A file is a leaf, so the value passes through untouched, and `BlobDbPlugin` swaps it
+  for a reference during `bulkPersist`, the only place an upload can happen because
+  `preprocess` is synchronous.
 - **`@routier/blob-plugin`** (new, 0.1.0) — files and media: metadata in your database, bytes
   in blob storage. A `BlobStore` is five operations (`put`, `has`, `get`, `delete`, and
   optionally `url` and `list`), with stores for memory and the local filesystem; S3, R2, GCS

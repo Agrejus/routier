@@ -5,23 +5,33 @@ Files and media for Routier. **Metadata goes in your database, bytes go in blob 
 ```ts
 import { DataStore } from "@routier/datastore";
 import { s } from "@routier/core/schema";
-import { createFiles, fileRef } from "@routier/blob-plugin";
+import { BlobDbPlugin, createFiles } from "@routier/blob-plugin";
 import { fileSystemBlobStore } from "@routier/blob-plugin/stores/fileSystem";
 
 const documentSchema = s.define("documents", {
   id: s.string().key().identity(),
   ownerId: s.string().index(),
   title: s.string(),
-  file: fileRef(),
+  file: s.file(),
 }).compile();
 
 const files = createFiles(fileSystemBlobStore("./uploads"));
 
-const reference = await files.upload(fileFromInput);
+class AppStore extends DataStore {
+  documents = this.collection(documentSchema).proxy().create();
+  constructor() { super(new BlobDbPlugin(new DexiePlugin("app"), files)); }
+}
 
-await store.documents.addAsync({ ownerId: user.id, title: "Q3 report", file: reference });
+await store.documents.addAsync({ ownerId: user.id, title: "Q3 report", file: fileFromInput });
 await store.saveChangesAsync();
 ```
+
+`s.file()` accepts content — a `File`, `Blob`, `Uint8Array` or string — and stores a reference.
+`BlobDbPlugin` performs that swap during the save and hands the reference to your real plugin,
+which never learns that files exist.
+
+Uploading explicitly is still available when you want the seam visible — `files.upload()`
+returns a reference you can assign yourself, which is what the direct-upload flow does.
 
 Reading back:
 
@@ -211,10 +221,7 @@ Not applicable. A reference is five plain fields.
 - **Whole-file only.** Content is read into memory to be hashed and uploaded. Streaming and
   multipart uploads are not implemented, so this is not yet the tool for multi-gigabyte video.
 - **No multipart.** A direct upload is a single PUT, which S3 caps at 5 GB.
-- **`file: someFile` does not work.** You upload explicitly and store what you get back. A
-  schema's generated `preprocess` runs before any plugin sees an entity and keeps only what the
-  schema declares, so raw content assigned to a property does not arrive mangled — it does not
-  arrive at all. Making that work needs `s.file()` to be a real schema primitive in core.
+- **Uploads are not part of the row transaction**, and cannot be. See *Atomicity*.
 
 ## Supported versions
 

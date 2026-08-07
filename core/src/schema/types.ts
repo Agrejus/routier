@@ -25,10 +25,47 @@ export enum SchemaTypes {
     String = "String",
     Definition = "Definition",
     Function = "Function",
-    Computed = "Computed"
+    Computed = "Computed",
+    /**
+     * Content in, reference out. The only type whose write shape differs from its stored
+     * shape, and a leaf on purpose — see `SchemaFile`.
+     */
+    File = "File"
 }
 
 export type ArrayShape = string | number | Date | {};
+
+/**
+ * What a file property gives back: where the bytes are and what they are.
+ *
+ * Declared in core so `InferType` can name it. Core never reads or writes the bytes — it only
+ * carries this shape — and `@routier/blob-plugin` is what puts one here.
+ */
+export type FileReferenceValue = {
+    /** Where the bytes live, content-addressed by the blob plugin. */
+    key: string;
+    /** Byte length. */
+    size: number;
+    /** Media type as supplied at upload. */
+    contentType: string;
+    /** SHA-256 of the bytes, lowercase hex. */
+    checksum: string;
+    /** The name to show a user. Not part of the key. */
+    fileName: string;
+};
+
+/**
+ * What a file property ACCEPTS: content, or a reference you already have.
+ *
+ * `Blob` covers `File`, which is what an `<input type="file">` yields. A reference is accepted
+ * too, so re-saving an entity that was read from the database does not have to re-upload it.
+ */
+export type FileContentValue =
+    | FileReferenceValue
+    | Uint8Array
+    | ArrayBuffer
+    | Blob
+    | string;
 
 export type ExpandedProperty = ExpandedChildProperty & {
     assignmentPath: string;
@@ -214,13 +251,31 @@ export type SchemaModifiers = "default" | "deserialize" |
  * An array is distinguishable because `SchemaArray`'s parameter is the ELEMENT schema, so a
  * tagged array arrives here as a `SchemaBase` rather than a plain map.
  */
-type InferTagged<C> =
-    C extends string | number | boolean | Date ? C :
+type InferTagged<C> = ResolveWrapped<C>;
+
+/**
+ * What a wrapping modifier's inner type resolves to.
+ *
+ * `SchemaOptional`, `SchemaNullable` and `SchemaTag` all carry the same `C` as whatever they
+ * wrapped, without carrying which class that was, so each has to work out what it is holding.
+ * Three shapes are possible:
+ *
+ * - an already-resolved value (`string` from `s.string()`, a file reference from `s.file()`)
+ * - an ELEMENT schema, which is what `SchemaArray` parameterises on
+ * - a map of child schemas, which is what `SchemaObject` parameterises on
+ *
+ * Getting this wrong is silent. The map branch applied to an already-resolved object walks
+ * its keys and infers `never` for each, so `s.file().optional()` typed as
+ * `{ key: never, size: never, ... }` — which no value can satisfy and no test would catch at
+ * runtime.
+ */
+type ResolveWrapped<C> =
+    C extends string | number | boolean | Date | FileReferenceValue ? C :
     C extends SchemaBase<any, any> ? InferPrimitive<C>[] :
     { [K in keyof C]: InferPrimitive<C[K]> };
 
 type InferPrimitive<T> =
-    T extends SchemaOptional<infer C, infer __> ? C extends (string | number | Date) ? C : { [K in keyof C]: InferPrimitive<C[K]> } :
+    T extends SchemaOptional<infer C, infer __> ? ResolveWrapped<C> :
     T extends SchemaTag<infer C, infer __> ? InferTagged<C> :
     T extends SchemaArray<infer Y, infer __> ? InferPrimitive<Y>[]
     : T extends SchemaObject<infer Obj, infer _> ?
@@ -273,8 +328,29 @@ type IsCreateOptional<T, K extends keyof T> =
 type IsCreateNullable<T, K extends keyof T> =
     HasModifier<T, K, "nullable"> extends true ? true : false;
 
+/**
+ * What a property ACCEPTS on the way in, which is not always what it gives back.
+ *
+ * Only a file differs today: you assign content and read a reference. Matching on the read
+ * type rather than on `SchemaFile` itself is deliberate — it keeps working through every
+ * modifier. `s.file().optional()` is a `SchemaOptional`, `s.file().tag('x')` is a
+ * `SchemaTag`, and neither carries the original class, so a check against the class alone
+ * would silently stop accepting content the moment anyone added a modifier.
+ *
+ * Assignability is required in BOTH directions, and the tuple wrappers are load-bearing.
+ * One-way `extends` matches `never` — which is assignable to everything — so a generic
+ * property over `Record<string, unknown>` resolved to file content and broke the Dexie
+ * plugin's types. It also matched any object that merely happens to have these five fields
+ * plus more. Mutual assignability admits the reference shape and nothing else, and the
+ * tuples stop the conditional distributing over a union.
+ */
+type InferWritePrimitive<T> =
+    [InferPrimitive<T>] extends [FileReferenceValue]
+    ? [FileReferenceValue] extends [InferPrimitive<T>] ? FileContentValue : InferPrimitive<T>
+    : InferPrimitive<T>;
+
 type InferCreateProperty<T, K extends keyof T> =
-    IsCreateNullable<T, K> extends true ? null | InferPrimitive<T[K]> : InferPrimitive<T[K]>;
+    IsCreateNullable<T, K> extends true ? null | InferWritePrimitive<T[K]> : InferWritePrimitive<T[K]>;
 
 type InferCompiledSchema<T> = CoalesceEmpty<{
     [K in keyof T as IsPlainProperty<T, K> extends true ? K : never]: InferPrimitive<T[K]>

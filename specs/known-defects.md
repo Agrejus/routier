@@ -1,6 +1,6 @@
 # Known defects
 
-Status: 60 of 61 fixed. #55 is a documented constraint, not a defect: the schema
+Status: 62 of 63 fixed. #55 is a documented constraint, not a defect: the schema
 codegen cannot survive minification, so minification stays off.
 Date: 2026-08-06
 
@@ -1445,6 +1445,49 @@ Found by `@routier/blob-plugin`, which tags a file reference so a sweeper can fi
 file-bearing property of a schema without being told where they are. Pinned by a test that
 asserts a plain typed assignment for each of string, number, boolean, Date, array and object —
 a regression fails to compile rather than failing at runtime.
+
+---
+
+## #62 — an optional object inferred `never` for every field — **FIXED** (2026-08-06)
+
+`InferPrimitive`'s `SchemaOptional` branch resolved its inner type as
+`C extends (string | number | Date) ? C : { [K in keyof C]: InferPrimitive<C[K]> }`.
+
+The map branch is right when `C` is a map of child schemas, which is what `SchemaObject`
+carries. It is wrong for anything already resolved: walking the keys of a plain value type
+infers `never` for each, so the property typed as `{ key: never, size: never, ... }`, which no
+value can satisfy.
+
+`boolean` was missing from the primitive list too, so `s.boolean().optional()` had the same
+problem.
+
+Found while adding `s.file()`, whose value type is resolved rather than a schema map.
+`SchemaOptional`, `SchemaNullable` and `SchemaTag` now share one `ResolveWrapped` helper that
+distinguishes the three cases a wrapper can hold: an already-resolved value, an element schema
+(what `SchemaArray` carries), and a map of child schemas.
+
+Runtime was never affected. Only the types were wrong, which is the same reason #61 survived.
+
+---
+
+## #63 — a schema of only files could not be added — **FIXED** (2026-08-06)
+
+The generated hash correlates a submitted addition with the row the database echoed. Its
+`result` string is declared by whichever handler runs first, so a schema where no property
+contributes emitted no declaration and then returned it:
+
+```
+ReferenceError: result is not defined
+```
+
+Reachable as soon as files were excluded from the hash — an assets row holding an original and
+a thumbnail has nothing else to contribute. Files now contribute their property NAME, which is
+stable across the content-to-reference swap and still declares the variable.
+
+The exclusion itself is required: what is submitted is content and what is echoed is a
+reference, so hashing the value produced two different hashes for one addition and every save
+with a file failed with "Cannot find internal addition". Identity properties were already
+excluded for the same reason.
 
 ---
 

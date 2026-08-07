@@ -40,14 +40,14 @@
     ],
     "description": "File and media storage for Routier: metadata in your database, bytes in blob storage",
     "peerDependencies": {
-        "@routier/core": ">=0.2.2",
+        "@routier/core": ">=0.2.3",
         "@aws-sdk/client-s3": ">=3.0.0",
         "@aws-sdk/s3-request-presigner": ">=3.0.0"
     },
     "devDependencies": {
         "@aws-sdk/client-s3": "^3.1105.0",
         "@aws-sdk/s3-request-presigner": "^3.1105.0",
-        "@routier/core": "^0.2.2",
+        "@routier/core": "^0.2.3",
         "@routier/datastore": "^0.2.2",
         "@routier/dexie-plugin": "^0.3.0",
         "@routier/memory-plugin": "^0.2.1",

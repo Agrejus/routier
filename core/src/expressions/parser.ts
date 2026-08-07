@@ -33,6 +33,9 @@ const converters: Record<SchemaTypes, (value: unknown) => unknown> = {
     // in-memory execution, so this entry cannot be reached through a parsable filter.
     Computed: v => v,
     Date: v => v,
+    // A file is a reference, and a filter can legitimately compare its fields — content type
+    // and size are ordinary columns. The value passes through unconverted like an object.
+    File: v => v,
     // Stryker disable next-line ArrowFunction: SchemaTypes.Definition is handled as a
     // generic primitive everywhere (specs/known-defects.md) and never pairs in a filter.
     Definition: v => v,

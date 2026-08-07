@@ -5,7 +5,7 @@ import { uuidv4 } from '@routier/core';
 import { MemoryPlugin } from '@routier/memory-plugin';
 import { DexiePlugin } from '@routier/dexie-plugin';
 import type { IDbPlugin } from '@routier/core/plugins';
-import { createFiles, fileProperties, fileRef, memoryBlobStore } from '../index';
+import { createFiles, fileProperties, memoryBlobStore } from '../index';
 
 /**
  * Metadata in the database, bytes in the blob store.
@@ -20,7 +20,7 @@ const documentSchema = s.define('documents', {
     id: s.string().key().identity(),
     ownerId: s.string().index(),
     title: s.string(),
-    file: fileRef(),
+    file: s.file(),
 }).compile();
 
 class DocumentStore extends DataStore {
@@ -104,8 +104,8 @@ describe('files', () => {
             // open a database before known defect #60.
             const assetSchema = s.define('assets', {
                 id: s.string().key().identity(),
-                original: fileRef(),
-                thumbnail: fileRef(),
+                original: s.file(),
+                thumbnail: s.file(),
             }).compile();
 
             class AssetStore extends DataStore {
@@ -254,7 +254,7 @@ describe('files', () => {
 
     describe('finding file properties on a schema', () => {
 
-        it('finds them by tag, not by name', () => {
+        it('finds them by type, not by name', () => {
             const found = fileProperties(documentSchema as never).map(p => p.name);
 
             expect(found).toEqual(['file']);
@@ -263,8 +263,8 @@ describe('files', () => {
         it('finds several, and no plain object', () => {
             const mixed = s.define('mixed', {
                 id: s.string().key().identity(),
-                attachment: fileRef(),
-                preview: fileRef(),
+                attachment: s.file(),
+                preview: s.file(),
                 settings: s.object({ theme: s.string() }),
             }).compile();
 

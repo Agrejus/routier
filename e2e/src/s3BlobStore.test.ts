@@ -5,7 +5,7 @@ import { uuidv4 } from '@routier/core';
 import { s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
 import { MemoryPlugin } from '@routier/memory-plugin';
-import { createDirectUploader, createFiles, fileRef } from '@routier/blob-plugin';
+import { createDirectUploader, createFiles } from '@routier/blob-plugin';
 import { s3BlobStore } from '@routier/blob-plugin/stores/s3';
 
 /**
@@ -325,7 +325,7 @@ suite('the S3 blob store against MinIO', () => {
             id: s.string().key().identity(),
             ownerId: s.string().index(),
             title: s.string(),
-            file: fileRef(),
+            file: s.file(),
         }).compile();
 
         class DocumentStore extends DataStore {

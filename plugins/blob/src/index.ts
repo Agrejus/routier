@@ -1,4 +1,5 @@
-export { createFiles, fileProperties, type Files } from './files';
+export { createFiles, type Files } from './files';
+export { BlobDbPlugin, fileProperties, isFileReference } from './BlobDbPlugin';
 export {
     createDirectUploader,
     referenceFor,
@@ -7,7 +8,7 @@ export {
     type UploadGrant,
     type UploadRequest,
 } from './direct';
-export { fileRef, FILE_TAG, type FileReference } from './schema';
+export type { FileReference } from './schema';
 export { memoryBlobStore } from './stores/memory';
 export { blobKey, checksum, toBytes, type FileContent, type UploadOptions } from './content';
 export type { BlobStore, BlobDescriptor, PresignedUpload, UploadUrlOptions } from './stores/types';
