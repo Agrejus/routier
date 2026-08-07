@@ -5,7 +5,7 @@ Hand-written, one section per release, grouped by package with breaking changes 
 
 ## Unreleased
 
-Thirty-three defects fixed, recorded as `specs/known-defects.md` #27 through #59, plus the first
+Thirty-four defects fixed, recorded as `specs/known-defects.md` #27 through #60, plus the first
 CI this repository has had. Every publishable package changed.
 
 Most of these were found by pointing tests at something real for the first time — a MySQL
@@ -27,7 +27,7 @@ unaffected package to `0.3.0` would claim a break that did not happen.
 | `@routier/postgresql-plugin` | 0.2.1 | 0.2.2 | fixes, republish (see below) |
 | `@routier/browser-storage-plugin` | 0.2.0 | 0.2.1 | fixes, republish (see below) |
 | `@routier/sqlite-plugin` | 0.2.0 | **0.3.0** | breaking: default engine, Node floor |
-| `@routier/dexie-plugin` | 0.2.0 | 0.2.1 | fixes, additive option |
+| `@routier/dexie-plugin` | 0.2.0 | **0.3.0** | breaking: index layout changed |
 | `@routier/file-system-plugin` | 0.2.0 | 0.2.1 | fixes |
 | `@routier/memory-plugin` | 0.2.0 | 0.2.1 | packaging, docs |
 | `@routier/react` | 0.2.0 | 0.2.1 | packaging |
@@ -111,6 +111,13 @@ Two packages. Both are published, so both can break a real installation.
   before now returns rows, and a windowed read syncs the whole filtered set rather than one page.
   Bound what you sync with `where(...)`. Use `HttpDbPlugin` directly if you need the server to
   paginate.
+- **`@routier/dexie-plugin`** — a schema with a nested object produces a different index
+  layout, because the children of that object are no longer emitted as top-level indexes
+  (#60). Dexie keys its layout to a version number, so an existing database hits
+  "The stored database holds a different index layout for this version" until you bump
+  `new DexiePlugin(name, { version })`. Only schemas with nested objects are affected. A
+  schema with **two** nested objects sharing a child name could not open a database at all
+  before this, so those have nothing to migrate.
 - **`@routier/sqlite-plugin`** — the default engine is `node:sqlite` instead of `sqlite3`, and
   `sqlite3` moved from a dependency to an optional peer dependency. The plugin needs **Node
   22.5** by default; on Node 18 or 20, install `sqlite3` and pass `sqlite3Driver()`. Nothing

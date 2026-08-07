@@ -22,7 +22,22 @@ export const convertToDexieSchema = <T extends {}>(schema: CompiledSchema<T>) =>
             continue;
         }
 
-        if (property.level > 1) {
+        /**
+         * Root properties only.
+         *
+         * A root property is level 0 and its children are level 1, so `level > 1` skipped
+         * only grandchildren: the direct children of a nested object were emitted into the
+         * stores string as if they were top-level properties. A schema with
+         * `file: s.object({ key, size })` produced `...,file,key,size` — two indexes on
+         * paths that do not exist at the root.
+         *
+         * Wasteful on its own, and fatal in pairs. Two nested objects sharing a child name —
+         * `original.size` and `thumbnail.size`, which is what any schema with a file and its
+         * thumbnail looks like — emitted `size` twice, and IndexedDB refuses the duplicate:
+         * the database failed to OPEN with `ConstraintError`, so the whole store was
+         * unusable rather than merely unindexed.
+         */
+        if (property.level > 0) {
             logger.warn(`Dexie does not support querying on nested objects.  Property: ${property.getPathArray().join(".")}`);
             continue;
         }

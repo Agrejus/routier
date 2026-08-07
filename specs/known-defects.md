@@ -1,6 +1,6 @@
 # Known defects
 
-Status: 58 of 59 fixed. #55 is a documented constraint, not a defect: the schema
+Status: 59 of 60 fixed. #55 is a documented constraint, not a defect: the schema
 codegen cannot survive minification, so minification stays off.
 Date: 2026-08-06
 
@@ -1389,6 +1389,36 @@ The WASM driver unlinked through a cached OPFS pool handle, and the cache is pop
 `open`. A destroy that ran before any database had been opened — a test clearing state before
 it starts, which is the common case — found the cache empty and unlinked nothing. It reported
 success. `deleteDatabase` now installs the pool rather than reusing whatever is cached.
+
+---
+
+## #60 — a Dexie schema with two nested objects would not open — **FIXED** (2026-08-06)
+
+`convertToDexieSchema` emitted the children of a nested object into the stores string as
+though they were top-level properties. A root property is level 0 and its children are level
+1, and the guard skipped only `level > 1`, so it caught grandchildren and nothing else.
+
+`file: s.object({ key, size })` produced `++id,...,file,key,size`: two indexes on paths that
+do not exist on the record, plus one on `file` itself, which IndexedDB cannot index because an
+object is not a valid key.
+
+Wasteful alone, fatal in pairs. Two nested objects sharing a child name — `original.size` and
+`thumbnail.size`, which is what any schema with a file and its thumbnail looks like — emitted
+`size` twice. IndexedDB refuses a duplicate index, so the database failed to **open**:
+
+```
+OpenFailedError: ConstraintError ... an index already exists and a request
+attempted to create a new one
+```
+
+Every operation on that store failed, not merely an indexed query.
+
+This is the same mistake as #57 in a different plugin: iterating `schema.properties`, which is
+every property in the tree, where only root properties were meant. The SQL side has
+`sqlColumnProperties` for exactly this; Dexie now tests `level > 0`.
+
+Found by probing whether the planned blob/file plugin could store its reference on Dexie. It
+could not, and nothing in the suite covered a schema with two nested objects.
 
 ---
 
