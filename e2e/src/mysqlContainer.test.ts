@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
 import { MySqlContainer, StartedMySqlContainer } from '@testcontainers/mysql';
 import { s } from '@routier/core/schema';
+import { uuidv4 } from '@routier/core';
 import { ConcurrencyDbPlugin, OptimisticConcurrencyError } from '@routier/core';
 import { DataStore } from '@routier/datastore';
 import { MysqlDbPlugin } from '@routier/mysql-plugin';
@@ -521,6 +522,67 @@ suite('MySQL via testcontainers', () => {
             expect(() => new MysqlDbPlugin({} as any)).toThrow(/database.*required/);
         });
     });
+
+    describe('a schema that declares an index', () => {
+
+        /**
+         * Creating the table used to fail outright.
+         *
+         * The DDL builder emitted `CREATE TABLE ...; CREATE INDEX ...;` as one string, and
+         * mysql2 runs one statement per query unless `multipleStatements` is enabled — which
+         * is a SQL injection surface nobody should turn on. So any schema with an index could
+         * not create its table, with a syntax error pointing at the second statement.
+         *
+         * Nothing caught it because no MySQL test had an indexed property. Indexes are now
+         * declared inside the table body as `KEY`, which MySQL accepts and which keeps the
+         * whole thing one statement.
+         */
+        it('creates its table, and the index is usable', async () => {
+            const schema = s.define(`idx_${uuidv4().replace(/-/g, '').slice(0, 20)}`, {
+                id: s.string().key().identity(),
+                tenant: s.string().index(),
+                name: s.string(),
+            }).compile();
+
+            class IndexedStore extends DataStore {
+                rows = this.collection(schema).proxy().create();
+            }
+
+            const created = new IndexedStore(new MysqlDbPlugin(pluginConfig()));
+            opened.push(created);
+
+            await created.rows.addAsync({ tenant: 't1', name: 'first' } as never);
+            await created.rows.addAsync({ tenant: 't2', name: 'second' } as never);
+            await created.saveChangesAsync();
+
+            const found = await created.rows
+                .where(([r, p]) => r.tenant === p.tenant, { tenant: 't2' })
+                .toArrayAsync() as { name: string }[];
+
+            expect(found).toHaveLength(1);
+            expect(found[0].name).toBe('second');
+        });
+
+        it('creates its table for a distinct property, which is a unique index', async () => {
+            const schema = s.define(`uniq_${uuidv4().replace(/-/g, '').slice(0, 20)}`, {
+                id: s.string().key().identity(),
+                code: s.string().distinct(),
+            }).compile();
+
+            class UniqueStore extends DataStore {
+                rows = this.collection(schema).proxy().create();
+            }
+
+            const created = new UniqueStore(new MysqlDbPlugin(pluginConfig()));
+            opened.push(created);
+
+            await created.rows.addAsync({ code: 'abc' } as never);
+            await created.saveChangesAsync();
+
+            expect(await created.rows.countAsync()).toBe(1);
+        });
+    });
+
 });
 
 /**

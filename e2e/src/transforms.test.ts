@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from '@jest/globals';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
 import { DataStore } from '@routier/datastore';
 import { s, SchemaTypes } from '@routier/core/schema';
 import { uuidv4 } from '@routier/core';
@@ -7,6 +7,10 @@ import { MemoryPlugin } from '@routier/memory-plugin';
 import { DexiePlugin } from '@routier/dexie-plugin';
 import { SqliteDbPlugin } from '@routier/sqlite-plugin';
 import { createKeyring, encryption, isEnvelope } from '@routier/encryption';
+import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import { MySqlContainer, StartedMySqlContainer } from '@testcontainers/mysql';
+import { PostgresDbPlugin } from '@routier/postgresql-plugin';
+import { MysqlDbPlugin } from '@routier/mysql-plugin';
 
 /**
  * Transforms end to end, through a real store and real backends.
@@ -342,6 +346,157 @@ describe('transforms', () => {
             const [read] = await store.rows.toArrayAsync() as { shout: string }[];
 
             expect(read.shout).toBe('QUIET');
+        });
+    });
+
+});
+
+/**
+ * The same transforms against real SQL servers.
+ *
+ * These are the engines that can reject what SQLite quietly coerces. A transform declaring
+ * `stores: String` turns an encrypted NUMBER into a text column, and PostgreSQL will refuse a
+ * ciphertext bound to a numeric column rather than storing something surprising — so this is
+ * where the schema view either works or is exposed.
+ *
+ * Gated behind E2E_CONTAINERS with the rest of the container suites.
+ */
+const containerSuite = process.env.E2E_CONTAINERS === '1' ? describe : describe.skip;
+
+containerSuite('transforms against real SQL servers', () => {
+    let postgres: StartedPostgreSqlContainer;
+    let mysql: StartedMySqlContainer;
+
+    beforeAll(async () => {
+        [postgres, mysql] = await Promise.all([
+            new PostgreSqlContainer('postgres:16-alpine').start(),
+            new MySqlContainer('mysql:8.0').start(),
+        ]);
+    }, 240_000);
+
+    afterAll(async () => {
+        await Promise.all([postgres?.stop(), mysql?.stop()]);
+    });
+
+    const engines: [string, () => IDbPlugin][] = [
+        ['postgresql', () => new PostgresDbPlugin({
+            host: postgres.getHost(),
+            port: postgres.getPort(),
+            database: postgres.getDatabase(),
+            user: postgres.getUsername(),
+            password: postgres.getPassword(),
+        })],
+        ['mysql', () => new MysqlDbPlugin({
+            host: mysql.getHost(),
+            port: mysql.getPort(),
+            database: mysql.getDatabase(),
+            user: mysql.getUsername(),
+            password: mysql.getUserPassword(),
+        })],
+    ];
+
+    describe.each(engines)('with %s', (name, plugin) => {
+
+        /** A fresh collection per test: these servers keep their tables between tests. */
+        const build = async () => {
+            const keyring = await keyringOf();
+            const cipher = encryption(keyring);
+            const searchable = encryption(keyring, { searchable: true });
+            const collection = `tx_${name}_${uuidv4().replace(/-/g, '')}`.slice(0, 40);
+
+            const schema = s.define(collection, {
+                id: s.string().key().identity(),
+                tenant: s.string().index(),
+                email: s.string(),
+                notes: s.string(),
+                salary: s.number(),
+            }).modify(x => ({
+                email: x.transform(searchable),
+                notes: x.transform(cipher),
+                salary: x.transform(cipher),
+            })).compile();
+
+            class Store extends DataStore {
+                rows = this.collection(schema).proxy().create();
+            }
+
+            return track(new Store(plugin())) as DataStore & { rows: any };
+        };
+
+        it('stores an encrypted NUMBER in a text column and reads it back as a number', async () => {
+            // The assertion the schema view exists for. Without `stores: String` the column
+            // would be numeric and the server would reject the ciphertext outright.
+            const store = await build();
+
+            await store.rows.addAsync({
+                tenant: 't1', email: 'ada@example.com', notes: 'confidential', salary: 125000.5,
+            } as never);
+            await store.saveChangesAsync();
+
+            const [saved] = await store.rows.toArrayAsync() as { salary: number; notes: string }[];
+
+            expect(saved.salary).toBe(125000.5);
+            expect(typeof saved.salary).toBe('number');
+            expect(saved.notes).toBe('confidential');
+        });
+
+        it('finds a row by a searchable transformed property', async () => {
+            const store = await build();
+
+            await store.rows.addAsync({ tenant: 't1', email: 'ada@example.com', notes: 'a', salary: 1 } as never);
+            await store.rows.addAsync({ tenant: 't1', email: 'grace@example.com', notes: 'b', salary: 2 } as never);
+            await store.saveChangesAsync();
+
+            const found = await store.rows
+                .where(([r, p]: any) => r.email === p.email, { email: 'grace@example.com' })
+                .toArrayAsync() as { email: string; notes: string }[];
+
+            expect(found).toHaveLength(1);
+            expect(found[0].email).toBe('grace@example.com');
+            expect(found[0].notes).toBe('b');
+        });
+
+        it('updates a transformed number through the delta path', async () => {
+            // SQL writes the UPDATE from the delta, not the entity. Transforming one and not
+            // the other put a raw number into a text column and read back "2.0".
+            const store = await build();
+
+            await store.rows.addAsync({ tenant: 't1', email: 'a@b.c', notes: 'n', salary: 1 } as never);
+            await store.saveChangesAsync();
+
+            const [row] = await store.rows.toArrayAsync() as { salary: number }[];
+            row.salary = 2;
+            await store.saveChangesAsync();
+
+            const [reread] = await store.rows.toArrayAsync() as { salary: number }[];
+
+            expect(reread.salary).toBe(2);
+        });
+
+        it('leaves untransformed properties queryable', async () => {
+            const store = await build();
+
+            await store.rows.addAsync({ tenant: 't1', email: 'a@b.c', notes: 'n', salary: 1 } as never);
+            await store.rows.addAsync({ tenant: 't2', email: 'd@e.f', notes: 'n', salary: 2 } as never);
+            await store.saveChangesAsync();
+
+            const found = await store.rows
+                .where(([r, p]: any) => r.tenant === p.tenant, { tenant: 't2' })
+                .toArrayAsync() as { email: string }[];
+
+            expect(found).toHaveLength(1);
+            expect(found[0].email).toBe('d@e.f');
+        });
+
+        it('refuses to filter a property whose transform is not comparable', async () => {
+            const store = await build();
+
+            await store.rows.addAsync({ tenant: 't1', email: 'a@b.c', notes: 'secret', salary: 1 } as never);
+            await store.saveChangesAsync();
+
+            await expect(
+                store.rows.where(([r, p]: any) => r.notes === p.notes, { notes: 'secret' }).toArrayAsync()
+            ).rejects.toThrow(/cannot be filtered/);
         });
     });
 });

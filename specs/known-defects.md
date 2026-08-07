@@ -1,6 +1,6 @@
 # Known defects
 
-Status: 62 of 63 fixed. #55 is a documented constraint, not a defect: the schema
+Status: 63 of 64 fixed. #55 is a documented constraint, not a defect: the schema
 codegen cannot survive minification, so minification stays off.
 Date: 2026-08-06
 
@@ -1488,6 +1488,32 @@ The exclusion itself is required: what is submitted is content and what is echoe
 reference, so hashing the value produced two different hashes for one addition and every save
 with a file failed with "Cannot find internal addition". Identity properties were already
 excluded for the same reason.
+
+---
+
+## #64 — MySQL could not create a table for any schema with an index — **FIXED** (2026-08-07)
+
+The DDL builder emitted two statements in one string:
+
+```sql
+CREATE TABLE IF NOT EXISTS `t` ( ... );
+CREATE INDEX `t_tenant_idx` ON `t` (`tenant`);
+```
+
+mysql2 runs one statement per `query()` unless `multipleStatements` is enabled, which is a SQL
+injection surface nobody should turn on for this. So the second statement was a syntax error
+and **the table was never created** — every save against a schema declaring `.index()` or
+`.distinct()` failed, which is most schemas.
+
+Not caught because no MySQL test had an indexed property. The plugin contract, the query
+oracle and the container suite all used schemas without one.
+
+Indexes are now declared inside the table body as `KEY` and `UNIQUE KEY`, which MySQL accepts
+and which keeps it a single idempotent statement.
+
+Found while adding PostgreSQL and MySQL to the transform e2e suite. PostgreSQL passed the same
+schema on the first run, which is what made it clear the fault was the engine's DDL and not
+the transform.
 
 ---
 

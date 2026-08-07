@@ -5,7 +5,7 @@ Hand-written, one section per release, grouped by package with breaking changes 
 
 ## Unreleased
 
-Thirty-seven defects fixed, recorded as `specs/known-defects.md` #27 through #63, plus the first
+Thirty-eight defects fixed, recorded as `specs/known-defects.md` #27 through #64, plus the first
 CI this repository has had. Every publishable package changed.
 
 Most of these were found by pointing tests at something real for the first time — a MySQL
@@ -147,6 +147,12 @@ part of a first release. There is no earlier version for them to break.
 rendered `? IS NULL`, a tautology matching every row. Behind it, a sentinel collision made
 `"x" == x.prop` render `prop IS NULL`, dropping the value entirely. And both update builders
 matched composite keys on the first component only, so an update overwrote its siblings.
+
+**`@routier/mysql-plugin`** — no schema declaring an index could create its table (#64). The
+DDL builder emitted `CREATE TABLE ...; CREATE INDEX ...;` as one string, and mysql2 runs one
+statement per query, so the table was never created and every save failed. Indexes are now
+declared inside the table body as `KEY`. No MySQL test had an indexed property, which is why
+nothing caught it.
 
 **`@routier/mysql-plugin`** — first execution against a real server, which failed 81 of 86 cases
 (#35–#38). DDL ran inside the transaction, and MySQL commits implicitly on DDL, so a failed save

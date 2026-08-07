@@ -103,7 +103,7 @@ export function compiledSchemaToMysqlTable(schema: CompiledSchema<any>, tableNam
         if (prop.isDistinct) {
             const idxName = `${table}_${prop.name}_unique_idx`;
             if (!usedIndexNames.has(idxName)) {
-                indexStatements.push(`CREATE UNIQUE INDEX \`${idxName}\` ON \`${table}\` (\`${prop.name}\`);`);
+                indexStatements.push(`UNIQUE KEY \`${idxName}\` (\`${prop.name}\`)`);
                 usedIndexNames.add(idxName);
             }
         }
@@ -123,24 +123,36 @@ export function compiledSchemaToMysqlTable(schema: CompiledSchema<any>, tableNam
         if (props.length === 1) {
             const idxSqlName = `${table}_${props[0].name}_idx`;
             if (!usedIndexNames.has(idxSqlName)) {
-                indexStatements.push(`CREATE INDEX \`${idxSqlName}\` ON \`${table}\` (\`${props[0].name}\`);`);
+                indexStatements.push(`KEY \`${idxSqlName}\` (\`${props[0].name}\`)`);
                 usedIndexNames.add(idxSqlName);
             }
         } else if (props.length > 1) {
             const idxSqlName = `${table}_${idxName}_clustered_idx`;
             const colList = props.map(p => `\`${p.name}\``).join(', ');
             if (!usedIndexNames.has(idxSqlName)) {
-                indexStatements.push(`CREATE INDEX \`${idxSqlName}\` ON \`${table}\` (${colList});`);
+                indexStatements.push(`KEY \`${idxSqlName}\` (${colList})`);
                 usedIndexNames.add(idxSqlName);
             }
         }
     }
 
-    const sql = `CREATE TABLE IF NOT EXISTS \`${table}\` (
-  ${columns.join(',\n  ')}${pkClause}
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-${indexStatements.join('\n')}`;
-    return sql;
+    /**
+     * Indexes are declared INSIDE the table rather than as separate CREATE INDEX statements.
+     *
+     * This used to emit `CREATE TABLE ...; CREATE INDEX ...;` as one string, and mysql2 runs
+     * one statement per query unless `multipleStatements` is enabled — which is a SQL
+     * injection surface nobody should turn on for this. So any schema declaring an index
+     * failed to create its table at all, with a syntax error pointing at the second
+     * statement. No test had an indexed property on MySQL, so nothing caught it.
+     *
+     * MySQL accepts `KEY` and `UNIQUE KEY` in the table body, which keeps the whole thing one
+     * statement and idempotent under `IF NOT EXISTS`.
+     */
+    const indexClause = indexStatements.length === 0 ? '' : `,\n  ${indexStatements.join(',\n  ')}`;
+
+    return `CREATE TABLE IF NOT EXISTS \`${table}\` (
+  ${columns.join(',\n  ')}${pkClause}${indexClause}
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;`;
 }
 
 /**
