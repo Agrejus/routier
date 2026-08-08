@@ -43,7 +43,7 @@ export class TestDataStore extends DataStore {
 
         });
     }).create();
-    productsHistory = this.view(productsHistorySchema).scope(([x, p]) => x.documentType === p.collectionName, productsHistorySchema).derive((done) => {
+    productsHistory = this.view(productsHistorySchema).accumulate().scope(([x, p]) => x.documentType === p.collectionName, productsHistorySchema).derive((done) => {
         return this.products.subscribe().toArray(productsResponse => {
 
             if (productsResponse.ok === "error") {

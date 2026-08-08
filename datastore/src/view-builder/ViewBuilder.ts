@@ -11,6 +11,7 @@ type CollectionBuilderProps<TEntity extends {}, TCollection extends View<TEntity
     instanceCreator: ViewInstanceCreator<TEntity, TCollection>;
     dependencies: CollectionDependencies<TEntity>;
     derive?: Derive<TEntity>;
+    accumulates?: boolean;
 }
 
 export class ViewBuilder<TEntity extends {}, TCollection extends View<TEntity>> {
@@ -19,10 +20,12 @@ export class ViewBuilder<TEntity extends {}, TCollection extends View<TEntity>> 
     private _instanceCreator: ViewInstanceCreator<TEntity, TCollection>;
     private dependencies: CollectionDependencies<TEntity>;
     private _derive: Derive<TEntity> = () => void (0);
+    private _accumulates: boolean = false;
 
     constructor(props: CollectionBuilderProps<TEntity, TCollection>) {
         this.dependencies = props.dependencies;
         this._derive = props.derive;
+        this._accumulates = props.accumulates === true;
         this._onCollectionCreated = props.onCollectionCreated;
         this._instanceCreator = props.instanceCreator;
     }
@@ -68,6 +71,35 @@ export class ViewBuilder<TEntity extends {}, TCollection extends View<TEntity>> 
 
         return new ViewBuilder<TEntity, View<TEntity>>({
             derive: this._derive,
+            accumulates: this._accumulates,
+            onCollectionCreated: this._onCollectionCreated,
+            instanceCreator: View,
+            dependencies: this.dependencies
+        });
+    }
+
+    /**
+     * Keep every row the derivation has ever produced, instead of mirroring it.
+     *
+     * By default a view EQUALS its derivation: a row the derivation stops producing is removed,
+     * which is what makes a view usable as a synced subset — one user's data out of a table
+     * with hundreds of thousands of rows. A view that could be joined but never left would
+     * grow towards the full table, which is the cost it exists to avoid.
+     *
+     * An accumulating view is the other useful shape: a history. Give the schema a key derived
+     * from the row's CONTENT — a hash — and every distinct version lands as its own row, so the
+     * view becomes an append-only log of what the derivation saw. That only works if nothing
+     * is ever removed, which is what this declares.
+     *
+     * The two are opposites and neither can be inferred from the schema, so it is stated.
+     */
+    accumulate() {
+
+        this._accumulates = true;
+
+        return new ViewBuilder<TEntity, View<TEntity>>({
+            derive: this._derive,
+            accumulates: true,
             onCollectionCreated: this._onCollectionCreated,
             instanceCreator: View,
             dependencies: this.dependencies
@@ -80,6 +112,7 @@ export class ViewBuilder<TEntity extends {}, TCollection extends View<TEntity>> 
 
         return new ViewBuilder<TEntity, View<TEntity>>({
             derive: this._derive,
+            accumulates: this._accumulates,
             onCollectionCreated: this._onCollectionCreated,
             instanceCreator: View,
             dependencies: this.dependencies
@@ -93,7 +126,7 @@ export class ViewBuilder<TEntity extends {}, TCollection extends View<TEntity>> 
 
         if (extend == null) {
             const Instance = this._instanceCreator;
-            const result = new Instance(this.dependencies, this._derive);
+            const result = new Instance(this.dependencies, this._derive, this._accumulates);
 
             this._onCollectionCreated(result);
 

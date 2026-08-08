@@ -7,5 +7,7 @@ export type ViewInstanceCreator<
     TCollection extends View<TEntity>
 > = new (
     dependencies: CollectionDependencies<TEntity>,
-    derive: Derive<TEntity>
+    derive: Derive<TEntity>,
+    /** Whether the view keeps rows the derivation no longer produces — see ViewBuilder.accumulate. */
+    accumulates?: boolean
 ) => TCollection;
