@@ -146,6 +146,51 @@ Decided while building:
 Known gap, and it is a migration rather than a bug: a table created as JSONB keeps that column
 type if pgvector is installed later. No SQL plugin here migrates.
 
+### Cloudflare D1 — shipped 2026-08-08, as a plugin variant
+
+`D1DbPlugin` in `@routier/sqlite-plugin/d1`. The spike was right that this is not a driver: a
+`SqliteDriver` exposes `run` and `all` against an open connection, and the plugin uses that to
+hold a transaction open — BEGIN IMMEDIATE, a statement, a look at what came back, then the
+next. D1 has no interactive transaction at all, so the interface a driver must implement is
+not one D1 can offer.
+
+What made it cheap anyway: the SQLite plugin already builds its whole `operations` list before
+opening a connection. The statements were always batch-shaped; only the execution was not. So
+the variant shares `utils.ts` — same DDL, same WHERE generation, same grouped updates — and
+differs solely in how it hands them over. It lives in the SQLite package rather than a new one
+because D1 IS SQLite, and a separate package could only get the builders by importing another
+plugin, which the domain rules forbid and the "never duplicate a shared builder" rule exists
+to prevent.
+
+Both blockers resolved as the spike predicted:
+
+- **Lazy table creation.** `CREATE TABLE IF NOT EXISTS` is prepended to the batch, deduplicated
+  per collection. Idempotent, so it costs nothing and removes the interactive retry. Reads keep
+  the retry — one statement, no transaction for a second attempt to break.
+- **Optimistic concurrency: refused, loudly.** `ConcurrencyDbPlugin` wrapping `D1DbPlugin`
+  throws on the FIRST operation, read or write. It cannot be refused in the constructor: a
+  wrapper is invisible to the plugin it wraps until it hands down an augmented schema.
+
+Decided while building:
+
+- **The refusal covers reads too**, not just conflicting writes. The composition is wrong, and
+  failing on the first query surfaces it in development rather than under contention.
+- **`destroy` refuses without a caller-supplied `deleteDatabase`**, the same decision the Turso
+  driver made. A binding cannot tell a scratch database from the production one an environment
+  variable pointed it at.
+- **Batch results are checked positionally.** A response shorter than the statement list throws
+  rather than mis-filing rows into another schema's bucket, which would corrupt the change
+  tracker's view of what was saved.
+- **The `__version` check reads through `schemas.get(id)`, never by iterating.** Only `get` is
+  augmented by the wrapper's proxy; iterating returns the raw schemas, so an iteration-based
+  check finds nothing and the refusal never fires. It was written that way first.
+
+Unproven, and the same shape of gap the Turso driver carries: the suite runs against a D1
+double over `node:sqlite` that implements batch-as-transaction faithfully — rollback on first
+failure, positional results, non-mutating `bind` — but nothing here has talked to Cloudflare.
+That `batch()` really is one transaction on their side, how a missing table is reported, and
+the statement limits are assumptions this encodes rather than facts it checks.
+
 ### MongoDB — shipped 2026-08-07
 
 `@routier/mongodb-plugin`: `toMql` turns a core expression tree into an MQL filter document,
@@ -229,42 +274,9 @@ can do:
   width at the `.nearest()` call, and stored values are checked only by backends with a
   native column. A JSON backend will store an embedding of the wrong width without complaint.
 
-### 1. Cloudflare D1 — spiked, and it is not a driver
-
-**Turso is done — see "Built" above. D1 is the half that did not hold.**
-
-D1 has **no interactive transactions**. Its only atomicity primitive is `batch()`, which takes
-every statement upfront:
-
-> "Batched statements are SQL transactions. If a statement in the sequence fails, then an
-> error is returned for that specific statement, and it aborts or rolls back the entire
-> sequence."
-
-There is no way to inspect statement N's result and decide whether to run N+1 — and the plugin
-does exactly that: it reads a token-checked UPDATE's row count mid-transaction and throws
-`OptimisticConcurrencyError`. That one check is the entire problem. The spike confirmed
-everything else is batch-friendly, because the whole `operations` list is built before the
-connection is opened.
-
-So D1 needs a batch-shaped write path, which is a plugin variant rather than a driver. Two
-blockers, different sizes:
-
-1. **Lazy table creation — easy.** `runWithTable` catches "no such table" and retries, which is
-   interactive; but `compiledSchemaToSqliteTable` already emits `CREATE TABLE IF NOT EXISTS`, so
-   a batch path prepends the creates and drops the retry.
-2. **Optimistic concurrency — the real one.** Re-expressing the check as a statement that
-   *fails* is possible (`INSERT ... SELECT ... WHERE changes() = 0` violating a constraint) but
-   needs a probe table, changes what `sql-core` emits for every engine, and loses which rows
-   conflicted.
-
-   **Recommendation: D1 refuses `.concurrency()` and says so** — the rule the encryption work
-   settled, and a schema-time check fails at startup rather than under load.
-
-Effort: medium, plus a documented gap in optimistic concurrency.
-
 ## Needs design
 
-### 2. Full-text search — needs design
+### 1. Full-text search — needs design
 
 Real user need, and `sql-core` gives leverage across three engines. The blocker is not
 implementation.
@@ -292,7 +304,7 @@ Also unresolved:
 - What backends with no full-text support do. Falling back to `LIKE` returns different rows and
   would be the wrong kind of quiet.
 
-### 3. Multi-tenancy wrapper — needs design
+### 2. Multi-tenancy wrapper — needs design
 
 Scope every read and stamp every write with a tenant id. A wrapper enforces globally what is
 easy to forget in one query and severe when you do.
