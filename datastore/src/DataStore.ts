@@ -1,4 +1,5 @@
 import { Collection } from './collections/Collection';
+import { AuditRegistry } from './collection-builder/audit';
 import { CollectionBuilder } from './collection-builder/CollectionBuilder';
 import { CollectionPipelines } from './types';
 import { IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
@@ -34,6 +35,8 @@ export class DataStore implements Disposable {
     protected readonly abortController: AbortController;
 
     protected readonly _schemas: SchemaCollection;
+    /** Audit declarations, shared by every collection — auditing runs once per save. */
+    protected readonly _audits = new AuditRegistry();
 
     get schemas() {
         return new ReadonlySchemaCollection([...this._schemas]);
@@ -91,7 +94,8 @@ export class DataStore implements Disposable {
             new QueryOptionsCollection<TEntity>(),
             schema.createSubscription(this.abortController.signal, this.dbPlugin.identity),
             new ChangeTracker<TEntity>(schema),
-            DataBridge.create<TEntity>(this.dbPlugin, schema, this.abortController.signal)
+            DataBridge.create<TEntity>(this.dbPlugin, schema, this.abortController.signal),
+            this._audits
         );
 
         // No mode is chosen here on purpose: the returned builder has no create() until
@@ -140,7 +144,8 @@ export class DataStore implements Disposable {
             new QueryOptionsCollection<TEntity>(),
             schema.createSubscription(this.abortController.signal, this.dbPlugin.identity),
             new ChangeTracker<TEntity>(schema),
-            DataBridge.create<TEntity>(this.dbPlugin, schema, this.abortController.signal)
+            DataBridge.create<TEntity>(this.dbPlugin, schema, this.abortController.signal),
+            this._audits
         );
 
         return new ViewBuilder<TEntity, View<TEntity>>({
@@ -201,6 +206,12 @@ export class DataStore implements Disposable {
                     return;
                 }
 
+                // Audit rows leave before anything else looks at the save. They were never
+                // submitted by a collection, so a store that also declares a collection over
+                // the audit schema would otherwise try to match rows its change tracker never
+                // sent — and the caller's reported add count would include them.
+                this._audits.detach(changes, bulkPersistResult.data);
+
                 // The echo carries stored values, and the change tracker compares it against
                 // what the entity holds. Reversing it keeps the two sides equal.
                 const afterPersist = () =>
@@ -258,6 +269,11 @@ export class DataStore implements Disposable {
                 done(preparedChangesResult);
                 return;
             }
+
+            // After the prepare pipeline, so every declaration sees the COMPLETE batch for its
+            // collection. Running one during its own collection's prepare would show it only
+            // part of the save, and what it saw would depend on declaration order.
+            this._audits.apply(preparedChangesResult.data, this._schemas);
 
             this.onSavePreparedChanges(preparedChangesResult.data, done);
         });

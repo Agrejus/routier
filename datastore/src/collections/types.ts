@@ -1,4 +1,5 @@
 import { SchemaCollection } from "@routier/core/collections";
+import { AuditRegistry } from "../collection-builder/audit";
 import { IDbPlugin, QueryOptionsCollection } from "@routier/core/plugins";
 import { ChangeTrackingType, CompiledSchema, ISchemaSubscription } from "@routier/core/schema";
 import { ChangeTracker } from "../change-tracking/ChangeTracker";
@@ -25,6 +26,8 @@ export class CollectionDependencies<TRoot extends {}> extends ComposerDependenci
     readonly changeTracker: ChangeTracker<TRoot>;
     readonly dataBridge: DataBridge<TRoot>;
     readonly scopedQueryOptions: QueryOptionsCollection<TRoot>;
+    /** Every audit declaration in the store. Shared, because auditing runs once per save. */
+    readonly audits: AuditRegistry;
 
     constructor(
         plugin: IDbPlugin,
@@ -35,7 +38,8 @@ export class CollectionDependencies<TRoot extends {}> extends ComposerDependenci
         scopedQueryOptions: QueryOptionsCollection<TRoot>,
         subscription: ISchemaSubscription<TRoot>,
         changeTracker: ChangeTracker<TRoot>,
-        dataBridge: DataBridge<TRoot>
+        dataBridge: DataBridge<TRoot>,
+        audits: AuditRegistry
     ) {
         super(schema);
         this.plugin = plugin;
@@ -46,6 +50,7 @@ export class CollectionDependencies<TRoot extends {}> extends ComposerDependenci
         this.changeTracker = changeTracker;
         this.dataBridge = dataBridge;
         this.scopedQueryOptions = scopedQueryOptions;
+        this.audits = audits;
     }
 }
 

@@ -1,4 +1,4 @@
-import { InferType } from '@routier/core/schema';
+import { CompiledSchema, InferType } from '@routier/core/schema';
 import { CollectionInstanceCreator } from './types';
 import { Collection } from '../collections/Collection';
 import { ImmutableCollection } from '../collections/ImmutableCollection';
@@ -9,6 +9,7 @@ import { GenericFunction } from '@routier/core/types';
 import { CollectionBase } from '../collections/CollectionBase';
 import { CollectionDependencies } from '../collections/types';
 import { resolveSoftDelete, softDeleteScope } from './softDelete';
+import { AuditDerive } from './audit';
 
 type ModelessProps<TEntity extends {}> = {
     dependencies: CollectionDependencies<TEntity>;
@@ -47,6 +48,40 @@ function addScope<TEntity extends {}, P extends {}>(
     const expression = toExpression(schema, selector, params);
 
     dependencies.scopedQueryOptions.add("filter", { filter: selector as Filter<TEntity> | ParamsFilter<TEntity, {}>, expression, params });
+}
+
+
+/**
+ * The stage between `.audit(schema)` and `.derive(...)`.
+ *
+ * It exists so the declaration reads the same way a view's does: the first call names the
+ * shape being written, the second decides what goes in it. Splitting them also means there is
+ * no half-declared audit — this stage has no `create()`, so a collection cannot be built with
+ * an audit target and no rule for filling it.
+ */
+export class AuditingCollectionBuilder<TEntity extends {}, TAudit extends {}, TNext> {
+
+    constructor(
+        private readonly auditSchema: CompiledSchema<TAudit>,
+        private readonly dependencies: CollectionDependencies<TEntity>,
+        private readonly next: () => TNext
+    ) { }
+
+    /**
+     * Decides what to record, given everything that changed in one save.
+     *
+     * @param derive Receives the batch for this collection and a callback to emit rows with.
+     * Emit none — or never call it — to record nothing.
+     */
+    derive(derive: AuditDerive<InferType<TEntity>, TAudit>): TNext {
+        this.dependencies.audits.register({
+            sourceSchemaId: this.dependencies.schema.id,
+            auditSchema: this.auditSchema,
+            derive: derive as AuditDerive<any, any>,
+        });
+
+        return this.next();
+    }
 }
 
 /**
@@ -106,6 +141,36 @@ export class CollectionBuilder<TEntity extends {}> {
     /** Data can only be read. */
     readonly() {
         return this.configure<ReadonlyCollection<TEntity>>(ReadonlyCollection);
+    }
+
+    /**
+     * Record what changes on this collection into a table of your own design.
+     *
+     * The same shape as `view().derive()`: this names where rows go, and `derive` decides what
+     * they contain. Nothing about the row is decided for you.
+     *
+     * ```ts
+     * history = this.collection(historySchema).proxy().create();
+     *
+     * products = this.collection(productSchema)
+     *     .audit(historySchema)
+     *     .derive((changes, cb) => cb(changes.map(c => ({ ... }))))
+     *     .proxy()
+     *     .create();
+     * ```
+     *
+     * The rows are appended to the same save, so on a backend with an atomic batch they commit
+     * with the change they describe.
+     */
+    audit<TAudit extends {}>(auditSchema: CompiledSchema<TAudit>) {
+        return new AuditingCollectionBuilder<TEntity, TAudit, CollectionBuilder<TEntity>>(
+            auditSchema,
+            this.dependencies,
+            () => new CollectionBuilder<TEntity>({
+                onCollectionCreated: this._onCollectionCreated,
+                dependencies: this.dependencies
+            })
+        );
     }
 
     /**
@@ -196,6 +261,19 @@ export class ConfiguredCollectionBuilder<TEntity extends {}, TCollection extends
         this.dependencies = props.dependencies;
         this._onCollectionCreated = props.onCollectionCreated;
         this.instanceCreator = props.instanceCreator;
+    }
+
+    /** See CollectionBuilder.audit — it may also be declared after the mode is chosen. */
+    audit<TAudit extends {}>(auditSchema: CompiledSchema<TAudit>) {
+        return new AuditingCollectionBuilder<TEntity, TAudit, ConfiguredCollectionBuilder<TEntity, TCollection>>(
+            auditSchema,
+            this.dependencies,
+            () => new ConfiguredCollectionBuilder<TEntity, TCollection>({
+                onCollectionCreated: this._onCollectionCreated,
+                instanceCreator: this.instanceCreator,
+                dependencies: this.dependencies
+            })
+        );
     }
 
     /** See CollectionBuilder.softDelete — it may also be declared after the mode is chosen. */
