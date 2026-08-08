@@ -19,17 +19,19 @@ import { SelectionQueryable } from '../queryable/SelectionQueryable';
  * Keyed by the plugin rather than by the store, because the plugin is what owns the lock. A
  * WeakMap so a discarded store's chain is collectable.
  *
- * KNOWN GAP: this orders the WRITES, not the recomputes that produce them. Each recompute reads
- * the source, diffs, then writes, and two recomputes started close together can compute their
- * snapshots in one order and reach here in the other — leaving the view holding the older
- * answer. Two saves in quick succession is enough to show it on a client/server engine, where
- * the round trip is long enough for the overlap. Fixing it means serializing the whole
- * read-diff-write per view and discarding a superseded recompute, which is the same work as
- * making derive incremental and is deliberately not bundled here.
+ * This orders writes ACROSS views. Ordering WITHIN one view — so a stale snapshot cannot land
+ * after a fresh one — is the coalescing queue on the class below. Both are needed: this stops
+ * two views colliding on the lock, that stops a single view going backwards.
+ *
+ * KNOWN GAP: it does not order view writes against the CALLER's saves, which go straight to the
+ * plugin. On SQLite a view write and a `saveChanges` can still contend for the write lock, and
+ * the caller's save is the one that surfaces the error. Rapid saves against a store with no
+ * views are unaffected. Fixing it means one writer per backend rather than two, which is a
+ * change to how the datastore writes rather than to how views do.
  */
 const viewWrites = new WeakMap<IDbPlugin, Promise<unknown>>();
 
-const serializeWrite = (plugin: IDbPlugin, work: () => Promise<void>): void => {
+const serializeWrite = (plugin: IDbPlugin, work: () => Promise<void>): Promise<unknown> => {
     const previous = viewWrites.get(plugin) ?? Promise.resolve();
 
     // Chained onto the previous outcome whether it succeeded or failed: one view's failed write
@@ -37,6 +39,8 @@ const serializeWrite = (plugin: IDbPlugin, work: () => Promise<void>): void => {
     const next = previous.then(work, work);
 
     viewWrites.set(plugin, next);
+
+    return next;
 };
 
 /**
@@ -47,6 +51,37 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
 
     protected derive: Derive<TEntity>;
     protected unsubscribe: DeriveResponse;
+
+    /**
+     * The most recent derived snapshot waiting to be reconciled, and whether one is in flight.
+     *
+     * A view reconciles by reading its own contents, diffing, and writing. That is three async
+     * steps, so two recomputes started close together can read in one order and write in the
+     * other, leaving the view holding the OLDER answer — permanently, because nothing recomputes
+     * again until the source changes.
+     *
+     * Whether a queued snapshot may be REPLACED by a newer one follows from the same thing that
+     * decides everything else about a view — its key.
+     *
+     * A mirror only has to end up correct, so an intermediate snapshot is work whose result the
+     * next one immediately overwrites: keeping just the latest is both faster and identical in
+     * outcome.
+     *
+     * A history cannot skip anything. Its intermediate states ARE the data — dropping the
+     * snapshot between two saves loses the version that existed in between, which is the one
+     * thing it was declared to record. So it queues them all and reconciles each in turn.
+     */
+    private queuedSnapshots: InferType<TEntity>[][] = [];
+    private isReconciling = false;
+    /**
+     * Set by `dispose`, so a reconcile already in flight stops instead of writing.
+     *
+     * Disposing unsubscribes, which stops NEW recomputes, but a queued one is already past that
+     * point — and the store it belongs to has just closed its connection. On PostgreSQL that
+     * surfaced as "cannot use a pool after calling end on the pool" from a view nobody was
+     * watching any more.
+     */
+    private isDisposed = false;
 
     constructor(dependencies: CollectionDependencies<TEntity>, derive: Derive<TEntity>) {
         super(dependencies);
@@ -84,6 +119,38 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                     enriched[i] = this.dependencies.schema.postprocess(data[i] as InferType<TEntity>, this.changeTrackingType);
                 }
 
+                if (this.isDisposed) {
+                    return;
+                }
+
+                if (accumulates) {
+                    // Every state is a row worth keeping; none may be skipped.
+                    this.queuedSnapshots.push(enriched);
+                } else {
+                    // Only the latest answer matters, so an older one waiting is discarded.
+                    this.queuedSnapshots = [enriched];
+                }
+
+                if (this.isReconciling) {
+                    // The run in flight will pick this up when it finishes.
+                    cb(enriched);
+                    return;
+                }
+
+                this.isReconciling = true;
+
+                const drain = () => {
+                    const snapshot = this.queuedSnapshots.shift();
+
+                    if (snapshot == null || this.isDisposed) {
+                        this.isReconciling = false;
+                        return;
+                    }
+
+                    reconcile(snapshot, drain);
+                };
+
+                const reconcile = (enriched: InferType<TEntity>[], done: () => void) => {
                 /**
                  * The view's ENTIRE contents, not the rows matching the derived ids.
                  *
@@ -100,8 +167,18 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                  */
                 this.toArray(toArrayResult => {
 
+                    // Checked again here, not only before the read was issued: the store can be
+                    // destroyed while this read is in flight, and writing afterwards reaches a
+                    // connection that has already been closed.
+                    if (this.isDisposed) {
+                        done();
+                        return;
+                    }
+
                     if (toArrayResult.ok === "error") {
-                        return cb([]);
+                        cb([]);
+                        done();
+                        return;
                     }
 
                     const operation = new BulkPersistChanges();
@@ -162,14 +239,16 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                     if (schemaChanges.adds.length === 0 && schemaChanges.updates.length === 0 && schemaChanges.removes.length === 0) {
                         // Nothing to persist — the derived data already matches the view.
                         // Skipping also prevents an empty notification round trip
-                        return cb(enriched);
+                        cb(enriched);
+                        done();
+                        return;
                     }
 
                     operation.set(this.dependencies.schema.id, schemaChanges);
 
                     // Automatically save the view, behind the per-backend queue so two views
                     // reacting to the same change do not collide on the write lock.
-                    serializeWrite(dependencies.plugin, () => new Promise<void>(resolve => persist({
+                    const written = serializeWrite(dependencies.plugin, () => new Promise<void>(resolve => persist({
                         id: uuid(8),
                         operation,
                         schemas: this.dependencies.schemas,
@@ -210,8 +289,15 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                         resolve();
                     })));
 
+                    // `done` only once the write has LANDED, so this view's next reconcile
+                    // reads its own result rather than the state before it.
+                    written.then(done, done);
+
                     cb(enriched);
                 });
+                };
+
+                drain();
             });
         };
 
@@ -220,6 +306,9 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
     }
 
     override dispose(): void {
+        this.isDisposed = true;
+        this.queuedSnapshots = [];
+
         if (typeof this.unsubscribe === "function") {
             return this.unsubscribe()
         }

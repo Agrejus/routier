@@ -141,6 +141,11 @@ afterAll(async () => {
 const opened: DataStore[] = [];
 
 afterEach(async () => {
+    // A view reconciles asynchronously, so a recompute triggered by the last save can still be
+    // in flight. Letting it land before the store is destroyed keeps teardown from racing it —
+    // the view stops on its own once disposed, but a read already issued still has to finish.
+    await new Promise(resolve => setTimeout(resolve, 150));
+
     for (const store of opened.splice(0)) {
         await store.destroyAsync().catch(() => undefined);
     }
@@ -373,6 +378,38 @@ describe('views against a real database', () => {
         });
     });
 
+    forEachSubject('lands the latest snapshot when recomputes overlap', async subject => {
+        const { store, raw } = await clean(subject);
+
+        const [a] = await store.products.addAsync(
+            { id: 1, name: 'a', active: true } as any,
+            { id: 2, name: 'b', active: true } as any,
+        );
+
+        // Saves with no settling between them, so recomputes overlap. Each reads the view,
+        // diffs, and writes — three async steps — so without serializing them per view an
+        // earlier snapshot could write after a later one, and the view would hold the wrong
+        // answer permanently: nothing recomputes again until the source changes.
+        //
+        // Deliberately not pushed further than this. More overlap runs into a SEPARATE defect
+        // — view writes contend with the caller's saves for SQLite's write lock — which is
+        // about who writes when, not about which snapshot wins.
+        await store.saveChangesAsync();
+        a.active = false;
+        await store.saveChangesAsync();
+
+        // The final source state is: a inactive, b active. The view must agree.
+        await waitFor(async () => {
+            expect((await store.activeProducts.toArrayAsync()).map(x => x.name)).toEqual(['b']);
+        });
+
+        // And it must have STOPPED there rather than being mid-flight — read again after the
+        // queue has drained, straight from the table.
+        await new Promise(resolve => setTimeout(resolve, 250));
+
+        expect((await raw.active.toArrayAsync()).map(x => x.name)).toEqual(['b']);
+    });
+
     forEachSubject('runs both shapes over one source collection', async subject => {
         const { store } = await clean(subject);
 
@@ -382,14 +419,9 @@ describe('views against a real database', () => {
         );
         await store.saveChangesAsync();
 
-        // Settled before the second save on purpose. Firing both and waiting once at the end
-        // depends on two in-flight recomputes landing in the order they were started, and they
-        // do not — see the staleness note in View.ts. That is a real defect, but it is not the
-        // one this case is about, and letting it fail here would hide what is.
-        await waitFor(async () => {
-            expect(await store.activeProducts.countAsync()).toBe(2);
-        });
-
+        // Deliberately NOT settled in between. Two saves back to back put two recomputes in
+        // flight at once, which is what made a view land the older answer before reconciles
+        // were serialized and coalesced per view.
         a.active = false;
         await store.saveChangesAsync();
 
