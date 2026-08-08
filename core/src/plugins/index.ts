@@ -5,3 +5,4 @@ export * from './ConcurrencyDbPlugin';
 export * from './EphemeralDataPlugin';
 export * from './RetryDbPlugin';
 export * from './CacheDbPlugin';
+export * from './AuditLogDbPlugin';

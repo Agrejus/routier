@@ -36,7 +36,7 @@ class FlakyPlugin implements IDbPlugin {
             value: [`attempt-${this.queries}`],
             isTransformed: false,
             isEmpty: false,
-            forEach: () => undefined,
+            forEach: (): void => undefined,
         } as unknown as ITranslatedValue<TShape>));
     }
 
