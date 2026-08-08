@@ -148,6 +148,11 @@ module.exports = {
         },
         {
             ...base,
+            displayName: 'architecture',
+            testMatch: ['<rootDir>/architecture/**/*.test.ts'],
+        },
+        {
+            ...base,
             displayName: 'test-utils',
             testMatch: ['<rootDir>/test-utils/**/*.test.ts'],
         },

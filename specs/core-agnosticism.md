@@ -79,14 +79,36 @@ both the DDL and `toColumnAssignments` read it from there so they cannot drift.
 
 ## How to check
 
+**Superseded by a test as of 2026-08-07.** This rule is now one entry in
+`architecture/src/domains.ts`, enforced by `architecture/src/domains.test.ts`:
+
 ```bash
-# Must print nothing.
+npx jest -c jest.config.js --selectProjects architecture
+```
+
+The grep below is what it replaced. Every violation in the table above got in because it was
+a grep somebody had to remember to run, and each fix was two lines and obviously correct on
+its own.
+
+```bash
+# The old check. Must print nothing.
 grep -rniE "sqlite|postgres|mysql|mssql|pouchdb|dexie|indexeddb" core/src --include="*.ts" \
   | grep -v "\.test\.ts"
 ```
 
-The only permitted hits are prose in `core/src/plugins/types.ts` explaining why the delta is
-*not* storage-shaped — which exists so the next person does not helpfully re-flatten it.
+Two differences worth knowing:
+
+- The test matches **code, not prose**. Comments are stripped first, because explaining why a
+  concept is absent is exactly the commentary worth keeping — a rule that punished it would
+  train people to delete the explanation rather than the dependency. A type or an import
+  named after an engine still fails.
+- It covers **every domain**, not just core, and adds dependency direction. That is what
+  caught `DataBridge` importing `@routier/memory-plugin`: the CRUD abstraction depending on
+  one specific backend. See `datastore/src/data-access/ChangeMatchProbe.ts` for the
+  replacement, built from `EphemeralDataPlugin` and `MemoryDataCollection` in core.
+
+The permitted hits are declared as `allowedIn` on the rule, so an exception has to be written
+down with a reason rather than remembered.
 
 ## Still open
 

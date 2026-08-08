@@ -292,7 +292,7 @@ export class ChangeTracker<TEntity extends {}> {
                 return `Cannot find internal addition, please check the following:
                 
 1. Entire document must be returned from the plugin for adds
-2. Serialization/deserialization must be set at the schema level if the underlying datastore does not support certain types. Ex.  Sqlite stores booleans as integers
+2. Serialization/deserialization must be set at the schema level if the underlying datastore does not support certain types. Ex. a backend with no boolean type stores them as integers
 3. If sending over HTTP, remember, undefined will be serialzied as null over the wire.  Please use .nullable().default(() => null) to replace optional properties
 
 Canonical Documents: ${JSON.stringify([...this.canonicalAttachments.entries()], null, 2)}

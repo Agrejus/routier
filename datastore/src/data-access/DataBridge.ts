@@ -1,6 +1,6 @@
 import { DatabaseDataAccessStrategy } from "./strategies/DatabaseDataAccessStrategy";
 import { IDataAccessStrategy } from "./types";
-import { MemoryPlugin } from "@routier/memory-plugin";
+import { ChangeMatchProbe } from "./ChangeMatchProbe";
 import { DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue } from "@routier/core/plugins";
 import { PluginEventCallbackResult, Result } from "@routier/core/results";
 import { BulkPersistResult } from "@routier/core/collections";
@@ -74,8 +74,9 @@ export class DataBridge<T extends {}> {
             const hasChanges = changes.adds.length > 0 || changes.updates.length > 0 || changes.removals.length > 0 || changes.unknown.length > 0;
             if (hasChanges) {
 
-                // create a new plugin where we can quickly seed the changes and then query them
-                const ephemeralPlugin = new MemoryPlugin(uuidv4());
+                // A scratch store, private to this question. Built from core's own pieces
+                // rather than a backend plugin — see ChangeMatchProbe.
+                const ephemeralPlugin = new ChangeMatchProbe(uuidv4());
 
                 // seed the db, we don't care about bulk operations here, we just want to query the raw data
                 ephemeralPlugin.seed(event.operation.schema, [...changes.adds, ...changes.updates, ...changes.removals]);

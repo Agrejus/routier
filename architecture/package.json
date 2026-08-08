@@ -1,0 +1,15 @@
+{
+    "name": "@routier/architecture",
+    "version": "0.2.0",
+    "private": true,
+    "source": "./src/domains.ts",
+    "scripts": {
+        "test": "jest -c ../jest.config.js --selectProjects architecture",
+        "tsc": "tsc --noEmit",
+        "domains:write": "tsx src/writeDomainDocs.ts",
+        "lint": "oxlint . --ignore-pattern \"**/*.test.*\""
+    },
+    "description": "What each domain in this repository is responsible for, and the tests that enforce it.",
+    "author": "James DeMeuse <james.demeuse@gmail.com>",
+    "license": "MIT"
+}
