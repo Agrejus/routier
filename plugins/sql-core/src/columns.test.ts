@@ -34,8 +34,21 @@ describe('toColumnAssignments', () => {
     });
 
     it('keeps a false boolean rather than dropping it', () => {
-        // A truthiness check here would silently discard the most common boolean write.
+        // A truthiness check here would silently discard the most common boolean write. SQLite
+        // has no boolean type, so `false` becomes 0 — which is still a value, not an absence.
         expect(toColumnAssignments({ active: false }, schema as any, sqlite))
+            .toEqual([{ column: 'active', value: 0 }]);
+    });
+
+    it('encodes a boolean as an integer only where the engine needs it', () => {
+        // `node:sqlite` refuses to bind a JS boolean rather than coercing it, so the dialect
+        // converts. PostgreSQL has a real boolean type and takes one directly — converting
+        // there would store an integer in a BOOLEAN column.
+        expect(toColumnAssignments({ active: true }, schema as any, sqlite))
+            .toEqual([{ column: 'active', value: 1 }]);
+        expect(toColumnAssignments({ active: true }, schema as any, postgres))
+            .toEqual([{ column: 'active', value: true }]);
+        expect(toColumnAssignments({ active: false }, schema as any, postgres))
             .toEqual([{ column: 'active', value: false }]);
     });
 

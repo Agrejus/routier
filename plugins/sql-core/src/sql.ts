@@ -51,6 +51,16 @@ export interface SqlDialect {
      */
     encodeDate(value: unknown): unknown;
     /**
+     * Bindable form of a value for a `s.boolean()` property.
+     *
+     * Most engines have a boolean type and take one directly. SQLite does not — it stores them
+     * as INTEGER — and `node:sqlite` refuses to bind a JS boolean at all rather than coercing
+     * it, so every save of an entity with a boolean failed with "provided value cannot be bound".
+     * That is a fact about the engine, so it belongs on the dialect rather than on the caller,
+     * who should not have to add a serializer for a type the schema already declares.
+     */
+    encodeBoolean(value: unknown): unknown;
+    /**
      * SQL expression for the length of a column: character count for strings,
      * element count for arrays (which are stored as `jsonColumnType`).
      */
@@ -97,6 +107,12 @@ const jsonPathLiteral = (path: string[]): string =>
 /** Engines that accept ISO-8601 directly. */
 const passThroughDate = (value: unknown): unknown => value;
 
+/** Engines with a real boolean type take one as it is. */
+const passThroughBoolean = (value: unknown): unknown => value;
+
+/** SQLite has no boolean type: 1 and 0, which is what its INTEGER column holds. */
+const integerBoolean = (value: unknown): unknown => (value ? 1 : 0);
+
 /** ISO-8601 with a `T` separator, which is what a serialized `s.date()` carries. */
 const ISO_DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
 
@@ -141,6 +157,7 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
             return JSON.stringify(value);
         },
         encodeDate: passThroughDate,
+        encodeBoolean: integerBoolean,
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `json_array_length(${column})` : `LENGTH(${column})`;
         },
@@ -170,6 +187,7 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
             return JSON.stringify(value);
         },
         encodeDate: passThroughDate,
+        encodeBoolean: passThroughBoolean,
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `jsonb_array_length(${column})` : `LENGTH(${column})`;
         },
@@ -212,6 +230,7 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
             return JSON.stringify(value);
         },
         encodeDate: mysqlDate,
+        encodeBoolean: passThroughBoolean,
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `JSON_LENGTH(${column})` : `CHAR_LENGTH(${column})`;
         },
@@ -252,6 +271,7 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
             return JSON.stringify(value);
         },
         encodeDate: passThroughDate,
+        encodeBoolean: passThroughBoolean,
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `(SELECT COUNT(*) FROM OPENJSON(${column}))` : `LEN(${column})`;
         },
@@ -486,7 +506,7 @@ function renderStringPatternComparison(
 
         if (Array.isArray(value)) {
             const placeholders = value.map(() => placeholder()).join(", ");
-            params.push(...value);
+            params.push(...value.map(item => typeof item === "boolean" ? d.encodeBoolean(item) : item));
             return cmp.negated ? `${col} NOT IN (${placeholders})` : `${col} IN (${placeholders})`;
         }
 
@@ -569,6 +589,17 @@ export function toSql(
     dialect: SqlDialectName | SqlDialect
 ): ToSqlResult {
     const d = typeof dialect === "string" ? getDialect(dialect) : dialect;
+
+    /**
+     * A value on its way to becoming a bound parameter.
+     *
+     * Only booleans need touching, and only because an engine may not have the type — SQLite
+     * binds 1 and 0, everything else takes a boolean. Applied here rather than at each push
+     * site so a filter cannot disagree with what `toColumnAssignments` wrote: comparing
+     * `active = true` against a column holding 1 matches nothing, and returns an empty result
+     * rather than an error.
+     */
+    const bindable = (value: unknown) => typeof value === "boolean" ? d.encodeBoolean(value) : value;
     const params: unknown[] = [];
     let paramIndex = 0;
 
@@ -618,7 +649,9 @@ export function toSql(
                         const strategy = EQUALS_STRATEGIES[caseKey];
                         return strategy({
                             col,
-                            value,
+                            // Encoded here rather than inside each strategy: they share one
+                            // context and only some of them bind the value at all.
+                            value: bindable(value),
                             negated: cmp.negated,
                             params,
                             placeholder,
@@ -636,7 +669,7 @@ export function toSql(
         }
 
         if (isValueExpression(e)) {
-            params.push(applyValueTransformer(e.value, e.transformer));
+            params.push(bindable(applyValueTransformer(e.value, e.transformer)));
             return placeholder();
         }
 

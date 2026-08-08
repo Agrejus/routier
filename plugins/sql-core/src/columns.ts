@@ -105,6 +105,10 @@ const encodeForColumn = (property: PropertyInfo<any>, value: unknown, dialect: S
         return dialect.encodeDate(value);
     }
 
+    if (property.type === SchemaTypes.Boolean && value != null) {
+        return dialect.encodeBoolean(value);
+    }
+
     return value;
 };
 
@@ -189,17 +193,39 @@ export function toColumnValueMap<T extends {}>(
  * rather than by configuration.
  */
 export function decodeJsonColumns<T extends {}>(rows: unknown, schema: CompiledSchema<T>): unknown {
-    const decodable = rootProperties(schema).filter(
-        p => isJsonColumn(p) && p.valueDeserializer == null
-    );
+    const roots = rootProperties(schema);
+    const decodable = roots.filter(p => isJsonColumn(p) && p.valueDeserializer == null);
+    /**
+     * Booleans stored as 1 and 0 come back as numbers and have to become booleans again.
+     *
+     * The mirror of `encodeBoolean`, and dialect-free on purpose: an engine with a real boolean
+     * type returns one, which the shape check below leaves alone. Only a number needs undoing,
+     * and only SQLite produces one. Without this a `s.boolean()` property read back as `1`,
+     * which is truthy but is not `true` — `compare` then reported every row as changed and the
+     * change tracker rewrote them on every save.
+     */
+    const booleans = roots.filter(p => p.type === SchemaTypes.Boolean && p.valueDeserializer == null);
 
-    if (decodable.length === 0 || Array.isArray(rows) === false) {
+    if (decodable.length === 0 && booleans.length === 0) {
+        return rows;
+    }
+
+    if (Array.isArray(rows) === false) {
         return rows;
     }
 
     for (const row of rows as Record<string, unknown>[]) {
         if (row == null || typeof row !== "object") {
             continue;
+        }
+
+        for (const property of booleans) {
+            const column = property.getResolvedName();
+            const value = row[column];
+
+            if (typeof value === "number") {
+                row[column] = value !== 0;
+            }
         }
 
         for (const property of decodable) {

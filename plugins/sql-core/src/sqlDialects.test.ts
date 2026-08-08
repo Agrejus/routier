@@ -191,7 +191,12 @@ describe('toSql', () => {
     });
 
     it.each(ALL_DIALECTS)('binds a boolean comparison for %s, including false', name => {
-        expect(toSql(expr((r: any) => r.active === false), name).params).toEqual([false]);
+        // Bound as whatever the engine's column holds, never dropped. SQLite has no boolean
+        // type and stores 1 and 0, so a filter comparing against `false` has to bind 0 or it
+        // matches nothing — the same conversion `toColumnAssignments` applies on the way in.
+        const expected = name === 'sqlite' ? 0 : false;
+
+        expect(toSql(expr((r: any) => r.active === false), name).params).toEqual([expected]);
     });
 
     it.each(ALL_DIALECTS)('binds a zero without dropping it for %s', name => {
