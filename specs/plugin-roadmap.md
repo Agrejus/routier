@@ -339,16 +339,50 @@ Decide before building:
   oracle knows about against a two-tenant store and asserts no row crosses. Without something
   of that strength the feature should not ship.
 
-## Small wrappers
+## Small wrappers — shipped 2026-08-08
 
-Each is a few hundred lines and composes with every backend.
+Three landed in core beside `ConcurrencyDbPlugin`; the fourth turned out not to be a wrapper
+at all.
 
-| Wrapper | What it does | Note |
+| Feature | Where | Note |
 | --- | --- | --- |
-| Soft delete | Turns a remove into a flag, filters it from reads | Same coverage problem as multi-tenancy, smaller stakes |
-| Audit log | Records who changed what, and when | The change tracker already computes the diff |
-| Read-through cache | An LRU in front of a slow backend | Invalidation is the whole problem |
-| Retry | Backs off on a transient failure | Only safe for idempotent operations; reads yes, writes need care |
+| Retry | `RetryDbPlugin` | Reads only. A save is never repeated |
+| Read-through cache | `CacheDbPlugin` | LRU, invalidated per schema on any write through it |
+| Audit log | `AuditLogDbPlugin` | Rows go in a table the caller declares and shapes |
+| Soft delete | `.softDelete()` on the collection builder | Not a wrapper — see below |
+
+**Soft delete is a collection declaration, not a wrapper.** A wrapper applies to everything a
+store does, and soft delete is a per-collection decision: one collection wants it, the next
+does not. Declaring it on the builder also lets the CALLER pick the property, which a wrapper
+appending a hidden column cannot. That matters because a deletion timestamp is not a token
+nobody reads — it answers "when did this go?", and a hidden one makes that query unwritable.
+
+Decided while building:
+
+- **Retry never repeats a write.** A read is idempotent by construction, which is what makes a
+  blanket retry safe and why the wrapper needs no transient-error classifier. A save gives no
+  general way to know how much of it landed, and an add is the sharp case: the database assigns
+  the identity, so a repeated INSERT does not collide, it DUPLICATES.
+- **The cache rebuilds its value on every hit.** `TranslatedArrayValue.forEach` reassigns its
+  own slots — that is how the change tracker swaps in attached entities — so sharing the
+  cached instance would let one caller replace the cache's contents with its own proxies.
+- **The cache invalidates before a write as well as after.** A backend without atomic batches
+  can apply part of a failed save.
+- **Audit rows ride the same `bulkPersist`.** On a backend with an atomic batch the record and
+  the change it describes commit together. A trail that can disagree with the data is worse
+  than none, because it is believed.
+- **Only the audit wrapper's own rows are stripped from the result**, not the whole bucket: a
+  caller may declare a collection over the audit schema to read it, and removing the bucket
+  breaks `afterPersist`.
+- **Soft delete's scope uses loose equality**, or enabling it on an existing table whose rows
+  predate the column would hide every one of them.
+- **Soft delete branches on the collection's declared mode, not `Object.isFrozen`.** A row is
+  frozen when READ, so a freshly added entity is not frozen yet and the assignment would
+  succeed while an immutable collection recorded nothing at all.
+
+What the cache cannot do is see a write it did not make. Another process, tab or store over the
+same database leaves it stale until entries age out. That is the condition for using it rather
+than a defect to fix later.
 
 ## Backends
 
