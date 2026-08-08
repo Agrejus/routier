@@ -9,6 +9,37 @@ import { CollectionDependencies, RequestContext } from '../collections/types';
 import { SelectionQueryable } from '../queryable/SelectionQueryable';
 
 /**
+ * Serializes view writes per backend.
+ *
+ * Every view recomputes when its source changes, so two views over one collection both react to
+ * the same save and both write. Nothing coordinated them, and on any backend that locks for
+ * writes the second call failed — "database is locked" on SQLite — leaving that view silently
+ * stale. Only the log said so; no caller is on the other end of a view's write to be told.
+ *
+ * Keyed by the plugin rather than by the store, because the plugin is what owns the lock. A
+ * WeakMap so a discarded store's chain is collectable.
+ *
+ * KNOWN GAP: this orders the WRITES, not the recomputes that produce them. Each recompute reads
+ * the source, diffs, then writes, and two recomputes started close together can compute their
+ * snapshots in one order and reach here in the other — leaving the view holding the older
+ * answer. Two saves in quick succession is enough to show it on a client/server engine, where
+ * the round trip is long enough for the overlap. Fixing it means serializing the whole
+ * read-diff-write per view and discarding a superseded recompute, which is the same work as
+ * making derive incremental and is deliberately not bundled here.
+ */
+const viewWrites = new WeakMap<IDbPlugin, Promise<unknown>>();
+
+const serializeWrite = (plugin: IDbPlugin, work: () => Promise<void>): void => {
+    const previous = viewWrites.get(plugin) ?? Promise.resolve();
+
+    // Chained onto the previous outcome whether it succeeded or failed: one view's failed write
+    // must not stop every later one.
+    const next = previous.then(work, work);
+
+    viewWrites.set(plugin, next);
+};
+
+/**
  * View that only allows data selection. Cannot add, remove, or update data.  Data is computed
  * and saved when subscriptions in the derived function change
  */
@@ -136,8 +167,9 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
 
                     operation.set(this.dependencies.schema.id, schemaChanges);
 
-                    // Automatically save the view
-                    persist({
+                    // Automatically save the view, behind the per-backend queue so two views
+                    // reacting to the same change do not collide on the write lock.
+                    serializeWrite(dependencies.plugin, () => new Promise<void>(resolve => persist({
                         id: uuid(8),
                         operation,
                         schemas: this.dependencies.schemas,
@@ -147,6 +179,7 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
 
                         if (r.ok === Result.ERROR) {
                             logger.error("Failed to update view", r.error);
+                            resolve();
                             return;
                         }
 
@@ -173,7 +206,9 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                         if (updates.length > 0 || adds.length > 0 || removals.length > 0) {
                             this.dependencies.subscription.send(subscriptionChanges);
                         }
-                    });
+
+                        resolve();
+                    })));
 
                     cb(enriched);
                 });
