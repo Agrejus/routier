@@ -19,6 +19,8 @@ const moduleNameMapper = {
     '^@routier/blob-plugin$': '<rootDir>/plugins/blob/src/index.ts',
     '^@routier/encryption$': '<rootDir>/plugins/encryption/src/index.ts',
     '^@routier/blob-plugin/(.*)$': '<rootDir>/plugins/blob/src/$1',
+    // Subpath first: a bare-name pattern would swallow it.
+    '^@routier/sqlite-plugin/d1$': '<rootDir>/plugins/sqlite/src/d1.ts',
     '^@routier/sqlite-plugin$': '<rootDir>/plugins/sqlite/src/index.ts',
     '^@routier/pouchdb-plugin$': '<rootDir>/plugins/pouchdb/src/index.ts',
     '^@routier/postgresql-plugin$': '<rootDir>/plugins/postgresql/src/index.ts',

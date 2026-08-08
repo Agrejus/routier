@@ -185,11 +185,21 @@ Decided while building:
   augmented by the wrapper's proxy; iterating returns the raw schemas, so an iteration-based
   check finds nothing and the refusal never fires. It was written that way first.
 
-Unproven, and the same shape of gap the Turso driver carries: the suite runs against a D1
-double over `node:sqlite` that implements batch-as-transaction faithfully — rollback on first
-failure, positional results, non-mutating `bind` — but nothing here has talked to Cloudflare.
-That `batch()` really is one transaction on their side, how a missing table is reported, and
-the statement limits are assumptions this encodes rather than facts it checks.
+**Proven against a real binding**, unlike the Turso driver's HTTP transport.
+`e2e/src/d1Miniflare.test.ts` runs the full plugin contract and the vector suite against D1
+served by workerd through Miniflare — no Docker needed — and pins the three assumptions a
+double could only have confirmed to their author:
+
+- `batch()` is one transaction. A failure part way through leaves nothing behind, which is
+  what the whole design rests on.
+- Results come back positionally, one per statement, so the prepended creates can be sliced
+  off and the rest matched to operations by index.
+- A missing table says "no such table". D1 wraps it as
+  `D1_ERROR: no such table: x: SQLITE_ERROR`; a wrapper that dropped the phrase would turn
+  lazy creation into a hard failure on the first read of every collection.
+
+Still untested: statement limits per batch, and behaviour against Cloudflare's own service
+rather than workerd running the same code locally.
 
 ### MongoDB — shipped 2026-08-07
 
