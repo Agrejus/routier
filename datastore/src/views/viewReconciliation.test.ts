@@ -40,7 +40,7 @@ const compositeViewSchema = s.define("reconcileCompositeView", {
 class Store extends DataStore {
     products = this.collection(sourceSchema).proxy().create();
 
-    activeProducts = this.view(viewSchema)
+    activeProducts = this.view(viewSchema).mirror()
         .derive((cb) => {
             const recompute = () => {
                 this.products.where(x => x.active === true).toArray(r => {
@@ -61,7 +61,7 @@ class Store extends DataStore {
 class CompositeStore extends DataStore {
     items = this.collection(compositeSourceSchema).proxy().create();
 
-    activeItems = this.view(compositeViewSchema)
+    activeItems = this.view(compositeViewSchema).mirror()
         .derive((cb) => {
             const recompute = () => {
                 this.items.where(x => x.active === true).toArray(r => {

@@ -5,7 +5,7 @@ import { productsViewSchema } from "./schemas/productsView";
 export class AppDataStore extends DataStore {
   products = this.collection(productsSchema).proxy().create();
 
-  productsView = this.view(productsViewSchema)
+  productsView = this.view(productsViewSchema).mirror()
     .scope(([x, p]) => x.documentType === p.collectionName, productsViewSchema)
     .derive((done) => {
       return this.products.subscribe().toArray((productsResponse) => {

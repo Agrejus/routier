@@ -18,7 +18,7 @@ const viewSchema = s.define("activeProductView", {
 class ViewStore extends DataStore {
     products = this.collection(sourceSchema).proxy().create();
 
-    activeProducts = this.view(viewSchema)
+    activeProducts = this.view(viewSchema).mirror()
         .derive((cb) => {
             const recompute = () => {
                 this.products

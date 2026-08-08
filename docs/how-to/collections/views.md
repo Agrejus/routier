@@ -52,7 +52,16 @@ Views are ideal for:
 
 ## Creating a View
 
-Views are created using `.view()` followed by `.derive()` to specify how data is computed:
+Views are created using `.view()`, a tracking mode, and `.derive()` to specify how data is
+computed. There is no default mode — a view either equals its derivation or accumulates
+history, and the two are opposites:
+
+- `.mirror()` — the view EQUALS its derivation. A row it stops producing is removed. This is
+  what makes a view usable as a synced subset: one user's data out of a table with hundreds of
+  thousands of rows, rather than the whole table.
+- `.accumulate()` — the view keeps every row it has ever produced. Pair it with a key derived
+  from the row's content and each version lands as its own row, making the view an append-only
+  history. See the history tracking guide.
 
 
 {% highlight ts linenos %}{% include code/from-docs/how-to/collections/views/block-1.ts %}{% endhighlight %}

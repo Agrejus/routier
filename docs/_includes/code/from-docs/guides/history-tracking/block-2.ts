@@ -31,7 +31,7 @@ const productsHistorySchema = s
 export class AppDataStore extends DataStore {
   products = this.collection(productsSchema).proxy().create();
 
-  productsHistory = this.view(productsHistorySchema)
+  productsHistory = this.view(productsHistorySchema).accumulate()
     .derive((done) => {
       return this.products.subscribe().toArray((response) => {
         if (response.ok === "error") {
