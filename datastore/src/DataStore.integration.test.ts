@@ -275,7 +275,7 @@ describe("DataStore integration", () => {
 
         expect(() => {
             class InvalidViewStore extends DataStore {
-                badView = this.view(viewSchemaWithIdentity).mirror().derive(() => []).create();
+                badView = this.view(viewSchemaWithIdentity).derive(() => []).create();
             }
             new InvalidViewStore(new RoutingProbePlugin());
         }).toThrow("View cannot have an identty key");

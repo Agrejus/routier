@@ -1,4 +1,4 @@
-productsView = this.view(productsViewSchema).mirror()
+productsView = this.view(productsViewSchema)
   .derive((done) => {
     return this.products.subscribe().toArray((response) => {
       if (response.ok === "error") {

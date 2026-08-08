@@ -40,7 +40,7 @@ const compositeViewSchema = s.define("reconcileCompositeView", {
 class Store extends DataStore {
     products = this.collection(sourceSchema).proxy().create();
 
-    activeProducts = this.view(viewSchema).mirror()
+    activeProducts = this.view(viewSchema)
         .derive((cb) => {
             const recompute = () => {
                 this.products.where(x => x.active === true).toArray(r => {
@@ -61,7 +61,7 @@ class Store extends DataStore {
 class CompositeStore extends DataStore {
     items = this.collection(compositeSourceSchema).proxy().create();
 
-    activeItems = this.view(compositeViewSchema).mirror()
+    activeItems = this.view(compositeViewSchema)
         .derive((cb) => {
             const recompute = () => {
                 this.items.where(x => x.active === true).toArray(r => {
@@ -79,7 +79,10 @@ class CompositeStore extends DataStore {
         .create();
 }
 
-/** A history: the key is a content hash, so every version is its own row. */
+/**
+ * A history, declared the way a history is declared: the key is COMPUTED from the row, so
+ * every version gets its own key. Nothing else marks it as accumulating.
+ */
 const historySchema = s.define("reconcileHistory", {
     name: s.string(),
     active: s.boolean(),
@@ -91,7 +94,6 @@ class HistoryStore extends DataStore {
     products = this.collection(sourceSchema).proxy().create();
 
     history = this.view(historySchema)
-        .accumulate()
         .derive((cb) => {
             const recompute = () => {
                 this.products.toArray(r => {
@@ -219,7 +221,7 @@ describe("view reconciliation", () => {
         expect(await store.activeProducts.countAsync()).toBe(1);
     });
 
-    it("keeps superseded rows when the view accumulates", async () => {
+    it("keeps superseded rows when the key is computed", async () => {
         const store = open(HistoryStore);
 
         const [a] = await store.products.addAsync({ id: 1, name: "a", active: true } as any);
@@ -232,9 +234,9 @@ describe("view reconciliation", () => {
         await store.saveChangesAsync();
         await settle();
 
-        // A content-hash key makes the changed row a NEW row, and the old one must survive —
-        // removing it would delete the history the view exists to be. This is the opposite of
-        // every case above, which is why it has to be declared rather than inferred.
+        // A computed key makes the changed row a NEW row, so the old one is not a row that
+        // left the set — it is the previous version, and removing it would delete the history.
+        // The schema is the only thing that says so; there is no setting.
         expect(await store.history.countAsync()).toBe(2);
     });
 

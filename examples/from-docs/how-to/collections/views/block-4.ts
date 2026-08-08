@@ -1,4 +1,4 @@
-combinedView = this.view(combinedViewSchema).mirror()
+combinedView = this.view(combinedViewSchema)
   .derive((done) => {
     let usersData: User[] = [];
     let postsData: Post[] = [];

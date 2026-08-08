@@ -1,4 +1,4 @@
-commentsView = this.view(commentsViewSchema).mirror()
+commentsView = this.view(commentsViewSchema)
   .derive((done) => {
     return this.comments.subscribe().toArray((response) => {
       if (response.ok === "error") {

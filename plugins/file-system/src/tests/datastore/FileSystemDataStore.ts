@@ -23,7 +23,7 @@ export class TestDataStore extends DataStore {
     }
 
     products = this.collection(productsSchema).scope(([x, p]) => x.documentType === p.collectionName, productsSchema).proxy().create();
-    productsView = this.view(productsViewSchema).mirror().scope(([x, p]) => x.documentType === p.collectionName, productsViewSchema).derive((done) => {
+    productsView = this.view(productsViewSchema).scope(([x, p]) => x.documentType === p.collectionName, productsViewSchema).derive((done) => {
         return this.products.subscribe().toArray(productsResponse => {
 
             if (productsResponse.ok === "error") {
@@ -43,7 +43,7 @@ export class TestDataStore extends DataStore {
 
         });
     }).create();
-    productsHistory = this.view(productsHistorySchema).accumulate().scope(([x, p]) => x.documentType === p.collectionName, productsHistorySchema).derive((done) => {
+    productsHistory = this.view(productsHistorySchema).scope(([x, p]) => x.documentType === p.collectionName, productsHistorySchema).derive((done) => {
         return this.products.subscribe().toArray(productsResponse => {
 
             if (productsResponse.ok === "error") {
@@ -76,7 +76,7 @@ export class TestDataStore extends DataStore {
     immutableItems = this.collection(immutableItemSchema).readonly().create();
     orders = this.collection(ordersSchema).proxy().create();
 
-    commentsView = this.view(commentsViewSchema).mirror().derive((done) => {
+    commentsView = this.view(commentsViewSchema).derive((done) => {
         // defer because we don't want to compute every time we create a datastore
         const unsubscribe = this.comments.subscribe().toArray(response => {
 
@@ -100,7 +100,7 @@ export class TestDataStore extends DataStore {
     blogPosts = this.collection(blogPostsSchema).proxy().create();
 
     tasks = this.collection(taskSchema).proxy().create();
-    highPriorityTasksView = this.view(taskViewSchema).mirror()
+    highPriorityTasksView = this.view(taskViewSchema)
         .derive((done) => {
             return this.tasks.subscribe().toArray((response) => {
                 if (response.ok === "error") {

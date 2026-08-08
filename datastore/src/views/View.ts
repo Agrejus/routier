@@ -1,6 +1,6 @@
 import { CollectionBase } from '../collections/CollectionBase';
 import { IDbPlugin } from '@routier/core/plugins';
-import { ChangeTrackingType, HashType, InferCreateType, InferType, SubscriptionChanges } from '@routier/core/schema';
+import { ChangeTrackingType, HashType, InferCreateType, InferType, SchemaTypes, SubscriptionChanges } from '@routier/core/schema';
 import { BulkPersistChanges, SchemaPersistChanges } from '@routier/core/collections';
 import { CallbackResult, Result } from '@routier/core/results';
 import { logger, noop, uuid } from '@routier/core/utilities';
@@ -17,8 +17,30 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
     protected derive: Derive<TEntity>;
     protected unsubscribe: DeriveResponse;
 
-    constructor(dependencies: CollectionDependencies<TEntity>, derive: Derive<TEntity>, accumulates: boolean = false) {
+    constructor(dependencies: CollectionDependencies<TEntity>, derive: Derive<TEntity>) {
         super(dependencies);
+
+        /**
+         * Whether the view accumulates history or mirrors its derivation, read off the KEY.
+         *
+         * Not a setting, because the schema already says it. A key COMPUTED from the entity
+         * changes whenever the entity does, so every version of a row lands under its own key
+         * and the view is an append-only history:
+         *
+         *     id: x.computed(entity => hash(entity)).key()
+         *
+         * A key the caller supplies is stable across versions, so a changed row updates in
+         * place and the view mirrors its source:
+         *
+         *     id: s.string().key()          // derive emits `view:${source.id}`
+         *
+         * That difference decides what an absent key MEANS, which is the only question
+         * reconciliation has to answer. Under a stable key, a row the derivation stopped
+         * producing has genuinely left the set and must go — that is what makes a view usable
+         * as a synced subset. Under a computed key, the same absence just means the row has a
+         * newer version, and removing it would delete the history the view exists to be.
+         */
+        const accumulates = dependencies.schema.idProperties.some(property => property.type === SchemaTypes.Computed);
 
         const persist: IDbPlugin["bulkPersist"] = dependencies.plugin.bulkPersist.bind(dependencies.plugin);
 
@@ -96,10 +118,7 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                      * avoid. It also silently contradicts its own definition: rows that do not
                      * satisfy the derivation keep being returned by it.
                      *
-                     * Skipped for an accumulating view, which is the opposite shape on purpose
-                     * — a history keyed by content hash, where each version is its own row and
-                     * removing the old ones would delete the history. See
-                     * `ViewBuilder.accumulate`.
+                     * Skipped when the key is computed — see `accumulates` above.
                      */
                     if (accumulates === false) {
                         for (const [key, existing] of stored) {
