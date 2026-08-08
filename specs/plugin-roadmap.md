@@ -6,19 +6,21 @@ before anyone writes code, and the question is stated rather than left to be red
 
 Date: 2026-08-07
 
-## Three shapes, and why it matters which one you pick
+## Four shapes, and why it matters which one you pick
 
-Routier has three extension points, and they have very different leverage. Reach for the
+Routier has four extension points, and they have very different leverage. Reach for the
 cheapest one that can express the feature.
 
 | Shape | What it is | Costs | Reach |
 | --- | --- | --- | --- |
 | Backend | Implements `IDbPlugin` | A whole plugin | One more place to store data |
-| Wrapper | Wraps an `IDbPlugin` | A few hundred lines | Every backend at once |
+| Wrapper | Wraps an `IDbPlugin` | A few hundred lines | Every collection in the store |
+| Collection declaration | A method on the collection builder | A few hundred lines | One collection, configured per collection |
 | Transform | `to` / `from` on a property, declared in `.modify()` | Two functions | Every backend, with no plugin at all |
 
-There are nine backends and three wrappers: `ConcurrencyDbPlugin`, `OptimisticUpdatesDbPlugin`
-and `BlobDbPlugin`.
+There are nine backends and five wrappers: `ConcurrencyDbPlugin`, `OptimisticUpdatesDbPlugin`,
+`BlobDbPlugin`, `RetryDbPlugin` and `CacheDbPlugin`. Two collection declarations: `.softDelete()`
+and `.audit()`.
 
 **Prefer a wrapper over a backend** whenever the feature is not about *where* bytes live. Both
 wrappers that augment storage use the same technique: hand the inner plugin a view of the
@@ -44,10 +46,13 @@ The question is *what the feature intercepts*.
 
 - Intercepts **where bytes go** → backend.
 - Intercepts a **query or a save** — scoping every read, filtering removed rows, recording who
-  changed what → wrapper. It needs to see the operation, which a transform never does.
+  changed what. It needs to see the operation, which a transform never does. Then ask which
+  collections: **all of them** → wrapper; **some of them, configured differently** →
+  collection declaration.
 - Intercepts **one property's value** → transform.
 
-Encryption is the worked example, and it is why this section says three rather than two. It
+Encryption is the worked example for the transform row, and it is why this section says four
+rather than three. It
 shipped as a wrapper plugin, `.encrypted()` and all, and was then deleted: encryption is a
 value mapping, so a transform expressed it in two functions and the whole plugin turned out to
 be ceremony. The wrapper had to re-derive the schema for every backend and intercept both
@@ -57,8 +62,18 @@ Candidates that are transform-shaped and therefore much cheaper than they look: 
 tokenization and PII redaction, and any custom wire format. None of them need a plugin.
 
 The trap in the other direction: soft delete, audit log, read-through cache, retry and
-multi-tenancy all look like value features and are not. Each has to see the operation, so each
-is a wrapper.
+multi-tenancy all look like value features and are not. Each has to see the OPERATION, which a
+transform never does.
+
+But seeing the operation does not make something a wrapper — that is the second question, and
+it is about SCOPE. A wrapper applies to the whole store. If the feature is a per-collection
+decision, it belongs on the collection builder instead, where it can also be given
+per-collection configuration a wrapper would have to fake. Soft delete and audit log both moved
+there for exactly that reason; read-through cache and retry are genuinely store-wide and stayed
+wrappers.
+
+Reach for a collection declaration whenever "which collections?" has an answer other than
+"all of them".
 
 ## Built
 
@@ -348,14 +363,30 @@ at all.
 | --- | --- | --- |
 | Retry | `RetryDbPlugin` | Reads only. A save is never repeated |
 | Read-through cache | `CacheDbPlugin` | LRU, invalidated per schema on any write through it |
-| Audit log | `AuditLogDbPlugin` | Rows go in a table the caller declares and shapes |
+| Audit log | `.audit().derive()` on the collection builder | Not a wrapper — see below |
 | Soft delete | `.softDelete()` on the collection builder | Not a wrapper — see below |
 
-**Soft delete is a collection declaration, not a wrapper.** A wrapper applies to everything a
-store does, and soft delete is a per-collection decision: one collection wants it, the next
-does not. Declaring it on the builder also lets the CALLER pick the property, which a wrapper
+**Two of the four are collection declarations, not wrappers.** A wrapper applies to everything
+a store does, and both of these are per-collection decisions: one collection wants it, the next
+does not.
+
+Soft delete declared on the builder also lets the CALLER pick the property, which a wrapper
 appending a hidden column cannot. That matters because a deletion timestamp is not a token
 nobody reads — it answers "when did this go?", and a hidden one makes that query unwritable.
+
+Auditing shipped as a wrapper first and was replaced. The tell was in its own worked example:
+the row mapper needed `if (change.collection === 'sessions') return null`, which is
+per-collection configuration living inside a store-wide function. It now mirrors
+`view().derive()` — `.audit(schema)` names what is written, `.derive((changes, cb) => ...)`
+decides what goes in it — and `derive` receives the whole batch for one save rather than one
+call per change, so a caller can collapse many edits into one row or emit none. There are no
+return-value rules to learn.
+
+What was given up is coverage: a newly added collection is unaudited until someone declares it.
+A store-wide wrapper cannot miss one. That is the right trade here — the requirement was
+history and logs with a caller-defined shape, not a compliance trail — but it is the reason to
+think twice before doing the same to multi-tenancy, where the gap is invisible precisely
+because the feature is believed.
 
 Decided while building:
 
@@ -368,12 +399,16 @@ Decided while building:
   cached instance would let one caller replace the cache's contents with its own proxies.
 - **The cache invalidates before a write as well as after.** A backend without atomic batches
   can apply part of a failed save.
-- **Audit rows ride the same `bulkPersist`.** On a backend with an atomic batch the record and
-  the change it describes commit together. A trail that can disagree with the data is worse
-  than none, because it is believed.
-- **Only the audit wrapper's own rows are stripped from the result**, not the whole bucket: a
-  caller may declare a collection over the audit schema to read it, and removing the bucket
-  breaks `afterPersist`.
+- **Audit rows ride the same save.** They are appended to the assembled `BulkPersistChanges`,
+  so on a backend with an atomic batch the record and the change it describes commit together.
+  A trail that can disagree with the data is worse than none, because it is believed.
+- **Auditing runs after the prepare pipeline**, not inside a collection's own prepare. A
+  declaration that ran there would see only part of the save, and what it saw would depend on
+  the order collections happened to be declared in.
+- **Audit rows are detached from the changes AND the result before anything else reads them.**
+  Nothing tracks them, so a store that also declares a collection over the audit schema in
+  order to read it would otherwise try to match rows its change tracker never sent — and the
+  caller's reported add count would include rows they did not make.
 - **Soft delete's scope uses loose equality**, or enabling it on an existing table whose rows
   predate the column would hide every one of them.
 - **Soft delete branches on the collection's declared mode, not `Object.isFrozen`.** A row is
