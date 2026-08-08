@@ -44,7 +44,10 @@ const converters: Record<SchemaTypes, (value: unknown) => unknown> = {
     Function: v => v,
     Number: v => v == null ? v : Number(v),
     Object: v => v,
-    String: v => v == null ? v : String(v)
+    String: v => v == null ? v : String(v),
+    // A vector is a list of numbers and passes through like any other array. Nothing
+    // converts it because nothing compares it: similarity is `.nearest()`, not a filter.
+    Vector: v => v
 };
 
 // #region Tokenizer
@@ -844,6 +847,11 @@ class ExpressionParser {
                 const parentPath = path.slice(0, -1).join(".");
                 const parent = this.schema.properties.find(w => w.getAssignmentPath() == parentPath);
 
+                // Vector is deliberately absent. Its length is the dimension count declared
+                // in the schema — a constant, not data — so a filter on it answers a question
+                // nobody asks, and pushing it down would need `json_array_length` on a
+                // backend storing JSON and something else entirely on one with a native
+                // vector column. Not parsing it leaves a clear error instead of a dialect gap.
                 if (parent != null && (parent.type === SchemaTypes.String || parent.type === SchemaTypes.Array)) {
                     return { kind: "property", property: parent, transformer: "length", locale: null };
                 }

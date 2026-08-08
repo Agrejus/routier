@@ -1,6 +1,7 @@
 import type { SchemaDefinition } from "./SchemaDefinition";
 import type { SchemaBase } from "./property/base/SchemaBase";
 import type { SchemaArray } from "./property/types/SchemaArray";
+import type { SchemaVector } from "./property/types/SchemaVector";
 import type { SchemaObject } from "./property/types/SchemaObject";
 import type { PropertyInfo } from "./PropertyInfo";
 import type { DeepPartial } from "../types";
@@ -30,7 +31,15 @@ export enum SchemaTypes {
      * Content in, reference out. The only type whose write shape differs from its stored
      * shape, and a leaf on purpose — see `SchemaFile`.
      */
-    File = "File"
+    File = "File",
+    /**
+     * A fixed-length list of numbers, carrying its dimension count — see `SchemaVector`.
+     *
+     * Value-shaped exactly like `s.array(s.number())`, which is why every array codegen
+     * handler accepts it. It is a distinct type only so a backend can recognise it and store
+     * it natively; nothing else needs to tell the two apart.
+     */
+    Vector = "Vector"
 }
 
 export type ArrayShape = string | number | Date | {};
@@ -67,6 +76,15 @@ export type FileContentValue =
     | ArrayBuffer
     | Blob
     | string;
+
+/**
+ * What a vector property holds, in and out: a plain list of numbers.
+ *
+ * Named rather than written inline because the inference rules have to recognise it after a
+ * modifier has erased which class produced it — the same problem `FileReferenceValue` solves
+ * above, and for the same reason.
+ */
+export type VectorValue = number[];
 
 export type ExpandedProperty = ExpandedChildProperty & {
     assignmentPath: string;
@@ -312,12 +330,17 @@ type InferTagged<C> = ResolveWrapped<C>;
  */
 type ResolveWrapped<C> =
     C extends string | number | boolean | Date | FileReferenceValue ? C :
+    C extends VectorValue ? C :
     C extends SchemaBase<any, any> ? InferPrimitive<C>[] :
     { [K in keyof C]: InferPrimitive<C[K]> };
 
 type InferPrimitive<T> =
     T extends SchemaOptional<infer C, infer __> ? ResolveWrapped<C> :
     T extends SchemaTag<infer C, infer __> ? InferTagged<C> :
+    // Before the generic `SchemaBase` branch below, which would see `X = number[]` and map
+    // the element through `InferPrimitive<number>` — no branch matches a bare `number`, so a
+    // vector would type as `never[]`: assignable from nothing, and invisible at runtime.
+    T extends SchemaVector<infer __, infer ___> ? VectorValue :
     T extends SchemaArray<infer Y, infer __> ? InferPrimitive<Y>[]
     : T extends SchemaObject<infer Obj, infer _> ?
     { [K in keyof Obj]: InferPrimitive<Obj[K]> } : // Process nested objects

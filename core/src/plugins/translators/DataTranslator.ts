@@ -19,7 +19,8 @@ export abstract class DataTranslator<TRoot extends {}, TShape> {
         sort: (data: unknown, option: QueryOption<TShape, "sort">) => this.sort(data, option),
         sum: (data: unknown, option: QueryOption<TShape, "sum">) => this.sum<any>(data, option),
         take: (data: unknown, option: QueryOption<TShape, "take">) => this.take(data, option),
-        group: (data: unknown, option: QueryOption<TShape, "group">) => this.group(data, option)
+        group: (data: unknown, option: QueryOption<TShape, "group">) => this.group(data, option),
+        nearest: (data: unknown, option: QueryOption<TShape, "nearest">) => this.nearest(data, option)
     };
 
     constructor(query: IQuery<TRoot, TShape>) {
@@ -40,6 +41,18 @@ export abstract class DataTranslator<TRoot extends {}, TShape> {
     abstract sort(data: unknown, option: QueryOption<TShape, "sort">): TShape;
     abstract map(data: unknown, option: QueryOption<TShape, "map">): TShape;
     abstract group(data: unknown, option: QueryOption<TShape, "group">): TShape;
+    /**
+     * Abstract on purpose, unlike the pass-throughs a storage translator can usually inherit.
+     *
+     * Every other shaper degrades safely when a backend ignores it — an unsorted result is
+     * still the right rows. A similarity search is not: it is the only option whose value is
+     * ENTIRELY in the ordering and the limit, so a translator that quietly passes the data
+     * through returns every row in insertion order and calls it the ten nearest.
+     *
+     * Requiring an answer here means a new translator cannot be written without deciding
+     * whether its backend performed the search, and the compiler asks the question.
+     */
+    abstract nearest(data: unknown, option: QueryOption<TShape, "nearest">): TShape;
 
     translate(data: unknown): ITranslatedValue<TShape> {
 

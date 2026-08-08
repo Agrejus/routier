@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { describePluginContract } from '@routier/test-utils';
+import { describePluginContract, describeVectorSearch } from '@routier/test-utils';
 import { uuidv4 } from '@routier/core';
 import { EphemeralDataPlugin } from '@routier/core/plugins';
 import type { DbPluginEvent, IDbPlugin, DbPluginQueryEvent, DbPluginBulkPersistEvent, ITranslatedValue } from '@routier/core/plugins';
@@ -186,6 +186,23 @@ describePluginContract(
     'example: counting wrapper',
     () => new CountingDbPlugin(new KeyValuePlugin(inMemoryStore(), `wrapped-${uuidv4()}`)),
     { supportsRichTypes: true, knownFailing: [] }
+);
+
+/**
+ * A minimal plugin gets vector search without knowing what a vector is.
+ *
+ * This is the strongest form of the claim: `KeyValuePlugin` below was written before vectors
+ * existed and stores whatever it is handed. It passes because the scoring happens above it, in
+ * the translator every plugin inherits — nothing was added here to make it work.
+ */
+describeVectorSearch(
+    'example: key-value backend',
+    () => new KeyValuePlugin(inMemoryStore(), `example-vector-${uuidv4()}`),
+);
+
+describeVectorSearch(
+    'example: counting wrapper',
+    () => new CountingDbPlugin(new KeyValuePlugin(inMemoryStore(), `wrapped-vector-${uuidv4()}`)),
 );
 
 describe('the wrapper really is in the path', () => {

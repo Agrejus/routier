@@ -20,6 +20,10 @@ const schemaTypeToSqliteType = (type: SchemaTypes): string => {
             return 'TEXT'; // ISO string
         case SchemaTypes.Object:
         case SchemaTypes.Array:
+        // A vector is a list of numbers with no native SQLite type behind it, so it is
+        // stored as JSON like any other array. The similarity search then runs in memory
+        // — correct, and the reason `.nearest()` works here at all.
+        case SchemaTypes.Vector:
             // One source of truth for this engine's JSON type: the same dialect value
             // toColumnAssignments encodes against, so DDL and DML cannot drift apart.
             return getDialect('sqlite').jsonColumnType;
@@ -32,7 +36,7 @@ const schemaTypeToSqliteType = (type: SchemaTypes): string => {
  * Determines if a property is deeply nested (object or array).
  */
 const isDeeplyNested = (prop: PropertyInfo<any>): boolean => {
-    return prop.type === SchemaTypes.Object || prop.type === SchemaTypes.Array;
+    return prop.type === SchemaTypes.Object || prop.type === SchemaTypes.Array || prop.type === SchemaTypes.Vector;
 };
 
 /**

@@ -12,11 +12,27 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
     isIdentity: boolean = false;
     isReadonly: boolean = false;
     isDistict: boolean = false;
-    /** Set by `.encrypted()`. `null` when the property is stored as it is. */
-    /** Set by `.modify(x => x.transform(...))`. A live reference, never stringified. */
+    /**
+     * Set by `.modify(x => x.transform(...))`. A live reference, never stringified.
+     * `null` when the property is stored as it is.
+     */
     transform: PropertyTransform<unknown> | null = null;
     indexes: string[] = [];
     fromPropertyName: string | null = null;
+    /**
+     * How many numbers a vector holds. `null` for every other type.
+     *
+     * Declared here rather than on `SchemaVector` because a modifier WRAPS rather than
+     * extends: `s.vector(1536).optional()` is a `SchemaOptional`, and anything reachable only
+     * through the original class is lost the moment a modifier is added. `type` survives for
+     * exactly this reason — the copy constructor below carries it — and a dimension count has
+     * to travel with it, or an optional vector reaches a backend as a vector of unknown width
+     * and cannot be given a column.
+     *
+     * `innerSchema` is the cautionary example: it lives on `SchemaArray` alone, so a modified
+     * array arrives with no element type and clones through the slow path.
+     */
+    dimensions: number | null = null;
 
     foreignKeyDefinition: ForeignKey<unknown> | null = null;
     tags: string[] = [];
@@ -47,6 +63,7 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
             this.fromPropertyName = entity.fromPropertyName;
             this.tags = entity.tags;
             this.transform = entity.transform;
+            this.dimensions = entity.dimensions;
         }
 
         if (literals) {

@@ -87,6 +87,20 @@ export class QueryOptionsCollection<T> {
             }
         }
 
+        if (name === "nearest") {
+            const nearestValue = value as QueryOptionValueMap<T>["nearest"];
+
+            // Same rule as sort, and for the same reason: the plugin stores the vector under
+            // the `from` name, and an unmapped property is not stored at all. Both are only
+            // readable after deserialization, which is where memory execution runs.
+            //
+            // This is also what lets every translator's in-memory fallback read the column by
+            // its resolved name — anything whose storage name differs never reaches them.
+            if (nearestValue.property != null && (nearestValue.property.isUnmapped || nearestValue.property.hasRenamedSegments)) {
+                this.nextExecutionTarget = "memory";
+            }
+        }
+
         const item: QueryCollectionItem<T, K> = {
             index: this.nextIndex,
             option: {
@@ -101,6 +115,23 @@ export class QueryOptionsCollection<T> {
         const found = this.options.get(name);
 
         this.options.set(name, [...found ?? [], item]);
+
+        if (name === "nearest") {
+            // Everything AFTER a similarity search runs in memory, whatever the backend.
+            //
+            // Whether the search was pushed down is a fact about the plugin, which this
+            // collection cannot see — so a later option is only safe if it runs after the
+            // scoring definitely happened, and in memory is the only place that is true of.
+            //
+            // The failure this prevents is silent. `.nearest(x => x.embedding, v, 10).take(3)`
+            // sends `LIMIT 3` to a backend that ignored the ordering, so three arbitrary rows
+            // come back and get scored — three real rows, in a plausible order, and not the
+            // three nearest. Nothing errors.
+            //
+            // A plugin that DID push the search down loses nothing but the chance to also
+            // push down what follows it, which is a limit over ten rows.
+            this.nextExecutionTarget = "memory";
+        }
     }
 
     /**

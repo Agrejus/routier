@@ -1,4 +1,4 @@
-import { describePluginContract } from '@routier/test-utils';
+import { describePluginContract, describeVectorSearch } from '@routier/test-utils';
 import { createClient } from '@libsql/client';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -55,3 +55,25 @@ describePluginContract(
     },
 );
 
+/** Vectors go through the same JSON column and the same in-memory scoring on libSQL. */
+describeVectorSearch(
+    'sqlite (turso driver, local file)',
+    () => {
+        const file = path.join(directory, `vector-${uuidv4()}.sqlite`);
+        const client = createClient({ url: `file:${file}` });
+
+        return new SqliteDbPlugin(file, {
+            driver: tursoDriver(client, {
+                deleteDatabase: async () => {
+                    client.close();
+
+                    await fs.promises.unlink(file).catch((error: NodeJS.ErrnoException) => {
+                        if (error.code !== 'ENOENT') {
+                            throw error;
+                        }
+                    });
+                },
+            }),
+        });
+    },
+);

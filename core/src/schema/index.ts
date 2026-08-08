@@ -6,4 +6,5 @@ export * from './property/types';
 export * from './PropertyInfo';
 export * from './types';
 export * from './utils/standardJsonSchema';
+export * from './utils/propertyKind';
 export * from './SchemaDefinition';

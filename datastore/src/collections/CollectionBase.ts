@@ -45,6 +45,7 @@ export abstract class CollectionBase<TEntity extends {}> implements Disposable {
         this.where = this.where.bind(this);
         this.sort = this.sort.bind(this);
         this.sortDescending = this.sortDescending.bind(this);
+        this.nearest = this.nearest.bind(this);
         this.skip = this.skip.bind(this);
         this.take = this.take.bind(this);
         this.toArray = this.toArray.bind(this);
@@ -345,6 +346,20 @@ export abstract class CollectionBase<TEntity extends {}> implements Disposable {
         const result = new QueryableAsync<TEntity, InferType<TEntity>>(this.dependencies, request);
 
         return result.sortDescending(selector);
+    }
+
+    /**
+     * The `count` entities whose vector is most similar to `vector`, nearest first.
+     * @param selector Function that selects the vector property to search
+     * @param vector The embedding to compare against, of the property's declared width
+     * @param count How many entities to return
+     * @returns QueryableAsync instance for chaining additional query operations
+     */
+    nearest(selector: EntityMap<InferType<TEntity>, InferType<TEntity>[keyof InferType<TEntity>]>, vector: number[], count: number) {
+        const request = new RequestContext<TEntity>(this.changeTrackingType);
+        const result = new QueryableAsync<TEntity, InferType<TEntity>>(this.dependencies, request);
+
+        return result.nearest(selector, vector, count);
     }
 
     toGroup<R extends InferType<TEntity>[keyof InferType<TEntity>] & IdType>(selector: GenericFunction<InferType<TEntity>, R>, done: CallbackResult<Record<R, InferType<TEntity>[]>>) {

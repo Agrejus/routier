@@ -7,7 +7,8 @@ import { SchemaNumber } from "./property/types/SchemaNumber";
 import { SchemaObject } from "./property/types/SchemaObject";
 import { SchemaFile } from "./property/types/SchemaFile";
 import { SchemaString } from "./property/types/SchemaString";
-import { CollectionName, FileReferenceValue } from "./types";
+import { SchemaVector } from "./property/types/SchemaVector";
+import { CollectionName, FileReferenceValue, VectorValue } from "./types";
 
 export const s = {
     number: <T extends number[] = number[]>(...literals: T) => new SchemaNumber<T[number] extends never ? number : T[number], never>(null, literals),
@@ -23,5 +24,12 @@ export const s = {
      * only carries the value through untouched.
      */
     file: () => new SchemaFile<FileReferenceValue, never>(),
+    /**
+     * An embedding of `dimensions` numbers, searchable with `.nearest()`.
+     *
+     * Every backend supports it. One with a native vector column uses it; the rest store the
+     * numbers as JSON and score the search in memory, which returns the same rows.
+     */
+    vector: (dimensions: number) => new SchemaVector<VectorValue, never>(dimensions),
     define: <T extends {}>(collectionName: string, schema: T) => new SchemaDefinition<T>(collectionName as CollectionName, schema),
 }

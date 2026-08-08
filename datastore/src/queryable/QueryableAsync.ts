@@ -53,6 +53,12 @@ export class QueryableAsync<Root extends {}, Shape> extends SelectionQueryableAs
         return this.create(QueryableAsync<Root, Shape>);
     }
 
+    /** The `count` rows nearest `vector` by cosine distance — see `Queryable.nearest`. */
+    nearest(expression: GenericFunction<Shape, Shape[keyof Shape]>, vector: number[], count: number) {
+        this.setNearestQueryOption(expression, vector, count);
+        return this.create(QueryableAsync<Root, Shape>);
+    }
+
     // does not allow for async functions due to the subscription
     subscribe() {
         this.request.isSubScribed = true;

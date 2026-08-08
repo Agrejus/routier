@@ -1,6 +1,6 @@
 import { CodeBuilder, SlotBlock } from '../../blocks';
 import { PropertyInfoHandler } from "../types";
-import { PropertyInfo, SchemaTypes } from "../../../schema";
+import { isArrayValued, PropertyInfo, SchemaTypes } from "../../../schema";
 
 /**
  * Serializes arrays per element instead of copying the reference:
@@ -32,7 +32,7 @@ export class SerializeArrayHandler extends PropertyInfoHandler {
 
     override handle(property: PropertyInfo<any>, builder: CodeBuilder): CodeBuilder | null {
 
-        if (property.type === SchemaTypes.Array) {
+        if (isArrayValued(property.type)) {
             const slot = builder.get<SlotBlock>("if");
             // Serialize maps in-memory shape -> storage shape: read the entity by
             // property name, write the result by `from` (storage) name

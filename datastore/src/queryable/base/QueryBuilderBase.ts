@@ -1,6 +1,7 @@
 import { QueryField, QueryOrdering } from "@routier/core/plugins";
 import { GenericFunction } from "@routier/core/types";
 import { Filter, ParamsFilter, toExpression } from "@routier/core/expressions";
+import { SchemaTypes } from "@routier/core/schema";
 import { ComposerDependencies, RequestContext } from "../../collections/types";
 
 export abstract class QueryBuilderBase<TRoot extends {}, TShape, TDeps extends ComposerDependencies<TRoot>> {
@@ -115,6 +116,29 @@ export abstract class QueryBuilderBase<TRoot extends {}, TShape, TDeps extends C
         const property = this.dependencies.schema.getProperty(propertyName);
 
         this.request.queryOptions.add("sort", { selector: selector as any, direction, propertyName, property });
+    }
+
+    /**
+     * Records a similarity search, validating what can only be checked here.
+     *
+     * Both checks throw at the call rather than at execution. A width mismatch surfaces at
+     * the backend as an error naming a column, several layers from the embedding that caused
+     * it, and on a backend storing JSON it does not surface at all — every distance comes
+     * back `Infinity` and the query returns an arbitrary ten rows that look like an answer.
+     */
+    protected setNearestQueryOption(selector: GenericFunction<TShape, TShape[keyof TShape]>, vector: number[], count: number) {
+        const propertyName = this.getSortPropertyName(selector);
+        const property = this.dependencies.schema.getProperty(propertyName);
+
+        if (property != null && property.type !== SchemaTypes.Vector) {
+            throw new Error(`.nearest() needs a vector property.  Property: ${propertyName}, Type: ${property.type}`);
+        }
+
+        if (property?.dimensions != null && property.dimensions !== vector.length) {
+            throw new Error(`.nearest() was given a vector of the wrong width.  Property: ${propertyName}, Expected: ${property.dimensions}, Received: ${vector.length}`);
+        }
+
+        this.request.queryOptions.add("nearest", { selector: selector as any, propertyName, property, vector, count });
     }
 
     protected setSkipQueryOption(amount: number) {

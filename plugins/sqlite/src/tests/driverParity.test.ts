@@ -1,4 +1,4 @@
-import { describePluginContract } from '@routier/test-utils';
+import { describePluginContract, describeVectorSearch } from '@routier/test-utils';
 import { uuidv4 } from '@routier/core';
 import { SqliteDbPlugin } from '../index';
 import { sqlite3Driver } from '../drivers/sqlite3';
@@ -24,4 +24,10 @@ describePluginContract(
         supportsRichTypes: false,
         knownFailing: [],
     },
+);
+
+/** Vectors are a JSON column here too, so both engines must score identically. */
+describeVectorSearch(
+    'sqlite (sqlite3 driver)',
+    () => new SqliteDbPlugin(`vector-sqlite3-${uuidv4()}.sqlite`, { driver: sqlite3Driver() }),
 );

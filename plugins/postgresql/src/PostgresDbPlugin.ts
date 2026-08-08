@@ -1,14 +1,14 @@
 import { Pool } from 'pg';
 import { decodeJsonColumns } from '@routier/sql-plugin-core';
 import { OptimisticConcurrencyError } from '@routier/core';
-import { buildFromPersistOperation, buildFromQueryOperation, compiledSchemaToPostgresTable } from './utils';
+import { buildFromPersistOperation, buildFromQueryOperation, compiledSchemaToPostgresTable, NO_VECTOR_SUPPORT, PostgresVectorSupport } from './utils';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue } from '@routier/core/plugins';
 import { PostgresSqlTranslator } from './PostgresSqlTranslator';
 import { CallbackResult, PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '@routier/core/results';
 import { BulkPersistResult } from '@routier/core/collections';
 import { CompiledSchema } from '@routier/core/schema';
 import { logger } from '@routier/core/utilities';
-import { SqlPersistOperation } from './types';
+import { SqlOperation, SqlPersistOperation } from './types';
 
 export interface PostgresDbPluginConfig {
     host?: string;
@@ -27,6 +27,8 @@ export class PostgresDbPlugin implements IDbPlugin {
 
     private pool: Pool;
     private tableCache: Record<string, string> = {};
+    /** Resolved once per plugin instance; see `resolveVectorSupport`. */
+    private vectorProbe: Promise<PostgresVectorSupport> | null = null;
 
     constructor(config: PostgresDbPluginConfig) {
         this.pool = new Pool({
@@ -48,30 +50,79 @@ export class PostgresDbPlugin implements IDbPlugin {
         });
     }
 
-    private resolveSchema<TEntity extends {}>(schema: CompiledSchema<TEntity>) {
+    private resolveSchema<TEntity extends {}>(schema: CompiledSchema<TEntity>, vectors: PostgresVectorSupport) {
         if (this.tableCache[schema.collectionName] == null) {
-            this.tableCache[schema.collectionName] = compiledSchemaToPostgresTable(schema);
+            this.tableCache[schema.collectionName] = compiledSchemaToPostgresTable(schema, undefined, vectors);
         }
     }
 
+    /**
+     * Whether this server can store and search a `vector` column, asked once and reused.
+     *
+     * A schema with `s.vector()` works either way — without the extension the numbers go into
+     * JSONB and the similarity search runs in memory. So this decides how FAST the feature is,
+     * never whether it is available, and a probe that fails for any reason at all correctly
+     * lands on the path that always works.
+     *
+     * Two ways to have it: already installed, or installable by this connection. The second
+     * needs privileges an application role often lacks, which is why a failure here is
+     * ordinary rather than exceptional and is not logged as an error.
+     *
+     * The promise is cached rather than the value, so concurrent first queries share one
+     * probe instead of racing to create the extension.
+     *
+     * **This is decided per plugin instance, and the DDL it produces is permanent.** A table
+     * created as JSONB keeps that column type after the extension is installed later — SQL
+     * plugins here do not migrate. Installing pgvector against existing data is a migration,
+     * and it has to be done as one.
+     */
+    private resolveVectorSupport(): Promise<PostgresVectorSupport> {
+        if (this.vectorProbe != null) {
+            return this.vectorProbe;
+        }
+
+        this.vectorProbe = this.pool
+            .query(`SELECT 1 FROM pg_extension WHERE extname = 'vector'`)
+            .then(installed => {
+                if (installed.rowCount != null && installed.rowCount > 0) {
+                    return { available: true };
+                }
+
+                return this.pool
+                    .query('CREATE EXTENSION IF NOT EXISTS vector')
+                    .then(() => ({ available: true }))
+                    .catch(() => NO_VECTOR_SUPPORT);
+            })
+            .catch(() => NO_VECTOR_SUPPORT);
+
+        return this.vectorProbe;
+    }
+
     query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
-        this.resolveSchema(event.operation.schema);
-        const translator = new PostgresSqlTranslator(event.operation);
+        this.resolveVectorSupport().then(vectors => {
+            this.resolveSchema(event.operation.schema, vectors);
 
-        this._doQueryWork<TRoot, TShape>(event, (result) => {
-            if (result.ok === "error") {
-                done(PluginEventResult.error(event.id, result.error));
-                return;
-            }
+            // Built once, here, and handed down. The builder decides whether the search made
+            // it into the SQL, and the translator has to be told the SAME answer — building
+            // twice would let the statement and the decision about it drift apart.
+            const built = buildFromQueryOperation(event.operation, vectors);
+            const translator = new PostgresSqlTranslator(event.operation, built.nearestPushedDown);
 
-            // Nested objects and arrays are stored as JSON columns (see
-            // toColumnAssignments); decode them before translation so the entity gets a
-            // structure back rather than a JSON string. Skips properties whose schema
-            // does its own deserialization.
-            const decoded = decodeJsonColumns(result.data, event.operation.schema);
-            const data = translator.translate(decoded);
+            this._doQueryWork<TRoot, TShape>(event, built, vectors, (result) => {
+                if (result.ok === "error") {
+                    done(PluginEventResult.error(event.id, result.error));
+                    return;
+                }
 
-            done(PluginEventResult.success(event.id, data));
+                // Nested objects and arrays are stored as JSON columns (see
+                // toColumnAssignments); decode them before translation so the entity gets a
+                // structure back rather than a JSON string. Skips properties whose schema
+                // does its own deserialization.
+                const decoded = decodeJsonColumns(result.data, event.operation.schema);
+                const data = translator.translate(decoded);
+
+                done(PluginEventResult.success(event.id, data));
+            });
         });
     }
 
@@ -86,23 +137,28 @@ export class PostgresDbPlugin implements IDbPlugin {
     }
 
     bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackPartialResult<BulkPersistResult>) {
-        this._doPersistWork(event, (result) => {
-            if (result.ok === "error") {
-                done(PluginEventResult.error(event.id, result.error));
-                return;
-            }
+        // The probe gates the write too, not just the read: it decides the column type this
+        // table is created with, and a table created before the answer is known would get
+        // JSONB on a server that could have given it a real vector column.
+        this.resolveVectorSupport().then(vectors => {
+            this._doPersistWork(event, vectors, (result) => {
+                if (result.ok === "error") {
+                    done(PluginEventResult.error(event.id, result.error));
+                    return;
+                }
 
-            done(PluginEventResult.success(event.id, result.data));
+                done(PluginEventResult.success(event.id, result.data));
+            });
         });
     }
 
-    private resolveTableCreateStatement(schema: CompiledSchema<unknown>): string {
+    private resolveTableCreateStatement(schema: CompiledSchema<unknown>, vectors: PostgresVectorSupport): string {
         const collectionName = schema.collectionName;
         if (this.tableCache[collectionName]) {
             return this.tableCache[collectionName];
         }
 
-        const createTableSQL = compiledSchemaToPostgresTable(schema);
+        const createTableSQL = compiledSchemaToPostgresTable(schema, undefined, vectors);
         this.tableCache[collectionName] = createTableSQL;
 
         return createTableSQL;
@@ -110,6 +166,7 @@ export class PostgresDbPlugin implements IDbPlugin {
 
     private _doPersistWork(
         event: DbPluginBulkPersistEvent,
+        vectors: PostgresVectorSupport,
         done: CallbackResult<BulkPersistResult>
     ): void {
         this.pool.connect((err, client, release) => {
@@ -131,7 +188,7 @@ export class PostgresDbPlugin implements IDbPlugin {
 
                 const schema = event.schemas.get(schemaId);
                 const persistOperations = buildFromPersistOperation(schema, changes);
-                const createTableSql = compiledSchemaToPostgresTable(schema);
+                const createTableSql = this.resolveTableCreateStatement(schema, vectors);
 
                 if (persistOperations.removes != null) {
                     operations.push({ op: { ...persistOperations.removes, createTableSql, schemaId }, type: 'removes' });
@@ -342,6 +399,8 @@ export class PostgresDbPlugin implements IDbPlugin {
 
     private _doQueryWork<TRoot extends {}, TShape extends any = TRoot>(
         event: DbPluginQueryEvent<TRoot, TShape>,
+        built: SqlOperation,
+        vectors: PostgresVectorSupport,
         done: CallbackResult<TShape>
     ) {
         this.pool.connect((err, client, release) => {
@@ -363,8 +422,8 @@ export class PostgresDbPlugin implements IDbPlugin {
                 return done(Result.error(err));
             }
 
-            const createTableSQL = this.resolveTableCreateStatement(event.operation.schema);
-            const { params, sql } = buildFromQueryOperation(event.operation);
+            const createTableSQL = this.resolveTableCreateStatement(event.operation.schema, vectors);
+            const { params, sql } = built;
 
             logger.debug('[DB] PostgreSQL query:', {
                 sql,

@@ -50,4 +50,10 @@ export class SubscribedQueryable<Root extends {}, Shape, U> extends SelectionQue
         this.setSortQueryOption(expression, QueryOrdering.Descending);
         return this.create(SubscribedQueryable<Root, Shape, U>);
     }
+
+    /** The `count` rows nearest `vector` by cosine distance — see `Queryable.nearest`. */
+    nearest(expression: GenericFunction<Shape, Shape[keyof Shape]>, vector: number[], count: number) {
+        this.setNearestQueryOption(expression, vector, count);
+        return this.create(SubscribedQueryable<Root, Shape, U>);
+    }
 }

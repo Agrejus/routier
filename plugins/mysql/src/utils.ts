@@ -27,6 +27,9 @@ const schemaTypeToMysqlType = (type: SchemaTypes): string => {
             return 'DATETIME';
         case SchemaTypes.Object:
         case SchemaTypes.Array:
+        // MySQL has no vector type before 9.0 and no similarity operator to go with one,
+        // so a vector is stored as JSON and searched in memory.
+        case SchemaTypes.Vector:
             // One source of truth for this engine's JSON type: the same dialect value
             // toColumnAssignments encodes against, so DDL and DML cannot drift apart.
             return getDialect('mysql').jsonColumnType;
@@ -39,7 +42,7 @@ const schemaTypeToMysqlType = (type: SchemaTypes): string => {
  * Determines if a property is deeply nested (object or array).
  */
 const isDeeplyNested = (prop: PropertyInfo<any>): boolean => {
-    return prop.type === SchemaTypes.Object || prop.type === SchemaTypes.Array;
+    return prop.type === SchemaTypes.Object || prop.type === SchemaTypes.Array || prop.type === SchemaTypes.Vector;
 };
 
 /**

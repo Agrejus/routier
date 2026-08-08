@@ -1,5 +1,6 @@
 import { DataTranslator } from "./DataTranslator";
 import { QueryOption } from "../query/types";
+import { nearestBy } from "../query/similarity";
 import { assertIsArray } from "../../assertions";
 import { ParamsFilter } from "../../expressions";
 import { isDate, UnknownRecord } from "../../utilities";
@@ -145,6 +146,25 @@ export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRo
         }
 
         return data as TResult;
+    }
+
+    /**
+     * The similarity search itself, over values already in memory.
+     *
+     * This is the floor the whole feature stands on: it is reached whenever the backend did
+     * not do the search, which is every backend except the ones with a native vector index.
+     * It reads the property through the option's selector, so it works on any shape the rows
+     * arrive in.
+     */
+    override nearest<TResult>(data: unknown, option: QueryOption<TShape, "nearest">): TResult {
+
+        if (Array.isArray(data) === false) {
+            return data as TResult;
+        }
+
+        const { selector, vector, count } = option.value;
+
+        return nearestBy(data, vector, count, row => selector(row) as unknown as number[] | null) as TResult;
     }
 
     override sum<TResult extends number>(data: unknown, _: QueryOption<TShape, "sum">): TResult {

@@ -1,7 +1,7 @@
 import { CodeBuilder, ContainerBlock, ObjectBuilder, SlotBlock } from '../../blocks';
 import { SlotPath } from '../../SlotPath';
 import { PropertyInfoHandler } from "../types";
-import { PropertyInfo, SchemaTypes } from "../../../schema";
+import { isArrayValued, PropertyInfo, SchemaTypes } from "../../../schema";
 
 /**
  * Deserializes arrays per element instead of copying the reference:
@@ -24,7 +24,7 @@ export class DeserializeArrayHandler extends PropertyInfoHandler {
 
     override handle(property: PropertyInfo<any>, builder: CodeBuilder): CodeBuilder | null {
 
-        if (property.type === SchemaTypes.Array) {
+        if (isArrayValued(property.type)) {
             const slotPath = new SlotPath("result.variable.object");
 
             // Create the result object when this is the first property iterated —

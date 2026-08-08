@@ -75,6 +75,8 @@ export class PropertyInfo<T extends {}> {
     readonly schema: SchemaBase<T, any>;
     /** The inner schema if this property is an array. */
     readonly innerSchema?: SchemaBase<unknown, any>;
+    /** How many numbers this property holds if it is a vector, `null` otherwise. */
+    readonly dimensions: number | null;
     /** Literal values allowed for this property. */
     readonly literals: T[];
     /** Tags passed from the schema */
@@ -97,6 +99,7 @@ export class PropertyInfo<T extends {}> {
         this.name = name;
         this.type = schema.type;
         this.literals = schema.literals;
+        this.dimensions = schema.dimensions;
 
         if (schema instanceof SchemaArray) {
             this.innerSchema = schema.innerSchema;

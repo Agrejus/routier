@@ -1,6 +1,6 @@
 import { CodeBuilder, SlotBlock } from '../../blocks';
 import { PropertyInfoHandler } from "../types";
-import { PropertyInfo, SchemaTypes } from "../../../schema";
+import { isArrayValued, PropertyInfo } from "../../../schema";
 
 /**
  * Merges an array by copying elements INTO the destination's existing array instead of
@@ -20,7 +20,7 @@ export class MergeArrayHandler extends PropertyInfoHandler {
 
     override handle(property: PropertyInfo<any>, builder: CodeBuilder): CodeBuilder | null {
 
-        if (property.type === SchemaTypes.Array) {
+        if (isArrayValued(property.type)) {
             const selectorPath = property.getSelectrorPath({ parent: "source", assignmentType: "FORCE_NULLABLE_OR_OPTIONAL" });
             const slot = builder.get<SlotBlock>("factory.function.assignments");
             const sourcePath = property.getAssignmentPath({ parent: "source" });

@@ -55,9 +55,19 @@ const propertyFor = <T extends {}>(schema: CompiledSchema<T>, key: string): Prop
     return roots.find(p => p.getResolvedName() === key) ?? roots.find(p => p.name === key);
 };
 
-/** True when the property's value occupies a JSON column rather than a scalar one. */
+/**
+ * True when the property's value is encoded as JSON rather than bound as a scalar.
+ *
+ * A vector belongs here even on an engine that gives it a native column type. The encoding
+ * `JSON.stringify` produces for a list of numbers — `[1,2,3]` — is byte for byte the text
+ * literal pgvector accepts, so one encode path serves both, and the DDL is the only place the
+ * two engines differ. Reading is the same story in reverse: a JSON column comes back as that
+ * text, and so does a pgvector column through a driver with no type parser registered for it.
+ */
 export const isJsonColumn = (property: PropertyInfo<any>) =>
-    property.type === SchemaTypes.Object || property.type === SchemaTypes.Array;
+    property.type === SchemaTypes.Object ||
+    property.type === SchemaTypes.Array ||
+    property.type === SchemaTypes.Vector;
 
 /**
  * Whether this layer should JSON-encode the value, decided on its **runtime shape** rather

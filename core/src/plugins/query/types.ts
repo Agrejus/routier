@@ -34,6 +34,14 @@ export type QueryOptionValueMap<T extends {}> = {
     map: { selector: GenericFunction<T, any>, fields: QueryField[] };
     group: { selector: GenericFunction<T, any>, key: QueryField, fields: QueryField[] };
     filter: { params?: {}, filter: ParamsFilter<T, {}> | Filter<T>, expression: Expression };
+    /**
+     * Similarity search: an ordering plus a limit, never a filter.
+     *
+     * `count` is part of the option rather than a separate `take` because the two are one
+     * operation to a backend that can push this down — `ORDER BY ... LIMIT n` is what makes an
+     * approximate index usable, and splitting them would order every row before limiting.
+     */
+    nearest: { selector: GenericFunction<T, T[keyof T]>, propertyName: string, property?: PropertyInfo<T> | null, vector: number[], count: number };
     min: true; // True or not set
     max: true; // True or not set
     count: true; // True or not set

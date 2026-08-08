@@ -1,6 +1,6 @@
 import { CodeBuilder, SlotBlock, StringBuilder } from '../../blocks';
 import { PropertyInfoHandler } from "../types";
-import { PropertyInfo, SchemaTypes } from "../../../schema";
+import { isArrayValued, PropertyInfo } from "../../../schema";
 
 /**
  * Hashes array contents via JSON — template interpolation of an array of
@@ -10,7 +10,7 @@ export class HashArrayHandler extends PropertyInfoHandler {
 
     override handle(property: PropertyInfo<any>, builder: CodeBuilder): CodeBuilder | null {
 
-        if (property.type === SchemaTypes.Array) {
+        if (isArrayValued(property.type)) {
             let stringBuilder = builder.getOrDefault<StringBuilder>("hash-object-return.variable.string");
             const entitySelectorPath = property.getSelectrorPath({ parent: "entity" });
 

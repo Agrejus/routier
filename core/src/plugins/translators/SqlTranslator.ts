@@ -1,7 +1,35 @@
 import { IdType } from "../../schema/types";
 import { UnknownRecord } from "../../utilities/types";
 import { QueryOption } from "../query/types";
+import { nearestBy } from "../query/similarity";
 import { DataTranslator } from "./DataTranslator";
+
+/**
+ * A stored vector as a list of numbers, whatever the driver handed back.
+ *
+ * Three shapes reach here and all are legitimate. A JSON column decoded by
+ * `decodeJsonColumns` is already an array. A driver with no type parser for its native vector
+ * type returns the literal text — `pg` does exactly this for pgvector, giving `"[1,2,3]"`,
+ * which happens to be JSON. Anything else is not a vector, and `null` sorts it last rather
+ * than throwing.
+ */
+const toVector = (value: unknown): number[] | null => {
+    if (Array.isArray(value)) {
+        return value as number[];
+    }
+
+    if (typeof value !== "string") {
+        return null;
+    }
+
+    try {
+        const parsed = JSON.parse(value);
+
+        return Array.isArray(parsed) ? parsed as number[] : null;
+    } catch {
+        return null;
+    }
+};
 
 export class SqlTranslator<TRoot extends {}, TShape> extends DataTranslator<TRoot, TShape> {
 
@@ -59,6 +87,33 @@ export class SqlTranslator<TRoot extends {}, TShape> extends DataTranslator<TRoo
 
     sort(data: unknown, _: QueryOption<TShape, "sort">): TShape {
         return data as TShape;
+    }
+
+    /**
+     * Scores in memory, unlike every other shaper here.
+     *
+     * The pass-throughs above are safe because the SQL that produced these rows contained the
+     * corresponding clause. No `sql-core` statement contains a similarity ordering — engines
+     * that can express one are the exception, not the rule — so passing the data through
+     * would return whatever order the engine happened to produce.
+     *
+     * A plugin whose engine DID push the search down overrides this with a pass-through,
+     * gated on `option.target`. Postgres is the only one today.
+     *
+     * Rows arrive keyed by storage column name and are read that way rather than through the
+     * option's selector, because the selector is written against the entity shape and these
+     * rows have not been deserialized into it yet.
+     */
+    nearest(data: unknown, option: QueryOption<TShape, "nearest">): TShape {
+
+        if (Array.isArray(data) === false) {
+            return data as TShape;
+        }
+
+        const { property, propertyName, vector, count } = option.value;
+        const column = property?.getResolvedName() ?? propertyName;
+
+        return nearestBy(data, vector, count, row => toVector((row as UnknownRecord)[column])) as TShape;
     }
 
     group<T>(data: unknown, option: QueryOption<T, "group">): T {

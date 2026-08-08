@@ -1,12 +1,15 @@
 import { CodeBuilder, SlotBlock } from '../../blocks';
 import { PropertyInfoHandler } from "../types";
-import { PropertyInfo, SchemaTypes } from "../../../schema";
+import { isArrayValued, PropertyInfo, SchemaTypes } from "../../../schema";
 
 export class CloneValueHandler extends PropertyInfoHandler {
 
     override handle(property: PropertyInfo<any>, builder: CodeBuilder): CodeBuilder | null {
 
-        if (property.type != SchemaTypes.Object && property.type != SchemaTypes.Array) {
+        // Anything that copies by assignment. An array-valued property must not land here:
+        // assigning the reference shares it with the source, which is the whole point of
+        // CloneArrayHandler.
+        if (property.type != SchemaTypes.Object && isArrayValued(property.type) === false) {
             const slot = builder.get<SlotBlock>("if");
             const entitySelectorPath = property.getSelectrorPath({ parent: "entity" });
             const resultAssignmentPath = property.getAssignmentPath({ parent: "result" });

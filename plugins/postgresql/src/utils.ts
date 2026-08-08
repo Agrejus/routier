@@ -6,6 +6,22 @@ import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, getDial
 import { SqlOperation } from './types';
 
 /**
+ * What this connection can do with a vector, decided once by probing for pgvector.
+ *
+ * Passed rather than detected here because DDL generation is synchronous and the answer is a
+ * fact about the server. The SAME value must reach the DDL and the query builder: a table
+ * created as `JSONB` with a `<=>` ordering run against it is a type error at query time, and
+ * the reverse silently reads a native vector column as JSON.
+ */
+export type PostgresVectorSupport = {
+    /** True when the `vector` extension is installed and a `vector(n)` column is usable. */
+    readonly available: boolean;
+};
+
+/** What to assume before a probe has run: nothing. Storing JSON always works. */
+export const NO_VECTOR_SUPPORT: PostgresVectorSupport = { available: false };
+
+/**
  * Maps schema types to PostgreSQL column types.
  */
 const schemaTypeToPostgresType = (type: SchemaTypes): string => {
@@ -31,10 +47,31 @@ const schemaTypeToPostgresType = (type: SchemaTypes): string => {
 };
 
 /**
- * Determines if a property is deeply nested (object or array).
+ * Determines if a property is stored as a JSON column.
+ *
+ * A vector is one of these ONLY when pgvector is missing. With the extension installed it
+ * gets a real `vector(n)` column, which is what makes the `<=>` ordering available; without
+ * it the numbers go into JSONB and the search runs in memory instead.
  */
-const isDeeplyNested = (prop: PropertyInfo<any>): boolean => {
-    return prop.type === SchemaTypes.Object || prop.type === SchemaTypes.Array;
+const isDeeplyNested = (prop: PropertyInfo<any>, vectors: PostgresVectorSupport): boolean => {
+    return prop.type === SchemaTypes.Object
+        || prop.type === SchemaTypes.Array
+        || (prop.type === SchemaTypes.Vector && vectors.available === false);
+};
+
+/**
+ * The column type for a vector property on a server that has pgvector.
+ *
+ * The width is required — pgvector's `vector` accepts an unspecified dimension, but a column
+ * declared that way cannot be indexed and gives up the engine's own width check, which is the
+ * earliest place a mismatched embedding can be caught.
+ */
+const vectorColumnType = (prop: PropertyInfo<any>): string => {
+    if (prop.dimensions == null) {
+        throw new Error(`A vector property reached the PostgreSQL DDL with no dimension count.  Property: ${prop.name}`);
+    }
+
+    return `vector(${prop.dimensions})`;
 };
 
 /**
@@ -46,7 +83,7 @@ const isDeeplyNested = (prop: PropertyInfo<any>): boolean => {
  * - Uses JSONB for nested objects/arrays
  * - Uses GIN indexes for JSONB columns
  */
-export function compiledSchemaToPostgresTable(schema: CompiledSchema<any>, tableName?: string): string {
+export function compiledSchemaToPostgresTable(schema: CompiledSchema<any>, tableName?: string, vectors: PostgresVectorSupport = NO_VECTOR_SUPPORT): string {
     const columns: string[] = [];
     const idProps = schema.idProperties;
     const identityProps = idProps.filter(p => p.isIdentity);
@@ -72,8 +109,10 @@ export function compiledSchemaToPostgresTable(schema: CompiledSchema<any>, table
             } else {
                 colDef = `"${prop.getResolvedName()}" ${schemaTypeToPostgresType(prop.type)} PRIMARY KEY`;
             }
-        } else if (isDeeplyNested(prop)) {
+        } else if (isDeeplyNested(prop, vectors)) {
             colDef = `"${prop.getResolvedName()}" JSONB`;
+        } else if (prop.type === SchemaTypes.Vector) {
+            colDef = `"${prop.getResolvedName()}" ${vectorColumnType(prop)}`;
         } else {
             colDef = `"${prop.getResolvedName()}" ${schemaTypeToPostgresType(prop.type)}`;
         }
@@ -120,7 +159,7 @@ export function compiledSchemaToPostgresTable(schema: CompiledSchema<any>, table
             const prop = props[0];
             const idxSqlName = `${table}_${prop.name}_idx`;
             if (!usedIndexNames.has(idxSqlName)) {
-                if (isDeeplyNested(prop)) {
+                if (isDeeplyNested(prop, vectors)) {
                     // GIN index for JSONB
                     indexStatements.push(`CREATE INDEX IF NOT EXISTS "${idxSqlName}" ON "${table}" USING GIN ("${prop.getResolvedName()}");`);
                 } else {
@@ -305,7 +344,7 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 /**
  * Builds a complete SQL query from an IQuery object for PostgreSQL.
  */
-export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuery<TEntity, TShape>): SqlOperation {
+export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuery<TEntity, TShape>, vectors: PostgresVectorSupport = NO_VECTOR_SUPPORT): SqlOperation & { nearestPushedDown: boolean } {
     const { schema, options } = query;
     const tableName = schema.collectionName;
 
@@ -406,11 +445,40 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
         }
     }
 
-    // Build ORDER BY
-    for (const op of sortOps) {
-        const sortProp = op.value.propertyName;
-        const sortDir = op.value.direction === 'asc' ? 'ASC' : 'DESC';
-        currentQuery += ` ORDER BY "${sortProp}" ${sortDir}`;
+    // A similarity search is pushed down only when nothing else here competes for the
+    // ORDER BY and LIMIT it needs.
+    //
+    // A window is the disqualifying case. `.take(5).nearest(v, 10)` means "five rows, then
+    // the ten nearest among them", and one statement cannot say that — a single LIMIT applies
+    // to the whole query, so pushing both down answers a different question. Leaving the
+    // search to the translator answers the right one over the five rows SQL returned.
+    //
+    // A preceding sort is not disqualifying, it is simply overwritten: the search reorders
+    // everything, exactly as the in-memory path does.
+    const nearestOp = otherOps.find(op => op.type === 'nearest');
+    const nearestPushedDown = vectors.available && nearestOp != null && skipTakeOps.length === 0;
+
+    if (nearestPushedDown) {
+        const { property, propertyName, vector, count } = nearestOp!.value;
+        const column = property?.getResolvedName() ?? propertyName;
+
+        // The same text `JSON.stringify` produces for a JSON column, which is also pgvector's
+        // input literal — one encoding serves both storage shapes.
+        params.push(JSON.stringify(vector));
+
+        // `<=>` is cosine distance. No index is declared for it on purpose: pgvector's HNSW
+        // and IVFFlat are APPROXIMATE, so an indexed search can return a different set of
+        // rows than the exact scoring every other backend performs — and returning the same
+        // rows everywhere is the promise this feature makes. An exact ordering still avoids
+        // shipping every row to the client and scoring it in JS, which is the bulk of the win.
+        currentQuery += ` ORDER BY "${column}" <=> $${params.length} LIMIT ${count}`;
+    } else {
+        // Build ORDER BY
+        for (const op of sortOps) {
+            const sortProp = op.value.propertyName;
+            const sortDir = op.value.direction === 'asc' ? 'ASC' : 'DESC';
+            currentQuery += ` ORDER BY "${sortProp}" ${sortDir}`;
+        }
     }
 
     // Handle skip/take
@@ -472,5 +540,5 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
         }
     }
 
-    return { sql: currentQuery, params };
+    return { sql: currentQuery, params, nearestPushedDown };
 }

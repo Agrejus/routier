@@ -1,6 +1,6 @@
 import { CodeBuilder, SlotBlock } from '../../blocks';
 import { PropertyInfoHandler } from "../types";
-import { PropertyInfo, SchemaTypes } from "../../../schema";
+import { isArrayValued, PropertyInfo } from "../../../schema";
 
 /**
  * Arrays participate in change tracking: the array itself is wrapped in the tracking
@@ -11,7 +11,7 @@ export class EnrichmentArrayHandler extends PropertyInfoHandler {
 
     override handle(property: PropertyInfo<any>, builder: CodeBuilder): CodeBuilder | null {
 
-        if (property.type === SchemaTypes.Array) {
+        if (isArrayValued(property.type)) {
 
             // Place the property in the enriched literal like any other leaf
             this.setEnrichedProperty(property, builder);

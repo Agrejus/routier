@@ -1,12 +1,12 @@
 import { CodeBuilder, SlotBlock } from '../../blocks';
 import { PropertyInfoHandler } from "../types";
-import { PropertyInfo, SchemaTypes } from "../../../schema";
+import { hasPrimitiveElements, isArrayValued, PropertyInfo, SchemaTypes } from "../../../schema";
 
 export class CloneArrayHandler extends PropertyInfoHandler {
 
     override handle(property: PropertyInfo<any>, builder: CodeBuilder): CodeBuilder | null {
 
-        if (property.type === SchemaTypes.Array) {
+        if (isArrayValued(property.type)) {
 
             // Arrays are leaf properties — they have no child PropertyInfos, so the
             // copy must happen here for every array, including nullable/optional ones.
@@ -25,11 +25,8 @@ export class CloneArrayHandler extends PropertyInfoHandler {
             // change-tracked entity's array is wrapped in a Proxy (and stays wrapped
             // across merges), and a Proxy cannot pass a structured-clone boundary.
             const elementType = property.innerSchema?.type;
-            const isPrimitiveElement = elementType === SchemaTypes.String ||
-                elementType === SchemaTypes.Number ||
-                elementType === SchemaTypes.Boolean;
             let copyExpression: string;
-            if (isPrimitiveElement) {
+            if (hasPrimitiveElements(property.type, elementType)) {
                 copyExpression = `[...${entitySelectorPath}]`;
             } else if (elementType === SchemaTypes.Date) {
                 copyExpression = `${entitySelectorPath}.map(function (v) { return v == null ? v : new Date(v); })`;
