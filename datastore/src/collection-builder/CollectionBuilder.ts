@@ -5,8 +5,10 @@ import { ImmutableCollection } from '../collections/ImmutableCollection';
 import { ReadonlyCollection } from '../collections/ReadonlyCollection';
 import { DiffCollection } from '../collections/DiffCollection';
 import { Filter, ParamsFilter, toExpression } from '@routier/core/expressions';
+import { GenericFunction } from '@routier/core/types';
 import { CollectionBase } from '../collections/CollectionBase';
 import { CollectionDependencies } from '../collections/types';
+import { resolveSoftDelete, softDeleteScope } from './softDelete';
 
 type ModelessProps<TEntity extends {}> = {
     dependencies: CollectionDependencies<TEntity>;
@@ -15,6 +17,23 @@ type ModelessProps<TEntity extends {}> = {
 
 type ConfiguredProps<TEntity extends {}, TCollection extends CollectionBase<TEntity>> = ModelessProps<TEntity> & {
     instanceCreator: CollectionInstanceCreator<TEntity, TCollection>;
+}
+
+/**
+ * Shared by both builder stages — soft delete is mode-independent.
+ *
+ * Registers both halves at once so they cannot be enabled separately: the change tracker
+ * learns to stamp instead of delete, and every query gains a scope hiding stamped rows.
+ */
+function addSoftDelete<TEntity extends {}>(
+    dependencies: CollectionDependencies<TEntity>,
+    selector: GenericFunction<InferType<TEntity>, unknown>
+) {
+    const configuration = resolveSoftDelete(dependencies.schema, selector as GenericFunction<TEntity, unknown>);
+    const { filter, expression } = softDeleteScope(configuration);
+
+    dependencies.changeTracker.enableSoftDelete(configuration);
+    dependencies.scopedQueryOptions.add("filter", { filter: filter as Filter<TEntity>, expression, params: undefined });
 }
 
 /** Shared by both builder stages — a scope is mode-independent. */
@@ -90,6 +109,36 @@ export class CollectionBuilder<TEntity extends {}> {
     }
 
     /**
+     * Turn a removal into a stamp on `selector`'s property, and hide stamped rows from reads.
+     *
+     * The property must be declared on the schema and be nullable or optional — a row that was
+     * never deleted has nothing to put there. A date is preferred over a boolean because it
+     * records WHEN, which is the question a soft-deleted row usually has to answer later.
+     *
+     * ```ts
+     * products = this.collection(productSchema)
+     *     .softDelete(x => x.deletedAt)
+     *     .proxy()
+     *     .create();
+     * ```
+     *
+     * `removeAsync` then writes the timestamp instead of deleting, and every query on this
+     * collection is scoped to rows where it is still empty. To read deleted rows, open a
+     * second STORE over the same database whose collection omits this — a store rejects two
+     * collections over one schema, and reading deleted rows is different enough to be worth
+     * its own declaration anyway.
+     */
+    softDelete(selector: GenericFunction<InferType<TEntity>, unknown>): CollectionBuilder<TEntity> {
+
+        addSoftDelete(this.dependencies, selector);
+
+        return new CollectionBuilder<TEntity>({
+            onCollectionCreated: this._onCollectionCreated,
+            dependencies: this.dependencies
+        });
+    }
+
+    /**
      * Apply a global filter (scope) to the collection.
      *
      * The scope is combined with every query issued against this collection and is ideal for
@@ -147,6 +196,18 @@ export class ConfiguredCollectionBuilder<TEntity extends {}, TCollection extends
         this.dependencies = props.dependencies;
         this._onCollectionCreated = props.onCollectionCreated;
         this.instanceCreator = props.instanceCreator;
+    }
+
+    /** See CollectionBuilder.softDelete — it may also be declared after the mode is chosen. */
+    softDelete(selector: GenericFunction<InferType<TEntity>, unknown>): ConfiguredCollectionBuilder<TEntity, TCollection> {
+
+        addSoftDelete(this.dependencies, selector);
+
+        return new ConfiguredCollectionBuilder<TEntity, TCollection>({
+            onCollectionCreated: this._onCollectionCreated,
+            instanceCreator: this.instanceCreator,
+            dependencies: this.dependencies
+        });
     }
 
     /** See CollectionBuilder.scope — a scope may also be added after the mode is chosen. */

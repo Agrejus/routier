@@ -1,4 +1,5 @@
 import { ChangeTrackingType, CompiledSchema, HashType, IdType, InferCreateType, InferType } from "@routier/core/schema";
+import { SoftDeleteConfiguration } from "../collection-builder/softDelete";
 import { ChangeTrackedEntity } from "../types";
 import { KnownKeyAdditions } from "./additions/KnownKeyAdditions";
 import { IAdditions } from "./additions/types";
@@ -127,6 +128,12 @@ export class ChangeTracker<TEntity extends {}> {
      * caller had every reason to think was gone.
      */
     private unsavedSlots: UnsavedRow<TEntity>[] = [];
+
+    /**
+     * Set when the collection was declared with `.softDelete()`. Null means a removal really
+     * removes.
+     */
+    private softDelete: SoftDeleteConfiguration<TEntity> | null = null;
 
     constructor(
         schema: CompiledSchema<TEntity>,
@@ -674,8 +681,55 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
         return result;
     }
 
+    /** Declared by `CollectionBuilder.softDelete`; see that method. */
+    enableSoftDelete(configuration: SoftDeleteConfiguration<TEntity>) {
+        this.softDelete = configuration;
+    }
+
+    /**
+     * Stamps the soft-delete property instead of queuing a removal.
+     *
+     * Done here rather than in each collection because there is more than one way to reach a
+     * removal — `remove(entity)`, `removeAsync(...entities)` and a queryable's `.removeAsync()`
+     * all arrive at this method — and a soft delete that only covered some of them would leave
+     * rows genuinely deleted through the path nobody remembered to change.
+     *
+     * An immutable collection takes the patch route `update()` already uses. Testing the
+     * collection's declared mode rather than `Object.isFrozen` on the entity: a row is frozen
+     * when it is READ, so an entity that has only ever been added is not frozen yet, and the
+     * assignment would succeed while the immutable collection — which detects changes through
+     * patches, not mutations — recorded nothing at all. The row would stay visible with no
+     * error anywhere.
+     */
+    private stampAsDeleted(entities: InferType<TEntity>[]) {
+        const { propertyName, stamp } = this.softDelete!;
+
+        for (const entity of entities) {
+            if (this.changeTrackingType === "immutable") {
+                // A patch object rather than an updater function: an updater has to return a
+                // whole entity and its delta is then derived by diffing, which is work and
+                // precision this does not need. The patch IS the delta.
+                this.updateImmutable(entity, { [propertyName]: stamp() });
+                continue;
+            }
+
+            (entity as Record<string, unknown>)[propertyName] = stamp();
+        }
+    }
+
     remove(entities: InferType<TEntity>[], tag: unknown | null, done: CallbackResult<InferType<TEntity>[]>) {
         try {
+            if (this.softDelete != null) {
+                this.stampAsDeleted(entities);
+
+                if (tag != null) {
+                    this.resolveTagCollection().setMany(entities, tag);
+                }
+
+                done(Result.success(entities));
+                return;
+            }
+
             this.removals.push(...entities);
 
             // A pending patch for a row being removed is moot, and replaying it after the
