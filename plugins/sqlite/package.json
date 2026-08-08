@@ -75,7 +75,12 @@
             "import": "./dist/drivers/sqlite3.js",
             "require": "./dist/drivers/sqlite3.cjs"
         },
-        "./package.json": "./package.json"
+        "./package.json": "./package.json",
+        "./drivers/turso": {
+            "types": "./dist/drivers/turso.d.ts",
+            "import": "./dist/drivers/turso.js",
+            "require": "./dist/drivers/turso.cjs"
+        }
     },
     "module": "./dist/index.js",
     "browser": "./dist/index.browser.js",

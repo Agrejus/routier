@@ -12,6 +12,7 @@ export default libraryConfig({
         index: "./src/index.ts",
         "index.browser": "./src/index.browser.ts",
         "drivers/sqlite3": "./src/drivers/sqlite3.ts",
+        "drivers/turso": "./src/drivers/turso.ts",
         // At the root of dist/, not under drivers/. The worker URL is resolved relative to
         // whichever file contains the expression, and that file is `index.browser.js` at the
         // root — the wasm driver is bundled into it rather than published separately, so that
