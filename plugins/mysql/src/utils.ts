@@ -1,8 +1,8 @@
 import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema';
-import { Expression, ComparatorExpression, OperatorExpression, ValueExpression, PropertyExpression } from '@routier/core/expressions';
+import { Expression } from '@routier/core/expressions';
 import { IQuery, QueryField } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
-import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, getDialect, sqlColumnProperties, toColumnValueMap } from '@routier/sql-plugin-core';
+import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, getDialect, sqlColumnProperties, toColumnValueMap, toSql } from '@routier/sql-plugin-core';
 import { uuidv4 } from '@routier/core/utilities';
 import { MysqlAddsOperation, MysqlRemovesOperation, MysqlSelectBack, MysqlUpdatesOperation, SqlOperation } from './types';
 
@@ -156,197 +156,24 @@ export function compiledSchemaToMysqlTable(schema: CompiledSchema<any>, tableNam
 }
 
 /**
- * Translates an Expression tree to a SQL WHERE clause and parameters.
- * MySQL-specific: Uses LIKE for case-insensitive matching (with COLLATE utf8mb4_general_ci).
+ * Translates an Expression tree to a MySQL WHERE clause and parameters.
+ *
+ * Delegates to the shared builder, as the SQLite and PostgreSQL plugins already do. This
+ * was a full hand-rolled copy of `toSql`, and every divergence between the two was a defect
+ * rather than a MySQL requirement:
+ *
+ * - It rendered `prop.property.name`, ignoring `.from()` renames.
+ * - It never escaped `%`, `_` or `\` in a LIKE literal, so searching for `50%` matched
+ *   anything starting `50`.
+ * - It had no JSON path handling, so a filter on a nested property emitted the leaf name
+ *   and failed with `Unknown column`.
+ *
+ * The `mysql` dialect in `@routier/sql-plugin-core` already carries what is genuinely
+ * MySQL-specific: backtick quoting, LIKE with its escape clause, `JSON_LENGTH`/`CHAR_LENGTH`,
+ * the DATETIME literal rewrite, and `JSON_UNQUOTE(JSON_EXTRACT(...))` extraction.
  */
 export function expressionToWhereClause(expr: Expression): { where: string, params: any[] } {
-    const params: any[] = [];
-
-    // Wraps a column in the SQL function its parsed transformer calls for —
-    // ignoring the transformer would silently return wrong rows
-    function column(prop: PropertyExpression): string {
-        const col = `\`${prop.property.name}\``;
-
-        if (prop.transformer === "to-lower-case") {
-            return `LOWER(${col})`;
-        }
-
-        if (prop.transformer === "to-upper-case") {
-            return `UPPER(${col})`;
-        }
-
-        if (prop.transformer === "length") {
-            return prop.property.type === SchemaTypes.Array ? `JSON_LENGTH(${col})` : `CHAR_LENGTH(${col})`;
-        }
-
-        return col;
-    }
-
-    // Value transformers (e.g. `p.name.toLowerCase()`) are applied before binding
-    function toValue(expr: ValueExpression): unknown {
-        if (expr.transformer === "to-lower-case" && typeof expr.value === "string") {
-            return expr.value.toLowerCase();
-        }
-
-        if (expr.transformer === "to-upper-case" && typeof expr.value === "string") {
-            return expr.value.toUpperCase();
-        }
-
-        return expr.value;
-    }
-
-    function walk(e: Expression): string {
-        if (e.type === 'operator') {
-            const op = (e as OperatorExpression).operator;
-            const left = e.left ? walk(e.left) : '';
-            const right = e.right ? walk(e.right) : '';
-
-            let sqlOp: string;
-            switch (op) {
-                case '&&':
-                    sqlOp = 'AND';
-                    break;
-                case '||':
-                    sqlOp = 'OR';
-                    break;
-                default:
-                    sqlOp = op;
-                    break;
-            }
-
-            return `(${left} ${sqlOp} ${right})`;
-        }
-        if (e.type === 'comparator') {
-            const cmp = e as ComparatorExpression;
-
-            // Handle string operations - MySQL uses LIKE (case-insensitive by default with utf8mb4_general_ci)
-            if (cmp.comparator === 'starts-with' || cmp.comparator === 'ends-with' || cmp.comparator === 'includes') {
-                if (cmp.comparator === 'includes') {
-                    if (cmp.left.type === 'property' && cmp.right.type === 'value') {
-                        const col = column(cmp.left as PropertyExpression);
-                        const value = toValue(cmp.right as ValueExpression);
-
-                        if (Array.isArray(value)) {
-                            const placeholders = value.map(() => '?').join(', ');
-                            params.push(...value);
-                            return cmp.negated ? `${col} NOT IN (${placeholders})` : `${col} IN (${placeholders})`;
-                        } else {
-                            params.push(`%${value}%`);
-                            return cmp.negated ? `${col} NOT LIKE ?` : `${col} LIKE ?`;
-                        }
-                    } else if (cmp.left.type === 'value' && cmp.right.type === 'property') {
-                        const col = column(cmp.right as PropertyExpression);
-                        const value = toValue(cmp.left as ValueExpression);
-
-                        if (Array.isArray(value)) {
-                            const placeholders = value.map(() => '?').join(', ');
-                            params.push(...value);
-                            return cmp.negated ? `${col} NOT IN (${placeholders})` : `${col} IN (${placeholders})`;
-                        } else {
-                            params.push(`%${value}%`);
-                            return cmp.negated ? `? NOT LIKE ${col}` : `? LIKE ${col}`;
-                        }
-                    }
-                }
-
-                // starts-with and ends-with
-                if (cmp.left.type === 'property' && cmp.right.type === 'value') {
-                    const col = column(cmp.left as PropertyExpression);
-                    const value = toValue(cmp.right as ValueExpression);
-                    let pattern: string;
-
-                    switch (cmp.comparator) {
-                        case 'starts-with':
-                            pattern = `${value}%`;
-                            break;
-                        case 'ends-with':
-                            pattern = `%${value}`;
-                            break;
-                        default:
-                            pattern = `%${value}%`;
-                    }
-
-                    params.push(pattern);
-                    return cmp.negated ? `${col} NOT LIKE ?` : `${col} LIKE ?`;
-                } else if (cmp.left.type === 'value' && cmp.right.type === 'property') {
-                    const col = column(cmp.right as PropertyExpression);
-                    const value = toValue(cmp.left as ValueExpression);
-                    let pattern: string;
-
-                    switch (cmp.comparator) {
-                        case 'starts-with':
-                            pattern = `${value}%`;
-                            break;
-                        case 'ends-with':
-                            pattern = `%${value}`;
-                            break;
-                        default:
-                            pattern = `%${value}%`;
-                    }
-
-                    params.push(pattern);
-                    return cmp.negated ? `? NOT LIKE ${col}` : `? LIKE ${col}`;
-                }
-            }
-
-            // Handle null comparisons
-            if (cmp.comparator === 'equals') {
-                if (cmp.left.type === 'property' && cmp.right.type === 'value') {
-                    const col = column(cmp.left as PropertyExpression);
-                    const value = toValue(cmp.right as ValueExpression);
-
-                    if (value === null) {
-                        return cmp.negated ? `${col} IS NOT NULL` : `${col} IS NULL`;
-                    }
-                    params.push(value);
-                    return cmp.negated ? `${col} != ?` : `${col} = ?`;
-                } else if (cmp.left.type === 'value' && cmp.right.type === 'property') {
-                    const col = column(cmp.right as PropertyExpression);
-                    const value = toValue(cmp.left as ValueExpression);
-
-                    if (value === null) {
-                        return cmp.negated ? `? IS NOT NULL` : `? IS NULL`;
-                    }
-                    params.push(value);
-                    return cmp.negated ? `? != ${col}` : `? = ${col}`;
-                }
-            }
-
-            // Generic comparison
-            const leftExpr = walk(cmp.left);
-            const rightExpr = walk(cmp.right);
-
-            switch (cmp.comparator) {
-                case 'equals':
-                    return cmp.negated ? `${leftExpr} != ${rightExpr}` : `${leftExpr} = ${rightExpr}`;
-                case 'greater-than':
-                    return cmp.negated ? `${leftExpr} <= ${rightExpr}` : `${leftExpr} > ${rightExpr}`;
-                case 'greater-than-equals':
-                    return cmp.negated ? `${leftExpr} < ${rightExpr}` : `${leftExpr} >= ${rightExpr}`;
-                case 'less-than':
-                    return cmp.negated ? `${leftExpr} >= ${rightExpr}` : `${leftExpr} < ${rightExpr}`;
-                case 'less-than-equals':
-                    return cmp.negated ? `${leftExpr} > ${rightExpr}` : `${leftExpr} <= ${rightExpr}`;
-                default:
-                    throw new Error(`Unsupported comparator: ${cmp.comparator}`);
-            }
-        }
-        if (e.type === 'property') {
-            return column(e as PropertyExpression);
-        }
-        if (e.type === 'value') {
-            params.push(toValue(e as ValueExpression));
-            return '?';
-        }
-        throw new Error(`Unknown expression type: ${e.type}`);
-    }
-    // A tautology (`x => true`) — no rows are excluded
-    if (expr.type === "empty") {
-        return { where: "1 = 1", params: [] };
-    }
-
-    const where = walk(expr);
-    return { where, params };
+    return toSql(expr, 'mysql');
 }
 
 /**

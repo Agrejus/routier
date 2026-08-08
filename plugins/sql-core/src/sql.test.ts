@@ -4,7 +4,7 @@ import { getDialect, toSql } from "./sql";
 
 const prop = (name: string, from?: string) =>
     new PropertyExpression({
-        property: { name, from: from ?? null, getResolvedName: () => from ?? name } as any,
+        property: { name, from: from ?? null, getResolvedName: () => from ?? name, getParentPathArray: (): string[] => [] } as any,
     });
 
 const val = (value: unknown) =>
@@ -161,7 +161,7 @@ describe("sql expression translator", () => {
 describe("sql expression translator — expanded syntax", () => {
     const propTyped = (name: string, type: string, transformer: string | null = null) => {
         const p = new PropertyExpression({
-            property: { name, from: null, type, getResolvedName: () => name } as any,
+            property: { name, from: null, type, getResolvedName: () => name, getParentPathArray: (): string[] => [] } as any,
         });
         p.transformer = transformer as any;
         return p;

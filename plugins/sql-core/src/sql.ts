@@ -55,7 +55,44 @@ export interface SqlDialect {
      * element count for arrays (which are stored as `jsonColumnType`).
      */
     lengthExpression(column: string, isJsonArray: boolean): string;
+    /**
+     * Reads a value out of a JSON column so a nested property can be filtered on.
+     *
+     * A nested subtree is stored as ONE JSON column named for its root (see
+     * `sqlColumnProperties`), so `payload.inner.value` is not a column — it is a path into
+     * the `payload` column. Without this the translator rendered the leaf name alone and
+     * emitted `"value" = $1`, a column that does not exist.
+     *
+     * `leafType` is needed because every engine extracts JSON as text by default, and text
+     * comparison answers `price > 9` with the wrong rows once a value reaches double digits.
+     * Each dialect casts back to the type the schema declared.
+     *
+     * @param rootColumn Already quoted, as returned by `quoteIdentifier`.
+     * @param path Storage-side segment names BELOW the root, leaf last.
+     */
+    jsonPathExpression(rootColumn: string, path: string[], leafType: SchemaTypes): string;
 }
+
+/** A path segment safe to write unquoted in a JSON path literal. */
+const SIMPLE_SEGMENT = /^[A-Za-z_][A-Za-z0-9_]*$/;
+
+/** Escapes a value for use inside a single-quoted SQL string literal. */
+const sqlStringLiteral = (value: string): string => `'${value.replace(/'/g, "''")}'`;
+
+/**
+ * `$.a.b` form, used by SQLite, MySQL and SQL Server.
+ *
+ * A segment that is not a plain identifier is quoted, because `.from()` accepts any string
+ * and an unquoted segment containing a dot would silently address a different level.
+ */
+const jsonPathLiteral = (path: string[]): string =>
+    "$" + path
+        .map(segment =>
+            SIMPLE_SEGMENT.test(segment)
+                ? `.${segment}`
+                : `."${segment.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`
+        )
+        .join("");
 
 /** Engines that accept ISO-8601 directly. */
 const passThroughDate = (value: unknown): unknown => value;
@@ -107,6 +144,15 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `json_array_length(${column})` : `LENGTH(${column})`;
         },
+        /**
+         * `json_extract` is the one extractor that already returns a typed value — INTEGER,
+         * REAL or TEXT as the document holds it — so SQLite needs no cast. JSON1 has been
+         * built in since 3.38, and 3.45 added the JSONB storage format on top of the same
+         * function names.
+         */
+        jsonPathExpression(rootColumn, path) {
+            return `json_extract(${rootColumn}, ${sqlStringLiteral(jsonPathLiteral(path))})`;
+        },
     },
     postgresql: {
         quoteIdentifier(name) {
@@ -126,6 +172,28 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         encodeDate: passThroughDate,
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `jsonb_array_length(${column})` : `LENGTH(${column})`;
+        },
+        /**
+         * `->` to navigate and `->>` for the final hop, which yields text. The cast back to
+         * the declared type is what makes `count > 9` order numerically instead of
+         * lexicographically — as text, `'10' < '9'`.
+         */
+        jsonPathExpression(rootColumn, path, leafType) {
+            const segments = path.map(sqlStringLiteral);
+            const leaf = segments[segments.length - 1];
+            const parents = segments.slice(0, -1);
+            const navigated = parents.length > 0 ? `${rootColumn}->${parents.join("->")}` : rootColumn;
+            const text = `${navigated}->>${leaf}`;
+
+            if (leafType === SchemaTypes.Number) {
+                return `(${text})::numeric`;
+            }
+
+            if (leafType === SchemaTypes.Boolean) {
+                return `(${text})::boolean`;
+            }
+
+            return text;
         },
     },
     mysql: {
@@ -147,6 +215,26 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `JSON_LENGTH(${column})` : `CHAR_LENGTH(${column})`;
         },
+        /**
+         * `JSON_EXTRACT` alone returns a JSON scalar, so a string comes back still wearing
+         * its quotes and `= 'deep'` never matches. `JSON_UNQUOTE` strips them.
+         *
+         * Booleans then arrive as the text `'true'`/`'false'` while the driver binds a JS
+         * boolean as 1/0, so the comparison is rewritten to produce 1/0 rather than cast.
+         */
+        jsonPathExpression(rootColumn, path, leafType) {
+            const extracted = `JSON_UNQUOTE(JSON_EXTRACT(${rootColumn}, ${sqlStringLiteral(jsonPathLiteral(path))}))`;
+
+            if (leafType === SchemaTypes.Number) {
+                return `CAST(${extracted} AS DECIMAL(65,30))`;
+            }
+
+            if (leafType === SchemaTypes.Boolean) {
+                return `(${extracted} = 'true')`;
+            }
+
+            return extracted;
+        },
     },
     mssql: {
         quoteIdentifier(name) {
@@ -166,6 +254,20 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         encodeDate: passThroughDate,
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `(SELECT COUNT(*) FROM OPENJSON(${column}))` : `LEN(${column})`;
+        },
+        /** `JSON_VALUE` returns nvarchar, so numbers and booleans both need rewriting. */
+        jsonPathExpression(rootColumn, path, leafType) {
+            const extracted = `JSON_VALUE(${rootColumn}, ${sqlStringLiteral(jsonPathLiteral(path))})`;
+
+            if (leafType === SchemaTypes.Number) {
+                return `CAST(${extracted} AS FLOAT)`;
+            }
+
+            if (leafType === SchemaTypes.Boolean) {
+                return `CASE WHEN ${extracted} = 'true' THEN 1 ELSE 0 END`;
+            }
+
+            return extracted;
         },
     },
 };
@@ -234,8 +336,31 @@ function applyValueTransformer(value: unknown, transformer: Transformer | null):
  * parsed transformer calls for (LOWER/UPPER/length). Ignoring the transformer
  * here would silently return wrong rows.
  */
+/**
+ * The column, or the JSON path into it when the property is nested.
+ *
+ * `getResolvedName()` returns the LEAF name, which is a real column only for a root
+ * property. For `payload.inner.value` the storage is a `payload` JSON column and the rest
+ * of the chain is a path inside it.
+ */
+function renderColumnBase(prop: PropertyExpression, d: SqlDialect): string {
+    const parents = prop.property.getParentPathArray({ useFromPropertyName: true });
+
+    if (parents.length === 0) {
+        return d.quoteIdentifier(prop.property.getResolvedName());
+    }
+
+    const [root, ...rest] = parents;
+
+    return d.jsonPathExpression(
+        d.quoteIdentifier(root),
+        [...rest, prop.property.getResolvedName()],
+        prop.property.type
+    );
+}
+
 function renderColumn(prop: PropertyExpression, d: SqlDialect): string {
-    const col = d.quoteIdentifier(prop.property.getResolvedName());
+    const col = renderColumnBase(prop, d);
 
     if (prop.transformer === "to-lower-case") {
         return `LOWER(${col})`;

@@ -428,6 +428,85 @@ export function describeDialectConformance(backend: ConformanceBackend) {
             });
         });
 
+        /**
+         * Filtering INTO a nested value, as opposed to round-tripping one.
+         *
+         * The gap these close: a nested subtree is stored as one JSON column named for its
+         * root, but the translator rendered the leaf name alone and emitted `"value" = ?` —
+         * a column that does not exist. Nothing caught it, because the cases above only ever
+         * wrote and read nested values and `sql.test.ts` asserts emitted strings rather than
+         * executing them.
+         *
+         * Every engine here has JSON path operators (SQLite via JSON1, built in since 3.38),
+         * so unlike full-text search this is a question each one can answer the same way.
+         */
+        describe('nested JSON filters', () => {
+            const seedNested = async () => {
+                const store = open(NestedStore);
+
+                await store.rows.addAsync(
+                    { id: 'f1', payload: { inner: { value: 'alpha', count: 3 } }, tags: [] } as any,
+                    { id: 'f2', payload: { inner: { value: 'beta', count: 10 } }, tags: [] } as any,
+                    { id: 'f3', payload: { inner: { value: 'gamma', count: 9 } }, tags: [] } as any,
+                );
+                await store.saveChangesAsync();
+            };
+
+            it('filters on a nested string', async () => {
+                await seedNested();
+
+                const found = await open(NestedStore).rows
+                    .where(r => (r as any).payload.inner.value === 'beta')
+                    .toArrayAsync();
+
+                expect(found.map((r: any) => r.id)).toEqual(['f2']);
+            });
+
+            /**
+             * The case a text comparison gets wrong rather than errors on: extracted as
+             * text, `'10' > '9'` is false, so `count > 9` silently drops f2.
+             */
+            it('compares a nested number numerically, not lexicographically', async () => {
+                await seedNested();
+
+                const found = await open(NestedStore).rows
+                    .where(r => (r as any).payload.inner.count > 9)
+                    .toArrayAsync();
+
+                expect(found.map((r: any) => r.id)).toEqual(['f2']);
+            });
+
+            it('orders nested numbers numerically', async () => {
+                await seedNested();
+
+                const found = await open(NestedStore).rows
+                    .where(r => (r as any).payload.inner.count >= 3)
+                    .toArrayAsync();
+
+                expect(found.map((r: any) => r.id).sort()).toEqual(['f1', 'f2', 'f3']);
+            });
+
+            it('combines a nested filter with a root-column filter', async () => {
+                await seedNested();
+
+                const found = await open(NestedStore).rows
+                    .where(r => (r as any).payload.inner.count > 5 && (r as any).id === 'f3')
+                    .toArrayAsync();
+
+                expect(found.map((r: any) => r.id)).toEqual(['f3']);
+            });
+
+            it('matches a nested string by prefix', async () => {
+                await seedNested();
+
+                const found = await open(NestedStore).rows
+                    .where(r => (r as any).payload.inner.value.startsWith('ga'))
+                    .toArrayAsync();
+
+                expect(found.map((r: any) => r.id)).toEqual(['f3']);
+            });
+        });
+
         describe('update deltas', () => {
             it('applies an update touching one column', async () => {
                 await seededProducts();
