@@ -13,6 +13,9 @@ export default libraryConfig({
         "index.browser": "./src/index.browser.ts",
         "drivers/sqlite3": "./src/drivers/sqlite3.ts",
         "drivers/turso": "./src/drivers/turso.ts",
+        // A plugin variant, not a driver — D1 has no interactive transaction for a driver
+        // interface to sit on. Its own entry so a Workers bundle never pulls in node:sqlite.
+        d1: "./src/d1.ts",
         // At the root of dist/, not under drivers/. The worker URL is resolved relative to
         // whichever file contains the expression, and that file is `index.browser.js` at the
         // root — the wasm driver is bundled into it rather than published separately, so that

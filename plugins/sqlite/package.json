@@ -80,6 +80,11 @@
             "types": "./dist/drivers/turso.d.ts",
             "import": "./dist/drivers/turso.js",
             "require": "./dist/drivers/turso.cjs"
+        },
+        "./d1": {
+            "types": "./dist/d1.d.ts",
+            "import": "./dist/d1.js",
+            "require": "./dist/d1.cjs"
         }
     },
     "module": "./dist/index.js",
