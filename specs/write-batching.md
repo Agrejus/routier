@@ -18,7 +18,7 @@ One queue in front of a plugin's `bulkPersist`.
 
 Nothing polls, nothing sleeps, and nothing waits for a batch to fill.
 
-## Why it is worth doing
+## Why it might be worth doing
 
 Because a store already writes more than once per logical change.
 
@@ -27,7 +27,8 @@ reconciling in response to it. Every one is a separate transaction and a separat
 a local file that is cheap; on a server it is four network waits, and on a client-server database
 the round trip dominates everything else the save does.
 
-Batching turns that into one.
+Batching collapses the ones that overlap. **Not all four** — see "the payoff is smaller than it
+looks" below, which is the first thing to read before believing any of this is worth building.
 
 **The property that makes it safe is that it never waits for anything.** A batch is whatever
 happens to have arrived while the previous write was in flight. When writes do not overlap the
@@ -37,8 +38,9 @@ is the only time anyone is measuring.
 
 This is the opposite trade to serializing writes, which was measured at roughly four times
 slower for concurrent writes on PostgreSQL (see `plugins/sqlite/src/plugin.ts` and the numbers
-recorded with it). Serializing pays a cost to gain safety on one engine. Batching pays nothing
-and gains throughput on every engine.
+recorded with it). Serializing pays a real cost to gain safety on one engine. Batching pays no
+latency — but it does pay in correctness risk, which is what the rest of this document is
+about.
 
 ## What it is not
 
@@ -46,6 +48,10 @@ and gains throughput on every engine.
 serializing that plugin's own writes — the lock is a fact about that engine and the fix belongs
 where the constraint is. Batching would reduce how often that queue is contended, but it is not
 what makes it correct.
+
+It would also stack a second queue on top of that one: the batcher queues, hands one merged
+write down, and that write queues again. Harmless, but two queues doing related jobs at
+different layers is worth noticing before adding the second.
 
 **Not a debounce.** No timer, no window, no "wait 5ms for more". A write is issued the instant
 the backend is free. Adding a delay would trade latency for batch size and is a different
@@ -66,10 +72,74 @@ makes it a wrapper rather than a collection declaration. That also means:
 
 `query` and `destroy` pass straight through. Only `bulkPersist` is queued.
 
+## Does it solve a problem we actually have?
+
+Honestly: unproven, and that is the first issue with it.
+
+Nothing measured says round trips are hurting anyone. Saves cost roughly 0.5ms each against a
+local SQLite file and 1.6ms against PostgreSQL in a container, sequentially. Batching is
+speculative optimisation until someone shows a workload where write round trips dominate — and
+this design is complicated enough that building it on a hunch is the wrong order.
+
+**Measure first.** The number to get is write round trips per logical change under a realistic
+load, against a server backend where the trip is large enough to matter. If that number is 2,
+this is not worth building.
+
+### The payoff is smaller than it looks
+
+That claim, made carelessly, is wrong. A view recomputes from a SUBSCRIPTION, and the
+subscription fires in `afterPersist` — after the caller's write has already returned. So a view's
+write cannot batch with the save that caused it: by the time the view has anything to write, the
+queue is empty and it goes out on its own.
+
+What can batch is the views with EACH OTHER, since they all react to the same notification and
+start together. So a store with three views goes from four round trips to about two, not to one.
+Still worth something; less than half of what it first looked like.
+
 ## The two hard parts
 
 Everything above is easy. These are not, and they are why this is a design document rather than
 a patch.
+
+### 0. Merging reorders operations, and silently loses writes
+
+This one is a blocker, and it is not obvious until you look at what a plugin does with the
+changes it is handed.
+
+A plugin applies operations **removes, then updates, then adds, within a schema** — see the
+comment in `SqliteDbPlugin.persist`, and the same grouping in the PostgreSQL and MySQL plugins.
+That is correct for one save, where the three sets are independent.
+
+Merge two saves into one `SchemaPersistChanges` and their operations are regrouped, so the order
+BETWEEN them is gone:
+
+    save A:  add row X
+    save B:  update row X
+
+    sequential:  X is added, then updated       -> X holds B's values
+    merged:      updates run first (X does not exist yet, affecting nothing),
+                 then adds                       -> X holds A's values
+
+B's update is lost. Nothing errors, no row count looks wrong, and the caller is told their save
+succeeded. The add-then-remove pairing is the same shape: merged, the remove runs against a row
+that is not there yet and the row survives a deletion the caller asked for.
+
+Two saves from one store cannot hit this — the second starts after the first returns, so they
+never overlap and never merge. It needs concurrent writers, which is exactly the case batching
+exists to help: several stores over one plugin, or a caller not awaiting.
+
+So merging is only safe under a constraint, and the options are:
+
+- **Never merge two items that touch the same schema.** Cheap to check, keeps the common
+  save-plus-views case (different schemas) and refuses the dangerous one. Batches get smaller.
+- **Preserve per-item ordering inside the batch**, which means the plugin can no longer group by
+  operation type — a change to every SQL plugin's persist path, for a feature they do not know
+  about.
+- **Only merge items whose operations do not overlap by ID.** Precise, and the most work.
+
+The first is the only one that does not push complexity into the backends. It also shrinks the
+payoff again, since the views-batching-with-each-other case is several views over DIFFERENT
+schemas, which does still merge.
 
 ### 1. Giving each caller back its own result
 
@@ -191,14 +261,18 @@ reached when there was something to gain.
 
 ## What has to be decided before building
 
-1. **Failure policy.** (c) above is the recommendation; it is the one real decision.
-2. **Whether to batch across stores** or only within one. Cross-store batching helps most when
+1. **Whether to build it at all**, on measured evidence rather than on the shape of the idea
+   being appealing. See the top of this document.
+2. **The merge constraint** — same-schema refusal is the recommendation, and it caps how much
+   this can ever win.
+3. **Failure policy.** (c) above is the recommendation.
+4. **Whether to batch across stores** or only within one. Cross-store batching helps most when
    several stores share a plugin, which is also when the blast radius argument is strongest.
-3. **Whether `identity` should scope the queue.** Two plugins over one database are separate
+5. **Whether `identity` should scope the queue.** Two plugins over one database are separate
    objects and would not share a queue. Batching cannot fix cross-process contention anyway, so
    probably not — but it is the same question `SqliteDbPlugin`'s write chain already answers by
    being per instance.
-4. **Whether a batch has a size ceiling.** A thousand queued writes merged into one transaction
+6. **Whether a batch has a size ceiling.** A thousand queued writes merged into one transaction
    is one very large statement set, and some engines have limits — D1's `batch()` in particular.
    A ceiling means the drain takes N items rather than all of them, which does not change any of
    the reasoning above.
@@ -228,6 +302,27 @@ Then the parts the contract cannot see:
   same tick — the datastore's save path is synchronous up to the plugin on purpose, and a
   deferral there reintroduces a recorded defect where saves interleaved and the change tracker
   could no longer match an addition to its echo.
+- **Operation ordering across merged items.** Add a row in one write and update it in another,
+  concurrently, and assert the update survives. This is the case that silently loses data if the
+  merge constraint is missing, and it will pass against a wrapper that queues without merging —
+  so it has to run alongside the call-counting test, or it proves nothing.
+
+## Verdict
+
+**Do not build this yet.** In order:
+
+1. Nothing measured says write round trips are a problem.
+2. The payoff is roughly halved by the fact that a view cannot batch with the save that
+   triggered it, and halved again by refusing to merge items touching the same schema — which
+   the reordering hazard forces.
+3. What remains is a merge-and-split path whose failure mode is silent: a lost update, or one
+   caller receiving another's identities.
+
+That is a poor ratio. It becomes a good one if a measurement shows round trips dominating a
+real workload, and the design above is ready for that day. It also becomes better if the
+ordering constraint can be lifted, which means plugins preserving submission order rather than
+grouping by operation type — worth considering on its own merits, since it is the thing making
+merging dangerous.
 
 ## Expected payoff
 
