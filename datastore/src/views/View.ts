@@ -23,11 +23,10 @@ import { SelectionQueryable } from '../queryable/SelectionQueryable';
  * after a fresh one — is the coalescing queue on the class below. Both are needed: this stops
  * two views colliding on the lock, that stops a single view going backwards.
  *
- * KNOWN GAP: it does not order view writes against the CALLER's saves, which go straight to the
- * plugin. On SQLite a view write and a `saveChanges` can still contend for the write lock, and
- * the caller's save is the one that surfaces the error. Rapid saves against a store with no
- * views are unaffected. Fixing it means one writer per backend rather than two, which is a
- * change to how the datastore writes rather than to how views do.
+ * It does NOT order view writes against the caller's saves, and deliberately does not try:
+ * whether concurrent writes are safe is a fact about the backend. An engine that cannot take
+ * them serializes its own — see the write chain in `SqliteDbPlugin` — and one that can keeps
+ * its concurrency, which is worth roughly four times the throughput on overlapping saves.
  */
 const viewWrites = new WeakMap<IDbPlugin, Promise<unknown>>();
 

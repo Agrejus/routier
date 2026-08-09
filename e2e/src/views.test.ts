@@ -386,14 +386,18 @@ describe('views against a real database', () => {
             { id: 2, name: 'b', active: true } as any,
         );
 
-        // Saves with no settling between them, so recomputes overlap. Each reads the view,
-        // diffs, and writes — three async steps — so without serializing them per view an
-        // earlier snapshot could write after a later one, and the view would hold the wrong
-        // answer permanently: nothing recomputes again until the source changes.
+        // Four saves with no settling between them, so several recomputes are in flight at
+        // once. Each reads the view, diffs, and writes — three async steps — so without
+        // serializing them per view an earlier snapshot could write after a later one, and the
+        // view would hold the wrong answer permanently: nothing recomputes again until the
+        // source changes.
         //
-        // Deliberately not pushed further than this. More overlap runs into a SEPARATE defect
-        // — view writes contend with the caller's saves for SQLite's write lock — which is
-        // about who writes when, not about which snapshot wins.
+        // This much overlap also has the caller's saves and the views' writes reaching the
+        // backend together, which is what SQLite's single write lock refuses.
+        await store.saveChangesAsync();
+        a.active = false;
+        await store.saveChangesAsync();
+        a.active = true;
         await store.saveChangesAsync();
         a.active = false;
         await store.saveChangesAsync();

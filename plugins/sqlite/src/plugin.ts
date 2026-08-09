@@ -58,6 +58,30 @@ export class SqliteDbPluginBase implements IDbPlugin {
      */
     private readonly tableCache = new Map<string, string>();
 
+    /**
+     * Serializes writes, because SQLite has ONE write lock per database.
+     *
+     * A store writes from more than one place — the caller's `saveChanges`, and every view
+     * reconciling in response to it — and those calls overlap. Two of them reaching a SQLite
+     * file at once means the second gets "database is locked" rather than waiting, and for a
+     * view that failure is only logged, leaving it silently stale.
+     *
+     * It belongs HERE and not in the datastore. Serialization is a fact about this engine, not
+     * about writing in general: PostgreSQL, MySQL and MongoDB take concurrent writes and
+     * queueing them costs real throughput — measured at roughly four times slower for
+     * concurrent saves. Putting the queue in the plugin leaves those untouched, and every
+     * caller reaches it because every caller goes through `bulkPersist`.
+     *
+     * A chained promise rather than a lock: each write starts when the previous one settles,
+     * whether it succeeded or failed, so one failure does not stall the rest. Sequential saves
+     * pay nothing — the chain is already resolved, so the work starts on the next microtask.
+     *
+     * Per INSTANCE, which is the same scope the connection is. Two plugins over one file still
+     * contend, and no in-process queue can fix that: another process is the same problem. That
+     * is what `busy_timeout` is for, and it is a separate question from this one.
+     */
+    private writes: Promise<unknown> = Promise.resolve();
+
     constructor(databaseName: string, driver: SqliteDriver) {
         this.databaseName = databaseName;
         this.driver = driver;
@@ -151,9 +175,12 @@ export class SqliteDbPluginBase implements IDbPlugin {
         event: DbPluginBulkPersistEvent,
         done: PluginEventCallbackPartialResult<BulkPersistResult>
     ): void {
-        this.persist(event)
+        const run = () => this.persist(event)
             .then(result => done(PluginEventResult.success(event.id, result)))
             .catch(error => done(PluginEventResult.error(event.id, error)));
+
+        // `then(run, run)`: the next write starts whichever way the previous one went.
+        this.writes = this.writes.then(run, run);
     }
 
     private async persist(event: DbPluginBulkPersistEvent): Promise<BulkPersistResult> {
