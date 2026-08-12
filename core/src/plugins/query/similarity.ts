@@ -1,3 +1,5 @@
+import { logger } from "../../utilities";
+
 /**
  * Cosine distance, and the ordering rules that go with it.
  *
@@ -70,7 +72,38 @@ export const nearestBy = <T>(
         return [];
     }
 
-    const scored = rows.map((row, index) => ({ row, index, distance: cosineDistance(select(row), vector) }));
+    /**
+     * Rows whose stored vector is the wrong width, counted so the query can say so once.
+     *
+     * `cosineDistance` already handles them safely — they score `Infinity` and sort last, the
+     * way PostgreSQL orders `NULL` — and that is deliberately not an error, because one corrupt
+     * row must not fail a query that is otherwise answerable.
+     *
+     * The problem is that it is also SILENT. A row written at the wrong width is never returned
+     * by any search and never reported by one, so an embedding model that changed its output
+     * size degrades results steadily with nothing to notice. Counting costs a length comparison
+     * per row against a vector that is commonly 1536 wide, and the warning is emitted once per
+     * query rather than once per row.
+     */
+    let mismatched = 0;
+
+    const scored = rows.map((row, index) => {
+        const stored = select(row);
+
+        if (stored != null && stored.length !== vector.length) {
+            mismatched++;
+        }
+
+        return { row, index, distance: cosineDistance(stored, vector) };
+    });
+
+    if (mismatched > 0) {
+        logger.warn(
+            `nearest(): ${mismatched} of ${rows.length} stored vectors are not ${vector.length} wide, ` +
+            `so they cannot be scored and sort last. They will never be returned by a search. ` +
+            `This usually means the rows were written with a different embedding model.`
+        );
+    }
 
     scored.sort((a, b) => {
         if (a.distance === b.distance) {

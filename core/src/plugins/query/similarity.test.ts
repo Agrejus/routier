@@ -1,4 +1,5 @@
 import { cosineDistance, nearestBy } from "./similarity";
+import { setLogLevel } from "../../utilities";
 
 /**
  * The arithmetic every backend's fallback shares.
@@ -104,5 +105,70 @@ describe("nearestBy", () => {
         nearestBy(rows, [1, 0], 2, select);
 
         expect(rows).toEqual(original);
+    });
+});
+
+describe("nearestBy: a wrong-width vector is reported, not just sorted last", () => {
+
+    /**
+     * The safe handling of a corrupt vector is also a silent one — it sorts last and is never
+     * returned, so an embedding model that changed its output width degrades every search with
+     * nothing to notice. The warning is the only signal, which makes it worth pinning: it costs
+     * nothing when the data is clean, and it is exactly the kind of diagnostic that gets
+     * removed by someone tidying a hot loop.
+     */
+    const withWarnings = async (body: () => void) => {
+        const warnings: string[] = [];
+        const original = console.warn;
+
+        // The level is set explicitly rather than inherited: the suite runs with
+        // ROUTIER_LOG_LEVEL=silent, so a test asserting on output has to ask for it.
+        setLogLevel("warn");
+        console.warn = (...args: unknown[]) => { warnings.push(args.join(" ")); };
+
+        try {
+            body();
+        } finally {
+            console.warn = original;
+            setLogLevel("silent");
+        }
+
+        return warnings.join("\n");
+    };
+
+    it("warns once per query, naming how many rows are unusable", async () => {
+        const rows = [
+            { embedding: [1, 0, 0] },
+            { embedding: [1, 0] },
+            { embedding: [0, 1, 0, 0] },
+        ];
+
+        const output = await withWarnings(() => {
+            nearestBy(rows, [1, 0, 0], 10, r => r.embedding);
+        });
+
+        expect(output).toMatch(/2 of 3 stored vectors are not 3 wide/);
+    });
+
+    it("says nothing when every vector is the declared width", async () => {
+        const rows = [{ embedding: [1, 0, 0] }, { embedding: [0, 1, 0] }];
+
+        const output = await withWarnings(() => {
+            nearestBy(rows, [1, 0, 0], 10, r => r.embedding);
+        });
+
+        expect(output).toBe("");
+    });
+
+    it("still returns the usable rows first", async () => {
+        // The warning must not change the answer — a corrupt row is reported AND sorted last.
+        const rows = [
+            { label: "short", embedding: [1, 0] },
+            { label: "exact", embedding: [1, 0, 0] },
+        ];
+
+        const found = nearestBy(rows, [1, 0, 0], 10, r => r.embedding);
+
+        expect(found.map(r => r.label)).toEqual(["exact", "short"]);
     });
 });

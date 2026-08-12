@@ -9,8 +9,12 @@ against the design that predicted them. Neither needed building. Their entries a
 "Closed without building" with the evidence, because the reasoning is worth finding before
 someone reopens either one.
 
-What is left is under "Ready to build": work that is understood, optional, and about speed
-rather than capability.
+**"Ready to build" is empty too.** The three vector follow-ups that were there were closed on
+the same day, for the same kind of reason: checked against the code rather than against the
+design that proposed them.
+
+What remains genuinely open is under "Backends" — more places to store data — and
+`specs/write-batching.md`, which is built and waiting on a measurement rather than a decision.
 
 Date: 2026-08-07. Last updated 2026-08-12.
 
@@ -318,22 +322,45 @@ Two things worth carrying forward from building it:
   specific and both fixes help every user of those plugins. Worth expecting more of this: a
   feature that touches every backend is the thing that finds what one backend quietly demands.
 
-## Ready to build
-
-### Vector follow-ups — optional speed, not capability
-
-Vectors shipped (see "Built"). What remains is speed, and none of it changes what a caller
-can do:
-
-- **`sqlite-vec`.** Would push the search down on SQLite. Needs an extension loaded across
-  three drivers that each load extensions differently, and Turso over HTTP may not at all.
-- **An index for pgvector.** Requires deciding whether approximate results are acceptable —
-  see the note above. Today's exact ordering is correct everywhere and slow only at scale.
-- **A dimension check in core.** Currently the query vector is checked against the declared
-  width at the `.nearest()` call, and stored values are checked only by backends with a
-  native column. A JSON backend will store an embedding of the wrong width without complaint.
-
 ## Closed without building
+
+### Vector follow-ups — all three closed 2026-08-12
+
+Three items sat here as "ready to build, optional speed". Checked against the code, none was
+worth building and one contradicted a decision already made elsewhere.
+
+**A dimension check in core — already handled, and the real gap was smaller.** The entry said a
+JSON backend stores a wrong-width embedding without complaint. True, and the read path was
+already designed for it: `cosineDistance` scores such a vector `Infinity` so it sorts last, the
+way PostgreSQL orders `NULL`, and `SchemaVector` records the decision NOT to validate in core —
+it would duplicate what a native `vector(n)` column already rejects and add a per-save array scan
+to backends that cannot use the information.
+
+What was genuinely missing was a SIGNAL, not a check. A wrong-width row is never returned by any
+search and never reported by one, so an embedding model that changed its output size degrades
+results steadily with nothing to notice. `nearestBy` now counts mismatches and warns once per
+query. Shipped as a defect fix rather than as this roadmap item, and pinned by
+`core/src/plugins/query/similarity.test.ts`.
+
+**An index for pgvector — closed, for the same reason engine-native full-text search is out.**
+HNSW and IVFFlat are APPROXIMATE: they return different rows than exact scoring. The vector
+feature's whole claim is that every backend returns the same rows in the same order, and
+`specs/full-text-search.md` settled the identical question permanently — an engine feature that
+changes WHICH rows come back is not an acceleration that can be turned on transparently, unlike
+one that produces the same answer faster. Exact `ORDER BY <=> LIMIT n` already avoids shipping
+every row to the client.
+
+Reopen only as an explicitly opt-in "approximate results accepted" mode, which is a different
+feature from the one written here and needs its own spec.
+
+**`sqlite-vec` — closed, and the coverage is the reason.** `SqliteConnection` is `all`, `run`
+and `close`; there is no extension loading, so this means growing the driver interface and
+implementing it five times. Two of those cannot use it: `wasm` and `wasmWorker` are browser
+SQLite, and `turso` speaks HTTP and cannot load a local extension. So the interface grows for
+every driver to buy speed on at most three, changing nothing a caller can do.
+
+Worth revisiting only if SQLite vector search becomes a measured bottleneck for someone, and
+then starting from "which drivers actually need it" rather than from the extension.
 
 ### Multi-tenancy — closed 2026-08-12, the existing pieces are enough
 
