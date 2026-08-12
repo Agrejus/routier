@@ -1,8 +1,16 @@
 # Plugin roadmap
 
 Candidate plugins, why each is worth building, and what is still undecided. Nothing here is
-committed work. Items marked **needs design** have an open question that must be answered
-before anyone writes code, and the question is stated rather than left to be rediscovered.
+committed work.
+
+**Nothing currently needs design.** Both items that did — wrapper stacking order and
+multi-tenancy — were closed on 2026-08-12 after checking them against the code rather than
+against the design that predicted them. Neither needed building. Their entries are kept under
+"Closed without building" with the evidence, because the reasoning is worth finding before
+someone reopens either one.
+
+What is left is under "Ready to build": work that is understood, optional, and about speed
+rather than capability.
 
 Date: 2026-08-07. Last updated 2026-08-12.
 
@@ -327,6 +335,46 @@ can do:
 
 ## Closed without building
 
+### Multi-tenancy — closed 2026-08-12, the existing pieces are enough
+
+This was recorded as needing a wrapper that scopes every read and stamps every write, with five
+open questions. Four of them turned out to be already answered by machinery that exists, and the
+fifth is a deployment shape we are choosing not to serve yet.
+
+**`.scope()` already covers the whole read side.** Verified against a two-tenant store: `toArray`,
+`count`, `sum`, `max`, and `firstOrUndefined` on another tenant's row all return only the
+scoped tenant, and a remove-by-query deleted only the caller's rows and left the other tenant's
+alone. The roadmap's "coverage beyond `where` — counts, aggregates, every path in `bulkPersist`"
+concern does not apply: a scope is AND-ed in at the collection level, so no read path skips it.
+
+**A schema default covers the write side**, in the form that matters for a single-tenant process:
+
+```ts
+tenantId: s.string().default((injected: { tenant: string }) => injected.tenant, { tenant: 'acme' })
+```
+
+The supported pattern is therefore `.scope()` for reads plus a default for writes, and it needs
+no new API.
+
+Two limits, both real and both stated rather than discovered:
+
+- **A default fills a blank; it does not enforce a value.** `addAsync({ tenantId: 'globex' })`
+  through an `acme`-scoped store stores `globex`. The row then vanishes from the store that
+  wrote it, because the scope filters it back out.
+- **One tenant per process.** Defaults are stringified into generated code when the schema
+  compiles (`SchemaDefinition.ts`, `createReturnFunction`), so a closure over a mutable variable
+  fails with `ReferenceError` and the `injected` form is bound at schema-compile time. Two
+  tenants in one process means two compiled schemas.
+
+**If someone needs many tenants in one process**, the escape hatch already exists and is better
+than a wrapper would have been: `create(extend)` on the collection builder hands back the
+instance creator and the dependencies, so a caller can return their own subclass and override
+the write methods to stamp the tenant they hold. That keeps the tenant on the OBJECT rather than
+in ambient state, which is the part `AsyncLocalStorage` could never do in a browser.
+
+Not built, deliberately. Revisit only when someone actually needs per-request tenancy in one
+process — and start from the subclass hook rather than from a wrapper.
+
 ### Wrapper stacking order — closed 2026-08-12, no mechanism needed
 
 This was recorded as an open design question: wrappers nest, the order is load-bearing, and
@@ -364,33 +412,6 @@ never read at all, while sharing another store's observation map, would be the r
 the shared-instance hazard — it would write with a version it never observed. No attach-without-read
 path was found in the API, so it may be unreachable, but that is untested rather than disproven.
 Anyone adding such a path should extend that test file first.
-
-## Needs design
-
-### Multi-tenancy wrapper — needs design
-
-Scope every read and stamp every write with a tenant id. A wrapper enforces globally what is
-easy to forget in one query and severe when you do.
-
-**The open question: what makes it trustworthy.** A multi-tenancy layer that is 99% correct is
-worse than none, because it is believed. The design has to make an unscoped query *impossible*,
-not merely unlikely, and that has to be provable by a test rather than by review.
-
-Decide before building:
-
-- **Isolation model.** A `tenantId` column on every row, a database per tenant, or a PostgreSQL
-  schema per tenant. Three different implementations with different blast radii; the wrapper
-  can only be one of them.
-- **Where the tenant comes from.** An ambient context works in Node through
-  `AsyncLocalStorage` and has no browser equivalent. A per-store tenant is explicit and safe
-  but means one store per tenant. A per-query tenant is the easiest to forget.
-- **Coverage beyond `where`.** Counts, aggregates, `firstOrUndefined`, and every path in
-  `bulkPersist` all need scoping. Any one missed is a leak.
-- **The admin escape hatch.** Cross-tenant access is a real requirement and is exactly how
-  leaks happen. It must be loud, separate, and impossible to reach by accident.
-- **How the guarantee is tested.** Probably a property test that runs every query shape the
-  oracle knows about against a two-tenant store and asserts no row crosses. Without something
-  of that strength the feature should not ship.
 
 ## Small wrappers — shipped 2026-08-08
 
