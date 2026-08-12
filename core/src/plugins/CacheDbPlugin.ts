@@ -108,6 +108,14 @@ export class CacheDbPlugin implements IDbPlugin {
      * so handing out the cached instance would let the first caller replace the cache's
      * contents with its own tracked proxies. The second caller would then receive entities
      * attached to somebody else's store.
+     *
+     * It protects a second thing that is easy to miss, so do not replace it with a shallow copy
+     * or hand out the entry directly. `ConcurrencyDbPlugin` strips `__version` from result rows
+     * IN PLACE after observing them. Stacked as `ConcurrencyDbPlugin(CacheDbPlugin(...))` the
+     * strip therefore lands on this copy, and the cached row keeps its token — without that,
+     * every hit after the first would carry no version, the observer would record nothing, and
+     * the next update would be written UNCHECKED with no error anywhere.
+     * Pinned by `datastore/src/collections/wrapperStacking.test.ts`.
      */
     private rebuild(entry: CacheEntry): ITranslatedValue<unknown> {
         return new entry.construct(structuredClone(entry.value), entry.isTransformed);

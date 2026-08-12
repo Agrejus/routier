@@ -325,50 +325,49 @@ can do:
   width at the `.nearest()` call, and stored values are checked only by backends with a
   native column. A JSON backend will store an embedding of the wrong width without complaint.
 
+## Closed without building
+
+### Wrapper stacking order — closed 2026-08-12, no mechanism needed
+
+This was recorded as an open design question: wrappers nest, the order is load-bearing, and
+nothing errors when it is wrong. Four hazards were named. **None of them reproduce**, and the
+entry is closed rather than deferred.
+
+`datastore/src/collections/wrapperStacking.test.ts` covers five compositions and asserts on
+`update.concurrency` — what a backend reads to decide whether to apply a write conditionally.
+Absent means unconditional. Every one is checked, and a genuine conflict still throws.
+
+Why each hazard is not live:
+
+- **Cache above concurrency → unchecked writes.** Cannot happen, and the reason is structural
+  rather than lucky. Wrappers nest, so a cache HIT is always preceded by a MISS through the same
+  chain, and that miss is what observes the version. A `CacheDbPlugin` instance wraps exactly one
+  inner plugin, so warming the cache warms the observer beneath it. There is no composition where
+  the cache answers a read the observer never saw.
+- **Cache below concurrency → token stripped before recording.** Defended by
+  `CacheDbPlugin.rebuild`, which hands out a `structuredClone` on every read, so the observer's
+  in-place strip lands on the copy. That clone was written to stop callers corrupting cached
+  entries; the concurrency protection was an accidental side effect, and is now recorded at the
+  site so nobody optimises it away.
+- **Retry above anything not idempotent.** Solved inside `RetryDbPlugin`, which declines to retry
+  `bulkPersist` and `destroy` outright. It stopped being a stacking concern whenever that landed.
+- **A shared instance below a per-store wrapper.** Two stores sharing one `ConcurrencyDbPlugin`
+  still produce checked writes. See the caveat below.
+
+**The question this entry asked — who owns the ordering knowledge, given it cannot live on
+`IDbPlugin` and cannot be a closed list — has no answer because it has no subject.** There is no
+ordering constraint to encode. Do not build `composeDbPlugins`, a symbol-keyed placement
+annotation, or a validation pass; each would guard a population of zero.
+
+**One thing is NOT proven.** Every test reads before it writes. A store that updates a row it
+never read at all, while sharing another store's observation map, would be the residual form of
+the shared-instance hazard — it would write with a version it never observed. No attach-without-read
+path was found in the API, so it may be unreachable, but that is untested rather than disproven.
+Anyone adding such a path should extend that test file first.
+
 ## Needs design
 
-### 1. Wrapper stacking order — needs design
-
-Wrappers compose by nesting, and the order is load-bearing and invisible. Nothing errors when
-it is wrong, and the failures are silent rather than loud.
-
-The concrete pairs, all of which exist today with no batching involved:
-
-- **Cache above concurrency.** A cache hit never reaches `ConcurrencyDbPlugin`, so the version
-  observer does not see the read. The next update to that row is written with no expected
-  token, which means it is written UNCHECKED — the protection silently lapses for exactly the
-  rows a cache makes fast.
-- **Cache below concurrency.** The cache serves a `structuredClone` of rows the observer has
-  already stripped `__version` from in place, so the token is gone before it is recorded.
-- **Retry above anything that is not idempotent.** `RetryDbPlugin` already declines to retry
-  `bulkPersist` and `destroy` for this reason, which is the pattern to generalise rather than
-  a special case to leave in one class.
-- **A shared instance below a per-store wrapper.** `ConcurrencyDbPlugin` holds per-store
-  observed versions, so two stores sharing one concurrency wrapper conflate their reads. Any
-  wrapper deliberately shared between stores — a batcher, a pool — must sit BELOW each store's
-  own wrappers, never above.
-
-**The open question is who owns the knowledge.** A `composeDbPlugins` helper that knows the
-right order only works for the wrappers core ships, and the wrapper ecosystem is open —
-`OptimisticUpdatesDbPlugin` and `PluginSyncEngine` live in replication, and anything a user
-writes against `IDbPlugin` participates. Moving the constraints onto the plugins was tried
-during the write-batching design and rejected: `IDbPlugin` is frozen at `databaseName`, `query`,
-`destroy`, `bulkPersist`, and placement advice is not part of what a plugin IS. See
-`specs/write-batching.md`, "What this replaces", for the variants already considered and why
-each was dropped.
-
-What is left to decide:
-
-- Whether validation is worth having at all, or whether documenting the pairs is proportionate.
-  Three of the four cases above are arguably "do not do that", and a mechanism that only core's
-  wrappers can use may cost more than it prevents.
-- If validation: where the order knowledge lives, given it cannot live on `IDbPlugin` and
-  cannot be a closed list.
-- Whether a test could catch the cache×concurrency pair directly instead — the two failures are
-  observable (an unchecked update, a lost token), so a targeted test may be worth more than a
-  general mechanism.
-
-### 2. Multi-tenancy wrapper — needs design
+### Multi-tenancy wrapper — needs design
 
 Scope every read and stamp every write with a tenant id. A wrapper enforces globally what is
 easy to forget in one query and severe when you do.
