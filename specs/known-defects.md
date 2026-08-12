@@ -1,6 +1,6 @@
 # Known defects
 
-Status: 64 of 65 fixed. #55 is a documented constraint, not a defect: the schema
+Status: 67 of 68 fixed. #55 is a documented constraint, not a defect: the schema
 codegen cannot survive minification, so minification stays off.
 Date: 2026-08-06
 
@@ -1608,6 +1608,32 @@ before that the e2e project ran 17 suites and the window never opened. It reprod
 run in two with 19, and not once in three runs after the fix.
 
 ---
+
+
+## #68 — `distinct` was misspelled and would not survive a modifier — **FIXED** (2026-08-12)
+
+`SchemaBase` declared the flag as `isDistict`, and its copy constructor did not carry it.
+
+Never observable. `SchemaDistinct` exposes no methods, so nothing can wrap it — `.distinct()` is
+always the last call in a chain, and the flag reaches `PropertyInfo` intact. Verified across
+`.distinct()`, `.index().distinct()`, `.tag().distinct()` and `.from().distinct()` before
+changing anything.
+
+Recorded as a defect anyway, because "unreachable" was a fact about one class rather than a
+guarantee. Every other flag on `SchemaBase` is copied, and the reason is written above
+`dimensions`: a modifier WRAPS rather than extends, so anything the constructor forgets is
+dropped the moment a property gains one more modifier. Adding `optional()` to `SchemaDistinct`
+— which is exactly what `SchemaSearchable` now has — would have silently removed the uniqueness
+from every property declared that way, with no error and no failing test. The uniqueness
+constraint is what backends build a UNIQUE index from, so the symptom would have been duplicate
+rows in production and a passing suite.
+
+Fixed by renaming to `isDistinct`, matching `PropertyInfo.isDistinct` which was already spelled
+correctly, and adding it to the copy constructor beside every other flag. The comment on
+`isSearchable` cited this as the counter-example and now states the general rule instead.
+
+Pinned by `core/src/schema/distinct.test.ts`, which asserts the copy constructor carries it
+directly rather than only through the chains that happen to compile today.
 
 ## Orientation for a new session
 

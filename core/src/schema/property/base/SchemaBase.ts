@@ -11,7 +11,7 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
     isKey: boolean = false;
     isIdentity: boolean = false;
     isReadonly: boolean = false;
-    isDistict: boolean = false;
+    isDistinct: boolean = false;
     /**
      * Set by `.modify(x => x.transform(...))`. A live reference, never stringified.
      * `null` when the property is stored as it is.
@@ -55,9 +55,9 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
      * collection that never declares `.searchIndex()` indexes nothing regardless.
      *
      * Copied by the constructor below, so `s.string().searchable().optional()` stays searchable.
-     * `isDistict` above is NOT copied, which means `.distinct().optional()` silently loses its
-     * uniqueness — do not follow that here. A searchable property that quietly stopped being
-     * indexed would take its terms out of the index and change what queries match.
+     * Every flag on this class is copied for the same reason: a modifier WRAPS rather than
+     * extends, so anything the constructor forgets is silently dropped the moment a property
+     * gains one more modifier.
      */
     isSearchable: boolean = false;
 
@@ -93,6 +93,7 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
             this.dimensions = entity.dimensions;
             this.maxLength = entity.maxLength;
             this.isSearchable = entity.isSearchable;
+            this.isDistinct = entity.isDistinct;
         }
 
         if (literals) {

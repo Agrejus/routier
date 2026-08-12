@@ -128,7 +128,7 @@ export class PropertyInfo<T extends {}> {
         this.isReadonly = schema.isReadonly;
         this.isUnmapped = schema.isUnmapped;
         this.injected = schema.injected;
-        this.isDistinct = schema.isDistict;
+        this.isDistinct = schema.isDistinct;
         this.transform = schema.transform;
         this.indexes = schema.indexes;
         this.from = schema.fromPropertyName;

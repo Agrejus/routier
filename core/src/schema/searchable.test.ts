@@ -44,7 +44,7 @@ describe("s.string().searchable()", () => {
 
     it("survives optional and nullable", () => {
         // The reason the flag lives on SchemaBase and is copied. `.optional()` returns a
-        // SchemaOptional, which is not a SchemaString — the same trap `isDistict` falls into.
+        // SchemaOptional, which is not a SchemaString, so an uncopied flag would vanish here.
         const schema = s.define("articles", {
             id: s.string().key().identity(),
             subtitle: s.string().searchable().optional(),
