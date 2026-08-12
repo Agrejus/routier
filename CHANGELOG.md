@@ -3,7 +3,7 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `RELEASING.md` for the procedure.
 
-## Unreleased
+## 0.3.0 (2026-08-12)
 
 Thirty-nine defects fixed, recorded as `specs/known-defects.md` #27 through #65, plus the first
 CI this repository has had. Every publishable package changed.
