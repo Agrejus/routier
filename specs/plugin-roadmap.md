@@ -4,7 +4,7 @@ Candidate plugins, why each is worth building, and what is still undecided. Noth
 committed work. Items marked **needs design** have an open question that must be answered
 before anyone writes code, and the question is stated rather than left to be rediscovered.
 
-Date: 2026-08-07
+Date: 2026-08-07. Last updated 2026-08-12.
 
 ## Four shapes, and why it matters which one you pick
 
@@ -284,6 +284,32 @@ stop being expressed as SQL at all. That removes the statement matching and matc
 `MongoDriver.transaction` already does. It changes the interface for three existing drivers,
 so it was deliberately not bundled with adding a backend.
 
+### Full-text search — shipped 2026-08-12
+
+`s.string().searchable()`, `.fullTextSearch()` on the collection, `collection.search(...)`, and
+`collection.fullTextSearch.check()` / `.rebuild()`. Full design and every decision in
+`specs/full-text-search.md`; the user-facing page is
+`docs/concepts/queries/full-text-search.md`.
+
+**No plugin contains any search code**, which was the whole claim. Core tokenises and ranks; the
+engine sees an ordinary `IN` over an ordinary table. One contract —
+`describeFullTextSearch` in `@routier/test-utils` — runs against ten backends with no
+exemptions.
+
+Two things worth carrying forward from building it:
+
+- **The prerequisite that disappeared.** This entry used to say full-text search depended on
+  incremental `derive`, because a view is handed its whole snapshot on every save. Moving
+  steady-state maintenance off the view and into the save pipeline, beside `.audit()`, removed
+  the dependency entirely — and made the index commit in the same transaction as the documents,
+  which the view could never do. A general incremental `derive` is still worth building; nothing
+  waits on it.
+- **Both remaining backend gaps were PLUGIN defects, not design limits.** `MongoDbPlugin`
+  required `.identity()` on a key its own database does not require it on; `PouchDbPlugin` made
+  its `_rev` write protocol every caller's problem instead of resolving it. Neither is search
+  specific and both fixes help every user of those plugins. Worth expecting more of this: a
+  feature that touches every backend is the thing that finds what one backend quietly demands.
+
 ## Ready to build
 
 ### Vector follow-ups — optional speed, not capability
@@ -301,46 +327,7 @@ can do:
 
 ## Needs design
 
-### 1. Full-text search — designed, see `specs/full-text-search.md`
-
-Real user need. The two blockers recorded below were both consequences of one unexamined
-decision — using the ENGINE's full-text search — and neither survives dropping it. A view is
-already a shadow table kept in sync, so there is no migration; and if core tokenises, matching
-is set membership over ordinary rows, so there is nothing to diverge and the conformance line
-holds. That is the vector trade, already shipped.
-
-What was left was a cost question, not a design one: `derive` hands back the WHOLE snapshot, so
-every save through the view would recompute the entire index. **Resolved 2026-08-11** — steady-state
-maintenance moved off the view and into the save pipeline, where `.audit()` already runs and the
-change set is already incremental. The view keeps the rebuild path. Full-text search no longer
-depends on incremental `derive`, and one prerequisite is left: `s.string({ maxLength })`. See the
-amendment in `specs/full-text-search.md`. The original blockers are kept below because the
-reasoning that retired them is worth finding next to them.
-
-**The open question: cross-backend consistency is impossible.** Every other feature in this
-repository returns the same answer on every backend, and `e2e/src/dialectConformance.test.ts`
-holds that line. Full-text search cannot meet it. SQLite FTS5, PostgreSQL `tsvector` and MySQL
-`FULLTEXT` tokenise differently, stem differently, and rank differently. The same query over
-the same rows returns different results, in a different order, on each.
-
-So the first decision is what to promise:
-
-- One engine only, and say the feature is PostgreSQL-only.
-- A shared subset with results that differ per backend, documented loudly.
-- A search-service wrapper (Meilisearch, Typesense) that is consistent because it is one
-  engine, at the cost of a second system to run.
-
-Also unresolved:
-
-- FTS5 needs a shadow virtual table kept in sync by triggers. That is schema migration, which
-  every SQL plugin explicitly does not do.
-- Where search is declared: on the property (`s.string().searchable()`) or at the query.
-- Whether relevance ranking is exposed. Ordering by rank is a query shape the translator has
-  no concept of.
-- What backends with no full-text support do. Falling back to `LIKE` returns different rows and
-  would be the wrong kind of quiet.
-
-### 2. Wrapper stacking order — needs design
+### 1. Wrapper stacking order — needs design
 
 Wrappers compose by nesting, and the order is load-bearing and invisible. Nothing errors when
 it is wrong, and the failures are silent rather than loud.
@@ -381,7 +368,7 @@ What is left to decide:
   observable (an unchecked update, a lost token), so a targeted test may be worth more than a
   general mechanism.
 
-### 3. Multi-tenancy wrapper — needs design
+### 2. Multi-tenancy wrapper — needs design
 
 Scope every read and stamp every write with a tenant id. A wrapper enforces globally what is
 easy to forget in one query and severe when you do.
