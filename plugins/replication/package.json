@@ -42,7 +42,7 @@
         "@routier/core": ">=0.3.0"
     },
     "dependencies": {
-        "@routier/memory-plugin": "^0.2.1"
+        "@routier/memory-plugin": "^0.3.0"
     },
     "devDependencies": {
         "@faker-js/faker": "^10.0.0",

@@ -1,6 +1,6 @@
 {
     "name": "@routier/mongodb-plugin",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "main": "./dist/index.cjs",
     "types": "./dist/index.d.ts",
     "source": "./src/index.ts",

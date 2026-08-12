@@ -48,9 +48,9 @@
     "devDependencies": {
         "@faker-js/faker": "^10.0.0",
         "@routier/core": "^0.3.0",
-        "@routier/datastore": "^0.2.2",
+        "@routier/datastore": "^0.3.0",
         "@routier/memory-plugin": "file://../memory",
-        "@routier/test-utils": "^0.0.1-alpha.1",
+        "@routier/test-utils": "^0.3.0",
         "@rspack/cli": "^1.1.8",
         "@rspack/core": "^1.1.8",
         "@types/pouchdb": "^6.4.2"

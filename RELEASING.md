@@ -1,12 +1,21 @@
 # Releasing
 
-Routier publishes 13 packages from one repository. They are versioned **independently** —
-`@routier/core` is at 0.2.2 while `@routier/memory-plugin` is at 0.2.1 — and each is published
-with npm workspaces.
+Routier publishes 16 packages from one repository with npm workspaces.
 
-Independent versioning is the point, not an accident. On `0.x` a minor bump claims a breaking
-change, so raising an unaffected package in lockstep tells every consumer to read a migration
-note that does not exist.
+Versioning is **independent by default**. On `0.x` a minor bump claims a breaking change, so
+raising an unaffected package in lockstep tells every consumer to read a migration note that
+does not exist.
+
+`0.3.0` is a deliberate exception: every package moved together. That is only the right call
+when a release changes `@routier/core` in a breaking way, because every plugin declares core as
+a peer dependency and a consumer cannot upgrade one package without upgrading core with it.
+Independent numbers would document a freedom nobody has. Do not treat it as the new default —
+see the reasoning recorded in `CHANGELOG.md` under "Versions".
+
+**Internal ranges move with the versions.** Most `@routier/*` references are dev dependencies,
+but two are runtime ones: `@routier/datastore` and `@routier/replication-plugin` both depend on
+`@routier/memory-plugin`. A `^0.2.1` range does not match `0.3.0`, so a version bump that leaves
+those behind publishes an unsatisfiable install.
 
 There is no release automation. This file is the procedure.
 

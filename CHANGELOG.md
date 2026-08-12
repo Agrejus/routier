@@ -15,24 +15,91 @@ existed.
 
 ### Versions
 
-Independent, not lockstep. On `0.x` a minor bump means a breaking change, so bumping an
-unaffected package to `0.3.0` would claim a break that did not happen.
+**Every publishable package goes to `0.3.0`, in lockstep.**
 
-| Package | From | To | Why |
-| --- | --- | --- | --- |
-| `@routier/pouchdb-plugin` | 0.2.0 | **0.3.0** | breaking: sync callback types |
-| `@routier/replication-plugin` | 0.2.1 | **0.3.0** | breaking: no `skip`/`take` pushdown |
-| `@routier/core` | 0.2.1 | **0.3.0** | `s.file()`, corrected wrapper inference |
-| `@routier/datastore` | 0.2.1 | 0.2.2 | fixes |
-| `@routier/postgresql-plugin` | 0.2.1 | 0.2.2 | fixes, republish (see below) |
-| `@routier/browser-storage-plugin` | 0.2.0 | 0.2.1 | fixes, republish (see below) |
-| `@routier/sqlite-plugin` | 0.2.0 | **0.3.0** | breaking: default engine, Node floor |
-| `@routier/dexie-plugin` | 0.2.0 | **0.3.0** | breaking: index layout changed |
-| `@routier/file-system-plugin` | 0.2.0 | 0.2.1 | fixes |
-| `@routier/memory-plugin` | 0.2.0 | 0.2.1 | packaging, docs |
-| `@routier/react` | 0.2.0 | 0.2.1 | packaging |
-| `@routier/mysql-plugin` | — | 0.2.0 | first publish |
-| `@routier/sql-plugin-core` | — | 0.2.0 | first publish |
+This reverses the policy stated in `RELEASING.md` and in earlier drafts of this section, which
+argued that bumping an unaffected package to `0.3.0` claims a break that did not happen. That
+reasoning is sound in general and does not describe this release: thirteen of the seventeen
+packages have shipped-code changes, `@routier/core` and `@routier/datastore` both change in
+breaking ways, and every plugin depends on core. A consumer upgrading one package has to upgrade
+core with it regardless, so independent numbers would document a freedom nobody has.
+
+Four packages have no shipped-code change and are bumped anyway, which is the cost of the
+decision rather than an oversight: `@routier/react`, `@routier/memory-plugin`,
+`@routier/browser-storage-plugin` and `@routier/encryption`.
+
+| Package | From | To |
+| --- | --- | --- |
+| `@routier/core` | 0.2.1 | 0.3.0 |
+| `@routier/datastore` | 0.2.1 | 0.3.0 |
+| `@routier/react` | 0.2.0 | 0.3.0 |
+| `@routier/test-utils` | 0.0.1-alpha.1 | 0.3.0 |
+| `@routier/blob-plugin` | 0.1.0 | 0.3.0 |
+| `@routier/browser-storage-plugin` | 0.2.0 | 0.3.0 |
+| `@routier/dexie-plugin` | 0.2.0 | 0.3.0 |
+| `@routier/encryption` | 0.1.0 | 0.3.0 |
+| `@routier/file-system-plugin` | 0.2.0 | 0.3.0 |
+| `@routier/memory-plugin` | 0.2.0 | 0.3.0 |
+| `@routier/mongodb-plugin` | — | 0.3.0 |
+| `@routier/mysql-plugin` | — | 0.3.0 |
+| `@routier/postgresql-plugin` | 0.2.1 | 0.3.0 |
+| `@routier/pouchdb-plugin` | 0.2.0 | 0.3.0 |
+| `@routier/replication-plugin` | 0.2.1 | 0.3.0 |
+| `@routier/sql-plugin-core` | — | 0.3.0 |
+| `@routier/sqlite-plugin` | 0.2.0 | 0.3.0 |
+
+Internal ranges moved with them. Two are runtime dependencies rather than dev ones —
+`@routier/datastore` and `@routier/replication-plugin` both depend on `@routier/memory-plugin` —
+and a `^0.2.1` range does not match `0.3.0`, so leaving them would have shipped an unsatisfiable
+install.
+
+### Full-text search
+
+Search that returns the same rows in the same order on every backend. Core tokenises and ranks;
+no plugin contains any search code.
+
+```ts
+title: s.string().searchable()
+
+articles = this.collection(articleSchema).fullTextSearch().proxy().create()
+
+await store.articles.search('copper pipe').where(x => x.published).take(10).toArrayAsync()
+```
+
+The index is an ordinary generated collection — one row per (term, field, document) — maintained
+in the save pipeline beside `.audit()`, so its rows commit in the same transaction as the
+documents they describe. An add whose key the database assigns is the exception: the row's key
+embeds an id that does not exist until the insert runs, so those rows are written immediately
+after, and a failure reaches the caller rather than a log.
+
+`collection.fullTextSearch.check()` and `.rebuild()` make that repairable on a schedule. `check`
+reports drift without writing; `rebuild` writes only differences, so a healthy index costs two
+reads and no writes. `rebuild` also builds the index the first time over data that predates the
+declaration.
+
+Ranking is term frequency only — no BM25, no stemming, no phrase search — and the `score` a
+result carries is ordered-by, not contractual. Engine-native search (FTS5, `tsvector`,
+`FULLTEXT`) is deliberately unused: each tokenises and ranks differently, so the same query would
+return different rows on different backends. See `docs/concepts/queries/full-text-search.md`.
+
+Proven by one contract run against ten backends with no exemptions: memory, Dexie, file-system,
+browser-storage, SQLite, PouchDB, Cloudflare D1, PostgreSQL, MySQL and MongoDB.
+
+Two of those needed a plugin fixed first, and both were defects rather than limits of the design:
+
+- **`@routier/mongodb-plugin` no longer requires `.identity()` on `_id`.** The rule reasoned that
+  Mongo fills in a missing `_id`, which only describes a key nobody supplies — and a key without
+  `.identity()` is by definition one the caller supplies. It was stricter than the database and
+  rejected schemas that work.
+- **`@routier/pouchdb-plugin` resolves a missing `_rev` itself.** It used to make its write
+  protocol the caller's problem: a schema had to declare `_rev` and every entity had to carry the
+  current value. A revision is a fact the database owns, so the plugin now looks up any missing
+  one in a single `allDocs`, and only when one is missing. Declaring `_rev` is now an
+  optimisation, not a requirement.
+
+Also added, and useful on its own: `s.string({ maxLength })`, which MySQL maps to `VARCHAR(n)`
+instead of the blanket `VARCHAR(255)`; and `previous` alongside `delta` on every update, so an
+audit declaration can record before-and-after with no extra configuration.
 
 ### Every package now ships both module formats
 
