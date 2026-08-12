@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from '@jest/globals';
 import { uuidv4 } from '@routier/core';
 import { s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
-import { describePluginContract, describeVectorSearch } from '@routier/test-utils';
+import { describeFullTextSearch, describePluginContract, describeVectorSearch } from '@routier/test-utils';
 import { BrowserStoragePlugin } from '../BrowserStoragePlugin';
 
 /**
@@ -54,6 +54,11 @@ class FakeStorage implements Storage {
 describeVectorSearch(
     'browser-storage',
     () => new BrowserStoragePlugin(`vector-${uuidv4()}`, new FakeStorage()),
+);
+
+describeFullTextSearch(
+    'browser-storage',
+    () => new BrowserStoragePlugin(`fts-${uuidv4()}`, new FakeStorage()),
 );
 
 describePluginContract(

@@ -1,4 +1,4 @@
-import { IQuery, QueryOption, SqlTranslator } from '@routier/core/plugins';
+import { IQuery, QueryOption, SqlPushdown, SqlTranslator } from '@routier/core/plugins';
 
 /**
  * `SqlTranslator` with the `pg` driver's quirks applied.
@@ -12,18 +12,25 @@ import { IQuery, QueryOption, SqlTranslator } from '@routier/core/plugins';
  * core's `SqlTranslator.count`, which is exactly how engine-specific knowledge leaks into a
  * storage-agnostic package: not by decision, but one bug fix at a time.
  */
+/** What Postgres can push down: everything the base class knows about, plus the vector ordering. */
+export type PostgresPushdown = SqlPushdown & {
+    /** The statement carried a `<=>` ordering and its `LIMIT`. */
+    nearest?: boolean;
+};
+
 export class PostgresSqlTranslator<TRoot extends {}, TShape> extends SqlTranslator<TRoot, TShape> {
 
     private readonly nearestPushedDown: boolean;
 
     /**
-     * @param nearestPushedDown Whether the statement that produced these rows carried the
-     * `<=>` ordering. Supplied by the plugin because only the query builder knows: pgvector
-     * may be missing, or a window may have made the pushdown unsafe.
+     * @param pushedDown What the statement that produced these rows actually contained. Supplied
+     * by the plugin because only the query builder knows: pgvector may be missing, a window may
+     * have made a pushdown unsafe, an inner join filter may have had no column to compare against.
+     * `nearest` is Postgres-specific; `join` is handled by the base class.
      */
-    constructor(query: IQuery<TRoot, TShape>, nearestPushedDown: boolean = false) {
-        super(query);
-        this.nearestPushedDown = nearestPushedDown;
+    constructor(query: IQuery<TRoot, TShape>, pushedDown: PostgresPushdown = {}) {
+        super(query, pushedDown);
+        this.nearestPushedDown = pushedDown.nearest === true;
     }
 
     /**

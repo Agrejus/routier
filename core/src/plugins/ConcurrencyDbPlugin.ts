@@ -68,8 +68,8 @@ export class ConcurrencyDbPlugin implements IDbPlugin {
         this.plugin = plugin;
     }
 
-    get identity(): string | undefined {
-        return this.plugin.identity;
+    get databaseName(): string {
+        return this.plugin.databaseName;
     }
 
     query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {

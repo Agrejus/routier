@@ -9,13 +9,27 @@ import { ITranslatedValue } from "./translators";
  */
 export interface IDbPlugin {
     /**
-     * Optional stable identity for the underlying database (e.g. its name). Used to scope
-     * schema subscription channels: instances sharing an identity (same database in
-     * another tab or context) see each other's change notifications, while unrelated
-     * databases holding the same schema do not. When omitted, channels are scoped by
-     * schema alone and every instance of the schema shares one channel.
+     * Uniquely identifies the database this plugin talks to, INCLUDING host or path where a
+     * bare name would collide — `orders.db` in two directories is two databases, and `mydb`
+     * on two hosts is two databases. Two instances over the same database must return the
+     * same string, in this process and in any other; two over different databases must not.
+     *
+     * Used to scope schema subscription channels, so instances of one database (another tab,
+     * a worker) see each other's change notifications and unrelated databases holding the
+     * same schema do not.
+     *
+     * Required rather than optional on purpose. An absent value used to fall back to scoping
+     * by schema alone, which shares one channel across every database holding that schema —
+     * the exact cross-talk this prevents, arrived at by omission. Requiring it also makes a
+     * wrapper that forgets to forward it a compile error rather than a silent regression.
+     *
+     * Derive it, never generate it: a random value is unique per PROCESS, not per database,
+     * so another tab would never match one and cross-context notifications would stop.
+     *
+     * Must not contain credentials — it becomes part of a channel key, so build it from
+     * host/port/database rather than returning a connection string.
      */
-    readonly identity?: string;
+    readonly databaseName: string;
     /**
      * Executes a query operation on the database.
      * @param event The query event containing schema, parent, and query operation.
@@ -135,6 +149,26 @@ export type EntityUpdateInfo<T extends {}> = {
      * OptimisticConcurrencyError naming the conflicted rows — never apply partially.
      */
     concurrency?: { column: string; expected: number };
+    /**
+     * The values these properties held BEFORE this update — keyed like `delta`, which holds
+     * the values they hold after.
+     *
+     * DATASTORE-INTERNAL. The datastore strips it before the plugin is called
+     * (`DataStore.onSavePreparedChanges`), so no plugin ever receives it and nothing goes over
+     * a wire. It exists for save-pipeline participants that must undo work keyed by an old
+     * value — a search index has to delete the rows for terms that just left a field, and
+     * `delta` only says what the field says now.
+     *
+     * Always populated for an update. It is part of what an update IS, not something a
+     * declaration switches on — a consumer can rely on it without knowing what else the store
+     * declared, and there is one code path to reason about rather than two.
+     *
+     * Which properties appear depends on what the change-tracking mode can know. Proxy and
+     * immutable name exactly the properties that changed. Diff detects change by comparing a
+     * content hash, so it cannot say WHICH property moved and reports every root property —
+     * the same "assume everything" convention its empty `delta` already uses.
+     */
+    previous?: EntityDelta<T>;
 }
 
 export type TaggedEntity<T> = {

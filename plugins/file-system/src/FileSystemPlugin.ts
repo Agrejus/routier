@@ -37,12 +37,21 @@ export class FileSystemPlugin extends EphemeralDataPlugin {
     }
 
     private get databaseFilePath() {
-        return path.join(this.path, this.databaseName);
+        return path.join(this.path, this._databaseName);
     }
 
     /** Registry key: the resolved path, so two spellings of one directory share a database. */
     private get databaseKey() {
         return path.resolve(this.databaseFilePath);
+    }
+
+    /**
+     * The resolved path, not the bare file name: `orders.json` in two directories is two
+     * databases, and scoping subscriptions by the name alone would let them notify each other.
+     * Same value as the registry key, which is the same question asked about collections.
+     */
+    override get databaseName(): string {
+        return this.databaseKey;
     }
 
     protected override resolveCollection<TEntity extends {}>(schema: CompiledSchema<TEntity>) {

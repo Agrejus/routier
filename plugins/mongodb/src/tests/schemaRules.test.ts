@@ -54,13 +54,23 @@ describe("assertMongoSchema", () => {
         expect(() => assertMongoSchema(schema)).toThrow(/composite key \(tenant, sku\)/);
     });
 
-    it("rejects _id without identity", () => {
+    /**
+     * This used to be rejected. The rule required `.identity()` because Mongo fills in a
+     * missing `_id`, and the change tracker cannot match a value it never issued — but that
+     * only describes a key NOBODY supplies. A key without `.identity()` is by definition one
+     * the caller supplies, so Mongo never has to invent it, and the rule was stricter than the
+     * database.
+     *
+     * The generated full-text search index is the case that found it: its key is
+     * `${term}|${field}|${sourceId}`, built by index maintenance and never assignable.
+     */
+    it("accepts _id declared without identity, because the caller supplies it", () => {
         const schema = s.define("noIdentity", {
             _id: s.string().key(),
             name: s.string(),
         }).compile();
 
-        expect(() => assertMongoSchema(schema)).toThrow(/without `\.identity\(\)`/);
+        expect(() => assertMongoSchema(schema)).not.toThrow();
     });
 
     /**

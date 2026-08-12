@@ -4,7 +4,7 @@ import { Derive } from "../views/types";
 
 export type ViewInstanceCreator<
     TEntity extends {},
-    TCollection extends View<TEntity>
+    TCollection extends View<TEntity, any>
 > = new (
     dependencies: CollectionDependencies<TEntity>,
     derive: Derive<TEntity>

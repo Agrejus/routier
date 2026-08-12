@@ -10,7 +10,9 @@ export class CloneArrayHandler extends PropertyInfoHandler {
 
             // Arrays are leaf properties — they have no child PropertyInfos, so the
             // copy must happen here for every array, including nullable/optional ones.
-            // The `!= null` guard below covers absent values.
+            // The `!== undefined` guard below covers absent values; an explicit null is copied as
+            // null (see CloneValueHandler and known-defects #66), which is why every copy
+            // expression is wrapped rather than applied directly — `[...null]` throws.
             const entitySelectorPath = property.getSelectrorPath({ parent: "entity" });
 
             const slot = builder.get<SlotBlock>("if");
@@ -34,20 +36,23 @@ export class CloneArrayHandler extends PropertyInfoHandler {
                 copyExpression = `${entitySelectorPath}.map(function (v) { return v == null ? v : structuredClone(v); })`;
             }
 
+            // A null array is still a null, not an empty one, and neither spread nor map survives it
+            const nullSafeCopy = `${entitySelectorPath} === null ? null : ${copyExpression}`;
+
             if (property.parent == null) {
-                slot.if(`${entitySelectorPath} != null`).appendBody(`${resultAssignmentPath} = ${copyExpression}`);
+                slot.if(`${entitySelectorPath} !== undefined`).appendBody(`${resultAssignmentPath} = ${nullSafeCopy}`);
                 return builder;
             }
 
             // Nested array: ensure parent exists, then assign the copy (same pattern as CloneValueHandler)
             const parentPathArray = property.getParentPathArray();
-            const ifSlot = slot.if(`${entitySelectorPath} != null`);
+            const ifSlot = slot.if(`${entitySelectorPath} !== undefined`);
 
             for (let i = 0; i < parentPathArray.length; i++) {
                 const pathSoFar = ["result", ...parentPathArray.slice(0, i + 1)].join(".");
                 ifSlot.appendBody(`if (${pathSoFar} == null) ${pathSoFar} = {};`);
             }
-            ifSlot.appendBody(`${resultAssignmentPath} = ${copyExpression};`);
+            ifSlot.appendBody(`${resultAssignmentPath} = ${nullSafeCopy};`);
             return builder;
         }
 

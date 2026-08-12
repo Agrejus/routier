@@ -55,6 +55,14 @@ export type AuditChange<TEntity extends {} = Record<string, unknown>> = {
     readonly entity: TEntity;
     /** What changed, for an update. Absent for an add and a remove. */
     readonly delta?: Record<string, unknown>;
+    /**
+     * What those properties held BEFORE the update — `delta` says what they hold now.
+     *
+     * Always present for an update, so a before-and-after audit needs no extra declaration.
+     * Absent for an add and a remove — an add has no previous state, and a remove's whole
+     * `entity` is it.
+     */
+    readonly previous?: Record<string, unknown>;
     /** When the save was submitted. One instant for every change in it. */
     readonly at: Date;
 };
@@ -178,6 +186,7 @@ export class AuditRegistry {
                 id: idOf(update.entity),
                 entity: update.entity,
                 delta: update.delta,
+                previous: update.previous,
                 at,
             });
         }

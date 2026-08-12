@@ -3,7 +3,7 @@ import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers
 import { MySqlContainer, StartedMySqlContainer } from '@testcontainers/mysql';
 import { MongoDBContainer, StartedMongoDBContainer } from '@testcontainers/mongodb';
 import { MongoClient } from 'mongodb';
-import { describeVectorSearch, vectorContractSchema } from '@routier/test-utils';
+import { describeFullTextSearch, describeVectorSearch, vectorContractSchema } from '@routier/test-utils';
 import { PostgresDbPlugin } from '@routier/postgresql-plugin';
 import { MysqlDbPlugin } from '@routier/mysql-plugin';
 import { MongoClientDriver, MongoDbPlugin } from '@routier/mongodb-plugin';
@@ -79,6 +79,26 @@ suite('vector search on server-backed stores', () => {
         'PostgreSQL without pgvector (JSONB, scored in memory)',
         () => new PostgresDbPlugin(postgresConfig(plainPostgres)),
     );
+
+    // Full-text search on the server engines. Nothing here uses `tsvector`, `FULLTEXT` or
+    // FTS5 — see "Why the engine's own search is out". What each engine DOES contribute is
+    // the `IN` that narrows index rows, which is why these run at all.
+    describeFullTextSearch(
+        'PostgreSQL',
+        () => new PostgresDbPlugin(postgresConfig(plainPostgres)),
+    );
+
+    describeFullTextSearch(
+        'MySQL',
+        () => new MysqlDbPlugin(mysqlConfig()),
+    );
+
+    describeFullTextSearch(
+        'MongoDB',
+        () => new MongoDbPlugin(new MongoClientDriver(mongoClient as never, 'routier_search_e2e', { transactions: 'required' })),
+        { borrowsConnection: true },
+    );
+
 
     describeVectorSearch(
         'PostgreSQL with pgvector (native column, pushed down)',

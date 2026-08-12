@@ -62,9 +62,11 @@ only thing that does.** Everything else follows from it.
    dependency.
 4. **Dependency direction.** `core` imports no workspace package. `datastore` imports only
    `core`. A package referring to itself is not a violation.
-5. **`IDbPlugin` is frozen** at `identity`, `query`, `destroy`, `bulkPersist`. A fourth method
-   fails the suite. A feature that seems to need one is either a wrapper plugin or a
-   translator.
+5. **`IDbPlugin` is frozen** at `databaseName`, `query`, `destroy`, `bulkPersist`. A fourth
+   method fails the suite. A feature that seems to need one is either a wrapper plugin or a
+   translator. `databaseName` is not an operation — it is what the plugin IS, the identifier
+   for the database it talks to, and the rule is that the interface grows no new BEHAVIOUR.
+   See `specs/plugin-database-name.md`.
 
 ## What it caught on the first run
 

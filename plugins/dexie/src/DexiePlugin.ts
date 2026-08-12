@@ -1,6 +1,6 @@
 import Dexie from 'dexie';
 import { convertToDexieSchema } from "./utils";
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue } from '@routier/core/plugins';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, joinInPlugin } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
 import { BulkPersistResult, SchemaPersistChanges } from '@routier/core/collections';
 import { CompiledSchema, InferCreateType, PropertyInfo, SchemaId, SchemaTypes } from '@routier/core/schema';
@@ -47,6 +47,15 @@ export class DexiePlugin implements IDbPlugin, Disposable {
 
     private readonly dbName: string;
     private readonly version: number;
+
+    /**
+     * See `IDbPlugin.databaseName`. IndexedDB names are already scoped to an origin, so the
+     * name alone identifies the database — and two tabs on that origin opening it must share
+     * subscription channels, which is exactly what returning the name gives them.
+     */
+    get databaseName(): string {
+        return this.dbName;
+    }
 
     constructor(dbName: string, options?: DexiePluginOptions) {
         this.dbName = dbName;
@@ -299,6 +308,18 @@ export class DexiePlugin implements IDbPlugin, Disposable {
     }
 
     query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
+        // Two ordinary queries through this same path — outer first, so its keys narrow the inner
+        // read — and the shared hash join over the results. Both go through the index selection and
+        // windowing rules below rather than around them.
+        if (event.operation.options.has("join")) {
+            joinInPlugin(event, (innerEvent, innerDone) => this.query(innerEvent, innerDone), done);
+            return;
+        }
+
+        this._query(event, done);
+    }
+
+    private _query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
         this._doWork(event, (db, d) => {
 
             const { collectionName } = event.operation.schema;

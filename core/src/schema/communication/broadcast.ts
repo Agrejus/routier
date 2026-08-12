@@ -13,9 +13,15 @@ type StampedChanges<T> = { data: SubscriptionChanges<T>, timestamp: number };
 const registry: Record<string, SchemaChannel<unknown>> = {};
 
 /**
- * Channels are scoped by schema AND database identity (when the plugin provides one):
- * two databases holding the same schema must not see each other's change notifications.
- * Instances of the same database (e.g. another tab) share a scope and stay connected.
+ * Channels are scoped by schema AND database: two databases holding the same schema must not
+ * see each other's change notifications, while instances of the same database (another tab, a
+ * worker) share a scope and stay connected.
+ *
+ * Every datastore path supplies a scope — `IDbPlugin.databaseName` is required, so there is no
+ * longer a plugin that leaves it out. The unscoped key remains for callers who create a
+ * subscription directly off a schema without a database in hand; it is a channel per schema
+ * across the whole process, which is what asking for no scope means. A SENDER that omits the
+ * scope will not reach datastore listeners, because they are on `schema|databaseName`.
  */
 const getChannelKey = (schemaId: SchemaId, scope?: string) => scope == null ? String(schemaId) : `${schemaId}|${scope}`;
 

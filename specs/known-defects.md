@@ -154,7 +154,7 @@ over-notified (3+ fires per save).
 - View change-resolution works (a byproduct of #1/#6/#2 — postprocess no longer corrupts
   entities), so `View.ts` now **skips persisting** when the derived data already matches and
   **guards the subscription send** on non-empty changes, like `CollectionBase.saveChanges`.
-- Broadcast channels are scoped by **schema + database identity** (`IDbPlugin.identity`,
+- Broadcast channels are scoped by **schema + database name** (`IDbPlugin.databaseName`,
   provided by `EphemeralDataPlugin` as the database name): two unrelated databases holding
   the same schema no longer see each other's notifications, which was both the
   over-notification and the cross-store event storm that starved view population in large
@@ -1538,6 +1538,74 @@ commit was sitting beside it.
 A second fault was hiding behind the first: `hasTransforms` iterated the `SchemaCollection`
 directly, which is not iterable, so the fast path threw `schema.properties is not iterable`
 once it started running. `values()` is the accessor.
+
+---
+
+## #66 — a `null` written to a nullable property read back as `undefined` — **FIXED** (2026-08-11)
+
+```ts
+await store.rows.addAsync({ note: null });   // s.string().nullable()
+await store.saveChangesAsync();
+
+// A DIFFERENT store over the same database:
+const [row] = await reader.rows.toArrayAsync();
+row.note;   // was undefined on the memory family, null on SQLite
+```
+
+**The cause was `!= null` where `!== undefined` was meant**, in five generated-code handlers:
+`clone` (value, date, array) and the nullable/optional branches of `serialize` and `deserialize`
+for dates and arrays. A loose guard treats "the caller wrote null" and "the property is not there"
+as the same thing. They are not: the first is a value the schema declares as legal, and the second
+is a key that must not be invented. Every one of those guards now tests `!== undefined`, and the
+copy expressions that cannot survive a null (`[...x]`, `x.map(...)`) are wrapped rather than
+applied.
+
+The engines diverged because they lose it in different places. The memory family clones records on
+read, so `clone` dropped the key. A SQL plugin builds columns from the schema and binds the absent
+value as `NULL`, so it read back `null` — and then `deserialize` dropped it again for dates and
+arrays, which is why the fix is not only in `clone`.
+
+**Why nobody noticed.** Reading through the store that did the write looks correct on every
+backend: `postProcessQuery` attaches the result and `changeTracker.resolve(..., { merge: true })`
+merges it into the canonical instance the caller created — which still holds the `null` they
+passed. The stored value is never what you see. It takes a second store over the same database to
+observe it, and no test did that for a nullable property.
+
+**Found by joins.** A join result is a read-only projection with no change tracking, so nothing
+merges and the stored value reaches the caller unaltered. The cross-backend join conformance suite
+compared two engines on the same data and they disagreed. The join code was not implicated in
+either direction — it was the only reader honest enough to show the difference.
+
+Covered by `core/src/schema/cloneNulls.test.ts` (the guard itself, including that an ABSENT
+property is still omitted) and `plugins/memory/src/tests/nullRoundTrip.test.ts` (the round trip,
+read through a second store so no change tracker can hide it).
+
+---
+
+## #67 — a view reconciling after its store was destroyed crashed the process — **FIXED** (2026-08-11)
+
+```
+Cannot use a pool after calling end on the pool
+  at PostgresDbPlugin._doQueryWork
+```
+
+`pg` answers `pool.connect()` after `pool.end()` by THROWING synchronously. Thrown out of a
+callback-shaped method, that is not an error result anybody can handle — it becomes an unhandled
+exception attributed to whatever happens to be running.
+
+A query is not one synchronous call. It awaits the vector probe, and a view's reconcile awaits its
+own read before it writes. A store destroyed during either gap reaches the pool after it has ended.
+`View` already guards its own `isDisposed` at both points; the hole was below it, in a plugin that
+assumed nobody would call it after `destroy`.
+
+The plugin now sets a `destroyed` flag and routes both pool users through one `connect` helper that
+returns a `PluginDestroyedError` instead of throwing — the flag for the ordinary case, a try/catch
+for the race where `destroy` lands between the check and the call. A view then logs a failed write,
+which is what it already does for every other failure, rather than failing the run.
+
+**Only ever seen under load**, which is why it took adding two more container suites to surface it:
+before that the e2e project ran 17 suites and the window never opened. It reproduced in roughly one
+run in two with 19, and not once in three runs after the fix.
 
 ---
 

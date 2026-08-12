@@ -1,7 +1,8 @@
 import { Collection } from './collections/Collection';
 import { AuditRegistry } from './collection-builder/audit';
+import { FullTextSearchRegistry } from './collection-builder/fullTextSearch';
 import { CollectionBuilder } from './collection-builder/CollectionBuilder';
-import { CollectionPipelines } from './types';
+import { CollectionPipelines, DataStoreOptions, ResolvedDataStoreOptions, resolveDataStoreOptions } from './types';
 import { IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
 import { CompiledSchema, SchemaId } from '@routier/core/schema';
 import { TrampolinePipeline } from '@routier/core/pipeline';
@@ -17,6 +18,23 @@ import { CollectionDependencies } from './collections/types';
 import { ChangeTracker } from './change-tracking/ChangeTracker';
 import { DataBridge } from './data-access/DataBridge';
 import { assertIsNotNull } from '@routier/core';
+
+/**
+ * Removes the datastore-internal `previous` values from every update in a save.
+ *
+ * See `EntityUpdateInfo.previous`. Deleting the property rather than setting it to undefined,
+ * so a plugin that serializes the update — the HTTP family does — emits nothing at all for it.
+ */
+function stripPreviousValues(changes: BulkPersistChanges) {
+    for (const [, schemaChanges] of changes) {
+        for (const update of schemaChanges.updates) {
+
+            if (update.previous != null) {
+                delete update.previous;
+            }
+        }
+    }
+}
 
 /**
  * The main Routier class, providing collection management, change tracking, and persistence for entities.
@@ -37,6 +55,10 @@ export class DataStore implements Disposable {
     protected readonly _schemas: SchemaCollection;
     /** Audit declarations, shared by every collection — auditing runs once per save. */
     protected readonly _audits = new AuditRegistry();
+    /** Full-text search declarations, shared for the same reason as `_audits`. */
+    protected readonly _fullTextSearches = new FullTextSearchRegistry();
+    /** Store-wide settings with defaults resolved. See `DataStoreOptions`. */
+    protected readonly storeOptions: ResolvedDataStoreOptions;
 
     get schemas() {
         return new ReadonlySchemaCollection([...this._schemas]);
@@ -45,10 +67,12 @@ export class DataStore implements Disposable {
     /**
      * Constructs a new Routier instance.
      * @param dbPlugin The database plugin to use for persistence.
+     * @param options Store-wide settings. Every one has a default; see `DataStoreOptions`.
      */
-    constructor(dbPlugin: IDbPlugin) {
+    constructor(dbPlugin: IDbPlugin, options?: DataStoreOptions) {
         this.abortController = new AbortController();
         this.dbPlugin = dbPlugin;
+        this.storeOptions = resolveDataStoreOptions(options);
         this.collections = new Map<SchemaId, CollectionBase<any>>();
         this._schemas = new SchemaCollection();
         this.collectionPipelines = {
@@ -71,11 +95,18 @@ export class DataStore implements Disposable {
 
     /**
      * Creates a new collection builder for the given schema.
+     *
+     * The return type carries `this` — the CONCRETE store type, because `this` in a subclass's
+     * field initializer is that subclass. That is what lets a collection name its siblings:
+     * `store.players.join(s => s.playerMatches, ...)` type-checks `s` against the store the
+     * collection was declared in, so a wrong name is a compile error rather than a query that
+     * quietly returns nothing.
+     *
      * @param schema The compiled schema for the entity type.
      * @returns A CollectionBuilder for the entity type.
      */
-    protected collection<TEntity extends {}>(schema: CompiledSchema<TEntity>) {
-        const onCreated = (collection: CollectionBase<TEntity>) => {
+    protected collection<TEntity extends {}>(schema: CompiledSchema<TEntity>): CollectionBuilder<TEntity, this> {
+        const onCreated = (collection: CollectionBase<TEntity, any>) => {
 
             if (this.collections.has(schema.id)) {
                 throw new Error(`Cannot have two collections/views with the same schema.  Schema Collection Name: ${schema.collectionName}`);
@@ -92,16 +123,19 @@ export class DataStore implements Disposable {
             this.collectionPipelines,
             this.abortController.signal,
             new QueryOptionsCollection<TEntity>(),
-            schema.createSubscription(this.abortController.signal, this.dbPlugin.identity),
+            schema.createSubscription(this.abortController.signal, this.dbPlugin.databaseName),
             new ChangeTracker<TEntity>(schema),
             DataBridge.create<TEntity>(this.dbPlugin, schema, this.abortController.signal),
-            this._audits
+            this._audits,
+            this,
+            this.storeOptions,
+            this._fullTextSearches
         );
 
         // No mode is chosen here on purpose: the returned builder has no create() until
         // the caller declares HOW mutations are tracked — proxy(), diff(), immutable(),
         // or readonly().
-        return new CollectionBuilder<TEntity>({
+        return new CollectionBuilder<TEntity, this>({
             dependencies,
             onCollectionCreated: onCreated.bind(this),
         });
@@ -112,7 +146,7 @@ export class DataStore implements Disposable {
      * @param schema The compiled schema for the entity type.
      * @returns A CollectionBuilder for the entity type.
      */
-    protected view<TEntity extends {}>(schema: CompiledSchema<TEntity>) {
+    protected view<TEntity extends {}>(schema: CompiledSchema<TEntity>): ViewBuilder<TEntity, View<TEntity, this>, this> {
 
         if (schema.idProperties.some(x => x.isIdentity)) {
             throw new Error("View cannot have an identty key.  Must be a known/computed key so Routier can find and update the record");
@@ -124,7 +158,7 @@ export class DataStore implements Disposable {
             this._schemas.set(schema.id, schema as CompiledSchema<UnknownRecord>);
         }
 
-        const onCreated = (view: View<TEntity>) => {
+        const onCreated = (view: View<TEntity, this>) => {
 
             if (this.collections.has(schema.id)) {
                 throw new Error(`Cannot have two collections/views with the same schema.  Schema Collection Name: ${schema.collectionName}`);
@@ -142,15 +176,18 @@ export class DataStore implements Disposable {
             this.collectionPipelines,
             this.abortController.signal,
             new QueryOptionsCollection<TEntity>(),
-            schema.createSubscription(this.abortController.signal, this.dbPlugin.identity),
+            schema.createSubscription(this.abortController.signal, this.dbPlugin.databaseName),
             new ChangeTracker<TEntity>(schema),
             DataBridge.create<TEntity>(this.dbPlugin, schema, this.abortController.signal),
-            this._audits
+            this._audits,
+            this,
+            this.storeOptions,
+            this._fullTextSearches
         );
 
-        return new ViewBuilder<TEntity, View<TEntity>>({
+        return new ViewBuilder<TEntity, View<TEntity, this>, this>({
             dependencies,
-            instanceCreator: View<TEntity>,
+            instanceCreator: View<TEntity, this>,
             onCollectionCreated: onCreated.bind(this),
         });
     }
@@ -174,6 +211,16 @@ export class DataStore implements Disposable {
             this._transforming ??= hasTransforms(this._schemas);
 
             const transforming = this._transforming;
+
+            /**
+             * `previous` is for save-pipeline participants, and they have all run by now.
+             *
+             * Stripped rather than never added, because the participants read it off the same
+             * assembled changes the plugin is about to be given. Leaving it on would put the
+             * OLD value of every changed property into every plugin's payload — and over a
+             * wire, for the HTTP family — to be ignored by all of them.
+             */
+            stripPreviousValues(changes);
 
             const event: DbPluginBulkPersistEvent = {
                 id: uuid(8),
@@ -211,6 +258,7 @@ export class DataStore implements Disposable {
                 // the audit schema would otherwise try to match rows its change tracker never
                 // sent — and the caller's reported add count would include them.
                 this._audits.detach(changes, bulkPersistResult.data);
+                this._fullTextSearches.detach(changes, bulkPersistResult.data);
 
                 // The echo carries stored values, and the change tracker compares it against
                 // what the entity holds. Reversing it keeps the two sides equal.
@@ -233,13 +281,50 @@ export class DataStore implements Disposable {
                     done(PluginEventResult.success(bulkPersistResult.id, afterPersistResult.data.result))
                 });
 
+                /**
+                 * Index rows for adds whose key the DATABASE assigned.
+                 *
+                 * The only part of index maintenance that cannot ride the document's own
+                 * transaction: the row's key embeds the source id, and an identity key does
+                 * not exist until the insert has run. A second write is the only way to know
+                 * it, so an add is indexed a moment after it lands rather than with it.
+                 *
+                 * Its failure is reported to the CALLER, which is the difference that matters.
+                 * The view path this replaced logged and carried on, so an index could silently
+                 * disagree with the data; here a save whose index write fails is a failed save.
+                 */
+                const withDeferredAdds = (next: () => void) => {
+                    const deferred = this._fullTextSearches.deferredAdds(bulkPersistResult.data);
+
+                    if (deferred == null) {
+                        next();
+                        return;
+                    }
+
+                    this.dbPlugin.bulkPersist({
+                        id: uuid(8),
+                        operation: deferred,
+                        schemas: this._schemas,
+                        source: "DataStore",
+                        action: "persist"
+                    }, (deferredResult) => {
+
+                        if (deferredResult.ok === Result.ERROR) {
+                            done(Result.error(deferredResult.error));
+                            return;
+                        }
+
+                        next();
+                    });
+                };
+
                 if (transforming === false) {
-                    afterPersist();
+                    withDeferredAdds(afterPersist);
                     return;
                 }
 
                 applyFromPersistResult(event, bulkPersistResult.data)
-                    .then(afterPersist)
+                    .then(() => withDeferredAdds(afterPersist))
                     .catch(error => done(Result.error(error)));
             });
 
@@ -274,6 +359,12 @@ export class DataStore implements Disposable {
             // collection. Running one during its own collection's prepare would show it only
             // part of the save, and what it saw would depend on declaration order.
             this._audits.apply(preparedChangesResult.data, this._schemas);
+
+            // After auditing, and for the same reason it runs here: the batch is complete, so
+            // index rows are computed from everything this save does rather than from whichever
+            // collection happened to be declared first. They join the same
+            // `BulkPersistChanges`, which is what makes the index commit with the documents.
+            this._fullTextSearches.apply(preparedChangesResult.data);
 
             this.onSavePreparedChanges(preparedChangesResult.data, done);
         });

@@ -2,6 +2,7 @@ import { IdType } from "../../schema/types";
 import { UnknownRecord } from "../../utilities/types";
 import { QueryOption } from "../query/types";
 import { nearestBy } from "../query/similarity";
+import { IQuery } from "../types";
 import { DataTranslator } from "./DataTranslator";
 
 /**
@@ -31,7 +32,27 @@ const toVector = (value: unknown): number[] | null => {
     }
 };
 
+/**
+ * What the statement that produced these rows actually did.
+ *
+ * Supplied by the plugin because only its query builder knows: an extension may be missing, a
+ * window may have made a pushdown unsafe, an inner filter may have had no column to compare
+ * against. Every flag defaults to false — the safe direction, since doing the work twice is slow
+ * and skipping it is wrong.
+ */
+export type SqlPushdown = {
+    /** The statement contained a real `INNER JOIN`/`LEFT JOIN` and its rows are already tuples. */
+    join?: boolean;
+};
+
 export class SqlTranslator<TRoot extends {}, TShape> extends DataTranslator<TRoot, TShape> {
+
+    protected readonly pushedDown: SqlPushdown;
+
+    constructor(query: IQuery<TRoot, TShape>, pushedDown: SqlPushdown = {}) {
+        super(query);
+        this.pushedDown = pushedDown;
+    }
 
     count<TResult extends number>(data: unknown, _: QueryOption<TShape, "count">): TResult {
         if (Array.isArray(data) && data.length > 0) {
@@ -114,6 +135,31 @@ export class SqlTranslator<TRoot extends {}, TShape> extends DataTranslator<TRoo
         const column = property?.getResolvedName() ?? propertyName;
 
         return nearestBy(data, vector, count, row => toVector((row as UnknownRecord)[column])) as TShape;
+    }
+
+    /**
+     * Passes through only when the statement really did contain the `JOIN`, and refuses otherwise.
+     *
+     * The pass-throughs above are safe unconditionally because the SQL that produced these rows
+     * contained the corresponding clause. A join is not like that: if the plugin did not emit one,
+     * these rows are the outer side alone, and passing them through hands the caller entities
+     * where the contract says tuples — every `([outer, inner]) => ...` lambda downstream then
+     * destructures the wrong object, and nothing errors.
+     *
+     * So the plugin has to say, and the default is to refuse. A plugin that DID emit the join has
+     * already split each flat row into its two deserialized halves (`splitJoinRows` in
+     * `@routier/sql-plugin-core`), so by the time the option is walked the work is done.
+     */
+    join(data: unknown, option: QueryOption<TShape, "join">): TShape {
+        if (this.pushedDown.join === true && option.target === "database") {
+            return data as TShape;
+        }
+
+        throw new Error(
+            `This SQL plugin did not push the join down, so it cannot produce the pairs.  Kind: ${option.value.kind}.  ` +
+            `Emitting the JOIN is the plugin's job: build the joined statement with buildJoinStatement, split the rows with ` +
+            `splitJoinRows, and construct this translator with { join: true }.`
+        );
     }
 
     group<T>(data: unknown, option: QueryOption<T, "group">): T {

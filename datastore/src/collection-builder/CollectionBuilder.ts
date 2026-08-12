@@ -10,13 +10,14 @@ import { CollectionBase } from '../collections/CollectionBase';
 import { CollectionDependencies } from '../collections/types';
 import { resolveSoftDelete, softDeleteScope } from './softDelete';
 import { AuditDerive } from './audit';
+import { FullTextSearchOptions, resolveFullTextSearch } from './fullTextSearch';
 
 type ModelessProps<TEntity extends {}> = {
     dependencies: CollectionDependencies<TEntity>;
-    onCollectionCreated: (collection: CollectionBase<TEntity>) => void;
+    onCollectionCreated: (collection: CollectionBase<TEntity, any>) => void;
 }
 
-type ConfiguredProps<TEntity extends {}, TCollection extends CollectionBase<TEntity>> = ModelessProps<TEntity> & {
+type ConfiguredProps<TEntity extends {}, TCollection extends CollectionBase<TEntity, any>> = ModelessProps<TEntity> & {
     instanceCreator: CollectionInstanceCreator<TEntity, TCollection>;
 }
 
@@ -35,6 +36,24 @@ function addSoftDelete<TEntity extends {}>(
 
     dependencies.changeTracker.enableSoftDelete(configuration);
     dependencies.scopedQueryOptions.add("filter", { filter: filter as Filter<TEntity>, expression, params: undefined });
+}
+
+/**
+ * Shared by both builder stages — full-text search is mode-independent.
+ *
+ * Registers the declaration and the generated index schema together. The index schema is
+ * registered with the STORE here rather than waiting for maintenance to be wired, because a
+ * plugin builds its table from the schema collection: a schema that arrives late is a table
+ * that does not exist when the first save tries to write to it.
+ */
+function addFullTextSearch<TEntity extends {}>(
+    dependencies: CollectionDependencies<TEntity>,
+    options: FullTextSearchOptions | undefined
+) {
+    const registration = resolveFullTextSearch(dependencies.schema, options);
+
+    dependencies.fullTextSearches.register(registration);
+    dependencies.schemas.set(registration.indexSchema.id, registration.indexSchema);
 }
 
 /** Shared by both builder stages — a scope is mode-independent. */
@@ -101,9 +120,9 @@ export class AuditingCollectionBuilder<TEntity extends {}, TAudit extends {}, TN
  *                    instances. A plain mutation throws instead of being silently lost.
  *  - `readonly()`  — data can only be read.
  */
-export class CollectionBuilder<TEntity extends {}> {
+export class CollectionBuilder<TEntity extends {}, TStore = unknown> {
 
-    private _onCollectionCreated: (collection: CollectionBase<TEntity>) => void;
+    private _onCollectionCreated: (collection: CollectionBase<TEntity, any>) => void;
     private dependencies: CollectionDependencies<TEntity>;
 
     constructor(props: ModelessProps<TEntity>) {
@@ -111,8 +130,8 @@ export class CollectionBuilder<TEntity extends {}> {
         this._onCollectionCreated = props.onCollectionCreated;
     }
 
-    private configure<TCollection extends CollectionBase<TEntity>>(instanceCreator: CollectionInstanceCreator<TEntity, TCollection>) {
-        return new ConfiguredCollectionBuilder<TEntity, TCollection>({
+    private configure<TCollection extends CollectionBase<TEntity, any>>(instanceCreator: CollectionInstanceCreator<TEntity, TCollection>) {
+        return new ConfiguredCollectionBuilder<TEntity, TCollection, TStore>({
             onCollectionCreated: this._onCollectionCreated,
             instanceCreator,
             dependencies: this.dependencies
@@ -121,7 +140,7 @@ export class CollectionBuilder<TEntity extends {}> {
 
     /** Live change tracking through a Proxy: every write is recorded as it happens. */
     proxy() {
-        return this.configure<Collection<TEntity>>(Collection);
+        return this.configure<Collection<TEntity, TStore>>(Collection);
     }
 
     /**
@@ -130,17 +149,17 @@ export class CollectionBuilder<TEntity extends {}> {
      * content-hash baseline taken when the entity was attached.
      */
     diff() {
-        return this.configure<DiffCollection<TEntity>>(DiffCollection);
+        return this.configure<DiffCollection<TEntity, TStore>>(DiffCollection);
     }
 
     /** Frozen reads; changes go through `update()` patches producing new instances. */
     immutable() {
-        return this.configure<ImmutableCollection<TEntity>>(ImmutableCollection);
+        return this.configure<ImmutableCollection<TEntity, TStore>>(ImmutableCollection);
     }
 
     /** Data can only be read. */
     readonly() {
-        return this.configure<ReadonlyCollection<TEntity>>(ReadonlyCollection);
+        return this.configure<ReadonlyCollection<TEntity, TStore>>(ReadonlyCollection);
     }
 
     /**
@@ -163,14 +182,48 @@ export class CollectionBuilder<TEntity extends {}> {
      * with the change they describe.
      */
     audit<TAudit extends {}>(auditSchema: CompiledSchema<TAudit>) {
-        return new AuditingCollectionBuilder<TEntity, TAudit, CollectionBuilder<TEntity>>(
+        return new AuditingCollectionBuilder<TEntity, TAudit, CollectionBuilder<TEntity, TStore>>(
             auditSchema,
             this.dependencies,
-            () => new CollectionBuilder<TEntity>({
+            () => new CollectionBuilder<TEntity, TStore>({
                 onCollectionCreated: this._onCollectionCreated,
                 dependencies: this.dependencies
             })
         );
+    }
+
+    /**
+     * Index this collection's `.searchable()` properties for full-text search.
+     *
+     * ```ts
+     * articles = this.collection(articleSchema)
+     *     .fullTextSearch()
+     *     .proxy()
+     *     .create();
+     * ```
+     *
+     * The schema decides WHAT can be indexed — `s.string().searchable()` — and this decides that
+     * it is. Marking properties without declaring this costs nothing: no index exists, and no
+     * save pays for one.
+     *
+     * Every option has a default, so the no-argument call is the whole opt-in:
+     *
+     * ```ts
+     * .fullTextSearch({ stopWords: 'english', minTokenLength: 3 })
+     * ```
+     *
+     * Supplying `tokenizer` replaces the built-in pipeline entirely, so it cannot be combined
+     * with `lowercase`, `minTokenLength`, `maxTokenLength` or `stopWords` — that throws rather
+     * than ignoring them.
+     */
+    fullTextSearch(options?: FullTextSearchOptions): CollectionBuilder<TEntity, TStore> {
+
+        addFullTextSearch(this.dependencies, options);
+
+        return new CollectionBuilder<TEntity, TStore>({
+            onCollectionCreated: this._onCollectionCreated,
+            dependencies: this.dependencies
+        });
     }
 
     /**
@@ -193,11 +246,11 @@ export class CollectionBuilder<TEntity extends {}> {
      * collections over one schema, and reading deleted rows is different enough to be worth
      * its own declaration anyway.
      */
-    softDelete(selector: GenericFunction<InferType<TEntity>, unknown>): CollectionBuilder<TEntity> {
+    softDelete(selector: GenericFunction<InferType<TEntity>, unknown>): CollectionBuilder<TEntity, TStore> {
 
         addSoftDelete(this.dependencies, selector);
 
-        return new CollectionBuilder<TEntity>({
+        return new CollectionBuilder<TEntity, TStore>({
             onCollectionCreated: this._onCollectionCreated,
             dependencies: this.dependencies
         });
@@ -221,7 +274,7 @@ export class CollectionBuilder<TEntity extends {}> {
      * @param expression A filter expression that will be AND-ed with all user queries
      * @returns A builder for chaining additional configuration
      */
-    scope(expression: Filter<InferType<TEntity>>): CollectionBuilder<TEntity>;
+    scope(expression: Filter<InferType<TEntity>>): CollectionBuilder<TEntity, TStore>;
     /**
      * Apply a global, parameterized filter (scope) to the collection.
      *
@@ -235,12 +288,12 @@ export class CollectionBuilder<TEntity extends {}> {
      * @param params Parameters passed to the selector (excluding `collectionName`, which is auto‑injected)
      * @returns A builder for chaining additional configuration
      */
-    scope<P extends {}>(selector: ParamsFilter<InferType<TEntity>, P>, params: P): CollectionBuilder<TEntity>;
-    scope<P extends {} = never>(selector: ParamsFilter<InferType<TEntity>, P> | Filter<InferType<TEntity>>, params?: P): CollectionBuilder<TEntity> {
+    scope<P extends {}>(selector: ParamsFilter<InferType<TEntity>, P>, params: P): CollectionBuilder<TEntity, TStore>;
+    scope<P extends {} = never>(selector: ParamsFilter<InferType<TEntity>, P> | Filter<InferType<TEntity>>, params?: P): CollectionBuilder<TEntity, TStore> {
 
         addScope(this.dependencies, selector, params);
 
-        return new CollectionBuilder<TEntity>({
+        return new CollectionBuilder<TEntity, TStore>({
             onCollectionCreated: this._onCollectionCreated,
             dependencies: this.dependencies
         });
@@ -251,9 +304,9 @@ export class CollectionBuilder<TEntity extends {}> {
  * A collection builder whose change-tracking mode has been chosen — the only builder with
  * `create()`.
  */
-export class ConfiguredCollectionBuilder<TEntity extends {}, TCollection extends CollectionBase<TEntity>> {
+export class ConfiguredCollectionBuilder<TEntity extends {}, TCollection extends CollectionBase<TEntity, any>, TStore = unknown> {
 
-    private _onCollectionCreated: (collection: CollectionBase<TEntity>) => void;
+    private _onCollectionCreated: (collection: CollectionBase<TEntity, any>) => void;
     private instanceCreator: CollectionInstanceCreator<TEntity, TCollection>;
     private dependencies: CollectionDependencies<TEntity>;
 
@@ -265,10 +318,10 @@ export class ConfiguredCollectionBuilder<TEntity extends {}, TCollection extends
 
     /** See CollectionBuilder.audit — it may also be declared after the mode is chosen. */
     audit<TAudit extends {}>(auditSchema: CompiledSchema<TAudit>) {
-        return new AuditingCollectionBuilder<TEntity, TAudit, ConfiguredCollectionBuilder<TEntity, TCollection>>(
+        return new AuditingCollectionBuilder<TEntity, TAudit, ConfiguredCollectionBuilder<TEntity, TCollection, TStore>>(
             auditSchema,
             this.dependencies,
-            () => new ConfiguredCollectionBuilder<TEntity, TCollection>({
+            () => new ConfiguredCollectionBuilder<TEntity, TCollection, TStore>({
                 onCollectionCreated: this._onCollectionCreated,
                 instanceCreator: this.instanceCreator,
                 dependencies: this.dependencies
@@ -276,12 +329,24 @@ export class ConfiguredCollectionBuilder<TEntity extends {}, TCollection extends
         );
     }
 
+    /** See CollectionBuilder.fullTextSearch — it may also be declared after the mode is chosen. */
+    fullTextSearch(options?: FullTextSearchOptions): ConfiguredCollectionBuilder<TEntity, TCollection, TStore> {
+
+        addFullTextSearch(this.dependencies, options);
+
+        return new ConfiguredCollectionBuilder<TEntity, TCollection, TStore>({
+            onCollectionCreated: this._onCollectionCreated,
+            instanceCreator: this.instanceCreator,
+            dependencies: this.dependencies
+        });
+    }
+
     /** See CollectionBuilder.softDelete — it may also be declared after the mode is chosen. */
-    softDelete(selector: GenericFunction<InferType<TEntity>, unknown>): ConfiguredCollectionBuilder<TEntity, TCollection> {
+    softDelete(selector: GenericFunction<InferType<TEntity>, unknown>): ConfiguredCollectionBuilder<TEntity, TCollection, TStore> {
 
         addSoftDelete(this.dependencies, selector);
 
-        return new ConfiguredCollectionBuilder<TEntity, TCollection>({
+        return new ConfiguredCollectionBuilder<TEntity, TCollection, TStore>({
             onCollectionCreated: this._onCollectionCreated,
             instanceCreator: this.instanceCreator,
             dependencies: this.dependencies
@@ -289,13 +354,13 @@ export class ConfiguredCollectionBuilder<TEntity extends {}, TCollection extends
     }
 
     /** See CollectionBuilder.scope — a scope may also be added after the mode is chosen. */
-    scope(expression: Filter<InferType<TEntity>>): ConfiguredCollectionBuilder<TEntity, TCollection>;
-    scope<P extends {}>(selector: ParamsFilter<InferType<TEntity>, P>, params: P): ConfiguredCollectionBuilder<TEntity, TCollection>;
-    scope<P extends {} = never>(selector: ParamsFilter<InferType<TEntity>, P> | Filter<InferType<TEntity>>, params?: P): ConfiguredCollectionBuilder<TEntity, TCollection> {
+    scope(expression: Filter<InferType<TEntity>>): ConfiguredCollectionBuilder<TEntity, TCollection, TStore>;
+    scope<P extends {}>(selector: ParamsFilter<InferType<TEntity>, P>, params: P): ConfiguredCollectionBuilder<TEntity, TCollection, TStore>;
+    scope<P extends {} = never>(selector: ParamsFilter<InferType<TEntity>, P> | Filter<InferType<TEntity>>, params?: P): ConfiguredCollectionBuilder<TEntity, TCollection, TStore> {
 
         addScope(this.dependencies, selector, params);
 
-        return new ConfiguredCollectionBuilder<TEntity, TCollection>({
+        return new ConfiguredCollectionBuilder<TEntity, TCollection, TStore>({
             onCollectionCreated: this._onCollectionCreated,
             instanceCreator: this.instanceCreator,
             dependencies: this.dependencies

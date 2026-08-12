@@ -4,6 +4,7 @@ import {
     DbPluginQueryEvent,
     IDbPlugin,
     ITranslatedValue,
+    joinInPlugin,
     QueryOrdering,
 } from "@routier/core/plugins";
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from "@routier/core/results";
@@ -50,16 +51,33 @@ export class MongoDbPlugin implements IDbPlugin {
 
     private readonly driver: MongoDriver;
 
-    readonly identity: string;
+    /** See `IDbPlugin.databaseName`. Defaults to the driver's database name. */
+    readonly databaseName: string;
 
-    constructor(driver: MongoDriver, identity?: string) {
+    constructor(driver: MongoDriver, databaseName?: string) {
         this.driver = driver;
-        this.identity = identity ?? driver.name;
+        this.databaseName = databaseName ?? driver.name;
     }
 
     // ---------------------------------------------------------------------------- query
 
     query<TRoot extends {}, TShape extends any = TRoot>(
+        event: DbPluginQueryEvent<TRoot, TShape>,
+        done: PluginEventCallbackResult<ITranslatedValue<TShape>>
+    ): void {
+        // Two ordinary queries through this same path — outer first, so its keys narrow the inner
+        // read — and the shared hash join over the results. `$lookup` is deliberately not used:
+        // pairing here is already correct, and the pipeline surface is not worth adding until a
+        // measurement says it is.
+        if (event.operation.options.has("join")) {
+            joinInPlugin(event, (innerEvent, innerDone) => this.query(innerEvent, innerDone), done);
+            return;
+        }
+
+        this._query(event, done);
+    }
+
+    private _query<TRoot extends {}, TShape extends any = TRoot>(
         event: DbPluginQueryEvent<TRoot, TShape>,
         done: PluginEventCallbackResult<ITranslatedValue<TShape>>
     ): void {

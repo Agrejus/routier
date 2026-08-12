@@ -1,3 +1,28 @@
+import { DEFAULT_SEMI_JOIN_KEY_THRESHOLD } from "@routier/core/plugins";
+
+/**
+ * Store-wide settings. Every field is optional and has a default that suits an ordinary store.
+ */
+export type DataStoreOptions = {
+    /**
+     * How many distinct outer keys are still worth sending as an `IN (...)` prefilter when a join
+     * reads its inner side. Default 500.
+     *
+     * Purely a cost knob. Below it, the inner read is narrowed to keys the outer side actually has;
+     * above it, the inner side is read under its own scopes and the surplus is discarded by the
+     * hash join. Both produce the same pairs — raise it if your inner collections are large and
+     * your engine is happy with long parameter lists, lower it if they are not.
+     */
+    semiJoinKeyThreshold?: number;
+};
+
+/** `DataStoreOptions` with every default filled in, which is what the internals actually read. */
+export type ResolvedDataStoreOptions = Required<DataStoreOptions>;
+
+export const resolveDataStoreOptions = (options?: DataStoreOptions): ResolvedDataStoreOptions => ({
+    semiJoinKeyThreshold: options?.semiJoinKeyThreshold ?? DEFAULT_SEMI_JOIN_KEY_THRESHOLD,
+});
+
 import { BulkPersistChanges, BulkPersistResult } from "@routier/core";
 import { TrampolinePipeline } from "@routier/core/pipeline";
 import { PartialResultType } from "@routier/core/results";

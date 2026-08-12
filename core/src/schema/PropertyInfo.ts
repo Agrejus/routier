@@ -77,6 +77,15 @@ export class PropertyInfo<T extends {}> {
     readonly innerSchema?: SchemaBase<unknown, any>;
     /** How many numbers this property holds if it is a vector, `null` otherwise. */
     readonly dimensions: number | null;
+    /** The longest value this property is declared to hold, `null` if it declares none. */
+    readonly maxLength: number | null;
+    /**
+     * Whether this property may be tokenised into a full-text search index.
+     *
+     * True only for a string. See the constructor — this is derived from the declaration and
+     * the type together, not copied.
+     */
+    readonly isSearchable: boolean;
     /** Literal values allowed for this property. */
     readonly literals: T[];
     /** Tags passed from the schema */
@@ -100,6 +109,13 @@ export class PropertyInfo<T extends {}> {
         this.type = schema.type;
         this.literals = schema.literals;
         this.dimensions = schema.dimensions;
+        this.maxLength = schema.maxLength;
+        // Both, always. The builder already refuses `.searchable()` on anything but a string,
+        // but that gate is a type and types do not exist at runtime — a schema rebuilt from
+        // hand-written JSON can set the raw flag on a number. Deriving the answer here means
+        // every reader gets a searchable property that is definitely a string, rather than each
+        // one having to remember to check.
+        this.isSearchable = schema.isSearchable && schema.type === SchemaTypes.String;
 
         if (schema instanceof SchemaArray) {
             this.innerSchema = schema.innerSchema;

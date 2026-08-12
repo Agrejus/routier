@@ -86,6 +86,22 @@ export type FileContentValue =
  */
 export type VectorValue = number[];
 
+/**
+ * What `s.string({ ... })` accepts.
+ *
+ * Declarations only. Core stores them and never acts on them; a backend that can use one does.
+ */
+export type StringOptions = {
+    /**
+     * The longest value the property is declared to hold.
+     *
+     * MySQL uses it for `VARCHAR(maxLength)`; without it every string column is
+     * `VARCHAR(255)`, which silently truncates longer values. Other backends ignore it. Core
+     * never validates a value against it — see `SchemaBase.maxLength`.
+     */
+    maxLength?: number;
+};
+
 export type ExpandedProperty = ExpandedChildProperty & {
     assignmentPath: string;
     selectorPath: string;
@@ -295,7 +311,7 @@ export type SchemaModifiers = "default" | "deserialize" |
     "nullable" | "optional" |
     "readonly" | "serialize" |
     "unmapped" | "computed" |
-    "distinct";
+    "distinct" | "searchable";
 
 /**
  * What a tagged property infers to.

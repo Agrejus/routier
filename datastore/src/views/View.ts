@@ -46,7 +46,7 @@ const serializeWrite = (plugin: IDbPlugin, work: () => Promise<void>): Promise<u
  * View that only allows data selection. Cannot add, remove, or update data.  Data is computed
  * and saved when subscriptions in the derived function change
  */
-export class View<TEntity extends {}> extends CollectionBase<TEntity> {
+export class View<TEntity extends {}, TStore = unknown> extends CollectionBase<TEntity, TStore> {
 
     protected derive: Derive<TEntity>;
     protected unsubscribe: DeriveResponse;

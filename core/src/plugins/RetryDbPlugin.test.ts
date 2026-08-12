@@ -15,6 +15,8 @@ import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin 
 /** Counts calls and fails the first `failures` of them. */
 class FlakyPlugin implements IDbPlugin {
 
+    readonly databaseName = "test-db";
+
     queries = 0;
     persists = 0;
     destroys = 0;

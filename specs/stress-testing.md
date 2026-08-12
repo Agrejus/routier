@@ -439,8 +439,8 @@ Follow the workflow in `specs/known-defects.md`:
   correct rows through the fallback. Throughput collapse is the observable symptom.
 - **MemoryPlugin databases are process-global by name** (`dbs` registry). Use
   `uuidv4()` database names unless the scenario shares a database on purpose.
-- **Broadcast channels are scoped by schema + `IDbPlugin.identity`.** Stores share
-  notifications only when their plugins report the same identity. An open channel keeps
+- **Broadcast channels are scoped by schema + `IDbPlugin.databaseName`.** Stores share
+  notifications only when their plugins report the same database name. An open channel keeps
   the event loop alive; `destroyAsync` every store you create.
 - **Subscription messages sent before a subscriber exists are dropped** (timestamp
   guard). Create subscribers before the writes they must observe.

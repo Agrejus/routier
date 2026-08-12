@@ -61,6 +61,18 @@ type Attachment<TEntity extends {}> = {
      * `HashType.Object`, which is exactly right — they cannot change.
      */
     snapshotHash?: string;
+    /**
+     * The entity as it was at attach / last persist, for diff-tracked collections that were
+     * asked for previous values.
+     *
+     * `snapshotHash` says THAT the entity changed; it cannot say what it held. Only a copy can,
+     * and only diff mode needs one — proxy keeps originals in `__tracking__.original` and
+     * immutable keeps `PendingUpdate.original`, both for free.
+     *
+     * This is what diff tracking pays for `previous` being standard: one clone per attached
+     * entity, held for as long as it is attached. Proxy and immutable pay nothing here.
+     */
+    snapshot?: InferType<TEntity>;
 };
 
 /**
@@ -98,6 +110,7 @@ export class ChangeTracker<TEntity extends {}> {
      * twice.
      */
     readonly immutable: ImmutableUpdates<TEntity>
+
     /**
      * Every generation of an added-but-unsaved row, mapped to the slot holding its current
      * value.
@@ -170,6 +183,9 @@ export class ChangeTracker<TEntity extends {}> {
             snapshotHash: this.changeTrackingType === "diff"
                 ? this.contentHash(doc)
                 : undefined,
+            snapshot: this.changeTrackingType === "diff"
+                ? this.schema.clone(doc)
+                : undefined,
         });
     }
 
@@ -182,6 +198,12 @@ export class ChangeTracker<TEntity extends {}> {
     private refreshSnapshot(attachment: Attachment<TEntity>) {
         if (attachment.snapshotHash != null) {
             attachment.snapshotHash = this.contentHash(attachment.doc);
+        }
+
+        // Re-taken alongside the hash, or the next save would report the state before LAST
+        // save as "previous" and a search index would try to delete rows that are already gone.
+        if (attachment.snapshot != null) {
+            attachment.snapshot = this.schema.clone(attachment.doc);
         }
     }
 
@@ -394,7 +416,27 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
                 ? ({} as InferType<TEntity>)
                 : this.serializeDelta(serializedEntity, tracking.changes);
 
-            changes.push({ entity: serializedEntity, delta, changeType })
+            const restored = snapshotDirty
+                ? undefined
+                // Proxy mode: originals are keyed by the same dotted paths as the changes, so
+                // restoring them over a clone rebuilds the entity as it was.
+                : this.restoreOriginals(canonicalAttachment.doc, tracking?.original);
+
+            changes.push({
+                entity: serializedEntity,
+                delta,
+                changeType,
+                previous: snapshotDirty
+                    // Diff mode: the baseline copy IS the previous entity, and the mode cannot
+                    // say which property moved, so every root is reported.
+                    ? this.serializePrevious(canonicalAttachment.snapshot, null)
+                    : restored != null
+                        ? this.serializePrevious(restored, tracking?.changes ?? null)
+                        // Nothing was recorded as changed — `markDirty()` rather than an edit.
+                        // The entity as it stands IS its previous state, and no property can be
+                        // named, so every root is reported for the same reason diff does.
+                        : this.serializePrevious(canonicalAttachment.doc, null),
+            })
         }
 
         // An immutably-updated row is normally invisible to the loop above: `update()` never
@@ -416,6 +458,9 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
                 entity: serializedEntity,
                 delta: this.serializeDelta(serializedEntity, update.patch),
                 changeType: "propertiesChanged",
+                // `original` is already the whole entity as it was — the one mode that needs no
+                // reconstruction at all.
+                previous: this.serializePrevious(update.original, update.patch),
             });
         }
 
@@ -436,6 +481,87 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
      * always sent whole, which is also what the JSON-column consumers require (a partial
      * subtree would overwrite the siblings that did not change).
      */
+    /**
+     * The entity as it was, rebuilt from a clone of what it is now.
+     *
+     * The proxy records the value each path held before its FIRST change and never overwrites
+     * it (see the `set` trap in `SchemaDefinition`), so putting those values back produces the
+     * state at the last save — not the state one edit ago. A property changed twice therefore
+     * reports what it held before the first change, which is the only answer that lets a
+     * consumer undo everything this save is about to do.
+     *
+     * Returns undefined when there is nothing to restore, so the caller reports no previous
+     * values rather than the current ones dressed up as old.
+     */
+    private restoreOriginals(doc: InferType<TEntity>, originals: Record<string, any> | undefined) {
+
+        if (originals == null) {
+            return undefined;
+        }
+
+        const paths = Object.keys(originals);
+
+        if (paths.length === 0) {
+            return undefined;
+        }
+
+        const restored = this.schema.clone(doc) as Record<string, any>;
+
+        for (const path of paths) {
+            // Dotted, and an array index is just a segment: "nested.inner.value", "values.2".
+            const segments = path.split(".");
+            let cursor: Record<string, any> | undefined = restored;
+
+            for (let i = 0; i < segments.length - 1 && cursor != null; i++) {
+                const next = cursor[segments[i]];
+                cursor = next != null && typeof next === "object" ? next : undefined;
+            }
+
+            if (cursor == null) {
+                // The parent no longer exists — it was replaced wholesale, so its own path
+                // carries the previous value and this one has nothing to add.
+                continue;
+            }
+
+            cursor[segments[segments.length - 1]] = originals[path];
+        }
+
+        return restored as InferType<TEntity>;
+    }
+
+    /**
+     * Previous values in the same shape as a delta: storage-side names, serialized values.
+     *
+     * `patch` names which properties to report. Pass null to report every root, which is what
+     * diff mode needs — a content hash cannot say which property moved.
+     */
+    private serializePrevious(previousEntity: InferType<TEntity> | undefined, patch: Record<string, any> | null) {
+
+        if (previousEntity == null) {
+            return undefined;
+        }
+
+        const serialized = this.schema.preprocess(previousEntity as InferCreateType<TEntity>);
+
+        if (patch != null) {
+            return this.serializeDelta(serialized, patch);
+        }
+
+        const previous: Record<string, unknown> = {};
+
+        for (const property of this.schema.properties) {
+
+            if (property.parent != null) {
+                continue;
+            }
+
+            const column = property.getResolvedName();
+            previous[column] = (serialized as Record<string, unknown>)[column];
+        }
+
+        return previous as any;
+    }
+
     private serializeDelta(serializedEntity: Record<string, unknown>, patch: Record<string, any>) {
         const roots = this.schema.properties.filter(p => p.parent == null);
         const delta: Record<string, unknown> = {};

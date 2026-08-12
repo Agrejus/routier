@@ -22,6 +22,7 @@ import {
     DbPluginBulkPersistEvent,
     DbPluginEvent,
     ITranslatedValue,
+    joinInPlugin,
     JsonTranslator,
 } from '@routier/core/plugins';
 import {
@@ -43,6 +44,16 @@ import { buildAuthErrorEvent, type AuthErrorEvent, type AuthErrorHandler } from 
 
 export interface HttpPluginOptions {
     getUrl: (collectionName: string) => string;
+    /**
+     * See `IDbPlugin.databaseName`. `getUrl` is a caller-supplied function of collection name,
+     * so there is no origin this plugin can read without inventing a collection to ask about —
+     * hence a plain option with a shared default.
+     *
+     * Set it whenever an application talks to more than one HTTP backend over the same schema:
+     * leaving both on the default makes them one database as far as subscriptions are
+     * concerned, and each would be notified of the other's writes.
+     */
+    databaseName?: string;
     /** Headers for every request (e.g. Authorization). Can be async. Re-evaluated per retry attempt. */
     getHeaders?: () => Promise<Record<string, string>> | Record<string, string>;
     /**
@@ -121,7 +132,11 @@ export class HttpDbPlugin implements IDbPlugin {
     private readonly queryRetryMaxAttempts: number;
     private readonly onAuthError?: AuthErrorHandler;
 
+    /** See `IDbPlugin.databaseName` and `HttpPluginOptions.databaseName`. */
+    readonly databaseName: string;
+
     constructor(options: HttpPluginOptions) {
+        this.databaseName = options.databaseName ?? "http";
         this.getUrl = options.getUrl;
         this.getHeaders = options.getHeaders;
         this.translateRemoteResponse = options.translateRemoteResponse;
@@ -216,6 +231,27 @@ export class HttpDbPlugin implements IDbPlugin {
         event: DbPluginQueryEvent<TRoot, TShape>,
         done: PluginEventCallbackResult<ITranslatedValue<TShape>>
     ): void {
+        /**
+         * Interpretation 3 from `specs/joins.md`: two ordinary requests, paired here.
+         *
+         * The join option is NOT sent. `buildQueryParams` serializes filters, sort and the window
+         * and ignores anything else, so each side goes out as the plain collection query it would
+         * have been — which is the point: no server has to know what a join is. Both requests get
+         * the full retry and re-auth treatment, because both are ordinary queries.
+         *
+         * The OUTER side goes first, so its keys narrow the inner request to rows that can actually
+         * pair — the saving is largest here, where the inner read is a whole extra round trip.
+         *
+         * Forwarding the whole option and letting the server do the work is the eventual version,
+         * and it waits on complete expression-tree serialization — a `PropertyExpression` still
+         * holds a live `PropertyInfo`. Nothing about this design changes when that lands; the
+         * option was built serializable from the start.
+         */
+        if (event.operation.options.has("join")) {
+            joinInPlugin(event, (innerEvent, innerDone) => this.query(innerEvent, innerDone), done);
+            return;
+        }
+
         this.handleQuery(event, done).catch((err) => {
             done(PluginEventResult.error(event.id, err instanceof Error ? err : new Error(String(err))));
         });

@@ -23,6 +23,8 @@ const computedSchema = s.define("queryableComputed", {
 })).compile();
 
 class QueryRoutingProbePlugin implements IDbPlugin {
+
+    readonly databaseName = "test-db";
     queryEvents: DbPluginQueryEvent<any, any>[] = [];
     bulkPersistEvents: DbPluginBulkPersistEvent[] = [];
     destroyEvents: DbPluginEvent[] = [];
@@ -262,7 +264,8 @@ describe("Queryable routing contracts", () => {
 
         const store = trackStore(new QueryableStore(plugin));
         let callbackCount = 0;
-        const sender = productsSchema.createSubscription();
+        // Scoped to the plugin's database, because that is where the store is listening.
+        const sender = productsSchema.createSubscription(undefined, plugin.databaseName);
 
         const unsub = store.products
             .where((x) => x.category === "office")

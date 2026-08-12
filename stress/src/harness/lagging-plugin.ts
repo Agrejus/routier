@@ -81,12 +81,12 @@ export class LaggingPlugin implements IDbPlugin {
     /**
      * The wrapped plugin's identity, passed through unchanged.
      *
-     * Subscription channels are scoped by schema plus identity. Swallowing it here would put
-     * a wrapped plugin on a different channel from an unwrapped one over the same database,
+     * Subscription channels are scoped by schema plus database name. Swallowing it here would
+     * put a wrapped plugin on a different channel from an unwrapped one over the same database,
      * and the scenario would be measuring the wrapper instead of the system.
      */
-    get identity() {
-        return this.inner.identity;
+    get databaseName() {
+        return this.inner.databaseName;
     }
 
     /** Callbacks still waiting on a timer. */

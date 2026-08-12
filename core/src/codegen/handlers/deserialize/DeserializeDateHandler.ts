@@ -28,12 +28,14 @@ export class DeserializeDateHandler extends PropertyInfoHandler {
             const entityAssignmentPath = property.getAssignmentPath({ parent: "entity" });
             const assignment = `${property.name}: typeof ${entitySelectorPath} === "string" ? new Date(${entitySelectorPath}) : ${entitySelectorPath}`;
 
-            // if it is nullable or optional, assign in an if block, otherwise we 
-            // could unintentionally assign null/undefined to a property that does not exist
+            // if it is nullable or optional, assign in an if block, otherwise we
+            // could unintentionally assign a property that does not exist. An explicit null IS
+            // assigned — a stored null is a value, and dropping it is known-defects #66. The
+            // expression passes null through, since null is not a string.
             if (property.isOptional || property.isNullable) {
                 const ifAssignment = `${entityAssignmentPath} = typeof ${entitySelectorPath} === "string" ? new Date(${entitySelectorPath}) : ${entitySelectorPath}`;
                 const rootPath = new SlotPath("if");
-                builder.get<ContainerBlock>(rootPath.get()).if(`${entitySelectorPath} != null`).appendBody(ifAssignment);
+                builder.get<ContainerBlock>(rootPath.get()).if(`${entitySelectorPath} !== undefined`).appendBody(ifAssignment);
                 return builder;
             }
 

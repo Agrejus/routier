@@ -275,6 +275,15 @@ export class HttpSwrDbPlugin implements IDbPlugin {
     private lastFlushStartedAt = 0;
     private isDestroyed = false;
 
+    /**
+     * The REMOTE's name. The swr store is a local cache of it, so two instances backed by one
+     * server are one database for subscription purposes — which is what makes their stores
+     * see each other's writes.
+     */
+    get databaseName(): string {
+        return this.httpPlugin.databaseName;
+    }
+
     constructor(
         swrStore: IDbPlugin,
         options: HttpSwrDbPluginOptions,
@@ -353,6 +362,27 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         event: DbPluginQueryEvent<TRoot, TShape>,
         done: PluginEventCallbackResult<ITranslatedValue<TShape>>
     ): void {
+        /**
+         * Refused, not attempted — and this is the honest answer rather than a missing feature.
+         *
+         * This plugin answers a read from its local store and revalidates against the remote,
+         * merging the two. A join makes both halves of that incoherent: the local store would
+         * return TUPLES (its own plugin can join), the remote returns rows, and merging one into
+         * the other produces something that is neither. The cache key would collide too — it is
+         * built from the serialized query, and the join option does not serialize, so two
+         * different joins over one collection would share an entry.
+         *
+         * `HttpDbPlugin` joins fine. Use it directly for a joined read, or project the pair you
+         * need with `.map()` on a plain query.
+         */
+        if (event.operation.options.has("join")) {
+            done(PluginEventResult.error(event.id, new Error(
+                "HttpSwrDbPlugin cannot execute a join: it merges a local read with a remote one, and the two sides " +
+                "would disagree about whether a row is an entity or a pair.  Use HttpDbPlugin for joined reads."
+            )));
+            return;
+        }
+
         this.queryAsync(event, done).catch((err) => {
             done(PluginEventResult.error(event.id, err instanceof Error ? err : new Error(String(err))));
         });
@@ -983,7 +1013,10 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         // raises the refcount permanently and the channel can never close — two MessagePort
         // handles held for the life of the process, per revalidation. This one exists only
         // to carry a single send.
-        const subscription = schema.createSubscription();
+        // Scoped to THIS database, because that is where the listeners are: a datastore
+        // subscribes on `schema|databaseName`, so a send with no scope lands on a channel
+        // nobody is listening to and the revalidation is silently never delivered.
+        const subscription = schema.createSubscription(undefined, this.databaseName);
 
         try {
             subscription.send({

@@ -20,7 +20,8 @@ export abstract class DataTranslator<TRoot extends {}, TShape> {
         sum: (data: unknown, option: QueryOption<TShape, "sum">) => this.sum<any>(data, option),
         take: (data: unknown, option: QueryOption<TShape, "take">) => this.take(data, option),
         group: (data: unknown, option: QueryOption<TShape, "group">) => this.group(data, option),
-        nearest: (data: unknown, option: QueryOption<TShape, "nearest">) => this.nearest(data, option)
+        nearest: (data: unknown, option: QueryOption<TShape, "nearest">) => this.nearest(data, option),
+        join: (data: unknown, option: QueryOption<TShape, "join">) => this.join(data, option)
     };
 
     constructor(query: IQuery<TRoot, TShape>) {
@@ -53,6 +54,23 @@ export abstract class DataTranslator<TRoot extends {}, TShape> {
      * whether its backend performed the search, and the compiler asks the question.
      */
     abstract nearest(data: unknown, option: QueryOption<TShape, "nearest">): TShape;
+
+    /**
+     * Abstract for the same reason as `nearest`, one step further.
+     *
+     * A translator that quietly passed a join through would not return an unsorted or unlimited
+     * result — it would return the OUTER rows, one object each where the contract says tuples,
+     * and every `([outer, inner]) => ...` lambda downstream would destructure the outer entity
+     * instead. Nothing errors; the answer is simply a different query's answer.
+     *
+     * So the compiler asks the question. Every translator must state how its backend joins:
+     * natively (pass through the rows the SQL already paired), in memory (the shared hash join
+     * over rows the plugin supplies), or not at all (throw, loudly, naming the backend).
+     *
+     * The output contract, whichever answer: an array of `[outer, inner]` tuples, each half
+     * fully deserialized into its OWN schema's entity shape.
+     */
+    abstract join(data: unknown, option: QueryOption<TShape, "join">): TShape;
 
     translate(data: unknown): ITranslatedValue<TShape> {
 

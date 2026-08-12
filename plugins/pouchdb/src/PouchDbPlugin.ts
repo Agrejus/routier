@@ -2,7 +2,7 @@ import PouchDB from 'pouchdb';
 import { PouchDbTranslator } from './PouchDbTranslator';
 import { SyncronousQueue, SyncronousUnitOfWork, WorkPipeline } from '@routier/core/pipeline';
 import { InferCreateType, InferType, PropertyInfo, SchemaId } from '@routier/core/schema';
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, EntityUpdateInfo, IDbPlugin, IQuery, ITranslatedValue } from '@routier/core/plugins';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, EntityUpdateInfo, IDbPlugin, IQuery, ITranslatedValue, joinInPlugin } from '@routier/core/plugins';
 import { CallbackResult, PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '@routier/core/results';
 import { assertIsNotNull } from '@routier/core/assertions';
 import { combineExpressions, ComparatorExpression, Expression, getProperties } from '@routier/core/expressions';
@@ -106,6 +106,16 @@ export class PouchDbPlugin implements IDbPlugin {
         this._options = options;
     }
 
+    /**
+     * See `IDbPlugin.databaseName`. The local database name — the same value two contexts
+     * opening one PouchDB database supply, so they share subscription channels. Remote sync
+     * targets are deliberately not part of it: two local databases replicating to one remote
+     * are still two databases.
+     */
+    get databaseName(): string {
+        return this._name;
+    }
+
     sync(schemas: ReadonlySchemaCollection) {
 
         assertIsNotNull(this._options?.sync, "Cannot start sync process without sync options.  Provide sync options in PouchDbPlugin constructor");
@@ -161,6 +171,65 @@ export class PouchDbPlugin implements IDbPlugin {
         return this.syncHandle;
     }
 
+    /**
+     * Fills in the `_rev` of any document about to be updated or removed that arrives without
+     * one, in a single lookup.
+     *
+     * PouchDB is the only backend in this repository that needs a revision to change a row, and
+     * it used to make that the CALLER's problem: a schema had to declare `_rev` and every
+     * entity had to carry the current value. That is this plugin's write protocol leaking into
+     * every schema written for it, and it made whole features unusable here — a generated
+     * search-index row is built from the document being saved, so it has an id and never a
+     * revision, and every edit to an indexed document failed with a conflict whose only
+     * detail was `true`.
+     *
+     * A revision is a fact this database owns, so this is the layer that should look it up.
+     * One `allDocs` for every id that needs one, only when at least one does, and never on the
+     * path where every entity already carries its own. Nothing above has to know.
+     *
+     * A missing row resolves to no revision and is left alone: an update to a document that is
+     * not there must still fail, and it fails the way it always did.
+     */
+    private _withRevisions(
+        db: PouchDB.Database,
+        documents: UnknownRecord[],
+        done: (error: unknown | null) => void
+    ) {
+        const missing = documents
+            .filter(document => document._rev == null && document._id != null)
+            .map(document => String(document._id));
+
+        if (missing.length === 0) {
+            done(null);
+            return;
+        }
+
+        db.allDocs({ keys: missing }).then(response => {
+            const revisions = new Map<string, string>();
+
+            for (const row of response?.rows ?? []) {
+                const revision = (row as { value?: { rev?: string, deleted?: boolean } }).value;
+
+                if (revision?.rev != null && revision.deleted !== true) {
+                    revisions.set(String(row.key), revision.rev);
+                }
+            }
+
+            for (const document of documents) {
+
+                if (document._rev == null) {
+                    const revision = revisions.get(String(document._id));
+
+                    if (revision != null) {
+                        document._rev = revision;
+                    }
+                }
+            }
+
+            done(null);
+        }).catch(error => done(error));
+    }
+
     private _identityBulkOperations(identitySchemaIds: SchemaId[], changes: BulkPersistChanges, result: BulkPersistResult, done: CallbackResult<never>): void {
 
         if (changes.aggregate.size === 0) {
@@ -198,7 +267,18 @@ export class PouchDbPlugin implements IDbPlugin {
                 const updatedDocuments = [...updates].map(w => w.change.entity);
                 const errors: any[] = [];
 
-                db.bulkDocs([...removes.map(w => ({ _id: w.entity._id, _rev: w.entity._rev, _deleted: true })), ...updatedDocuments], null, (error, response) => {
+                // Tombstones are built here rather than inline so a missing revision can be
+                // resolved into them before the write.
+                const tombstones = removes.map(w => ({ _id: w.entity._id, _rev: w.entity._rev, _deleted: true } as UnknownRecord));
+
+                this._withRevisions(db, [...tombstones, ...updatedDocuments] as UnknownRecord[], (revisionError) => {
+
+                if (revisionError != null) {
+                    d(Result.error(revisionError));
+                    return;
+                }
+
+                db.bulkDocs([...tombstones, ...updatedDocuments], null, (error, response) => {
 
                     if (error) {
                         d(Result.error(error));
@@ -333,6 +413,7 @@ export class PouchDbPlugin implements IDbPlugin {
                         d(Result.success());
                     });
                 });
+                });
             } catch (e) {
                 d(Result.error(e));
             }
@@ -370,10 +451,17 @@ export class PouchDbPlugin implements IDbPlugin {
         this._doWork((db, d) => {
             try {
 
-                db.bulkDocs([
-                    ...removes.map(x => ({ _id: x.entity._id, _rev: x.entity._rev, _deleted: true })),
-                    ...updates.map(x => x.change.entity)
-                ], null, (error, response) => {
+                const tombstones = removes.map(x => ({ _id: x.entity._id, _rev: x.entity._rev, _deleted: true } as UnknownRecord));
+                const updatedDocuments = updates.map(x => x.change.entity) as UnknownRecord[];
+
+                this._withRevisions(db, [...tombstones, ...updatedDocuments], (revisionError) => {
+
+                if (revisionError != null) {
+                    d(Result.error(revisionError));
+                    return;
+                }
+
+                db.bulkDocs([...tombstones, ...updatedDocuments], null, (error, response) => {
 
                     if (error != null) {
                         d(Result.error(error));
@@ -507,6 +595,7 @@ export class PouchDbPlugin implements IDbPlugin {
 
                         d(Result.success());
                     });
+                });
                 });
             } catch (e) {
                 d(Result.error(e));
@@ -794,10 +883,23 @@ export class PouchDbPlugin implements IDbPlugin {
 
     query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
 
-        const unitOfWork: SyncronousUnitOfWork = (d) => this._query<TRoot, TShape>(event, (r) => {
-            d();
-            done(r)
-        })
+        const unitOfWork: SyncronousUnitOfWork = (d) => {
+            const settle = (r: Parameters<typeof done>[0]) => {
+                d();
+                done(r);
+            };
+
+            // A join is two reads through `_query` — the UN-QUEUED path — on purpose: this unit of
+            // work already holds the queue, so routing them through `query` would make them wait on
+            // itself and the plugin would never answer. They are still serialized against every
+            // other query, because this slot is held for both.
+            if (event.operation.options.has("join")) {
+                joinInPlugin(event, (e, cb) => this._query(e, cb), settle as never);
+                return;
+            }
+
+            this._query<TRoot, TShape>(event, settle);
+        };
 
         this.queue.enqueue(unitOfWork.bind(this));
     }

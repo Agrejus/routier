@@ -9,17 +9,98 @@ import { BulkPersistChanges, BulkPersistResult } from "@routier/core/collections
 import { assertIsNotNull } from "@routier/core/assertions";
 import { GenericFunction } from "@routier/core/types";
 import { Filter, ParamsFilter } from "@routier/core/expressions";
-import { CollectionDependencies, RequestContext } from "./types";
+import { CollectionDependencies, JoinSide, JoinTarget, RequestContext } from "./types";
 import { unsafeCast } from "@routier/core";
 import { QueryableBuilder, QueryBuilderContext } from "../queryable/composers/QueryableBuilder";
+import { FullTextSearchIndexer } from "../search/FullTextSearchIndexer";
+import { createSearch, SearchOptions, SearchQueryable } from "../search/SearchQueryable";
 
-export abstract class CollectionBase<TEntity extends {}> implements Disposable {
+export abstract class CollectionBase<TEntity extends {}, TStore = unknown> implements Disposable {
 
     protected readonly dependencies: CollectionDependencies<TEntity>;
     protected _tag: unknown;
 
     get schema() {
         return this.dependencies.schema;
+    }
+
+    /**
+     * Operating the collection's search index — declared with `.fullTextSearch()` on the
+     * builder, operated here.
+     *
+     * ```ts
+     * const drift = await store.articles.fullTextSearch.check();
+     * if (drift.isHealthy === false) await store.articles.fullTextSearch.rebuild();
+     * ```
+     *
+     * Both throw on a collection that never declared an index, rather than reporting a healthy
+     * index that does not exist.
+     */
+    fullTextSearch = {
+        /**
+         * What is wrong with the index, changing nothing.
+         *
+         * A scheduled job should call this before `rebuild`: a repair that silently fixes drift
+         * also hides whatever caused it.
+         */
+        // `async` so a collection with no index REJECTS rather than throwing synchronously.
+        // An awaited call that throws before returning a promise escapes the caller's
+        // try/catch around the await, which is a trap for an otherwise async API.
+        check: async () => this.searchIndexer().check(),
+        /**
+         * Makes the index match the documents, writing only the differences.
+         *
+         * Idempotent and safe to run on a schedule. Reads every document, so it belongs in a
+         * scheduled job rather than on a request path.
+         */
+        rebuild: async () => this.searchIndexer().rebuild(),
+    };
+
+    /**
+     * Ranked full-text search over the properties marked `.searchable()`.
+     *
+     * ```ts
+     * const hits = await store.articles
+     *     .search('copper pipe')
+     *     .where(x => x.published === true)
+     *     .take(10)
+     *     .toArrayAsync();
+     *
+     * const loose = await store.articles
+     *     .search(x => x.body, 'copper pipe', { match: 'any' })
+     *     .toArrayAsync();
+     * ```
+     *
+     * Results carry a readonly `score` and are ordered by it, then by key. `map()` drops the
+     * score; `sort()` replaces the ranking. Requires `.fullTextSearch()` on the collection.
+     */
+    search(terms: string, options?: SearchOptions): SearchQueryable<TEntity>;
+    search(selector: GenericFunction<InferType<TEntity>, string>, terms: string, options?: SearchOptions): SearchQueryable<TEntity>;
+    search(selectors: GenericFunction<InferType<TEntity>, string>[], terms: string, options?: SearchOptions): SearchQueryable<TEntity>;
+    search(...args: unknown[]) {
+        const registration = this.dependencies.fullTextSearches.get(this.dependencies.schema.id);
+
+        if (registration == null) {
+            throw new Error(
+                `'${this.dependencies.schema.collectionName}' has no search index. ` +
+                `Declare one with .fullTextSearch() on the collection builder.`
+            );
+        }
+
+        return createSearch<TEntity>(this.dependencies, registration, this.changeTrackingType, args);
+    }
+
+    private searchIndexer() {
+        const registration = this.dependencies.fullTextSearches.get(this.dependencies.schema.id);
+
+        if (registration == null) {
+            throw new Error(
+                `'${this.dependencies.schema.collectionName}' has no search index. ` +
+                `Declare one with .fullTextSearch() on the collection builder.`
+            );
+        }
+
+        return new FullTextSearchIndexer(registration, this.dependencies.plugin, this.dependencies.schemas);
     }
 
     constructor(
@@ -43,6 +124,9 @@ export abstract class CollectionBase<TEntity extends {}> implements Disposable {
         this.instance = this.instance.bind(this);
         this.subscribe = this.subscribe.bind(this);
         this.where = this.where.bind(this);
+        this.joinSide = this.joinSide.bind(this);
+        this.join = this.join.bind(this);
+        this.leftJoin = this.leftJoin.bind(this);
         this.sort = this.sort.bind(this);
         this.sortDescending = this.sortDescending.bind(this);
         this.nearest = this.nearest.bind(this);
@@ -301,26 +385,82 @@ export abstract class CollectionBase<TEntity extends {}> implements Disposable {
     }
 
     /**
+     * What this collection looks like as the INNER side of someone else's join.
+     *
+     * Public because a join is written from the other collection — `players.join(matches, …)` —
+     * and `matches` has to hand over three things it otherwise keeps to itself. Read
+     * `JoinSide` for why each is needed; the short version is that the scoped options are the
+     * ONLY place the inner side's soft-delete and `.scope()` filters exist once a join bypasses
+     * its read path.
+     *
+     * Views implement this by extending this class, which is a requirement rather than a
+     * convenience: full-text search joins its index view to its source collection.
+     */
+    joinSide(): JoinSide<TEntity> {
+        return {
+            schema: this.dependencies.schema,
+            plugin: this.dependencies.plugin,
+            scopedQueryOptions: this.dependencies.scopedQueryOptions
+        };
+    }
+
+    /**
+     * Pairs each row with every matching row of `inner` — an inner equi-join. See
+     * `QueryableExecutor.setJoinQueryOption`.
+     *
+     * ```ts
+     * store.players
+     *     .join(s => s.playerMatches, p => p._id, m => m.playerId)
+     *     .toArrayAsync();
+     * ```
+     *
+     * `s` is this store, so a sibling collection is named once. Pass a collection directly to join
+     * across two stores — see `JoinTarget`.
+     */
+    join<TInner extends {}, TKey extends string | number>(
+        inner: JoinTarget<TStore, TInner>,
+        outerKey: (outer: InferType<TEntity>) => TKey | null | undefined,
+        innerKey: (inner: InferType<TInner>) => TKey | null | undefined
+    ) {
+        const request = new RequestContext<TEntity>(this.changeTrackingType);
+        const queryable = new QueryableAsync<TEntity, InferType<TEntity>, TStore>(this.dependencies, request);
+
+        return queryable.join(inner, outerKey, innerKey);
+    }
+
+    /** Like `join`, but unmatched rows appear paired with `undefined`. */
+    leftJoin<TInner extends {}, TKey extends string | number>(
+        inner: JoinTarget<TStore, TInner>,
+        outerKey: (outer: InferType<TEntity>) => TKey | null | undefined,
+        innerKey: (inner: InferType<TInner>) => TKey | null | undefined
+    ) {
+        const request = new RequestContext<TEntity>(this.changeTrackingType);
+        const queryable = new QueryableAsync<TEntity, InferType<TEntity>, TStore>(this.dependencies, request);
+
+        return queryable.leftJoin(inner, outerKey, innerKey);
+    }
+
+    /**
      * Creates a query with a filter expression to filter entities in the collection.
      * @param expression Filter expression to apply to the collection
      * @returns QueryableAsync instance for chaining additional query operations
      */
-    where(expression: Filter<InferType<TEntity>>): QueryableAsync<TEntity, InferType<TEntity>>;
+    where(expression: Filter<InferType<TEntity>>): QueryableAsync<TEntity, InferType<TEntity>, TStore>;
     /**
      * Creates a query with a parameterized filter to filter entities in the collection.
      * @param selector Parameterized filter function
      * @param params Parameters to pass to the filter function
      * @returns QueryableAsync instance for chaining additional query operations
      */
-    where<P extends {}>(selector: ParamsFilter<InferType<TEntity>, P>, params: P): QueryableAsync<TEntity, InferType<TEntity>>;
+    where<P extends {}>(selector: ParamsFilter<InferType<TEntity>, P>, params: P): QueryableAsync<TEntity, InferType<TEntity>, TStore>;
     where<P extends {} = never>(selector: ParamsFilter<InferType<TEntity>, P> | Filter<InferType<TEntity>>, params?: P) {
         const request = new RequestContext<TEntity>(this.changeTrackingType);
         if (params == null) {
-            const queryable = new QueryableAsync<TEntity, InferType<TEntity>>(this.dependencies, request);
+            const queryable = new QueryableAsync<TEntity, InferType<TEntity>, TStore>(this.dependencies, request);
             return queryable.where(selector as Filter<InferType<TEntity>>);
         }
 
-        const queryable = new QueryableAsync<TEntity, InferType<TEntity>>(this.dependencies, request);
+        const queryable = new QueryableAsync<TEntity, InferType<TEntity>, TStore>(this.dependencies, request);
 
         return queryable.where(selector as ParamsFilter<InferType<TEntity>, P>, params);
     }
@@ -332,7 +472,7 @@ export abstract class CollectionBase<TEntity extends {}> implements Disposable {
      */
     sort(selector: EntityMap<InferType<TEntity>, InferType<TEntity>[keyof InferType<TEntity>]>) {
         const request = new RequestContext<TEntity>(this.changeTrackingType);
-        const result = new QueryableAsync<TEntity, InferType<TEntity>>(this.dependencies, request);
+        const result = new QueryableAsync<TEntity, InferType<TEntity>, TStore>(this.dependencies, request);
         return result.sort(selector);
     }
 
@@ -343,7 +483,7 @@ export abstract class CollectionBase<TEntity extends {}> implements Disposable {
      */
     sortDescending(selector: EntityMap<InferType<TEntity>, InferType<TEntity>[keyof InferType<TEntity>]>) {
         const request = new RequestContext<TEntity>(this.changeTrackingType);
-        const result = new QueryableAsync<TEntity, InferType<TEntity>>(this.dependencies, request);
+        const result = new QueryableAsync<TEntity, InferType<TEntity>, TStore>(this.dependencies, request);
 
         return result.sortDescending(selector);
     }
@@ -357,7 +497,7 @@ export abstract class CollectionBase<TEntity extends {}> implements Disposable {
      */
     nearest(selector: EntityMap<InferType<TEntity>, InferType<TEntity>[keyof InferType<TEntity>]>, vector: number[], count: number) {
         const request = new RequestContext<TEntity>(this.changeTrackingType);
-        const result = new QueryableAsync<TEntity, InferType<TEntity>>(this.dependencies, request);
+        const result = new QueryableAsync<TEntity, InferType<TEntity>, TStore>(this.dependencies, request);
 
         return result.nearest(selector, vector, count);
     }
@@ -379,7 +519,7 @@ export abstract class CollectionBase<TEntity extends {}> implements Disposable {
      */
     map<R extends InferType<TEntity>[keyof InferType<TEntity>] | {}>(expression: EntityMap<InferType<TEntity>, R>) {
         const request = new RequestContext<TEntity>(this.changeTrackingType);
-        const result = new QueryableAsync<TEntity, InferType<TEntity>>(this.dependencies, request);
+        const result = new QueryableAsync<TEntity, InferType<TEntity>, TStore>(this.dependencies, request);
         return result.map(expression);
     }
 
@@ -390,7 +530,7 @@ export abstract class CollectionBase<TEntity extends {}> implements Disposable {
      */
     skip(amount: number) {
         const request = new RequestContext<TEntity>(this.changeTrackingType);
-        const result = new QueryableAsync<TEntity, InferType<TEntity>>(this.dependencies, request);
+        const result = new QueryableAsync<TEntity, InferType<TEntity>, TStore>(this.dependencies, request);
         return result.skip(amount);
     }
 
@@ -401,7 +541,7 @@ export abstract class CollectionBase<TEntity extends {}> implements Disposable {
      */
     take(amount: number) {
         const request = new RequestContext<TEntity>(this.changeTrackingType);
-        const result = new QueryableAsync<TEntity, InferType<TEntity>>(this.dependencies, request);
+        const result = new QueryableAsync<TEntity, InferType<TEntity>, TStore>(this.dependencies, request);
         return result.take(amount);
     }
 
@@ -412,12 +552,12 @@ export abstract class CollectionBase<TEntity extends {}> implements Disposable {
      */
     toQueryable() {
         const request = new RequestContext<TEntity>(this.changeTrackingType);
-        return new QueryableAsync<TEntity, InferType<TEntity>>(this.dependencies, request);
+        return new QueryableAsync<TEntity, InferType<TEntity>, TStore>(this.dependencies, request);
     }
 
     apply<U, Shape>(composer: QueryableBuilder<TEntity, Shape, U>) {
         const props = unsafeCast<QueryBuilderContext<TEntity>>(composer);
-        return new QueryableAsync<TEntity, Shape>(this.dependencies, props.request);
+        return new QueryableAsync<TEntity, Shape, TStore>(this.dependencies, props.request);
     }
 
     /**

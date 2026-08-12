@@ -60,6 +60,8 @@
           url: /concepts/queries/terminal-methods.md
         - title: Query Composer
           url: /concepts/queries/query-composer.md
+        - title: Full-Text Search
+          url: /concepts/queries/full-text-search.md
 
 - title: Guides
   url: /guides/

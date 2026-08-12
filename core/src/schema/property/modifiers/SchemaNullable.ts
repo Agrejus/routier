@@ -3,6 +3,7 @@ import { SchemaBase } from "../base/SchemaBase";
 import { SchemaDefault } from "./SchemaDefault";
 import { SchemaDeserialize } from "./SchemaDeserialize";
 import { SchemaOptional } from "./SchemaOptional";
+import { SchemaSearchable } from "./SchemaSearchable";
 
 export class SchemaNullable<T extends any, TModifiers extends SchemaModifiers> extends SchemaBase<T, TModifiers> {
     instance: T;
@@ -16,6 +17,16 @@ export class SchemaNullable<T extends any, TModifiers extends SchemaModifiers> e
 
     optional() {
         return new SchemaOptional<T, TModifiers | "optional">(this);
+    }
+
+    /**
+     * Only callable when the property underneath is a string — see the same method on
+     * `SchemaOptional` for why the constraint is on `instance` rather than the whole class.
+     *
+     * A null value contributes no tokens.
+     */
+    searchable(this: { instance: string }) {
+        return new SchemaSearchable<T, TModifiers | "searchable">(this as unknown as SchemaBase<T, TModifiers>);
     }
 
     default<I = never>(value: DefaultValue<T | null, I>, injected?: I) {

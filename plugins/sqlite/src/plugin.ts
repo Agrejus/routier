@@ -1,6 +1,6 @@
-import { decodeJsonColumns } from '@routier/sql-plugin-core';
-import { OptimisticConcurrencyError } from '@routier/core';
-import { buildFromPersistOperation, buildFromQueryOperation, compiledSchemaToSqliteTable } from './utils';
+import { canPushDownJoin, decodeJsonColumns, splitJoinRows } from '@routier/sql-plugin-core';
+import { assertIsNotNull, OptimisticConcurrencyError, UnknownRecord } from '@routier/core';
+import { buildFromPersistOperation, buildFromQueryOperation, buildJoinQueryOperation, compiledSchemaToSqliteTable } from './utils';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, SqlTranslator } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
 import { BulkPersistResult } from '@routier/core/collections';
@@ -44,7 +44,13 @@ const isMissingTable = (error: unknown) => {
  */
 export class SqliteDbPluginBase implements IDbPlugin {
 
-    protected readonly databaseName: string;
+    /**
+     * See `IDbPlugin.databaseName`. This is the file path as the caller spelled it, which is
+     * as far as a plugin that also runs in the browser can go: resolving it needs a file
+     * system. Two spellings of one file — a relative and an absolute path — therefore read as
+     * two databases and will not share subscription channels. Pass a consistent path.
+     */
+    readonly databaseName: string;
     protected readonly driver: SqliteDriver;
 
     /**
@@ -154,6 +160,11 @@ export class SqliteDbPluginBase implements IDbPlugin {
         event: DbPluginQueryEvent<TRoot, TShape>,
         done: PluginEventCallbackResult<ITranslatedValue<TShape>>
     ): void {
+        if (event.operation.options.has("join")) {
+            this.queryJoined(event, done);
+            return;
+        }
+
         const createTableSQL = this.resolveTableCreateStatement(event.operation.schema);
         const translator = new SqlTranslator(event.operation);
         const { params, sql } = buildFromQueryOperation(event.operation);
@@ -169,6 +180,75 @@ export class SqliteDbPluginBase implements IDbPlugin {
                 done(PluginEventResult.success(event.id, translator.translate(decoded)));
             })
             .catch(error => done(PluginEventResult.error(event.id, error)));
+    }
+
+    /**
+     * A join, done by SQLite rather than in memory.
+     *
+     * The engine pairs the rows; everything else here is about the pairs arriving in the shape the
+     * contract promises. `splitJoinRows` cuts each flat row in two and deserializes each half
+     * against its own schema, so what the translator receives is already tuples — which is why it
+     * is constructed with `{ join: true }` and passes the option through.
+     *
+     * Both tables are created if missing, not just the outer one: a join against a collection
+     * nothing has written yet is a legitimate query returning no pairs, and "no such table" is not
+     * the right answer to it.
+     */
+    private queryJoined<TRoot extends {}, TShape extends any = TRoot>(
+        event: DbPluginQueryEvent<TRoot, TShape>,
+        done: PluginEventCallbackResult<ITranslatedValue<TShape>>
+    ): void {
+        try {
+            const join = event.operation.options.getLast("join");
+            assertIsNotNull(join, "A joined query reached queryJoined without a join option.");
+
+            const innerSchema = event.schemas.get(join.value.innerSchemaId);
+
+            if (innerSchema == null) {
+                done(PluginEventResult.error(event.id, new Error(
+                    `Cannot join: the inner collection's schema is not registered in this store.  SchemaId: ${join.value.innerSchemaId}`
+                )));
+                return;
+            }
+
+            /**
+             * An inner filter core could not push down means there is no column to compare — an
+             * unmapped or renamed property. Emitting the join anyway would silently return rows
+             * the inner side's scope excludes, so the plugin says it did NOT push down and the
+             * translator refuses rather than answering wrongly.
+             */
+            if (canPushDownJoin(join.value) === false) {
+                done(PluginEventResult.error(event.id, new Error(
+                    `Cannot push this join down to SQLite: the inner collection has a filter that cannot be expressed as SQL ` +
+                    `(an unmapped or renamed property), so the join would return rows its scope excludes.`
+                )));
+                return;
+            }
+
+            const { sql, params } = buildJoinQueryOperation(event.operation, innerSchema);
+            const translator = new SqlTranslator(event.operation, { join: true });
+
+            const createTables = [
+                this.resolveTableCreateStatement(event.operation.schema),
+                this.resolveTableCreateStatement(innerSchema)
+            ].join("\n");
+
+            this.withConnection(connection => this.runWithTable(connection, sql, params, createTables))
+                .then(rows => {
+                    const tuples = splitJoinRows({
+                        rows: rows as UnknownRecord[],
+                        kind: join.value.kind,
+                        join: join.value,
+                        outerSchema: event.operation.schema,
+                        innerSchema
+                    });
+
+                    done(PluginEventResult.success(event.id, translator.translate(tuples)));
+                })
+                .catch(error => done(PluginEventResult.error(event.id, error)));
+        } catch (error) {
+            done(PluginEventResult.error(event.id, error));
+        }
     }
 
     bulkPersist(

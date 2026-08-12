@@ -1,6 +1,6 @@
-import { decodeJsonColumns } from '@routier/sql-plugin-core';
-import { ConcurrencyDbPlugin } from '@routier/core';
-import { buildFromPersistOperation, buildFromQueryOperation, compiledSchemaToSqliteTable } from './utils';
+import { canPushDownJoin, decodeJsonColumns, splitJoinRows } from '@routier/sql-plugin-core';
+import { assertIsNotNull, ConcurrencyDbPlugin, UnknownRecord } from '@routier/core';
+import { buildFromPersistOperation, buildFromQueryOperation, buildJoinQueryOperation, compiledSchemaToSqliteTable } from './utils';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, SqlTranslator } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
 import { BulkPersistResult, SchemaCollection } from '@routier/core/collections';
@@ -83,6 +83,13 @@ export type D1DbPluginOptions = {
      * same reason: a caller who knows which database this is can supply the teardown.
      */
     deleteDatabase?: () => Promise<void>;
+    /**
+     * See `IDbPlugin.databaseName`. A D1 binding carries no name a plugin can read, so this
+     * is the only way to tell two of them apart. Required in practice if one Worker binds
+     * more than one D1 database and they share a schema — without it both get the default
+     * and would see each other's subscription notifications.
+     */
+    databaseName?: string;
 };
 
 /**
@@ -109,9 +116,13 @@ export class D1DbPlugin implements IDbPlugin {
      */
     private readonly tableCache = new Map<string, string>();
 
+    /** See `IDbPlugin.databaseName` and `D1DbPluginOptions.databaseName`. */
+    readonly databaseName: string;
+
     constructor(database: D1Database, options: D1DbPluginOptions = {}) {
         this.database = database;
         this.deleteDatabase = options.deleteDatabase;
+        this.databaseName = options.databaseName ?? "d1";
     }
 
     private resolveTableCreateStatement(schema: CompiledSchema<unknown>): string {
@@ -184,6 +195,11 @@ export class D1DbPlugin implements IDbPlugin {
         event: DbPluginQueryEvent<TRoot, TShape>,
         done: PluginEventCallbackResult<ITranslatedValue<TShape>>
     ): void {
+        if (event.operation.options.has("join")) {
+            this.queryJoined(event, done);
+            return;
+        }
+
         this.runQuery(event)
             .then(rows => {
                 // Nested objects, arrays and vectors are stored as JSON columns; decode them
@@ -194,6 +210,91 @@ export class D1DbPlugin implements IDbPlugin {
                 done(PluginEventResult.success(event.id, translator.translate(decoded)));
             })
             .catch(error => done(PluginEventResult.error(event.id, error)));
+    }
+
+    /**
+     * A join, done by D1 rather than in memory.
+     *
+     * The same shape as `SqliteDbPluginBase.queryJoined` — D1 *is* SQLite, so the statement and the
+     * row splitting are identical and both come from shared code. Only reaching the engine differs.
+     */
+    private queryJoined<TRoot extends {}, TShape extends any = TRoot>(
+        event: DbPluginQueryEvent<TRoot, TShape>,
+        done: PluginEventCallbackResult<ITranslatedValue<TShape>>
+    ): void {
+        try {
+            const join = event.operation.options.getLast("join");
+            assertIsNotNull(join, "A joined query reached queryJoined without a join option.");
+
+            const innerSchema = event.schemas.get(join.value.innerSchemaId);
+
+            if (innerSchema == null) {
+                done(PluginEventResult.error(event.id, new Error(
+                    `Cannot join: the inner collection's schema is not registered in this store.  SchemaId: ${join.value.innerSchemaId}`
+                )));
+                return;
+            }
+
+            // An inner filter with no column to compare against would make the emitted join return
+            // rows the inner side's scope excludes. Refusing beats answering wrongly.
+            if (canPushDownJoin(join.value) === false) {
+                done(PluginEventResult.error(event.id, new Error(
+                    `Cannot push this join down to D1: the inner collection has a filter that cannot be expressed as SQL ` +
+                    `(an unmapped or renamed property), so the join would return rows its scope excludes.`
+                )));
+                return;
+            }
+
+            const { sql, params } = buildJoinQueryOperation(event.operation, innerSchema);
+
+            this.runJoinQuery(event, innerSchema, sql, params)
+                .then(rows => {
+                    const tuples = splitJoinRows({
+                        rows: rows as UnknownRecord[],
+                        kind: join.value.kind,
+                        join: join.value,
+                        outerSchema: event.operation.schema,
+                        innerSchema
+                    });
+
+                    const translator = new SqlTranslator(event.operation, { join: true });
+
+                    done(PluginEventResult.success(event.id, translator.translate(tuples)));
+                })
+                .catch(error => done(PluginEventResult.error(event.id, error)));
+        } catch (error) {
+            done(PluginEventResult.error(event.id, error));
+        }
+    }
+
+    /**
+     * The joined read, creating EITHER table on demand.
+     *
+     * Both, not just the outer one: a join against a collection nothing has written yet is a
+     * legitimate query with no pairs, and "no such table" is not the right answer to it. D1 has no
+     * multi-statement call, so the two DDL statements go one at a time.
+     */
+    private async runJoinQuery<TRoot extends {}, TShape>(
+        event: DbPluginQueryEvent<TRoot, TShape>,
+        innerSchema: CompiledSchema<any>,
+        sql: string,
+        params: readonly unknown[]
+    ): Promise<unknown[]> {
+        this.assertNoConcurrency(event.schemas);
+
+        try {
+            return (await this.statement(sql, params).all()).results;
+        } catch (error) {
+            if (isMissingTable(error) === false) {
+                throw error;
+            }
+
+            for (const schema of [event.operation.schema, innerSchema]) {
+                await this.statement(this.resolveTableCreateStatement(schema)).all();
+            }
+
+            return (await this.statement(sql, params).all()).results;
+        }
     }
 
     /**

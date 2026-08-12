@@ -96,6 +96,14 @@ export class PluginSyncEngine implements IDbPlugin {
     private readonly mirrorPersistPayloadMode: MirrorPersistPayloadMode;
     private readonly pluginCallTimeoutMs: number;
 
+    /**
+     * The SOURCE's name. Mirrors are copies of one database rather than databases in their own
+     * right, so the engine identifies itself by what it is a view of.
+     */
+    get databaseName(): string {
+        return this.source.databaseName;
+    }
+
     constructor(options: PluginSyncEngineOptions) {
         this.source = options.source;
         this.queryPlugins = options.queryPlugins?.length ? options.queryPlugins : [options.source];

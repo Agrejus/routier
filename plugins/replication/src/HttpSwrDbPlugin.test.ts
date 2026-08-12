@@ -68,6 +68,7 @@ describe('HttpSwrDbPlugin persistToStore', () => {
         queryCalls = [];
         bulkPersistCalls = [];
         mockSwrStore = {
+            databaseName: 'swr-test-db',
             query: jest.fn((event: any, done: any) => {
                 queryCalls.push({ event, callback: done });
             }) as any,

@@ -33,6 +33,33 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
      * array arrives with no element type and clones through the slow path.
      */
     dimensions: number | null = null;
+    /**
+     * The longest string the property is declared to hold. `null` for every other type, and
+     * for a string that declares nothing.
+     *
+     * Declared here rather than on `SchemaString` for the same reason as `dimensions` above:
+     * `s.string({ maxLength: 4000 }).optional()` is a `SchemaOptional`, so anything reachable
+     * only through `SchemaString` is lost the moment a modifier is added.
+     *
+     * A declaration, never a validation. Core does not check a value against it and does not
+     * truncate. The backend that can use the number does: MySQL gives the column
+     * `VARCHAR(maxLength)` instead of the blanket `VARCHAR(255)`. Every other backend ignores
+     * it, because a string column that is already unbounded cannot be made more correct by
+     * knowing a bound.
+     */
+    maxLength: number | null = null;
+    /**
+     * Whether this string may be tokenised into a full-text search index.
+     *
+     * Set by `.searchable()`, and only ever true on a string. Eligibility, not membership: a
+     * collection that never declares `.searchIndex()` indexes nothing regardless.
+     *
+     * Copied by the constructor below, so `s.string().searchable().optional()` stays searchable.
+     * `isDistict` above is NOT copied, which means `.distinct().optional()` silently loses its
+     * uniqueness — do not follow that here. A searchable property that quietly stopped being
+     * indexed would take its terms out of the index and change what queries match.
+     */
+    isSearchable: boolean = false;
 
     foreignKeyDefinition: ForeignKey<unknown> | null = null;
     tags: string[] = [];
@@ -64,6 +91,8 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
             this.tags = entity.tags;
             this.transform = entity.transform;
             this.dimensions = entity.dimensions;
+            this.maxLength = entity.maxLength;
+            this.isSearchable = entity.isSearchable;
         }
 
         if (literals) {

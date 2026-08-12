@@ -101,6 +101,20 @@ export class QueryOptionsCollection<T> {
             }
         }
 
+        if (name === "join") {
+            const joinValue = value as QueryOptionValueMap<T>["join"];
+
+            // A join whose two sides live on different plugins cannot be sent to EITHER of
+            // them — neither can read the other's rows — so the option itself belongs to the
+            // memory half, where the datastore interprets it.
+            //
+            // Set BEFORE the item is created, unlike `nearest`'s ratchet below, because this
+            // moves the join option itself rather than everything after it.
+            if (joinValue.crossPlugin === true) {
+                this.nextExecutionTarget = "memory";
+            }
+        }
+
         const item: QueryCollectionItem<T, K> = {
             index: this.nextIndex,
             option: {
@@ -132,6 +146,48 @@ export class QueryOptionsCollection<T> {
             // push down what follows it, which is a limit over ten rows.
             this.nextExecutionTarget = "memory";
         }
+
+        if (name === "join") {
+            // Everything AFTER a join runs in memory, for the same reason as `nearest`: this
+            // collection cannot see HOW the plugin executed the join, and the rows it produced
+            // are TUPLES rather than entities of the root schema.
+            //
+            // A `take` sent to a backend that hash-joined in its translator would limit the
+            // OUTER rows read, not the pairs produced — a plausible-looking result with the
+            // wrong number of rows in it. Conjuncts that can safely run earlier are split off
+            // by the query builder BEFORE dispatch, which is the only exception.
+            this.nextExecutionTarget = "memory";
+        }
+    }
+
+    /**
+     * Splits the collection around the FIRST occurrence of `name`, preserving order.
+     *
+     * For a join: the options recorded before it operate on entity rows, the option itself
+     * produces tuples, and the ones after it operate on tuples. Three different shapes, so the
+     * caller has to run them in three steps rather than one pass.
+     */
+    splitAt<K extends QueryOptionName>(name: K): { before: QueryOptionsCollection<T>, at: QueryOption<T, K> | null, after: QueryOptionsCollection<T> } {
+        this.resolveEnumeration();
+
+        const sortedItems = this.enumeratedItems.toSorted((a, b) => a.index - b.index);
+        const before = new QueryOptionsCollection<T>();
+        const after = new QueryOptionsCollection<T>();
+        let at: QueryOption<T, K> | null = null;
+
+        for (let i = 0, length = sortedItems.length; i < length; i++) {
+            const { option } = sortedItems[i];
+
+            if (at == null && option.name === name) {
+                at = option as QueryOption<T, K>;
+                continue;
+            }
+
+            const destination = at == null ? before : after;
+            destination.add(option.name, option.value);
+        }
+
+        return { before, at, after };
     }
 
     /**

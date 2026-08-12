@@ -71,13 +71,18 @@ export function assertMongoSchema<T extends {}>(schema: CompiledSchema<T>): void
         );
     }
 
-    if (id.isIdentity !== true) {
-        throw new Error(
-            `${where} declares '_id' without \`.identity()\`. Mongo fills in a missing '_id' ` +
-            `itself, so without it a document would come back carrying a value the change ` +
-            `tracker never issued and cannot match to the entity that was saved.`
-        );
-    }
-
+    /**
+     * `_id` may be declared with OR without `.identity()`, and both are safe.
+     *
+     * This used to require `.identity()`, on the grounds that Mongo fills in a missing `_id`
+     * and the change tracker could not match a value it never issued. That reasoning only
+     * covers a key nobody supplies — and in Routier a key without `.identity()` is BY
+     * DEFINITION one the caller supplies, so Mongo never has to invent it. The rule was
+     * therefore stricter than the database and rejected a schema that works.
+     *
+     * Relaxed for the generated full-text search index, whose key is
+     * `${term}|${field}|${sourceId}` — built by index maintenance, never assigned, and never
+     * expressible as an identity. Ordinary caller-keyed schemas gain the same freedom.
+     */
     checked.add(schema as unknown as object);
 }

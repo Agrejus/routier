@@ -27,7 +27,7 @@ import { CollectionDependencies } from "./types";
  * no `add`/`addAsync` — so `.immutable()` produced a collection nothing could be added to.
  * `DiffCollection` already had this right.
  */
-export class ImmutableCollection<TEntity extends {}> extends Collection<TEntity> {
+export class ImmutableCollection<TEntity extends {}, TStore = unknown> extends Collection<TEntity, TStore> {
 
     constructor(
         dependencies: CollectionDependencies<TEntity>

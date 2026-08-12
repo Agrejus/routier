@@ -1,8 +1,8 @@
 import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema';
 import { Expression } from '@routier/core/expressions';
-import { IQuery, QueryField } from '@routier/core/plugins';
+import { IQuery, JoinQueryOptionValue, Query, QueryField } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
-import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, getDialect, sqlColumnProperties, toColumnValueMap, toSql, SqlDialect } from '@routier/sql-plugin-core';
+import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, getDialect, sqlColumnProperties, toColumnValueMap, toSql, SqlDialect } from '@routier/sql-plugin-core';
 import { SqlOperation } from './types';
 
 /**
@@ -86,14 +86,11 @@ const vectorColumnType = (prop: PropertyInfo<any>): string => {
 export function compiledSchemaToPostgresTable(schema: CompiledSchema<any>, tableName?: string, vectors: PostgresVectorSupport = NO_VECTOR_SUPPORT): string {
     const columns: string[] = [];
     const idProps = schema.idProperties;
-    const identityProps = idProps.filter(p => p.isIdentity);
     const table = tableName || schema.collectionName;
 
-    // Single identity PK logic
-    let singleIdentityPK: PropertyInfo<any> | undefined;
-    if (identityProps.length === 1 && idProps.length === 1) {
-        singleIdentityPK = identityProps[0];
-    }
+    // The one key that gets SERIAL/UUID treatment. Shared with the join key cast so the two
+    // cannot disagree about which columns are `uuid` — see singleIdentityKeyProperty.
+    const singleIdentityPK: PropertyInfo<any> | undefined = singleIdentityKeyProperty(schema) ?? undefined;
 
     // Root properties only: a nested subtree is ONE JSON column named for its root.
     // Iterating every property would emit a column per descendant, named by its leaf.
@@ -342,6 +339,62 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 }
 
 /**
+ * The one identity key that gets special column treatment, or `null`.
+ *
+ * A schema with a single identity id property maps it to `SERIAL` (number) or `UUID` (string);
+ * anything else — a composite key, a caller-supplied key — is an ordinary column. Extracted so the
+ * DDL and `postgresJoinKeyCast` cannot disagree about which columns are `uuid`, which they would
+ * eventually do if each restated the rule.
+ */
+export const singleIdentityKeyProperty = <T extends {}>(schema: CompiledSchema<T>): PropertyInfo<T> | null => {
+    const idProperties = schema.idProperties;
+    const identityProperties = idProperties.filter(p => p.isIdentity);
+
+    if (identityProperties.length !== 1 || idProperties.length !== 1) {
+        return null;
+    }
+
+    return identityProperties[0];
+};
+
+/** Whether this property's column is declared `UUID` — a single STRING identity key, and only that. */
+export const isUuidColumn = <T extends {}>(schema: CompiledSchema<T>, property: PropertyInfo<any> | null): boolean => {
+    if (property == null) {
+        return false;
+    }
+
+    const identity = singleIdentityKeyProperty(schema);
+
+    return identity != null && identity.name === property.name && identity.type === SchemaTypes.String;
+};
+
+/**
+ * Which side of a join has to be cast, and to what.
+ *
+ * PostgreSQL has no implicit `uuid = text`, and the everyday join shape crosses exactly that
+ * boundary: a string identity key is a `uuid` column, and the foreign key pointing at it is an
+ * ordinary `text` one. The uuid side is the one cast, never the text side — see `keyCast` in
+ * `buildJoinStatement` for why casting text to uuid is not an option.
+ *
+ * Nothing is cast when both columns are the same type, so an int-to-int or text-to-text join keeps
+ * its indexes.
+ */
+export const postgresJoinKeyCast = <TOuter extends {}, TInner extends {}>(
+    outerSchema: CompiledSchema<TOuter>,
+    innerSchema: CompiledSchema<TInner>,
+    join: JoinQueryOptionValue
+): { outer?: string; inner?: string } => {
+    const outerIsUuid = isUuidColumn(outerSchema, join.outerKey.property);
+    const innerIsUuid = isUuidColumn(innerSchema, join.innerKey.property);
+
+    if (outerIsUuid === innerIsUuid) {
+        return {};
+    }
+
+    return outerIsUuid ? { outer: 'text' } : { inner: 'text' };
+};
+
+/**
  * Builds a complete SQL query from an IQuery object for PostgreSQL.
  */
 export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuery<TEntity, TShape>, vectors: PostgresVectorSupport = NO_VECTOR_SUPPORT): SqlOperation & { nearestPushedDown: boolean } {
@@ -541,4 +594,43 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
     }
 
     return { sql: currentQuery, params, nearestPushedDown };
+}
+
+/**
+ * Builds the joined SELECT for a query carrying a `join` option.
+ *
+ * The emission itself is shared (`buildJoinStatement`); this supplies the two things only the
+ * plugin knows — the inner schema, which lives in the event's schema collection, and the outer
+ * side's own statement.
+ *
+ * The outer side is built by the ordinary single-table path and used as a derived table, because
+ * PostgreSQL applies `ORDER BY` and `LIMIT` to the JOINED rows: a `.take(2)` recorded before the
+ * join has to window the outer rows, not the pairs, or it answers a different question from every
+ * other backend. Its parameters are bound first, and the inner side's scope placeholders continue
+ * the `$n` numbering from there.
+ */
+export function buildJoinQueryOperation<TEntity extends {}, TShape, TInner extends {}>(
+    query: IQuery<TEntity, TShape>,
+    innerSchema: CompiledSchema<TInner>,
+    vectors: PostgresVectorSupport = NO_VECTOR_SUPPORT
+): SqlOperation & { join: JoinQueryOptionValue } {
+    const { before, at } = query.options.splitAt("join");
+
+    if (at == null) {
+        throw new Error("buildJoinQueryOperation was called for a query with no join option.");
+    }
+
+    const outer = buildFromQueryOperation(new Query(before, query.schema), vectors);
+
+    const joined = buildJoinStatement({
+        dialect: getDialect('postgresql'),
+        join: at.value,
+        outerSchema: query.schema,
+        innerSchema,
+        outer: outer.sql,
+        outerParams: outer.params,
+        keyCast: postgresJoinKeyCast(query.schema, innerSchema, at.value)
+    });
+
+    return { ...joined, join: at.value };
 }

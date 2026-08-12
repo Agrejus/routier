@@ -30,6 +30,8 @@ const otherSchema = s.define("cache_orders", {
 /** Returns a distinct row per call, so a hit and a miss are told apart by the DATA. */
 class CountingPlugin implements IDbPlugin {
 
+    readonly databaseName = "test-db";
+
     queries = 0;
     persists = 0;
 
@@ -180,6 +182,7 @@ describe("CacheDbPlugin", () => {
     it("invalidates even when the save fails", async () => {
         const inner = new CountingPlugin();
         const failing: IDbPlugin = {
+            databaseName: inner.databaseName,
             query: inner.query.bind(inner),
             bulkPersist: (event, done) => done(PluginEventResult.error(event.id, new Error("nope"))),
             destroy: inner.destroy.bind(inner),

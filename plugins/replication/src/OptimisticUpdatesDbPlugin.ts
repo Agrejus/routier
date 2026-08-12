@@ -44,6 +44,15 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
      * 
      * @param source The primary database plugin that will receive all operations first
      */
+    /**
+     * The SOURCE's name. The read plugin is a per-instance scratch copy with a uuid name;
+     * identifying by it would give every instance its own subscription scope and cut two
+     * stores over one source database off from each other.
+     */
+    get databaseName(): string {
+        return this.plugins.source.databaseName;
+    }
+
     constructor(source: IDbPlugin) {
         this.plugins = {
             source,

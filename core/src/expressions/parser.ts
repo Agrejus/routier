@@ -1257,6 +1257,37 @@ export const combineExpressions = (...expressions: Expression[]): Expression => 
     return result;
 };
 
+/**
+ * Parses an expression SOURCE FRAGMENT against one schema and one root name.
+ *
+ * `toExpression` starts from a function and works out its own roots. This starts from text, which
+ * is what a caller has when it has split a larger predicate apart — `p.rank > 10` lifted out of
+ * `([p, m]) => p.rank > 10 && m.won === true`.
+ *
+ * **A fragment naming anything other than `rootName` returns `NOT_PARSABLE`, and that is the
+ * point.** It is how a caller discovers which side of a join a conjunct belongs to: parse it
+ * against each side in turn, and exactly one succeeds for a single-side condition. A condition
+ * spanning both fails against both, which is the correct answer — it cannot be pushed to either.
+ *
+ * No params: a fragment carrying a params reference has no bag to resolve it against here, so it
+ * fails rather than binding to nothing.
+ *
+ * Deliberately NOT cached. The cache is keyed by function source, and a fragment is not a function
+ * — two different lambdas can contain the same fragment text against different schemas.
+ */
+export const parseFragment = (schema: CompiledSchema<any>, body: string, rootName: string): Expression => {
+    try {
+        const stream = new TokenStream(tokenize(body));
+        const parser = new ExpressionParser(schema, stream, rootName, null, undefined);
+
+        return parser.parse();
+    } catch {
+        // The failure is expected and informative — see above — so it is not logged. A caller that
+        // parses one conjunct against two schemas would otherwise warn on every successful split.
+        return Expression.NOT_PARSABLE;
+    }
+};
+
 export const toExpression = <T extends any, P extends any>(schema: CompiledSchema<any>, fn: Filter<T> | ParamsFilter<T, P>, params?: P) => {
     const stringifiedFunction = fn.toString();
 

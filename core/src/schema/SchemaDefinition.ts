@@ -615,6 +615,59 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                 throw new Error(`Schema must have a key.  Use .key() to mark a property as a key.  Collection Name: ${this.collectionName}`)
             }
 
+            /**
+             * The two things `.searchable()` cannot express in its own type.
+             *
+             * It is NOT checked here that the property is a string. The builder gates that:
+             * `searchable()` exists on `SchemaString`, and on `SchemaOptional`/`SchemaNullable`
+             * only when their `instance` is a string, so `s.number().optional().searchable()`
+             * does not compile. A builder that offers a method and then throws has gated
+             * nothing.
+             *
+             * A string nested in an `s.object()` does type-check, and cannot be indexed: v1
+             * keys index rows by a ROOT property name, so a nested one has nowhere to be
+             * recorded. Rejected rather than ignored — a silently unindexed property returns no
+             * rows for a query the caller believes is covered.
+             *
+             * A property NAME longer than 100 characters breaks the index key's length budget.
+             * The key is `${term}|${field}|${sourceId}` in a column declared `VARCHAR(255)`, and
+             * the field name is the only unbounded part of it. See "The index collection" in
+             * specs/full-text-search.md.
+             */
+            for (const property of properties) {
+
+                if (property.isSearchable === false) {
+                    continue;
+                }
+
+                if (property.parent != null) {
+                    throw new Error(
+                        `searchable() is declared on '${property.getAssignmentPath()}', which is nested inside another property. ` +
+                        `Full-text search indexes root-level string properties only.  Collection Name: ${this.collectionName}`
+                    );
+                }
+
+                if (property.name.length > 100) {
+                    throw new Error(
+                        `searchable() is declared on '${property.name}', whose name is ${property.name.length} characters. ` +
+                        `A searchable property name must be 100 characters or fewer, so the search index key fits its column.  ` +
+                        `Collection Name: ${this.collectionName}`
+                    );
+                }
+
+                // The index key is `${term}|${field}|${sourceId}`, and it is only unambiguous
+                // because no part of it can contain the separator. The default tokenizer cannot
+                // emit one — it splits on anything that is not a letter or digit — so the field
+                // name is the only piece that could.
+                if (property.name.includes("|")) {
+                    throw new Error(
+                        `searchable() is declared on '${property.name}', whose name contains '|'. ` +
+                        `That character separates the parts of a search index key and cannot appear in a field name.  ` +
+                        `Collection Name: ${this.collectionName}`
+                    );
+                }
+            }
+
             const enrichParams = enricherFunctionRoot.getParameters();
             const mergeParams = mergeFunctionRoot.getParameters();
 

@@ -79,8 +79,8 @@ export class RetryDbPlugin implements IDbPlugin {
         this.shouldRetry = options.shouldRetry ?? (() => true);
     }
 
-    get identity(): string | undefined {
-        return this.plugin.identity;
+    get databaseName(): string {
+        return this.plugin.databaseName;
     }
 
     query<TRoot extends {}, TShape extends any = TRoot>(

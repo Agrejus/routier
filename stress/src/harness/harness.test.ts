@@ -265,7 +265,7 @@ describe('LaggingPlugin', () => {
 
         return {
             calls,
-            identity: 'fake-identity',
+            databaseName: 'fake-database',
             query: (_event: any, done: any) => { calls.push('query'); done('query-result'); },
             bulkPersist: (_event: any, done: any) => { calls.push('persist'); done('persist-result'); },
             destroy: (_event: any, done: any) => { calls.push('destroy'); done('destroy-result'); },
@@ -275,11 +275,11 @@ describe('LaggingPlugin', () => {
     const wrap = (inner: any, options?: Partial<ConstructorParameters<typeof LaggingPlugin>[2]>) =>
         new LaggingPlugin(inner as any, new Rng(4242), { minMs: 10, maxMs: 20, ...options });
 
-    it('passes the wrapped plugin identity through', () => {
-        // Channels are scoped by schema plus identity. A wrapper that dropped it would put a
-        // lagged plugin on a different subscription channel from an unlagged one over the
-        // same database.
-        expect(wrap(fake()).identity).toBe('fake-identity');
+    it('passes the wrapped plugin database name through', () => {
+        // Channels are scoped by schema plus database name. A wrapper that dropped it would
+        // put a lagged plugin on a different subscription channel from an unlagged one over
+        // the same database.
+        expect(wrap(fake()).databaseName).toBe('fake-database');
     });
 
     it('runs the wrapped operation immediately and delays only the callback', () => {

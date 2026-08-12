@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
 import { Miniflare } from 'miniflare';
 import { uuidv4 } from '@routier/core';
-import { describePluginContract, describeVectorSearch } from '@routier/test-utils';
+import { describeFullTextSearch, describePluginContract, describeVectorSearch } from '@routier/test-utils';
 import { D1DbPlugin, type D1Database } from '@routier/sqlite-plugin/d1';
 
 /**
@@ -40,6 +40,7 @@ let miniflare: Miniflare;
  */
 let contractDatabase: D1Database;
 let vectorDatabase: D1Database;
+let searchDatabase: D1Database;
 let assumptionDatabase: D1Database;
 
 const binding = async (name: string): Promise<D1Database> =>
@@ -71,13 +72,14 @@ suite('Cloudflare D1 via Miniflare', () => {
             modules: true,
             script: 'export default {};',
             // One binding per suite below, so no two share a database.
-            d1Databases: { CONTRACT: 'contract', VECTORS: 'vectors', ASSUMPTIONS: 'assumptions' },
+            d1Databases: { CONTRACT: 'contract', VECTORS: 'vectors', ASSUMPTIONS: 'assumptions', SEARCH: 'search' },
         });
 
-        [contractDatabase, vectorDatabase, assumptionDatabase] = await Promise.all([
+        [contractDatabase, vectorDatabase, assumptionDatabase, searchDatabase] = await Promise.all([
             binding('CONTRACT'),
             binding('VECTORS'),
             binding('ASSUMPTIONS'),
+            binding('SEARCH'),
         ]);
     }, 120_000);
 
@@ -142,6 +144,12 @@ suite('Cloudflare D1 via Miniflare', () => {
     describeVectorSearch(
         'cloudflare d1 (miniflare)',
         () => new D1DbPlugin(vectorDatabase, { deleteDatabase: dropEverything(vectorDatabase) }),
+        { borrowsConnection: true },
+    );
+
+    describeFullTextSearch(
+        'cloudflare d1 (miniflare)',
+        () => new D1DbPlugin(searchDatabase, { deleteDatabase: dropEverything(searchDatabase) }),
         { borrowsConnection: true },
     );
 });

@@ -26,6 +26,8 @@ const toEchoPersistResult = (changes: DbPluginBulkPersistEvent["operation"]) => 
 };
 
 class RoutingProbePlugin implements IDbPlugin {
+
+    readonly databaseName = "test-db";
     queryEvents: DbPluginQueryEvent<any, any>[] = [];
     bulkPersistEvents: DbPluginBulkPersistEvent[] = [];
     destroyEvents: DbPluginEvent[] = [];

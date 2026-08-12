@@ -3,7 +3,7 @@ import { CollectionDependencies } from '../collections/types';
 
 export type CollectionInstanceCreator<
     TEntity extends {},
-    TCollection extends CollectionBase<TEntity>
+    TCollection extends CollectionBase<TEntity, any>
 > = new (
     container: CollectionDependencies<TEntity>
 ) => TCollection;

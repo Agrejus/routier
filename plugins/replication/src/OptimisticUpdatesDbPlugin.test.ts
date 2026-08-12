@@ -148,6 +148,7 @@ describe('OptimisticUpdatesDbPlugin integration', () => {
 
     it('surfaces hydration failure instead of serving an empty result', async () => {
         const failingSource: IDbPlugin = {
+            databaseName: 'failing-source',
             query: (event, done) => done({ ok: Result.ERROR, error: new Error('source down'), id: event.id } as any),
             bulkPersist: (event, done) => done({ ok: Result.ERROR, error: new Error('source down'), id: event.id } as any),
             destroy: (_event, done) => done({ ok: Result.SUCCESS, id: '' } as any),

@@ -1,7 +1,7 @@
 import { Pool } from 'pg';
-import { decodeJsonColumns } from '@routier/sql-plugin-core';
-import { OptimisticConcurrencyError } from '@routier/core';
-import { buildFromPersistOperation, buildFromQueryOperation, compiledSchemaToPostgresTable, NO_VECTOR_SUPPORT, PostgresVectorSupport } from './utils';
+import { canPushDownJoin, decodeJsonColumns, splitJoinRows } from '@routier/sql-plugin-core';
+import { assertIsNotNull, OptimisticConcurrencyError, PluginDestroyedError, UnknownRecord } from '@routier/core';
+import { buildFromPersistOperation, buildFromQueryOperation, buildJoinQueryOperation, compiledSchemaToPostgresTable, NO_VECTOR_SUPPORT, PostgresVectorSupport } from './utils';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue } from '@routier/core/plugins';
 import { PostgresSqlTranslator } from './PostgresSqlTranslator';
 import { CallbackResult, PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '@routier/core/results';
@@ -23,14 +23,53 @@ export interface PostgresDbPluginConfig {
     };
 }
 
+/**
+ * A stable, credential-free identifier for the server and database a config points at.
+ *
+ * The regex fallback exists so a connection string `URL` cannot parse still yields a usable
+ * identifier rather than throwing from a constructor that previously never threw — it strips
+ * the `user:password@` userinfo section, which is the only part that must not survive.
+ */
+const describeTarget = (config: PostgresDbPluginConfig): string => {
+    if (config.connectionString != null) {
+        try {
+            const url = new URL(config.connectionString);
+            return `postgres://${url.hostname}:${url.port || 5432}${url.pathname}`;
+        } catch {
+            return config.connectionString.replace(/\/\/[^@/]*@/, '//');
+        }
+    }
+
+    return `postgres://${config.host || 'localhost'}:${config.port || 5432}/${config.database}`;
+};
+
 export class PostgresDbPlugin implements IDbPlugin {
 
     private pool: Pool;
+    /**
+     * Set by `destroy`, so work already in flight fails as a destroyed plugin rather than throwing.
+     *
+     * A query is not one synchronous call: it awaits the vector probe, and a view's reconcile
+     * awaits its own read before writing. A store destroyed during either gap reaches
+     * `pool.connect()` after `pool.end()`, which `pg` answers by THROWING synchronously — out of a
+     * callback, past the caller, and straight into an unhandled exception. The view that issued it
+     * is not even being watched any more.
+     */
+    private destroyed = false;
     private tableCache: Record<string, string> = {};
     /** Resolved once per plugin instance; see `resolveVectorSupport`. */
     private vectorProbe: Promise<PostgresVectorSupport> | null = null;
 
+    /**
+     * See `IDbPlugin.databaseName`. Host, port and database rather than the bare database
+     * name, because `mydb` on two servers is two databases — and without credentials,
+     * because this value becomes part of a subscription channel key.
+     */
+    readonly databaseName: string;
+
     constructor(config: PostgresDbPluginConfig) {
+        this.databaseName = describeTarget(config);
+
         this.pool = new Pool({
             host: config.host || 'localhost',
             port: config.port || 5432,
@@ -48,6 +87,30 @@ export class PostgresDbPlugin implements IDbPlugin {
         this.pool.on('error', (err) => {
             logger.warn('[DB] PostgreSQL pool error on idle client', { error: err });
         });
+    }
+
+    /**
+     * `pool.connect`, with both ways a destroyed store can reach it turned into a normal error.
+     *
+     * Returns the failure rather than throwing, so each caller reports it through its own `done`
+     * — the callers are callback-shaped and an exception thrown past them becomes an unhandled
+     * rejection that fails whatever test happens to be running.
+     *
+     * The flag catches the ordinary case; the try/catch catches the race where `destroy` lands
+     * between the check and the call. Both are needed: `pg` throws synchronously from `connect`
+     * once the pool has ended.
+     */
+    private connect(onConnect: Parameters<Pool["connect"]>[0]): Error | null {
+        if (this.destroyed) {
+            return new PluginDestroyedError("the store was destroyed before this operation reached the pool");
+        }
+
+        try {
+            this.pool.connect(onConnect);
+            return null;
+        } catch (error) {
+            return error as Error;
+        }
     }
 
     private resolveSchema<TEntity extends {}>(schema: CompiledSchema<TEntity>, vectors: PostgresVectorSupport) {
@@ -99,6 +162,11 @@ export class PostgresDbPlugin implements IDbPlugin {
     }
 
     query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
+        if (event.operation.options.has("join")) {
+            this.queryJoined(event, done);
+            return;
+        }
+
         this.resolveVectorSupport().then(vectors => {
             this.resolveSchema(event.operation.schema, vectors);
 
@@ -106,7 +174,7 @@ export class PostgresDbPlugin implements IDbPlugin {
             // it into the SQL, and the translator has to be told the SAME answer — building
             // twice would let the statement and the decision about it drift apart.
             const built = buildFromQueryOperation(event.operation, vectors);
-            const translator = new PostgresSqlTranslator(event.operation, built.nearestPushedDown);
+            const translator = new PostgresSqlTranslator(event.operation, { nearest: built.nearestPushedDown });
 
             this._doQueryWork<TRoot, TShape>(event, built, vectors, (result) => {
                 if (result.ok === "error") {
@@ -126,7 +194,71 @@ export class PostgresDbPlugin implements IDbPlugin {
         });
     }
 
+    /**
+     * A join, done by PostgreSQL rather than in memory.
+     *
+     * The engine pairs the rows; `splitJoinRows` cuts each flat row back into two halves and
+     * deserializes each against its own schema, so the translator receives tuples already — which
+     * is why it is told `{ join: true }` and passes the option through.
+     */
+    private queryJoined<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
+        this.resolveVectorSupport().then(vectors => {
+            try {
+                const join = event.operation.options.getLast("join");
+                assertIsNotNull(join, "A joined query reached queryJoined without a join option.");
+
+                const innerSchema = event.schemas.get(join.value.innerSchemaId);
+
+                if (innerSchema == null) {
+                    done(PluginEventResult.error(event.id, new Error(
+                        `Cannot join: the inner collection's schema is not registered in this store.  SchemaId: ${join.value.innerSchemaId}`
+                    )));
+                    return;
+                }
+
+                // An inner filter with no column to compare against would make the emitted join
+                // return rows the inner side's scope excludes. Refusing beats answering wrongly.
+                if (canPushDownJoin(join.value) === false) {
+                    done(PluginEventResult.error(event.id, new Error(
+                        `Cannot push this join down to PostgreSQL: the inner collection has a filter that cannot be expressed as SQL ` +
+                        `(an unmapped or renamed property), so the join would return rows its scope excludes.`
+                    )));
+                    return;
+                }
+
+                // Both tables, not just the outer one: a join against a collection nothing has
+                // written yet is a legitimate query with no pairs.
+                this.resolveSchema(event.operation.schema, vectors);
+                this.resolveSchema(innerSchema, vectors);
+
+                const built = buildJoinQueryOperation(event.operation, innerSchema, vectors);
+                const translator = new PostgresSqlTranslator(event.operation, { join: true });
+
+                this._doQueryWork<TRoot, TShape>(event, built, vectors, (result) => {
+                    if (result.ok === "error") {
+                        done(PluginEventResult.error(event.id, result.error));
+                        return;
+                    }
+
+                    const tuples = splitJoinRows({
+                        rows: result.data as UnknownRecord[],
+                        kind: join.value.kind,
+                        join: join.value,
+                        outerSchema: event.operation.schema,
+                        innerSchema
+                    });
+
+                    done(PluginEventResult.success(event.id, translator.translate(tuples)));
+                }, innerSchema);
+            } catch (error) {
+                done(PluginEventResult.error(event.id, error));
+            }
+        });
+    }
+
     destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
+        this.destroyed = true;
+
         this.pool.end()
             .then(() => {
                 done(PluginEventResult.success(event.id));
@@ -169,7 +301,7 @@ export class PostgresDbPlugin implements IDbPlugin {
         vectors: PostgresVectorSupport,
         done: CallbackResult<BulkPersistResult>
     ): void {
-        this.pool.connect((err, client, release) => {
+        const failedToConnect = this.connect((err, client, release) => {
             if (err) {
                 return done(Result.error(err));
             }
@@ -395,15 +527,23 @@ export class PostgresDbPlugin implements IDbPlugin {
                 executeNext(0);
             });
         });
+
+        // The pool refused before the callback could ever run — report it here, since
+        // nothing inside the callback got the chance to.
+        if (failedToConnect != null) {
+            done(Result.error(failedToConnect));
+        }
     }
 
     private _doQueryWork<TRoot extends {}, TShape extends any = TRoot>(
         event: DbPluginQueryEvent<TRoot, TShape>,
         built: SqlOperation,
         vectors: PostgresVectorSupport,
-        done: CallbackResult<TShape>
+        done: CallbackResult<TShape>,
+        /** The inner side of a join, whose table must also exist before the statement can run. */
+        alsoCreate?: CompiledSchema<any>
     ) {
-        this.pool.connect((err, client, release) => {
+        const failedToConnect = this.connect((err, client, release) => {
             if (err) {
                 const nodeErr = err as NodeJS.ErrnoException;
                 const isConnectionError = nodeErr.message?.includes('ECONNREFUSED') || 
@@ -422,7 +562,10 @@ export class PostgresDbPlugin implements IDbPlugin {
                 return done(Result.error(err));
             }
 
-            const createTableSQL = this.resolveTableCreateStatement(event.operation.schema, vectors);
+            const createTableSQL = [
+                this.resolveTableCreateStatement(event.operation.schema, vectors),
+                ...(alsoCreate == null ? [] : [this.resolveTableCreateStatement(alsoCreate, vectors)])
+            ].join("\n");
             const { params, sql } = built;
 
             logger.debug('[DB] PostgreSQL query:', {
@@ -463,5 +606,11 @@ export class PostgresDbPlugin implements IDbPlugin {
                 }
             });
         });
+
+        // The pool refused before the callback could ever run — report it here, since
+        // nothing inside the callback got the chance to.
+        if (failedToConnect != null) {
+            done(Result.error(failedToConnect));
+        }
     }
 }

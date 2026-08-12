@@ -1,18 +1,25 @@
 import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema';
 import { Expression } from '@routier/core/expressions';
-import { IQuery, QueryField } from '@routier/core/plugins';
+import { IQuery, JoinQueryOptionValue, Query, QueryField } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
-import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, getDialect, sqlColumnProperties, toColumnValueMap, toSql } from '@routier/sql-plugin-core';
+import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, getDialect, sqlColumnProperties, toColumnValueMap, toSql } from '@routier/sql-plugin-core';
 import { uuidv4 } from '@routier/core/utilities';
 import { MysqlAddsOperation, MysqlRemovesOperation, MysqlSelectBack, MysqlUpdatesOperation, SqlOperation } from './types';
 
 /**
  * Maps schema types to MySQL column types.
+ *
+ * Takes the property rather than its type alone because two mappings need more than the type:
+ * a vector needs its width, and a string needs its declared length.
  */
-const schemaTypeToMysqlType = (type: SchemaTypes): string => {
-    switch (type) {
+const schemaTypeToMysqlType = (prop: PropertyInfo<any>): string => {
+    switch (prop.type) {
         case SchemaTypes.String:
-            return 'VARCHAR(255)';
+            // `VARCHAR(255)` unless the property declared otherwise. MySQL is the only engine
+            // that needs the number: it truncates silently past the column width, and 255 is
+            // short enough that a body of text hits it. Every other backend stores strings
+            // unbounded and ignores the declaration.
+            return `VARCHAR(${prop.maxLength ?? 255})`;
         case SchemaTypes.Number:
             // DOUBLE, not DECIMAL. mysql2 returns DECIMAL as a STRING to preserve exact
             // precision, so a `s.number()` property came back as "20.0000000000" and the
@@ -78,12 +85,12 @@ export function compiledSchemaToMysqlTable(schema: CompiledSchema<any>, tableNam
                 // Use UUID() function for string identity keys
                 colDef = `\`${prop.getResolvedName()}\` VARCHAR(36) PRIMARY KEY DEFAULT (UUID())`;
             } else {
-                colDef = `\`${prop.getResolvedName()}\` ${schemaTypeToMysqlType(prop.type)} PRIMARY KEY`;
+                colDef = `\`${prop.getResolvedName()}\` ${schemaTypeToMysqlType(prop)} PRIMARY KEY`;
             }
         } else if (isDeeplyNested(prop)) {
             colDef = `\`${prop.getResolvedName()}\` JSON`;
         } else {
-            colDef = `\`${prop.getResolvedName()}\` ${schemaTypeToMysqlType(prop.type)}`;
+            colDef = `\`${prop.getResolvedName()}\` ${schemaTypeToMysqlType(prop)}`;
         }
 
         columns.push(colDef);
@@ -569,4 +576,39 @@ export function decodeBooleanColumns<T extends {}>(rows: unknown, schema: Compil
     }
 
     return rows;
+}
+
+/**
+ * Builds the joined SELECT for a query carrying a `join` option.
+ *
+ * The emission is shared (`buildJoinStatement`); this supplies the inner schema, which lives in
+ * the event's schema collection rather than in the query, and the outer side's own statement.
+ *
+ * The outer side is built by the ordinary single-table path and used as a derived table, because
+ * MySQL applies `ORDER BY` and `LIMIT` to the JOINED rows: a `.take(2)` recorded before the join
+ * has to window the outer rows, not the pairs, or it answers a different question from every other
+ * backend.
+ */
+export function buildJoinQueryOperation<TEntity extends {}, TShape, TInner extends {}>(
+    query: IQuery<TEntity, TShape>,
+    innerSchema: CompiledSchema<TInner>
+): SqlOperation & { join: JoinQueryOptionValue } {
+    const { before, at } = query.options.splitAt("join");
+
+    if (at == null) {
+        throw new Error("buildJoinQueryOperation was called for a query with no join option.");
+    }
+
+    const outer = buildFromQueryOperation(new Query(before, query.schema));
+
+    const joined = buildJoinStatement({
+        dialect: getDialect('mysql'),
+        join: at.value,
+        outerSchema: query.schema,
+        innerSchema,
+        outer: outer.sql,
+        outerParams: outer.params
+    });
+
+    return { ...joined, join: at.value };
 }

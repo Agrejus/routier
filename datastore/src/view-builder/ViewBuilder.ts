@@ -6,16 +6,16 @@ import { ViewInstanceCreator } from './types';
 import { Filter, ParamsFilter, toExpression } from '@routier/core/expressions';
 import { CollectionDependencies } from '../collections/types';
 
-type CollectionBuilderProps<TEntity extends {}, TCollection extends View<TEntity>> = {
-    onCollectionCreated: (collection: CollectionBase<TEntity>) => void;
+type CollectionBuilderProps<TEntity extends {}, TCollection extends View<TEntity, any>> = {
+    onCollectionCreated: (collection: CollectionBase<TEntity, any>) => void;
     instanceCreator: ViewInstanceCreator<TEntity, TCollection>;
     dependencies: CollectionDependencies<TEntity>;
     derive?: Derive<TEntity>;
 }
 
-export class ViewBuilder<TEntity extends {}, TCollection extends View<TEntity>> {
+export class ViewBuilder<TEntity extends {}, TCollection extends View<TEntity, any>, TStore = unknown> {
 
-    private _onCollectionCreated: (collection: CollectionBase<TEntity>) => void;
+    private _onCollectionCreated: (collection: CollectionBase<TEntity, any>) => void;
     private _instanceCreator: ViewInstanceCreator<TEntity, TCollection>;
     private dependencies: CollectionDependencies<TEntity>;
     private _derive: Derive<TEntity> = () => void (0);
@@ -44,7 +44,7 @@ export class ViewBuilder<TEntity extends {}, TCollection extends View<TEntity>> 
    * @param expression A filter expression that will be AND-ed with all user queries
    * @returns A builder for chaining additional configuration
    */
-    scope(expression: Filter<InferType<TEntity>>): ViewBuilder<TEntity, TCollection>;
+    scope(expression: Filter<InferType<TEntity>>): ViewBuilder<TEntity, TCollection, TStore>;
     /**
      * Apply a global, parameterized filter (scope) to the collection.
      *
@@ -58,7 +58,7 @@ export class ViewBuilder<TEntity extends {}, TCollection extends View<TEntity>> 
      * @param params Parameters passed to the selector (excluding `collectionName`, which is auto‑injected)
      * @returns A builder for chaining additional configuration
      */
-    scope<P extends {}>(selector: ParamsFilter<InferType<TEntity>, P>, params: P): ViewBuilder<TEntity, TCollection>;
+    scope<P extends {}>(selector: ParamsFilter<InferType<TEntity>, P>, params: P): ViewBuilder<TEntity, TCollection, TStore>;
     scope<P extends {} = never>(selector: ParamsFilter<InferType<TEntity>, P> | Filter<InferType<TEntity>>, params?: P) {
 
         const schema = this.dependencies.schema;
@@ -66,7 +66,7 @@ export class ViewBuilder<TEntity extends {}, TCollection extends View<TEntity>> 
 
         this.dependencies.scopedQueryOptions.add("filter", { filter: selector as Filter<TEntity> | ParamsFilter<TEntity, {}>, expression, params });
 
-        return new ViewBuilder<TEntity, View<TEntity>>({
+        return new ViewBuilder<TEntity, View<TEntity, TStore>, TStore>({
             derive: this._derive,
             onCollectionCreated: this._onCollectionCreated,
             instanceCreator: View,
@@ -78,7 +78,7 @@ export class ViewBuilder<TEntity extends {}, TCollection extends View<TEntity>> 
 
         this._derive = derive;
 
-        return new ViewBuilder<TEntity, View<TEntity>>({
+        return new ViewBuilder<TEntity, View<TEntity, TStore>, TStore>({
             derive: this._derive,
             onCollectionCreated: this._onCollectionCreated,
             instanceCreator: View,

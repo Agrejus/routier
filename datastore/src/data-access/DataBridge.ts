@@ -28,7 +28,7 @@ export class DataBridge<T extends {}> {
     static create<T extends {}>(dbPlugin: IDbPlugin, schema: CompiledSchema<T>, signal: AbortSignal) {
         const strategy = DataBridge.createStrategy<T>(dbPlugin, schema);
 
-        return new DataBridge<T>(strategy, signal, dbPlugin.identity);
+        return new DataBridge<T>(strategy, signal, dbPlugin.databaseName);
     }
 
     bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackResult<BulkPersistResult>) {

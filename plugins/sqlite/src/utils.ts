@@ -1,7 +1,7 @@
 import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema';
 import { Expression } from '@routier/core/expressions';
-import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, getDialect, sqlColumnProperties, toColumnValueMap, toSql } from '@routier/sql-plugin-core';
-import { IQuery, QueryField } from '@routier/core/plugins';
+import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, getDialect, sqlColumnProperties, toColumnValueMap, toSql } from '@routier/sql-plugin-core';
+import { IQuery, JoinQueryOptionValue, Query, QueryField } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
 import { SqlOperation } from './types';
 
@@ -307,6 +307,7 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
     const { schema, options } = query;
     const tableName = schema.collectionName;
 
+
     // Check if there's a map operation that specifies which columns to select
     let mapFields: QueryField[] | null = null;
     for (const [, items] of options.items) {
@@ -508,4 +509,41 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
     }
 
     return { sql: currentQuery, params };
+}
+
+/**
+ * Builds the joined SELECT for a query carrying a `join` option.
+ *
+ * Separate from `buildFromQueryOperation` because a join needs the INNER schema, which lives in
+ * the event's schema collection rather than in the query — and because the outer side is built by
+ * the ordinary single-table path, which this then wraps.
+ *
+ * The options recorded BEFORE the join belong to the outer side, and they are applied to the
+ * derived table rather than to the joined statement. That distinction is load-bearing: SQL applies
+ * `ORDER BY` and `LIMIT` to the JOINED rows, so a `.take(2)` before a join would window the pairs
+ * instead of the outer rows and answer a different question from the in-memory hash join. As a
+ * subquery it means what it means everywhere else — window the outer rows, then pair them.
+ */
+export function buildJoinQueryOperation<TEntity extends {}, TShape, TInner extends {}>(
+    query: IQuery<TEntity, TShape>,
+    innerSchema: CompiledSchema<TInner>
+): SqlOperation & { join: JoinQueryOptionValue } {
+    const { before, at } = query.options.splitAt("join");
+
+    if (at == null) {
+        throw new Error("buildJoinQueryOperation was called for a query with no join option.");
+    }
+
+    const outer = buildFromQueryOperation(new Query(before, query.schema));
+
+    const joined = buildJoinStatement({
+        dialect: getDialect('sqlite'),
+        join: at.value,
+        outerSchema: query.schema,
+        innerSchema,
+        outer: outer.sql,
+        outerParams: outer.params
+    });
+
+    return { ...joined, join: at.value };
 }

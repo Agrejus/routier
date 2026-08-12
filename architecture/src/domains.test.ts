@@ -20,6 +20,11 @@ const IGNORED_DIRECTORIES = new Set([
     // plugin it is exercising, which would otherwise read as a plugin depending on the
     // datastore.
     "tests", "__tests__",
+    // Test OUTPUT, not source: the file-system plugin's suites write their databases into
+    // `src/dbs` and delete them again. Walking it made this file flaky rather than wrong —
+    // `readdirSync` throws ENOENT when another Jest project removes a directory mid-scan, and
+    // the projects run in parallel. Roughly one full-suite run in four.
+    "dbs",
 ]);
 
 /**
@@ -264,7 +269,7 @@ describe("dependency direction", () => {
  */
 describe("IDbPlugin is frozen", () => {
 
-    it("declares exactly identity, query, destroy and bulkPersist", () => {
+    it("declares exactly databaseName, query, destroy and bulkPersist", () => {
         const source = fs.readFileSync(
             path.join(REPO_ROOT, "core/src/plugins/types.ts"),
             "utf8"
@@ -280,6 +285,6 @@ describe("IDbPlugin is frozen", () => {
         const members = [...withoutComments.matchAll(/^\s{4}(?:readonly\s+)?(\w+)\s*[<(?:]/gm)]
             .map(match => match[1]);
 
-        expect(new Set(members)).toEqual(new Set(["identity", "query", "destroy", "bulkPersist"]));
+        expect(new Set(members)).toEqual(new Set(["databaseName", "query", "destroy", "bulkPersist"]));
     });
 });

@@ -389,6 +389,9 @@ function applyRoutierMetadata(
     if (property.isDistinct && !routierMeta.isDistinct) {
         routierMeta.isDistinct = true;
     }
+    if (property.isSearchable && !routierMeta.isSearchable) {
+        routierMeta.isSearchable = true;
+    }
     if (property.indexes && property.indexes.length > 0 && !routierMeta.indexes) {
         routierMeta.indexes = property.indexes;
     }
@@ -631,6 +634,12 @@ export function rehydrateSchemaFromJsonSchema(
         }
         if (routierPropMeta?.isDistinct && typeof schemaBuilder.distinct === 'function') {
             schemaBuilder = schemaBuilder.distinct();
+        }
+        // Before `.optional()` below, which is safe because `isSearchable` survives a wrapping
+        // modifier — see `SchemaBase.isSearchable`. Rebuilding a schema that silently dropped
+        // this would take a property's terms out of the index and change what queries match.
+        if (routierPropMeta?.isSearchable && typeof schemaBuilder.searchable === 'function') {
+            schemaBuilder = schemaBuilder.searchable();
         }
         // Apply optional if property is not required (nullable and optional are independent)
         if (!isRequired && typeof schemaBuilder.optional === 'function') {

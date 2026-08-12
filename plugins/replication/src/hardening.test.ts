@@ -777,9 +777,11 @@ describe('hardening: POST-echo reconciliation', () => {
 
         // A separate subscription observes what the plugin broadcasts
         const observed: unknown[] = [];
+        // Scoped to the plugin's database: the plugin broadcasts on `schema|databaseName`,
+        // so an unscoped observer sits on a channel nothing is sent to.
         const subscription: ISchemaSubscription<Record<string, unknown>> = (testSchema as never as {
-            createSubscription: () => ISchemaSubscription<Record<string, unknown>>;
-        }).createSubscription();
+            createSubscription: (signal?: AbortSignal, scope?: string) => ISchemaSubscription<Record<string, unknown>>;
+        }).createSubscription(undefined, plugin.databaseName);
         subscription.onMessage((changes) => observed.push(changes));
 
         await persistPlugin(plugin, { adds: [{ id: 'local-1', name: 'Optimistic' }] });

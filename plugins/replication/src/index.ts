@@ -1,6 +1,8 @@
 export { OptimisticUpdatesDbPlugin } from './OptimisticUpdatesDbPlugin';
 export { HttpDbPlugin } from './HttpDbPlugin';
 export { HttpSwrDbPlugin } from './HttpSwrDbPlugin';
+export { HttpTransportDbPlugin } from './HttpTransportDbPlugin';
+export type { HttpTransportDbPluginOptions } from './HttpTransportDbPlugin';
 export { PluginSyncEngine } from './PluginSyncEngine';
 export type {
     PluginSyncEngineOptions,

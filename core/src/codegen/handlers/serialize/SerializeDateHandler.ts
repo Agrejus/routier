@@ -21,12 +21,14 @@ export class SerializeDateHandler extends PropertyInfoHandler {
                 useFromPropertyName: true
             });
 
-            // if it is nullable or optional, assign in an if block, otherwise we 
-            // could unintentionally assign null/undefined to a property that does not exist
+            // if it is nullable or optional, assign in an if block, otherwise we
+            // could unintentionally assign a property that does not exist. An explicit null IS
+            // assigned — it is a legal value, and dropping it here is known-defects #66. The
+            // expression already passes null through, since null is not `instanceof Date`.
             if (property.isOptional || property.isNullable) {
                 const ifAssignment = `${entityAssignmentPath} = ${entitySelectorPath} instanceof Date ? ${entitySelectorPath}.toISOString() : ${entitySelectorPath}`;
                 const rootPath = new SlotPath("if");
-                builder.get<ContainerBlock>(rootPath.get()).if(`${entitySelectorPath} != null`).appendBody(ifAssignment);
+                builder.get<ContainerBlock>(rootPath.get()).if(`${entitySelectorPath} !== undefined`).appendBody(ifAssignment);
                 return builder;
             }
 

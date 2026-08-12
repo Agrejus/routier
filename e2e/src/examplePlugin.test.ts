@@ -135,8 +135,8 @@ class CountingDbPlugin implements IDbPlugin {
     constructor(private readonly plugin: IDbPlugin) { }
 
     // Passed through so change notifications stay scoped to the same database.
-    get identity(): string | undefined {
-        return this.plugin.identity;
+    get databaseName(): string {
+        return this.plugin.databaseName;
     }
 
     query<TRoot extends {}, TShape extends any = TRoot>(

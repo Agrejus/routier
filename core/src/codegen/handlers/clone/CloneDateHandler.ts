@@ -6,6 +6,7 @@ import { PropertyInfo, SchemaTypes } from "../../../schema";
  * Copies Date properties by value.  A reference copy would let a mutation of the
  * clone's Date (e.g. setHours) silently change the source entity.
  */
+// See CloneValueHandler for why the guard is `!== undefined` (known-defects #66).
 export class CloneDateHandler extends PropertyInfoHandler {
 
     override handle(property: PropertyInfo<any>, builder: CodeBuilder): CodeBuilder | null {
@@ -15,17 +16,18 @@ export class CloneDateHandler extends PropertyInfoHandler {
             const entitySelectorPath = property.getSelectrorPath({ parent: "entity" });
             const resultAssignmentPath = property.getAssignmentPath({ parent: "result" });
 
-            // Stored values can still be serialized strings; only wrap real Dates
+            // Stored values can still be serialized strings; only wrap real Dates. A null falls
+            // through this expression unchanged, which is what the `!== undefined` guard wants.
             const copyExpression = `${entitySelectorPath} instanceof Date ? new Date(${entitySelectorPath}.getTime()) : ${entitySelectorPath}`;
 
             if (property.parent == null) {
-                slot.if(`${entitySelectorPath} != null`).appendBody(`${resultAssignmentPath} = ${copyExpression}`);
+                slot.if(`${entitySelectorPath} !== undefined`).appendBody(`${resultAssignmentPath} = ${copyExpression}`);
                 return builder;
             }
 
             // Nested property: ensure every ancestor object exists, then assign (same pattern as CloneValueHandler)
             const parentPathArray = property.getParentPathArray();
-            const ifSlot = slot.if(`${entitySelectorPath} != null`);
+            const ifSlot = slot.if(`${entitySelectorPath} !== undefined`);
 
             for (let i = 0; i < parentPathArray.length; i++) {
                 const pathSoFar = ["result", ...parentPathArray.slice(0, i + 1)].join(".");

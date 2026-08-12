@@ -212,7 +212,7 @@ describe('s.file()', () => {
             const inner = new MemoryPlugin(`spy-${uuidv4()}`);
 
             const spy: IDbPlugin = {
-                get identity() { return inner.identity; },
+                get databaseName() { return inner.databaseName; },
                 query: (event, done) => inner.query(event as never, done as never),
                 destroy: (event, done) => inner.destroy(event, done),
                 bulkPersist: (event, done) => {

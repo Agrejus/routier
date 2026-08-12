@@ -1,12 +1,57 @@
 import { DataTranslator } from "./DataTranslator";
 import { QueryOption } from "../query/types";
 import { nearestBy } from "../query/similarity";
+import { executeJoin, JoinInnerSide, toEntityShape } from "../query/join";
 import { assertIsArray } from "../../assertions";
 import { ParamsFilter } from "../../expressions";
 import { isDate, UnknownRecord } from "../../utilities";
 import { IdType } from "../../schema";
+import { IQuery } from "../types";
 
 export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRoot, TShape> {
+
+    private readonly innerSide?: JoinInnerSide;
+
+    /**
+     * @param innerSide The inner collection's rows, when this query carries a `join` option.
+     * A plugin that omits it for a query that HAS a join gets a throw from `join()` rather than
+     * a silently un-joined result.
+     */
+    constructor(query: IQuery<TRoot, TShape>, innerSide?: JoinInnerSide) {
+        super(query);
+        this.innerSide = innerSide;
+    }
+
+    /**
+     * The hash join itself, over rows already in memory — the floor every non-SQL backend
+     * stands on.
+     *
+     * Both halves are deserialized here, each with its own schema, because that is where the
+     * `===` on key values is specified to happen: in entity shape, by the property names the
+     * caller wrote in the key selectors. A `from`-renamed column reads correctly for free.
+     */
+    override join<TResult>(data: unknown, option: QueryOption<TShape, "join">): TResult {
+
+        if (Array.isArray(data) === false) {
+            return data as TResult;
+        }
+
+        if (this.innerSide == null) {
+            throw new Error(
+                `Cannot join: this plugin did not supply the inner collection's rows.  ` +
+                `A plugin whose translator inherits JsonTranslator.join must construct it with the inner side ` +
+                `(new JsonTranslator(operation, { innerSchema, innerRows })) when the query carries a join option.`
+            );
+        }
+
+        const { innerSchema, innerRows } = this.innerSide;
+
+        return executeJoin({
+            option: option.value,
+            outerRows: toEntityShape(this.query.schema, data),
+            innerRows: toEntityShape(innerSchema, innerRows)
+        }) as TResult;
+    }
 
     override filter<TResult>(data: unknown, option: QueryOption<TShape, "filter">): TResult {
 

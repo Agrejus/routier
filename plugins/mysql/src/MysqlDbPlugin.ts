@@ -1,11 +1,11 @@
 import { createPool, Pool, PoolConnection } from 'mysql2/promise';
-import { decodeJsonColumns, sqlColumnProperties } from '@routier/sql-plugin-core';
-import { buildFromPersistOperation, buildFromQueryOperation, compiledSchemaToMysqlTable, decodeBooleanColumns } from './utils';
+import { canPushDownJoin, decodeJsonColumns, splitJoinRows, sqlColumnProperties } from '@routier/sql-plugin-core';
+import { buildFromPersistOperation, buildFromQueryOperation, buildJoinQueryOperation, compiledSchemaToMysqlTable, decodeBooleanColumns } from './utils';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, SqlTranslator } from '@routier/core/plugins';
 import { CallbackResult, PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '@routier/core/results';
 import { BulkPersistResult } from '@routier/core/collections';
 import { CompiledSchema, SchemaId } from '@routier/core/schema';
-import { OptimisticConcurrencyError } from '@routier/core';
+import { assertIsNotNull, OptimisticConcurrencyError, UnknownRecord } from '@routier/core';
 
 export interface MysqlDbPluginConfig {
     host?: string;
@@ -47,12 +47,39 @@ export interface MysqlDbPluginConfig {
 const bindable = (params: readonly unknown[] | undefined): unknown[] =>
     (params ?? []).map(value => (value === undefined ? null : value));
 
+/**
+ * A stable, credential-free identifier for the server and database a config points at.
+ * See the identical helper in `PostgresDbPlugin` — the fallback strips the `user:password@`
+ * userinfo section so an unparseable connection string still yields a usable identifier
+ * instead of throwing from a constructor that previously never threw.
+ */
+const describeTarget = (config: MysqlDbPluginConfig): string => {
+    if (config.connectionString != null) {
+        try {
+            const url = new URL(config.connectionString);
+            return `mysql://${url.hostname}:${url.port || 3306}${url.pathname}`;
+        } catch {
+            return config.connectionString.replace(/\/\/[^@/]*@/, '//');
+        }
+    }
+
+    return `mysql://${config.host || 'localhost'}:${config.port || 3306}/${config.database}`;
+};
+
 export class MysqlDbPlugin implements IDbPlugin {
 
     private pool: Pool;
     private tableCache: Record<string, string> = {};
 
+    /**
+     * See `IDbPlugin.databaseName`. Host, port and database rather than the bare name,
+     * because `mydb` on two servers is two databases.
+     */
+    readonly databaseName: string;
+
     constructor(config: MysqlDbPluginConfig) {
+        this.databaseName = describeTarget(config);
+
         const hasDiscreteTarget = config.host != null
             || config.port != null
             || config.database != null
@@ -101,6 +128,11 @@ export class MysqlDbPlugin implements IDbPlugin {
     }
 
     query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
+        if (event.operation.options.has("join")) {
+            this.queryJoined(event, done);
+            return;
+        }
+
         this.resolveSchema(event.operation.schema);
         const translator = new SqlTranslator(event.operation);
 
@@ -122,6 +154,66 @@ export class MysqlDbPlugin implements IDbPlugin {
 
             done(PluginEventResult.success(event.id, data));
         });
+    }
+
+    /**
+     * A join, done by MySQL rather than in memory.
+     *
+     * `splitJoinRows` cuts each flat row into two halves and deserializes each against its own
+     * schema, so the translator receives tuples already — hence `{ join: true }` and a pass-through.
+     *
+     * No `decodeBooleanColumns` call here, unlike the single-table path: `decodeJsonColumns` — which
+     * `splitJoinRows` runs per side — already turns a numeric column back into a boolean, and it is
+     * MySQL's `TINYINT(1)` that made that necessary in the first place.
+     */
+    private queryJoined<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
+        try {
+            const join = event.operation.options.getLast("join");
+            assertIsNotNull(join, "A joined query reached queryJoined without a join option.");
+
+            const innerSchema = event.schemas.get(join.value.innerSchemaId);
+
+            if (innerSchema == null) {
+                done(PluginEventResult.error(event.id, new Error(
+                    `Cannot join: the inner collection's schema is not registered in this store.  SchemaId: ${join.value.innerSchemaId}`
+                )));
+                return;
+            }
+
+            // An inner filter with no column to compare against would make the emitted join return
+            // rows the inner side's scope excludes. Refusing beats answering wrongly.
+            if (canPushDownJoin(join.value) === false) {
+                done(PluginEventResult.error(event.id, new Error(
+                    `Cannot push this join down to MySQL: the inner collection has a filter that cannot be expressed as SQL ` +
+                    `(an unmapped or renamed property), so the join would return rows its scope excludes.`
+                )));
+                return;
+            }
+
+            this.resolveSchema(event.operation.schema);
+            this.resolveSchema(innerSchema);
+
+            const translator = new SqlTranslator(event.operation, { join: true });
+
+            this._doJoinQueryWork(event, innerSchema, (result) => {
+                if (result.ok === "error") {
+                    done(PluginEventResult.error(event.id, result.error));
+                    return;
+                }
+
+                const tuples = splitJoinRows({
+                    rows: result.data as UnknownRecord[],
+                    kind: join.value.kind,
+                    join: join.value,
+                    outerSchema: event.operation.schema,
+                    innerSchema
+                });
+
+                done(PluginEventResult.success(event.id, translator.translate(tuples)));
+            });
+        } catch (error) {
+            done(PluginEventResult.error(event.id, error));
+        }
     }
 
     destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
@@ -329,6 +421,47 @@ export class MysqlDbPlugin implements IDbPlugin {
                     // connection, and enough of them deadlocked the plugin.
                     connection.release();
                 }
+            }
+            done(Result.error(err));
+        }
+    }
+
+    /**
+     * The joined read, creating EITHER table on demand.
+     *
+     * Both, not just the outer one: a join against a collection nothing has written yet is a
+     * legitimate query with no pairs. One `query()` call per DDL statement — mysql2 runs a single
+     * statement per call unless `multipleStatements` is enabled, which is a SQL injection surface
+     * nobody should turn on (see known-defects #64).
+     */
+    private async _doJoinQueryWork<TRoot extends {}, TShape extends any = TRoot>(
+        event: DbPluginQueryEvent<TRoot, TShape>,
+        innerSchema: CompiledSchema<any>,
+        done: CallbackResult<TShape>
+    ): Promise<void> {
+        let connection: PoolConnection | undefined;
+        try {
+            connection = await this.pool.getConnection();
+
+            for (const schema of [event.operation.schema, innerSchema]) {
+                const [tables] = await connection.execute(
+                    `SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?`,
+                    [schema.collectionName]
+                ) as [Array<{ TABLE_NAME: string }>, any];
+
+                if (tables.length === 0) {
+                    await connection.query(this.resolveTableCreateStatement(schema));
+                }
+            }
+
+            const { params, sql } = buildJoinQueryOperation(event.operation, innerSchema);
+            const [rows] = await connection.execute(sql, bindable(params));
+
+            connection.release();
+            done(Result.success(rows as TShape));
+        } catch (err) {
+            if (connection) {
+                connection.release();
             }
             done(Result.error(err));
         }

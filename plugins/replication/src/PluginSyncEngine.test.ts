@@ -72,6 +72,7 @@ function createTranslated<T>(value: T): ITranslatedValue<T> {
 
 function createPluginMock() {
     const plugin: IDbPlugin = {
+        databaseName: 'sync-mock',
         query: jest.fn() as any,
         bulkPersist: jest.fn() as any,
         destroy: jest.fn() as any,

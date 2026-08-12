@@ -2,7 +2,7 @@ import { assertIsNotNull } from '../assertions';
 import { OptimisticConcurrencyError } from '../errors';
 import { BulkPersistResult, SchemaPersistChanges } from '../collections';
 import { WorkPipeline } from '../pipeline';
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, JsonTranslator } from '.';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, distinctJoinKeys, IDbPlugin, ITranslatedValue, JoinInnerSide, JsonTranslator } from '.';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '../results';
 import { CompiledSchema, IdType, InferCreateType } from '../schema';
 import { isComparatorExpression, isPropertyExpression, isValueExpression } from '../assertions';
@@ -43,15 +43,19 @@ const getKeyEqualityValue = (expression: unknown): { value: IdType } | null => {
 
 export abstract class EphemeralDataPlugin implements IDbPlugin {
 
-    protected databaseName: string;
+    protected readonly _databaseName: string;
 
     constructor(databaseName: string) {
-        this.databaseName = databaseName;
+        this._databaseName = databaseName;
     }
 
-    /** Scopes subscription channels to this database — see IDbPlugin.identity. */
-    get identity(): string {
-        return this.databaseName;
+    /**
+     * See `IDbPlugin.databaseName`. A getter rather than the field itself so a subclass whose
+     * database is identified by more than a name can widen it — `FileSystemPlugin` returns the
+     * resolved file path, because one name in two directories is two databases.
+     */
+    get databaseName(): string {
+        return this._databaseName;
     }
 
     protected abstract resolveCollection<TEntity extends {}>(schema: CompiledSchema<TEntity>): MemoryDataCollection;
@@ -267,20 +271,104 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
         }
     }
 
+    /**
+     * Loads the inner side of a join, when the query carries one.
+     *
+     * This is the whole of "interpretation 2" for the ephemeral family — memory, file-system and
+     * browser-storage all reach the inner collection the same way they reach the outer one, so
+     * the wiring lives here once rather than in each subclass. The shared hash join in
+     * `JsonTranslator.join` does everything after it.
+     *
+     * `load()` is called on the inner collection too: a durable subclass has nothing in memory
+     * until it reads, and a join that skipped it would return no pairs on the first query after
+     * a restart — an empty result, not an error.
+     *
+     * The rows are CLONED, like the outer side's are. Deserialization builds a new object for the
+     * entity and its nested objects, but an array property can come through by reference — and
+     * here that reference is the one this plugin's own storage holds, so a caller appending to a
+     * joined row's array would be editing the database. The outer path has always cloned for this
+     * reason; the inner path is the same read.
+     *
+     * @param outerKeys The distinct keys the outer rows actually hold — the semi-join prefilter.
+     * Rows whose key is not among them cannot pair with anything, so they are skipped before the
+     * clone rather than after the hash join, which is where the saving is. `null` means the outer
+     * side had more distinct keys than `semiJoinKeyThreshold`, so every inner row is taken and the
+     * join discards the surplus. Same pairs either way.
+     */
+    private resolveJoinInnerSide<TEntity extends {}, TShape>(
+        event: DbPluginQueryEvent<TEntity, TShape>,
+        outerKeys: ReadonlySet<unknown> | null,
+        done: (result: { ok: "success", innerSide?: JoinInnerSide } | { ok: "error", error: unknown }) => void
+    ) {
+        const joinOption = event.operation.options.getLast("join");
+
+        if (joinOption == null) {
+            done({ ok: "success" });
+            return;
+        }
+
+        const innerSchema = event.schemas.get(joinOption.value.innerSchemaId);
+
+        if (innerSchema == null) {
+            done({
+                ok: "error",
+                error: new Error(`Cannot join: the inner collection's schema is not registered in this store.  SchemaId: ${joinOption.value.innerSchemaId}`)
+            });
+            return;
+        }
+
+        const innerCollection = this.resolveCollection(innerSchema);
+
+        innerCollection.load(r => {
+            if (r.ok === Result.ERROR) {
+                done({ ok: "error", error: r.error });
+                return;
+            }
+
+            const cloneRecord = this.recordCloner(innerSchema);
+            const stored = innerCollection.records;
+            const innerRows: Record<string, unknown>[] = [];
+
+            // Records are held in STORAGE shape, so the key is read by its resolved column name.
+            const innerKey = joinOption.value.innerKey;
+            const keyColumn = innerKey.property?.getResolvedName() ?? innerKey.propertyName;
+
+            for (let i = 0, length = stored.length; i < length; i++) {
+                if (outerKeys != null && outerKeys.has(stored[i][keyColumn]) === false) {
+                    continue;
+                }
+
+                innerRows.push(cloneRecord(stored[i]));
+            }
+
+            done({ ok: "success", innerSide: { innerSchema, innerRows } });
+        });
+    }
+
+    /**
+     * How to copy a stored record of this schema.
+     *
+     * Stored records use the storage shape (`from` names). The generated clone reads IN-MEMORY
+     * property names and would silently drop renamed fields, so a schema with renames deep-copies
+     * structurally instead.
+     */
+    private recordCloner(schema: CompiledSchema<any>) {
+        const hasRenamedProperties = schema.properties.some(property => property.from != null);
+
+        return (hasRenamedProperties ? structuredClone : schema.clone) as (record: Record<string, unknown>) => Record<string, unknown>;
+    }
+
     query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
+        this._query(event, done);
+    }
+
+    private _query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
         try {
             const operation = event.operation;
             const schema = operation.schema;
-            const translator = new JsonTranslator<TEntity, TShape>(operation);
             const collection = this.resolveCollection(schema);
 
-            // Stored records use the storage shape (`from` names).  The generated
-            // clone reads in-memory property names and would silently drop renamed
-            // fields, so schemas with renames deep-copy structurally instead
-            const hasRenamedProperties = schema.properties.some(w => w.from != null);
-            const cloneRecord = (hasRenamedProperties
-                ? structuredClone
-                : schema.clone) as (record: Record<string, unknown>) => Record<string, unknown>;
+            const cloneRecord = this.recordCloner(schema);
 
             collection.load(r => {
                 if (r.ok === Result.ERROR) {
@@ -345,7 +433,35 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                     cloned[i] = cloneRecord(source[i]);
                 }
 
-                done(PluginEventResult.success(event.id, translator.translate(cloned)));
+                /**
+                 * The inner side is loaded LAST, once the outer rows are known.
+                 *
+                 * That ordering is the whole semi-join: the outer keys are what narrow the inner
+                 * read, and they do not exist until the outer filters have run. Reading the inner
+                 * side first — which is what this did before — means loading and cloning a whole
+                 * collection to pair it with three rows.
+                 *
+                 * `source` is in storage shape, so the keys are read by resolved column name.
+                 */
+                const joinOption = operation.options.getLast("join");
+                const outerKeys = joinOption == null
+                    ? null
+                    : distinctJoinKeys(cloned, joinOption.value.outerKey, joinOption.value.semiJoinKeyThreshold, { storageShape: true });
+
+                this.resolveJoinInnerSide(event, outerKeys, joinResult => {
+                    if (joinResult.ok === "error") {
+                        done(PluginEventResult.error(event.id, joinResult.error));
+                        return;
+                    }
+
+                    try {
+                        const translator = new JsonTranslator<TEntity, TShape>(operation, joinResult.innerSide);
+
+                        done(PluginEventResult.success(event.id, translator.translate(cloned)));
+                    } catch (e) {
+                        done(PluginEventResult.error(event.id, e));
+                    }
+                });
             });
         } catch (e) {
             done(PluginEventResult.error(event.id, e));

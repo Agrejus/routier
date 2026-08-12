@@ -18,6 +18,8 @@ const factory = (dbname?: string) => {
 };
 
 class CloneOnReadPlugin implements IDbPlugin {
+
+    readonly databaseName = "test-db";
     constructor(private readonly inner: IDbPlugin) {}
 
     query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {

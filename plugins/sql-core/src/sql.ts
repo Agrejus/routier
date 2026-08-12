@@ -363,24 +363,34 @@ function applyValueTransformer(value: unknown, transformer: Transformer | null):
  * property. For `payload.inner.value` the storage is a `payload` JSON column and the rest
  * of the chain is a path inside it.
  */
-function renderColumnBase(prop: PropertyExpression, d: SqlDialect): string {
+/**
+ * Qualifies a column identifier with a table alias, when there is one.
+ *
+ * Applied to the ROOT identifier only. A nested property is read out of a JSON column, so the
+ * alias belongs on the column the JSON lives in — `"o"."nested" -> '$.inner'` — not on the path
+ * inside it.
+ */
+const qualify = (identifier: string, alias: string | undefined, d: SqlDialect): string =>
+    alias == null ? identifier : `${d.quoteIdentifier(alias)}.${identifier}`;
+
+function renderColumnBase(prop: PropertyExpression, d: SqlDialect, alias?: string): string {
     const parents = prop.property.getParentPathArray({ useFromPropertyName: true });
 
     if (parents.length === 0) {
-        return d.quoteIdentifier(prop.property.getResolvedName());
+        return qualify(d.quoteIdentifier(prop.property.getResolvedName()), alias, d);
     }
 
     const [root, ...rest] = parents;
 
     return d.jsonPathExpression(
-        d.quoteIdentifier(root),
+        qualify(d.quoteIdentifier(root), alias, d),
         [...rest, prop.property.getResolvedName()],
         prop.property.type
     );
 }
 
-function renderColumn(prop: PropertyExpression, d: SqlDialect): string {
-    const col = renderColumnBase(prop, d);
+function renderColumn(prop: PropertyExpression, d: SqlDialect, alias?: string): string {
+    const col = renderColumnBase(prop, d, alias);
 
     if (prop.transformer === "to-lower-case") {
         return `LOWER(${col})`;
@@ -484,7 +494,8 @@ function renderStringPatternComparison(
     cmp: ComparatorExpression,
     d: SqlDialect,
     params: unknown[],
-    placeholder: () => string
+    placeholder: () => string,
+    alias?: string
 ): string {
     const { propLeft, propRight, valLeft, valRight } = getPropertyValueSides(cmp);
     const kind = d.stringMatchKind;
@@ -492,9 +503,9 @@ function renderStringPatternComparison(
     if (cmp.comparator === "includes") {
         const col =
             propLeft && valRight !== undefined
-                ? renderColumn(propLeft, d)
+                ? renderColumn(propLeft, d, alias)
                 : propRight && valLeft !== undefined
-                  ? renderColumn(propRight, d)
+                  ? renderColumn(propRight, d, alias)
                   : null;
         const value = valRight !== undefined ? valRight : valLeft;
 
@@ -524,9 +535,9 @@ function renderStringPatternComparison(
 
     const col =
         propLeft && valRight !== undefined
-            ? renderColumn(propLeft, d)
+            ? renderColumn(propLeft, d, alias)
             : propRight && valLeft !== undefined
-              ? renderColumn(propRight, d)
+              ? renderColumn(propRight, d, alias)
               : null;
     const rawValue = valRight !== undefined ? valRight : valLeft;
     const value = rawValue == null ? null : String(rawValue);
@@ -581,14 +592,36 @@ export interface ToSqlResult {
     params: unknown[];
 }
 
+export type ToSqlOptions = {
+    /**
+     * Table alias to qualify every column with — `"o"."name"` rather than `"name"`.
+     *
+     * Needed only when the statement names more than one table, which today means a join. Any
+     * column present on BOTH sides is otherwise ambiguous and the engine rejects the whole
+     * statement; a discriminator column that every collection carries makes that the normal case
+     * rather than an edge one.
+     */
+    alias?: string;
+    /**
+     * Where this clause's placeholders start counting.
+     *
+     * Irrelevant to a dialect with positional `?`, and load-bearing for one with numbered
+     * placeholders: two clauses rendered separately and concatenated both start at `$1`, so the
+     * second binds the first's values. The caller adding the clauses knows the running total.
+     */
+    paramOffset?: number;
+};
+
 /**
  * Converts an Expression to a SQL WHERE clause and bound parameters for the given dialect.
  */
 export function toSql(
     expr: Expression,
-    dialect: SqlDialectName | SqlDialect
+    dialect: SqlDialectName | SqlDialect,
+    options?: ToSqlOptions
 ): ToSqlResult {
     const d = typeof dialect === "string" ? getDialect(dialect) : dialect;
+    const alias = options?.alias;
 
     /**
      * A value on its way to becoming a bound parameter.
@@ -601,7 +634,7 @@ export function toSql(
      */
     const bindable = (value: unknown) => typeof value === "boolean" ? d.encodeBoolean(value) : value;
     const params: unknown[] = [];
-    let paramIndex = 0;
+    let paramIndex = options?.paramOffset ?? 0;
 
     function placeholder(): string {
         const p = d.getPlaceholder(paramIndex);
@@ -627,7 +660,7 @@ export function toSql(
 
             if (isStringPattern) {
                 /* String pattern: includes / starts-with / ends-with → one renderer. */
-                return renderStringPatternComparison(cmp, d, params, placeholder);
+                return renderStringPatternComparison(cmp, d, params, placeholder, alias);
             }
 
             if (cmp.comparator === "equals") {
@@ -635,9 +668,9 @@ export function toSql(
                 const { propLeft, propRight, valLeft, valRight } = getPropertyValueSides(cmp);
                 const col =
                     propLeft && (valRight !== undefined || propRight)
-                        ? renderColumn(propLeft, d)
+                        ? renderColumn(propLeft, d, alias)
                         : propRight && (valLeft !== undefined || propLeft)
-                          ? renderColumn(propRight, d)
+                          ? renderColumn(propRight, d, alias)
                           : null;
                 const value = valRight !== undefined ? valRight : valLeft;
                 const columnOnLeft = Boolean(propLeft && cmp.right && isValueExpression(cmp.right));
@@ -665,7 +698,7 @@ export function toSql(
         }
 
         if (isPropertyExpression(e)) {
-            return renderColumn(e, d);
+            return renderColumn(e, d, alias);
         }
 
         if (isValueExpression(e)) {

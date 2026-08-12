@@ -4,7 +4,7 @@ import { CallbackResult, Result } from "@routier/core/results";
 import { GenericFunction } from "@routier/core/types";
 import { CollectionDependencies } from "./types";
 
-export class Collection<TEntity extends {}> extends RemovableCollection<TEntity> {
+export class Collection<TEntity extends {}, TStore = unknown> extends RemovableCollection<TEntity, TStore> {
 
     protected override get changeTrackingType(): ChangeTrackingType {
         return "proxy";

@@ -44,10 +44,13 @@ export class DeserializeArrayHandler extends PropertyInfoHandler {
             const valueExpression = `${entitySelectorPath} == null ? ${entitySelectorPath} : ${this.copyExpression(property, entitySelectorPath)}`;
 
             // if it is nullable or optional, assign in an if block, otherwise we
-            // could unintentionally assign null/undefined to a property that does not exist
+            // could unintentionally assign a property that does not exist. An explicit null IS
+            // assigned — a stored null is a value, and dropping it is known-defects #66.
+            // `valueExpression` rather than the bare copy: neither a spread nor a map survives a
+            // null, so the copy has to stay behind its own null check.
             if (property.isOptional || property.isNullable) {
                 const rootPath = new SlotPath("if");
-                builder.get<ContainerBlock>(rootPath.get()).if(`${entitySelectorPath} != null`).appendBody(`${entityAssignmentPath} = ${this.copyExpression(property, entitySelectorPath)}`);
+                builder.get<ContainerBlock>(rootPath.get()).if(`${entitySelectorPath} !== undefined`).appendBody(`${entityAssignmentPath} = ${valueExpression}`);
                 return builder;
             }
 

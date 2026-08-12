@@ -301,10 +301,21 @@ can do:
 
 ## Needs design
 
-### 1. Full-text search — needs design
+### 1. Full-text search — designed, see `specs/full-text-search.md`
 
-Real user need, and `sql-core` gives leverage across three engines. The blocker is not
-implementation.
+Real user need. The two blockers recorded below were both consequences of one unexamined
+decision — using the ENGINE's full-text search — and neither survives dropping it. A view is
+already a shadow table kept in sync, so there is no migration; and if core tokenises, matching
+is set membership over ordinary rows, so there is nothing to diverge and the conformance line
+holds. That is the vector trade, already shipped.
+
+What was left was a cost question, not a design one: `derive` hands back the WHOLE snapshot, so
+every save through the view would recompute the entire index. **Resolved 2026-08-11** — steady-state
+maintenance moved off the view and into the save pipeline, where `.audit()` already runs and the
+change set is already incremental. The view keeps the rebuild path. Full-text search no longer
+depends on incremental `derive`, and one prerequisite is left: `s.string({ maxLength })`. See the
+amendment in `specs/full-text-search.md`. The original blockers are kept below because the
+reasoning that retired them is worth finding next to them.
 
 **The open question: cross-backend consistency is impossible.** Every other feature in this
 repository returns the same answer on every backend, and `e2e/src/dialectConformance.test.ts`
@@ -329,7 +340,48 @@ Also unresolved:
 - What backends with no full-text support do. Falling back to `LIKE` returns different rows and
   would be the wrong kind of quiet.
 
-### 2. Multi-tenancy wrapper — needs design
+### 2. Wrapper stacking order — needs design
+
+Wrappers compose by nesting, and the order is load-bearing and invisible. Nothing errors when
+it is wrong, and the failures are silent rather than loud.
+
+The concrete pairs, all of which exist today with no batching involved:
+
+- **Cache above concurrency.** A cache hit never reaches `ConcurrencyDbPlugin`, so the version
+  observer does not see the read. The next update to that row is written with no expected
+  token, which means it is written UNCHECKED — the protection silently lapses for exactly the
+  rows a cache makes fast.
+- **Cache below concurrency.** The cache serves a `structuredClone` of rows the observer has
+  already stripped `__version` from in place, so the token is gone before it is recorded.
+- **Retry above anything that is not idempotent.** `RetryDbPlugin` already declines to retry
+  `bulkPersist` and `destroy` for this reason, which is the pattern to generalise rather than
+  a special case to leave in one class.
+- **A shared instance below a per-store wrapper.** `ConcurrencyDbPlugin` holds per-store
+  observed versions, so two stores sharing one concurrency wrapper conflate their reads. Any
+  wrapper deliberately shared between stores — a batcher, a pool — must sit BELOW each store's
+  own wrappers, never above.
+
+**The open question is who owns the knowledge.** A `composeDbPlugins` helper that knows the
+right order only works for the wrappers core ships, and the wrapper ecosystem is open —
+`OptimisticUpdatesDbPlugin` and `PluginSyncEngine` live in replication, and anything a user
+writes against `IDbPlugin` participates. Moving the constraints onto the plugins was tried
+during the write-batching design and rejected: `IDbPlugin` is frozen at `databaseName`, `query`,
+`destroy`, `bulkPersist`, and placement advice is not part of what a plugin IS. See
+`specs/write-batching.md`, "What this replaces", for the variants already considered and why
+each was dropped.
+
+What is left to decide:
+
+- Whether validation is worth having at all, or whether documenting the pairs is proportionate.
+  Three of the four cases above are arguably "do not do that", and a mechanism that only core's
+  wrappers can use may cost more than it prevents.
+- If validation: where the order knowledge lives, given it cannot live on `IDbPlugin` and
+  cannot be a closed list.
+- Whether a test could catch the cache×concurrency pair directly instead — the two failures are
+  observable (an unchecked update, a lost token), so a targeted test may be worth more than a
+  general mechanism.
+
+### 3. Multi-tenancy wrapper — needs design
 
 Scope every read and stamp every write with a tenant id. A wrapper enforces globally what is
 easy to forget in one query and severe when you do.
