@@ -20,6 +20,17 @@ const versionExists = pkg => {
   return result.status === 0;
 };
 
+// npm acknowledges a publish before every read replica necessarily serves it. Poll instead of
+// treating ordinary registry propagation as a failed release; a retry remains bounded and the
+// workflow's package-level existence check still makes the whole operation idempotent.
+const waitForVersion = async (pkg, attempts = 12) => {
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    if (versionExists(pkg)) return true;
+    if (attempt < attempts) await new Promise(resolve => setTimeout(resolve, 5_000));
+  }
+  return false;
+};
+
 const tagExists = tag => spawnSync('git', ['rev-parse', '--verify', `refs/tags/${tag}`], { stdio: 'ignore' }).status === 0;
 const releaseExists = tag => spawnSync('gh', ['release', 'view', tag], { stdio: 'ignore' }).status === 0;
 
@@ -37,7 +48,7 @@ for (const pkg of packages) {
   } else {
     console.log(`Publishing ${tag}...`);
     command('npm', ['publish', '--workspace', pkg.name, '--access', 'public', '--provenance'], { env: npmEnvironment });
-    if (!versionExists(pkg)) throw new Error(`${tag} was not visible from npm after publication`);
+    if (!await waitForVersion(pkg)) throw new Error(`${tag} was not visible from npm after one minute`);
   }
 
   if (releaseExists(tag)) {
