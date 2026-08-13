@@ -1,8 +1,5 @@
 ---
 title: Data Manipulation
-layout: default
-parent: Guides
-nav_order: 4
 ---
 
 ## Data Manipulation
@@ -32,7 +29,7 @@ Data manipulation in Routier covers both querying your data and modifying it thr
 All data manipulation operations are built into the query API. Here are common patterns:
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/data-manipulation/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/data-manipulation/block-1.ts
 
 
 ## Updating Entities with Proxies
@@ -55,7 +52,7 @@ This happens transparently—you write normal JavaScript code and Routier handle
 Update properties directly:
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/data-manipulation/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/data-manipulation/block-2.ts
 
 
 ### Updating Nested Objects
@@ -63,7 +60,7 @@ Update properties directly:
 Nested objects are also proxied, so changes are tracked automatically:
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/data-manipulation/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/data-manipulation/block-3.ts
 
 
 ### Updating Arrays
@@ -73,7 +70,7 @@ Arrays require special handling. Here's what works and what doesn't:
 #### ✅ Works: Mutating Arrays Directly
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/data-manipulation/block-4.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/data-manipulation/block-4.ts
 
 
 #### ⚠️ Limitation: Replacing Entire Arrays
@@ -81,7 +78,7 @@ Arrays require special handling. Here's what works and what doesn't:
 When you replace an entire array, the change is tracked:
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/data-manipulation/block-5.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/data-manipulation/block-5.ts
 
 
 ### What Works and What Doesn't
@@ -105,12 +102,12 @@ When you replace an entire array, the change is tracked:
 Here's a complete example showing proper update patterns:
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/data-manipulation/block-6.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/data-manipulation/block-6.ts
 
 
 ## Related Guides
 
 - **[Update Operations](/how-to/crud/update)** - Detailed guide to updating entities
 - **[Queries Guide](/concepts/queries/)** - Comprehensive query documentation
-- **[Field Selection](/concepts/queries/field-selection/)** - Data transformation techniques
-- **[Filtering](/concepts/queries/filtering/)** - Advanced filtering patterns
+- **[Field Selection](/concepts/queries/field-selection)** - Data transformation techniques
+- **[Filtering](/concepts/queries/filtering)** - Advanced filtering patterns

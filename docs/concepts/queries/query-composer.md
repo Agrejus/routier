@@ -1,9 +1,5 @@
 ---
 title: Query Composer
-layout: default
-parent: Queries
-nav_order: 7
-permalink: /concepts/queries/query-composer/
 ---
 
 # Query Composer
@@ -28,7 +24,7 @@ Query Composer is a way to build queries independently of a collection. Instead 
 When building queries directly on collections, you must have the collection instance available:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/query-composer/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-1.ts
 
 
 This works well for one-off queries, but becomes limiting when you want to:
@@ -43,13 +39,13 @@ This works well for one-off queries, but becomes limiting when you want to:
 Query Composer separates query building from query execution:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/query-composer/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-2.ts
 
 
 **Note**: You can import schemas directly instead of accessing them from the data store. This makes your query composers completely independent:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/query-composer/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-3.ts
 
 
 This pattern is especially useful when:
@@ -65,7 +61,7 @@ This pattern is especially useful when:
 Create query factories that can be reused throughout your application:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/query-composer/block-4.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-4.ts
 
 
 ### 2. Separation of Concerns
@@ -73,7 +69,7 @@ Create query factories that can be reused throughout your application:
 Separate query definition from query execution. Import schemas directly to make queries completely independent:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/query-composer/block-5.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-5.ts
 
 
 ### 3. Complex Query Building
@@ -81,7 +77,7 @@ Separate query definition from query execution. Import schemas directly to make 
 Build complex queries with multiple parameters and operations:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/query-composer/block-6.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-6.ts
 
 
 ## Basic Usage
@@ -91,7 +87,7 @@ Build complex queries with multiple parameters and operations:
 Start with `Queryable.compose()` and pass the schema. You can access the schema from the data store or import it directly:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/query-composer/block-7.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-7.ts
 
 
 ### Chaining Operations
@@ -99,7 +95,7 @@ Start with `Queryable.compose()` and pass the schema. You can access the schema 
 Composers support all standard query operations:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/query-composer/block-8.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-8.ts
 
 
 ### Using with Pagination
@@ -107,7 +103,7 @@ Composers support all standard query operations:
 Composers work seamlessly with pagination:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/query-composer/block-9.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-9.ts
 
 
 ## Advanced Patterns
@@ -117,7 +113,7 @@ Composers work seamlessly with pagination:
 Create factories that generate queries based on different criteria:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/query-composer/block-10.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-10.ts
 
 
 ### Conditional Query Building
@@ -125,7 +121,7 @@ Create factories that generate queries based on different criteria:
 Build queries conditionally based on runtime conditions:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/query-composer/block-11.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-11.ts
 
 
 ### Combining Composers with Additional Operations
@@ -133,7 +129,7 @@ Build queries conditionally based on runtime conditions:
 You can apply a composer and then chain additional operations:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/query-composer/block-12.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-12.ts
 
 
 ## When to Use Query Composer
@@ -169,30 +165,30 @@ You can apply a composer and then chain additional operations:
 ### 1. Use Descriptive Function Names
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/query-composer/block-13.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-13.ts
 
 
 ### 2. Group Related Queries
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/query-composer/block-14.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-14.ts
 
 
 ### 3. Type Your Parameters
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/query-composer/block-15.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-15.ts
 
 
 ### 4. Keep Composers Focused
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/query-composer/block-16.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-16.ts
 
 
 ## Related Topics
 
-- [Filtering Data](/concepts/queries/filtering/) - Learn about parameterized queries
-- [Query Architecture](/concepts/query-architecture/) - Understand how queries work internally
-- [Sorting Results](/concepts/queries/sorting/) - Learn about sorting operations
-- [Pagination](/concepts/queries/pagination/) - Learn about pagination patterns
+- [Filtering Data](/concepts/queries/filtering) - Learn about parameterized queries
+- [Query Architecture](/concepts/query-architecture) - Understand how queries work internally
+- [Sorting Results](/concepts/queries/sorting) - Learn about sorting operations
+- [Pagination](/concepts/queries/pagination) - Learn about pagination patterns

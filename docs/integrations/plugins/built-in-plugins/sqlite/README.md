@@ -1,9 +1,5 @@
 ---
 title: SQLite Plugin
-layout: default
-parent: Built-in Plugins
-grand_parent: Integrations
-nav_order: 6
 ---
 
 # SQLite Plugin
@@ -18,8 +14,7 @@ npm install @routier/sqlite-plugin sqlite3
 
 ## Basic Usage
 
-{% capture snippet_sqlite_basic %}{% include code/from-docs/integrations/plugins/built-in-plugins/sqlite/README/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_sqlite_basic | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/built-in-plugins/sqlite/README/block-1.ts
 
 ## Notes
 

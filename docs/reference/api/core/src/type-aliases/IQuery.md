@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / IQuery
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / IQuery
 
 # Type Alias: IQuery\<TRoot, TShape\>
 
@@ -26,7 +26,7 @@ Interface for a query operation, including expression, options, filters, and cha
 
 ### options
 
-> **options**: [`QueryOptionsCollection`](../classes/QueryOptionsCollection.md)\<`TShape`\>
+> **options**: [`QueryOptionsCollection`](/reference/api/core/src/classes/QueryOptionsCollection)\<`TShape`\>
 
 Defined in: [core/src/plugins/types.ts:107](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/types.ts#L107)
 
@@ -36,7 +36,7 @@ Query options (sort, skip, take, etc.).
 
 ### schema
 
-> **schema**: [`CompiledSchema`](CompiledSchema.md)\<`TRoot`\>
+> **schema**: [`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`TRoot`\>
 
 Defined in: [core/src/plugins/types.ts:109](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/types.ts#L109)
 

@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / QueryField
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / QueryField
 
 # Type Alias: QueryField
 
@@ -40,7 +40,7 @@ Defined in: [core/src/plugins/query/types.ts:16](https://github.com/Agrejus/rout
 
 ### property?
 
-> `optional` **property**: [`PropertyInfo`](../classes/PropertyInfo.md)\<`unknown`\>
+> `optional` **property**: [`PropertyInfo`](/reference/api/core/src/classes/PropertyInfo)\<`unknown`\>
 
 Defined in: [core/src/plugins/query/types.ts:17](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/query/types.ts#L17)
 

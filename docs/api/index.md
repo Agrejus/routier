@@ -1,8 +1,5 @@
 ---
 title: API Reference
-layout: default
-nav_order: 10
-permalink: /api/
 ---
 
 # API Reference
@@ -28,7 +25,7 @@ The primary class for managing collections and data persistence.
 **Import:**
 
 
-{% highlight ts linenos %}{% include code/from-docs/api/index/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/api/index/block-1.ts
 
 
 **Main Methods:**
@@ -48,7 +45,7 @@ Represents a collection of entities with full CRUD operations.
 **Import:**
 
 
-{% highlight ts linenos %}{% include code/from-docs/api/index/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/api/index/block-2.ts
 
 
 **Main Methods:**
@@ -99,7 +96,7 @@ Core utilities, schema definitions, and shared types.
 **Import:**
 
 
-{% highlight ts linenos %}{% include code/from-docs/api/index/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/api/index/block-3.ts
 
 
 **Schema Builder:**
@@ -138,25 +135,25 @@ Core utilities, schema definitions, and shared types.
 **Filtering:**
 
 
-{% highlight ts linenos %}{% include code/from-docs/api/index/block-4.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/api/index/block-4.ts
 
 
 **Sorting:**
 
 
-{% highlight ts linenos %}{% include code/from-docs/api/index/block-5.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/api/index/block-5.ts
 
 
 **Pagination:**
 
 
-{% highlight ts linenos %}{% include code/from-docs/api/index/block-6.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/api/index/block-6.ts
 
 
 **Terminal Operations:**
 
 
-{% highlight ts linenos %}{% include code/from-docs/api/index/block-7.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/api/index/block-7.ts
 
 
 ## @routier/react
@@ -170,25 +167,25 @@ React hook for subscribing to live queries.
 **Import:**
 
 
-{% highlight ts linenos %}{% include code/from-docs/api/index/block-8.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/api/index/block-8.ts
 
 
 **Signature:**
 
 
-{% highlight ts linenos %}{% include code/from-docs/api/index/block-9.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/api/index/block-9.ts
 
 
 **Return Type:**
 
 
-{% highlight ts linenos %}{% include code/from-docs/api/index/block-10.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/api/index/block-10.ts
 
 
 **Usage:**
 
 
-{% highlight ts linenos %}{% include code/from-docs/api/index/block-11.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/api/index/block-11.ts
 
 
 ## Core Utilities
@@ -209,32 +206,32 @@ React hook for subscribing to live queries.
 
 Complete auto-generated API documentation with full type signatures, method parameters, return types, and detailed descriptions is available:
 
-- **[Complete API Reference]({{ site.baseurl }}/reference/api/)** - Full generated documentation index
-- **[@routier/datastore API]({{ site.baseurl }}/reference/api/datastore/src/README.md)** - DataStore and Collection classes
-- **[@routier/core API]({{ site.baseurl }}/reference/api/core/src/README.md)** - Schema, utilities, and core functionality
-- **[@routier/react API]({{ site.baseurl }}/reference/api/react/src/README.md)** - React hooks
+- **[Complete API Reference](/reference/api/README)** - Full generated documentation index
+- **[@routier/datastore API](/reference/api/datastore/src/README)** - DataStore and Collection classes
+- **[@routier/core API](/reference/api/core/src/README)** - Schema, utilities, and core functionality
+- **[@routier/react API](/reference/api/react/src/README)** - React hooks
 
 ### Key API Classes
 
 **@routier/datastore:**
 
-- [DataStore]({{ site.baseurl }}/reference/api/datastore/src/classes/DataStore.md) - Main data store class
-- [Collection]({{ site.baseurl }}/reference/api/datastore/src/classes/Collection.md) - Collection class with query and CRUD operations
+- [DataStore](/reference/api/datastore/src/classes/DataStore) - Main data store class
+- [Collection](/reference/api/datastore/src/classes/Collection) - Collection class with query and CRUD operations
 
 **@routier/core:**
 
-- Schema builders: [SchemaString]({{ site.baseurl }}/reference/api/core/src/classes/SchemaString.md), [SchemaNumber]({{ site.baseurl }}/reference/api/core/src/classes/SchemaNumber.md), [SchemaObject]({{ site.baseurl }}/reference/api/core/src/classes/SchemaObject.md), etc.
-- [s]({{ site.baseurl }}/reference/api/core/src/variables/s.md) - Schema builder variable
-- [Result]({{ site.baseurl }}/reference/api/core/src/classes/Result.md) - Result type for operations
-- [IDbPlugin]({{ site.baseurl }}/reference/api/core/src/interfaces/IDbPlugin.md) - Database plugin interface
+- Schema builders: [SchemaString](/reference/api/core/src/classes/SchemaString), [SchemaNumber](/reference/api/core/src/classes/SchemaNumber), [SchemaObject](/reference/api/core/src/classes/SchemaObject), etc.
+- [s](/reference/api/core/src/variables/s) - Schema builder variable
+- [Result](/reference/api/core/src/classes/Result) - Result type for operations
+- [IDbPlugin](/reference/api/core/src/interfaces/IDbPlugin) - Database plugin interface
 
 **@routier/react:**
 
-- [useQuery]({{ site.baseurl }}/reference/api/react/src/functions/useQuery.md) - React hook for live queries
+- [useQuery](/reference/api/react/src/functions/useQuery) - React hook for live queries
 
 ## Related
 
-- [Getting Started Guide]({{ site.baseurl }}/getting-started/overview)
-- [Schema Concepts]({{ site.baseurl }}/concepts/schema/)
-- [Query Concepts]({{ site.baseurl }}/concepts/queries/)
-- [Live Queries Guide]({{ site.baseurl }}/guides/live-queries)
+- [Getting Started Guide](/getting-started/overview)
+- [Schema Concepts](/concepts/schema/)
+- [Query Concepts](/concepts/queries/)
+- [Live Queries Guide](/guides/live-queries)

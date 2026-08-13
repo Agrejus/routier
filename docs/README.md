@@ -1,39 +1,41 @@
+---
+title: Docs README
+search: false
+---
+
 # Routier Documentation
 
-Routier is a reactive data toolkit: schemas + collections + live queries + optimistic mutations, powered by a plugin system for any storage.
+This folder is a [VitePress](https://vitepress.dev) site published to
+[routier.dev](https://routier.dev) with GitHub Pages.
 
-## How it works
+## Local development
 
-1. Define schemas (types, indexes, modifiers)
-2. Create collections from schemas
-3. Read data with live queries
-4. Write with optimistic mutations (rollback on error)
+```bash
+cd docs
+npm install
+npm run docs:dev      # dev server with hot reload
+npm run docs:build    # production build (also validates internal links)
+npm run docs:preview  # serve the production build locally
+```
 
-## Start here
+## Layout
 
-- Getting Started: /getting-started/overview
-- Installation: /getting-started/installation
-- Quick Start: /getting-started/quick-start
-- React Adapter: /getting-started/react-adapter
+- `index.md` — the landing page (VitePress `home` layout).
+- `.vitepress/config.mts` — site config: nav, theme, search.
+- `.vitepress/sidebar.json` — the sidebar tree. Add new pages here.
+- `.vitepress/theme/custom.css` — brand colors and visual tweaks.
+- `_snippets/` — code samples imported into pages with `<<< @/_snippets/...`.
+- `public/` — static assets served at the site root (logo, `CNAME`).
 
-## Concepts
+## Deployment
 
-- Schema: /concepts/schema/
-- Queries: /concepts/queries/
+Pushing changes under `docs/` to `main` triggers
+`.github/workflows/docs.yml`, which builds the site and deploys it to
+GitHub Pages.
 
-## Guides
+## Conventions
 
-- Live Queries: /guides/live-queries.md
-- Optimistic Replication: /guides/optimistic-replication.md
-- State Management: /guides/state-management.md
-- Data Manipulation: /guides/data-manipulation.md
-- History Tracking: /guides/history-tracking.md
-- Syncing: /guides/syncing.md
-- Entity Tagging: /guides/entity-tagging.md
-
-## Integrations
-
-- React: /integrations/react/
-- Plugins: /integrations/plugins/built-in-plugins/
-
-For structure/flow inspiration: TanStack DB Overview — `https://tanstack.com/db/latest/docs/overview`
+- Internal links are site-absolute without extensions: `/guides/live-queries`.
+- The build fails on dead internal links — run `npm run docs:build` before pushing.
+- Prefer `<<<` snippet imports over inline fenced code for anything longer
+  than a few lines, so samples stay type-checkable.

@@ -1,9 +1,5 @@
 ---
 title: Getting Started
-layout: default
-nav_order: 1
-has_children: true
-permalink: /getting-started/
 ---
 
 # Getting Started with Routier
@@ -47,7 +43,7 @@ Before you begin, make sure you have:
 
 ## Quick Overview
 
-Routier is built for **local-first** apps: data lives on the device first, the app works offline, and syncs when online. See [Local-First Apps](/guides/local-first-apps.md) for the full picture.
+Routier is built for **local-first** apps: data lives on the device first, the app works offline, and syncs when online. See [Local-First Apps](/guides/local-first-apps) for the full picture.
 
 Routier works by:
 
@@ -62,36 +58,36 @@ Routier works by:
 
 If you want to see Routier in action immediately:
 
-- [Quick Start Guide]({{ site.baseurl }}/getting-started/quick-start) - Build a working example in minutes
+- [Quick Start Guide](/getting-started/quick-start) - Build a working example in minutes
 
 ### 📦 **Installation First**
 
 If you prefer to understand the setup process:
 
-- [Installation Guide]({{ site.baseurl }}/getting-started/installation) - Install packages and dependencies
-- [Quick Start Guide]({{ site.baseurl }}/getting-started/quick-start) - Then build your first app
+- [Installation Guide](/getting-started/installation) - Install packages and dependencies
+- [Quick Start Guide](/getting-started/quick-start) - Then build your first app
 
 ### ⚛️ **React Developer**
 
 If you're building with React:
 
-- [React Adapter]({{ site.baseurl }}/getting-started/react-adapter) - React hooks and components
+- [React Adapter](/getting-started/react-adapter) - React hooks and components
 
 ### ⚙️ **Advanced Setup**
 
 If you need custom configuration:
 
-- [Configuration Guide]({{ site.baseurl }}/getting-started/configuration) - Advanced setup options
+- [Configuration Guide](/tutorials/configuration) - Advanced setup options
 
 ## Next Steps
 
 Once you've completed the getting started guide:
 
-- **Build offline-first**: [Local-First Apps]({{ site.baseurl }}/guides/local-first-apps) - Work offline, sync when online
-- **Learn the concepts**: [Schema Guide]({{ site.baseurl }}/concepts/schema/) - Deep dive into data modeling
-- **Explore features**: [Live Queries]({{ site.baseurl }}/guides/live-queries) - Reactive data patterns
-- **Check out React**: [React Integration]({{ site.baseurl }}/integrations/react/) - Use Routier with React
-- **Browse plugins**: [Built-in Plugins]({{ site.baseurl }}/integrations/plugins/built-in-plugins/) - Available storage options
+- **Build offline-first**: [Local-First Apps](/guides/local-first-apps) - Work offline, sync when online
+- **Learn the concepts**: [Schema Guide](/concepts/schema/) - Deep dive into data modeling
+- **Explore features**: [Live Queries](/guides/live-queries) - Reactive data patterns
+- **Check out React**: [React Integration](/integrations/react/) - Use Routier with React
+- **Browse plugins**: [Built-in Plugins](/integrations/plugins/built-in-plugins/) - Available storage options
 
 ## Need Help?
 

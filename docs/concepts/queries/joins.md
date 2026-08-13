@@ -1,9 +1,5 @@
 ---
 title: Joins
-layout: default
-parent: Queries
-nav_order: 8
-permalink: /concepts/queries/joins/
 ---
 
 # Joining Collections
@@ -27,7 +23,7 @@ Pair rows from two collections on a matching key with `join` and `leftJoin`.
 ## A First Join
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/joins/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/joins/block-1.ts
 
 
 `s` is the store the collection belongs to. A store can see its own collections, so a sibling is
@@ -45,7 +41,7 @@ agree on type: joining a `string` key to a `number` key does not compile.
 `leftJoin` keeps rows from the left side that match nothing, pairing them with `undefined`:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/joins/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/joins/block-2.ts
 
 
 The unmatched half is `undefined` — never an entity whose properties are all null.
@@ -55,7 +51,7 @@ The unmatched half is `undefined` — never an entity whose properties are all n
 Two forms, and the difference is only which store the inner collection lives on:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/joins/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/joins/block-3.ts
 
 
 The selector runs when the query is built, not when it executes, so it costs nothing and its
@@ -79,14 +75,14 @@ Two things follow from a tuple not being a row:
 Everything you chain after a join operates on the pairs:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/joins/block-4.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/joins/block-4.ts
 
 
 A `where` after the join can compare the two sides to each other, which is the only place such a
 condition can go:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/joins/block-5.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/joins/block-5.ts
 
 
 A `where` **after** the join is split where it can be: any `&&` part of it that mentions one side
@@ -100,13 +96,13 @@ other filter is. Either place is correct; before the join is clearer when the co
 about the left side:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/joins/block-6.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/joins/block-6.ts
 
 
 `count` counts **pairs**, not left-side rows:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/joins/block-7.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/joins/block-7.ts
 
 
 The terminal methods available on a join are `toArray`/`toArrayAsync`, `first`/`firstAsync`,
@@ -135,7 +131,7 @@ partially-correct behaviour to fall back on. Conditions that are not key equalit
 A view is a join side like any collection:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/joins/block-8.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/joins/block-8.ts
 
 
 ## Joining Across Stores
@@ -144,7 +140,7 @@ Two collections on different plugins — a local cache and a remote store, two d
 normally:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/joins/block-9.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/joins/block-9.ts
 
 
 Here the inner side is passed **directly** rather than selected. That is the one case the selector
@@ -181,7 +177,7 @@ than reading that collection whole. It stops doing so past `semiJoinKeyThreshold
 (default 500), where a long key list costs more than the scan it saves:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/joins/block-10.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/joins/block-10.ts
 
 
 Purely a cost knob — the pairs are identical either way.
@@ -198,7 +194,7 @@ Purely a cost knob — the pairs are identical either way.
 
 ## Related
 
-- [Filtering](/concepts/queries/filtering/) — filter before the join to read less
-- [Field Selection](/concepts/queries/field-selection/) — project pairs into your own shape
-- [Terminal Methods](/concepts/queries/terminal-methods/) — how a query executes
-- [Views](/concepts/data-collections/) — views as a join side
+- [Filtering](/concepts/queries/filtering) — filter before the join to read less
+- [Field Selection](/concepts/queries/field-selection) — project pairs into your own shape
+- [Terminal Methods](/concepts/queries/terminal-methods) — how a query executes
+- [Views](/concepts/data-collections/memory-collections) — views as a join side

@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / JsonTranslator
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / JsonTranslator
 
 # Class: JsonTranslator\<TRoot, TShape\>
 
@@ -10,7 +10,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:7](https://github.co
 
 ## Extends
 
-- [`DataTranslator`](DataTranslator.md)\<`TRoot`, `TShape`\>
+- [`DataTranslator`](/reference/api/core/src/classes/DataTranslator)\<`TRoot`, `TShape`\>
 
 ## Type Parameters
 
@@ -34,7 +34,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:20](https://github.c
 
 ##### query
 
-[`IQuery`](../type-aliases/IQuery.md)\<`TRoot`, `TShape`\>
+[`IQuery`](/reference/api/core/src/type-aliases/IQuery)\<`TRoot`, `TShape`\>
 
 #### Returns
 
@@ -42,7 +42,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:20](https://github.c
 
 #### Inherited from
 
-[`DataTranslator`](DataTranslator.md).[`constructor`](DataTranslator.md#constructor)
+[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`constructor`](/reference/api/core/src/classes/DataTranslator#constructor)
 
 ## Methods
 
@@ -64,7 +64,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:38](https://github.c
 
 #### Inherited from
 
-[`DataTranslator`](DataTranslator.md).[`translate`](DataTranslator.md#translate)
+[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`translate`](/reference/api/core/src/classes/DataTranslator#translate)
 
 ***
 
@@ -88,7 +88,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:9](https://github.co
 
 ##### option
 
-[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"filter"`\>
+[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"filter"`\>
 
 #### Returns
 
@@ -96,7 +96,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:9](https://github.co
 
 #### Overrides
 
-[`DataTranslator`](DataTranslator.md).[`filter`](DataTranslator.md#filter)
+[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`filter`](/reference/api/core/src/classes/DataTranslator#filter)
 
 ***
 
@@ -120,7 +120,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:28](https://github.c
 
 ##### option
 
-[`QueryOption`](../type-aliases/QueryOption.md)\<`T`, `"map"`\>
+[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`T`, `"map"`\>
 
 #### Returns
 
@@ -128,7 +128,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:28](https://github.c
 
 #### Overrides
 
-[`DataTranslator`](DataTranslator.md).[`map`](DataTranslator.md#map)
+[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`map`](/reference/api/core/src/classes/DataTranslator#map)
 
 ***
 
@@ -152,7 +152,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:59](https://github.c
 
 ##### \_
 
-[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"count"`\>
+[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"count"`\>
 
 #### Returns
 
@@ -160,7 +160,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:59](https://github.c
 
 #### Overrides
 
-[`DataTranslator`](DataTranslator.md).[`count`](DataTranslator.md#count)
+[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`count`](/reference/api/core/src/classes/DataTranslator#count)
 
 ***
 
@@ -184,7 +184,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:68](https://github.c
 
 ##### \_
 
-[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"min"`\>
+[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"min"`\>
 
 #### Returns
 
@@ -192,7 +192,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:68](https://github.c
 
 #### Overrides
 
-[`DataTranslator`](DataTranslator.md).[`min`](DataTranslator.md#min)
+[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`min`](/reference/api/core/src/classes/DataTranslator#min)
 
 ***
 
@@ -216,7 +216,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:72](https://github.c
 
 ##### \_
 
-[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"max"`\>
+[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"max"`\>
 
 #### Returns
 
@@ -224,7 +224,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:72](https://github.c
 
 #### Overrides
 
-[`DataTranslator`](DataTranslator.md).[`max`](DataTranslator.md#max)
+[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`max`](/reference/api/core/src/classes/DataTranslator#max)
 
 ***
 
@@ -248,7 +248,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:76](https://github.c
 
 ##### option
 
-[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"sort"`\>
+[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"sort"`\>
 
 #### Returns
 
@@ -256,7 +256,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:76](https://github.c
 
 #### Overrides
 
-[`DataTranslator`](DataTranslator.md).[`sort`](DataTranslator.md#sort)
+[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`sort`](/reference/api/core/src/classes/DataTranslator#sort)
 
 ***
 
@@ -280,7 +280,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:92](https://github.c
 
 ##### \_
 
-[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"sum"`\>
+[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"sum"`\>
 
 #### Returns
 
@@ -288,7 +288,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:92](https://github.c
 
 #### Overrides
 
-[`DataTranslator`](DataTranslator.md).[`sum`](DataTranslator.md#sum)
+[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`sum`](/reference/api/core/src/classes/DataTranslator#sum)
 
 ***
 
@@ -312,7 +312,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:118](https://github.
 
 ##### \_
 
-[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"distinct"`\>
+[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"distinct"`\>
 
 #### Returns
 
@@ -320,7 +320,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:118](https://github.
 
 #### Overrides
 
-[`DataTranslator`](DataTranslator.md).[`distinct`](DataTranslator.md#distinct)
+[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`distinct`](/reference/api/core/src/classes/DataTranslator#distinct)
 
 ***
 
@@ -344,7 +344,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:150](https://github.
 
 ##### option
 
-[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"skip"`\>
+[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"skip"`\>
 
 #### Returns
 
@@ -352,7 +352,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:150](https://github.
 
 #### Overrides
 
-[`DataTranslator`](DataTranslator.md).[`skip`](DataTranslator.md#skip)
+[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`skip`](/reference/api/core/src/classes/DataTranslator#skip)
 
 ***
 
@@ -376,7 +376,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:170](https://github.
 
 ##### option
 
-[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"take"`\>
+[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"take"`\>
 
 #### Returns
 
@@ -384,4 +384,4 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:170](https://github.
 
 #### Overrides
 
-[`DataTranslator`](DataTranslator.md).[`take`](DataTranslator.md#take)
+[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`take`](/reference/api/core/src/classes/DataTranslator#take)

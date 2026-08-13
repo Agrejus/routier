@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / DataTranslator
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / DataTranslator
 
 # Abstract Class: DataTranslator\<TRoot, TShape\>
 
@@ -10,8 +10,8 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:4](https://github.co
 
 ## Extended by
 
-- [`JsonTranslator`](JsonTranslator.md)
-- [`SqlTranslator`](SqlTranslator.md)
+- [`JsonTranslator`](/reference/api/core/src/classes/JsonTranslator)
+- [`SqlTranslator`](/reference/api/core/src/classes/SqlTranslator)
 
 ## Type Parameters
 
@@ -35,7 +35,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:20](https://github.c
 
 ##### query
 
-[`IQuery`](../type-aliases/IQuery.md)\<`TRoot`, `TShape`\>
+[`IQuery`](/reference/api/core/src/type-aliases/IQuery)\<`TRoot`, `TShape`\>
 
 #### Returns
 
@@ -63,7 +63,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:25](https://github.c
 
 ##### option
 
-[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"count"`\>
+[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"count"`\>
 
 #### Returns
 
@@ -91,7 +91,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:26](https://github.c
 
 ##### option
 
-[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"min"`\>
+[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"min"`\>
 
 #### Returns
 
@@ -119,7 +119,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:27](https://github.c
 
 ##### option
 
-[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"max"`\>
+[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"max"`\>
 
 #### Returns
 
@@ -147,7 +147,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:28](https://github.c
 
 ##### option
 
-[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"sum"`\>
+[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"sum"`\>
 
 #### Returns
 
@@ -175,7 +175,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:29](https://github.c
 
 ##### option
 
-[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"distinct"`\>
+[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"distinct"`\>
 
 #### Returns
 
@@ -203,7 +203,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:32](https://github.c
 
 ##### option
 
-[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"filter"`\>
+[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"filter"`\>
 
 #### Returns
 
@@ -225,7 +225,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:33](https://github.c
 
 ##### option
 
-[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"skip"`\>
+[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"skip"`\>
 
 #### Returns
 
@@ -247,7 +247,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:34](https://github.c
 
 ##### option
 
-[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"take"`\>
+[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"take"`\>
 
 #### Returns
 
@@ -269,7 +269,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:35](https://github.c
 
 ##### option
 
-[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"sort"`\>
+[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"sort"`\>
 
 #### Returns
 
@@ -291,7 +291,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:36](https://github.c
 
 ##### option
 
-[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"map"`\>
+[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"map"`\>
 
 #### Returns
 

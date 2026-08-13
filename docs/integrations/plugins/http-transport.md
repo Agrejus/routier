@@ -1,9 +1,5 @@
 ---
 title: HTTP Transport
-layout: default
-parent: Plugins
-nav_order: 9
-permalink: /integrations/plugins/http-transport/
 ---
 
 # HTTP Transport
@@ -27,7 +23,7 @@ Use this when **both ends are yours** and both run Routier. The query travels in
 can push a filter to an index, run a real SQL `JOIN`, or compute an aggregate and return the answer
 instead of the rows.
 
-Use [`HttpDbPlugin`](/integrations/plugins/replication/) instead when the server is not yours — it
+Use [`HttpDbPlugin`](/integrations/plugins/built-in-plugins/replication/README) instead when the server is not yours — it
 talks to an ordinary REST API, one GET per collection, with filters flattened into query parameters.
 
 ## Client
@@ -35,13 +31,13 @@ talks to an ordinary REST API, one GET per collection, with filters flattened in
 The client has no local storage at all:
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/http-transport/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/http-transport/block-1.ts
 
 
 Then query it like any store. Nothing about the calling code changes:
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/http-transport/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/http-transport/block-2.ts
 
 
 That is **one** request, and the join executes on the server.
@@ -52,7 +48,7 @@ That is **one** request, and the join executes on the server.
 works behind Express, a Cloudflare Worker, a Lambda, a WebSocket, or a worker `postMessage`:
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/http-transport/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/http-transport/block-3.ts
 
 
 Failures come back as `{ ok: false, error }` rather than as a thrown exception, so a query error
@@ -60,7 +56,7 @@ cannot accidentally become a 500 with no body. **You choose the status code** �
 whether "not signed in" is a 401 or a 403:
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/http-transport/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/http-transport/block-1.ts
 
 
 Whatever status you pick, **return the body**. The client reads it: a non-2xx carrying a Routier
@@ -78,7 +74,7 @@ Both receive a `context` you build from the request. Build it from the request, 
 body** — the body is the part the client controls.
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/http-transport/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/http-transport/block-1.ts
 
 
 Name a context type and passing one becomes **required**, so a policy cannot be half-wired.
@@ -92,7 +88,7 @@ It is told the action and **every collection the request touches, joins included
 refuse a join to a collection it would refuse directly:
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/http-transport/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/http-transport/block-2.ts
 
 
 ### `scope` — which rows may this caller touch?
@@ -117,7 +113,7 @@ callers, and one that quietly stops applying is worse than an error.
 `{"kind":"destroy"}` would otherwise drop your database, so it is opt-in:
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/http-transport/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/http-transport/block-3.ts
 
 
 It still passes through `authorize`.
@@ -148,7 +144,7 @@ named, never described, so the server's definition of a collection is always the
 the longest prefix it can and runs the rest itself:
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/http-transport/block-6.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/http-transport/block-6.ts
 
 
 It is a prefix rather than a filtered subset, and that matters: sending `count` while keeping `map`
@@ -157,7 +153,7 @@ local would count unmapped rows.
 ## Limits
 
 - **No caching, no offline queue, no retry.** This is a transport, so what arrives at the server is
-  exactly what the caller asked for. Compose [`HttpSwrDbPlugin`](/integrations/plugins/replication/)
+  exactly what the caller asked for. Compose [`HttpSwrDbPlugin`](/integrations/plugins/built-in-plugins/replication/README)
   when you want those.
 - **`destroy` is not forwarded.** It means "release what this plugin holds", and this plugin holds a
   URL. Forwarding it would let any client drop the server's database.
@@ -168,6 +164,6 @@ local would count unmapped rows.
 
 ## Related
 
-- [Joins](/concepts/queries/joins/) — what a forwarded join does on the far side
-- [Replication](/integrations/plugins/replication/) — `HttpDbPlugin` and the SWR plugin
-- [Plugins](/integrations/plugins/) — the plugin contract
+- [Joins](/concepts/queries/joins) — what a forwarded join does on the far side
+- [Replication](/integrations/plugins/built-in-plugins/replication/README) — `HttpDbPlugin` and the SWR plugin
+- [Plugins](/integrations/plugins/built-in-plugins/) — the plugin contract

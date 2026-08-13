@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / QueryOptionValueMap
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / QueryOptionValueMap
 
 # Type Alias: QueryOptionValueMap\<T\>
 
@@ -42,11 +42,11 @@ Defined in: [core/src/plugins/query/types.ts:33](https://github.com/Agrejus/rout
 
 #### selector
 
-> **selector**: [`GenericFunction`](GenericFunction.md)\<`T`, `T`\[keyof `T`\]\>
+> **selector**: [`GenericFunction`](/reference/api/core/src/type-aliases/GenericFunction)\<`T`, `T`\[keyof `T`\]\>
 
 #### direction
 
-> **direction**: [`QueryOrdering`](../enumerations/QueryOrdering.md)
+> **direction**: [`QueryOrdering`](/reference/api/core/src/enumerations/QueryOrdering)
 
 #### propertyName
 
@@ -62,11 +62,11 @@ Defined in: [core/src/plugins/query/types.ts:34](https://github.com/Agrejus/rout
 
 #### selector
 
-> **selector**: [`GenericFunction`](GenericFunction.md)\<`T`, `any`\>
+> **selector**: [`GenericFunction`](/reference/api/core/src/type-aliases/GenericFunction)\<`T`, `any`\>
 
 #### fields
 
-> **fields**: [`QueryField`](QueryField.md)[]
+> **fields**: [`QueryField`](/reference/api/core/src/type-aliases/QueryField)[]
 
 ***
 
@@ -82,11 +82,11 @@ Defined in: [core/src/plugins/query/types.ts:35](https://github.com/Agrejus/rout
 
 #### filter
 
-> **filter**: [`ParamsFilter`](ParamsFilter.md)\<`T`, \{ \}\> \| [`Filter`](Filter.md)\<`T`\>
+> **filter**: [`ParamsFilter`](/reference/api/core/src/type-aliases/ParamsFilter)\<`T`, \{ \}\> \| [`Filter`](/reference/api/core/src/type-aliases/Filter)\<`T`\>
 
 #### expression
 
-> **expression**: [`Expression`](../classes/Expression.md)
+> **expression**: [`Expression`](/reference/api/core/src/classes/Expression)
 
 ***
 

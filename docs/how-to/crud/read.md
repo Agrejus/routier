@@ -1,9 +1,5 @@
 ---
 title: Read Operations
-layout: default
-parent: CRUD
-grand_parent: Data Operations
-nav_order: 3
 ---
 
 # Read Operations
@@ -41,7 +37,7 @@ For detailed information about read operations, including:
 - **Computed properties** and performance optimization
 - **Terminal methods** and query execution
 
-Please refer to the comprehensive [Queries documentation](../../concepts/queries/) which covers all aspects of querying in Routier with detailed examples and best practices.
+Please refer to the comprehensive [Queries documentation](/concepts/queries/) which covers all aspects of querying in Routier with detailed examples and best practices.
 
 ## Key Concepts
 
@@ -62,7 +58,7 @@ All queries must end with a terminal method to execute:
 Queries are lazy and chainable - nothing executes until you call a terminal method:
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/read/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/read/block-1.ts
 
 
 ### Performance Considerations
@@ -73,9 +69,9 @@ Queries are lazy and chainable - nothing executes until you call a terminal meth
 
 ## Next Steps
 
-- [Data Manipulation](../../guides/data-manipulation) - Learn about proxy-based updates and array/object manipulation
-- [Queries Documentation](../../concepts/queries/) - Comprehensive querying guide with examples
-- [Create Operations](create.md) - Learn how to add new entities
-- [Update Operations](update.md) - Learn how to modify existing entities
-- [Delete Operations](delete.md) - Learn how to remove entities
-- [Bulk Operations](bulk/README.md) - Learn how to handle multiple entities efficiently
+- [Data Manipulation](/guides/data-manipulation) - Learn about proxy-based updates and array/object manipulation
+- [Queries Documentation](/concepts/queries/) - Comprehensive querying guide with examples
+- [Create Operations](/how-to/crud/create) - Learn how to add new entities
+- [Update Operations](/how-to/crud/update) - Learn how to modify existing entities
+- [Delete Operations](/how-to/crud/delete) - Learn how to remove entities
+- [Bulk Operations](/how-to/crud/bulk/README) - Learn how to handle multiple entities efficiently

@@ -1,9 +1,5 @@
 ---
 title: File System Plugin
-layout: default
-parent: Built-in Plugins
-grand_parent: Integrations
-nav_order: 4
 ---
 
 # File System Plugin
@@ -18,8 +14,7 @@ npm install @routier/file-system-plugin
 
 ## Basic Usage
 
-{% capture snippet_fs_basic %}{% include code/from-docs/integrations/plugins/built-in-plugins/file-system/README/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_fs_basic | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/built-in-plugins/file-system/README/block-1.ts
 
 ## Notes
 

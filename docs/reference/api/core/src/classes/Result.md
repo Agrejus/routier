@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / Result
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / Result
 
 # Class: Result
 
@@ -132,7 +132,7 @@ Defined in: [core/src/results/Result.ts:25](https://github.com/Agrejus/routier/b
 
 #### Call Signature
 
-> `static` **success**\<`T`\>(`data`): [`ResultType`](../type-aliases/ResultType.md)\<`T`\>
+> `static` **success**\<`T`\>(`data`): [`ResultType`](/reference/api/core/src/type-aliases/ResultType)\<`T`\>
 
 Defined in: [core/src/results/Result.ts:33](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L33)
 
@@ -150,11 +150,11 @@ Defined in: [core/src/results/Result.ts:33](https://github.com/Agrejus/routier/b
 
 ##### Returns
 
-[`ResultType`](../type-aliases/ResultType.md)\<`T`\>
+[`ResultType`](/reference/api/core/src/type-aliases/ResultType)\<`T`\>
 
 #### Call Signature
 
-> `static` **success**\<`T`\>(): [`ResultType`](../type-aliases/ResultType.md)\<`never`\>
+> `static` **success**\<`T`\>(): [`ResultType`](/reference/api/core/src/type-aliases/ResultType)\<`never`\>
 
 Defined in: [core/src/results/Result.ts:34](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L34)
 
@@ -166,13 +166,13 @@ Defined in: [core/src/results/Result.ts:34](https://github.com/Agrejus/routier/b
 
 ##### Returns
 
-[`ResultType`](../type-aliases/ResultType.md)\<`never`\>
+[`ResultType`](/reference/api/core/src/type-aliases/ResultType)\<`never`\>
 
 ***
 
 ### error()
 
-> `static` **error**\<`T`\>(`error`): [`ResultType`](../type-aliases/ResultType.md)\<`T`\>
+> `static` **error**\<`T`\>(`error`): [`ResultType`](/reference/api/core/src/type-aliases/ResultType)\<`T`\>
 
 Defined in: [core/src/results/Result.ts:42](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L42)
 
@@ -190,13 +190,13 @@ Defined in: [core/src/results/Result.ts:42](https://github.com/Agrejus/routier/b
 
 #### Returns
 
-[`ResultType`](../type-aliases/ResultType.md)\<`T`\>
+[`ResultType`](/reference/api/core/src/type-aliases/ResultType)\<`T`\>
 
 ***
 
 ### partial()
 
-> `static` **partial**\<`T`\>(`data`, `error`): [`PartialResultType`](../type-aliases/PartialResultType.md)\<`T`\>
+> `static` **partial**\<`T`\>(`data`, `error`): [`PartialResultType`](/reference/api/core/src/type-aliases/PartialResultType)\<`T`\>
 
 Defined in: [core/src/results/Result.ts:49](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L49)
 
@@ -218,4 +218,4 @@ Defined in: [core/src/results/Result.ts:49](https://github.com/Agrejus/routier/b
 
 #### Returns
 
-[`PartialResultType`](../type-aliases/PartialResultType.md)\<`T`\>
+[`PartialResultType`](/reference/api/core/src/type-aliases/PartialResultType)\<`T`\>

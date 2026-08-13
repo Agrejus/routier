@@ -1,9 +1,5 @@
 ---
 title: Change Tracking
-layout: default
-parent: Concepts
-nav_order: 6
-permalink: /concepts/change-tracking/
 ---
 
 ## Change Tracking
@@ -26,7 +22,7 @@ Change tracking records in-memory modifications to entities returned from collec
 ### Basics
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/change-tracking/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/change-tracking/block-1.ts
 
 
 ### Attachments overview
@@ -38,10 +34,10 @@ Use attachments to control what will be saved:
 - Include/Exclude: `set(...entities)` and `remove(entity)`
 - Transfer: move attachments between contexts when using multiple `DataStore` instances
 
-For a step-by-step guide and runnable example, see **[Attachments & Dirty Tracking]({{ site.baseurl }}/guides/attachments/)**.
+For a step-by-step guide and runnable example, see **[Attachments & Dirty Tracking](/guides/attachments)**.
 
 ## Related
 
-- **[State Management]({{ site.baseurl }}/guides/state-management/)** — patterns for working with collections and saves
-- **[Live Queries]({{ site.baseurl }}/guides/live-queries/)** — reactive reads
-- **[Collections]({{ site.baseurl }}/how-to/collections/)** — working with collections and views
+- **[State Management](/guides/state-management)** — patterns for working with collections and saves
+- **[Live Queries](/guides/live-queries)** — reactive reads
+- **[Collections](/how-to/collections/)** — working with collections and views

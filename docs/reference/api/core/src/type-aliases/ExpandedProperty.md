@@ -1,12 +1,12 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / ExpandedProperty
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / ExpandedProperty
 
 # Type Alias: ExpandedProperty
 
-> **ExpandedProperty** = [`ExpandedChildProperty`](ExpandedChildProperty.md) & `object`
+> **ExpandedProperty** = [`ExpandedChildProperty`](/reference/api/core/src/type-aliases/ExpandedChildProperty) & `object`
 
 Defined in: [core/src/schema/types.ts:29](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/types.ts#L29)
 
@@ -22,7 +22,7 @@ Defined in: [core/src/schema/types.ts:29](https://github.com/Agrejus/routier/blo
 
 ### properties
 
-> **properties**: `Map`\<`string`, [`ExpandedChildProperty`](ExpandedChildProperty.md)\>
+> **properties**: `Map`\<`string`, [`ExpandedChildProperty`](/reference/api/core/src/type-aliases/ExpandedChildProperty)\>
 
 ### childDegree
 

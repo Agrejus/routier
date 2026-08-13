@@ -1,11 +1,6 @@
 ---
 title: Replication Plugin
-layout: default
-parent: Built-in Plugins
-grand_parent: Integrations
-nav_order: 6
 doc_role: reference
-permalink: /integrations/plugins/built-in-plugins/replication/
 ---
 
 # Replication Plugin
@@ -21,7 +16,7 @@ Use the replication plugin when you want one of these patterns:
 - `OptimisticUpdatesDbPlugin` for memory-first reads layered on top of a persistent store.
 - `HttpSwrDbPlugin` + `OptimisticUpdatesDbPlugin` for local-first SWR with optimistic updates.
 
-For the full local-first background, see [Local-First Apps](/guides/local-first-apps.md). For the highest-performance composition, see [HttpSwrDbPlugin with Optimistic Replication](/guides/http-swr-with-optimistic.md).
+For the full local-first background, see [Local-First Apps](/guides/local-first-apps). For the highest-performance composition, see [HttpSwrDbPlugin with Optimistic Replication](/guides/http-swr-with-optimistic).
 
 ## Installation
 
@@ -37,8 +32,7 @@ npm install @routier/dexie-plugin
 
 ## Minimal Setup
 
-{% capture replication_basic %}{% include code/from-docs/integrations/plugins/built-in-plugins/replication/README/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ replication_basic | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/built-in-plugins/replication/README/block-1.ts
 
 ## Exported Plugins
 
@@ -114,9 +108,9 @@ avoid discarding valid writes.
 
 ## Related
 
-- [Local-First Apps](/guides/local-first-apps.md)
-- [HttpSwrDbPlugin with Optimistic Replication](/guides/http-swr-with-optimistic.md)
-- [Optimistic Replication](/guides/optimistic-replication.md)
+- [Local-First Apps](/guides/local-first-apps)
+- [HttpSwrDbPlugin with Optimistic Replication](/guides/http-swr-with-optimistic)
+- [Optimistic Replication](/guides/optimistic-replication)
 - [Built-in Plugins](/integrations/plugins/built-in-plugins/)
-- [OptimisticReplicationDbPlugin API](/reference/api/core/src/classes/OptimisticReplicationDbPlugin.md)
-- [ReplicationDbPlugin API](/reference/api/core/src/classes/ReplicationDbPlugin.md)
+- [OptimisticReplicationDbPlugin API](/reference/api/core/src/classes/OptimisticReplicationDbPlugin)
+- [ReplicationDbPlugin API](/reference/api/core/src/classes/ReplicationDbPlugin)

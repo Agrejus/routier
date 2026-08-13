@@ -1,9 +1,5 @@
 ---
 title: Dexie Plugin
-layout: default
-parent: Built-in Plugins
-grand_parent: Integrations
-nav_order: 2
 ---
 
 # Dexie Plugin
@@ -18,8 +14,7 @@ npm install @routier/dexie-plugin dexie
 
 ## Basic Usage
 
-{% capture snippet_dexie_basic %}{% include code/from-docs/integrations/plugins/built-in-plugins/dexie/README/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_dexie_basic | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/built-in-plugins/dexie/README/block-1.ts
 
 ## Notes
 

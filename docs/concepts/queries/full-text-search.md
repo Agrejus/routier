@@ -1,9 +1,5 @@
 ---
 title: Full-Text Search
-layout: default
-parent: Queries
-nav_order: 9
-permalink: /concepts/queries/full-text-search/
 ---
 
 # Full-Text Search
@@ -29,7 +25,7 @@ Rank documents by the words they contain, with the same results on every backend
 Mark the string properties you want to search, declare the index on the collection, and query it:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/full-text-search/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/full-text-search/block-1.ts
 
 
 `hits` holds the articles that contain both words, best match first.
@@ -54,7 +50,7 @@ indexes root-level properties only.
 narrows the results.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/full-text-search/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/full-text-search/block-2.ts
 
 
 There are two modes: `'all'` (the default) and `'any'`.
@@ -67,7 +63,7 @@ entirely of stop words all produce no results rather than every result.
 Pass a selector to search one property, or an array to search several:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/full-text-search/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/full-text-search/block-3.ts
 
 
 A selector that names a property without `.searchable()` throws. Returning no results would look
@@ -79,7 +75,7 @@ Every result carries a readonly `score`. It is the number of times the query's w
 the document, across the fields that were searched:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/full-text-search/block-4.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/full-text-search/block-4.ts
 
 
 Results are ordered by score, highest first. Documents with equal scores are ordered by key, so
@@ -97,7 +93,7 @@ example — without that being a breaking change.
 A search composes like a query:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/full-text-search/block-5.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/full-text-search/block-5.ts
 
 
 - `where` narrows which documents can match. It runs on the database.
@@ -106,7 +102,7 @@ A search composes like a query:
 - `map` projects the result and drops the score.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/full-text-search/block-6.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/full-text-search/block-6.ts
 
 
 Terminal methods are `toArrayAsync`, `firstOrUndefinedAsync` and `countAsync`.
@@ -118,7 +114,7 @@ Collection scopes apply. A soft-deleted document never appears in a search resul
 Every option has a default, so `.fullTextSearch()` with no argument is a complete declaration.
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/full-text-search/block-7.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/full-text-search/block-7.ts
 
 
 Routier splits text on anything that is not a letter or a digit, and it counts Unicode letters
@@ -136,7 +132,7 @@ language.
 Supply `tokenizer` to replace the whole pipeline with your own function:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/full-text-search/block-8.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/full-text-search/block-8.ts
 
 
 The same function runs on your documents and on your queries. It must return the same words for
@@ -156,7 +152,7 @@ the two writes, that document is not findable until you repair the index.
 Two methods handle it:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/full-text-search/block-9.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/full-text-search/block-9.ts
 
 
 `check` reports without writing. `rebuild` makes the index match your documents and writes only
@@ -205,7 +201,7 @@ words. If you need a specific engine's ranking, use that engine directly.
 
 ## Related
 
-- [Filtering](/concepts/queries/filtering/) — narrowing a search with `where`
-- [Sorting](/concepts/queries/sorting/) — replacing the ranking
-- [Pagination](/concepts/queries/pagination/) — `skip` and `take`
-- [Joins](/concepts/queries/joins/) — pairing collections on a key
+- [Filtering](/concepts/queries/filtering) — narrowing a search with `where`
+- [Sorting](/concepts/queries/sorting) — replacing the ranking
+- [Pagination](/concepts/queries/pagination) — `skip` and `take`
+- [Joins](/concepts/queries/joins) — pairing collections on a key

@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / ParsedExpression
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / ParsedExpression
 
 # Type Alias: ParsedExpression
 
@@ -14,7 +14,7 @@ Defined in: [core/src/expressions/types.ts:4](https://github.com/Agrejus/routier
 
 ### expression
 
-> **expression**: [`Expression`](../classes/Expression.md)
+> **expression**: [`Expression`](/reference/api/core/src/classes/Expression)
 
 Defined in: [core/src/expressions/types.ts:5](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/expressions/types.ts#L5)
 
@@ -22,6 +22,6 @@ Defined in: [core/src/expressions/types.ts:5](https://github.com/Agrejus/routier
 
 ### executionTarget
 
-> **executionTarget**: [`QueryOptionExecutionTarget`](QueryOptionExecutionTarget.md)
+> **executionTarget**: [`QueryOptionExecutionTarget`](/reference/api/core/src/type-aliases/QueryOptionExecutionTarget)
 
 Defined in: [core/src/expressions/types.ts:7](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/expressions/types.ts#L7)

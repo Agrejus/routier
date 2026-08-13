@@ -1,8 +1,5 @@
 ---
 title: Syncing
-layout: default
-parent: Guides
-nav_order: 6
 ---
 
 ## Syncing
@@ -120,9 +117,9 @@ Robust sync implementations include:
 
 ## Related Guides
 
-- **[Local-First Apps](local-first-apps.md)** — Build offline-capable apps that sync when online
-- **[Plugin Compositions](plugin-compositions.md)** — Map of plugin combinations for HTTP sync, optimistic replication, and more
-- **[PouchDB Syncing]({{ site.baseurl }}/data-operations/state-management/syncing/pouchdb-sync)** - Practical example with PouchDB
-- **[Change Tracking](/concepts/change-tracking/)** - Understanding how Routier tracks changes
-- **[State Management](state-management.md)** - Managing application state
-- **[Live Queries](live-queries.md)** - Real-time data updates
+- **[Local-First Apps](/guides/local-first-apps)** — Build offline-capable apps that sync when online
+- **[Plugin Compositions](/guides/plugin-compositions)** — Map of plugin combinations for HTTP sync, optimistic replication, and more
+- **[PouchDB Syncing](/data-operations/state-management/syncing/pouchdb-sync)** - Practical example with PouchDB
+- **[Change Tracking](/concepts/change-tracking)** - Understanding how Routier tracks changes
+- **[State Management](/guides/state-management)** - Managing application state
+- **[Live Queries](/guides/live-queries)** - Real-time data updates

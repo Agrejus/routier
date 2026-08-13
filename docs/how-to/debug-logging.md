@@ -1,8 +1,5 @@
 ---
 title: Debug Logging
-layout: default
-parent: Data Operations
-nav_order: 4
 ---
 
 # Debug Logging
@@ -46,8 +43,9 @@ The level is resolved once, when Routier is first imported, from the first of th
 
 An unrecognised level name is ignored rather than throwing, and resolution continues down the table — a typo in configuration will not take an application down.
 
-{: .note }
-> **`NODE_ENV=test` does not enable logging.** It used to. That meant every test suite running against Routier logged whether it wanted to or not, and the cost is not small: test runners capture console output by snapshotting a stack trace per call, so a suite driving a few thousand saves through a plugin that logs per query spent roughly half its wall clock on logging it never asked for. Set `ROUTIER_LOG_LEVEL=debug` when a test needs the output.
+::: warning `NODE_ENV=test` does not enable logging
+It used to. That meant every test suite running against Routier logged whether it wanted to or not, and the cost is not small: test runners capture console output by snapshotting a stack trace per call, so a suite driving a few thousand saves through a plugin that logs per query spent roughly half its wall clock on logging it never asked for. Set `ROUTIER_LOG_LEVEL=debug` when a test needs the output.
+:::
 
 ## Enabling Logging
 
@@ -56,7 +54,7 @@ An unrecognised level name is ignored rather than throwing, and resolution conti
 Set `globalThis.__ROUTIER_DEBUG__ = true` **before** any routier imports. This works in Node, browser, and Vite.
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/debug-logging/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/debug-logging/block-1.ts
 
 
 ### Option 2: Node.js / bundlers with process.env
@@ -81,7 +79,7 @@ DEBUG=* npm run dev
 Routier is built with rspack, which replaces `import.meta.env` with `undefined` in the bundle, so Routier cannot read your app's `import.meta.env` — it would see its own build environment. In a Vite app, read `import.meta.env` yourself and set the global:
 
 
-{% highlight tsx linenos %}{% include code/from-docs/how-to/debug-logging/block-3.tsx %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/debug-logging/block-3.tsx
 
 
 ## Disabling Logging
@@ -95,7 +93,7 @@ Logging is off by default. It is explicitly off when:
 To force logging off even in a development environment, set:
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/debug-logging/block-4.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/debug-logging/block-4.ts
 
 
 This takes precedence over `NODE_ENV` and `DEBUG`, so it also silences a process started with `DEBUG=*`.
@@ -103,7 +101,7 @@ This takes precedence over `NODE_ENV` and `DEBUG`, so it also silences a process
 To keep errors but drop the rest, choose a level instead of switching off entirely:
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/debug-logging/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/debug-logging/block-2.ts
 
 
 ## Changing the level at runtime
@@ -111,7 +109,7 @@ To keep errors but drop the rest, choose a level instead of switching off entire
 The precedence table is read once, at import, which is what keeps a suppressed log call cheap (about 3ns, against 70ns for one that is emitted). When verbosity is decided after startup — a debug toggle in a settings panel, or a test that wants to assert on output — use the API:
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/debug-logging/block-6.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/debug-logging/block-6.ts
 
 
 `setLogLevel` throws on an unknown level, unlike the environment sources, because a bad literal at a call site is a programming error rather than a configuration mistake.
@@ -123,7 +121,7 @@ If you change an environment variable after Routier has been imported, call `res
 A suppressed call still evaluates its own arguments. That does not matter for an ordinary object — it costs a fraction of a nanosecond next to the call itself — but it does when building the payload is real work, such as serializing a large collection:
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/debug-logging/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/debug-logging/block-3.ts
 
 
 ## Vite Applications
@@ -136,7 +134,7 @@ For Vite apps, the global override is required because:
 Add the override at the top of your entry file (before any routier imports):
 
 
-{% highlight tsx linenos %}{% include code/from-docs/how-to/debug-logging/block-5.tsx %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/debug-logging/block-5.tsx
 
 
 See [React Best Practices - Debug Logging in Vite](/integrations/react/best-practices/#debug-logging-in-vite) for the same pattern in a React context.
@@ -144,5 +142,5 @@ See [React Best Practices - Debug Logging in Vite](/integrations/react/best-prac
 ## Related Topics
 
 - [React Best Practices](/integrations/react/best-practices/) – Debug logging setup for Vite + React
-- [Optimistic Replication](/guides/optimistic-replication/) – Uses debug logs for hydration and sync
-- [Syncing](/guides/syncing/) – Uses debug logs for sync lifecycle
+- [Optimistic Replication](/guides/optimistic-replication) – Uses debug logs for hydration and sync
+- [Syncing](/guides/syncing) – Uses debug logs for sync lifecycle

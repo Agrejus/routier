@@ -1,8 +1,5 @@
 ---
 title: Basic Example
-layout: default
-parent: Tutorials
-nav_order: 2
 ---
 
 # Basic Example
@@ -11,8 +8,7 @@ This guide shows a complete working example of using Routier for a simple user m
 
 ## Complete Example
 
-{% capture snippet_fmz07h %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_fmz07h  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/index/block-1.ts
 
 ## What This Example Shows
 
@@ -25,6 +21,6 @@ This guide shows a complete working example of using Routier for a simple user m
 
 ## Next Steps
 
-- [Configuration](configuration.md) - Advanced configuration options
-- [Schema Guide](../concepts/schema/creating-a-schema.md) - Detailed schema creation
-- [Query Guide](../concepts/queries/index.md) - Advanced querying techniques
+- [Configuration](/tutorials/configuration) - Advanced configuration options
+- [Schema Guide](/concepts/schema/creating-a-schema) - Detailed schema creation
+- [Query Guide](/concepts/queries/) - Advanced querying techniques

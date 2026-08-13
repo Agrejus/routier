@@ -1,9 +1,5 @@
 ---
 title: Property Modifiers
-layout: default
-parent: Schema
-grand_parent: Concepts
-nav_order: 3
 ---
 
 # Property Modifiers
@@ -52,8 +48,7 @@ Persists a computed value to the underlying store. Use when:
 - You need to index or sort/filter by the computed value
 - Recomputing is expensive and you want to cache post-save
 
-{% capture snippet_bznbzy %}{% include code/from-docs/concepts/schema/modifiers/tracked-example.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_bznbzy  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/modifiers/tracked-example.ts
 
 Notes:
 
@@ -67,8 +62,7 @@ Notes:
 
 Marks a property as a primary key for the entity.
 
-{% capture snippet_85eeza %}{% include code/from-docs/concepts/schema/modifiers/key-example.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_85eeza  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/modifiers/key-example.ts
 
 **Available on:** `string`, `number`, `date`
 
@@ -76,8 +70,7 @@ Marks a property as a primary key for the entity.
 
 Marks the property for automatic value generation by the datastore. The datastore will generate unique values for this property.
 
-{% capture snippet_n4hxuc %}{% include code/from-docs/concepts/schema/modifiers/identity-example.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_n4hxuc  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/modifiers/identity-example.ts
 
 **Available on:** `string`, `number`, `date`, `boolean`
 
@@ -87,8 +80,7 @@ Marks the property for automatic value generation by the datastore. The datastor
 
 Creates a database index for efficient querying.
 
-{% capture snippet_27qlvd %}{% include code/from-docs/concepts/schema/modifiers/index-example.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_27qlvd  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/modifiers/index-example.ts
 
 **Available on:** All types
 
@@ -96,8 +88,7 @@ Creates a database index for efficient querying.
 
 Multiple fields can share the same index name for compound indexing.
 
-{% capture snippet_zcizjw %}{% include code/from-docs/concepts/schema/modifiers/compound-index-example.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_zcizjw  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/modifiers/compound-index-example.ts
 
 ## Defaults and Values
 
@@ -112,8 +103,7 @@ Sets a default value for the property. Can accept either a direct value or a fun
 - **`.default((injected) => value, { injected })`** - Function with injected dependencies
 - **`.default((injected, collectionName) => value, { injected })`** - Function with injected dependencies and collection name
 
-{% capture snippet_9ckcic %}{% include code/from-docs/concepts/schema/modifiers/default-example.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_9ckcic  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/modifiers/default-example.ts
 
 **Available on:** All types
 
@@ -123,8 +113,7 @@ Sets a default value for the property. Can accept either a direct value or a fun
 
 - If a property has `.default(...)`, it is considered optional during inserts. When the value is omitted, Routier will supply the default.
 
-{% capture snippet_2iwgt0 %}{% include code/from-docs/concepts/schema/modifiers/default-insert-example.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_2iwgt0  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/modifiers/default-insert-example.ts
 
 ## Behavior Control
 
@@ -132,8 +121,7 @@ Sets a default value for the property. Can accept either a direct value or a fun
 
 Makes the property optional (can be undefined).
 
-{% capture snippet_eimzso %}{% include code/from-docs/concepts/schema/modifiers/optional-example.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_eimzso  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/modifiers/optional-example.ts
 
 **Available on:** All types
 
@@ -145,8 +133,7 @@ If a property is `.optional()`, its value can be `undefined`. Many HTTP/JSON ser
 
 Makes the property nullable (can be null).
 
-{% capture snippet_tudq6i %}{% include code/from-docs/concepts/schema/modifiers/nullable-example.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_tudq6i  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/modifiers/nullable-example.ts
 
 **Available on:** All types
 
@@ -154,8 +141,7 @@ Makes the property nullable (can be null).
 
 Makes the property read-only after creation.
 
-{% capture snippet_jx409r %}{% include code/from-docs/concepts/schema/modifiers/readonly-example.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_jx409r  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/modifiers/readonly-example.ts
 
 **Available on:** All types
 
@@ -165,8 +151,7 @@ Makes the property read-only after creation.
 
 Custom serialization function for the property.
 
-{% capture snippet_raovy6 %}{% include code/from-docs/concepts/schema/modifiers/serialize-example.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_raovy6  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/modifiers/serialize-example.ts
 
 **Available on:** All types
 
@@ -174,8 +159,7 @@ Custom serialization function for the property.
 
 Custom deserialization function for the property.
 
-{% capture snippet_t98whi %}{% include code/from-docs/concepts/schema/modifiers/deserialize-example.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_t98whi  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/modifiers/deserialize-example.ts
 
 **Available on:** All types
 
@@ -185,8 +169,7 @@ Custom deserialization function for the property.
 
 Converts any property type to an array of that type. This allows you to combine base types with array functionality.
 
-{% capture snippet_nv6qg0 %}{% include code/from-docs/concepts/schema/modifiers/type-combination-example.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_nv6qg0  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/modifiers/type-combination-example.ts
 
 **Available on:** All types
 
@@ -202,8 +185,7 @@ Converts any property type to an array of that type. This allows you to combine 
 
 Ensures the property value is unique across all entities.
 
-{% capture snippet_ny7toy %}{% include code/from-docs/concepts/schema/modifiers/distinct-example.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_ny7toy  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/modifiers/distinct-example.ts
 
 **Available on:** `string`, `number`, `date`, `boolean`
 
@@ -211,8 +193,7 @@ Ensures the property value is unique across all entities.
 
 Modifiers can be chained together in any order:
 
-{% capture snippet_awss86 %}{% include code/from-docs/concepts/schema/modifiers/chaining-example.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_awss86  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/modifiers/chaining-example.ts
 
 ## Modifier Compatibility
 
@@ -244,32 +225,27 @@ Not all modifiers can be used together. Here are the key rules based on the sour
 
 While modifiers can be chained in any order, it's recommended to follow this pattern:
 
-{% capture snippet_gye6r6 %}{% include code/from-docs/concepts/schema/modifiers/order-example.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_gye6r6  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/modifiers/order-example.ts
 
 ## Best Practices
 
 ### 1. **Use Built-in Modifiers**
 
-{% capture snippet_tcl5f8 %}{% include code/from-docs/concepts/schema/modifiers/built-in-example.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_tcl5f8  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/modifiers/built-in-example.ts
 
 ### 2. **Define Constraints Early**
 
-{% capture snippet_lajwjh %}{% include code/from-docs/concepts/schema/modifiers/constraints-example.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_lajwjh  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/modifiers/constraints-example.ts
 
 ### 3. **Leverage Type Safety**
 
-{% capture snippet_68sph6 %}{% include code/from-docs/concepts/schema/modifiers/type-safety-example.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_68sph6  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/modifiers/type-safety-example.ts
 
 ### 4. **Use Appropriate Modifiers**
 
-{% capture snippet_61aty5 %}{% include code/from-docs/concepts/schema/modifiers/appropriate-example.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_61aty5  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/modifiers/appropriate-example.ts
 
 ## Next Steps
 
-- [Property Types](../property-types/README.md) - Available property types
-- [Creating A Schema](../creating-a-schema.md) - Back to schema creation
+- [Property Types](/concepts/schema/property-types/README) - Available property types
+- [Creating A Schema](/concepts/schema/creating-a-schema) - Back to schema creation

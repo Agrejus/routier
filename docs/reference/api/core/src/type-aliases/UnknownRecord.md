@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / UnknownRecord
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / UnknownRecord
 
 # Type Alias: UnknownRecord
 

@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / PerformanceCapability
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / PerformanceCapability
 
 # Class: PerformanceCapability
 
@@ -10,7 +10,7 @@ Defined in: [core/src/capabilities/PerformanceCapability.ts:17](https://github.c
 
 ## Extends
 
-- [`Capability`](Capability.md)
+- [`Capability`](/reference/api/core/src/classes/Capability)
 
 ## Constructors
 
@@ -32,7 +32,7 @@ Defined in: [core/src/capabilities/PerformanceCapability.ts:32](https://github.c
 
 #### Overrides
 
-[`Capability`](Capability.md).[`constructor`](Capability.md#constructor)
+[`Capability`](/reference/api/core/src/classes/Capability).[`constructor`](/reference/api/core/src/classes/Capability#constructor)
 
 ## Methods
 
@@ -54,4 +54,4 @@ Defined in: [core/src/capabilities/PerformanceCapability.ts:136](https://github.
 
 #### Overrides
 
-[`Capability`](Capability.md).[`apply`](Capability.md#apply)
+[`Capability`](/reference/api/core/src/classes/Capability).[`apply`](/reference/api/core/src/classes/Capability#apply)

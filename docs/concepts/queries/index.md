@@ -1,10 +1,5 @@
 ---
 title: Queries
-layout: default
-parent: Concepts
-nav_order: 2
-has_children: true
-permalink: /concepts/queries/
 ---
 
 # Queries
@@ -45,61 +40,61 @@ Routier queries are fluent and can only be performed through a collection. Build
 ### Getting All Results
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/index/block-1.ts
 
 
 ### Getting Single Items
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/index/block-2.ts
 
 
 ### Checking Existence
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/index/block-3.ts
 
 
 ### Counting Items
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-4.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/index/block-4.ts
 
 
 ### Filtering Data
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-5.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/index/block-5.ts
 
 
 ### Sorting Results
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-6.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/index/block-6.ts
 
 
 ### Field Selection and Transformation
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-7.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/index/block-7.ts
 
 
 ### Pagination
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-8.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/index/block-8.ts
 
 
 ### Aggregation Operations
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-9.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/index/block-9.ts
 
 
 ### Complex Queries
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-10.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/index/block-10.ts
 
 
 ## Key Concepts
@@ -121,15 +116,15 @@ Routier queries are fluent and can only be performed through a collection. Build
 When filtering on computed properties (not stored in database), the filter runs in memory:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/index/block-11.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/index/block-11.ts
 
 
 ## Related Topics
 
-- [Filtering](/concepts/queries/filtering/) - Detailed filtering examples
-- [Sorting](/concepts/queries/sorting/) - Advanced sorting techniques
-- [Field Selection](/concepts/queries/field-selection/) - Data transformation
-- [Pagination](/concepts/queries/pagination/) - Pagination strategies
-- [Aggregation](/concepts/queries/aggregation/) - Aggregation operations
-- [Terminal Methods](/concepts/queries/terminal-methods/) - Query execution methods
-- [Query Composer](/concepts/queries/query-composer/) - Reusable, parameterized queries
+- [Filtering](/concepts/queries/filtering) - Detailed filtering examples
+- [Sorting](/concepts/queries/sorting) - Advanced sorting techniques
+- [Field Selection](/concepts/queries/field-selection) - Data transformation
+- [Pagination](/concepts/queries/pagination) - Pagination strategies
+- [Aggregation](/concepts/queries/aggregation) - Aggregation operations
+- [Terminal Methods](/concepts/queries/terminal-methods) - Query execution methods
+- [Query Composer](/concepts/queries/query-composer) - Reusable, parameterized queries

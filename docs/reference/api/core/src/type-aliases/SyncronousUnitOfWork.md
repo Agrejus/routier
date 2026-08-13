@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / SyncronousUnitOfWork
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / SyncronousUnitOfWork
 
 # Type Alias: SyncronousUnitOfWork()
 

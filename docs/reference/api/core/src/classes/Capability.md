@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / Capability
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / Capability
 
 # Abstract Class: Capability
 
@@ -10,8 +10,8 @@ Defined in: [core/src/capabilities/Capability.ts:3](https://github.com/Agrejus/r
 
 ## Extended by
 
-- [`PerformanceCapability`](PerformanceCapability.md)
-- [`TracingCapability`](TracingCapability.md)
+- [`PerformanceCapability`](/reference/api/core/src/classes/PerformanceCapability)
+- [`TracingCapability`](/reference/api/core/src/classes/TracingCapability)
 
 ## Constructors
 

@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / SyncronousQueue
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / SyncronousQueue
 
 # Class: SyncronousQueue
 
@@ -30,7 +30,7 @@ Defined in: [core/src/pipeline/SyncronousQueue.ts:8](https://github.com/Agrejus/
 
 ##### unitOfWork
 
-[`SyncronousUnitOfWork`](../type-aliases/SyncronousUnitOfWork.md)
+[`SyncronousUnitOfWork`](/reference/api/core/src/type-aliases/SyncronousUnitOfWork)
 
 #### Returns
 

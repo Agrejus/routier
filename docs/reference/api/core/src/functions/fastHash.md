@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / fastHash
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / fastHash
 
 # Function: fastHash()
 
@@ -37,5 +37,5 @@ A positive 32-bit integer hash value
 ## Example
 
 
-{% highlight ts linenos %}{% include code/from-docs/reference/api/core/src/functions/fastHash/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/reference/api/core/src/functions/fastHash/block-1.ts
 

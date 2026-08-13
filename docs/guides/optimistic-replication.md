@@ -1,8 +1,5 @@
 ---
 title: Optimistic Replication
-layout: default
-parent: Guides
-nav_order: 8
 ---
 
 ## Optimistic Replication
@@ -43,7 +40,7 @@ All reads happen in memory, avoiding the latency of disk-based storage like Inde
 Writes go to the persistent source plugin, but since reads come from memory, write latency doesn't affect your UI:
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/optimistic-replication/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/optimistic-replication/block-1.ts
 
 
 ## When to Use It
@@ -85,7 +82,7 @@ The optimistic replication plugin coordinates three components:
 ## Basic Setup
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/optimistic-replication/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/optimistic-replication/block-2.ts
 
 
 ## Complete Example
@@ -93,7 +90,7 @@ The optimistic replication plugin coordinates three components:
 Here's a complete example using multiple collections:
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/optimistic-replication/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/optimistic-replication/block-3.ts
 
 
 ## Performance Considerations
@@ -107,7 +104,7 @@ Since data is stored in both memory and persistent storage, memory usage increas
 On first load, the memory store is hydrated from the source plugin. This is a one-time cost:
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/optimistic-replication/block-4.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/optimistic-replication/block-4.ts
 
 
 ### Write Latency
@@ -126,8 +123,8 @@ Writes still go to the persistent source plugin, so they have the same latency a
 
 ## Related Guides
 
-- **[Plugin Compositions](plugin-compositions.md)** — Map of all plugin combinations and when to use each
-- **[HttpSwrDbPlugin with Optimistic Replication](http-swr-with-optimistic.md)** — Combine with HTTP sync for maximum speed
-- **[Live Queries](live-queries.md)** - Reactive data that updates automatically
-- **[State Management](state-management.md)** - Managing application state
-- **[Dexie Plugin](/integrations/plugins/built-in-plugins/dexie/)** - IndexedDB integration
+- **[Plugin Compositions](/guides/plugin-compositions)** — Map of all plugin combinations and when to use each
+- **[HttpSwrDbPlugin with Optimistic Replication](/guides/http-swr-with-optimistic)** — Combine with HTTP sync for maximum speed
+- **[Live Queries](/guides/live-queries)** - Reactive data that updates automatically
+- **[State Management](/guides/state-management)** - Managing application state
+- **[Dexie Plugin](/integrations/plugins/built-in-plugins/dexie/README)** - IndexedDB integration

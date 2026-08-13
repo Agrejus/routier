@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / PropertyInfo
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / PropertyInfo
 
 # Class: PropertyInfo\<T\>
 
@@ -28,7 +28,7 @@ Defined in: [core/src/schema/PropertyInfo.ts:72](https://github.com/Agrejus/rout
 
 ##### schema
 
-[`SchemaBase`](SchemaBase.md)\<`T`, `any`\>
+[`SchemaBase`](/reference/api/core/src/classes/SchemaBase)\<`T`, `any`\>
 
 ##### name
 
@@ -66,7 +66,7 @@ The name of the property we need to map from.
 
 ### type
 
-> `readonly` **type**: [`SchemaTypes`](../enumerations/SchemaTypes.md)
+> `readonly` **type**: [`SchemaTypes`](/reference/api/core/src/enumerations/SchemaTypes)
 
 Defined in: [core/src/schema/PropertyInfo.ts:23](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/PropertyInfo.ts#L23)
 
@@ -176,7 +176,7 @@ The default value for the property, if any.
 
 ### valueSerializer
 
-> `readonly` **valueSerializer**: [`PropertySerializer`](../type-aliases/PropertySerializer.md)\<`T`\> = `null`
+> `readonly` **valueSerializer**: [`PropertySerializer`](/reference/api/core/src/type-aliases/PropertySerializer)\<`T`\> = `null`
 
 Defined in: [core/src/schema/PropertyInfo.ts:47](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/PropertyInfo.ts#L47)
 
@@ -186,7 +186,7 @@ Serializer for the property value, if any.
 
 ### valueDeserializer
 
-> `readonly` **valueDeserializer**: [`PropertyDeserializer`](../type-aliases/PropertyDeserializer.md)\<`T`\> = `null`
+> `readonly` **valueDeserializer**: [`PropertyDeserializer`](/reference/api/core/src/type-aliases/PropertyDeserializer)\<`T`\> = `null`
 
 Defined in: [core/src/schema/PropertyInfo.ts:49](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/PropertyInfo.ts#L49)
 
@@ -196,7 +196,7 @@ Deserializer for the property value, if any.
 
 ### functionBody
 
-> `readonly` **functionBody**: [`FunctionBody`](../type-aliases/FunctionBody.md)\<`any`, `T`\>
+> `readonly` **functionBody**: [`FunctionBody`](/reference/api/core/src/type-aliases/FunctionBody)\<`any`, `T`\>
 
 Defined in: [core/src/schema/PropertyInfo.ts:51](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/PropertyInfo.ts#L51)
 
@@ -216,7 +216,7 @@ Child properties of this property.
 
 ### schema
 
-> `readonly` **schema**: [`SchemaBase`](SchemaBase.md)\<`T`, `any`\>
+> `readonly` **schema**: [`SchemaBase`](/reference/api/core/src/classes/SchemaBase)\<`T`, `any`\>
 
 Defined in: [core/src/schema/PropertyInfo.ts:55](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/PropertyInfo.ts#L55)
 
@@ -226,7 +226,7 @@ The schema this property belongs to.
 
 ### innerSchema?
 
-> `readonly` `optional` **innerSchema**: [`SchemaBase`](SchemaBase.md)\<`unknown`, `any`\>
+> `readonly` `optional` **innerSchema**: [`SchemaBase`](/reference/api/core/src/classes/SchemaBase)\<`unknown`, `any`\>
 
 Defined in: [core/src/schema/PropertyInfo.ts:57](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/PropertyInfo.ts#L57)
 

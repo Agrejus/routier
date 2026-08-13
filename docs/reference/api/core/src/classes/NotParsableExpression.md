@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / NotParsableExpression
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / NotParsableExpression
 
 # Class: NotParsableExpression
 
@@ -12,7 +12,7 @@ The base class for all expression types.
 
 ## Extends
 
-- [`Expression`](Expression.md)
+- [`Expression`](/reference/api/core/src/classes/Expression)
 
 ## Constructors
 
@@ -26,11 +26,11 @@ Defined in: [core/src/expressions/types.ts:21](https://github.com/Agrejus/routie
 
 ##### left?
 
-[`Expression`](Expression.md)
+[`Expression`](/reference/api/core/src/classes/Expression)
 
 ##### right?
 
-[`Expression`](Expression.md)
+[`Expression`](/reference/api/core/src/classes/Expression)
 
 #### Returns
 
@@ -38,13 +38,13 @@ Defined in: [core/src/expressions/types.ts:21](https://github.com/Agrejus/routie
 
 #### Inherited from
 
-[`Expression`](Expression.md).[`constructor`](Expression.md#constructor)
+[`Expression`](/reference/api/core/src/classes/Expression).[`constructor`](/reference/api/core/src/classes/Expression#constructor)
 
 ## Properties
 
 ### left?
 
-> `optional` **left**: [`Expression`](Expression.md)
+> `optional` **left**: [`Expression`](/reference/api/core/src/classes/Expression)
 
 Defined in: [core/src/expressions/types.ts:17](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/expressions/types.ts#L17)
 
@@ -52,13 +52,13 @@ The left-hand side of the expression (if applicable).
 
 #### Inherited from
 
-[`Expression`](Expression.md).[`left`](Expression.md#left)
+[`Expression`](/reference/api/core/src/classes/Expression).[`left`](/reference/api/core/src/classes/Expression#left)
 
 ***
 
 ### right?
 
-> `optional` **right**: [`Expression`](Expression.md)
+> `optional` **right**: [`Expression`](/reference/api/core/src/classes/Expression)
 
 Defined in: [core/src/expressions/types.ts:19](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/expressions/types.ts#L19)
 
@@ -66,7 +66,7 @@ The right-hand side of the expression (if applicable).
 
 #### Inherited from
 
-[`Expression`](Expression.md).[`right`](Expression.md#right)
+[`Expression`](/reference/api/core/src/classes/Expression).[`right`](/reference/api/core/src/classes/Expression#right)
 
 ***
 
@@ -80,7 +80,7 @@ The type of the expression.
 
 #### Overrides
 
-[`Expression`](Expression.md).[`type`](Expression.md#type)
+[`Expression`](/reference/api/core/src/classes/Expression).[`type`](/reference/api/core/src/classes/Expression#type)
 
 ## Accessors
 
@@ -88,17 +88,17 @@ The type of the expression.
 
 #### Get Signature
 
-> **get** `static` **EMPTY**(): [`EmptyExpression`](EmptyExpression.md)
+> **get** `static` **EMPTY**(): [`EmptyExpression`](/reference/api/core/src/classes/EmptyExpression)
 
 Defined in: [core/src/expressions/types.ts:26](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/expressions/types.ts#L26)
 
 ##### Returns
 
-[`EmptyExpression`](EmptyExpression.md)
+[`EmptyExpression`](/reference/api/core/src/classes/EmptyExpression)
 
 #### Inherited from
 
-[`Expression`](Expression.md).[`EMPTY`](Expression.md#empty)
+[`Expression`](/reference/api/core/src/classes/Expression).[`EMPTY`](/reference/api/core/src/classes/Expression#empty)
 
 ***
 
@@ -116,7 +116,7 @@ Defined in: [core/src/expressions/types.ts:30](https://github.com/Agrejus/routie
 
 #### Inherited from
 
-[`Expression`](Expression.md).[`NOT_PARSABLE`](Expression.md#not_parsable)
+[`Expression`](/reference/api/core/src/classes/Expression).[`NOT_PARSABLE`](/reference/api/core/src/classes/Expression#not_parsable)
 
 ## Methods
 
@@ -130,7 +130,7 @@ Defined in: [core/src/expressions/types.ts:34](https://github.com/Agrejus/routie
 
 ##### expression
 
-[`Expression`](Expression.md)
+[`Expression`](/reference/api/core/src/classes/Expression)
 
 #### Returns
 
@@ -138,7 +138,7 @@ Defined in: [core/src/expressions/types.ts:34](https://github.com/Agrejus/routie
 
 #### Inherited from
 
-[`Expression`](Expression.md).[`isEmpty`](Expression.md#isempty)
+[`Expression`](/reference/api/core/src/classes/Expression).[`isEmpty`](/reference/api/core/src/classes/Expression#isempty)
 
 ***
 
@@ -152,7 +152,7 @@ Defined in: [core/src/expressions/types.ts:38](https://github.com/Agrejus/routie
 
 ##### expression
 
-[`Expression`](Expression.md)
+[`Expression`](/reference/api/core/src/classes/Expression)
 
 #### Returns
 
@@ -160,4 +160,4 @@ Defined in: [core/src/expressions/types.ts:38](https://github.com/Agrejus/routie
 
 #### Inherited from
 
-[`Expression`](Expression.md).[`isNotParsable`](Expression.md#isnotparsable)
+[`Expression`](/reference/api/core/src/classes/Expression).[`isNotParsable`](/reference/api/core/src/classes/Expression#isnotparsable)

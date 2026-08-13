@@ -1,8 +1,5 @@
 ---
 title: Local-First Apps
-layout: default
-parent: Guides
-nav_order: 2
 doc_role: guide
 ---
 
@@ -76,18 +73,18 @@ User Device
 
 | Goal | Composition | Guide |
 |------|-------------|-------|
-| **HTTP sync + offline** | HttpSwrDbPlugin(DexiePlugin) | [Plugin Compositions](plugin-compositions.md) |
-| **HTTP sync + fastest reads** | HttpSwrDbPlugin(OptimisticUpdatesDbPlugin(DexiePlugin)) | [HttpSwrDbPlugin with Optimistic](http-swr-with-optimistic.md) |
-| **Local-only (no sync)** | DexiePlugin or MemoryPlugin | [Plugin Compositions](plugin-compositions.md) |
+| **HTTP sync + offline** | HttpSwrDbPlugin(DexiePlugin) | [Plugin Compositions](/guides/plugin-compositions) |
+| **HTTP sync + fastest reads** | HttpSwrDbPlugin(OptimisticUpdatesDbPlugin(DexiePlugin)) | [HttpSwrDbPlugin with Optimistic](/guides/http-swr-with-optimistic) |
+| **Local-only (no sync)** | DexiePlugin or MemoryPlugin | [Plugin Compositions](/guides/plugin-compositions) |
 
-See [Replication Plugin](/integrations/plugins/built-in-plugins/replication/) for the package-level overview and option reference.
+See [Replication Plugin](/integrations/plugins/built-in-plugins/replication/README) for the package-level overview and option reference.
 
-See **[Plugin Compositions](plugin-compositions.md)** for the full map of combinations and when to use each.
+See **[Plugin Compositions](/guides/plugin-compositions)** for the full map of combinations and when to use each.
 
 ## Related Guides
 
-- [Plugin Compositions](plugin-compositions.md) — Choose your storage and sync combination
-- [Replication Plugin](/integrations/plugins/built-in-plugins/replication/) — HTTP sync, SWR, and optimistic local-first building blocks
-- [Syncing](syncing.md) — Sync patterns and conflict handling
-- [HttpSwrDbPlugin with Optimistic Replication](http-swr-with-optimistic.md) — Maximum speed with HTTP sync
-- [Optimistic Replication](optimistic-replication.md) — In-memory reads with persistent storage
+- [Plugin Compositions](/guides/plugin-compositions) — Choose your storage and sync combination
+- [Replication Plugin](/integrations/plugins/built-in-plugins/replication/README) — HTTP sync, SWR, and optimistic local-first building blocks
+- [Syncing](/guides/syncing) — Sync patterns and conflict handling
+- [HttpSwrDbPlugin with Optimistic Replication](/guides/http-swr-with-optimistic) — Maximum speed with HTTP sync
+- [Optimistic Replication](/guides/optimistic-replication) — In-memory reads with persistent storage

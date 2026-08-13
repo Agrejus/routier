@@ -1,9 +1,5 @@
 ---
 title: Update Operations
-layout: default
-parent: CRUD
-grand_parent: Data Operations
-nav_order: 4
 ---
 
 # Update Operations
@@ -41,15 +37,13 @@ Routier's update system works through:
 
 When you query entities in Routier, they are returned as **proxy objects** that automatically track changes:
 
-{% capture snippet_0z48wy %}{% include code/from-docs/how-to/crud/update/proxy-entities.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_0z48wy  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/proxy-entities.ts
 
 ### Automatic Change Detection
 
 Routier automatically detects property changes without requiring manual update calls:
 
-{% capture snippet_yc1i8q %}{% include code/from-docs/how-to/crud/update/automatic-change-detection.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_yc1i8q  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/automatic-change-detection.ts
 
 ## Basic Update Operations
 
@@ -57,29 +51,25 @@ Routier automatically detects property changes without requiring manual update c
 
 Update individual properties on entities:
 
-{% capture snippet_2zb0mt %}{% include code/from-docs/how-to/crud/update/single-property-updates.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_2zb0mt  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/single-property-updates.ts
 
 ### Multiple Property Updates
 
 Update multiple properties on a single entity:
 
-{% capture snippet_kp5kwi %}{% include code/from-docs/how-to/crud/update/multiple-property-updates.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_kp5kwi  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/multiple-property-updates.ts
 
 ### Nested Object Updates
 
 Update nested objects and their properties:
 
-{% capture snippet_yzjelp %}{% include code/from-docs/how-to/crud/update/nested-object-updates.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_yzjelp  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/nested-object-updates.ts
 
 ### Array Updates
 
 Modify arrays within entities:
 
-{% capture snippet_m0pu4q %}{% include code/from-docs/how-to/crud/update/array-updates.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_m0pu4q  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/array-updates.ts
 
 ## Batch Update Operations
 
@@ -87,22 +77,19 @@ Modify arrays within entities:
 
 Update multiple entities efficiently:
 
-{% capture snippet_pvqwqf %}{% include code/from-docs/how-to/crud/update/update-multiple-entities.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_pvqwqf  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/update-multiple-entities.ts
 
 ### Conditional Batch Updates
 
 Apply updates based on conditions:
 
-{% capture snippet_wv83pp %}{% include code/from-docs/how-to/crud/update/conditional-batch-updates.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_wv83pp  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/conditional-batch-updates.ts
 
 ### Batch Updates with Transformations
 
 Apply transformations to multiple entities:
 
-{% capture snippet_nhh9ur %}{% include code/from-docs/how-to/crud/update/batch-updates-with-transformations.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_nhh9ur  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/batch-updates-with-transformations.ts
 
 ## Advanced Update Patterns
 
@@ -110,22 +97,19 @@ Apply transformations to multiple entities:
 
 Update entities with computed or derived values:
 
-{% capture snippet_vhw95t %}{% include code/from-docs/how-to/crud/update/computed-updates.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_vhw95t  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/computed-updates.ts
 
 ### Incremental Updates
 
 Apply incremental changes to numeric fields:
 
-{% capture snippet_wm35ir %}{% include code/from-docs/how-to/crud/update/incremental-updates.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_wm35ir  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/incremental-updates.ts
 
 ### Conditional Field Updates
 
 Update fields based on specific conditions:
 
-{% capture snippet_0he1gr %}{% include code/from-docs/how-to/crud/update/conditional-field-updates.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_0he1gr  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/conditional-field-updates.ts
 
 ## Change Management
 
@@ -133,22 +117,19 @@ Update fields based on specific conditions:
 
 Monitor and check for pending changes:
 
-{% capture snippet_tzekfo %}{% include code/from-docs/how-to/crud/update/checking-for-changes.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_tzekfo  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/checking-for-changes.ts
 
 ### Saving Changes
 
 Persist tracked changes to the database:
 
-{% capture snippet_ypky6a %}{% include code/from-docs/how-to/crud/update/saving-changes.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_ypky6a  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/saving-changes.ts
 
 ### Partial Saves
 
 Save changes in batches or selectively:
 
-{% capture snippet_rd7whz %}{% include code/from-docs/how-to/crud/update/partial-saves.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_rd7whz  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/partial-saves.ts
 
 ## Update Type Safety
 
@@ -156,15 +137,13 @@ Save changes in batches or selectively:
 
 Ensure type safety when updating entities:
 
-{% capture snippet_361bbf %}{% include code/from-docs/how-to/crud/update/schema-type-checking.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_361bbf  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/schema-type-checking.ts
 
 ### Business Logic Type Checking
 
 Implement business logic validation during updates:
 
-{% capture snippet_gy1j1u %}{% include code/from-docs/how-to/crud/update/business-logic-type-checking.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_gy1j1u  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/business-logic-type-checking.ts
 
 ## Performance Considerations
 
@@ -172,15 +151,13 @@ Implement business logic validation during updates:
 
 Optimize performance with batch update operations:
 
-{% capture snippet_sl83kr %}{% include code/from-docs/how-to/crud/update/batch-updates.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_sl83kr  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/batch-updates.ts
 
 ### Change Batching
 
 Manage change batching for optimal performance:
 
-{% capture snippet_kp4hzu %}{% include code/from-docs/how-to/crud/update/change-batching.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_kp4hzu  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/change-batching.ts
 
 ## Best Practices
 
@@ -188,29 +165,25 @@ Manage change batching for optimal performance:
 
 Take advantage of automatic change tracking:
 
-{% capture snippet_wsbnun %}{% include code/from-docs/how-to/crud/update/leverage-change-tracking.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_wsbnun  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/leverage-change-tracking.ts
 
 ### 2. **Update Related Fields Together**
 
 Update related fields in a single operation:
 
-{% capture snippet_4scm75 %}{% include code/from-docs/how-to/crud/update/update-related-fields-together.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_4scm75  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/update-related-fields-together.ts
 
 ### 3. **Validate Before Updating**
 
 Implement validation before applying updates:
 
-{% capture snippet_grsuc9 %}{% include code/from-docs/how-to/crud/update/validate-before-updating.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_grsuc9  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/validate-before-updating.ts
 
 ### 4. **Use Meaningful Update Patterns**
 
 Follow consistent patterns for updates:
 
-{% capture snippet_6764ib %}{% include code/from-docs/how-to/crud/update/meaningful-update-patterns.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_6764ib  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/meaningful-update-patterns.ts
 
 ## Error Handling
 
@@ -218,33 +191,32 @@ Follow consistent patterns for updates:
 
 Handle errors gracefully during update operations:
 
-{% capture snippet_s88jdm %}{% include code/from-docs/how-to/crud/update/update-error-handling.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_s88jdm  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/update-error-handling.ts
 
 ## Common Update Patterns
 
 ### User Profile Updates
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/block-1.ts
 
 
 ### Status Updates
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/block-2.ts
 
 
 ### Batch Price Updates
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/crud/update/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/update/block-3.ts
 
 
 ## Next Steps
 
-- [Data Manipulation](../../guides/data-manipulation) - Learn about proxy-based updates and array/object manipulation
-- [Create Operations](create.md) - Learn how to add new entities
-- [Read Operations](read.md) - Learn how to query and retrieve data
-- [Delete Operations](delete.md) - Learn how to remove entities
-- [Bulk Operations](bulk/README.md) - Learn how to handle multiple entities efficiently
+- [Data Manipulation](/guides/data-manipulation) - Learn about proxy-based updates and array/object manipulation
+- [Create Operations](/how-to/crud/create) - Learn how to add new entities
+- [Read Operations](/how-to/crud/read) - Learn how to query and retrieve data
+- [Delete Operations](/how-to/crud/delete) - Learn how to remove entities
+- [Bulk Operations](/how-to/crud/bulk/README) - Learn how to handle multiple entities efficiently

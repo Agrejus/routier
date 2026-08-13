@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / SchemaError
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / SchemaError
 
 # Class: SchemaError
 
@@ -121,7 +121,7 @@ a string representing the location in the code at which
 `Error.captureStackTrace()` was called.
 
 
-{% highlight js linenos %}{% include code/from-docs/reference/api/core/src/classes/SchemaError/block-1.js %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/reference/api/core/src/classes/SchemaError/block-1.js
 
 
 The first line of the trace will be prefixed with
@@ -135,7 +135,7 @@ The `constructorOpt` argument is useful for hiding implementation
 details of error generation from the user. For instance:
 
 
-{% highlight js linenos %}{% include code/from-docs/reference/api/core/src/classes/SchemaError/block-2.js %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/reference/api/core/src/classes/SchemaError/block-2.js
 
 
 #### Parameters

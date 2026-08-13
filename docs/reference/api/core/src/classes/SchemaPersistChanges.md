@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / SchemaPersistChanges
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / SchemaPersistChanges
 
 # Class: SchemaPersistChanges\<T\>
 
@@ -28,7 +28,7 @@ Defined in: [core/src/collections/Changes.ts:150](https://github.com/Agrejus/rou
 
 ### adds
 
-> **adds**: [`InferCreateType`](../type-aliases/InferCreateType.md)\<`T`\>[] = `[]`
+> **adds**: [`InferCreateType`](/reference/api/core/src/type-aliases/InferCreateType)\<`T`\>[] = `[]`
 
 Defined in: [core/src/collections/Changes.ts:151](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/Changes.ts#L151)
 
@@ -36,7 +36,7 @@ Defined in: [core/src/collections/Changes.ts:151](https://github.com/Agrejus/rou
 
 ### updates
 
-> **updates**: [`EntityUpdateInfo`](../type-aliases/EntityUpdateInfo.md)\<`T`\>[] = `[]`
+> **updates**: [`EntityUpdateInfo`](/reference/api/core/src/type-aliases/EntityUpdateInfo)\<`T`\>[] = `[]`
 
 Defined in: [core/src/collections/Changes.ts:152](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/Changes.ts#L152)
 
@@ -44,7 +44,7 @@ Defined in: [core/src/collections/Changes.ts:152](https://github.com/Agrejus/rou
 
 ### removes
 
-> **removes**: [`InferType`](../type-aliases/InferType.md)\<`T`\>[] = `[]`
+> **removes**: [`InferType`](/reference/api/core/src/type-aliases/InferType)\<`T`\>[] = `[]`
 
 Defined in: [core/src/collections/Changes.ts:153](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/Changes.ts#L153)
 
@@ -52,7 +52,7 @@ Defined in: [core/src/collections/Changes.ts:153](https://github.com/Agrejus/rou
 
 ### tags
 
-> **tags**: [`TagCollection`](TagCollection.md)
+> **tags**: [`TagCollection`](/reference/api/core/src/classes/TagCollection)
 
 Defined in: [core/src/collections/Changes.ts:154](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/Changes.ts#L154)
 

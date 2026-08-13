@@ -1,8 +1,5 @@
 ---
 title: Installation
-layout: default
-parent: Getting Started
-nav_order: 2
 ---
 
 ## Installation
@@ -33,9 +30,9 @@ npm install @routier/memory-plugin
 
 Other plugins are available (Local Storage, File System, Dexie, SQLite, PouchDB). See the list at:
 
-- [Built‑in Plugins]({{ site.baseurl }}/integrations/plugins/built-in-plugins/)
+- [Built‑in Plugins](/integrations/plugins/built-in-plugins/)
 
 ## Next Steps
 
-- [Quick Start]({{ site.baseurl }}/getting-started/quick-start) - Build a working example in minutes
-- [React Adapter]({{ site.baseurl }}/getting-started/react-adapter) - Use Routier with React
+- [Quick Start](/getting-started/quick-start) - Build a working example in minutes
+- [React Adapter](/getting-started/react-adapter) - Use Routier with React

@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / ExpressionType
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / ExpressionType
 
 # Type Alias: ExpressionType
 

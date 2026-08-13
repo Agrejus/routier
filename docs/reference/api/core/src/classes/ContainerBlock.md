@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / ContainerBlock
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / ContainerBlock
 
 # Abstract Class: ContainerBlock
 
@@ -10,18 +10,18 @@ Defined in: [core/src/codegen/blocks.ts:84](https://github.com/Agrejus/routier/b
 
 ## Extends
 
-- [`Block`](Block.md)
+- [`Block`](/reference/api/core/src/classes/Block)
 
 ## Extended by
 
-- [`SlotBlock`](SlotBlock.md)
-- [`AssignmentBuilder`](AssignmentBuilder.md)
-- [`AndBuilder`](AndBuilder.md)
-- [`RawBuilder`](RawBuilder.md)
-- [`FunctionFactoryBuilder`](FunctionFactoryBuilder.md)
-- [`FunctionBuilder`](FunctionBuilder.md)
-- [`IfBuilder`](IfBuilder.md)
-- [`CodeBuilder`](CodeBuilder.md)
+- [`SlotBlock`](/reference/api/core/src/classes/SlotBlock)
+- [`AssignmentBuilder`](/reference/api/core/src/classes/AssignmentBuilder)
+- [`AndBuilder`](/reference/api/core/src/classes/AndBuilder)
+- [`RawBuilder`](/reference/api/core/src/classes/RawBuilder)
+- [`FunctionFactoryBuilder`](/reference/api/core/src/classes/FunctionFactoryBuilder)
+- [`FunctionBuilder`](/reference/api/core/src/classes/FunctionBuilder)
+- [`IfBuilder`](/reference/api/core/src/classes/IfBuilder)
+- [`CodeBuilder`](/reference/api/core/src/classes/CodeBuilder)
 
 ## Constructors
 
@@ -43,7 +43,7 @@ Defined in: [core/src/codegen/blocks.ts:16](https://github.com/Agrejus/routier/b
 
 ##### parent?
 
-[`Block`](Block.md)
+[`Block`](/reference/api/core/src/classes/Block)
 
 #### Returns
 
@@ -51,7 +51,7 @@ Defined in: [core/src/codegen/blocks.ts:16](https://github.com/Agrejus/routier/b
 
 #### Inherited from
 
-[`Block`](Block.md).[`constructor`](Block.md#constructor)
+[`Block`](/reference/api/core/src/classes/Block).[`constructor`](/reference/api/core/src/classes/Block#constructor)
 
 ## Properties
 
@@ -63,7 +63,7 @@ Defined in: [core/src/codegen/blocks.ts:11](https://github.com/Agrejus/routier/b
 
 #### Inherited from
 
-[`Block`](Block.md).[`name`](Block.md#name)
+[`Block`](/reference/api/core/src/classes/Block).[`name`](/reference/api/core/src/classes/Block#name)
 
 ## Methods
 
@@ -85,7 +85,7 @@ Defined in: [core/src/codegen/blocks.ts:22](https://github.com/Agrejus/routier/b
 
 #### Inherited from
 
-[`Block`](Block.md).[`indexOf`](Block.md#indexof)
+[`Block`](/reference/api/core/src/classes/Block).[`indexOf`](/reference/api/core/src/classes/Block#indexof)
 
 ***
 
@@ -99,7 +99,7 @@ Defined in: [core/src/codegen/blocks.ts:26](https://github.com/Agrejus/routier/b
 
 ##### T
 
-`T` *extends* [`Block`](Block.md)
+`T` *extends* [`Block`](/reference/api/core/src/classes/Block)
 
 #### Parameters
 
@@ -113,7 +113,7 @@ Defined in: [core/src/codegen/blocks.ts:26](https://github.com/Agrejus/routier/b
 
 #### Inherited from
 
-[`Block`](Block.md).[`getOrDefault`](Block.md#getordefault)
+[`Block`](/reference/api/core/src/classes/Block).[`getOrDefault`](/reference/api/core/src/classes/Block#getordefault)
 
 ***
 
@@ -127,7 +127,7 @@ Defined in: [core/src/codegen/blocks.ts:54](https://github.com/Agrejus/routier/b
 
 ##### T
 
-`T` *extends* [`Block`](Block.md)
+`T` *extends* [`Block`](/reference/api/core/src/classes/Block)
 
 #### Parameters
 
@@ -141,7 +141,7 @@ Defined in: [core/src/codegen/blocks.ts:54](https://github.com/Agrejus/routier/b
 
 #### Inherited from
 
-[`Block`](Block.md).[`get`](Block.md#get)
+[`Block`](/reference/api/core/src/classes/Block).[`get`](/reference/api/core/src/classes/Block#get)
 
 ***
 
@@ -163,7 +163,7 @@ Defined in: [core/src/codegen/blocks.ts:64](https://github.com/Agrejus/routier/b
 
 #### Inherited from
 
-[`Block`](Block.md).[`has`](Block.md#has)
+[`Block`](/reference/api/core/src/classes/Block).[`has`](/reference/api/core/src/classes/Block#has)
 
 ***
 
@@ -179,13 +179,13 @@ Defined in: [core/src/codegen/blocks.ts:81](https://github.com/Agrejus/routier/b
 
 #### Inherited from
 
-[`Block`](Block.md).[`toString`](Block.md#tostring)
+[`Block`](/reference/api/core/src/classes/Block).[`toString`](/reference/api/core/src/classes/Block#tostring)
 
 ***
 
 ### if()
 
-> **if**(`condition`, `options?`): [`IfBuilder`](IfBuilder.md)
+> **if**(`condition`, `options?`): [`IfBuilder`](/reference/api/core/src/classes/IfBuilder)
 
 Defined in: [core/src/codegen/blocks.ts:85](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/codegen/blocks.ts#L85)
 
@@ -197,17 +197,17 @@ Defined in: [core/src/codegen/blocks.ts:85](https://github.com/Agrejus/routier/b
 
 ##### options?
 
-[`CreateBlockOptions`](../type-aliases/CreateBlockOptions.md)
+[`CreateBlockOptions`](/reference/api/core/src/type-aliases/CreateBlockOptions)
 
 #### Returns
 
-[`IfBuilder`](IfBuilder.md)
+[`IfBuilder`](/reference/api/core/src/classes/IfBuilder)
 
 ***
 
 ### raw()
 
-> **raw**(`raw`, `options?`): [`RawBuilder`](RawBuilder.md)
+> **raw**(`raw`, `options?`): [`RawBuilder`](/reference/api/core/src/classes/RawBuilder)
 
 Defined in: [core/src/codegen/blocks.ts:96](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/codegen/blocks.ts#L96)
 
@@ -219,17 +219,17 @@ Defined in: [core/src/codegen/blocks.ts:96](https://github.com/Agrejus/routier/b
 
 ##### options?
 
-[`CreateBlockOptions`](../type-aliases/CreateBlockOptions.md)
+[`CreateBlockOptions`](/reference/api/core/src/type-aliases/CreateBlockOptions)
 
 #### Returns
 
-[`RawBuilder`](RawBuilder.md)
+[`RawBuilder`](/reference/api/core/src/classes/RawBuilder)
 
 ***
 
 ### function()
 
-> **function**(`name?`, `options?`): [`FunctionBuilder`](FunctionBuilder.md)
+> **function**(`name?`, `options?`): [`FunctionBuilder`](/reference/api/core/src/classes/FunctionBuilder)
 
 Defined in: [core/src/codegen/blocks.ts:102](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/codegen/blocks.ts#L102)
 
@@ -241,17 +241,17 @@ Defined in: [core/src/codegen/blocks.ts:102](https://github.com/Agrejus/routier/
 
 ##### options?
 
-[`CreateBlockOptions`](../type-aliases/CreateBlockOptions.md)
+[`CreateBlockOptions`](/reference/api/core/src/type-aliases/CreateBlockOptions)
 
 #### Returns
 
-[`FunctionBuilder`](FunctionBuilder.md)
+[`FunctionBuilder`](/reference/api/core/src/classes/FunctionBuilder)
 
 ***
 
 ### factory()
 
-> **factory**(`name?`, `options?`): [`FunctionFactoryBuilder`](FunctionFactoryBuilder.md)
+> **factory**(`name?`, `options?`): [`FunctionFactoryBuilder`](/reference/api/core/src/classes/FunctionFactoryBuilder)
 
 Defined in: [core/src/codegen/blocks.ts:108](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/codegen/blocks.ts#L108)
 
@@ -263,17 +263,17 @@ Defined in: [core/src/codegen/blocks.ts:108](https://github.com/Agrejus/routier/
 
 ##### options?
 
-[`CreateBlockOptions`](../type-aliases/CreateBlockOptions.md)
+[`CreateBlockOptions`](/reference/api/core/src/type-aliases/CreateBlockOptions)
 
 #### Returns
 
-[`FunctionFactoryBuilder`](FunctionFactoryBuilder.md)
+[`FunctionFactoryBuilder`](/reference/api/core/src/classes/FunctionFactoryBuilder)
 
 ***
 
 ### variable()
 
-> **variable**(`declaration`, `options?`): [`VariableBuilder`](VariableBuilder.md)
+> **variable**(`declaration`, `options?`): [`VariableBuilder`](/reference/api/core/src/classes/VariableBuilder)
 
 Defined in: [core/src/codegen/blocks.ts:114](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/codegen/blocks.ts#L114)
 
@@ -285,17 +285,17 @@ Defined in: [core/src/codegen/blocks.ts:114](https://github.com/Agrejus/routier/
 
 ##### options?
 
-[`CreateBlockOptions`](../type-aliases/CreateBlockOptions.md)
+[`CreateBlockOptions`](/reference/api/core/src/type-aliases/CreateBlockOptions)
 
 #### Returns
 
-[`VariableBuilder`](VariableBuilder.md)
+[`VariableBuilder`](/reference/api/core/src/classes/VariableBuilder)
 
 ***
 
 ### assign()
 
-> **assign**(`variableName`, `options?`): [`AssignmentBuilder`](AssignmentBuilder.md)
+> **assign**(`variableName`, `options?`): [`AssignmentBuilder`](/reference/api/core/src/classes/AssignmentBuilder)
 
 Defined in: [core/src/codegen/blocks.ts:120](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/codegen/blocks.ts#L120)
 
@@ -307,17 +307,17 @@ Defined in: [core/src/codegen/blocks.ts:120](https://github.com/Agrejus/routier/
 
 ##### options?
 
-[`CreateBlockOptions`](../type-aliases/CreateBlockOptions.md)
+[`CreateBlockOptions`](/reference/api/core/src/type-aliases/CreateBlockOptions)
 
 #### Returns
 
-[`AssignmentBuilder`](AssignmentBuilder.md)
+[`AssignmentBuilder`](/reference/api/core/src/classes/AssignmentBuilder)
 
 ***
 
 ### object()
 
-> **object**(`options?`): [`ObjectBuilder`](ObjectBuilder.md)
+> **object**(`options?`): [`ObjectBuilder`](/reference/api/core/src/classes/ObjectBuilder)
 
 Defined in: [core/src/codegen/blocks.ts:126](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/codegen/blocks.ts#L126)
 
@@ -325,17 +325,17 @@ Defined in: [core/src/codegen/blocks.ts:126](https://github.com/Agrejus/routier/
 
 ##### options?
 
-[`CreateBlockOptions`](../type-aliases/CreateBlockOptions.md)
+[`CreateBlockOptions`](/reference/api/core/src/type-aliases/CreateBlockOptions)
 
 #### Returns
 
-[`ObjectBuilder`](ObjectBuilder.md)
+[`ObjectBuilder`](/reference/api/core/src/classes/ObjectBuilder)
 
 ***
 
 ### slot()
 
-> **slot**(`name`): [`SlotBlock`](SlotBlock.md)
+> **slot**(`name`): [`SlotBlock`](/reference/api/core/src/classes/SlotBlock)
 
 Defined in: [core/src/codegen/blocks.ts:132](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/codegen/blocks.ts#L132)
 
@@ -347,13 +347,13 @@ Defined in: [core/src/codegen/blocks.ts:132](https://github.com/Agrejus/routier/
 
 #### Returns
 
-[`SlotBlock`](SlotBlock.md)
+[`SlotBlock`](/reference/api/core/src/classes/SlotBlock)
 
 ***
 
 ### array()
 
-> **array**(`accessor`, `options?`): [`ArrayBuilder`](ArrayBuilder.md)
+> **array**(`accessor`, `options?`): [`ArrayBuilder`](/reference/api/core/src/classes/ArrayBuilder)
 
 Defined in: [core/src/codegen/blocks.ts:138](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/codegen/blocks.ts#L138)
 
@@ -365,8 +365,8 @@ Defined in: [core/src/codegen/blocks.ts:138](https://github.com/Agrejus/routier/
 
 ##### options?
 
-[`CreateBlockOptions`](../type-aliases/CreateBlockOptions.md)
+[`CreateBlockOptions`](/reference/api/core/src/type-aliases/CreateBlockOptions)
 
 #### Returns
 
-[`ArrayBuilder`](ArrayBuilder.md)
+[`ArrayBuilder`](/reference/api/core/src/classes/ArrayBuilder)

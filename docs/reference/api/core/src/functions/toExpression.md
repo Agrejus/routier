@@ -1,12 +1,12 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / toExpression
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / toExpression
 
 # Function: toExpression()
 
-> **toExpression**\<`T`, `P`\>(`schema`, `fn`, `params?`): [`Expression`](../classes/Expression.md)
+> **toExpression**\<`T`, `P`\>(`schema`, `fn`, `params?`): [`Expression`](/reference/api/core/src/classes/Expression)
 
 Defined in: [core/src/expressions/parser.ts:123](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/expressions/parser.ts#L123)
 
@@ -24,11 +24,11 @@ Defined in: [core/src/expressions/parser.ts:123](https://github.com/Agrejus/rout
 
 ### schema
 
-[`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`any`\>
+[`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`any`\>
 
 ### fn
 
-[`Filter`](../type-aliases/Filter.md)\<`T`\> | [`ParamsFilter`](../type-aliases/ParamsFilter.md)\<`T`, `P`\>
+[`Filter`](/reference/api/core/src/type-aliases/Filter)\<`T`\> | [`ParamsFilter`](/reference/api/core/src/type-aliases/ParamsFilter)\<`T`, `P`\>
 
 ### params?
 
@@ -36,4 +36,4 @@ Defined in: [core/src/expressions/parser.ts:123](https://github.com/Agrejus/rout
 
 ## Returns
 
-[`Expression`](../classes/Expression.md)
+[`Expression`](/reference/api/core/src/classes/Expression)

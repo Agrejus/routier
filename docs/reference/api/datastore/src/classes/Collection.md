@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ---
 
-[routier-collection](../../../README.md) / [datastore/src](../README.md) / Collection
+[routier-collection](/reference/api/README) / [datastore/src](/reference/api/datastore/src/README) / Collection
 
 # Class: Collection\<TEntity\>
 

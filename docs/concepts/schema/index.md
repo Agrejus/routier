@@ -1,10 +1,5 @@
 ---
 title: Schema
-layout: default
-parent: Concepts
-nav_order: 1
-has_children: true
-permalink: /concepts/schema/
 ---
 
 # Schemas
@@ -35,9 +30,8 @@ Schemas are type definitions that:
 
 Routier provides a fluent, type-safe schema builder API:
 
-{% capture snippet_basic_schema %}{% include code/from-docs/concepts/schema/basic-schema.ts %}{% endcapture %}
 
-{% highlight ts %}{{ snippet_basic_schema | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/basic-schema.ts
 
 ## Key Features
 
@@ -123,38 +117,35 @@ This keeps **collection-level configuration** colocated with the schema and stro
 
 ### Getting Started
 
-- **[Creating A Schema](creating-a-schema.md)** - Learn how to create your first schema
+- **[Creating A Schema](/concepts/schema/creating-a-schema)** - Learn how to create your first schema
 
 ### Core Concepts
 
-- **[Property Types](property-types/README.md)** - Available property types and their capabilities
-- **[Modifiers](modifiers/README.md)** - All available property modifiers and constraints
-- **[Optional vs nullable over HTTP](modifiers/README.md#optional-vs-nullable-over-http)** - Sending missing values safely over JSON
-- **[InferType](infer-type.md)** - Type inference and type safety
+- **[Property Types](/concepts/schema/property-types/README)** - Available property types and their capabilities
+- **[Modifiers](/concepts/schema/modifiers/README)** - All available property modifiers and constraints
+- **[Optional vs nullable over HTTP](/concepts/schema/modifiers/README#optional-vs-nullable-over-http)** - Sending missing values safely over JSON
+- **[InferType](/concepts/schema/infer-type)** - Type inference and type safety
 
 ### Reference
 
-- **[Why Schemas?](why-schemas.md)** - Understanding the benefits and philosophy
+- **[Why Schemas?](/concepts/schema/why-schemas)** - Understanding the benefits and philosophy
 
 ## Quick Examples
 
 ### Basic Entity
 
-{% capture snippet_basic_schema %}{% include code/from-docs/concepts/schema/basic-schema.ts %}{% endcapture %}
 
-{% highlight ts %}{{ snippet_basic_schema | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/basic-schema.ts
 
 ### Complex Nested Schema
 
-{% capture snippet_complex_schema %}{% include code/from-docs/concepts/schema/complex-schema.ts %}{% endcapture %}
 
-{% highlight ts %}{{ snippet_complex_schema | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/complex-schema.ts
 
 ### Constrained Values
 
-{% capture snippet_constrained_schema %}{% include code/from-docs/concepts/schema/constrained-schema.ts %}{% endcapture %}
 
-{% highlight ts %}{{ snippet_constrained_schema | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/constrained-schema.ts
 
 ## Benefits
 
@@ -187,16 +178,15 @@ Schemas are compiled into optimized JavaScript functions that eliminate runtime 
 - **Optimized Data Paths**: Generated code uses direct property access and optimized algorithms for common operations
 - **Memory Efficiency**: Compiled schemas minimize memory allocations and garbage collection pressure
 
-{% capture snippet_memory_efficiency %}{% include code/from-docs/concepts/schema/memory-efficiency-example.ts %}{% endcapture %}
 
-{% highlight ts %}{{ snippet_memory_efficiency | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/memory-efficiency-example.ts
 
 ## Next Steps
 
-1. **[Create your first schema](creating-a-schema.md)** - Start building schemas
-2. **[Understand property types](property-types/README.md)** - Choose the right types for your data
-3. **[Apply modifiers](modifiers/README.md)** - Customize behavior and constraints
-4. **[Learn about type inference](infer-type.md)** - Leverage TypeScript integration
-5. **[Data Manipulation](/guides/data-manipulation/)** - Learn how to update entities with proxies
+1. **[Create your first schema](/concepts/schema/creating-a-schema)** - Start building schemas
+2. **[Understand property types](/concepts/schema/property-types/README)** - Choose the right types for your data
+3. **[Apply modifiers](/concepts/schema/modifiers/README)** - Customize behavior and constraints
+4. **[Learn about type inference](/concepts/schema/infer-type)** - Leverage TypeScript integration
+5. **[Data Manipulation](/guides/data-manipulation)** - Learn how to update entities with proxies
 
 Schemas are the foundation of Routier's data management system. They provide the structure and rules that make your data consistent, safe, and performant.

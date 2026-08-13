@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / Block
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / Block
 
 # Abstract Class: Block
 
@@ -10,11 +10,11 @@ Defined in: [core/src/codegen/blocks.ts:10](https://github.com/Agrejus/routier/b
 
 ## Extended by
 
-- [`ContainerBlock`](ContainerBlock.md)
-- [`StringBuilder`](StringBuilder.md)
-- [`VariableBuilder`](VariableBuilder.md)
-- [`ObjectBuilder`](ObjectBuilder.md)
-- [`ArrayBuilder`](ArrayBuilder.md)
+- [`ContainerBlock`](/reference/api/core/src/classes/ContainerBlock)
+- [`StringBuilder`](/reference/api/core/src/classes/StringBuilder)
+- [`VariableBuilder`](/reference/api/core/src/classes/VariableBuilder)
+- [`ObjectBuilder`](/reference/api/core/src/classes/ObjectBuilder)
+- [`ArrayBuilder`](/reference/api/core/src/classes/ArrayBuilder)
 
 ## Constructors
 

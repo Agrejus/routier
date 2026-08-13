@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / AsyncPipeline
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / AsyncPipeline
 
 # Class: AsyncPipeline\<TData, TResult\>
 
@@ -40,7 +40,7 @@ Defined in: [core/src/pipeline/TrampolinePipeline.ts:164](https://github.com/Agr
 
 ##### done
 
-[`CallbackResult`](../type-aliases/CallbackResult.md)\<`TResult`[]\>
+[`CallbackResult`](/reference/api/core/src/type-aliases/CallbackResult)\<`TResult`[]\>
 
 #### Returns
 
@@ -62,7 +62,7 @@ Defined in: [core/src/pipeline/TrampolinePipeline.ts:288](https://github.com/Agr
 
 ##### processor
 
-[`AsyncUnitOfWork`](../type-aliases/AsyncUnitOfWork.md)\<`TData`, `TResult`\>
+[`AsyncUnitOfWork`](/reference/api/core/src/type-aliases/AsyncUnitOfWork)\<`TData`, `TResult`\>
 
 #### Returns
 
@@ -84,7 +84,7 @@ Defined in: [core/src/pipeline/TrampolinePipeline.ts:292](https://github.com/Agr
 
 ##### processor
 
-[`AsyncUnitOfWork`](../type-aliases/AsyncUnitOfWork.md)\<`TData`, `TResult`\>
+[`AsyncUnitOfWork`](/reference/api/core/src/type-aliases/AsyncUnitOfWork)\<`TData`, `TResult`\>
 
 #### Returns
 

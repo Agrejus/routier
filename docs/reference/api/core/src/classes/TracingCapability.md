@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / TracingCapability
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / TracingCapability
 
 # Class: TracingCapability
 
@@ -10,7 +10,7 @@ Defined in: [core/src/capabilities/TracingCapability.ts:18](https://github.com/A
 
 ## Extends
 
-- [`Capability`](Capability.md)
+- [`Capability`](/reference/api/core/src/classes/Capability)
 
 ## Constructors
 
@@ -32,7 +32,7 @@ Defined in: [core/src/capabilities/TracingCapability.ts:32](https://github.com/A
 
 #### Overrides
 
-[`Capability`](Capability.md).[`constructor`](Capability.md#constructor)
+[`Capability`](/reference/api/core/src/classes/Capability).[`constructor`](/reference/api/core/src/classes/Capability#constructor)
 
 ## Methods
 
@@ -54,4 +54,4 @@ Defined in: [core/src/capabilities/TracingCapability.ts:94](https://github.com/A
 
 #### Overrides
 
-[`Capability`](Capability.md).[`apply`](Capability.md#apply)
+[`Capability`](/reference/api/core/src/classes/Capability).[`apply`](/reference/api/core/src/classes/Capability#apply)

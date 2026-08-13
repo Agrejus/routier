@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / ArrayBuilder
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / ArrayBuilder
 
 # Class: ArrayBuilder
 
@@ -10,7 +10,7 @@ Defined in: [core/src/codegen/blocks.ts:511](https://github.com/Agrejus/routier/
 
 ## Extends
 
-- [`Block`](Block.md)
+- [`Block`](/reference/api/core/src/classes/Block)
 
 ## Constructors
 
@@ -36,7 +36,7 @@ Defined in: [core/src/codegen/blocks.ts:512](https://github.com/Agrejus/routier/
 
 ##### parent?
 
-[`Block`](Block.md)
+[`Block`](/reference/api/core/src/classes/Block)
 
 #### Returns
 
@@ -44,7 +44,7 @@ Defined in: [core/src/codegen/blocks.ts:512](https://github.com/Agrejus/routier/
 
 #### Overrides
 
-[`Block`](Block.md).[`constructor`](Block.md#constructor)
+[`Block`](/reference/api/core/src/classes/Block).[`constructor`](/reference/api/core/src/classes/Block#constructor)
 
 ## Properties
 
@@ -56,7 +56,7 @@ Defined in: [core/src/codegen/blocks.ts:11](https://github.com/Agrejus/routier/b
 
 #### Inherited from
 
-[`Block`](Block.md).[`name`](Block.md#name)
+[`Block`](/reference/api/core/src/classes/Block).[`name`](/reference/api/core/src/classes/Block#name)
 
 ## Methods
 
@@ -78,7 +78,7 @@ Defined in: [core/src/codegen/blocks.ts:22](https://github.com/Agrejus/routier/b
 
 #### Inherited from
 
-[`Block`](Block.md).[`indexOf`](Block.md#indexof)
+[`Block`](/reference/api/core/src/classes/Block).[`indexOf`](/reference/api/core/src/classes/Block#indexof)
 
 ***
 
@@ -92,7 +92,7 @@ Defined in: [core/src/codegen/blocks.ts:26](https://github.com/Agrejus/routier/b
 
 ##### T
 
-`T` *extends* [`Block`](Block.md)
+`T` *extends* [`Block`](/reference/api/core/src/classes/Block)
 
 #### Parameters
 
@@ -106,7 +106,7 @@ Defined in: [core/src/codegen/blocks.ts:26](https://github.com/Agrejus/routier/b
 
 #### Inherited from
 
-[`Block`](Block.md).[`getOrDefault`](Block.md#getordefault)
+[`Block`](/reference/api/core/src/classes/Block).[`getOrDefault`](/reference/api/core/src/classes/Block#getordefault)
 
 ***
 
@@ -120,7 +120,7 @@ Defined in: [core/src/codegen/blocks.ts:54](https://github.com/Agrejus/routier/b
 
 ##### T
 
-`T` *extends* [`Block`](Block.md)
+`T` *extends* [`Block`](/reference/api/core/src/classes/Block)
 
 #### Parameters
 
@@ -134,7 +134,7 @@ Defined in: [core/src/codegen/blocks.ts:54](https://github.com/Agrejus/routier/b
 
 #### Inherited from
 
-[`Block`](Block.md).[`get`](Block.md#get)
+[`Block`](/reference/api/core/src/classes/Block).[`get`](/reference/api/core/src/classes/Block#get)
 
 ***
 
@@ -156,7 +156,7 @@ Defined in: [core/src/codegen/blocks.ts:64](https://github.com/Agrejus/routier/b
 
 #### Inherited from
 
-[`Block`](Block.md).[`has`](Block.md#has)
+[`Block`](/reference/api/core/src/classes/Block).[`has`](/reference/api/core/src/classes/Block#has)
 
 ***
 
@@ -190,4 +190,4 @@ Defined in: [core/src/codegen/blocks.ts:522](https://github.com/Agrejus/routier/
 
 #### Overrides
 
-[`Block`](Block.md).[`toString`](Block.md#tostring)
+[`Block`](/reference/api/core/src/classes/Block).[`toString`](/reference/api/core/src/classes/Block#tostring)

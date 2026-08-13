@@ -1,9 +1,5 @@
 ---
 title: Creating a Schema
-layout: default
-parent: Schema
-grand_parent: Concepts
-nav_order: 1
 ---
 
 # Creating A Schema
@@ -22,8 +18,7 @@ Schemas in Routier define the structure and behavior of your data entities. The 
 
 ## Basic Schema Definition
 
-{% capture snippet_uwvygh %}{% include code/from-docs/concepts/schema/creating-a-schema/basic-schema.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_uwvygh  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/creating-a-schema/basic-schema.ts
 
 ## Schema Builder API
 
@@ -43,8 +38,7 @@ The `s` object provides the main entry point for schema creation:
 
 You can constrain properties to specific literal values:
 
-{% capture snippet_r07whk %}{% include code/from-docs/concepts/schema/creating-a-schema/literal-constraints.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_r07whk  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/creating-a-schema/literal-constraints.ts
 
 ## Property Modifiers
 
@@ -52,41 +46,35 @@ Each schema type supports a set of modifiers that can be chained together:
 
 ### Core Modifiers
 
-{% capture snippet_834udw %}{% include code/from-docs/concepts/schema/creating-a-schema/core-modifiers.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_834udw  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/creating-a-schema/core-modifiers.ts
 
 ### Serialization Modifiers
 
-{% capture snippet_5wxct0 %}{% include code/from-docs/concepts/schema/creating-a-schema/serialization-modifiers.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_5wxct0  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/creating-a-schema/serialization-modifiers.ts
 
 ### Array and Object Modifiers
 
-{% capture snippet_rl0i32 %}{% include code/from-docs/concepts/schema/creating-a-schema/array-object-modifiers.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_rl0i32  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/creating-a-schema/array-object-modifiers.ts
 
 ## Complete Example
 
-{% capture snippet_btkdlv %}{% include code/from-docs/concepts/schema/creating-a-schema/complete-example.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_btkdlv  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/creating-a-schema/complete-example.ts
 
 ## Modifier Chaining
 
 Modifiers can be chained in any order, but it's recommended to follow a logical pattern:
 
-{% capture snippet_yeelah %}{% include code/from-docs/concepts/schema/creating-a-schema/modifier-chaining.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_yeelah  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/creating-a-schema/modifier-chaining.ts
 
 ## Compiling Schemas
 
 Always call `.compile()` at the end to create the final schema:
 
-{% capture snippet_k6k6vd %}{% include code/from-docs/concepts/schema/creating-a-schema/compiling-schemas.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_k6k6vd  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/creating-a-schema/compiling-schemas.ts
 
 ## Next Steps
 
-- [Property Types](property-types/README.md) - Detailed property type reference
-- [Modifiers](modifiers/README.md) - All available property modifiers
-- [InferType](infer-type.md) - Type inference and type safety
-- [Why Schemas?](why-schemas.md) - Understanding the benefits of schemas
+- [Property Types](/concepts/schema/property-types/README) - Detailed property type reference
+- [Modifiers](/concepts/schema/modifiers/README) - All available property modifiers
+- [InferType](/concepts/schema/infer-type) - Type inference and type safety
+- [Why Schemas?](/concepts/schema/why-schemas) - Understanding the benefits of schemas

@@ -1,9 +1,5 @@
 ---
 title: Pagination
-layout: default
-parent: Queries
-nav_order: 4
-permalink: /concepts/queries/pagination/
 ---
 
 # Pagination
@@ -22,13 +18,12 @@ Use `take` and `skip` to implement pagination for large datasets.
 
 Implement page-based pagination:
 
-{% capture snippet_pagination_example %}{% include code/from-docs/concepts/queries/pagination-example.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_pagination_example | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/pagination-example.ts
 
 ## Simple Take and Skip
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/pagination/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/pagination/block-1.ts
 
 
 ## Pagination with Filtering
@@ -36,7 +31,7 @@ Implement page-based pagination:
 Paginate filtered results:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/pagination/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/pagination/block-2.ts
 
 
 ## Pagination with Sorting
@@ -44,11 +39,11 @@ Paginate filtered results:
 Paginate sorted results:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/pagination/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/pagination/block-3.ts
 
 
 ## Related
 
-- [Filtering Data](/concepts/queries/filtering/)
-- [Sorting Results](/concepts/queries/sorting/)
-- [Terminal Methods](/concepts/queries/terminal-methods/)
+- [Filtering Data](/concepts/queries/filtering)
+- [Sorting Results](/concepts/queries/sorting)
+- [Terminal Methods](/concepts/queries/terminal-methods)

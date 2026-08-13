@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / toEventArray
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / toEventArray
 
 # Function: toEventArray()
 
@@ -14,7 +14,7 @@ Defined in: [core/src/utilities/dbPluginEventUtils.ts:15](https://github.com/Agr
 
 ### event
 
-[`DbPluginBulkPersistEvent`](../type-aliases/DbPluginBulkPersistEvent.md)
+[`DbPluginBulkPersistEvent`](/reference/api/core/src/type-aliases/DbPluginBulkPersistEvent)
 
 ## Returns
 

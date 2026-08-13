@@ -6,6 +6,6 @@
 
 ## Modules
 
-- [core/src](core/src/README.md)
-- [datastore/src](datastore/src/README.md)
-- [react/src](react/src/README.md)
+- [core/src](/reference/api/core/src/README)
+- [datastore/src](/reference/api/datastore/src/README)
+- [react/src](/reference/api/react/src/README)

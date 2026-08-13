@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / HashFunction
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / HashFunction
 
 # Type Alias: HashFunction()\<TEntity\>
 
@@ -24,11 +24,11 @@ Defined in: [core/src/schema/types.ts:50](https://github.com/Agrejus/routier/blo
 
 #### entity
 
-[`InferCreateType`](InferCreateType.md)\<`TEntity`\>
+[`InferCreateType`](/reference/api/core/src/type-aliases/InferCreateType)\<`TEntity`\>
 
 #### type
 
-[`Object`](../enumerations/HashType.md#object)
+[`Object`](/reference/api/core/src/enumerations/HashType#object)
 
 ### Returns
 
@@ -42,11 +42,11 @@ Defined in: [core/src/schema/types.ts:50](https://github.com/Agrejus/routier/blo
 
 #### entity
 
-[`InferType`](InferType.md)\<`TEntity`\>
+[`InferType`](/reference/api/core/src/type-aliases/InferType)\<`TEntity`\>
 
 #### type
 
-[`Ids`](../enumerations/HashType.md#ids)
+[`Ids`](/reference/api/core/src/enumerations/HashType#ids)
 
 ### Returns
 

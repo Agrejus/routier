@@ -1,0 +1,73 @@
+/**
+ * Routier brand theme for VitePress.
+ * Brand teal comes from the logo (#00BFA6); indigo is the accent used in
+ * gradients so the site keeps some of the old docs' purple energy.
+ */
+
+:root {
+  --routier-teal: #00bfa6;
+  --routier-teal-dark: #009e8a;
+  --routier-indigo: #667eea;
+
+  --vp-c-brand-1: #009e8a;
+  --vp-c-brand-2: #00bfa6;
+  --vp-c-brand-3: #00bfa6;
+  --vp-c-brand-soft: rgba(0, 191, 166, 0.14);
+
+  /* Hero name gradient */
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: -webkit-linear-gradient(
+    120deg,
+    #00bfa6 30%,
+    #667eea
+  );
+
+  /* Glow behind the hero logo */
+  --vp-home-hero-image-background-image: linear-gradient(
+    -45deg,
+    rgba(0, 191, 166, 0.55) 40%,
+    rgba(102, 126, 234, 0.55) 60%
+  );
+  --vp-home-hero-image-filter: blur(48px);
+
+  --vp-button-brand-bg: #00ab95;
+  --vp-button-brand-hover-bg: #00bfa6;
+  --vp-button-brand-active-bg: #009e8a;
+}
+
+.dark {
+  --vp-c-brand-1: #2ad6bf;
+  --vp-c-brand-2: #00bfa6;
+  --vp-c-brand-soft: rgba(0, 191, 166, 0.18);
+}
+
+@media (min-width: 640px) {
+  :root {
+    --vp-home-hero-image-filter: blur(60px);
+  }
+}
+
+@media (min-width: 960px) {
+  :root {
+    --vp-home-hero-image-filter: blur(72px);
+  }
+}
+
+/* Feature cards: subtle lift on hover */
+.VPFeature {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.VPFeature:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.dark .VPFeature:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Slightly larger hero tagline for readability */
+.VPHero .tagline {
+  max-width: 620px;
+}
