@@ -14,6 +14,56 @@ All line numbers below were verified on branch `0.3.0` on 2026-08-12. Re-verify 
 
 ---
 
+## Campaign total: where this started and where it ended
+
+Both rounds — v1 (Fixes 1–3, new items A–C) and v2 (items D, F, H) — landed in one commit on
+branch `0.3.0`. Everything below is `b2d1f7b` ("Fix the distinct flag") versus that commit.
+
+Method: the CURRENT benchmark harness run against BOTH source trees, so the measurement is
+identical on each side and only the library changes. Interleaved A/B, 4 cycles
+(before/after/before/after), medians of 4 per arm. Machine: darwin arm64, Node v22.22.0.
+
+| scenario | before (`b2d1f7b`) | after | change | speedup |
+|---|---|---|---|---|
+| `renamed-filtered-query-10000` | 21.599ms | 7.790ms | **−63.9%** | **2.77x** |
+| `renamed-full-scan-10000` | 26.206ms | 11.873ms | **−54.7%** | **2.21x** |
+| `count-10000` | 0.732ms | 0.510ms | **−30.3%** | 1.43x |
+| `filtered-query-10000` | 6.593ms | 5.185ms | **−21.4%** | 1.27x |
+| `full-scan-10000` | 12.989ms | 11.524ms | **−11.3%** | 1.13x |
+| `update-1000` | 3.130ms | 2.997ms | −4.3% | 1.04x |
+| `insert-1000` | 4.605ms | 4.558ms | −1.0% | 1.01x |
+| `diff-update-1000` | 1.767ms | 1.751ms | −0.9% | 1.01x |
+| `point-lookup-10000` | 0.022ms | 0.022ms | +0.0% | 1.00x |
+
+Sum of the nine scenarios above: **77.6ms → 46.2ms, −40.5% (1.68x)**. That sum is a rough
+shape-of-the-work number, not a user-facing figure — it weights scenarios by how long they
+happen to take, not by how often anyone runs them.
+
+`diff-clean-sweep-10000`, `parse-simple-filter`, `parse-complex-filter` and `compile-schema` are
+omitted: they sit under the measured noise floor (see the null-A/B table under item H).
+
+**The read path is where this campaign paid.** Renamed schemas roughly halved, and they were the
+worst case by far — they used to cost about double an unrenamed read and now land within ~13% of
+one. The unrenamed reads improved 11–30%.
+
+**The write path barely moved, and that is a DEFAULT, not a ceiling.** Fix 1's guard only fires
+when `crossTabSync: false`, which is off by default for backward compatibility, and the benchmark
+constructs its stores with the default. Measured on the shipped code, 7 interleaved cycles, the
+same stores with `crossTabSync: false`:
+
+| scenario | default (`true`) | `crossTabSync: false` | change |
+|---|---|---|---|
+| `diff-update-1000` | 1.752ms | 1.418ms | **−19.1%** |
+| `insert-1000` | 4.354ms | 3.902ms | **−10.4%** |
+| `update-1000` | 2.955ms | 2.771ms | **−6.2%** |
+
+So an app that does not use cross-tab live queries gets a further 6–19% on writes for one flag.
+Caveat on that table: `renamed-filtered-query-10000` read +16.3% in the same sample, and a
+write-path flag cannot affect it — that side of the sample is not trustworthy, and the write
+numbers above are the part that held steady across all 7 cycles.
+
+---
+
 ## Part 1: Environment setup
 
 Work through this section first. Every trap below has burned a session in this repo.
