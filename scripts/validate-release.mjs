@@ -13,6 +13,15 @@ const tagCommit = tag => {
   }
 };
 
+const versionExists = pkg => {
+  try {
+    execFileSync('npm', ['view', `${pkg.name}@${pkg.version}`, 'version'], { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 if (event === 'workflow_dispatch') {
   const version = process.env.RELEASE_VERSION;
   if (ref !== 'refs/heads/main') throw new Error(`Coordinated releases must run from main, not ${ref ?? 'an unknown ref'}`);
@@ -26,8 +35,11 @@ if (event === 'workflow_dispatch') {
   // A package tag is a source assertion. Never publish current code under a tag that points to
   // an older commit, even when the corresponding npm version has not been published yet.
   const stale = releasePackages
-    .map(pkg => ({ tag: packageTag(pkg), commit: tagCommit(packageTag(pkg)) }))
-    .filter(item => item.commit != null && item.commit !== sha);
+    .map(pkg => ({ pkg, tag: packageTag(pkg), commit: tagCommit(packageTag(pkg)) }))
+    // A partial coordinated release can require a workflow-only correction on main. Tags for
+    // versions already published must remain on their provenance commit; only an UNPUBLISHED
+    // preparation tag is stale and safe to replace.
+    .filter(item => item.commit != null && item.commit !== sha && !versionExists(item.pkg));
   if (stale.length) {
     throw new Error(`Release tags already point to a different commit. Delete these unpublished stale tags before retrying: ${stale.map(x => x.tag).join(', ')}`);
   }
