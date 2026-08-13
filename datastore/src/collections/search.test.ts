@@ -230,6 +230,23 @@ describe('search', () => {
         expect(JSON.parse(JSON.stringify(hit)).score).toBeUndefined();
     });
 
+    it('adds query scores to immutable collection results without mutating frozen entities', async () => {
+        class ImmutableStore extends DataStore {
+            articles = this.collection(articleSchema).fullTextSearch().immutable().create();
+        }
+
+        const store = new ImmutableStore(new MemoryPlugin('search-immutable'));
+        await store.articles.addAsync({ id: '1', title: 'copper', body: 'copper', published: true, deletedAt: null });
+        await store.saveChangesAsync();
+
+        const stored = await store.articles.firstAsync();
+        const [hit] = await store.articles.search('copper').toArrayAsync();
+
+        expect(Object.isFrozen(stored)).toBe(true);
+        expect(hit.score).toBe(2);
+        expect(Object.keys(hit)).not.toContain('score');
+    });
+
     it('respects a soft-delete scope', async () => {
         // A soft-deleted document can sit in the index — the index sees the raw table — and
         // must still not come back from a search. It is filtered at the document read.

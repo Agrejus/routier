@@ -17,7 +17,31 @@ but two are runtime ones: `@routier/datastore` and `@routier/replication-plugin`
 `@routier/memory-plugin`. A `^0.2.1` range does not match `0.3.0`, so a version bump that leaves
 those behind publishes an unsatisfiable install.
 
-There is no release automation. This file is the procedure.
+Publishing is automated by `.github/workflows/release.yml`. A package tag publishes one
+independently versioned package; the manual `workflow_dispatch` path publishes a coordinated
+version in dependency order. Both paths run the complete artifact gate before entering the
+protected `npm` GitHub environment.
+
+`sync-server` and `test-utils` are private workspaces. They remain in the repository and CI but
+are never npm release candidates.
+
+## One-time npm setup
+
+The publish job uses npm trusted publishing (GitHub OIDC) and provenance. For every existing public
+package, configure a trusted publisher on npmjs.com with:
+
+- repository owner: `Agrejus`
+- repository: `routier`
+- workflow: `release.yml`
+- environment: `npm`
+
+Create an `npm` environment in the GitHub repository. A required reviewer is recommended because
+npm publication is irreversible.
+
+A package that has never existed on npm cannot have package-level trusted publishing configured
+first. For the initial coordinated release only, add a granular automation token as the repository
+Actions secret `NPM_TOKEN`. After all packages have been published and configured as trusted
+publishers, delete that secret. With no token, the workflow automatically uses OIDC.
 
 ## Before you start
 
@@ -101,32 +125,47 @@ node -e 'const f=require("fs");const p=JSON.parse(f.readFileSync("package-lock.j
 changes first. Do not generate it: the commit messages here are prose that explains causes,
 which is worth reading and does not fit a conventional-commit parser.
 
-## 4. Publish
+## 4. Release
 
-Publishing is irreversible. A published version cannot be replaced, only deprecated or
-superseded.
+Publishing is irreversible. A published version cannot be replaced, only deprecated or superseded.
 
-```
-npm publish --workspace @routier/core --access public
-```
+### Independent package release
 
-One package at a time, dependencies first, in the same order as the bumps. `sync-server` and
-`test-utils` are `private: true` and are not published.
-
-Verify before moving to the next package:
+After the version and changelog commit is on `main`, create a package tag:
 
 ```
+git tag @routier/core@0.3.1
+git push origin @routier/core@0.3.1
+```
+
+The tag workflow validates that the package manifest has exactly that version, rebuilds and tests
+every artifact, publishes the named workspace, verifies npm, and creates the GitHub Release.
+
+### Coordinated release
+
+Use **Actions → Publish npm packages → Run workflow**, select `main`, enter the common version, and
+type `RELEASE`. The workflow first verifies that every public package has exactly that version and
+that no same-version tag points at an older commit. It then publishes in dependency order and
+creates one package tag/GitHub Release per workspace. Existing npm versions and GitHub Releases are
+skipped, making a partially completed coordinated release safe to retry.
+
+Do not move a published tag. If an *unpublished* preparation tag points to an older commit, delete
+it locally and remotely before starting the coordinated release, then let the workflow recreate it:
+
+```
+git tag -d @routier/core@0.3.0
+git push origin :refs/tags/@routier/core@0.3.0
+```
+
+### Manual emergency fallback
+
+If GitHub or npm OIDC is unavailable, run the checks above, then publish in the order recorded in
+`scripts/release-packages.mjs`:
+
+```
+npm publish --workspace @routier/core --access public --provenance
 npm view @routier/core version
 ```
-
-## 5. Tag
-
-```
-git tag @routier/core@0.3.0
-git push origin --tags
-```
-
-A tag per published package, matching the published version.
 
 ## Notes
 

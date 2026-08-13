@@ -4,6 +4,7 @@
 dist
 *-db
 node_modules/
+examples/relayops/.data/
 .DS_Store
 .idea/
 *.iml

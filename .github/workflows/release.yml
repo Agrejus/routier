@@ -1,0 +1,127 @@
+name: Publish npm packages
+
+on:
+  # Normal independent releases: push a tag such as @routier/core@0.3.1.
+  push:
+    tags:
+      - "@routier/**@*"
+  # Bootstrap and coordinated releases, including the currently-unpublished 0.3.0 set.
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Publish every public workspace at this exact version"
+        required: true
+        default: "0.3.0"
+      confirmation:
+        description: "Type RELEASE to confirm the irreversible npm publication"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-release-${{ github.ref }}-${{ inputs.version || 'tag' }}
+  cancel-in-progress: false
+
+env:
+  ROUTIER_LOG_LEVEL: silent
+
+jobs:
+  verify:
+    name: Verify release artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Require an explicit manual confirmation
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: test "$CONFIRMATION" = RELEASE
+
+      - name: Validate release request and tags
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: node scripts/validate-release.mjs
+
+      - name: Install
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npx jest
+
+      - name: Pack check
+        run: npm run release:pack-check
+
+      - name: Consumer check
+        run: npm run release:consumer-check
+
+      - name: Upload built workspaces
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-workspaces
+          path: |
+            */dist
+            plugins/*/dist
+          if-no-files-found: error
+          retention-days: 1
+
+  publish:
+    name: Publish to npm
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: npm
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install package metadata dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Restore built workspaces
+        uses: actions/download-artifact@v4
+        with:
+          name: release-workspaces
+          path: .
+
+      - name: Publish and create package releases
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_VERSION: ${{ inputs.version }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          # Needed only for the one-time publication of packages that do not exist on npm yet.
+          # Once every package has an npm trusted publisher, delete this repository secret.
+          BOOTSTRAP_NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/publish-release.mjs

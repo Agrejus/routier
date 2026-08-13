@@ -4,7 +4,7 @@ import { SchemaCollection } from "@routier/core/collections";
 import { Result } from "@routier/core/results";
 import { GenericFunction } from "@routier/core/types";
 import { UnknownRecord, uuid } from "@routier/core/utilities";
-import { Filter, ParamsFilter, toExpression } from "@routier/core/expressions";
+import { ComparatorExpression, Expression, Filter, ParamsFilter, PropertyExpression, toExpression, ValueExpression } from "@routier/core/expressions";
 import { FullTextSearchRegistration } from "../collection-builder/fullTextSearch";
 import { CollectionDependencies, RequestContext } from "../collections/types";
 import { QueryableAsync } from "../queryable/QueryableAsync";
@@ -144,12 +144,17 @@ export class SearchQueryable<TEntity extends {}, TShape = Scored<InferType<TEnti
         let rows: any[] = documents.map(document => {
             const score = scores.get(keyOf(document)) ?? 0;
 
+            // Immutable collections freeze their read results. Search results are projections
+            // (the score is query metadata, never tracked), so clone a frozen/non-extensible row
+            // before attaching that metadata rather than throwing in Object.defineProperty.
+            const scored = Object.isExtensible(document) ? document : { ...document };
+
             // Non-enumerable so `score` does not survive a structured clone, a JSON round trip
             // or an equality check against a stored row. It is a fact about this result, not a
             // property of the entity.
-            Object.defineProperty(document, "score", { value: score, enumerable: false, configurable: true });
+            Object.defineProperty(scored, "score", { value: score, enumerable: false, configurable: true });
 
-            return document;
+            return scored;
         });
 
         rows = this.order(rows, ranked);
@@ -284,8 +289,28 @@ export class SearchQueryable<TEntity extends {}, TShape = Scored<InferType<TEnti
         const key = this.registration.sourceKeyColumn;
         const request = new RequestContext<TEntity>(this.changeTrackingType);
 
-        let queryable = new QueryableAsync<TEntity, InferType<TEntity>>(this.dependencies, request)
-            .where(([entity, p]: [any, any]) => p.ids.includes(entity[key]), { ids: sourceIds } as any);
+        const property = this.dependencies.schema.getProperty(key);
+        const filter = ([entity, p]: [any, any]) => p.ids.includes(property?.getValue(entity));
+        const expression = property == null
+            ? undefined
+            : new ComparatorExpression({
+                comparator: "includes",
+                negated: false,
+                strict: true,
+                left: new ValueExpression({ value: sourceIds }),
+                right: new PropertyExpression({ property }),
+            });
+
+        // The key column is schema metadata, not source text in a user lambda. Add the ordinary
+        // `IN` filter directly so the expression parser never has to understand dynamic bracket
+        // access (`entity[key]`), which it intentionally rejects.
+        request.queryOptions.add("filter", {
+            filter,
+            expression: expression ?? Expression.NOT_PARSABLE,
+            params: { ids: sourceIds },
+        });
+
+        let queryable = new QueryableAsync<TEntity, InferType<TEntity>>(this.dependencies, request);
 
         for (const filter of this.filters) {
             queryable = filter.params == null
