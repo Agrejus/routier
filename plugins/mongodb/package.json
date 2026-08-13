@@ -18,7 +18,11 @@
     "sideEffects": false,
     "author": "James DeMeuse <james.demeuse@gmail.com>",
     "license": "MIT",
-    "repository": "routier",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Agrejus/routier.git",
+        "directory": "plugins/mongodb"
+    },
     "keywords": [
         "orm",
         "typescript",

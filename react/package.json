@@ -48,5 +48,10 @@
             "types": "./dist/index.d.ts"
         }
     },
-    "sideEffects": false
+    "sideEffects": false,
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Agrejus/routier.git",
+        "directory": "react"
+    }
 }
