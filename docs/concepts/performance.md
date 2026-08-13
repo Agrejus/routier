@@ -7,61 +7,48 @@ title: Performance
 Routier is fast because it does less work per row, not because it caches results. This page
 names each optimization and what it costs.
 
-### Measured numbers
+Every percentage on this page compares Routier against an earlier version of itself, measured on
+the same machine. Your machine, your plugin, and your schema decide what an operation actually
+costs. A disk-backed plugin such as SQLite or IndexedDB pays I/O that the memory plugin does not.
 
-These numbers come from the regression benchmark in `benchmark/`. It runs against the
-`MemoryPlugin` on Node 22 and Apple Silicon. Each number is the median of repeated runs.
-
-| Operation | Rows | Time |
-| --- | --- | --- |
-| Point lookup by key | 10,000 | 0.022ms |
-| Count | 10,000 | 0.51ms |
-| Filtered query | 10,000 | 5.2ms |
-| Full scan | 10,000 | 11.5ms |
-| Update | 1,000 | 3.0ms |
-| Insert | 1,000 | 4.6ms |
-
-Read these as relative costs, not as a promise. Your machine, your plugin, and your schema all
-change the absolute time. A disk-backed plugin such as SQLite or IndexedDB pays I/O that the
-memory plugin does not.
+To measure your own workload, run the regression benchmark in `benchmark/`.
 
 ### Reads
 
 **A key lookup does not scan.** Routier parses the filter expression. If the expression pins the
 key to one value, Routier reads that record from a `Map`. The cost does not grow with the
-collection. A point lookup in 10,000 rows takes 0.022ms.
+collection.
 
 **Filters run before copies.** Routier tests the stored record first. It copies only the rows
 that match. A query that returns 10 rows out of 10,000 pays for 10 copies.
 
 **Filter and copy share one pass.** Routier iterates the stored records once. It tests the
 filters and copies the survivors in the same loop. It does not build an intermediate array for
-each filter. This made `count` over 10,000 rows 1.43x faster.
+each filter. This cut about 30% off a count and about 21% off a filtered query.
 
 **Routier generates the copy function from your schema.** It does not call `structuredClone`.
 The generated function copies the exact properties the schema declares. On a five-property
-schema the generated function takes 11ns per record against 885ns for `structuredClone` — 78x.
+schema it is 78x faster per record than `structuredClone`.
 
 **Renamed properties get their own copier.** A property declared with `.from('unit_price')` is
 stored under the storage name. Routier generates a second copy function that reads storage
-names. Reads on renamed schemas used to fall back to `structuredClone`. They are now 2.2x to
-2.8x faster and land within about 13% of an equivalent read on a schema with no renames.
+names. Reads on renamed schemas used to fall back to `structuredClone`. They are now 55% to 64%
+faster, and they land within about 13% of an equivalent read on a schema with no renames.
 
 **`min()` and `max()` make one pass.** They do not sort. They also do not reorder the array you
 pass them.
 
 ### Writes
 
-**Change tracking answers "did this change?" in about 31ns.** Routier proxies tracked entities.
-The set trap compares the new value to the current value first. A write that does not change the
-value stops there.
+**A write that changes nothing stops early.** Routier proxies tracked entities. The set trap
+compares the new value to the current value first. This cut the cost of that write by about 80%.
 
 **Each tracked entity caches its tracking record.** A save over 100,000 attached entities that
 changed nothing is 26x faster than it was without the cache.
 
 **The change tracker computes its property list once.** It builds the root property list and its
 name lookups when you construct the collection, not on every changed entity of every save. This
-made a 1,000-row update 7.4% faster.
+made bulk updates about 7% faster.
 
 **Adds hash an entity once per operation, not twice.** Building the hash string costs about 7x
 the map lookup it feeds.
