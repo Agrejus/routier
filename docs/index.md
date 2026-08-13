@@ -31,10 +31,10 @@ features:
     link: /guides/live-queries
     linkText: Live queries guide
   - icon: ⚡
-    title: Thin & Fast
-    details: No per-entity allocation, scheduling, or cloning in hot paths. Optimistic replication reads from memory and persists asynchronously.
-    link: /guides/optimistic-replication
-    linkText: How it works
+    title: Less Work Per Row
+    details: Key lookups skip the scan. Filters run before copies. Routier generates the copy function from your schema instead of calling structuredClone — 78x faster per record.
+    link: /concepts/performance
+    linkText: Performance
   - icon: 🔌
     title: Swappable Storage
     details: IndexedDB, SQLite, Local Storage, OPFS, PouchDB, and more. Change the plugin, keep your domain model and app code.

@@ -42,6 +42,10 @@
         "link": "/concepts/query-architecture"
       },
       {
+        "text": "Performance",
+        "link": "/concepts/performance"
+      },
+      {
         "text": "Schema",
         "link": "/concepts/schema/",
         "items": [

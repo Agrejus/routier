@@ -27,13 +27,16 @@ The pattern orchestrates three storage tiers:
 2. **Source Plugin**: All writes go to a persistent storage plugin (e.g., IndexedDB via Dexie)
 3. **Asynchronous Replication**: The source plugin automatically replicates data back to the memory store
 
-This architecture provides the best of both worlds: lightning-fast reads from memory and persistent storage for durability. You get immediate UI responsiveness without sacrificing data persistence.
+Reads come from memory, so they never wait for disk. Writes go to the persistent plugin, which replicates back to memory. The UI does not block on either step.
 
 ## Why is it Fast?
 
 ### Immediate Read Performance
 
-All reads happen in memory, avoiding the latency of disk-based storage like IndexedDB. This means your queries execute immediately without waiting for database I/O operations.
+All reads happen in memory. They do not wait for disk I/O, as they would on IndexedDB.
+
+Memory removes the I/O cost. It does not remove the cost of the query itself. See
+[Performance](/concepts/performance) for what a read costs once the data is in memory.
 
 ### Non-Blocking Writes
 
