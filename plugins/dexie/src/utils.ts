@@ -4,10 +4,40 @@ export const convertToDexieSchema = <T extends {}>(schema: CompiledSchema<T>) =>
     const schemaProperties: string[] = [];
     const existingIndexes: PropertyInfo<any>[] = [];
 
+    // Dexie's primary key is the FIRST entry in the stores string. A schema with
+    // multiple key properties needs a compound primary key ([a+b]) emitted first —
+    // listing the keys as plain entries makes only the first one the primary key,
+    // collapsing entities that differ in a later key component.
+    const compositeKey = schema.idProperties.length > 1;
+
+    if (compositeKey) {
+        schemaProperties.push(`[${schema.idProperties.map(p => p.name).join("+")}]`);
+    }
+
     for (let i = 0, length = schema.properties.length; i < length; i++) {
         const property = schema.properties[i];
 
-        if (property.level > 1) {
+        if (compositeKey && property.isKey) {
+            // Already part of the compound primary key
+            continue;
+        }
+
+        /**
+         * Root properties only.
+         *
+         * A root property is level 0 and its children are level 1, so `level > 1` skipped
+         * only grandchildren: the direct children of a nested object were emitted into the
+         * stores string as if they were top-level properties. A schema with
+         * `file: s.object({ key, size })` produced `...,file,key,size` — two indexes on
+         * paths that do not exist at the root.
+         *
+         * Wasteful on its own, and fatal in pairs. Two nested objects sharing a child name —
+         * `original.size` and `thumbnail.size`, which is what any schema with a file and its
+         * thumbnail looks like — emitted `size` twice, and IndexedDB refuses the duplicate:
+         * the database failed to OPEN with `ConstraintError`, so the whole store was
+         * unusable rather than merely unindexed.
+         */
+        if (property.level > 0) {
             logger.warn(`Dexie does not support querying on nested objects.  Property: ${property.getPathArray().join(".")}`);
             continue;
         }

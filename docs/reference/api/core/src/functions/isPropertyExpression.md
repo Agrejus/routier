@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / isPropertyExpression
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / isPropertyExpression
 
 # Function: isPropertyExpression()
 
@@ -14,7 +14,7 @@ Defined in: [core/src/expressions/utils.ts:31](https://github.com/Agrejus/routie
 
 ### expression
 
-[`Expression`](../classes/Expression.md)
+[`Expression`](/reference/api/core/src/classes/Expression)
 
 ## Returns
 

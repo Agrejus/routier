@@ -61,4 +61,6 @@ export class SchemaBoolean<T extends boolean, TModifiers extends SchemaModifiers
     tag(...tags: string[]) {
         return new SchemaTag<T, TModifiers>(tags, this);
     }
+
+
 }

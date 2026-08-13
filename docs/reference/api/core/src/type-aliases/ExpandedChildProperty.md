@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / ExpandedChildProperty
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / ExpandedChildProperty
 
 # Type Alias: ExpandedChildProperty
 
@@ -22,7 +22,7 @@ Defined in: [core/src/schema/types.ts:37](https://github.com/Agrejus/routier/blo
 
 ### type
 
-> **type**: [`SchemaTypes`](../enumerations/SchemaTypes.md)
+> **type**: [`SchemaTypes`](/reference/api/core/src/enumerations/SchemaTypes)
 
 Defined in: [core/src/schema/types.ts:38](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/types.ts#L38)
 

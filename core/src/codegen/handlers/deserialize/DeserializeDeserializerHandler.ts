@@ -10,7 +10,8 @@ export class DeserializeDeserializerHandler extends PropertyInfoHandler {
         if (property.valueDeserializer != null) {
             let objectBuilder = builder.getOrDefault<ObjectBuilder>("result.variable.object");
             const assignmentBuilder = builder.getOrDefault<SlotBlock>("functions");
-            const entitySelectorPath = property.getSelectrorPath({ parent: "unserialized" });
+            // Read the incoming record by `from` (storage) name
+            const entitySelectorPath = property.getSelectrorPath({ parent: "unserialized", useFromPropertyName: true });
 
             if (objectBuilder == null) {
                 objectBuilder = builder.get<SlotBlock>("result")

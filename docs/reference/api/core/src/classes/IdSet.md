@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / IdSet
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / IdSet
 
 # Class: IdSet
 
@@ -20,7 +20,7 @@ Defined in: [core/src/collections/IdSet.ts:7](https://github.com/Agrejus/routier
 
 ##### ids
 
-...[`IdType`](../type-aliases/IdType.md)[]
+...[`IdType`](/reference/api/core/src/type-aliases/IdType)[]
 
 #### Returns
 
@@ -30,7 +30,7 @@ Defined in: [core/src/collections/IdSet.ts:7](https://github.com/Agrejus/routier
 
 ### ids
 
-> `readonly` **ids**: readonly [`IdType`](../type-aliases/IdType.md)[]
+> `readonly` **ids**: readonly [`IdType`](/reference/api/core/src/type-aliases/IdType)[]
 
 Defined in: [core/src/collections/IdSet.ts:5](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/IdSet.ts#L5)
 

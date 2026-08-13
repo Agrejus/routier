@@ -1,0 +1,10 @@
+{
+  "name": "@routier/stress",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Stress scenarios: volume, churn, concurrency, and throughput",
+  "scripts": {
+    "test": "STRESS=1 jest -c ../jest.config.js --selectProjects stress",
+    "test:containers": "STRESS=1 E2E_CONTAINERS=1 jest -c ../jest.config.js --selectProjects stress"
+  }
+}

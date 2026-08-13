@@ -1,11 +1,6 @@
 ---
 title: Replication Plugin
-layout: default
-parent: Built-in Plugins
-grand_parent: Integrations
-nav_order: 6
 doc_role: reference
-permalink: /integrations/plugins/built-in-plugins/replication/
 ---
 
 # Replication Plugin
@@ -21,7 +16,7 @@ Use the replication plugin when you want one of these patterns:
 - `OptimisticUpdatesDbPlugin` for memory-first reads layered on top of a persistent store.
 - `HttpSwrDbPlugin` + `OptimisticUpdatesDbPlugin` for local-first SWR with optimistic updates.
 
-For the full local-first background, see [Local-First Apps](/guides/local-first-apps.md). For the highest-performance composition, see [HttpSwrDbPlugin with Optimistic Replication](/guides/http-swr-with-optimistic.md).
+For the full local-first background, see [Local-First Apps](/guides/local-first-apps). For the highest-performance composition, see [HttpSwrDbPlugin with Optimistic Replication](/guides/http-swr-with-optimistic).
 
 ## Installation
 
@@ -37,8 +32,7 @@ npm install @routier/dexie-plugin
 
 ## Minimal Setup
 
-{% capture replication_basic %}{% include code/from-docs/integrations/plugins/built-in-plugins/replication/README/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ replication_basic | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/built-in-plugins/replication/README/block-1.ts
 
 ## Exported Plugins
 
@@ -69,6 +63,7 @@ That gives you SWR semantics, optimistic local UX, and offline resilience withou
 - `ignoreQueryForCollections`: skips query serialization for collections the server always scopes itself.
 - `queryRetryBaseDelayMs`, `queryRetryMaxDelayMs`, `queryRetryMaxAttempts`: control retry backoff for reads.
 - `translateRemoteResponse(schema, data)`: adapts your API payload to the array shape Routier expects.
+- `writeBatchDelayMs`: debounce window for combining rapid writes to one URL (default `25`; `0` disables batching).
 
 ### `HttpSwrDbPlugin`
 
@@ -80,6 +75,30 @@ That gives you SWR semantics, optimistic local UX, and offline resilience withou
 - `onRevalidateError(error, context)`: log or surface background refresh failures without breaking the current UI.
 - `unsyncedQueueStore`: where pending writes are persisted until the server confirms them.
 
+## Structured Permanent Rejections
+
+A legacy permanent `4xx` response does not say whether the whole request is invalid or one entity
+poisoned the batch. To preserve valid writes, `HttpSwrDbPlugin` falls back to sending each entity
+alone. That is safe but costs `N` requests.
+
+Servers can avoid that fan-out by returning one of these JSON bodies with the permanent status:
+
+```json
+{ "error": "account is read-only", "rejectionScope": "batch" }
+```
+
+The entire batch is dead-lettered without probes. Use this only when no entity in the request could
+succeed.
+
+```json
+{ "error": "validation failed", "rejectedOpIds": ["operation-id-2"] }
+```
+
+The listed operations are dead-lettered and all unlisted operations are retried together in one
+request. Operation IDs come from `meta.opIds`, parallel to the `adds`, `updates`, and `removes`
+arrays. An unstructured response retains the per-item isolation fallback for compatibility and to
+avoid discarding valid writes.
+
 ## Operational Notes
 
 - `translateRemoteResponse` is usually required when your API returns `{ data: [...] }` or another wrapped payload.
@@ -89,9 +108,9 @@ That gives you SWR semantics, optimistic local UX, and offline resilience withou
 
 ## Related
 
-- [Local-First Apps](/guides/local-first-apps.md)
-- [HttpSwrDbPlugin with Optimistic Replication](/guides/http-swr-with-optimistic.md)
-- [Optimistic Replication](/guides/optimistic-replication.md)
+- [Local-First Apps](/guides/local-first-apps)
+- [HttpSwrDbPlugin with Optimistic Replication](/guides/http-swr-with-optimistic)
+- [Optimistic Replication](/guides/optimistic-replication)
 - [Built-in Plugins](/integrations/plugins/built-in-plugins/)
-- [OptimisticReplicationDbPlugin API](/reference/api/core/src/classes/OptimisticReplicationDbPlugin.md)
-- [ReplicationDbPlugin API](/reference/api/core/src/classes/ReplicationDbPlugin.md)
+- [OptimisticReplicationDbPlugin API](/reference/api/core/src/classes/OptimisticReplicationDbPlugin)
+- [ReplicationDbPlugin API](/reference/api/core/src/classes/ReplicationDbPlugin)

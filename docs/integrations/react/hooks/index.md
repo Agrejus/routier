@@ -1,9 +1,5 @@
 ---
 title: React Hooks
-layout: default
-parent: React
-grand_parent: Integrations
-nav_order: 1
 ---
 
 # React Hooks
@@ -20,7 +16,7 @@ The `useQuery` hook connects React components to Routier's live query system, au
 4. **State**: Returns a discriminated union for safe status checking
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/react/hooks/index/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/hooks/index/block-1.ts
 
 
 The hook uses `useEffect` internally, re-running your query when dependencies change and calling the cleanup function you return.
@@ -30,7 +26,7 @@ The hook uses `useEffect` internally, re-running your query when dependencies ch
 ## API
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/react/hooks/index/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/hooks/index/block-2.ts
 
 
 **Parameters:**
@@ -47,13 +43,13 @@ The hook uses `useEffect` internally, re-running your query when dependencies ch
 Calling `.subscribe()` creates a live query that **automatically re-runs** when data changes. You **must return** the unsubscribe handler so `useQuery` can clean up:
 
 
-{% highlight tsx linenos %}{% include code/from-docs/integrations/react/hooks/index/block-3.tsx %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/hooks/index/block-3.tsx
 
 
 With a block body, explicitly return the result of the chain:
 
 
-{% highlight tsx linenos %}{% include code/from-docs/integrations/react/hooks/index/block-4.tsx %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/hooks/index/block-4.tsx
 
 
 **Use `.subscribe()` when:**
@@ -67,7 +63,7 @@ With a block body, explicitly return the result of the chain:
 Omitting `.subscribe()` runs the query **once** when the component mounts:
 
 
-{% highlight tsx linenos %}{% include code/from-docs/integrations/react/hooks/index/block-5.tsx %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/hooks/index/block-5.tsx
 
 
 **Use without `.subscribe()` when:**
@@ -82,64 +78,55 @@ Omitting `.subscribe()` runs the query **once** when the component mounts:
 
 Subscribe to an entire collection:
 
-{% capture snippet_react_basic %}{% include code/from-docs/integrations/react/hooks/block-1.tsx %}{% endcapture %}
-{% highlight tsx %}{{ snippet_react_basic | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/hooks/block-1.tsx
 
 ### Count Query
 
 Get the count of items:
 
-{% capture snippet_react_count %}{% include code/from-docs/integrations/react/hooks/block-2.tsx %}{% endcapture %}
-{% highlight tsx %}{{ snippet_react_count | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/hooks/block-2.tsx
 
 ### Filtered Query with Dependencies
 
 Search and filter with reactive updates:
 
-{% capture snippet_react_filtered %}{% include code/from-docs/integrations/react/hooks/block-3.tsx %}{% endcapture %}
-{% highlight tsx %}{{ snippet_react_filtered | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/hooks/block-3.tsx
 
 ### Single Item Query
 
 Get one item by ID or condition:
 
-{% capture snippet_react_single %}{% include code/from-docs/integrations/react/hooks/block-4.tsx %}{% endcapture %}
-{% highlight tsx %}{{ snippet_react_single | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/hooks/block-4.tsx
 
 ### Sorted Results
 
 Apply sorting to your query:
 
-{% capture snippet_react_sorted %}{% include code/from-docs/integrations/react/hooks/block-5.tsx %}{% endcapture %}
-{% highlight tsx %}{{ snippet_react_sorted | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/hooks/block-5.tsx
 
 ### Pagination with Dependencies
 
 Use take/skip with reactive filtering:
 
-{% capture snippet_react_pagination %}{% include code/from-docs/integrations/react/hooks/block-6.tsx %}{% endcapture %}
-{% highlight tsx %}{{ snippet_react_pagination | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/hooks/block-6.tsx
 
 ### Custom Subscription with Cleanup
 
 For advanced use cases with manual cleanup:
 
-{% capture snippet_react_custom %}{% include code/from-docs/integrations/react/hooks/block-7.tsx %}{% endcapture %}
-{% highlight tsx %}{{ snippet_react_custom | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/hooks/block-7.tsx
 
 ### Multiple Queries in One Component
 
 Run multiple independent queries:
 
-{% capture snippet_react_multi %}{% include code/from-docs/integrations/react/hooks/block-8.tsx %}{% endcapture %}
-{% highlight tsx %}{{ snippet_react_multi | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/hooks/block-8.tsx
 
 ### One-Time Queries Without Subscription
 
 For static data that doesn't need updates:
 
-{% capture snippet_react_onetime %}{% include code/from-docs/integrations/react/hooks/block-9.tsx %}{% endcapture %}
-{% highlight tsx %}{{ snippet_react_onetime | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/hooks/block-9.tsx
 
 ## Quick Reference
 
@@ -162,7 +149,7 @@ For static data that doesn't need updates:
 Create your DataStore in a simple custom hook:
 
 
-{% highlight tsx linenos %}{% include code/from-docs/integrations/react/hooks/index/block-6.tsx %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/hooks/index/block-6.tsx
 
 
 **Critical:** You **must** use `useMemo` when creating a DataStore instance. Without `useMemo`, a new DataStore is created on every render, which causes subscriptions to be recreated infinitely. Each new datastore instance triggers `useQuery`'s effect to re-run, creating new subscriptions, which can cause performance issues and infinite loops.
@@ -176,13 +163,13 @@ Alternatively, you can use Context if you prefer a shared instance across your a
 Always check status before accessing data:
 
 
-{% highlight tsx linenos %}{% include code/from-docs/integrations/react/hooks/index/block-7.tsx %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/hooks/index/block-7.tsx
 
 
 TypeScript's discriminated unions make this safe:
 
 
-{% highlight tsx linenos %}{% include code/from-docs/integrations/react/hooks/index/block-8.tsx %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/hooks/index/block-8.tsx
 
 
 ### Dependencies Array
@@ -190,7 +177,7 @@ TypeScript's discriminated unions make this safe:
 Use the deps array to control when queries re-run:
 
 
-{% highlight tsx linenos %}{% include code/from-docs/integrations/react/hooks/index/block-9.tsx %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/hooks/index/block-9.tsx
 
 
 ### Return the Unsubscribe Handler
@@ -201,13 +188,13 @@ When you subscribe inside `useQuery`, the query chain returns an unsubscribe fun
 - **Block body:** use `return` so the handler is passed to `useQuery`:
 
 
-{% highlight tsx linenos %}{% include code/from-docs/integrations/react/hooks/index/block-10.tsx %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/hooks/index/block-10.tsx
 
 
 For custom subscriptions (e.g. `onChange`), return your cleanup function the same way:
 
 
-{% highlight tsx linenos %}{% include code/from-docs/integrations/react/hooks/index/block-11.tsx %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/hooks/index/block-11.tsx
 
 
 ## Troubleshooting
@@ -241,7 +228,7 @@ Prevent leaks by:
 ### Combining with Other Hooks
 
 
-{% highlight tsx linenos %}{% include code/from-docs/integrations/react/hooks/index/block-12.tsx %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/hooks/index/block-12.tsx
 
 
 ### Optimistic Updates
@@ -249,11 +236,11 @@ Prevent leaks by:
 Combine with collection mutations for optimistic updates:
 
 
-{% highlight tsx linenos %}{% include code/from-docs/integrations/react/hooks/index/block-13.tsx %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/hooks/index/block-13.tsx
 
 
 ## See Also
 
-- [Live Queries Guide](../../../guides/live-queries/) - Understanding live queries
-- [Optimistic Replication Guide](../../../guides/optimistic-replication/) - Using optimistic replication
-- [State Management Guide](../../../guides/state-management/) - Managing application state
+- [Live Queries Guide](/guides/live-queries) - Understanding live queries
+- [Optimistic Replication Guide](/guides/optimistic-replication) - Using optimistic replication
+- [State Management Guide](/guides/state-management) - Managing application state

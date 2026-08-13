@@ -1,4 +1,5 @@
-import { ChangeTrackingType, CompiledSchema, IdType, InferCreateType, InferType } from "@routier/core/schema";
+import { ChangeTrackingType, CompiledSchema, HashType, IdType, InferCreateType, InferType, PropertyInfo } from "@routier/core/schema";
+import { SoftDeleteConfiguration } from "../collection-builder/softDelete";
 import { ChangeTrackedEntity } from "../types";
 import { KnownKeyAdditions } from "./additions/KnownKeyAdditions";
 import { IAdditions } from "./additions/types";
@@ -8,20 +9,169 @@ import { SchemaPersistResult, TagCollection } from "@routier/core/collections";
 import { GenericFunction } from "@routier/core/types";
 import { CallbackResult, Result } from "@routier/core/results";
 import { assertIsNotNull } from "@routier/core";
+import { applyPatch, ImmutableUpdates, UpdateRecipe } from "./ImmutableUpdates";
 
+
+/**
+ * Marks a tracked entity clean after its changes have been persisted.
+ *
+ * The accumulated edits are dropped in place rather than by replacing `__tracking__`:
+ * the change-tracking proxy's `set` trap ignores writes to `__tracking__` itself (see
+ * `createChangeTracker` in core/src/schema/SchemaDefinition.ts), so assigning a fresh
+ * object through the proxy would silently do nothing. `isPaused` is left alone — whether
+ * tracking is paused is a property of the current operation, not of the save.
+ */
+function markPersisted<TEntity extends {}>(entity: InferType<TEntity>) {
+    const tracking = (entity as unknown as ChangeTrackedEntity<{}>).__tracking__;
+
+    if (tracking == null) {
+        return;
+    }
+
+    tracking.changes = {};
+    tracking.original = {};
+    tracking.isDirty = false;
+}
+
+/**
+ * A canonically attached entity, plus a direct handle on its tracking state.
+ *
+ * `tracking` is a cache of `doc.__tracking__`, and it exists purely for speed. Every save
+ * scans every attachment to find the dirty ones, and `doc` is a Proxy — so reading
+ * `doc.__tracking__` invokes the proxy's `get` trap once per attached entity, per scan.
+ * Measured over 100k attachments: 186ns per entity through the proxy versus 17ns through
+ * a direct reference, which is the floor for iterating the Map at all. In other words the
+ * trap was the entire cost — 18.6ms of a save that had nothing to do.
+ *
+ * Correctness does not depend on the cache being populated: `trackingOf` falls back to the
+ * proxy read when it is absent, which is exactly the old behaviour. It depends only on the
+ * cache never being *stale*, which is why `attach` is the single place an attachment is
+ * created.
+ */
+type Attachment<TEntity extends {}> = {
+    doc: InferType<TEntity>;
+    changeType: EntityChangeType;
+    /** `doc.__tracking__` at attach time. Absent for entities tracked without a proxy. */
+    tracking?: ChangeTrackedEntity<{}>["__tracking__"];
+    /**
+     * Content hash of `doc` at attach / last persist — present only on diff-tracked
+     * collections, where it IS the change detection: the caller's reference is the
+     * canonical instance and mutations land on it directly, so "dirty" means the current
+     * hash no longer matches this baseline. Keys and identities are excluded by
+     * `HashType.Object`, which is exactly right — they cannot change.
+     */
+    snapshotHash?: string;
+    /**
+     * The entity as it was at attach / last persist, for diff-tracked collections that were
+     * asked for previous values.
+     *
+     * `snapshotHash` says THAT the entity changed; it cannot say what it held. Only a copy can,
+     * and only diff mode needs one — proxy keeps originals in `__tracking__.original` and
+     * immutable keeps `PendingUpdate.original`, both for free.
+     *
+     * This is what diff tracking pays for `previous` being standard: one clone per attached
+     * entity, held for as long as it is attached. Proxy and immutable pay nothing here.
+     */
+    snapshot?: InferType<TEntity>;
+};
+
+/**
+ * A row added through `add()`, tracked by object reference rather than by id.
+ *
+ * `state` is what a caller's reference means at the moment it is used again:
+ *  - `pending` — still an unsaved addition; a patch rewrites it in place of an INSERT.
+ *  - `saved` — persisted; `current` now carries the assigned identity, so a patch becomes
+ *    an ordinary update against the attachment.
+ *  - `discarded` — its save failed, or the changes were cleared. Patching it must not
+ *    resurrect the row, so it falls through to the "not attached" error.
+ */
+type UnsavedRow<TEntity extends {}> = {
+    current: InferCreateType<TEntity>;
+    state: "pending" | "saved" | "discarded";
+};
 
 export class ChangeTracker<TEntity extends {}> {
 
+    /**
+     * The owning collection's tracking mode, set by CollectionBase at construction. The
+     * tracker needs it in exactly one place: `attach`, which snapshots a content hash for
+     * diff-tracked entities so saves can detect mutations made through plain references.
+     */
+    changeTrackingType: ChangeTrackingType = "proxy";
     protected removals: InferType<TEntity>[] = [];
-    protected canonicalAttachments: Map<IdType, { doc: InferType<TEntity>, changeType: EntityChangeType }> = new Map<IdType, { doc: InferType<TEntity>, changeType: EntityChangeType }>();
+    protected canonicalAttachments: Map<IdType, Attachment<TEntity>> = new Map<IdType, Attachment<TEntity>>();
     protected schema: CompiledSchema<TEntity>;
     protected _tagCollection: TagCollection | null = null;
     protected additions: IAdditions<TEntity>
+    /**
+     * Pending immutable updates. SPIKE — runs alongside proxy tracking, see
+     * ImmutableUpdates.ts. A row present here is authoritative for its own pending state:
+     * `getAttachmentsChanges` skips the proxy scan for it so one change cannot be reported
+     * twice.
+     */
+    readonly immutable: ImmutableUpdates<TEntity>
+
+    /**
+     * Every generation of an added-but-unsaved row, mapped to the slot holding its current
+     * value.
+     *
+     * An unsaved row cannot be resolved the way `update()` resolves a saved one. That path
+     * reads the id and looks the row up, and an identity-keyed row has no id until the
+     * database assigns one — which is why updating one used to throw. There is also nothing
+     * else stable to key on: `UnknownKeyAdditions` keys pending adds by content hash, so the
+     * first patch moves the key.
+     *
+     * The object reference is the only stable handle, so it is the key. Each `update()`
+     * registers the value it returns against the SAME slot, which is what keeps a stale
+     * reference working here as well: generation 1 and generation 7 both resolve to the row.
+     * A WeakMap so an abandoned generation is collectable — a long chain of updates before a
+     * save would otherwise pin every intermediate value for the life of the collection.
+     *
+     * The slot outlives the save deliberately. Once the row is persisted it flips to
+     * `"saved"` and later updates route to the ordinary id-based path — but they route there
+     * through `slot.current`, which is the generation that actually received the assigned
+     * identity. Without that hop a reference taken before the save could never be resolved
+     * again, because it has no id and never will.
+     */
+    private readonly unsavedRows = new WeakMap<object, UnsavedRow<TEntity>>();
+    /**
+     * The slots created since the last save, so they can be invalidated when their pending
+     * additions are dropped. A WeakMap cannot be enumerated, and a stale slot is not merely
+     * useless: patching one would put its row back into `additions` and insert a row the
+     * caller had every reason to think was gone.
+     */
+    private unsavedSlots: UnsavedRow<TEntity>[] = [];
+
+    /**
+     * Set when the collection was declared with `.softDelete()`. Null means a removal really
+     * removes.
+     */
+    private softDelete: SoftDeleteConfiguration<TEntity> | null = null;
+
+    /**
+     * The schema's root (non-nested) properties, and lookups into them by both names.
+     *
+     * Serialization asks for these on every changed entity of every save, and the schema is
+     * fixed for the tracker's lifetime, so they are computed once here instead of rebuilt and
+     * linearly searched per call.
+     *
+     * TWO maps, not one merged map: `serializeDelta` resolves a key by `name` across ALL roots
+     * FIRST and only then by `getResolvedName()`. One combined map loses that precedence — a
+     * property whose resolved name collides with another property's `name` would resolve to the
+     * wrong property.
+     */
+    private readonly rootProperties: PropertyInfo<TEntity>[];
+    private readonly rootsByName: Map<string, PropertyInfo<TEntity>>;
+    private readonly rootsByResolvedName: Map<string, PropertyInfo<TEntity>>;
 
     constructor(
         schema: CompiledSchema<TEntity>,
     ) {
         this.schema = schema;
+        this.immutable = new ImmutableUpdates<TEntity>(schema);
+        this.rootProperties = schema.properties.filter(p => p.parent == null);
+        this.rootsByName = new Map(this.rootProperties.map(p => [p.name, p]));
+        this.rootsByResolvedName = new Map(this.rootProperties.map(p => [p.getResolvedName(), p]));
 
         if (schema.hasIdentityKeys === true) {
             this.additions = new UnknownKeyAdditions<TEntity>(this.schema);
@@ -35,16 +185,79 @@ export class ChangeTracker<TEntity extends {}> {
         destroy: () => { this._tagCollection = null; }
     }
 
+    /**
+     * The single place a canonical attachment is created.
+     *
+     * Funnelling every write through here is what makes the `tracking` cache safe: there
+     * is exactly one expression computing it from `doc`, so the pair cannot drift apart.
+     * Adding a `canonicalAttachments.set` elsewhere would reintroduce that risk.
+     */
+    private attach(key: IdType, doc: InferType<TEntity>, changeType: EntityChangeType) {
+        this.canonicalAttachments.set(key, {
+            doc,
+            changeType,
+            tracking: (doc as unknown as ChangeTrackedEntity<{}>).__tracking__,
+            // Diff tracking baselines the entity's content at attach time; everything
+            // else about the identity map is shared with the other modes.
+            snapshotHash: this.changeTrackingType === "diff"
+                ? this.contentHash(doc)
+                : undefined,
+            snapshot: this.changeTrackingType === "diff"
+                ? this.schema.clone(doc)
+                : undefined,
+        });
+    }
+
+    /** Content hash of an attached entity — the diff-tracking baseline currency. */
+    private contentHash(doc: InferType<TEntity>) {
+        return this.schema.hash(doc as unknown as InferCreateType<TEntity>, HashType.Object);
+    }
+
+    /** Re-baselines a diff-tracked attachment after its current state has been persisted. */
+    private refreshSnapshot(attachment: Attachment<TEntity>) {
+        if (attachment.snapshotHash != null) {
+            attachment.snapshotHash = this.contentHash(attachment.doc);
+        }
+
+        // Re-taken alongside the hash, or the next save would report the state before LAST
+        // save as "previous" and a search index would try to delete rows that are already gone.
+        if (attachment.snapshot != null) {
+            attachment.snapshot = this.schema.clone(attachment.doc);
+        }
+    }
+
+    /** True when a diff-tracked attachment's content no longer matches its baseline. */
+    private isSnapshotDirty(attachment: Attachment<TEntity>) {
+        return attachment.snapshotHash != null
+            && this.contentHash(attachment.doc) !== attachment.snapshotHash;
+    }
+
+    /**
+     * An attachment's tracking state, without paying the proxy's `get` trap when possible.
+     *
+     * The fallback is not defensive padding — entities enriched without a proxy have no
+     * `__tracking__` at attach time, and the pause bootstrap can install one afterwards.
+     * Reading through `doc` in that case is exactly what the code did before the cache
+     * existed, so the slow path is never wrong, only slow.
+     */
+    private static trackingOf<T extends {}>(attachment: Attachment<T>) {
+        return attachment.tracking
+            ?? (attachment.doc as unknown as ChangeTrackedEntity<{}>).__tracking__;
+    }
+
     protected hasAttachmentsChanges() {
 
         let hasChanges = false;
 
-        for (const [, canonicalAttachment] of this.canonicalAttachments) {
+        // `values()` rather than destructured entries: the key is unused here, and
+        // destructuring allocates a two-element array per attachment.
+        for (const canonicalAttachment of this.canonicalAttachments.values()) {
 
-            const changeTrackedDoc = canonicalAttachment.doc as unknown as ChangeTrackedEntity<{}>;
-            const changeType = canonicalAttachment.changeType;
+            const tracking = ChangeTracker.trackingOf(canonicalAttachment);
 
-            if (changeTrackedDoc.__tracking__?.isDirty === true || changeType !== "notModified") {
+            if (tracking?.isDirty === true
+                || canonicalAttachment.changeType !== "notModified"
+                || this.isSnapshotDirty(canonicalAttachment)) {
                 hasChanges = true;
                 break
             }
@@ -81,9 +294,37 @@ export class ChangeTracker<TEntity extends {}> {
             // Optimized: cache found.doc since it's accessed twice (line 83 and 84)
             const foundDoc = found.doc;
 
+            // Plugin responses are wire-shaped (e.g. sqlite returns dates as strings);
+            // deserialize before merging so wire values never leak into tracked entities
+            const deserializedUpdate = this.schema.deserialize(update);
+
+            // A row changed through `update()` gets its persisted value ADOPTED as the new
+            // canonical rather than merged into the old one. Two reasons, and the second is
+            // fatal without this: merging is pointless when the new value is already
+            // complete, and on an immutable collection the old canonical is frozen, so
+            // writing into it throws.
+            if (this.immutable.has(id)) {
+                this.attach(id, deserializedUpdate as InferType<TEntity>, "notModified");
+                result.updates[i] = this.schema.clone(deserializedUpdate as InferType<TEntity>);
+                continue;
+            }
+
             // Let's only map Ids and identities
-            this.schema.merge(foundDoc, update); // merge needs to map children appropriately
+            this.schema.merge(foundDoc, deserializedUpdate); // merge needs to map children appropriately
             result.updates[i] = this.schema.clone(foundDoc);
+
+            // The persisted state is the new baseline for diff tracking.
+            this.refreshSnapshot(found);
+
+            // The update is now persisted, so the entity is no longer dirty. Without this
+            // the proxy's accumulated `changes`/`original` survive the save and
+            // `getAttachmentsChanges` keeps reporting the entity as `propertiesChanged`
+            // on every subsequent save, forever: update counts climb save over save,
+            // `previewChanges` never reaches zero pending, and — worst — an entity that
+            // was updated and then removed gets its stale update replayed after the
+            // removal, reinserting the row.
+            markPersisted(foundDoc);
+            found.changeType = "notModified";
         }
 
         for (let i = 0, length = adds.length; i < length; i++) {
@@ -92,14 +333,14 @@ export class ChangeTracker<TEntity extends {}> {
             // Need to deserialize so we can match properly
             const deserializedAdd = this.schema.deserialize(add);
 
-            const found = this.additions.get(deserializedAdd);
+            const found = this.additions.take(deserializedAdd);
 
             assertIsNotNull(found, () => {
 
                 return `Cannot find internal addition, please check the following:
                 
 1. Entire document must be returned from the plugin for adds
-2. Serialization/deserialization must be set at the schema level if the underlying datastore does not support certain types. Ex.  Sqlite stores booleans as integers
+2. Serialization/deserialization must be set at the schema level if the underlying datastore does not support certain types. Ex. a backend with no boolean type stores them as integers
 3. If sending over HTTP, remember, undefined will be serialzied as null over the wire.  Please use .nullable().default(() => null) to replace optional properties
 
 Canonical Documents: ${JSON.stringify([...this.canonicalAttachments.entries()], null, 2)}
@@ -115,10 +356,19 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
             const id = this.schema.getId(add);
 
             // Set here, if we never save we should never attach
-            this.canonicalAttachments.set(id, {
-                doc: found as InferType<TEntity>,
-                changeType: "notModified" // since we just added it, mark it as not modified
-            });
+            // notModified: it was just added, so there is nothing pending for it.
+            this.attach(id, found as InferType<TEntity>, "notModified");
+
+            // `found` is the generation the merge just gave the assigned identity to, so it
+            // is the only one a later `update()` can resolve by id. Point the slot at it and
+            // every reference the caller holds — including the one from before the save —
+            // keeps working.
+            const slot = this.unsavedRows.get(found as object);
+
+            if (slot != null) {
+                slot.current = found;
+                slot.state = "saved";
+            }
         }
         // nothing to merge here, use the attached removals
         result.removals = this.removals;
@@ -138,10 +388,19 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     getAttachmentsChanges(): EntityUpdateInfo<TEntity>[] {
         const changes: EntityUpdateInfo<TEntity>[] = [];
 
-        for (const [, canonicalAttachment] of this.canonicalAttachments) {
-            const changeTrackedDoc = canonicalAttachment.doc as unknown as ChangeTrackedEntity<{}>;
-            // Optimized: cache __tracking__ since it's accessed twice (line 149 and 158)
-            const tracking = changeTrackedDoc.__tracking__;
+        // This loop runs over EVERY attachment on EVERY save, so its body is kept inline and
+        // free of anything proportional to attachment count. Two things were measured to
+        // matter at 100k attachments and are deliberately absent:
+        //
+        //  - destructuring Map entries to get the id, which allocates a two-element array
+        //    per attachment (hence `.values()`);
+        //  - a per-attachment `immutable.has(id)` probe.
+        //
+        // Extracting the body into a helper method also cost measurably — one non-inlined
+        // call per attachment — so it stays here despite the duplication with the immutable
+        // pass below.
+        for (const canonicalAttachment of this.canonicalAttachments.values()) {
+            const tracking = ChangeTracker.trackingOf(canonicalAttachment);
 
             let changeType: EntityChangeType = "notModified";
 
@@ -155,15 +414,265 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
                 changeType = "propertiesChanged"
             }
 
+            // Diff tracking: the caller mutated the canonical instance directly, so the
+            // only evidence is the content hash diverging from the attach-time baseline.
+            const snapshotDirty = changeType === "notModified" && this.isSnapshotDirty(canonicalAttachment);
+
+            if (snapshotDirty) {
+                changeType = "propertiesChanged";
+            }
+
             if (changeType === "notModified") {
                 continue;
             }
 
-            const serializedEntity = this.schema.preprocess(changeTrackedDoc as InferCreateType<TEntity>);
-            changes.push({ entity: serializedEntity, delta: this.schema.serialize(tracking.changes as InferType<TEntity>), changeType })
+            const serializedEntity = this.schema.preprocess(canonicalAttachment.doc as InferCreateType<TEntity>);
+            // A hash comparison says THAT the entity changed, not WHICH properties did, so
+            // a diff-tracked change ships an empty delta — the convention every plugin
+            // already implements as "no tracked change list: write the whole entity"
+            // (see the empty-delta fallback in the SQL builders).
+            const delta = snapshotDirty || tracking == null
+                ? ({} as InferType<TEntity>)
+                : this.serializeDelta(serializedEntity, tracking.changes);
+
+            const restored = snapshotDirty
+                ? undefined
+                // Proxy mode: originals are keyed by the same dotted paths as the changes, so
+                // restoring them over a clone rebuilds the entity as it was.
+                : this.restoreOriginals(canonicalAttachment.doc, tracking?.original);
+
+            changes.push({
+                entity: serializedEntity,
+                delta,
+                changeType,
+                previous: snapshotDirty
+                    // Diff mode: the baseline copy IS the previous entity, and the mode cannot
+                    // say which property moved, so every root is reported.
+                    ? this.serializePrevious(canonicalAttachment.snapshot, null)
+                    : restored != null
+                        ? this.serializePrevious(restored, tracking?.changes ?? null)
+                        // Nothing was recorded as changed — `markDirty()` rather than an edit.
+                        // The entity as it stands IS its previous state, and no property can be
+                        // named, so every root is reported for the same reason diff does.
+                        : this.serializePrevious(canonicalAttachment.doc, null),
+            })
+        }
+
+        // An immutably-updated row is normally invisible to the loop above: `update()` never
+        // touches the proxy, so the canonical document stays clean. The exception is a row
+        // mutated BOTH ways before one save, which would otherwise be sent twice. Deduping
+        // here rather than inside the loop keeps the cost proportional to the number of
+        // changes instead of the number of attachments.
+        if (this.immutable.size > 0 && changes.length > 0) {
+            for (let i = changes.length - 1; i >= 0; i--) {
+                if (this.immutable.has(this.schema.getId(changes[i].entity))) {
+                    changes.splice(i, 1);
+                }
+            }
+        }
+
+        for (const [, update] of this.immutable.entries()) {
+            const serializedEntity = this.schema.preprocess(update.current as InferCreateType<TEntity>);
+            changes.push({
+                entity: serializedEntity,
+                delta: this.serializeDelta(serializedEntity, update.patch),
+                changeType: "propertiesChanged",
+                // `original` is already the whole entity as it was — the one mode that needs no
+                // reconstruction at all.
+                previous: this.serializePrevious(update.original, update.patch),
+            });
         }
 
         return changes
+    }
+
+    /**
+     * The changed properties of the entity, keyed by storage-side name, selected from the
+     * COMPLETE already-serialized entity.
+     *
+     * Deliberately NOT `schema.serialize(patch)`. A patch is partial (and on the proxy path
+     * it is a FLAT map keyed by dotted path, e.g. `{ "nested.inner.value": "y" }`), so
+     * handing it to the generated serializer walks branches the patch omits — the depth-2
+     * throw of defect #13 — and a dotted key never matches an entity-shaped walk at all.
+     * Selecting changed roots out of the complete serialized entity sidesteps both: every
+     * value has already been through its property's real serializer, and a dotted path only
+     * needs its root segment to select the right storage key. A nested subtree is therefore
+     * always sent whole, which is also what the JSON-column consumers require (a partial
+     * subtree would overwrite the siblings that did not change).
+     */
+    /**
+     * The entity as it was, rebuilt from a clone of what it is now.
+     *
+     * The proxy records the value each path held before its FIRST change and never overwrites
+     * it (see the `set` trap in `SchemaDefinition`), so putting those values back produces the
+     * state at the last save — not the state one edit ago. A property changed twice therefore
+     * reports what it held before the first change, which is the only answer that lets a
+     * consumer undo everything this save is about to do.
+     *
+     * Returns undefined when there is nothing to restore, so the caller reports no previous
+     * values rather than the current ones dressed up as old.
+     */
+    private restoreOriginals(doc: InferType<TEntity>, originals: Record<string, any> | undefined) {
+
+        if (originals == null) {
+            return undefined;
+        }
+
+        const paths = Object.keys(originals);
+
+        if (paths.length === 0) {
+            return undefined;
+        }
+
+        const restored = this.schema.clone(doc) as Record<string, any>;
+
+        for (const path of paths) {
+            // Dotted, and an array index is just a segment: "nested.inner.value", "values.2".
+            const segments = path.split(".");
+            let cursor: Record<string, any> | undefined = restored;
+
+            for (let i = 0; i < segments.length - 1 && cursor != null; i++) {
+                const next = cursor[segments[i]];
+                cursor = next != null && typeof next === "object" ? next : undefined;
+            }
+
+            if (cursor == null) {
+                // The parent no longer exists — it was replaced wholesale, so its own path
+                // carries the previous value and this one has nothing to add.
+                continue;
+            }
+
+            cursor[segments[segments.length - 1]] = originals[path];
+        }
+
+        return restored as InferType<TEntity>;
+    }
+
+    /**
+     * Previous values in the same shape as a delta: storage-side names, serialized values.
+     *
+     * `patch` names which properties to report. Pass null to report every root, which is what
+     * diff mode needs — a content hash cannot say which property moved.
+     */
+    private serializePrevious(previousEntity: InferType<TEntity> | undefined, patch: Record<string, any> | null) {
+
+        if (previousEntity == null) {
+            return undefined;
+        }
+
+        const serialized = this.schema.preprocess(previousEntity as InferCreateType<TEntity>);
+
+        if (patch != null) {
+            return this.serializeDelta(serialized, patch);
+        }
+
+        const previous: Record<string, unknown> = {};
+
+        for (const property of this.rootProperties) {
+
+            const column = property.getResolvedName();
+            previous[column] = (serialized as Record<string, unknown>)[column];
+        }
+
+        return previous as any;
+    }
+
+    private serializeDelta(serializedEntity: Record<string, unknown>, patch: Record<string, any>) {
+        const delta: Record<string, unknown> = {};
+
+        for (const key of Object.keys(patch)) {
+            // Proxy-path change keys are dotted paths ("nested.inner.value", "values.2");
+            // only the root segment names a storage column
+            const rootKey = key.split(".")[0];
+            const property = this.rootsByName.get(rootKey) ?? this.rootsByResolvedName.get(rootKey);
+
+            if (property == null) {
+                continue;
+            }
+
+            const column = property.getResolvedName();
+            delta[column] = serializedEntity[column];
+        }
+
+        return delta as any;
+    }
+
+    /**
+     * Applies a patch or updater to a row, resolving the caller's reference by id.
+     *
+     * The reference may be any generation of the row — only its id is read. See
+     * ImmutableUpdates.update.
+     */
+    updateImmutable(entity: InferType<TEntity>, recipe: UpdateRecipe<TEntity>) {
+        const unsaved = this.unsavedRows.get(entity as object);
+
+        if (unsaved?.state === "pending") {
+            return this.updateUnsaved(unsaved, recipe);
+        }
+
+        // A saved row is resolved through the slot rather than through the caller's
+        // reference: an identity-keyed row only ever received its id on ONE generation, and
+        // that is the one the slot holds.
+        const resolvable = unsaved?.state === "saved"
+            ? unsaved.current as InferType<TEntity>
+            : entity;
+
+        return this.immutable.update(
+            resolvable,
+            recipe,
+            id => this.canonicalAttachments.get(id)?.doc
+        );
+    }
+
+    /** Registers the first generation of an added row. */
+    private trackUnsaved(entity: InferCreateType<TEntity>) {
+        const slot: UnsavedRow<TEntity> = { current: entity, state: "pending" };
+
+        this.unsavedRows.set(entity as object, slot);
+        this.unsavedSlots.push(slot);
+    }
+
+    /**
+     * Patches a row that has been added but not yet saved.
+     *
+     * The new value replaces the pending addition outright — there is no delta to record,
+     * because an unsaved row is sent to the plugin whole. That also means a patch and a
+     * later save produce one INSERT with the final values rather than an INSERT followed by
+     * an UPDATE.
+     *
+     * The result is NOT frozen, even on an immutable collection. Freezing is deliberately
+     * kept off the add path (see `QueryableExecutor.attachResults`) because `mergeChanges`
+     * has to write the database's assigned identity back into the entity it just persisted.
+     * Reads are frozen; a row you are still composing is not.
+     */
+    private updateUnsaved(slot: UnsavedRow<TEntity>, recipe: UpdateRecipe<TEntity>) {
+        const base = slot.current;
+
+        const next = typeof recipe === "function"
+            ? recipe(base as InferType<TEntity>)
+            : applyPatch(base as Record<string, any>, recipe) as InferType<TEntity>;
+
+        this.additions.replace(base, next as InferCreateType<TEntity>);
+
+        slot.current = next as InferCreateType<TEntity>;
+        this.unsavedRows.set(next as object, slot);
+
+        return next;
+    }
+
+    /** The current value of a row: its pending version if any, otherwise the attached one. */
+    currentOf(entity: InferType<TEntity>) {
+        const unsaved = this.unsavedRows.get(entity as object);
+
+        if (unsaved?.state === "pending") {
+            return unsaved.current as InferType<TEntity>;
+        }
+
+        const id = this.schema.getId(
+            unsaved?.state === "saved" ? unsaved.current as InferType<TEntity> : entity
+        );
+
+        return this.immutable.current(id) ?? this.canonicalAttachments.get(id)?.doc;
     }
 
     markDirty(entities: InferType<TEntity>[]) {
@@ -191,11 +700,13 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
         }
 
         if (found.changeType === "notModified") {
-            const resolvedChangeType = this.resolveChangeType(found.doc);
+            const resolvedChangeType = this.resolveChangeType(found.doc) === "propertiesChanged" || this.isSnapshotDirty(found)
+                ? "propertiesChanged"
+                : "notModified";
 
             return {
                 doc: found.doc,
-                changeType: resolvedChangeType
+                changeType: resolvedChangeType as EntityChangeType
             }
         }
 
@@ -238,14 +749,46 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     }
 
     // Checks to see if the entity already has a canonical attachment; if so merge, otherwise attach.
-    resolve(entity: InferType<TEntity>, tag: unknown | null, options?: { merge?: boolean }) {
+    resolve(entity: InferType<TEntity>, tag: unknown | null, options?: { merge?: boolean, adopt?: boolean }) {
 
         const key = this.schema.getId(entity);
         const existing = this.canonicalAttachments.get(key);
 
         if (existing != null) {
+
+            // An explicit attach adopts the caller's instance as the canonical: the
+            // caller will mutate THAT instance, and keeping a previously attached copy
+            // canonical would silently drop those mutations on save. The caller's values
+            // are authoritative — nothing is merged from the replaced copy
+            if (options?.adopt === true && existing.doc !== entity) {
+                this.attach(key, entity, existing.changeType);
+
+                if (tag != null) {
+                    const tagCollection = this.resolveTagCollection();
+                    tagCollection.set(entity, tag);
+                }
+
+                return entity;
+            }
+
             if (options?.merge === true) {
+                // A diff-tracked attachment with unsaved local edits keeps them: merging a
+                // re-read over the canonical would silently absorb the caller's mutations
+                // into a fresh baseline, and there is no per-property record to protect
+                // them the way the proxy's paused merge does. Local state wins until saved.
+                if (this.isSnapshotDirty(existing)) {
+                    if (tag != null) {
+                        this.resolveTagCollection().set(existing, tag);
+                    }
+
+                    return existing.doc;
+                }
+
                 this.schema.merge(existing.doc, entity); // merge needs to map children appropriately
+
+                // The merged read is database truth over a clean entity — re-baseline, or
+                // the merged-in values would read as local edits on the next save.
+                this.refreshSnapshot(existing);
             }
 
             if (tag != null) {
@@ -258,7 +801,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
 
 
         const changeType = this.resolveChangeType(entity);
-        this.canonicalAttachments.set(key, { doc: entity, changeType });
+        this.attach(key, entity, changeType);
 
         if (tag != null) {
             const tagCollection = this.resolveTagCollection();
@@ -268,7 +811,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
         return entity;
     }
 
-    resolveMany(entities: InferType<TEntity>[], tag: unknown | null, options?: { merge?: boolean }) {
+    resolveMany(entities: InferType<TEntity>[], tag: unknown | null, options?: { merge?: boolean, adopt?: boolean }) {
         const result = Array.from<InferType<TEntity>>({ length: entities.length });
 
         for (let i = 0, length = entities.length; i < length; i++) {
@@ -278,9 +821,62 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
         return result;
     }
 
+    /** Declared by `CollectionBuilder.softDelete`; see that method. */
+    enableSoftDelete(configuration: SoftDeleteConfiguration<TEntity>) {
+        this.softDelete = configuration;
+    }
+
+    /**
+     * Stamps the soft-delete property instead of queuing a removal.
+     *
+     * Done here rather than in each collection because there is more than one way to reach a
+     * removal — `remove(entity)`, `removeAsync(...entities)` and a queryable's `.removeAsync()`
+     * all arrive at this method — and a soft delete that only covered some of them would leave
+     * rows genuinely deleted through the path nobody remembered to change.
+     *
+     * An immutable collection takes the patch route `update()` already uses. Testing the
+     * collection's declared mode rather than `Object.isFrozen` on the entity: a row is frozen
+     * when it is READ, so an entity that has only ever been added is not frozen yet, and the
+     * assignment would succeed while the immutable collection — which detects changes through
+     * patches, not mutations — recorded nothing at all. The row would stay visible with no
+     * error anywhere.
+     */
+    private stampAsDeleted(entities: InferType<TEntity>[]) {
+        const { propertyName, stamp } = this.softDelete!;
+
+        for (const entity of entities) {
+            if (this.changeTrackingType === "immutable") {
+                // A patch object rather than an updater function: an updater has to return a
+                // whole entity and its delta is then derived by diffing, which is work and
+                // precision this does not need. The patch IS the delta.
+                this.updateImmutable(entity, { [propertyName]: stamp() });
+                continue;
+            }
+
+            (entity as Record<string, unknown>)[propertyName] = stamp();
+        }
+    }
+
     remove(entities: InferType<TEntity>[], tag: unknown | null, done: CallbackResult<InferType<TEntity>[]>) {
         try {
+            if (this.softDelete != null) {
+                this.stampAsDeleted(entities);
+
+                if (tag != null) {
+                    this.resolveTagCollection().setMany(entities, tag);
+                }
+
+                done(Result.success(entities));
+                return;
+            }
+
             this.removals.push(...entities);
+
+            // A pending patch for a row being removed is moot, and replaying it after the
+            // delete would reinsert the row — the resurrection half of defect #11.
+            for (const entity of entities) {
+                this.immutable.forget(this.schema.getId(entity));
+            }
 
             if (tag != null) {
                 const tagCollection = this.resolveTagCollection();
@@ -297,28 +893,37 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
         for (const [key, canonicalAttachment] of this.canonicalAttachments) {
 
             if (canonicalAttachment.doc === existingEntity) {
-                this.canonicalAttachments.set(key, {
-                    doc: newEntity as InferType<TEntity>,
-                    changeType: canonicalAttachment.changeType
-                });
+                this.attach(key, newEntity as InferType<TEntity>, canonicalAttachment.changeType);
                 return;
             }
         }
     }
 
     hasChanges(): boolean {
-        return this.additions.size > 0 || this.removals.length > 0 || this.hasAttachmentsChanges() === true;
+        return this.additions.size > 0 || this.removals.length > 0 || this.immutable.hasChanges() || this.hasAttachmentsChanges() === true;
     }
 
-    add(entities: InferCreateType<TEntity>[], tag: unknown | null, done: CallbackResult<InferType<TEntity>[]>) {
+    /**
+     * @param changeTrackingType supplied by the collection. It used to be hardcoded to
+     *   "proxy", which made `.immutable()` and `.diff()` leak proxies through the back door:
+     *   an added entity became the canonical attachment, so every later read of that row
+     *   handed back the proxy no matter what the query asked for.
+     */
+    add(
+        entities: InferCreateType<TEntity>[],
+        tag: unknown | null,
+        done: CallbackResult<InferType<TEntity>[]>,
+        changeTrackingType: ChangeTrackingType = "proxy"
+    ) {
         try {
             const length = entities.length;
             const result: InferType<TEntity>[] = Array.from({ length });
             const tagCollection = tag != null ? this.resolveTagCollection() : null;
 
             for (let i = 0; i < length; i++) {
-                const entity = this.schema.enrich(entities[i], "proxy");
+                const entity = this.schema.enrich(entities[i], changeTrackingType);
                 this.additions.set(entity);
+                this.trackUnsaved(entity);
                 result[i] = entity as InferType<TEntity>;
 
                 if (tagCollection != null) {
@@ -387,6 +992,13 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
             return [];
         }
 
+        // Re-key from current content before anything leaves. A pending row can have been
+        // mutated since it was added — `project.taskCount = 4` on a proxy collection — and the
+        // content-hash key would still describe the row as it was, so `mergeChanges` could not
+        // pair the plugin's returned row back to it and threw (defect #25). Doing it here, rather
+        // than on every write, means one pass per save and no hook into the proxy.
+        this.additions.reindex();
+
         const result: InferCreateType<TEntity>[] = Array.from({ length: size });
         let index = 0;
 
@@ -405,5 +1017,20 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     clearChanges() {
         this.additions.clear();
         this.removals = [];
+
+        // Whatever is still pending here never made it to the database — either the save
+        // failed or the changes were dropped. Its slot has to stop accepting patches, or the
+        // next `update()` through a reference to it would re-enter it into `additions`.
+        // Slots the merge already flipped to "saved" are left alone: those rows exist.
+        for (const slot of this.unsavedSlots) {
+            if (slot.state === "pending") {
+                slot.state = "discarded";
+            }
+        }
+
+        this.unsavedSlots = [];
+        // Pending patches are discarded here rather than per-entity. There is no dirty flag
+        // to reset, which is the whole reason defect #11 cannot recur on this path.
+        this.immutable.clear();
     }
 }   

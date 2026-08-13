@@ -1,9 +1,5 @@
 ---
 title: Property Types
-layout: default
-parent: Schema
-grand_parent: Concepts
-nav_order: 2
 ---
 
 # Property Types
@@ -14,42 +10,35 @@ Routier provides a comprehensive set of property types for building robust schem
 
 ### String
 
-{% capture snippet_34jf1v %}{% include code/from-docs/concepts/schema/property-types/string-examples.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_34jf1v  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/property-types/string-examples.ts
 
 #### Type Narrowing with `constrain()`
 
 Use `constrain()` to narrow string types to branded or tagged types:
 
-{% capture snippet_constrain %}{% include code/from-docs/concepts/schema/property-types/string-constrain.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_constrain  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/property-types/string-constrain.ts
 
 ### Number
 
-{% capture snippet_oempxx %}{% include code/from-docs/concepts/schema/property-types/number-examples.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_oempxx  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/property-types/number-examples.ts
 
 ### Boolean
 
-{% capture snippet_t1gwom %}{% include code/from-docs/concepts/schema/property-types/boolean-examples.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_t1gwom  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/property-types/boolean-examples.ts
 
 ### Date
 
-{% capture snippet_0o33ad %}{% include code/from-docs/concepts/schema/property-types/date-examples.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_0o33ad  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/property-types/date-examples.ts
 
 ## Complex Types
 
 ### Object
 
-{% capture snippet_y9r625 %}{% include code/from-docs/concepts/schema/property-types/object-examples.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_y9r625  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/property-types/object-examples.ts
 
 ### Array
 
-{% capture snippet_fh5wji %}{% include code/from-docs/concepts/schema/property-types/array-examples.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_fh5wji  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/property-types/array-examples.ts
 
 ## Type Constraints with Generics
 
@@ -57,32 +46,27 @@ Routier's type system allows you to constrain properties to specific literal val
 
 ### String Literals
 
-{% capture snippet_sepo73 %}{% include code/from-docs/concepts/schema/property-types/string-literals.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_sepo73  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/property-types/string-literals.ts
 
 ### Type Narrowing with `constrain()`
 
 For string properties, you can use `constrain()` to narrow the type to branded or tagged types. This is useful for creating type-safe identifiers like UUIDs:
 
-{% capture snippet_constrain %}{% include code/from-docs/concepts/schema/property-types/string-constrain.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_constrain  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/property-types/string-constrain.ts
 
 ### Number Literals
 
-{% capture snippet_vo0j1n %}{% include code/from-docs/concepts/schema/property-types/number-literals.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_vo0j1n  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/property-types/number-literals.ts
 
 ### Boolean Literals
 
-{% capture snippet_ep1grl %}{% include code/from-docs/concepts/schema/property-types/boolean-literals.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_ep1grl  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/property-types/boolean-literals.ts
 
 ## Type Composition
 
 ### Combining Types
 
-{% capture snippet_ot7kh4 %}{% include code/from-docs/concepts/schema/property-types/type-composition.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_ot7kh4  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/property-types/type-composition.ts
 
 ## Type Conversion
 
@@ -90,8 +74,7 @@ For string properties, you can use `constrain()` to narrow the type to branded o
 
 Any type can be converted to an array using the `.array()` modifier:
 
-{% capture snippet_y4i5de %}{% include code/from-docs/concepts/schema/property-types/array-conversions.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_y4i5de  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/property-types/array-conversions.ts
 
 ## Special Use Cases
 
@@ -99,44 +82,37 @@ Any type can be converted to an array using the `.array()` modifier:
 
 Properties that auto-generate values:
 
-{% capture snippet_zbhp4c %}{% include code/from-docs/concepts/schema/property-types/identity-properties.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_zbhp4c  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/property-types/identity-properties.ts
 
 ### Key Properties
 
 Properties that serve as unique identifiers:
 
-{% capture snippet_myq6n4 %}{% include code/from-docs/concepts/schema/property-types/key-properties.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_myq6n4  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/property-types/key-properties.ts
 
 ### Indexed Properties
 
 Properties that create database indexes:
 
-{% capture snippet_mtslo8 %}{% include code/from-docs/concepts/schema/property-types/indexed-properties.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_mtslo8  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/property-types/indexed-properties.ts
 
 ## Best Practices
 
 ### 1. **Use Literal Types for Constrained Values**
 
-{% capture snippet_qqb4dt %}{% include code/from-docs/concepts/schema/property-types/literal-best-practice.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_qqb4dt  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/property-types/literal-best-practice.ts
 
 ### 2. **Leverage Type Inference**
 
-{% capture snippet_b4mi9q %}{% include code/from-docs/concepts/schema/property-types/type-inference-best-practice.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_b4mi9q  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/property-types/type-inference-best-practice.ts
 
 ### 3. **Use Appropriate Types**
 
-{% capture snippet_u6gsr0 %}{% include code/from-docs/concepts/schema/property-types/appropriate-types-best-practice.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_u6gsr0  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/property-types/appropriate-types-best-practice.ts
 
 ### 4. **Structure Complex Data**
 
-{% capture snippet_unwd1x %}{% include code/from-docs/concepts/schema/property-types/complex-structure-best-practice.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_unwd1x  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/property-types/complex-structure-best-practice.ts
 
 ## Type Compatibility
 
@@ -170,5 +146,5 @@ Different types support different modifiers:
 
 ## Next Steps
 
-- [Modifiers](modifiers/README.md) - Property modifiers and constraints
-- [Creating A Schema](../creating-a-schema.md) - Back to schema creation
+- [Modifiers](/concepts/schema/modifiers/README) - Property modifiers and constraints
+- [Creating A Schema](/concepts/schema/creating-a-schema) - Back to schema creation

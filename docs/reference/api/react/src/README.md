@@ -1,11 +1,11 @@
-[**routier-collection**](../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../README.md) / react/src
+[routier-collection](/reference/api/README) / react/src
 
 # react/src
 
 ## Functions
 
-- [useQuery](functions/useQuery.md)
+- [useQuery](/reference/api/react/src/functions/useQuery)

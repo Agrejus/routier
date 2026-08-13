@@ -1,8 +1,5 @@
 ---
 title: State Management
-layout: default
-parent: Guides
-nav_order: 3
 ---
 
 ## State Management
@@ -20,7 +17,7 @@ State management in Routier involves managing application state through collecti
 Collections act as your primary state containers:
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/state-management/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/state-management/block-1.ts
 
 
 ### Live Queries
@@ -28,17 +25,27 @@ Collections act as your primary state containers:
 Keep UI in sync with data changes automatically:
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/state-management/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/state-management/block-2.ts
 
 
 Note: With `.subscribe()`, you must use callback-based methods (not async methods like `toArrayAsync()`).
+
+Live queries reach other browser tabs, and other worker threads in Node, because change
+notifications travel over a `BroadcastChannel`. A sender cannot see who is listening on the other
+end of one, so by default every save publishes its changes in case another tab is subscribed.
+
+If the process is the only one reading the database — a server, a script, a single-tab app — set
+`crossTabSync: false` on the store. Saves then skip that work whenever nothing in the current
+process is subscribed, which the repository benchmark measures at roughly 10% of insert time.
+Subscriptions within the process keep working. See
+**[Live Queries](/guides/live-queries#cross-tab-delivery-and-the-cost-of-a-save)**.
 
 ### Change Tracking
 
 All modifications are tracked automatically until saved:
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/state-management/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/state-management/block-3.ts
 
 
 ### Derived State
@@ -46,7 +53,7 @@ All modifications are tracked automatically until saved:
 Compute derived data from your collections:
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/state-management/block-4.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/state-management/block-4.ts
 
 
 ## Patterns
@@ -58,8 +65,8 @@ Compute derived data from your collections:
 
 ## Related Guides
 
-- **[Live Queries](live-queries.md)** - Reactive data patterns
-- **[Views]({{ site.baseurl }}/how-to/collections/views/)** - Create read-only derived collections
-- **[Syncing](syncing.md)** - Sync with remote sources
-- **[Change Tracking](/concepts/change-tracking/)** - Understanding change tracking
-- **[Data Manipulation](data-manipulation.md)** - Working with your data
+- **[Live Queries](/guides/live-queries)** - Reactive data patterns
+- **[Views](/how-to/collections/views)** - Create read-only derived collections
+- **[Syncing](/guides/syncing)** - Sync with remote sources
+- **[Change Tracking](/concepts/change-tracking)** - Understanding change tracking
+- **[Data Manipulation](/guides/data-manipulation)** - Working with your data

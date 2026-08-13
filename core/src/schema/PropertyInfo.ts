@@ -1,7 +1,7 @@
 import { UnknownRecord } from '../utilities';
 import { SchemaBase } from './property/base/SchemaBase';
 import { SchemaArray } from './property/types/SchemaArray';
-import { DefaultValue, ForeignKey, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaTypes } from './types';
+import { DefaultValue, ForeignKey, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaTypes, PropertyTransform } from './types';
 
 const SUPPORTED_DESERIALIZATION_TYPES = new Set<SchemaTypes>([
     SchemaTypes.Boolean,
@@ -46,6 +46,16 @@ export class PropertyInfo<T extends {}> {
     readonly isUnmapped: boolean;
     /** Whether the property is distinct. */
     readonly isDistinct: boolean;
+
+
+    /**
+     * A two-way transform between the application value and the stored value, or `null`.
+     *
+     * A LIVE reference. Unlike `computed`, which is stringified into generated code, this is
+     * held as-is so it can close over a key, a client, or anything else a caller needs — and
+     * so it can be async, which generated code cannot be.
+     */
+    readonly transform: PropertyTransform<unknown> | null;
     /** Indexes associated with the property. */
     readonly indexes: string[];
 
@@ -65,6 +75,17 @@ export class PropertyInfo<T extends {}> {
     readonly schema: SchemaBase<T, any>;
     /** The inner schema if this property is an array. */
     readonly innerSchema?: SchemaBase<unknown, any>;
+    /** How many numbers this property holds if it is a vector, `null` otherwise. */
+    readonly dimensions: number | null;
+    /** The longest value this property is declared to hold, `null` if it declares none. */
+    readonly maxLength: number | null;
+    /**
+     * Whether this property may be tokenised into a full-text search index.
+     *
+     * True only for a string. See the constructor — this is derived from the declaration and
+     * the type together, not copied.
+     */
+    readonly isSearchable: boolean;
     /** Literal values allowed for this property. */
     readonly literals: T[];
     /** Tags passed from the schema */
@@ -80,12 +101,21 @@ export class PropertyInfo<T extends {}> {
     private _idCache?: string;
     private _levelCache?: number;
     private _hasNullableParentsCache?: boolean;
+    private _hasRenamedSegmentsCache?: boolean;
 
     constructor(schema: SchemaBase<T, any>, name: string, parent?: PropertyInfo<T> | null) {
         this.schema = schema;
         this.name = name;
         this.type = schema.type;
         this.literals = schema.literals;
+        this.dimensions = schema.dimensions;
+        this.maxLength = schema.maxLength;
+        // Both, always. The builder already refuses `.searchable()` on anything but a string,
+        // but that gate is a type and types do not exist at runtime — a schema rebuilt from
+        // hand-written JSON can set the raw flag on a number. Deriving the answer here means
+        // every reader gets a searchable property that is definitely a string, rather than each
+        // one having to remember to check.
+        this.isSearchable = schema.isSearchable && schema.type === SchemaTypes.String;
 
         if (schema instanceof SchemaArray) {
             this.innerSchema = schema.innerSchema;
@@ -98,7 +128,8 @@ export class PropertyInfo<T extends {}> {
         this.isReadonly = schema.isReadonly;
         this.isUnmapped = schema.isUnmapped;
         this.injected = schema.injected;
-        this.isDistinct = schema.isDistict;
+        this.isDistinct = schema.isDistinct;
+        this.transform = schema.transform;
         this.indexes = schema.indexes;
         this.from = schema.fromPropertyName;
         this.tags = schema.tags;
@@ -169,12 +200,22 @@ export class PropertyInfo<T extends {}> {
         return chain;
     }
 
-    private _needsOptionalChaining(prop: PropertyInfo<T>, assignmentType?: AssignmentType): boolean {
+    private _needsOptionalChaining(precedingProp: PropertyInfo<T> | null, assignmentType?: AssignmentType): boolean {
         if (assignmentType === "ASSIGNMENT") {
             return false;
         }
 
-        return assignmentType === "FORCE_NULLABLE_OR_OPTIONAL" || prop.isNullable || prop.isOptional;
+        if (assignmentType === "FORCE_NULLABLE_OR_OPTIONAL") {
+            return true;
+        }
+
+        // The accessor guards the value it follows: entity.a?.c is safe when `a`
+        // is nullable, entity?.a.c is not.  The root can never be null.
+        if (precedingProp == null) {
+            return false;
+        }
+
+        return precedingProp.isNullable || precedingProp.isOptional;
     }
 
     private _resolvePathArray(options?: {
@@ -185,10 +226,14 @@ export class PropertyInfo<T extends {}> {
         const propertyChain = this._getPropertyChain();
         const hasRoot = options?.root != null;
         const path: string[] = hasRoot ? [options!.root!] : [];
+        let precedingProp: PropertyInfo<T> | null = null;
 
         for (const prop of propertyChain) {
-            const accessor = this._needsOptionalChaining(prop, options?.assignmentType) ? '?.' : '.';
-            path.push(accessor, options?.useFromPropertyName ? prop.from : prop.name);
+            const accessor = this._needsOptionalChaining(precedingProp, options?.assignmentType) ? '?.' : '.';
+            // Storage-side paths use `from` per segment; segments that were never
+            // renamed keep their property name
+            path.push(accessor, options?.useFromPropertyName ? (prop.from ?? prop.name) : prop.name);
+            precedingProp = prop;
         }
 
         return path;
@@ -224,7 +269,21 @@ export class PropertyInfo<T extends {}> {
      *
      * @returns {string[]} The property path as an array of names, excluding this property.
      */
-    getParentPathArray() {
+    getParentPathArray(options?: { useFromPropertyName?: boolean }) {
+        if (options?.useFromPropertyName === true) {
+            // Storage-side variant is uncached: `from` falls back to the property
+            // name per segment
+            const fromPath: string[] = [];
+            const chain = this._getPropertyChain();
+
+            for (let i = 0; i < chain.length - 1; i++) {
+                const prop = chain[i];
+                fromPath.push(prop.from ?? prop.name);
+            }
+
+            return fromPath;
+        }
+
         if (this._parentPathArrayCache) {
             return this._parentPathArrayCache;
         }
@@ -261,6 +320,31 @@ export class PropertyInfo<T extends {}> {
         }
 
         this._hasNullableParentsCache = false;
+        return false;
+    }
+
+    /**
+     * Returns true if this property or any parent is renamed with from().
+     * Storage paths for such properties differ from their in-memory paths.
+     *
+     * @returns {boolean} True if any segment of the path is renamed, false otherwise.
+     */
+    get hasRenamedSegments(): boolean {
+        if (this._hasRenamedSegmentsCache !== undefined) {
+            return this._hasRenamedSegmentsCache;
+        }
+
+        // oxlint-disable-next-line no-this-alias
+        let current: PropertyInfo<T> | undefined = this;
+        while (current != null) {
+            if (current.from != null) {
+                this._hasRenamedSegmentsCache = true;
+                return true;
+            }
+            current = current.parent;
+        }
+
+        this._hasRenamedSegmentsCache = false;
         return false;
     }
 

@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / UnitOfWork
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / UnitOfWork
 
 # Type Alias: UnitOfWork()
 
@@ -14,7 +14,7 @@ Defined in: [core/src/pipeline/TrampolinePipeline.ts:299](https://github.com/Agr
 
 ### done
 
-[`CallbackResult`](CallbackResult.md)\<`never`\>
+[`CallbackResult`](/reference/api/core/src/type-aliases/CallbackResult)\<`never`\>
 
 ## Returns
 

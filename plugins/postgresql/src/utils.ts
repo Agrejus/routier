@@ -1,8 +1,25 @@
 import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema';
-import { Expression, ComparatorExpression, OperatorExpression, ValueExpression, PropertyExpression } from '@routier/core/expressions';
-import { IQuery, QueryField } from '@routier/core/plugins';
+import { Expression } from '@routier/core/expressions';
+import { IQuery, JoinQueryOptionValue, Query, QueryField } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
+import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, getDialect, sqlColumnProperties, toColumnValueMap, toSql, SqlDialect } from '@routier/sql-plugin-core';
 import { SqlOperation } from './types';
+
+/**
+ * What this connection can do with a vector, decided once by probing for pgvector.
+ *
+ * Passed rather than detected here because DDL generation is synchronous and the answer is a
+ * fact about the server. The SAME value must reach the DDL and the query builder: a table
+ * created as `JSONB` with a `<=>` ordering run against it is a type error at query time, and
+ * the reverse silently reads a native vector column as JSON.
+ */
+export type PostgresVectorSupport = {
+    /** True when the `vector` extension is installed and a `vector(n)` column is usable. */
+    readonly available: boolean;
+};
+
+/** What to assume before a probe has run: nothing. Storing JSON always works. */
+export const NO_VECTOR_SUPPORT: PostgresVectorSupport = { available: false };
 
 /**
  * Maps schema types to PostgreSQL column types.
@@ -12,63 +29,89 @@ const schemaTypeToPostgresType = (type: SchemaTypes): string => {
         case SchemaTypes.String:
             return 'TEXT';
         case SchemaTypes.Number:
-            return 'NUMERIC';
+            // DOUBLE PRECISION matches the JS number type and comes back from the pg
+            // driver as a number; NUMERIC is arbitrary-precision and returns strings
+            return 'DOUBLE PRECISION';
         case SchemaTypes.Boolean:
             return 'BOOLEAN';
         case SchemaTypes.Date:
             return 'TIMESTAMP';
         case SchemaTypes.Object:
         case SchemaTypes.Array:
-            return 'JSONB'; // PostgreSQL has native JSONB support
+            // One source of truth for this engine's JSON type: the same dialect value
+            // toColumnAssignments encodes against, so DDL and DML cannot drift apart.
+            return getDialect('postgresql').jsonColumnType;
         default:
             return 'TEXT';
     }
 };
 
 /**
- * Determines if a property is deeply nested (object or array).
+ * Determines if a property is stored as a JSON column.
+ *
+ * A vector is one of these ONLY when pgvector is missing. With the extension installed it
+ * gets a real `vector(n)` column, which is what makes the `<=>` ordering available; without
+ * it the numbers go into JSONB and the search runs in memory instead.
  */
-const isDeeplyNested = (prop: PropertyInfo<any>): boolean => {
-    return prop.type === SchemaTypes.Object || prop.type === SchemaTypes.Array;
+const isDeeplyNested = (prop: PropertyInfo<any>, vectors: PostgresVectorSupport): boolean => {
+    return prop.type === SchemaTypes.Object
+        || prop.type === SchemaTypes.Array
+        || (prop.type === SchemaTypes.Vector && vectors.available === false);
+};
+
+/**
+ * The column type for a vector property on a server that has pgvector.
+ *
+ * The width is required — pgvector's `vector` accepts an unspecified dimension, but a column
+ * declared that way cannot be indexed and gives up the engine's own width check, which is the
+ * earliest place a mismatched embedding can be caught.
+ */
+const vectorColumnType = (prop: PropertyInfo<any>): string => {
+    if (prop.dimensions == null) {
+        throw new Error(`A vector property reached the PostgreSQL DDL with no dimension count.  Property: ${prop.name}`);
+    }
+
+    return `vector(${prop.dimensions})`;
 };
 
 /**
  * Converts a CompiledSchema to a PostgreSQL CREATE TABLE statement and index statements.
- * 
+ *
  * PostgreSQL-specific features:
  * - Uses SERIAL/BIGSERIAL for auto-incrementing integers
  * - Uses UUID extension for string identity keys
  * - Uses JSONB for nested objects/arrays
  * - Uses GIN indexes for JSONB columns
  */
-export function compiledSchemaToPostgresTable(schema: CompiledSchema<any>, tableName?: string): string {
+export function compiledSchemaToPostgresTable(schema: CompiledSchema<any>, tableName?: string, vectors: PostgresVectorSupport = NO_VECTOR_SUPPORT): string {
     const columns: string[] = [];
     const idProps = schema.idProperties;
-    const identityProps = idProps.filter(p => p.isIdentity);
     const table = tableName || schema.collectionName;
 
-    // Single identity PK logic
-    let singleIdentityPK: PropertyInfo<any> | undefined;
-    if (identityProps.length === 1 && idProps.length === 1) {
-        singleIdentityPK = identityProps[0];
-    }
+    // The one key that gets SERIAL/UUID treatment. Shared with the join key cast so the two
+    // cannot disagree about which columns are `uuid` — see singleIdentityKeyProperty.
+    const singleIdentityPK: PropertyInfo<any> | undefined = singleIdentityKeyProperty(schema) ?? undefined;
 
-    for (const prop of schema.properties) {
+    // Root properties only: a nested subtree is ONE JSON column named for its root.
+    // Iterating every property would emit a column per descendant, named by its leaf.
+    for (const prop of sqlColumnProperties(schema)) {
         let colDef: string;
 
         if (singleIdentityPK && prop.name === singleIdentityPK.name) {
             if (prop.type === SchemaTypes.Number) {
-                colDef = `"${prop.name}" SERIAL PRIMARY KEY`;
+                colDef = `"${prop.getResolvedName()}" SERIAL PRIMARY KEY`;
             } else if (prop.type === SchemaTypes.String) {
                 // Use UUID extension for string identity keys
-                colDef = `"${prop.name}" UUID PRIMARY KEY DEFAULT gen_random_uuid()`;
+                colDef = `"${prop.getResolvedName()}" UUID PRIMARY KEY DEFAULT gen_random_uuid()`;
             } else {
-                colDef = `"${prop.name}" ${schemaTypeToPostgresType(prop.type)} PRIMARY KEY`;
+                colDef = `"${prop.getResolvedName()}" ${schemaTypeToPostgresType(prop.type)} PRIMARY KEY`;
             }
-        } else if (isDeeplyNested(prop)) {
-            colDef = `"${prop.name}" JSONB`;
+        } else if (isDeeplyNested(prop, vectors)) {
+            colDef = `"${prop.getResolvedName()}" JSONB`;
+        } else if (prop.type === SchemaTypes.Vector) {
+            colDef = `"${prop.getResolvedName()}" ${vectorColumnType(prop)}`;
         } else {
-            colDef = `"${prop.name}" ${schemaTypeToPostgresType(prop.type)}`;
+            colDef = `"${prop.getResolvedName()}" ${schemaTypeToPostgresType(prop.type)}`;
         }
 
         columns.push(colDef);
@@ -77,7 +120,7 @@ export function compiledSchemaToPostgresTable(schema: CompiledSchema<any>, table
     // Composite PK logic
     let pkClause = '';
     if ((!singleIdentityPK) && idProps.length > 0) {
-        const pkCols = idProps.map(p => `"${p.name}"`);
+        const pkCols = idProps.map(p => `"${p.getResolvedName()}"`);
         pkClause = `, PRIMARY KEY (${pkCols.join(', ')})`;
     }
 
@@ -91,7 +134,7 @@ export function compiledSchemaToPostgresTable(schema: CompiledSchema<any>, table
         if (prop.isDistinct) {
             const idxName = `${table}_${prop.name}_unique_idx`;
             if (!usedIndexNames.has(idxName)) {
-                indexStatements.push(`CREATE UNIQUE INDEX IF NOT EXISTS "${idxName}" ON "${table}" ("${prop.name}");`);
+                indexStatements.push(`CREATE UNIQUE INDEX IF NOT EXISTS "${idxName}" ON "${table}" ("${prop.getResolvedName()}");`);
                 usedIndexNames.add(idxName);
             }
         }
@@ -113,18 +156,18 @@ export function compiledSchemaToPostgresTable(schema: CompiledSchema<any>, table
             const prop = props[0];
             const idxSqlName = `${table}_${prop.name}_idx`;
             if (!usedIndexNames.has(idxSqlName)) {
-                if (isDeeplyNested(prop)) {
+                if (isDeeplyNested(prop, vectors)) {
                     // GIN index for JSONB
-                    indexStatements.push(`CREATE INDEX IF NOT EXISTS "${idxSqlName}" ON "${table}" USING GIN ("${prop.name}");`);
+                    indexStatements.push(`CREATE INDEX IF NOT EXISTS "${idxSqlName}" ON "${table}" USING GIN ("${prop.getResolvedName()}");`);
                 } else {
-                    indexStatements.push(`CREATE INDEX IF NOT EXISTS "${idxSqlName}" ON "${table}" ("${prop.name}");`);
+                    indexStatements.push(`CREATE INDEX IF NOT EXISTS "${idxSqlName}" ON "${table}" ("${prop.getResolvedName()}");`);
                 }
                 usedIndexNames.add(idxSqlName);
             }
         } else if (props.length > 1) {
             // Composite index
             const idxSqlName = `${table}_${idxName}_clustered_idx`;
-            const colList = props.map(p => `"${p.name}"`).join(', ');
+            const colList = props.map(p => `"${p.getResolvedName()}"`).join(', ');
             if (!usedIndexNames.has(idxSqlName)) {
                 indexStatements.push(`CREATE INDEX IF NOT EXISTS "${idxSqlName}" ON "${table}" (${colList});`);
                 usedIndexNames.add(idxSqlName);
@@ -140,163 +183,24 @@ ${indexStatements.join('\n')}`;
 }
 
 /**
+ * A postgres dialect whose placeholders start after `offset` already-bound parameters,
+ * so several WHERE fragments can share one parameter list without renumbering.
+ */
+const offsetPostgresDialect = (offset: number): SqlDialect => {
+    const base = getDialect('postgresql');
+    return {
+        ...base,
+        getPlaceholder: (i: number) => `$${offset + i + 1}`,
+    };
+};
+
+/**
  * Translates an Expression tree to a SQL WHERE clause and parameters.
- * PostgreSQL-specific: Uses ILIKE for case-insensitive string matching, LIKE for case-sensitive.
+ * @deprecated Use `toSql(expr, 'postgresql')` from `@routier/sql-plugin-core` for dialect-agnostic SQL.
  */
 export function expressionToWhereClause(expr: Expression): { where: string, params: any[] } {
-    const params: any[] = [];
-    function walk(e: Expression): string {
-        if (e.type === 'operator') {
-            const op = (e as OperatorExpression).operator;
-            const left = e.left ? walk(e.left) : '';
-            const right = e.right ? walk(e.right) : '';
-
-            let sqlOp: string;
-            switch (op) {
-                case '&&':
-                    sqlOp = 'AND';
-                    break;
-                case '||':
-                    sqlOp = 'OR';
-                    break;
-                default:
-                    sqlOp = op;
-                    break;
-            }
-
-            return `(${left} ${sqlOp} ${right})`;
-        }
-        if (e.type === 'comparator') {
-            const cmp = e as ComparatorExpression;
-
-            // Handle string operations - PostgreSQL uses LIKE/ILIKE
-            if (cmp.comparator === 'starts-with' || cmp.comparator === 'ends-with' || cmp.comparator === 'includes') {
-                if (cmp.comparator === 'includes') {
-                    if (cmp.left.type === 'property' && cmp.right.type === 'value') {
-                        const col = `"${(cmp.left as PropertyExpression).property.name}"`;
-                        const value = (cmp.right as ValueExpression).value;
-
-                        if (Array.isArray(value)) {
-                            const placeholders = value.map((_, idx) => `$${params.length + idx + 1}`).join(', ');
-                            params.push(...value);
-                            return cmp.negated ? `${col} NOT IN (${placeholders})` : `${col} IN (${placeholders})`;
-                        } else {
-                            // PostgreSQL uses ILIKE for case-insensitive, LIKE for case-sensitive
-                            params.push(`%${value}%`);
-                            return cmp.negated ? `${col} NOT ILIKE $${params.length}` : `${col} ILIKE $${params.length}`;
-                        }
-                    } else if (cmp.left.type === 'value' && cmp.right.type === 'property') {
-                        const col = `"${(cmp.right as PropertyExpression).property.name}"`;
-                        const value = (cmp.left as ValueExpression).value;
-
-                        if (Array.isArray(value)) {
-                            const placeholders = value.map((_, idx) => `$${params.length + idx + 1}`).join(', ');
-                            params.push(...value);
-                            return cmp.negated ? `${col} NOT IN (${placeholders})` : `${col} IN (${placeholders})`;
-                        } else {
-                            params.push(`%${value}%`);
-                            return cmp.negated ? `$${params.length} NOT ILIKE ${col}` : `$${params.length} ILIKE ${col}`;
-                        }
-                    }
-                }
-
-                // starts-with and ends-with
-                if (cmp.left.type === 'property' && cmp.right.type === 'value') {
-                    const col = `"${(cmp.left as PropertyExpression).property.name}"`;
-                    const value = (cmp.right as ValueExpression).value;
-                    let pattern: string;
-
-                    switch (cmp.comparator) {
-                        case 'starts-with':
-                            pattern = `${value}%`;
-                            break;
-                        case 'ends-with':
-                            pattern = `%${value}`;
-                            break;
-                        default:
-                            pattern = `%${value}%`;
-                    }
-
-                    params.push(pattern);
-                    return cmp.negated ? `${col} NOT ILIKE $${params.length}` : `${col} ILIKE $${params.length}`;
-                } else if (cmp.left.type === 'value' && cmp.right.type === 'property') {
-                    const col = `"${(cmp.right as PropertyExpression).property.name}"`;
-                    const value = (cmp.left as ValueExpression).value;
-                    let pattern: string;
-
-                    switch (cmp.comparator) {
-                        case 'starts-with':
-                            pattern = `${value}%`;
-                            break;
-                        case 'ends-with':
-                            pattern = `%${value}`;
-                            break;
-                        default:
-                            pattern = `%${value}%`;
-                    }
-
-                    params.push(pattern);
-                    return cmp.negated ? `$${params.length} NOT ILIKE ${col}` : `$${params.length} ILIKE ${col}`;
-                }
-            }
-
-            // Handle null comparisons
-            if (cmp.comparator === 'equals') {
-                if (cmp.left.type === 'property' && cmp.right.type === 'value') {
-                    const col = `"${(cmp.left as PropertyExpression).property.name}"`;
-                    const value = (cmp.right as ValueExpression).value;
-
-                    if (value === null) {
-                        return cmp.negated ? `${col} IS NOT NULL` : `${col} IS NULL`;
-                    }
-                    params.push(value);
-                    const paramNum = params.length;
-                    return cmp.negated ? `${col} != $${paramNum}` : `${col} = $${paramNum}`;
-                } else if (cmp.left.type === 'value' && cmp.right.type === 'property') {
-                    const col = `"${(cmp.right as PropertyExpression).property.name}"`;
-                    const value = (cmp.left as ValueExpression).value;
-
-                    if (value === null) {
-                        params.push(null); // Push null to maintain param count
-                        const paramNum = params.length;
-                        return cmp.negated ? `$${paramNum} IS NOT NULL` : `$${paramNum} IS NULL`;
-                    }
-                    params.push(value);
-                    const paramNum = params.length;
-                    return cmp.negated ? `$${paramNum} != ${col}` : `$${paramNum} = ${col}`;
-                }
-            }
-
-            // Generic comparison
-            const leftExpr = walk(cmp.left);
-            const rightExpr = walk(cmp.right);
-
-            switch (cmp.comparator) {
-                case 'equals':
-                    return cmp.negated ? `${leftExpr} != ${rightExpr}` : `${leftExpr} = ${rightExpr}`;
-                case 'greater-than':
-                    return cmp.negated ? `${leftExpr} <= ${rightExpr}` : `${leftExpr} > ${rightExpr}`;
-                case 'greater-than-equals':
-                    return cmp.negated ? `${leftExpr} < ${rightExpr}` : `${leftExpr} >= ${rightExpr}`;
-                case 'less-than':
-                    return cmp.negated ? `${leftExpr} >= ${rightExpr}` : `${leftExpr} < ${rightExpr}`;
-                case 'less-than-equals':
-                    return cmp.negated ? `${leftExpr} > ${rightExpr}` : `${leftExpr} <= ${rightExpr}`;
-                default:
-                    throw new Error(`Unsupported comparator: ${cmp.comparator}`);
-            }
-        }
-        if (e.type === 'property') {
-            return `"${(e as PropertyExpression).property.name}"`;
-        }
-        if (e.type === 'value') {
-            params.push((e as ValueExpression).value);
-            return `$${params.length}`;
-        }
-        throw new Error(`Unknown expression type: ${e.type}`);
-    }
-    const where = walk(expr);
-    return { where, params };
+    const { where, params } = toSql(expr, 'postgresql');
+    return { where, params: params as any[] };
 }
 
 /**
@@ -307,8 +211,10 @@ export function buildSelectFromExpression<TEntity extends {}, TShape>(options: {
     schema: CompiledSchema<TEntity>
 }): { sql: string, params: any[] } {
     const { schema, query } = options;
-    const columns = schema.properties && schema.properties.length > 0
-        ? schema.properties.map(p => `"${p.name}"`)
+    // Root properties only, storage-side names — same layout the DDL creates
+    const columnProperties = sqlColumnProperties(schema);
+    const columns = columnProperties.length > 0
+        ? columnProperties.map(p => `"${p.getResolvedName()}"`)
         : ['*'];
 
     const filterOptions = query.options.get('filter');
@@ -325,7 +231,7 @@ export function buildSelectFromExpression<TEntity extends {}, TShape>(options: {
 
 export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSchema<TEntity>, changes: SchemaPersistChanges<Record<string, unknown>>): {
     adds: SqlOperation | null;
-    updates: SqlOperation | null;
+    updates: SqlOperation[];
     removes: SqlOperation | null;
 } {
     const collectionName = schema.collectionName;
@@ -337,15 +243,19 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
     } = changes;
 
     if (!hasItems) {
-        return { adds: null, updates: null, removes: null };
+        return { adds: null, updates: [], removes: null };
     }
 
-    const allColumns = schema.properties.map(p => `"${p.name}"`);
+    // Column identifiers are storage-side names (PropertyInfo.from ?? name), one column per
+    // ROOT property: the entities handed to bulkPersist are wire-shaped, and a nested
+    // subtree is stored as a single JSON column named for its root.
+    const columnProperties = sqlColumnProperties(schema);
+    const allColumns = columnProperties.map(p => `"${p.getResolvedName()}"`);
     const allColumnStr = allColumns.join(', ');
 
-    const insertColumns = schema.properties
-        .filter(p => !p.isIdentity)
-        .map(p => `"${p.name}"`);
+    // For INSERT operations, exclude identity columns (they're auto-generated)
+    const insertProperties = columnProperties.filter(p => !p.isIdentity);
+    const insertColumns = insertProperties.map(p => `"${p.getResolvedName()}"`);
     const insertColumnStr = insertColumns.join(', ');
 
     // Handle INSERT operations (adds)
@@ -360,83 +270,41 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 
         const addParams: any[] = [];
         for (const add of adds) {
-            for (const col of schema.properties) {
-                if (!col.isIdentity) {
-                    addParams.push(add[col.name]);
-                }
+            // Routed through the same column resolution the UPDATE path uses, so a nested
+            // object or array is JSON-encoded here too rather than handed to the driver as
+            // a structure — `pg` encodes a JS array as a Postgres array literal (`{x,y}`),
+            // which a json/jsonb column rejects.
+            const values = toColumnValueMap(add as Record<string, unknown>, schema, getDialect('postgresql'));
+
+            for (const col of insertProperties) {
+                addParams.push(values.get(col.getResolvedName()));
             }
         }
 
         addsOperation = { sql: insertSql, params: addParams };
     }
 
-    // Handle UPDATE operations (updates)
-    let updatesOperation: SqlOperation | null = null;
-    if (updates.length > 0) {
-        const updateGroups = new Map<string, typeof updates>();
-
-        for (const update of updates) {
-            const deltaKeys = Object.keys(update.delta).sort().join(',');
-            if (!updateGroups.has(deltaKeys)) {
-                updateGroups.set(deltaKeys, []);
-            }
-            updateGroups.get(deltaKeys)!.push(update);
-        }
-
-        const statements: string[] = [];
-        const allParams: any[] = [];
-        let paramCounter = 1;
-
-        for (const [, groupUpdates] of updateGroups) {
-            const firstUpdate = groupUpdates[0];
-            let deltaKeys = Object.keys(firstUpdate.delta);
-
-            if (deltaKeys.length === 0) {
-                const entityKeys = Object.keys(firstUpdate.entity);
-                const identityKeys = schema.idProperties.map(p => p.name);
-                deltaKeys = entityKeys.filter(key => !identityKeys.includes(key));
-            }
-
-            const setClauses: string[] = [];
-            const idColumns = schema.idProperties.map(p => p.name);
-            const idColumn = idColumns[0];
-
-            for (const key of deltaKeys) {
-                let caseStatement = `"${key}" = CASE "${idColumn}"`;
-
-                for (const update of groupUpdates) {
-                    const idValue = schema.idProperties[0].getValue(update.entity);
-                    caseStatement += ` WHEN $${paramCounter++} THEN $${paramCounter++}`;
-                    allParams.push(idValue);
-
-                    const value = Object.keys(update.delta).length === 0
-                        ? update.entity[key]
-                        : update.delta[key];
-                    allParams.push(value);
-                }
-
-                caseStatement += ` ELSE "${key}" END`;
-                setClauses.push(caseStatement);
-            }
-
-            const idPlaceholders = groupUpdates.map(() => {
-                const placeholder = `$${paramCounter++}`;
-                return placeholder;
-            }).join(', ');
-
-            for (const update of groupUpdates) {
-                const idValue = schema.idProperties[0].getValue(update.entity);
-                allParams.push(idValue);
-            }
-
-            const updateSql = `UPDATE "${collectionName}" SET ${setClauses.join(', ')} WHERE "${idColumn}" IN (${idPlaceholders}) RETURNING ${allColumnStr}`;
-            statements.push(updateSql);
-        }
-
-        if (statements.length > 0) {
-            updatesOperation = { sql: statements.join('; '), params: allParams };
-        }
-    }
+    // Handle UPDATE operations (updates). One SqlOperation per changed-column group — the
+    // shared builder resolves deltas to columns (renames, JSON encoding, empty-delta
+    // fallback) and never joins groups with ';', which PostgreSQL's extended query protocol
+    // rejects outright (defect #22).
+    // Schemas with a `.concurrency()` token take one CONDITIONAL statement per row
+    // instead of the grouped CASE form, so a stale write affects zero rows and is
+    // reported as a conflict on that exact row.
+    const hasConcurrencyChecks = updates.some(u => (u as { concurrency?: unknown }).concurrency != null);
+    const updatesOperations: SqlOperation[] = hasConcurrencyChecks
+        ? buildConditionalUpdateOperations(
+            schema,
+            updates as { entity: Record<string, unknown>; delta: Record<string, unknown> }[],
+            getDialect('postgresql'),
+            { suffix: ` RETURNING ${allColumnStr}` }
+        ).map(({ sql, params, id, checked }) => ({ sql, params, conflictCheck: checked ? { id } : undefined }))
+        : buildGroupedUpdateOperations(
+            schema,
+            updates as { entity: Record<string, unknown>; delta: Record<string, unknown> }[],
+            getDialect('postgresql'),
+            { suffix: ` RETURNING ${allColumnStr}` }
+        ).map(({ sql, params }) => ({ sql, params }));
 
     // Handle DELETE operations (removes)
     let removesOperation: SqlOperation | null = null;
@@ -451,7 +319,7 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 
             for (const idProperty of idProperties) {
                 const idValue = idProperty.getValue(remove);
-                entityWhereClauses.push(`"${idProperty.name}" = $${paramCounter++}`);
+                entityWhereClauses.push(`"${idProperty.getResolvedName()}" = $${paramCounter++}`);
                 allParams.push(idValue);
             }
 
@@ -465,15 +333,71 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 
     return {
         adds: addsOperation,
-        updates: updatesOperation,
+        updates: updatesOperations,
         removes: removesOperation
     };
 }
 
 /**
+ * The one identity key that gets special column treatment, or `null`.
+ *
+ * A schema with a single identity id property maps it to `SERIAL` (number) or `UUID` (string);
+ * anything else — a composite key, a caller-supplied key — is an ordinary column. Extracted so the
+ * DDL and `postgresJoinKeyCast` cannot disagree about which columns are `uuid`, which they would
+ * eventually do if each restated the rule.
+ */
+export const singleIdentityKeyProperty = <T extends {}>(schema: CompiledSchema<T>): PropertyInfo<T> | null => {
+    const idProperties = schema.idProperties;
+    const identityProperties = idProperties.filter(p => p.isIdentity);
+
+    if (identityProperties.length !== 1 || idProperties.length !== 1) {
+        return null;
+    }
+
+    return identityProperties[0];
+};
+
+/** Whether this property's column is declared `UUID` — a single STRING identity key, and only that. */
+export const isUuidColumn = <T extends {}>(schema: CompiledSchema<T>, property: PropertyInfo<any> | null): boolean => {
+    if (property == null) {
+        return false;
+    }
+
+    const identity = singleIdentityKeyProperty(schema);
+
+    return identity != null && identity.name === property.name && identity.type === SchemaTypes.String;
+};
+
+/**
+ * Which side of a join has to be cast, and to what.
+ *
+ * PostgreSQL has no implicit `uuid = text`, and the everyday join shape crosses exactly that
+ * boundary: a string identity key is a `uuid` column, and the foreign key pointing at it is an
+ * ordinary `text` one. The uuid side is the one cast, never the text side — see `keyCast` in
+ * `buildJoinStatement` for why casting text to uuid is not an option.
+ *
+ * Nothing is cast when both columns are the same type, so an int-to-int or text-to-text join keeps
+ * its indexes.
+ */
+export const postgresJoinKeyCast = <TOuter extends {}, TInner extends {}>(
+    outerSchema: CompiledSchema<TOuter>,
+    innerSchema: CompiledSchema<TInner>,
+    join: JoinQueryOptionValue
+): { outer?: string; inner?: string } => {
+    const outerIsUuid = isUuidColumn(outerSchema, join.outerKey.property);
+    const innerIsUuid = isUuidColumn(innerSchema, join.innerKey.property);
+
+    if (outerIsUuid === innerIsUuid) {
+        return {};
+    }
+
+    return outerIsUuid ? { outer: 'text' } : { inner: 'text' };
+};
+
+/**
  * Builds a complete SQL query from an IQuery object for PostgreSQL.
  */
-export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuery<TEntity, TShape>): SqlOperation {
+export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuery<TEntity, TShape>, vectors: PostgresVectorSupport = NO_VECTOR_SUPPORT): SqlOperation & { nearestPushedDown: boolean } {
     const { schema, options } = query;
     const tableName = schema.collectionName;
 
@@ -495,19 +419,21 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
             columnsStr += `, "${mapFields[i].sourceName}"`;
         }
     } else {
-        const columnCount = schema.properties.length;
+        // Root properties only, storage-side names — the layout the DDL creates. A column
+        // per descendant would select phantom columns the table does not have.
+        const columnProperties = sqlColumnProperties(schema);
+        const columnCount = columnProperties.length;
         if (columnCount === 0) {
             throw new Error("Need to select at least one column, found zero");
         }
 
-        columnsStr = `"${schema.properties[0].name}"`;
+        columnsStr = `"${columnProperties[0].getResolvedName()}"`;
         for (let i = 1; i < columnCount; i++) {
-            columnsStr += `, "${schema.properties[i].name}"`;
+            columnsStr += `, "${columnProperties[i].getResolvedName()}"`;
         }
     }
 
     const params: any[] = [];
-    let paramCounter = 1;
     let currentQuery = `SELECT ${columnsStr} FROM "${tableName}"`;
 
     const operations: Array<{ type: string, value: any, index: number }> = [];
@@ -558,30 +484,54 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
     for (const op of filterOps) {
         const filterExpr = op.value.expression;
         if (filterExpr) {
-            const { where, params: filterParams } = expressionToWhereClause(filterExpr);
-            // expressionToWhereClause already uses $N placeholders, but we need to renumber them
-            let pgWhere = where;
-            for (const param of filterParams) {
-                pgWhere = pgWhere.replace(/\$(\d+)/g, () => {
-                    return `$${paramCounter++}`;
-                });
-                params.push(param);
-            }
+            // Placeholders are numbered after the params already bound, so several filter
+            // fragments can share one parameter list without renumbering.
+            const { where, params: filterParams } = toSql(filterExpr, offsetPostgresDialect(params.length));
+            params.push(...filterParams);
 
             if (!hasWhereClause) {
-                currentQuery += ` WHERE ${pgWhere}`;
+                currentQuery += ` WHERE ${where}`;
                 hasWhereClause = true;
             } else {
-                currentQuery += ` AND ${pgWhere}`;
+                currentQuery += ` AND ${where}`;
             }
         }
     }
 
-    // Build ORDER BY
-    for (const op of sortOps) {
-        const sortProp = op.value.propertyName;
-        const sortDir = op.value.direction === 'asc' ? 'ASC' : 'DESC';
-        currentQuery += ` ORDER BY "${sortProp}" ${sortDir}`;
+    // A similarity search is pushed down only when nothing else here competes for the
+    // ORDER BY and LIMIT it needs.
+    //
+    // A window is the disqualifying case. `.take(5).nearest(v, 10)` means "five rows, then
+    // the ten nearest among them", and one statement cannot say that — a single LIMIT applies
+    // to the whole query, so pushing both down answers a different question. Leaving the
+    // search to the translator answers the right one over the five rows SQL returned.
+    //
+    // A preceding sort is not disqualifying, it is simply overwritten: the search reorders
+    // everything, exactly as the in-memory path does.
+    const nearestOp = otherOps.find(op => op.type === 'nearest');
+    const nearestPushedDown = vectors.available && nearestOp != null && skipTakeOps.length === 0;
+
+    if (nearestPushedDown) {
+        const { property, propertyName, vector, count } = nearestOp!.value;
+        const column = property?.getResolvedName() ?? propertyName;
+
+        // The same text `JSON.stringify` produces for a JSON column, which is also pgvector's
+        // input literal — one encoding serves both storage shapes.
+        params.push(JSON.stringify(vector));
+
+        // `<=>` is cosine distance. No index is declared for it on purpose: pgvector's HNSW
+        // and IVFFlat are APPROXIMATE, so an indexed search can return a different set of
+        // rows than the exact scoring every other backend performs — and returning the same
+        // rows everywhere is the promise this feature makes. An exact ordering still avoids
+        // shipping every row to the client and scoring it in JS, which is the bulk of the win.
+        currentQuery += ` ORDER BY "${column}" <=> $${params.length} LIMIT ${count}`;
+    } else {
+        // Build ORDER BY
+        for (const op of sortOps) {
+            const sortProp = op.value.propertyName;
+            const sortDir = op.value.direction === 'asc' ? 'ASC' : 'DESC';
+            currentQuery += ` ORDER BY "${sortProp}" ${sortDir}`;
+        }
     }
 
     // Handle skip/take
@@ -618,7 +568,10 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
                 break;
 
             case 'count':
-                currentQuery = currentQuery.replace(/SELECT .*? FROM/, 'SELECT COUNT(*) AS "count" FROM');
+                // Wrap rather than rewrite the SELECT: a rewritten query keeps its
+                // LIMIT/OFFSET, which then applies to the single count row (OFFSET
+                // skips it entirely). Wrapping counts whatever the built query yields
+                currentQuery = `SELECT COUNT(*) AS "count" FROM (${currentQuery}) AS count_subquery`;
                 break;
 
             case 'min':
@@ -640,5 +593,44 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
         }
     }
 
-    return { sql: currentQuery, params };
+    return { sql: currentQuery, params, nearestPushedDown };
+}
+
+/**
+ * Builds the joined SELECT for a query carrying a `join` option.
+ *
+ * The emission itself is shared (`buildJoinStatement`); this supplies the two things only the
+ * plugin knows — the inner schema, which lives in the event's schema collection, and the outer
+ * side's own statement.
+ *
+ * The outer side is built by the ordinary single-table path and used as a derived table, because
+ * PostgreSQL applies `ORDER BY` and `LIMIT` to the JOINED rows: a `.take(2)` recorded before the
+ * join has to window the outer rows, not the pairs, or it answers a different question from every
+ * other backend. Its parameters are bound first, and the inner side's scope placeholders continue
+ * the `$n` numbering from there.
+ */
+export function buildJoinQueryOperation<TEntity extends {}, TShape, TInner extends {}>(
+    query: IQuery<TEntity, TShape>,
+    innerSchema: CompiledSchema<TInner>,
+    vectors: PostgresVectorSupport = NO_VECTOR_SUPPORT
+): SqlOperation & { join: JoinQueryOptionValue } {
+    const { before, at } = query.options.splitAt("join");
+
+    if (at == null) {
+        throw new Error("buildJoinQueryOperation was called for a query with no join option.");
+    }
+
+    const outer = buildFromQueryOperation(new Query(before, query.schema), vectors);
+
+    const joined = buildJoinStatement({
+        dialect: getDialect('postgresql'),
+        join: at.value,
+        outerSchema: query.schema,
+        innerSchema,
+        outer: outer.sql,
+        outerParams: outer.params,
+        keyCast: postgresJoinKeyCast(query.schema, innerSchema, at.value)
+    });
+
+    return { ...joined, join: at.value };
 }

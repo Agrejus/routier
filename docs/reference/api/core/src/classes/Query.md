@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / Query
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / Query
 
 # Class: Query\<TRoot, TShape\>
 
@@ -20,7 +20,7 @@ Defined in: [core/src/plugins/query/Query.ts:6](https://github.com/Agrejus/routi
 
 ## Implements
 
-- [`IQuery`](../type-aliases/IQuery.md)\<`TRoot`, `TShape`\>
+- [`IQuery`](/reference/api/core/src/type-aliases/IQuery)\<`TRoot`, `TShape`\>
 
 ## Constructors
 
@@ -34,11 +34,11 @@ Defined in: [core/src/plugins/query/Query.ts:12](https://github.com/Agrejus/rout
 
 ##### options
 
-[`QueryOptionsCollection`](QueryOptionsCollection.md)\<`TShape`\>
+[`QueryOptionsCollection`](/reference/api/core/src/classes/QueryOptionsCollection)\<`TShape`\>
 
 ##### schema
 
-[`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`TRoot`\>
+[`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`TRoot`\>
 
 ##### enableChangeTrackingOverride?
 
@@ -52,7 +52,7 @@ Defined in: [core/src/plugins/query/Query.ts:12](https://github.com/Agrejus/rout
 
 ### options
 
-> `readonly` **options**: [`QueryOptionsCollection`](QueryOptionsCollection.md)\<`TShape`\>
+> `readonly` **options**: [`QueryOptionsCollection`](/reference/api/core/src/classes/QueryOptionsCollection)\<`TShape`\>
 
 Defined in: [core/src/plugins/query/Query.ts:8](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/query/Query.ts#L8)
 
@@ -60,19 +60,19 @@ Query options (sort, skip, take, etc.).
 
 #### Implementation of
 
-[`IQuery`](../type-aliases/IQuery.md).[`options`](../type-aliases/IQuery.md#options)
+[`IQuery`](/reference/api/core/src/type-aliases/IQuery).[`options`](/reference/api/core/src/type-aliases/IQuery#options)
 
 ***
 
 ### schema
 
-> `readonly` **schema**: [`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`TRoot`\>
+> `readonly` **schema**: [`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`TRoot`\>
 
 Defined in: [core/src/plugins/query/Query.ts:9](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/query/Query.ts#L9)
 
 #### Implementation of
 
-[`IQuery`](../type-aliases/IQuery.md).[`schema`](../type-aliases/IQuery.md#schema)
+[`IQuery`](/reference/api/core/src/type-aliases/IQuery).[`schema`](/reference/api/core/src/type-aliases/IQuery#schema)
 
 ## Accessors
 
@@ -117,7 +117,7 @@ Defined in: [core/src/plugins/query/Query.ts:49](https://github.com/Agrejus/rout
 
 ##### schema
 
-[`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`T`\>
+[`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`T`\>
 
 #### Returns
 
@@ -145,7 +145,7 @@ Defined in: [core/src/plugins/query/Query.ts:53](https://github.com/Agrejus/rout
 
 ##### query
 
-[`IQuery`](../type-aliases/IQuery.md)\<`T`, `S`\>
+[`IQuery`](/reference/api/core/src/type-aliases/IQuery)\<`T`, `S`\>
 
 #### Returns
 
@@ -173,7 +173,7 @@ Defined in: [core/src/plugins/query/Query.ts:57](https://github.com/Agrejus/rout
 
 ##### query
 
-[`IQuery`](../type-aliases/IQuery.md)\<`TRoot`, `TShape`\>
+[`IQuery`](/reference/api/core/src/type-aliases/IQuery)\<`TRoot`, `TShape`\>
 
 #### Returns
 

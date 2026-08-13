@@ -80,4 +80,6 @@ export class SchemaNumber<T extends number, TModifiers extends SchemaModifiers> 
     tag(...tags: string[]) {
         return new SchemaTag<T, TModifiers>(tags, this);
     }
+
+
 }

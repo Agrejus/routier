@@ -174,6 +174,8 @@ describe('JsonTranslator', () => {
         });
 
         it('should return minimum string from array', () => {
+            // Pinned wrong ('zebra') until 2026-08-13: the comparator subtracted, which is
+            // NaN for strings, so min() returned whatever element happened to be first.
             const data = ['zebra', 'apple', 'banana'];
             const option: QueryOption<any, 'min'> = {
                 name: 'min',
@@ -183,7 +185,18 @@ describe('JsonTranslator', () => {
 
             const result = translator.min(data, option);
 
-            expect(result).toBe('zebra');
+            expect(result).toBe('apple');
+        });
+
+        it('should order null first: min of a column with nulls is null', () => {
+            const data = [5, null, 1];
+            const option: QueryOption<any, 'min'> = {
+                name: 'min',
+                value: true,
+                target: 'memory'
+            };
+
+            expect(translator.min(data, option)).toBeNull();
         });
 
         it('should return minimum date from array', () => {
@@ -229,7 +242,7 @@ describe('JsonTranslator', () => {
         });
 
         it('should return maximum string from array', () => {
-            const data = ['zebra', 'apple', 'banana'];
+            const data = ['apple', 'zebra', 'banana'];
             const option: QueryOption<any, 'max'> = {
                 name: 'max',
                 value: true,
@@ -239,6 +252,17 @@ describe('JsonTranslator', () => {
             const result = translator.max(data, option);
 
             expect(result).toBe('zebra');
+        });
+
+        it('should order null last: max of a column with nulls is the largest value', () => {
+            const data = [5, null, 9];
+            const option: QueryOption<any, 'max'> = {
+                name: 'max',
+                value: true,
+                target: 'memory'
+            };
+
+            expect(translator.max(data, option)).toBe(9);
         });
 
         it('should return maximum date from array', () => {
@@ -255,6 +279,62 @@ describe('JsonTranslator', () => {
             const result = translator.max(data, option);
 
             expect(result).toBe(date2);
+        });
+    });
+
+    describe('min/max, single pass', () => {
+        // These pin the shape of _minMax, not just its answers.  It used to sort the array and
+        // take element 0, which mutated the caller's array and cost O(n log n).
+        const minOption: QueryOption<any, 'min'> = { name: 'min', value: true, target: 'memory' };
+        const maxOption: QueryOption<any, 'max'> = { name: 'max', value: true, target: 'memory' };
+
+        it('should not reorder the array it was given', () => {
+            const data = [5, 2, 8, 1, 9];
+
+            translator.min(data, minOption);
+
+            expect(data).toEqual([5, 2, 8, 1, 9]);
+
+            translator.max(data, maxOption);
+
+            expect(data).toEqual([5, 2, 8, 1, 9]);
+        });
+
+        it('should not reorder an array of dates', () => {
+            const dates = [new Date('2023-01-02'), new Date('2022-12-31'), new Date('2023-01-01')];
+            const order = dates.slice();
+
+            translator.min(dates, minOption);
+            translator.max(dates, maxOption);
+
+            expect(dates).toEqual(order);
+        });
+
+        it('should throw on an empty array', () => {
+            expect(() => translator.min([], minOption))
+                .toThrow('Cannot perform operation on empty array, result query contains no data');
+            expect(() => translator.max([], maxOption))
+                .toThrow('Cannot perform operation on empty array, result query contains no data');
+        });
+
+        it('should return the only element of a single-element array', () => {
+            expect(translator.min([7], minOption)).toBe(7);
+            expect(translator.max([7], maxOption)).toBe(7);
+        });
+
+        it('should never select undefined unless every element is undefined', () => {
+            // sort() moves undefined to the END without consulting the comparator, so a naive
+            // single pass would answer `undefined` for min here.  It must not.
+            expect(translator.min([5, undefined, 1], minOption)).toBe(1);
+            expect(translator.max([5, undefined, 1], maxOption)).toBe(5);
+            expect(translator.min([undefined, undefined], minOption)).toBeUndefined();
+        });
+
+        it('should handle duplicates and all-null arrays', () => {
+            expect(translator.min([3, 3, 3], minOption)).toBe(3);
+            expect(translator.max([3, 3, 3], maxOption)).toBe(3);
+            expect(translator.min([null, null], minOption)).toBeNull();
+            expect(translator.max([null, null], maxOption)).toBeNull();
         });
     });
 

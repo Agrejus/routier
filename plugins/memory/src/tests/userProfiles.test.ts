@@ -11,6 +11,7 @@ const UNTRACKED_PROP_NAMES = ['fullName', 'age', 'formattedAddress', 'isActive',
 function createSpyPlugin(inner: IDbPlugin): IDbPlugin & { lastBulkPersistEvent: DbPluginBulkPersistEvent | null } {
     let lastBulkPersistEvent: DbPluginBulkPersistEvent | null = null;
     return {
+        databaseName: inner.databaseName,
         get lastBulkPersistEvent() {
             return lastBulkPersistEvent;
         },

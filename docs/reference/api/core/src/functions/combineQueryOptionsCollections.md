@@ -1,12 +1,12 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / combineQueryOptionsCollections
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / combineQueryOptionsCollections
 
 # Function: combineQueryOptionsCollections()
 
-> **combineQueryOptionsCollections**\<`T`\>(...`collections`): [`QueryOptionsCollection`](../classes/QueryOptionsCollection.md)\<`T`\>
+> **combineQueryOptionsCollections**\<`T`\>(...`collections`): [`QueryOptionsCollection`](/reference/api/core/src/classes/QueryOptionsCollection)\<`T`\>
 
 Defined in: [core/src/utilities/queryOptionsCollection.ts:3](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/utilities/queryOptionsCollection.ts#L3)
 
@@ -20,8 +20,8 @@ Defined in: [core/src/utilities/queryOptionsCollection.ts:3](https://github.com/
 
 ### collections
 
-...[`QueryOptionsCollection`](../classes/QueryOptionsCollection.md)\<`T`\>[]
+...[`QueryOptionsCollection`](/reference/api/core/src/classes/QueryOptionsCollection)\<`T`\>[]
 
 ## Returns
 
-[`QueryOptionsCollection`](../classes/QueryOptionsCollection.md)\<`T`\>
+[`QueryOptionsCollection`](/reference/api/core/src/classes/QueryOptionsCollection)\<`T`\>

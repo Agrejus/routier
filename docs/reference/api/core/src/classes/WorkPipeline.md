@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / WorkPipeline
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / WorkPipeline
 
 # Class: WorkPipeline
 
@@ -36,7 +36,7 @@ Defined in: [core/src/pipeline/TrampolinePipeline.ts:311](https://github.com/Agr
 
 ##### done
 
-[`CallbackResult`](../type-aliases/CallbackResult.md)\<`never`\>
+[`CallbackResult`](/reference/api/core/src/type-aliases/CallbackResult)\<`never`\>
 
 #### Returns
 
@@ -54,7 +54,7 @@ Defined in: [core/src/pipeline/TrampolinePipeline.ts:405](https://github.com/Agr
 
 ##### work
 
-[`UnitOfWork`](../type-aliases/UnitOfWork.md)
+[`UnitOfWork`](/reference/api/core/src/type-aliases/UnitOfWork)
 
 #### Returns
 

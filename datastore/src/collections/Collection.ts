@@ -1,10 +1,14 @@
 import { RemovableCollection } from './RemovableCollection';
-import { InferCreateType, InferType } from "@routier/core/schema";
+import { ChangeTrackingType, InferCreateType, InferType } from "@routier/core/schema";
 import { CallbackResult, Result } from "@routier/core/results";
 import { GenericFunction } from "@routier/core/types";
 import { CollectionDependencies } from "./types";
 
-export class Collection<TEntity extends {}> extends RemovableCollection<TEntity> {
+export class Collection<TEntity extends {}, TStore = unknown> extends RemovableCollection<TEntity, TStore> {
+
+    protected override get changeTrackingType(): ChangeTrackingType {
+        return "proxy";
+    }
 
     constructor(
         dependencies: CollectionDependencies<TEntity>
@@ -46,10 +50,16 @@ export class Collection<TEntity extends {}> extends RemovableCollection<TEntity>
         remove: (...entities: InferType<TEntity>[]) => {
             return this.dependencies.changeTracker.detach(entities);
         },
-        /** Attaches entities to change tracking, enabling property change monitoring and dirty state management */
+        /**
+         * Attaches entities to change tracking, enabling property change monitoring and
+         * dirty state management. The given instances become the canonical attachments —
+         * an explicit set means the caller will mutate THESE instances, so a previously
+         * attached copy of the same entity (e.g. via a background query) is merged into
+         * them and replaced rather than kept.
+         */
         set: (...entities: InferType<TEntity>[]) => {
             const tag = this.getAndDestroyTag()
-            return this.dependencies.changeTracker.resolveMany(entities, tag, { merge: true });
+            return this.dependencies.changeTracker.resolveMany(entities, tag, { merge: true, adopt: true });
         },
         /** Checks if an entity is currently attached to change tracking */
         has: (entity: InferType<TEntity>) => {
@@ -94,7 +104,7 @@ export class Collection<TEntity extends {}> extends RemovableCollection<TEntity>
      */
     add(entities: InferCreateType<TEntity>[], done: CallbackResult<InferType<TEntity>[]>) {
         const tag = this.getAndDestroyTag();
-        this.dependencies.changeTracker.add(entities, tag, done);
+        this.dependencies.changeTracker.add(entities, tag, done, this.changeTrackingType);
     }
 
     /**

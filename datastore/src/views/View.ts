@@ -1,25 +1,111 @@
 import { CollectionBase } from '../collections/CollectionBase';
 import { IDbPlugin } from '@routier/core/plugins';
-import { ChangeTrackingType, HashType, IdType, InferCreateType, InferType, SubscriptionChanges } from '@routier/core/schema';
+import { ChangeTrackingType, HashType, InferCreateType, InferType, SchemaTypes, SubscriptionChanges } from '@routier/core/schema';
 import { BulkPersistChanges, SchemaPersistChanges } from '@routier/core/collections';
 import { CallbackResult, Result } from '@routier/core/results';
 import { logger, noop, uuid } from '@routier/core/utilities';
-import { QueryableAsync } from '../queryable/QueryableAsync';
 import { Derive, DeriveResponse } from './types';
 import { CollectionDependencies, RequestContext } from '../collections/types';
 import { SelectionQueryable } from '../queryable/SelectionQueryable';
 
 /**
+ * Serializes view writes per backend.
+ *
+ * Every view recomputes when its source changes, so two views over one collection both react to
+ * the same save and both write. Nothing coordinated them, and on any backend that locks for
+ * writes the second call failed — "database is locked" on SQLite — leaving that view silently
+ * stale. Only the log said so; no caller is on the other end of a view's write to be told.
+ *
+ * Keyed by the plugin rather than by the store, because the plugin is what owns the lock. A
+ * WeakMap so a discarded store's chain is collectable.
+ *
+ * This orders writes ACROSS views. Ordering WITHIN one view — so a stale snapshot cannot land
+ * after a fresh one — is the coalescing queue on the class below. Both are needed: this stops
+ * two views colliding on the lock, that stops a single view going backwards.
+ *
+ * It does NOT order view writes against the caller's saves, and deliberately does not try:
+ * whether concurrent writes are safe is a fact about the backend. An engine that cannot take
+ * them serializes its own — see the write chain in `SqliteDbPlugin` — and one that can keeps
+ * its concurrency, which is worth roughly four times the throughput on overlapping saves.
+ */
+const viewWrites = new WeakMap<IDbPlugin, Promise<unknown>>();
+
+const serializeWrite = (plugin: IDbPlugin, work: () => Promise<void>): Promise<unknown> => {
+    const previous = viewWrites.get(plugin) ?? Promise.resolve();
+
+    // Chained onto the previous outcome whether it succeeded or failed: one view's failed write
+    // must not stop every later one.
+    const next = previous.then(work, work);
+
+    viewWrites.set(plugin, next);
+
+    return next;
+};
+
+/**
  * View that only allows data selection. Cannot add, remove, or update data.  Data is computed
  * and saved when subscriptions in the derived function change
  */
-export class View<TEntity extends {}> extends CollectionBase<TEntity> {
+export class View<TEntity extends {}, TStore = unknown> extends CollectionBase<TEntity, TStore> {
 
     protected derive: Derive<TEntity>;
     protected unsubscribe: DeriveResponse;
 
+    /**
+     * The most recent derived snapshot waiting to be reconciled, and whether one is in flight.
+     *
+     * A view reconciles by reading its own contents, diffing, and writing. That is three async
+     * steps, so two recomputes started close together can read in one order and write in the
+     * other, leaving the view holding the OLDER answer — permanently, because nothing recomputes
+     * again until the source changes.
+     *
+     * Whether a queued snapshot may be REPLACED by a newer one follows from the same thing that
+     * decides everything else about a view — its key.
+     *
+     * A mirror only has to end up correct, so an intermediate snapshot is work whose result the
+     * next one immediately overwrites: keeping just the latest is both faster and identical in
+     * outcome.
+     *
+     * A history cannot skip anything. Its intermediate states ARE the data — dropping the
+     * snapshot between two saves loses the version that existed in between, which is the one
+     * thing it was declared to record. So it queues them all and reconciles each in turn.
+     */
+    private queuedSnapshots: InferType<TEntity>[][] = [];
+    private isReconciling = false;
+    /**
+     * Set by `dispose`, so a reconcile already in flight stops instead of writing.
+     *
+     * Disposing unsubscribes, which stops NEW recomputes, but a queued one is already past that
+     * point — and the store it belongs to has just closed its connection. On PostgreSQL that
+     * surfaced as "cannot use a pool after calling end on the pool" from a view nobody was
+     * watching any more.
+     */
+    private isDisposed = false;
+
     constructor(dependencies: CollectionDependencies<TEntity>, derive: Derive<TEntity>) {
         super(dependencies);
+
+        /**
+         * Whether the view accumulates history or mirrors its derivation, read off the KEY.
+         *
+         * Not a setting, because the schema already says it. A key COMPUTED from the entity
+         * changes whenever the entity does, so every version of a row lands under its own key
+         * and the view is an append-only history:
+         *
+         *     id: x.computed(entity => hash(entity)).key()
+         *
+         * A key the caller supplies is stable across versions, so a changed row updates in
+         * place and the view mirrors its source:
+         *
+         *     id: s.string().key()          // derive emits `view:${source.id}`
+         *
+         * That difference decides what an absent key MEANS, which is the only question
+         * reconciliation has to answer. Under a stable key, a row the derivation stopped
+         * producing has genuinely left the set and must go — that is what makes a view usable
+         * as a synced subset. Under a computed key, the same absence just means the row has a
+         * newer version, and removing it would delete the history the view exists to be.
+         */
+        const accumulates = dependencies.schema.idProperties.some(property => property.type === SchemaTypes.Computed);
 
         const persist: IDbPlugin["bulkPersist"] = dependencies.plugin.bulkPersist.bind(dependencies.plugin);
 
@@ -27,72 +113,141 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
         this.derive = (cb) => {
             return derive(data => {
 
-                if (data.length === 0) {
-                    return cb([]);
-                }
-
                 const enriched = Array.from<InferType<TEntity>>({ length: data.length });
                 for (let i = 0, length = data.length; i < length; i++) {
                     enriched[i] = this.dependencies.schema.postprocess(data[i] as InferType<TEntity>, this.changeTrackingType);
                 }
 
-                const idProperties = this.dependencies.schema.idProperties;
-                let query: QueryableAsync<TEntity, InferType<TEntity>>;
-
-                for (let i = 0, length = idProperties.length; i < length; i++) {
-                    const idProperty = idProperties[i];
-                    const ids = enriched.map(x => (x as Record<string, IdType>)[idProperty.name]);
-
-                    query = this.where(([x, p]) => p.ids.includes((x as Record<string, IdType>)[p.name]), { ids, name: idProperty.name });
+                if (this.isDisposed) {
+                    return;
                 }
 
-                query.toArray(toArrayResult => {
+                if (accumulates) {
+                    // Every state is a row worth keeping; none may be skipped.
+                    this.queuedSnapshots.push(enriched);
+                } else {
+                    // Only the latest answer matters, so an older one waiting is discarded.
+                    this.queuedSnapshots = [enriched];
+                }
+
+                if (this.isReconciling) {
+                    // The run in flight will pick this up when it finishes.
+                    cb(enriched);
+                    return;
+                }
+
+                this.isReconciling = true;
+
+                const drain = () => {
+                    const snapshot = this.queuedSnapshots.shift();
+
+                    if (snapshot == null || this.isDisposed) {
+                        this.isReconciling = false;
+                        return;
+                    }
+
+                    reconcile(snapshot, drain);
+                };
+
+                const reconcile = (enriched: InferType<TEntity>[], done: () => void) => {
+                /**
+                 * The view's ENTIRE contents, not the rows matching the derived ids.
+                 *
+                 * Two reasons, and they are the same reason. A row that has LEFT the derived
+                 * set has to be removed, and it cannot be found by asking for the ids that are
+                 * still in it — that query returns everything except the answer. Reading the
+                 * whole view is also what the previous id-list query was approximating, at the
+                 * cost of an `IN` clause carrying one entry per derived row: at a hundred
+                 * thousand rows that is a hundred thousand bound parameters per recompute,
+                 * which most engines refuse outright.
+                 *
+                 * It replaces a loop that reassigned its query per id property rather than
+                 * chaining, so only the LAST part of a composite key was ever filtered on.
+                 */
+                this.toArray(toArrayResult => {
+
+                    // Checked again here, not only before the read was issued: the store can be
+                    // destroyed while this read is in flight, and writing afterwards reaches a
+                    // connection that has already been closed.
+                    if (this.isDisposed) {
+                        done();
+                        return;
+                    }
 
                     if (toArrayResult.ok === "error") {
-                        return cb([]);
+                        cb([]);
+                        done();
+                        return;
                     }
 
                     const operation = new BulkPersistChanges();
                     const schemaChanges = new SchemaPersistChanges();
 
-                    if (toArrayResult.data.length === 0) {
-                        schemaChanges.adds = enriched;
-                    } else {
+                    // Keyed by id-hash on both sides, so the comparison is a lookup rather
+                    // than a scan, and duplicates emitted by `derive` collapse to one row —
+                    // which is what a keyed table can hold anyway.
+                    const derived = new Map<string, InferType<TEntity>>();
+                    for (const item of enriched) {
+                        derived.set(this.dependencies.schema.hash(item, HashType.Ids), item);
+                    }
 
-                        // Build lookup map for O(1) lookups instead of O(n) find()
-                        const existingMap = new Map<string, InferType<TEntity>>();
-                        for (const existing of toArrayResult.data) {
-                            const hash = this.dependencies.schema.hash(existing, HashType.Ids);
-                            existingMap.set(hash, existing);
-                        }
+                    const stored = new Map<string, InferType<TEntity>>();
+                    for (const existing of toArrayResult.data) {
+                        stored.set(this.dependencies.schema.hash(existing, HashType.Ids), existing);
+                    }
 
-                        // compute changes
-                        for (let i = 0, length = enriched.length; i < length; i++) {
-                            const item = enriched[i];
-                            const hash = this.dependencies.schema.hash(item, HashType.Ids);
-                            const existing = existingMap.get(hash);
+                    for (const [key, item] of derived) {
+                        const existing = stored.get(key);
 
-                            if (existing != null) {
-
-                                if (this.dependencies.schema.compare(existing, item)) {
-                                    continue; // Nothing has changed
-                                }
-
-                                schemaChanges.updates.push({
-                                    changeType: "markedDirty", // We are not sure what changed, mark it dirty
-                                    delta: {},
-                                    entity: item
-                                });
-                                continue;
-                            }
+                        if (existing == null) {
                             schemaChanges.adds.push(item);
+                            continue;
                         }
+
+                        if (this.dependencies.schema.compare(existing, item)) {
+                            continue; // Nothing has changed
+                        }
+
+                        schemaChanges.updates.push({
+                            changeType: "markedDirty", // We are not sure what changed, mark it dirty
+                            delta: {},
+                            entity: item
+                        });
+                    }
+
+                    /**
+                     * Anything the view holds that the derivation no longer produces.
+                     *
+                     * Without this a view only ever grows. Its whole purpose is to be the
+                     * subset worth keeping — one user's data out of a table with hundreds of
+                     * thousands of rows — and a subset that can be joined but never left
+                     * converges on the full table, which is the cost the view existed to
+                     * avoid. It also silently contradicts its own definition: rows that do not
+                     * satisfy the derivation keep being returned by it.
+                     *
+                     * Skipped when the key is computed — see `accumulates` above.
+                     */
+                    if (accumulates === false) {
+                        for (const [key, existing] of stored) {
+                            if (derived.has(key) === false) {
+                                schemaChanges.removes.push(existing);
+                            }
+                        }
+                    }
+
+                    if (schemaChanges.adds.length === 0 && schemaChanges.updates.length === 0 && schemaChanges.removes.length === 0) {
+                        // Nothing to persist — the derived data already matches the view.
+                        // Skipping also prevents an empty notification round trip
+                        cb(enriched);
+                        done();
+                        return;
                     }
 
                     operation.set(this.dependencies.schema.id, schemaChanges);
 
-                    // Automatically save the view
-                    persist({
+                    // Automatically save the view, behind the per-backend queue so two views
+                    // reacting to the same change do not collide on the write lock.
+                    const written = serializeWrite(dependencies.plugin, () => new Promise<void>(resolve => persist({
                         id: uuid(8),
                         operation,
                         schemas: this.dependencies.schemas,
@@ -102,13 +257,16 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
 
                         if (r.ok === Result.ERROR) {
                             logger.error("Failed to update view", r.error);
+                            resolve();
                             return;
                         }
 
                         const resolvedChanges = r.data.get<TEntity>(this.dependencies.schema.id);
-                        // we only want to notify of changes when an item that was saved matches the query
-                        // these get reset each time
-                        // send in the resulting adds because properties might have been set from the db operation
+                        // Send the resolved adds/updates because properties might have been
+                        // set by the db operation. Match-filtering per subscriber happens in
+                        // DataBridge.subscribe (filtered subscriptions check changes against
+                        // their filter before re-querying); unfiltered subscriptions re-query
+                        // on any non-empty change, which is the accepted behavior.
                         const updates = this.cloneMany(resolvedChanges.updates);
                         const adds = this.cloneMany(resolvedChanges.adds as InferType<TEntity>[]);
                         const removals = this.cloneMany(resolvedChanges.removes);
@@ -120,11 +278,25 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
                             unknown: []
                         };
 
-                        this.dependencies.subscription.send(subscriptionChanges);
-                    });
+                        // Guarded like CollectionBase.saveChanges. This used to be
+                        // unconditional because view change-resolution returned empty
+                        // change sets; resolution works now, so empty rounds stay silent
+                        if (updates.length > 0 || adds.length > 0 || removals.length > 0) {
+                            this.dependencies.subscription.send(subscriptionChanges);
+                        }
+
+                        resolve();
+                    })));
+
+                    // `done` only once the write has LANDED, so this view's next reconcile
+                    // reads its own result rather than the state before it.
+                    written.then(done, done);
 
                     cb(enriched);
                 });
+                };
+
+                drain();
             });
         };
 
@@ -133,6 +305,9 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
     }
 
     override dispose(): void {
+        this.isDisposed = true;
+        this.queuedSnapshots = [];
+
         if (typeof this.unsubscribe === "function") {
             return this.unsubscribe()
         }
@@ -153,7 +328,7 @@ export class View<TEntity extends {}> extends CollectionBase<TEntity> {
     }
 
     empty(done: CallbackResult<InferType<TEntity>[]>) {
-        const request = new RequestContext<TEntity>();
+        const request = new RequestContext<TEntity>(this.changeTrackingType);
         const result = new SelectionQueryable<TEntity, InferType<TEntity>, void>(this.dependencies, request);
         return result.remove(done);
     }

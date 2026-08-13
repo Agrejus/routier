@@ -17,12 +17,19 @@ export class MergeDefaultValueHandler extends PropertyInfoHandler {
                 defaultFunctionParameters.push(parameter.name);
             }
 
+            // A defaulted property still merges from the source; the default only fills
+            // the gap when neither side has a value
+            this.emitMergeCopy(property, builder, { onlyWhenChanged: true });
+
             const ifsSlot = builder.get<SlotBlock>("factory.function.ifs");
-            // we only want to run if the destination is null
-            const selectorPath = property.getSelectrorPath({ parent: "destination" });
+            // we only want to run if the destination is null; the guarded selector keeps
+            // the check from throwing when a destination ancestor is absent
+            const selectorPath = property.getSelectrorPath({ parent: "destination", assignmentType: "FORCE_NULLABLE_OR_OPTIONAL" });
             const assignmentPath = property.getAssignmentPath({ parent: "destination" });
 
-            ifsSlot.if(`${selectorPath} == null`).appendBody(`${assignmentPath} = ${typeof property.defaultValue === "string" ? `"${property.defaultValue}"` : property.defaultValue}`);
+            const defaultIf = ifsSlot.if(`${selectorPath} == null`);
+            this.emitDestinationAncestorGuards(property, defaultIf);
+            defaultIf.appendBody(`${assignmentPath} = ${typeof property.defaultValue === "string" ? `"${property.defaultValue}"` : property.defaultValue}`);
 
             return builder;
         }

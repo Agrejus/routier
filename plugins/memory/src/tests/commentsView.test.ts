@@ -43,6 +43,12 @@ describe("Comments View Tests", () => {
             });
         });
 
+    
+        // A subscribed toArray delivers its initial query result plus exactly one
+        // notification per save that changed the view — 2 calls total, matching the
+        // contract pinned by tasks.test.ts. Before the fix this fired 3+ times: view
+        // sends were unconditional and broadcast channels were shared across unrelated
+        // databases holding the same schema.
         it("Should fire subscription changes when view updates", async () => {
             const { plugin, dataStore } = factory();
 
@@ -53,21 +59,20 @@ describe("Comments View Tests", () => {
             const subscriptionCallback = jest.fn();
             const commentsCallback = jest.fn();
 
-            // Act
             dataStore.comments.subscribe().toArray(commentsCallback);
             dataStore.commentsView.subscribe().toArray(subscriptionCallback);
 
             await dataStore.comments.addAsync(item);
             await dataStore.saveChangesAsync();
 
-            // Assert
             await waitFor(async () => {
                 return await dataStore.commentsView.countAsync() === 11;
             });
 
             await wait(1000);
 
-            expect(subscriptionCallback).toHaveBeenCalledTimes(1);
+            // Initial toArray result + exactly one change notification — no more, no less
+            expect(subscriptionCallback).toHaveBeenCalledTimes(2);
         });
-    });
+});
 });

@@ -1,105 +1,1235 @@
 import { logger } from "../utilities";
 import { assertString } from "../assertions";
-import { CompiledSchema, SchemaTypes } from "../schema";
-import { Expression, OperatorExpression, ComparatorExpression, ValueExpression, PropertyExpression, Filter, ParamsFilter, Operator } from "./types";
-
-// Pre-compiled regex patterns for better performance
-const METHOD_REGEX = /([a-zA-Z0-9_.]+)\.(startsWith|endsWith|includes)\(([^)]+)\)(\s*(===|==|!==|!=)\s*(true|false))?/;
-const TRANSFORM_METHOD_REGEX = /([a-zA-Z0-9_.]+)\.(toLowerCase|toUpperCase|toLocaleLowerCase|toLocaleUpperCase)\(\)\.(startsWith|endsWith|includes)\(((?:[^()]|\([^)]*\))*)\)(\s*(===|==|!==|!=)\s*(true|false))?/;
-const EQUALITY_REGEX = /([^=!<>]+?)\s*(===|==|!==|!=)\s*(.+)/;
-const COMPARISON_REGEX = /([^=!<>]+?)\s*(>=|<=|>|<)\s*(.+)/;
-const PARAM_PATH_REGEX = /^([a-zA-Z0-9_.]+)/;
-
-// Pre-compiled regex patterns for comment removal
-const SINGLE_LINE_COMMENT_REGEX = /\/\/.*$/gm;
-const MULTI_LINE_COMMENT_REGEX = /\/\*[\s\S]*?\*\//g;
-const WHITESPACE_REGEX = /\s+/g;
-
-// need to have negated + strict
-const comparators: Record<string, ComparatorExpression> = {
-    startsWith: new ComparatorExpression({
-        comparator: "starts-with",
-        negated: false,
-        strict: false
-    }),
-    endsWith: new ComparatorExpression({
-        comparator: "ends-with",
-        negated: false,
-        strict: false
-    }),
-    includes: new ComparatorExpression({
-        comparator: "includes",
-        negated: false,
-        strict: false
-    }),
-    "==": new ComparatorExpression({
-        comparator: "equals",
-        negated: false,
-        strict: false
-    }),
-    "===": new ComparatorExpression({
-        comparator: "equals",
-        negated: false,
-        strict: true
-    }),
-    "!=": new ComparatorExpression({
-        comparator: "equals",
-        negated: true,
-        strict: false
-    }),
-    "!==": new ComparatorExpression({
-        comparator: "equals",
-        negated: true,
-        strict: true
-    }),
-    ">=": new ComparatorExpression({
-        comparator: "greater-than-equals",
-        negated: false,
-        strict: false
-    }),
-    ">==": new ComparatorExpression({
-        comparator: "greater-than-equals",
-        negated: false,
-        strict: true
-    }),
-    "<=": new ComparatorExpression({
-        comparator: "less-than-equals",
-        negated: false,
-        strict: false
-    }),
-    "<==": new ComparatorExpression({
-        comparator: "less-than-equals",
-        negated: false,
-        strict: true
-    }),
-    ">": new ComparatorExpression({
-        comparator: "greater-than",
-        negated: false,
-        strict: false
-    }),
-    "<": new ComparatorExpression({
-        comparator: "less-than",
-        negated: false,
-        strict: false
-    })
-} as const;
-
-// Optimized comparator lookup using Map
-const COMPARATOR_MAP = new Map(Object.entries(comparators));
+import { CompiledSchema, PropertyInfo, SchemaTypes } from "../schema";
+import { Expression, OperatorExpression, ComparatorExpression, ValueExpression, PropertyExpression, Filter, ParamsFilter, Comparator, Transformer } from "./types";
 
 // Error message constants
 const ERROR_MESSAGES = {
-    COMPARATOR_NOT_FOUND: (value: string) => `Cannot find comparator: ${value}`,
     PROPERTY_NOT_FOUND: (path: string) => `Error parsing query, could not find PropertyInfo for path: ${path}`,
-    PARAM_PATH_NOT_FOUND: (value: string, params: any) => `Cannot find path in params for .where(). Make sure parameters are not used inline.\r\nPath: ${value}, Params: ${JSON.stringify(params)}`
-};
+    PARAM_PATH_NOT_FOUND: (value: string, params: unknown) => `Cannot find path in params for .where(). Make sure parameters are not used inline.\r\nPath: ${value}, Params: ${JSON.stringify(params)}`,
+    VARIABLE_VALUE: (value: string) => `Cannot derive value from variable, please pass parameters into the expression.
 
-const STRINGIFIED_COMPARE_OPERATORS = ["true", "false"];
+Example: .where(([x, params]) => x.id === params.id, { id: someVar.id })
+Issue At: ${value}`,
+    UNSUPPORTED: (value: string) => `Unsupported expression format: ${value}`
+};
 
 const parseUnknown = (value: unknown) => {
     assertString(value);
     return JSON.parse(value);
 }
+
+/**
+ * A parse failure caused by the params VALUES rather than the filter source.
+ * These must never poison the template cache — the same source can succeed
+ * with different params.
+ */
+class ParamDependentParseError extends Error { }
+
+const converters: Record<SchemaTypes, (value: unknown) => unknown> = {
+    Array: v => v,
+    Boolean: v => v == null ? v : Boolean(v),
+    // Stryker disable next-line ArrowFunction: filters on computed properties route to
+    // in-memory execution, so this entry cannot be reached through a parsable filter.
+    Computed: v => v,
+    Date: v => v,
+    // A file is a reference, and a filter can legitimately compare its fields — content type
+    // and size are ordinary columns. The value passes through unconverted like an object.
+    File: v => v,
+    // Stryker disable next-line ArrowFunction: SchemaTypes.Definition is handled as a
+    // generic primitive everywhere (specs/known-defects.md) and never pairs in a filter.
+    Definition: v => v,
+    // Stryker disable next-line ArrowFunction: filters on function properties route to
+    // in-memory execution, so this entry cannot be reached through a parsable filter.
+    Function: v => v,
+    Number: v => v == null ? v : Number(v),
+    Object: v => v,
+    String: v => v == null ? v : String(v),
+    // A vector is a list of numbers and passes through like any other array. Nothing
+    // converts it because nothing compares it: similarity is `.nearest()`, not a filter.
+    Vector: v => v
+};
+
+// #region Tokenizer
+
+type TokenKind = "identifier" | "string" | "number" | "punctuation";
+
+type Token = {
+    kind: TokenKind;
+    value: string;
+}
+
+// Longest first so multi-character punctuation wins over its prefixes
+const MULTI_CHARACTER_PUNCTUATION = ["===", "!==", "?.", "&&", "||", "==", "!=", ">=", "<=", "=>"] as const;
+// Stryker disable next-line all: documented equivalent cluster (see
+// docs/mutation-backlog.md) — dropping an entry only affects source the parser rejects
+// either way, and the rejection message names the character from the source rather than
+// from this set, so no observable boundary distinguishes the mutant. Established
+// experimentally: 30 message-asserting tests killed 1 of 12.
+const SINGLE_CHARACTER_PUNCTUATION = new Set(["(", ")", "[", "]", "{", "}", ".", ",", ";", "!", ">", "<", "-", "+", "*", "/", "%", "=", "?", ":", "&", "|"]);
+
+const STRING_ESCAPES: Record<string, string> = {
+    "n": "\n",
+    "r": "\r",
+    "t": "\t",
+    "b": "\b",
+    "f": "\f",
+    "v": "\v",
+    "0": "\0"
+};
+
+const isIdentifierStart = (char: string) => /[a-zA-Z_$]/.test(char);
+const isIdentifierPart = (char: string) => /[a-zA-Z0-9_$]/.test(char);
+const isDigit = (char: string) => char >= "0" && char <= "9";
+const isHexDigit = (char: string) => isDigit(char) || (char >= "a" && char <= "f") || (char >= "A" && char <= "F");
+
+/**
+ * Decodes a `\uXXXX`, `\u{...}` or `\xXX` escape starting at the backslash.
+ * Returns the decoded character and the index just past the escape.  These
+ * escapes carry a computed character, so mapping them through STRING_ESCAPES
+ * (which would yield the literal "u"/"x") silently corrupts the value.
+ */
+const decodeCodeEscape = (source: string, backslashIndex: number): { value: string, nextIndex: number } => {
+    const kind = source[backslashIndex + 1];
+    let start = backslashIndex + 2;
+
+    if (kind === "u" && source[start] === "{") {
+        const end = source.indexOf("}", start + 1);
+
+        if (end === -1) {
+            throw new Error(ERROR_MESSAGES.UNSUPPORTED("unterminated unicode escape"));
+        }
+
+        return { value: String.fromCodePoint(parseInt(source.slice(start + 1, end), 16)), nextIndex: end + 1 };
+    }
+
+    const length = kind === "u" ? 4 : 2;
+    const digits = source.slice(start, start + length);
+
+    if (digits.length < length || [...digits].some(d => !isHexDigit(d))) {
+        throw new Error(ERROR_MESSAGES.UNSUPPORTED(`'\\${kind}' escape`));
+    }
+
+    return { value: String.fromCharCode(parseInt(digits, 16)), nextIndex: start + length };
+}
+
+/**
+ * Converts filter source text into a flat token stream.  Strings and comments are
+ * consumed here so operator characters inside literals can never be mistaken for
+ * real operators.
+ */
+const tokenize = (source: string): Token[] => {
+
+    const tokens: Token[] = [];
+    let i = 0;
+
+    while (i < source.length) {
+        const char = source[i];
+
+        // Whitespace
+        if (char === " " || char === "\t" || char === "\r" || char === "\n") {
+            i++;
+            continue;
+        }
+
+        // Comments
+        if (char === "/" && source[i + 1] === "/") {
+            while (i < source.length && source[i] !== "\n") {
+                i++;
+            }
+            continue;
+        }
+
+        if (char === "/" && source[i + 1] === "*") {
+            i += 2;
+            while (i < source.length && !(source[i] === "*" && source[i + 1] === "/")) {
+                i++;
+            }
+            i += 2;
+            continue;
+        }
+
+        // String literals
+        if (char === "'" || char === "\"" || char === "`") {
+            const quote = char;
+            let value = "";
+            i++;
+
+            while (i < source.length && source[i] !== quote) {
+                if (source[i] === "\\") {
+                    const escaped = source[i + 1];
+
+                    if (escaped === "u" || escaped === "x") {
+                        const decoded = decodeCodeEscape(source, i);
+                        value += decoded.value;
+                        i = decoded.nextIndex;
+                        continue;
+                    }
+
+                    value += STRING_ESCAPES[escaped] ?? escaped;
+                    i += 2;
+                    continue;
+                }
+
+                if (quote === "`" && source[i] === "$" && source[i + 1] === "{") {
+                    throw new Error(ERROR_MESSAGES.UNSUPPORTED("template literal interpolation"));
+                }
+
+                value += source[i];
+                i++;
+            }
+
+            if (i >= source.length) {
+                throw new Error(ERROR_MESSAGES.UNSUPPORTED("unterminated string literal"));
+            }
+
+            i++; // consume closing quote
+            tokens.push({ kind: "string", value });
+            continue;
+        }
+
+        // Numbers — covers decimals, exponents (1e6), hex/octal/binary (0xFF),
+        // and numeric separators (1_000_000).  Values are normalized here (the
+        // separator stripped) so the parser can hand them straight to Number()
+        if (isDigit(char)) {
+            let value = "";
+
+            const nextChar = source[i + 1];
+            const radixPrefix = char === "0" && nextChar != null && "xXoObB".includes(nextChar);
+
+            if (radixPrefix) {
+                value = source[i] + source[i + 1];
+                i += 2;
+
+                while (i < source.length && (isHexDigit(source[i]) || source[i] === "_")) {
+                    value += source[i];
+                    i++;
+                }
+            } else {
+                while (i < source.length && (isDigit(source[i]) || source[i] === "." || source[i] === "_")) {
+                    value += source[i];
+                    i++;
+                }
+
+                // Exponent part: e/E, optional sign, then digits.  Only consumed when
+                // digits follow, so a stray identifier after a number still errors
+                if ((source[i] === "e" || source[i] === "E")) {
+                    const signLength = source[i + 1] === "+" || source[i + 1] === "-" ? 1 : 0;
+
+                    if (isDigit(source[i + 1 + signLength])) {
+                        value += source[i];
+                        i++;
+
+                        if (signLength === 1) {
+                            value += source[i];
+                            i++;
+                        }
+
+                        while (i < source.length && isDigit(source[i])) {
+                            value += source[i];
+                            i++;
+                        }
+                    }
+                }
+            }
+
+            tokens.push({ kind: "number", value: value.replace(/_/g, "") });
+            continue;
+        }
+
+        // Identifiers / keywords
+        if (isIdentifierStart(char)) {
+            let value = "";
+
+            while (i < source.length && isIdentifierPart(source[i])) {
+                value += source[i];
+                i++;
+            }
+
+            tokens.push({ kind: "identifier", value });
+            continue;
+        }
+
+        // Multi-character punctuation (longest match first)
+        const multi = MULTI_CHARACTER_PUNCTUATION.find(w => source.startsWith(w, i));
+
+        if (multi != null) {
+            tokens.push({ kind: "punctuation", value: multi });
+            i += multi.length;
+            continue;
+        }
+
+        if (SINGLE_CHARACTER_PUNCTUATION.has(char)) {
+            tokens.push({ kind: "punctuation", value: char });
+            i++;
+            continue;
+        }
+
+        throw new Error(ERROR_MESSAGES.UNSUPPORTED(`unexpected character '${char}'`));
+    }
+
+    return tokens;
+}
+
+/**
+ * Cursor over the token stream with the small set of lookahead operations the
+ * parser needs.
+ */
+class TokenStream {
+
+    private readonly tokens: Token[];
+    private index: number = 0;
+
+    constructor(tokens: Token[]) {
+        this.tokens = tokens;
+    }
+
+    get isAtEnd() {
+        return this.index >= this.tokens.length;
+    }
+
+    peek(offset: number = 0): Token | null {
+        return this.tokens[this.index + offset] ?? null;
+    }
+
+    next(): Token {
+        const token = this.tokens[this.index];
+
+        if (token == null) {
+            throw new Error(ERROR_MESSAGES.UNSUPPORTED("unexpected end of expression"));
+        }
+
+        this.index++;
+        return token;
+    }
+
+    isPunctuation(value: string, offset: number = 0): boolean {
+        const token = this.peek(offset);
+        return token != null && token.kind === "punctuation" && token.value === value;
+    }
+
+    matchPunctuation(value: string): boolean {
+        if (this.isPunctuation(value)) {
+            this.index++;
+            return true;
+        }
+
+        return false;
+    }
+
+    expectPunctuation(value: string) {
+        if (!this.matchPunctuation(value)) {
+            throw new Error(ERROR_MESSAGES.UNSUPPORTED(`expected '${value}'`));
+        }
+    }
+}
+
+// #endregion
+
+// #region Operands
+
+// Discriminated union so a condition builder can only ever see the operand
+// shapes the grammar allows
+type PropertyOperand = {
+    kind: "property";
+    property: PropertyInfo<any>;
+    transformer: Transformer | null;
+    locale: string | null;
+}
+
+type ValueOperand = {
+    kind: "value";
+    value: unknown;
+    transformer: Transformer | null;
+    locale: string | null;
+}
+
+type ParamOperand = {
+    kind: "param";
+    path: string[];
+    transformer: Transformer | null;
+    locale: string | null;
+}
+
+type MethodCallOperand = {
+    kind: "method-call";
+    target: PropertyOperand | ParamOperand | ValueOperand;
+    method: "startsWith" | "endsWith" | "includes";
+    argument: PropertyOperand | ValueOperand | ParamOperand;
+}
+
+type Operand = PropertyOperand | ValueOperand | ParamOperand | MethodCallOperand;
+
+const COMPARATOR_METHODS: Record<string, Comparator> = {
+    startsWith: "starts-with",
+    endsWith: "ends-with",
+    includes: "includes"
+};
+
+const TRANSFORM_METHODS: Record<string, { transformer: Transformer, locale: string | null }> = {
+    toLowerCase: { transformer: "to-lower-case", locale: null },
+    toUpperCase: { transformer: "to-upper-case", locale: null },
+    toLocaleLowerCase: { transformer: "to-lower-case", locale: "en-US" },
+    toLocaleUpperCase: { transformer: "to-upper-case", locale: "en-US" }
+};
+
+const COMPARISON_OPERATORS: Record<string, { comparator: Comparator, negated: boolean, strict: boolean }> = {
+    "==": { comparator: "equals", negated: false, strict: false },
+    "===": { comparator: "equals", negated: false, strict: true },
+    "!=": { comparator: "equals", negated: true, strict: false },
+    "!==": { comparator: "equals", negated: true, strict: true },
+    ">": { comparator: "greater-than", negated: false, strict: false },
+    ">=": { comparator: "greater-than-equals", negated: false, strict: false },
+    "<": { comparator: "less-than", negated: false, strict: false },
+    "<=": { comparator: "less-than-equals", negated: false, strict: false }
+};
+
+const SWAPPED_COMPARATORS: Record<Comparator, Comparator> = {
+    "equals": "equals",
+    "greater-than": "less-than",
+    "greater-than-equals": "less-than-equals",
+    "less-than": "greater-than",
+    "less-than-equals": "greater-than-equals",
+    "starts-with": "starts-with",
+    "ends-with": "ends-with",
+    "includes": "includes"
+};
+
+// #endregion
+
+// #region Param references
+
+/**
+ * Placeholder for a parameter value inside a cached expression template.  Never
+ * escapes this module — binding replaces it with a plain ValueExpression that
+ * holds the resolved value.
+ */
+class ParamReferenceExpression extends ValueExpression {
+
+    /** Path into the params object, excluding the params root name. */
+    readonly paramPath: string[];
+    /** The property this value is compared against; drives serialization/conversion at bind time. */
+    readonly pairedProperty: PropertyInfo<any> | null;
+    /** Whether the paired property's type converter applies (equality/relational comparisons only). */
+    readonly applyConverter: boolean;
+
+    constructor(options: {
+        paramPath: string[],
+        pairedProperty: PropertyInfo<any> | null,
+        applyConverter: boolean
+    }) {
+        super({ value: undefined });
+        this.paramPath = options.paramPath;
+        this.pairedProperty = options.pairedProperty;
+        this.applyConverter = options.applyConverter;
+    }
+}
+
+const resolveParamPath = (paramsName: string, path: string[], data: unknown) => {
+
+    let result = data as Record<string, unknown>;
+
+    for (let i = 0; i < path.length; i++) {
+        const name = path[i];
+
+        if (result != null && typeof result === "object" && name in result) {
+            result = result[name] as Record<string, unknown>;
+            continue;
+        }
+
+        throw new ParamDependentParseError(ERROR_MESSAGES.PARAM_PATH_NOT_FOUND([paramsName, ...path].join("."), data));
+    }
+
+    return result as unknown;
+}
+
+/**
+ * Applies the paired property's value serializer and (optionally) its schema
+ * type converter, matching how literal values are treated at parse time.
+ */
+const resolvePairedValue = (value: unknown, pairedProperty: PropertyInfo<any> | null, applyConverter: boolean) => {
+
+    if (pairedProperty == null) {
+        return value;
+    }
+
+    let result = value;
+
+    if (pairedProperty.valueSerializer != null) {
+        result = String(pairedProperty.valueSerializer(parseUnknown(result)));
+    }
+
+    if (applyConverter) {
+        result = converters[pairedProperty.type](result);
+    }
+
+    return result;
+}
+
+// #endregion
+
+// #region Parser
+
+/**
+ * Recursive descent parser over the token stream.  Produces an expression
+ * template: literal values are fully resolved, parameter values are represented
+ * as ParamReferenceExpression placeholders so the template can be cached and
+ * re-bound with different params.
+ */
+class ExpressionParser {
+
+    private readonly schema: CompiledSchema<any>;
+    private readonly stream: TokenStream;
+    private readonly entityName: string;
+    private readonly paramsName: string | null;
+    private readonly params: unknown;
+
+    /** Set when a param value shaped the tree itself (e.g. x[p.name]) — such templates cannot be cached. */
+    structurallyDependsOnParams: boolean = false;
+
+    constructor(schema: CompiledSchema<any>, stream: TokenStream, entityName: string, paramsName: string | null, params: unknown) {
+        this.schema = schema;
+        this.stream = stream;
+        this.entityName = entityName;
+        this.paramsName = paramsName;
+        this.params = params;
+    }
+
+    parse(): Expression {
+        const expression = this.parseOr();
+
+        if (!this.stream.isAtEnd) {
+            throw new Error(ERROR_MESSAGES.UNSUPPORTED(`unexpected token '${this.stream.peek()?.value}'`));
+        }
+
+        return expression;
+    }
+
+    // || binds loosest, so it sits at the root of the parse
+    private parseOr(): Expression {
+        let left = this.parseAnd();
+
+        while (this.stream.matchPunctuation("||")) {
+            const right = this.parseAnd();
+
+            // A tautology (`true`) absorbs the whole disjunction
+            if (Expression.isEmpty(left) || Expression.isEmpty(right)) {
+                left = Expression.EMPTY;
+                continue;
+            }
+
+            left = new OperatorExpression({ operator: "||", left, right });
+        }
+
+        return left;
+    }
+
+    private parseAnd(): Expression {
+        let left = this.parseUnary();
+
+        while (this.stream.matchPunctuation("&&")) {
+            const right = this.parseUnary();
+
+            // A tautology (`true`) is the identity of a conjunction
+            if (Expression.isEmpty(left)) {
+                left = right;
+                continue;
+            }
+
+            if (Expression.isEmpty(right)) {
+                continue;
+            }
+
+            left = new OperatorExpression({ operator: "&&", left, right });
+        }
+
+        return left;
+    }
+
+    private parseUnary(): Expression {
+        if (this.stream.matchPunctuation("!")) {
+            return this.negateExpression(this.parseUnary());
+        }
+
+        return this.parseComparison();
+    }
+
+    /**
+     * Applies `!` to an already-parsed expression: comparators flip their
+     * negated flag, compound expressions distribute via De Morgan's laws.
+     */
+    private negateExpression(expression: Expression): Expression {
+        if (expression instanceof ComparatorExpression) {
+            expression.negated = !expression.negated;
+            return expression;
+        }
+
+        if (expression instanceof OperatorExpression && expression.left != null && expression.right != null) {
+            return new OperatorExpression({
+                operator: expression.operator === "&&" ? "||" : "&&",
+                left: this.negateExpression(expression.left),
+                right: this.negateExpression(expression.right)
+            });
+        }
+
+        throw new Error(ERROR_MESSAGES.UNSUPPORTED("'!' on this expression"));
+    }
+
+    private parseComparison(): Expression {
+
+        // Parenthesized group
+        if (this.stream.matchPunctuation("(")) {
+            const expression = this.parseOr();
+            this.stream.expectPunctuation(")");
+
+            const trailing = this.stream.peek();
+            if (trailing != null && trailing.kind === "punctuation" && COMPARISON_OPERATORS[trailing.value] != null) {
+                throw new Error(ERROR_MESSAGES.UNSUPPORTED("comparison against a parenthesized expression"));
+            }
+
+            return expression;
+        }
+
+        const left = this.parseOperand();
+        const operatorToken = this.stream.peek();
+
+        if (operatorToken != null && operatorToken.kind === "punctuation" && COMPARISON_OPERATORS[operatorToken.value] != null) {
+            this.stream.next();
+            const right = this.parseOperand();
+            return this.buildComparison(left, COMPARISON_OPERATORS[operatorToken.value], right);
+        }
+
+        return this.buildStandalone(left);
+    }
+
+    private parseOperand(): Operand {
+        const token = this.stream.peek();
+
+        if (token == null) {
+            throw new Error(ERROR_MESSAGES.UNSUPPORTED("unexpected end of expression"));
+        }
+
+        if (token.kind === "string") {
+            this.stream.next();
+            return this.withValueTransformer({ kind: "value", value: token.value, transformer: null, locale: null });
+        }
+
+        if (token.kind === "number") {
+            this.stream.next();
+            return { kind: "value", value: Number(token.value), transformer: null, locale: null };
+        }
+
+        if (token.kind === "punctuation" && token.value === "-") {
+            this.stream.next();
+            const numberToken = this.stream.next();
+
+            if (numberToken.kind !== "number") {
+                throw new Error(ERROR_MESSAGES.UNSUPPORTED("unary '-' on a non-number"));
+            }
+
+            return { kind: "value", value: -Number(numberToken.value), transformer: null, locale: null };
+        }
+
+        if (token.kind === "punctuation" && token.value === "[") {
+            return this.parseArrayLiteralOperand();
+        }
+
+        if (token.kind === "identifier") {
+            return this.parseIdentifierOperand();
+        }
+
+        throw new Error(ERROR_MESSAGES.UNSUPPORTED(String(token.value)));
+    }
+
+    /**
+     * Parses an inline array of literals, e.g. `["active", "pending"]`, and the
+     * membership test that follows it: `[...].includes(entity.property)`.
+     */
+    private parseArrayLiteralOperand(): Operand {
+        this.stream.expectPunctuation("[");
+        const elements: unknown[] = [];
+
+        while (!this.stream.isPunctuation("]")) {
+            const element = this.parseOperand();
+
+            if (element.kind !== "value" || element.transformer != null) {
+                throw new Error(ERROR_MESSAGES.UNSUPPORTED("a non-literal element in an array literal"));
+            }
+
+            elements.push(element.value);
+
+            if (!this.stream.matchPunctuation(",")) {
+                break;
+            }
+        }
+
+        this.stream.expectPunctuation("]");
+
+        const array: ValueOperand = { kind: "value", value: elements, transformer: null, locale: null };
+
+        // The only supported use is a membership test on a schema property
+        if (this.stream.isPunctuation(".") || this.stream.isPunctuation("?.")) {
+            this.stream.next();
+            const method = this.stream.next();
+
+            if (method.kind !== "identifier" || method.value !== "includes") {
+                throw new Error(ERROR_MESSAGES.UNSUPPORTED(`'.${method.value}' on an array literal`));
+            }
+
+            this.stream.expectPunctuation("(");
+            const argument = this.parseOperand();
+            this.stream.expectPunctuation(")");
+
+            if (argument.kind === "method-call") {
+                throw new Error(ERROR_MESSAGES.UNSUPPORTED("nested method call inside .includes()"));
+            }
+
+            return { kind: "method-call", target: array, method: "includes", argument };
+        }
+
+        return array;
+    }
+
+    private parseIdentifierOperand(): Operand {
+        const root = this.stream.next().value;
+
+        // Keyword literals
+        if (root === "true" || root === "false") {
+            return { kind: "value", value: root === "true", transformer: null, locale: null };
+        }
+
+        if (root === "null") {
+            return { kind: "value", value: null, transformer: null, locale: null };
+        }
+
+        if (root === "undefined") {
+            return { kind: "value", value: undefined, transformer: null, locale: null };
+        }
+
+        if (root === "void") {
+            this.stream.next(); // the '0'
+            return { kind: "value", value: undefined, transformer: null, locale: null };
+        }
+
+        if (root === this.entityName) {
+            return this.parseChain({ kind: "property", root });
+        }
+
+        if (this.paramsName != null && root === this.paramsName) {
+            return this.parseChain({ kind: "param", root });
+        }
+
+        // A bare variable from the outer scope — its value cannot be derived from source text
+        throw new Error(ERROR_MESSAGES.VARIABLE_VALUE(root));
+    }
+
+    /**
+     * Parses the segments after an entity/params root: dot access, bracket
+     * access, transform methods and comparator methods.
+     */
+    private parseChain(options: { kind: "property" | "param", root: string }): Operand {
+        const path: string[] = [];
+        let transformer: Transformer | null = null;
+        let locale: string | null = null;
+
+        while (true) {
+            if (this.stream.matchPunctuation(".") || this.stream.matchPunctuation("?.")) {
+                const segment = this.stream.next();
+
+                if (segment.kind !== "identifier") {
+                    throw new Error(ERROR_MESSAGES.UNSUPPORTED(`'.${segment.value}'`));
+                }
+
+                // Method call
+                if (this.stream.isPunctuation("(")) {
+                    const method = segment.value;
+
+                    if (TRANSFORM_METHODS[method] != null) {
+                        this.stream.expectPunctuation("(");
+                        this.stream.expectPunctuation(")");
+                        transformer = TRANSFORM_METHODS[method].transformer;
+                        locale = TRANSFORM_METHODS[method].locale;
+                        continue;
+                    }
+
+                    if (COMPARATOR_METHODS[method] != null) {
+                        this.stream.expectPunctuation("(");
+                        const argument = this.parseOperand();
+                        this.stream.expectPunctuation(")");
+
+                        if (argument.kind === "method-call") {
+                            throw new Error(ERROR_MESSAGES.UNSUPPORTED(`nested method call inside .${method}()`));
+                        }
+
+                        return {
+                            kind: "method-call",
+                            target: this.resolveChain(options.kind, path, transformer, locale),
+                            method: method as MethodCallOperand["method"],
+                            argument
+                        };
+                    }
+
+                    throw new Error(ERROR_MESSAGES.UNSUPPORTED(`method '.${method}()'`));
+                }
+
+                if (transformer != null) {
+                    throw new Error(ERROR_MESSAGES.UNSUPPORTED("property access after a transform method"));
+                }
+
+                path.push(segment.value);
+                continue;
+            }
+
+            if (this.stream.matchPunctuation("[")) {
+                path.push(this.parseBracketSegment(options.kind));
+                this.stream.expectPunctuation("]");
+                continue;
+            }
+
+            break;
+        }
+
+        return this.resolveChain(options.kind, path, transformer, locale);
+    }
+
+    private parseBracketSegment(kind: "property" | "param"): string {
+        const token = this.stream.next();
+
+        // Literal segment: entity["name"]
+        if (token.kind === "string") {
+            return token.value;
+        }
+
+        // Param-driven segment: entity[p.name] — the property depends on the
+        // param VALUE, so the resulting template is tied to these params.
+        // Stryker disable next-line all: documented equivalent cluster (see
+        // docs/mutation-backlog.md) — every mutation of this four-conjunct guard reroutes
+        // bracket access between two paths that both collapse to NOT_PARSABLE; the
+        // experiment recorded there aimed 30 tests at this line and killed none.
+        if (kind === "property" && token.kind === "identifier" && this.paramsName != null && token.value === this.paramsName) {
+            const paramPath: string[] = [];
+
+            while (this.stream.matchPunctuation(".") || this.stream.matchPunctuation("?.")) {
+                paramPath.push(this.stream.next().value);
+            }
+
+            const resolved = resolveParamPath(this.paramsName, paramPath, this.params);
+
+            if (typeof resolved !== "string") {
+                throw new ParamDependentParseError(ERROR_MESSAGES.PROPERTY_NOT_FOUND(paramPath.join(".")));
+            }
+
+            this.structurallyDependsOnParams = true;
+            return resolved;
+        }
+
+        throw new Error(ERROR_MESSAGES.UNSUPPORTED(`bracket access '[${token.value}]'`));
+    }
+
+    private resolveChain(kind: "property" | "param", path: string[], transformer: Transformer | null, locale: string | null): PropertyOperand | ParamOperand {
+
+        if (kind === "param") {
+            if (path.length === 0) {
+                // `params` alone is a variable, not a value we can resolve
+                throw new Error(ERROR_MESSAGES.PARAM_PATH_NOT_FOUND(this.paramsName ?? "params", this.params));
+            }
+
+            return { kind: "param", path, transformer, locale };
+        }
+
+        const pathString = path.join(".");
+        const property = this.schema.properties.find(w => w.getAssignmentPath() == pathString);
+
+        if (property == null) {
+            // `.length` on a string/array property — a real schema property named
+            // `length` wins (checked above); otherwise treat it as a transformer
+            if (path.length > 1 && path[path.length - 1] === "length" && transformer == null) {
+                const parentPath = path.slice(0, -1).join(".");
+                const parent = this.schema.properties.find(w => w.getAssignmentPath() == parentPath);
+
+                // Vector is deliberately absent. Its length is the dimension count declared
+                // in the schema — a constant, not data — so a filter on it answers a question
+                // nobody asks, and pushing it down would need `json_array_length` on a
+                // backend storing JSON and something else entirely on one with a native
+                // vector column. Not parsing it leaves a clear error instead of a dialect gap.
+                if (parent != null && (parent.type === SchemaTypes.String || parent.type === SchemaTypes.Array)) {
+                    return { kind: "property", property: parent, transformer: "length", locale: null };
+                }
+            }
+
+            throw new Error(ERROR_MESSAGES.PROPERTY_NOT_FOUND(pathString));
+        }
+
+        return { kind: "property", property, transformer, locale };
+    }
+
+    private withValueTransformer(operand: ValueOperand): ValueOperand {
+        if (this.stream.isPunctuation(".")) {
+            const method = this.stream.peek(1);
+
+            // Stryker disable next-line all: documented equivalent cluster (see
+        // docs/mutation-backlog.md) — the guard's conjuncts each route to a rejection that
+        // collapses to NOT_PARSABLE with an indistinguishable message; 18 targeted tests
+        // killed none of these.
+        if (method != null && method.kind === "identifier" && TRANSFORM_METHODS[method.value] != null) {
+                this.stream.next(); // .
+                this.stream.next(); // method name
+                this.stream.expectPunctuation("(");
+                this.stream.expectPunctuation(")");
+
+                operand.transformer = TRANSFORM_METHODS[method.value].transformer;
+                operand.locale = TRANSFORM_METHODS[method.value].locale;
+            }
+        }
+
+        return operand;
+    }
+
+    // #region Condition building
+
+    private buildComparison(left: Operand, operator: { comparator: Comparator, negated: boolean, strict: boolean }, right: Operand): Expression {
+
+        // methodCall == true/false — fold the boolean into negation
+        if (left.kind === "method-call") {
+            if (operator.comparator === "equals" && right.kind === "value" && typeof right.value === "boolean") {
+                const comparator = this.buildMethodComparator(left);
+                const comparedToFalse = right.value === false;
+                comparator.negated = comparator.negated !== (operator.negated !== comparedToFalse);
+                return comparator;
+            }
+
+            throw new Error(ERROR_MESSAGES.UNSUPPORTED("comparing a method call to a non-boolean"));
+        }
+
+        if (right.kind === "method-call") {
+            throw new Error(ERROR_MESSAGES.UNSUPPORTED("method call on the right side of a comparison"));
+        }
+
+        if (left.kind === "property" && right.kind === "property") {
+            // Casing transformers are only valid with string-matching comparators,
+            // which cannot produce a property-to-property comparison
+            if (left.transformer === "to-lower-case" || left.transformer === "to-upper-case" ||
+                right.transformer === "to-lower-case" || right.transformer === "to-upper-case") {
+                throw new Error(ERROR_MESSAGES.UNSUPPORTED("transform method outside of startsWith/endsWith/includes"));
+            }
+
+            return new ComparatorExpression({
+                comparator: operator.comparator,
+                negated: operator.negated,
+                strict: operator.strict,
+                left: this.createPropertyExpression(left),
+                right: this.createPropertyExpression(right)
+            });
+        }
+
+        if (left.kind === "property" && right.kind !== "property") {
+            return this.buildPropertyComparator(left, operator, right, /* applyConverter */ true);
+        }
+
+        if (right.kind === "property" && left.kind !== "property") {
+            const swapped = { ...operator, comparator: SWAPPED_COMPARATORS[operator.comparator] };
+            return this.buildPropertyComparator(right, swapped, left, /* applyConverter */ true);
+        }
+
+        throw new Error(ERROR_MESSAGES.UNSUPPORTED("comparison requires a schema property on at least one side"));
+    }
+
+    private buildStandalone(operand: Operand): Expression {
+
+        if (operand.kind === "method-call") {
+            return this.buildMethodComparator(operand);
+        }
+
+        if (operand.kind === "property") {
+            // Truthy shorthand on `.length`: a length is truthy exactly when > 0
+            if (operand.transformer === "length") {
+                return this.buildPropertyComparator(operand, COMPARISON_OPERATORS[">"], { kind: "value", value: 0, transformer: null, locale: null }, /* applyConverter */ true);
+            }
+
+            // Truthy shorthand: `w.isActive` → isActive === true
+            return this.buildPropertyComparator(operand, COMPARISON_OPERATORS["==="], { kind: "value", value: true, transformer: null, locale: null }, /* applyConverter */ true);
+        }
+
+        // Constant `true` — a tautology, which parseAnd/parseOr simplify away
+        if (operand.kind === "value" && operand.value === true && operand.transformer == null) {
+            return Expression.EMPTY;
+        }
+
+        throw new Error(ERROR_MESSAGES.UNSUPPORTED("a filter condition must reference a schema property"));
+    }
+
+    private buildMethodComparator(operand: MethodCallOperand): ComparatorExpression {
+        const { target, method, argument } = operand;
+
+        if (target.kind === "property") {
+            if (argument.kind === "property") {
+                throw new Error(ERROR_MESSAGES.UNSUPPORTED(`.${method}() comparing two schema properties`));
+            }
+
+            // Method arguments skip type conversion — only the value serializer applies
+            return this.buildPropertyComparator(target, { comparator: COMPARATOR_METHODS[method], negated: false, strict: false }, argument, /* applyConverter */ false);
+        }
+
+        // ["a", "b"].includes(x.prop) / params.list.includes(x.prop) —
+        // membership test with the collection on the left
+        if (method === "includes" && argument.kind === "property") {
+            if (target.transformer != null) {
+                throw new Error(ERROR_MESSAGES.UNSUPPORTED("transform method on a collection used with .includes()"));
+            }
+
+            return new ComparatorExpression({
+                comparator: "includes",
+                negated: false,
+                strict: false,
+                left: this.createValueExpression(target, argument.property, /* applyConverter */ false),
+                right: this.createPropertyExpression(argument)
+            });
+        }
+
+        throw new Error(ERROR_MESSAGES.UNSUPPORTED(`.${method}() on a non-property target`));
+    }
+
+    private buildPropertyComparator(property: PropertyOperand, operator: { comparator: Comparator, negated: boolean, strict: boolean }, value: ValueOperand | ParamOperand, applyConverter: boolean): ComparatorExpression {
+
+        const isStringMatch = operator.comparator === "starts-with" || operator.comparator === "ends-with" || operator.comparator === "includes";
+
+        // `.length` compares a NUMBER, so the paired property's serializer and
+        // type converter must not touch the value; and a length has no meaning
+        // inside a string-matching comparator
+        if (property.transformer === "length") {
+            if (isStringMatch) {
+                throw new Error(ERROR_MESSAGES.UNSUPPORTED("'.length' with startsWith/endsWith/includes"));
+            }
+
+            return new ComparatorExpression({
+                comparator: operator.comparator,
+                negated: operator.negated,
+                strict: operator.strict,
+                left: this.createPropertyExpression(property),
+                right: this.createValueExpression(value, null, /* applyConverter */ false)
+            });
+        }
+
+        // Casing transformers on a property are only meaningful with string-matching
+        // comparators; on relational comparators the plugins would silently
+        // ignore them and return wrong data
+        if (property.transformer != null && !isStringMatch) {
+            throw new Error(ERROR_MESSAGES.UNSUPPORTED("transform method outside of startsWith/endsWith/includes"));
+        }
+
+        return new ComparatorExpression({
+            comparator: operator.comparator,
+            negated: operator.negated,
+            strict: operator.strict,
+            left: this.createPropertyExpression(property),
+            right: this.createValueExpression(value, property.property, applyConverter)
+        });
+    }
+
+    private createPropertyExpression(operand: PropertyOperand): PropertyExpression {
+        const expression = new PropertyExpression({ property: operand.property });
+        expression.transformer = operand.transformer;
+        expression.locale = operand.locale;
+        return expression;
+    }
+
+    private createValueExpression(operand: ValueOperand | ParamOperand, pairedProperty: PropertyInfo<any> | null, applyConverter: boolean): ValueExpression {
+
+        if (operand.kind === "param") {
+            const expression = new ParamReferenceExpression({ paramPath: operand.path, pairedProperty, applyConverter });
+            expression.transformer = operand.transformer;
+            expression.locale = operand.locale;
+            return expression;
+        }
+
+        const expression = new ValueExpression({ value: resolvePairedValue(operand.value, pairedProperty, applyConverter) });
+        expression.transformer = operand.transformer;
+        expression.locale = operand.locale;
+        return expression;
+    }
+
+    // #endregion
+}
+
+// #endregion
+
+// #region Template binding
+
+/**
+ * Deep-clones a template into a consumer-facing tree, resolving parameter
+ * placeholders against the supplied params.  Always clones so cached templates
+ * can never be mutated by consumers.
+ */
+const bindExpression = (expression: Expression, paramsName: string | null, params: unknown): Expression => {
+
+    if (expression instanceof ParamReferenceExpression) {
+        const raw = resolveParamPath(paramsName ?? "params", expression.paramPath, params);
+        const bound = new ValueExpression({ value: resolvePairedValue(raw, expression.pairedProperty, expression.applyConverter) });
+        bound.transformer = expression.transformer;
+        bound.locale = expression.locale;
+        return bound;
+    }
+
+    if (expression instanceof ValueExpression) {
+        const clone = new ValueExpression({ value: expression.value });
+        clone.transformer = expression.transformer;
+        clone.locale = expression.locale;
+        return clone;
+    }
+
+    if (expression instanceof PropertyExpression) {
+        const clone = new PropertyExpression({ property: expression.property });
+        clone.transformer = expression.transformer;
+        clone.locale = expression.locale;
+        return clone;
+    }
+
+    if (expression instanceof ComparatorExpression) {
+        return new ComparatorExpression({
+            comparator: expression.comparator,
+            negated: expression.negated,
+            strict: expression.strict,
+            left: expression.left ? bindExpression(expression.left, paramsName, params) : undefined,
+            right: expression.right ? bindExpression(expression.right, paramsName, params) : undefined
+        });
+    }
+
+    if (expression instanceof OperatorExpression) {
+        return new OperatorExpression({
+            operator: expression.operator,
+            left: expression.left ? bindExpression(expression.left, paramsName, params) : undefined,
+            right: expression.right ? bindExpression(expression.right, paramsName, params) : undefined
+        });
+    }
+
+    return expression;
+}
+
+// #endregion
+
+// #region Function source handling
+
+type FunctionShape = {
+    entityName: string;
+    paramsName: string | null;
+    body: string;
+}
+
+/**
+ * Splits stringified filter source into parameter names and the expression
+ * body, unwrapping single-return block bodies.
+ */
+const resolveFunctionShape = (stringifiedFunction: string, hasParams: boolean): FunctionShape => {
+
+    const source = stringifiedFunction.trim();
+
+    let parameterNames: string;
+    let body: string;
+
+    // `function (x) { ... }` / `function name(x) { ... }` — what ES5-targeting
+    // transpilers rewrite every arrow filter into
+    const functionHead = /^function\b[^(]*\(/.exec(source);
+
+    if (functionHead != null) {
+        const parametersEnd = source.indexOf(")", functionHead[0].length);
+
+        if (parametersEnd === -1) {
+            throw new Error("Invalid Function");
+        }
+
+        parameterNames = source.slice(functionHead[0].length, parametersEnd).trim();
+        body = source.slice(parametersEnd + 1).trim();
+    } else {
+        const arrowIndex = source.indexOf("=>");
+
+        if (arrowIndex === -1) {
+            throw new Error("Invalid Function");
+        }
+
+        parameterNames = source.substring(0, arrowIndex).trim();
+        body = source.substring(arrowIndex + 2).trim();
+
+        // Strip wrapping parens: (entity) or ([x, p])
+        if (parameterNames.startsWith("(") && parameterNames.endsWith(")")) {
+            parameterNames = parameterNames.slice(1, -1).trim();
+        }
+    }
+
+    let entityName: string;
+    let paramsName: string | null = null;
+
+    if (parameterNames.startsWith("[") && parameterNames.endsWith("]")) {
+        const destructured = parameterNames.slice(1, -1).split(",").map(w => w.trim());
+        entityName = destructured[0];
+
+        if (hasParams) {
+            paramsName = destructured[1] ?? null;
+        }
+    } else {
+        entityName = parameterNames;
+    }
+
+    if (entityName == null || entityName.length === 0) {
+        throw new Error("Invalid Function");
+    }
+
+    // Unwrap a single-return block body: { return <expression>; }
+    if (body.startsWith("{")) {
+        const inner = body.slice(1, body.lastIndexOf("}")).trim();
+
+        if (!inner.startsWith("return")) {
+            throw new Error(ERROR_MESSAGES.UNSUPPORTED("block body without a single return statement"));
+        }
+
+        body = inner.slice("return".length).trim();
+
+        if (body.endsWith(";")) {
+            body = body.slice(0, -1).trim();
+        }
+    }
+
+    return { entityName, paramsName, body };
+}
+
+// #endregion
+
+// #region Cache
+
+type ParsedTemplate = {
+    template: Expression;
+    paramsName: string | null;
+}
+
+// Keyed by schema instance so identical filter source on different schemas can
+// never collide; entries live only as long as the schema does
+const templateCache = new WeakMap<CompiledSchema<any>, Map<string, ParsedTemplate>>();
+const MAX_CACHED_TEMPLATES_PER_SCHEMA = 1024;
+
+const getCachedTemplate = (schema: CompiledSchema<any>, source: string): ParsedTemplate | null => {
+    return templateCache.get(schema)?.get(source) ?? null;
+}
+
+const setCachedTemplate = (schema: CompiledSchema<any>, source: string, entry: ParsedTemplate) => {
+    let bySource = templateCache.get(schema);
+
+    if (bySource == null) {
+        bySource = new Map<string, ParsedTemplate>();
+        templateCache.set(schema, bySource);
+    }
+
+    // Filter source strings come from static code, so this cap should never be
+    // hit in practice — it only guards against unbounded dynamic generation.
+    // Stryker disable next-line all: the cap is a pure resource bound — every mutation of
+    // it (never clear, always clear, off-by-one) parses identically and differs only in
+    // memory growth, which no observable boundary can assert.
+    if (bySource.size >= MAX_CACHED_TEMPLATES_PER_SCHEMA) {
+        bySource.clear();
+    }
+
+    bySource.set(source, entry);
+}
+
+// #endregion
 
 export const combineExpressions = (...expressions: Expression[]): Expression => {
 
@@ -127,694 +1257,97 @@ export const combineExpressions = (...expressions: Expression[]): Expression => 
     return result;
 };
 
+/**
+ * Parses an expression SOURCE FRAGMENT against one schema and one root name.
+ *
+ * `toExpression` starts from a function and works out its own roots. This starts from text, which
+ * is what a caller has when it has split a larger predicate apart — `p.rank > 10` lifted out of
+ * `([p, m]) => p.rank > 10 && m.won === true`.
+ *
+ * **A fragment naming anything other than `rootName` returns `NOT_PARSABLE`, and that is the
+ * point.** It is how a caller discovers which side of a join a conjunct belongs to: parse it
+ * against each side in turn, and exactly one succeeds for a single-side condition. A condition
+ * spanning both fails against both, which is the correct answer — it cannot be pushed to either.
+ *
+ * No params: a fragment carrying a params reference has no bag to resolve it against here, so it
+ * fails rather than binding to nothing.
+ *
+ * Deliberately NOT cached. The cache is keyed by function source, and a fragment is not a function
+ * — two different lambdas can contain the same fragment text against different schemas.
+ */
+export const parseFragment = (schema: CompiledSchema<any>, body: string, rootName: string): Expression => {
+    try {
+        const stream = new TokenStream(tokenize(body));
+        const parser = new ExpressionParser(schema, stream, rootName, null, undefined);
+
+        return parser.parse();
+    } catch {
+        // The failure is expected and informative — see above — so it is not logged. A caller that
+        // parses one conjunct against two schemas would otherwise warn on every successful split.
+        return Expression.NOT_PARSABLE;
+    }
+};
+
 export const toExpression = <T extends any, P extends any>(schema: CompiledSchema<any>, fn: Filter<T> | ParamsFilter<T, P>, params?: P) => {
     const stringifiedFunction = fn.toString();
 
+    const warn = (error: unknown) => logger.warn("Error parsing expression", {
+        error,
+        collectionName: schema.collectionName,
+        params,
+        selector: stringifiedFunction
+    });
+
+    const cached = getCachedTemplate(schema, stringifiedFunction);
+
+    if (cached != null) {
+        // A cached failure — the warning was already logged when it was discovered
+        if (Expression.isNotParsable(cached.template)) {
+            return Expression.NOT_PARSABLE;
+        }
+
+        try {
+            return bindExpression(cached.template, cached.paramsName, params);
+        } catch (error) {
+            // Binding failures are param-dependent by nature — never cached
+            warn(error);
+            return Expression.NOT_PARSABLE;
+        }
+    }
+
+    let paramsName: string | null = null;
+    let template: Expression;
+    let structurallyDependsOnParams: boolean;
+
     try {
-
-        // Optimized string parsing
-        const arrowIndex = stringifiedFunction.indexOf('=>');
-        if (arrowIndex === -1) {
-            throw new Error("Invalid Function");
-        }
-
-        const parameterNames = stringifiedFunction.substring(0, arrowIndex).trim();
-        let expression = stringifiedFunction.substring(arrowIndex + 2).trim();
-
-        // Remove JavaScript comments from the expression
-        expression = expression
-            .replace(SINGLE_LINE_COMMENT_REGEX, '') // Remove single-line comments
-            .replace(MULTI_LINE_COMMENT_REGEX, '') // Remove multi-line comments
-            .replace(WHITESPACE_REGEX, ' ') // Normalize whitespace
-            .trim();
-
-        let parameterData: { name: string, data: P } | undefined = undefined;
-
-        if (params != null) {
-            let name: string;
-            if (parameterNames.includes("[") && parameterNames.includes("]")) {
-                // Optimized parameter name extraction
-                const commaIndex = parameterNames.indexOf(",");
-                if (commaIndex !== -1) {
-                    const bracketIndex = parameterNames.indexOf("]", commaIndex);
-                    if (bracketIndex !== -1) {
-                        name = parameterNames.substring(commaIndex + 1, bracketIndex).trim();
-                    }
-                }
-            }
-
-            parameterData = {
-                name,
-                data: params
-            };
-        }
-
-        return parseExpressionToTree(schema, expression, parameterData);
+        const shape = resolveFunctionShape(stringifiedFunction, params != null);
+        const stream = new TokenStream(tokenize(shape.body));
+        const parser = new ExpressionParser(schema, stream, shape.entityName, shape.paramsName, params);
+        paramsName = shape.paramsName;
+        template = parser.parse();
+        structurallyDependsOnParams = parser.structurallyDependsOnParams;
     } catch (error) {
-        logger.warn("Error parsing expression", {
-            error,
-            collectionName: schema.collectionName,
-            params,
-            selector: stringifiedFunction
-        });
+        // Cache the failure so a hot query on an unsupported filter doesn't
+        // re-parse and re-warn on every execution.  Param-dependent failures are
+        // exempt: the same source can succeed with different params.
+        if (!(error instanceof ParamDependentParseError)) {
+            setCachedTemplate(schema, stringifiedFunction, { template: Expression.NOT_PARSABLE, paramsName: null });
+        }
+
+        warn(error);
+        return Expression.NOT_PARSABLE;
+    }
+
+    // Templates whose structure was resolved from param values are only
+    // valid for this exact params object — parse those fresh every time
+    if (!structurallyDependsOnParams) {
+        setCachedTemplate(schema, stringifiedFunction, { template, paramsName });
+    }
+
+    try {
+        return bindExpression(template, paramsName, params);
+    } catch (error) {
+        warn(error);
         return Expression.NOT_PARSABLE;
     }
 }
-
-const parseExpressionToTree = <P extends any>(schema: CompiledSchema<any>, expression: string, params?: { name: string, data: P }) => {
-
-    const parse = (exp: string): Expression => {
-        // Remove any wrapping parentheses
-        exp = exp.trim();
-        if (exp.startsWith('(') && exp.endsWith(')')) {
-            let depth = 0;
-            let isWrapper = true;
-            for (let i = 0; i < exp.length; i++) {
-                const char = exp[i];
-                if (char === '(') {
-                    depth++;
-                } else if (char === ')') {
-                    depth--;
-                    if (depth < 0) break; // Early exit for invalid parentheses
-                }
-                // Early exit if we find a closing parenthesis that's not the last character
-                if (depth === 0 && i !== exp.length - 1) {
-                    isWrapper = false;
-                    break; // Early exit
-                }
-                // Early exit if we go negative (invalid parentheses)
-                if (depth < 0) {
-                    isWrapper = false;
-                    break;
-                }
-            }
-            if (isWrapper) {
-                exp = exp.slice(1, -1).trim();
-            }
-        }
-
-        // Parse based on the operator precedence
-        let operator: Operator | null = null, splitIndex = -1, depth = 0;
-
-        for (let i = 0; i < exp.length - 1; i++) {
-            const char = exp[i];
-            if (char === '(') depth++;
-            else if (char === ')') depth--;
-            else if (depth === 0) {
-                // Optimized operator detection using character comparison
-                if (char === '&' && exp[i + 1] === '&') {
-                    operator = '&&';
-                    splitIndex = i;
-                    break; // AND takes precedence over OR
-                } else if (operator === null && char === '|' && exp[i + 1] === '|') {
-                    operator = '||';
-                    splitIndex = i;
-                }
-            }
-        }
-
-        if (operator) {
-            const left = exp.slice(0, splitIndex).trim();
-            const right = exp.slice(splitIndex + 2).trim();
-
-            return new OperatorExpression({
-                operator,
-                left: parse(left),
-                right: parse(right)
-            });
-        }
-
-        // If no operator, try to parse as a condition
-        return parseCondition(schema, exp, params);
-    }
-
-    return parse(expression);
-}
-
-const convertAndAssignValue = (valueExpression: unknown, propertyPathExpression: unknown) => {
-
-    assertIsPropertyPathExpression(propertyPathExpression);
-
-    assertIsValueExpression(valueExpression)
-
-    const propertyType = propertyPathExpression.property.type;
-
-    valueExpression.value = converters[propertyType](valueExpression.value);
-}
-
-const converters: Record<SchemaTypes, (value: unknown) => unknown> = {
-    Array: v => v,
-    Boolean: v => v == null ? v : Boolean(v),
-    Computed: v => v,
-    Date: v => v,
-    Definition: v => v,
-    Function: v => v,
-    Number: v => v == null ? v : Number(v),
-    Object: v => v,
-    String: v => v == null ? v : String(v)
-};
-
-const isExpression = (value: unknown): value is Expression => {
-    return typeof value === "object" && value !== null && "type" in value;
-}
-
-function assertIsExpression(value: unknown): asserts value is Expression {
-    if (isExpression(value) === false) {
-        throw new Error("Assertion Failed: Value is not a Expression")
-    }
-}
-
-function assertIsPropertyPathExpression(value: unknown): asserts value is PropertyExpression {
-
-    assertIsExpression(value);
-
-    if (!("property" in value)) {
-        throw new Error("Assertion Failed: Value is not a PropertyPathExpression")
-    }
-}
-
-function assertIsValueExpression(value: unknown): asserts value is ValueExpression {
-
-    assertIsExpression(value);
-
-    if (!("value" in value)) {
-        throw new Error("Assertion Failed: Value is not a ValueExpression")
-    }
-}
-
-// Helper function to detect if a string is a property path
-const isPropertyPath = (value: string, params?: { name: string, data: any }): boolean => {
-    // Check for dot notation (e.g., entity.name)
-    if (value.includes('.') && value.match(/^[a-zA-Z0-9_.]+$/) !== null) {
-        return true;
-    }
-    // Check for bracket notation with literal strings (e.g., entity["name"], entity['name'], or entity[\"name\"] with escaped quotes)
-    const literalBracketPattern = /^[a-zA-Z_$][a-zA-Z0-9_$]*(\[\\?["'][^"']+\\?["']\])+$/;
-    if (literalBracketPattern.test(value)) {
-        return true;
-    }
-    // Check for bracket notation with parameter paths (e.g., entity[p.name], entity[params.property])
-    if (params && value.includes('[') && value.includes(']')) {
-        const bracketMatch = value.match(/\[([^\]]+)\]/);
-        if (bracketMatch) {
-            const bracketContent = bracketMatch[1].trim();
-            // Check if it's a parameter path - should start with params.name followed by dot, or be just params.name
-            const isParamPath = bracketContent.startsWith(params.name + '.') || bracketContent === params.name;
-            if (isParamPath || (bracketContent.includes('.') && bracketContent.match(PARAM_PATH_REGEX))) {
-                return true;
-            }
-        }
-    }
-    return false;
-};
-
-// Helper function to determine if we need to swap the operator for reversed comparisons
-const getSwappedOperator = (operator: string): string => {
-    const swapMap: Record<string, string> = {
-        '>': '<',
-        '<': '>',
-        '>=': '<=',
-        '<=': '>='
-    };
-    return swapMap[operator] || operator;
-};
-
-const parseCondition = <P extends any>(schema: CompiledSchema<any>, expression: string, params?: { name: string, data: P }): Expression => {
-
-    // Optimized string operations - single trim operation
-    const trimmed = expression.trim();
-    const isNegation = trimmed.startsWith('!');
-    const finalExpression = isNegation ? trimmed.slice(1).trim() : trimmed;
-
-    // Enhanced pattern matching for complex expressions
-    const methodMatch = finalExpression.match(METHOD_REGEX);
-    const transformMethodMatch = finalExpression.match(TRANSFORM_METHOD_REGEX);
-    const equalityMatch = finalExpression.match(EQUALITY_REGEX);
-    const comparisonMatch = finalExpression.match(COMPARISON_REGEX);
-
-    if (methodMatch) {
-        // Handle .startsWith or .endsWith
-        const comparator = getComparator(methodMatch[2]);
-
-        if (isNegation) {
-            comparator.negated = isNegation;
-        }
-
-        // Check if the left side is a parameter path
-        const leftSide = methodMatch[1];
-        const rightSide = methodMatch[3];
-
-        if (params && leftSide.startsWith(params.name)) {
-            // This is a parameter path on the left side (e.g., params.distinctPlayers.includes(entity.playerId))
-            // For includes method, we need to swap left and right sides
-            if (methodMatch[2] === 'includes') {
-
-                const property = getProperty(schema, rightSide, params);
-                const value = getValue(leftSide, params); // retrieve the original value
-                const serializer = property.property.valueSerializer;
-                comparator.left = serializer ? getValue(String(property.property.valueSerializer(parseUnknown(value.value)))) : value;
-                comparator.right = property;
-            } else {
-                // For other methods, return NOT_PARSABLE for now
-                return Expression.NOT_PARSABLE;
-            }
-        } else {
-            // Normal case: property on left, value on right
-            const property = getProperty(schema, leftSide, params);
-            const serializer = property.property.valueSerializer;
-            const value = getValue(rightSide, params); // retrieve the original value
-
-            comparator.left = property;
-            comparator.right = serializer ? getValue(String(property.property.valueSerializer(parseUnknown(value.value)))) : value;
-        }
-
-        // If the comparison is explicitly to false, mark it as negated
-        if (methodMatch[6] === "false") {
-            comparator.negated = true;
-        }
-
-        return comparator;
-    }
-
-    // Check for transformations on the value side (right side of comparison) - check this FIRST
-    const valueTransformMatch = finalExpression.match(/([^=!<>]+?)\s*(===|==|!==|!=)\s*([^)]+)\.(toLowerCase|toUpperCase|toLocaleLowerCase|toLocaleUpperCase)\(\)/);
-    if (valueTransformMatch) {
-        const comparator = getComparator(valueTransformMatch[2]);
-
-        if (isNegation) {
-            comparator.negated = isNegation;
-        }
-
-        const property = getProperty(schema, valueTransformMatch[1].trim(), params);
-        const serializer = property.property.valueSerializer;
-        const value = getValue(valueTransformMatch[3], params); // retrieve the original value
-
-        // Create the property expression for the left side (no transformer)
-        const propertyExpression = property;
-
-        // Create a ValueExpression for the right side with transformer
-        const valueExpression = serializer ? getValue(String(property.property.valueSerializer(parseUnknown(value.value)))) : value;
-
-        // Set transformer and locale based on the method
-        const method = valueTransformMatch[4];
-        if (method === 'toLowerCase' || method === 'toLocaleLowerCase') {
-            valueExpression.transformer = 'to-lower-case';
-            if (method === 'toLocaleLowerCase') {
-                valueExpression.locale = 'en-US';
-            }
-        } else {
-            valueExpression.transformer = 'to-upper-case';
-            if (method === 'toLocaleUpperCase') {
-                valueExpression.locale = 'en-US';
-            }
-        }
-
-        comparator.left = propertyExpression;
-        comparator.right = valueExpression;
-
-        return comparator;
-    }
-
-    if (transformMethodMatch) {
-        // Handle .toLowerCase or .toUpperCase on the property side
-        const comparator = getComparator(transformMethodMatch[3]); // e.g., startsWith, endsWith, includes
-
-        if (isNegation) {
-            comparator.negated = isNegation;
-        }
-
-        // Create the property expression for the left side with transformer
-        const property = getProperty(schema, transformMethodMatch[1], params);
-
-        // Set transformer and locale based on the method
-        const method = transformMethodMatch[2];
-        if (method === 'toLowerCase' || method === 'toLocaleLowerCase') {
-            property.transformer = 'to-lower-case';
-            if (method === 'toLocaleLowerCase') {
-                property.locale = 'en-US'; // Default locale, could be extracted from method call
-            }
-        } else {
-            property.transformer = 'to-upper-case';
-            if (method === 'toLocaleUpperCase') {
-                property.locale = 'en-US'; // Default locale, could be extracted from method call
-            }
-        }
-
-        // Create a ValueExpression for the right side
-        let value = getValue(transformMethodMatch[4], params);
-
-        // Check if the value also has a transformation (but only if it's not already handled by value-side check)
-        const valueTransformMatch = transformMethodMatch[4].match(/^([^)]+)\.(toLowerCase|toUpperCase|toLocaleLowerCase|toLocaleUpperCase)\(\)$/);
-
-        if (valueTransformMatch) {
-            // Create a new ValueExpression with the base value and transformer
-            value = new ValueExpression({
-                value: valueTransformMatch[1].replace(/^["']|["']$/g, '') // Remove quotes
-            });
-
-            // Set transformer and locale based on the method
-            const valueMethod = valueTransformMatch[2];
-            if (valueMethod === 'toLowerCase' || valueMethod === 'toLocaleLowerCase') {
-                value.transformer = 'to-lower-case';
-                if (valueMethod === 'toLocaleLowerCase') {
-                    value.locale = 'en-US'; // Default locale
-                }
-            } else {
-                value.transformer = 'to-upper-case';
-                if (valueMethod === 'toLocaleUpperCase') {
-                    value.locale = 'en-US'; // Default locale
-                }
-            }
-        }
-
-        const serializer = property.property.valueSerializer;
-
-        comparator.left = property;
-        comparator.right = serializer ? getValue(String(property.property.valueSerializer(parseUnknown(value.value)))) : value;
-
-        // If the comparison is explicitly to false, mark it as negated
-        if (transformMethodMatch[7] === "false") {
-            comparator.negated = true;
-        }
-
-        return comparator;
-    }
-
-    if (equalityMatch) {
-        const left = equalityMatch[1].trim();
-        const operator = equalityMatch[2];
-        const right = equalityMatch[3].trim();
-
-        const leftIsProperty = isPropertyPath(left, params);
-        const rightIsProperty = isPropertyPath(right, params);
-
-        // Determine which side is the property and which is the value
-        let propertySide: string, valueSide: string, finalOperator: string;
-
-        if (leftIsProperty && !rightIsProperty) {
-            // Normal case: property === value
-            propertySide = left;
-            valueSide = right;
-            finalOperator = operator;
-        } else if (!leftIsProperty && rightIsProperty) {
-            // Reversed case: value === property
-            propertySide = right;
-            valueSide = left;
-            finalOperator = operator;
-        } else {
-            // Both sides look like properties or neither does - assume left is property
-            propertySide = left;
-            valueSide = right;
-            finalOperator = operator;
-        }
-
-        const comparator = getComparator(finalOperator);
-
-        if (isNegation) {
-            comparator.negated = isNegation;
-        }
-
-        const property = getProperty(schema, propertySide, params);
-        const value = getValue(valueSide, params);
-        const serializer = property.property.valueSerializer;
-
-        comparator.left = property;
-        comparator.right = serializer ? getValue(String(property.property.valueSerializer(parseUnknown(value.value)))) : value;
-
-        convertAndAssignValue(comparator.right, comparator.left);
-
-        return comparator;
-    }
-
-    if (comparisonMatch) {
-        const left = comparisonMatch[1].trim();
-        const operator = comparisonMatch[2];
-        const right = comparisonMatch[3].trim();
-
-        const leftIsProperty = isPropertyPath(left, params);
-        const rightIsProperty = isPropertyPath(right, params);
-
-        // Determine which side is the property and which is the value
-        let propertySide: string, valueSide: string, finalOperator: string;
-
-        if (leftIsProperty && !rightIsProperty) {
-            // Normal case: property > value
-            propertySide = left;
-            valueSide = right;
-            finalOperator = operator;
-        } else if (!leftIsProperty && rightIsProperty) {
-            // Reversed case: value > property -> property < value
-            propertySide = right;
-            valueSide = left;
-            finalOperator = getSwappedOperator(operator);
-        } else {
-            // Both sides look like properties or neither does - assume left is property
-            propertySide = left;
-            valueSide = right;
-            finalOperator = operator;
-        }
-
-        const comparator = getComparator(finalOperator);
-
-        if (isNegation) {
-            comparator.negated = isNegation;
-        }
-
-        const property = getProperty(schema, propertySide, params);
-        const value = getValue(valueSide, params);
-        const serializer = property.property.valueSerializer;
-
-        comparator.left = property;
-        comparator.right = serializer ? getValue(String(property.property.valueSerializer(parseUnknown(value.value)))) : value;
-
-        convertAndAssignValue(comparator.right, comparator.left);
-
-        return comparator;
-    }
-
-    // Check for standalone property reference (truthy comparison)
-    // Pattern: property name only (e.g., "w.inStock" -> w.inStock === true)
-    const standalonePropertyMatch = finalExpression.match(/^[a-zA-Z_$][a-zA-Z0-9_$]*(\.[a-zA-Z_$][a-zA-Z0-9_$]*)*$/);
-    if (standalonePropertyMatch && isPropertyPath(finalExpression, params)) {
-        const comparator = getComparator('===');
-
-        if (isNegation) {
-            comparator.negated = isNegation;
-        }
-
-        const property = getProperty(schema, finalExpression, params);
-        const value = getValue('true', params);
-        const serializer = property.property.valueSerializer;
-
-        comparator.left = property;
-        // need to parse the value so it matches what the serializer expects
-        comparator.right = serializer ? getValue(String(property.property.valueSerializer(parseUnknown(value.value)))) : value;
-
-        return comparator;
-    }
-
-    // If we get here, the expression is too complex for the current parser
-    // This is expected for complex real-world expressions
-    throw new Error(`Unsupported expression format: ${finalExpression}`);
-}
-
-const getComparator = (value: string): ComparatorExpression => {
-
-    const comparator = COMPARATOR_MAP.get(value);
-
-    if (comparator == null) {
-        throw new Error(ERROR_MESSAGES.COMPARATOR_NOT_FOUND(value))
-    }
-
-    // Return a new instance to avoid modifying the cached one
-    return new ComparatorExpression({
-        comparator: comparator.comparator,
-        negated: comparator.negated,
-        strict: comparator.strict
-    });
-}
-
-const getValue = <P extends any>(value: string, params?: { name: string, data: P }): ValueExpression => {
-
-    // Early return for string literals
-    if (value.startsWith("'") || value.startsWith("\"")) {
-        return new ValueExpression({
-            value: value.replace(/"|'/g, "")
-        });
-    }
-
-    // Early return for null/undefined
-    if (value === "null") {
-        return new ValueExpression({ value: null });
-    }
-
-    if (value === "undefined" || value === "void 0") {
-        return new ValueExpression({ value: undefined });
-    }
-
-    // Optimized number parsing with early return
-    const numValue = +value;
-    if (!isNaN(numValue) && isFinite(numValue)) {
-        return new ValueExpression({ value: numValue });
-    }
-
-    // Handle parameter paths if params are provided
-    if (params != null) {
-        // Check if this is a parameter path (starts with params.name)
-        if (value.startsWith(params.name)) {
-            return new ValueExpression({
-                value: getValueFromParams(value, params)
-            });
-        }
-
-        // Check if this is a parameter path without the params prefix
-        if (value.includes('.')) {
-            // Try to extract the parameter path
-            const paramMatch = value.match(PARAM_PATH_REGEX);
-            if (paramMatch) {
-                const potentialParamPath = paramMatch[1];
-                try {
-                    const paramValue = getValueFromParams(`${params.name}.${potentialParamPath}`, params);
-                    return new ValueExpression({ value: paramValue });
-                } catch  {
-                    // Not a parameter path, continue with normal parsing
-                }
-            }
-        }
-    }
-
-    if (STRINGIFIED_COMPARE_OPERATORS.includes(value)) {
-        return new ValueExpression({ value });
-    }
-
-    if (isNaN(numValue)) {
-        // value is a variable passed in by the dev, we cannot evaluate it's value
-        // need to fallback to select all by throwing an error
-        throw new Error(`Cannot derive value from variable, please pass parameters into the expression.
-
-Example: .where(([x, params]) => x.id === params.id, { id: someVar.id })
-Issue At: ${value}`);
-    }
-
-    // Default case: return as-is
-    return new ValueExpression({ value });
-}
-
-const getValueFromParams = <P extends any>(value: string, params: { name: string, data: P }) => {
-
-    const split = value.split('.');
-
-    // Early exit for invalid paths
-    if (split.length === 1) {
-        throw new Error(ERROR_MESSAGES.PARAM_PATH_NOT_FOUND(value, params.data))
-    }
-
-    let result = params.data as any;
-
-    // For nested params - start from index 1 to skip the params prefix
-    for (let i = 1; i < split.length; i++) {
-        const name = split[i];
-
-        if (name in result) {
-            result = result[name];
-            continue;
-        }
-
-        throw new Error(ERROR_MESSAGES.PARAM_PATH_NOT_FOUND(value, params.data))
-    }
-
-    return result;
-}
-
-const getProperty = <P extends any>(schema: CompiledSchema<any>, value: string, params?: { name: string, data: P }): PropertyExpression => {
-    let pathString: string;
-
-    // Handle bracket notation (e.g., entity["name"], entity['name'], entity[p.name], or entity[\"name\"] with escaped quotes)
-    if (value.includes('[') && value.includes(']')) {
-        // First try to match literal string brackets: ["name"], ['name'], [\"name\"], [\'name\']
-        const literalBracketMatches = value.matchAll(/\[\\?["']([^"']+)\\?["']\]/g);
-        const pathParts: string[] = [];
-        let foundLiteral = false;
-
-        for (const match of literalBracketMatches) {
-            // match[1] is the property name inside the brackets
-            const propName = match[1];
-            if (propName) {
-                pathParts.push(propName);
-                foundLiteral = true;
-            }
-        }
-
-        // If no literal matches found, try parameter path in brackets (e.g., [p.name])
-        if (!foundLiteral && params) {
-            // Match brackets containing parameter paths: [p.name], [params.property], etc.
-            const bracketParamMatch = value.match(/\[([^\]]+)\]/);
-            if (bracketParamMatch) {
-                const bracketContent = bracketParamMatch[1].trim();
-
-                // Check if this is a parameter path
-                // It should start with params.name (e.g., "p") followed by a dot, or be just params.name
-                const isParamPath = bracketContent.startsWith(params.name + '.') || bracketContent === params.name;
-
-                if (isParamPath || (bracketContent.includes('.') && bracketContent.match(PARAM_PATH_REGEX))) {
-                    try {
-                        // Try to resolve as a parameter path
-                        let paramPath: string;
-                        if (bracketContent.startsWith(params.name + '.') || bracketContent === params.name) {
-                            // Already has params.name prefix
-                            paramPath = bracketContent;
-                        } else {
-                            // Add params.name prefix
-                            const paramMatch = bracketContent.match(PARAM_PATH_REGEX);
-                            paramPath = paramMatch
-                                ? `${params.name}.${paramMatch[1]}`
-                                : `${params.name}.${bracketContent}`;
-                        }
-
-                        const resolvedValue = getValueFromParams(paramPath, params);
-                        // The resolved value should be the property name
-                        if (typeof resolvedValue === 'string') {
-                            pathParts.push(resolvedValue);
-                        } else {
-                            throw new Error(ERROR_MESSAGES.PROPERTY_NOT_FOUND(value));
-                        }
-                    } catch  {
-                        // Not a valid parameter path, continue to error
-                        throw new Error(ERROR_MESSAGES.PROPERTY_NOT_FOUND(value));
-                    }
-                } else {
-                    throw new Error(ERROR_MESSAGES.PROPERTY_NOT_FOUND(value));
-                }
-            } else {
-                throw new Error(ERROR_MESSAGES.PROPERTY_NOT_FOUND(value));
-            }
-        }
-
-        if (pathParts.length === 0) {
-            throw new Error(ERROR_MESSAGES.PROPERTY_NOT_FOUND(value));
-        }
-
-        pathString = pathParts.join(".");
-    } else if (value.includes('.')) {
-        // Handle dot notation (e.g., entity.name)
-        const pathSplit = value.split(/[?!.]/g).slice(1);
-        pathString = pathSplit.join(".");
-    } else {
-        throw new Error(ERROR_MESSAGES.PROPERTY_NOT_FOUND(value));
-    }
-
-    // Early exit if no path found
-    if (!pathString) {
-        throw new Error(ERROR_MESSAGES.PROPERTY_NOT_FOUND(value));
-    }
-
-    const found = schema.properties.find(w => w.getAssignmentPath() == pathString);
-
-    if (found == null) {
-        throw new Error(ERROR_MESSAGES.PROPERTY_NOT_FOUND(value));
-    }
-
-    return new PropertyExpression({ property: found });
-}
-
-

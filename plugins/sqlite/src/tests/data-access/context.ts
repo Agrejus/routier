@@ -8,6 +8,6 @@ export class SqliteDataStore extends DataStore {
         super(plugin);
     }
 
-    products = this.collection(productsSchema).create();
-    users = this.collection(usersSchema).create();
+    products = this.collection(productsSchema).proxy().create();
+    users = this.collection(usersSchema).proxy().create();
 }

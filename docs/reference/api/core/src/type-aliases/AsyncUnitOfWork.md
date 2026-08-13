@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / AsyncUnitOfWork
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / AsyncUnitOfWork
 
 # Type Alias: AsyncUnitOfWork()\<TData, TResult\>
 
@@ -28,7 +28,7 @@ Defined in: [core/src/pipeline/TrampolinePipeline.ts:159](https://github.com/Agr
 
 ### done
 
-[`CallbackResult`](CallbackResult.md)\<`TResult`\>
+[`CallbackResult`](/reference/api/core/src/type-aliases/CallbackResult)\<`TResult`\>
 
 ## Returns
 

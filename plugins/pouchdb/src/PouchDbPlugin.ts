@@ -2,26 +2,24 @@ import PouchDB from 'pouchdb';
 import { PouchDbTranslator } from './PouchDbTranslator';
 import { SyncronousQueue, SyncronousUnitOfWork, WorkPipeline } from '@routier/core/pipeline';
 import { InferCreateType, InferType, PropertyInfo, SchemaId } from '@routier/core/schema';
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, EntityUpdateInfo, IDbPlugin, IQuery, ITranslatedValue } from '@routier/core/plugins';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, EntityUpdateInfo, IDbPlugin, IQuery, ITranslatedValue, joinInPlugin } from '@routier/core/plugins';
 import { CallbackResult, PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '@routier/core/results';
 import { assertIsNotNull } from '@routier/core/assertions';
 import { combineExpressions, ComparatorExpression, Expression, getProperties } from '@routier/core/expressions';
-import { BulkPersistChanges, BulkPersistResult, SchemaCollection, UnknownRecord } from '@routier/core';
+import { BulkPersistChanges, BulkPersistResult, ReadonlySchemaCollection, UnknownRecord } from '@routier/core';
 
-const queue = new SyncronousQueue();
 const INDEX_NAME = "routier_pdb_indexes"
-const cache: Record<string, unknown> = {};
 
 type PouchDBPluginOptions = PouchDB.Configuration.DatabaseConfiguration & {
     queryType?: "default" | "memory-optimized" | "experimental";
     sync?: PouchDB.Replication.SyncOptions & {
         remoteDb: string;
-        onChange?: (schemas: SchemaCollection, event: PouchDB.Replication.SyncResult<{}>) => void;
-        onError?: (schemas: SchemaCollection, error?: any) => void;
-        onComplete?: (schemas: SchemaCollection, event: PouchDB.Replication.SyncResultComplete<{}>) => void;
-        onPaused?: (schemas: SchemaCollection, event?: any) => void;
-        onActive?: (schemas: SchemaCollection) => void;
-        onDenied?: (schemas: SchemaCollection, event?: any) => void;
+        onChange?: (schemas: ReadonlySchemaCollection, event: PouchDB.Replication.SyncResult<{}>) => void;
+        onError?: (schemas: ReadonlySchemaCollection, error?: any) => void;
+        onComplete?: (schemas: ReadonlySchemaCollection, event: PouchDB.Replication.SyncResultComplete<{}>) => void;
+        onPaused?: (schemas: ReadonlySchemaCollection, event?: any) => void;
+        onActive?: (schemas: ReadonlySchemaCollection) => void;
+        onDenied?: (schemas: ReadonlySchemaCollection, event?: any) => void;
         auth?: {
             username: string;
             password: string;
@@ -60,18 +58,79 @@ export class PouchDbPlugin implements IDbPlugin {
     private readonly _name: string;
     private readonly _options?: PouchDBPluginOptions;
 
+    /**
+     * Per INSTANCE, all three of these. They used to be module-level, which made every
+     * PouchDbPlugin in the process share one database's state regardless of its name:
+     *
+     *  - the **queue** serialized work across unrelated databases, so a slow save against one
+     *    database blocked a read against another;
+     *  - the **index cache** was keyed by nothing at all, so the first database's design
+     *    document was reported as every database's;
+     *  - the **sync handle** lived under the literal key `"sync"`, so only the FIRST plugin in
+     *    a process could establish replication — every later one got back the first one's
+     *    handle, pointed at a different remote.
+     *
+     * A plugin instance is the natural scope: it owns exactly one database name.
+     */
+    private readonly queue = new SyncronousQueue();
+    private indexCache: PouchDbDesignDoc | null = null;
+    private syncHandle: PouchDB.Replication.Sync<{}> | null = null;
+
+    /**
+     * ONE local database handle for this plugin, shared by every operation and by `sync()`.
+     *
+     * This used to be a fresh `new PouchDB(name)` per operation, with `sync()` constructing
+     * yet another one of its own. Two PouchDB objects over the same name only behave as one
+     * database when the ADAPTER broadcasts changes between them: IndexedDB does, so this
+     * works in a browser, and the in-memory adapter does not, so under it a live replication
+     * never observes the plugin's own writes and the plugin never observes what replication
+     * pulls in. Replication and data access were effectively wired to two different databases
+     * on any adapter without that broadcast.
+     *
+     * One handle removes the question, and removes the per-operation construction churn with
+     * it. It is closed and cleared by `destroy()`.
+     */
+    private localDb: PouchDB.Database<any> | null = null;
+
+    private database<TEntity>(): PouchDB.Database<TEntity> {
+        if (this.localDb == null) {
+            const { sync: _sync, queryType: _queryType, ...rest } = this._options ?? {};
+            this.localDb = new PouchDB(this._name, rest);
+        }
+
+        return this.localDb as PouchDB.Database<TEntity>;
+    }
+
     constructor(name: string, options?: PouchDBPluginOptions) {
         this._name = name;
         this._options = options;
     }
 
-    sync(schemas: SchemaCollection) {
+    /**
+     * See `IDbPlugin.databaseName`. The local database name — the same value two contexts
+     * opening one PouchDB database supply, so they share subscription channels. Remote sync
+     * targets are deliberately not part of it: two local databases replicating to one remote
+     * are still two databases.
+     */
+    get databaseName(): string {
+        return this._name;
+    }
+
+    sync(schemas: ReadonlySchemaCollection) {
 
         assertIsNotNull(this._options?.sync, "Cannot start sync process without sync options.  Provide sync options in PouchDbPlugin constructor");
 
-        if (cache["sync"] == null) {
-            cache["sync"] = {}; // placeholder
-            const localDb = new PouchDB(this._name);
+        if (this.syncHandle == null) {
+            // No placeholder write before the work. The previous shape assigned `{}` first
+            // and only replaced it after `sync()` returned, so if constructing either
+            // database threw, the cache kept the placeholder forever and every later call
+            // returned an empty object cast as a Sync — no replication, no error, no way back
+            // without restarting the process.
+            // The plugin's own handle, not a second one over the same name: replication has
+            // to observe the writes this plugin makes, and on an adapter that does not
+            // broadcast changes between instances (the in-memory one, for example) a
+            // separate object is a separate database in every way that matters here.
+            const localDb = this.database();
             const remoteDb = new PouchDB(this._options.sync.remoteDb);
 
             // Set up sync
@@ -103,10 +162,72 @@ export class PouchDbPlugin implements IDbPlugin {
                 sync.on('paused', (e) => this._options.sync.onPaused(schemas, e));
             }
 
-            cache["sync"] = sync;
+            // Retained so destroy() can cancel it. An uncancelled sync keeps polling a
+            // remote that the caller believes it has finished with, and holds both databases
+            // open with it.
+            this.syncHandle = sync;
         }
 
-        return cache["sync"] as PouchDB.Replication.Sync<{}>
+        return this.syncHandle;
+    }
+
+    /**
+     * Fills in the `_rev` of any document about to be updated or removed that arrives without
+     * one, in a single lookup.
+     *
+     * PouchDB is the only backend in this repository that needs a revision to change a row, and
+     * it used to make that the CALLER's problem: a schema had to declare `_rev` and every
+     * entity had to carry the current value. That is this plugin's write protocol leaking into
+     * every schema written for it, and it made whole features unusable here — a generated
+     * search-index row is built from the document being saved, so it has an id and never a
+     * revision, and every edit to an indexed document failed with a conflict whose only
+     * detail was `true`.
+     *
+     * A revision is a fact this database owns, so this is the layer that should look it up.
+     * One `allDocs` for every id that needs one, only when at least one does, and never on the
+     * path where every entity already carries its own. Nothing above has to know.
+     *
+     * A missing row resolves to no revision and is left alone: an update to a document that is
+     * not there must still fail, and it fails the way it always did.
+     */
+    private _withRevisions(
+        db: PouchDB.Database,
+        documents: UnknownRecord[],
+        done: (error: unknown | null) => void
+    ) {
+        const missing = documents
+            .filter(document => document._rev == null && document._id != null)
+            .map(document => String(document._id));
+
+        if (missing.length === 0) {
+            done(null);
+            return;
+        }
+
+        db.allDocs({ keys: missing }).then(response => {
+            const revisions = new Map<string, string>();
+
+            for (const row of response?.rows ?? []) {
+                const revision = (row as { value?: { rev?: string, deleted?: boolean } }).value;
+
+                if (revision?.rev != null && revision.deleted !== true) {
+                    revisions.set(String(row.key), revision.rev);
+                }
+            }
+
+            for (const document of documents) {
+
+                if (document._rev == null) {
+                    const revision = revisions.get(String(document._id));
+
+                    if (revision != null) {
+                        document._rev = revision;
+                    }
+                }
+            }
+
+            done(null);
+        }).catch(error => done(error));
     }
 
     private _identityBulkOperations(identitySchemaIds: SchemaId[], changes: BulkPersistChanges, result: BulkPersistResult, done: CallbackResult<never>): void {
@@ -146,7 +267,18 @@ export class PouchDbPlugin implements IDbPlugin {
                 const updatedDocuments = [...updates].map(w => w.change.entity);
                 const errors: any[] = [];
 
-                db.bulkDocs([...removes.map(w => ({ _id: w.entity._id, _rev: w.entity._rev, _deleted: true })), ...updatedDocuments], null, (error, response) => {
+                // Tombstones are built here rather than inline so a missing revision can be
+                // resolved into them before the write.
+                const tombstones = removes.map(w => ({ _id: w.entity._id, _rev: w.entity._rev, _deleted: true } as UnknownRecord));
+
+                this._withRevisions(db, [...tombstones, ...updatedDocuments] as UnknownRecord[], (revisionError) => {
+
+                if (revisionError != null) {
+                    d(Result.error(revisionError));
+                    return;
+                }
+
+                db.bulkDocs([...tombstones, ...updatedDocuments], null, (error, response) => {
 
                     if (error) {
                         d(Result.error(error));
@@ -219,7 +351,12 @@ export class PouchDbPlugin implements IDbPlugin {
                                     return;
                                 }
 
-                                const ids = response.map(x => x.id);
+                                // Starts EMPTY and is filled from the ok entries below.
+                                // Seeding it from every response entry and then pushing each
+                                // ok id again put every id in twice, so `_bulkGetAdditions`
+                                // asked for each document twice and the echo carried
+                                // duplicates into the change tracker.
+                                const ids: string[] = [];
 
                                 for (let i = 0, length = response.length; i < length; i++) {
 
@@ -276,6 +413,7 @@ export class PouchDbPlugin implements IDbPlugin {
                         d(Result.success());
                     });
                 });
+                });
             } catch (e) {
                 d(Result.error(e));
             }
@@ -313,10 +451,17 @@ export class PouchDbPlugin implements IDbPlugin {
         this._doWork((db, d) => {
             try {
 
-                db.bulkDocs([
-                    ...removes.map(x => ({ _id: x.entity._id, _rev: x.entity._rev, _deleted: true })),
-                    ...updates.map(x => x.change.entity)
-                ], null, (error, response) => {
+                const tombstones = removes.map(x => ({ _id: x.entity._id, _rev: x.entity._rev, _deleted: true } as UnknownRecord));
+                const updatedDocuments = updates.map(x => x.change.entity) as UnknownRecord[];
+
+                this._withRevisions(db, [...tombstones, ...updatedDocuments], (revisionError) => {
+
+                if (revisionError != null) {
+                    d(Result.error(revisionError));
+                    return;
+                }
+
+                db.bulkDocs([...tombstones, ...updatedDocuments], null, (error, response) => {
 
                     if (error != null) {
                         d(Result.error(error));
@@ -389,7 +534,12 @@ export class PouchDbPlugin implements IDbPlugin {
                                     return;
                                 }
 
-                                const ids = response.map(x => x.id);
+                                // Starts EMPTY and is filled from the ok entries below.
+                                // Seeding it from every response entry and then pushing each
+                                // ok id again put every id in twice, so `_bulkGetAdditions`
+                                // asked for each document twice and the echo carried
+                                // duplicates into the change tracker.
+                                const ids: string[] = [];
 
                                 for (let i = 0, length = response.length; i < length; i++) {
 
@@ -446,6 +596,7 @@ export class PouchDbPlugin implements IDbPlugin {
                         d(Result.success());
                     });
                 });
+                });
             } catch (e) {
                 d(Result.error(e));
             }
@@ -474,8 +625,8 @@ export class PouchDbPlugin implements IDbPlugin {
             return;
         }
 
-        if (cache["indexes"]) {
-            done(Result.success(cache["indexes"] as PouchDbDesignDoc));
+        if (this.indexCache != null) {
+            done(Result.success(this.indexCache));
             return; // Already built
         }
 
@@ -526,7 +677,7 @@ export class PouchDbPlugin implements IDbPlugin {
                             return;
                         }
 
-                        cache["indexes"] = ddoc;
+                        this.indexCache = ddoc;
 
                         d(Result.success(ddoc));
                     });
@@ -543,7 +694,7 @@ export class PouchDbPlugin implements IDbPlugin {
                             return;
                         }
 
-                        cache["indexes"] = ddoc;
+                        this.indexCache = ddoc;
 
                         d(Result.success(ddoc));
                     });
@@ -575,7 +726,7 @@ export class PouchDbPlugin implements IDbPlugin {
                                 return;
                             }
 
-                            cache["indexes"] = ddoc;
+                            this.indexCache = ddoc;
 
                             d(Result.success(ddoc));
                         });
@@ -662,13 +813,20 @@ export class PouchDbPlugin implements IDbPlugin {
     }
 
     private _doWork<TResult, TEntity>(work: (db: PouchDB.Database<TEntity>, done: CallbackResult<TResult>) => void, done: CallbackResult<TResult>, shouldClose: boolean = false) {
-        const { sync: _sync, queryType: _queryType, ...rest } = this._options ?? {};
-        const db = new PouchDB<TEntity>(this._name, rest);
+        const db = this.database<TEntity>();
 
         work(db, (result) => {
 
+            // The `return` is the fix. Without it, `shouldClose` ran BOTH branches: `done`
+            // fired synchronously here and again from the close callback. A doubled callback
+            // resolves a settled promise silently, but it also drives every pipeline stage
+            // downstream twice — see known-defects #3's "calls done exactly once".
             if (shouldClose) {
+                // The handle is shared, so closing it has to clear the cache too — the next
+                // operation must open a fresh one rather than reuse a closed database.
+                this.localDb = null;
                 db.close(() => done(result));
+                return;
             }
 
             done(result);
@@ -676,7 +834,28 @@ export class PouchDbPlugin implements IDbPlugin {
     }
 
     destroy(_event: DbPluginEvent, done: (error?: any) => void): void {
-        // this needs to be queued too
+        // Replication first. A live sync holds both the local and the remote database open
+        // and keeps polling; destroying the local one underneath it leaves a replication
+        // running against a database that no longer exists, which surfaces later as errors
+        // from a plugin the caller believes it has finished with.
+        if (this.syncHandle != null) {
+            try {
+                this.syncHandle.cancel();
+            } catch {
+                // An already-finished sync throws on cancel. Destroy's goal is that no
+                // replication is running, and that is satisfied either way.
+            }
+
+            this.syncHandle = null;
+        }
+
+        // A destroyed database must not keep serving its cached design document to a plugin
+        // that outlives it.
+        this.indexCache = null;
+
+        // `shouldClose: true`, so the handle this work opened is closed rather than left to
+        // the garbage collector. It was false, which is what left destroy leaking the very
+        // resource it was called to release.
         this._doWork((w, d) => {
             w.destroy(null, (e) => {
                 if (e) {
@@ -686,7 +865,7 @@ export class PouchDbPlugin implements IDbPlugin {
 
                 d(Result.success());
             });
-        }, done, false);
+        }, done, true);
     }
 
 
@@ -699,17 +878,30 @@ export class PouchDbPlugin implements IDbPlugin {
             done(r)
         })
 
-        queue.enqueue(unitOfWork.bind(this));
+        this.queue.enqueue(unitOfWork.bind(this));
     }
 
     query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
 
-        const unitOfWork: SyncronousUnitOfWork = (d) => this._query<TRoot, TShape>(event, (r) => {
-            d();
-            done(r)
-        })
+        const unitOfWork: SyncronousUnitOfWork = (d) => {
+            const settle = (r: Parameters<typeof done>[0]) => {
+                d();
+                done(r);
+            };
 
-        queue.enqueue(unitOfWork.bind(this));
+            // A join is two reads through `_query` — the UN-QUEUED path — on purpose: this unit of
+            // work already holds the queue, so routing them through `query` would make them wait on
+            // itself and the plugin would never answer. They are still serialized against every
+            // other query, because this slot is held for both.
+            if (event.operation.options.has("join")) {
+                joinInPlugin(event, (e, cb) => this._query(e, cb), settle as never);
+                return;
+            }
+
+            this._query<TRoot, TShape>(event, settle);
+        };
+
+        this.queue.enqueue(unitOfWork.bind(this));
     }
 
     protected onGetIndex<TEntity extends {}, TShape extends unknown = TEntity>(_: IQuery<TEntity, TShape>, __: PouchDB.Find.FindRequest<unknown>, done: (result: null | string | [string, string]) => void) {

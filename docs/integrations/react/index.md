@@ -1,10 +1,5 @@
 ---
 title: React
-layout: default
-parent: Integrations
-has_children: true
-nav_order: 2
-permalink: /integrations/react/
 ---
 
 # React Integration
@@ -29,10 +24,10 @@ Routier provides first-class support for React through the `useQuery` hook, enab
 ## Quick Start
 
 
-{% highlight tsx linenos %}{% include code/from-docs/integrations/react/index/block-1.tsx %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/index/block-1.tsx
 
 
-**Important:** Your `useDataStore` hook must use `useMemo` to memoize the DataStore instance. Creating a new DataStore on every render will cause infinite subscription loops. See the [Best Practices](./best-practices/) guide for details.
+**Important:** Your `useDataStore` hook must use `useMemo` to memoize the DataStore instance. Creating a new DataStore on every render will cause infinite subscription loops. See the [Best Practices](/integrations/react/best-practices/) guide for details.
 
 ## Installation
 
@@ -49,7 +44,7 @@ npm install react react-dom
 The `useQuery` hook subscribes to Routier collections and returns loading, error, and success states:
 
 
-{% highlight tsx linenos %}{% include code/from-docs/integrations/react/index/block-3.tsx %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/index/block-3.tsx
 
 
 ### Automatic Updates
@@ -57,7 +52,7 @@ The `useQuery` hook subscribes to Routier collections and returns loading, error
 Queries automatically re-render when your data changes:
 
 
-{% highlight tsx linenos %}{% include code/from-docs/integrations/react/index/block-4.tsx %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/index/block-4.tsx
 
 
 ### Type Safety
@@ -65,16 +60,16 @@ Queries automatically re-render when your data changes:
 TypeScript knows exactly what state your component is in:
 
 
-{% highlight tsx linenos %}{% include code/from-docs/integrations/react/index/block-5.tsx %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/react/index/block-5.tsx
 
 
 ## Related Topics
 
-- **[React Hooks](./hooks/)** - Detailed guide to `useQuery` and other hooks
-- **[Best Practices](./best-practices/)** - Patterns, performance tips, and common scenarios
+- **[React Hooks](/integrations/react/hooks/)** - Detailed guide to `useQuery` and other hooks
+- **[Best Practices](/integrations/react/best-practices/)** - Patterns, performance tips, and common scenarios
 
 ## Concepts You'll Need
 
-- [Live Queries](/guides/live-queries/) - Understanding live queries in depth
-- [Optimistic Replication](/guides/optimistic-replication/) - Fast reads with memory replication
-- [State Management](/guides/state-management/) - Managing application state
+- [Live Queries](/guides/live-queries) - Understanding live queries in depth
+- [Optimistic Replication](/guides/optimistic-replication) - Fast reads with memory replication
+- [State Management](/guides/state-management) - Managing application state

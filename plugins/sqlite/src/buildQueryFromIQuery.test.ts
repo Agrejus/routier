@@ -1,8 +1,8 @@
-import { describe, it, expect, jest } from '@jest/globals';
+import { afterEach, describe, it, expect, jest } from '@jest/globals';
 import { buildFromQueryOperation } from './utils';
 import { DbPluginQueryEvent, ITranslatedValue } from '@routier/core/plugins';
 import { s } from '@routier/core/schema';
-import { SqliteDbPlugin } from './SqliteDbPlugin';
+import { SqliteDbPlugin } from './index';
 import { PluginEventCallbackResult } from '@routier/core/results';
 import { DataStore } from '@routier/datastore';
 
@@ -29,10 +29,30 @@ class SqliteTestPlugin extends SqliteDbPlugin {
 }
 
 class TestDataStore extends DataStore {
-    users = this.collection(compiledUserSchema).create();
+    users = this.collection(compiledUserSchema).proxy().create();
 }
 
 describe('buildQueryFromIQuery Integration Tests', () => {
+
+    /**
+     * Every store built here, disposed after each test. Constructing a DataStore opens a
+     * BroadcastChannel pair per collection — two MessagePort handles that hold the Node
+     * event loop open on their own — and leaving them is what makes a run need
+     * `--forceExit`.
+     */
+    const stores: TestDataStore[] = [];
+
+    const open = (plugin: SqliteTestPlugin) => {
+        const store = new TestDataStore(plugin);
+        stores.push(store);
+        return store;
+    };
+
+    afterEach(() => {
+        for (const store of stores.splice(0)) {
+            store[Symbol.dispose]();
+        }
+    });
 
     it('should build a simple SELECT query with no options', () => {
         let capturedQuery: any = null;
@@ -41,7 +61,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             capturedQuery = event.operation;
         });
 
-        const datastore = new TestDataStore(plugin);
+        const datastore = open(plugin);
 
         // This will trigger a query with no filters
         datastore.users.firstOrUndefined(jest.fn<any>());
@@ -59,7 +79,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             capturedQuery = event.operation;
         });
 
-        const datastore = new TestDataStore(plugin);
+        const datastore = open(plugin);
 
         // This will trigger a query with a filter
         datastore.users.firstOrUndefined(x => x.age === 25, jest.fn<any>());
@@ -77,7 +97,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             capturedQuery = event.operation;
         });
 
-        const datastore = new TestDataStore(plugin);
+        const datastore = open(plugin);
 
         // This will trigger a query with filter, sort, and take
         datastore.users
@@ -99,7 +119,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             capturedQuery = event.operation;
         });
 
-        const datastore = new TestDataStore(plugin);
+        const datastore = open(plugin);
 
         // This will trigger a query with sort and skip
         datastore.users
@@ -120,14 +140,17 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             capturedQuery = event.operation;
         });
 
-        const datastore = new TestDataStore(plugin);
+        const datastore = open(plugin);
 
         // This will trigger a count query
         datastore.users.count(jest.fn<any>());
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
-        expect(result.sql).toBe('SELECT COUNT(*) AS "count" FROM "users"');
+        // Count wraps the built query in a subquery so windowing (skip/take) inside the
+        // query counts correctly — a rewritten SELECT kept its LIMIT/OFFSET, which then
+        // applied to the single count row
+        expect(result.sql).toBe('SELECT COUNT(*) AS "count" FROM (SELECT "id", "name", "age" FROM "users") AS count_subquery');
         expect(result.params).toEqual([]);
     });
 
@@ -138,7 +161,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             capturedQuery = event.operation;
         });
 
-        const datastore = new TestDataStore(plugin);
+        const datastore = open(plugin);
 
         // This will trigger a query with multiple filters
         datastore.users
@@ -159,7 +182,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             capturedQuery = event.operation;
         });
 
-        const datastore = new TestDataStore(plugin);
+        const datastore = open(plugin);
 
         // This will trigger a distinct query
         datastore.users.distinct(jest.fn<any>());
@@ -177,7 +200,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             capturedQuery = event.operation;
         });
 
-        const datastore = new TestDataStore(plugin);
+        const datastore = open(plugin);
 
         // This will trigger a complex query with multiple operations
         datastore.users
@@ -199,7 +222,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             capturedQuery = event.operation;
         });
 
-        const datastore = new TestDataStore(plugin);
+        const datastore = open(plugin);
 
         // This will trigger a query with multiple filters using chained where calls
         datastore.users
@@ -221,7 +244,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             capturedQuery = event.operation;
         });
 
-        const datastore = new TestDataStore(plugin);
+        const datastore = open(plugin);
 
         // This will trigger a MIN query
         datastore.users.min(x => x.age, jest.fn<any>());
@@ -239,7 +262,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             capturedQuery = event.operation;
         });
 
-        const datastore = new TestDataStore(plugin);
+        const datastore = open(plugin);
 
         // This will trigger a MAX query
         datastore.users.max(x => x.age, jest.fn<any>());
@@ -257,7 +280,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             capturedQuery = event.operation;
         });
 
-        const datastore = new TestDataStore(plugin);
+        const datastore = open(plugin);
 
         // This will trigger a SUM query
         datastore.users.sum(x => x.age, jest.fn<any>());
@@ -275,7 +298,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             capturedQuery = event.operation;
         });
 
-        const datastore = new TestDataStore(plugin);
+        const datastore = open(plugin);
 
         // This will trigger a filtered MIN query
         datastore.users
@@ -295,7 +318,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             capturedQuery = event.operation;
         });
 
-        const datastore = new TestDataStore(plugin);
+        const datastore = open(plugin);
 
         // This will trigger a map query
         datastore.users
@@ -316,7 +339,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             capturedQuery = event.operation;
         });
 
-        const datastore = new TestDataStore(plugin);
+        const datastore = open(plugin);
 
         // This will trigger a some query
         datastore.users.some(x => x.age > 18, jest.fn<any>());
@@ -334,7 +357,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             capturedQuery = event.operation;
         });
 
-        const datastore = new TestDataStore(plugin);
+        const datastore = open(plugin);
 
         // This will trigger an every query
         datastore.users.every(x => x.age > 18, jest.fn<any>());
@@ -352,7 +375,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             capturedQuery = event.operation;
         });
 
-        const datastore = new TestDataStore(plugin);
+        const datastore = open(plugin);
 
         // This will trigger a first query
         datastore.users.first(jest.fn<any>());
@@ -370,7 +393,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             capturedQuery = event.operation;
         });
 
-        const datastore = new TestDataStore(plugin);
+        const datastore = open(plugin);
 
         // This will trigger a filtered first query
         datastore.users
@@ -390,7 +413,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             capturedQuery = event.operation;
         });
 
-        const datastore = new TestDataStore(plugin);
+        const datastore = open(plugin);
 
         // This will trigger a complex query with all major operations
         datastore.users
@@ -413,7 +436,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             capturedQuery = event.operation;
         });
 
-        const datastore = new TestDataStore(plugin);
+        const datastore = open(plugin);
 
         // This will trigger a complex query with all major operations
         datastore.users
@@ -437,7 +460,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             capturedQuery = event.operation;
         });
 
-        const datastore = new TestDataStore(plugin);
+        const datastore = open(plugin);
 
         // Test IS NOT NULL
         datastore.users.where(x => x.name != null).toArray(jest.fn<any>());
@@ -461,7 +484,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             capturedQuery = event.operation;
         });
 
-        const datastore = new TestDataStore(plugin);
+        const datastore = open(plugin);
 
         // Test mixed: non-null comparison + null comparison
         datastore.users
@@ -482,7 +505,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             capturedQuery = event.operation;
         });
 
-        const datastore = new TestDataStore(plugin);
+        const datastore = open(plugin);
 
         // Test case-sensitive starts-with
         datastore.users
@@ -502,7 +525,7 @@ describe('buildQueryFromIQuery Integration Tests', () => {
             capturedQuery = event.operation;
         });
 
-        const datastore = new TestDataStore(plugin);
+        const datastore = open(plugin);
 
         // Test complex logical expression
         datastore.users

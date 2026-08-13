@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / ReadonlySchemaCollection
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / ReadonlySchemaCollection
 
 # Class: ReadonlySchemaCollection
 
@@ -12,7 +12,7 @@ Collection of schemas with generic typing for type-safe schema retrieval
 
 ## Extended by
 
-- [`SchemaCollection`](SchemaCollection.md)
+- [`SchemaCollection`](/reference/api/core/src/classes/SchemaCollection)
 
 ## Constructors
 
@@ -26,7 +26,7 @@ Defined in: [core/src/collections/ReadonlySchemaCollection.ts:10](https://github
 
 ##### data?
 
-\[`number`, [`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`Record`\<`string`, `unknown`\>\>\][]
+\[`number`, [`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`Record`\<`string`, `unknown`\>\>\][]
 
 #### Returns
 
@@ -50,7 +50,7 @@ Defined in: [core/src/collections/ReadonlySchemaCollection.ts:22](https://github
 
 ### get()
 
-> **get**\<`T`\>(`schemaId`): [`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`T`\>
+> **get**\<`T`\>(`schemaId`): [`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`T`\>
 
 Defined in: [core/src/collections/ReadonlySchemaCollection.ts:14](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/ReadonlySchemaCollection.ts#L14)
 
@@ -68,7 +68,7 @@ Defined in: [core/src/collections/ReadonlySchemaCollection.ts:14](https://github
 
 #### Returns
 
-[`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`T`\>
+[`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`T`\>
 
 ***
 
@@ -104,25 +104,25 @@ Defined in: [core/src/collections/ReadonlySchemaCollection.ts:26](https://github
 
 ### values()
 
-> **values**(): `IterableIterator`\<[`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`Record`\<`string`, `unknown`\>\>\>
+> **values**(): `IterableIterator`\<[`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`Record`\<`string`, `unknown`\>\>\>
 
 Defined in: [core/src/collections/ReadonlySchemaCollection.ts:30](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/ReadonlySchemaCollection.ts#L30)
 
 #### Returns
 
-`IterableIterator`\<[`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`Record`\<`string`, `unknown`\>\>\>
+`IterableIterator`\<[`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`Record`\<`string`, `unknown`\>\>\>
 
 ***
 
 ### entries()
 
-> **entries**(): `IterableIterator`\<\[`number`, [`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`Record`\<`string`, `unknown`\>\>\]\>
+> **entries**(): `IterableIterator`\<\[`number`, [`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`Record`\<`string`, `unknown`\>\>\]\>
 
 Defined in: [core/src/collections/ReadonlySchemaCollection.ts:34](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/ReadonlySchemaCollection.ts#L34)
 
 #### Returns
 
-`IterableIterator`\<\[`number`, [`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`Record`\<`string`, `unknown`\>\>\]\>
+`IterableIterator`\<\[`number`, [`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`Record`\<`string`, `unknown`\>\>\]\>
 
 ***
 
@@ -150,19 +150,19 @@ Defined in: [core/src/collections/ReadonlySchemaCollection.ts:38](https://github
 
 ### \[iterator\]()
 
-> **\[iterator\]**(): `IterableIterator`\<\[`number`, [`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`Record`\<`string`, `unknown`\>\>\]\>
+> **\[iterator\]**(): `IterableIterator`\<\[`number`, [`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`Record`\<`string`, `unknown`\>\>\]\>
 
 Defined in: [core/src/collections/ReadonlySchemaCollection.ts:42](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/ReadonlySchemaCollection.ts#L42)
 
 #### Returns
 
-`IterableIterator`\<\[`number`, [`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`Record`\<`string`, `unknown`\>\>\]\>
+`IterableIterator`\<\[`number`, [`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`Record`\<`string`, `unknown`\>\>\]\>
 
 ***
 
 ### getByName()
 
-> **getByName**\<`T`\>(`collectionName`): [`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`T`\>
+> **getByName**\<`T`\>(`collectionName`): [`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`T`\>
 
 Defined in: [core/src/collections/ReadonlySchemaCollection.ts:46](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/ReadonlySchemaCollection.ts#L46)
 
@@ -180,4 +180,4 @@ Defined in: [core/src/collections/ReadonlySchemaCollection.ts:46](https://github
 
 #### Returns
 
-[`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`T`\>
+[`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`T`\>

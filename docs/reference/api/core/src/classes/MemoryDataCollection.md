@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / MemoryDataCollection
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / MemoryDataCollection
 
 # Class: MemoryDataCollection
 
@@ -20,7 +20,7 @@ Defined in: [core/src/collections/MemoryDataCollection.ts:21](https://github.com
 
 ##### schema
 
-[`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`any`\>
+[`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`any`\>
 
 #### Returns
 
@@ -138,7 +138,7 @@ Defined in: [core/src/collections/MemoryDataCollection.ts:121](https://github.co
 
 ##### done
 
-[`CallbackResult`](../type-aliases/CallbackResult.md)\<`never`\>
+[`CallbackResult`](/reference/api/core/src/type-aliases/CallbackResult)\<`never`\>
 
 #### Returns
 
@@ -156,7 +156,7 @@ Defined in: [core/src/collections/MemoryDataCollection.ts:127](https://github.co
 
 ##### done
 
-[`CallbackResult`](../type-aliases/CallbackResult.md)\<`never`\>
+[`CallbackResult`](/reference/api/core/src/type-aliases/CallbackResult)\<`never`\>
 
 #### Returns
 
@@ -174,7 +174,7 @@ Defined in: [core/src/collections/MemoryDataCollection.ts:131](https://github.co
 
 ##### done
 
-[`CallbackResult`](../type-aliases/CallbackResult.md)\<`never`\>
+[`CallbackResult`](/reference/api/core/src/type-aliases/CallbackResult)\<`never`\>
 
 #### Returns
 

@@ -1,11 +1,5 @@
 ---
 title: Syncing
-layout: default
-parent: State Management
-grand_parent: Data Operations
-has_children: true
-nav_order: 2
-permalink: /data-operations/state-management/syncing/
 ---
 
 # Data Syncing
@@ -25,15 +19,13 @@ The PouchDB plugin for Routier includes built-in synchronization that works with
 
 Enable syncing by configuring the `sync` option when creating your PouchDB plugin:
 
-{% capture snippet_pouch_sync_basic %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_pouch_sync_basic | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-1.ts
 
 ## Complete Example
 
 Here's a full example showing pull-only sync with filtering and custom document processing:
 
-{% capture snippet_pouch_sync_complete %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-9.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_pouch_sync_complete | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-9.ts
 
 This example demonstrates:
 
@@ -47,7 +39,7 @@ This example demonstrates:
 To test this example, you'll need a CouchDB-compatible server. You can use express-pouchdb to run a local server:
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/index/block-1.ts
 
 
 ## How It Works
@@ -69,7 +61,7 @@ The PouchDB plugin supports several sync configuration options:
 The URL to your remote CouchDB-compatible database:
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/index/block-2.ts
 
 
 ### Pull and Push Configuration
@@ -77,7 +69,7 @@ The URL to your remote CouchDB-compatible database:
 You can configure sync direction separately using `pull` and `push` options:
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/index/block-3.ts
 
 
 - **`pull`**: Configuration for pulling changes from remote
@@ -88,7 +80,7 @@ You can configure sync direction separately using `pull` and `push` options:
 Use the `filter` function to control which documents are synced:
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-4.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/index/block-4.ts
 
 
 ### `live` (Optional)
@@ -96,7 +88,7 @@ Use the `filter` function to control which documents are synced:
 Enable continuous synchronization:
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-5.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/index/block-5.ts
 
 
 With `live: false`, sync happens once on startup. With `live: true`, changes are synchronized in real-time.
@@ -106,7 +98,7 @@ With `live: false`, sync happens once on startup. With `live: true`, changes are
 Enable automatic retry with exponential backoff:
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-6.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/index/block-6.ts
 
 
 When enabled, failed sync operations automatically retry with increasing delays (1s, 2s, 4s, up to 10s max).
@@ -116,7 +108,7 @@ When enabled, failed sync operations automatically retry with increasing delays 
 Callback function that receives sync events. Use this to process synced documents manually:
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-7.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/index/block-7.ts
 
 
 Use this callback to:
@@ -131,7 +123,7 @@ Use this callback to:
 PouchDB automatically detects conflicts when the same document is modified in multiple places. Handle conflicts by checking the change information in your `onChange` callback:
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-8.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/index/block-8.ts
 
 
 ## Network Handling
@@ -151,7 +143,7 @@ You can monitor sync status through the `onChange` callback to inform users abou
 For read-only data or when you want to prevent local changes from syncing back:
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-9.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/index/block-9.ts
 
 
 ### Bidirectional Sync
@@ -159,7 +151,7 @@ For read-only data or when you want to prevent local changes from syncing back:
 Default behavior when push is not disabled:
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-10.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/index/block-10.ts
 
 
 ### Filtered Sync
@@ -167,7 +159,7 @@ Default behavior when push is not disabled:
 Only sync specific collections or document types:
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/index/block-11.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/index/block-11.ts
 
 
 ## Best Practices
@@ -182,7 +174,7 @@ Only sync specific collections or document types:
 
 ## Next Steps
 
-- **[PouchDB Syncing Details](pouchdb-sync.md)** - Complete reference for PouchDB sync options and advanced configuration
-- **[Syncing Guide]({{ site.baseurl }}/guides/syncing)** - Conceptual overview of how syncing works in Routier
-- **[Change Tracking](/concepts/change-tracking/)** - Understanding how Routier tracks local changes
-- **[Live Queries]({{ site.baseurl }}/guides/live-queries)** - Real-time data queries
+- **[PouchDB Syncing Details](/data-operations/state-management/syncing/pouchdb-sync)** - Complete reference for PouchDB sync options and advanced configuration
+- **[Syncing Guide](/guides/syncing)** - Conceptual overview of how syncing works in Routier
+- **[Change Tracking](/concepts/change-tracking)** - Understanding how Routier tracks local changes
+- **[Live Queries](/guides/live-queries)** - Real-time data queries

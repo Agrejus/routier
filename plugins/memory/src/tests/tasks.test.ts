@@ -29,6 +29,10 @@ describe("Task Tests", () => {
             const dataStore = factory();
 
             const items = generateData(dataStore.tasks.schema, 5);
+            // generateData picks priority at random from four values; ~3% of runs produce
+            // no high/urgent task at all, and then the filtered view (rightly) never
+            // notifies. The view assertion below needs at least one match to exist.
+            items[0].priority = "high";
             const subscriptionCallback = jest.fn();
             const commentsCallback = jest.fn();
 

@@ -26,6 +26,8 @@ const toEchoPersistResult = (changes: DbPluginBulkPersistEvent["operation"]) => 
 };
 
 class RoutingProbePlugin implements IDbPlugin {
+
+    readonly databaseName = "test-db";
     queryEvents: DbPluginQueryEvent<any, any>[] = [];
     bulkPersistEvents: DbPluginBulkPersistEvent[] = [];
     destroyEvents: DbPluginEvent[] = [];
@@ -59,7 +61,7 @@ class RoutingProbePlugin implements IDbPlugin {
 }
 
 class IntegrationStore extends DataStore {
-    products = this.collection(productSchema).create();
+    products = this.collection(productSchema).proxy().create();
 }
 
 const stores: DataStore[] = [];
@@ -211,7 +213,7 @@ describe("DataStore integration", () => {
         expect(await store.hasChangesAsync()).toBe(false);
     });
 
-    it("reuses canonical attachments when the same entity is attached again", async () => {
+    it("adopts the caller's instance when the same entity is attached again", async () => {
         const plugin = new RoutingProbePlugin();
         const store = createStore(plugin);
 
@@ -227,9 +229,13 @@ describe("DataStore integration", () => {
             category: "supplies",
         } as Product);
 
-        expect(second).toBe(first);
-        expect(first.name).toBe("Merged");
-        expect(first.category).toBe("supplies");
+        // An explicit set means the caller will mutate THIS instance: it replaces the
+        // previous canonical (which would otherwise silently swallow those mutations)
+        // and its values are authoritative.
+        expect(second).not.toBe(first);
+        expect(second.name).toBe("Merged");
+        expect(second.category).toBe("supplies");
+        expect(store.products.attachments.get(second)).toBe(second);
     });
 
     it("routes scoped queries with both scope and user filters to plugin.query", async () => {
@@ -245,10 +251,14 @@ describe("DataStore integration", () => {
         class ScopedStore extends DataStore {
             products = this.collection(scopedSchema)
                 .scope(x => x.documentType === "products")
-                .create();
+                .proxy().create();
         }
 
+        // Tracked like every other store here: an undisposed one holds a BroadcastChannel
+        // pair open and the run needs --forceExit.
         const store = new ScopedStore(plugin);
+        stores.push(store);
+
         await store.products.where(x => x.category === "office").toArrayAsync();
 
         expect(plugin.queryEvents.length).toBe(1);

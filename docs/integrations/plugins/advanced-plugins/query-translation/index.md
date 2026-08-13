@@ -1,9 +1,5 @@
 ---
 title: Query Translation & Table Creation
-layout: default
-parent: Advanced Plugins
-grand_parent: Integrations
-nav_order: 1
 ---
 
 ## Query Translation & Table Creation
@@ -24,7 +20,7 @@ The `compiledSchemaToSqliteTable` function demonstrates how to convert a Compile
 ### Schema Type Mapping
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/query-translation/index/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/advanced-plugins/query-translation/index/block-1.ts
 
 
 ### Key Considerations
@@ -46,7 +42,7 @@ The `compiledSchemaToSqliteTable` function demonstrates how to convert a Compile
 ### Example Table Creation
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/query-translation/index/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/advanced-plugins/query-translation/index/block-2.ts
 
 
 ## Expression Translation
@@ -65,7 +61,7 @@ Routier uses an Expression tree structure:
 ### Translation Pattern
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/query-translation/index/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/advanced-plugins/query-translation/index/block-3.ts
 
 
 ### Special Cases
@@ -95,7 +91,7 @@ The `buildFromQueryOperation` function constructs complete SQL queries from Rout
 ### Key Pattern
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/query-translation/index/block-4.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/advanced-plugins/query-translation/index/block-4.ts
 
 
 ## Common Gotchas

@@ -1,9 +1,5 @@
 ---
 title: Query Architecture
-layout: default
-parent: Concepts
-nav_order: 1
-permalink: /concepts/query-architecture/
 ---
 
 # Query Architecture
@@ -24,7 +20,7 @@ Routier's query architecture enables you to write plain JavaScript queries that 
 Routier allows you to write queries using familiar JavaScript syntax:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/query-architecture/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/query-architecture/block-1.ts
 
 
 These queries work identically regardless of whether you're using SQLite, IndexedDB, PouchDB, or in-memory storage.
@@ -38,7 +34,7 @@ Routier transforms JavaScript queries into agnostic expressions that plugins can
 Expression trees represent code as data structures rather than executable code. In Routier, when you write:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/query-architecture/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/query-architecture/block-2.ts
 
 
 Routier parses this into an abstract syntax tree (AST) that represents the logical structure:
@@ -94,7 +90,7 @@ This abstraction means you can write the same query syntax regardless of your un
 ### Write Once, Run Anywhere
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/query-architecture/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/query-architecture/block-3.ts
 
 
 ### Seamless Migration
@@ -102,7 +98,7 @@ This abstraction means you can write the same query syntax regardless of your un
 You can switch storage backends without changing your query code:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/query-architecture/block-4.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/query-architecture/block-4.ts
 
 
 ## Performance Considerations
@@ -112,7 +108,7 @@ You can switch storage backends without changing your query code:
 When Routier can parse your JavaScript expressions, it translates them to optimized database queries:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/query-architecture/block-5.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/query-architecture/block-5.ts
 
 
 ### Fallback Behavior
@@ -120,7 +116,7 @@ When Routier can parse your JavaScript expressions, it translates them to optimi
 When expressions cannot be parsed (returns `NOT_PARSABLE`), Routier falls back to selecting all data and filtering in memory:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/query-architecture/block-6.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/query-architecture/block-6.ts
 
 
 **Best Practice**: Use parameterized queries and avoid complex expressions that cannot be parsed to maintain optimal performance.
@@ -130,14 +126,14 @@ When expressions cannot be parsed (returns `NOT_PARSABLE`), Routier falls back t
 For dynamic filtering with variables, use parameterized queries to ensure database-level optimization:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/query-architecture/block-7.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/query-architecture/block-7.ts
 
 
 ## Related Topics
 
-- [Filtering Data](/concepts/queries/filtering/) - Learn how to filter your data
-- [Sorting Results](/concepts/queries/sorting/) - Learn how to sort query results
-- [Field Selection](/concepts/queries/field-selection/) - Learn how to select specific fields
-- [Pagination](/concepts/queries/pagination/) - Learn how to paginate results
-- [Aggregation](/concepts/queries/aggregation/) - Learn how to perform calculations
-- [Terminal Methods](/concepts/queries/terminal-methods/) - Learn about query execution methods
+- [Filtering Data](/concepts/queries/filtering) - Learn how to filter your data
+- [Sorting Results](/concepts/queries/sorting) - Learn how to sort query results
+- [Field Selection](/concepts/queries/field-selection) - Learn how to select specific fields
+- [Pagination](/concepts/queries/pagination) - Learn how to paginate results
+- [Aggregation](/concepts/queries/aggregation) - Learn how to perform calculations
+- [Terminal Methods](/concepts/queries/terminal-methods) - Learn about query execution methods

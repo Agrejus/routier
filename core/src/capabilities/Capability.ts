@@ -17,6 +17,7 @@ export abstract class Capability {
         "SchemaDefault",
         "SchemaDeserialize",
         "SchemaDistinct",
+        "SchemaSearchable",
         "SchemaFrom",
         "SchemaIdentity",
         "SchemaIndex",

@@ -176,9 +176,11 @@ describe("PropertyInfo", () => {
         it("should produce selector paths", () => {
             expect(baseProperty.getSelectrorPath({ parent: "entity" })).toBe("entity.testProperty");
             expect(nestedChildProperty.getSelectrorPath({ parent: "entity" })).toBe("entity.parentProperty.childProperty");
-            expect(nullableProperty.getSelectrorPath({ parent: "entity" })).toBe("entity?.nullableProperty");
-            expect(optionalProperty.getSelectrorPath({ parent: "entity" })).toBe("entity?.optionalProperty");
-            expect(nullableParentChildProperty.getSelectrorPath({ parent: "entity" })).toBe("entity?.nullableParentProperty.childProperty");
+            // The accessor guards the value it follows: the root is never null, so
+            // `?.` only appears after a nullable/optional segment
+            expect(nullableProperty.getSelectrorPath({ parent: "entity" })).toBe("entity.nullableProperty");
+            expect(optionalProperty.getSelectrorPath({ parent: "entity" })).toBe("entity.optionalProperty");
+            expect(nullableParentChildProperty.getSelectrorPath({ parent: "entity" })).toBe("entity.nullableParentProperty?.childProperty");
             expect(nullableProperty.getSelectrorPath({ parent: "entity", assignmentType: "ASSIGNMENT" })).toBe("entity.nullableProperty");
         });
 
@@ -266,7 +268,7 @@ describe("PropertyInfo", () => {
             expect(metadataEmailProperty.parent).toBe(metadataProperty);
             expect(metadataEmailProperty.isOptional).toBe(true);
             expect(metadataEmailProperty.hasNullableParents).toBe(true);
-            expect(metadataEmailProperty.getSelectrorPath({ parent: "entity" })).toBe("entity?.metadataJson?.email");
+            expect(metadataEmailProperty.getSelectrorPath({ parent: "entity" })).toBe("entity.metadataJson?.email");
         });
 
         it("should expose date default and deserializer combinations used by memory schemas", () => {

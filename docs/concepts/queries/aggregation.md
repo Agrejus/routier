@@ -1,9 +1,5 @@
 ---
 title: Aggregation
-layout: default
-parent: Queries
-nav_order: 5
-permalink: /concepts/queries/aggregation/
 ---
 
 # Aggregation Operations
@@ -27,37 +23,37 @@ Perform calculations on your data with aggregation methods like `sum`, `min`, `m
 ### Counting Items
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/aggregation/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/aggregation/block-1.ts
 
 
 ### Sum Operations
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/aggregation/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/aggregation/block-2.ts
 
 
 ### Min and Max Operations
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/aggregation/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/aggregation/block-3.ts
 
 
 ### Distinct Values
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/aggregation/block-4.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/aggregation/block-4.ts
 
 
 ### Boolean Operations
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/aggregation/block-5.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/aggregation/block-5.ts
 
 
 ### Complex Aggregations
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/aggregation/block-6.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/aggregation/block-6.ts
 
 
 ## Common Patterns
@@ -65,19 +61,19 @@ Perform calculations on your data with aggregation methods like `sum`, `min`, `m
 ### Inventory Management
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/aggregation/block-7.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/aggregation/block-7.ts
 
 
 ### Price Analysis
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/aggregation/block-8.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/aggregation/block-8.ts
 
 
 ### Category Analysis
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/aggregation/block-9.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/aggregation/block-9.ts
 
 
 ## Performance Tips
@@ -91,11 +87,11 @@ Perform calculations on your data with aggregation methods like `sum`, `min`, `m
 ### Memory Considerations
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/aggregation/block-10.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/aggregation/block-10.ts
 
 
 ## Related Topics
 
-- [Filtering Data](/concepts/queries/filtering/) - Filter before aggregating
-- [Field Selection](/concepts/queries/field-selection/) - Transform data before aggregation
-- [Terminal Methods](/concepts/queries/terminal-methods/) - All query execution methods
+- [Filtering Data](/concepts/queries/filtering) - Filter before aggregating
+- [Field Selection](/concepts/queries/field-selection) - Transform data before aggregation
+- [Terminal Methods](/concepts/queries/terminal-methods) - All query execution methods

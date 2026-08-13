@@ -1,8 +1,5 @@
 ---
 title: History Tracking
-layout: default
-parent: Guides
-nav_order: 5
 ---
 
 ## History Tracking
@@ -42,7 +39,7 @@ History tracking in Routier can be implemented in different ways. Both approache
 When your history table is subscribed to a data source, you can use computed properties with the `tracked()` modifier to automatically insert a new record whenever the subscribed data changes. This approach computes the ID based on the entire entity state, ensuring any change results in a new record:
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/history-tracking/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/history-tracking/block-1.ts
 
 
 **How this approach works:**
@@ -62,7 +59,7 @@ This pattern is particularly useful when your history table is derived from a vi
 Another way to implement history tracking is using views with a unique hashing strategy to detect changes and insert new records instead of updating existing ones. This approach uses `fastHash` with the schema's hash function to generate a unique ID based on the entire object:
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/history-tracking/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/history-tracking/block-2.ts
 
 
 **How this approach works:**
@@ -80,7 +77,7 @@ Another way to implement history tracking is using views with a unique hashing s
 Once you have a history table, you can query it to see all historical states of your entities:
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/history-tracking/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/history-tracking/block-3.ts
 
 
 ### When to Use History Tables
@@ -99,7 +96,7 @@ Once you have a history table, you can query it to see all historical states of 
 
 ## Related Guides
 
-- **[Views]({{ site.baseurl }}/how-to/collections/views/)** - Understanding how views work for history tracking
-- **[Change Tracking](/concepts/change-tracking/)** - How Routier tracks changes
-- **[State Management](state-management.md)** - Managing application state
-- **[Data Manipulation](data-manipulation.md)** - Working with your data
+- **[Views](/how-to/collections/views)** - Understanding how views work for history tracking
+- **[Change Tracking](/concepts/change-tracking)** - How Routier tracks changes
+- **[State Management](/guides/state-management)** - Managing application state
+- **[Data Manipulation](/guides/data-manipulation)** - Working with your data

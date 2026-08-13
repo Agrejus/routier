@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / Filterable
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / Filterable
 
 # Type Alias: Filterable\<T, P\>
 
@@ -26,7 +26,7 @@ An object that can be filtered using a composite filter and optional parameters.
 
 ### filter
 
-> **filter**: [`CompositeFilter`](CompositeFilter.md)\<`T`, `P`\>
+> **filter**: [`CompositeFilter`](/reference/api/core/src/type-aliases/CompositeFilter)\<`T`, `P`\>
 
 Defined in: [core/src/expressions/types.ts:181](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/expressions/types.ts#L181)
 

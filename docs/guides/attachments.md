@@ -1,9 +1,5 @@
 ---
 title: Attachments and Dirty Tracking
-layout: default
-parent: Guides
-nav_order: 9
-permalink: /guides/attachments/
 ---
 
 ## Attachments and Dirty Tracking
@@ -25,8 +21,7 @@ Goal: Understand how to inspect and control the internal change tracking set for
 
 ### Example
 
-{% capture snippet_attach %}{% include code/from-docs/guides/attachments/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_attach | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/attachments/block-1.ts
 
 ### Notes
 
@@ -35,5 +30,5 @@ Goal: Understand how to inspect and control the internal change tracking set for
 
 ## Related
 
-- **[Change Tracking]({{ site.baseurl }}/concepts/change-tracking/)** — how change tracking works
-- **[State Management]({{ site.baseurl }}/guides/state-management)** — patterns for working with collections and saves
+- **[Change Tracking](/concepts/change-tracking)** — how change tracking works
+- **[State Management](/guides/state-management)** — patterns for working with collections and saves

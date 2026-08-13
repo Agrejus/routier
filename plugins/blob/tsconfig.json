@@ -1,0 +1,30 @@
+{
+    "compilerOptions": {
+        "allowJs": true,
+        "allowSyntheticDefaultImports": true,
+        "module": "ESNext",
+        "lib": [
+            "ESNext"
+        ],
+        "target": "ESNext",
+        "declaration": true,
+        "noImplicitAny": true,
+        "sourceMap": true,
+        "outDir": "./dist",
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "baseUrl": "dist",
+        "resolveJsonModule": true
+    },
+    "include": [
+        "./src/index.ts",
+        "./src/stores/fileSystem.ts",
+        "./src/stores/s3.ts"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist",
+        "./src/__tests__/*"
+    ]
+}

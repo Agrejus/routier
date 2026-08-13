@@ -1,9 +1,5 @@
 ---
 title: Result Translation
-layout: default
-parent: Advanced Plugins
-grand_parent: Integrations
-nav_order: 2
 ---
 
 ## Result Translation
@@ -29,7 +25,7 @@ Both extend `DataTranslator`, which orchestrates the translation process based o
 The `DataTranslator.translate()` method processes query results by applying each query option in order:
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-1.ts
 
 
 Translation happens in the **order operations were added** to the query, ensuring correct semantics.
@@ -43,13 +39,13 @@ Used for backends that **don't support query operations natively**. The plugin r
 #### Filtering
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-2.ts
 
 
 #### Sorting
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-3.ts
 
 
 #### Aggregations
@@ -63,7 +59,7 @@ Used for backends that **don't support query operations natively**. The plugin r
 Since the backend doesn't support aggregations natively:
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-4.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-4.ts
 
 
 **Why**: These backends don't have aggregate functions, so the translator receives all matching data and performs the calculation.
@@ -78,7 +74,7 @@ Since the backend doesn't support aggregations natively:
 #### Distinct
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-5.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-5.ts
 
 
 ### When to Use JsonTranslator
@@ -105,7 +101,7 @@ Used for SQL backends where **the database natively supports query operations**.
 1. **Count**: SQL already executed `COUNT(*)`, so extract the value
 
    
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-6.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-6.ts
 ts
 map(data: unknown, option: QueryOption<TShape, "map">): TShape {
     const response = [];
@@ -154,7 +150,7 @@ Your backend might support some operations but not others. You can create a cust
 If your backend needs custom translation logic, extend `DataTranslator` and implement methods based on what your backend supports:
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-7.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-7.ts
 
 
 ### Usage in Plugin
@@ -162,7 +158,7 @@ If your backend needs custom translation logic, extend `DataTranslator` and impl
 The `DataTranslator.translate()` method automatically wraps results in `ITranslatedValue`, so you don't need to manually wrap them:
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-8.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-8.ts
 
 
 ## Common Patterns
@@ -172,7 +168,7 @@ The `DataTranslator.translate()` method automatically wraps results in `ITransla
 The schema handles deserialization automatically through property-level `deserialize()` methods. You don't need to manually deserialize in the translator. The `map` operation already handles deserialization for mapped fields:
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-9.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-9.ts
 
 
 If your backend returns raw data that needs schema-level deserialization, handle it in your plugin's `query` method before passing to the translator, not in the translator itself.
@@ -182,7 +178,7 @@ If your backend returns raw data that needs schema-level deserialization, handle
 If your backend supports some operations but not others, check what was handled:
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-10.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-10.ts
 
 
 ### Filtering After Fetch
@@ -190,7 +186,7 @@ If your backend supports some operations but not others, check what was handled:
 If your backend doesn't support certain filters, fetch and filter in memory:
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-11.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-11.ts
 
 
 The key principle: **If your backend already did the work, extract the result. If not, do the work in the translator.**
@@ -200,7 +196,7 @@ The key principle: **If your backend already did the work, extract the result. I
 Transform backend-specific result structures:
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-12.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/advanced-plugins/result-translation/index/block-12.ts
 
 
 ## Reference Implementations

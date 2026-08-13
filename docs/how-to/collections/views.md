@@ -1,9 +1,5 @@
 ---
 title: Views
-layout: default
-parent: Collections
-grand_parent: Data Operations
-nav_order: 3
 ---
 
 ## Views
@@ -55,7 +51,7 @@ Views are ideal for:
 Views are created using `.view()` followed by `.derive()` to specify how data is computed:
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/collections/views/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/collections/views/block-1.ts
 
 
 ## One-to-One Views
@@ -63,7 +59,7 @@ Views are created using `.view()` followed by `.derive()` to specify how data is
 One-to-one views maintain a predictable mapping between source entities and view entities. Use a predictable ID pattern like `view:${originalId}`:
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/collections/views/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/collections/views/block-2.ts
 
 
 **Key points:**
@@ -83,7 +79,7 @@ This pattern is ideal for:
 - **Change tracking**: Know when and how data changed
 - **Undo/Redo**: Retrieve previous states
 
-For complete implementation details, examples, and best practices, see the **[History Tracking guide]({{ site.baseurl }}/guides/history-tracking)**.
+For complete implementation details, examples, and best practices, see the **[History Tracking guide](/guides/history-tracking)**.
 
 ## View Patterns
 
@@ -92,7 +88,7 @@ For complete implementation details, examples, and best practices, see the **[Hi
 Views can reshape data from source collections:
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/collections/views/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/collections/views/block-3.ts
 
 
 ### Combining Multiple Sources
@@ -100,7 +96,7 @@ Views can reshape data from source collections:
 You can subscribe to multiple collections and combine their data:
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/collections/views/block-4.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/collections/views/block-4.ts
 
 
 ### Scoped Views
@@ -108,7 +104,7 @@ You can subscribe to multiple collections and combine their data:
 Use `.scope()` to filter view data, especially useful for single-store backends:
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/collections/views/block-5.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/collections/views/block-5.ts
 
 
 ## View Lifecycle
@@ -125,7 +121,7 @@ Use `.scope()` to filter view data, especially useful for single-store backends:
 Views automatically compute when source data changes, but you can also manually trigger computation using `compute()` or `computeAsync()`:
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/collections/views/block-6.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/collections/views/block-6.ts
 
 
 **When to use:**
@@ -146,8 +142,8 @@ The `compute` methods run the derive function you provided when creating the vie
 
 ## Related Topics
 
-- **[Collections Overview](index.md)** - Understanding collections
-- **[Scope Single Store](scope-single-store.md)** - Scoping views for single-store backends
-- **[Live Queries]({{ site.baseurl }}/guides/live-queries)** - Understanding reactive queries
-- **[History Tracking]({{ site.baseurl }}/guides/history-tracking)** - Implementing audit trails and version history
-- **[State Management]({{ site.baseurl }}/guides/state-management)** - Managing application state
+- **[Collections Overview](/how-to/collections/)** - Understanding collections
+- **[Scope Single Store](/how-to/collections/scope-single-store)** - Scoping views for single-store backends
+- **[Live Queries](/guides/live-queries)** - Understanding reactive queries
+- **[History Tracking](/guides/history-tracking)** - Implementing audit trails and version history
+- **[State Management](/guides/state-management)** - Managing application state

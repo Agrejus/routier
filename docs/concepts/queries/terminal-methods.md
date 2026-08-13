@@ -1,9 +1,5 @@
 ---
 title: Terminal Methods
-layout: default
-parent: Queries
-nav_order: 6
-permalink: /concepts/queries/terminal-methods/
 ---
 
 # Terminal Methods
@@ -40,37 +36,37 @@ All queries must end with a terminal method to execute. These methods actually p
 ### Getting All Results
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/terminal-methods/block-1.ts
 
 
 ### Getting Single Items
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/terminal-methods/block-2.ts
 
 
 ### Checking Existence
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/terminal-methods/block-3.ts
 
 
 ### Counting Items
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-4.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/terminal-methods/block-4.ts
 
 
 ### Aggregation Operations
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-5.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/terminal-methods/block-5.ts
 
 
 ### Distinct Values
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-6.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/terminal-methods/block-6.ts
 
 
 ### Grouping Data
@@ -78,7 +74,7 @@ All queries must end with a terminal method to execute. These methods actually p
 Group items by a key value, returning a record where keys are the grouped values and values are arrays of items with that key:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-7.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/terminal-methods/block-7.ts
 
 
 The selector function must return a value that can be used as an object key (string, number, or Date). Each group contains an array of all items that share the same key value.
@@ -86,7 +82,7 @@ The selector function must return a value that can be used as an object key (str
 ### Removal Operations
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-8.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/terminal-methods/block-8.ts
 
 
 ## Important Notes
@@ -102,7 +98,7 @@ The selector function must return a value that can be used as an object key (str
 Both async Promises and callback styles are supported:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-9.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/terminal-methods/block-9.ts
 
 
 ### Live Queries
@@ -110,7 +106,7 @@ Both async Promises and callback styles are supported:
 For live results that update automatically, you can chain `.subscribe()` before a terminal method:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-10.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/terminal-methods/block-10.ts
 
 
 ## Common Patterns
@@ -118,29 +114,29 @@ For live results that update automatically, you can chain `.subscribe()` before 
 ### Data Validation
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-11.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/terminal-methods/block-11.ts
 
 
 ### Pagination with Count
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-12.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/terminal-methods/block-12.ts
 
 
 ### Conditional Operations
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-13.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/terminal-methods/block-13.ts
 
 
 ### Organizing Data by Category
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/terminal-methods/block-14.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/terminal-methods/block-14.ts
 
 
 ## Related Topics
 
-- [Filtering Data](/concepts/queries/filtering/) - Filter before terminal methods
-- [Sorting Results](/concepts/queries/sorting/) - Sort before terminal methods
-- [Aggregation](/concepts/queries/aggregation/) - Aggregation terminal methods
+- [Filtering Data](/concepts/queries/filtering) - Filter before terminal methods
+- [Sorting Results](/concepts/queries/sorting) - Sort before terminal methods
+- [Aggregation](/concepts/queries/aggregation) - Aggregation terminal methods

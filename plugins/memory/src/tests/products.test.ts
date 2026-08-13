@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 import { describe, it, expect, afterEach } from '@jest/globals';
-import { generateData, seedData } from '@routier/test-utils';
+import { generateData, invokeCallback, seedData } from '@routier/test-utils';
 import { CallbackResult, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, PluginEventCallbackResult, UnknownRecord, uuidv4 } from '@routier/core';
 import { MemoryPlugin } from '../MemoryPlugin';
 import { TestDataStore } from './datastore/MemoryDatastore';
@@ -18,6 +18,8 @@ const factory = (dbname?: string) => {
 };
 
 class CloneOnReadPlugin implements IDbPlugin {
+
+    readonly databaseName = "test-db";
     constructor(private readonly inner: IDbPlugin) {}
 
     query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
@@ -490,8 +492,10 @@ describe("Product Tests", () => {
             expect(foundAfterSave.tags.length).toBe(0);
         });
 
-        it("QUIRK: should not update a nested array if it is not set through assignment", async () => {
-            // SOLUTION: Set the property to the expected result
+        it("updates a nested array mutated in place, without assignment", async () => {
+            // Guards the fix for defect #12: the array's tracking proxy survives the merge
+            // afterPersist performs, so an in-place mutation after the first save is
+            // tracked and persisted rather than silently reverted.
             const dataStore = factory();
             // Arrange
             await dataStore.products.addAsync({
@@ -507,10 +511,10 @@ describe("Product Tests", () => {
             const found = await dataStore.products.firstAsync();
             found.tags.length = 0;
             const response = await dataStore.saveChangesAsync();
-            expect(response.aggregate.size).toBe(0);
+            expect(response.aggregate.size).toBe(1);
             const foundAfterSave = await dataStore.products.firstAsync(w => w._id === found._id);
-            // Assert - We modified it and it was reset/overwritten by the selected item from the database
-            expect(foundAfterSave.tags.length).toBe(1);
+            // Assert - the in-place mutation was tracked and persisted
+            expect(foundAfterSave.tags.length).toBe(0);
         });
 
         it("should not mark the item as dirty when the property is set to the same value", async () => {
@@ -584,9 +588,14 @@ describe("Product Tests", () => {
 
             const found = await dataStore.products.firstAsync();
 
-            expect(secondDataStore.products.attachments.has(found)).toBe(false);
-
+            // No "not yet attached" precondition here: with live views on a shared
+            // database, the second store may legitimately have auto-attached this
+            // entity already (its views re-derive on the first store's save). The
+            // contract is that an explicit set adopts THIS instance as the canonical
+            // attachment either way, so mutations on it are tracked and saved.
             secondDataStore.products.attachments.set(found);
+
+            expect(secondDataStore.products.attachments.get(found)).toBe(found);
 
             found.category = "changed_value";
 
@@ -657,7 +666,6 @@ describe("Product Tests", () => {
             const changeType = dataStore.products.attachments.getChangeType(first);
             expect(changeType).toBeDefined();
         });
-
 
         it("Should detach and attach and mark entity as dirty", async () => {
             const dataStore = factory();
@@ -2146,57 +2154,29 @@ describe("Product Tests", () => {
                 expect(callback).toHaveBeenCalled();
             });
 
+        });
+
+        describe('SubscribedQueryable Method Binding', () => {
+            // Terminal options are snapshotted and restored per execution, so a
+            // subscribed queryable can be re-read as data changes.
             it('should bind count', async () => {
                 const dataStore = factory();
                 await seedData(dataStore, () => dataStore.products, 5);
 
                 const subscribedQuery = dataStore.products.subscribe();
-
                 const countMethod = subscribedQuery.count;
-
-                // Adjust this to your real callback shape
-                type CallbackResult<T> = (value: T) => void;
-
-                // Helpers
-                type Last<T extends any[]> = T extends [...infer _, infer L] ? L : never;
-
-                // Given a method type like
-                //   (expr: Filter<...>, done: CallbackResult<X>) => void
-                // extract X from the last param
-                type CallbackPayloadOfMethod<M> =
-                    M extends (...args: infer P) => any
-                    ? Last<P> extends CallbackResult<infer R>
-                    ? R
-                    : never
-                    : never;
-
-                // A function that takes a method and returns its callback payload type
-                const resultFromMethod = <M extends (...args: any[]) => any>(
-                    _method: M
-                ): CallbackPayloadOfMethod<M> => {
-                    return null as unknown as CallbackPayloadOfMethod<M>;
-                };
-
-                const y = resultFromMethod(cb => dataStore.products.firstOrUndefined(x => x._id === "", cb));
-                const z = resultFromMethod(cb => dataStore.products.every(x => x._id === "", cb));
 
                 expect(typeof countMethod).toBe('function');
 
-                const callback = jest.fn();
-                countMethod(callback);
-                countMethod(callback);
-                expect(callback).toHaveBeenCalledTimes(2);
-                expect(callback).toHaveBeenNthCalledWith(1, {
-                    ok: "success",
-                    data: 5,
-                    id: expect.any(String)
-                });
-                expect(callback).toHaveBeenNthCalledWith(2, {
-                    ok: "error",
-                    error: expect.any(Object),
-                    id: expect.any(String)
-                });
+                const first = await invokeCallback<{ ok: string; data?: number }>(done => countMethod(done));
+                expect(first.ok).toBe('success');
+                expect(first.data).toBe(5);
+
+                const second = await invokeCallback<{ ok: string; data?: number }>(done => countMethod(done));
+                expect(second.ok).toBe('success');
+                expect(second.data).toBe(5);
             });
+
         });
 
         describe('SubscribedSkippedQueryable Method Binding', () => {
@@ -2322,13 +2302,12 @@ describe("Product Tests", () => {
         });
     });
 
+
     describe('View Test', () => {
         it('history view should add a new record on update', async () => {
             const dataStore = factory();
-            // Arrange
             const items = generateData(dataStore.products.schema, 2);
 
-            // Act
             await dataStore.products.addAsync(...items);
             await dataStore.saveChangesAsync();
 
@@ -2337,9 +2316,7 @@ describe("Product Tests", () => {
             });
 
             const firstProduct = await dataStore.products.firstAsync();
-
             firstProduct.category = "Changed";
-
             await dataStore.saveChangesAsync();
 
             await waitForAsync(async () => {
@@ -2349,10 +2326,8 @@ describe("Product Tests", () => {
 
         it('products view should update existing and not add a new record', async () => {
             const dataStore = factory();
-            // Arrange
             const items = generateData(dataStore.products.schema, 2);
 
-            // Act
             await dataStore.products.addAsync(...items);
             await dataStore.saveChangesAsync();
 
@@ -2361,15 +2336,14 @@ describe("Product Tests", () => {
             });
 
             const firstProduct = await dataStore.products.firstAsync();
-
             firstProduct.category = "Changed";
-
             await dataStore.saveChangesAsync();
 
             await waitForAsync(async () => {
-                const viewItemsCountAfterChange = await dataStore.productsView.firstOrUndefinedAsync(x => x.category === "Changed");
-                expect(viewItemsCountAfterChange).toBeDefined();
+                const changed = await dataStore.productsView.firstOrUndefinedAsync(x => x.category === "Changed");
+                expect(changed).toBeDefined();
             });
         });
+
     });
 });

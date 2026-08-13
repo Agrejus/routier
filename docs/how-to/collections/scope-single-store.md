@@ -1,10 +1,5 @@
 ---
 title: Scope a collection (single physical store)
-layout: default
-parent: Collections
-grand_parent: Data Operations
-nav_order: 2
-permalink: /how-to/collections/scope-single-store/
 ---
 
 ## Scope a collection (single physical store)
@@ -23,16 +18,14 @@ For single-table/collection backends (e.g., PouchDB, Local Storage), scope each 
 1. Add a tracked computed discriminator to your schema that stores the logical collection name (for example, `documentType`).
 2. Apply a global scope when creating the collection so all queries are constrained to that discriminator.
 
-{% capture snippet_scope_single_db %}{% include code/how-to/collections/scope-single-db.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_scope_single_db | strip }}{% endhighlight %}
+<<< @/_snippets/code/how-to/collections/scope-single-db.ts
 
 ### Runtime Scope + Inferred Types
 
 When the scope value is only known at runtime (for example, current `userSub`), initialize those collections in the constructor via factory functions.  
 Use `ReturnType<...>` on the collection properties to keep the same inferred collection types you would get from direct property initialization.
 
-{% capture snippet_scope_runtime_factory %}{% include code/how-to/collections/scope-runtime-param-factory.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_scope_runtime_factory | strip }}{% endhighlight %}
+<<< @/_snippets/code/how-to/collections/scope-runtime-param-factory.ts
 
 ### Why
 
@@ -40,5 +33,5 @@ This prevents cross-type collisions when multiple entity types share a single ph
 
 ### Related
 
-- Concepts: [Data Collections]({{ site.baseurl }}/concepts/data-collections/)
-- Integration: [PouchDB Plugin]({{ site.baseurl }}/integrations/plugins/built-in-plugins/pouchdb/)
+- Concepts: [Data Collections](/concepts/data-collections/memory-collections)
+- Integration: [PouchDB Plugin](/integrations/plugins/built-in-plugins/pouchdb/README)

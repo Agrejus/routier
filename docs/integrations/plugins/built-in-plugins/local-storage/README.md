@@ -1,9 +1,5 @@
 ---
 title: Local Storage Plugin
-layout: default
-parent: Built-in Plugins
-grand_parent: Integrations
-nav_order: 3
 ---
 
 # Local Storage Plugin
@@ -18,8 +14,7 @@ npm install @routier/browser-storage-plugin
 
 ## Basic Usage
 
-{% capture snippet_ls_basic %}{% include code/from-docs/integrations/plugins/built-in-plugins/local-storage/README/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_ls_basic | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/built-in-plugins/local-storage/README/block-1.ts
 
 ## Notes
 

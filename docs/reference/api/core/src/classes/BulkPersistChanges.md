@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / BulkPersistChanges
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / BulkPersistChanges
 
 # Class: BulkPersistChanges
 
@@ -10,7 +10,7 @@ Defined in: [core/src/collections/Changes.ts:70](https://github.com/Agrejus/rout
 
 ## Extends
 
-- `Map`\<[`SchemaId`](../type-aliases/SchemaId.md), [`SchemaPersistChanges`](SchemaPersistChanges.md)\>
+- `Map`\<[`SchemaId`](/reference/api/core/src/type-aliases/SchemaId), [`SchemaPersistChanges`](/reference/api/core/src/classes/SchemaPersistChanges)\>
 
 ## Constructors
 
@@ -24,7 +24,7 @@ Defined in: node\_modules/typescript/lib/lib.es2015.collection.d.ts:50
 
 ##### entries?
 
-readonly readonly \[`number`, [`SchemaPersistChanges`](SchemaPersistChanges.md)\<`Record`\<`string`, `unknown`\>\>\][]
+readonly readonly \[`number`, [`SchemaPersistChanges`](/reference/api/core/src/classes/SchemaPersistChanges)\<`Record`\<`string`, `unknown`\>\>\][]
 
 #### Returns
 
@@ -44,7 +44,7 @@ Defined in: node\_modules/typescript/lib/lib.es2015.collection.d.ts:49
 
 ##### iterable?
 
-`Iterable`\<readonly \[`number`, [`SchemaPersistChanges`](SchemaPersistChanges.md)\<`Record`\<`string`, `unknown`\>\>\], `any`, `any`\>
+`Iterable`\<readonly \[`number`, [`SchemaPersistChanges`](/reference/api/core/src/classes/SchemaPersistChanges)\<`Record`\<`string`, `unknown`\>\>\], `any`, `any`\>
 
 #### Returns
 
@@ -128,7 +128,7 @@ Defined in: [core/src/collections/Changes.ts:86](https://github.com/Agrejus/rout
 
 ### resolve()
 
-> **resolve**(`schemaId`): [`SchemaPersistChanges`](SchemaPersistChanges.md)
+> **resolve**(`schemaId`): [`SchemaPersistChanges`](/reference/api/core/src/classes/SchemaPersistChanges)
 
 Defined in: [core/src/collections/Changes.ts:72](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/Changes.ts#L72)
 
@@ -140,13 +140,13 @@ Defined in: [core/src/collections/Changes.ts:72](https://github.com/Agrejus/rout
 
 #### Returns
 
-[`SchemaPersistChanges`](SchemaPersistChanges.md)
+[`SchemaPersistChanges`](/reference/api/core/src/classes/SchemaPersistChanges)
 
 ***
 
 ### get()
 
-> **get**\<`T`\>(`schemaId`): [`SchemaPersistChanges`](SchemaPersistChanges.md)\<`T`\>
+> **get**\<`T`\>(`schemaId`): [`SchemaPersistChanges`](/reference/api/core/src/classes/SchemaPersistChanges)\<`T`\>
 
 Defined in: [core/src/collections/Changes.ts:82](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/Changes.ts#L82)
 
@@ -166,7 +166,7 @@ Returns a specified element from the Map object. If the value that is associated
 
 #### Returns
 
-[`SchemaPersistChanges`](SchemaPersistChanges.md)\<`T`\>
+[`SchemaPersistChanges`](/reference/api/core/src/classes/SchemaPersistChanges)\<`T`\>
 
 Returns the element associated with the specified key. If no element is associated with the specified key, undefined is returned.
 
@@ -178,7 +178,7 @@ Returns the element associated with the specified key. If no element is associat
 
 ### toResult()
 
-> **toResult**(): [`BulkPersistResult`](BulkPersistResult.md)
+> **toResult**(): [`BulkPersistResult`](/reference/api/core/src/classes/BulkPersistResult)
 
 Defined in: [core/src/collections/Changes.ts:139](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/Changes.ts#L139)
 
@@ -186,7 +186,7 @@ Ensures the result has the same result sets as the change sets
 
 #### Returns
 
-[`BulkPersistResult`](BulkPersistResult.md)
+[`BulkPersistResult`](/reference/api/core/src/classes/BulkPersistResult)
 
 ***
 
@@ -298,7 +298,7 @@ Adds a new element with a specified key and value to the Map. If an element with
 
 ##### value
 
-[`SchemaPersistChanges`](SchemaPersistChanges.md)
+[`SchemaPersistChanges`](/reference/api/core/src/classes/SchemaPersistChanges)
 
 #### Returns
 
@@ -312,7 +312,7 @@ Adds a new element with a specified key and value to the Map. If an element with
 
 ### \[iterator\]()
 
-> **\[iterator\]**(): `MapIterator`\<\[`number`, [`SchemaPersistChanges`](SchemaPersistChanges.md)\<`Record`\<`string`, `unknown`\>\>\]\>
+> **\[iterator\]**(): `MapIterator`\<\[`number`, [`SchemaPersistChanges`](/reference/api/core/src/classes/SchemaPersistChanges)\<`Record`\<`string`, `unknown`\>\>\]\>
 
 Defined in: node\_modules/typescript/lib/lib.es2015.iterable.d.ts:143
 
@@ -320,7 +320,7 @@ Returns an iterable of entries in the map.
 
 #### Returns
 
-`MapIterator`\<\[`number`, [`SchemaPersistChanges`](SchemaPersistChanges.md)\<`Record`\<`string`, `unknown`\>\>\]\>
+`MapIterator`\<\[`number`, [`SchemaPersistChanges`](/reference/api/core/src/classes/SchemaPersistChanges)\<`Record`\<`string`, `unknown`\>\>\]\>
 
 #### Inherited from
 
@@ -330,7 +330,7 @@ Returns an iterable of entries in the map.
 
 ### entries()
 
-> **entries**(): `MapIterator`\<\[`number`, [`SchemaPersistChanges`](SchemaPersistChanges.md)\<`Record`\<`string`, `unknown`\>\>\]\>
+> **entries**(): `MapIterator`\<\[`number`, [`SchemaPersistChanges`](/reference/api/core/src/classes/SchemaPersistChanges)\<`Record`\<`string`, `unknown`\>\>\]\>
 
 Defined in: node\_modules/typescript/lib/lib.es2015.iterable.d.ts:148
 
@@ -338,7 +338,7 @@ Returns an iterable of key, value pairs for every entry in the map.
 
 #### Returns
 
-`MapIterator`\<\[`number`, [`SchemaPersistChanges`](SchemaPersistChanges.md)\<`Record`\<`string`, `unknown`\>\>\]\>
+`MapIterator`\<\[`number`, [`SchemaPersistChanges`](/reference/api/core/src/classes/SchemaPersistChanges)\<`Record`\<`string`, `unknown`\>\>\]\>
 
 #### Inherited from
 
@@ -366,7 +366,7 @@ Returns an iterable of keys in the map
 
 ### values()
 
-> **values**(): `MapIterator`\<[`SchemaPersistChanges`](SchemaPersistChanges.md)\<`Record`\<`string`, `unknown`\>\>\>
+> **values**(): `MapIterator`\<[`SchemaPersistChanges`](/reference/api/core/src/classes/SchemaPersistChanges)\<`Record`\<`string`, `unknown`\>\>\>
 
 Defined in: node\_modules/typescript/lib/lib.es2015.iterable.d.ts:158
 
@@ -374,7 +374,7 @@ Returns an iterable of values in the map
 
 #### Returns
 
-`MapIterator`\<[`SchemaPersistChanges`](SchemaPersistChanges.md)\<`Record`\<`string`, `unknown`\>\>\>
+`MapIterator`\<[`SchemaPersistChanges`](/reference/api/core/src/classes/SchemaPersistChanges)\<`Record`\<`string`, `unknown`\>\>\>
 
 #### Inherited from
 

@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / EntityUpdateInfo
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / EntityUpdateInfo
 
 # Type Alias: EntityUpdateInfo\<T\>
 
@@ -20,7 +20,7 @@ Defined in: [core/src/plugins/types.ts:90](https://github.com/Agrejus/routier/bl
 
 ### entity
 
-> **entity**: [`InferType`](InferType.md)\<`T`\>
+> **entity**: [`InferType`](/reference/api/core/src/type-aliases/InferType)\<`T`\>
 
 Defined in: [core/src/plugins/types.ts:91](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/types.ts#L91)
 
@@ -28,7 +28,7 @@ Defined in: [core/src/plugins/types.ts:91](https://github.com/Agrejus/routier/bl
 
 ### changeType
 
-> **changeType**: [`EntityChangeType`](EntityChangeType.md)
+> **changeType**: [`EntityChangeType`](/reference/api/core/src/type-aliases/EntityChangeType)
 
 Defined in: [core/src/plugins/types.ts:92](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/types.ts#L92)
 

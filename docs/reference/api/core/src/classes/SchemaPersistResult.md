@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / SchemaPersistResult
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / SchemaPersistResult
 
 # Class: SchemaPersistResult\<T\>
 
@@ -28,7 +28,7 @@ Defined in: [core/src/collections/Changes.ts:165](https://github.com/Agrejus/rou
 
 ### adds
 
-> **adds**: [`InferType`](../type-aliases/InferType.md)\<`T`\>[] = `[]`
+> **adds**: [`InferType`](/reference/api/core/src/type-aliases/InferType)\<`T`\>[] = `[]`
 
 Defined in: [core/src/collections/Changes.ts:166](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/Changes.ts#L166)
 
@@ -36,7 +36,7 @@ Defined in: [core/src/collections/Changes.ts:166](https://github.com/Agrejus/rou
 
 ### updates
 
-> **updates**: [`InferType`](../type-aliases/InferType.md)\<`T`\>[] = `[]`
+> **updates**: [`InferType`](/reference/api/core/src/type-aliases/InferType)\<`T`\>[] = `[]`
 
 Defined in: [core/src/collections/Changes.ts:167](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/Changes.ts#L167)
 
@@ -44,7 +44,7 @@ Defined in: [core/src/collections/Changes.ts:167](https://github.com/Agrejus/rou
 
 ### removes
 
-> **removes**: [`InferType`](../type-aliases/InferType.md)\<`T`\>[] = `[]`
+> **removes**: [`InferType`](/reference/api/core/src/type-aliases/InferType)\<`T`\>[] = `[]`
 
 Defined in: [core/src/collections/Changes.ts:168](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/Changes.ts#L168)
 

@@ -10,7 +10,7 @@ export class EnrichmentNullableObjectHandler extends PropertyInfoHandler {
         if (property.type === SchemaTypes.Object && (property.isNullable || property.isOptional)) {
 
             const slotPath = new SlotPath("factory", "function", "enriched", "object", "enriched");
-            const nestedSlotPath = this.buildSlotPath(property, slotPath);
+            const nestedSlotPath = this.buildEnrichedObjectSlotPath(property, slotPath);
 
             // Generate null check for current level using parent relationships
             const entityPath = property.getSelectrorPath({ parent: "entity", assignmentType: "FORCE_NULLABLE_OR_OPTIONAL" });
@@ -23,18 +23,32 @@ export class EnrichmentNullableObjectHandler extends PropertyInfoHandler {
             }
 
 
-            ifsSlot.if(`${entityPath} != null`).appendBody(`${enrichedPath} = enableChangeTracking(${enrichedPath} || {}, "${property.name}");`);
+            // Pass the root as parent so nested writes mark the root entity dirty,
+            // and the full dotted path so the change is recorded under it
+            ifsSlot.if(`${entityPath} != null`).appendBody(`${enrichedPath} = enableChangeTracking(${enrichedPath} || {}, "${this.getTrackingPath(property)}", enriched);`);
 
             let enriched = builder.getOrDefault<ObjectBuilder>(nestedSlotPath.get());
 
             if (enriched == null) {
-                const enrichedSlot = builder.get<ObjectBuilder>(slotPath.get());
+                if (property.parent != null) {
+                    // Nested object: attach to the parent's ObjectBuilder (registered as
+                    // `[enriched.<parentPath>]`), never to the root — attaching to the root
+                    // hoists the subtree to the top level of the literal
+                    const parentSlotPath = this.buildEnrichedObjectSlotPath(property.parent, slotPath);
+                    const parentBuilder = builder.get<ObjectBuilder>(parentSlotPath.get());
+                    enriched = parentBuilder.nested(property.name, `[${enrichedPath}]`);
+                } else {
+                    // Create the enriched result object when this is the first property
+                    // iterated — handler output cannot depend on schema property order
+                    let enrichedRoot = builder.getOrDefault<ObjectBuilder>(slotPath.get());
 
-                if (enrichedSlot == null) {
-                    throw new Error(`Error building enricher, could not find slot for ${slotPath.get()}`)
+                    if (enrichedRoot == null) {
+                        const enrichedSlot = builder.get<SlotBlock>("factory.function.enriched");
+                        enrichedRoot = enrichedSlot.variable("enriched", { name: "object" }).object({ name: "enriched" });
+                    }
+
+                    enriched = enrichedRoot.nested(property.name, `[${enrichedPath}]`);
                 }
-
-                enriched = enrichedSlot.nested(property.name, `[${enrichedPath}]`);
             }
             return builder;
         }

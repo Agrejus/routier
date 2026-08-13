@@ -1,0 +1,57 @@
+{
+    "compilerOptions": {
+        "lib": ["ESNext", "ES2023"],
+        "target": "ESNext",
+        "module": "ESNext",
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "resolveJsonModule": true,
+        "jsx": "react-jsx",
+        "skipLibCheck": true,
+        "baseUrl": ".",
+        // Workspace packages publish `types: ./dist/index.d.ts`, which does not exist
+        // until a build runs. Tests resolve to source instead so `npx jest` works on a
+        // clean checkout with no build step.
+        "paths": {
+            "@routier/core": ["./core/src/index.ts"],
+            "@routier/core/*": ["./core/src/*"],
+            "@routier/datastore": ["./datastore/src/index.ts"],
+            "@routier/datastore/*": ["./datastore/src/*"],
+            "@routier/test-utils": ["./test-utils/src/index.ts"],
+            "@routier/test-utils/*": ["./test-utils/src/*"],
+            "@routier/memory-plugin": ["./plugins/memory/src/index.ts"],
+            "@routier/memory-plugin/*": ["./plugins/memory/src/*"],
+            "@routier/dexie-plugin": ["./plugins/dexie/src/index.ts"],
+            "@routier/browser-storage-plugin": ["./plugins/browser-storage/src/index.ts"],
+            "@routier/file-system-plugin": ["./plugins/file-system/src/index.ts"],
+            "@routier/sql-plugin-core": ["./plugins/sql-core/src/index.ts"],
+            "@routier/blob-plugin": ["./plugins/blob/src/index.ts"],
+            "@routier/encryption": ["./plugins/encryption/src/index.ts"],
+            "@routier/blob-plugin/*": ["./plugins/blob/src/*"],
+            "@routier/sqlite-plugin": ["./plugins/sqlite/src/index.ts"],
+            "@routier/sqlite-plugin/d1": ["./plugins/sqlite/src/d1.ts"],
+            "@routier/pouchdb-plugin": ["./plugins/pouchdb/src/index.ts"],
+            "@routier/postgresql-plugin": ["./plugins/postgresql/src/index.ts"],
+            "@routier/mysql-plugin": ["./plugins/mysql/src/index.ts"],
+            "@routier/mongodb-plugin": ["./plugins/mongodb/src/index.ts"],
+            "@routier/replication-plugin": ["./plugins/replication/src/index.ts"],
+            "@routier/react": ["./react/src/index.ts"],
+            "@routier/sync-server": ["./sync-server/src/index.ts"],
+
+            // `baseUrl` is the repo root, which contains a directory named `react`. TS tries
+            // baseUrl-relative resolution before node_modules for a non-relative import, so
+            // once `react/dist/index.d.ts` exists — it does after `npm run build` — the bare
+            // specifier `react` resolves to THIS WORKSPACE instead of the React package, and
+            // every hook import fails with "has no exported member". It only looked fine on an
+            // unbuilt checkout, where the workspace had no types to find. Pinned explicitly.
+            "react": ["./node_modules/react"],
+            "react-dom": ["./node_modules/react-dom"],
+            "react-dom/*": ["./node_modules/react-dom/*"]
+        }
+    },
+    // ts-jest reads only `compilerOptions` from this file. An empty `include` keeps
+    // editors and `tsc -b` from adopting it as the project config for source files,
+    // where its test-only paths would mask the real package boundaries.
+    "include": []
+}

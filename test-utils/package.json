@@ -1,6 +1,7 @@
 {
   "name": "@routier/test-utils",
-  "version": "0.0.1-alpha.1",
+  "version": "0.3.0",
+  "private": true,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "source": "./src/index.ts",
@@ -8,7 +9,7 @@
     "build:types": "tsc --emitDeclarationOnly",
     "build:bundle": "rspack build",
     "build": "npm run build:bundle && npm run build:types",
-    "tsc": "tsc",
+    "tsc": "tsc --noEmit",
     "lint": "oxlint . --ignore-pattern \"**/__tests__/**\" --ignore-pattern \"**/*.test.*\" --ignore-pattern \"**/*.spec.*\" --ignore-pattern \"**/*.mjs\""
   },
   "sideEffects": false,
@@ -28,7 +29,7 @@
   ],
   "description": "Testing plugin for routier",
   "peerDependencies": {
-    "@routier/core": ">=0.2.1"
+    "@routier/core": ">=0.3.0"
   },
   "dependencies": {
     "@faker-js/faker": "^9.7.0"
@@ -38,7 +39,6 @@
     "@routier/datastore": "file://../../datastore",
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",
-    "ts-loader": "^9.5.2",
     "vitest": "^3.2.4"
   }
 }

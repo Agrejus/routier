@@ -69,7 +69,7 @@ class AppContext extends DataStore {
   constructor() {
     super(new MemoryPlugin("routier-app"));
   }
-  users = this.collection(userSchema).create();
+  users = this.collection(userSchema).proxy().create();
 }
 
 const ctx = new AppContext();

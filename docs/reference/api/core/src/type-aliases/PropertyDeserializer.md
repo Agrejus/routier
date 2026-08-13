@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / PropertyDeserializer
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / PropertyDeserializer
 
 # Type Alias: PropertyDeserializer()\<T\>
 

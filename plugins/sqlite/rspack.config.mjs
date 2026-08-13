@@ -1,54 +1,25 @@
-import { dirname, resolve } from "node:path";
+import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { defineConfig } from "@rspack/cli";
+import { libraryConfig } from "../../scripts/rspack.library.mjs";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-export default defineConfig({
-    entry: "./src/index.ts", // Entry point for your library
-    output: {
-        path: resolve(__dirname, "dist"),
-        filename: "index.js", // Default output file name
-        library: {
-            type: "commonjs2" // Use CommonJS for Node.js compatibility with native modules
-        },
-        globalObject: "this", // Ensures compatibility with both browser and Node.js
-        clean: true, // Cleans the output directory before each build
+export default libraryConfig({
+    dirname: dirname(fileURLToPath(import.meta.url)),
+    // `node`, even though one of the entries is the browser build. The target only decides
+    // how Rspack resolves what it bundles, and every engine here is external, so nothing
+    // Node-specific reaches the browser bundle. The browser entry imports no Node built-in.
+    target: "node",
+    entry: {
+        index: "./src/index.ts",
+        "index.browser": "./src/index.browser.ts",
+        "drivers/sqlite3": "./src/drivers/sqlite3.ts",
+        "drivers/turso": "./src/drivers/turso.ts",
+        // A plugin variant, not a driver — D1 has no interactive transaction for a driver
+        // interface to sit on. Its own entry so a Workers bundle never pulls in node:sqlite.
+        d1: "./src/d1.ts",
+        // At the root of dist/, not under drivers/. The worker URL is resolved relative to
+        // whichever file contains the expression, and that file is `index.browser.js` at the
+        // root — the wasm driver is bundled into it rather than published separately, so that
+        // there is exactly one depth to be correct about.
+        wasmWorker: "./src/drivers/wasmWorker.ts",
     },
-    module: {
-        rules: [
-            {
-                test: /\.ts$/, // Match TypeScript files
-                use: {
-                    loader: "ts-loader",
-                    options: {
-                        transpileOnly: false, // Ensure type-checking is performed
-                    },
-                },
-                exclude: /node_modules/,
-            },
-        ],
-    },
-    resolve: {
-        extensions: [".ts", ".js"], // Resolve TypeScript and JavaScript files
-        fallback: {
-            "perf_hooks": false,
-            "path": false,
-            "fs": false,
-            "os": false,
-            "crypto": false,
-            "stream": false,
-            "util": false,
-            "buffer": false,
-            "events": false
-        }
-    },
-    externals: {
-        // Externalize sqlite3 (native Node.js module) - it will be required at runtime
-        // In browser environments, this will fail gracefully or use an alternative implementation
-        "sqlite3": "commonjs sqlite3"
-    },
-    target: "web", // Compile for both browser and Node.js
-    mode: "development", // Set production mode
-    devtool: "source-map"
 });

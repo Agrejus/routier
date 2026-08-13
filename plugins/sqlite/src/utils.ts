@@ -1,6 +1,7 @@
 import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema';
-import { Expression, toSql } from '@routier/core/expressions';
-import { IQuery, QueryField } from '@routier/core/plugins';
+import { Expression } from '@routier/core/expressions';
+import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, getDialect, sqlColumnProperties, toColumnValueMap, toSql } from '@routier/sql-plugin-core';
+import { IQuery, JoinQueryOptionValue, Query, QueryField } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
 import { SqlOperation } from './types';
 
@@ -19,7 +20,13 @@ const schemaTypeToSqliteType = (type: SchemaTypes): string => {
             return 'TEXT'; // ISO string
         case SchemaTypes.Object:
         case SchemaTypes.Array:
-            return 'JSON'; // Use JSON for deeply nested structures
+        // A vector is a list of numbers with no native SQLite type behind it, so it is
+        // stored as JSON like any other array. The similarity search then runs in memory
+        // — correct, and the reason `.nearest()` works here at all.
+        case SchemaTypes.Vector:
+            // One source of truth for this engine's JSON type: the same dialect value
+            // toColumnAssignments encodes against, so DDL and DML cannot drift apart.
+            return getDialect('sqlite').jsonColumnType;
         default:
             return 'TEXT';
     }
@@ -29,7 +36,7 @@ const schemaTypeToSqliteType = (type: SchemaTypes): string => {
  * Determines if a property is deeply nested (object or array).
  */
 const isDeeplyNested = (prop: PropertyInfo<any>): boolean => {
-    return prop.type === SchemaTypes.Object || prop.type === SchemaTypes.Array;
+    return prop.type === SchemaTypes.Object || prop.type === SchemaTypes.Array || prop.type === SchemaTypes.Vector;
 };
 
 /**
@@ -59,21 +66,23 @@ export function compiledSchemaToSqliteTable(schema: CompiledSchema<any>, tableNa
         singleIdentityPK = identityProps[0];
     }
 
-    for (const prop of schema.properties) {
+    // Root properties only: a nested subtree is ONE JSON column named for its root.
+    // Iterating every property would emit a column per descendant, named by its leaf.
+    for (const prop of sqlColumnProperties(schema)) {
         let colDef: string;
 
         if (singleIdentityPK && prop.name === singleIdentityPK.name) {
             if (prop.type === SchemaTypes.Number) {
-                colDef = `"${prop.name}" INTEGER PRIMARY KEY AUTOINCREMENT`;
+                colDef = `"${prop.getResolvedName()}" INTEGER PRIMARY KEY AUTOINCREMENT`;
             } else if (prop.type === SchemaTypes.String) {
-                colDef = `"${prop.name}" TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)),2) || '-' || hex(randomblob(6))))`;
+                colDef = `"${prop.getResolvedName()}" TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(hex(randomblob(2)),2) || '-' || hex(randomblob(6))))`;
             } else {
-                colDef = `"${prop.name}" ${schemaTypeToSqliteType(prop.type)} PRIMARY KEY`;
+                colDef = `"${prop.getResolvedName()}" ${schemaTypeToSqliteType(prop.type)} PRIMARY KEY`;
             }
         } else if (isDeeplyNested(prop)) {
-            colDef = `"${prop.name}" JSON`;
+            colDef = `"${prop.getResolvedName()}" JSON`;
         } else {
-            colDef = `"${prop.name}" ${schemaTypeToSqliteType(prop.type)}`;
+            colDef = `"${prop.getResolvedName()}" ${schemaTypeToSqliteType(prop.type)}`;
         }
 
         columns.push(colDef);
@@ -82,7 +91,7 @@ export function compiledSchemaToSqliteTable(schema: CompiledSchema<any>, tableNa
     // Composite PK logic
     let pkClause = '';
     if ((!singleIdentityPK) && idProps.length > 0) {
-        const pkCols = idProps.map(p => `"${p.name}"`);
+        const pkCols = idProps.map(p => `"${p.getResolvedName()}"`);
         pkClause = `, PRIMARY KEY (${pkCols.join(', ')})`;
     }
 
@@ -96,7 +105,7 @@ export function compiledSchemaToSqliteTable(schema: CompiledSchema<any>, tableNa
         if (prop.isDistinct) {
             const idxName = `${table}_${prop.name}_unique_idx`;
             if (!usedIndexNames.has(idxName)) {
-                indexStatements.push(`CREATE UNIQUE INDEX IF NOT EXISTS "${idxName}" ON "${table}" ("${prop.name}");`);
+                indexStatements.push(`CREATE UNIQUE INDEX IF NOT EXISTS "${idxName}" ON "${table}" ("${prop.getResolvedName()}");`);
                 usedIndexNames.add(idxName);
             }
         }
@@ -117,13 +126,13 @@ export function compiledSchemaToSqliteTable(schema: CompiledSchema<any>, tableNa
             // Single-column index
             const idxSqlName = `${table}_${props[0].name}_idx`;
             if (!usedIndexNames.has(idxSqlName)) {
-                indexStatements.push(`CREATE INDEX IF NOT EXISTS "${idxSqlName}" ON "${table}" ("${props[0].name}");`);
+                indexStatements.push(`CREATE INDEX IF NOT EXISTS "${idxSqlName}" ON "${table}" ("${props[0].getResolvedName()}");`);
                 usedIndexNames.add(idxSqlName);
             }
         } else if (props.length > 1) {
             // Composite (clustered) index
             const idxSqlName = `${table}_${idxName}_clustered_idx`;
-            const colList = props.map(p => `"${p.name}"`).join(', ');
+            const colList = props.map(p => `"${p.getResolvedName()}"`).join(', ');
             if (!usedIndexNames.has(idxSqlName)) {
                 indexStatements.push(`CREATE INDEX IF NOT EXISTS "${idxSqlName}" ON "${table}" (${colList});`);
                 usedIndexNames.add(idxSqlName);
@@ -159,8 +168,12 @@ export function buildSelectFromExpression<TEntity extends {}, TShape>(options: {
     schema: CompiledSchema<TEntity>
 }): { sql: string, params: any[] } {
     const { schema, query } = options;
-    const columns = schema.properties && schema.properties.length > 0
-        ? schema.properties.map(p => `"${p.name}"`)
+    // Root properties only. `schema.properties` includes the children of a nested object,
+    // and those are not columns — the whole object is stored in one JSON column. Selecting
+    // them produced `SELECT "nested", "inner", "value" ...` where only `nested` exists.
+    const rootProperties = sqlColumnProperties(schema);
+    const columns = rootProperties.length > 0
+        ? rootProperties.map(p => `"${p.getResolvedName()}"`)
         : ['*'];
 
     // Get the first filter expression from the query options
@@ -178,7 +191,7 @@ export function buildSelectFromExpression<TEntity extends {}, TShape>(options: {
 
 export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSchema<TEntity>, changes: SchemaPersistChanges<Record<string, unknown>>): {
     adds: SqlOperation | null;
-    updates: SqlOperation | null;
+    updates: SqlOperation[];
     removes: SqlOperation | null;
 } {
     const collectionName = schema.collectionName;
@@ -190,17 +203,18 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
     } = changes;
 
     if (!hasItems) {
-        return { adds: null, updates: null, removes: null };
+        return { adds: null, updates: [], removes: null };
     }
 
-    // Get column names from schema properties, excluding identity columns for INSERT
-    const allColumns = schema.properties.map(p => `"${p.name}"`);
+    // Column identifiers are storage-side names (PropertyInfo.from ?? name): the entities
+    // handed to bulkPersist are wire-shaped, so both the DDL and the DML must use them
+    const columnProperties = sqlColumnProperties(schema);
+    const allColumns = columnProperties.map(p => `"${p.getResolvedName()}"`);
     const allColumnStr = allColumns.join(', ');
 
     // For INSERT operations, exclude identity columns (they're auto-generated)
-    const insertColumns = schema.properties
-        .filter(p => !p.isIdentity)
-        .map(p => `"${p.name}"`);
+    const insertProperties = columnProperties.filter(p => !p.isIdentity);
+    const insertColumns = insertProperties.map(p => `"${p.getResolvedName()}"`);
     const insertColumnStr = insertColumns.join(', ');
 
     // Handle INSERT operations (adds)
@@ -215,89 +229,38 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
         // Flatten all add parameters (excluding identity columns)
         const addParams: any[] = [];
         for (const add of adds) {
-            for (const col of schema.properties) {
-                if (!col.isIdentity) {
-                    addParams.push(add[col.name]);
-                }
+            // Routed through the same column resolution the UPDATE path uses, so a nested
+            // object is JSON-encoded here too rather than handed to the driver as an object.
+            const values = toColumnValueMap(add as Record<string, unknown>, schema, getDialect('sqlite'));
+
+            for (const col of insertProperties) {
+                addParams.push(values.get(col.getResolvedName()));
             }
         }
 
         addsOperation = { sql: insertSql, params: addParams };
     }
 
-    // Handle UPDATE operations (updates)
-    let updatesOperation: SqlOperation | null = null;
-    if (updates.length > 0) {
-        // Group updates by which columns they're changing
-        const updateGroups = new Map<string, typeof updates>();
-
-        for (const update of updates) {
-            const deltaKeys = Object.keys(update.delta).sort().join(',');
-            if (!updateGroups.has(deltaKeys)) {
-                updateGroups.set(deltaKeys, []);
-            }
-            updateGroups.get(deltaKeys)!.push(update);
-        }
-
-        // Build a separate UPDATE statement for each group
-        const statements: string[] = [];
-        const allParams: any[] = [];
-
-        for (const [, groupUpdates] of updateGroups) {
-            const firstUpdate = groupUpdates[0];
-            let deltaKeys = Object.keys(firstUpdate.delta);
-
-            // If delta is empty, use all properties from the entity (except identity columns)
-            if (deltaKeys.length === 0) {
-                const entityKeys = Object.keys(firstUpdate.entity);
-                const identityKeys = schema.idProperties.map(p => p.name);
-                deltaKeys = entityKeys.filter(key => !identityKeys.includes(key));
-            }
-
-            // Build SET clause with CASE statements for each column
-            const setClauses: string[] = [];
-
-            // Get ID column names
-            const idColumns = schema.idProperties.map(p => p.name);
-            const idColumn = idColumns[0]; // Use first ID for CASE matching
-
-            for (const key of deltaKeys) {
-                let caseStatement = `"${key}" = CASE "${idColumn}"`;
-
-                for (const update of groupUpdates) {
-                    const idValue = schema.idProperties[0].getValue(update.entity);
-                    caseStatement += ` WHEN ? THEN ?`;
-                    allParams.push(idValue);
-
-                    // Use entity value if delta is empty, otherwise use delta value
-                    const value = Object.keys(update.delta).length === 0
-                        ? update.entity[key]
-                        : update.delta[key];
-                    allParams.push(value);
-                }
-
-                caseStatement += ` ELSE "${key}" END`;
-                setClauses.push(caseStatement);
-            }
-
-            // Build WHERE clause for all IDs in this group
-            const idPlaceholders = groupUpdates.map(() => '?').join(', ');
-
-            // Add IDs for WHERE clause (they're already in CASE statements, but WHERE needs them too)
-            for (const update of groupUpdates) {
-                const idValue = schema.idProperties[0].getValue(update.entity);
-                allParams.push(idValue);
-            }
-
-            const updateSql = `UPDATE "${collectionName}" SET ${setClauses.join(', ')} WHERE "${idColumn}" IN (${idPlaceholders}) RETURNING ${allColumnStr}`;
-            statements.push(updateSql);
-        }
-
-        if (statements.length > 0) {
-            // Join multiple statements with semicolon only if there are multiple groups
-            updatesOperation = { sql: statements.join('; '), params: allParams };
-        }
-    }
+    // Handle UPDATE operations (updates). One SqlOperation per changed-column group — the
+    // shared builder resolves deltas to columns (renames, JSON encoding, empty-delta
+    // fallback) and never joins groups with ';' (defect #22).
+    // Schemas with a `.concurrency()` token take one CONDITIONAL statement per row
+    // instead of the grouped CASE form, so a stale write affects zero rows and is
+    // reported as a conflict on that exact row.
+    const hasConcurrencyChecks = updates.some(u => (u as { concurrency?: unknown }).concurrency != null);
+    const updatesOperations: SqlOperation[] = hasConcurrencyChecks
+        ? buildConditionalUpdateOperations(
+            schema,
+            updates as { entity: Record<string, unknown>; delta: Record<string, unknown> }[],
+            getDialect('sqlite'),
+            { suffix: ` RETURNING ${allColumnStr}` }
+        ).map(({ sql, params, id, checked }) => ({ sql, params, conflictCheck: checked ? { id } : undefined }))
+        : buildGroupedUpdateOperations(
+            schema,
+            updates as { entity: Record<string, unknown>; delta: Record<string, unknown> }[],
+            getDialect('sqlite'),
+            { suffix: ` RETURNING ${allColumnStr}` }
+        ).map(({ sql, params }) => ({ sql, params }));
 
     // Handle DELETE operations (removes)
     let removesOperation: SqlOperation | null = null;
@@ -313,7 +276,7 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 
             for (const idProperty of idProperties) {
                 const idValue = idProperty.getValue(remove);
-                entityWhereClauses.push(`"${idProperty.name}" = ?`);
+                entityWhereClauses.push(`"${idProperty.getResolvedName()}" = ?`);
                 allParams.push(idValue);
 
             }
@@ -328,7 +291,7 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 
     return {
         adds: addsOperation,
-        updates: updatesOperation,
+        updates: updatesOperations,
         removes: removesOperation
     };
 }
@@ -343,6 +306,7 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuery<TEntity, TShape>): SqlOperation {
     const { schema, options } = query;
     const tableName = schema.collectionName;
+
 
     // Check if there's a map operation that specifies which columns to select
     let mapFields: QueryField[] | null = null;
@@ -366,16 +330,32 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
             columnsStr += `, "${fieldName}"`;
         }
     } else {
-        // Use all schema properties
-        const columnCount = schema.properties.length;
+        /**
+         * Root properties only.
+         *
+         * `schema.properties` is every property in the schema, including the children of a
+         * nested object. Those children are not columns: the object is stored whole in one
+         * JSON column. Using the unfiltered list emitted
+         * `SELECT "nested", "inner", "value", "count" ...` for a schema with one nested
+         * object, naming three columns that do not exist.
+         *
+         * That went unnoticed because `sqlite3` enables SQLite's double-quoted-string
+         * misfeature, which silently reinterprets an unknown `"inner"` as the string literal
+         * `'inner'`. The query then returned three constant columns, which the decoder
+         * ignored, and every test passed. `node:sqlite` compiles with `SQLITE_DQS=0` and
+         * reports it properly.
+         */
+        const rootProperties = sqlColumnProperties(schema);
+        const columnCount = rootProperties.length;
+
         if (columnCount === 0) {
             throw new Error("Need to select at least one column, found zero");
         }
 
         // Use string concatenation instead of array join for better performance
-        columnsStr = `"${schema.properties[0].name}"`;
+        columnsStr = `"${rootProperties[0].getResolvedName()}"`;
         for (let i = 1; i < columnCount; i++) {
-            columnsStr += `, "${schema.properties[i].name}"`;
+            columnsStr += `, "${rootProperties[i].getResolvedName()}"`;
         }
     }
 
@@ -498,8 +478,10 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
                 break;
 
             case 'count':
-                // Replace SELECT with COUNT and rename the column to "count"
-                currentQuery = currentQuery.replace(/SELECT .*? FROM/, 'SELECT COUNT(*) AS "count" FROM');
+                // Wrap rather than rewrite the SELECT: a rewritten query keeps its
+                // LIMIT/OFFSET, which then applies to the single count row (OFFSET
+                // skips it entirely). Wrapping counts whatever the built query yields
+                currentQuery = `SELECT COUNT(*) AS "count" FROM (${currentQuery}) AS count_subquery`;
                 break;
 
             case 'min':
@@ -527,4 +509,41 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
     }
 
     return { sql: currentQuery, params };
+}
+
+/**
+ * Builds the joined SELECT for a query carrying a `join` option.
+ *
+ * Separate from `buildFromQueryOperation` because a join needs the INNER schema, which lives in
+ * the event's schema collection rather than in the query — and because the outer side is built by
+ * the ordinary single-table path, which this then wraps.
+ *
+ * The options recorded BEFORE the join belong to the outer side, and they are applied to the
+ * derived table rather than to the joined statement. That distinction is load-bearing: SQL applies
+ * `ORDER BY` and `LIMIT` to the JOINED rows, so a `.take(2)` before a join would window the pairs
+ * instead of the outer rows and answer a different question from the in-memory hash join. As a
+ * subquery it means what it means everywhere else — window the outer rows, then pair them.
+ */
+export function buildJoinQueryOperation<TEntity extends {}, TShape, TInner extends {}>(
+    query: IQuery<TEntity, TShape>,
+    innerSchema: CompiledSchema<TInner>
+): SqlOperation & { join: JoinQueryOptionValue } {
+    const { before, at } = query.options.splitAt("join");
+
+    if (at == null) {
+        throw new Error("buildJoinQueryOperation was called for a query with no join option.");
+    }
+
+    const outer = buildFromQueryOperation(new Query(before, query.schema));
+
+    const joined = buildJoinStatement({
+        dialect: getDialect('sqlite'),
+        join: at.value,
+        outerSchema: query.schema,
+        innerSchema,
+        outer: outer.sql,
+        outerParams: outer.params
+    });
+
+    return { ...joined, join: at.value };
 }

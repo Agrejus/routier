@@ -121,9 +121,22 @@ export class TrampolinePipeline<TInitial, TCurrent = TInitial> {
                             this._hasErrored = true;
                         }
                         currentStep = null; // Stop the loop
-                        // We don't call `done` here because an error occurred.
-                        // The application should handle the uncaught exception if desired.
-                        break; // Explicitly break loop on error
+
+                        // Report the failure to the caller.
+                        //
+                        // This used to break without calling `done`, on the reasoning that
+                        // the application should handle the uncaught exception. It cannot:
+                        // the error is caught right here, so nothing escapes to be handled,
+                        // and every caller awaiting the callback waits forever. A hang is
+                        // strictly worse than an error — it gives the caller nothing to act
+                        // on and no way to time out.
+                        //
+                        // `done` runs exactly once per execution: this path returns
+                        // immediately, and finalStepSentinel checks `_hasErrored` before
+                        // reporting success, so the two are mutually exclusive.
+                        isRunning = false;
+                        done(currentData as TFinal, trampolineError);
+                        return;
                     }
                 }
                 // Loop ends when currentStep is null or loop is broken by error
@@ -273,9 +286,13 @@ export class WorkPipeline {
                             this._hasErrored = true;
                         }
                         currentStep = null; // Stop the loop
-                        // We don't call `done` here because an error occurred.
-                        // The application should handle the uncaught exception if desired.
-                        break; // Explicitly break loop on error
+
+                        // Report the failure to the caller. See the note on the same path in
+                        // TrampolinePipeline: swallowing the error here left every caller
+                        // awaiting `done` hanging instead of receiving a failure.
+                        isRunning = false;
+                        done(Result.error(trampolineError));
+                        return;
                     }
                 }
                 // Loop ends when currentStep is null or loop is broken by error

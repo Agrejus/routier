@@ -1,11 +1,57 @@
 import { DataTranslator } from "./DataTranslator";
 import { QueryOption } from "../query/types";
+import { nearestBy } from "../query/similarity";
+import { executeJoin, JoinInnerSide, toEntityShape } from "../query/join";
 import { assertIsArray } from "../../assertions";
 import { ParamsFilter } from "../../expressions";
 import { isDate, UnknownRecord } from "../../utilities";
 import { IdType } from "../../schema";
+import { IQuery } from "../types";
 
 export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRoot, TShape> {
+
+    private readonly innerSide?: JoinInnerSide;
+
+    /**
+     * @param innerSide The inner collection's rows, when this query carries a `join` option.
+     * A plugin that omits it for a query that HAS a join gets a throw from `join()` rather than
+     * a silently un-joined result.
+     */
+    constructor(query: IQuery<TRoot, TShape>, innerSide?: JoinInnerSide) {
+        super(query);
+        this.innerSide = innerSide;
+    }
+
+    /**
+     * The hash join itself, over rows already in memory — the floor every non-SQL backend
+     * stands on.
+     *
+     * Both halves are deserialized here, each with its own schema, because that is where the
+     * `===` on key values is specified to happen: in entity shape, by the property names the
+     * caller wrote in the key selectors. A `from`-renamed column reads correctly for free.
+     */
+    override join<TResult>(data: unknown, option: QueryOption<TShape, "join">): TResult {
+
+        if (Array.isArray(data) === false) {
+            return data as TResult;
+        }
+
+        if (this.innerSide == null) {
+            throw new Error(
+                `Cannot join: this plugin did not supply the inner collection's rows.  ` +
+                `A plugin whose translator inherits JsonTranslator.join must construct it with the inner side ` +
+                `(new JsonTranslator(operation, { innerSchema, innerRows })) when the query carries a join option.`
+            );
+        }
+
+        const { innerSchema, innerRows } = this.innerSide;
+
+        return executeJoin({
+            option: option.value,
+            outerRows: toEntityShape(this.query.schema, data),
+            innerRows: toEntityShape(innerSchema, innerRows)
+        }) as TResult;
+    }
 
     override filter<TResult>(data: unknown, option: QueryOption<TShape, "filter">): TResult {
 
@@ -109,28 +155,93 @@ export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRo
         throw new Error("Cannot count resulting data, it must be an array.  Please return array of data for function: count()");
     }
 
+    // Relational comparison instead of subtraction, for the same reason as sort():
+    // subtraction is NaN for strings, which made min()/max() return an arbitrary element.
+    // Nulls order first ascending — min() of a column with nulls is null, max() is the
+    // largest value — matching what sort() does with the same data.
     override min<TResult extends string | number | Date>(data: unknown, _: QueryOption<TShape, "min">): TResult {
-        return this._minMax(data, "min", (a: any, b: any) => a - b);
+        return this._minMax(data, "min", (a: any, b: any) => {
+            if (a === b) {
+                return 0;
+            }
+
+            if (a == null) {
+                return -1;
+            }
+
+            if (b == null) {
+                return 1;
+            }
+
+            return a < b ? -1 : 1;
+        });
     }
 
     override max<TResult extends string | number | Date>(data: unknown, _: QueryOption<TShape, "max">): TResult {
-        return this._minMax(data, "max", (a: any, b: any) => b - a);
+        return this._minMax(data, "max", (a: any, b: any) => {
+            if (a === b) {
+                return 0;
+            }
+
+            if (a == null) {
+                return 1;
+            }
+
+            if (b == null) {
+                return -1;
+            }
+
+            return a < b ? 1 : -1;
+        });
     }
 
     override sort<TResult>(data: unknown, option: QueryOption<TShape, "sort">): TResult {
 
         if (Array.isArray(data)) {
+            const direction = option.value.direction === "asc" ? 1 : -1;
 
-            data.sort((a, b) => {
-                if (option.value.direction === "asc") {
-                    return (option.value.selector(a) as any) - (option.value.selector(b) as any);
+            // Relational comparison instead of subtraction — subtraction is NaN
+            // for strings, which leaves the array unsorted
+            data.sort((x, y) => {
+                const a = option.value.selector(x) as any;
+                const b = option.value.selector(y) as any;
+
+                if (a === b) {
+                    return 0;
                 }
 
-                return (option.value.selector(b) as any) - (option.value.selector(a) as any);
+                if (a == null) {
+                    return -1 * direction;
+                }
+
+                if (b == null) {
+                    return 1 * direction;
+                }
+
+                return (a < b ? -1 : 1) * direction;
             });
         }
 
         return data as TResult;
+    }
+
+    /**
+     * The similarity search itself, over values already in memory.
+     *
+     * This is the floor the whole feature stands on: it is reached whenever the backend did
+     * not do the search, which is every backend except the ones with a native vector index.
+     * It reads the property through the option's selector, so it works on any shape the rows
+     * arrive in.
+     */
+    override nearest<TResult>(data: unknown, option: QueryOption<TShape, "nearest">): TResult {
+
+        if (Array.isArray(data) === false) {
+            return data as TResult;
+        }
+
+        const { selector, vector, count } = option.value;
+
+        return nearestBy(data, vector, count, row => selector(row) as unknown as number[] | null) as TResult;
     }
 
     override sum<TResult extends number>(data: unknown, _: QueryOption<TShape, "sum">): TResult {
@@ -244,13 +355,30 @@ export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRo
 
         assertIsArray(data, this._formatDataNotArrayError(name));
 
-        data.sort(sort);
-
         if (data.length === 0) {
             throw new Error("Cannot perform operation on empty array, result query contains no data")
         }
 
-        return data[0] as T;
+        // A single pass, not sort-and-take-first: O(n) for an O(n) question, and it does not
+        // MUTATE the array the caller handed us — the sort did.  The caller's comparator is
+        // reused so min and max keep their null ordering from one body.
+        let best = data[0];
+
+        for (let i = 1, length = data.length; i < length; i++) {
+            const value = data[i];
+
+            // Array.prototype.sort moves undefined elements to the END without consulting the
+            // comparator. Mirror that: undefined is never selected unless every element is.
+            if (value === undefined) {
+                continue;
+            }
+
+            if (best === undefined || sort(value, best) < 0) {
+                best = value;
+            }
+        }
+
+        return best as T;
     }
 
     private _formatDataNotArrayError(functionName: string) {

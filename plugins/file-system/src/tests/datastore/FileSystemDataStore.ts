@@ -22,7 +22,7 @@ export class TestDataStore extends DataStore {
         super(plugin);
     }
 
-    products = this.collection(productsSchema).scope(([x, p]) => x.documentType === p.collectionName, productsSchema).create();
+    products = this.collection(productsSchema).scope(([x, p]) => x.documentType === p.collectionName, productsSchema).proxy().create();
     productsView = this.view(productsViewSchema).scope(([x, p]) => x.documentType === p.collectionName, productsViewSchema).derive((done) => {
         return this.products.subscribe().toArray(productsResponse => {
 
@@ -64,17 +64,17 @@ export class TestDataStore extends DataStore {
 
         });
     }).create();
-    comments = this.collection(commentsSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...commentsSchema }).create();
-    events = this.collection(eventsSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...eventsSchema }).create();
-    users = this.collection(usersSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...usersSchema }).create();
-    userProfiles = this.collection(userProfileSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...userProfileSchema }).create();
-    inventoryItems = this.collection(inventoryItemsSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...inventoryItemsSchema }).create();
+    comments = this.collection(commentsSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...commentsSchema }).proxy().create();
+    events = this.collection(eventsSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...eventsSchema }).proxy().create();
+    users = this.collection(usersSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...usersSchema }).proxy().create();
+    userProfiles = this.collection(userProfileSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...userProfileSchema }).proxy().create();
+    inventoryItems = this.collection(inventoryItemsSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...inventoryItemsSchema }).proxy().create();
 
-    players = this.collection(playerSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...playerSchema }).create();
-    playerMatches = this.collection(playerMatchSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...playerMatchSchema }).create();
+    players = this.collection(playerSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...playerSchema }).proxy().create();
+    playerMatches = this.collection(playerMatchSchema).scope(([x, p]) => x.documentType === p.collectionName, { ...playerMatchSchema }).proxy().create();
 
     immutableItems = this.collection(immutableItemSchema).readonly().create();
-    orders = this.collection(ordersSchema).create();
+    orders = this.collection(ordersSchema).proxy().create();
 
     commentsView = this.view(commentsViewSchema).derive((done) => {
         // defer because we don't want to compute every time we create a datastore
@@ -97,9 +97,9 @@ export class TestDataStore extends DataStore {
 
         return unsubscribe;
     }).create();
-    blogPosts = this.collection(blogPostsSchema).create();
+    blogPosts = this.collection(blogPostsSchema).proxy().create();
 
-    tasks = this.collection(taskSchema).create();
+    tasks = this.collection(taskSchema).proxy().create();
     highPriorityTasksView = this.view(taskViewSchema)
         .derive((done) => {
             return this.tasks.subscribe().toArray((response) => {

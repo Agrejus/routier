@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / ISchemaSubscription
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / ISchemaSubscription
 
 # Interface: ISchemaSubscription\<T\>
 
@@ -30,7 +30,7 @@ Defined in: [core/src/schema/types.ts:95](https://github.com/Agrejus/routier/blo
 
 ##### changes
 
-[`SubscriptionChanges`](../type-aliases/SubscriptionChanges.md)\<`T`\>
+[`SubscriptionChanges`](/reference/api/core/src/type-aliases/SubscriptionChanges)\<`T`\>
 
 #### Returns
 

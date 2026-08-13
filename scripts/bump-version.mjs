@@ -8,6 +8,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = join(__dirname, '..');
 
+/** Directories that never hold a package this repository publishes. */
+const IGNORED_DIRECTORIES = new Set([
+    'node_modules',
+    '.git',
+    'dist',
+    '.stryker-tmp',
+    'reports',
+    'coverage',
+]);
+
 /**
  * Recursively find all package.json files in the monorepo
  */
@@ -19,8 +29,10 @@ function findPackageJsonFiles(dir, files = []) {
         const stat = statSync(fullPath);
 
         if (stat.isDirectory()) {
-            // Skip node_modules and .git directories
-            if (item === 'node_modules' || item === '.git' || item === 'dist') {
+            // Anything not under version control is a copy, not a package. `.stryker-tmp` holds
+            // a full sandbox per mutation-run worker, so bumping through it rewrites the same
+            // manifest a dozen times and buries the real ones in the output.
+            if (IGNORED_DIRECTORIES.has(item)) {
                 continue;
             }
             findPackageJsonFiles(fullPath, files);
@@ -96,25 +108,13 @@ function updatePackageJson(filePath, packageName, newVersion) {
     }
 
     if (updated) {
-        writeFileSync(filePath, JSON.stringify(packageJson, null, 2) + '\n');
-        return true;
-    }
+        // Preserve the file's own indentation. Some manifests here use four spaces and some
+        // two; rewriting every one at a fixed width buries a one-line version change in a
+        // hundred lines of reformatting, which is how a bump becomes unreviewable.
+        const indentMatch = content.match(/\n(\s+)"/);
+        const indent = indentMatch ? indentMatch[1].length : 2;
 
-    return false;
-}
-
-/**
- * Update lerna.json version
- */
-function updateLernaJson(packageName, newVersion) {
-    const lernaPath = join(rootDir, 'lerna.json');
-    const content = readFileSync(lernaPath, 'utf8');
-    const lernaJson = JSON.parse(content);
-
-    // Only update if this is the root package version
-    if (packageName === 'routier-collection' || packageName === 'routier') {
-        lernaJson.version = newVersion;
-        writeFileSync(lernaPath, JSON.stringify(lernaJson, null, 2) + '\n');
+        writeFileSync(filePath, JSON.stringify(packageJson, null, indent) + '\n');
         return true;
     }
 
@@ -248,20 +248,14 @@ function main() {
         }
     }
 
-    // Update lerna.json if needed
-    const lernaUpdated = updateLernaJson(packageName, newVersion);
-    if (lernaUpdated) {
-        console.log('✅ Updated lerna.json');
-        updatedFiles++;
-    }
-
     console.log('');
     console.log(`🎉 Successfully updated ${updatedFiles} files`);
     console.log('');
     console.log('📋 Next steps:');
     console.log('  1. Review the changes: git diff');
     console.log('  2. Commit the changes: git add . && git commit -m "chore: bump ' + packageName + ' to ' + newVersion + '"');
-    console.log('  3. Publish if needed: lerna publish from-git');
+    console.log(`  3. Publish: npm publish --workspace ${packageName} --access public`);
+    console.log('     (dependencies first — see RELEASING.md)');
 }
 
 // Run the script

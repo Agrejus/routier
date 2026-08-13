@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+        "target": "ESNext",
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "jsx": "react-jsx",
+        "strict": false,
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "skipLibCheck": true,
+        "baseUrl": ".",
+        "paths": {
+            "@routier/core": ["../../core/src/index.ts"],
+            "@routier/core/*": ["../../core/src/*"],
+            "@routier/datastore": ["../../datastore/src/index.ts"],
+            "@routier/memory-plugin": ["../../plugins/memory/src/index.ts"],
+            "@routier/react": ["../../react/src/index.ts"]
+        }
+    },
+    "include": ["src/**/*.ts", "src/**/*.tsx", "vite.config.ts"]
+}

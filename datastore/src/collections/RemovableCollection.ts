@@ -4,7 +4,7 @@ import { CallbackResult, Result } from "@routier/core/results";
 import { CollectionDependencies, RequestContext } from "./types";
 import { SelectionQueryable } from '../queryable/SelectionQueryable';
 
-export class RemovableCollection<TEntity extends {}> extends CollectionBase<TEntity> {
+export abstract class RemovableCollection<TEntity extends {}, TStore = unknown> extends CollectionBase<TEntity, TStore> {
 
     constructor(
         dependencies: CollectionDependencies<TEntity>
@@ -44,7 +44,7 @@ export class RemovableCollection<TEntity extends {}> extends CollectionBase<TEnt
      * @param done Callback function called when the operation completes or with an error
      */
     removeAll(done: CallbackResult<InferType<TEntity>[]>) {
-        const request = new RequestContext<TEntity>();
+        const request = new RequestContext<TEntity>(this.changeTrackingType);
         const result = new SelectionQueryable<TEntity, InferType<TEntity>, void>(this.dependencies, request);
         return result.remove(done);
     }

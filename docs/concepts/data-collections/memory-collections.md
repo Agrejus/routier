@@ -1,9 +1,5 @@
 ---
 title: Memory Collections
-layout: default
-parent: Collections
-grand_parent: Concepts
-nav_order: 1
 ---
 
 # Memory Collections
@@ -21,9 +17,8 @@ Memory collections are the fastest storage option in Routier, storing all data i
 
 ## Creating Memory Collections
 
-{% capture snippet_mc_1 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-{% highlight ts %}{{ snippet_mc_1 | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/index/block-1.ts
 
 ## Performance Characteristics
 
@@ -44,24 +39,21 @@ Memory collections are the fastest storage option in Routier, storing all data i
 
 ### Development and Testing
 
-{% capture snippet_mc_2 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-{% highlight ts %}{{ snippet_mc_2 | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/index/block-1.ts
 
 ### High-Performance Applications
 
-{% capture snippet_mc_3 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-{% highlight ts %}{{ snippet_mc_3 | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/index/block-1.ts
 
 ### Offline-First with Sync
 
-{% capture snippet_mc_4 %}{% include code/from-docs/index/block-1.ts %}{% endcapture %}
 
-{% highlight ts %}{{ snippet_mc_4 | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/index/block-1.ts
 
 ## Next Steps
 
-- [Change Tracking](change-tracking.md) - Understanding how changes are tracked
-- [Entity Management](entity-management.md) - Managing entities in collections
-- [Memory Plugin]({{ site.baseurl }}/integrations/plugins/built-in-plugins/memory/) - Detailed plugin documentation
+- [Change Tracking](/concepts/change-tracking) - Understanding how changes are tracked
+
+- [Memory Plugin](/integrations/plugins/built-in-plugins/memory/README) - Detailed plugin documentation

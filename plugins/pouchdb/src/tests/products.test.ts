@@ -342,8 +342,10 @@ describe("Product Tests", () => {
             expect(foundAfterSave.tags.length).toBe(0);
         });
 
-        it("QUIRK: should not update a nested array if it is not set through assignment", async () => {
-            // SOLUTION: Set the property to the expected result
+        it("updates a nested array mutated in place, without assignment", async () => {
+            // Guards the fix for defect #12: the array's tracking proxy survives the merge
+            // afterPersist performs, so an in-place mutation after the first save is
+            // tracked and persisted rather than silently reverted.
             const dataStore = factory();
             // Arrange
             await dataStore.products.addAsync({
@@ -359,10 +361,10 @@ describe("Product Tests", () => {
             const found = await dataStore.products.firstAsync();
             found.tags.length = 0;
             const response = await dataStore.saveChangesAsync();
-            expect(response.aggregate.size).toBe(0);
+            expect(response.aggregate.size).toBe(1);
             const foundAfterSave = await dataStore.products.firstAsync(w => w._id === found._id);
-            // Assert - We modified it and it was reset/overwritten by the selected item from the database
-            expect(foundAfterSave.tags.length).toBe(1);
+            // Assert - the in-place mutation was tracked and persisted
+            expect(foundAfterSave.tags.length).toBe(0);
         });
 
         it("should not mark the item as dirty when the property is set to the same value", async () => {
@@ -436,9 +438,14 @@ describe("Product Tests", () => {
 
             const found = await dataStore.products.firstAsync();
 
-            expect(secondDataStore.products.attachments.has(found)).toBe(false);
-
+            // No "not yet attached" precondition here: with live views on a shared
+            // database, the second store may legitimately have auto-attached this
+            // entity already (its views re-derive on the first store's save). The
+            // contract is that an explicit set adopts THIS instance as the canonical
+            // attachment either way, so mutations on it are tracked and saved.
             secondDataStore.products.attachments.set(found);
+
+            expect(secondDataStore.products.attachments.get(found)).toBe(found);
 
             found.category = "changed_value";
 

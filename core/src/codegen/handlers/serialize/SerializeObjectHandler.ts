@@ -8,8 +8,11 @@ export class SerializeObjectHandler extends PropertyInfoHandler {
 
         if (property.type === SchemaTypes.Object) {
             const slotPath = new SlotPath("assignments");
+            // The result is the storage shape — materialize the container under
+            // its `from` (storage) name
             const childPath = property.getAssignmentPath({
-                parent: "result"
+                parent: "result",
+                useFromPropertyName: true
             });
 
             if (property.isNullable || property.isOptional) {

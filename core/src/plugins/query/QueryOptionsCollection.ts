@@ -42,8 +42,14 @@ export class QueryOptionsCollection<T> {
         }
 
         if (name === "filter") {
-            // Need to check for unmapped properties
+            // Need to check for unmapped and renamed properties
             const filterValue = value as QueryOptionValueMap<T>["filter"];
+
+            // A tautology (`x => true`) filters nothing — skip it entirely so
+            // plugins never see it
+            if (filterValue.expression.type === "empty") {
+                return;
+            }
 
             if (filterValue.expression.type === "not-parsable") {
                 this.nextExecutionTarget = "memory";
@@ -57,8 +63,55 @@ export class QueryOptionsCollection<T> {
                         return false;
                     }
 
+                    if (isPropertyExpression(expression) && expression.property.hasRenamedSegments) {
+                        // Cut over to memory execution: the plugin stores data under the
+                        // `from` (storage) names, but filter selectors reference the
+                        // in-memory names.  Memory execution runs after deserialization,
+                        // where the in-memory names exist
+                        this.nextExecutionTarget = "memory";
+                        return false;
+                    }
+
                     return true;
                 });
+            }
+        }
+
+        if (name === "sort") {
+            const sortValue = value as QueryOptionValueMap<T>["sort"];
+
+            // Same rule as filters: sort selectors reference in-memory names, which
+            // only exist after deserialization when the property is renamed or unmapped
+            if (sortValue.property != null && (sortValue.property.isUnmapped || sortValue.property.hasRenamedSegments)) {
+                this.nextExecutionTarget = "memory";
+            }
+        }
+
+        if (name === "nearest") {
+            const nearestValue = value as QueryOptionValueMap<T>["nearest"];
+
+            // Same rule as sort, and for the same reason: the plugin stores the vector under
+            // the `from` name, and an unmapped property is not stored at all. Both are only
+            // readable after deserialization, which is where memory execution runs.
+            //
+            // This is also what lets every translator's in-memory fallback read the column by
+            // its resolved name — anything whose storage name differs never reaches them.
+            if (nearestValue.property != null && (nearestValue.property.isUnmapped || nearestValue.property.hasRenamedSegments)) {
+                this.nextExecutionTarget = "memory";
+            }
+        }
+
+        if (name === "join") {
+            const joinValue = value as QueryOptionValueMap<T>["join"];
+
+            // A join whose two sides live on different plugins cannot be sent to EITHER of
+            // them — neither can read the other's rows — so the option itself belongs to the
+            // memory half, where the datastore interprets it.
+            //
+            // Set BEFORE the item is created, unlike `nearest`'s ratchet below, because this
+            // moves the join option itself rather than everything after it.
+            if (joinValue.crossPlugin === true) {
+                this.nextExecutionTarget = "memory";
             }
         }
 
@@ -76,6 +129,86 @@ export class QueryOptionsCollection<T> {
         const found = this.options.get(name);
 
         this.options.set(name, [...found ?? [], item]);
+
+        if (name === "nearest") {
+            // Everything AFTER a similarity search runs in memory, whatever the backend.
+            //
+            // Whether the search was pushed down is a fact about the plugin, which this
+            // collection cannot see — so a later option is only safe if it runs after the
+            // scoring definitely happened, and in memory is the only place that is true of.
+            //
+            // The failure this prevents is silent. `.nearest(x => x.embedding, v, 10).take(3)`
+            // sends `LIMIT 3` to a backend that ignored the ordering, so three arbitrary rows
+            // come back and get scored — three real rows, in a plausible order, and not the
+            // three nearest. Nothing errors.
+            //
+            // A plugin that DID push the search down loses nothing but the chance to also
+            // push down what follows it, which is a limit over ten rows.
+            this.nextExecutionTarget = "memory";
+        }
+
+        if (name === "join") {
+            // Everything AFTER a join runs in memory, for the same reason as `nearest`: this
+            // collection cannot see HOW the plugin executed the join, and the rows it produced
+            // are TUPLES rather than entities of the root schema.
+            //
+            // A `take` sent to a backend that hash-joined in its translator would limit the
+            // OUTER rows read, not the pairs produced — a plausible-looking result with the
+            // wrong number of rows in it. Conjuncts that can safely run earlier are split off
+            // by the query builder BEFORE dispatch, which is the only exception.
+            this.nextExecutionTarget = "memory";
+        }
+    }
+
+    /**
+     * Splits the collection around the FIRST occurrence of `name`, preserving order.
+     *
+     * For a join: the options recorded before it operate on entity rows, the option itself
+     * produces tuples, and the ones after it operate on tuples. Three different shapes, so the
+     * caller has to run them in three steps rather than one pass.
+     */
+    splitAt<K extends QueryOptionName>(name: K): { before: QueryOptionsCollection<T>, at: QueryOption<T, K> | null, after: QueryOptionsCollection<T> } {
+        this.resolveEnumeration();
+
+        const sortedItems = this.enumeratedItems.toSorted((a, b) => a.index - b.index);
+        const before = new QueryOptionsCollection<T>();
+        const after = new QueryOptionsCollection<T>();
+        let at: QueryOption<T, K> | null = null;
+
+        for (let i = 0, length = sortedItems.length; i < length; i++) {
+            const { option } = sortedItems[i];
+
+            if (at == null && option.name === name) {
+                at = option as QueryOption<T, K>;
+                continue;
+            }
+
+            const destination = at == null ? before : after;
+            destination.add(option.name, option.value);
+        }
+
+        return { before, at, after };
+    }
+
+    /**
+     * Captures the collection's current state and returns a function that restores it.
+     *
+     * Terminal queryable operations (count, first, aggregates, …) record their option on
+     * the shared collection before executing. Without restoring, a re-executed terminal —
+     * the whole point of a subscribed queryable — stacks its option a second time and
+     * runs it over the first execution's scalar result.
+     */
+    snapshot(): () => void {
+        const options = new Map([...this.options.entries()].map(([key, items]): [QueryOptionName, QueryCollectionItem<any, any>[]] => [key, [...items]]));
+        const nextExecutionTarget = this.nextExecutionTarget;
+        const nextIndex = this.nextIndex;
+
+        return () => {
+            this.options = new Map(options);
+            this.nextExecutionTarget = nextExecutionTarget;
+            this.nextIndex = nextIndex;
+            this.enumeratedItems = [];
+        };
     }
 
     split(): { memory: QueryOptionsCollection<T>, database: QueryOptionsCollection<T> } {

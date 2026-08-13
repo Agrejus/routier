@@ -1,14 +1,10 @@
 ---
 title: PouchDB Syncing
-layout: default
-parent: Syncing
-grand_parent: State Management
-nav_order: 1
 ---
 
 # PouchDB Syncing Reference
 
-This page provides a complete reference for PouchDB synchronization options and advanced configuration. For a practical walkthrough with examples, see the [Syncing Overview](index.md).
+This page provides a complete reference for PouchDB synchronization options and advanced configuration. For a practical walkthrough with examples, see the [Syncing Overview](/data-operations/state-management/syncing/).
 
 ## Overview
 
@@ -21,7 +17,7 @@ The PouchDB plugin integrates with PouchDB's replication engine, which provides 
 The URL to your remote CouchDB-compatible database. Must be a valid HTTP/HTTPS URL.
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-1.ts
 
 
 ### `live` (Optional)
@@ -31,7 +27,7 @@ Enable continuous synchronization. When `true`, the sync will continue running a
 **Default:** `false`
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-2.ts
 
 
 ### `retry` (Optional)
@@ -41,7 +37,7 @@ Enable automatic retry with exponential backoff. When enabled, failed sync opera
 **Default:** `false`
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-3.ts
 
 
 ### `pull` (Optional)
@@ -54,7 +50,7 @@ Configure options for pulling changes from remote. This is an object that can in
 - Any other PouchDB replication options
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-4.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-4.ts
 
 
 ### `push` (Optional)
@@ -65,7 +61,7 @@ Configure options for pushing changes to remote. Can be set to `false` to disabl
 - Object: Configuration for pushing (similar structure to `pull`)
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-5.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-5.ts
 
 
 ### `filter` (Optional)
@@ -73,7 +69,7 @@ Configure options for pushing changes to remote. Can be set to `false` to disabl
 Function to filter documents during sync. The filter function receives a document and returns `true` to include it or `false` to exclude it.
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-6.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-6.ts
 
 
 **Note:** Filters apply to both pull and push unless specified separately in `pull` or `push` options.
@@ -83,7 +79,7 @@ Function to filter documents during sync. The filter function receives a documen
 Callback function that receives sync events. Use this to process synced documents manually, track progress, or handle conflicts.
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-7.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-7.ts
 
 
 **Parameters:**
@@ -98,7 +94,7 @@ Callback function that receives sync events. Use this to process synced document
 Callback function called when a sync error occurs.
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-8.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-8.ts
 
 
 ### `onComplete` (Optional)
@@ -106,7 +102,7 @@ Callback function called when a sync error occurs.
 Callback function called when a sync operation completes (only for non-live syncs).
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-9.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-9.ts
 
 
 ### `onPaused` (Optional)
@@ -114,7 +110,7 @@ Callback function called when a sync operation completes (only for non-live sync
 Callback function called when sync is paused (typically due to network issues).
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-10.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-10.ts
 
 
 ### `onActive` (Optional)
@@ -122,7 +118,7 @@ Callback function called when sync is paused (typically due to network issues).
 Callback function called when sync becomes active after being paused.
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-11.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-11.ts
 
 
 ### `onDenied` (Optional)
@@ -130,7 +126,7 @@ Callback function called when sync becomes active after being paused.
 Callback function called when sync is denied (typically due to authentication/permission issues).
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-12.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-12.ts
 
 
 ### `auth` (Optional)
@@ -138,7 +134,7 @@ Callback function called when sync is denied (typically due to authentication/pe
 Authentication credentials for the remote database.
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-13.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-13.ts
 
 
 ### `headers` (Optional)
@@ -146,7 +142,7 @@ Authentication credentials for the remote database.
 Custom HTTP headers to send with sync requests.
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-14.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-14.ts
 
 
 ## Processing Sync Events
@@ -161,15 +157,14 @@ The `onChange` callback receives sync events that contain information about what
 ### Basic Usage
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-15.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-15.ts
 
 
 ### Routing Documents by Collection
 
 Process documents by grouping them by collection name:
 
-{% capture snippet_pouch_sync_route %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-9.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_pouch_sync_route | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-9.ts
 
 ## Conflict Resolution
 
@@ -180,7 +175,7 @@ PouchDB automatically detects conflicts when the same document is modified in bo
 Check for conflicts in your `onChange` callback:
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-16.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-16.ts
 
 
 ### Resolving Conflicts
@@ -214,7 +209,7 @@ Common advanced options include:
 Use pull-only sync when you want to receive updates from a server but don't want local changes to sync back:
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-17.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-17.ts
 
 
 ### Push-Only Sync
@@ -222,7 +217,7 @@ Use pull-only sync when you want to receive updates from a server but don't want
 Use push-only sync to send local changes to a server without receiving updates:
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-18.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-18.ts
 
 
 ### Bidirectional Sync
@@ -230,7 +225,7 @@ Use push-only sync to send local changes to a server without receiving updates:
 Default behavior when both directions are enabled:
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-19.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-19.ts
 
 
 ### One-Time Sync
@@ -238,7 +233,7 @@ Default behavior when both directions are enabled:
 Perform a single sync operation without live updates:
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-20.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-20.ts
 
 
 ## Starting Sync
@@ -246,7 +241,7 @@ Perform a single sync operation without live updates:
 After creating the plugin, you need to start the sync process. The plugin provides a `sync()` method that you should call:
 
 
-{% highlight ts linenos %}{% include code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-21.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/data-operations/state-management/syncing/pouchdb-sync/block-21.ts
 
 
 ## Troubleshooting
@@ -285,8 +280,8 @@ After creating the plugin, you need to start the sync process. The plugin provid
 
 ## Next Steps
 
-- **[Syncing Overview](index.md)** - Practical example and walkthrough
-- **[Syncing Guide]({{ site.baseurl }}/guides/syncing)** - Conceptual overview of syncing in Routier
-- **[PouchDB Plugin](/integrations/plugins/built-in-plugins/pouchdb/)** - PouchDB plugin documentation
-- **[Live Queries]({{ site.baseurl }}/guides/live-queries)** - Real-time data queries
-- **[Change Tracking](/concepts/change-tracking/)** - Understanding how Routier tracks changes
+- **[Syncing Overview](/data-operations/state-management/syncing/)** - Practical example and walkthrough
+- **[Syncing Guide](/guides/syncing)** - Conceptual overview of syncing in Routier
+- **[PouchDB Plugin](/integrations/plugins/built-in-plugins/pouchdb/README)** - PouchDB plugin documentation
+- **[Live Queries](/guides/live-queries)** - Real-time data queries
+- **[Change Tracking](/concepts/change-tracking)** - Understanding how Routier tracks changes

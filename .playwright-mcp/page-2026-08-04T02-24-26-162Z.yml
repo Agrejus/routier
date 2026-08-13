@@ -1,0 +1,71 @@
+- generic [ref=f9e2]:
+  - banner [ref=f9e3]:
+    - heading "Routier Finance" [level=1] [ref=f9e4]
+    - generic [ref=f9e5]: ConcurrencyDbPlugin
+    - navigation [ref=f9e6]:
+      - button "Dashboard" [ref=f9e7] [cursor=pointer]
+      - button "Accounts" [ref=f9e8] [cursor=pointer]
+      - button "Transactions" [ref=f9e9] [cursor=pointer]
+    - generic [ref=f9e10]:
+      - generic [ref=f9e11]:
+        - text: users
+        - slider "users 10" [ref=f9e12]: "10"
+        - generic [ref=f9e13]: "10"
+      - generic [ref=f9e14]:
+        - text: tx/s
+        - slider "tx/s 50" [ref=f9e15]: "50"
+        - generic [ref=f9e16]: "50"
+      - button "Start load" [ref=f9e17] [cursor=pointer]
+  - main [ref=f9e18]:
+    - generic [ref=f9e19]:
+      - generic [ref=f9e20]:
+        - generic [ref=f9e21]:
+          - heading "Total balance" [level=3] [ref=f9e22]
+          - generic [ref=f9e23]: $75,000.00
+        - generic [ref=f9e24]:
+          - heading "Invariant drift (must be $0.00)" [level=3] [ref=f9e25]
+          - generic [ref=f9e26]: $0.00
+        - generic [ref=f9e27]:
+          - heading "Accounts" [level=3] [ref=f9e28]
+          - generic [ref=f9e29]: "75"
+        - generic [ref=f9e30]:
+          - heading "Ledger rows" [level=3] [ref=f9e31]
+          - generic [ref=f9e32]: "0"
+      - generic [ref=f9e33]:
+        - heading "Latest transactions (live)" [level=3] [ref=f9e34]
+        - table [ref=f9e35]:
+          - rowgroup [ref=f9e36]:
+            - row "When Category Memo Amount" [ref=f9e37]:
+              - columnheader "When" [ref=f9e38]
+              - columnheader "Category" [ref=f9e39]
+              - columnheader "Memo" [ref=f9e40]
+              - columnheader "Amount" [ref=f9e41]
+          - rowgroup
+  - generic [ref=f9e42]:
+    - generic [ref=f9e43]:
+      - generic [ref=f9e44]: committed tx
+      - generic [ref=f9e45]: "0"
+    - generic [ref=f9e46]:
+      - generic [ref=f9e47]: tx / sec
+      - generic [ref=f9e48]: "0.0"
+    - generic [ref=f9e49]:
+      - generic [ref=f9e50]: save p50
+      - generic [ref=f9e51]: 0.0 ms
+    - generic [ref=f9e52]:
+      - generic [ref=f9e53]: save p95
+      - generic [ref=f9e54]: 0.0 ms
+    - generic [ref=f9e55]:
+      - generic [ref=f9e56]: save p99
+      - generic [ref=f9e57]: 0.0 ms
+    - generic [ref=f9e58]:
+      - generic [ref=f9e59]: deliveries / sec
+      - generic [ref=f9e60]: "0.0"
+    - generic [ref=f9e61]:
+      - generic [ref=f9e62]: conflicts (retried)
+      - generic [ref=f9e63]: "0"
+    - generic [ref=f9e64]:
+      - generic [ref=f9e65]: failed saves
+      - generic [ref=f9e66]: "0"
+    - generic [ref=f9e67]:
+      - generic [ref=f9e68]: fps
+      - generic [ref=f9e69]: "0"

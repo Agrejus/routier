@@ -23,6 +23,8 @@ const computedSchema = s.define("queryableComputed", {
 })).compile();
 
 class QueryRoutingProbePlugin implements IDbPlugin {
+
+    readonly databaseName = "test-db";
     queryEvents: DbPluginQueryEvent<any, any>[] = [];
     bulkPersistEvents: DbPluginBulkPersistEvent[] = [];
     destroyEvents: DbPluginEvent[] = [];
@@ -60,8 +62,8 @@ class QueryRoutingProbePlugin implements IDbPlugin {
 }
 
 class QueryableStore extends DataStore {
-    products = this.collection(productsSchema).create();
-    computedProducts = this.collection(computedSchema).create();
+    products = this.collection(productsSchema).proxy().create();
+    computedProducts = this.collection(computedSchema).proxy().create();
 }
 
 const lastQueryEvent = (plugin: QueryRoutingProbePlugin) => {
@@ -232,7 +234,7 @@ describe("Queryable routing contracts", () => {
         class ScopedComputedStore extends DataStore {
             products = this.collection(scopedComputedSchema)
                 .scope((x) => x.category === "office")
-                .create();
+                .proxy().create();
         }
 
         plugin.seed(scopedComputedSchema, [
@@ -262,7 +264,8 @@ describe("Queryable routing contracts", () => {
 
         const store = trackStore(new QueryableStore(plugin));
         let callbackCount = 0;
-        const sender = productsSchema.createSubscription();
+        // Scoped to the plugin's database, because that is where the store is listening.
+        const sender = productsSchema.createSubscription(undefined, plugin.databaseName);
 
         const unsub = store.products
             .where((x) => x.category === "office")

@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / TrampolinePipeline
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / TrampolinePipeline
 
 # Class: TrampolinePipeline\<TInitial, TCurrent\>
 
@@ -74,7 +74,7 @@ Defined in: [core/src/pipeline/TrampolinePipeline.ts:143](https://github.com/Agr
 
 ##### processor
 
-[`Processor`](../type-aliases/Processor.md)\<`TCurrent`, `TNext`\>
+[`Processor`](/reference/api/core/src/type-aliases/Processor)\<`TCurrent`, `TNext`\>
 
 #### Returns
 
@@ -100,7 +100,7 @@ Defined in: [core/src/pipeline/TrampolinePipeline.ts:148](https://github.com/Agr
 
 ##### map
 
-(`previous`, `current`) => [`ResultType`](../type-aliases/ResultType.md)\<`TCurrent`\>
+(`previous`, `current`) => [`ResultType`](/reference/api/core/src/type-aliases/ResultType)\<`TCurrent`\>
 
 #### Returns
 

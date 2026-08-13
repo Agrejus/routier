@@ -1,9 +1,5 @@
 ---
 title: InferType
-layout: default
-parent: Schema
-nav_order: 6
-permalink: /concepts/schema/infer-type/
 ---
 
 # InferType
@@ -31,9 +27,8 @@ permalink: /concepts/schema/infer-type/
 
 ## Basic Usage
 
-{% capture snippet_infertype_basic %}{% include code/from-docs/concepts/schema/infertype-basic.ts %}{% endcapture %}
 
-{% highlight ts %}{{ snippet_infertype_basic | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/infertype-basic.ts
 
 ## InferType vs InferCreateType
 
@@ -51,42 +46,38 @@ Routier provides two related type utilities:
 - **Excludes**: Properties with defaults (optional) and identity properties (auto-generated)
 - **Use case**: Creating new entities with `addAsync()`
 
-{% capture snippet_infertype_comparison %}{% include code/from-docs/concepts/schema/infertype-comparison.ts %}{% endcapture %}
 
-{% highlight ts %}{{ snippet_infertype_comparison | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/infertype-comparison.ts
 
 ## Real-World Examples
 
 ### Function Parameters
 
-{% capture snippet_infertype_functions %}{% include code/from-docs/concepts/schema/infertype-functions.ts %}{% endcapture %}
 
-{% highlight ts %}{{ snippet_infertype_functions | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/infertype-functions.ts
 
 ### API Responses
 
-{% capture snippet_infertype_api %}{% include code/from-docs/concepts/schema/infertype-api.ts %}{% endcapture %}
 
-{% highlight ts %}{{ snippet_infertype_api | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/infertype-api.ts
 
 ### Complex Nested Types
 
-{% capture snippet_infertype_nested %}{% include code/from-docs/concepts/schema/infertype-nested.ts %}{% endcapture %}
 
-{% highlight ts %}{{ snippet_infertype_nested | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/infertype-nested.ts
 
 ## Type Safety Benefits
 
 ### Compile-Time Type Checking
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/infer-type/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/infer-type/block-1.ts
 
 
 ### IntelliSense Support
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/infer-type/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/infer-type/block-2.ts
 
 
 ### Refactoring Safety
@@ -98,19 +89,19 @@ When you change your schema, TypeScript will show errors everywhere the type is 
 ### 1. Use Type Aliases
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/infer-type/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/infer-type/block-3.ts
 
 
 ### 2. Export Types for Reuse
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/infer-type/block-4.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/infer-type/block-4.ts
 
 
 ### 3. Use Appropriate Type
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/infer-type/block-5.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/infer-type/block-5.ts
 
 
 ### 4. Use `constrain()` for Branded Types
@@ -118,11 +109,11 @@ When you change your schema, TypeScript will show errors everywhere the type is 
 When working with branded or tagged types (like UUIDs), use `constrain()` to narrow string types:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/schema/infer-type/block-6.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/schema/infer-type/block-6.ts
 
 
 ## Related
 
-- **[Creating A Schema](creating-a-schema.md)** - Learn how to define schemas
-- **[Property Types](property-types/README.md)** - Available property types
-- **[Modifiers](modifiers/README.md)** - Property modifiers and constraints
+- **[Creating A Schema](/concepts/schema/creating-a-schema)** - Learn how to define schemas
+- **[Property Types](/concepts/schema/property-types/README)** - Available property types
+- **[Modifiers](/concepts/schema/modifiers/README)** - Property modifiers and constraints

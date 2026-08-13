@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / resolveBulkPersistChanges
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / resolveBulkPersistChanges
 
 # Function: resolveBulkPersistChanges()
 
@@ -14,15 +14,15 @@ Defined in: [core/src/utilities/replication.ts:4](https://github.com/Agrejus/rou
 
 ### event
 
-[`DbPluginBulkPersistEvent`](../type-aliases/DbPluginBulkPersistEvent.md)
+[`DbPluginBulkPersistEvent`](/reference/api/core/src/type-aliases/DbPluginBulkPersistEvent)
 
 ### result
 
-[`BulkPersistResult`](../classes/BulkPersistResult.md)
+[`BulkPersistResult`](/reference/api/core/src/classes/BulkPersistResult)
 
 ### bulkPersistChanges
 
-[`BulkPersistChanges`](../classes/BulkPersistChanges.md)
+[`BulkPersistChanges`](/reference/api/core/src/classes/BulkPersistChanges)
 
 ## Returns
 

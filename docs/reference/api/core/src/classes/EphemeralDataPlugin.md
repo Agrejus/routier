@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ---
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / EphemeralDataPlugin
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / EphemeralDataPlugin
 
 # Abstract Class: EphemeralDataPlugin
 
@@ -12,7 +12,7 @@ Interface for a database plugin, which provides query, destroy, and bulk operati
 
 ## Implements
 
-- [`IDbPlugin`](../interfaces/IDbPlugin.md)
+- [`IDbPlugin`](/reference/api/core/src/interfaces/IDbPlugin)
 
 ## Constructors
 
@@ -46,13 +46,13 @@ Executes bulk operations (add, update, remove) on the database.
 
 ##### event
 
-[`DbPluginBulkPersistEvent`](../type-aliases/DbPluginBulkPersistEvent.md)
+[`DbPluginBulkPersistEvent`](/reference/api/core/src/type-aliases/DbPluginBulkPersistEvent)
 
 The bulk operations event containing schema, parent, and changes.
 
 ##### done
 
-[`PluginEventCallbackPartialResult`](../type-aliases/PluginEventCallbackPartialResult.md)\<[`BulkPersistResult`](BulkPersistResult.md)\>
+[`PluginEventCallbackPartialResult`](/reference/api/core/src/type-aliases/PluginEventCallbackPartialResult)\<[`BulkPersistResult`](/reference/api/core/src/classes/BulkPersistResult)\>
 
 Callback with the result or error.
 
@@ -62,7 +62,7 @@ Callback with the result or error.
 
 #### Implementation of
 
-[`IDbPlugin`](../interfaces/IDbPlugin.md).[`bulkPersist`](../interfaces/IDbPlugin.md#bulkpersist)
+[`IDbPlugin`](/reference/api/core/src/interfaces/IDbPlugin).[`bulkPersist`](/reference/api/core/src/interfaces/IDbPlugin#bulkpersist)
 
 ---
 
@@ -88,13 +88,13 @@ Executes a query operation on the database.
 
 ##### event
 
-[`DbPluginQueryEvent`](../type-aliases/DbPluginQueryEvent.md)\<`TEntity`, `TShape`\>
+[`DbPluginQueryEvent`](/reference/api/core/src/type-aliases/DbPluginQueryEvent)\<`TEntity`, `TShape`\>
 
 The query event containing schema, parent, and query operation.
 
 ##### done
 
-[`PluginEventCallbackResult`](../type-aliases/PluginEventCallbackResult.md)\<[`ITranslatedValue`](ITranslatedValue.md)\<`TShape`\>\>
+[`PluginEventCallbackResult`](/reference/api/core/src/type-aliases/PluginEventCallbackResult)\<`ITranslatedValue`\<`TShape`\>\>
 
 Callback with the result or error. The result must be wrapped in an `ITranslatedValue` to allow the datastore to iterate over results (for grouped queries) and determine if change tracking should be enabled.
 
@@ -104,7 +104,7 @@ Callback with the result or error. The result must be wrapped in an `ITranslated
 
 #### Implementation of
 
-[`IDbPlugin`](../interfaces/IDbPlugin.md).[`query`](../interfaces/IDbPlugin.md#query)
+[`IDbPlugin`](/reference/api/core/src/interfaces/IDbPlugin).[`query`](/reference/api/core/src/interfaces/IDbPlugin#query)
 
 ---
 
@@ -120,11 +120,11 @@ Destroys or cleans up the plugin, closing connections or freeing resources.
 
 ##### event
 
-[`DbPluginEvent`](../type-aliases/DbPluginEvent.md)
+[`DbPluginEvent`](/reference/api/core/src/type-aliases/DbPluginEvent)
 
 ##### done
 
-[`PluginEventCallbackResult`](../type-aliases/PluginEventCallbackResult.md)\<`never`\>
+[`PluginEventCallbackResult`](/reference/api/core/src/type-aliases/PluginEventCallbackResult)\<`never`\>
 
 Callback with an optional error.
 
@@ -134,4 +134,4 @@ Callback with an optional error.
 
 #### Implementation of
 
-[`IDbPlugin`](../interfaces/IDbPlugin.md).[`destroy`](../interfaces/IDbPlugin.md#destroy)
+[`IDbPlugin`](/reference/api/core/src/interfaces/IDbPlugin).[`destroy`](/reference/api/core/src/interfaces/IDbPlugin#destroy)

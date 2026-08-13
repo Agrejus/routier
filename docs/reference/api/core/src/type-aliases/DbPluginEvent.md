@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / DbPluginEvent
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / DbPluginEvent
 
 # Type Alias: DbPluginEvent
 
@@ -16,7 +16,7 @@ Base event for all plugin operations, containing the schema and parent.
 
 ### schemas
 
-> **schemas**: [`SchemaCollection`](../classes/SchemaCollection.md)
+> **schemas**: [`SchemaCollection`](/reference/api/core/src/classes/SchemaCollection)
 
 Defined in: [core/src/plugins/types.ts:44](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/types.ts#L44)
 

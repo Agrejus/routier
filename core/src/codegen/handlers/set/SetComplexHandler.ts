@@ -9,7 +9,8 @@ const allowedTypes = new Set<SchemaTypes>([
     SchemaTypes.Date,
     SchemaTypes.Number,
     SchemaTypes.Object,
-    SchemaTypes.String
+    SchemaTypes.String,
+    SchemaTypes.Vector
 ]);
 
 export class SetComplexHandler extends PropertyInfoHandler {

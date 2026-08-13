@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / QueryCollectionItem
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / QueryCollectionItem
 
 # Type Alias: QueryCollectionItem\<T, K\>
 
@@ -18,7 +18,7 @@ Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:4](https://github.
 
 ### K
 
-`K` *extends* [`QueryOptionName`](QueryOptionName.md)
+`K` *extends* [`QueryOptionName`](/reference/api/core/src/type-aliases/QueryOptionName)
 
 ## Properties
 
@@ -32,6 +32,6 @@ Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:4](https://github.
 
 ### option
 
-> **option**: [`QueryOption`](QueryOption.md)\<`T`, `K`\>
+> **option**: [`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`T`, `K`\>
 
 Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:4](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/query/QueryOptionsCollection.ts#L4)

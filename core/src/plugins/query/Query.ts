@@ -36,6 +36,14 @@ export class Query<TRoot extends {}, TShape> implements IQuery<TRoot, TShape> {
             return false
         }
 
+        // A join returns TUPLES, not entities of this query's root schema. Attaching one would
+        // hand the change tracker a two-element array to find an id on, and freezing or
+        // membership-capturing it means reading the root schema's id off something that has no
+        // properties at all. Join results are read-only projections, like `.map()` results.
+        if (this.options.has("join")) {
+            return false;
+        }
+
         if (count === true ||
             max === true ||
             min === true ||

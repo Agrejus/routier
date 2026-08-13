@@ -4,31 +4,112 @@ import { IAdditions } from "./types";
 export class UnknownKeyAdditions<T extends {}> implements IAdditions<T> {
 
     private schema: CompiledSchema<T>;
-    private data: Map<IdType, InferCreateType<T>> = new Map<IdType, InferCreateType<T>>();
+    // A MULTIMAP, not a map: the key is a hash of the content with keys and identities
+    // excluded, so two pending rows that are equal in content share a bucket. A plain map
+    // silently collapsed them — one row was never inserted at all (defect #23).
+    private data: Map<IdType, InferCreateType<T>[]> = new Map<IdType, InferCreateType<T>[]>();
+    private count = 0;
 
     get size() {
-        return this.data.size;
+        return this.count;
     }
 
     constructor(schema: CompiledSchema<T>) {
         this.schema = schema;
     }
 
-    get(entity: InferCreateType<T>): InferCreateType<T> | undefined {
+    take(entity: InferCreateType<T>): InferCreateType<T> | undefined {
         const hash = this.schema.hash(entity, HashType.Object);
-        return this.data.get(hash);
+        const bucket = this.data.get(hash);
+
+        if (bucket == null || bucket.length === 0) {
+            return undefined;
+        }
+
+        // Rows in one bucket are equal on every hashed property and have no identity yet,
+        // so which one is paired with which returned row is unobservable — any entry is
+        // correct. Removing it is what lets the NEXT identical returned row find the next
+        // pending entry instead of the same one twice.
+        const found = bucket.shift();
+
+        if (bucket.length === 0) {
+            this.data.delete(hash);
+        }
+
+        this.count--;
+
+        return found;
     }
 
     values(): InferCreateType<T>[] {
-        return [...this.data.values()];
+        const result: InferCreateType<T>[] = [];
+
+        for (const bucket of this.data.values()) {
+            result.push(...bucket);
+        }
+
+        return result;
     }
 
     set(entity: InferCreateType<T>) {
         const hash = this.schema.hash(entity, HashType.Object);
-        this.data.set(hash, entity);
+        const bucket = this.data.get(hash);
+
+        if (bucket == null) {
+            this.data.set(hash, [entity]);
+        } else {
+            bucket.push(entity);
+        }
+
+        this.count++;
+    }
+
+    replace(existing: InferCreateType<T>, next: InferCreateType<T>) {
+        // The key is a hash of the CONTENT, so any patch moves it. Only the caller's own
+        // reference is removed from the old bucket — an identical sibling row must stay.
+        //
+        // Hashed once and reused: `hash` builds a string from every hashed property, which
+        // measures at ~7x the cost of the Map lookup it feeds, and nothing between the two
+        // uses here changes `existing`.
+        const existingHash = this.schema.hash(existing, HashType.Object);
+        const bucket = this.data.get(existingHash);
+
+        if (bucket != null) {
+            const index = bucket.indexOf(existing);
+
+            if (index !== -1) {
+                bucket.splice(index, 1);
+                this.count--;
+
+                if (bucket.length === 0) {
+                    this.data.delete(existingHash);
+                }
+            }
+        }
+
+        this.set(next);
+    }
+
+    /**
+     * Rebuilds the buckets from the entities' current content.
+     *
+     * Cheap on purpose: one pass, reusing the same entity references, so the ids `mergeChanges`
+     * writes back still land in the caller's objects. Rows that are equal in content share a
+     * bucket exactly as they did before, which is what keeps defect #23 fixed.
+     */
+    reindex(): void {
+        const entities = this.values();
+
+        this.data.clear();
+        this.count = 0;
+
+        for (const entity of entities) {
+            this.set(entity);
+        }
     }
 
     clear(): void {
         this.data.clear();
+        this.count = 0;
     }
 }

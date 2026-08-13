@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { getProperties } from './utils';
+import { forEach, getProperties } from './utils';
 import { PropertyExpression, ComparatorExpression, OperatorExpression, ValueExpression, EmptyExpression } from './types';
 import { PropertyInfo } from '../schema/PropertyInfo';
 
@@ -344,3 +344,100 @@ describe('getProperties', () => {
         expect(result[2]).toBe(prop3);
     });
 }); 
+describe('forEach', () => {
+    const tree = () => new OperatorExpression({
+        operator: '&&',
+        left: new ComparatorExpression({
+            comparator: 'equals',
+            negated: false,
+            strict: false,
+            left: new PropertyExpression({ property: createMockProperty('a') }),
+            right: new ValueExpression({ value: 1 }),
+        }),
+        right: new ComparatorExpression({
+            comparator: 'equals',
+            negated: false,
+            strict: false,
+            left: new PropertyExpression({ property: createMockProperty('b') }),
+            right: new ValueExpression({ value: 2 }),
+        }),
+    });
+
+    it('visits every node depth-first, parent before children, left before right', () => {
+        const visited: string[] = [];
+
+        forEach(tree(), expr => {
+            visited.push(expr.type === 'property' ? (expr as PropertyExpression).property.name : expr.type);
+            return true;
+        });
+
+        expect(visited).toEqual(['operator', 'comparator', 'a', 'value', 'comparator', 'b', 'value']);
+    });
+
+    it('stops the WHOLE traversal when the callback returns false', () => {
+        const visited: string[] = [];
+
+        forEach(tree(), expr => {
+            visited.push(expr.type);
+            // Stop on the first comparator: neither its children nor the right-hand
+            // subtree may be visited afterwards.
+            return expr.type !== 'comparator';
+        });
+
+        expect(visited).toEqual(['operator', 'comparator']);
+    });
+
+    it('stopping inside the left subtree also skips the right subtree', () => {
+        const visited: string[] = [];
+
+        forEach(tree(), expr => {
+            if (expr.type === 'property') {
+                visited.push((expr as PropertyExpression).property.name);
+                return false;
+            }
+            return true;
+        });
+
+        expect(visited).toEqual(['a']);
+    });
+
+    it('visits a leaf-only expression exactly once', () => {
+        const calls: unknown[] = [];
+
+        forEach(new ValueExpression({ value: 42 }), expr => {
+            calls.push(expr);
+            return true;
+        });
+
+        expect(calls).toHaveLength(1);
+    });
+});
+
+describe('forEach right-link failure propagation', () => {
+    it('a stop inside a RIGHT subtree prevents visits to everything after it', () => {
+        // The failure has to travel back through a right-child link (the `expr.right`
+        // early-return), so the stopping node sits in a right subtree and a later sibling
+        // exists to observe the stop.
+        const stopHere = new ValueExpression({ value: 'stop' });
+        const inner = new OperatorExpression({
+            operator: '&&',
+            left: new PropertyExpression({ property: createMockProperty('a') }),
+            right: stopHere,
+        });
+        const after = new PropertyExpression({ property: createMockProperty('after') });
+        const root = new OperatorExpression({ operator: '&&', left: inner, right: after });
+
+        const visited: string[] = [];
+
+        forEach(root, expr => {
+            if (expr === stopHere) {
+                visited.push('stop');
+                return false;
+            }
+            visited.push(expr.type === 'property' ? (expr as PropertyExpression).property.name : expr.type);
+            return true;
+        });
+
+        expect(visited).toEqual(['operator', 'operator', 'a', 'stop']);
+    });
+});

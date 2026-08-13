@@ -134,10 +134,20 @@ export const generateData = <T extends {}>(schema: CompiledSchema<T>, count: num
     for (let i = 0; i < count; i++) {
         const item: any = {};
 
-        // Generate data for each property in the schema
+        // Generate data for each property in the schema.
+        //
+        // `schema.properties` is flat: it contains nested children alongside their parents
+        // (e.g. `nested`, `nested.inner`, `nested.inner.value`). Assigning by `property.name`
+        // over the whole list therefore writes leaf names at the top level — a schema with
+        // `nested: { inner: { value } }` picked up stray root-level `inner` and `value` keys.
+        // Root properties own their subtree via generateObject, so only they are walked here.
         for (const property of schema.properties) {
 
             if (property.isIdentity === true) {
+                continue;
+            }
+
+            if (property.parent != null) {
                 continue;
             }
 

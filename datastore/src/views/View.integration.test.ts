@@ -16,7 +16,7 @@ const viewSchema = s.define("activeProductView", {
 }).compile();
 
 class ViewStore extends DataStore {
-    products = this.collection(sourceSchema).create();
+    products = this.collection(sourceSchema).proxy().create();
 
     activeProducts = this.view(viewSchema)
         .derive((cb) => {

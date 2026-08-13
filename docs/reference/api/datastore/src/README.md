@@ -1,12 +1,12 @@
-[**routier-collection**](../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../README.md) / datastore/src
+[routier-collection](/reference/api/README) / datastore/src
 
 # datastore/src
 
 ## Classes
 
-- [DataStore](classes/DataStore.md)
-- [Collection](classes/Collection.md)
+- [DataStore](/reference/api/datastore/src/classes/DataStore)
+- [Collection](/reference/api/datastore/src/classes/Collection)

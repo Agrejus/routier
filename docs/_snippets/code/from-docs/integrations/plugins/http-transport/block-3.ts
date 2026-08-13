@@ -1,0 +1,1 @@
+createRequestHandler({ plugin, schemas, allowDestroy: true })

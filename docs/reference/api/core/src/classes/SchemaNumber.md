@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / SchemaNumber
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / SchemaNumber
 
 # Class: SchemaNumber\<T, TModifiers\>
 
@@ -10,7 +10,7 @@ Defined in: [core/src/schema/property/types/SchemaNumber.ts:16](https://github.c
 
 ## Extends
 
-- [`SchemaBase`](SchemaBase.md)\<`T`, `TModifiers`\>
+- [`SchemaBase`](/reference/api/core/src/classes/SchemaBase)\<`T`, `TModifiers`\>
 
 ## Type Parameters
 
@@ -20,7 +20,7 @@ Defined in: [core/src/schema/property/types/SchemaNumber.ts:16](https://github.c
 
 ### TModifiers
 
-`TModifiers` *extends* [`SchemaModifiers`](../type-aliases/SchemaModifiers.md)
+`TModifiers` *extends* [`SchemaModifiers`](/reference/api/core/src/type-aliases/SchemaModifiers)
 
 ## Constructors
 
@@ -34,7 +34,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:27](https://github.com/
 
 ##### entity?
 
-[`SchemaBase`](SchemaBase.md)\<`T`, `TModifiers`\>
+[`SchemaBase`](/reference/api/core/src/classes/SchemaBase)\<`T`, `TModifiers`\>
 
 ##### literals?
 
@@ -46,7 +46,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:27](https://github.com/
 
 #### Inherited from
 
-[`SchemaBase`](SchemaBase.md).[`constructor`](SchemaBase.md#constructor)
+[`SchemaBase`](/reference/api/core/src/classes/SchemaBase).[`constructor`](/reference/api/core/src/classes/SchemaBase#constructor)
 
 ## Properties
 
@@ -58,7 +58,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:6](https://github.com/A
 
 #### Inherited from
 
-[`SchemaBase`](SchemaBase.md).[`modifiers`](SchemaBase.md#modifiers)
+[`SchemaBase`](/reference/api/core/src/classes/SchemaBase).[`modifiers`](/reference/api/core/src/classes/SchemaBase#modifiers)
 
 ***
 
@@ -70,7 +70,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:8](https://github.com/A
 
 #### Inherited from
 
-[`SchemaBase`](SchemaBase.md).[`isNullable`](SchemaBase.md#isnullable)
+[`SchemaBase`](/reference/api/core/src/classes/SchemaBase).[`isNullable`](/reference/api/core/src/classes/SchemaBase#isnullable)
 
 ***
 
@@ -82,7 +82,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:9](https://github.com/A
 
 #### Inherited from
 
-[`SchemaBase`](SchemaBase.md).[`isUnmapped`](SchemaBase.md#isunmapped)
+[`SchemaBase`](/reference/api/core/src/classes/SchemaBase).[`isUnmapped`](/reference/api/core/src/classes/SchemaBase#isunmapped)
 
 ***
 
@@ -94,7 +94,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:10](https://github.com/
 
 #### Inherited from
 
-[`SchemaBase`](SchemaBase.md).[`isOptional`](SchemaBase.md#isoptional)
+[`SchemaBase`](/reference/api/core/src/classes/SchemaBase).[`isOptional`](/reference/api/core/src/classes/SchemaBase#isoptional)
 
 ***
 
@@ -106,7 +106,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:11](https://github.com/
 
 #### Inherited from
 
-[`SchemaBase`](SchemaBase.md).[`isKey`](SchemaBase.md#iskey)
+[`SchemaBase`](/reference/api/core/src/classes/SchemaBase).[`isKey`](/reference/api/core/src/classes/SchemaBase#iskey)
 
 ***
 
@@ -118,7 +118,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:12](https://github.com/
 
 #### Inherited from
 
-[`SchemaBase`](SchemaBase.md).[`isIdentity`](SchemaBase.md#isidentity)
+[`SchemaBase`](/reference/api/core/src/classes/SchemaBase).[`isIdentity`](/reference/api/core/src/classes/SchemaBase#isidentity)
 
 ***
 
@@ -130,7 +130,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:13](https://github.com/
 
 #### Inherited from
 
-[`SchemaBase`](SchemaBase.md).[`isReadonly`](SchemaBase.md#isreadonly)
+[`SchemaBase`](/reference/api/core/src/classes/SchemaBase).[`isReadonly`](/reference/api/core/src/classes/SchemaBase#isreadonly)
 
 ***
 
@@ -142,7 +142,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:14](https://github.com/
 
 #### Inherited from
 
-[`SchemaBase`](SchemaBase.md).[`isDistict`](SchemaBase.md#isdistict)
+[`SchemaBase`](/reference/api/core/src/classes/SchemaBase).[`isDistict`](/reference/api/core/src/classes/SchemaBase#isdistict)
 
 ***
 
@@ -154,7 +154,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:15](https://github.com/
 
 #### Inherited from
 
-[`SchemaBase`](SchemaBase.md).[`indexes`](SchemaBase.md#indexes)
+[`SchemaBase`](/reference/api/core/src/classes/SchemaBase).[`indexes`](/reference/api/core/src/classes/SchemaBase#indexes)
 
 ***
 
@@ -166,7 +166,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:16](https://github.com/
 
 #### Inherited from
 
-[`SchemaBase`](SchemaBase.md).[`fromPropertyName`](SchemaBase.md#frompropertyname)
+[`SchemaBase`](/reference/api/core/src/classes/SchemaBase).[`fromPropertyName`](/reference/api/core/src/classes/SchemaBase#frompropertyname)
 
 ***
 
@@ -178,55 +178,55 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:18](https://github.com/
 
 #### Inherited from
 
-[`SchemaBase`](SchemaBase.md).[`injected`](SchemaBase.md#injected)
+[`SchemaBase`](/reference/api/core/src/classes/SchemaBase).[`injected`](/reference/api/core/src/classes/SchemaBase#injected)
 
 ***
 
 ### defaultValue
 
-> **defaultValue**: [`DefaultValue`](../type-aliases/DefaultValue.md)\<`T`\> = `null`
+> **defaultValue**: [`DefaultValue`](/reference/api/core/src/type-aliases/DefaultValue)\<`T`\> = `null`
 
 Defined in: [core/src/schema/property/base/SchemaBase.ts:19](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/base/SchemaBase.ts#L19)
 
 #### Inherited from
 
-[`SchemaBase`](SchemaBase.md).[`defaultValue`](SchemaBase.md#defaultvalue)
+[`SchemaBase`](/reference/api/core/src/classes/SchemaBase).[`defaultValue`](/reference/api/core/src/classes/SchemaBase#defaultvalue)
 
 ***
 
 ### valueSerializer
 
-> **valueSerializer**: [`PropertySerializer`](../type-aliases/PropertySerializer.md)\<`T`\> = `null`
+> **valueSerializer**: [`PropertySerializer`](/reference/api/core/src/type-aliases/PropertySerializer)\<`T`\> = `null`
 
 Defined in: [core/src/schema/property/base/SchemaBase.ts:20](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/base/SchemaBase.ts#L20)
 
 #### Inherited from
 
-[`SchemaBase`](SchemaBase.md).[`valueSerializer`](SchemaBase.md#valueserializer)
+[`SchemaBase`](/reference/api/core/src/classes/SchemaBase).[`valueSerializer`](/reference/api/core/src/classes/SchemaBase#valueserializer)
 
 ***
 
 ### valueDeserializer
 
-> **valueDeserializer**: [`PropertyDeserializer`](../type-aliases/PropertyDeserializer.md)\<`T`\> = `null`
+> **valueDeserializer**: [`PropertyDeserializer`](/reference/api/core/src/type-aliases/PropertyDeserializer)\<`T`\> = `null`
 
 Defined in: [core/src/schema/property/base/SchemaBase.ts:21](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/base/SchemaBase.ts#L21)
 
 #### Inherited from
 
-[`SchemaBase`](SchemaBase.md).[`valueDeserializer`](SchemaBase.md#valuedeserializer)
+[`SchemaBase`](/reference/api/core/src/classes/SchemaBase).[`valueDeserializer`](/reference/api/core/src/classes/SchemaBase#valuedeserializer)
 
 ***
 
 ### functionBody
 
-> **functionBody**: [`FunctionBody`](../type-aliases/FunctionBody.md)\<`any`, `T`\>
+> **functionBody**: [`FunctionBody`](/reference/api/core/src/type-aliases/FunctionBody)\<`any`, `T`\>
 
 Defined in: [core/src/schema/property/base/SchemaBase.ts:23](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/base/SchemaBase.ts#L23)
 
 #### Inherited from
 
-[`SchemaBase`](SchemaBase.md).[`functionBody`](SchemaBase.md#functionbody)
+[`SchemaBase`](/reference/api/core/src/classes/SchemaBase).[`functionBody`](/reference/api/core/src/classes/SchemaBase#functionbody)
 
 ***
 
@@ -238,7 +238,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:25](https://github.com/
 
 #### Inherited from
 
-[`SchemaBase`](SchemaBase.md).[`literals`](SchemaBase.md#literals)
+[`SchemaBase`](/reference/api/core/src/classes/SchemaBase).[`literals`](/reference/api/core/src/classes/SchemaBase#literals)
 
 ***
 
@@ -250,25 +250,25 @@ Defined in: [core/src/schema/property/types/SchemaNumber.ts:18](https://github.c
 
 #### Overrides
 
-[`SchemaBase`](SchemaBase.md).[`instance`](SchemaBase.md#instance)
+[`SchemaBase`](/reference/api/core/src/classes/SchemaBase).[`instance`](/reference/api/core/src/classes/SchemaBase#instance)
 
 ***
 
 ### type
 
-> **type**: [`SchemaTypes`](../enumerations/SchemaTypes.md) = `SchemaTypes.Number`
+> **type**: [`SchemaTypes`](/reference/api/core/src/enumerations/SchemaTypes) = `SchemaTypes.Number`
 
 Defined in: [core/src/schema/property/types/SchemaNumber.ts:19](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/types/SchemaNumber.ts#L19)
 
 #### Overrides
 
-[`SchemaBase`](SchemaBase.md).[`type`](SchemaBase.md#type)
+[`SchemaBase`](/reference/api/core/src/classes/SchemaBase).[`type`](/reference/api/core/src/classes/SchemaBase#type)
 
 ## Methods
 
 ### from()
 
-> **from**(`propertyName`): [`SchemaFrom`](SchemaFrom.md)\<`T`, `TModifiers`\>
+> **from**(`propertyName`): [`SchemaFrom`](/reference/api/core/src/classes/SchemaFrom)\<`T`, `TModifiers`\>
 
 Defined in: [core/src/schema/property/types/SchemaNumber.ts:22](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/types/SchemaNumber.ts#L22)
 
@@ -280,49 +280,49 @@ Defined in: [core/src/schema/property/types/SchemaNumber.ts:22](https://github.c
 
 #### Returns
 
-[`SchemaFrom`](SchemaFrom.md)\<`T`, `TModifiers`\>
+[`SchemaFrom`](/reference/api/core/src/classes/SchemaFrom)\<`T`, `TModifiers`\>
 
 ***
 
 ### optional()
 
-> **optional**(): [`SchemaOptional`](SchemaOptional.md)\<`T`, `"optional"` \| `TModifiers`\>
+> **optional**(): [`SchemaOptional`](/reference/api/core/src/classes/SchemaOptional)\<`T`, `"optional"` \| `TModifiers`\>
 
 Defined in: [core/src/schema/property/types/SchemaNumber.ts:26](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/types/SchemaNumber.ts#L26)
 
 #### Returns
 
-[`SchemaOptional`](SchemaOptional.md)\<`T`, `"optional"` \| `TModifiers`\>
+[`SchemaOptional`](/reference/api/core/src/classes/SchemaOptional)\<`T`, `"optional"` \| `TModifiers`\>
 
 ***
 
 ### nullable()
 
-> **nullable**(): [`SchemaNullable`](SchemaNullable.md)\<`T`, `"nullable"` \| `TModifiers`\>
+> **nullable**(): [`SchemaNullable`](/reference/api/core/src/classes/SchemaNullable)\<`T`, `"nullable"` \| `TModifiers`\>
 
 Defined in: [core/src/schema/property/types/SchemaNumber.ts:30](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/types/SchemaNumber.ts#L30)
 
 #### Returns
 
-[`SchemaNullable`](SchemaNullable.md)\<`T`, `"nullable"` \| `TModifiers`\>
+[`SchemaNullable`](/reference/api/core/src/classes/SchemaNullable)\<`T`, `"nullable"` \| `TModifiers`\>
 
 ***
 
 ### key()
 
-> **key**(): [`SchemaKey`](SchemaKey.md)\<`T`, `"key"` \| `TModifiers`\>
+> **key**(): [`SchemaKey`](/reference/api/core/src/classes/SchemaKey)\<`T`, `"key"` \| `TModifiers`\>
 
 Defined in: [core/src/schema/property/types/SchemaNumber.ts:34](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/types/SchemaNumber.ts#L34)
 
 #### Returns
 
-[`SchemaKey`](SchemaKey.md)\<`T`, `"key"` \| `TModifiers`\>
+[`SchemaKey`](/reference/api/core/src/classes/SchemaKey)\<`T`, `"key"` \| `TModifiers`\>
 
 ***
 
 ### default()
 
-> **default**\<`I`\>(`value`, `injected?`): [`SchemaDefault`](SchemaDefault.md)\<`T`, `I`, `"default"` \| `TModifiers`\>
+> **default**\<`I`\>(`value`, `injected?`): [`SchemaDefault`](/reference/api/core/src/classes/SchemaDefault)\<`T`, `I`, `"default"` \| `TModifiers`\>
 
 Defined in: [core/src/schema/property/types/SchemaNumber.ts:38](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/types/SchemaNumber.ts#L38)
 
@@ -336,7 +336,7 @@ Defined in: [core/src/schema/property/types/SchemaNumber.ts:38](https://github.c
 
 ##### value
 
-[`DefaultValue`](../type-aliases/DefaultValue.md)\<`T`, `I`\>
+[`DefaultValue`](/reference/api/core/src/type-aliases/DefaultValue)\<`T`, `I`\>
 
 ##### injected?
 
@@ -344,25 +344,25 @@ Defined in: [core/src/schema/property/types/SchemaNumber.ts:38](https://github.c
 
 #### Returns
 
-[`SchemaDefault`](SchemaDefault.md)\<`T`, `I`, `"default"` \| `TModifiers`\>
+[`SchemaDefault`](/reference/api/core/src/classes/SchemaDefault)\<`T`, `I`, `"default"` \| `TModifiers`\>
 
 ***
 
 ### readonly()
 
-> **readonly**(): [`SchemaReadonly`](SchemaReadonly.md)\<`T`, `"readonly"` \| `TModifiers`\>
+> **readonly**(): [`SchemaReadonly`](/reference/api/core/src/classes/SchemaReadonly)\<`T`, `"readonly"` \| `TModifiers`\>
 
 Defined in: [core/src/schema/property/types/SchemaNumber.ts:42](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/types/SchemaNumber.ts#L42)
 
 #### Returns
 
-[`SchemaReadonly`](SchemaReadonly.md)\<`T`, `"readonly"` \| `TModifiers`\>
+[`SchemaReadonly`](/reference/api/core/src/classes/SchemaReadonly)\<`T`, `"readonly"` \| `TModifiers`\>
 
 ***
 
 ### deserialize()
 
-> **deserialize**(`deserializer`): [`SchemaDeserialize`](SchemaDeserialize.md)\<`T`, `"deserialize"` \| `TModifiers`\>
+> **deserialize**(`deserializer`): [`SchemaDeserialize`](/reference/api/core/src/classes/SchemaDeserialize)\<`T`, `"deserialize"` \| `TModifiers`\>
 
 Defined in: [core/src/schema/property/types/SchemaNumber.ts:46](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/types/SchemaNumber.ts#L46)
 
@@ -370,17 +370,17 @@ Defined in: [core/src/schema/property/types/SchemaNumber.ts:46](https://github.c
 
 ##### deserializer
 
-[`PropertyDeserializer`](../type-aliases/PropertyDeserializer.md)\<`T`\>
+[`PropertyDeserializer`](/reference/api/core/src/type-aliases/PropertyDeserializer)\<`T`\>
 
 #### Returns
 
-[`SchemaDeserialize`](SchemaDeserialize.md)\<`T`, `"deserialize"` \| `TModifiers`\>
+[`SchemaDeserialize`](/reference/api/core/src/classes/SchemaDeserialize)\<`T`, `"deserialize"` \| `TModifiers`\>
 
 ***
 
 ### serialize()
 
-> **serialize**(`serializer`): [`SchemaSerialize`](SchemaSerialize.md)\<`T`, `"serialize"` \| `TModifiers`\>
+> **serialize**(`serializer`): [`SchemaSerialize`](/reference/api/core/src/classes/SchemaSerialize)\<`T`, `"serialize"` \| `TModifiers`\>
 
 Defined in: [core/src/schema/property/types/SchemaNumber.ts:50](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/types/SchemaNumber.ts#L50)
 
@@ -388,41 +388,41 @@ Defined in: [core/src/schema/property/types/SchemaNumber.ts:50](https://github.c
 
 ##### serializer
 
-[`PropertySerializer`](../type-aliases/PropertySerializer.md)\<`T`\>
+[`PropertySerializer`](/reference/api/core/src/type-aliases/PropertySerializer)\<`T`\>
 
 #### Returns
 
-[`SchemaSerialize`](SchemaSerialize.md)\<`T`, `"serialize"` \| `TModifiers`\>
+[`SchemaSerialize`](/reference/api/core/src/classes/SchemaSerialize)\<`T`, `"serialize"` \| `TModifiers`\>
 
 ***
 
 ### identity()
 
-> **identity**(): [`SchemaIdentity`](SchemaIdentity.md)\<`T`, `"identity"` \| `"readonly"` \| `TModifiers`\>
+> **identity**(): [`SchemaIdentity`](/reference/api/core/src/classes/SchemaIdentity)\<`T`, `"identity"` \| `"readonly"` \| `TModifiers`\>
 
 Defined in: [core/src/schema/property/types/SchemaNumber.ts:54](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/types/SchemaNumber.ts#L54)
 
 #### Returns
 
-[`SchemaIdentity`](SchemaIdentity.md)\<`T`, `"identity"` \| `"readonly"` \| `TModifiers`\>
+[`SchemaIdentity`](/reference/api/core/src/classes/SchemaIdentity)\<`T`, `"identity"` \| `"readonly"` \| `TModifiers`\>
 
 ***
 
 ### array()
 
-> **array**(): [`SchemaArray`](SchemaArray.md)\<`SchemaNumber`\<`T`, `TModifiers`\>, `TModifiers`\>
+> **array**(): [`SchemaArray`](/reference/api/core/src/classes/SchemaArray)\<`SchemaNumber`\<`T`, `TModifiers`\>, `TModifiers`\>
 
 Defined in: [core/src/schema/property/types/SchemaNumber.ts:58](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/types/SchemaNumber.ts#L58)
 
 #### Returns
 
-[`SchemaArray`](SchemaArray.md)\<`SchemaNumber`\<`T`, `TModifiers`\>, `TModifiers`\>
+[`SchemaArray`](/reference/api/core/src/classes/SchemaArray)\<`SchemaNumber`\<`T`, `TModifiers`\>, `TModifiers`\>
 
 ***
 
 ### index()
 
-> **index**(...`indexes`): [`SchemaIndex`](SchemaIndex.md)\<`T`, `TModifiers`\>
+> **index**(...`indexes`): [`SchemaIndex`](/reference/api/core/src/classes/SchemaIndex)\<`T`, `TModifiers`\>
 
 Defined in: [core/src/schema/property/types/SchemaNumber.ts:62](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/types/SchemaNumber.ts#L62)
 
@@ -434,16 +434,16 @@ Defined in: [core/src/schema/property/types/SchemaNumber.ts:62](https://github.c
 
 #### Returns
 
-[`SchemaIndex`](SchemaIndex.md)\<`T`, `TModifiers`\>
+[`SchemaIndex`](/reference/api/core/src/classes/SchemaIndex)\<`T`, `TModifiers`\>
 
 ***
 
 ### distinct()
 
-> **distinct**(): [`SchemaDistinct`](SchemaDistinct.md)\<`T`, `"distinct"` \| `TModifiers`\>
+> **distinct**(): [`SchemaDistinct`](/reference/api/core/src/classes/SchemaDistinct)\<`T`, `"distinct"` \| `TModifiers`\>
 
 Defined in: [core/src/schema/property/types/SchemaNumber.ts:66](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/types/SchemaNumber.ts#L66)
 
 #### Returns
 
-[`SchemaDistinct`](SchemaDistinct.md)\<`T`, `"distinct"` \| `TModifiers`\>
+[`SchemaDistinct`](/reference/api/core/src/classes/SchemaDistinct)\<`T`, `"distinct"` \| `TModifiers`\>

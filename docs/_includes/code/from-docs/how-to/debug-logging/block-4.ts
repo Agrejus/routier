@@ -1,1 +1,0 @@
-(globalThis as any).__ROUTIER_DEBUG__ = false;

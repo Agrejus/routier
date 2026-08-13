@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / s
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / s
 
 # Variable: s
 
@@ -14,7 +14,7 @@ Defined in: [core/src/schema/builder.ts:10](https://github.com/Agrejus/routier/b
 
 ### number()
 
-> **number**: \<`T`\>(...`literals`) => [`SchemaNumber`](../classes/SchemaNumber.md)\<`T`\[`number`\] *extends* `never` ? `number` : `T`\[`number`\], `never`\>
+> **number**: \<`T`\>(...`literals`) => [`SchemaNumber`](/reference/api/core/src/classes/SchemaNumber)\<`T`\[`number`\] *extends* `never` ? `number` : `T`\[`number`\], `never`\>
 
 #### Type Parameters
 
@@ -30,11 +30,11 @@ Defined in: [core/src/schema/builder.ts:10](https://github.com/Agrejus/routier/b
 
 #### Returns
 
-[`SchemaNumber`](../classes/SchemaNumber.md)\<`T`\[`number`\] *extends* `never` ? `number` : `T`\[`number`\], `never`\>
+[`SchemaNumber`](/reference/api/core/src/classes/SchemaNumber)\<`T`\[`number`\] *extends* `never` ? `number` : `T`\[`number`\], `never`\>
 
 ### string()
 
-> **string**: \<`T`\>(...`literals`) => [`SchemaString`](../classes/SchemaString.md)\<`T`\[`number`\] *extends* `never` ? `string` : `T`\[`number`\], `never`\>
+> **string**: \<`T`\>(...`literals`) => [`SchemaString`](/reference/api/core/src/classes/SchemaString)\<`T`\[`number`\] *extends* `never` ? `string` : `T`\[`number`\], `never`\>
 
 #### Type Parameters
 
@@ -50,11 +50,11 @@ Defined in: [core/src/schema/builder.ts:10](https://github.com/Agrejus/routier/b
 
 #### Returns
 
-[`SchemaString`](../classes/SchemaString.md)\<`T`\[`number`\] *extends* `never` ? `string` : `T`\[`number`\], `never`\>
+[`SchemaString`](/reference/api/core/src/classes/SchemaString)\<`T`\[`number`\] *extends* `never` ? `string` : `T`\[`number`\], `never`\>
 
 ### boolean()
 
-> **boolean**: \<`T`\>() => [`SchemaBoolean`](../classes/SchemaBoolean.md)\<`T`, `never`\>
+> **boolean**: \<`T`\>() => [`SchemaBoolean`](/reference/api/core/src/classes/SchemaBoolean)\<`T`, `never`\>
 
 #### Type Parameters
 
@@ -64,11 +64,11 @@ Defined in: [core/src/schema/builder.ts:10](https://github.com/Agrejus/routier/b
 
 #### Returns
 
-[`SchemaBoolean`](../classes/SchemaBoolean.md)\<`T`, `never`\>
+[`SchemaBoolean`](/reference/api/core/src/classes/SchemaBoolean)\<`T`, `never`\>
 
 ### date()
 
-> **date**: \<`T`\>() => [`SchemaDate`](../classes/SchemaDate.md)\<`T`, `never`\>
+> **date**: \<`T`\>() => [`SchemaDate`](/reference/api/core/src/classes/SchemaDate)\<`T`, `never`\>
 
 #### Type Parameters
 
@@ -78,11 +78,11 @@ Defined in: [core/src/schema/builder.ts:10](https://github.com/Agrejus/routier/b
 
 #### Returns
 
-[`SchemaDate`](../classes/SchemaDate.md)\<`T`, `never`\>
+[`SchemaDate`](/reference/api/core/src/classes/SchemaDate)\<`T`, `never`\>
 
 ### array()
 
-> **array**: \<`T`\>(`schema`) => [`SchemaArray`](../classes/SchemaArray.md)\<[`SchemaBase`](../classes/SchemaBase.md)\<`T`, `never`\>, `never`\>
+> **array**: \<`T`\>(`schema`) => [`SchemaArray`](/reference/api/core/src/classes/SchemaArray)\<[`SchemaBase`](/reference/api/core/src/classes/SchemaBase)\<`T`, `never`\>, `never`\>
 
 #### Type Parameters
 
@@ -94,15 +94,15 @@ Defined in: [core/src/schema/builder.ts:10](https://github.com/Agrejus/routier/b
 
 ##### schema
 
-[`SchemaBase`](../classes/SchemaBase.md)\<`T`, `never`\>
+[`SchemaBase`](/reference/api/core/src/classes/SchemaBase)\<`T`, `never`\>
 
 #### Returns
 
-[`SchemaArray`](../classes/SchemaArray.md)\<[`SchemaBase`](../classes/SchemaBase.md)\<`T`, `never`\>, `never`\>
+[`SchemaArray`](/reference/api/core/src/classes/SchemaArray)\<[`SchemaBase`](/reference/api/core/src/classes/SchemaBase)\<`T`, `never`\>, `never`\>
 
 ### object()
 
-> **object**: \<`T`\>(`schema`) => [`SchemaObject`](../classes/SchemaObject.md)\<`T`, `never`\>
+> **object**: \<`T`\>(`schema`) => [`SchemaObject`](/reference/api/core/src/classes/SchemaObject)\<`T`, `never`\>
 
 #### Type Parameters
 
@@ -118,7 +118,7 @@ Defined in: [core/src/schema/builder.ts:10](https://github.com/Agrejus/routier/b
 
 #### Returns
 
-[`SchemaObject`](../classes/SchemaObject.md)\<`T`, `never`\>
+[`SchemaObject`](/reference/api/core/src/classes/SchemaObject)\<`T`, `never`\>
 
 ### define()
 

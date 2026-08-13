@@ -1,8 +1,5 @@
 ---
 title: Entity Tagging
-layout: default
-parent: Guides
-nav_order: 7
 ---
 
 ## Entity Tagging
@@ -32,13 +29,13 @@ Entity tagging attaches one or more tags to a write operation (insert/update/del
 You can tag a write by calling `tag(...)` on the collection before the write:
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/entity-tagging/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/entity-tagging/block-1.ts
 
 
 Programmatic writes can use a different tag:
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/entity-tagging/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/entity-tagging/block-2.ts
 
 
 ## Notes
@@ -51,7 +48,7 @@ Programmatic writes can use a different tag:
 The example below shows tagging user-initiated vs programmatic inserts.
 
 
-{% highlight tsx linenos %}{% include code/from-docs/guides/entity-tagging/block-3.tsx %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/entity-tagging/block-3.tsx
 
 
 In your storage plugin, read the tags from the write transaction/context to record who performed the operation or to adjust persistence behavior.

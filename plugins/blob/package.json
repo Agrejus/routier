@@ -1,0 +1,82 @@
+{
+    "name": "@routier/blob-plugin",
+    "version": "0.3.0",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "source": "./src/index.ts",
+    "publishConfig": {
+        "access": "public"
+    },
+    "files": [
+        "dist/**/*",
+        "README.md",
+        "LICENSE"
+    ],
+    "scripts": {
+        "build:types": "tsc --emitDeclarationOnly",
+        "build:bundle": "node ../../scripts/clean-dist.mjs && rspack build",
+        "build": "npm run build:bundle && npm run build:types",
+        "tsc": "tsc --noEmit",
+        "test": "jest",
+        "lint": "oxlint . --ignore-pattern \"**/*.test.*\" --ignore-pattern \"**/*.mjs\""
+    },
+    "sideEffects": false,
+    "author": "James DeMeuse <james.demeuse@gmail.com>",
+    "license": "MIT",
+    "repository": "routier",
+    "keywords": [
+        "orm",
+        "typescript",
+        "files",
+        "media",
+        "uploads",
+        "s3",
+        "r2",
+        "gcs",
+        "azure",
+        "blob storage",
+        "data access layer"
+    ],
+    "description": "File and media storage for Routier: metadata in your database, bytes in blob storage",
+    "peerDependencies": {
+        "@routier/core": ">=0.3.0",
+        "@aws-sdk/client-s3": ">=3.0.0",
+        "@aws-sdk/s3-request-presigner": ">=3.0.0"
+    },
+    "devDependencies": {
+        "@aws-sdk/client-s3": "^3.1105.0",
+        "@aws-sdk/s3-request-presigner": "^3.1105.0",
+        "@routier/core": "^0.3.0",
+        "@routier/datastore": "^0.3.0",
+        "@routier/dexie-plugin": "^0.3.0",
+        "@routier/memory-plugin": "^0.3.0",
+        "@rspack/cli": "^1.1.8",
+        "@rspack/core": "^1.1.8"
+    },
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs"
+        },
+        "./stores/fileSystem": {
+            "types": "./dist/stores/fileSystem.d.ts",
+            "import": "./dist/stores/fileSystem.js",
+            "require": "./dist/stores/fileSystem.cjs"
+        },
+        "./stores/s3": {
+            "types": "./dist/stores/s3.d.ts",
+            "import": "./dist/stores/s3.js",
+            "require": "./dist/stores/s3.cjs"
+        }
+    },
+    "peerDependenciesMeta": {
+        "@aws-sdk/client-s3": {
+            "optional": true
+        },
+        "@aws-sdk/s3-request-presigner": {
+            "optional": true
+        }
+    }
+}

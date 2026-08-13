@@ -9,6 +9,6 @@ export class SchemaDistinct<T extends any, TModifiers extends SchemaModifiers> e
     constructor(current: SchemaBase<T, TModifiers>) {
         super(current);
         this.instance = current.instance;
-        this.isDistict = true;
+        this.isDistinct = true;
     }
 }

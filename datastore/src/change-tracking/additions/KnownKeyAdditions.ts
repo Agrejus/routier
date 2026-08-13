@@ -14,9 +14,15 @@ export class KnownKeyAdditions<T extends {}> implements IAdditions<T> {
         this.schema = schema;
     }
 
-    get(entity: InferCreateType<T>): InferCreateType<T> | undefined {
+    take(entity: InferCreateType<T>): InferCreateType<T> | undefined {
         const id = this.schema.getId(entity as InferType<T>);
-        return this.data.get(id);
+        const found = this.data.get(id);
+
+        // Destructive to honor the interface contract; with unique ids per pending row it
+        // makes no behavioral difference, since each id is resolved at most once per save.
+        this.data.delete(id);
+
+        return found;
     }
 
     values(): InferCreateType<T>[] {
@@ -26,6 +32,19 @@ export class KnownKeyAdditions<T extends {}> implements IAdditions<T> {
     set(entity: InferCreateType<T>) {
         const id = this.schema.getId(entity as InferType<T>);
         this.data.set(id, entity);
+    }
+
+    replace(existing: InferCreateType<T>, next: InferCreateType<T>) {
+        // The key is the id, so it only moves when the patch changed the key itself.
+        this.data.delete(this.schema.getId(existing as InferType<T>));
+        this.set(next);
+    }
+
+    /**
+     * Nothing to do: the key is the row's own id, and mutating other properties cannot move it.
+     * A caller that changes the id itself has changed which row this is, which `replace` covers.
+     */
+    reindex(): void {
     }
 
     clear(): void {

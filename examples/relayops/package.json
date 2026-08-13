@@ -1,0 +1,11 @@
+{
+  "name": "routier-relayops-dogfood",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx --tsconfig tsconfig.json server/index.ts",
+    "smoke": "tsx --tsconfig tsconfig.json server/run-smoke.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "vite build"
+  }
+}

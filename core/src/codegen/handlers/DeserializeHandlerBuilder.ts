@@ -4,8 +4,9 @@ import { DeserializeDateHandler } from "./deserialize/DeserializeDateHandler";
 import { DeserializeComputedValueHandler } from "./deserialize/DeserializeComputedValueHandler";
 import { DeserializeFunctionHandler } from "./deserialize/DeserializeFunctionHandler";
 import { DeserializeDeserializerHandler } from "./deserialize/DeserializeDeserializerHandler";
+import { DeserializeArrayHandler } from "./deserialize/DeserializeArrayHandler";
 
-/// Purpose: 
+/// Purpose:
 export class DeserializeHandlerBuilder {
 
     build() {
@@ -14,6 +15,7 @@ export class DeserializeHandlerBuilder {
             .setNext(new DeserializeDeserializerHandler())
             .setNext(new DeserializeComputedValueHandler())
             .setNext(new DeserializeFunctionHandler())
+            .setNext(new DeserializeArrayHandler())
             .setNext(new DeserializeValueHandler())
             .setNext(new DeserializeDateHandler());
 

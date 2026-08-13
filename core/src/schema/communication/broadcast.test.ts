@@ -37,6 +37,16 @@ class MockBroadcastChannel {
     }
 }
 
+// A compiled schema always exposes both halves of the wire pipeline: `preprocess`
+// (prepare + serialize) on send and `postprocess` (deserialize + enrich) on receive.
+// Mocks must carry both, or a receive-path regression looks like a passing test.
+const mockSchema = (id: string, overrides: Record<string, unknown> = {}) => ({
+    id,
+    preprocess: (x: unknown) => x,
+    postprocess: (x: unknown) => x,
+    ...overrides,
+}) as any;
+
 describe("SchemaSubscription broadcast contract", () => {
     const originalBroadcastChannel = globalThis.BroadcastChannel;
 
@@ -51,10 +61,7 @@ describe("SchemaSubscription broadcast contract", () => {
     });
 
     it("does not deliver messages after subscription is disposed", () => {
-        const schema = {
-            id: "schema-1",
-            preprocess: (x: unknown) => x,
-        } as any;
+        const schema = mockSchema("schema-1");
 
         const sender = new SchemaSubscription(schema);
         const receiver = new SchemaSubscription(schema);
@@ -73,10 +80,7 @@ describe("SchemaSubscription broadcast contract", () => {
     });
 
     it("dispose is idempotent and remains unsubscribed", () => {
-        const schema = {
-            id: "schema-idempotent",
-            preprocess: (x: unknown) => x,
-        } as any;
+        const schema = mockSchema("schema-idempotent");
 
         const sender = new SchemaSubscription(schema);
         const receiver = new SchemaSubscription(schema);
@@ -97,8 +101,8 @@ describe("SchemaSubscription broadcast contract", () => {
     });
 
     it("isolates channels by schema id", () => {
-        const schemaA = { id: "schema-A", preprocess: (x: unknown) => x } as any;
-        const schemaB = { id: "schema-B", preprocess: (x: unknown) => x } as any;
+        const schemaA = mockSchema("schema-A");
+        const schemaB = mockSchema("schema-B");
 
         const senderA = new SchemaSubscription(schemaA);
         const receiverB = new SchemaSubscription(schemaB);
@@ -116,7 +120,7 @@ describe("SchemaSubscription broadcast contract", () => {
     });
 
     it("fans out to multiple listeners for same schema channel", () => {
-        const schema = { id: "schema-fanout", preprocess: (x: unknown) => x } as any;
+        const schema = mockSchema("schema-fanout");
 
         const sender = new SchemaSubscription(schema);
         const receiverA = new SchemaSubscription(schema);
@@ -140,11 +144,7 @@ describe("SchemaSubscription broadcast contract", () => {
     it("should postprocess incoming changes before delivering to listeners", () => {
         const preprocess = jest.fn((x: any) => ({ ...x, _stage: "pre" }));
         const postprocess = jest.fn((x: any) => ({ ...x, _stage: "post" }));
-        const schema = {
-            id: "schema-postprocess",
-            preprocess,
-            postprocess,
-        } as any;
+        const schema = mockSchema("schema-postprocess", { preprocess, postprocess });
 
         const sender = new SchemaSubscription(schema);
         const receiver = new SchemaSubscription(schema);
@@ -164,6 +164,121 @@ describe("SchemaSubscription broadcast contract", () => {
         expect(message.adds[0]._stage).toBe("post");
     });
 
+    describe("crossTabSync", () => {
+
+        it("preprocesses and sends with no listeners by default, because another tab may be listening", () => {
+            const preprocess = jest.fn((x: any) => x);
+            const schema = mockSchema("schema-default-sends", { preprocess });
+
+            const sender = new SchemaSubscription(schema);
+
+            sender.send({
+                adds: [{ id: 1 }],
+                updates: [],
+                removals: [],
+                unknown: [],
+            } as any);
+
+            expect(preprocess).toHaveBeenCalledTimes(1);
+        });
+
+        it("skips preprocessing entirely when crossTabSync is off and nothing is listening", () => {
+            const preprocess = jest.fn((x: any) => x);
+            const schema = mockSchema("schema-guarded", { preprocess });
+
+            const sender = new SchemaSubscription(schema, undefined, undefined, { crossTabSync: false });
+
+            sender.send({
+                adds: [{ id: 1 }],
+                updates: [{ id: 2 }],
+                removals: [{ id: 3 }],
+                unknown: [{ id: 4 }],
+            } as any);
+
+            expect(preprocess).not.toHaveBeenCalled();
+        });
+
+        it("still delivers to a local listener when crossTabSync is off", () => {
+            const schema = mockSchema("schema-guarded-local");
+
+            const sender = new SchemaSubscription(schema, undefined, undefined, { crossTabSync: false });
+            const receiver = new SchemaSubscription(schema);
+            const callback = jest.fn();
+            receiver.onMessage(callback);
+
+            sender.send({
+                adds: [{ id: 1 }],
+                updates: [],
+                removals: [],
+                unknown: [],
+            } as any);
+
+            expect(callback).toHaveBeenCalledTimes(1);
+        });
+
+        // The count that matters is registered CALLBACKS, not subscription objects. A DataStore
+        // builds one subscription per collection just to send from, so a count of instances is
+        // never zero and the guard below would never engage.
+        it("counts listeners rather than subscriptions, so a sender-only peer does not defeat the guard", () => {
+            const preprocess = jest.fn((x: any) => x);
+            const schema = mockSchema("schema-sender-only-peer", { preprocess });
+
+            const sender = new SchemaSubscription(schema, undefined, undefined, { crossTabSync: false });
+            // Exists, retains the channel, but never calls onMessage.
+            new SchemaSubscription(schema);
+
+            sender.send({
+                adds: [{ id: 1 }],
+                updates: [],
+                removals: [],
+                unknown: [],
+            } as any);
+
+            expect(preprocess).not.toHaveBeenCalled();
+        });
+
+        it("resumes sending when a listener arrives and stops again once it disposes", () => {
+            const preprocess = jest.fn((x: any) => x);
+            const schema = mockSchema("schema-guard-toggles", { preprocess });
+
+            const sender = new SchemaSubscription(schema, undefined, undefined, { crossTabSync: false });
+            const changes = { adds: [{ id: 1 }], updates: [], removals: [], unknown: [] } as any;
+
+            sender.send(changes);
+            expect(preprocess).not.toHaveBeenCalled();
+
+            const receiver = new SchemaSubscription(schema);
+            receiver.onMessage(jest.fn());
+
+            sender.send(changes);
+            expect(preprocess).toHaveBeenCalledTimes(1);
+
+            receiver.dispose();
+
+            sender.send(changes);
+            expect(preprocess).toHaveBeenCalledTimes(1);
+        });
+
+        it("scopes the guard per channel, so a listener on one scope does not unblock another", () => {
+            const preprocess = jest.fn((x: any) => x);
+            const schema = mockSchema("schema-scoped-guard", { preprocess });
+
+            const listenedTo = new SchemaSubscription(schema, undefined, "db-a");
+            listenedTo.onMessage(jest.fn());
+
+            const sender = new SchemaSubscription(schema, undefined, "db-b", { crossTabSync: false });
+
+            sender.send({
+                adds: [{ id: 1 }],
+                updates: [],
+                removals: [],
+                unknown: [],
+            } as any);
+
+            expect(preprocess).not.toHaveBeenCalled();
+        });
+    });
+
     it("should restore Date values on receive via postprocess", () => {
         const preprocess = jest.fn((x: any) => {
             if (x && x.createdAt instanceof Date) {
@@ -177,11 +292,7 @@ describe("SchemaSubscription broadcast contract", () => {
             }
             return x;
         });
-        const schema = {
-            id: "schema-date-roundtrip",
-            preprocess,
-            postprocess,
-        } as any;
+        const schema = mockSchema("schema-date-roundtrip", { preprocess, postprocess });
 
         const sender = new SchemaSubscription(schema);
         const receiver = new SchemaSubscription(schema);

@@ -1,9 +1,5 @@
 ---
 title: Bulk Operations
-layout: default
-parent: CRUD
-grand_parent: Data Operations
-nav_order: 6
 ---
 
 # Bulk Operations
@@ -28,114 +24,95 @@ Bulk operations allow you to:
 
 ### Adding Multiple Entities
 
-{% capture snippet_yrprqb %}{% include code/from-docs/how-to/crud/bulk/README/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_yrprqb  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/bulk/README/block-1.ts
 
 ### Bulk Add with Array
 
-{% capture snippet_uw8bcx %}{% include code/from-docs/how-to/crud/bulk/README/block-2.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_uw8bcx  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/bulk/README/block-2.ts
 
 ### Bulk Add with Data Generation
 
-{% capture snippet_jvrsl9 %}{% include code/from-docs/how-to/crud/bulk/README/block-3.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_jvrsl9  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/bulk/README/block-3.ts
 
 ## Bulk Update Operations
 
 ### Batch Property Updates
 
-{% capture snippet_eag9mn %}{% include code/from-docs/how-to/crud/bulk/README/block-4.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_eag9mn  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/bulk/README/block-4.ts
 
 ### Conditional Bulk Updates
 
-{% capture snippet_xp7cs4 %}{% include code/from-docs/how-to/crud/bulk/README/block-5.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_xp7cs4  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/bulk/README/block-5.ts
 
 ### Bulk Updates with Transformations
 
-{% capture snippet_q9gyuz %}{% include code/from-docs/how-to/crud/bulk/README/block-6.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_q9gyuz  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/bulk/README/block-6.ts
 
 ## Bulk Delete Operations
 
 ### Remove Multiple Entities
 
-{% capture snippet_cyz6su %}{% include code/from-docs/how-to/crud/bulk/README/block-7.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_cyz6su  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/bulk/README/block-7.ts
 
 ### Remove by Query
 
-{% capture snippet_x08o3f %}{% include code/from-docs/how-to/crud/bulk/README/block-8.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_x08o3f  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/bulk/README/block-8.ts
 
 ### Bulk Remove with Confirmation
 
-{% capture snippet_w3hrvr %}{% include code/from-docs/how-to/crud/bulk/README/block-9.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_w3hrvr  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/bulk/README/block-9.ts
 
 ## Bulk Operations with Change Tracking
 
 ### Efficient Change Management
 
-{% capture snippet_tb922c %}{% include code/from-docs/how-to/crud/bulk/README/block-10.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_tb922c  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/bulk/README/block-10.ts
 
 ### Previewing Bulk Changes
 
-{% capture snippet_qs8ydl %}{% include code/from-docs/how-to/crud/bulk/README/block-11.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_qs8ydl  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/bulk/README/block-11.ts
 
 ## Performance Considerations
 
 ### Batch Size Optimization
 
-{% capture snippet_bf0381 %}{% include code/from-docs/how-to/crud/bulk/README/block-12.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_bf0381  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/bulk/README/block-12.ts
 
 ### Memory Management
 
-{% capture snippet_99drnf %}{% include code/from-docs/how-to/crud/bulk/README/block-13.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_99drnf  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/bulk/README/block-13.ts
 
 ## Error Handling in Bulk Operations
 
 ### Graceful Failure Handling
 
-{% capture snippet_i43kay %}{% include code/from-docs/how-to/crud/bulk/README/block-14.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_i43kay  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/bulk/README/block-14.ts
 
 ### Partial Success Handling
 
-{% capture snippet_u5x4xt %}{% include code/from-docs/how-to/crud/bulk/README/block-15.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_u5x4xt  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/bulk/README/block-15.ts
 
 ## Best Practices
 
 ### 1. **Use Appropriate Batch Sizes**
 
-{% capture snippet_6rl9cc %}{% include code/from-docs/how-to/crud/bulk/README/block-16.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_6rl9cc  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/bulk/README/block-16.ts
 
 ### 2. **Save Changes Strategically**
 
-{% capture snippet_sz50tg %}{% include code/from-docs/how-to/crud/bulk/README/block-17.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_sz50tg  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/bulk/README/block-17.ts
 
 ### 3. **Handle Errors Gracefully**
 
-{% capture snippet_gcc4wa %}{% include code/from-docs/how-to/crud/bulk/README/block-18.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_gcc4wa  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/bulk/README/block-18.ts
 
 ### 4. **Monitor Performance**
 
-{% capture snippet_3htkn6 %}{% include code/from-docs/how-to/crud/bulk/README/block-19.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_3htkn6  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/crud/bulk/README/block-19.ts
 
 ## Next Steps
 
-- [CRUD Operations](../README.md) - Back to basic CRUD operations
-- [Data Collections](../../data-collections/) - Understanding collections and change tracking
-- [Performance Optimization](../../../advanced-features/performance-profiling/) - Optimizing bulk operations
-- [State Management](../state-management/) - Managing application state with Routier
+- [CRUD Operations](/how-to/crud/README) - Back to basic CRUD operations
+- [Data Collections](/concepts/data-collections/memory-collections) - Understanding collections and change tracking
+
+- [State Management](/guides/state-management) - Managing application state with Routier

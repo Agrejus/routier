@@ -19,7 +19,9 @@ export abstract class DataTranslator<TRoot extends {}, TShape> {
         sort: (data: unknown, option: QueryOption<TShape, "sort">) => this.sort(data, option),
         sum: (data: unknown, option: QueryOption<TShape, "sum">) => this.sum<any>(data, option),
         take: (data: unknown, option: QueryOption<TShape, "take">) => this.take(data, option),
-        group: (data: unknown, option: QueryOption<TShape, "group">) => this.group(data, option)
+        group: (data: unknown, option: QueryOption<TShape, "group">) => this.group(data, option),
+        nearest: (data: unknown, option: QueryOption<TShape, "nearest">) => this.nearest(data, option),
+        join: (data: unknown, option: QueryOption<TShape, "join">) => this.join(data, option)
     };
 
     constructor(query: IQuery<TRoot, TShape>) {
@@ -40,6 +42,35 @@ export abstract class DataTranslator<TRoot extends {}, TShape> {
     abstract sort(data: unknown, option: QueryOption<TShape, "sort">): TShape;
     abstract map(data: unknown, option: QueryOption<TShape, "map">): TShape;
     abstract group(data: unknown, option: QueryOption<TShape, "group">): TShape;
+    /**
+     * Abstract on purpose, unlike the pass-throughs a storage translator can usually inherit.
+     *
+     * Every other shaper degrades safely when a backend ignores it — an unsorted result is
+     * still the right rows. A similarity search is not: it is the only option whose value is
+     * ENTIRELY in the ordering and the limit, so a translator that quietly passes the data
+     * through returns every row in insertion order and calls it the ten nearest.
+     *
+     * Requiring an answer here means a new translator cannot be written without deciding
+     * whether its backend performed the search, and the compiler asks the question.
+     */
+    abstract nearest(data: unknown, option: QueryOption<TShape, "nearest">): TShape;
+
+    /**
+     * Abstract for the same reason as `nearest`, one step further.
+     *
+     * A translator that quietly passed a join through would not return an unsorted or unlimited
+     * result — it would return the OUTER rows, one object each where the contract says tuples,
+     * and every `([outer, inner]) => ...` lambda downstream would destructure the outer entity
+     * instead. Nothing errors; the answer is simply a different query's answer.
+     *
+     * So the compiler asks the question. Every translator must state how its backend joins:
+     * natively (pass through the rows the SQL already paired), in memory (the shared hash join
+     * over rows the plugin supplies), or not at all (throw, loudly, naming the backend).
+     *
+     * The output contract, whichever answer: an array of `[outer, inner]` tuples, each half
+     * fully deserialized into its OWN schema's entity shape.
+     */
+    abstract join(data: unknown, option: QueryOption<TShape, "join">): TShape;
 
     translate(data: unknown): ITranslatedValue<TShape> {
 

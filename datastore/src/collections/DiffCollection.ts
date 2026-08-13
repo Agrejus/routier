@@ -2,7 +2,7 @@ import { Collection } from './Collection';
 import { ChangeTrackingType } from "@routier/core/schema";
 import { CollectionDependencies } from "./types";
 
-export class DiffCollection<TEntity extends {}> extends Collection<TEntity> {
+export class DiffCollection<TEntity extends {}, TStore = unknown> extends Collection<TEntity, TStore> {
 
     constructor(
         dependencies: CollectionDependencies<TEntity>

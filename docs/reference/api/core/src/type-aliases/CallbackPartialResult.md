@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / CallbackPartialResult
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / CallbackPartialResult
 
 # Type Alias: CallbackPartialResult()\<TData, TCallbackResult\>
 
@@ -24,7 +24,7 @@ Defined in: [core/src/results/types.ts:7](https://github.com/Agrejus/routier/blo
 
 ### result
 
-[`PartialResultType`](PartialResultType.md)\<`TData`\>
+[`PartialResultType`](/reference/api/core/src/type-aliases/PartialResultType)\<`TData`\>
 
 ## Returns
 

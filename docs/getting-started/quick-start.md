@@ -1,8 +1,5 @@
 ---
 title: Quick Start
-layout: default
-parent: Getting Started
-nav_order: 3
 ---
 
 ## Quick Start
@@ -25,12 +22,12 @@ Spin up a minimal project and see live queries and optimistic updates in action.
 ### Quick setup (Memory plugin)
 
 
-{% highlight ts linenos %}{% include code/from-docs/getting-started/quick-start/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/getting-started/quick-start/block-1.ts
 
 
 ## What's Next?
 
-- **[Learn About Schemas]({{ site.baseurl }}/concepts/schema/)** - Define your data structure
-- **[Explore Queries]({{ site.baseurl }}/concepts/queries/)** - Query and filter data
-- **[Try Live Queries]({{ site.baseurl }}/guides/live-queries)** - Build reactive UIs
-- **[Use with React]({{ site.baseurl }}/getting-started/react-adapter)** - React integration
+- **[Learn About Schemas](/concepts/schema/)** - Define your data structure
+- **[Explore Queries](/concepts/queries/)** - Query and filter data
+- **[Try Live Queries](/guides/live-queries)** - Build reactive UIs
+- **[Use with React](/getting-started/react-adapter)** - React integration

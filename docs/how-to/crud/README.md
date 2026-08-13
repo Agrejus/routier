@@ -1,9 +1,5 @@
 ---
 title: CRUD
-layout: default
-parent: Data Operations
-has_children: true
-nav_order: 1
 ---
 
 # CRUD Operations
@@ -101,9 +97,9 @@ For advanced scenarios, Routier supports callback-based operations using a discr
 
 ## Next Steps
 
-- [Data Manipulation](../../guides/data-manipulation) - Learn about proxy-based updates and array/object manipulation
-- [Create Operations](create.md) - Learn how to add new entities with detailed examples
-- [Read Operations](read.md) - Learn how to query and retrieve data with advanced filtering
-- [Update Operations](update.md) - Learn how to modify existing entities with change tracking
-- [Delete Operations](delete.md) - Learn how to remove entities safely and efficiently
-- [Bulk Operations](bulk/README.md) - Learn how to handle multiple entities efficiently
+- [Data Manipulation](/guides/data-manipulation) - Learn about proxy-based updates and array/object manipulation
+- [Create Operations](/how-to/crud/create) - Learn how to add new entities with detailed examples
+- [Read Operations](/how-to/crud/read) - Learn how to query and retrieve data with advanced filtering
+- [Update Operations](/how-to/crud/update) - Learn how to modify existing entities with change tracking
+- [Delete Operations](/how-to/crud/delete) - Learn how to remove entities safely and efficiently
+- [Bulk Operations](/how-to/crud/bulk/README) - Learn how to handle multiple entities efficiently

@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / Index
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / Index
 
 # Type Alias: Index
 
@@ -14,7 +14,7 @@ Defined in: [core/src/schema/types.ts:63](https://github.com/Agrejus/routier/blo
 
 ### properties
 
-> **properties**: [`PropertyInfo`](../classes/PropertyInfo.md)\<`any`\>[]
+> **properties**: [`PropertyInfo`](/reference/api/core/src/classes/PropertyInfo)\<`any`\>[]
 
 Defined in: [core/src/schema/types.ts:64](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/types.ts#L64)
 
@@ -22,7 +22,7 @@ Defined in: [core/src/schema/types.ts:64](https://github.com/Agrejus/routier/blo
 
 ### type
 
-> **type**: [`IndexType`](IndexType.md)
+> **type**: [`IndexType`](/reference/api/core/src/type-aliases/IndexType)
 
 Defined in: [core/src/schema/types.ts:65](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/types.ts#L65)
 

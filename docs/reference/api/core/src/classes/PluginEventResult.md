@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / PluginEventResult
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / PluginEventResult
 
 # Class: PluginEventResult
 
@@ -104,7 +104,7 @@ Defined in: [core/src/results/Result.ts:8](https://github.com/Agrejus/routier/bl
 
 #### Call Signature
 
-> `static` **success**\<`T`\>(`id`, `data`): [`PluginEventResultType`](../type-aliases/PluginEventResultType.md)\<`T`\>
+> `static` **success**\<`T`\>(`id`, `data`): [`PluginEventResultType`](/reference/api/core/src/type-aliases/PluginEventResultType)\<`T`\>
 
 Defined in: [core/src/results/Result.ts:59](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L59)
 
@@ -126,11 +126,11 @@ Defined in: [core/src/results/Result.ts:59](https://github.com/Agrejus/routier/b
 
 ##### Returns
 
-[`PluginEventResultType`](../type-aliases/PluginEventResultType.md)\<`T`\>
+[`PluginEventResultType`](/reference/api/core/src/type-aliases/PluginEventResultType)\<`T`\>
 
 #### Call Signature
 
-> `static` **success**\<`T`\>(`id`): [`PluginEventResultType`](../type-aliases/PluginEventResultType.md)\<`never`\>
+> `static` **success**\<`T`\>(`id`): [`PluginEventResultType`](/reference/api/core/src/type-aliases/PluginEventResultType)\<`never`\>
 
 Defined in: [core/src/results/Result.ts:60](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L60)
 
@@ -148,13 +148,13 @@ Defined in: [core/src/results/Result.ts:60](https://github.com/Agrejus/routier/b
 
 ##### Returns
 
-[`PluginEventResultType`](../type-aliases/PluginEventResultType.md)\<`never`\>
+[`PluginEventResultType`](/reference/api/core/src/type-aliases/PluginEventResultType)\<`never`\>
 
 ***
 
 ### error()
 
-> `static` **error**\<`T`\>(`id`, `error`): [`PluginEventResultType`](../type-aliases/PluginEventResultType.md)\<`T`\>
+> `static` **error**\<`T`\>(`id`, `error`): [`PluginEventResultType`](/reference/api/core/src/type-aliases/PluginEventResultType)\<`T`\>
 
 Defined in: [core/src/results/Result.ts:69](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L69)
 
@@ -176,13 +176,13 @@ Defined in: [core/src/results/Result.ts:69](https://github.com/Agrejus/routier/b
 
 #### Returns
 
-[`PluginEventResultType`](../type-aliases/PluginEventResultType.md)\<`T`\>
+[`PluginEventResultType`](/reference/api/core/src/type-aliases/PluginEventResultType)\<`T`\>
 
 ***
 
 ### partial()
 
-> `static` **partial**\<`T`\>(`id`, `data`, `error`): [`PluginEventPartialResultType`](../type-aliases/PluginEventPartialResultType.md)\<`T`\>
+> `static` **partial**\<`T`\>(`id`, `data`, `error`): [`PluginEventPartialResultType`](/reference/api/core/src/type-aliases/PluginEventPartialResultType)\<`T`\>
 
 Defined in: [core/src/results/Result.ts:77](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L77)
 
@@ -208,7 +208,7 @@ Defined in: [core/src/results/Result.ts:77](https://github.com/Agrejus/routier/b
 
 #### Returns
 
-[`PluginEventPartialResultType`](../type-aliases/PluginEventPartialResultType.md)\<`T`\>
+[`PluginEventPartialResultType`](/reference/api/core/src/type-aliases/PluginEventPartialResultType)\<`T`\>
 
 ***
 
@@ -228,7 +228,7 @@ Defined in: [core/src/results/Result.ts:86](https://github.com/Agrejus/routier/b
 
 ##### result
 
-[`PluginEventResultType`](../type-aliases/PluginEventResultType.md)\<`T`\>
+[`PluginEventResultType`](/reference/api/core/src/type-aliases/PluginEventResultType)\<`T`\>
 
 #### Returns
 

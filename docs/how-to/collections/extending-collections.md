@@ -1,9 +1,5 @@
 ---
 title: Extending Collections
-layout: default
-parent: Collections
-grand_parent: Data Operations
-nav_order: 1
 ---
 
 ## Extending Collections
@@ -22,8 +18,7 @@ You can extend a generated collection to add domain-specific helpers while prese
 
 The simplest way to extend a collection is to add custom methods using the `create()` method:
 
-{% capture snippet_basic %}{% include code/from-docs/how-to/collections/extending-collections/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_basic | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/collections/extending-collections/block-1.ts
 
 This example shows how to add helper methods that:
 
@@ -35,8 +30,7 @@ This example shows how to add helper methods that:
 
 You can add any number of custom methods that work with your collection's data:
 
-{% capture snippet_helpers %}{% include code/from-docs/how-to/collections/extending-collections/block-2.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_helpers | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/collections/extending-collections/block-2.ts
 
 This example demonstrates:
 
@@ -67,5 +61,5 @@ Extend collections when you want to:
 Extended collections work seamlessly with all base collection features. You can use queries, change tracking, and persistence within your custom methods:
 
 
-{% highlight ts linenos %}{% include code/from-docs/how-to/collections/extending-collections/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/how-to/collections/extending-collections/block-1.ts
 

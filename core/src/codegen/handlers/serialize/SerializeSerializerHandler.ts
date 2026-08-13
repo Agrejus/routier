@@ -7,25 +7,23 @@ export class SerializeSerializerHandler extends PropertyInfoHandler {
     override handle(property: PropertyInfo<any>, builder: CodeBuilder): CodeBuilder | null {
 
         if (property.valueSerializer != null) {
-            const objectBuilder = builder.getOrDefault<SlotBlock>("if");
+            const slot = builder.getOrDefault<SlotBlock>("if");
             const assignmentBuilder = builder.getOrDefault<SlotBlock>("functions");
-            const entitySelectorPath = property.getAssignmentPath({ parent: "entity", useFromPropertyName: property.isRenamed });
-            const resultSelectorPath = property.getAssignmentPath({ parent: "result" });
+            // Serialize maps in-memory shape -> storage shape: read the entity by
+            // property name, write the result by `from` (storage) name
+            const entitySelectorPath = property.getSelectrorPath({ parent: "entity" });
+            const resultSelectorPath = property.getAssignmentPath({ parent: "result", useFromPropertyName: true });
 
             const defaultFunctionWithParameters = this.toNamedFunction(property.valueSerializer.toString(), assignmentBuilder);
             defaultFunctionWithParameters.builder.parameters(...defaultFunctionWithParameters.parameters.map((_, i) => ({ name: defaultFunctionWithParameters.parameters[i], callName: entitySelectorPath })));
 
             if (property.parent == null) {
-                objectBuilder.if(`Object.hasOwn(entity, "${property.name}")`).appendBody(`${resultSelectorPath} = ${defaultFunctionWithParameters.builder.toCallable()}`)
+                slot.if(`Object.hasOwn(entity, "${property.name}")`).appendBody(`${resultSelectorPath} = ${defaultFunctionWithParameters.builder.toCallable()}`);
                 return builder;
             }
 
-            // TODO: SOLVE THIS
-            //const slotPath = new SlotPath(...property.getParentPathArray());
-
-            // const slotPath = new SlotPath(...property.getParentPathArray());
-            // objectBuilder = objectBuilder.get<ObjectBuilder>(slotPath.get());
-            // objectBuilder.property(`${property.name}: ${defaultFunctionWithParameters.builder.toCallable()}`);
+            // Nested serializer: same pattern as SerializeValueHandler — if block for parent existence, then assign via serializer
+            this.emitSerializeNestedAssignment(property, slot, defaultFunctionWithParameters.builder.toCallable());
             return builder;
         }
 

@@ -1,9 +1,5 @@
 ---
 title: Memory Plugin
-layout: default
-parent: Built-in Plugins
-grand_parent: Integrations
-nav_order: 1
 ---
 
 # Memory Plugin
@@ -33,22 +29,19 @@ npm install @routier/memory-plugin
 
 ## Basic Usage
 
-{% capture snippet_j93uk4 %}{% include code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-1.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_j93uk4  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-1.ts
 
 ## Configuration
 
 ### Constructor Parameters
 
-{% capture snippet_wmjaxi %}{% include code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-3.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_wmjaxi  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-3.ts
 
 ### Database Name
 
 The database name is used to namespace your data and should be unique within your application:
 
-{% capture snippet_t0gugq %}{% include code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-4.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_t0gugq  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-4.ts
 
 ## Performance Characteristics
 
@@ -69,25 +62,21 @@ The database name is used to namespace your data and should be unique within you
 
 ### Development and Testing
 
-{% capture snippet_bjnyoi %}{% include code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-5.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_bjnyoi  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-5.ts
 
 ### High-Performance Applications
 
-{% capture snippet_e67add %}{% include code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-6.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_e67add  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-6.ts
 
 ### Offline-First with Sync
 
-{% capture snippet_1e3k2w %}{% include code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-7.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_1e3k2w  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-7.ts
 
 ## API Reference
 
 ### Constructor
 
-{% capture snippet_41jr8p %}{% include code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-8.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_41jr8p  | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-8.ts
 
 ### Properties
 
@@ -101,10 +90,26 @@ The Memory Plugin implements all standard plugin methods:
 - `update()` - Update existing entities
 - `remove()` - Remove entities
 - `query()` - Query collections
-- `destroy()` - Clean up resources
+- `destroy()` - Clear the named database
+
+## Shared Named Databases
+
+The plugin keeps one database per NAME, shared by every `MemoryPlugin` instance in the
+process. Two `new MemoryPlugin("app")` instances read and write the same records, which is
+what lets a multi-store test behave like several connections to one database.
+
+This has one consequence to plan for: `destroy()` clears the named database for **every** user
+of that name, not only for the instance you call it on. A test that destroys its store empties
+the database out from under any other store that named it.
+
+Give each test its own database name when the tests run in one process:
+
+```ts
+const store = new AppStore(new MemoryPlugin(`test-${crypto.randomUUID()}`));
+```
 
 ## Next Steps
 
-- [Local Storage Plugin](../local-storage/README.md) - Browser storage plugin
-- [File System Plugin](../file-system/README.md) - Node.js file storage
-- [Plugin Architecture](../../create-your-own/plugin-architecture.md) - Creating custom plugins
+- [Local Storage Plugin](/integrations/plugins/built-in-plugins/local-storage/README) - Browser storage plugin
+- [File System Plugin](/integrations/plugins/built-in-plugins/file-system/README) - Node.js file storage
+- [Plugin Architecture](/integrations/plugins/create-your-own/) - Creating custom plugins

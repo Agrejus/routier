@@ -50,4 +50,6 @@ export class SchemaFrom<T extends any, TModifiers extends SchemaModifiers> exten
     serialize(serializer: PropertySerializer<T>) {
         return new SchemaSerialize<T, TModifiers | "serialize">(serializer, this);
     }
+
+
 }

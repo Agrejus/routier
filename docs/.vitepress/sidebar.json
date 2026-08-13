@@ -1,0 +1,311 @@
+[
+  {
+    "text": "Getting Started",
+    "items": [
+      {
+        "text": "Installation",
+        "link": "/getting-started/installation"
+      },
+      {
+        "text": "Quick Start",
+        "link": "/getting-started/quick-start"
+      },
+      {
+        "text": "React Adapter",
+        "link": "/getting-started/react-adapter"
+      },
+      {
+        "text": "Overview",
+        "link": "/getting-started/overview"
+      },
+      {
+        "text": "Basic Example",
+        "link": "/tutorials/basic-example"
+      },
+      {
+        "text": "Configuration",
+        "link": "/tutorials/configuration"
+      }
+    ],
+    "collapsed": false
+  },
+  {
+    "text": "Concepts",
+    "link": "/concepts/",
+    "items": [
+      {
+        "text": "Change Tracking",
+        "link": "/concepts/change-tracking"
+      },
+      {
+        "text": "Query Architecture",
+        "link": "/concepts/query-architecture"
+      },
+      {
+        "text": "Performance",
+        "link": "/concepts/performance"
+      },
+      {
+        "text": "Schema",
+        "link": "/concepts/schema/",
+        "items": [
+          {
+            "text": "Creating A Schema",
+            "link": "/concepts/schema/creating-a-schema"
+          },
+          {
+            "text": "Property Types",
+            "link": "/concepts/schema/property-types/README"
+          },
+          {
+            "text": "Modifiers",
+            "link": "/concepts/schema/modifiers/README"
+          },
+          {
+            "text": "Collection Modifiers",
+            "link": "/concepts/schema/modifiers/schema-modifiers"
+          },
+          {
+            "text": "InferType",
+            "link": "/concepts/schema/infer-type"
+          },
+          {
+            "text": "Why Schemas?",
+            "link": "/concepts/schema/why-schemas"
+          }
+        ],
+        "collapsed": true
+      },
+      {
+        "text": "Data Collections",
+        "items": [
+          {
+            "text": "Memory Collections",
+            "link": "/concepts/data-collections/memory-collections"
+          }
+        ],
+        "collapsed": true
+      },
+      {
+        "text": "Queries",
+        "link": "/concepts/queries/",
+        "items": [
+          {
+            "text": "Filtering",
+            "link": "/concepts/queries/filtering"
+          },
+          {
+            "text": "Sorting",
+            "link": "/concepts/queries/sorting"
+          },
+          {
+            "text": "Field Selection",
+            "link": "/concepts/queries/field-selection"
+          },
+          {
+            "text": "Pagination",
+            "link": "/concepts/queries/pagination"
+          },
+          {
+            "text": "Aggregation",
+            "link": "/concepts/queries/aggregation"
+          },
+          {
+            "text": "Terminal Methods",
+            "link": "/concepts/queries/terminal-methods"
+          },
+          {
+            "text": "Query Composer",
+            "link": "/concepts/queries/query-composer"
+          },
+          {
+            "text": "Full-Text Search",
+            "link": "/concepts/queries/full-text-search"
+          }
+        ],
+        "collapsed": true
+      }
+    ],
+    "collapsed": false
+  },
+  {
+    "text": "Guides",
+    "link": "/guides/",
+    "items": [
+      {
+        "text": "Attachments & Dirty Tracking",
+        "link": "/guides/attachments"
+      },
+      {
+        "text": "Overview",
+        "link": "/guides/index"
+      },
+      {
+        "text": "Local-First Apps",
+        "link": "/guides/local-first-apps"
+      },
+      {
+        "text": "Plugin Compositions",
+        "link": "/guides/plugin-compositions"
+      },
+      {
+        "text": "Live Queries",
+        "link": "/guides/live-queries"
+      },
+      {
+        "text": "State Management",
+        "link": "/guides/state-management"
+      },
+      {
+        "text": "Data Manipulation",
+        "link": "/guides/data-manipulation"
+      },
+      {
+        "text": "History Tracking",
+        "link": "/guides/history-tracking"
+      },
+      {
+        "text": "Syncing",
+        "link": "/guides/syncing"
+      },
+      {
+        "text": "Entity Tagging",
+        "link": "/guides/entity-tagging"
+      },
+      {
+        "text": "Optimistic Replication",
+        "link": "/guides/optimistic-replication"
+      },
+      {
+        "text": "HttpSwrDbPlugin with Optimistic Replication",
+        "link": "/guides/http-swr-with-optimistic"
+      }
+    ],
+    "collapsed": false
+  },
+  {
+    "text": "How-to Guides",
+    "items": [
+      {
+        "text": "Debug Logging",
+        "link": "/how-to/debug-logging"
+      },
+      {
+        "text": "CRUD Operations",
+        "link": "/how-to/crud/README",
+        "items": [
+          {
+            "text": "Overview",
+            "link": "/how-to/crud/README"
+          },
+          {
+            "text": "Create",
+            "link": "/how-to/crud/create"
+          },
+          {
+            "text": "Read",
+            "link": "/how-to/crud/read"
+          },
+          {
+            "text": "Update",
+            "link": "/how-to/crud/update"
+          },
+          {
+            "text": "Delete",
+            "link": "/how-to/crud/delete"
+          },
+          {
+            "text": "Bulk Operations",
+            "link": "/how-to/crud/bulk/README"
+          }
+        ],
+        "collapsed": true
+      },
+      {
+        "text": "Collections",
+        "link": "/how-to/collections/",
+        "items": [
+          {
+            "text": "Extending Collections",
+            "link": "/how-to/collections/extending-collections"
+          },
+          {
+            "text": "Scope Single Store",
+            "link": "/how-to/collections/scope-single-store"
+          },
+          {
+            "text": "Views",
+            "link": "/how-to/collections/views"
+          }
+        ],
+        "collapsed": true
+      }
+    ],
+    "collapsed": false
+  },
+  {
+    "text": "Integrations",
+    "link": "/integrations/",
+    "items": [
+      {
+        "text": "React",
+        "link": "/integrations/react/",
+        "items": [
+          {
+            "text": "Overview",
+            "link": "/integrations/react/index"
+          },
+          {
+            "text": "React Hooks",
+            "link": "/integrations/react/hooks/"
+          },
+          {
+            "text": "Best Practices",
+            "link": "/integrations/react/best-practices/"
+          }
+        ],
+        "collapsed": true
+      },
+      {
+        "text": "Plugins",
+        "link": "/integrations/plugins/built-in-plugins/",
+        "items": [
+          {
+            "text": "Memory Plugin",
+            "link": "/integrations/plugins/built-in-plugins/memory/README"
+          },
+          {
+            "text": "Local Storage Plugin",
+            "link": "/integrations/plugins/built-in-plugins/local-storage/README"
+          },
+          {
+            "text": "File System Plugin",
+            "link": "/integrations/plugins/built-in-plugins/file-system/README"
+          },
+          {
+            "text": "PouchDB Plugin",
+            "link": "/integrations/plugins/built-in-plugins/pouchdb/README"
+          },
+          {
+            "text": "Dexie Plugin",
+            "link": "/integrations/plugins/built-in-plugins/dexie/README"
+          },
+          {
+            "text": "Replication Plugin",
+            "link": "/integrations/plugins/built-in-plugins/replication/README"
+          },
+          {
+            "text": "SQLite Plugin",
+            "link": "/integrations/plugins/built-in-plugins/sqlite/README"
+          },
+          {
+            "text": "Create Your Own",
+            "link": "/integrations/plugins/create-your-own/"
+          }
+        ],
+        "collapsed": true
+      }
+    ],
+    "collapsed": false
+  }
+]

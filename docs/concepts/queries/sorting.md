@@ -1,9 +1,5 @@
 ---
 title: Sorting
-layout: default
-parent: Queries
-nav_order: 2
-permalink: /concepts/queries/sorting/
 ---
 
 # Sorting Results
@@ -22,22 +18,20 @@ Sort your data in ascending or descending order using `orderBy` and `orderByDesc
 
 Sort data in ascending order:
 
-{% capture snippet_sorting_ascending %}{% include code/from-docs/concepts/queries/sorting-ascending.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_sorting_ascending | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/sorting-ascending.ts
 
 ## Descending Sort
 
 Sort data in descending order:
 
-{% capture snippet_sorting_descending %}{% include code/from-docs/concepts/queries/sorting-descending.ts %}{% endcapture %}
-{% highlight ts %}{{ snippet_sorting_descending | strip }}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/sorting-descending.ts
 
 ## Multiple Sort Criteria
 
 Chain multiple sort operations for complex sorting:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/sorting/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/sorting/block-1.ts
 
 
 ## Combined with Filtering
@@ -45,11 +39,11 @@ Chain multiple sort operations for complex sorting:
 Sort filtered results:
 
 
-{% highlight ts linenos %}{% include code/from-docs/concepts/queries/sorting/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/concepts/queries/sorting/block-2.ts
 
 
 ## Related
 
-- [Filtering Data](/concepts/queries/filtering/)
-- [Pagination](/concepts/queries/pagination/)
-- [Terminal Methods](/concepts/queries/terminal-methods/)
+- [Filtering Data](/concepts/queries/filtering)
+- [Pagination](/concepts/queries/pagination)
+- [Terminal Methods](/concepts/queries/terminal-methods)

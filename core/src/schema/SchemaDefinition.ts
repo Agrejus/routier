@@ -1,4 +1,5 @@
 import { SchemaFunction } from './table/SchemaFunction';
+import { SchemaTransform } from './table/SchemaTransform';
 import { SchemaComputed } from './table/SchemaComputed';
 import { SchemaBase } from "./property/base/SchemaBase";
 import { PropertyInfo } from './PropertyInfo';
@@ -18,12 +19,18 @@ import { FreezeHandlerBuilder } from '../codegen/handlers/FreezeHandlerBuilder';
 import { SchemaError } from '../errors/SchemaError';
 import { SerializeHandlerBuilder } from "../codegen/handlers/SerializeHandlerBuilder";
 import { hash, logger } from "../utilities";
-import { CollectionName, CompiledSchema, CompiledSchemaCore, CompiledSchemaWithMetadata, GetHashTypeFunction, HashFunction, HashType, IdType, Index, InferCreateType, InferType, Prepare, Preprocess, SchemaId, SchemaTypes, SetProperties } from './types';
+import { CollectionName, CompiledSchema, CompiledSchemaCore, CompiledSchemaWithMetadata, GetHashTypeFunction, HashFunction, HashType, IdType, Index, InferCreateType, InferType, Prepare, Preprocess, SchemaId, SchemaTypes, SetProperties, PropertyTransform } from './types';
 import { DeepPartial } from '../types';
-import { SchemaSubscription } from './communication/broadcast';
+import { SchemaSubscription, SchemaSubscriptionOptions } from './communication/broadcast';
 import { CompareIdsHandlerBuilder } from '../codegen/handlers/CompareIdsHandlerBuilder';
 import { StandardJSONSchemaV1, createStandardJsonSchemaProps, rehydrateSchemaFromJsonString } from './utils/standardJsonSchema';
 import { SetHandlerBuilder } from '../codegen/handlers';
+
+function assertPropertyHandled(generatorName: string, property: PropertyInfo<any>, result: unknown): asserts result is {} {
+    if (result == null) {
+        throw new Error(`Schema compilation failed: no '${generatorName}' code generator handles property '${property.getAssignmentPath()}' (type: ${property.type}). Add a handler for this property shape or mark it not applicable in the ${generatorName} chain.`);
+    }
+}
 
 function createChangeTracker() {
     const DIRTY_ENTITY_MARKER: string = "isDirty";
@@ -38,23 +45,46 @@ function createChangeTracker() {
         const proxyHandler: ProxyHandler<TEntity> = {
             set(entity, property, value) {
                 const indexableEntity: { [key: string]: any } = entity;
-                const key = String(property);
-                const originalValue = indexableEntity[key];
 
                 // if values are the same, do nothing
+                //
+                // Checked before `String(property)` on purpose. A write that changes
+                // nothing is the common case, not the exception: `schema.merge` copies
+                // every property of a re-read row into the attached entity, and on an
+                // unchanged row every one of those writes lands here and returns.
+                // Building the string key first made that path cost 156ns a write, of
+                // which 125ns was the `String()` call alone; checking first takes it to
+                // 31ns, against a 14ns floor for the same writes on a plain object.
+                // Indexing by `property` rather than by `key` reads the same slot for
+                // string keys, and the correct one for symbols (which `String()` would
+                // have mangled into a "Symbol(x)" lookup).
+                const originalValue = indexableEntity[property as string];
+
                 if (originalValue === value) {
                     return true;
                 }
 
+                const key = String(property);
                 const resolvedParent: { [key: string]: any } = parent ?? entity;
 
                 if (resolvedParent[TRACKING_KEY] == null) {
-                    resolvedParent[TRACKING_KEY] = {
-                        [CHANGES_ENTITY_KEY]: {},
-                        [DIRTY_ENTITY_MARKER]: false,
-                        [ORIGINAL_ENTITY_KEY]: {},
-                        [PAUSED_ENTITY_KEY]: false
-                    }
+                    // defineProperty, not assignment: a plain assignment creates an ENUMERABLE
+                    // property, and this is the lazy path that runs on the first tracked write —
+                    // so every entity the caller had edited came back from a query with
+                    // `__tracking__` visible to Object.entries, JSON.stringify and any deep
+                    // compare (defect #26). Both bootstrap paths below already define it
+                    // non-enumerable; this one was the outlier.
+                    Object.defineProperty(resolvedParent, TRACKING_KEY, {
+                        value: {
+                            [CHANGES_ENTITY_KEY]: {},
+                            [DIRTY_ENTITY_MARKER]: false,
+                            [ORIGINAL_ENTITY_KEY]: {},
+                            [PAUSED_ENTITY_KEY]: false
+                        },
+                        configurable: true,
+                        writable: true,
+                        enumerable: false
+                    });
                 }
 
                 if (key == TRACKING_KEY) {
@@ -73,6 +103,19 @@ function createChangeTracker() {
 
                     if (changes[ORIGINAL_ENTITY_KEY][resolvedPath] === value) {
                         // we are changing the value back to the original value, remove the change
+                        //
+                        // These two stay `delete`, unlike the `__tracking__` sites on the entity
+                        // itself. Assigning undefined here would be read as "still changed" by
+                        // the isDirty count below, which asks Object.keys — and a key assigned
+                        // undefined is still a key. Counting only defined values does not rescue
+                        // it either: an original value of undefined is legitimate (a property
+                        // that was unset and then given a value), so a defined-value count would
+                        // report a genuinely dirty entity as clean. Removing the key is the only
+                        // representation that keeps "present" and "changed" the same question.
+                        //
+                        // The cost is bounded in a way the entity sites are not: these bags hold
+                        // one key per changed path, they are internal to the tracking record, and
+                        // this branch only runs when a value is set BACK to its original.
                         delete changes[ORIGINAL_ENTITY_KEY][resolvedPath];
                         delete changes[CHANGES_ENTITY_KEY][resolvedPath];
                     } else {
@@ -181,16 +224,59 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
     modify<R>(builder: (d: {
         function: <UU, I = never>(fn: (entity: InferType<CompiledSchema<T>>, collectionName: CollectionName, injected: I) => UU, injected?: I) => SchemaFunction<UU, I, "unmapped">;
         computed: <UU, I = never>(fn: (entity: InferType<CompiledSchema<T>>, collectionName: CollectionName, injected: I) => UU, injected?: I) => SchemaComputed<UU, I, "computed" | "unmapped">;
+        /**
+         * Replaces a property with a transformed version of itself.
+         *
+         * `computed` derives a value one way and cannot come back. A transform declares both
+         * directions, so the property keeps its type and only its STORED form changes.
+         *
+         * ```ts
+         * .modify(x => ({
+         *     ssn: x.transform(s.string(), {
+         *         to:   (value, keys) => myEncrypt(value, keys),
+         *         from: (text,  keys) => myDecrypt(text,  keys),
+         *         stores: SchemaTypes.String,
+         *     }, myKeys),
+         * }))
+         * ```
+         *
+         * `to` and `from` may be async and are held as live references, so they can close
+         * over whatever they need. `injected` is there for when passing it explicitly reads
+         * better than capturing it.
+         */
+        transform: <UU>(transform: PropertyTransform<UU>) => SchemaTransform<UU>;
     }) => R) {
 
         const b = {
             function: <UU, I = never>(fn: (entity: InferType<CompiledSchema<T>>, collectionName: CollectionName, injected?: I) => UU, injected?: I) => new SchemaFunction<UU, I, "unmapped">(fn as any, injected),
-            computed: <UU, I = never>(fn: (entity: InferType<CompiledSchema<T>>, collectionName: CollectionName, injected?: I) => UU, injected?: I) => new SchemaComputed<UU, I, "computed" | "unmapped">(fn as any, injected)
+            computed: <UU, I = never>(fn: (entity: InferType<CompiledSchema<T>>, collectionName: CollectionName, injected?: I) => UU, injected?: I) => new SchemaComputed<UU, I, "computed" | "unmapped">(fn as any, injected),
+            transform: <UU>(transform: PropertyTransform<UU>) => new SchemaTransform<UU>(transform)
         }
 
-        const r = builder(b)
+        const r = builder(b) as Record<string, unknown>;
 
-        return new SchemaDefinition<R & T>(this.collectionName, { ...this.instance, ...r });
+        /**
+         * A transform replaces the property it was assigned to, so it is bound here rather
+         * than being handed its own property to repeat. `.modify()` already knows which one
+         * is meant — it is the key.
+         */
+        for (const [name, value] of Object.entries(r)) {
+            if (value instanceof SchemaTransform) {
+                const underlying = (this.instance as Record<string, unknown>)[name];
+
+                if (underlying == null) {
+                    throw new Error(
+                        `transform() was assigned to '${name}', which is not a property of ` +
+                        `'${this.collectionName}'. A transform replaces an existing property; ` +
+                        'to add a new one, use computed().'
+                    );
+                }
+
+                value.bindTo(underlying as never);
+            }
+        }
+
+        return new SchemaDefinition<R & T>(this.collectionName, { ...this.instance, ...r } as R & T);
     }
 
     private _iterate(
@@ -330,8 +416,25 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const changeTrackingCodeBuilder = new CodeBuilder();
             changeTrackingCodeBuilder.raw(`${createChangeTracker.toString()}`);
             changeTrackingCodeBuilder.slot("declarations").variable("enableChangeTracking").value('createChangeTracker()');
+            // Nested proxies are installed by assigning through already-proxied parents;
+            // pause tracking during setup so those writes don't register as changes
+            changeTrackingCodeBuilder.slot("pause").raw('\tconst hadTracking = entity.__tracking__ != null;\n\tif (!hadTracking) { Object.defineProperty(entity, "__tracking__", { value: { changes: {}, isDirty: false, original: {}, isPaused: false }, configurable: true, writable: true, enumerable: false }); }\n\tconst wasPaused = entity.__tracking__.isPaused;\n\tentity.__tracking__.isPaused = true;');
             changeTrackingCodeBuilder.slot("assignment");
-            changeTrackingCodeBuilder.slot("return").raw('\treturn enableChangeTracking(entity);');
+            // Tracking metadata is created lazily on the first real write; only restore
+            // what already existed, never leave the bootstrap behind.
+            //
+            // Cleared by redefining the property, not by `delete`. `delete` moves the object
+            // into V8 dictionary mode permanently — it never returns to fast properties, so
+            // every later read of every property on the entity pays a dictionary lookup,
+            // measured at ~43% slower reads.
+            //
+            // defineProperty rather than plain assignment because `entity` here is whatever
+            // the caller passed, and enableChangeTracking is public API, so it may already be
+            // a change-tracking proxy. That proxy's set trap answers writes to `__tracking__`
+            // with a bare `return true` and drops them, which would leave this bootstrap
+            // behind. The handler defines no defineProperty trap, so this reaches the target,
+            // and repeating the descriptor keeps the property non-enumerable.
+            changeTrackingCodeBuilder.slot("return").raw('\tif (hadTracking) { entity.__tracking__.isPaused = wasPaused; } else { delete entity.__tracking__; }\n\treturn enableChangeTracking(entity);');
 
             const freezeCodeBuilder = new CodeBuilder();
             freezeCodeBuilder.slot("assignment");
@@ -350,11 +453,32 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
             enricherFunctionBody.slot("append");
             enricherFunctionBody.slot("enriched");
-            enricherFunctionBody.slot("declarations");
+            // Nested proxies are installed by assigning through already-proxied parents;
+            // pause tracking during setup so those writes don't register as changes.
+            // Non-enumerable: computed properties run after this and may JSON.stringify
+            // the entity (e.g. content-hash ids) — the bootstrap must not change their input
+            enricherFunctionBody.slot("declarations").raw('\tif (changeTrackingType === "proxy") { Object.defineProperty(enriched, "__tracking__", { value: { changes: {}, isDirty: false, original: {}, isPaused: true }, configurable: true, writable: true, enumerable: false }); }');
             enricherFunctionBody.slot("assignment");
             enricherFunctionBody.slot("ifs");
             enricherFunctionBody.slot("tracking").if('changeTrackingType === "immutable"', { name: "freeze" });
-            enricherFunctionBody.slot("return").raw('\treturn enableChangeTracking(enriched);');
+            // The paused bootstrap tracking is removed rather than unpaused: tracking
+            // metadata is created lazily on the first real write, and callers assert
+            // an untouched entity carries none. Proxy mode recreates it on the first
+            // tracked write (see defect #2).
+            //
+            // Cleared by assignment rather than `delete`, because `delete` drops the entity
+            // into V8 dictionary mode for the rest of its life — and this line runs on EVERY
+            // entity that comes off a read. Assignment keeps the non-enumerable descriptor
+            // installed above, so the property still stays out of Object.keys and JSON.
+            //
+            // The condition is now "proxy" rather than "not immutable", which is the same set
+            // of entities in practice: `enriched` is a fresh object literal built from schema
+            // properties, so ONLY the proxy branch above ever puts `__tracking__` on it. Under
+            // `delete` the wider condition was harmless because deleting an absent property is
+            // a no-op; under assignment it would CREATE an enumerable `__tracking__` on every
+            // diff- and readonly-tracked entity and leak it into persistence. Defect #16's
+            // stray `{ isPaused: false }` residue stays fixed — nothing is left behind here.
+            enricherFunctionBody.slot("return").raw('\tif (changeTrackingType === "proxy") { enriched.__tracking__ = undefined; }\n\treturn enableChangeTracking(enriched);');
 
             const preprocessCodeBuilder = new CodeBuilder();
             preprocessCodeBuilder.slot("main");
@@ -373,20 +497,45 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const mergeFunctionRoot = mergeCodeBuilder.factory("factory", { name: "factory" }).parameters({ name: "collectionName", value: this.collectionName });
             const mergeFunctionBody = mergeFunctionRoot.function(undefined, { name: "function" }).parameters("destination", "source").return();
 
+            // The pause bootstrap exists so a PROXIED destination does not record the
+            // merge's own writes as changes. A destination with no tracking (diff and
+            // immutable modes) gets a temporary bootstrap so the same generated code runs —
+            // and unpause() DELETES it again, because leaving it behind is the
+            // `{ isPaused: false }` residue of defect #16, this time on the merge path.
             const pauseFunctionBody = mergeFunctionBody.function("pause")
                 .appendBody("// initiate change tracking if needed");
 
             pauseFunctionBody.if("destination.__tracking__ == null")
-                .appendBody("destination.__tracking__ = {};");
+                // Non-enumerable for the same reason the enricher's bootstrap is: computed
+                // properties can JSON.stringify the entity while this is installed, and the
+                // bootstrap must not change their input. It is removed again below either way.
+                .appendBody('Object.defineProperty(destination, "__tracking__", { value: {}, configurable: true, writable: true, enumerable: false });')
+                .appendBody("installedTrackingBootstrap = true;");
 
             pauseFunctionBody.appendBody("destination.__tracking__.isPaused = true;");
 
-            mergeFunctionBody.function("unpause")
-                .appendBody("// unpause change tracking if needed")
-                .if("destination.__tracking__ != null")
+            const unpauseFunctionBody = mergeFunctionBody.function("unpause")
+                .appendBody("// unpause change tracking, removing a bootstrap this merge installed");
+
+            // Redefined to undefined rather than deleted, so the merged entity keeps its fast
+            // properties — `delete` would put it in dictionary mode for good.
+            //
+            // It must be defineProperty and NOT assignment. `destination` is an attached,
+            // proxied entity, and the change tracker's set trap answers writes to
+            // `__tracking__` with a bare `return true`, dropping them. Assigning here is
+            // therefore a silent no-op that leaves the `{}` bootstrap installed by pause() in
+            // place — and the next write through the proxy reads `changes.changes` off that
+            // bootstrap and throws. defineProperty is not intercepted, because the handler
+            // declares no defineProperty trap.
+            unpauseFunctionBody.if("installedTrackingBootstrap === true")
+                .appendBody("delete destination.__tracking__;")
+                .appendBody("return;");
+
+            unpauseFunctionBody.if("destination.__tracking__ != null")
                 .appendBody("destination.__tracking__.isPaused  = false;");
 
-            mergeFunctionBody.slot("header").raw(`pause()`);
+            mergeFunctionBody.slot("header").raw(`let installedTrackingBootstrap = false;
+    pause()`);
             mergeFunctionBody.slot("assignments");
             mergeFunctionBody.slot("ifs");
             mergeFunctionBody.slot("return").raw(`
@@ -450,8 +599,8 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             return d;
         }
 
-        if (d.toISOString != null) {
-            return d.toISOString();
+        if (d.getTime != null) {
+            return "" + d.getTime();
         }
 
         return d.toString();
@@ -487,25 +636,81 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                     hasIdentityKeys = true;
                 }
 
-                enricher.handle(property, enricherCodeBuilder);
-                merge.handle(property, mergeCodeBuilder);
-                prepare.handle(property, prepareCodeBuilder);
-                strip.handle(property, stripCodeBuilder);
-                clone.handle(property, cloneCodeBuilder);
-                compare.handle(property, compareCodeBuilder);
-                deserialize.handle(property, deserializeCodeBuilder);
-                serializeHandler.handle(property, serializeCodeBuilder)
-                hashTypeHandler.handle(property, hashTypeCodeBuilder);
-                idSelectorHandler.handle(property, idSelectorCodeBuilder);
-                hashHandler.handle(property, hashCodeBuilder);
-                enableChangeTrackingHandler.handle(property, changeTrackingCodeBuilder);
-                freezeHandler.handle(property, freezeCodeBuilder);
-                compareIdsHandler.handle(property, compareIdsCodeBuilder);
-                setHandlerHanlder.handle(property, setCodeBuilder);
+                // Every chain must claim every property.  A null return means no
+                // handler matched, and silently omitting the property from the
+                // generated function corrupts data — fail the compile instead.
+                assertPropertyHandled("enrich", property, enricher.handle(property, enricherCodeBuilder));
+                assertPropertyHandled("merge", property, merge.handle(property, mergeCodeBuilder));
+                assertPropertyHandled("prepare", property, prepare.handle(property, prepareCodeBuilder));
+                assertPropertyHandled("strip", property, strip.handle(property, stripCodeBuilder));
+                assertPropertyHandled("clone", property, clone.handle(property, cloneCodeBuilder));
+                assertPropertyHandled("compare", property, compare.handle(property, compareCodeBuilder));
+                assertPropertyHandled("deserialize", property, deserialize.handle(property, deserializeCodeBuilder));
+                assertPropertyHandled("serialize", property, serializeHandler.handle(property, serializeCodeBuilder))
+                assertPropertyHandled("hashType", property, hashTypeHandler.handle(property, hashTypeCodeBuilder));
+                assertPropertyHandled("idSelector", property, idSelectorHandler.handle(property, idSelectorCodeBuilder));
+                assertPropertyHandled("hash", property, hashHandler.handle(property, hashCodeBuilder));
+                assertPropertyHandled("enableChangeTracking", property, enableChangeTrackingHandler.handle(property, changeTrackingCodeBuilder));
+                assertPropertyHandled("freeze", property, freezeHandler.handle(property, freezeCodeBuilder));
+                assertPropertyHandled("compareIds", property, compareIdsHandler.handle(property, compareIdsCodeBuilder));
+                assertPropertyHandled("set", property, setHandlerHanlder.handle(property, setCodeBuilder));
             });
 
             if (idProperties.length === 0) {
                 throw new Error(`Schema must have a key.  Use .key() to mark a property as a key.  Collection Name: ${this.collectionName}`)
+            }
+
+            /**
+             * The two things `.searchable()` cannot express in its own type.
+             *
+             * It is NOT checked here that the property is a string. The builder gates that:
+             * `searchable()` exists on `SchemaString`, and on `SchemaOptional`/`SchemaNullable`
+             * only when their `instance` is a string, so `s.number().optional().searchable()`
+             * does not compile. A builder that offers a method and then throws has gated
+             * nothing.
+             *
+             * A string nested in an `s.object()` does type-check, and cannot be indexed: v1
+             * keys index rows by a ROOT property name, so a nested one has nowhere to be
+             * recorded. Rejected rather than ignored — a silently unindexed property returns no
+             * rows for a query the caller believes is covered.
+             *
+             * A property NAME longer than 100 characters breaks the index key's length budget.
+             * The key is `${term}|${field}|${sourceId}` in a column declared `VARCHAR(255)`, and
+             * the field name is the only unbounded part of it. See "The index collection" in
+             * specs/full-text-search.md.
+             */
+            for (const property of properties) {
+
+                if (property.isSearchable === false) {
+                    continue;
+                }
+
+                if (property.parent != null) {
+                    throw new Error(
+                        `searchable() is declared on '${property.getAssignmentPath()}', which is nested inside another property. ` +
+                        `Full-text search indexes root-level string properties only.  Collection Name: ${this.collectionName}`
+                    );
+                }
+
+                if (property.name.length > 100) {
+                    throw new Error(
+                        `searchable() is declared on '${property.name}', whose name is ${property.name.length} characters. ` +
+                        `A searchable property name must be 100 characters or fewer, so the search index key fits its column.  ` +
+                        `Collection Name: ${this.collectionName}`
+                    );
+                }
+
+                // The index key is `${term}|${field}|${sourceId}`, and it is only unambiguous
+                // because no part of it can contain the separator. The default tokenizer cannot
+                // emit one — it splits on anything that is not a letter or digit — so the field
+                // name is the only piece that could.
+                if (property.name.includes("|")) {
+                    throw new Error(
+                        `searchable() is declared on '${property.name}', whose name contains '|'. ` +
+                        `That character separates the parts of a search index key and cannot appear in a field name.  ` +
+                        `Collection Name: ${this.collectionName}`
+                    );
+                }
             }
 
             const enrichParams = enricherFunctionRoot.getParameters();
@@ -535,6 +740,68 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const getHashTypeFunction = this.createFunction<GetHashTypeFunction<T>>(hashTypeCodeBuilder, "entity");
             const prepareFunction = this.createFunction<Prepare<T>>(prepareCodeBuilder, "entity");
             const cloneFunction = this.createFunction<(entity: InferType<T>) => InferType<T>>(cloneCodeBuilder, "entity");
+
+            /**
+             * `clone`, but for records that are still in the STORAGE shape.
+             *
+             * Built on first use rather than at compile time. Generating it costs a full pass over
+             * the property tree plus a `Function` compile, and only stores that hold records in
+             * storage shape ever ask for it, so a schema that is never read through one pays
+             * nothing. After the first call it is the same generated function as `clone`.
+             */
+            let storageCloneFunction: ((entity: InferType<T>) => InferType<T>) | null = null;
+            const cloneStorageFunction = (entity: InferType<T>): InferType<T> => {
+
+                if (storageCloneFunction == null) {
+                    const storageCloneCodeBuilder = new CodeBuilder();
+
+                    // Undeclared columns are carried across; declared ones are left to the
+                    // generated deep-copy code below. This is the one place this differs from
+                    // `clone`, and both halves of it matter.
+                    //
+                    // Carrying them at all: a stored record can hold columns the schema never
+                    // declared, and this copier replaces `structuredClone`, which kept them.
+                    // ConcurrencyDbPlugin depends on exactly that — it appends a synthetic
+                    // `__version` property carrying a `from` name for the express purpose of
+                    // pushing reads onto this path, so its hidden column survives the copy and the
+                    // wrapper can observe the row's version. Drop the token and every read looks
+                    // unversioned, so optimistic concurrency stops detecting conflicts silently.
+                    //
+                    // Skipping the declared ones: a blanket `{ ...entity }` would seed the result
+                    // with the SOURCE's nested objects, and the child handlers then write their
+                    // copies into those shared references — mutating the record the caller was
+                    // copying to get away from.
+                    // Compared inline rather than against a Set: the set would be rebuilt on every
+                    // call, and this runs once per record on every read.
+                    const isDeclared = properties
+                        .filter(property => property.parent == null)
+                        .map(property => `key === ${JSON.stringify(property.getResolvedName())}`)
+                        .join(" || ");
+
+                    const skipDeclared = isDeclared.length === 0 ? "" : `if (${isDeclared}) { continue; }\n            `;
+
+                    storageCloneCodeBuilder.slot("result").raw(
+                        `const result = {};\n` +
+                        `    for (const key in entity) {\n` +
+                        `        if (Object.hasOwn(entity, key) === false) { continue; }\n` +
+                        `        ${skipDeclared}result[key] = entity[key];\n` +
+                        `    }`
+                    );
+                    storageCloneCodeBuilder.slot("assignments");
+                    storageCloneCodeBuilder.slot("if");
+                    storageCloneCodeBuilder.slot("return").raw(`     return result;`);
+
+                    const storageClone = cloneHandlerBuilder.build(true);
+
+                    for (let i = 0, length = properties.length; i < length; i++) {
+                        assertPropertyHandled("cloneStorage", properties[i], storageClone.handle(properties[i], storageCloneCodeBuilder));
+                    }
+
+                    storageCloneFunction = this.createFunction<(entity: InferType<T>) => InferType<T>>(storageCloneCodeBuilder, "entity");
+                }
+
+                return storageCloneFunction(entity);
+            };
             const deserializeFunction = this.createFunction<(entity: InferType<T>) => InferType<T>>(deserializeCodeBuilder, "unserialized");
             const serializeFunction = this.createFunction<(entity: InferType<T>) => InferType<T>>(serializeCodeBuilder, "entity");
             const compareFunction = this.createFunction<(a: InferType<T>, b: InferType<T>) => boolean>(compareCodeBuilder, "a", "b");
@@ -598,6 +865,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                 merge: mergeFunction,
                 prepare: prepareFunction,
                 clone: cloneFunction,
+                cloneStorage: cloneStorageFunction,
                 deserializePartial,
                 deserialize: deserializeFunction,
                 serialize: serializeFunction,
@@ -683,7 +951,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
                 const compiledSchemaWithMetadata: CompiledSchemaWithMetadata<T, TMetadata> = {
                     ...result,
-                    createSubscription: (signal?: AbortSignal) => new SchemaSubscription(result, signal),
+                    createSubscription: (signal?: AbortSignal, scope?: string, options?: SchemaSubscriptionOptions) => new SchemaSubscription(result, signal, scope, options),
                     metadata
                 };
 
@@ -691,7 +959,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             }
 
             const compiledSchema = {
-                createSubscription: (signal?: AbortSignal) => new SchemaSubscription(result, signal),
+                createSubscription: (signal?: AbortSignal, scope?: string, options?: SchemaSubscriptionOptions) => new SchemaSubscription(result, signal, scope, options),
                 ...result
             };
 

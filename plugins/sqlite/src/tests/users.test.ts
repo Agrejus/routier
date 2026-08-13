@@ -1,7 +1,7 @@
 import { faker } from '@faker-js/faker';
 import { describe, it, expect, afterAll } from '@jest/globals';
 import { IDbPlugin, uuidv4 } from '@routier/core';
-import { SqliteDbPlugin } from '../SqliteDbPlugin';
+import { SqliteDbPlugin } from '../index';
 import { SqliteDataStore } from './data-access/context';
 
 const generateDbName = () => `z-${uuidv4()}-db`;

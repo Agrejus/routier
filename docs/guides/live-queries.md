@@ -1,8 +1,5 @@
 ---
 title: Live Queries
-layout: default
-parent: Guides
-nav_order: 1
 ---
 
 # Live Queries
@@ -44,7 +41,7 @@ Live queries in Routier allow you to subscribe to data changes and automatically
 When using `.subscribe()`, you **must use callback-based methods** (not async methods):
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/live-queries/block-1.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/live-queries/block-1.ts
 
 
 The reason: subscriptions need to trigger the callback whenever data changes, which can't be done with promises. Callbacks can be invoked at any time, making them perfect for reactive updates.
@@ -54,19 +51,19 @@ The reason: subscriptions need to trigger the callback whenever data changes, wh
 ### Simple Live Query
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/live-queries/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/live-queries/block-2.ts
 
 
 ### Live Query with Filtering
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/live-queries/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/live-queries/block-3.ts
 
 
 ### Live Query with Sorting
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/live-queries/block-4.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/live-queries/block-4.ts
 
 
 ## Advanced Live Query Patterns
@@ -74,19 +71,19 @@ The reason: subscriptions need to trigger the callback whenever data changes, wh
 ### Live Aggregation
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/live-queries/block-5.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/live-queries/block-5.ts
 
 
 ### Live Pagination
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/live-queries/block-6.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/live-queries/block-6.ts
 
 
 ### Live Single Item
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/live-queries/block-7.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/live-queries/block-7.ts
 
 
 ## Managing Live Queries
@@ -94,13 +91,13 @@ The reason: subscriptions need to trigger the callback whenever data changes, wh
 ### Unsubscribing
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/live-queries/block-8.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/live-queries/block-8.ts
 
 
 ### Conditional Live Queries
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/live-queries/block-9.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/live-queries/block-9.ts
 
 
 ## Performance Considerations
@@ -108,13 +105,34 @@ The reason: subscriptions need to trigger the callback whenever data changes, wh
 ### Efficient Live Queries
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/live-queries/block-10.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/live-queries/block-10.ts
 
 
 ### Memory Management
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/live-queries/block-11.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/live-queries/block-11.ts
+
+
+### Cross-tab delivery and the cost of a save
+
+Live queries work across browser tabs. Change notifications travel over a `BroadcastChannel`, so a
+save in one tab updates a subscribed query in another. Worker threads in Node behave the same way.
+
+That reach has a price on every save. A `BroadcastChannel` sender cannot ask who is listening on the
+other end, so by default each save prepares its changes for the wire and publishes them on the chance
+that a second tab is subscribed — even when nothing is.
+
+Set `crossTabSync: false` on the store when the process is the only one reading the database, such as
+a server, a script, or an app you know runs in a single tab. Saves then skip that work entirely
+whenever nothing in the current process is subscribed. Measured on the repository benchmark, this is
+worth about 10% of insert time and about 17% on a diff-tracked update of 1,000 entities.
+
+The default stays `true`, so leaving the option alone keeps cross-tab live queries working.
+
+Note what the flag does and does not promise. Subscriptions inside the same process keep working
+either way — turning it off only skips the publish when there is no local listener. Turning it off
+while another tab **is** subscribed raises no error; that tab simply stops receiving updates.
 
 
 ## Common Patterns
@@ -122,19 +140,19 @@ The reason: subscriptions need to trigger the callback whenever data changes, wh
 ### Real-time Dashboard
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/live-queries/block-12.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/live-queries/block-12.ts
 
 
 ### Live Search Results
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/live-queries/block-13.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/live-queries/block-13.ts
 
 
 ### Live Notifications
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/live-queries/block-14.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/live-queries/block-14.ts
 
 
 ## Best Practices
@@ -142,25 +160,25 @@ The reason: subscriptions need to trigger the callback whenever data changes, wh
 ### 1. **Use Live Queries for Real-time Data**
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/live-queries/block-15.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/live-queries/block-15.ts
 
 
 ### 2. **Apply Filters Before Subscribing**
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/live-queries/block-16.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/live-queries/block-16.ts
 
 
 ### 3. **Clean Up Subscriptions**
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/live-queries/block-17.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/live-queries/block-17.ts
 
 
 ### 4. **Use Appropriate Terminal Methods**
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/live-queries/block-18.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/live-queries/block-18.ts
 
 
 ## Error Handling
@@ -168,11 +186,11 @@ The reason: subscriptions need to trigger the callback whenever data changes, wh
 ### Live Query Error Handling
 
 
-{% highlight ts linenos %}{% include code/from-docs/guides/live-queries/block-19.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/guides/live-queries/block-19.ts
 
 
 ## Related Topics
 
 - [Queries](/concepts/queries/) - Basic query operations
-- [State Management](/guides/state-management/) - Managing application state
-- [Data Manipulation](/guides/data-manipulation/) - Modifying data
+- [State Management](/guides/state-management) - Managing application state
+- [Data Manipulation](/guides/data-manipulation) - Modifying data

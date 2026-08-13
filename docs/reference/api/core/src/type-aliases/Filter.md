@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / Filter
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / Filter
 
 # Type Alias: Filter()\<T\>
 

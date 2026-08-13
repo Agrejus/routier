@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ---
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / IDbPlugin
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / IDbPlugin
 
 # Interface: IDbPlugin
 
@@ -34,13 +34,13 @@ Executes a query operation on the database.
 
 ##### event
 
-[`DbPluginQueryEvent`](../type-aliases/DbPluginQueryEvent.md)\<`TRoot`, `TShape`\>
+[`DbPluginQueryEvent`](/reference/api/core/src/type-aliases/DbPluginQueryEvent)\<`TRoot`, `TShape`\>
 
 The query event containing schema, parent, and query operation.
 
 ##### done
 
-[`PluginEventCallbackResult`](../type-aliases/PluginEventCallbackResult.md)\<[`ITranslatedValue`](../classes/ITranslatedValue.md)\<`TShape`\>\>
+[`PluginEventCallbackResult`](/reference/api/core/src/type-aliases/PluginEventCallbackResult)\<`ITranslatedValue`\<`TShape`\>\>
 
 Callback with the result or error. The result must be wrapped in an `ITranslatedValue` to allow the datastore to iterate over results (for grouped queries) and determine if change tracking should be enabled.
 
@@ -62,11 +62,11 @@ Destroys or cleans up the plugin, closing connections or freeing resources.
 
 ##### event
 
-[`DbPluginEvent`](../type-aliases/DbPluginEvent.md)
+[`DbPluginEvent`](/reference/api/core/src/type-aliases/DbPluginEvent)
 
 ##### done
 
-[`PluginEventCallbackResult`](../type-aliases/PluginEventCallbackResult.md)\<`never`\>
+[`PluginEventCallbackResult`](/reference/api/core/src/type-aliases/PluginEventCallbackResult)\<`never`\>
 
 Callback with an optional error.
 
@@ -88,13 +88,13 @@ Executes bulk operations (add, update, remove) on the database.
 
 ##### event
 
-[`DbPluginBulkPersistEvent`](../type-aliases/DbPluginBulkPersistEvent.md)
+[`DbPluginBulkPersistEvent`](/reference/api/core/src/type-aliases/DbPluginBulkPersistEvent)
 
 The bulk operations event containing schema, parent, and changes.
 
 ##### done
 
-[`PluginEventCallbackPartialResult`](../type-aliases/PluginEventCallbackPartialResult.md)\<[`BulkPersistResult`](../classes/BulkPersistResult.md)\>
+[`PluginEventCallbackPartialResult`](/reference/api/core/src/type-aliases/PluginEventCallbackPartialResult)\<[`BulkPersistResult`](/reference/api/core/src/classes/BulkPersistResult)\>
 
 Callback with the result or error.
 

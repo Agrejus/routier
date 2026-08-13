@@ -1,10 +1,12 @@
 export class TagCollection implements Disposable {
 
     private data: Map<object, unknown> = new Map<object, unknown>();
-    private _size: number = 0;
 
+    // Delegated to the map rather than tracked in a counter field: every mutation path
+    // (set, setMany, combine, delete, dispose) would otherwise have to maintain it, and
+    // a missed path silently reports a size that disagrees with the contents.
     get size() {
-        return this._size;
+        return this.data.size;
     }
 
     get(key: object) {
@@ -16,22 +18,14 @@ export class TagCollection implements Disposable {
     }
 
     set(key: object, tag: unknown) {
-        this._size++;
         return this.data.set(key, tag);
     }
 
     delete(key: object) {
-        const result = this.data.delete(key);
-
-        if (result) {
-            this._size--;
-        }
-
-        return result;
+        return this.data.delete(key);
     }
 
     setMany(keys: object[], tag: unknown) {
-        this._size += keys.length;
         for (let i = 0, length = keys.length; i < length; i++) {
             const key = keys[i];
             this.set(key, tag);
@@ -40,7 +34,7 @@ export class TagCollection implements Disposable {
 
     combine(tags: TagCollection) {
         for (const [key, value] of tags) {
-            this.data.set(key, value);
+            this.set(key, value);
         }
     }
 

@@ -1,10 +1,5 @@
 ---
 title: Built-in Plugins
-layout: default
-parent: Integrations
-has_children: true
-nav_order: 1
-permalink: /integrations/plugins/built-in-plugins/
 doc_role: reference
 ---
 
@@ -51,7 +46,7 @@ Creating a custom plugin is straightforward—implement the `IDbPlugin` interfac
 ### Implementing the Interface
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/built-in-plugins/index/block-2.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/built-in-plugins/index/block-2.ts
 
 
 ### Important Considerations
@@ -89,7 +84,7 @@ For SQL backends, Routier provides `SqlTranslator` to help translate results bac
 The `bulkPersist` method receives **all collections and views** that have changes:
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/built-in-plugins/index/block-3.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/built-in-plugins/index/block-3.ts
 
 
 #### Schema Information
@@ -125,7 +120,7 @@ Use `TranslatedArrayValue` for array results or other implementations for differ
 For `bulkPersist`: You must populate the result object returned by `event.operation.toResult()`. After persisting, update the result:
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/built-in-plugins/index/block-4.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/built-in-plugins/index/block-4.ts
 
 
 #### Single Collection Datastores
@@ -133,7 +128,7 @@ For `bulkPersist`: You must populate the result object returned by `event.operat
 If your backend uses a single physical collection for all entities (like PouchDB), you need a way to separate entities by collection. Add a tracked computed property to schemas that stores the collection name:
 
 
-{% highlight ts linenos %}{% include code/from-docs/integrations/plugins/built-in-plugins/index/block-5.ts %}{% endhighlight %}
+<<< @/_snippets/code/from-docs/integrations/plugins/built-in-plugins/index/block-5.ts
 
 
 Then filter by `documentType` when querying to ensure collections don't collide.
@@ -150,5 +145,5 @@ See the [SQLite plugin implementation](https://github.com/agrejus/routier/blob/m
 
 ## Related
 
-- [Create Your Own Plugin](../create-your-own/) - Detailed guide with more examples
-- [Replication Plugin](./replication/) - Local-first HTTP sync with SWR and optimistic updates
+- [Create Your Own Plugin](/integrations/plugins/create-your-own/) - Detailed guide with more examples
+- [Replication Plugin](/integrations/plugins/built-in-plugins/replication/README) - Local-first HTTP sync with SWR and optimistic updates

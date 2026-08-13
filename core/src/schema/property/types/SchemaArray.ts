@@ -52,4 +52,6 @@ export class SchemaArray<T extends any, TModifiers extends SchemaModifiers> exte
     tag(...tags: string[]) {
         return new SchemaTag<T[], TModifiers>(tags, this);
     }
+
+
 }

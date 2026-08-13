@@ -1,0 +1,1 @@
+new MyStore(plugin, { semiJoinKeyThreshold: 2000 })

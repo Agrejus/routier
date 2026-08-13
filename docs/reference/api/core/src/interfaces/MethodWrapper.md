@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / MethodWrapper
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / MethodWrapper
 
 # Interface: MethodWrapper
 
@@ -24,7 +24,7 @@ Defined in: [core/src/capabilities/types.ts:15](https://github.com/Agrejus/routi
 
 ##### methodInfo
 
-[`MethodInfo`](MethodInfo.md)
+[`MethodInfo`](/reference/api/core/src/interfaces/MethodInfo)
 
 #### Returns
 

@@ -1,4 +1,4 @@
-import { CodeBuilder, ContainerBlock, ObjectBuilder } from '../../blocks';
+import { CodeBuilder, ContainerBlock, ObjectBuilder, SlotBlock } from '../../blocks';
 import { SlotPath } from '../../SlotPath';
 import { PropertyInfoHandler } from "../types";
 import { PropertyInfo, SchemaTypes } from "../../../schema";
@@ -12,18 +12,31 @@ export class DeserializeDateHandler extends PropertyInfoHandler {
 
         if (property.type === SchemaTypes.Date) {
             const slotPath = new SlotPath("result.variable.object");
-            let objectBuilder = builder.get<ObjectBuilder>(slotPath.get());
-            const entitySelectorPath = property.getSelectrorPath({ parent: "unserialized" });
-            const entityAssignmentPath = property.getAssignmentPath({ parent: "entity", useFromPropertyName: property.isRenamed });
+
+            // Create the result object when this is the first property iterated —
+            // handler output cannot depend on schema property order
+            let objectBuilder = builder.getOrDefault<ObjectBuilder>(slotPath.get());
+
+            if (objectBuilder == null) {
+                objectBuilder = builder.get<SlotBlock>("result")
+                    .assign("const entity", { name: "variable" })
+                    .object({ name: "object" });
+            }
+            // Deserialize maps storage shape -> in-memory shape: read the incoming
+            // record by `from` (storage) name, write the entity by property name
+            const entitySelectorPath = property.getSelectrorPath({ parent: "unserialized", useFromPropertyName: true });
+            const entityAssignmentPath = property.getAssignmentPath({ parent: "entity" });
             const assignment = `${property.name}: typeof ${entitySelectorPath} === "string" ? new Date(${entitySelectorPath}) : ${entitySelectorPath}`;
 
-            // if it is nullable or optional, assign in an if block, otherwise we 
-            // could unintentionally assign null/undefined to a property that does not exist
+            // if it is nullable or optional, assign in an if block, otherwise we
+            // could unintentionally assign a property that does not exist. An explicit null IS
+            // assigned — a stored null is a value, and dropping it is known-defects #66. The
+            // expression passes null through, since null is not a string.
             if (property.isOptional || property.isNullable) {
                 const ifAssignment = `${entityAssignmentPath} = typeof ${entitySelectorPath} === "string" ? new Date(${entitySelectorPath}) : ${entitySelectorPath}`;
                 const rootPath = new SlotPath("if");
-                builder.get<ContainerBlock>(rootPath.get()).if(`${entitySelectorPath} != null`).appendBody(ifAssignment);
-                return;
+                builder.get<ContainerBlock>(rootPath.get()).if(`${entitySelectorPath} !== undefined`).appendBody(ifAssignment);
+                return builder;
             }
 
             // A date cannot be a nested object, just do the assignment

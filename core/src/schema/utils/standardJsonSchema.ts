@@ -233,6 +233,27 @@ function convertArrayItems(
 /**
  * Converts an Array property to JSON Schema
  */
+/**
+ * Converts a Vector property to JSON Schema.
+ *
+ * The dimension count is expressible here in a way it is not in the type system, so it is
+ * emitted: a consumer validating against this schema rejects a wrong-width embedding, which
+ * is the earliest anything can.
+ */
+const vectorConverter: PropertyConverter = (property, _context) => {
+    const jsonSchema: Record<string, unknown> = {
+        type: 'array',
+        items: { type: 'number' }
+    };
+
+    if (property.dimensions != null) {
+        jsonSchema.minItems = property.dimensions;
+        jsonSchema.maxItems = property.dimensions;
+    }
+
+    return jsonSchema;
+};
+
 const arrayConverter: PropertyConverter = (property, context) => {
     const jsonSchema: Record<string, unknown> = { type: 'array' };
 
@@ -314,6 +335,7 @@ const converterRegistry = new Map<SchemaTypes, PropertyConverter>([
     [SchemaTypes.Date, dateConverter],
     [SchemaTypes.Object, objectConverter],
     [SchemaTypes.Array, arrayConverter],
+    [SchemaTypes.Vector, vectorConverter],
     [SchemaTypes.Computed, computedConverter],
     [SchemaTypes.Function, computedConverter],
 ]);
@@ -366,6 +388,9 @@ function applyRoutierMetadata(
     }
     if (property.isDistinct && !routierMeta.isDistinct) {
         routierMeta.isDistinct = true;
+    }
+    if (property.isSearchable && !routierMeta.isSearchable) {
+        routierMeta.isSearchable = true;
     }
     if (property.indexes && property.indexes.length > 0 && !routierMeta.indexes) {
         routierMeta.indexes = property.indexes;
@@ -609,6 +634,12 @@ export function rehydrateSchemaFromJsonSchema(
         }
         if (routierPropMeta?.isDistinct && typeof schemaBuilder.distinct === 'function') {
             schemaBuilder = schemaBuilder.distinct();
+        }
+        // Before `.optional()` below, which is safe because `isSearchable` survives a wrapping
+        // modifier — see `SchemaBase.isSearchable`. Rebuilding a schema that silently dropped
+        // this would take a property's terms out of the index and change what queries match.
+        if (routierPropMeta?.isSearchable && typeof schemaBuilder.searchable === 'function') {
+            schemaBuilder = schemaBuilder.searchable();
         }
         // Apply optional if property is not required (nullable and optional are independent)
         if (!isRequired && typeof schemaBuilder.optional === 'function') {

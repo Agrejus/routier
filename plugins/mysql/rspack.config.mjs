@@ -1,42 +1,8 @@
-import { dirname, resolve } from "node:path";
+import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { defineConfig } from '@rspack/cli';
+import { libraryConfig } from "../../scripts/rspack.library.mjs";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-
-export default defineConfig({
-  entry: './src/index.ts',
-  mode: 'production',
-  target: 'node',
-  output: {
-    filename: 'index.js',
-    path: resolve(__dirname, "dist"),
-    library: {
-      type: 'commonjs2'
-    }
-  },
-  resolve: {
-    extensions: ['.ts', '.tsx', '.js', '.jsx']
-  },
-  module: {
-    rules: [
-      {
-        test: /\.tsx?$/,
-        use: [
-          {
-            loader: 'ts-loader',
-            options: {
-              transpileOnly: true
-            }
-          }
-        ]
-      }
-    ]
-  },
-  externals: {
-    '@routier/core': 'commonjs @routier/core',
-    '@routier/datastore': 'commonjs @routier/datastore',
-    'mysql2': 'commonjs mysql2',
-    'cardinal': 'commonjs cardinal'
-  }
+export default libraryConfig({
+    dirname: dirname(fileURLToPath(import.meta.url)),
+    target: "node",
 });

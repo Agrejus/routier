@@ -1,8 +1,8 @@
-[**routier-collection**](../../../README.md)
+[**routier-collection**](/reference/api/README)
 
 ***
 
-[routier-collection](../../../README.md) / [core/src](../README.md) / OptimisticReplicationPluginOptions
+[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / OptimisticReplicationPluginOptions
 
 # Type Alias: OptimisticReplicationPluginOptions
 
@@ -14,7 +14,7 @@ Defined in: [core/src/plugins/types.ts:78](https://github.com/Agrejus/routier/bl
 
 ### source
 
-> **source**: [`IDbPlugin`](../interfaces/IDbPlugin.md)
+> **source**: [`IDbPlugin`](/reference/api/core/src/interfaces/IDbPlugin)
 
 Defined in: [core/src/plugins/types.ts:80](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/types.ts#L80)
 
@@ -24,7 +24,7 @@ The primary database plugin that handles all write operations, do not include in
 
 ### replicas
 
-> **replicas**: [`IDbPlugin`](../interfaces/IDbPlugin.md)[]
+> **replicas**: [`IDbPlugin`](/reference/api/core/src/interfaces/IDbPlugin)[]
 
 Defined in: [core/src/plugins/types.ts:83](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/types.ts#L83)
 
@@ -34,7 +34,7 @@ Array of replica database plugins that can be used for read operations.
 
 ### read
 
-> **read**: [`IDbPlugin`](../interfaces/IDbPlugin.md)
+> **read**: [`IDbPlugin`](/reference/api/core/src/interfaces/IDbPlugin)
 
 Defined in: [core/src/plugins/types.ts:86](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/types.ts#L86)
 
