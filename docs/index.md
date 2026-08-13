@@ -4,7 +4,7 @@ layout: home
 hero:
   name: Routier
   text: Reactive data for any datastore
-  tagline: A fast, front-end-first data toolkit — schemas, live queries, optimistic mutations, and swappable storage plugins. No lock-in, no rewrite.
+  tagline: A fast, front-end-first data toolkit with schemas, live queries, optimistic mutations, and swappable storage plugins. No lock-in, no rewrite.
   image:
     src: /routier.svg
     alt: Routier
@@ -22,17 +22,17 @@ hero:
 features:
   - icon: 📐
     title: Powerful Schemas
-    details: Defaults, identity keys, indexes, computed properties, transforms, and property mapping—bring your own validation with Zod or AJV.
+    details: Defaults, identity keys, indexes, computed properties, transforms, and property mapping. Bring your own validation with Zod or AJV.
     link: /concepts/schema/
     linkText: Schema guide
   - icon: 🔌
     title: Storage and Capability Plugins
-    details: Choose memory, IndexedDB, SQLite, PostgreSQL, MySQL, MongoDB, PouchDB, or files—then add caching, replication, concurrency, encryption, and blob storage.
+    details: Choose memory, IndexedDB, SQLite, PostgreSQL, MySQL, MongoDB, PouchDB, or files. Then add caching, replication, concurrency, encryption, and blob storage.
     link: /integrations/plugins/built-in-plugins/
     linkText: Choose plugins
   - icon: 🔗
     title: Joins and Rich Queries
-    details: Inner and left joins across collections, views, stores, and plugins—plus filtering, aggregation, reusable queries, full-text search, and vector similarity.
+    details: Inner and left joins across collections, views, stores, and plugins, plus filtering, aggregation, reusable queries, full-text search, and vector similarity.
     link: /concepts/queries/
     linkText: Explore queries
   - icon: 🔄
@@ -47,7 +47,7 @@ features:
     linkText: Local-first guide
   - icon: ⚛️
     title: React Integration
-    details: First-class hooks that keep components in sync with your data—no extra state-management layer required.
+    details: First-class hooks keep components in sync with your data. No extra state-management layer required.
     link: /integrations/react/
     linkText: React adapter
   - icon: ⚡
@@ -61,10 +61,10 @@ features:
 
 Routier is a fast, front-end-first data toolkit that augments any datastore with
 schemas, collections, live queries, optimistic mutations, replication, caching,
-and more — without locking you into a specific ORM or backend.
+and more, without locking you into a specific ORM or backend.
 
 Modern apps inevitably build a data abstraction layer: defaults, business rules,
-computed fields, and adapters for whatever datastore you start with. That works —
+computed fields, and adapters for whatever datastore you start with. That works
 until you hit performance ceilings, need local-first, or want to adopt a
 different storage primitive. Routier gives you a datastore-agnostic layer you
 control: keep your domain model and data API intact, and swap the storage plugin
@@ -80,10 +80,10 @@ beneath it.
 
 ## How Routier Fits Your Stack
 
-- **Enhance, don't replace** — keep your existing datastore. Add structure (schemas, defaults, serialization), speed (indexes, caching), and better ergonomics (live queries, optimistic updates).
-- **Swap without rewrites** — move from IndexedDB to SQLite or adopt OPFS by changing the plugin. Your app code remains unchanged.
-- **Type checking by choice** — use Zod or AJV for validation. Routier handles transformation and persistence.
-- **Client-first, backend-capable** — designed for the browser and local-first workflows, adaptable to backend runtimes.
+- **Enhance, don't replace.** Keep your existing datastore. Add structure (schemas, defaults, serialization), speed (indexes, caching), and better ergonomics (live queries, optimistic updates).
+- **Swap without rewrites.** Move from IndexedDB to SQLite or adopt OPFS by changing the plugin. Your app code remains unchanged.
+- **Type checking by choice.** Use Zod or AJV for validation. Routier handles transformation and persistence.
+- **Client-first, backend-capable.** Routier is designed for the browser and local-first workflows, while remaining adaptable to backend runtimes.
 
 ## Next Steps
 
