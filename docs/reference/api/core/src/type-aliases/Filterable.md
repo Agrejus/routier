@@ -1,14 +1,14 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / Filterable
+[routier-collection](../../../README.md) / [core/src](../README.md) / Filterable
 
 # Type Alias: Filterable\<T, P\>
 
 > **Filterable**\<`T`, `P`\> = `object`
 
-Defined in: [core/src/expressions/types.ts:179](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/expressions/types.ts#L179)
+Defined in: [core/src/expressions/types.ts:396](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L396)
 
 An object that can be filtered using a composite filter and optional parameters.
 
@@ -26,9 +26,9 @@ An object that can be filtered using a composite filter and optional parameters.
 
 ### filter
 
-> **filter**: [`CompositeFilter`](/reference/api/core/src/type-aliases/CompositeFilter)\<`T`, `P`\>
+> **filter**: [`CompositeFilter`](CompositeFilter.md)\<`T`, `P`\>
 
-Defined in: [core/src/expressions/types.ts:181](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/expressions/types.ts#L181)
+Defined in: [core/src/expressions/types.ts:398](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L398)
 
 The filter function.
 
@@ -38,6 +38,6 @@ The filter function.
 
 > `optional` **params**: `P`
 
-Defined in: [core/src/expressions/types.ts:183](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/expressions/types.ts#L183)
+Defined in: [core/src/expressions/types.ts:400](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L400)
 
 Optional parameters for the filter.

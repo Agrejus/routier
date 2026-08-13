@@ -1,27 +1,27 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / ParsedExpression
+[routier-collection](../../../README.md) / [core/src](../README.md) / ParsedExpression
 
 # Type Alias: ParsedExpression
 
 > **ParsedExpression** = `object`
 
-Defined in: [core/src/expressions/types.ts:4](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/expressions/types.ts#L4)
+Defined in: [core/src/expressions/types.ts:87](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L87)
 
 ## Properties
 
 ### expression
 
-> **expression**: [`Expression`](/reference/api/core/src/classes/Expression)
+> **expression**: [`Expression`](../classes/Expression.md)
 
-Defined in: [core/src/expressions/types.ts:5](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/expressions/types.ts#L5)
+Defined in: [core/src/expressions/types.ts:88](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L88)
 
 ***
 
 ### executionTarget
 
-> **executionTarget**: [`QueryOptionExecutionTarget`](/reference/api/core/src/type-aliases/QueryOptionExecutionTarget)
+> **executionTarget**: [`QueryOptionExecutionTarget`](QueryOptionExecutionTarget.md)
 
-Defined in: [core/src/expressions/types.ts:7](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/expressions/types.ts#L7)
+Defined in: [core/src/expressions/types.ts:90](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L90)

@@ -1,20 +1,20 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / s
+[routier-collection](../../../README.md) / [core/src](../README.md) / s
 
 # Variable: s
 
 > `const` **s**: `object`
 
-Defined in: [core/src/schema/builder.ts:10](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/builder.ts#L10)
+Defined in: [core/src/schema/builder.ts:45](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/builder.ts#L45)
 
 ## Type Declaration
 
 ### number()
 
-> **number**: \<`T`\>(...`literals`) => [`SchemaNumber`](/reference/api/core/src/classes/SchemaNumber)\<`T`\[`number`\] *extends* `never` ? `number` : `T`\[`number`\], `never`\>
+> **number**: \<`T`\>(...`literals`) => [`SchemaNumber`](../classes/SchemaNumber.md)\<`T`\[`number`\] *extends* `never` ? `number` : `T`\[`number`\], `never`\>
 
 #### Type Parameters
 
@@ -30,31 +30,85 @@ Defined in: [core/src/schema/builder.ts:10](https://github.com/Agrejus/routier/b
 
 #### Returns
 
-[`SchemaNumber`](/reference/api/core/src/classes/SchemaNumber)\<`T`\[`number`\] *extends* `never` ? `number` : `T`\[`number`\], `never`\>
+[`SchemaNumber`](../classes/SchemaNumber.md)\<`T`\[`number`\] *extends* `never` ? `number` : `T`\[`number`\], `never`\>
 
 ### string()
 
-> **string**: \<`T`\>(...`literals`) => [`SchemaString`](/reference/api/core/src/classes/SchemaString)\<`T`\[`number`\] *extends* `never` ? `string` : `T`\[`number`\], `never`\>
+> **string**: \{\<`T`\>(...`literals`): [`SchemaString`](../classes/SchemaString.md)\<`T`\[`number`\] *extends* `never` ? `string` : `T`\[`number`\], `never`\>; \<`T`\>(`options`, ...`literals`): [`SchemaString`](../classes/SchemaString.md)\<`T`\[`number`\] *extends* `never` ? `string` : `T`\[`number`\], `never`\>; \}
 
-#### Type Parameters
+#### Call Signature
 
-##### T
+> \<`T`\>(...`literals`): [`SchemaString`](../classes/SchemaString.md)\<`T`\[`number`\] *extends* `never` ? `string` : `T`\[`number`\], `never`\>
+
+A string, optionally declaring how long it can be and which values it may take.
+
+```ts
+s.string()                              // any string
+s.string("draft", "published")          // a literal union
+s.string({ maxLength: 4000 })           // any string, declared long
+s.string({ maxLength: 8 }, "a", "b")    // both
+```
+
+The options object is a leading parameter rather than a `.maxLength()` modifier so the
+declaration stays on the factory, next to the literals. A modifier would also have to survive
+being wrapped by another modifier, which is the trap `SchemaBase.maxLength` documents.
+
+##### Type Parameters
+
+###### T
 
 `T` *extends* `string`[] = `string`[]
 
-#### Parameters
+##### Parameters
 
-##### literals
+###### literals
 
 ...`T`
 
-#### Returns
+##### Returns
 
-[`SchemaString`](/reference/api/core/src/classes/SchemaString)\<`T`\[`number`\] *extends* `never` ? `string` : `T`\[`number`\], `never`\>
+[`SchemaString`](../classes/SchemaString.md)\<`T`\[`number`\] *extends* `never` ? `string` : `T`\[`number`\], `never`\>
+
+#### Call Signature
+
+> \<`T`\>(`options`, ...`literals`): [`SchemaString`](../classes/SchemaString.md)\<`T`\[`number`\] *extends* `never` ? `string` : `T`\[`number`\], `never`\>
+
+A string, optionally declaring how long it can be and which values it may take.
+
+```ts
+s.string()                              // any string
+s.string("draft", "published")          // a literal union
+s.string({ maxLength: 4000 })           // any string, declared long
+s.string({ maxLength: 8 }, "a", "b")    // both
+```
+
+The options object is a leading parameter rather than a `.maxLength()` modifier so the
+declaration stays on the factory, next to the literals. A modifier would also have to survive
+being wrapped by another modifier, which is the trap `SchemaBase.maxLength` documents.
+
+##### Type Parameters
+
+###### T
+
+`T` *extends* `string`[] = `string`[]
+
+##### Parameters
+
+###### options
+
+[`StringOptions`](../type-aliases/StringOptions.md)
+
+###### literals
+
+...`T`
+
+##### Returns
+
+[`SchemaString`](../classes/SchemaString.md)\<`T`\[`number`\] *extends* `never` ? `string` : `T`\[`number`\], `never`\>
 
 ### boolean()
 
-> **boolean**: \<`T`\>() => [`SchemaBoolean`](/reference/api/core/src/classes/SchemaBoolean)\<`T`, `never`\>
+> **boolean**: \<`T`\>() => [`SchemaBoolean`](../classes/SchemaBoolean.md)\<`T`, `never`\>
 
 #### Type Parameters
 
@@ -64,11 +118,11 @@ Defined in: [core/src/schema/builder.ts:10](https://github.com/Agrejus/routier/b
 
 #### Returns
 
-[`SchemaBoolean`](/reference/api/core/src/classes/SchemaBoolean)\<`T`, `never`\>
+[`SchemaBoolean`](../classes/SchemaBoolean.md)\<`T`, `never`\>
 
 ### date()
 
-> **date**: \<`T`\>() => [`SchemaDate`](/reference/api/core/src/classes/SchemaDate)\<`T`, `never`\>
+> **date**: \<`T`\>() => [`SchemaDate`](../classes/SchemaDate.md)\<`T`, `never`\>
 
 #### Type Parameters
 
@@ -78,11 +132,11 @@ Defined in: [core/src/schema/builder.ts:10](https://github.com/Agrejus/routier/b
 
 #### Returns
 
-[`SchemaDate`](/reference/api/core/src/classes/SchemaDate)\<`T`, `never`\>
+[`SchemaDate`](../classes/SchemaDate.md)\<`T`, `never`\>
 
 ### array()
 
-> **array**: \<`T`\>(`schema`) => [`SchemaArray`](/reference/api/core/src/classes/SchemaArray)\<[`SchemaBase`](/reference/api/core/src/classes/SchemaBase)\<`T`, `never`\>, `never`\>
+> **array**: \<`T`\>(`schema`) => [`SchemaArray`](../classes/SchemaArray.md)\<[`SchemaBase`](../classes/SchemaBase.md)\<`T`, `never`\>, `never`\>
 
 #### Type Parameters
 
@@ -94,15 +148,15 @@ Defined in: [core/src/schema/builder.ts:10](https://github.com/Agrejus/routier/b
 
 ##### schema
 
-[`SchemaBase`](/reference/api/core/src/classes/SchemaBase)\<`T`, `never`\>
+[`SchemaBase`](../classes/SchemaBase.md)\<`T`, `never`\>
 
 #### Returns
 
-[`SchemaArray`](/reference/api/core/src/classes/SchemaArray)\<[`SchemaBase`](/reference/api/core/src/classes/SchemaBase)\<`T`, `never`\>, `never`\>
+[`SchemaArray`](../classes/SchemaArray.md)\<[`SchemaBase`](../classes/SchemaBase.md)\<`T`, `never`\>, `never`\>
 
 ### object()
 
-> **object**: \<`T`\>(`schema`) => [`SchemaObject`](/reference/api/core/src/classes/SchemaObject)\<`T`, `never`\>
+> **object**: \<`T`\>(`schema`) => [`SchemaObject`](../classes/SchemaObject.md)\<`T`, `never`\>
 
 #### Type Parameters
 
@@ -118,11 +172,43 @@ Defined in: [core/src/schema/builder.ts:10](https://github.com/Agrejus/routier/b
 
 #### Returns
 
-[`SchemaObject`](/reference/api/core/src/classes/SchemaObject)\<`T`, `never`\>
+[`SchemaObject`](../classes/SchemaObject.md)\<`T`, `never`\>
+
+### file()
+
+> **file**: () => [`SchemaFile`](../classes/SchemaFile.md)\<[`FileReferenceValue`](../type-aliases/FileReferenceValue.md), `never`\>
+
+A file. Assign content, read back a reference.
+
+Needs `@routier/blob-plugin` wrapping your plugin to turn the one into the other; core
+only carries the value through untouched.
+
+#### Returns
+
+[`SchemaFile`](../classes/SchemaFile.md)\<[`FileReferenceValue`](../type-aliases/FileReferenceValue.md), `never`\>
+
+### vector()
+
+> **vector**: (`dimensions`) => [`SchemaVector`](../classes/SchemaVector.md)\<[`VectorValue`](../type-aliases/VectorValue.md), `never`\>
+
+An embedding of `dimensions` numbers, searchable with `.nearest()`.
+
+Every backend supports it. One with a native vector column uses it; the rest store the
+numbers as JSON and score the search in memory, which returns the same rows.
+
+#### Parameters
+
+##### dimensions
+
+`number`
+
+#### Returns
+
+[`SchemaVector`](../classes/SchemaVector.md)\<[`VectorValue`](../type-aliases/VectorValue.md), `never`\>
 
 ### define()
 
-> **define**: \<`T`\>(`collectionName`, `schema`) => `SchemaDefinition`\<`T`\>
+> **define**: \<`T`\>(`collectionName`, `schema`) => [`SchemaDefinition`](../classes/SchemaDefinition.md)\<`T`\>
 
 #### Type Parameters
 
@@ -142,4 +228,4 @@ Defined in: [core/src/schema/builder.ts:10](https://github.com/Agrejus/routier/b
 
 #### Returns
 
-`SchemaDefinition`\<`T`\>
+[`SchemaDefinition`](../classes/SchemaDefinition.md)\<`T`\>

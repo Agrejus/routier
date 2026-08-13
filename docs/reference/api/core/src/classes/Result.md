@@ -1,12 +1,12 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / Result
+[routier-collection](../../../README.md) / [core/src](../README.md) / Result
 
 # Class: Result
 
-Defined in: [core/src/results/Result.ts:32](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L32)
+Defined in: [core/src/results/Result.ts:32](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/results/Result.ts#L32)
 
 ## Extends
 
@@ -32,7 +32,7 @@ Defined in: [core/src/results/Result.ts:32](https://github.com/Agrejus/routier/b
 
 > `static` **ERROR**: `"error"`
 
-Defined in: [core/src/results/Result.ts:4](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L4)
+Defined in: [core/src/results/Result.ts:4](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/results/Result.ts#L4)
 
 #### Inherited from
 
@@ -44,7 +44,7 @@ Defined in: [core/src/results/Result.ts:4](https://github.com/Agrejus/routier/bl
 
 > `static` **SUCCESS**: `"success"`
 
-Defined in: [core/src/results/Result.ts:5](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L5)
+Defined in: [core/src/results/Result.ts:5](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/results/Result.ts#L5)
 
 #### Inherited from
 
@@ -56,7 +56,7 @@ Defined in: [core/src/results/Result.ts:5](https://github.com/Agrejus/routier/bl
 
 > `static` **PARTIAL**: `"partial"`
 
-Defined in: [core/src/results/Result.ts:6](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L6)
+Defined in: [core/src/results/Result.ts:6](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/results/Result.ts#L6)
 
 #### Inherited from
 
@@ -68,7 +68,7 @@ Defined in: [core/src/results/Result.ts:6](https://github.com/Agrejus/routier/bl
 
 > `static` **resolve**\<`T`\>(`result`, `resolve`, `reject`): `void`
 
-Defined in: [core/src/results/Result.ts:8](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L8)
+Defined in: [core/src/results/Result.ts:8](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/results/Result.ts#L8)
 
 #### Type Parameters
 
@@ -104,7 +104,7 @@ Defined in: [core/src/results/Result.ts:8](https://github.com/Agrejus/routier/bl
 
 > `static` **assertSuccess**\<`T`\>(`result`): `asserts result is { ok: "success"; data: T }`
 
-Defined in: [core/src/results/Result.ts:25](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L25)
+Defined in: [core/src/results/Result.ts:25](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/results/Result.ts#L25)
 
 #### Type Parameters
 
@@ -132,9 +132,9 @@ Defined in: [core/src/results/Result.ts:25](https://github.com/Agrejus/routier/b
 
 #### Call Signature
 
-> `static` **success**\<`T`\>(`data`): [`ResultType`](/reference/api/core/src/type-aliases/ResultType)\<`T`\>
+> `static` **success**\<`T`\>(`data`): [`ResultType`](../type-aliases/ResultType.md)\<`T`\>
 
-Defined in: [core/src/results/Result.ts:33](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L33)
+Defined in: [core/src/results/Result.ts:33](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/results/Result.ts#L33)
 
 ##### Type Parameters
 
@@ -150,31 +150,25 @@ Defined in: [core/src/results/Result.ts:33](https://github.com/Agrejus/routier/b
 
 ##### Returns
 
-[`ResultType`](/reference/api/core/src/type-aliases/ResultType)\<`T`\>
+[`ResultType`](../type-aliases/ResultType.md)\<`T`\>
 
 #### Call Signature
 
-> `static` **success**\<`T`\>(): [`ResultType`](/reference/api/core/src/type-aliases/ResultType)\<`never`\>
+> `static` **success**(): [`ResultType`](../type-aliases/ResultType.md)\<`never`\>
 
-Defined in: [core/src/results/Result.ts:34](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L34)
-
-##### Type Parameters
-
-###### T
-
-`T`
+Defined in: [core/src/results/Result.ts:34](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/results/Result.ts#L34)
 
 ##### Returns
 
-[`ResultType`](/reference/api/core/src/type-aliases/ResultType)\<`never`\>
+[`ResultType`](../type-aliases/ResultType.md)\<`never`\>
 
 ***
 
 ### error()
 
-> `static` **error**\<`T`\>(`error`): [`ResultType`](/reference/api/core/src/type-aliases/ResultType)\<`T`\>
+> `static` **error**\<`T`\>(`error`): [`ResultType`](../type-aliases/ResultType.md)\<`T`\>
 
-Defined in: [core/src/results/Result.ts:42](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L42)
+Defined in: [core/src/results/Result.ts:42](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/results/Result.ts#L42)
 
 #### Type Parameters
 
@@ -190,15 +184,15 @@ Defined in: [core/src/results/Result.ts:42](https://github.com/Agrejus/routier/b
 
 #### Returns
 
-[`ResultType`](/reference/api/core/src/type-aliases/ResultType)\<`T`\>
+[`ResultType`](../type-aliases/ResultType.md)\<`T`\>
 
 ***
 
 ### partial()
 
-> `static` **partial**\<`T`\>(`data`, `error`): [`PartialResultType`](/reference/api/core/src/type-aliases/PartialResultType)\<`T`\>
+> `static` **partial**\<`T`\>(`data`, `error`): [`PartialResultType`](../type-aliases/PartialResultType.md)\<`T`\>
 
-Defined in: [core/src/results/Result.ts:49](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L49)
+Defined in: [core/src/results/Result.ts:49](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/results/Result.ts#L49)
 
 #### Type Parameters
 
@@ -218,4 +212,4 @@ Defined in: [core/src/results/Result.ts:49](https://github.com/Agrejus/routier/b
 
 #### Returns
 
-[`PartialResultType`](/reference/api/core/src/type-aliases/PartialResultType)\<`T`\>
+[`PartialResultType`](../type-aliases/PartialResultType.md)\<`T`\>

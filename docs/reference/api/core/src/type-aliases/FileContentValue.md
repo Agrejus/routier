@@ -1,0 +1,16 @@
+[**routier-collection**](../../../README.md)
+
+***
+
+[routier-collection](../../../README.md) / [core/src](../README.md) / FileContentValue
+
+# Type Alias: FileContentValue
+
+> **FileContentValue** = [`FileReferenceValue`](FileReferenceValue.md) \| `Uint8Array` \| `ArrayBuffer` \| `Blob` \| `string`
+
+Defined in: [core/src/schema/types.ts:74](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/types.ts#L74)
+
+What a file property ACCEPTS: content, or a reference you already have.
+
+`Blob` covers `File`, which is what an `<input type="file">` yields. A reference is accepted
+too, so re-saving an entity that was read from the database does not have to re-upload it.

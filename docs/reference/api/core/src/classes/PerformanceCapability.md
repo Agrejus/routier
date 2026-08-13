@@ -1,16 +1,16 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / PerformanceCapability
+[routier-collection](../../../README.md) / [core/src](../README.md) / PerformanceCapability
 
 # Class: PerformanceCapability
 
-Defined in: [core/src/capabilities/PerformanceCapability.ts:17](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/capabilities/PerformanceCapability.ts#L17)
+Defined in: [core/src/capabilities/PerformanceCapability.ts:12](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/capabilities/PerformanceCapability.ts#L12)
 
 ## Extends
 
-- [`Capability`](/reference/api/core/src/classes/Capability)
+- [`Capability`](Capability.md)
 
 ## Constructors
 
@@ -18,7 +18,7 @@ Defined in: [core/src/capabilities/PerformanceCapability.ts:17](https://github.c
 
 > **new PerformanceCapability**(`options?`): `PerformanceCapability`
 
-Defined in: [core/src/capabilities/PerformanceCapability.ts:32](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/capabilities/PerformanceCapability.ts#L32)
+Defined in: [core/src/capabilities/PerformanceCapability.ts:19](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/capabilities/PerformanceCapability.ts#L19)
 
 #### Parameters
 
@@ -32,7 +32,7 @@ Defined in: [core/src/capabilities/PerformanceCapability.ts:32](https://github.c
 
 #### Overrides
 
-[`Capability`](/reference/api/core/src/classes/Capability).[`constructor`](/reference/api/core/src/classes/Capability#constructor)
+[`Capability`](Capability.md).[`constructor`](Capability.md#constructor)
 
 ## Methods
 
@@ -40,7 +40,7 @@ Defined in: [core/src/capabilities/PerformanceCapability.ts:32](https://github.c
 
 > **apply**(`instance`): `void`
 
-Defined in: [core/src/capabilities/PerformanceCapability.ts:136](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/capabilities/PerformanceCapability.ts#L136)
+Defined in: [core/src/capabilities/PerformanceCapability.ts:26](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/capabilities/PerformanceCapability.ts#L26)
 
 #### Parameters
 
@@ -54,4 +54,4 @@ Defined in: [core/src/capabilities/PerformanceCapability.ts:136](https://github.
 
 #### Overrides
 
-[`Capability`](/reference/api/core/src/classes/Capability).[`apply`](/reference/api/core/src/classes/Capability#apply)
+[`Capability`](Capability.md).[`apply`](Capability.md#apply)

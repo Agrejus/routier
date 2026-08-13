@@ -1,35 +1,42 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / SchemaBase
+[routier-collection](../../../README.md) / [core/src](../README.md) / SchemaBase
 
 # Abstract Class: SchemaBase\<T, TModifiers\>
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:3](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/base/SchemaBase.ts#L3)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:3](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L3)
 
 ## Extended by
 
-- [`SchemaComputed`](/reference/api/core/src/classes/SchemaComputed)
-- [`SchemaFunction`](/reference/api/core/src/classes/SchemaFunction)
-- [`SchemaDefault`](/reference/api/core/src/classes/SchemaDefault)
-- [`SchemaDeserialize`](/reference/api/core/src/classes/SchemaDeserialize)
-- [`SchemaDistinct`](/reference/api/core/src/classes/SchemaDistinct)
-- [`SchemaIdentity`](/reference/api/core/src/classes/SchemaIdentity)
-- [`SchemaIndex`](/reference/api/core/src/classes/SchemaIndex)
-- [`SchemaKey`](/reference/api/core/src/classes/SchemaKey)
-- [`SchemaNullable`](/reference/api/core/src/classes/SchemaNullable)
-- [`SchemaOptional`](/reference/api/core/src/classes/SchemaOptional)
-- [`SchemaReadonly`](/reference/api/core/src/classes/SchemaReadonly)
-- [`SchemaSerialize`](/reference/api/core/src/classes/SchemaSerialize)
-- [`SchemaTracked`](/reference/api/core/src/classes/SchemaTracked)
-- [`SchemaFrom`](/reference/api/core/src/classes/SchemaFrom)
-- [`SchemaArray`](/reference/api/core/src/classes/SchemaArray)
-- [`SchemaBoolean`](/reference/api/core/src/classes/SchemaBoolean)
-- [`SchemaDate`](/reference/api/core/src/classes/SchemaDate)
-- [`SchemaNumber`](/reference/api/core/src/classes/SchemaNumber)
-- [`SchemaObject`](/reference/api/core/src/classes/SchemaObject)
-- [`SchemaString`](/reference/api/core/src/classes/SchemaString)
+- [`SchemaComputed`](SchemaComputed.md)
+- [`SchemaFunction`](SchemaFunction.md)
+- [`SchemaTransform`](SchemaTransform.md)
+- [`SchemaDefault`](SchemaDefault.md)
+- [`SchemaDeserialize`](SchemaDeserialize.md)
+- [`SchemaDistinct`](SchemaDistinct.md)
+- [`SchemaIdentity`](SchemaIdentity.md)
+- [`SchemaIndex`](SchemaIndex.md)
+- [`SchemaKey`](SchemaKey.md)
+- [`SchemaNullable`](SchemaNullable.md)
+- [`SchemaOptional`](SchemaOptional.md)
+- [`SchemaReadonly`](SchemaReadonly.md)
+- [`SchemaSearchable`](SchemaSearchable.md)
+- [`SchemaSerialize`](SchemaSerialize.md)
+- [`SchemaTracked`](SchemaTracked.md)
+- [`SchemaFrom`](SchemaFrom.md)
+- [`SchemaTag`](SchemaTag.md)
+- [`SchemaForeignKey`](SchemaForeignKey.md)
+- [`SchemaArray`](SchemaArray.md)
+- [`SchemaBoolean`](SchemaBoolean.md)
+- [`SchemaDate`](SchemaDate.md)
+- [`SchemaNumber`](SchemaNumber.md)
+- [`SchemaObject`](SchemaObject.md)
+- [`SchemaString`](SchemaString.md)
+- [`SchemaFile`](SchemaFile.md)
+- [`SchemaVector`](SchemaVector.md)
+- [`SchemaDefinition`](SchemaDefinition.md)
 
 ## Type Parameters
 
@@ -39,7 +46,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:3](https://github.com/A
 
 ### TModifiers
 
-`TModifiers` *extends* [`SchemaModifiers`](/reference/api/core/src/type-aliases/SchemaModifiers)
+`TModifiers` *extends* [`SchemaModifiers`](../type-aliases/SchemaModifiers.md)
 
 ## Constructors
 
@@ -47,7 +54,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:3](https://github.com/A
 
 > **new SchemaBase**\<`T`, `TModifiers`\>(`entity?`, `literals?`): `SchemaBase`\<`T`, `TModifiers`\>
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:27](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/base/SchemaBase.ts#L27)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:75](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L75)
 
 #### Parameters
 
@@ -69,7 +76,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:27](https://github.com/
 
 > `abstract` **instance**: `T`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:5](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/base/SchemaBase.ts#L5)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:5](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L5)
 
 ***
 
@@ -77,7 +84,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:5](https://github.com/A
 
 > **modifiers**: `TModifiers`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:6](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/base/SchemaBase.ts#L6)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:6](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L6)
 
 ***
 
@@ -85,7 +92,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:6](https://github.com/A
 
 > **isNullable**: `boolean` = `false`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:8](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/base/SchemaBase.ts#L8)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:8](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L8)
 
 ***
 
@@ -93,7 +100,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:8](https://github.com/A
 
 > **isUnmapped**: `boolean` = `false`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:9](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/base/SchemaBase.ts#L9)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:9](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L9)
 
 ***
 
@@ -101,7 +108,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:9](https://github.com/A
 
 > **isOptional**: `boolean` = `false`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:10](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/base/SchemaBase.ts#L10)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:10](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L10)
 
 ***
 
@@ -109,7 +116,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:10](https://github.com/
 
 > **isKey**: `boolean` = `false`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:11](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/base/SchemaBase.ts#L11)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:11](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L11)
 
 ***
 
@@ -117,7 +124,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:11](https://github.com/
 
 > **isIdentity**: `boolean` = `false`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:12](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/base/SchemaBase.ts#L12)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:12](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L12)
 
 ***
 
@@ -125,15 +132,26 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:12](https://github.com/
 
 > **isReadonly**: `boolean` = `false`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:13](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/base/SchemaBase.ts#L13)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:13](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L13)
 
 ***
 
-### isDistict
+### isDistinct
 
-> **isDistict**: `boolean` = `false`
+> **isDistinct**: `boolean` = `false`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:14](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/base/SchemaBase.ts#L14)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:14](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L14)
+
+***
+
+### transform
+
+> **transform**: [`PropertyTransform`](../type-aliases/PropertyTransform.md)\<`unknown`\> = `null`
+
+Defined in: [core/src/schema/property/base/SchemaBase.ts:19](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L19)
+
+Set by `.modify(x => x.transform(...))`. A live reference, never stringified.
+`null` when the property is stored as it is.
 
 ***
 
@@ -141,7 +159,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:14](https://github.com/
 
 > **indexes**: `string`[] = `[]`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:15](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/base/SchemaBase.ts#L15)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:20](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L20)
 
 ***
 
@@ -149,7 +167,82 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:15](https://github.com/
 
 > **fromPropertyName**: `string` = `null`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:16](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/base/SchemaBase.ts#L16)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:21](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L21)
+
+***
+
+### dimensions
+
+> **dimensions**: `number` = `null`
+
+Defined in: [core/src/schema/property/base/SchemaBase.ts:35](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L35)
+
+How many numbers a vector holds. `null` for every other type.
+
+Declared here rather than on `SchemaVector` because a modifier WRAPS rather than
+extends: `s.vector(1536).optional()` is a `SchemaOptional`, and anything reachable only
+through the original class is lost the moment a modifier is added. `type` survives for
+exactly this reason — the copy constructor below carries it — and a dimension count has
+to travel with it, or an optional vector reaches a backend as a vector of unknown width
+and cannot be given a column.
+
+`innerSchema` is the cautionary example: it lives on `SchemaArray` alone, so a modified
+array arrives with no element type and clones through the slow path.
+
+***
+
+### maxLength
+
+> **maxLength**: `number` = `null`
+
+Defined in: [core/src/schema/property/base/SchemaBase.ts:50](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L50)
+
+The longest string the property is declared to hold. `null` for every other type, and
+for a string that declares nothing.
+
+Declared here rather than on `SchemaString` for the same reason as `dimensions` above:
+`s.string({ maxLength: 4000 }).optional()` is a `SchemaOptional`, so anything reachable
+only through `SchemaString` is lost the moment a modifier is added.
+
+A declaration, never a validation. Core does not check a value against it and does not
+truncate. The backend that can use the number does: MySQL gives the column
+`VARCHAR(maxLength)` instead of the blanket `VARCHAR(255)`. Every other backend ignores
+it, because a string column that is already unbounded cannot be made more correct by
+knowing a bound.
+
+***
+
+### isSearchable
+
+> **isSearchable**: `boolean` = `false`
+
+Defined in: [core/src/schema/property/base/SchemaBase.ts:62](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L62)
+
+Whether this string may be tokenised into a full-text search index.
+
+Set by `.searchable()`, and only ever true on a string. Eligibility, not membership: a
+collection that never declares `.searchIndex()` indexes nothing regardless.
+
+Copied by the constructor below, so `s.string().searchable().optional()` stays searchable.
+Every flag on this class is copied for the same reason: a modifier WRAPS rather than
+extends, so anything the constructor forgets is silently dropped the moment a property
+gains one more modifier.
+
+***
+
+### foreignKeyDefinition
+
+> **foreignKeyDefinition**: [`ForeignKey`](../type-aliases/ForeignKey.md)\<`unknown`\> = `null`
+
+Defined in: [core/src/schema/property/base/SchemaBase.ts:64](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L64)
+
+***
+
+### tags
+
+> **tags**: `string`[] = `[]`
+
+Defined in: [core/src/schema/property/base/SchemaBase.ts:65](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L65)
 
 ***
 
@@ -157,47 +250,47 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:16](https://github.com/
 
 > **injected**: `any` = `null`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:18](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/base/SchemaBase.ts#L18)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:66](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L66)
 
 ***
 
 ### defaultValue
 
-> **defaultValue**: [`DefaultValue`](/reference/api/core/src/type-aliases/DefaultValue)\<`T`\> = `null`
+> **defaultValue**: [`DefaultValue`](../type-aliases/DefaultValue.md)\<`T`\> = `null`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:19](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/base/SchemaBase.ts#L19)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:67](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L67)
 
 ***
 
 ### valueSerializer
 
-> **valueSerializer**: [`PropertySerializer`](/reference/api/core/src/type-aliases/PropertySerializer)\<`T`\> = `null`
+> **valueSerializer**: [`PropertySerializer`](../type-aliases/PropertySerializer.md)\<`T`\> = `null`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:20](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/base/SchemaBase.ts#L20)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:68](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L68)
 
 ***
 
 ### valueDeserializer
 
-> **valueDeserializer**: [`PropertyDeserializer`](/reference/api/core/src/type-aliases/PropertyDeserializer)\<`T`\> = `null`
+> **valueDeserializer**: [`PropertyDeserializer`](../type-aliases/PropertyDeserializer.md)\<`T`\> = `null`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:21](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/base/SchemaBase.ts#L21)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:69](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L69)
 
 ***
 
 ### type
 
-> **type**: [`SchemaTypes`](/reference/api/core/src/enumerations/SchemaTypes)
+> **type**: [`SchemaTypes`](../enumerations/SchemaTypes.md)
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:22](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/base/SchemaBase.ts#L22)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:70](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L70)
 
 ***
 
 ### functionBody
 
-> **functionBody**: [`FunctionBody`](/reference/api/core/src/type-aliases/FunctionBody)\<`any`, `T`\>
+> **functionBody**: [`FunctionBody`](../type-aliases/FunctionBody.md)\<`any`, `T`\>
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:23](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/base/SchemaBase.ts#L23)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:71](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L71)
 
 ***
 
@@ -205,4 +298,4 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:23](https://github.com/
 
 > `readonly` **literals**: `T`[] = `[]`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:25](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/property/base/SchemaBase.ts#L25)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:73](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/property/base/SchemaBase.ts#L73)

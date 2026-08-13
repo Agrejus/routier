@@ -1,14 +1,14 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [react/src](/reference/api/react/src/README) / useQuery
+[routier-collection](../../../README.md) / [react/src](../README.md) / useQuery
 
 # Function: useQuery()
 
-> **useQuery**\<`T`\>(`query`, `deps`): `LiveQueryState`\<`T`\>
+> **useQuery**\<`T`\>(`query`, `deps`): [`LiveQueryState`](../type-aliases/LiveQueryState.md)\<`T`\>
 
-Defined in: [react/src/useQuery.tsx:9](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/react/src/useQuery.tsx#L9)
+Defined in: [react/src/useQuery.tsx:26](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/react/src/useQuery.tsx#L26)
 
 ## Type Parameters
 
@@ -22,12 +22,10 @@ Defined in: [react/src/useQuery.tsx:9](https://github.com/Agrejus/routier/blob/a
 
 (`callback`) => `void` \| () => `void`
 
-Function that sets up the subscription and invokes the callback with results. **Must return** the unsubscribe handler (the return value of the query chain, e.g. `.subscribe().where(...).firstOrUndefined(callback)`) so the hook can clean up on unmount or when dependencies change.
-
 ### deps
 
-`any`[] = `[]`
+`unknown`[] = `[]`
 
 ## Returns
 
-`LiveQueryState`\<`T`\>
+[`LiveQueryState`](../type-aliases/LiveQueryState.md)\<`T`\>

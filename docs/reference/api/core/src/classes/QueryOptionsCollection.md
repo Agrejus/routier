@@ -1,12 +1,12 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / QueryOptionsCollection
+[routier-collection](../../../README.md) / [core/src](../README.md) / QueryOptionsCollection
 
 # Class: QueryOptionsCollection\<T\>
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:6](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/query/QueryOptionsCollection.ts#L6)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:7](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/QueryOptionsCollection.ts#L7)
 
 ## Type Parameters
 
@@ -30,13 +30,13 @@ Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:6](https://github.
 
 #### Get Signature
 
-> **get** **items**(): `Map`\<keyof [`QueryOptionValueMap`](/reference/api/core/src/type-aliases/QueryOptionValueMap)\<`unknown`\>, [`QueryCollectionItem`](/reference/api/core/src/type-aliases/QueryCollectionItem)\<`any`, `any`\>[]\>
+> **get** **items**(): `Map`\<keyof [`QueryOptionValueMap`](../type-aliases/QueryOptionValueMap.md)\<`unknown`\>, [`QueryCollectionItem`](../type-aliases/QueryCollectionItem.md)\<`any`, `any`\>[]\>
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:13](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/query/QueryOptionsCollection.ts#L13)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:14](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/QueryOptionsCollection.ts#L14)
 
 ##### Returns
 
-`Map`\<keyof [`QueryOptionValueMap`](/reference/api/core/src/type-aliases/QueryOptionValueMap)\<`unknown`\>, [`QueryCollectionItem`](/reference/api/core/src/type-aliases/QueryCollectionItem)\<`any`, `any`\>[]\>
+`Map`\<keyof [`QueryOptionValueMap`](../type-aliases/QueryOptionValueMap.md)\<`unknown`\>, [`QueryCollectionItem`](../type-aliases/QueryCollectionItem.md)\<`any`, `any`\>[]\>
 
 ***
 
@@ -46,7 +46,7 @@ Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:13](https://github
 
 > **get** **isEmpty**(): `boolean`
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:17](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/query/QueryOptionsCollection.ts#L17)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:18](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/QueryOptionsCollection.ts#L18)
 
 ##### Returns
 
@@ -58,7 +58,7 @@ Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:17](https://github
 
 > `static` **EMPTY**\<`R`\>(): `QueryOptionsCollection`\<`R`\>
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:21](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/query/QueryOptionsCollection.ts#L21)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:22](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/QueryOptionsCollection.ts#L22)
 
 #### Type Parameters
 
@@ -76,7 +76,7 @@ Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:21](https://github
 
 > `static` **isEmpty**\<`T`\>(`options`): `boolean`
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:25](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/query/QueryOptionsCollection.ts#L25)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:26](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/QueryOptionsCollection.ts#L26)
 
 #### Type Parameters
 
@@ -100,13 +100,13 @@ Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:25](https://github
 
 > **add**\<`K`\>(`name`, `value`): `void`
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:29](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/query/QueryOptionsCollection.ts#L29)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:30](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/QueryOptionsCollection.ts#L30)
 
 #### Type Parameters
 
 ##### K
 
-`K` *extends* keyof [`QueryOptionValueMap`](/reference/api/core/src/type-aliases/QueryOptionValueMap)\<`unknown`\>
+`K` *extends* keyof [`QueryOptionValueMap`](../type-aliases/QueryOptionValueMap.md)\<`unknown`\>
 
 #### Parameters
 
@@ -116,9 +116,74 @@ Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:29](https://github
 
 ##### value
 
-[`QueryOptionValueMap`](/reference/api/core/src/type-aliases/QueryOptionValueMap)\<`T`\>\[`K`\]
+[`QueryOptionValueMap`](../type-aliases/QueryOptionValueMap.md)\<`T`\>\[`K`\]
 
 #### Returns
+
+`void`
+
+***
+
+### splitAt()
+
+> **splitAt**\<`K`\>(`name`): `object`
+
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:170](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/QueryOptionsCollection.ts#L170)
+
+Splits the collection around the FIRST occurrence of `name`, preserving order.
+
+For a join: the options recorded before it operate on entity rows, the option itself
+produces tuples, and the ones after it operate on tuples. Three different shapes, so the
+caller has to run them in three steps rather than one pass.
+
+#### Type Parameters
+
+##### K
+
+`K` *extends* keyof [`QueryOptionValueMap`](../type-aliases/QueryOptionValueMap.md)\<`unknown`\>
+
+#### Parameters
+
+##### name
+
+`K`
+
+#### Returns
+
+`object`
+
+##### before
+
+> **before**: `QueryOptionsCollection`\<`T`\>
+
+##### at
+
+> **at**: [`QueryOption`](../type-aliases/QueryOption.md)\<`T`, `K`\>
+
+##### after
+
+> **after**: `QueryOptionsCollection`\<`T`\>
+
+***
+
+### snapshot()
+
+> **snapshot**(): () => `void`
+
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:201](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/QueryOptionsCollection.ts#L201)
+
+Captures the collection's current state and returns a function that restores it.
+
+Terminal queryable operations (count, first, aggregates, …) record their option on
+the shared collection before executing. Without restoring, a re-executed terminal —
+the whole point of a subscribed queryable — stacks its option a second time and
+runs it over the first execution's scalar result.
+
+#### Returns
+
+> (): `void`
+
+##### Returns
 
 `void`
 
@@ -128,7 +193,7 @@ Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:29](https://github
 
 > **split**(): `object`
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:80](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/query/QueryOptionsCollection.ts#L80)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:214](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/QueryOptionsCollection.ts#L214)
 
 #### Returns
 
@@ -144,17 +209,29 @@ Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:80](https://github
 
 ***
 
+### hasTransformations()
+
+> **hasTransformations**(): `boolean`
+
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:238](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/QueryOptionsCollection.ts#L238)
+
+#### Returns
+
+`boolean`
+
+***
+
 ### has()
 
 > **has**\<`K`\>(`name`): `boolean`
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:104](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/query/QueryOptionsCollection.ts#L104)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:243](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/QueryOptionsCollection.ts#L243)
 
 #### Type Parameters
 
 ##### K
 
-`K` *extends* keyof [`QueryOptionValueMap`](/reference/api/core/src/type-aliases/QueryOptionValueMap)\<`unknown`\>
+`K` *extends* keyof [`QueryOptionValueMap`](../type-aliases/QueryOptionValueMap.md)\<`unknown`\>
 
 #### Parameters
 
@@ -170,15 +247,15 @@ Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:104](https://githu
 
 ### get()
 
-> **get**\<`K`\>(`name`): [`QueryCollectionItem`](/reference/api/core/src/type-aliases/QueryCollectionItem)\<`T`, `K`\>[]
+> **get**\<`K`\>(`name`): [`QueryCollectionItem`](../type-aliases/QueryCollectionItem.md)\<`T`, `K`\>[]
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:108](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/query/QueryOptionsCollection.ts#L108)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:247](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/QueryOptionsCollection.ts#L247)
 
 #### Type Parameters
 
 ##### K
 
-`K` *extends* keyof [`QueryOptionValueMap`](/reference/api/core/src/type-aliases/QueryOptionValueMap)\<`unknown`\>
+`K` *extends* keyof [`QueryOptionValueMap`](../type-aliases/QueryOptionValueMap.md)\<`unknown`\>
 
 #### Parameters
 
@@ -188,21 +265,21 @@ Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:108](https://githu
 
 #### Returns
 
-[`QueryCollectionItem`](/reference/api/core/src/type-aliases/QueryCollectionItem)\<`T`, `K`\>[]
+[`QueryCollectionItem`](../type-aliases/QueryCollectionItem.md)\<`T`, `K`\>[]
 
 ***
 
 ### getLast()
 
-> **getLast**\<`K`\>(`name`): [`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`T`, `K`\>
+> **getLast**\<`K`\>(`name`): [`QueryOption`](../type-aliases/QueryOption.md)\<`T`, `K`\>
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:112](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/query/QueryOptionsCollection.ts#L112)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:251](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/QueryOptionsCollection.ts#L251)
 
 #### Type Parameters
 
 ##### K
 
-`K` *extends* keyof [`QueryOptionValueMap`](/reference/api/core/src/type-aliases/QueryOptionValueMap)\<`unknown`\>
+`K` *extends* keyof [`QueryOptionValueMap`](../type-aliases/QueryOptionValueMap.md)\<`unknown`\>
 
 #### Parameters
 
@@ -212,21 +289,21 @@ Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:112](https://githu
 
 #### Returns
 
-[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`T`, `K`\>
+[`QueryOption`](../type-aliases/QueryOption.md)\<`T`, `K`\>
 
 ***
 
 ### getValues()
 
-> **getValues**\<`K`\>(`name`): [`QueryOptionValueMap`](/reference/api/core/src/type-aliases/QueryOptionValueMap)\<`T`\>\[`K`\][]
+> **getValues**\<`K`\>(`name`): [`QueryOptionValueMap`](../type-aliases/QueryOptionValueMap.md)\<`T`\>\[`K`\][]
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:126](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/query/QueryOptionsCollection.ts#L126)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:265](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/QueryOptionsCollection.ts#L265)
 
 #### Type Parameters
 
 ##### K
 
-`K` *extends* keyof [`QueryOptionValueMap`](/reference/api/core/src/type-aliases/QueryOptionValueMap)\<`unknown`\>
+`K` *extends* keyof [`QueryOptionValueMap`](../type-aliases/QueryOptionValueMap.md)\<`unknown`\>
 
 #### Parameters
 
@@ -236,7 +313,7 @@ Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:126](https://githu
 
 #### Returns
 
-[`QueryOptionValueMap`](/reference/api/core/src/type-aliases/QueryOptionValueMap)\<`T`\>\[`K`\][]
+[`QueryOptionValueMap`](../type-aliases/QueryOptionValueMap.md)\<`T`\>\[`K`\][]
 
 ***
 
@@ -244,7 +321,7 @@ Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:126](https://githu
 
 > **forEach**(`iterator`): `void`
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:147](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/query/QueryOptionsCollection.ts#L147)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:286](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/QueryOptionsCollection.ts#L286)
 
 #### Parameters
 

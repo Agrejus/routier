@@ -1,12 +1,12 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / SchemaPersistChanges
+[routier-collection](../../../README.md) / [core/src](../README.md) / SchemaPersistChanges
 
 # Class: SchemaPersistChanges\<T\>
 
-Defined in: [core/src/collections/Changes.ts:150](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/Changes.ts#L150)
+Defined in: [core/src/collections/Changes.ts:150](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/Changes.ts#L150)
 
 ## Type Parameters
 
@@ -28,33 +28,33 @@ Defined in: [core/src/collections/Changes.ts:150](https://github.com/Agrejus/rou
 
 ### adds
 
-> **adds**: [`InferCreateType`](/reference/api/core/src/type-aliases/InferCreateType)\<`T`\>[] = `[]`
+> **adds**: [`InferCreateType`](../type-aliases/InferCreateType.md)\<`T`\>[] = `[]`
 
-Defined in: [core/src/collections/Changes.ts:151](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/Changes.ts#L151)
+Defined in: [core/src/collections/Changes.ts:151](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/Changes.ts#L151)
 
 ***
 
 ### updates
 
-> **updates**: [`EntityUpdateInfo`](/reference/api/core/src/type-aliases/EntityUpdateInfo)\<`T`\>[] = `[]`
+> **updates**: [`EntityUpdateInfo`](../type-aliases/EntityUpdateInfo.md)\<`T`\>[] = `[]`
 
-Defined in: [core/src/collections/Changes.ts:152](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/Changes.ts#L152)
+Defined in: [core/src/collections/Changes.ts:152](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/Changes.ts#L152)
 
 ***
 
 ### removes
 
-> **removes**: [`InferType`](/reference/api/core/src/type-aliases/InferType)\<`T`\>[] = `[]`
+> **removes**: [`InferType`](../type-aliases/InferType.md)\<`T`\>[] = `[]`
 
-Defined in: [core/src/collections/Changes.ts:153](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/Changes.ts#L153)
+Defined in: [core/src/collections/Changes.ts:153](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/Changes.ts#L153)
 
 ***
 
 ### tags
 
-> **tags**: [`TagCollection`](/reference/api/core/src/classes/TagCollection)
+> **tags**: [`TagCollection`](TagCollection.md)
 
-Defined in: [core/src/collections/Changes.ts:154](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/Changes.ts#L154)
+Defined in: [core/src/collections/Changes.ts:154](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/Changes.ts#L154)
 
 ## Accessors
 
@@ -64,7 +64,7 @@ Defined in: [core/src/collections/Changes.ts:154](https://github.com/Agrejus/rou
 
 > **get** **hasItems**(): `boolean`
 
-Defined in: [core/src/collections/Changes.ts:156](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/Changes.ts#L156)
+Defined in: [core/src/collections/Changes.ts:156](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/Changes.ts#L156)
 
 ##### Returns
 
@@ -78,7 +78,7 @@ Defined in: [core/src/collections/Changes.ts:156](https://github.com/Agrejus/rou
 
 > **get** **total**(): `number`
 
-Defined in: [core/src/collections/Changes.ts:160](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/Changes.ts#L160)
+Defined in: [core/src/collections/Changes.ts:160](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/Changes.ts#L160)
 
 ##### Returns
 

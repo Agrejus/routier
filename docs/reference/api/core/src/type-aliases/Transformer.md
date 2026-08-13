@@ -1,13 +1,14 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / Transformer
+[routier-collection](../../../README.md) / [core/src](../README.md) / Transformer
 
 # Type Alias: Transformer
 
-> **Transformer** = `"to-lower-case"` \| `"to-upper-case"`
+> **Transformer** = `"to-lower-case"` \| `"to-upper-case"` \| `"length"`
 
-Defined in: [core/src/expressions/types.ts:141](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/expressions/types.ts#L141)
+Defined in: [core/src/expressions/types.ts:358](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L358)
 
 Supported value transformations that can be applied to values.
+`length` reads the length of a string or array property.

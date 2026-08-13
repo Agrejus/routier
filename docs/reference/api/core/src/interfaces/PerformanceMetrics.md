@@ -1,12 +1,12 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / PerformanceMetrics
+[routier-collection](../../../README.md) / [core/src](../README.md) / PerformanceMetrics
 
 # Interface: PerformanceMetrics
 
-Defined in: [core/src/capabilities/types.ts:24](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/capabilities/types.ts#L24)
+Defined in: [core/src/capabilities/types.ts:4](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/capabilities/types.ts#L4)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [core/src/capabilities/types.ts:24](https://github.com/Agrejus/routi
 
 > `readonly` **startTime**: `number`
 
-Defined in: [core/src/capabilities/types.ts:25](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/capabilities/types.ts#L25)
+Defined in: [core/src/capabilities/types.ts:5](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/capabilities/types.ts#L5)
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: [core/src/capabilities/types.ts:25](https://github.com/Agrejus/routi
 
 > `readonly` `optional` **endTime**: `number`
 
-Defined in: [core/src/capabilities/types.ts:26](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/capabilities/types.ts#L26)
+Defined in: [core/src/capabilities/types.ts:6](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/capabilities/types.ts#L6)
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: [core/src/capabilities/types.ts:26](https://github.com/Agrejus/routi
 
 > `readonly` `optional` **duration**: `number`
 
-Defined in: [core/src/capabilities/types.ts:27](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/capabilities/types.ts#L27)
+Defined in: [core/src/capabilities/types.ts:7](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/capabilities/types.ts#L7)
 
 ***
 
@@ -38,7 +38,7 @@ Defined in: [core/src/capabilities/types.ts:27](https://github.com/Agrejus/routi
 
 > `readonly` `optional` **nextMethodStartTime**: `number`
 
-Defined in: [core/src/capabilities/types.ts:28](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/capabilities/types.ts#L28)
+Defined in: [core/src/capabilities/types.ts:8](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/capabilities/types.ts#L8)
 
 ***
 
@@ -46,4 +46,4 @@ Defined in: [core/src/capabilities/types.ts:28](https://github.com/Agrejus/routi
 
 > `readonly` `optional` **timeToNextCall**: `number`
 
-Defined in: [core/src/capabilities/types.ts:29](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/capabilities/types.ts#L29)
+Defined in: [core/src/capabilities/types.ts:9](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/capabilities/types.ts#L9)

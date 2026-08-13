@@ -120,29 +120,18 @@ Properties that create database indexes:
 
 Different types support different modifiers:
 
-| Modifier         | String | Number | Boolean | Date | Object | Array |
-| ---------------- | ------ | ------ | ------- | ---- | ------ | ----- |
-| `.optional()`    | ✅     | ✅     | ✅      | ✅   | ✅     | ✅    |
-| `.nullable()`    | ✅     | ✅     | ✅      | ✅   | ✅     | ✅    |
-| `.default()`     | ✅     | ✅     | ✅      | ✅   | ✅     | ✅    |
-| `.readonly()`    | ✅     | ✅     | ✅      | ✅   | ❌     | ❌    |
-| `.deserialize()` | ✅     | ✅     | ✅      | ✅   | ❌     | ✅    |
-| `.serialize()`   | ✅     | ✅     | ✅      | ✅   | ❌     | ✅    |
-| `.array()`       | ✅     | ✅     | ✅      | ✅   | ✅     | ❌    |
-| `.index()`       | ✅     | ✅     | ✅      | ✅   | ❌     | ✅    |
-| `.key()`         | ✅     | ✅     | ❌      | ✅   | ❌     | ❌    |
-| `.identity()`    | ✅     | ✅     | ❌      | ✅   | ✅     | ❌    |
-| `.distinct()`    | ✅     | ✅     | ✅      | ✅   | ❌     | ❌    |
-| `.constrain()`   | ✅     | ❌     | ❌      | ❌   | ❌     | ❌    |
+See the [complete modifier matrix](/concepts/schema/schema-api#modifier-matrix). It includes file and vector properties and is aligned with the fluent methods exposed by each source type.
 
 ## Summary of Types
 
 - Array: `s.array(innerType)`
 - Boolean: `s.boolean()`
 - Date: `s.date()`
+- File: `s.file()` — content on create, a reference on read; use `BlobDbPlugin`
 - Number: `s.number()`
 - Object: `s.object({...})`
-- String: `s.string()`
+- String: `s.string()` or `s.string({ maxLength }, ...literals)`
+- Vector: `s.vector(dimensions)` — fixed-width `number[]` for `.nearest()`
 
 ## Next Steps
 

@@ -1,28 +1,28 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / resolveBulkPersistChanges
+[routier-collection](../../../README.md) / [core/src](../README.md) / resolveBulkPersistChanges
 
 # Function: resolveBulkPersistChanges()
 
 > **resolveBulkPersistChanges**(`event`, `result`, `bulkPersistChanges`): `void`
 
-Defined in: [core/src/utilities/replication.ts:4](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/utilities/replication.ts#L4)
+Defined in: [core/src/utilities/replication.ts:4](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/utilities/replication.ts#L4)
 
 ## Parameters
 
 ### event
 
-[`DbPluginBulkPersistEvent`](/reference/api/core/src/type-aliases/DbPluginBulkPersistEvent)
+[`DbPluginBulkPersistEvent`](../type-aliases/DbPluginBulkPersistEvent.md)
 
 ### result
 
-[`BulkPersistResult`](/reference/api/core/src/classes/BulkPersistResult)
+[`BulkPersistResult`](../classes/BulkPersistResult.md)
 
 ### bulkPersistChanges
 
-[`BulkPersistChanges`](/reference/api/core/src/classes/BulkPersistChanges)
+[`BulkPersistChanges`](../classes/BulkPersistChanges.md)
 
 ## Returns
 

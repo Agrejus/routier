@@ -4,7 +4,7 @@ title: React
 
 # React Integration
 
-Routier provides first-class support for React through the `useQuery` hook, enabling reactive data fetching with automatic updates when your data changes.
+Routier supports live React subscriptions through `useQuery` and one-time React 19 Suspense reads through Routier's Promise-based terminal methods.
 
 <div style="background: #f0fdf4; border-left: 4px solid #22c55e; padding: 16px; margin: 20px 0; border-radius: 4px;">
   <p style="margin: 0 0 8px 0; font-weight: 600; color: #166534;">⚛️ Interactive React Demo</p>
@@ -16,18 +16,33 @@ Routier provides first-class support for React through the `useQuery` hook, enab
 
 ## Features
 
-- **Live Queries**: Automatic re-renders when data changes
-- **Type Safe**: Full TypeScript support with discriminated unions
-- **Performance Optimized**: Built-in memoization and cleanup handling
-- **Simple API**: Minimal boilerplate, maximum productivity
+- **Live Queries**: `useQuery` re-renders when subscribed data changes
+- **Suspense Reads**: React 19 `use()` reads `toArrayAsync()` and other Promise terminals
+- **Type Safe**: Discriminated hook state and inferred query result types
+- **Lifecycle Safe**: Dependency-driven subscription cleanup
 
-## Quick Start
+## Choose a loading style
+
+| Style | Behavior |
+| --- | --- |
+| `useQuery` + `.subscribe()` | Initial result plus live updates; explicit pending/error/success state |
+| React 19 `use()` + `<Suspense>` | One result per stable Promise; boundary-based loading and errors through an error boundary |
+
+## Live-query quick start
 
 
 <<< @/_snippets/code/from-docs/integrations/react/index/block-1.tsx
 
 
-**Important:** Your `useDataStore` hook must use `useMemo` to memoize the DataStore instance. Creating a new DataStore on every render will cause infinite subscription loops. See the [Best Practices](/integrations/react/best-practices/) guide for details.
+**Important:** Your `useDataStore` hook must use `useMemo` or Context to keep the DataStore instance stable. Creating a new DataStore on every render recreates subscriptions continuously. See [Best Practices](/integrations/react/best-practices/) for details.
+
+## Suspense quick start (React 19)
+
+Use an async terminal and keep its Promise in a parent ref so the component that calls `use()` receives the same request on every retry:
+
+<<< @/_snippets/code/react/adapter-suspense.tsx
+
+This performs a one-time read; it does not subscribe to later database changes. See the [React Adapter](/getting-started/react-adapter#which-should-i-use) for the complete comparison.
 
 ## Installation
 
@@ -65,8 +80,9 @@ TypeScript knows exactly what state your component is in:
 
 ## Related Topics
 
-- **[React Hooks](/integrations/react/hooks/)** - Detailed guide to `useQuery` and other hooks
-- **[Best Practices](/integrations/react/best-practices/)** - Patterns, performance tips, and common scenarios
+- **[React Adapter](/getting-started/react-adapter)** - Side-by-side live-query and Suspense examples
+- **[React Hooks](/integrations/react/hooks/)** - Detailed `useQuery`, cleanup, and Suspense guide
+- **[Best Practices](/integrations/react/best-practices/)** - Datastore lifetime and subscription patterns
 
 ## Concepts You'll Need
 

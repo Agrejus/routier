@@ -11,6 +11,10 @@
         "link": "/getting-started/quick-start"
       },
       {
+        "text": "Why Routier?",
+        "link": "/getting-started/why-routier"
+      },
+      {
         "text": "React Adapter",
         "link": "/getting-started/react-adapter"
       },
@@ -28,6 +32,103 @@
       }
     ],
     "collapsed": false
+  },
+  {
+    "text": "Plugins",
+    "link": "/integrations/plugins/built-in-plugins/",
+    "collapsed": false,
+    "items": [
+      {
+        "text": "Overview & Plugin Picker",
+        "link": "/integrations/plugins/built-in-plugins/"
+      },
+      {
+        "text": "Storage Plugins",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "Memory",
+            "link": "/integrations/plugins/built-in-plugins/memory/README"
+          },
+          {
+            "text": "Browser Storage",
+            "link": "/integrations/plugins/built-in-plugins/local-storage/README"
+          },
+          {
+            "text": "Dexie / IndexedDB",
+            "link": "/integrations/plugins/built-in-plugins/dexie/README"
+          },
+          {
+            "text": "File System Database",
+            "link": "/integrations/plugins/built-in-plugins/file-system/README"
+          },
+          {
+            "text": "SQLite",
+            "link": "/integrations/plugins/built-in-plugins/sqlite/README"
+          },
+          {
+            "text": "PostgreSQL, MySQL & MongoDB",
+            "link": "/integrations/plugins/built-in-plugins/server-databases"
+          },
+          {
+            "text": "PouchDB",
+            "link": "/integrations/plugins/built-in-plugins/pouchdb/README"
+          }
+        ]
+      },
+      {
+        "text": "Add Capabilities",
+        "collapsed": false,
+        "items": [
+          {
+            "text": "Wrapper Plugins",
+            "link": "/integrations/plugins/built-in-plugins/wrappers"
+          },
+          {
+            "text": "Replication & SWR",
+            "link": "/integrations/plugins/built-in-plugins/replication/README"
+          },
+          {
+            "text": "HTTP Transport",
+            "link": "/integrations/plugins/http-transport"
+          },
+          {
+            "text": "Files & Blob Storage",
+            "link": "/integrations/plugins/built-in-plugins/files"
+          },
+          {
+            "text": "Encryption",
+            "link": "/integrations/plugins/built-in-plugins/encryption"
+          },
+          {
+            "text": "Composition Recipes",
+            "link": "/guides/plugin-compositions"
+          }
+        ]
+      },
+      {
+        "text": "Plugin Authors",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "Build a Storage Plugin",
+            "link": "/integrations/plugins/create-your-own/"
+          },
+          {
+            "text": "Query Translation",
+            "link": "/integrations/plugins/advanced-plugins/query-translation/"
+          },
+          {
+            "text": "Result Translation",
+            "link": "/integrations/plugins/advanced-plugins/result-translation/"
+          },
+          {
+            "text": "Generated Plugin API",
+            "link": "/reference/api/README"
+          }
+        ]
+      }
+    ]
   },
   {
     "text": "Concepts",
@@ -52,6 +153,10 @@
           {
             "text": "Creating A Schema",
             "link": "/concepts/schema/creating-a-schema"
+          },
+          {
+            "text": "Schema API",
+            "link": "/concepts/schema/schema-api"
           },
           {
             "text": "Property Types",
@@ -99,6 +204,10 @@
             "link": "/concepts/queries/sorting"
           },
           {
+            "text": "Joins",
+            "link": "/concepts/queries/joins"
+          },
+          {
             "text": "Field Selection",
             "link": "/concepts/queries/field-selection"
           },
@@ -115,15 +224,19 @@
             "link": "/concepts/queries/terminal-methods"
           },
           {
-            "text": "Query Composer",
+            "text": "Reusable Queries",
             "link": "/concepts/queries/query-composer"
           },
           {
             "text": "Full-Text Search",
             "link": "/concepts/queries/full-text-search"
+          },
+          {
+            "text": "Vector Search",
+            "link": "/concepts/queries/vector-search"
           }
         ],
-        "collapsed": true
+        "collapsed": false
       }
     ],
     "collapsed": false
@@ -226,6 +339,10 @@
         "link": "/how-to/collections/",
         "items": [
           {
+            "text": "Configuring Collections",
+            "link": "/how-to/collections/configuring-collections"
+          },
+          {
             "text": "Extending Collections",
             "link": "/how-to/collections/extending-collections"
           },
@@ -244,68 +361,37 @@
     "collapsed": false
   },
   {
-    "text": "Integrations",
-    "link": "/integrations/",
+    "text": "React",
+    "link": "/integrations/react/",
+    "collapsed": true,
     "items": [
       {
-        "text": "React",
-        "link": "/integrations/react/",
-        "items": [
-          {
-            "text": "Overview",
-            "link": "/integrations/react/index"
-          },
-          {
-            "text": "React Hooks",
-            "link": "/integrations/react/hooks/"
-          },
-          {
-            "text": "Best Practices",
-            "link": "/integrations/react/best-practices/"
-          }
-        ],
-        "collapsed": true
+        "text": "Overview",
+        "link": "/integrations/react/index"
       },
       {
-        "text": "Plugins",
-        "link": "/integrations/plugins/built-in-plugins/",
-        "items": [
-          {
-            "text": "Memory Plugin",
-            "link": "/integrations/plugins/built-in-plugins/memory/README"
-          },
-          {
-            "text": "Local Storage Plugin",
-            "link": "/integrations/plugins/built-in-plugins/local-storage/README"
-          },
-          {
-            "text": "File System Plugin",
-            "link": "/integrations/plugins/built-in-plugins/file-system/README"
-          },
-          {
-            "text": "PouchDB Plugin",
-            "link": "/integrations/plugins/built-in-plugins/pouchdb/README"
-          },
-          {
-            "text": "Dexie Plugin",
-            "link": "/integrations/plugins/built-in-plugins/dexie/README"
-          },
-          {
-            "text": "Replication Plugin",
-            "link": "/integrations/plugins/built-in-plugins/replication/README"
-          },
-          {
-            "text": "SQLite Plugin",
-            "link": "/integrations/plugins/built-in-plugins/sqlite/README"
-          },
-          {
-            "text": "Create Your Own",
-            "link": "/integrations/plugins/create-your-own/"
-          }
-        ],
-        "collapsed": true
+        "text": "React Hooks",
+        "link": "/integrations/react/hooks/"
+      },
+      {
+        "text": "Best Practices",
+        "link": "/integrations/react/best-practices/"
+      }
+    ]
+  },
+  {
+    "text": "API Reference",
+    "link": "/api/",
+    "items": [
+      {
+        "text": "API Overview",
+        "link": "/api/"
+      },
+      {
+        "text": "Generated Reference",
+        "link": "/reference/api/README"
       }
     ],
-    "collapsed": false
+    "collapsed": true
   }
 ]

@@ -1,18 +1,18 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
----
+***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / EphemeralDataPlugin
+[routier-collection](../../../README.md) / [core/src](../README.md) / EphemeralDataPlugin
 
 # Abstract Class: EphemeralDataPlugin
 
-Defined in: [core/src/plugins/EphemeralDataPlugin.ts:11](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/EphemeralDataPlugin.ts#L11)
+Defined in: [core/src/plugins/EphemeralDataPlugin.ts:44](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/EphemeralDataPlugin.ts#L44)
 
 Interface for a database plugin, which provides query, destroy, and bulk operations.
 
 ## Implements
 
-- [`IDbPlugin`](/reference/api/core/src/interfaces/IDbPlugin)
+- [`IDbPlugin`](../interfaces/IDbPlugin.md)
 
 ## Constructors
 
@@ -20,7 +20,7 @@ Interface for a database plugin, which provides query, destroy, and bulk operati
 
 > **new EphemeralDataPlugin**(`databaseName`): `EphemeralDataPlugin`
 
-Defined in: [core/src/plugins/EphemeralDataPlugin.ts:15](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/EphemeralDataPlugin.ts#L15)
+Defined in: [core/src/plugins/EphemeralDataPlugin.ts:48](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/EphemeralDataPlugin.ts#L48)
 
 #### Parameters
 
@@ -32,27 +32,118 @@ Defined in: [core/src/plugins/EphemeralDataPlugin.ts:15](https://github.com/Agre
 
 `EphemeralDataPlugin`
 
+## Accessors
+
+### databaseName
+
+#### Get Signature
+
+> **get** **databaseName**(): `string`
+
+Defined in: [core/src/plugins/EphemeralDataPlugin.ts:57](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/EphemeralDataPlugin.ts#L57)
+
+See `IDbPlugin.databaseName`. A getter rather than the field itself so a subclass whose
+database is identified by more than a name can widen it — `FileSystemPlugin` returns the
+resolved file path, because one name in two directories is two databases.
+
+##### Returns
+
+`string`
+
+Uniquely identifies the database this plugin talks to, INCLUDING host or path where a
+bare name would collide — `orders.db` in two directories is two databases, and `mydb`
+on two hosts is two databases. Two instances over the same database must return the
+same string, in this process and in any other; two over different databases must not.
+
+Used to scope schema subscription channels, so instances of one database (another tab,
+a worker) see each other's change notifications and unrelated databases holding the
+same schema do not.
+
+Required rather than optional on purpose. An absent value used to fall back to scoping
+by schema alone, which shares one channel across every database holding that schema —
+the exact cross-talk this prevents, arrived at by omission. Requiring it also makes a
+wrapper that forgets to forward it a compile error rather than a silent regression.
+
+Derive it, never generate it: a random value is unique per PROCESS, not per database,
+so another tab would never match one and cross-context notifications would stop.
+
+Must not contain credentials — it becomes part of a channel key, so build it from
+host/port/database rather than returning a connection string.
+
+#### Implementation of
+
+[`IDbPlugin`](../interfaces/IDbPlugin.md).[`databaseName`](../interfaces/IDbPlugin.md#databasename)
+
 ## Methods
 
 ### bulkPersist()
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [core/src/plugins/EphemeralDataPlugin.ts:21](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/EphemeralDataPlugin.ts#L21)
+Defined in: [core/src/plugins/EphemeralDataPlugin.ts:77](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/EphemeralDataPlugin.ts#L77)
 
-Executes bulk operations (add, update, remove) on the database.
+All-or-nothing across every collection in the save.
+
+The naive shape — validate/apply/save one schema at a time — leaks partial saves:
+a conflict in the SECOND collection left the first collection's changes applied
+(measured in the finance stress app as one orphan ledger row per conflict). So the
+work is phased: every collection loads and validates BEFORE anything is applied,
+mutations apply with an undo log, and a failure anywhere reverts the memory state
+(and re-saves any files already written) so the caller sees a save that did nothing.
+
+The remaining honesty gap is crash-safety across FILES: a process dying between two
+file writes can leave disk partially updated. Guarding that needs a journal, which
+a memory-first plugin does not pretend to have.
 
 #### Parameters
 
 ##### event
 
-[`DbPluginBulkPersistEvent`](/reference/api/core/src/type-aliases/DbPluginBulkPersistEvent)
-
-The bulk operations event containing schema, parent, and changes.
+[`DbPluginBulkPersistEvent`](../type-aliases/DbPluginBulkPersistEvent.md)
 
 ##### done
 
-[`PluginEventCallbackPartialResult`](/reference/api/core/src/type-aliases/PluginEventCallbackPartialResult)\<[`BulkPersistResult`](/reference/api/core/src/classes/BulkPersistResult)\>
+[`PluginEventCallbackPartialResult`](../type-aliases/PluginEventCallbackPartialResult.md)\<[`BulkPersistResult`](BulkPersistResult.md)\>
+
+#### Returns
+
+`void`
+
+#### Implementation of
+
+[`IDbPlugin`](../interfaces/IDbPlugin.md).[`bulkPersist`](../interfaces/IDbPlugin.md#bulkpersist)
+
+***
+
+### query()
+
+> **query**\<`TEntity`, `TShape`\>(`event`, `done`): `void`
+
+Defined in: [core/src/plugins/EphemeralDataPlugin.ts:362](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/EphemeralDataPlugin.ts#L362)
+
+Executes a query operation on the database.
+
+#### Type Parameters
+
+##### TEntity
+
+`TEntity` *extends* `object`
+
+##### TShape
+
+`TShape` *extends* `unknown` = `TEntity`
+
+#### Parameters
+
+##### event
+
+[`DbPluginQueryEvent`](../type-aliases/DbPluginQueryEvent.md)\<`TEntity`, `TShape`\>
+
+The query event containing schema, parent, and query operation.
+
+##### done
+
+[`PluginEventCallbackResult`](../type-aliases/PluginEventCallbackResult.md)\<[`ITranslatedValue`](../interfaces/ITranslatedValue.md)\<`TShape`\>\>
 
 Callback with the result or error.
 
@@ -62,57 +153,15 @@ Callback with the result or error.
 
 #### Implementation of
 
-[`IDbPlugin`](/reference/api/core/src/interfaces/IDbPlugin).[`bulkPersist`](/reference/api/core/src/interfaces/IDbPlugin#bulkpersist)
+[`IDbPlugin`](../interfaces/IDbPlugin.md).[`query`](../interfaces/IDbPlugin.md#query)
 
----
-
-### query()
-
-> **query**\<`TEntity`, `TShape`\>(`event`, `done`): `void`
-
-Defined in: [core/src/plugins/EphemeralDataPlugin.ts:104](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/EphemeralDataPlugin.ts#L104)
-
-Executes a query operation on the database.
-
-#### Type Parameters
-
-##### TEntity
-
-`TEntity` _extends_ `object`
-
-##### TShape
-
-`TShape` _extends_ `unknown` = `TEntity`
-
-#### Parameters
-
-##### event
-
-[`DbPluginQueryEvent`](/reference/api/core/src/type-aliases/DbPluginQueryEvent)\<`TEntity`, `TShape`\>
-
-The query event containing schema, parent, and query operation.
-
-##### done
-
-[`PluginEventCallbackResult`](/reference/api/core/src/type-aliases/PluginEventCallbackResult)\<`ITranslatedValue`\<`TShape`\>\>
-
-Callback with the result or error. The result must be wrapped in an `ITranslatedValue` to allow the datastore to iterate over results (for grouped queries) and determine if change tracking should be enabled.
-
-#### Returns
-
-`void`
-
-#### Implementation of
-
-[`IDbPlugin`](/reference/api/core/src/interfaces/IDbPlugin).[`query`](/reference/api/core/src/interfaces/IDbPlugin#query)
-
----
+***
 
 ### destroy()
 
 > `abstract` **destroy**(`event`, `done`): `void`
 
-Defined in: [core/src/plugins/EphemeralDataPlugin.ts:132](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/EphemeralDataPlugin.ts#L132)
+Defined in: [core/src/plugins/EphemeralDataPlugin.ts:487](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/EphemeralDataPlugin.ts#L487)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 
@@ -120,11 +169,11 @@ Destroys or cleans up the plugin, closing connections or freeing resources.
 
 ##### event
 
-[`DbPluginEvent`](/reference/api/core/src/type-aliases/DbPluginEvent)
+[`DbPluginEvent`](../type-aliases/DbPluginEvent.md)
 
 ##### done
 
-[`PluginEventCallbackResult`](/reference/api/core/src/type-aliases/PluginEventCallbackResult)\<`never`\>
+[`PluginEventCallbackResult`](../type-aliases/PluginEventCallbackResult.md)\<`never`\>
 
 Callback with an optional error.
 
@@ -134,4 +183,4 @@ Callback with an optional error.
 
 #### Implementation of
 
-[`IDbPlugin`](/reference/api/core/src/interfaces/IDbPlugin).[`destroy`](/reference/api/core/src/interfaces/IDbPlugin#destroy)
+[`IDbPlugin`](../interfaces/IDbPlugin.md).[`destroy`](../interfaces/IDbPlugin.md#destroy)

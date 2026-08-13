@@ -128,12 +128,21 @@ For static data that doesn't need updates:
 
 <<< @/_snippets/code/from-docs/integrations/react/hooks/block-9.tsx
 
+## Suspense with Async Terminals (React 19)
+
+`useQuery` is an effect-based subscription hook; it returns `pending`, `error`, or `success` state and does not suspend. For React 19 Suspense, pass a stable Promise from a Routier async terminal such as `toArrayAsync()` to React's `use()`:
+
+<<< @/_snippets/code/from-docs/concepts/queries/pagination/suspense-pagination.tsx
+
+Create or cache the Promise outside the component that calls `use()`. Creating `toArrayAsync()` directly during that component's render produces a new Promise on every retry. This pattern performs one read for each Promise; it is not a live subscription. See [React pagination choices](/concepts/queries/pagination#react-19-suspense-pagination) for the behavioral comparison and error-boundary note.
+
 ## Quick Reference
 
 | Query Type         | Pattern                          | When to Use                          |
 | ------------------ | -------------------------------- | ------------------------------------ |
-| **Live Updates**   | `.subscribe().toArray(callback)` | Data changes, need initial + updates |
-| **One-Time Fetch** | `.toArray(callback)`             | Static data, fetch once only         |
+| **Live Updates**   | `useQuery` + `.subscribe().toArray(callback)` | Data changes, need initial + updates |
+| **One-Time Fetch** | `useQuery` + `.toArray(callback)` | Effect-based fetch with explicit status |
+| **Suspense Read (React 19)** | `use(toArrayAsync())` with a stable/cached Promise | Boundary-based loading for one-time reads |
 
 **Rule:** When using `.subscribe()`, **return** the query from your callback (e.g. `return dataStore.users.subscribe().where(...).firstOrUndefined(callback)`) so `useQuery` can unsubscribe on cleanup.
 

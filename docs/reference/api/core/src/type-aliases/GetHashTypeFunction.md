@@ -1,14 +1,14 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / GetHashTypeFunction
+[routier-collection](../../../README.md) / [core/src](../README.md) / GetHashTypeFunction
 
 # Type Alias: GetHashTypeFunction()\<TEntity\>
 
-> **GetHashTypeFunction**\<`TEntity`\> = \{(`entity`): [`Object`](/reference/api/core/src/enumerations/HashType#object); (`entity`): [`Ids`](/reference/api/core/src/enumerations/HashType#ids); \}
+> **GetHashTypeFunction**\<`TEntity`\> = \{(`entity`): [`Object`](../enumerations/HashType.md#object); (`entity`): [`Ids`](../enumerations/HashType.md#ids); \}
 
-Defined in: [core/src/schema/types.ts:55](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/types.ts#L55)
+Defined in: [core/src/schema/types.ts:132](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/types.ts#L132)
 
 ## Type Parameters
 
@@ -18,28 +18,28 @@ Defined in: [core/src/schema/types.ts:55](https://github.com/Agrejus/routier/blo
 
 ## Call Signature
 
-> (`entity`): [`Object`](/reference/api/core/src/enumerations/HashType#object)
+> (`entity`): [`Object`](../enumerations/HashType.md#object)
 
 ### Parameters
 
 #### entity
 
-[`InferCreateType`](/reference/api/core/src/type-aliases/InferCreateType)\<`TEntity`\>
+[`InferCreateType`](InferCreateType.md)\<`TEntity`\>
 
 ### Returns
 
-[`Object`](/reference/api/core/src/enumerations/HashType#object)
+[`Object`](../enumerations/HashType.md#object)
 
 ## Call Signature
 
-> (`entity`): [`Ids`](/reference/api/core/src/enumerations/HashType#ids)
+> (`entity`): [`Ids`](../enumerations/HashType.md#ids)
 
 ### Parameters
 
 #### entity
 
-[`InferType`](/reference/api/core/src/type-aliases/InferType)\<`TEntity`\>
+[`InferType`](InferType.md)\<`TEntity`\>
 
 ### Returns
 
-[`Ids`](/reference/api/core/src/enumerations/HashType#ids)
+[`Ids`](../enumerations/HashType.md#ids)

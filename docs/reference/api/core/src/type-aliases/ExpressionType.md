@@ -1,13 +1,13 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / ExpressionType
+[routier-collection](../../../README.md) / [core/src](../README.md) / ExpressionType
 
 # Type Alias: ExpressionType
 
 > **ExpressionType** = `"operator"` \| `"comparator"` \| `"property"` \| `"value"` \| `"empty"` \| `"not-parsable"`
 
-Defined in: [core/src/expressions/types.ts:136](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/expressions/types.ts#L136)
+Defined in: [core/src/expressions/types.ts:352](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L352)
 
 The set of possible expression types.

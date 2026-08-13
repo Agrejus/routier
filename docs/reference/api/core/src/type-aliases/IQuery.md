@@ -1,14 +1,14 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / IQuery
+[routier-collection](../../../README.md) / [core/src](../README.md) / IQuery
 
 # Type Alias: IQuery\<TRoot, TShape\>
 
 > **IQuery**\<`TRoot`, `TShape`\> = `object`
 
-Defined in: [core/src/plugins/types.ts:104](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/types.ts#L104)
+Defined in: [core/src/plugins/types.ts:182](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/types.ts#L182)
 
 Interface for a query operation, including expression, options, filters, and change tracking.
 
@@ -26,9 +26,9 @@ Interface for a query operation, including expression, options, filters, and cha
 
 ### options
 
-> **options**: [`QueryOptionsCollection`](/reference/api/core/src/classes/QueryOptionsCollection)\<`TShape`\>
+> **options**: [`QueryOptionsCollection`](../classes/QueryOptionsCollection.md)\<`TShape`\>
 
-Defined in: [core/src/plugins/types.ts:107](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/types.ts#L107)
+Defined in: [core/src/plugins/types.ts:185](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/types.ts#L185)
 
 Query options (sort, skip, take, etc.).
 
@@ -36,9 +36,9 @@ Query options (sort, skip, take, etc.).
 
 ### schema
 
-> **schema**: [`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`TRoot`\>
+> **schema**: [`CompiledSchema`](CompiledSchema.md)\<`TRoot`\>
 
-Defined in: [core/src/plugins/types.ts:109](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/types.ts#L109)
+Defined in: [core/src/plugins/types.ts:187](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/types.ts#L187)
 
 ## Accessors
 
@@ -48,7 +48,7 @@ Defined in: [core/src/plugins/types.ts:109](https://github.com/Agrejus/routier/b
 
 > **get** **changeTracking**(): `boolean`
 
-Defined in: [core/src/plugins/types.ts:114](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/types.ts#L114)
+Defined in: [core/src/plugins/types.ts:192](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/types.ts#L192)
 
 Whether change tracking is enabled for the query result.
 Only enabled when the response is not reduced/aggregated/mapped.

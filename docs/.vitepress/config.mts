@@ -8,6 +8,9 @@ export default defineConfig({
   cleanUrls: true,
   lastUpdated: true,
   sitemap: { hostname: "https://routier.dev" },
+  // TypeDoc emits these extensionless directory links for a few type-only symbols.
+  // VitePress reports them even though they are absent from the generated Markdown.
+  ignoreDeadLinks: [/^\.\/index$/, /^\.\/type-aliases\/index$/],
   head: [
     ["link", { rel: "icon", type: "image/svg+xml", href: "/routier.svg" }],
     ["meta", { name: "theme-color", content: "#00bfa6" }],
@@ -25,10 +28,23 @@ export default defineConfig({
     logo: "/routier.svg",
     nav: [
       { text: "Get Started", link: "/getting-started/installation" },
+      {
+        text: "Plugins",
+        items: [
+          { text: "Overview & Plugin Picker", link: "/integrations/plugins/built-in-plugins/" },
+          { text: "Storage Plugins", link: "/integrations/plugins/built-in-plugins/#choose-a-storage-plugin" },
+          { text: "Wrapper Plugins", link: "/integrations/plugins/built-in-plugins/wrappers" },
+          { text: "Replication & SWR", link: "/integrations/plugins/built-in-plugins/replication/README" },
+          { text: "Files & Blob Storage", link: "/integrations/plugins/built-in-plugins/files" },
+          { text: "Encryption", link: "/integrations/plugins/built-in-plugins/encryption" },
+          { text: "Build a Plugin", link: "/integrations/plugins/create-your-own/" },
+        ],
+      },
+      { text: "Queries", link: "/concepts/queries/" },
       { text: "Concepts", link: "/concepts/" },
       { text: "Guides", link: "/guides/" },
       { text: "React", link: "/integrations/react/" },
-      { text: "Plugins", link: "/integrations/plugins/built-in-plugins/" },
+      { text: "API", link: "/api/" },
     ],
     sidebar,
     search: { provider: "local" },

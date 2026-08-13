@@ -35,7 +35,7 @@ These combinations give users a **local-first** experience: the app works offlin
 | **DexiePlugin** | IndexedDB-backed cache, simple setup | [Syncing](/guides/syncing) |
 | **MemoryPlugin** | In-memory cache, no persistence | [Syncing](/guides/syncing) |
 | **PouchDB** | PouchDB as local cache | [Syncing](/guides/syncing) |
-| **LocalStoragePlugin** | localStorage-backed cache | [Syncing](/guides/syncing) |
+| **BrowserStoragePlugin** | `localStorage`-backed cache | [Syncing](/guides/syncing) |
 | **OptimisticUpdatesDbPlugin(Dexie)** | IndexedDB + in-memory reads, maximum speed | [HttpSwrDbPlugin with Optimistic Replication](/guides/http-swr-with-optimistic) |
 | **OptimisticUpdatesDbPlugin(any)** | Any backend + in-memory reads | [HttpSwrDbPlugin with Optimistic Replication](/guides/http-swr-with-optimistic) |
 
@@ -61,9 +61,12 @@ Use a single storage plugin when you don't need HTTP sync or an extra memory lay
 | **DexiePlugin** | IndexedDB in the browser | [Dexie Plugin](/integrations/plugins/built-in-plugins/dexie/README) |
 | **MemoryPlugin** | In-memory, tests, prototypes | [Memory Plugin](/integrations/plugins/built-in-plugins/memory/README) |
 | **PouchDB** | PouchDB with CouchDB sync | [PouchDB Plugin](/integrations/plugins/built-in-plugins/pouchdb/README) |
-| **LocalStoragePlugin** | localStorage | [Local Storage Plugin](/integrations/plugins/built-in-plugins/local-storage/README) |
+| **BrowserStoragePlugin** | `localStorage` or `sessionStorage` | [Browser Storage Plugin](/integrations/plugins/built-in-plugins/local-storage/README) |
 | **FileSystemPlugin** | File-based (Node.js) | [File System Plugin](/integrations/plugins/built-in-plugins/file-system/README) |
-| **SQLitePlugin** | SQLite | [SQLite Plugin](/integrations/plugins/built-in-plugins/sqlite/README) |
+| **SqliteDbPlugin** | SQLite in Node or a browser | [SQLite Plugin](/integrations/plugins/built-in-plugins/sqlite/README) |
+| **PostgresDbPlugin** | PostgreSQL | [Server Databases](/integrations/plugins/built-in-plugins/server-databases) |
+| **MysqlDbPlugin** | MySQL | [Server Databases](/integrations/plugins/built-in-plugins/server-databases) |
+| **MongoDbPlugin** | MongoDB | [Server Databases](/integrations/plugins/built-in-plugins/server-databases) |
 
 ## Quick Reference
 

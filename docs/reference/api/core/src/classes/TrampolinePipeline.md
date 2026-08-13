@@ -1,12 +1,12 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / TrampolinePipeline
+[routier-collection](../../../README.md) / [core/src](../README.md) / TrampolinePipeline
 
 # Class: TrampolinePipeline\<TInitial, TCurrent\>
 
-Defined in: [core/src/pipeline/TrampolinePipeline.ts:14](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/pipeline/TrampolinePipeline.ts#L14)
+Defined in: [core/src/pipeline/TrampolinePipeline.ts:15](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/pipeline/TrampolinePipeline.ts#L15)
 
 ## Type Parameters
 
@@ -34,7 +34,7 @@ Defined in: [core/src/pipeline/TrampolinePipeline.ts:14](https://github.com/Agre
 
 > **filter**\<`TFinal`\>(`initialData`, `done`): `void`
 
-Defined in: [core/src/pipeline/TrampolinePipeline.ts:18](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/pipeline/TrampolinePipeline.ts#L18)
+Defined in: [core/src/pipeline/TrampolinePipeline.ts:19](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/pipeline/TrampolinePipeline.ts#L19)
 
 #### Type Parameters
 
@@ -62,7 +62,7 @@ Defined in: [core/src/pipeline/TrampolinePipeline.ts:18](https://github.com/Agre
 
 > **pipe**\<`TNext`\>(`processor`): `TrampolinePipeline`\<`TInitial`, `TNext`\>
 
-Defined in: [core/src/pipeline/TrampolinePipeline.ts:143](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/pipeline/TrampolinePipeline.ts#L143)
+Defined in: [core/src/pipeline/TrampolinePipeline.ts:157](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/pipeline/TrampolinePipeline.ts#L157)
 
 #### Type Parameters
 
@@ -74,7 +74,7 @@ Defined in: [core/src/pipeline/TrampolinePipeline.ts:143](https://github.com/Agr
 
 ##### processor
 
-[`Processor`](/reference/api/core/src/type-aliases/Processor)\<`TCurrent`, `TNext`\>
+[`Processor`](../type-aliases/Processor.md)\<`TCurrent`, `TNext`\>
 
 #### Returns
 
@@ -86,7 +86,7 @@ Defined in: [core/src/pipeline/TrampolinePipeline.ts:143](https://github.com/Agr
 
 > **pipeEach**(`items`, `fn`, `map`): `void`
 
-Defined in: [core/src/pipeline/TrampolinePipeline.ts:148](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/pipeline/TrampolinePipeline.ts#L148)
+Defined in: [core/src/pipeline/TrampolinePipeline.ts:162](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/pipeline/TrampolinePipeline.ts#L162)
 
 #### Parameters
 
@@ -100,7 +100,7 @@ Defined in: [core/src/pipeline/TrampolinePipeline.ts:148](https://github.com/Agr
 
 ##### map
 
-(`previous`, `current`) => [`ResultType`](/reference/api/core/src/type-aliases/ResultType)\<`TCurrent`\>
+(`previous`, `current`) => [`ResultType`](../type-aliases/ResultType.md)\<`TCurrent`\>
 
 #### Returns
 

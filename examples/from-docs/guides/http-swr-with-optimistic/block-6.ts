@@ -40,6 +40,7 @@ export const createPlugin = (getAccessToken: GetAccessToken) => {
     maxAgeMs: 30_000,
     onAuthError: () => {
       forceRefreshNext = true;
+      return true; // Retry once with headers from the refreshed-token path.
     },
     unsyncedQueueStore: unsyncedQueueDb,
     translateRemoteResponse(_schema, data) {

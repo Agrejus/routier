@@ -1,12 +1,12 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / QueryOrdering
+[routier-collection](../../../README.md) / [core/src](../README.md) / QueryOrdering
 
 # Enumeration: QueryOrdering
 
-Defined in: [core/src/plugins/query/types.ts:5](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/query/types.ts#L5)
+Defined in: [core/src/plugins/query/types.ts:7](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/types.ts#L7)
 
 ## Enumeration Members
 
@@ -14,7 +14,7 @@ Defined in: [core/src/plugins/query/types.ts:5](https://github.com/Agrejus/routi
 
 > **Descending**: `"desc"`
 
-Defined in: [core/src/plugins/query/types.ts:6](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/query/types.ts#L6)
+Defined in: [core/src/plugins/query/types.ts:8](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/types.ts#L8)
 
 ***
 
@@ -22,4 +22,4 @@ Defined in: [core/src/plugins/query/types.ts:6](https://github.com/Agrejus/routi
 
 > **Ascending**: `"asc"`
 
-Defined in: [core/src/plugins/query/types.ts:7](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/query/types.ts#L7)
+Defined in: [core/src/plugins/query/types.ts:9](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/types.ts#L9)

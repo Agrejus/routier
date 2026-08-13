@@ -1,14 +1,14 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / assertInstanceOf
+[routier-collection](../../../README.md) / [core/src](../README.md) / assertInstanceOf
 
 # Function: assertInstanceOf()
 
 > **assertInstanceOf**\<`T`\>(`value`, `Instance`): `asserts value is T`
 
-Defined in: [core/src/assertions/index.ts:35](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/assertions/index.ts#L35)
+Defined in: [core/src/assertions/index.ts:37](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/assertions/index.ts#L37)
 
 ## Type Parameters
 

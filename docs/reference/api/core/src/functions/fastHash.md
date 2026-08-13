@@ -1,14 +1,14 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / fastHash
+[routier-collection](../../../README.md) / [core/src](../README.md) / fastHash
 
 # Function: fastHash()
 
 > **fastHash**(`value`, `seed`): `number`
 
-Defined in: [core/src/utilities/strings.ts:35](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/utilities/strings.ts#L35)
+Defined in: [core/src/utilities/strings.ts:35](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/utilities/strings.ts#L35)
 
 Fast string hash optimized for comparisons.
 Uses djb2 algorithm - very fast and good distribution for short to medium strings.
@@ -36,6 +36,7 @@ A positive 32-bit integer hash value
 
 ## Example
 
-
-<<< @/_snippets/code/from-docs/reference/api/core/src/functions/fastHash/block-1.ts
-
+```ts
+fastHash("test") === fastHash("test") // true
+fastHash("test") !== fastHash("test2") // true
+```

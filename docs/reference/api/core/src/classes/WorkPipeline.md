@@ -1,12 +1,12 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / WorkPipeline
+[routier-collection](../../../README.md) / [core/src](../README.md) / WorkPipeline
 
 # Class: WorkPipeline
 
-Defined in: [core/src/pipeline/TrampolinePipeline.ts:308](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/pipeline/TrampolinePipeline.ts#L308)
+Defined in: [core/src/pipeline/TrampolinePipeline.ts:182](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/pipeline/TrampolinePipeline.ts#L182)
 
 Processes functions with callbacks asynchronously.
 
@@ -30,13 +30,13 @@ flow control and error handling.
 
 > **filter**(`done`): `void`
 
-Defined in: [core/src/pipeline/TrampolinePipeline.ts:311](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/pipeline/TrampolinePipeline.ts#L311)
+Defined in: [core/src/pipeline/TrampolinePipeline.ts:186](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/pipeline/TrampolinePipeline.ts#L186)
 
 #### Parameters
 
 ##### done
 
-[`CallbackResult`](/reference/api/core/src/type-aliases/CallbackResult)\<`never`\>
+[`CallbackResult`](../type-aliases/CallbackResult.md)\<`never`\>
 
 #### Returns
 
@@ -48,13 +48,13 @@ Defined in: [core/src/pipeline/TrampolinePipeline.ts:311](https://github.com/Agr
 
 > **pipe**(`work`): `void`
 
-Defined in: [core/src/pipeline/TrampolinePipeline.ts:405](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/pipeline/TrampolinePipeline.ts#L405)
+Defined in: [core/src/pipeline/TrampolinePipeline.ts:312](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/pipeline/TrampolinePipeline.ts#L312)
 
 #### Parameters
 
 ##### work
 
-[`UnitOfWork`](/reference/api/core/src/type-aliases/UnitOfWork)
+[`UnitOfWork`](../type-aliases/UnitOfWork.md)
 
 #### Returns
 

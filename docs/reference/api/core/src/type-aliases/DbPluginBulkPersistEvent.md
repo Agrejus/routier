@@ -1,13 +1,13 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / DbPluginBulkPersistEvent
+[routier-collection](../../../README.md) / [core/src](../README.md) / DbPluginBulkPersistEvent
 
 # Type Alias: DbPluginBulkPersistEvent
 
-> **DbPluginBulkPersistEvent** = [`DbPluginOperationEvent`](/reference/api/core/src/type-aliases/DbPluginOperationEvent)\<[`BulkPersistChanges`](/reference/api/core/src/classes/BulkPersistChanges)\>
+> **DbPluginBulkPersistEvent** = [`DbPluginOperationEvent`](DbPluginOperationEvent.md)\<[`BulkPersistChanges`](../classes/BulkPersistChanges.md)\>
 
-Defined in: [core/src/plugins/types.ts:37](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/types.ts#L37)
+Defined in: [core/src/plugins/types.ts:60](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/types.ts#L60)
 
 Event for bulk operations, including schema, parent, and the entity changes.

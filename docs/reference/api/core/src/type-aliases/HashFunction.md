@@ -1,14 +1,14 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / HashFunction
+[routier-collection](../../../README.md) / [core/src](../README.md) / HashFunction
 
 # Type Alias: HashFunction()\<TEntity\>
 
 > **HashFunction**\<`TEntity`\> = \{(`entity`, `type`): `string`; (`entity`, `type`): `string`; \}
 
-Defined in: [core/src/schema/types.ts:50](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/types.ts#L50)
+Defined in: [core/src/schema/types.ts:127](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/types.ts#L127)
 
 ## Type Parameters
 
@@ -24,11 +24,11 @@ Defined in: [core/src/schema/types.ts:50](https://github.com/Agrejus/routier/blo
 
 #### entity
 
-[`InferCreateType`](/reference/api/core/src/type-aliases/InferCreateType)\<`TEntity`\>
+[`InferCreateType`](InferCreateType.md)\<`TEntity`\>
 
 #### type
 
-[`Object`](/reference/api/core/src/enumerations/HashType#object)
+[`Object`](../enumerations/HashType.md#object)
 
 ### Returns
 
@@ -42,11 +42,11 @@ Defined in: [core/src/schema/types.ts:50](https://github.com/Agrejus/routier/blo
 
 #### entity
 
-[`InferType`](/reference/api/core/src/type-aliases/InferType)\<`TEntity`\>
+[`InferType`](InferType.md)\<`TEntity`\>
 
 #### type
 
-[`Ids`](/reference/api/core/src/enumerations/HashType#ids)
+[`Ids`](../enumerations/HashType.md#ids)
 
 ### Returns
 
