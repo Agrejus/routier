@@ -1,14 +1,14 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / CallbackResult
+[routier-collection](../../../README.md) / [core/src](../README.md) / CallbackResult
 
 # Type Alias: CallbackResult()\<TData, TCallbackResult\>
 
 > **CallbackResult**\<`TData`, `TCallbackResult`\> = (`result`) => `TCallbackResult`
 
-Defined in: [core/src/results/types.ts:6](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/types.ts#L6)
+Defined in: [core/src/results/types.ts:6](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/results/types.ts#L6)
 
 ## Type Parameters
 
@@ -24,7 +24,7 @@ Defined in: [core/src/results/types.ts:6](https://github.com/Agrejus/routier/blo
 
 ### result
 
-[`ResultType`](/reference/api/core/src/type-aliases/ResultType)\<`TData`\>
+[`ResultType`](ResultType.md)\<`TData`\>
 
 ## Returns
 

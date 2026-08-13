@@ -1,20 +1,20 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / forEach
+[routier-collection](../../../README.md) / [core/src](../README.md) / forEach
 
 # Function: forEach()
 
 > **forEach**(`expression`, `callback`): `void`
 
-Defined in: [core/src/expressions/utils.ts:35](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/expressions/utils.ts#L35)
+Defined in: [core/src/expressions/utils.ts:31](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/utils.ts#L31)
 
 ## Parameters
 
 ### expression
 
-[`Expression`](/reference/api/core/src/classes/Expression)
+[`Expression`](../classes/Expression.md)
 
 ### callback
 

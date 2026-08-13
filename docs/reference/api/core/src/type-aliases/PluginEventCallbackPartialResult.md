@@ -1,14 +1,14 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / PluginEventCallbackPartialResult
+[routier-collection](../../../README.md) / [core/src](../README.md) / PluginEventCallbackPartialResult
 
 # Type Alias: PluginEventCallbackPartialResult()\<TData, TCallbackResult\>
 
 > **PluginEventCallbackPartialResult**\<`TData`, `TCallbackResult`\> = (`result`) => `TCallbackResult`
 
-Defined in: [core/src/results/types.ts:17](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/types.ts#L17)
+Defined in: [core/src/results/types.ts:17](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/results/types.ts#L17)
 
 ## Type Parameters
 
@@ -24,7 +24,7 @@ Defined in: [core/src/results/types.ts:17](https://github.com/Agrejus/routier/bl
 
 ### result
 
-[`PluginEventPartialResultType`](/reference/api/core/src/type-aliases/PluginEventPartialResultType)\<`TData`\>
+[`PluginEventPartialResultType`](PluginEventPartialResultType.md)\<`TData`\>
 
 ## Returns
 

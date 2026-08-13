@@ -1,10 +1,14 @@
 ---
-title: Result Translation
+title: Result Translation for Plugin Authors
 ---
 
-## Result Translation
+# Result Translation for Plugin Authors
 
-After executing queries against your backend, you need to translate the raw results back into the shape expected by Routier queries. The `DataTranslator` class hierarchy provides the framework for this.
+::: info Who this is for
+This is a plugin-author SPI guide. Application users receive typed entities and projections from collection terminal methods; they do not translate backend result sets themselves.
+:::
+
+After a custom plugin executes a backend query, it must translate raw results into the shape expected by Routier. The `DataTranslator` class hierarchy provides that framework and applies operations the backend did not perform.
 
 ## Overview
 

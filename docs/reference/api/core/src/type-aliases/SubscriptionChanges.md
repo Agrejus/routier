@@ -1,14 +1,14 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / SubscriptionChanges
+[routier-collection](../../../README.md) / [core/src](../README.md) / SubscriptionChanges
 
 # Type Alias: SubscriptionChanges\<T\>
 
 > **SubscriptionChanges**\<`T`\> = `object`
 
-Defined in: [core/src/schema/types.ts:74](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/types.ts#L74)
+Defined in: [core/src/schema/types.ts:151](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/types.ts#L151)
 
 Represents changes to subscriptions, categorizing them by modifications to
 entities (additions, updates, removals) or query-driven removals.
@@ -25,9 +25,9 @@ The type of the entities in the subscription.
 
 ### adds
 
-> **adds**: [`InferType`](/reference/api/core/src/type-aliases/InferType)\<`T`\>[]
+> **adds**: [`InferType`](InferType.md)\<`T`\>[]
 
-Defined in: [core/src/schema/types.ts:78](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/types.ts#L78)
+Defined in: [core/src/schema/types.ts:155](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/types.ts#L155)
 
 Entities that have been added to the subscription.
 
@@ -35,9 +35,9 @@ Entities that have been added to the subscription.
 
 ### updates
 
-> **updates**: [`InferType`](/reference/api/core/src/type-aliases/InferType)\<`T`\>[]
+> **updates**: [`InferType`](InferType.md)\<`T`\>[]
 
-Defined in: [core/src/schema/types.ts:82](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/types.ts#L82)
+Defined in: [core/src/schema/types.ts:159](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/types.ts#L159)
 
 Entities that have been updated within the subscription.
 
@@ -45,9 +45,9 @@ Entities that have been updated within the subscription.
 
 ### removals
 
-> **removals**: [`InferType`](/reference/api/core/src/type-aliases/InferType)\<`T`\>[]
+> **removals**: [`InferType`](InferType.md)\<`T`\>[]
 
-Defined in: [core/src/schema/types.ts:86](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/types.ts#L86)
+Defined in: [core/src/schema/types.ts:163](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/types.ts#L163)
 
 Entities that have been removed from the subscription.
 
@@ -55,9 +55,9 @@ Entities that have been removed from the subscription.
 
 ### unknown
 
-> **unknown**: [`InferType`](/reference/api/core/src/type-aliases/InferType)\<`T`\>[]
+> **unknown**: [`InferType`](InferType.md)\<`T`\>[]
 
-Defined in: [core/src/schema/types.ts:91](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/types.ts#L91)
+Defined in: [core/src/schema/types.ts:168](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/types.ts#L168)
 
 Entities that have been added/updated/removed from the subscription and it is unknown 
 if the entities have been added/updated/removed.

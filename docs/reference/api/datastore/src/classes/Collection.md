@@ -1,64 +1,48 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
----
+***
 
-[routier-collection](/reference/api/README) / [datastore/src](/reference/api/datastore/src/README) / Collection
+[routier-collection](../../../README.md) / [datastore/src](../README.md) / Collection
 
-# Class: Collection\<TEntity\>
+# Class: Collection\<TEntity, TStore\>
 
-Defined in: [datastore/src/collections/Collection.ts:9](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/Collection.ts#L9)
+Defined in: [datastore/src/collections/Collection.ts:7](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/Collection.ts#L7)
 
 ## Extends
 
-- `RemovableCollection`\<`TEntity`\>
+- `RemovableCollection`\<`TEntity`, `TStore`\>
 
 ## Type Parameters
 
 ### TEntity
 
-`TEntity` _extends_ `object`
+`TEntity` *extends* `object`
+
+### TStore
+
+`TStore` = `unknown`
 
 ## Constructors
 
 ### Constructor
 
-> **new Collection**\<`TEntity`\>(`dbPlugin`, `schema`, `options`, `pipelines`, `schemas`, `queryOptions`): `Collection`\<`TEntity`\>
+> **new Collection**\<`TEntity`, `TStore`\>(`dependencies`): `Collection`\<`TEntity`, `TStore`\>
 
-Defined in: [datastore/src/collections/Collection.ts:11](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/Collection.ts#L11)
+Defined in: [datastore/src/collections/Collection.ts:13](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/Collection.ts#L13)
 
 #### Parameters
 
-##### dbPlugin
+##### dependencies
 
-`IDbPlugin`
-
-##### schema
-
-`CompiledSchema`\<`TEntity`\>
-
-##### options
-
-`CollectionOptions`
-
-##### pipelines
-
-`CollectionPipelines`
-
-##### schemas
-
-`SchemaCollection`
-
-##### queryOptions
-
-`QueryOptionsCollection`\<`InferType`\<`TEntity`\>\>
+`CollectionDependencies`\<`TEntity`\>
 
 #### Returns
 
-`Collection`\<`TEntity`\>
+`Collection`\<`TEntity`, `TStore`\>
 
 #### Overrides
 
-`RemovableCollection<TEntity>.constructor`
+`RemovableCollection<TEntity, TStore>.constructor`
 
 ## Properties
 
@@ -66,7 +50,7 @@ Defined in: [datastore/src/collections/Collection.ts:11](https://github.com/Agre
 
 > **tags**: `object`
 
-Defined in: [datastore/src/collections/Collection.ts:41](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/Collection.ts#L41)
+Defined in: [datastore/src/collections/Collection.ts:38](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/Collection.ts#L38)
 
 #### get()
 
@@ -84,13 +68,13 @@ Defined in: [datastore/src/collections/Collection.ts:41](https://github.com/Agre
 
 `void`
 
----
+***
 
 ### attachments
 
 > **attachments**: `object`
 
-Defined in: [datastore/src/collections/Collection.ts:51](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/Collection.ts#L51)
+Defined in: [datastore/src/collections/Collection.ts:48](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/Collection.ts#L48)
 
 #### remove()
 
@@ -112,7 +96,11 @@ Detaches entities from change tracking, removing them from the collection's mana
 
 > **set**: (...`entities`) => `InferType`\<`TEntity`\>[]
 
-Attaches entities to change tracking, enabling property change monitoring and dirty state management
+Attaches entities to change tracking, enabling property change monitoring and
+dirty state management. The given instances become the canonical attachments —
+an explicit set means the caller will mutate THESE instances, so a previously
+attached copy of the same entity (e.g. via a background query) is merged into
+them and replaced rather than kept.
 
 ##### Parameters
 
@@ -220,41 +208,72 @@ Retrieves the change type for a specific entity. Returns the change type if atta
 
 `EntityChangeType`
 
----
+***
+
+### fullTextSearch
+
+> **fullTextSearch**: `object`
+
+Defined in: [datastore/src/collections/CollectionBase.ts:39](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L39)
+
+Operating the collection's search index — declared with `.fullTextSearch()` on the
+builder, operated here.
+
+```ts
+const drift = await store.articles.fullTextSearch.check();
+if (drift.isHealthy === false) await store.articles.fullTextSearch.rebuild();
+```
+
+Both throw on a collection that never declared an index, rather than reporting a healthy
+index that does not exist.
+
+#### check()
+
+> **check**: () => `Promise`\<\{ `missing`: `number`; `extra`: `number`; `stale`: `number`; get `isHealthy`(): `boolean`; \}\>
+
+What is wrong with the index, changing nothing.
+
+A scheduled job should call this before `rebuild`: a repair that silently fixes drift
+also hides whatever caused it.
+
+##### Returns
+
+`Promise`\<\{ `missing`: `number`; `extra`: `number`; `stale`: `number`; get `isHealthy`(): `boolean`; \}\>
+
+#### rebuild()
+
+> **rebuild**: () => `Promise`\<\{ `added`: `number`; `updated`: `number`; `removed`: `number`; \}\>
+
+Makes the index match the documents, writing only the differences.
+
+Idempotent and safe to run on a schedule. Reads every document, so it belongs in a
+scheduled job rather than on a request path.
+
+##### Returns
+
+`Promise`\<\{ `added`: `number`; `updated`: `number`; `removed`: `number`; \}\>
+
+#### Inherited from
+
+`RemovableCollection.fullTextSearch`
+
+## Accessors
 
 ### schema
 
-> `readonly` **schema**: `CompiledSchema`\<`TEntity`\>
+#### Get Signature
 
-Defined in: [datastore/src/collections/CollectionBase.ts:22](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L22)
+> **get** **schema**(): `CompiledSchema`\<`TEntity`\>
+
+Defined in: [datastore/src/collections/CollectionBase.ts:23](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L23)
+
+##### Returns
+
+`CompiledSchema`\<`TEntity`\>
 
 #### Inherited from
 
 `RemovableCollection.schema`
-
----
-
-### schemas
-
-> `readonly` **schemas**: `SchemaCollection`
-
-Defined in: [datastore/src/collections/CollectionBase.ts:23](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L23)
-
-#### Inherited from
-
-`RemovableCollection.schemas`
-
----
-
-### scopedQueryOptions
-
-> **scopedQueryOptions**: `QueryOptionsCollection`\<`InferType`\<`TEntity`\>\>
-
-Defined in: [datastore/src/collections/CollectionBase.ts:26](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L26)
-
-#### Inherited from
-
-`RemovableCollection.scopedQueryOptions`
 
 ## Methods
 
@@ -262,7 +281,7 @@ Defined in: [datastore/src/collections/CollectionBase.ts:26](https://github.com/
 
 > **add**(`entities`, `done`): `void`
 
-Defined in: [datastore/src/collections/Collection.ts:102](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/Collection.ts#L102)
+Defined in: [datastore/src/collections/Collection.ts:105](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/Collection.ts#L105)
 
 Adds entities to the collection and persists them to the database.
 
@@ -284,13 +303,13 @@ Callback function called with the added entities or error
 
 `void`
 
----
+***
 
 ### addAsync()
 
 > **addAsync**(...`entities`): `Promise`\<`InferType`\<`TEntity`\>[]\>
 
-Defined in: [datastore/src/collections/Collection.ts:112](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/Collection.ts#L112)
+Defined in: [datastore/src/collections/Collection.ts:115](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/Collection.ts#L115)
 
 Adds entities to the collection asynchronously and returns a Promise.
 
@@ -308,13 +327,13 @@ Entities to add to the collection
 
 Promise that resolves with the added entities or rejects with an error
 
----
+***
 
 ### tag()
 
-> **tag**(`tag`): `Collection`\<`TEntity`\>
+> **tag**(`tag`): `Collection`\<`TEntity`, `TStore`\>
 
-Defined in: [datastore/src/collections/Collection.ts:121](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/Collection.ts#L121)
+Defined in: [datastore/src/collections/Collection.ts:124](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/Collection.ts#L124)
 
 Sets a tag for the next operation. The tag will be used to group related operations.
 
@@ -328,17 +347,152 @@ The tag to associate with the next operation
 
 #### Returns
 
-`Collection`\<`TEntity`\>
+`Collection`\<`TEntity`, `TStore`\>
 
 The collection instance for method chaining
 
----
+***
+
+### search()
+
+#### Call Signature
+
+> **search**(`terms`, `options?`): `SearchQueryable`\<`TEntity`\>
+
+Defined in: [datastore/src/collections/CollectionBase.ts:77](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L77)
+
+Ranked full-text search over the properties marked `.searchable()`.
+
+```ts
+const hits = await store.articles
+    .search('copper pipe')
+    .where(x => x.published === true)
+    .take(10)
+    .toArrayAsync();
+
+const loose = await store.articles
+    .search(x => x.body, 'copper pipe', { match: 'any' })
+    .toArrayAsync();
+```
+
+Results carry a readonly `score` and are ordered by it, then by key. `map()` drops the
+score; `sort()` replaces the ranking. Requires `.fullTextSearch()` on the collection.
+
+##### Parameters
+
+###### terms
+
+`string`
+
+###### options?
+
+`SearchOptions`
+
+##### Returns
+
+`SearchQueryable`\<`TEntity`\>
+
+##### Inherited from
+
+`RemovableCollection.search`
+
+#### Call Signature
+
+> **search**(`selector`, `terms`, `options?`): `SearchQueryable`\<`TEntity`\>
+
+Defined in: [datastore/src/collections/CollectionBase.ts:78](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L78)
+
+Ranked full-text search over the properties marked `.searchable()`.
+
+```ts
+const hits = await store.articles
+    .search('copper pipe')
+    .where(x => x.published === true)
+    .take(10)
+    .toArrayAsync();
+
+const loose = await store.articles
+    .search(x => x.body, 'copper pipe', { match: 'any' })
+    .toArrayAsync();
+```
+
+Results carry a readonly `score` and are ordered by it, then by key. `map()` drops the
+score; `sort()` replaces the ranking. Requires `.fullTextSearch()` on the collection.
+
+##### Parameters
+
+###### selector
+
+`GenericFunction`\<`InferType`\<`TEntity`\>, `string`\>
+
+###### terms
+
+`string`
+
+###### options?
+
+`SearchOptions`
+
+##### Returns
+
+`SearchQueryable`\<`TEntity`\>
+
+##### Inherited from
+
+`RemovableCollection.search`
+
+#### Call Signature
+
+> **search**(`selectors`, `terms`, `options?`): `SearchQueryable`\<`TEntity`\>
+
+Defined in: [datastore/src/collections/CollectionBase.ts:79](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L79)
+
+Ranked full-text search over the properties marked `.searchable()`.
+
+```ts
+const hits = await store.articles
+    .search('copper pipe')
+    .where(x => x.published === true)
+    .take(10)
+    .toArrayAsync();
+
+const loose = await store.articles
+    .search(x => x.body, 'copper pipe', { match: 'any' })
+    .toArrayAsync();
+```
+
+Results carry a readonly `score` and are ordered by it, then by key. `map()` drops the
+score; `sort()` replaces the ranking. Requires `.fullTextSearch()` on the collection.
+
+##### Parameters
+
+###### selectors
+
+`GenericFunction`\<`InferType`\<`TEntity`\>, `string`\>[]
+
+###### terms
+
+`string`
+
+###### options?
+
+`SearchOptions`
+
+##### Returns
+
+`SearchQueryable`\<`TEntity`\>
+
+##### Inherited from
+
+`RemovableCollection.search`
+
+***
 
 ### \[dispose\]()
 
 > **\[dispose\]**(): `void`
 
-Defined in: [datastore/src/collections/CollectionBase.ts:80](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L80)
+Defined in: [datastore/src/collections/CollectionBase.ts:160](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L160)
 
 #### Returns
 
@@ -348,13 +502,13 @@ Defined in: [datastore/src/collections/CollectionBase.ts:80](https://github.com/
 
 `RemovableCollection.[dispose]`
 
----
+***
 
 ### dispose()
 
 > **dispose**(): `void`
 
-Defined in: [datastore/src/collections/CollectionBase.ts:84](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L84)
+Defined in: [datastore/src/collections/CollectionBase.ts:164](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L164)
 
 #### Returns
 
@@ -364,13 +518,116 @@ Defined in: [datastore/src/collections/CollectionBase.ts:84](https://github.com/
 
 `RemovableCollection.dispose`
 
----
+***
+
+### update()
+
+> **update**(`entity`, `recipe`): `any`
+
+Defined in: [datastore/src/collections/CollectionBase.ts:327](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L327)
+
+Applies a patch — or an updater function — to a row, returning the new value.
+
+SPIKE (specs/immutable-updates.md). The immutable alternative to mutating a
+change-tracked proxy. Two things make it different from `entity.price = 9`:
+
+1. **It returns the new value; it does not modify the one you passed.**
+2. **Your reference only has to identify the row, not be current.** The patch is
+   applied to whatever the collection holds now, so handing it a stale entity is
+   safe — which is the failure mode that actually loses data. It also makes
+   read-modify-write correct, because the updater receives the current value:
+
+```ts
+// +2, as intended. With a stale `prev` captured by the caller this would be +1.
+store.products.update(p, prev => ({ ...prev, price: prev.price + 1 }));
+store.products.update(p, prev => ({ ...prev, price: prev.price + 1 }));
+```
+
+Arrays and Dates are values: a patch replaces them rather than merging into them.
+That is deliberate — element-wise array merging makes "drop the last tag"
+inexpressible, and it is the ambiguity that made in-place array mutation unreliable
+under proxies (defect #12).
+
+#### Parameters
+
+##### entity
+
+`InferType`\<`TEntity`\>
+
+Any generation of the row. Only its id is read.
+
+##### recipe
+
+A partial entity to merge, or `current => next`.
+
+`Record`\<`string`, `any`\> | (`current`) => `InferType`\<`TEntity`\>
+
+#### Returns
+
+`any`
+
+#### Inherited from
+
+`RemovableCollection.update`
+
+***
+
+### current()
+
+> **current**(`entity`): `InferType`\<`TEntity`\>
+
+Defined in: [datastore/src/collections/CollectionBase.ts:337](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L337)
+
+The current value of a row, given any generation of it.
+
+The escape hatch for imperative code holding a reference across updates. Component
+code should not need it — subscriptions hand out fresh values on every change.
+
+#### Parameters
+
+##### entity
+
+`InferType`\<`TEntity`\>
+
+#### Returns
+
+`InferType`\<`TEntity`\>
+
+#### Inherited from
+
+`RemovableCollection.current`
+
+***
+
+### isCurrent()
+
+> **isCurrent**(`entity`): `boolean`
+
+Defined in: [datastore/src/collections/CollectionBase.ts:342](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L342)
+
+Whether the given reference is the row's current value.
+
+#### Parameters
+
+##### entity
+
+`InferType`\<`TEntity`\>
+
+#### Returns
+
+`boolean`
+
+#### Inherited from
+
+`RemovableCollection.isCurrent`
+
+***
 
 ### hasChanges()
 
 > **hasChanges**(): `boolean`
 
-Defined in: [datastore/src/collections/CollectionBase.ts:263](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L263)
+Defined in: [datastore/src/collections/CollectionBase.ts:357](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L357)
 
 #### Returns
 
@@ -380,13 +637,13 @@ Defined in: [datastore/src/collections/CollectionBase.ts:263](https://github.com
 
 `RemovableCollection.hasChanges`
 
----
+***
 
 ### instance()
 
 > **instance**(...`entities`): `InferCreateType`\<`TEntity`\>[]
 
-Defined in: [datastore/src/collections/CollectionBase.ts:272](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L272)
+Defined in: [datastore/src/collections/CollectionBase.ts:366](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L366)
 
 Creates change-tracked instances of entities without adding them to the collection.
 
@@ -408,19 +665,19 @@ Array of change-tracked entity instances
 
 `RemovableCollection.instance`
 
----
+***
 
 ### subscribe()
 
-> **subscribe**(): `SubscribedQueryable`\<`InferType`\<`TEntity`\>, `InferType`\<`TEntity`\>, () => `void`\>
+> **subscribe**(): `SubscribedQueryable`\<`TEntity`, `InferType`\<`TEntity`\>, () => `void`\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:287](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L287)
+Defined in: [datastore/src/collections/CollectionBase.ts:381](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L381)
 
 Creates a subscription to the collection that will be notified of changes.
 
 #### Returns
 
-`SubscribedQueryable`\<`InferType`\<`TEntity`\>, `InferType`\<`TEntity`\>, () => `void`\>
+`SubscribedQueryable`\<`TEntity`, `InferType`\<`TEntity`\>, () => `void`\>
 
 A subscription object that can be used to listen for collection changes
 
@@ -428,15 +685,136 @@ A subscription object that can be used to listen for collection changes
 
 `RemovableCollection.subscribe`
 
----
+***
+
+### joinSide()
+
+> **joinSide**(): [`JoinSide`](../type-aliases/JoinSide.md)\<`TEntity`\>
+
+Defined in: [datastore/src/collections/CollectionBase.ts:399](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L399)
+
+What this collection looks like as the INNER side of someone else's join.
+
+Public because a join is written from the other collection — `players.join(matches, …)` —
+and `matches` has to hand over three things it otherwise keeps to itself. Read
+`JoinSide` for why each is needed; the short version is that the scoped options are the
+ONLY place the inner side's soft-delete and `.scope()` filters exist once a join bypasses
+its read path.
+
+Views implement this by extending this class, which is a requirement rather than a
+convenience: full-text search joins its index view to its source collection.
+
+#### Returns
+
+[`JoinSide`](../type-aliases/JoinSide.md)\<`TEntity`\>
+
+#### Inherited from
+
+`RemovableCollection.joinSide`
+
+***
+
+### join()
+
+> **join**\<`TInner`, `TKey`\>(`inner`, `outerKey`, `innerKey`): [`JoinQueryable`](JoinQueryable.md)\<`TEntity`, [`JoinTuple`](../type-aliases/JoinTuple.md)\<`InferType`\<`TEntity`\>, `InferType`\<`TInner`\>\>\>
+
+Defined in: [datastore/src/collections/CollectionBase.ts:420](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L420)
+
+Pairs each row with every matching row of `inner` — an inner equi-join. See
+`QueryableExecutor.setJoinQueryOption`.
+
+```ts
+store.players
+    .join(s => s.playerMatches, p => p._id, m => m.playerId)
+    .toArrayAsync();
+```
+
+`s` is this store, so a sibling collection is named once. Pass a collection directly to join
+across two stores — see `JoinTarget`.
+
+#### Type Parameters
+
+##### TInner
+
+`TInner` *extends* `object`
+
+##### TKey
+
+`TKey` *extends* `string` \| `number`
+
+#### Parameters
+
+##### inner
+
+`JoinTarget`\<`TStore`, `TInner`\>
+
+##### outerKey
+
+(`outer`) => `TKey`
+
+##### innerKey
+
+(`inner`) => `TKey`
+
+#### Returns
+
+[`JoinQueryable`](JoinQueryable.md)\<`TEntity`, [`JoinTuple`](../type-aliases/JoinTuple.md)\<`InferType`\<`TEntity`\>, `InferType`\<`TInner`\>\>\>
+
+#### Inherited from
+
+`RemovableCollection.join`
+
+***
+
+### leftJoin()
+
+> **leftJoin**\<`TInner`, `TKey`\>(`inner`, `outerKey`, `innerKey`): [`JoinQueryable`](JoinQueryable.md)\<`TEntity`, [`JoinTuple`](../type-aliases/JoinTuple.md)\<`InferType`\<`TEntity`\>, `InferType`\<`TInner`\>\>\>
+
+Defined in: [datastore/src/collections/CollectionBase.ts:432](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L432)
+
+Like `join`, but unmatched rows appear paired with `undefined`.
+
+#### Type Parameters
+
+##### TInner
+
+`TInner` *extends* `object`
+
+##### TKey
+
+`TKey` *extends* `string` \| `number`
+
+#### Parameters
+
+##### inner
+
+`JoinTarget`\<`TStore`, `TInner`\>
+
+##### outerKey
+
+(`outer`) => `TKey`
+
+##### innerKey
+
+(`inner`) => `TKey`
+
+#### Returns
+
+[`JoinQueryable`](JoinQueryable.md)\<`TEntity`, [`JoinTuple`](../type-aliases/JoinTuple.md)\<`InferType`\<`TEntity`\>, `InferType`\<`TInner`\>\>\>
+
+#### Inherited from
+
+`RemovableCollection.leftJoin`
+
+***
 
 ### where()
 
 #### Call Signature
 
-> **where**(`expression`): `QueryableAsync`\<`InferType`\<`TEntity`\>, `InferType`\<`TEntity`\>\>
+> **where**(`expression`): `QueryableAsync`\<`TEntity`, `InferType`\<`TEntity`\>, `TStore`\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:311](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L311)
+Defined in: [datastore/src/collections/CollectionBase.ts:448](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L448)
 
 Creates a query with a filter expression to filter entities in the collection.
 
@@ -450,7 +828,7 @@ Filter expression to apply to the collection
 
 ##### Returns
 
-`QueryableAsync`\<`InferType`\<`TEntity`\>, `InferType`\<`TEntity`\>\>
+`QueryableAsync`\<`TEntity`, `InferType`\<`TEntity`\>, `TStore`\>
 
 QueryableAsync instance for chaining additional query operations
 
@@ -460,9 +838,9 @@ QueryableAsync instance for chaining additional query operations
 
 #### Call Signature
 
-> **where**\<`P`\>(`selector`, `params`): `QueryableAsync`\<`InferType`\<`TEntity`\>, `InferType`\<`TEntity`\>\>
+> **where**\<`P`\>(`selector`, `params`): `QueryableAsync`\<`TEntity`, `InferType`\<`TEntity`\>, `TStore`\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:318](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L318)
+Defined in: [datastore/src/collections/CollectionBase.ts:455](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L455)
 
 Creates a query with a parameterized filter to filter entities in the collection.
 
@@ -470,7 +848,7 @@ Creates a query with a parameterized filter to filter entities in the collection
 
 ###### P
 
-`P` _extends_ `object`
+`P` *extends* `object`
 
 ##### Parameters
 
@@ -488,7 +866,7 @@ Parameters to pass to the filter function
 
 ##### Returns
 
-`QueryableAsync`\<`InferType`\<`TEntity`\>, `InferType`\<`TEntity`\>\>
+`QueryableAsync`\<`TEntity`, `InferType`\<`TEntity`\>, `TStore`\>
 
 QueryableAsync instance for chaining additional query operations
 
@@ -496,13 +874,13 @@ QueryableAsync instance for chaining additional query operations
 
 `RemovableCollection.where`
 
----
+***
 
 ### sort()
 
-> **sort**(`selector`): `QueryableAsync`\<`InferType`\<`TEntity`\>, `InferType`\<`TEntity`\>\>
+> **sort**(`selector`): `QueryableAsync`\<`TEntity`, `InferType`\<`TEntity`\>, `TStore`\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:342](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L342)
+Defined in: [datastore/src/collections/CollectionBase.ts:473](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L473)
 
 Sorts the collection by the specified property in ascending order.
 
@@ -516,7 +894,7 @@ Function that selects the property to sort by
 
 #### Returns
 
-`QueryableAsync`\<`InferType`\<`TEntity`\>, `InferType`\<`TEntity`\>\>
+`QueryableAsync`\<`TEntity`, `InferType`\<`TEntity`\>, `TStore`\>
 
 QueryableAsync instance for chaining additional query operations
 
@@ -524,13 +902,13 @@ QueryableAsync instance for chaining additional query operations
 
 `RemovableCollection.sort`
 
----
+***
 
 ### sortDescending()
 
-> **sortDescending**(`selector`): `QueryableAsync`\<`InferType`\<`TEntity`\>, `InferType`\<`TEntity`\>\>
+> **sortDescending**(`selector`): `QueryableAsync`\<`TEntity`, `InferType`\<`TEntity`\>, `TStore`\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:355](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L355)
+Defined in: [datastore/src/collections/CollectionBase.ts:484](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L484)
 
 Sorts the collection by the specified property in descending order.
 
@@ -544,7 +922,7 @@ Function that selects the property to sort by
 
 #### Returns
 
-`QueryableAsync`\<`InferType`\<`TEntity`\>, `InferType`\<`TEntity`\>\>
+`QueryableAsync`\<`TEntity`, `InferType`\<`TEntity`\>, `TStore`\>
 
 QueryableAsync instance for chaining additional query operations
 
@@ -552,13 +930,113 @@ QueryableAsync instance for chaining additional query operations
 
 `RemovableCollection.sortDescending`
 
----
+***
+
+### nearest()
+
+> **nearest**(`selector`, `vector`, `count`): `QueryableAsync`\<`TEntity`, `InferType`\<`TEntity`\>, `TStore`\>
+
+Defined in: [datastore/src/collections/CollectionBase.ts:498](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L498)
+
+The `count` entities whose vector is most similar to `vector`, nearest first.
+
+#### Parameters
+
+##### selector
+
+`EntityMap`\<`InferType`\<`TEntity`\>, `InferType`\<`TEntity`\>\[keyof `InferType`\<`TEntity`\>\]\>
+
+Function that selects the vector property to search
+
+##### vector
+
+`number`[]
+
+The embedding to compare against, of the property's declared width
+
+##### count
+
+`number`
+
+How many entities to return
+
+#### Returns
+
+`QueryableAsync`\<`TEntity`, `InferType`\<`TEntity`\>, `TStore`\>
+
+QueryableAsync instance for chaining additional query operations
+
+#### Inherited from
+
+`RemovableCollection.nearest`
+
+***
+
+### toGroup()
+
+> **toGroup**\<`R`\>(`selector`, `done`): `void`
+
+Defined in: [datastore/src/collections/CollectionBase.ts:505](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L505)
+
+#### Type Parameters
+
+##### R
+
+`R` *extends* `string` \| `number`
+
+#### Parameters
+
+##### selector
+
+`GenericFunction`\<`InferType`\<`TEntity`\>, `R`\>
+
+##### done
+
+`CallbackResult`\<`Record`\<`R`, `InferType`\<`TEntity`\>[]\>\>
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+`RemovableCollection.toGroup`
+
+***
+
+### toGroupAsync()
+
+> **toGroupAsync**\<`R`\>(`selector`): `Promise`\<`Record`\<`R`, `InferType`\<`TEntity`\>[]\>\>
+
+Defined in: [datastore/src/collections/CollectionBase.ts:511](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L511)
+
+#### Type Parameters
+
+##### R
+
+`R` *extends* `string` \| `number`
+
+#### Parameters
+
+##### selector
+
+`GenericFunction`\<`InferType`\<`TEntity`\>, `R`\>
+
+#### Returns
+
+`Promise`\<`Record`\<`R`, `InferType`\<`TEntity`\>[]\>\>
+
+#### Inherited from
+
+`RemovableCollection.toGroupAsync`
+
+***
 
 ### map()
 
-> **map**\<`R`\>(`expression`): `QueryableAsync`\<`InferType`\<`TEntity`\>, `R`\>
+> **map**\<`R`\>(`expression`): `QueryableAsync`\<`TEntity`, `R`, `TStore`\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:369](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L369)
+Defined in: [datastore/src/collections/CollectionBase.ts:520](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L520)
 
 Maps the collection to a new shape using the specified transformation function.
 
@@ -578,7 +1056,7 @@ Function that transforms each entity to the new shape
 
 #### Returns
 
-`QueryableAsync`\<`InferType`\<`TEntity`\>, `R`\>
+`QueryableAsync`\<`TEntity`, `R`, `TStore`\>
 
 QueryableAsync instance for chaining additional query operations
 
@@ -586,13 +1064,13 @@ QueryableAsync instance for chaining additional query operations
 
 `RemovableCollection.map`
 
----
+***
 
 ### skip()
 
-> **skip**(`amount`): `SkippedQueryableAsync`\<`InferType`\<`TEntity`\>, `InferType`\<`TEntity`\>\>
+> **skip**(`amount`): `QueryableAsync`\<`TEntity`, `InferType`\<`TEntity`\>, `TStore`\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:382](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L382)
+Defined in: [datastore/src/collections/CollectionBase.ts:531](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L531)
 
 Skips the specified number of entities in the collection.
 
@@ -606,7 +1084,7 @@ Number of entities to skip
 
 #### Returns
 
-`SkippedQueryableAsync`\<`InferType`\<`TEntity`\>, `InferType`\<`TEntity`\>\>
+`QueryableAsync`\<`TEntity`, `InferType`\<`TEntity`\>, `TStore`\>
 
 QueryableAsync instance for chaining additional query operations
 
@@ -614,13 +1092,13 @@ QueryableAsync instance for chaining additional query operations
 
 `RemovableCollection.skip`
 
----
+***
 
 ### take()
 
-> **take**(`amount`): `TakeQueryableAsync`\<`InferType`\<`TEntity`\>, `InferType`\<`TEntity`\>\>
+> **take**(`amount`): `QueryableAsync`\<`TEntity`, `InferType`\<`TEntity`\>, `TStore`\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:395](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L395)
+Defined in: [datastore/src/collections/CollectionBase.ts:542](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L542)
 
 Takes the specified number of entities from the collection.
 
@@ -634,7 +1112,7 @@ Number of entities to take
 
 #### Returns
 
-`TakeQueryableAsync`\<`InferType`\<`TEntity`\>, `InferType`\<`TEntity`\>\>
+`QueryableAsync`\<`TEntity`, `InferType`\<`TEntity`\>, `TStore`\>
 
 QueryableAsync instance for chaining additional query operations
 
@@ -642,20 +1120,20 @@ QueryableAsync instance for chaining additional query operations
 
 `RemovableCollection.take`
 
----
+***
 
 ### toQueryable()
 
-> **toQueryable**(): `QueryableAsync`\<`InferType`\<`TEntity`\>, `InferType`\<`TEntity`\>\>
+> **toQueryable**(): `QueryableAsync`\<`TEntity`, `InferType`\<`TEntity`\>, `TStore`\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:408](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L408)
+Defined in: [datastore/src/collections/CollectionBase.ts:553](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L553)
 
 Converts the collection to a QueryableAsync instance for building queries dynamically.
 This is useful when you need to conditionally build queries by chaining operations based on logic.
 
 #### Returns
 
-`QueryableAsync`\<`InferType`\<`TEntity`\>, `InferType`\<`TEntity`\>\>
+`QueryableAsync`\<`TEntity`, `InferType`\<`TEntity`\>, `TStore`\>
 
 QueryableAsync instance for chaining additional query operations
 
@@ -663,13 +1141,45 @@ QueryableAsync instance for chaining additional query operations
 
 `RemovableCollection.toQueryable`
 
----
+***
+
+### apply()
+
+> **apply**\<`U`, `Shape`\>(`composer`): `QueryableAsync`\<`TEntity`, `Shape`, `TStore`\>
+
+Defined in: [datastore/src/collections/CollectionBase.ts:558](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L558)
+
+#### Type Parameters
+
+##### U
+
+`U`
+
+##### Shape
+
+`Shape`
+
+#### Parameters
+
+##### composer
+
+`QueryableBuilder`\<`TEntity`, `Shape`, `U`\>
+
+#### Returns
+
+`QueryableAsync`\<`TEntity`, `Shape`, `TStore`\>
+
+#### Inherited from
+
+`RemovableCollection.apply`
+
+***
 
 ### toArray()
 
 > **toArray**(`done`): `void`
 
-Defined in: [datastore/src/collections/CollectionBase.ts:419](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L419)
+Defined in: [datastore/src/collections/CollectionBase.ts:567](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L567)
 
 Executes the query and returns all results as an array.
 
@@ -689,13 +1199,13 @@ Callback function called with the array of entities or error
 
 `RemovableCollection.toArray`
 
----
+***
 
 ### toArrayAsync()
 
 > **toArrayAsync**(): `Promise`\<`InferType`\<`TEntity`\>[]\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:431](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L431)
+Defined in: [datastore/src/collections/CollectionBase.ts:577](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L577)
 
 Executes the query asynchronously and returns all results as an array.
 
@@ -709,7 +1219,7 @@ Promise that resolves with the array of entities or rejects with an error
 
 `RemovableCollection.toArrayAsync`
 
----
+***
 
 ### first()
 
@@ -717,7 +1227,7 @@ Promise that resolves with the array of entities or rejects with an error
 
 > **first**(`expression`, `done`): `void`
 
-Defined in: [datastore/src/collections/CollectionBase.ts:444](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L444)
+Defined in: [datastore/src/collections/CollectionBase.ts:588](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L588)
 
 Returns the first entity that matches the filter expression.
 
@@ -747,7 +1257,7 @@ Callback function called with the first matching entity or error
 
 > **first**\<`P`\>(`expression`, `params`, `done`): `void`
 
-Defined in: [datastore/src/collections/CollectionBase.ts:451](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L451)
+Defined in: [datastore/src/collections/CollectionBase.ts:595](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L595)
 
 Returns the first entity that matches the parameterized filter.
 
@@ -755,7 +1265,7 @@ Returns the first entity that matches the parameterized filter.
 
 ###### P
 
-`P` _extends_ `object`
+`P` *extends* `object`
 
 ##### Parameters
 
@@ -787,7 +1297,7 @@ Callback function called with the first matching entity or error
 
 > **first**(`done`): `void`
 
-Defined in: [datastore/src/collections/CollectionBase.ts:456](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L456)
+Defined in: [datastore/src/collections/CollectionBase.ts:600](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L600)
 
 Returns the first entity in the collection.
 
@@ -807,7 +1317,7 @@ Callback function called with the first entity or error
 
 `RemovableCollection.first`
 
----
+***
 
 ### firstAsync()
 
@@ -815,7 +1325,7 @@ Callback function called with the first entity or error
 
 > **firstAsync**(`expression`): `Promise`\<`InferType`\<`TEntity`\>\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:485](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L485)
+Defined in: [datastore/src/collections/CollectionBase.ts:627](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L627)
 
 Returns the first entity that matches the filter expression asynchronously.
 
@@ -841,7 +1351,7 @@ Promise that resolves with the first matching entity or rejects with an error
 
 > **firstAsync**\<`P`\>(`expression`, `params`): `Promise`\<`InferType`\<`TEntity`\>\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:492](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L492)
+Defined in: [datastore/src/collections/CollectionBase.ts:634](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L634)
 
 Returns the first entity that matches the parameterized filter asynchronously.
 
@@ -849,7 +1359,7 @@ Returns the first entity that matches the parameterized filter asynchronously.
 
 ###### P
 
-`P` _extends_ `object`
+`P` *extends* `object`
 
 ##### Parameters
 
@@ -877,7 +1387,7 @@ Promise that resolves with the first matching entity or rejects with an error
 
 > **firstAsync**(): `Promise`\<`InferType`\<`TEntity`\>\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:497](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L497)
+Defined in: [datastore/src/collections/CollectionBase.ts:639](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L639)
 
 Returns the first entity in the collection asynchronously.
 
@@ -891,7 +1401,7 @@ Promise that resolves with the first entity or rejects with an error
 
 `RemovableCollection.firstAsync`
 
----
+***
 
 ### firstOrUndefined()
 
@@ -899,7 +1409,7 @@ Promise that resolves with the first entity or rejects with an error
 
 > **firstOrUndefined**(`expression`, `done`): `void`
 
-Defined in: [datastore/src/collections/CollectionBase.ts:523](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L523)
+Defined in: [datastore/src/collections/CollectionBase.ts:663](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L663)
 
 Returns the first entity that matches the filter expression, or undefined if none found.
 
@@ -929,7 +1439,7 @@ Callback function called with the first matching entity, undefined, or error
 
 > **firstOrUndefined**\<`P`\>(`expression`, `params`, `done`): `void`
 
-Defined in: [datastore/src/collections/CollectionBase.ts:530](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L530)
+Defined in: [datastore/src/collections/CollectionBase.ts:670](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L670)
 
 Returns the first entity that matches the parameterized filter, or undefined if none found.
 
@@ -937,7 +1447,7 @@ Returns the first entity that matches the parameterized filter, or undefined if 
 
 ###### P
 
-`P` _extends_ `object`
+`P` *extends* `object`
 
 ##### Parameters
 
@@ -969,7 +1479,7 @@ Callback function called with the first matching entity, undefined, or error
 
 > **firstOrUndefined**(`done`): `void`
 
-Defined in: [datastore/src/collections/CollectionBase.ts:535](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L535)
+Defined in: [datastore/src/collections/CollectionBase.ts:675](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L675)
 
 Returns the first entity in the collection, or undefined if empty.
 
@@ -989,7 +1499,7 @@ Callback function called with the first entity, undefined, or error
 
 `RemovableCollection.firstOrUndefined`
 
----
+***
 
 ### firstOrUndefinedAsync()
 
@@ -997,7 +1507,7 @@ Callback function called with the first entity, undefined, or error
 
 > **firstOrUndefinedAsync**(`expression`): `Promise`\<`InferType`\<`TEntity`\>\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:564](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L564)
+Defined in: [datastore/src/collections/CollectionBase.ts:702](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L702)
 
 Returns the first entity that matches the filter expression asynchronously, or undefined if none found.
 
@@ -1023,7 +1533,7 @@ Promise that resolves with the first matching entity, undefined, or rejects with
 
 > **firstOrUndefinedAsync**\<`P`\>(`expression`, `params`): `Promise`\<`InferType`\<`TEntity`\>\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:571](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L571)
+Defined in: [datastore/src/collections/CollectionBase.ts:709](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L709)
 
 Returns the first entity that matches the parameterized filter asynchronously, or undefined if none found.
 
@@ -1031,7 +1541,7 @@ Returns the first entity that matches the parameterized filter asynchronously, o
 
 ###### P
 
-`P` _extends_ `object`
+`P` *extends* `object`
 
 ##### Parameters
 
@@ -1059,7 +1569,7 @@ Promise that resolves with the first matching entity, undefined, or rejects with
 
 > **firstOrUndefinedAsync**(): `Promise`\<`InferType`\<`TEntity`\>\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:576](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L576)
+Defined in: [datastore/src/collections/CollectionBase.ts:714](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L714)
 
 Returns the first entity in the collection asynchronously, or undefined if empty.
 
@@ -1073,7 +1583,7 @@ Promise that resolves with the first entity, undefined, or rejects with an error
 
 `RemovableCollection.firstOrUndefinedAsync`
 
----
+***
 
 ### some()
 
@@ -1081,7 +1591,7 @@ Promise that resolves with the first entity, undefined, or rejects with an error
 
 > **some**(`expression`, `done`): `void`
 
-Defined in: [datastore/src/collections/CollectionBase.ts:602](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L602)
+Defined in: [datastore/src/collections/CollectionBase.ts:739](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L739)
 
 Checks if any entity matches the filter expression.
 
@@ -1111,7 +1621,7 @@ Callback function called with true if any entity matches, false otherwise, or er
 
 > **some**\<`P`\>(`expression`, `params`, `done`): `void`
 
-Defined in: [datastore/src/collections/CollectionBase.ts:609](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L609)
+Defined in: [datastore/src/collections/CollectionBase.ts:746](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L746)
 
 Checks if any entity matches the parameterized filter.
 
@@ -1119,7 +1629,7 @@ Checks if any entity matches the parameterized filter.
 
 ###### P
 
-`P` _extends_ `object`
+`P` *extends* `object`
 
 ##### Parameters
 
@@ -1151,7 +1661,7 @@ Callback function called with true if any entity matches, false otherwise, or er
 
 > **some**(`done`): `void`
 
-Defined in: [datastore/src/collections/CollectionBase.ts:614](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L614)
+Defined in: [datastore/src/collections/CollectionBase.ts:751](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L751)
 
 Checks if the collection has any entities.
 
@@ -1171,7 +1681,7 @@ Callback function called with true if collection has entities, false otherwise, 
 
 `RemovableCollection.some`
 
----
+***
 
 ### someAsync()
 
@@ -1179,7 +1689,7 @@ Callback function called with true if collection has entities, false otherwise, 
 
 > **someAsync**(`expression`): `Promise`\<`boolean`\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:643](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L643)
+Defined in: [datastore/src/collections/CollectionBase.ts:779](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L779)
 
 Checks if any entity matches the filter expression asynchronously.
 
@@ -1205,7 +1715,7 @@ Promise that resolves with true if any entity matches, false otherwise, or rejec
 
 > **someAsync**\<`P`\>(`expression`, `params`): `Promise`\<`boolean`\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:650](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L650)
+Defined in: [datastore/src/collections/CollectionBase.ts:786](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L786)
 
 Checks if any entity matches the parameterized filter asynchronously.
 
@@ -1213,7 +1723,7 @@ Checks if any entity matches the parameterized filter asynchronously.
 
 ###### P
 
-`P` _extends_ `object`
+`P` *extends* `object`
 
 ##### Parameters
 
@@ -1241,7 +1751,7 @@ Promise that resolves with true if any entity matches, false otherwise, or rejec
 
 > **someAsync**(): `Promise`\<`boolean`\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:655](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L655)
+Defined in: [datastore/src/collections/CollectionBase.ts:791](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L791)
 
 Checks if the collection has any entities asynchronously.
 
@@ -1255,7 +1765,7 @@ Promise that resolves with true if collection has entities, false otherwise, or 
 
 `RemovableCollection.someAsync`
 
----
+***
 
 ### every()
 
@@ -1263,7 +1773,7 @@ Promise that resolves with true if collection has entities, false otherwise, or 
 
 > **every**(`expression`, `done`): `void`
 
-Defined in: [datastore/src/collections/CollectionBase.ts:681](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L681)
+Defined in: [datastore/src/collections/CollectionBase.ts:816](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L816)
 
 Checks if all entities match the filter expression.
 
@@ -1291,17 +1801,11 @@ Callback function called with true if all entities match, false otherwise, or er
 
 #### Call Signature
 
-> **every**\<`P`\>(`expression`, `done`): `void`
+> **every**(`expression`, `done`): `void`
 
-Defined in: [datastore/src/collections/CollectionBase.ts:688](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L688)
+Defined in: [datastore/src/collections/CollectionBase.ts:823](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L823)
 
 Checks if all entities match the parameterized filter.
-
-##### Type Parameters
-
-###### P
-
-`P` _extends_ `object`
 
 ##### Parameters
 
@@ -1327,7 +1831,7 @@ Callback function called with true if all entities match, false otherwise, or er
 
 > **every**\<`P`\>(`expression`, `params`, `done`): `void`
 
-Defined in: [datastore/src/collections/CollectionBase.ts:689](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L689)
+Defined in: [datastore/src/collections/CollectionBase.ts:824](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L824)
 
 Checks if all entities match the filter expression.
 
@@ -1335,7 +1839,7 @@ Checks if all entities match the filter expression.
 
 ###### P
 
-`P` _extends_ `object`
+`P` *extends* `object`
 
 ##### Parameters
 
@@ -1363,7 +1867,7 @@ Callback function called with true if all entities match, false otherwise, or er
 
 `RemovableCollection.every`
 
----
+***
 
 ### everyAsync()
 
@@ -1371,7 +1875,7 @@ Callback function called with true if all entities match, false otherwise, or er
 
 > **everyAsync**(`expression`): `Promise`\<`boolean`\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:713](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L713)
+Defined in: [datastore/src/collections/CollectionBase.ts:847](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L847)
 
 Checks if all entities match the filter expression asynchronously.
 
@@ -1395,17 +1899,11 @@ Promise that resolves with true if all entities match, false otherwise, or rejec
 
 #### Call Signature
 
-> **everyAsync**\<`P`\>(`expression`): `Promise`\<`boolean`\>
+> **everyAsync**(`expression`): `Promise`\<`boolean`\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:720](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L720)
+Defined in: [datastore/src/collections/CollectionBase.ts:854](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L854)
 
 Checks if all entities match the parameterized filter asynchronously.
-
-##### Type Parameters
-
-###### P
-
-`P` _extends_ `object`
 
 ##### Parameters
 
@@ -1427,7 +1925,7 @@ Promise that resolves with true if all entities match, false otherwise, or rejec
 
 > **everyAsync**\<`P`\>(`expression`, `params`): `Promise`\<`boolean`\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:721](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L721)
+Defined in: [datastore/src/collections/CollectionBase.ts:855](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L855)
 
 Checks if all entities match the filter expression asynchronously.
 
@@ -1435,7 +1933,7 @@ Checks if all entities match the filter expression asynchronously.
 
 ###### P
 
-`P` _extends_ `object`
+`P` *extends* `object`
 
 ##### Parameters
 
@@ -1459,13 +1957,13 @@ Promise that resolves with true if all entities match, false otherwise, or rejec
 
 `RemovableCollection.everyAsync`
 
----
+***
 
 ### min()
 
 > **min**(`selector`, `done`): `void`
 
-Defined in: [datastore/src/collections/CollectionBase.ts:743](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L743)
+Defined in: [datastore/src/collections/CollectionBase.ts:876](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L876)
 
 Finds the minimum value of the specified numeric property across all entities.
 
@@ -1491,13 +1989,13 @@ Callback function called with the minimum value or error
 
 `RemovableCollection.min`
 
----
+***
 
 ### minAsync()
 
 > **minAsync**(`selector`): `Promise`\<`number`\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:757](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L757)
+Defined in: [datastore/src/collections/CollectionBase.ts:889](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L889)
 
 Finds the minimum value of the specified numeric property across all entities asynchronously.
 
@@ -1519,13 +2017,13 @@ Promise that resolves with the minimum value or rejects with an error
 
 `RemovableCollection.minAsync`
 
----
+***
 
 ### max()
 
 > **max**(`selector`, `done`): `void`
 
-Defined in: [datastore/src/collections/CollectionBase.ts:771](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L771)
+Defined in: [datastore/src/collections/CollectionBase.ts:902](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L902)
 
 Finds the maximum value of the specified numeric property across all entities.
 
@@ -1551,13 +2049,13 @@ Callback function called with the maximum value or error
 
 `RemovableCollection.max`
 
----
+***
 
 ### maxAsync()
 
 > **maxAsync**(`selector`): `Promise`\<`number`\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:785](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L785)
+Defined in: [datastore/src/collections/CollectionBase.ts:915](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L915)
 
 Finds the maximum value of the specified numeric property across all entities asynchronously.
 
@@ -1579,13 +2077,13 @@ Promise that resolves with the maximum value or rejects with an error
 
 `RemovableCollection.maxAsync`
 
----
+***
 
 ### sum()
 
 > **sum**(`selector`, `done`): `void`
 
-Defined in: [datastore/src/collections/CollectionBase.ts:799](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L799)
+Defined in: [datastore/src/collections/CollectionBase.ts:928](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L928)
 
 Calculates the sum of the specified numeric property across all entities.
 
@@ -1611,13 +2109,13 @@ Callback function called with the sum or error
 
 `RemovableCollection.sum`
 
----
+***
 
 ### sumAsync()
 
 > **sumAsync**(`selector`): `Promise`\<`number`\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:813](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L813)
+Defined in: [datastore/src/collections/CollectionBase.ts:941](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L941)
 
 Calculates the sum of the specified numeric property across all entities asynchronously.
 
@@ -1639,13 +2137,13 @@ Promise that resolves with the sum or rejects with an error
 
 `RemovableCollection.sumAsync`
 
----
+***
 
 ### count()
 
 > **count**(`done`): `void`
 
-Defined in: [datastore/src/collections/CollectionBase.ts:826](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L826)
+Defined in: [datastore/src/collections/CollectionBase.ts:953](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L953)
 
 Counts the number of entities in the collection.
 
@@ -1665,13 +2163,13 @@ Callback function called with the count or error
 
 `RemovableCollection.count`
 
----
+***
 
 ### countAsync()
 
 > **countAsync**(): `Promise`\<`number`\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:839](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L839)
+Defined in: [datastore/src/collections/CollectionBase.ts:965](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L965)
 
 Counts the number of entities in the collection asynchronously.
 
@@ -1685,13 +2183,13 @@ Promise that resolves with the count or rejects with an error
 
 `RemovableCollection.countAsync`
 
----
+***
 
 ### distinct()
 
 > **distinct**(`done`): `void`
 
-Defined in: [datastore/src/collections/CollectionBase.ts:852](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L852)
+Defined in: [datastore/src/collections/CollectionBase.ts:977](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L977)
 
 Returns distinct entities from the collection, removing duplicates.
 
@@ -1711,13 +2209,13 @@ Callback function called with the distinct entities or error
 
 `RemovableCollection.distinct`
 
----
+***
 
 ### distinctAsync()
 
 > **distinctAsync**(): `Promise`\<`InferType`\<`TEntity`\>[]\>
 
-Defined in: [datastore/src/collections/CollectionBase.ts:865](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/CollectionBase.ts#L865)
+Defined in: [datastore/src/collections/CollectionBase.ts:989](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/CollectionBase.ts#L989)
 
 Returns distinct entities from the collection asynchronously, removing duplicates.
 
@@ -1731,13 +2229,13 @@ Promise that resolves with the distinct entities or rejects with an error
 
 `RemovableCollection.distinctAsync`
 
----
+***
 
 ### remove()
 
 > **remove**(`entities`, `done`): `void`
 
-Defined in: [datastore/src/collections/RemovableCollection.ts:32](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/RemovableCollection.ts#L32)
+Defined in: [datastore/src/collections/RemovableCollection.ts:26](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/RemovableCollection.ts#L26)
 
 Removes entities from the collection and persists the changes to the database.
 
@@ -1763,13 +2261,13 @@ Callback function called with the removed entities or error
 
 `RemovableCollection.remove`
 
----
+***
 
 ### removeAsync()
 
 > **removeAsync**(...`entities`): `Promise`\<`InferType`\<`TEntity`\>[]\>
 
-Defined in: [datastore/src/collections/RemovableCollection.ts:42](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/RemovableCollection.ts#L42)
+Defined in: [datastore/src/collections/RemovableCollection.ts:36](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/RemovableCollection.ts#L36)
 
 Removes entities from the collection asynchronously and returns a Promise.
 
@@ -1791,13 +2289,13 @@ Promise that resolves with the removed entities or rejects with an error
 
 `RemovableCollection.removeAsync`
 
----
+***
 
 ### removeAll()
 
 > **removeAll**(`done`): `void`
 
-Defined in: [datastore/src/collections/RemovableCollection.ts:52](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/RemovableCollection.ts#L52)
+Defined in: [datastore/src/collections/RemovableCollection.ts:46](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/RemovableCollection.ts#L46)
 
 Removes all entities from the collection and persists the changes to the database.
 
@@ -1805,7 +2303,7 @@ Removes all entities from the collection and persists the changes to the databas
 
 ##### done
 
-(`error?`) => `void`
+`CallbackResult`\<`InferType`\<`TEntity`\>[]\>
 
 Callback function called when the operation completes or with an error
 
@@ -1817,19 +2315,19 @@ Callback function called when the operation completes or with an error
 
 `RemovableCollection.removeAll`
 
----
+***
 
 ### removeAllAsync()
 
-> **removeAllAsync**(): `Promise`\<`void`\>
+> **removeAllAsync**(): `Promise`\<`InferType`\<`TEntity`\>[]\>
 
-Defined in: [datastore/src/collections/RemovableCollection.ts:65](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/datastore/src/collections/RemovableCollection.ts#L65)
+Defined in: [datastore/src/collections/RemovableCollection.ts:56](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/collections/RemovableCollection.ts#L56)
 
 Removes all entities from the collection asynchronously and returns a Promise.
 
 #### Returns
 
-`Promise`\<`void`\>
+`Promise`\<`InferType`\<`TEntity`\>[]\>
 
 Promise that resolves when the operation completes or rejects with an error
 

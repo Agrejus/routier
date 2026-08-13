@@ -28,11 +28,14 @@ The `s` object provides the main entry point for schema creation:
 
 - **`s.define(collectionName, schema)`** - Creates a schema definition
 - **`s.number<T>()`** - Number property with optional literal constraints
-- **`s.string<T>()`** - String property with optional literal constraints
+- **`s.string(...literals)`** - String property with optional literal constraints
+- **`s.string({ maxLength }, ...literals)`** - String plus a storage length declaration
 - **`s.boolean<T>()`** - Boolean property
 - **`s.date<T>()`** - Date property
-- **`s.array(schema)`** - Array property containing other schemas
+- **`s.array(schema)`** - Array property containing another schema property
 - **`s.object(schema)`** - Object property with nested schema
+- **`s.file()`** - File input/reference output used with `@routier/blob-plugin`
+- **`s.vector(dimensions)`** - Fixed-width numeric embedding used with `.nearest()`
 
 ### Literal Type Constraints
 
@@ -74,6 +77,7 @@ Always call `.compile()` at the end to create the final schema:
 
 ## Next Steps
 
+- [Schema API](/concepts/schema/schema-api) - Complete factories and modifier compatibility
 - [Property Types](/concepts/schema/property-types/README) - Detailed property type reference
 - [Modifiers](/concepts/schema/modifiers/README) - All available property modifiers
 - [InferType](/concepts/schema/infer-type) - Type inference and type safety

@@ -4,234 +4,123 @@ title: API Reference
 
 # API Reference
 
-Complete API documentation for Routier packages. This page provides an overview of the main APIs available in each package.
-
-## Quick Navigation
-
-- [@routier/datastore](#routierdatastore)
-- [@routier/core](#routiercore)
-- [@routier/react](#routierreact)
-- [Schema API](#schema-api)
-- [Query API](#query-api)
+Use this page to find a public API by package. The [generated reference](/reference/api/README) contains signatures for every exported core, datastore, React, and plugin entry point; task-focused pages explain behavior and combinations.
 
 ## @routier/datastore
 
-The main package for creating data stores and managing collections.
+```ts
+import { DataStore, Collection, Queryable } from "@routier/datastore";
+```
 
 ### DataStore
 
-The primary class for managing collections and data persistence.
+| Member | Purpose |
+| --- | --- |
+| `new DataStore(plugin, options?)` | Construct a store; normally called by a subclass |
+| `collection(schema)` | Protected collection-builder entry point |
+| `view(schema)` | Protected view-builder entry point |
+| `schemas` | Read-only collection of schemas registered by this store |
+| `getCollection(schema)` | Resolve a configured collection by schema |
+| `getDbPlugin<T>()` | Access the configured plugin/stack |
+| `saveChanges(done)` / `saveChangesAsync()` | Persist every pending collection change |
+| `previewChanges(done)` / `previewChangesAsync()` | Inspect pending changes without saving |
+| `hasChanges(done)` / `hasChangesAsync()` | Test whether any collection is dirty |
+| `destroy(done)` / `destroyAsync()` | Destroy the underlying database and dispose the store |
+| `[Symbol.dispose]()` | Abort subscriptions and release this store without deleting the database |
 
-**Import:**
+`DataStoreOptions` has `crossTabSync?: boolean` (default `true`) and `semiJoinKeyThreshold?: number` (default `500`).
 
+### Collection builder
 
-<<< @/_snippets/code/from-docs/api/index/block-1.ts
+A declaration is `collection(schema) → features → mode → create()`:
 
+- Features: `scope`, `softDelete`, `audit(...).derive(...)`, `fullTextSearch`.
+- Modes: `proxy`, `diff`, `immutable`, `readonly`.
+- Construction: `create()` or `create(factory)` for a custom subclass.
 
-**Main Methods:**
+See [Configuring Collections](/how-to/collections/configuring-collections) for the complete compatibility and behavior table.
 
-- `constructor(dbPlugin: IDbPlugin)` - Creates a new DataStore instance
-- `collection(schema)` - Returns a collection builder (protected, used in subclasses)
-- `view(schema)` - Returns a view builder (protected, used in subclasses)
-- `saveAsync()` - Persists all pending changes
-- `save(done)` - Persists all pending changes (callback)
-- `hasChanges()` - Checks if there are unsaved changes
-- `dispose()` - Cleans up resources
+### Collection and query surface
 
-### Collection
+| Group | Members |
+| --- | --- |
+| Create | `instance`, `add`/`addAsync` (writable modes) |
+| Update | direct mutation (`proxy`, `diff`); `update`, `current`, `isCurrent` (`immutable`) |
+| Delete | `remove`/`removeAsync`, `removeAll`/`removeAllAsync` (writable modes) |
+| Compose | `where`, `sort`, `sortDescending`, `skip`, `take`, `map`, `nearest`, `search`, `join`, `leftJoin`, `toQueryable`, `apply` |
+| Reusable query | `Queryable.compose(schema)` builds a definition; `collection.apply(composer)` attaches it |
+| Execute | `toArray`, `first`, `firstOrUndefined`, `some`, `every`, `min`, `max`, `sum`, `count`, `distinct`, `toGroup` and each `*Async` form |
+| Live query | `subscribe()` followed by a terminal method; the terminal callback returns an unsubscribe function |
+| Tracking | `hasChanges`, `tag`, `tags`, `attachments` |
+| Search maintenance | `fullTextSearch.check()`, `fullTextSearch.rebuild()` |
 
-Represents a collection of entities with full CRUD operations.
+Most filters have plain and parameterized overloads:
 
-**Import:**
+```ts
+store.products.where(p => p.active).toArrayAsync();
+store.products.where((p, q) => p.price >= q.min, { min: 10 }).toArrayAsync();
+```
 
-
-<<< @/_snippets/code/from-docs/api/index/block-2.ts
-
-
-**Main Methods:**
-
-**Query Operations:**
-
-- `where(expression, params?)` - Filter entities
-- `sort(selector)` - Sort ascending
-- `sortDescending(selector)` - Sort descending
-- `skip(amount)` - Skip n entities
-- `take(amount)` - Limit to n entities
-- `toArray(done)` - Get all results (callback)
-- `toArrayAsync()` - Get all results (Promise)
-- `first(expression?, done)` - Get first entity (callback)
-- `firstAsync(expression?)` - Get first entity (Promise)
-- `subscribe()` - Create a live query subscription
-- `toQueryable()` - Convert to QueryableAsync for dynamic queries
-
-**Modification Operations:**
-
-- `add(...entities)` - Add entities (returns entities)
-- `addAsync(...entities)` - Add entities (returns Promise)
-- `instance(...entities)` - Create entity instances for change tracking
-- `remove(...entities)` - Remove entities
-- `removeAsync(...entities)` - Remove entities (Promise)
-
-**Change Tracking:**
-
-- `hasChanges()` - Check if collection has unsaved changes
-- `tags.get()` - Get all tag values
-- `tags.destroy()` - Destroy all tags
-- `tag(value)` - Create or get a tag for tracking changes
-- `attachments.set(...entities)` - Attach entities to change tracking
-- `attachments.remove(...entities)` - Detach entities from change tracking
-- `attachments.has(entity)` - Check if entity is attached
-- `attachments.get(entity)` - Get attached entity
-- `attachments.filter(selector)` - Filter attached entities
-- `attachments.find(selector)` - Find attached entity
-- `attachments.markDirty(...entities)` - Force mark entities as dirty
-- `attachments.getChangeType(entity)` - Get change type for entity
+Start with [Queries](/concepts/queries/), [Reusable Queries](/concepts/queries/query-composer), and [Terminal Methods](/concepts/queries/terminal-methods).
 
 ## @routier/core
 
-Core utilities, schema definitions, and shared types.
+The root export mirrors the public subpath exports below. Prefer a focused subpath when it makes dependencies clearer.
 
-### Schema API (`@routier/core/schema`)
+| Import | Main API |
+| --- | --- |
+| `@routier/core/schema` | `s`, schema/property classes, `InferType`, `InferCreateType`, `SchemaDefinition`, property metadata |
+| `@routier/core/plugins` | `IDbPlugin`, events, query options, translators, `CacheDbPlugin`, `RetryDbPlugin`, `ConcurrencyDbPlugin`, `BatchingDbPlugin` |
+| `@routier/core/expressions` | Expression types, parsing, evaluation, query filter types |
+| `@routier/core/collections` | Persist change/result buckets, schema collections, in-memory collection primitives |
+| `@routier/core/results` | `Result`, `PluginEventResult`, callback/result types and helpers |
+| `@routier/core/errors` | `SchemaError`, `OptimisticConcurrencyError`, `PluginDestroyedError` |
+| `@routier/core/capabilities` | Capability, tracing, and performance instrumentation |
+| `@routier/core/assertions` | Runtime assertions and expression type guards |
+| `@routier/core/utilities` | IDs, hashing, cloning, logger, runtime and collection helpers |
+| `@routier/core/pipeline` | `TrampolinePipeline`, `SyncronousQueue` |
+| `@routier/core/performance` | `now`, `measure` |
+| `@routier/core/types` | Shared utility types |
 
-**Import:**
-
-
-<<< @/_snippets/code/from-docs/api/index/block-3.ts
-
-
-**Schema Builder:**
-
-- `s.define(name, properties)` - Define a new schema
-- `s.string()` - String property type
-- `s.number()` - Number property type
-- `s.boolean()` - Boolean property type
-- `s.date()` - Date property type
-- `s.object({ ... })` - Object property type
-- `s.array(type)` - Array property type
-
-**Property Modifiers:**
-
-- `.key()` - Mark as primary key
-- `.identity()` - Auto-generate identity value
-- `.distinct()` - Ensure unique values
-- `.default(value)` - Default value
-- `.optional()` - Make optional
-- `.nullable()` - Allow null
-- `.index()` - Create index for querying
-- `.tracked()` - Track changes to this property
-
-**Schema Modifiers:**
-
-- `.modify(w => ({ ... }))` - Add computed/function properties
-- `.compile()` - Compile schema to use with collections
-
-**Type Utilities:**
-
-- `InferType<typeof schema>` - Extract entity type from schema
-- `InferCreateType<typeof schema>` - Extract creation type (excludes identities/defaults)
-
-### Query API
-
-**Filtering:**
-
-
-<<< @/_snippets/code/from-docs/api/index/block-4.ts
-
-
-**Sorting:**
-
-
-<<< @/_snippets/code/from-docs/api/index/block-5.ts
-
-
-**Pagination:**
-
-
-<<< @/_snippets/code/from-docs/api/index/block-6.ts
-
-
-**Terminal Operations:**
-
-
-<<< @/_snippets/code/from-docs/api/index/block-7.ts
-
+The schema factories and valid modifier combinations are listed in [Schema API](/concepts/schema/schema-api). Generic wrapper behavior is in [Wrapper Plugins](/integrations/plugins/built-in-plugins/wrappers).
 
 ## @routier/react
 
-React integration hooks for Routier.
+```ts
+import { useQuery } from "@routier/react";
 
-### useQuery
+const result = useQuery(
+  () => store.products.where(p => p.active).subscribe().toArray,
+  [store]
+);
+```
 
-React hook for subscribing to live queries.
+`useQuery(queryFactory, deps)` executes a Routier callback query, manages its unsubscribe handler, and returns `{ status, data?, error? }`. See [React Hooks](/integrations/react/hooks/).
 
-**Import:**
+## Plugin packages
 
+| Package | Primary exports |
+| --- | --- |
+| `@routier/memory-plugin` | `MemoryPlugin`, `MemoryDatabase`, `assertIsMemoryPlugin` |
+| `@routier/browser-storage-plugin` | `BrowserStoragePlugin` |
+| `@routier/dexie-plugin` | `DexiePlugin` |
+| `@routier/file-system-plugin` | `FileSystemPlugin`, `FileSystemDbCollection` |
+| `@routier/sqlite-plugin` | `SqliteDbPlugin`, driver interfaces; subpaths for `sqlite3`, Turso, and D1 |
+| `@routier/postgresql-plugin` | `PostgresDbPlugin`, config/SQL result types, `PostgresSqlTranslator` |
+| `@routier/mysql-plugin` | `MysqlDbPlugin`, config/SQL result types |
+| `@routier/mongodb-plugin` | `MongoDbPlugin`, `MongoClientDriver`, MQL translation and driver interfaces |
+| `@routier/pouchdb-plugin` | `PouchDbPlugin` and sync/design-document types |
+| `@routier/replication-plugin` | HTTP, SWR, optimistic, transport, sync engine, auth/dead-letter types |
+| `@routier/blob-plugin` | `BlobDbPlugin`, `createFiles`, direct upload, file references and blob-store contracts |
+| `@routier/encryption` | `createKeyring`, `encryption`, keyring types, `isEnvelope` |
+| `@routier/sql-plugin-core` | SQL dialect, query, column, update, and join helpers for plugin authors |
 
-<<< @/_snippets/code/from-docs/api/index/block-8.ts
+See the [Plugin Catalog](/integrations/plugins/built-in-plugins/) for setup and selection.
 
+## Generated reference
 
-**Signature:**
+Run `npm run typedoc` at the repository root after changing a public export or JSDoc. It generates reference pages from all package entry points in `typedoc.json`.
 
-
-<<< @/_snippets/code/from-docs/api/index/block-9.ts
-
-
-**Return Type:**
-
-
-<<< @/_snippets/code/from-docs/api/index/block-10.ts
-
-
-**Usage:**
-
-
-<<< @/_snippets/code/from-docs/api/index/block-11.ts
-
-
-## Core Utilities
-
-### Results (`@routier/core/results`)
-
-- `Result.SUCCESS` - Success result code
-- `Result.ERROR` - Error result code
-- `Result.success<T>(data)` - Create success result
-- `Result.error(error)` - Create error result
-
-### Plugins (`@routier/core/plugins`)
-
-- `IDbPlugin` - Interface for database plugins
-- `QueryOptionsCollection<T>` - Query options configuration
-
-## Detailed API Reference
-
-Complete auto-generated API documentation with full type signatures, method parameters, return types, and detailed descriptions is available:
-
-- **[Complete API Reference](/reference/api/README)** - Full generated documentation index
-- **[@routier/datastore API](/reference/api/datastore/src/README)** - DataStore and Collection classes
-- **[@routier/core API](/reference/api/core/src/README)** - Schema, utilities, and core functionality
-- **[@routier/react API](/reference/api/react/src/README)** - React hooks
-
-### Key API Classes
-
-**@routier/datastore:**
-
-- [DataStore](/reference/api/datastore/src/classes/DataStore) - Main data store class
-- [Collection](/reference/api/datastore/src/classes/Collection) - Collection class with query and CRUD operations
-
-**@routier/core:**
-
-- Schema builders: [SchemaString](/reference/api/core/src/classes/SchemaString), [SchemaNumber](/reference/api/core/src/classes/SchemaNumber), [SchemaObject](/reference/api/core/src/classes/SchemaObject), etc.
-- [s](/reference/api/core/src/variables/s) - Schema builder variable
-- [Result](/reference/api/core/src/classes/Result) - Result type for operations
-- [IDbPlugin](/reference/api/core/src/interfaces/IDbPlugin) - Database plugin interface
-
-**@routier/react:**
-
-- [useQuery](/reference/api/react/src/functions/useQuery) - React hook for live queries
-
-## Related
-
-- [Getting Started Guide](/getting-started/overview)
-- [Schema Concepts](/concepts/schema/)
-- [Query Concepts](/concepts/queries/)
-- [Live Queries Guide](/guides/live-queries)
+- [Complete generated reference](/reference/api/README)
+- [Core concepts](/concepts/)
+- [How-to guides](/how-to/collections/)

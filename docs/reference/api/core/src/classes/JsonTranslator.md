@@ -1,16 +1,16 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / JsonTranslator
+[routier-collection](../../../README.md) / [core/src](../README.md) / JsonTranslator
 
 # Class: JsonTranslator\<TRoot, TShape\>
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:7](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/JsonTranslator.ts#L7)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:11](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/JsonTranslator.ts#L11)
 
 ## Extends
 
-- [`DataTranslator`](/reference/api/core/src/classes/DataTranslator)\<`TRoot`, `TShape`\>
+- [`DataTranslator`](DataTranslator.md)\<`TRoot`, `TShape`\>
 
 ## Type Parameters
 
@@ -26,31 +26,39 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:7](https://github.co
 
 ### Constructor
 
-> **new JsonTranslator**\<`TRoot`, `TShape`\>(`query`): `JsonTranslator`\<`TRoot`, `TShape`\>
+> **new JsonTranslator**\<`TRoot`, `TShape`\>(`query`, `innerSide?`): `JsonTranslator`\<`TRoot`, `TShape`\>
 
-Defined in: [core/src/plugins/translators/DataTranslator.ts:20](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/DataTranslator.ts#L20)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:20](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/JsonTranslator.ts#L20)
 
 #### Parameters
 
 ##### query
 
-[`IQuery`](/reference/api/core/src/type-aliases/IQuery)\<`TRoot`, `TShape`\>
+[`IQuery`](../type-aliases/IQuery.md)\<`TRoot`, `TShape`\>
+
+##### innerSide?
+
+[`JoinInnerSide`](../type-aliases/JoinInnerSide.md)
+
+The inner collection's rows, when this query carries a `join` option.
+A plugin that omits it for a query that HAS a join gets a throw from `join()` rather than
+a silently un-joined result.
 
 #### Returns
 
 `JsonTranslator`\<`TRoot`, `TShape`\>
 
-#### Inherited from
+#### Overrides
 
-[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`constructor`](/reference/api/core/src/classes/DataTranslator#constructor)
+[`DataTranslator`](DataTranslator.md).[`constructor`](DataTranslator.md#constructor)
 
 ## Methods
 
 ### translate()
 
-> **translate**(`data`): `TShape`
+> **translate**(`data`): [`ITranslatedValue`](../interfaces/ITranslatedValue.md)\<`TShape`\>
 
-Defined in: [core/src/plugins/translators/DataTranslator.ts:38](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/DataTranslator.ts#L38)
+Defined in: [core/src/plugins/translators/DataTranslator.ts:75](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/DataTranslator.ts#L75)
 
 #### Parameters
 
@@ -60,19 +68,26 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:38](https://github.c
 
 #### Returns
 
-`TShape`
+[`ITranslatedValue`](../interfaces/ITranslatedValue.md)\<`TShape`\>
 
 #### Inherited from
 
-[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`translate`](/reference/api/core/src/classes/DataTranslator#translate)
+[`DataTranslator`](DataTranslator.md).[`translate`](DataTranslator.md#translate)
 
 ***
 
-### filter()
+### join()
 
-> **filter**\<`TResult`\>(`data`, `option`): `TResult`
+> **join**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:9](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/JsonTranslator.ts#L9)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:33](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/JsonTranslator.ts#L33)
+
+The hash join itself, over rows already in memory — the floor every non-SQL backend
+stands on.
+
+Both halves are deserialized here, each with its own schema, because that is where the
+`===` on key values is specified to happen: in entity shape, by the property names the
+caller wrote in the key selectors. A `from`-renamed column reads correctly for free.
 
 #### Type Parameters
 
@@ -88,7 +103,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:9](https://github.co
 
 ##### option
 
-[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"filter"`\>
+[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"join"`\>
 
 #### Returns
 
@@ -96,7 +111,39 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:9](https://github.co
 
 #### Overrides
 
-[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`filter`](/reference/api/core/src/classes/DataTranslator#filter)
+[`DataTranslator`](DataTranslator.md).[`join`](DataTranslator.md#join)
+
+***
+
+### filter()
+
+> **filter**\<`TResult`\>(`data`, `option`): `TResult`
+
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:56](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/JsonTranslator.ts#L56)
+
+#### Type Parameters
+
+##### TResult
+
+`TResult`
+
+#### Parameters
+
+##### data
+
+`unknown`
+
+##### option
+
+[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"filter"`\>
+
+#### Returns
+
+`TResult`
+
+#### Overrides
+
+[`DataTranslator`](DataTranslator.md).[`filter`](DataTranslator.md#filter)
 
 ***
 
@@ -104,7 +151,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:9](https://github.co
 
 > **map**\<`T`\>(`data`, `option`): `T`
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:28](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/JsonTranslator.ts#L28)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:75](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/JsonTranslator.ts#L75)
 
 #### Type Parameters
 
@@ -120,7 +167,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:28](https://github.c
 
 ##### option
 
-[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`T`, `"map"`\>
+[`QueryOption`](../type-aliases/QueryOption.md)\<`T`, `"map"`\>
 
 #### Returns
 
@@ -128,7 +175,39 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:28](https://github.c
 
 #### Overrides
 
-[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`map`](/reference/api/core/src/classes/DataTranslator#map)
+[`DataTranslator`](DataTranslator.md).[`map`](DataTranslator.md#map)
+
+***
+
+### group()
+
+> **group**\<`T`\>(`data`, `option`): `T`
+
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:105](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/JsonTranslator.ts#L105)
+
+#### Type Parameters
+
+##### T
+
+`T`
+
+#### Parameters
+
+##### data
+
+`unknown`
+
+##### option
+
+[`QueryOption`](../type-aliases/QueryOption.md)\<`T`, `"group"`\>
+
+#### Returns
+
+`T`
+
+#### Overrides
+
+[`DataTranslator`](DataTranslator.md).[`group`](DataTranslator.md#group)
 
 ***
 
@@ -136,7 +215,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:28](https://github.c
 
 > **count**\<`TResult`\>(`data`, `_`): `TResult`
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:59](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/JsonTranslator.ts#L59)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:149](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/JsonTranslator.ts#L149)
 
 #### Type Parameters
 
@@ -152,7 +231,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:59](https://github.c
 
 ##### \_
 
-[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"count"`\>
+[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"count"`\>
 
 #### Returns
 
@@ -160,7 +239,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:59](https://github.c
 
 #### Overrides
 
-[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`count`](/reference/api/core/src/classes/DataTranslator#count)
+[`DataTranslator`](DataTranslator.md).[`count`](DataTranslator.md#count)
 
 ***
 
@@ -168,7 +247,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:59](https://github.c
 
 > **min**\<`TResult`\>(`data`, `_`): `TResult`
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:68](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/JsonTranslator.ts#L68)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:162](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/JsonTranslator.ts#L162)
 
 #### Type Parameters
 
@@ -184,7 +263,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:68](https://github.c
 
 ##### \_
 
-[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"min"`\>
+[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"min"`\>
 
 #### Returns
 
@@ -192,7 +271,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:68](https://github.c
 
 #### Overrides
 
-[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`min`](/reference/api/core/src/classes/DataTranslator#min)
+[`DataTranslator`](DataTranslator.md).[`min`](DataTranslator.md#min)
 
 ***
 
@@ -200,7 +279,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:68](https://github.c
 
 > **max**\<`TResult`\>(`data`, `_`): `TResult`
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:72](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/JsonTranslator.ts#L72)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:180](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/JsonTranslator.ts#L180)
 
 #### Type Parameters
 
@@ -216,7 +295,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:72](https://github.c
 
 ##### \_
 
-[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"max"`\>
+[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"max"`\>
 
 #### Returns
 
@@ -224,7 +303,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:72](https://github.c
 
 #### Overrides
 
-[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`max`](/reference/api/core/src/classes/DataTranslator#max)
+[`DataTranslator`](DataTranslator.md).[`max`](DataTranslator.md#max)
 
 ***
 
@@ -232,7 +311,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:72](https://github.c
 
 > **sort**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:76](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/JsonTranslator.ts#L76)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:198](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/JsonTranslator.ts#L198)
 
 #### Type Parameters
 
@@ -248,7 +327,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:76](https://github.c
 
 ##### option
 
-[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"sort"`\>
+[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"sort"`\>
 
 #### Returns
 
@@ -256,7 +335,46 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:76](https://github.c
 
 #### Overrides
 
-[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`sort`](/reference/api/core/src/classes/DataTranslator#sort)
+[`DataTranslator`](DataTranslator.md).[`sort`](DataTranslator.md#sort)
+
+***
+
+### nearest()
+
+> **nearest**\<`TResult`\>(`data`, `option`): `TResult`
+
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:236](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/JsonTranslator.ts#L236)
+
+The similarity search itself, over values already in memory.
+
+This is the floor the whole feature stands on: it is reached whenever the backend did
+not do the search, which is every backend except the ones with a native vector index.
+It reads the property through the option's selector, so it works on any shape the rows
+arrive in.
+
+#### Type Parameters
+
+##### TResult
+
+`TResult`
+
+#### Parameters
+
+##### data
+
+`unknown`
+
+##### option
+
+[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"nearest"`\>
+
+#### Returns
+
+`TResult`
+
+#### Overrides
+
+[`DataTranslator`](DataTranslator.md).[`nearest`](DataTranslator.md#nearest)
 
 ***
 
@@ -264,7 +382,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:76](https://github.c
 
 > **sum**\<`TResult`\>(`data`, `_`): `TResult`
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:92](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/JsonTranslator.ts#L92)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:247](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/JsonTranslator.ts#L247)
 
 #### Type Parameters
 
@@ -280,7 +398,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:92](https://github.c
 
 ##### \_
 
-[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"sum"`\>
+[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"sum"`\>
 
 #### Returns
 
@@ -288,7 +406,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:92](https://github.c
 
 #### Overrides
 
-[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`sum`](/reference/api/core/src/classes/DataTranslator#sum)
+[`DataTranslator`](DataTranslator.md).[`sum`](DataTranslator.md#sum)
 
 ***
 
@@ -296,7 +414,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:92](https://github.c
 
 > **distinct**\<`TResult`\>(`data`, `_`): `TResult`
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:118](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/JsonTranslator.ts#L118)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:273](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/JsonTranslator.ts#L273)
 
 #### Type Parameters
 
@@ -312,7 +430,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:118](https://github.
 
 ##### \_
 
-[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"distinct"`\>
+[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"distinct"`\>
 
 #### Returns
 
@@ -320,7 +438,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:118](https://github.
 
 #### Overrides
 
-[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`distinct`](/reference/api/core/src/classes/DataTranslator#distinct)
+[`DataTranslator`](DataTranslator.md).[`distinct`](DataTranslator.md#distinct)
 
 ***
 
@@ -328,7 +446,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:118](https://github.
 
 > **skip**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:150](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/JsonTranslator.ts#L150)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:305](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/JsonTranslator.ts#L305)
 
 #### Type Parameters
 
@@ -344,7 +462,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:150](https://github.
 
 ##### option
 
-[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"skip"`\>
+[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"skip"`\>
 
 #### Returns
 
@@ -352,7 +470,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:150](https://github.
 
 #### Overrides
 
-[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`skip`](/reference/api/core/src/classes/DataTranslator#skip)
+[`DataTranslator`](DataTranslator.md).[`skip`](DataTranslator.md#skip)
 
 ***
 
@@ -360,7 +478,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:150](https://github.
 
 > **take**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:170](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/JsonTranslator.ts#L170)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:325](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/JsonTranslator.ts#L325)
 
 #### Type Parameters
 
@@ -376,7 +494,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:170](https://github.
 
 ##### option
 
-[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"take"`\>
+[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"take"`\>
 
 #### Returns
 
@@ -384,4 +502,4 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:170](https://github.
 
 #### Overrides
 
-[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`take`](/reference/api/core/src/classes/DataTranslator#take)
+[`DataTranslator`](DataTranslator.md).[`take`](DataTranslator.md#take)

@@ -2,9 +2,9 @@
 title: Create Your Own Plugin
 ---
 
-## Overview
+# Build a Storage Plugin
 
-Creating your own plugin in very easy, simply implement the `IDbPlugin` found in `@routier/core` and profit. There
+Implement `IDbPlugin` from `@routier/core/plugins` when Routier needs to target a backend that does not already have a storage plugin. Application users selecting a built-in backend do not need this SPI.
 
 ## Requirements
 
@@ -48,5 +48,6 @@ If your datastore persists all entities into one physical table/collection (e.g.
 
 ## Next steps
 
-- Expose configuration via your plugin constructor (database name, connection string, options).
-- Document installation and usage under Integrations → Plugins.
+- [Query Translation for Plugin Authors](/integrations/plugins/advanced-plugins/query-translation/) — push filters, joins, sorting, and aggregation into the backend.
+- [Result Translation for Plugin Authors](/integrations/plugins/advanced-plugins/result-translation/) — adapt backend rows and finish operations in memory.
+- Expose configuration through the constructor and document the backend's durability, concurrency, migration, and failure guarantees.

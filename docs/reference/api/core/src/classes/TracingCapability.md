@@ -1,16 +1,16 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / TracingCapability
+[routier-collection](../../../README.md) / [core/src](../README.md) / TracingCapability
 
 # Class: TracingCapability
 
-Defined in: [core/src/capabilities/TracingCapability.ts:18](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/capabilities/TracingCapability.ts#L18)
+Defined in: [core/src/capabilities/TracingCapability.ts:10](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/capabilities/TracingCapability.ts#L10)
 
 ## Extends
 
-- [`Capability`](/reference/api/core/src/classes/Capability)
+- [`Capability`](Capability.md)
 
 ## Constructors
 
@@ -18,7 +18,7 @@ Defined in: [core/src/capabilities/TracingCapability.ts:18](https://github.com/A
 
 > **new TracingCapability**(`options?`): `TracingCapability`
 
-Defined in: [core/src/capabilities/TracingCapability.ts:32](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/capabilities/TracingCapability.ts#L32)
+Defined in: [core/src/capabilities/TracingCapability.ts:15](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/capabilities/TracingCapability.ts#L15)
 
 #### Parameters
 
@@ -32,7 +32,7 @@ Defined in: [core/src/capabilities/TracingCapability.ts:32](https://github.com/A
 
 #### Overrides
 
-[`Capability`](/reference/api/core/src/classes/Capability).[`constructor`](/reference/api/core/src/classes/Capability#constructor)
+[`Capability`](Capability.md).[`constructor`](Capability.md#constructor)
 
 ## Methods
 
@@ -40,7 +40,7 @@ Defined in: [core/src/capabilities/TracingCapability.ts:32](https://github.com/A
 
 > **apply**(`instance`): `void`
 
-Defined in: [core/src/capabilities/TracingCapability.ts:94](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/capabilities/TracingCapability.ts#L94)
+Defined in: [core/src/capabilities/TracingCapability.ts:21](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/capabilities/TracingCapability.ts#L21)
 
 #### Parameters
 
@@ -54,4 +54,4 @@ Defined in: [core/src/capabilities/TracingCapability.ts:94](https://github.com/A
 
 #### Overrides
 
-[`Capability`](/reference/api/core/src/classes/Capability).[`apply`](/reference/api/core/src/classes/Capability#apply)
+[`Capability`](Capability.md).[`apply`](Capability.md#apply)

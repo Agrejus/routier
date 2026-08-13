@@ -22,22 +22,21 @@ Property modifiers in Routier allow you to customize the behavior, constraints, 
 
 ## Available Modifiers
 
-All schema types support these core modifiers:
+Every property type supports `.from()`, `.optional()`, `.nullable()`, `.default()`, and `.tag()`. Other methods are type-specific and modifier wrappers may narrow the valid next methods.
 
-- **`.optional()`** - Makes the property optional
-- **`.nullable()`** - Allows the property to be null
-- **`.default(value)`** - Sets a default value
-- **`.readonly()`** - Makes the property read-only
-- **`.deserialize(fn)`** - Custom deserialization function
-- **`.serialize(fn)`** - Custom serialization function
-- **`.array()`** - Converts the property to an array type
-- **`.index(...names)`** - Creates database indexes
+Common type-specific modifiers:
 
-Additional modifiers are available on specific types:
+- **`.key()`** — string and number
+- **`.identity()`** — string, number, and object
+- **`.readonly()`** — string, number, boolean, date, file, and vector
+- **`.serialize()` / `.deserialize()`** — string, number, boolean, date, and array
+- **`.array()`** — string, number, boolean, date, and object
+- **`.index()`** — string, number, boolean, date, and array
+- **`.distinct()`** — string, number, boolean, and date
+- **`.foreignKey()`** — string and number
+- **`.searchable()`** — string only
 
-- **`.key()`** - Marks as primary key (string, number, date)
-- **`.identity()`** - Auto-generates values (string, number, date, boolean)
-- **`.distinct()`** - Ensures unique values (string, number, date, boolean)
+See [Schema API](/concepts/schema/schema-api#modifier-matrix) for the complete matrix.
 
 ## Tracked (for computed values)
 
@@ -64,7 +63,7 @@ Marks a property as a primary key for the entity.
 
 <<< @/_snippets/code/from-docs/concepts/schema/modifiers/key-example.ts
 
-**Available on:** `string`, `number`, `date`
+**Available on:** `string`, `number`
 
 ### `.identity()`
 
@@ -72,7 +71,7 @@ Marks the property for automatic value generation by the datastore. The datastor
 
 <<< @/_snippets/code/from-docs/concepts/schema/modifiers/identity-example.ts
 
-**Available on:** `string`, `number`, `date`, `boolean`
+**Available on:** `string`, `number`, and `object`
 
 ## Indexing
 
@@ -82,7 +81,7 @@ Creates a database index for efficient querying.
 
 <<< @/_snippets/code/from-docs/concepts/schema/modifiers/index-example.ts
 
-**Available on:** All types
+**Available on:** `string`, `number`, `boolean`, `date`, and `array`
 
 ### Compound Indexes
 
@@ -143,7 +142,7 @@ Makes the property read-only after creation.
 
 <<< @/_snippets/code/from-docs/concepts/schema/modifiers/readonly-example.ts
 
-**Available on:** All types
+**Available on:** `string`, `number`, `boolean`, `date`, `file`, and `vector`
 
 ## Serialization
 
@@ -153,7 +152,7 @@ Custom serialization function for the property.
 
 <<< @/_snippets/code/from-docs/concepts/schema/modifiers/serialize-example.ts
 
-**Available on:** All types
+**Available on:** `string`, `number`, `boolean`, `date`, and `array`
 
 ### `.deserialize()`
 
@@ -161,7 +160,7 @@ Custom deserialization function for the property.
 
 <<< @/_snippets/code/from-docs/concepts/schema/modifiers/deserialize-example.ts
 
-**Available on:** All types
+**Available on:** `string`, `number`, `boolean`, `date`, and `array`
 
 ## Type Conversion
 
@@ -171,7 +170,7 @@ Converts any property type to an array of that type. This allows you to combine 
 
 <<< @/_snippets/code/from-docs/concepts/schema/modifiers/type-combination-example.ts
 
-**Available on:** All types
+**Available on:** `string`, `number`, `boolean`, `date`, and `object`
 
 **Type Combinations:**
 
@@ -207,19 +206,7 @@ Not all modifiers can be used together. Here are the key rules based on the sour
 
 ### Modifier Support by Type
 
-| Modifier         | string | number | boolean | date | object | array |
-| ---------------- | ------ | ------ | ------- | ---- | ------ | ----- |
-| `.optional()`    | ✅     | ✅     | ✅      | ✅   | ✅     | ✅    |
-| `.nullable()`    | ✅     | ✅     | ✅      | ✅   | ✅     | ✅    |
-| `.default()`     | ✅     | ✅     | ✅      | ✅   | ✅     | ✅    |
-| `.readonly()`    | ✅     | ✅     | ✅      | ✅   | ✅     | ✅    |
-| `.serialize()`   | ✅     | ✅     | ✅      | ✅   | ✅     | ✅    |
-| `.deserialize()` | ✅     | ✅     | ✅      | ✅   | ✅     | ✅    |
-| `.array()`       | ✅     | ✅     | ✅      | ✅   | ✅     | ✅    |
-| `.index()`       | ✅     | ✅     | ✅      | ✅   | ✅     | ✅    |
-| `.key()`         | ✅     | ✅     | ❌      | ✅   | ❌     | ❌    |
-| `.identity()`    | ✅     | ✅     | ✅      | ✅   | ❌     | ❌    |
-| `.distinct()`    | ✅     | ✅     | ✅      | ✅   | ❌     | ❌    |
+See the source-aligned [modifier matrix](/concepts/schema/schema-api#modifier-matrix), which also covers file and vector properties. The TypeScript fluent API prevents unsupported combinations.
 
 ### Modifier Order
 

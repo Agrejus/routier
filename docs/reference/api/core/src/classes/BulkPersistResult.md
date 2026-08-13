@@ -1,16 +1,16 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / BulkPersistResult
+[routier-collection](../../../README.md) / [core/src](../README.md) / BulkPersistResult
 
 # Class: BulkPersistResult
 
-Defined in: [core/src/collections/Changes.ts:4](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/Changes.ts#L4)
+Defined in: [core/src/collections/Changes.ts:4](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/Changes.ts#L4)
 
 ## Extends
 
-- `Map`\<[`SchemaId`](/reference/api/core/src/type-aliases/SchemaId), [`SchemaPersistResult`](/reference/api/core/src/classes/SchemaPersistResult)\>
+- `Map`\<[`SchemaId`](../type-aliases/SchemaId.md), [`SchemaPersistResult`](SchemaPersistResult.md)\>
 
 ## Constructors
 
@@ -24,7 +24,7 @@ Defined in: node\_modules/typescript/lib/lib.es2015.collection.d.ts:50
 
 ##### entries?
 
-readonly readonly \[`number`, [`SchemaPersistResult`](/reference/api/core/src/classes/SchemaPersistResult)\<`Record`\<`string`, `unknown`\>\>\][]
+readonly readonly \[[`SchemaId`](../type-aliases/SchemaId.md), [`SchemaPersistResult`](SchemaPersistResult.md)\<`Record`\<`string`, `unknown`\>\>\][]
 
 #### Returns
 
@@ -44,7 +44,7 @@ Defined in: node\_modules/typescript/lib/lib.es2015.collection.d.ts:49
 
 ##### iterable?
 
-`Iterable`\<readonly \[`number`, [`SchemaPersistResult`](/reference/api/core/src/classes/SchemaPersistResult)\<`Record`\<`string`, `unknown`\>\>\], `any`, `any`\>
+`Iterable`\<readonly \[[`SchemaId`](../type-aliases/SchemaId.md), [`SchemaPersistResult`](SchemaPersistResult.md)\<`Record`\<`string`, `unknown`\>\>\], `any`, `any`\>
 
 #### Returns
 
@@ -68,7 +68,7 @@ the number of elements in the Map.
 
 #### Inherited from
 
-[`BulkPersistChanges`](/reference/api/core/src/classes/BulkPersistChanges).[`size`](/reference/api/core/src/classes/BulkPersistChanges#size)
+[`BulkPersistChanges`](BulkPersistChanges.md).[`size`](BulkPersistChanges.md#size)
 
 ***
 
@@ -80,7 +80,7 @@ Defined in: node\_modules/typescript/lib/lib.es2015.symbol.wellknown.d.ts:137
 
 #### Inherited from
 
-[`BulkPersistChanges`](/reference/api/core/src/classes/BulkPersistChanges).[`[toStringTag]`](/reference/api/core/src/classes/BulkPersistChanges#tostringtag)
+[`BulkPersistChanges`](BulkPersistChanges.md).[`[toStringTag]`](BulkPersistChanges.md#tostringtag)
 
 ***
 
@@ -102,7 +102,7 @@ Defined in: node\_modules/typescript/lib/lib.es2015.symbol.wellknown.d.ts:319
 
 > **get** **aggregate**(): `object`
 
-Defined in: [core/src/collections/Changes.ts:20](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/Changes.ts#L20)
+Defined in: [core/src/collections/Changes.ts:20](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/Changes.ts#L20)
 
 ##### Returns
 
@@ -128,27 +128,33 @@ Defined in: [core/src/collections/Changes.ts:20](https://github.com/Agrejus/rout
 
 ### resolve()
 
-> **resolve**(`schemaId`): [`SchemaPersistResult`](/reference/api/core/src/classes/SchemaPersistResult)
+> **resolve**\<`T`\>(`schemaId`): [`SchemaPersistResult`](SchemaPersistResult.md)\<`T`\>
 
-Defined in: [core/src/collections/Changes.ts:6](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/Changes.ts#L6)
+Defined in: [core/src/collections/Changes.ts:6](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/Changes.ts#L6)
+
+#### Type Parameters
+
+##### T
+
+`T` *extends* `object` = `Record`\<`string`, `unknown`\>
 
 #### Parameters
 
 ##### schemaId
 
-`number`
+[`SchemaId`](../type-aliases/SchemaId.md)
 
 #### Returns
 
-[`SchemaPersistResult`](/reference/api/core/src/classes/SchemaPersistResult)
+[`SchemaPersistResult`](SchemaPersistResult.md)\<`T`\>
 
 ***
 
 ### get()
 
-> **get**\<`T`\>(`schemaId`): [`SchemaPersistResult`](/reference/api/core/src/classes/SchemaPersistResult)\<`T`\>
+> **get**\<`T`\>(`schemaId`): [`SchemaPersistResult`](SchemaPersistResult.md)\<`T`\>
 
-Defined in: [core/src/collections/Changes.ts:16](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/Changes.ts#L16)
+Defined in: [core/src/collections/Changes.ts:16](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/Changes.ts#L16)
 
 Returns a specified element from the Map object. If the value that is associated to the provided key is an object, then you will get a reference to that object and any change made to that object will effectively modify it inside the Map.
 
@@ -162,11 +168,11 @@ Returns a specified element from the Map object. If the value that is associated
 
 ##### schemaId
 
-`number`
+[`SchemaId`](../type-aliases/SchemaId.md)
 
 #### Returns
 
-[`SchemaPersistResult`](/reference/api/core/src/classes/SchemaPersistResult)\<`T`\>
+[`SchemaPersistResult`](SchemaPersistResult.md)\<`T`\>
 
 Returns the element associated with the specified key. If no element is associated with the specified key, undefined is returned.
 
@@ -202,7 +208,7 @@ Defined in: node\_modules/typescript/lib/lib.es2015.collection.d.ts:24
 
 ##### key
 
-`number`
+[`SchemaId`](../type-aliases/SchemaId.md)
 
 #### Returns
 
@@ -254,7 +260,7 @@ Defined in: node\_modules/typescript/lib/lib.es2015.collection.d.ts:37
 
 ##### key
 
-`number`
+[`SchemaId`](../type-aliases/SchemaId.md)
 
 #### Returns
 
@@ -280,11 +286,11 @@ Adds a new element with a specified key and value to the Map. If an element with
 
 ##### key
 
-`number`
+[`SchemaId`](../type-aliases/SchemaId.md)
 
 ##### value
 
-[`SchemaPersistResult`](/reference/api/core/src/classes/SchemaPersistResult)
+[`SchemaPersistResult`](SchemaPersistResult.md)
 
 #### Returns
 
@@ -298,7 +304,7 @@ Adds a new element with a specified key and value to the Map. If an element with
 
 ### \[iterator\]()
 
-> **\[iterator\]**(): `MapIterator`\<\[`number`, [`SchemaPersistResult`](/reference/api/core/src/classes/SchemaPersistResult)\<`Record`\<`string`, `unknown`\>\>\]\>
+> **\[iterator\]**(): `MapIterator`\<\[[`SchemaId`](../type-aliases/SchemaId.md), [`SchemaPersistResult`](SchemaPersistResult.md)\<`Record`\<`string`, `unknown`\>\>\]\>
 
 Defined in: node\_modules/typescript/lib/lib.es2015.iterable.d.ts:143
 
@@ -306,7 +312,7 @@ Returns an iterable of entries in the map.
 
 #### Returns
 
-`MapIterator`\<\[`number`, [`SchemaPersistResult`](/reference/api/core/src/classes/SchemaPersistResult)\<`Record`\<`string`, `unknown`\>\>\]\>
+`MapIterator`\<\[[`SchemaId`](../type-aliases/SchemaId.md), [`SchemaPersistResult`](SchemaPersistResult.md)\<`Record`\<`string`, `unknown`\>\>\]\>
 
 #### Inherited from
 
@@ -316,7 +322,7 @@ Returns an iterable of entries in the map.
 
 ### entries()
 
-> **entries**(): `MapIterator`\<\[`number`, [`SchemaPersistResult`](/reference/api/core/src/classes/SchemaPersistResult)\<`Record`\<`string`, `unknown`\>\>\]\>
+> **entries**(): `MapIterator`\<\[[`SchemaId`](../type-aliases/SchemaId.md), [`SchemaPersistResult`](SchemaPersistResult.md)\<`Record`\<`string`, `unknown`\>\>\]\>
 
 Defined in: node\_modules/typescript/lib/lib.es2015.iterable.d.ts:148
 
@@ -324,7 +330,7 @@ Returns an iterable of key, value pairs for every entry in the map.
 
 #### Returns
 
-`MapIterator`\<\[`number`, [`SchemaPersistResult`](/reference/api/core/src/classes/SchemaPersistResult)\<`Record`\<`string`, `unknown`\>\>\]\>
+`MapIterator`\<\[[`SchemaId`](../type-aliases/SchemaId.md), [`SchemaPersistResult`](SchemaPersistResult.md)\<`Record`\<`string`, `unknown`\>\>\]\>
 
 #### Inherited from
 
@@ -334,7 +340,7 @@ Returns an iterable of key, value pairs for every entry in the map.
 
 ### keys()
 
-> **keys**(): `MapIterator`\<`number`\>
+> **keys**(): `MapIterator`\<[`SchemaId`](../type-aliases/SchemaId.md)\>
 
 Defined in: node\_modules/typescript/lib/lib.es2015.iterable.d.ts:153
 
@@ -342,7 +348,7 @@ Returns an iterable of keys in the map
 
 #### Returns
 
-`MapIterator`\<`number`\>
+`MapIterator`\<[`SchemaId`](../type-aliases/SchemaId.md)\>
 
 #### Inherited from
 
@@ -352,7 +358,7 @@ Returns an iterable of keys in the map
 
 ### values()
 
-> **values**(): `MapIterator`\<[`SchemaPersistResult`](/reference/api/core/src/classes/SchemaPersistResult)\<`Record`\<`string`, `unknown`\>\>\>
+> **values**(): `MapIterator`\<[`SchemaPersistResult`](SchemaPersistResult.md)\<`Record`\<`string`, `unknown`\>\>\>
 
 Defined in: node\_modules/typescript/lib/lib.es2015.iterable.d.ts:158
 
@@ -360,7 +366,7 @@ Returns an iterable of values in the map
 
 #### Returns
 
-`MapIterator`\<[`SchemaPersistResult`](/reference/api/core/src/classes/SchemaPersistResult)\<`Record`\<`string`, `unknown`\>\>\>
+`MapIterator`\<[`SchemaPersistResult`](SchemaPersistResult.md)\<`Record`\<`string`, `unknown`\>\>\>
 
 #### Inherited from
 

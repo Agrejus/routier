@@ -1,12 +1,12 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / IdSet
+[routier-collection](../../../README.md) / [core/src](../README.md) / IdSet
 
 # Class: IdSet
 
-Defined in: [core/src/collections/IdSet.ts:3](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/IdSet.ts#L3)
+Defined in: [core/src/collections/IdSet.ts:3](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/IdSet.ts#L3)
 
 ## Constructors
 
@@ -14,13 +14,13 @@ Defined in: [core/src/collections/IdSet.ts:3](https://github.com/Agrejus/routier
 
 > **new IdSet**(...`ids`): `IdSet`
 
-Defined in: [core/src/collections/IdSet.ts:7](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/IdSet.ts#L7)
+Defined in: [core/src/collections/IdSet.ts:7](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/IdSet.ts#L7)
 
 #### Parameters
 
 ##### ids
 
-...[`IdType`](/reference/api/core/src/type-aliases/IdType)[]
+...[`IdType`](../type-aliases/IdType.md)[]
 
 #### Returns
 
@@ -30,9 +30,9 @@ Defined in: [core/src/collections/IdSet.ts:7](https://github.com/Agrejus/routier
 
 ### ids
 
-> `readonly` **ids**: readonly [`IdType`](/reference/api/core/src/type-aliases/IdType)[]
+> `readonly` **ids**: readonly [`IdType`](../type-aliases/IdType.md)[]
 
-Defined in: [core/src/collections/IdSet.ts:5](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/IdSet.ts#L5)
+Defined in: [core/src/collections/IdSet.ts:5](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/IdSet.ts#L5)
 
 ## Methods
 
@@ -40,7 +40,7 @@ Defined in: [core/src/collections/IdSet.ts:5](https://github.com/Agrejus/routier
 
 > **equals**(`other`): `boolean`
 
-Defined in: [core/src/collections/IdSet.ts:11](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/IdSet.ts#L11)
+Defined in: [core/src/collections/IdSet.ts:11](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/IdSet.ts#L11)
 
 #### Parameters
 
@@ -58,7 +58,7 @@ Defined in: [core/src/collections/IdSet.ts:11](https://github.com/Agrejus/routie
 
 > **toString**(): `string`
 
-Defined in: [core/src/collections/IdSet.ts:20](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/IdSet.ts#L20)
+Defined in: [core/src/collections/IdSet.ts:20](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/IdSet.ts#L20)
 
 #### Returns
 

@@ -1,12 +1,12 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / MemoryDataCollection
+[routier-collection](../../../README.md) / [core/src](../README.md) / MemoryDataCollection
 
 # Class: MemoryDataCollection
 
-Defined in: [core/src/collections/MemoryDataCollection.ts:6](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/MemoryDataCollection.ts#L6)
+Defined in: [core/src/collections/MemoryDataCollection.ts:6](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/MemoryDataCollection.ts#L6)
 
 ## Constructors
 
@@ -14,13 +14,13 @@ Defined in: [core/src/collections/MemoryDataCollection.ts:6](https://github.com/
 
 > **new MemoryDataCollection**(`schema`): `MemoryDataCollection`
 
-Defined in: [core/src/collections/MemoryDataCollection.ts:21](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/MemoryDataCollection.ts#L21)
+Defined in: [core/src/collections/MemoryDataCollection.ts:26](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/MemoryDataCollection.ts#L26)
 
 #### Parameters
 
 ##### schema
 
-[`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`any`\>
+[`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`any`\>
 
 #### Returns
 
@@ -34,7 +34,7 @@ Defined in: [core/src/collections/MemoryDataCollection.ts:21](https://github.com
 
 > **get** **size**(): `number`
 
-Defined in: [core/src/collections/MemoryDataCollection.ts:13](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/MemoryDataCollection.ts#L13)
+Defined in: [core/src/collections/MemoryDataCollection.ts:13](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/MemoryDataCollection.ts#L13)
 
 ##### Returns
 
@@ -48,7 +48,7 @@ Defined in: [core/src/collections/MemoryDataCollection.ts:13](https://github.com
 
 > **get** **records**(): `Record`\<`string`, `unknown`\>[]
 
-Defined in: [core/src/collections/MemoryDataCollection.ts:17](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/MemoryDataCollection.ts#L17)
+Defined in: [core/src/collections/MemoryDataCollection.ts:17](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/MemoryDataCollection.ts#L17)
 
 ##### Returns
 
@@ -56,11 +56,25 @@ Defined in: [core/src/collections/MemoryDataCollection.ts:17](https://github.com
 
 ## Methods
 
+### values()
+
+> **values**(): `IterableIterator`\<`Record`\<`string`, `unknown`\>\>
+
+Defined in: [core/src/collections/MemoryDataCollection.ts:22](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/MemoryDataCollection.ts#L22)
+
+Iterates stored records without materializing them into an array.
+
+#### Returns
+
+`IterableIterator`\<`Record`\<`string`, `unknown`\>\>
+
+***
+
 ### seed()
 
 > **seed**(`items`): `void`
 
-Defined in: [core/src/collections/MemoryDataCollection.ts:61](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/MemoryDataCollection.ts#L61)
+Defined in: [core/src/collections/MemoryDataCollection.ts:80](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/MemoryDataCollection.ts#L80)
 
 #### Parameters
 
@@ -78,7 +92,7 @@ Defined in: [core/src/collections/MemoryDataCollection.ts:61](https://github.com
 
 > **add**(`item`): `void`
 
-Defined in: [core/src/collections/MemoryDataCollection.ts:106](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/MemoryDataCollection.ts#L106)
+Defined in: [core/src/collections/MemoryDataCollection.ts:131](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/MemoryDataCollection.ts#L131)
 
 #### Parameters
 
@@ -92,11 +106,57 @@ Defined in: [core/src/collections/MemoryDataCollection.ts:106](https://github.co
 
 ***
 
+### addIfAbsent()
+
+> **addIfAbsent**(`item`): `void`
+
+Defined in: [core/src/collections/MemoryDataCollection.ts:141](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/MemoryDataCollection.ts#L141)
+
+Adds a record only when no record with the same key is present. Durable
+collections use this to hydrate stored records around in-memory mutations
+without clobbering them.
+
+#### Parameters
+
+##### item
+
+`Record`\<`string`, `unknown`\>
+
+#### Returns
+
+`void`
+
+***
+
+### getByIds()
+
+> **getByIds**(`ids`): `Record`\<`string`, `unknown`\>
+
+Defined in: [core/src/collections/MemoryDataCollection.ts:155](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/MemoryDataCollection.ts#L155)
+
+Looks up a single record by its key values without scanning the collection.
+
+#### Parameters
+
+##### ids
+
+[`IdType`](../type-aliases/IdType.md)[]
+
+Key values in schema id property order
+
+#### Returns
+
+`Record`\<`string`, `unknown`\>
+
+The matching record or undefined when no record has the given key
+
+***
+
 ### remove()
 
 > **remove**(`item`): `void`
 
-Defined in: [core/src/collections/MemoryDataCollection.ts:111](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/MemoryDataCollection.ts#L111)
+Defined in: [core/src/collections/MemoryDataCollection.ts:159](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/MemoryDataCollection.ts#L159)
 
 #### Parameters
 
@@ -114,7 +174,7 @@ Defined in: [core/src/collections/MemoryDataCollection.ts:111](https://github.co
 
 > **update**(`item`): `void`
 
-Defined in: [core/src/collections/MemoryDataCollection.ts:116](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/MemoryDataCollection.ts#L116)
+Defined in: [core/src/collections/MemoryDataCollection.ts:164](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/MemoryDataCollection.ts#L164)
 
 #### Parameters
 
@@ -132,13 +192,13 @@ Defined in: [core/src/collections/MemoryDataCollection.ts:116](https://github.co
 
 > **destroy**(`done`): `void`
 
-Defined in: [core/src/collections/MemoryDataCollection.ts:121](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/MemoryDataCollection.ts#L121)
+Defined in: [core/src/collections/MemoryDataCollection.ts:169](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/MemoryDataCollection.ts#L169)
 
 #### Parameters
 
 ##### done
 
-[`CallbackResult`](/reference/api/core/src/type-aliases/CallbackResult)\<`never`\>
+[`CallbackResult`](../type-aliases/CallbackResult.md)\<`never`\>
 
 #### Returns
 
@@ -150,13 +210,13 @@ Defined in: [core/src/collections/MemoryDataCollection.ts:121](https://github.co
 
 > **load**(`done`): `void`
 
-Defined in: [core/src/collections/MemoryDataCollection.ts:127](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/MemoryDataCollection.ts#L127)
+Defined in: [core/src/collections/MemoryDataCollection.ts:175](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/MemoryDataCollection.ts#L175)
 
 #### Parameters
 
 ##### done
 
-[`CallbackResult`](/reference/api/core/src/type-aliases/CallbackResult)\<`never`\>
+[`CallbackResult`](../type-aliases/CallbackResult.md)\<`never`\>
 
 #### Returns
 
@@ -168,13 +228,13 @@ Defined in: [core/src/collections/MemoryDataCollection.ts:127](https://github.co
 
 > **save**(`done`): `void`
 
-Defined in: [core/src/collections/MemoryDataCollection.ts:131](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/MemoryDataCollection.ts#L131)
+Defined in: [core/src/collections/MemoryDataCollection.ts:179](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/MemoryDataCollection.ts#L179)
 
 #### Parameters
 
 ##### done
 
-[`CallbackResult`](/reference/api/core/src/type-aliases/CallbackResult)\<`never`\>
+[`CallbackResult`](../type-aliases/CallbackResult.md)\<`never`\>
 
 #### Returns
 

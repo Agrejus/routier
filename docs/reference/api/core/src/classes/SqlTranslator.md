@@ -1,16 +1,16 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / SqlTranslator
+[routier-collection](../../../README.md) / [core/src](../README.md) / SqlTranslator
 
 # Class: SqlTranslator\<TRoot, TShape\>
 
-Defined in: [core/src/plugins/translators/SqlTranslator.ts:4](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/SqlTranslator.ts#L4)
+Defined in: [core/src/plugins/translators/SqlTranslator.ts:48](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/SqlTranslator.ts#L48)
 
 ## Extends
 
-- [`DataTranslator`](/reference/api/core/src/classes/DataTranslator)\<`TRoot`, `TShape`\>
+- [`DataTranslator`](DataTranslator.md)\<`TRoot`, `TShape`\>
 
 ## Type Parameters
 
@@ -26,31 +26,35 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:4](https://github.com
 
 ### Constructor
 
-> **new SqlTranslator**\<`TRoot`, `TShape`\>(`query`): `SqlTranslator`\<`TRoot`, `TShape`\>
+> **new SqlTranslator**\<`TRoot`, `TShape`\>(`query`, `pushedDown`): `SqlTranslator`\<`TRoot`, `TShape`\>
 
-Defined in: [core/src/plugins/translators/DataTranslator.ts:20](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/DataTranslator.ts#L20)
+Defined in: [core/src/plugins/translators/SqlTranslator.ts:52](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/SqlTranslator.ts#L52)
 
 #### Parameters
 
 ##### query
 
-[`IQuery`](/reference/api/core/src/type-aliases/IQuery)\<`TRoot`, `TShape`\>
+[`IQuery`](../type-aliases/IQuery.md)\<`TRoot`, `TShape`\>
+
+##### pushedDown
+
+[`SqlPushdown`](../type-aliases/SqlPushdown.md) = `{}`
 
 #### Returns
 
 `SqlTranslator`\<`TRoot`, `TShape`\>
 
-#### Inherited from
+#### Overrides
 
-[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`constructor`](/reference/api/core/src/classes/DataTranslator#constructor)
+[`DataTranslator`](DataTranslator.md).[`constructor`](DataTranslator.md#constructor)
 
 ## Methods
 
 ### translate()
 
-> **translate**(`data`): `TShape`
+> **translate**(`data`): [`ITranslatedValue`](../interfaces/ITranslatedValue.md)\<`TShape`\>
 
-Defined in: [core/src/plugins/translators/DataTranslator.ts:38](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/DataTranslator.ts#L38)
+Defined in: [core/src/plugins/translators/DataTranslator.ts:75](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/DataTranslator.ts#L75)
 
 #### Parameters
 
@@ -60,11 +64,11 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:38](https://github.c
 
 #### Returns
 
-`TShape`
+[`ITranslatedValue`](../interfaces/ITranslatedValue.md)\<`TShape`\>
 
 #### Inherited from
 
-[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`translate`](/reference/api/core/src/classes/DataTranslator#translate)
+[`DataTranslator`](DataTranslator.md).[`translate`](DataTranslator.md#translate)
 
 ***
 
@@ -72,7 +76,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:38](https://github.c
 
 > **count**\<`TResult`\>(`data`, `_`): `TResult`
 
-Defined in: [core/src/plugins/translators/SqlTranslator.ts:6](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/SqlTranslator.ts#L6)
+Defined in: [core/src/plugins/translators/SqlTranslator.ts:57](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/SqlTranslator.ts#L57)
 
 #### Type Parameters
 
@@ -88,7 +92,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:6](https://github.com
 
 ##### \_
 
-[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"count"`\>
+[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"count"`\>
 
 #### Returns
 
@@ -96,7 +100,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:6](https://github.com
 
 #### Overrides
 
-[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`count`](/reference/api/core/src/classes/DataTranslator#count)
+[`DataTranslator`](DataTranslator.md).[`count`](DataTranslator.md#count)
 
 ***
 
@@ -104,7 +108,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:6](https://github.com
 
 > **min**\<`TResult`\>(`data`, `_`): `TResult`
 
-Defined in: [core/src/plugins/translators/SqlTranslator.ts:15](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/SqlTranslator.ts#L15)
+Defined in: [core/src/plugins/translators/SqlTranslator.ts:72](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/SqlTranslator.ts#L72)
 
 #### Type Parameters
 
@@ -120,7 +124,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:15](https://github.co
 
 ##### \_
 
-[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"min"`\>
+[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"min"`\>
 
 #### Returns
 
@@ -128,7 +132,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:15](https://github.co
 
 #### Overrides
 
-[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`min`](/reference/api/core/src/classes/DataTranslator#min)
+[`DataTranslator`](DataTranslator.md).[`min`](DataTranslator.md#min)
 
 ***
 
@@ -136,7 +140,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:15](https://github.co
 
 > **max**\<`TResult`\>(`data`, `_`): `TResult`
 
-Defined in: [core/src/plugins/translators/SqlTranslator.ts:19](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/SqlTranslator.ts#L19)
+Defined in: [core/src/plugins/translators/SqlTranslator.ts:76](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/SqlTranslator.ts#L76)
 
 #### Type Parameters
 
@@ -152,7 +156,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:19](https://github.co
 
 ##### \_
 
-[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"max"`\>
+[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"max"`\>
 
 #### Returns
 
@@ -160,7 +164,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:19](https://github.co
 
 #### Overrides
 
-[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`max`](/reference/api/core/src/classes/DataTranslator#max)
+[`DataTranslator`](DataTranslator.md).[`max`](DataTranslator.md#max)
 
 ***
 
@@ -168,7 +172,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:19](https://github.co
 
 > **sum**\<`TResult`\>(`data`, `_`): `TResult`
 
-Defined in: [core/src/plugins/translators/SqlTranslator.ts:23](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/SqlTranslator.ts#L23)
+Defined in: [core/src/plugins/translators/SqlTranslator.ts:80](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/SqlTranslator.ts#L80)
 
 #### Type Parameters
 
@@ -184,7 +188,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:23](https://github.co
 
 ##### \_
 
-[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"sum"`\>
+[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"sum"`\>
 
 #### Returns
 
@@ -192,7 +196,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:23](https://github.co
 
 #### Overrides
 
-[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`sum`](/reference/api/core/src/classes/DataTranslator#sum)
+[`DataTranslator`](DataTranslator.md).[`sum`](DataTranslator.md#sum)
 
 ***
 
@@ -200,7 +204,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:23](https://github.co
 
 > **distinct**\<`TResult`\>(`data`, `_`): `TResult`
 
-Defined in: [core/src/plugins/translators/SqlTranslator.ts:36](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/SqlTranslator.ts#L36)
+Defined in: [core/src/plugins/translators/SqlTranslator.ts:93](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/SqlTranslator.ts#L93)
 
 #### Type Parameters
 
@@ -216,7 +220,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:36](https://github.co
 
 ##### \_
 
-[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"distinct"`\>
+[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"distinct"`\>
 
 #### Returns
 
@@ -224,7 +228,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:36](https://github.co
 
 #### Overrides
 
-[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`distinct`](/reference/api/core/src/classes/DataTranslator#distinct)
+[`DataTranslator`](DataTranslator.md).[`distinct`](DataTranslator.md#distinct)
 
 ***
 
@@ -232,7 +236,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:36](https://github.co
 
 > **filter**\<`TResult`\>(`data`, `_`): `TResult`
 
-Defined in: [core/src/plugins/translators/SqlTranslator.ts:40](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/SqlTranslator.ts#L40)
+Defined in: [core/src/plugins/translators/SqlTranslator.ts:97](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/SqlTranslator.ts#L97)
 
 #### Type Parameters
 
@@ -248,7 +252,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:40](https://github.co
 
 ##### \_
 
-[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"filter"`\>
+[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"filter"`\>
 
 #### Returns
 
@@ -256,7 +260,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:40](https://github.co
 
 #### Overrides
 
-[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`filter`](/reference/api/core/src/classes/DataTranslator#filter)
+[`DataTranslator`](DataTranslator.md).[`filter`](DataTranslator.md#filter)
 
 ***
 
@@ -264,7 +268,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:40](https://github.co
 
 > **skip**(`data`, `_`): `TShape`
 
-Defined in: [core/src/plugins/translators/SqlTranslator.ts:44](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/SqlTranslator.ts#L44)
+Defined in: [core/src/plugins/translators/SqlTranslator.ts:101](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/SqlTranslator.ts#L101)
 
 #### Parameters
 
@@ -274,7 +278,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:44](https://github.co
 
 ##### \_
 
-[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"skip"`\>
+[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"skip"`\>
 
 #### Returns
 
@@ -282,7 +286,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:44](https://github.co
 
 #### Overrides
 
-[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`skip`](/reference/api/core/src/classes/DataTranslator#skip)
+[`DataTranslator`](DataTranslator.md).[`skip`](DataTranslator.md#skip)
 
 ***
 
@@ -290,7 +294,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:44](https://github.co
 
 > **take**(`data`, `_`): `TShape`
 
-Defined in: [core/src/plugins/translators/SqlTranslator.ts:48](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/SqlTranslator.ts#L48)
+Defined in: [core/src/plugins/translators/SqlTranslator.ts:105](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/SqlTranslator.ts#L105)
 
 #### Parameters
 
@@ -300,7 +304,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:48](https://github.co
 
 ##### \_
 
-[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"take"`\>
+[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"take"`\>
 
 #### Returns
 
@@ -308,7 +312,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:48](https://github.co
 
 #### Overrides
 
-[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`take`](/reference/api/core/src/classes/DataTranslator#take)
+[`DataTranslator`](DataTranslator.md).[`take`](DataTranslator.md#take)
 
 ***
 
@@ -316,7 +320,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:48](https://github.co
 
 > **sort**(`data`, `_`): `TShape`
 
-Defined in: [core/src/plugins/translators/SqlTranslator.ts:52](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/SqlTranslator.ts#L52)
+Defined in: [core/src/plugins/translators/SqlTranslator.ts:109](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/SqlTranslator.ts#L109)
 
 #### Parameters
 
@@ -326,7 +330,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:52](https://github.co
 
 ##### \_
 
-[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"sort"`\>
+[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"sort"`\>
 
 #### Returns
 
@@ -334,15 +338,29 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:52](https://github.co
 
 #### Overrides
 
-[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`sort`](/reference/api/core/src/classes/DataTranslator#sort)
+[`DataTranslator`](DataTranslator.md).[`sort`](DataTranslator.md#sort)
 
 ***
 
-### map()
+### nearest()
 
-> **map**(`data`, `option`): `TShape`
+> **nearest**(`data`, `option`): `TShape`
 
-Defined in: [core/src/plugins/translators/SqlTranslator.ts:56](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/translators/SqlTranslator.ts#L56)
+Defined in: [core/src/plugins/translators/SqlTranslator.ts:128](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/SqlTranslator.ts#L128)
+
+Scores in memory, unlike every other shaper here.
+
+The pass-throughs above are safe because the SQL that produced these rows contained the
+corresponding clause. No `sql-core` statement contains a similarity ordering — engines
+that can express one are the exception, not the rule — so passing the data through
+would return whatever order the engine happened to produce.
+
+A plugin whose engine DID push the search down overrides this with a pass-through,
+gated on `option.target`. Postgres is the only one today.
+
+Rows arrive keyed by storage column name and are read that way rather than through the
+option's selector, because the selector is written against the entity shape and these
+rows have not been deserialized into it yet.
 
 #### Parameters
 
@@ -352,7 +370,7 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:56](https://github.co
 
 ##### option
 
-[`QueryOption`](/reference/api/core/src/type-aliases/QueryOption)\<`TShape`, `"map"`\>
+[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"nearest"`\>
 
 #### Returns
 
@@ -360,4 +378,100 @@ Defined in: [core/src/plugins/translators/SqlTranslator.ts:56](https://github.co
 
 #### Overrides
 
-[`DataTranslator`](/reference/api/core/src/classes/DataTranslator).[`map`](/reference/api/core/src/classes/DataTranslator#map)
+[`DataTranslator`](DataTranslator.md).[`nearest`](DataTranslator.md#nearest)
+
+***
+
+### join()
+
+> **join**(`data`, `option`): `TShape`
+
+Defined in: [core/src/plugins/translators/SqlTranslator.ts:153](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/SqlTranslator.ts#L153)
+
+Passes through only when the statement really did contain the `JOIN`, and refuses otherwise.
+
+The pass-throughs above are safe unconditionally because the SQL that produced these rows
+contained the corresponding clause. A join is not like that: if the plugin did not emit one,
+these rows are the outer side alone, and passing them through hands the caller entities
+where the contract says tuples — every `([outer, inner]) => ...` lambda downstream then
+destructures the wrong object, and nothing errors.
+
+So the plugin has to say, and the default is to refuse. A plugin that DID emit the join has
+already split each flat row into its two deserialized halves (`splitJoinRows` in
+`@routier/sql-plugin-core`), so by the time the option is walked the work is done.
+
+#### Parameters
+
+##### data
+
+`unknown`
+
+##### option
+
+[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"join"`\>
+
+#### Returns
+
+`TShape`
+
+#### Overrides
+
+[`DataTranslator`](DataTranslator.md).[`join`](DataTranslator.md#join)
+
+***
+
+### group()
+
+> **group**\<`T`\>(`data`, `option`): `T`
+
+Defined in: [core/src/plugins/translators/SqlTranslator.ts:165](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/SqlTranslator.ts#L165)
+
+#### Type Parameters
+
+##### T
+
+`T`
+
+#### Parameters
+
+##### data
+
+`unknown`
+
+##### option
+
+[`QueryOption`](../type-aliases/QueryOption.md)\<`T`, `"group"`\>
+
+#### Returns
+
+`T`
+
+#### Overrides
+
+[`DataTranslator`](DataTranslator.md).[`group`](DataTranslator.md#group)
+
+***
+
+### map()
+
+> **map**(`data`, `option`): `TShape`
+
+Defined in: [core/src/plugins/translators/SqlTranslator.ts:201](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/SqlTranslator.ts#L201)
+
+#### Parameters
+
+##### data
+
+`unknown`
+
+##### option
+
+[`QueryOption`](../type-aliases/QueryOption.md)\<`TShape`, `"map"`\>
+
+#### Returns
+
+`TShape`
+
+#### Overrides
+
+[`DataTranslator`](DataTranslator.md).[`map`](DataTranslator.md#map)

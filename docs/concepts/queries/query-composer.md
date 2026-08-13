@@ -1,194 +1,146 @@
 ---
-title: Query Composer
+title: Reusable Queries
 ---
 
-# Query Composer
+# Reusable Queries (Query Composer)
 
-The Query Composer enables you to build reusable, parameterized queries that can be applied to collections later. This pattern is especially useful for creating query factories, sharing query logic across your application, and building complex queries with dynamic parameters.
+`Queryable.compose(schema)` builds a query definition without a store or collection. Later, pass that definition to `collection.apply(...)` and execute it normally.
 
-## Quick Navigation
+It is similar to a stored procedure in how application code uses it—a named, parameterized query that can be invoked repeatedly—but it is **not stored in the database**. Routier retains the query operations and translates them for whichever plugin executes the collection.
 
-- [What is Query Composer?](#what-is-query-composer)
-- [Why Use Query Composer?](#why-use-query-composer)
-- [Basic Usage](#basic-usage)
-- [Advanced Patterns](#advanced-patterns)
-- [When to Use Query Composer](#when-to-use-query-composer)
-- [Related Topics](#related-topics)
+## Define, apply, execute
 
-## What is Query Composer?
+```ts
+import { Queryable } from "@routier/datastore";
+import { productSchema } from "./schemas";
 
-Query Composer is a way to build queries independently of a collection. Instead of starting from a collection and chaining operations, you compose a query using `Queryable.compose()` and then apply it to a collection when needed.
+export const availableProducts = (category: string, minimumStock = 1) =>
+  Queryable.compose(productSchema)
+    .where(
+      (product, params) =>
+        product.category === params.category &&
+        product.stock >= params.minimumStock,
+      { category, minimumStock },
+    )
+    .sort(product => product.name);
+```
 
-### The Problem It Solves
+Apply it to a collection and choose a terminal operation:
 
-When building queries directly on collections, you must have the collection instance available:
+```ts
+const query = availableProducts("hardware", 5);
 
+const rows = await store.products
+  .apply(query)
+  .toArrayAsync();
 
-<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-1.ts
+const count = await store.products
+  .apply(availableProducts("hardware", 5))
+  .countAsync();
+```
 
+The composer does not execute anything. `apply()` attaches its recorded operations to the collection; `toArrayAsync()`, `countAsync()`, or another terminal method performs the read.
 
-This works well for one-off queries, but becomes limiting when you want to:
+## Why use one
 
-- **Reuse query logic** across different parts of your application
-- **Create query factories** that generate queries based on parameters
-- **Share query definitions** without executing them immediately
-- **Build queries conditionally** before knowing which collection to use
+- Keep query policy next to domain code instead of UI code.
+- Reuse the same definition from HTTP handlers, jobs, and components.
+- Unit-test query construction separately from storage setup.
+- Pass ordinary typed parameters instead of rebuilding predicates at each call site.
+- Apply the definition to any compatible collection using the same root schema.
 
-### The Solution
+```ts
+export const expensiveProducts = (minimumPrice: number) =>
+  Queryable.compose(productSchema)
+    .where((product, params) => product.price >= params.minimumPrice, {
+      minimumPrice,
+    });
 
-Query Composer separates query building from query execution:
+await primary.products.apply(expensiveProducts(100)).toArrayAsync();
+await replica.products.apply(expensiveProducts(100)).toArrayAsync();
+```
 
+## Supported composer operations
 
-<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-2.ts
+Before `apply()`, `QueryableComposer` exposes:
 
+| Operation | Purpose |
+| --- | --- |
+| `.where(predicate)` | Add a filter |
+| `.where(predicate, params)` | Add a parameterized filter |
+| `.map(selector)` | Project to a new shape |
+| `.sort(selector)` | Sort ascending |
+| `.sortDescending(selector)` | Sort descending |
+| `.skip(count)` | Skip rows |
+| `.take(count)` | Limit rows |
 
-**Note**: You can import schemas directly instead of accessing them from the data store. This makes your query composers completely independent:
+The staged types prevent invalid pagination ordering—for example, `skip()` is not available after `take()`.
 
+A composer intentionally has no terminal methods because it has no collection to execute against.
 
-<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-3.ts
+## Continue composing after apply
 
+`apply()` returns a normal `QueryableAsync`, so collection-dependent operations can follow it:
 
-This pattern is especially useful when:
+```ts
+const base = availableProducts("hardware");
 
-- Building query libraries in separate modules
-- Creating reusable query utilities
-- Testing queries independently of data store instances
+const firstPage = await store.products
+  .apply(base)
+  .take(20)
+  .toArrayAsync();
 
-## Why Use Query Composer?
+const nearest = await store.products
+  .apply(base)
+  .nearest(product => product.embedding, queryEmbedding, 10)
+  .toArrayAsync();
 
-### 1. Reusable Query Logic
+const suppliers = await store.products
+  .apply(base)
+  .join(s => s.suppliers, product => product.supplierId, supplier => supplier.id)
+  .toArrayAsync();
+```
 
-Create query factories that can be reused throughout your application:
+`search()` is not a composer operation. Full-text search starts from a collection because it needs that collection's generated search-index registration.
 
+## Prefer factories for parameterized definitions
 
-<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-4.ts
+Return a fresh composer from a function:
 
+```ts
+export const productsForTenant = (tenantId: string) =>
+  Queryable.compose(productSchema)
+    .where((product, params) => product.tenantId === params.tenantId, {
+      tenantId,
+    });
+```
 
-### 2. Separation of Concerns
+This keeps each invocation self-contained and avoids accidentally adding more operations to a shared definition while constructing another query.
 
-Separate query definition from query execution. Import schemas directly to make queries completely independent:
+## Direct query versus reusable query
 
+| Direct | Reusable |
+| --- | --- |
+| `store.products.where(...).toArrayAsync()` | `store.products.apply(productsForTenant(id)).toArrayAsync()` |
+| Starts from a collection | Starts from a compiled schema |
+| Best for one call site | Best for named application query policy |
+| Executes at a terminal method | Still executes only after `apply()` and a terminal method |
 
-<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-5.ts
+## API names
 
+The public API is:
 
-### 3. Complex Query Building
+```ts
+Queryable.compose(compiledSchema)
+collection.apply(composer)
+```
 
-Build complex queries with multiple parameters and operations:
+There is no separate public `query()` or `createQuery()` method. `Query` in `@routier/core/plugins` is the lower-level plugin request model, not the application-facing reusable-query builder.
 
+## Related
 
-<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-6.ts
-
-
-## Basic Usage
-
-### Creating a Simple Composer
-
-Start with `Queryable.compose()` and pass the schema. You can access the schema from the data store or import it directly:
-
-
-<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-7.ts
-
-
-### Chaining Operations
-
-Composers support all standard query operations:
-
-
-<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-8.ts
-
-
-### Using with Pagination
-
-Composers work seamlessly with pagination:
-
-
-<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-9.ts
-
-
-## Advanced Patterns
-
-### Query Factories
-
-Create factories that generate queries based on different criteria:
-
-
-<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-10.ts
-
-
-### Conditional Query Building
-
-Build queries conditionally based on runtime conditions:
-
-
-<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-11.ts
-
-
-### Combining Composers with Additional Operations
-
-You can apply a composer and then chain additional operations:
-
-
-<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-12.ts
-
-
-## When to Use Query Composer
-
-### Use Query Composer When:
-
-✅ **You need reusable query logic** across multiple parts of your application  
-✅ **You want to create query factories** for common query patterns  
-✅ **You're building queries conditionally** based on user input or application state  
-✅ **You want to separate query definition from execution** for better code organization  
-✅ **You're creating query libraries** or shared query utilities
-
-### Use Direct Queries When:
-
-✅ **The query is simple and one-off**  
-✅ **You don't need to reuse the query logic**  
-✅ **The query is tightly coupled to a specific collection instance**  
-✅ **You prefer the simpler, more direct syntax**
-
-## Key Differences from Direct Queries
-
-| Aspect               | Direct Queries                          | Query Composer                                             |
-| -------------------- | --------------------------------------- | ---------------------------------------------------------- |
-| **Starting Point**   | Collection instance                     | Schema                                                     |
-| **Query Building**   | Built inline on collection              | Built separately, then applied via `.apply()`              |
-| **Execution**        | Executes when terminal method is called | Executes when terminal method is called (after `.apply()`) |
-| **Reusability**      | Limited to collection instance          | Can be reused across collections                           |
-| **Parameterization** | Inline with query                       | Encapsulated in composer function                          |
-| **Use Case**         | One-off queries                         | Reusable query patterns                                    |
-
-## Best Practices
-
-### 1. Use Descriptive Function Names
-
-
-<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-13.ts
-
-
-### 2. Group Related Queries
-
-
-<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-14.ts
-
-
-### 3. Type Your Parameters
-
-
-<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-15.ts
-
-
-### 4. Keep Composers Focused
-
-
-<<< @/_snippets/code/from-docs/concepts/queries/query-composer/block-16.ts
-
-
-## Related Topics
-
-- [Filtering Data](/concepts/queries/filtering) - Learn about parameterized queries
-- [Query Architecture](/concepts/query-architecture) - Understand how queries work internally
-- [Sorting Results](/concepts/queries/sorting) - Learn about sorting operations
-- [Pagination](/concepts/queries/pagination) - Learn about pagination patterns
+- [Query Overview](/concepts/queries/)
+- [Filtering](/concepts/queries/filtering)
+- [Joins](/concepts/queries/joins)
+- [Vector Search](/concepts/queries/vector-search)
+- [Query Architecture](/concepts/query-architecture)

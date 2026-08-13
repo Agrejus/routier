@@ -43,9 +43,9 @@ This example demonstrates:
 - The `create((Instance, ...args) => new class extends Instance { ... })` pattern ensures the subclass receives the same constructor args and types as the base collection.
 - Always call `super(...args)` in the constructor to properly initialize the base collection.
 - Prefer adding cohesive, high-level helpers (e.g. `addWithDefaults`, `findLowStock`, `bulkRestock`) rather than simple wrappers.
-- All base collection methods remain available in your extended collection (`where`, `map`, `toArrayAsync`, `saveChangesAsync`, `addAsync`, `removeAsync`, attachments, etc.).
+- All methods from the selected mode remain available (`where`, `map`, `toArrayAsync`, and—for writable modes—`addAsync`, `removeAsync`, attachments, etc.).
 - Extended collections maintain full type safety - TypeScript will infer types from your schema automatically.
-- Changes made through custom methods are tracked just like standard collection operations - you still need to call `saveChangesAsync()` to persist them.
+- Changes made through custom methods are tracked like standard operations. Persist them with `store.saveChangesAsync()`.
 
 ### When to Use
 

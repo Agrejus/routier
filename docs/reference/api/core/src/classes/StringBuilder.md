@@ -1,16 +1,16 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / StringBuilder
+[routier-collection](../../../README.md) / [core/src](../README.md) / StringBuilder
 
 # Class: StringBuilder
 
-Defined in: [core/src/codegen/blocks.ts:147](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/codegen/blocks.ts#L147)
+Defined in: [core/src/codegen/blocks.ts:202](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/codegen/blocks.ts#L202)
 
 ## Extends
 
-- [`Block`](/reference/api/core/src/classes/Block)
+- [`Block`](Block.md)
 
 ## Constructors
 
@@ -18,13 +18,13 @@ Defined in: [core/src/codegen/blocks.ts:147](https://github.com/Agrejus/routier/
 
 > **new StringBuilder**(`type`, `name?`, `parentIndent?`, `parent?`): `StringBuilder`
 
-Defined in: [core/src/codegen/blocks.ts:151](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/codegen/blocks.ts#L151)
+Defined in: [core/src/codegen/blocks.ts:206](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/codegen/blocks.ts#L206)
 
 #### Parameters
 
 ##### type
 
-[`StringType`](/reference/api/core/src/type-aliases/StringType)
+[`StringType`](../type-aliases/StringType.md)
 
 ##### name?
 
@@ -36,7 +36,7 @@ Defined in: [core/src/codegen/blocks.ts:151](https://github.com/Agrejus/routier/
 
 ##### parent?
 
-[`Block`](/reference/api/core/src/classes/Block)
+[`Block`](Block.md)
 
 #### Returns
 
@@ -44,7 +44,7 @@ Defined in: [core/src/codegen/blocks.ts:151](https://github.com/Agrejus/routier/
 
 #### Overrides
 
-[`Block`](/reference/api/core/src/classes/Block).[`constructor`](/reference/api/core/src/classes/Block#constructor)
+[`Block`](Block.md).[`constructor`](Block.md#constructor)
 
 ## Properties
 
@@ -52,11 +52,11 @@ Defined in: [core/src/codegen/blocks.ts:151](https://github.com/Agrejus/routier/
 
 > `readonly` **name**: `string`
 
-Defined in: [core/src/codegen/blocks.ts:11](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/codegen/blocks.ts#L11)
+Defined in: [core/src/codegen/blocks.ts:11](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/codegen/blocks.ts#L11)
 
 #### Inherited from
 
-[`Block`](/reference/api/core/src/classes/Block).[`name`](/reference/api/core/src/classes/Block#name)
+[`Block`](Block.md).[`name`](Block.md#name)
 
 ## Methods
 
@@ -64,7 +64,7 @@ Defined in: [core/src/codegen/blocks.ts:11](https://github.com/Agrejus/routier/b
 
 > **indexOf**(`name`): `number`
 
-Defined in: [core/src/codegen/blocks.ts:22](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/codegen/blocks.ts#L22)
+Defined in: [core/src/codegen/blocks.ts:22](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/codegen/blocks.ts#L22)
 
 #### Parameters
 
@@ -78,7 +78,121 @@ Defined in: [core/src/codegen/blocks.ts:22](https://github.com/Agrejus/routier/b
 
 #### Inherited from
 
-[`Block`](/reference/api/core/src/classes/Block).[`indexOf`](/reference/api/core/src/classes/Block#indexof)
+[`Block`](Block.md).[`indexOf`](Block.md#indexof)
+
+***
+
+### getLines()
+
+> **getLines**(): `Line`[]
+
+Defined in: [core/src/codegen/blocks.ts:26](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/codegen/blocks.ts#L26)
+
+#### Returns
+
+`Line`[]
+
+#### Inherited from
+
+[`Block`](Block.md).[`getLines`](Block.md#getlines)
+
+***
+
+### getParent()
+
+> **getParent**(): [`Block`](Block.md)
+
+Defined in: [core/src/codegen/blocks.ts:30](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/codegen/blocks.ts#L30)
+
+#### Returns
+
+[`Block`](Block.md)
+
+#### Inherited from
+
+[`Block`](Block.md).[`getParent`](Block.md#getparent)
+
+***
+
+### getIndent()
+
+> **getIndent**(): `string`
+
+Defined in: [core/src/codegen/blocks.ts:34](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/codegen/blocks.ts#L34)
+
+#### Returns
+
+`string`
+
+#### Inherited from
+
+[`Block`](Block.md).[`getIndent`](Block.md#getindent)
+
+***
+
+### setLines()
+
+> **setLines**(`lines`): `void`
+
+Defined in: [core/src/codegen/blocks.ts:38](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/codegen/blocks.ts#L38)
+
+#### Parameters
+
+##### lines
+
+`Line`[]
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+[`Block`](Block.md).[`setLines`](Block.md#setlines)
+
+***
+
+### setParent()
+
+> **setParent**(`block`): `void`
+
+Defined in: [core/src/codegen/blocks.ts:42](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/codegen/blocks.ts#L42)
+
+#### Parameters
+
+##### block
+
+[`Block`](Block.md)
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+[`Block`](Block.md).[`setParent`](Block.md#setparent)
+
+***
+
+### setIndent()
+
+> **setIndent**(`indent`): `void`
+
+Defined in: [core/src/codegen/blocks.ts:46](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/codegen/blocks.ts#L46)
+
+#### Parameters
+
+##### indent
+
+`string`
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+[`Block`](Block.md).[`setIndent`](Block.md#setindent)
 
 ***
 
@@ -86,13 +200,13 @@ Defined in: [core/src/codegen/blocks.ts:22](https://github.com/Agrejus/routier/b
 
 > **getOrDefault**\<`T`\>(`name`): `T`
 
-Defined in: [core/src/codegen/blocks.ts:26](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/codegen/blocks.ts#L26)
+Defined in: [core/src/codegen/blocks.ts:50](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/codegen/blocks.ts#L50)
 
 #### Type Parameters
 
 ##### T
 
-`T` *extends* [`Block`](/reference/api/core/src/classes/Block)
+`T` *extends* [`Block`](Block.md)
 
 #### Parameters
 
@@ -106,7 +220,7 @@ Defined in: [core/src/codegen/blocks.ts:26](https://github.com/Agrejus/routier/b
 
 #### Inherited from
 
-[`Block`](/reference/api/core/src/classes/Block).[`getOrDefault`](/reference/api/core/src/classes/Block#getordefault)
+[`Block`](Block.md).[`getOrDefault`](Block.md#getordefault)
 
 ***
 
@@ -114,13 +228,13 @@ Defined in: [core/src/codegen/blocks.ts:26](https://github.com/Agrejus/routier/b
 
 > **get**\<`T`\>(`name`): `T`
 
-Defined in: [core/src/codegen/blocks.ts:54](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/codegen/blocks.ts#L54)
+Defined in: [core/src/codegen/blocks.ts:79](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/codegen/blocks.ts#L79)
 
 #### Type Parameters
 
 ##### T
 
-`T` *extends* [`Block`](/reference/api/core/src/classes/Block)
+`T` *extends* [`Block`](Block.md)
 
 #### Parameters
 
@@ -134,7 +248,7 @@ Defined in: [core/src/codegen/blocks.ts:54](https://github.com/Agrejus/routier/b
 
 #### Inherited from
 
-[`Block`](/reference/api/core/src/classes/Block).[`get`](/reference/api/core/src/classes/Block#get)
+[`Block`](Block.md).[`get`](Block.md#get)
 
 ***
 
@@ -142,7 +256,7 @@ Defined in: [core/src/codegen/blocks.ts:54](https://github.com/Agrejus/routier/b
 
 > **has**(`name`): `boolean`
 
-Defined in: [core/src/codegen/blocks.ts:64](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/codegen/blocks.ts#L64)
+Defined in: [core/src/codegen/blocks.ts:89](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/codegen/blocks.ts#L89)
 
 #### Parameters
 
@@ -156,7 +270,55 @@ Defined in: [core/src/codegen/blocks.ts:64](https://github.com/Agrejus/routier/b
 
 #### Inherited from
 
-[`Block`](/reference/api/core/src/classes/Block).[`has`](/reference/api/core/src/classes/Block#has)
+[`Block`](Block.md).[`has`](Block.md#has)
+
+***
+
+### remove()
+
+> **remove**(`name`): `void`
+
+Defined in: [core/src/codegen/blocks.ts:93](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/codegen/blocks.ts#L93)
+
+#### Parameters
+
+##### name
+
+`string`
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+[`Block`](Block.md).[`remove`](Block.md#remove)
+
+***
+
+### replace()
+
+> **replace**(`name`, `line`): `void`
+
+Defined in: [core/src/codegen/blocks.ts:97](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/codegen/blocks.ts#L97)
+
+#### Parameters
+
+##### name
+
+`string`
+
+##### line
+
+[`Block`](Block.md)
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+[`Block`](Block.md).[`replace`](Block.md#replace)
 
 ***
 
@@ -164,7 +326,7 @@ Defined in: [core/src/codegen/blocks.ts:64](https://github.com/Agrejus/routier/b
 
 > **append**(`value`): `StringBuilder`
 
-Defined in: [core/src/codegen/blocks.ts:156](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/codegen/blocks.ts#L156)
+Defined in: [core/src/codegen/blocks.ts:211](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/codegen/blocks.ts#L211)
 
 #### Parameters
 
@@ -182,7 +344,7 @@ Defined in: [core/src/codegen/blocks.ts:156](https://github.com/Agrejus/routier/
 
 > **toString**(): `string`
 
-Defined in: [core/src/codegen/blocks.ts:161](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/codegen/blocks.ts#L161)
+Defined in: [core/src/codegen/blocks.ts:216](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/codegen/blocks.ts#L216)
 
 #### Returns
 
@@ -190,4 +352,4 @@ Defined in: [core/src/codegen/blocks.ts:161](https://github.com/Agrejus/routier/
 
 #### Overrides
 
-[`Block`](/reference/api/core/src/classes/Block).[`toString`](/reference/api/core/src/classes/Block#tostring)
+[`Block`](Block.md).[`toString`](Block.md#tostring)

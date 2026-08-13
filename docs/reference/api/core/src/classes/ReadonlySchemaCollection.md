@@ -1,18 +1,18 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / ReadonlySchemaCollection
+[routier-collection](../../../README.md) / [core/src](../README.md) / ReadonlySchemaCollection
 
 # Class: ReadonlySchemaCollection
 
-Defined in: [core/src/collections/ReadonlySchemaCollection.ts:6](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/ReadonlySchemaCollection.ts#L6)
+Defined in: [core/src/collections/ReadonlySchemaCollection.ts:6](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/ReadonlySchemaCollection.ts#L6)
 
 Collection of schemas with generic typing for type-safe schema retrieval
 
 ## Extended by
 
-- [`SchemaCollection`](/reference/api/core/src/classes/SchemaCollection)
+- [`SchemaCollection`](SchemaCollection.md)
 
 ## Constructors
 
@@ -20,13 +20,13 @@ Collection of schemas with generic typing for type-safe schema retrieval
 
 > **new ReadonlySchemaCollection**(`data?`): `ReadonlySchemaCollection`
 
-Defined in: [core/src/collections/ReadonlySchemaCollection.ts:10](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/ReadonlySchemaCollection.ts#L10)
+Defined in: [core/src/collections/ReadonlySchemaCollection.ts:10](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/ReadonlySchemaCollection.ts#L10)
 
 #### Parameters
 
 ##### data?
 
-\[`number`, [`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`Record`\<`string`, `unknown`\>\>\][]
+\[[`SchemaId`](../type-aliases/SchemaId.md), [`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`Record`\<`string`, `unknown`\>\>\][]
 
 #### Returns
 
@@ -40,7 +40,7 @@ Defined in: [core/src/collections/ReadonlySchemaCollection.ts:10](https://github
 
 > **get** **size**(): `number`
 
-Defined in: [core/src/collections/ReadonlySchemaCollection.ts:22](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/ReadonlySchemaCollection.ts#L22)
+Defined in: [core/src/collections/ReadonlySchemaCollection.ts:22](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/ReadonlySchemaCollection.ts#L22)
 
 ##### Returns
 
@@ -50,9 +50,9 @@ Defined in: [core/src/collections/ReadonlySchemaCollection.ts:22](https://github
 
 ### get()
 
-> **get**\<`T`\>(`schemaId`): [`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`T`\>
+> **get**\<`T`\>(`schemaId`): [`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`T`\>
 
-Defined in: [core/src/collections/ReadonlySchemaCollection.ts:14](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/ReadonlySchemaCollection.ts#L14)
+Defined in: [core/src/collections/ReadonlySchemaCollection.ts:14](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/ReadonlySchemaCollection.ts#L14)
 
 #### Type Parameters
 
@@ -64,11 +64,11 @@ Defined in: [core/src/collections/ReadonlySchemaCollection.ts:14](https://github
 
 ##### schemaId
 
-`number`
+[`SchemaId`](../type-aliases/SchemaId.md)
 
 #### Returns
 
-[`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`T`\>
+[`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`T`\>
 
 ***
 
@@ -76,13 +76,13 @@ Defined in: [core/src/collections/ReadonlySchemaCollection.ts:14](https://github
 
 > **has**(`schemaId`): `boolean`
 
-Defined in: [core/src/collections/ReadonlySchemaCollection.ts:18](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/ReadonlySchemaCollection.ts#L18)
+Defined in: [core/src/collections/ReadonlySchemaCollection.ts:18](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/ReadonlySchemaCollection.ts#L18)
 
 #### Parameters
 
 ##### schemaId
 
-`number`
+[`SchemaId`](../type-aliases/SchemaId.md)
 
 #### Returns
 
@@ -92,37 +92,37 @@ Defined in: [core/src/collections/ReadonlySchemaCollection.ts:18](https://github
 
 ### keys()
 
-> **keys**(): `IterableIterator`\<`number`\>
+> **keys**(): `IterableIterator`\<[`SchemaId`](../type-aliases/SchemaId.md)\>
 
-Defined in: [core/src/collections/ReadonlySchemaCollection.ts:26](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/ReadonlySchemaCollection.ts#L26)
+Defined in: [core/src/collections/ReadonlySchemaCollection.ts:26](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/ReadonlySchemaCollection.ts#L26)
 
 #### Returns
 
-`IterableIterator`\<`number`\>
+`IterableIterator`\<[`SchemaId`](../type-aliases/SchemaId.md)\>
 
 ***
 
 ### values()
 
-> **values**(): `IterableIterator`\<[`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`Record`\<`string`, `unknown`\>\>\>
+> **values**(): `IterableIterator`\<[`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`Record`\<`string`, `unknown`\>\>\>
 
-Defined in: [core/src/collections/ReadonlySchemaCollection.ts:30](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/ReadonlySchemaCollection.ts#L30)
+Defined in: [core/src/collections/ReadonlySchemaCollection.ts:30](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/ReadonlySchemaCollection.ts#L30)
 
 #### Returns
 
-`IterableIterator`\<[`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`Record`\<`string`, `unknown`\>\>\>
+`IterableIterator`\<[`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`Record`\<`string`, `unknown`\>\>\>
 
 ***
 
 ### entries()
 
-> **entries**(): `IterableIterator`\<\[`number`, [`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`Record`\<`string`, `unknown`\>\>\]\>
+> **entries**(): `IterableIterator`\<\[[`SchemaId`](../type-aliases/SchemaId.md), [`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`Record`\<`string`, `unknown`\>\>\]\>
 
-Defined in: [core/src/collections/ReadonlySchemaCollection.ts:34](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/ReadonlySchemaCollection.ts#L34)
+Defined in: [core/src/collections/ReadonlySchemaCollection.ts:34](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/ReadonlySchemaCollection.ts#L34)
 
 #### Returns
 
-`IterableIterator`\<\[`number`, [`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`Record`\<`string`, `unknown`\>\>\]\>
+`IterableIterator`\<\[[`SchemaId`](../type-aliases/SchemaId.md), [`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`Record`\<`string`, `unknown`\>\>\]\>
 
 ***
 
@@ -130,7 +130,7 @@ Defined in: [core/src/collections/ReadonlySchemaCollection.ts:34](https://github
 
 > **forEach**(`callbackfn`, `thisArg?`): `void`
 
-Defined in: [core/src/collections/ReadonlySchemaCollection.ts:38](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/ReadonlySchemaCollection.ts#L38)
+Defined in: [core/src/collections/ReadonlySchemaCollection.ts:38](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/ReadonlySchemaCollection.ts#L38)
 
 #### Parameters
 
@@ -150,21 +150,21 @@ Defined in: [core/src/collections/ReadonlySchemaCollection.ts:38](https://github
 
 ### \[iterator\]()
 
-> **\[iterator\]**(): `IterableIterator`\<\[`number`, [`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`Record`\<`string`, `unknown`\>\>\]\>
+> **\[iterator\]**(): `IterableIterator`\<\[[`SchemaId`](../type-aliases/SchemaId.md), [`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`Record`\<`string`, `unknown`\>\>\]\>
 
-Defined in: [core/src/collections/ReadonlySchemaCollection.ts:42](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/ReadonlySchemaCollection.ts#L42)
+Defined in: [core/src/collections/ReadonlySchemaCollection.ts:42](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/ReadonlySchemaCollection.ts#L42)
 
 #### Returns
 
-`IterableIterator`\<\[`number`, [`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`Record`\<`string`, `unknown`\>\>\]\>
+`IterableIterator`\<\[[`SchemaId`](../type-aliases/SchemaId.md), [`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`Record`\<`string`, `unknown`\>\>\]\>
 
 ***
 
 ### getByName()
 
-> **getByName**\<`T`\>(`collectionName`): [`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`T`\>
+> **getByName**\<`T`\>(`collectionName`): [`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`T`\>
 
-Defined in: [core/src/collections/ReadonlySchemaCollection.ts:46](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/ReadonlySchemaCollection.ts#L46)
+Defined in: [core/src/collections/ReadonlySchemaCollection.ts:46](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/ReadonlySchemaCollection.ts#L46)
 
 #### Type Parameters
 
@@ -180,4 +180,4 @@ Defined in: [core/src/collections/ReadonlySchemaCollection.ts:46](https://github
 
 #### Returns
 
-[`CompiledSchema`](/reference/api/core/src/type-aliases/CompiledSchema)\<`T`\>
+[`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`T`\>

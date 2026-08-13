@@ -14,7 +14,7 @@ hero:
       link: /getting-started/quick-start
     - theme: alt
       text: Why Routier?
-      link: /getting-started/overview
+      link: /getting-started/why-routier
     - theme: alt
       text: Try it in CodeSandbox
       link: https://codesandbox.io/p/devbox/routier-4nlxsx
@@ -22,34 +22,39 @@ hero:
 features:
   - icon: 📐
     title: Powerful Schemas
-    details: Defaults, identity keys, indexes, computed properties, serialization, and property mapping — bring your own validation with Zod or AJV.
+    details: Defaults, identity keys, indexes, computed properties, transforms, and property mapping—bring your own validation with Zod or AJV.
     link: /concepts/schema/
     linkText: Schema guide
+  - icon: 🔌
+    title: Storage and Capability Plugins
+    details: Choose memory, IndexedDB, SQLite, PostgreSQL, MySQL, MongoDB, PouchDB, or files—then add caching, replication, concurrency, encryption, and blob storage.
+    link: /integrations/plugins/built-in-plugins/
+    linkText: Choose plugins
+  - icon: 🔗
+    title: Joins and Rich Queries
+    details: Inner and left joins across collections, views, stores, and plugins—plus filtering, aggregation, reusable queries, full-text search, and vector similarity.
+    link: /concepts/queries/
+    linkText: Explore queries
   - icon: 🔄
     title: Live Queries
     details: Subscriptions push updates when data changes. Zero-config reactivity for real-time UIs with built-in change detection.
     link: /guides/live-queries
     linkText: Live queries guide
-  - icon: ⚡
-    title: Less Work Per Row
-    details: Key lookups skip the scan. Filters run before copies. Routier generates the copy function from your schema instead of calling structuredClone — 78x faster per record.
-    link: /concepts/performance
-    linkText: Performance
-  - icon: 🔌
-    title: Swappable Storage
-    details: IndexedDB, SQLite, Local Storage, OPFS, PouchDB, and more. Change the plugin, keep your domain model and app code.
-    link: /integrations/plugins/built-in-plugins/
-    linkText: Built-in plugins
-  - icon: ⚛️
-    title: React Integration
-    details: First-class hooks that keep components in sync with your data — no extra state-management layer required.
-    link: /integrations/react/
-    linkText: React adapter
   - icon: 🌐
     title: Local-First Ready
     details: Optimistic writes, history tracking, entity tagging, and sync patterns for apps that work offline and reconcile later.
     link: /guides/local-first-apps
     linkText: Local-first guide
+  - icon: ⚛️
+    title: React Integration
+    details: First-class hooks that keep components in sync with your data—no extra state-management layer required.
+    link: /integrations/react/
+    linkText: React adapter
+  - icon: ⚡
+    title: Less Work Per Row
+    details: Key lookups skip the scan. Filters run before copies. Routier generates copy functions from schemas instead of calling structuredClone.
+    link: /concepts/performance
+    linkText: Performance
 ---
 
 ## What is Routier?
@@ -85,6 +90,7 @@ beneath it.
 | I want to…                     | Start here                                                        |
 | ------------------------------ | ----------------------------------------------------------------- |
 | Install and build my first app | [Installation](/getting-started/installation) → [Quick Start](/getting-started/quick-start) |
-| Understand the core ideas      | [Overview](/getting-started/overview) and [Concepts](/concepts/)  |
+| Decide whether Routier fits    | [Why Routier?](/getting-started/why-routier)                     |
+| Understand the core ideas      | [Concepts](/concepts/)                                            |
 | Use Routier with React         | [React Integration](/integrations/react/)                         |
 | Explore real patterns          | [Guides](/guides/)                                                |

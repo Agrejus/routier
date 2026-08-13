@@ -1,14 +1,14 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / ExpandedChildProperty
+[routier-collection](../../../README.md) / [core/src](../README.md) / ExpandedChildProperty
 
 # Type Alias: ExpandedChildProperty
 
 > **ExpandedChildProperty** = `object`
 
-Defined in: [core/src/schema/types.ts:36](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/types.ts#L36)
+Defined in: [core/src/schema/types.ts:113](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/types.ts#L113)
 
 ## Properties
 
@@ -16,15 +16,15 @@ Defined in: [core/src/schema/types.ts:36](https://github.com/Agrejus/routier/blo
 
 > **propertyName**: `string`
 
-Defined in: [core/src/schema/types.ts:37](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/types.ts#L37)
+Defined in: [core/src/schema/types.ts:114](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/types.ts#L114)
 
 ***
 
 ### type
 
-> **type**: [`SchemaTypes`](/reference/api/core/src/enumerations/SchemaTypes)
+> **type**: [`SchemaTypes`](../enumerations/SchemaTypes.md)
 
-Defined in: [core/src/schema/types.ts:38](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/types.ts#L38)
+Defined in: [core/src/schema/types.ts:115](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/types.ts#L115)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [core/src/schema/types.ts:38](https://github.com/Agrejus/routier/blo
 
 > **isNullableOrOptional**: `boolean`
 
-Defined in: [core/src/schema/types.ts:39](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/types.ts#L39)
+Defined in: [core/src/schema/types.ts:116](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/types.ts#L116)
 
 ***
 
@@ -40,7 +40,7 @@ Defined in: [core/src/schema/types.ts:39](https://github.com/Agrejus/routier/blo
 
 > **isReadonly**: `boolean`
 
-Defined in: [core/src/schema/types.ts:40](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/types.ts#L40)
+Defined in: [core/src/schema/types.ts:117](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/types.ts#L117)
 
 ***
 
@@ -48,7 +48,7 @@ Defined in: [core/src/schema/types.ts:40](https://github.com/Agrejus/routier/blo
 
 > **isIdentity**: `boolean`
 
-Defined in: [core/src/schema/types.ts:41](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/types.ts#L41)
+Defined in: [core/src/schema/types.ts:118](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/types.ts#L118)
 
 ***
 
@@ -56,4 +56,4 @@ Defined in: [core/src/schema/types.ts:41](https://github.com/Agrejus/routier/blo
 
 > **isUnmapped**: `boolean`
 
-Defined in: [core/src/schema/types.ts:42](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/types.ts#L42)
+Defined in: [core/src/schema/types.ts:119](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/types.ts#L119)

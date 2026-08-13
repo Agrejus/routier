@@ -1,12 +1,12 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / TagCollection
+[routier-collection](../../../README.md) / [core/src](../README.md) / TagCollection
 
 # Class: TagCollection
 
-Defined in: [core/src/collections/TagCollection.ts:1](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/TagCollection.ts#L1)
+Defined in: [core/src/collections/TagCollection.ts:1](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/TagCollection.ts#L1)
 
 ## Implements
 
@@ -30,7 +30,7 @@ Defined in: [core/src/collections/TagCollection.ts:1](https://github.com/Agrejus
 
 > **get** **size**(): `number`
 
-Defined in: [core/src/collections/TagCollection.ts:6](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/TagCollection.ts#L6)
+Defined in: [core/src/collections/TagCollection.ts:8](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/TagCollection.ts#L8)
 
 ##### Returns
 
@@ -42,13 +42,13 @@ Defined in: [core/src/collections/TagCollection.ts:6](https://github.com/Agrejus
 
 > **get**(`key`): `unknown`
 
-Defined in: [core/src/collections/TagCollection.ts:10](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/TagCollection.ts#L10)
+Defined in: [core/src/collections/TagCollection.ts:12](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/TagCollection.ts#L12)
 
 #### Parameters
 
 ##### key
 
-`Object`
+`object`
 
 #### Returns
 
@@ -60,13 +60,13 @@ Defined in: [core/src/collections/TagCollection.ts:10](https://github.com/Agreju
 
 > **has**(`key`): `boolean`
 
-Defined in: [core/src/collections/TagCollection.ts:14](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/TagCollection.ts#L14)
+Defined in: [core/src/collections/TagCollection.ts:16](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/TagCollection.ts#L16)
 
 #### Parameters
 
 ##### key
 
-`Object`
+`object`
 
 #### Returns
 
@@ -76,15 +76,15 @@ Defined in: [core/src/collections/TagCollection.ts:14](https://github.com/Agreju
 
 ### set()
 
-> **set**(`key`, `tag`): `Map`\<`Object`, `unknown`\>
+> **set**(`key`, `tag`): `Map`\<`object`, `unknown`\>
 
-Defined in: [core/src/collections/TagCollection.ts:18](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/TagCollection.ts#L18)
+Defined in: [core/src/collections/TagCollection.ts:20](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/TagCollection.ts#L20)
 
 #### Parameters
 
 ##### key
 
-`Object`
+`object`
 
 ##### tag
 
@@ -92,7 +92,7 @@ Defined in: [core/src/collections/TagCollection.ts:18](https://github.com/Agreju
 
 #### Returns
 
-`Map`\<`Object`, `unknown`\>
+`Map`\<`object`, `unknown`\>
 
 ***
 
@@ -100,13 +100,13 @@ Defined in: [core/src/collections/TagCollection.ts:18](https://github.com/Agreju
 
 > **delete**(`key`): `boolean`
 
-Defined in: [core/src/collections/TagCollection.ts:23](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/TagCollection.ts#L23)
+Defined in: [core/src/collections/TagCollection.ts:24](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/TagCollection.ts#L24)
 
 #### Parameters
 
 ##### key
 
-`Object`
+`object`
 
 #### Returns
 
@@ -118,13 +118,13 @@ Defined in: [core/src/collections/TagCollection.ts:23](https://github.com/Agreju
 
 > **setMany**(`keys`, `tag`): `void`
 
-Defined in: [core/src/collections/TagCollection.ts:33](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/TagCollection.ts#L33)
+Defined in: [core/src/collections/TagCollection.ts:28](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/TagCollection.ts#L28)
 
 #### Parameters
 
 ##### keys
 
-`Object`[]
+`object`[]
 
 ##### tag
 
@@ -140,7 +140,7 @@ Defined in: [core/src/collections/TagCollection.ts:33](https://github.com/Agreju
 
 > **combine**(`tags`): `void`
 
-Defined in: [core/src/collections/TagCollection.ts:41](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/TagCollection.ts#L41)
+Defined in: [core/src/collections/TagCollection.ts:35](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/TagCollection.ts#L35)
 
 #### Parameters
 
@@ -158,7 +158,7 @@ Defined in: [core/src/collections/TagCollection.ts:41](https://github.com/Agreju
 
 > **values**(): `MapIterator`\<`unknown`\>
 
-Defined in: [core/src/collections/TagCollection.ts:47](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/TagCollection.ts#L47)
+Defined in: [core/src/collections/TagCollection.ts:41](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/TagCollection.ts#L41)
 
 #### Returns
 
@@ -168,13 +168,13 @@ Defined in: [core/src/collections/TagCollection.ts:47](https://github.com/Agreju
 
 ### keys()
 
-> **keys**(): `MapIterator`\<`Object`\>
+> **keys**(): `MapIterator`\<`object`\>
 
-Defined in: [core/src/collections/TagCollection.ts:51](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/TagCollection.ts#L51)
+Defined in: [core/src/collections/TagCollection.ts:45](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/TagCollection.ts#L45)
 
 #### Returns
 
-`MapIterator`\<`Object`\>
+`MapIterator`\<`object`\>
 
 ***
 
@@ -182,7 +182,7 @@ Defined in: [core/src/collections/TagCollection.ts:51](https://github.com/Agreju
 
 > **\[dispose\]**(): `void`
 
-Defined in: [core/src/collections/TagCollection.ts:55](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/TagCollection.ts#L55)
+Defined in: [core/src/collections/TagCollection.ts:49](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/TagCollection.ts#L49)
 
 #### Returns
 
@@ -196,10 +196,10 @@ Defined in: [core/src/collections/TagCollection.ts:55](https://github.com/Agreju
 
 ### \[iterator\]()
 
-> **\[iterator\]**(): `MapIterator`\<\[`Object`, `unknown`\]\>
+> **\[iterator\]**(): `MapIterator`\<\[`object`, `unknown`\]\>
 
-Defined in: [core/src/collections/TagCollection.ts:59](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/collections/TagCollection.ts#L59)
+Defined in: [core/src/collections/TagCollection.ts:53](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/TagCollection.ts#L53)
 
 #### Returns
 
-`MapIterator`\<\[`Object`, `unknown`\]\>
+`MapIterator`\<\[`object`, `unknown`\]\>

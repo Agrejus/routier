@@ -30,8 +30,52 @@ Pair rows from two collections on a matching key with `join` and `leftJoin`.
 named once — and because the selector is checked against your store's type, a wrong name is a
 compile error rather than a query that returns nothing.
 
-Each result is a `[player, match]` pair — one for every match a player has. A player with three
-matches appears three times; a player with none does not appear at all.
+Each result is a `[player, match]` pair — one for every match a player has. For example, given:
+
+```ts
+players = [
+  { _id: "p1", name: "Ada" },
+  { _id: "p2", name: "Lin" },
+];
+
+playerMatches = [
+  { _id: "m1", playerId: "p1", score: 42 },
+  { _id: "m2", playerId: "p1", score: 18 },
+];
+```
+
+The inner join above returns:
+
+```ts
+[
+  [
+    { _id: "p1", name: "Ada" },
+    { _id: "m1", playerId: "p1", score: 42 },
+  ],
+  [
+    { _id: "p1", name: "Ada" },
+    { _id: "m2", playerId: "p1", score: 18 },
+  ],
+]
+```
+
+`p1` appears twice because it has two matches. `p2` is absent because an inner join drops an
+outer row with no match. With `leftJoin`, the same data adds one more tuple:
+
+```ts
+[
+  { _id: "p2", name: "Lin" },
+  undefined,
+]
+```
+
+The tuple is an actual two-element JavaScript array, so destructuring works naturally:
+
+```ts
+for (const [player, match] of pairs) {
+  console.log(player.name, match.score);
+}
+```
 
 The two selectors name the key on each side. They must be single property paths, and they must
 agree on type: joining a `string` key to a `number` key does not compile.
@@ -106,9 +150,9 @@ about the left side:
 
 
 The terminal methods available on a join are `toArray`/`toArrayAsync`, `first`/`firstAsync`,
-`firstOrUndefined`/`firstOrUndefinedAsync` and `count`/`countAsync`. `sum`, `min`, `max`,
-`distinct` and `toGroup` need one named field of one schema, which a pair is not — `map` to a
-projection first and they are all available on it.
+`firstOrUndefined`/`firstOrUndefinedAsync`, and `count`/`countAsync`. `map()` changes the result
+shape but deliberately keeps that same join terminal surface. `sum`, `min`, `max`, `distinct`,
+`toGroup`, `remove`, and `subscribe` are not exposed on `JoinQueryable`.
 
 ## Key Rules
 
@@ -163,10 +207,11 @@ other. Where it happens depends on the backend, and it never changes the answer:
 | HTTP / replication | Two ordinary requests, one per collection, paired in the plugin. No server needs to know what a join is. |
 | Two different plugins or stores | Routier reads both sides and pairs them itself. |
 
-What a join **reads** is worth thinking about. With no filter on either side, both collections are
-read in full. The filters that reduce that are the ones recorded before the join on the left side,
-and the collection's own scopes on the right side; a `where` written after the join runs over the
-pairs, so it narrows the result without narrowing the read.
+What a join **reads** is worth thinking about. A `where` recorded before the join narrows the left
+side, and the right side always keeps its collection scopes. Routier also analyzes top-level `&&`
+conjuncts in a post-join `where`: a conjunct that names only one side narrows that side's read,
+while the complete predicate still checks every resulting pair. Cross-side conditions cannot be
+pushed down and run only over the pairs.
 
 One thing an engine-side join gets for free: a `sort`, `skip` or `take` recorded **before** the
 join is applied to the left rows, not to the pairs. `.sort(...).take(2).join(...)` pairs the first
@@ -197,4 +242,4 @@ Purely a cost knob — the pairs are identical either way.
 - [Filtering](/concepts/queries/filtering) — filter before the join to read less
 - [Field Selection](/concepts/queries/field-selection) — project pairs into your own shape
 - [Terminal Methods](/concepts/queries/terminal-methods) — how a query executes
-- [Views](/concepts/data-collections/memory-collections) — views as a join side
+- [Views](/how-to/collections/views) — views as a join side

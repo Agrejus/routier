@@ -1,30 +1,30 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / Index
+[routier-collection](../../../README.md) / [core/src](../README.md) / Index
 
 # Type Alias: Index
 
 > **Index** = `object`
 
-Defined in: [core/src/schema/types.ts:63](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/types.ts#L63)
+Defined in: [core/src/schema/types.ts:140](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/types.ts#L140)
 
 ## Properties
 
 ### properties
 
-> **properties**: [`PropertyInfo`](/reference/api/core/src/classes/PropertyInfo)\<`any`\>[]
+> **properties**: [`PropertyInfo`](../classes/PropertyInfo.md)\<`any`\>[]
 
-Defined in: [core/src/schema/types.ts:64](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/types.ts#L64)
+Defined in: [core/src/schema/types.ts:141](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/types.ts#L141)
 
 ***
 
 ### type
 
-> **type**: [`IndexType`](/reference/api/core/src/type-aliases/IndexType)
+> **type**: [`IndexType`](IndexType.md)
 
-Defined in: [core/src/schema/types.ts:65](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/types.ts#L65)
+Defined in: [core/src/schema/types.ts:142](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/types.ts#L142)
 
 ***
 
@@ -32,4 +32,4 @@ Defined in: [core/src/schema/types.ts:65](https://github.com/Agrejus/routier/blo
 
 > **name**: `string`
 
-Defined in: [core/src/schema/types.ts:66](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/schema/types.ts#L66)
+Defined in: [core/src/schema/types.ts:143](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/types.ts#L143)

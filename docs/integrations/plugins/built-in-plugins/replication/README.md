@@ -111,6 +111,5 @@ avoid discarding valid writes.
 - [Local-First Apps](/guides/local-first-apps)
 - [HttpSwrDbPlugin with Optimistic Replication](/guides/http-swr-with-optimistic)
 - [Optimistic Replication](/guides/optimistic-replication)
-- [Built-in Plugins](/integrations/plugins/built-in-plugins/)
-- [OptimisticReplicationDbPlugin API](/reference/api/core/src/classes/OptimisticReplicationDbPlugin)
-- [ReplicationDbPlugin API](/reference/api/core/src/classes/ReplicationDbPlugin)
+- [Plugin Catalog](/integrations/plugins/built-in-plugins/)
+- [Replication Plugin API](/reference/api/plugins/replication/src/README)

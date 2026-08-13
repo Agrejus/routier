@@ -1,14 +1,14 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / QuerySort
+[routier-collection](../../../README.md) / [core/src](../README.md) / QuerySort
 
 # Type Alias: QuerySort
 
 > **QuerySort** = `object`
 
-Defined in: [core/src/plugins/query/types.ts:46](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/query/types.ts#L46)
+Defined in: [core/src/plugins/query/types.ts:103](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/types.ts#L103)
 
 Sort specification for a query.
 
@@ -18,7 +18,7 @@ Sort specification for a query.
 
 > **key**: `string`
 
-Defined in: [core/src/plugins/query/types.ts:46](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/query/types.ts#L46)
+Defined in: [core/src/plugins/query/types.ts:103](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/types.ts#L103)
 
 ***
 
@@ -26,7 +26,7 @@ Defined in: [core/src/plugins/query/types.ts:46](https://github.com/Agrejus/rout
 
 > **selector**: (`item`) => `unknown`
 
-Defined in: [core/src/plugins/query/types.ts:46](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/query/types.ts#L46)
+Defined in: [core/src/plugins/query/types.ts:103](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/types.ts#L103)
 
 #### Parameters
 
@@ -44,4 +44,4 @@ Defined in: [core/src/plugins/query/types.ts:46](https://github.com/Agrejus/rout
 
 > **direction**: `"asc"` \| `"desc"`
 
-Defined in: [core/src/plugins/query/types.ts:46](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/query/types.ts#L46)
+Defined in: [core/src/plugins/query/types.ts:103](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/types.ts#L103)

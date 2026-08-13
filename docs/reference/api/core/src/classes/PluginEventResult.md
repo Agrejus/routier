@@ -1,12 +1,12 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / PluginEventResult
+[routier-collection](../../../README.md) / [core/src](../README.md) / PluginEventResult
 
 # Class: PluginEventResult
 
-Defined in: [core/src/results/Result.ts:58](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L58)
+Defined in: [core/src/results/Result.ts:58](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/results/Result.ts#L58)
 
 ## Extends
 
@@ -32,7 +32,7 @@ Defined in: [core/src/results/Result.ts:58](https://github.com/Agrejus/routier/b
 
 > `static` **ERROR**: `"error"`
 
-Defined in: [core/src/results/Result.ts:4](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L4)
+Defined in: [core/src/results/Result.ts:4](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/results/Result.ts#L4)
 
 #### Inherited from
 
@@ -44,7 +44,7 @@ Defined in: [core/src/results/Result.ts:4](https://github.com/Agrejus/routier/bl
 
 > `static` **SUCCESS**: `"success"`
 
-Defined in: [core/src/results/Result.ts:5](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L5)
+Defined in: [core/src/results/Result.ts:5](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/results/Result.ts#L5)
 
 #### Inherited from
 
@@ -56,7 +56,7 @@ Defined in: [core/src/results/Result.ts:5](https://github.com/Agrejus/routier/bl
 
 > `static` **PARTIAL**: `"partial"`
 
-Defined in: [core/src/results/Result.ts:6](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L6)
+Defined in: [core/src/results/Result.ts:6](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/results/Result.ts#L6)
 
 #### Inherited from
 
@@ -68,7 +68,7 @@ Defined in: [core/src/results/Result.ts:6](https://github.com/Agrejus/routier/bl
 
 > `static` **resolve**\<`T`\>(`result`, `resolve`, `reject`): `void`
 
-Defined in: [core/src/results/Result.ts:8](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L8)
+Defined in: [core/src/results/Result.ts:8](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/results/Result.ts#L8)
 
 #### Type Parameters
 
@@ -104,9 +104,9 @@ Defined in: [core/src/results/Result.ts:8](https://github.com/Agrejus/routier/bl
 
 #### Call Signature
 
-> `static` **success**\<`T`\>(`id`, `data`): [`PluginEventResultType`](/reference/api/core/src/type-aliases/PluginEventResultType)\<`T`\>
+> `static` **success**\<`T`\>(`id`, `data`): [`PluginEventResultType`](../type-aliases/PluginEventResultType.md)\<`T`\>
 
-Defined in: [core/src/results/Result.ts:59](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L59)
+Defined in: [core/src/results/Result.ts:59](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/results/Result.ts#L59)
 
 ##### Type Parameters
 
@@ -126,19 +126,13 @@ Defined in: [core/src/results/Result.ts:59](https://github.com/Agrejus/routier/b
 
 ##### Returns
 
-[`PluginEventResultType`](/reference/api/core/src/type-aliases/PluginEventResultType)\<`T`\>
+[`PluginEventResultType`](../type-aliases/PluginEventResultType.md)\<`T`\>
 
 #### Call Signature
 
-> `static` **success**\<`T`\>(`id`): [`PluginEventResultType`](/reference/api/core/src/type-aliases/PluginEventResultType)\<`never`\>
+> `static` **success**(`id`): [`PluginEventResultType`](../type-aliases/PluginEventResultType.md)\<`never`\>
 
-Defined in: [core/src/results/Result.ts:60](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L60)
-
-##### Type Parameters
-
-###### T
-
-`T`
+Defined in: [core/src/results/Result.ts:60](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/results/Result.ts#L60)
 
 ##### Parameters
 
@@ -148,15 +142,15 @@ Defined in: [core/src/results/Result.ts:60](https://github.com/Agrejus/routier/b
 
 ##### Returns
 
-[`PluginEventResultType`](/reference/api/core/src/type-aliases/PluginEventResultType)\<`never`\>
+[`PluginEventResultType`](../type-aliases/PluginEventResultType.md)\<`never`\>
 
 ***
 
 ### error()
 
-> `static` **error**\<`T`\>(`id`, `error`): [`PluginEventResultType`](/reference/api/core/src/type-aliases/PluginEventResultType)\<`T`\>
+> `static` **error**\<`T`\>(`id`, `error`): [`PluginEventResultType`](../type-aliases/PluginEventResultType.md)\<`T`\>
 
-Defined in: [core/src/results/Result.ts:69](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L69)
+Defined in: [core/src/results/Result.ts:69](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/results/Result.ts#L69)
 
 #### Type Parameters
 
@@ -176,15 +170,15 @@ Defined in: [core/src/results/Result.ts:69](https://github.com/Agrejus/routier/b
 
 #### Returns
 
-[`PluginEventResultType`](/reference/api/core/src/type-aliases/PluginEventResultType)\<`T`\>
+[`PluginEventResultType`](../type-aliases/PluginEventResultType.md)\<`T`\>
 
 ***
 
 ### partial()
 
-> `static` **partial**\<`T`\>(`id`, `data`, `error`): [`PluginEventPartialResultType`](/reference/api/core/src/type-aliases/PluginEventPartialResultType)\<`T`\>
+> `static` **partial**\<`T`\>(`id`, `data`, `error`): [`PluginEventPartialResultType`](../type-aliases/PluginEventPartialResultType.md)\<`T`\>
 
-Defined in: [core/src/results/Result.ts:77](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L77)
+Defined in: [core/src/results/Result.ts:77](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/results/Result.ts#L77)
 
 #### Type Parameters
 
@@ -208,7 +202,7 @@ Defined in: [core/src/results/Result.ts:77](https://github.com/Agrejus/routier/b
 
 #### Returns
 
-[`PluginEventPartialResultType`](/reference/api/core/src/type-aliases/PluginEventPartialResultType)\<`T`\>
+[`PluginEventPartialResultType`](../type-aliases/PluginEventPartialResultType.md)\<`T`\>
 
 ***
 
@@ -216,7 +210,7 @@ Defined in: [core/src/results/Result.ts:77](https://github.com/Agrejus/routier/b
 
 > `static` **assertSuccess**\<`T`\>(`result`): `asserts result is { ok: "success"; data: T; id: string }`
 
-Defined in: [core/src/results/Result.ts:86](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/results/Result.ts#L86)
+Defined in: [core/src/results/Result.ts:86](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/results/Result.ts#L86)
 
 #### Type Parameters
 
@@ -228,7 +222,7 @@ Defined in: [core/src/results/Result.ts:86](https://github.com/Agrejus/routier/b
 
 ##### result
 
-[`PluginEventResultType`](/reference/api/core/src/type-aliases/PluginEventResultType)\<`T`\>
+[`PluginEventResultType`](../type-aliases/PluginEventResultType.md)\<`T`\>
 
 #### Returns
 

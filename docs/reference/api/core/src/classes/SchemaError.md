@@ -1,12 +1,12 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / SchemaError
+[routier-collection](../../../README.md) / [core/src](../README.md) / SchemaError
 
 # Class: SchemaError
 
-Defined in: [core/src/errors/SchemaError.ts:1](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/errors/SchemaError.ts#L1)
+Defined in: [core/src/errors/SchemaError.ts:1](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/errors/SchemaError.ts#L1)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [core/src/errors/SchemaError.ts:1](https://github.com/Agrejus/routie
 
 > **new SchemaError**(`error`, `innerErrorMessage`): `SchemaError`
 
-Defined in: [core/src/errors/SchemaError.ts:3](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/errors/SchemaError.ts#L3)
+Defined in: [core/src/errors/SchemaError.ts:3](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/errors/SchemaError.ts#L3)
 
 #### Parameters
 
@@ -120,9 +120,11 @@ Creates a `.stack` property on `targetObject`, which when accessed returns
 a string representing the location in the code at which
 `Error.captureStackTrace()` was called.
 
-
-<<< @/_snippets/code/from-docs/reference/api/core/src/classes/SchemaError/block-1.js
-
+```js
+const myObject = {};
+Error.captureStackTrace(myObject);
+myObject.stack;  // Similar to `new Error().stack`
+```
 
 The first line of the trace will be prefixed with
 `${myObject.name}: ${myObject.message}`.
@@ -134,9 +136,29 @@ generated stack trace.
 The `constructorOpt` argument is useful for hiding implementation
 details of error generation from the user. For instance:
 
+```js
+function a() {
+  b();
+}
 
-<<< @/_snippets/code/from-docs/reference/api/core/src/classes/SchemaError/block-2.js
+function b() {
+  c();
+}
 
+function c() {
+  // Create an error without stack trace to avoid calculating the stack trace twice.
+  const { stackTraceLimit } = Error;
+  Error.stackTraceLimit = 0;
+  const error = new Error();
+  Error.stackTraceLimit = stackTraceLimit;
+
+  // Capture the stack trace above function b
+  Error.captureStackTrace(error, b); // Neither function c, nor b is included in the stack trace
+  throw error;
+}
+
+a();
+```
 
 #### Parameters
 

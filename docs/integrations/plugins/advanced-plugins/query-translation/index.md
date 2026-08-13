@@ -1,10 +1,14 @@
 ---
-title: Query Translation & Table Creation
+title: Query Translation for Plugin Authors
 ---
 
-## Query Translation & Table Creation
+# Query Translation for Plugin Authors
 
-When creating a plugin that uses SQL or other query languages, you'll need to translate Routier queries into your backend's query format and handle schema-to-table creation.
+::: info Who this is for
+This is a plugin-author SPI guide. Application code uses `where`, `join`, `search`, and other collection APIs directly; it does not implement query translation. Read this page only when adapting Routier to a new storage backend.
+:::
+
+A plugin that uses SQL, MQL, or another native query language translates Routier query operations into that backend's format. A plugin may instead return broader data and let Routier finish unsupported operations in memory.
 
 ## Overview
 

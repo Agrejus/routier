@@ -1,11 +1,11 @@
-[**routier-collection**](/reference/api/README)
+[**routier-collection**](../../../README.md)
 
 ***
 
-[routier-collection](/reference/api/README) / [core/src](/reference/api/core/src/README) / QueryOptionName
+[routier-collection](../../../README.md) / [core/src](../README.md) / QueryOptionName
 
 # Type Alias: QueryOptionName
 
-> **QueryOptionName** = keyof [`QueryOptionValueMap`](/reference/api/core/src/type-aliases/QueryOptionValueMap)\<`unknown`\>
+> **QueryOptionName** = keyof [`QueryOptionValueMap`](QueryOptionValueMap.md)\<`unknown`\>
 
-Defined in: [core/src/plugins/query/types.ts:22](https://github.com/Agrejus/routier/blob/ae307d61bf9883ec014a438be7cbd96d2060d092/core/src/plugins/query/types.ts#L22)
+Defined in: [core/src/plugins/query/types.ts:24](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/types.ts#L24)
