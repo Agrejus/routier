@@ -42,6 +42,25 @@ class DiffBenchStore extends DataStore {
     products = this.collection(productSchema).diff().create();
 }
 
+/**
+ * Same shape as `productSchema`, but every non-key property is stored under a different name.
+ *
+ * Renames put reads on a different copier: stored records are in the storage shape, so the
+ * cloner generated from in-memory names cannot read them. That path used to fall back to
+ * `structuredClone` and no scenario covered it.
+ */
+const renamedProductSchema = s.define('bench_renamed_products', {
+    _id: s.string().key().identity(),
+    name: s.string().from('product_name'),
+    category: s.string().from('product_category'),
+    price: s.number().from('unit_price'),
+    inStock: s.boolean().from('in_stock'),
+}).compile();
+
+class RenamedBenchStore extends DataStore {
+    products = this.collection(renamedProductSchema).proxy().create();
+}
+
 let storeCounter = 0;
 // Every store constructed during a run, so main() can dispose them. A DataStore opens a
 // broadcast-channel port pair per collection AT CONSTRUCTION, so an undisposed store holds
@@ -71,6 +90,20 @@ const rows = (count: number) =>
 /** A store already holding `count` rows, for read benchmarks. */
 async function seeded(count: number) {
     const store = newStore();
+    await store.products.addAsync(...(rows(count) as any));
+    await store.saveChangesAsync();
+    return store;
+}
+
+const newRenamedStore = () => {
+    const store = new RenamedBenchStore(new MemoryPlugin(`bench-renamed-${storeCounter++}`));
+    openStores.push(store as unknown as BenchStore);
+    return store;
+};
+
+/** A store of renamed-property rows, for the storage-shape read benchmarks. */
+async function seededRenamed(count: number) {
+    const store = newRenamedStore();
     await store.products.addAsync(...(rows(count) as any));
     await store.saveChangesAsync();
     return store;
@@ -122,6 +155,20 @@ const SCENARIOS: Scenario[] = [
             return { store, id: first._id };
         },
         run: ({ store, id }: any) => store.products.where(([p, params]: [any, any]) => p._id === params.id, { id }).firstOrUndefinedAsync(),
+    },
+    {
+        // The renamed-schema read path. Stored rows are in storage shape, so these reads use
+        // the storage-shape cloner rather than the in-memory one.
+        name: 'renamed-full-scan-10000',
+        reuseSetup: true,
+        setup: () => seededRenamed(10_000),
+        run: (store: RenamedBenchStore) => store.products.toArrayAsync(),
+    },
+    {
+        name: 'renamed-filtered-query-10000',
+        reuseSetup: true,
+        setup: () => seededRenamed(10_000),
+        run: (store: RenamedBenchStore) => store.products.where(p => p.price > 50).toArrayAsync(),
     },
     {
         name: 'count-10000',

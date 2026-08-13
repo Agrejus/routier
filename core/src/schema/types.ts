@@ -8,6 +8,7 @@ import type { DeepPartial } from "../types";
 import type { SchemaFunction } from "./table";
 import type { SchemaOptional, SchemaTag } from "./property/modifiers";
 import type { Branded } from "../utilities/types";
+import type { SchemaSubscriptionOptions } from "./communication/broadcast";
 
 export type DefaultValue<T, I = never> = T | ((injected: I) => T);
 export type FunctionBody<TEntity, TResult> = (entity: TEntity, collectionName: CollectionName) => TResult;
@@ -200,13 +201,22 @@ export type CompiledSchema<TEntity extends {}> = {
 
     deserializePartial: (item: Record<string, unknown>, properties: PropertyInfo<TEntity>[]) => DeepPartial<InferType<TEntity>>;
 
-    createSubscription: (abortSignal?: AbortSignal, scope?: string) => ISchemaSubscription<TEntity>;
+    createSubscription: (abortSignal?: AbortSignal, scope?: string, options?: SchemaSubscriptionOptions) => ISchemaSubscription<TEntity>;
     /** Returns the property info for a given id (full path) */
     getProperty: (id: string) => PropertyInfo<TEntity>;
     /** Returns the ID of the given entity. */
     getId: (entity: InferType<TEntity>) => IdType;
     /** Returns a deep clone of the given entity. */
     clone: (entity: InferType<TEntity>) => InferType<TEntity>;
+    /**
+     * Returns a deep clone of a record that is still in the STORAGE shape — renamed properties
+     * under their `from` names rather than their in-memory names.
+     *
+     * `clone` reads in-memory names, so it returns `undefined` for every renamed property of a
+     * stored record. Use this when copying rows a store holds before they have been deserialized.
+     * Generated on first call; schemas that are never cloned in storage shape never build it.
+     */
+    cloneStorage: (entity: InferType<TEntity>) => InferType<TEntity>;
     /** Removes unmapped or extraneous properties from the entity. */
     strip: (entity: InferType<TEntity>) => InferType<TEntity>;
     /** Prepares a new entity for creation, applying defaults and transformations. */

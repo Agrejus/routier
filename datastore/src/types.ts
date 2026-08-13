@@ -14,6 +14,22 @@ export type DataStoreOptions = {
      * your engine is happy with long parameter lists, lower it if they are not.
      */
     semiJoinKeyThreshold?: number;
+
+    /**
+     * Whether live queries must keep working across browser tabs, or across worker threads in
+     * Node. Default `true`.
+     *
+     * Leave it alone unless saves are hot. Change notifications travel over a BroadcastChannel,
+     * and a sender cannot see who is listening on the other side of one, so by default every
+     * save preprocesses its changes and publishes them on the chance that a second tab is
+     * listening. Set this to `false` when the process is the only one reading the database —
+     * a server, a script, a single-tab app — and that work is skipped whenever nothing in this
+     * process is subscribed. Worth roughly 10-18% of save time.
+     *
+     * Setting it to `false` while a second tab IS subscribed does not error. That tab simply
+     * stops receiving updates.
+     */
+    crossTabSync?: boolean;
 };
 
 /** `DataStoreOptions` with every default filled in, which is what the internals actually read. */
@@ -21,6 +37,7 @@ export type ResolvedDataStoreOptions = Required<DataStoreOptions>;
 
 export const resolveDataStoreOptions = (options?: DataStoreOptions): ResolvedDataStoreOptions => ({
     semiJoinKeyThreshold: options?.semiJoinKeyThreshold ?? DEFAULT_SEMI_JOIN_KEY_THRESHOLD,
+    crossTabSync: options?.crossTabSync ?? true,
 });
 
 import { BulkPersistChanges, BulkPersistResult } from "@routier/core";

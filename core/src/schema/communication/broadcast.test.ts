@@ -164,6 +164,121 @@ describe("SchemaSubscription broadcast contract", () => {
         expect(message.adds[0]._stage).toBe("post");
     });
 
+    describe("crossTabSync", () => {
+
+        it("preprocesses and sends with no listeners by default, because another tab may be listening", () => {
+            const preprocess = jest.fn((x: any) => x);
+            const schema = mockSchema("schema-default-sends", { preprocess });
+
+            const sender = new SchemaSubscription(schema);
+
+            sender.send({
+                adds: [{ id: 1 }],
+                updates: [],
+                removals: [],
+                unknown: [],
+            } as any);
+
+            expect(preprocess).toHaveBeenCalledTimes(1);
+        });
+
+        it("skips preprocessing entirely when crossTabSync is off and nothing is listening", () => {
+            const preprocess = jest.fn((x: any) => x);
+            const schema = mockSchema("schema-guarded", { preprocess });
+
+            const sender = new SchemaSubscription(schema, undefined, undefined, { crossTabSync: false });
+
+            sender.send({
+                adds: [{ id: 1 }],
+                updates: [{ id: 2 }],
+                removals: [{ id: 3 }],
+                unknown: [{ id: 4 }],
+            } as any);
+
+            expect(preprocess).not.toHaveBeenCalled();
+        });
+
+        it("still delivers to a local listener when crossTabSync is off", () => {
+            const schema = mockSchema("schema-guarded-local");
+
+            const sender = new SchemaSubscription(schema, undefined, undefined, { crossTabSync: false });
+            const receiver = new SchemaSubscription(schema);
+            const callback = jest.fn();
+            receiver.onMessage(callback);
+
+            sender.send({
+                adds: [{ id: 1 }],
+                updates: [],
+                removals: [],
+                unknown: [],
+            } as any);
+
+            expect(callback).toHaveBeenCalledTimes(1);
+        });
+
+        // The count that matters is registered CALLBACKS, not subscription objects. A DataStore
+        // builds one subscription per collection just to send from, so a count of instances is
+        // never zero and the guard below would never engage.
+        it("counts listeners rather than subscriptions, so a sender-only peer does not defeat the guard", () => {
+            const preprocess = jest.fn((x: any) => x);
+            const schema = mockSchema("schema-sender-only-peer", { preprocess });
+
+            const sender = new SchemaSubscription(schema, undefined, undefined, { crossTabSync: false });
+            // Exists, retains the channel, but never calls onMessage.
+            new SchemaSubscription(schema);
+
+            sender.send({
+                adds: [{ id: 1 }],
+                updates: [],
+                removals: [],
+                unknown: [],
+            } as any);
+
+            expect(preprocess).not.toHaveBeenCalled();
+        });
+
+        it("resumes sending when a listener arrives and stops again once it disposes", () => {
+            const preprocess = jest.fn((x: any) => x);
+            const schema = mockSchema("schema-guard-toggles", { preprocess });
+
+            const sender = new SchemaSubscription(schema, undefined, undefined, { crossTabSync: false });
+            const changes = { adds: [{ id: 1 }], updates: [], removals: [], unknown: [] } as any;
+
+            sender.send(changes);
+            expect(preprocess).not.toHaveBeenCalled();
+
+            const receiver = new SchemaSubscription(schema);
+            receiver.onMessage(jest.fn());
+
+            sender.send(changes);
+            expect(preprocess).toHaveBeenCalledTimes(1);
+
+            receiver.dispose();
+
+            sender.send(changes);
+            expect(preprocess).toHaveBeenCalledTimes(1);
+        });
+
+        it("scopes the guard per channel, so a listener on one scope does not unblock another", () => {
+            const preprocess = jest.fn((x: any) => x);
+            const schema = mockSchema("schema-scoped-guard", { preprocess });
+
+            const listenedTo = new SchemaSubscription(schema, undefined, "db-a");
+            listenedTo.onMessage(jest.fn());
+
+            const sender = new SchemaSubscription(schema, undefined, "db-b", { crossTabSync: false });
+
+            sender.send({
+                adds: [{ id: 1 }],
+                updates: [],
+                removals: [],
+                unknown: [],
+            } as any);
+
+            expect(preprocess).not.toHaveBeenCalled();
+        });
+    });
+
     it("should restore Date values on receive via postprocess", () => {
         const preprocess = jest.fn((x: any) => {
             if (x && x.createdAt instanceof Date) {

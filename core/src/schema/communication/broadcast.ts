@@ -10,6 +10,20 @@ interface ISubscriptionAction<T> {
 }
 type StampedChanges<T> = { data: SubscriptionChanges<T>, timestamp: number };
 
+export type SchemaSubscriptionOptions = {
+    /**
+     * Whether changes must reach listeners OUTSIDE this process — another browser tab, or
+     * another worker thread in Node. Default `true`, which is the historical behaviour.
+     *
+     * It cannot be inferred. A BroadcastChannel gives a sender no way to ask who is on the
+     * other end, so `send` can only count the listeners registered in THIS process. When
+     * this is `true`, `send` must assume a listener it cannot see and always publish. When
+     * a caller sets it to `false`, it promises there is no such listener, and `send` skips
+     * the whole preprocess-and-post step whenever nobody local is listening.
+     */
+    crossTabSync?: boolean;
+};
+
 const registry: Record<string, SchemaChannel<unknown>> = {};
 
 /**
@@ -54,6 +68,18 @@ class SchemaChannel<T> {
     constructor(channelKey: string) {
         this.sender = new SchemaChannelSender<T>(channelKey);
         this.receiver = new SchemaChannelReceiver<T>(channelKey);
+    }
+
+    /**
+     * How many callbacks in THIS process are waiting on the channel.
+     *
+     * Deliberately not `subscribers`: that counts SchemaSubscription instances, and a
+     * DataStore constructs one per collection up front purely to SEND from, so it never
+     * reaches zero. Only `onMessage` registers a listener, which is the thing a sender
+     * can be skipped for. See `SchemaSubscription.send`.
+     */
+    get listenerCount() {
+        return this.receiver.listenerCount;
     }
 
     retain() {
@@ -133,6 +159,10 @@ class SchemaChannelReceiver<T> {
         };
     }
 
+    get listenerCount() {
+        return this.subscriptions.length;
+    }
+
     addListener(id: BroadcastChannelReceiverId, listener: SubscriptionListenerCallback<T>) {
         this.subscriptions.push(new SubscriptionListener<T>(id, listener));
     }
@@ -169,13 +199,15 @@ export class SchemaSubscription<T extends {}> implements ISchemaSubscription<T> 
     private readonly schema: CompiledSchemaCore<T>;
     private readonly scope?: string;
     private readonly createdAt: number;
+    private readonly crossTabSync: boolean;
     private isDisposed: boolean = false;
 
-    constructor(schema: CompiledSchemaCore<T>, signal?: AbortSignal, scope?: string) {
+    constructor(schema: CompiledSchemaCore<T>, signal?: AbortSignal, scope?: string, options?: SchemaSubscriptionOptions) {
         this.createdAt = now();
         this.id = uuid(8) as BroadcastChannelReceiverId;
         this.schema = schema;
         this.scope = scope;
+        this.crossTabSync = options?.crossTabSync ?? true;
 
         getChannelRegistry<T>(schema.id, scope).retain();
 
@@ -186,6 +218,16 @@ export class SchemaSubscription<T extends {}> implements ISchemaSubscription<T> 
 
     send(changes: SubscriptionChanges<T>) {
         const regisry = getChannelRegistry<T>(this.schema.id, this.scope);
+
+        // Preprocessing runs over every add, update, removal and unknown, and it ran on every
+        // saveChanges even when the message had nowhere to go. Measured on this branch, skipping
+        // it is worth ~18% on diff-update-1000 and ~10% on insert-1000.
+        //
+        // The guard lives here rather than at the call sites so every caller — CollectionBase,
+        // View, and anything added later — gets it without repeating the condition.
+        if (this.crossTabSync === false && regisry.listenerCount === 0) {
+            return;
+        }
 
         // cannot send raw data, needs to be preprocessed
         const preprocessedChanges: SubscriptionChanges<T> = {

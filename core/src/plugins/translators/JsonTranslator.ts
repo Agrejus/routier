@@ -155,12 +155,44 @@ export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRo
         throw new Error("Cannot count resulting data, it must be an array.  Please return array of data for function: count()");
     }
 
+    // Relational comparison instead of subtraction, for the same reason as sort():
+    // subtraction is NaN for strings, which made min()/max() return an arbitrary element.
+    // Nulls order first ascending — min() of a column with nulls is null, max() is the
+    // largest value — matching what sort() does with the same data.
     override min<TResult extends string | number | Date>(data: unknown, _: QueryOption<TShape, "min">): TResult {
-        return this._minMax(data, "min", (a: any, b: any) => a - b);
+        return this._minMax(data, "min", (a: any, b: any) => {
+            if (a === b) {
+                return 0;
+            }
+
+            if (a == null) {
+                return -1;
+            }
+
+            if (b == null) {
+                return 1;
+            }
+
+            return a < b ? -1 : 1;
+        });
     }
 
     override max<TResult extends string | number | Date>(data: unknown, _: QueryOption<TShape, "max">): TResult {
-        return this._minMax(data, "max", (a: any, b: any) => b - a);
+        return this._minMax(data, "max", (a: any, b: any) => {
+            if (a === b) {
+                return 0;
+            }
+
+            if (a == null) {
+                return 1;
+            }
+
+            if (b == null) {
+                return -1;
+            }
+
+            return a < b ? 1 : -1;
+        });
     }
 
     override sort<TResult>(data: unknown, option: QueryOption<TShape, "sort">): TResult {
@@ -323,13 +355,30 @@ export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRo
 
         assertIsArray(data, this._formatDataNotArrayError(name));
 
-        data.sort(sort);
-
         if (data.length === 0) {
             throw new Error("Cannot perform operation on empty array, result query contains no data")
         }
 
-        return data[0] as T;
+        // A single pass, not sort-and-take-first: O(n) for an O(n) question, and it does not
+        // MUTATE the array the caller handed us — the sort did.  The caller's comparator is
+        // reused so min and max keep their null ordering from one body.
+        let best = data[0];
+
+        for (let i = 1, length = data.length; i < length; i++) {
+            const value = data[i];
+
+            // Array.prototype.sort moves undefined elements to the END without consulting the
+            // comparator. Mirror that: undefined is never selected unless every element is.
+            if (value === undefined) {
+                continue;
+            }
+
+            if (best === undefined || sort(value, best) < 0) {
+                best = value;
+            }
+        }
+
+        return best as T;
     }
 
     private _formatDataNotArrayError(functionName: string) {

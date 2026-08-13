@@ -9,12 +9,18 @@ import { PropertyInfo, SchemaTypes } from "../../../schema";
 // See CloneValueHandler for why the guard is `!== undefined` (known-defects #66).
 export class CloneDateHandler extends PropertyInfoHandler {
 
+    /** See `CloneValueHandler`. */
+    constructor(private readonly useFromPropertyName: boolean = false) {
+        super();
+    }
+
     override handle(property: PropertyInfo<any>, builder: CodeBuilder): CodeBuilder | null {
 
         if (property.type === SchemaTypes.Date) {
             const slot = builder.get<SlotBlock>("if");
-            const entitySelectorPath = property.getSelectrorPath({ parent: "entity" });
-            const resultAssignmentPath = property.getAssignmentPath({ parent: "result" });
+            const useFromPropertyName = this.useFromPropertyName;
+            const entitySelectorPath = property.getSelectrorPath({ parent: "entity", useFromPropertyName });
+            const resultAssignmentPath = property.getAssignmentPath({ parent: "result", useFromPropertyName });
 
             // Stored values can still be serialized strings; only wrap real Dates. A null falls
             // through this expression unchanged, which is what the `!== undefined` guard wants.
@@ -26,7 +32,7 @@ export class CloneDateHandler extends PropertyInfoHandler {
             }
 
             // Nested property: ensure every ancestor object exists, then assign (same pattern as CloneValueHandler)
-            const parentPathArray = property.getParentPathArray();
+            const parentPathArray = property.getParentPathArray({ useFromPropertyName });
             const ifSlot = slot.if(`${entitySelectorPath} !== undefined`);
 
             for (let i = 0; i < parentPathArray.length; i++) {

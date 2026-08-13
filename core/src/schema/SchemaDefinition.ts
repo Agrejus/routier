@@ -21,7 +21,7 @@ import { SerializeHandlerBuilder } from "../codegen/handlers/SerializeHandlerBui
 import { hash, logger } from "../utilities";
 import { CollectionName, CompiledSchema, CompiledSchemaCore, CompiledSchemaWithMetadata, GetHashTypeFunction, HashFunction, HashType, IdType, Index, InferCreateType, InferType, Prepare, Preprocess, SchemaId, SchemaTypes, SetProperties, PropertyTransform } from './types';
 import { DeepPartial } from '../types';
-import { SchemaSubscription } from './communication/broadcast';
+import { SchemaSubscription, SchemaSubscriptionOptions } from './communication/broadcast';
 import { CompareIdsHandlerBuilder } from '../codegen/handlers/CompareIdsHandlerBuilder';
 import { StandardJSONSchemaV1, createStandardJsonSchemaProps, rehydrateSchemaFromJsonString } from './utils/standardJsonSchema';
 import { SetHandlerBuilder } from '../codegen/handlers';
@@ -103,6 +103,19 @@ function createChangeTracker() {
 
                     if (changes[ORIGINAL_ENTITY_KEY][resolvedPath] === value) {
                         // we are changing the value back to the original value, remove the change
+                        //
+                        // These two stay `delete`, unlike the `__tracking__` sites on the entity
+                        // itself. Assigning undefined here would be read as "still changed" by
+                        // the isDirty count below, which asks Object.keys — and a key assigned
+                        // undefined is still a key. Counting only defined values does not rescue
+                        // it either: an original value of undefined is legitimate (a property
+                        // that was unset and then given a value), so a defined-value count would
+                        // report a genuinely dirty entity as clean. Removing the key is the only
+                        // representation that keeps "present" and "changed" the same question.
+                        //
+                        // The cost is bounded in a way the entity sites are not: these bags hold
+                        // one key per changed path, they are internal to the tracking record, and
+                        // this branch only runs when a value is set BACK to its original.
                         delete changes[ORIGINAL_ENTITY_KEY][resolvedPath];
                         delete changes[CHANGES_ENTITY_KEY][resolvedPath];
                     } else {
@@ -408,7 +421,19 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             changeTrackingCodeBuilder.slot("pause").raw('\tconst hadTracking = entity.__tracking__ != null;\n\tif (!hadTracking) { Object.defineProperty(entity, "__tracking__", { value: { changes: {}, isDirty: false, original: {}, isPaused: false }, configurable: true, writable: true, enumerable: false }); }\n\tconst wasPaused = entity.__tracking__.isPaused;\n\tentity.__tracking__.isPaused = true;');
             changeTrackingCodeBuilder.slot("assignment");
             // Tracking metadata is created lazily on the first real write; only restore
-            // what already existed, never leave the bootstrap behind
+            // what already existed, never leave the bootstrap behind.
+            //
+            // Cleared by redefining the property, not by `delete`. `delete` moves the object
+            // into V8 dictionary mode permanently — it never returns to fast properties, so
+            // every later read of every property on the entity pays a dictionary lookup,
+            // measured at ~43% slower reads.
+            //
+            // defineProperty rather than plain assignment because `entity` here is whatever
+            // the caller passed, and enableChangeTracking is public API, so it may already be
+            // a change-tracking proxy. That proxy's set trap answers writes to `__tracking__`
+            // with a bare `return true` and drops them, which would leave this bootstrap
+            // behind. The handler defines no defineProperty trap, so this reaches the target,
+            // and repeating the descriptor keeps the property non-enumerable.
             changeTrackingCodeBuilder.slot("return").raw('\tif (hadTracking) { entity.__tracking__.isPaused = wasPaused; } else { delete entity.__tracking__; }\n\treturn enableChangeTracking(entity);');
 
             const freezeCodeBuilder = new CodeBuilder();
@@ -436,14 +461,24 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             enricherFunctionBody.slot("assignment");
             enricherFunctionBody.slot("ifs");
             enricherFunctionBody.slot("tracking").if('changeTrackingType === "immutable"', { name: "freeze" });
-            // The paused bootstrap tracking is deleted rather than unpaused: tracking
+            // The paused bootstrap tracking is removed rather than unpaused: tracking
             // metadata is created lazily on the first real write, and callers assert
-            // an untouched entity carries none
-            // The __tracking__ bootstrap is temporary in EVERY mode, so it is always removed.
-            // Proxy mode recreates it lazily on the first tracked write (see defect #2); the
-            // non-proxy modes never wanted it, and gating the delete on "proxy" left them
-            // carrying a stray `{ isPaused: false }` on every entity.
-            enricherFunctionBody.slot("return").raw('\tif (changeTrackingType !== "immutable") { delete enriched.__tracking__; }\n\treturn enableChangeTracking(enriched);');
+            // an untouched entity carries none. Proxy mode recreates it on the first
+            // tracked write (see defect #2).
+            //
+            // Cleared by assignment rather than `delete`, because `delete` drops the entity
+            // into V8 dictionary mode for the rest of its life — and this line runs on EVERY
+            // entity that comes off a read. Assignment keeps the non-enumerable descriptor
+            // installed above, so the property still stays out of Object.keys and JSON.
+            //
+            // The condition is now "proxy" rather than "not immutable", which is the same set
+            // of entities in practice: `enriched` is a fresh object literal built from schema
+            // properties, so ONLY the proxy branch above ever puts `__tracking__` on it. Under
+            // `delete` the wider condition was harmless because deleting an absent property is
+            // a no-op; under assignment it would CREATE an enumerable `__tracking__` on every
+            // diff- and readonly-tracked entity and leak it into persistence. Defect #16's
+            // stray `{ isPaused: false }` residue stays fixed — nothing is left behind here.
+            enricherFunctionBody.slot("return").raw('\tif (changeTrackingType === "proxy") { enriched.__tracking__ = undefined; }\n\treturn enableChangeTracking(enriched);');
 
             const preprocessCodeBuilder = new CodeBuilder();
             preprocessCodeBuilder.slot("main");
@@ -482,6 +517,16 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const unpauseFunctionBody = mergeFunctionBody.function("unpause")
                 .appendBody("// unpause change tracking, removing a bootstrap this merge installed");
 
+            // Redefined to undefined rather than deleted, so the merged entity keeps its fast
+            // properties — `delete` would put it in dictionary mode for good.
+            //
+            // It must be defineProperty and NOT assignment. `destination` is an attached,
+            // proxied entity, and the change tracker's set trap answers writes to
+            // `__tracking__` with a bare `return true`, dropping them. Assigning here is
+            // therefore a silent no-op that leaves the `{}` bootstrap installed by pause() in
+            // place — and the next write through the proxy reads `changes.changes` off that
+            // bootstrap and throws. defineProperty is not intercepted, because the handler
+            // declares no defineProperty trap.
             unpauseFunctionBody.if("installedTrackingBootstrap === true")
                 .appendBody("delete destination.__tracking__;")
                 .appendBody("return;");
@@ -695,6 +740,68 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const getHashTypeFunction = this.createFunction<GetHashTypeFunction<T>>(hashTypeCodeBuilder, "entity");
             const prepareFunction = this.createFunction<Prepare<T>>(prepareCodeBuilder, "entity");
             const cloneFunction = this.createFunction<(entity: InferType<T>) => InferType<T>>(cloneCodeBuilder, "entity");
+
+            /**
+             * `clone`, but for records that are still in the STORAGE shape.
+             *
+             * Built on first use rather than at compile time. Generating it costs a full pass over
+             * the property tree plus a `Function` compile, and only stores that hold records in
+             * storage shape ever ask for it, so a schema that is never read through one pays
+             * nothing. After the first call it is the same generated function as `clone`.
+             */
+            let storageCloneFunction: ((entity: InferType<T>) => InferType<T>) | null = null;
+            const cloneStorageFunction = (entity: InferType<T>): InferType<T> => {
+
+                if (storageCloneFunction == null) {
+                    const storageCloneCodeBuilder = new CodeBuilder();
+
+                    // Undeclared columns are carried across; declared ones are left to the
+                    // generated deep-copy code below. This is the one place this differs from
+                    // `clone`, and both halves of it matter.
+                    //
+                    // Carrying them at all: a stored record can hold columns the schema never
+                    // declared, and this copier replaces `structuredClone`, which kept them.
+                    // ConcurrencyDbPlugin depends on exactly that — it appends a synthetic
+                    // `__version` property carrying a `from` name for the express purpose of
+                    // pushing reads onto this path, so its hidden column survives the copy and the
+                    // wrapper can observe the row's version. Drop the token and every read looks
+                    // unversioned, so optimistic concurrency stops detecting conflicts silently.
+                    //
+                    // Skipping the declared ones: a blanket `{ ...entity }` would seed the result
+                    // with the SOURCE's nested objects, and the child handlers then write their
+                    // copies into those shared references — mutating the record the caller was
+                    // copying to get away from.
+                    // Compared inline rather than against a Set: the set would be rebuilt on every
+                    // call, and this runs once per record on every read.
+                    const isDeclared = properties
+                        .filter(property => property.parent == null)
+                        .map(property => `key === ${JSON.stringify(property.getResolvedName())}`)
+                        .join(" || ");
+
+                    const skipDeclared = isDeclared.length === 0 ? "" : `if (${isDeclared}) { continue; }\n            `;
+
+                    storageCloneCodeBuilder.slot("result").raw(
+                        `const result = {};\n` +
+                        `    for (const key in entity) {\n` +
+                        `        if (Object.hasOwn(entity, key) === false) { continue; }\n` +
+                        `        ${skipDeclared}result[key] = entity[key];\n` +
+                        `    }`
+                    );
+                    storageCloneCodeBuilder.slot("assignments");
+                    storageCloneCodeBuilder.slot("if");
+                    storageCloneCodeBuilder.slot("return").raw(`     return result;`);
+
+                    const storageClone = cloneHandlerBuilder.build(true);
+
+                    for (let i = 0, length = properties.length; i < length; i++) {
+                        assertPropertyHandled("cloneStorage", properties[i], storageClone.handle(properties[i], storageCloneCodeBuilder));
+                    }
+
+                    storageCloneFunction = this.createFunction<(entity: InferType<T>) => InferType<T>>(storageCloneCodeBuilder, "entity");
+                }
+
+                return storageCloneFunction(entity);
+            };
             const deserializeFunction = this.createFunction<(entity: InferType<T>) => InferType<T>>(deserializeCodeBuilder, "unserialized");
             const serializeFunction = this.createFunction<(entity: InferType<T>) => InferType<T>>(serializeCodeBuilder, "entity");
             const compareFunction = this.createFunction<(a: InferType<T>, b: InferType<T>) => boolean>(compareCodeBuilder, "a", "b");
@@ -758,6 +865,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                 merge: mergeFunction,
                 prepare: prepareFunction,
                 clone: cloneFunction,
+                cloneStorage: cloneStorageFunction,
                 deserializePartial,
                 deserialize: deserializeFunction,
                 serialize: serializeFunction,
@@ -843,7 +951,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
                 const compiledSchemaWithMetadata: CompiledSchemaWithMetadata<T, TMetadata> = {
                     ...result,
-                    createSubscription: (signal?: AbortSignal, scope?: string) => new SchemaSubscription(result, signal, scope),
+                    createSubscription: (signal?: AbortSignal, scope?: string, options?: SchemaSubscriptionOptions) => new SchemaSubscription(result, signal, scope, options),
                     metadata
                 };
 
@@ -851,7 +959,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             }
 
             const compiledSchema = {
-                createSubscription: (signal?: AbortSignal, scope?: string) => new SchemaSubscription(result, signal, scope),
+                createSubscription: (signal?: AbortSignal, scope?: string, options?: SchemaSubscriptionOptions) => new SchemaSubscription(result, signal, scope, options),
                 ...result
             };
 

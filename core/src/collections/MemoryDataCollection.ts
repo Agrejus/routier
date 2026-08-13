@@ -18,6 +18,11 @@ export class MemoryDataCollection {
         return [...this.data.values()];
     }
 
+    /** Iterates stored records without materializing them into an array. */
+    values(): IterableIterator<Record<string, unknown>> {
+        return this.data.values();
+    }
+
     constructor(schema: CompiledSchema<any>) {
         this.data = new Map<string, Record<string, unknown>>();
         this.nextNumericalIds = new Map<string, number>();

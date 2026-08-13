@@ -4,6 +4,11 @@ import { hasPrimitiveElements, isArrayValued, PropertyInfo, SchemaTypes } from "
 
 export class CloneArrayHandler extends PropertyInfoHandler {
 
+    /** See `CloneValueHandler`. */
+    constructor(private readonly useFromPropertyName: boolean = false) {
+        super();
+    }
+
     override handle(property: PropertyInfo<any>, builder: CodeBuilder): CodeBuilder | null {
 
         if (isArrayValued(property.type)) {
@@ -13,10 +18,11 @@ export class CloneArrayHandler extends PropertyInfoHandler {
             // The `!== undefined` guard below covers absent values; an explicit null is copied as
             // null (see CloneValueHandler and known-defects #66), which is why every copy
             // expression is wrapped rather than applied directly — `[...null]` throws.
-            const entitySelectorPath = property.getSelectrorPath({ parent: "entity" });
+            const useFromPropertyName = this.useFromPropertyName;
+            const entitySelectorPath = property.getSelectrorPath({ parent: "entity", useFromPropertyName });
 
             const slot = builder.get<SlotBlock>("if");
-            const resultAssignmentPath = property.getAssignmentPath({ parent: "result" });
+            const resultAssignmentPath = property.getAssignmentPath({ parent: "result", useFromPropertyName });
 
             // Primitive elements copy with a spread; anything that can hold nested
             // references (objects, dates, nested arrays) needs a deep copy or the
@@ -45,7 +51,7 @@ export class CloneArrayHandler extends PropertyInfoHandler {
             }
 
             // Nested array: ensure parent exists, then assign the copy (same pattern as CloneValueHandler)
-            const parentPathArray = property.getParentPathArray();
+            const parentPathArray = property.getParentPathArray({ useFromPropertyName });
             const ifSlot = slot.if(`${entitySelectorPath} !== undefined`);
 
             for (let i = 0; i < parentPathArray.length; i++) {

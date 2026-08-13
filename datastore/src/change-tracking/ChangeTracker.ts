@@ -1,4 +1,4 @@
-import { ChangeTrackingType, CompiledSchema, HashType, IdType, InferCreateType, InferType } from "@routier/core/schema";
+import { ChangeTrackingType, CompiledSchema, HashType, IdType, InferCreateType, InferType, PropertyInfo } from "@routier/core/schema";
 import { SoftDeleteConfiguration } from "../collection-builder/softDelete";
 import { ChangeTrackedEntity } from "../types";
 import { KnownKeyAdditions } from "./additions/KnownKeyAdditions";
@@ -148,11 +148,30 @@ export class ChangeTracker<TEntity extends {}> {
      */
     private softDelete: SoftDeleteConfiguration<TEntity> | null = null;
 
+    /**
+     * The schema's root (non-nested) properties, and lookups into them by both names.
+     *
+     * Serialization asks for these on every changed entity of every save, and the schema is
+     * fixed for the tracker's lifetime, so they are computed once here instead of rebuilt and
+     * linearly searched per call.
+     *
+     * TWO maps, not one merged map: `serializeDelta` resolves a key by `name` across ALL roots
+     * FIRST and only then by `getResolvedName()`. One combined map loses that precedence — a
+     * property whose resolved name collides with another property's `name` would resolve to the
+     * wrong property.
+     */
+    private readonly rootProperties: PropertyInfo<TEntity>[];
+    private readonly rootsByName: Map<string, PropertyInfo<TEntity>>;
+    private readonly rootsByResolvedName: Map<string, PropertyInfo<TEntity>>;
+
     constructor(
         schema: CompiledSchema<TEntity>,
     ) {
         this.schema = schema;
         this.immutable = new ImmutableUpdates<TEntity>(schema);
+        this.rootProperties = schema.properties.filter(p => p.parent == null);
+        this.rootsByName = new Map(this.rootProperties.map(p => [p.name, p]));
+        this.rootsByResolvedName = new Map(this.rootProperties.map(p => [p.getResolvedName(), p]));
 
         if (schema.hasIdentityKeys === true) {
             this.additions = new UnknownKeyAdditions<TEntity>(this.schema);
@@ -549,11 +568,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
 
         const previous: Record<string, unknown> = {};
 
-        for (const property of this.schema.properties) {
-
-            if (property.parent != null) {
-                continue;
-            }
+        for (const property of this.rootProperties) {
 
             const column = property.getResolvedName();
             previous[column] = (serialized as Record<string, unknown>)[column];
@@ -563,14 +578,13 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     }
 
     private serializeDelta(serializedEntity: Record<string, unknown>, patch: Record<string, any>) {
-        const roots = this.schema.properties.filter(p => p.parent == null);
         const delta: Record<string, unknown> = {};
 
         for (const key of Object.keys(patch)) {
             // Proxy-path change keys are dotted paths ("nested.inner.value", "values.2");
             // only the root segment names a storage column
             const rootKey = key.split(".")[0];
-            const property = roots.find(p => p.name === rootKey) ?? roots.find(p => p.getResolvedName() === rootKey);
+            const property = this.rootsByName.get(rootKey) ?? this.rootsByResolvedName.get(rootKey);
 
             if (property == null) {
                 continue;

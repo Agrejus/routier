@@ -326,19 +326,18 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
             }
 
             const cloneRecord = this.recordCloner(innerSchema);
-            const stored = innerCollection.records;
             const innerRows: Record<string, unknown>[] = [];
 
             // Records are held in STORAGE shape, so the key is read by its resolved column name.
             const innerKey = joinOption.value.innerKey;
             const keyColumn = innerKey.property?.getResolvedName() ?? innerKey.propertyName;
 
-            for (let i = 0, length = stored.length; i < length; i++) {
-                if (outerKeys != null && outerKeys.has(stored[i][keyColumn]) === false) {
+            for (const record of innerCollection.values()) {
+                if (outerKeys != null && outerKeys.has(record[keyColumn]) === false) {
                     continue;
                 }
 
-                innerRows.push(cloneRecord(stored[i]));
+                innerRows.push(cloneRecord(record));
             }
 
             done({ ok: "success", innerSide: { innerSchema, innerRows } });
@@ -348,14 +347,16 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
     /**
      * How to copy a stored record of this schema.
      *
-     * Stored records use the storage shape (`from` names). The generated clone reads IN-MEMORY
-     * property names and would silently drop renamed fields, so a schema with renames deep-copies
-     * structurally instead.
+     * Stored records use the storage shape (`from` names). `schema.clone` reads IN-MEMORY property
+     * names and would silently drop renamed fields, so a schema with renames uses the cloner
+     * generated against the storage shape instead. Both are generated code; the renamed case used
+     * to fall back to `structuredClone`, which is roughly an order of magnitude slower and was paid
+     * on EVERY read of EVERY schema that renames a property.
      */
     private recordCloner(schema: CompiledSchema<any>) {
         const hasRenamedProperties = schema.properties.some(property => property.from != null);
 
-        return (hasRenamedProperties ? structuredClone : schema.clone) as (record: Record<string, unknown>) => Record<string, unknown>;
+        return (hasRenamedProperties ? schema.cloneStorage : schema.clone) as (record: Record<string, unknown>) => Record<string, unknown>;
     }
 
     query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
@@ -404,13 +405,15 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                     }
                 }
 
-                if (source == null) {
-                    source = collection.records;
-                }
-
                 // Apply the leading filter options against the raw records before cloning
                 // so only surviving rows pay the clone cost.  Filter predicates are pure,
                 // so re-running them inside translate() is a no-op pass over the survivors.
+                //
+                // Filter and clone are FUSED into one pass, and the unfiltered case iterates
+                // the collection instead of spreading it into an array.  The staged form walked
+                // the collection up to four times and allocated a full-size array at each step.
+                const leadingFilters: { filter: (arg: any) => unknown, params: unknown | null }[] = [];
+
                 for (let i = 0; i < leadingFilterCount; i++) {
                     const value = orderedOptions[i].value;
 
@@ -418,19 +421,32 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                         continue;
                     }
 
-                    if (value.params == null) {
-                        source = source.filter(value.filter);
+                    leadingFilters.push({ filter: value.filter, params: value.params ?? null });
+                }
+
+                const filterCount = leadingFilters.length;
+                const cloned: Record<string, unknown>[] = [];
+
+                for (const record of (source ?? collection.values())) {
+                    let kept = true;
+
+                    for (let i = 0; i < filterCount; i++) {
+                        const { filter, params } = leadingFilters[i];
+
+                        // Truthiness, not === true: Array.prototype.filter keeps a row on any
+                        // truthy return, and these predicates are generated code that returns
+                        // whatever the expression evaluated to.
+                        if (!(params == null ? filter(record) : filter([record, params]))) {
+                            kept = false;
+                            break;
+                        }
+                    }
+
+                    if (kept === false) {
                         continue;
                     }
 
-                    source = source.filter(w => value.filter([w, value.params]));
-                }
-
-                const length = source.length;
-                const cloned: Record<string, unknown>[] = Array.from({ length });
-
-                for (let i = 0; i < length; i++) {
-                    cloned[i] = cloneRecord(source[i]);
+                    cloned.push(cloneRecord(record));
                 }
 
                 /**
@@ -441,7 +457,7 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                  * side first — which is what this did before — means loading and cloning a whole
                  * collection to pair it with three rows.
                  *
-                 * `source` is in storage shape, so the keys are read by resolved column name.
+                 * `cloned` is in storage shape, so the keys are read by resolved column name.
                  */
                 const joinOption = operation.options.getLast("join");
                 const outerKeys = joinOption == null

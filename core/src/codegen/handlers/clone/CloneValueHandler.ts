@@ -14,6 +14,14 @@ import { isArrayValued, PropertyInfo, SchemaTypes } from "../../../schema";
  */
 export class CloneValueHandler extends PropertyInfoHandler {
 
+    /**
+     * When true, emit reads and writes under the STORAGE name (`from`) instead of the
+     * in-memory name. See `CloneHandlerBuilder.build`.
+     */
+    constructor(private readonly useFromPropertyName: boolean = false) {
+        super();
+    }
+
     override handle(property: PropertyInfo<any>, builder: CodeBuilder): CodeBuilder | null {
 
         // Anything that copies by assignment. An array-valued property must not land here:
@@ -21,8 +29,9 @@ export class CloneValueHandler extends PropertyInfoHandler {
         // CloneArrayHandler.
         if (property.type != SchemaTypes.Object && isArrayValued(property.type) === false) {
             const slot = builder.get<SlotBlock>("if");
-            const entitySelectorPath = property.getSelectrorPath({ parent: "entity" });
-            const resultAssignmentPath = property.getAssignmentPath({ parent: "result" });
+            const useFromPropertyName = this.useFromPropertyName;
+            const entitySelectorPath = property.getSelectrorPath({ parent: "entity", useFromPropertyName });
+            const resultAssignmentPath = property.getAssignmentPath({ parent: "result", useFromPropertyName });
 
             if (property.parent == null) {
                 // we are a first level property
@@ -31,7 +40,7 @@ export class CloneValueHandler extends PropertyInfoHandler {
             }
 
             // Nested property: ensure every ancestor object exists, then assign (handles depth > 2)
-            const parentPathArray = property.getParentPathArray();
+            const parentPathArray = property.getParentPathArray({ useFromPropertyName });
             const ifSlot = slot.if(`${entitySelectorPath} !== undefined`);
 
             for (let i = 0; i < parentPathArray.length; i++) {
