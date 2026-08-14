@@ -211,35 +211,43 @@ app.post("/api/uploads/sign", requireUser, async (request, response) => {
 
 Authenticate this endpoint. A signed URL is a short-lived bearer token that grants permission to write one object.
 
-### 2. Upload from the browser
+### 2. Wrap the HTTP database plugin in the browser
+
+`DirectUploadPlugin` is the browser-safe companion to `S3Plugin`. It holds no storage credentials. Wrap an HTTP-backed database plugin once, then assign files and save normally:
 
 ```ts
-import { createDirectUploader } from "@routier/blob-plugin";
+import { DirectUploadPlugin } from "@routier/blob-plugin";
+import { HttpTransportDbPlugin } from "@routier/replication-plugin";
 
-const uploader = createDirectUploader({
-  requestUpload: async descriptor => {
-    const response = await fetch("/api/uploads/sign", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(descriptor),
-    });
+const plugin = new DirectUploadPlugin(
+  new HttpTransportDbPlugin({ url: "/api/routier" }),
+  {
+    requestUpload: async descriptor => {
+      const response = await fetch("/api/uploads/sign", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(descriptor),
+      });
 
-    if (!response.ok) {
-      throw new Error(`Upload authorization failed: ${response.status}`);
-    }
+      if (!response.ok) {
+        throw new Error(`Upload authorization failed: ${response.status}`);
+      }
 
-    return response.json();
+      return response.json();
+    },
   },
-});
+);
 
-const reference = await uploader.upload(fileInput.files![0]);
+const store = new AppStore(plugin);
 
 await store.documents.addAsync({
   title: "Quarterly report",
-  file: reference,
+  file: fileInput.files![0],
 });
-await store.saveChangesAsync();
+await store.saveChangesAsync(); // signs, uploads to S3, then saves over HTTP
 ```
+
+The wrapper resolves the `File` before the inner HTTP plugin serializes the change. Only the JSON-safe `FileReference` travels through the Routier database endpoint. This also composes with `HttpSwrDbPlugin`.
 
 The browser hashes the file before requesting a grant. If those bytes already exist, the server returns the reference without an upload URL and the browser transfers nothing.
 

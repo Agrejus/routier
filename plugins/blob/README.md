@@ -132,23 +132,25 @@ server one small JSON response, and the bytes never pass through it.
 // --- your server, where the credentials are ---
 app.post('/uploads', async (request, response) => {
   // Authorise here. Signing IS the authorisation decision.
-  response.json(await plugin.files.createUploadUrl(request.body));
+  response.json(await s3Plugin.files.createUploadUrl(request.body));
 });
 
 // --- the browser, which has none ---
-const uploader = createDirectUploader({
-  requestUpload: (descriptor) =>
-    fetch('/uploads', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(descriptor),
-    }).then(response => response.json()),
-});
+const httpPlugin = new DirectUploadPlugin(
+  new HttpTransportDbPlugin({ url: '/api/routier' }),
+  {
+    requestUpload: (descriptor) =>
+      fetch('/uploads', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(descriptor),
+      }).then(response => response.json()),
+  },
+);
 
-const reference = await uploader.upload(fileFromInput);
-
-await store.documents.addAsync({ ownerId, title, file: reference });
-await store.saveChangesAsync();
+const store = new AppStore(httpPlugin);
+await store.documents.addAsync({ ownerId, title, file: fileFromInput });
+await store.saveChangesAsync(); // uploads directly, then sends the reference over HTTP
 ```
 
 The browser hashes first, because a content-addressed key cannot be chosen until the content

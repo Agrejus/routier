@@ -1,5 +1,6 @@
 export { createFiles, type Files } from './files';
-export { BlobDbPlugin, fileProperties, isFileReference } from './BlobDbPlugin';
+export { BlobDbPlugin, fileProperties, isFileReference, type FileUploader } from './BlobDbPlugin';
+export { DirectUploadPlugin, type DirectUploadPluginOptions } from './DirectUploadPlugin';
 export {
     createDirectUploader,
     referenceFor,

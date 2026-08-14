@@ -44,11 +44,13 @@ import type { FileReference } from './schema';
  * Uploads are idempotent because keys are content-addressed, so a retried save re-uploads
  * nothing.
  */
-export class BlobDbPlugin implements IDbPlugin {
+export type FileUploader = Pick<Files, 'upload'>;
+
+export class BlobDbPlugin<TFiles extends FileUploader = Files> implements IDbPlugin {
 
     constructor(
         private readonly plugin: IDbPlugin,
-        public readonly files: Files
+        public readonly files: TFiles
     ) { }
 
     get databaseName(): string {
