@@ -1,7 +1,7 @@
 # Routier
 
 <p align="center">
-  <img src="docs/assets/routier.svg" alt="Routier" width="140" height="140" />
+  <img src="https://routier.dev/routier.svg" alt="Routier" width="140" height="140" />
 </p>
 
 > **⚠️ Release Candidate** - This project is currently a release candidate. APIs may change between versions. Use with caution in production.
