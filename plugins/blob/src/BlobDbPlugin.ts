@@ -48,7 +48,7 @@ export class BlobDbPlugin implements IDbPlugin {
 
     constructor(
         private readonly plugin: IDbPlugin,
-        private readonly files: Files
+        public readonly files: Files
     ) { }
 
     get databaseName(): string {

@@ -111,7 +111,7 @@ const result = useQuery(
 | `@routier/mongodb-plugin` | `MongoDbPlugin`, `MongoClientDriver`, MQL translation and driver interfaces |
 | `@routier/pouchdb-plugin` | `PouchDbPlugin` and sync/design-document types |
 | `@routier/replication-plugin` | HTTP, SWR, optimistic, transport, sync engine, auth/dead-letter types |
-| `@routier/blob-plugin` | `BlobDbPlugin`, `createFiles`, direct upload, file references and blob-store contracts |
+| `@routier/blob-plugin` | `S3Plugin`, `BlobDbPlugin`, `createFiles`, direct upload, file references and blob-store contracts |
 | `@routier/encryption` | `createKeyring`, `encryption`, keyring types, `isEnvelope` |
 | `@routier/sql-plugin-core` | SQL dialect, query, column, update, and join helpers for plugin authors |
 
