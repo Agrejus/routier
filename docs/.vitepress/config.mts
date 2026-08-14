@@ -36,6 +36,7 @@ export default defineConfig({
           { text: "Wrapper Plugins", link: "/integrations/plugins/built-in-plugins/wrappers" },
           { text: "Replication & SWR", link: "/integrations/plugins/built-in-plugins/replication/README" },
           { text: "Files & Blob Storage", link: "/integrations/plugins/built-in-plugins/files" },
+          { text: "S3 & SaaS Blob Storage", link: "/integrations/plugins/built-in-plugins/s3-blob-storage" },
           { text: "Encryption", link: "/integrations/plugins/built-in-plugins/encryption" },
           { text: "Build a Plugin", link: "/integrations/plugins/create-your-own/" },
         ],
