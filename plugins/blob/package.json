@@ -1,6 +1,6 @@
 {
     "name": "@routier/blob-plugin",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "main": "./dist/index.cjs",
     "module": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -68,6 +68,11 @@
             "types": "./dist/stores/fileSystem.d.ts",
             "import": "./dist/stores/fileSystem.js",
             "require": "./dist/stores/fileSystem.cjs"
+        },
+        "./s3": {
+            "types": "./dist/s3.d.ts",
+            "import": "./dist/s3.js",
+            "require": "./dist/s3.cjs"
         },
         "./stores/s3": {
             "types": "./dist/stores/s3.d.ts",

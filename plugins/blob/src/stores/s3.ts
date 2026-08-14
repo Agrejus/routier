@@ -37,7 +37,7 @@ import type { BlobStore } from './types';
  */
 
 /** The parts of an S3 client this uses, so the type does not require the SDK to be installed. */
-type S3ClientLike = {
+export type S3ClientLike = {
     send(command: unknown): Promise<unknown>;
     config?: unknown;
 };

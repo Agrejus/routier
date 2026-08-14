@@ -84,27 +84,34 @@ any `BlobStore`.
 
 ### S3, R2 and GCS
 
-One driver, three services. You construct the client, so the endpoint, region and credentials
-are yours:
+`S3Plugin` is the application-level API. Give it your row database plugin and ordinary S3
+configuration; it constructs the client and blob machinery internally:
 
 ```ts
-import { S3Client } from '@aws-sdk/client-s3';
-import { s3BlobStore } from '@routier/blob-plugin/stores/s3';
+import { S3Plugin } from '@routier/blob-plugin/s3';
 
 // AWS
-s3BlobStore({ bucket: 'uploads', client: new S3Client({ region: 'us-east-1' }) });
+const plugin = new S3Plugin(databasePlugin, {
+    bucket: 'uploads',
+    region: 'us-east-1',
+});
 
 // Cloudflare R2
-s3BlobStore({ bucket: 'uploads', client: new S3Client({
+const plugin = new S3Plugin(databasePlugin, {
+    bucket: 'uploads',
     region: 'auto',
     endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
     credentials: { accessKeyId, secretAccessKey },
-}) });
+});
 ```
 
+Assign content to an `s.file()` property and call `saveChangesAsync()`. The plugin uploads to
+S3 first, replaces the staged content with a reference, and then saves the row. Applications
+do not need to construct `S3Client`, call `createFiles`, or call `s3BlobStore`.
+
 `@aws-sdk/client-s3` is an optional peer dependency, and `@aws-sdk/s3-request-presigner` is a
-second one needed only by `url()`. Neither is downloaded by an application that does not use
-this store.
+second one needed only by signed URLs. Neither is downloaded by an application that does not
+use S3.
 
 `keyPrefix` puts several applications in one bucket and lets a lifecycle rule target this
 plugin's objects and nothing else.
@@ -125,23 +132,25 @@ server one small JSON response, and the bytes never pass through it.
 // --- your server, where the credentials are ---
 app.post('/uploads', async (request, response) => {
   // Authorise here. Signing IS the authorisation decision.
-  response.json(await files.createUploadUrl(request.body));
+  response.json(await s3Plugin.files.createUploadUrl(request.body));
 });
 
 // --- the browser, which has none ---
-const uploader = createDirectUploader({
-  requestUpload: (descriptor) =>
-    fetch('/uploads', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(descriptor),
-    }).then(response => response.json()),
-});
+const httpPlugin = new DirectUploadPlugin(
+  new HttpTransportDbPlugin({ url: '/api/routier' }),
+  {
+    requestUpload: (descriptor) =>
+      fetch('/uploads', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(descriptor),
+      }).then(response => response.json()),
+  },
+);
 
-const reference = await uploader.upload(fileFromInput);
-
-await store.documents.addAsync({ ownerId, title, file: reference });
-await store.saveChangesAsync();
+const store = new AppStore(httpPlugin);
+await store.documents.addAsync({ ownerId, title, file: fileFromInput });
+await store.saveChangesAsync(); // uploads directly, then sends the reference over HTTP
 ```
 
 The browser hashes first, because a content-addressed key cannot be chosen until the content

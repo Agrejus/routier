@@ -8,6 +8,49 @@ title: S3 and SaaS Blob Storage
 
 This page expands the [Files and Blob Storage overview](/integrations/plugins/built-in-plugins/files) with production-oriented provider configuration and a complete direct-upload flow.
 
+## The simple path
+
+Use `S3Plugin` when your Routier datastore runs on the server. Give it the database plugin that stores rows plus ordinary S3 configuration. Routier constructs the AWS client, creates the blob store, and wires the upload wrapper internally.
+
+```ts
+import { DataStore } from "@routier/datastore";
+import { s } from "@routier/core/schema";
+import { SqliteDbPlugin } from "@routier/sqlite-plugin";
+import { S3Plugin } from "@routier/blob-plugin/s3";
+
+const documentSchema = s.define("documents", {
+  id: s.string().key().identity(),
+  title: s.string(),
+  file: s.file(),
+}).compile();
+
+const plugin = new S3Plugin(new SqliteDbPlugin("app.db"), {
+  bucket: process.env.S3_BUCKET!,
+  region: process.env.AWS_REGION ?? "us-east-1",
+  keyPrefix: "production",
+});
+
+class AppStore extends DataStore {
+  documents = this.collection(documentSchema).proxy().create();
+
+  constructor() {
+    super(plugin);
+  }
+}
+
+const store = new AppStore();
+
+await store.documents.addAsync({
+  title: "Quarterly report",
+  file: fileOrBytes,
+});
+await store.saveChangesAsync(); // Uploads to S3, then saves the row.
+```
+
+That is the intended application API: assign content to an `s.file()` property and save. You do not need to construct `S3Client`, call `createFiles`, or call `s3BlobStore`.
+
+`S3Plugin` still receives an inner database plugin because S3 stores file bytes, not queryable rows. Internally it is a wrapper, but applications do not need to assemble that wrapper themselves.
+
 ## Architecture
 
 A file has two parts:
@@ -35,28 +78,18 @@ npm install @routier/blob-plugin @aws-sdk/client-s3 @aws-sdk/s3-request-presigne
 
 ## Configure a provider
 
-Construct the provider's `S3Client`, then pass it to `s3BlobStore`. The bucket must already exist.
+Pass the provider's standard S3 configuration directly to `S3Plugin`. The bucket must already exist. Routier constructs the client internally.
 
 ### AWS S3
 
 The SDK's default credential chain can read `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, profiles, workload identity, or an IAM role.
 
 ```ts
-import { S3Client } from "@aws-sdk/client-s3";
-import { createFiles } from "@routier/blob-plugin";
-import { s3BlobStore } from "@routier/blob-plugin/stores/s3";
-
-const client = new S3Client({
+const plugin = new S3Plugin(databasePlugin, {
+  bucket: process.env.S3_BUCKET!,
   region: process.env.AWS_REGION ?? "us-east-1",
+  keyPrefix: "production",
 });
-
-export const files = createFiles(
-  s3BlobStore({
-    bucket: process.env.S3_BUCKET!,
-    client,
-    keyPrefix: "production",
-  }),
-);
 ```
 
 ### Cloudflare R2
@@ -64,22 +97,16 @@ export const files = createFiles(
 Create an R2 API token with object read and write access. R2 exposes an S3-compatible endpoint:
 
 ```ts
-const client = new S3Client({
+const plugin = new S3Plugin(databasePlugin, {
+  bucket: process.env.R2_BUCKET!,
   region: "auto",
   endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
   credentials: {
     accessKeyId: process.env.R2_ACCESS_KEY_ID!,
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
   },
+  keyPrefix: "production",
 });
-
-export const files = createFiles(
-  s3BlobStore({
-    bucket: process.env.R2_BUCKET!,
-    client,
-    keyPrefix: "production",
-  }),
-);
 ```
 
 ### Google Cloud Storage
@@ -87,7 +114,8 @@ export const files = createFiles(
 Enable interoperability access and use its access key and secret with the XML API endpoint:
 
 ```ts
-const client = new S3Client({
+const plugin = new S3Plugin(databasePlugin, {
+  bucket: process.env.GCS_BUCKET!,
   region: "auto",
   endpoint: "https://storage.googleapis.com",
   credentials: {
@@ -102,7 +130,8 @@ const client = new S3Client({
 Local MinIO commonly needs path-style addressing:
 
 ```ts
-const client = new S3Client({
+const plugin = new S3Plugin(databasePlugin, {
+  bucket: process.env.S3_BUCKET!,
   region: "us-east-1",
   endpoint: process.env.S3_ENDPOINT ?? "http://127.0.0.1:9000",
   forcePathStyle: true,
@@ -113,32 +142,43 @@ const client = new S3Client({
 });
 ```
 
-For another SaaS provider, use the endpoint, region, and S3 credentials supplied by that provider. `s3BlobStore` does not depend on an AWS hostname.
+For another SaaS provider, use the endpoint, region, and S3 credentials supplied by that provider. `S3Plugin` does not depend on an AWS hostname.
 
-## Server-managed upload
+### Existing client escape hatch
 
-When the file reaches trusted server code, upload it through `createFiles` and save the returned reference:
+Most applications should let `S3Plugin` construct the client. If infrastructure code already manages one, pass it as `client`:
 
 ```ts
-const reference = await files.upload(requestFile, {
-  contentType: requestFile.type,
-  fileName: requestFile.name,
+const plugin = new S3Plugin(databasePlugin, {
+  bucket: "my-app-files",
+  client: existingS3Client,
 });
+```
 
+The lower-level `createFiles()` and `s3BlobStore()` APIs remain available for custom stores and framework integrations, but they are no longer required for the S3 happy path.
+
+## Automatic upload on save
+
+`S3Plugin` recognizes every `s.file()` property in a pending add or update. Assign a `File`, `Blob`, `Uint8Array`, or string as the property value:
+
+```ts
 await store.documents.addAsync({
   title: "Quarterly report",
-  file: reference,
+  file: requestFile,
 });
+
 await store.saveChangesAsync();
 ```
 
-You can also wrap a database plugin in `BlobDbPlugin` and assign raw file content to an `s.file()` property. The wrapper uploads before committing the database row:
+During `saveChangesAsync()`, Routier:
 
-```ts
-const plugin = new BlobDbPlugin(new PostgresDbPlugin(connection), files);
-```
+1. Hashes the content and checks whether it already exists.
+2. Uploads new bytes to S3.
+3. Replaces the staged content with a `FileReference`.
+4. Gives the row to the inner database plugin.
+5. Commits the database transaction.
 
-If the upload fails, no row is written. If the database save fails afterward, the uploaded object is an orphan that can be collected with `files.sweepOrphans()`.
+If the upload fails, no row is written. If the database save fails afterward, the uploaded object is an orphan that can be collected with `plugin.files.sweepOrphans()`.
 
 ## Direct browser upload
 
@@ -164,42 +204,50 @@ app.post("/api/uploads/sign", requireUser, async (request, response) => {
     return response.status(415).json({ error: "Unsupported file type" });
   }
 
-  const grant = await files.createUploadUrl(upload, { expiresIn: 60 });
+  const grant = await plugin.files.createUploadUrl(upload, { expiresIn: 60 });
   return response.json(grant);
 });
 ```
 
 Authenticate this endpoint. A signed URL is a short-lived bearer token that grants permission to write one object.
 
-### 2. Upload from the browser
+### 2. Wrap the HTTP database plugin in the browser
+
+`DirectUploadPlugin` is the browser-safe companion to `S3Plugin`. It holds no storage credentials. Wrap an HTTP-backed database plugin once, then assign files and save normally:
 
 ```ts
-import { createDirectUploader } from "@routier/blob-plugin";
+import { DirectUploadPlugin } from "@routier/blob-plugin";
+import { HttpTransportDbPlugin } from "@routier/replication-plugin";
 
-const uploader = createDirectUploader({
-  requestUpload: async descriptor => {
-    const response = await fetch("/api/uploads/sign", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(descriptor),
-    });
+const plugin = new DirectUploadPlugin(
+  new HttpTransportDbPlugin({ url: "/api/routier" }),
+  {
+    requestUpload: async descriptor => {
+      const response = await fetch("/api/uploads/sign", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(descriptor),
+      });
 
-    if (!response.ok) {
-      throw new Error(`Upload authorization failed: ${response.status}`);
-    }
+      if (!response.ok) {
+        throw new Error(`Upload authorization failed: ${response.status}`);
+      }
 
-    return response.json();
+      return response.json();
+    },
   },
-});
+);
 
-const reference = await uploader.upload(fileInput.files![0]);
+const store = new AppStore(plugin);
 
 await store.documents.addAsync({
   title: "Quarterly report",
-  file: reference,
+  file: fileInput.files![0],
 });
-await store.saveChangesAsync();
+await store.saveChangesAsync(); // signs, uploads to S3, then saves over HTTP
 ```
+
+The wrapper resolves the `File` before the inner HTTP plugin serializes the change. Only the JSON-safe `FileReference` travels through the Routier database endpoint. This also composes with `HttpSwrDbPlugin`.
 
 The browser hashes the file before requesting a grant. If those bytes already exist, the server returns the reference without an upload URL and the browser transfers nothing.
 
@@ -227,7 +275,7 @@ Issue a short-lived private download URL from trusted server code:
 
 ```ts
 const document = await store.documents.firstAsync();
-const downloadUrl = await files.url(document.file, { expiresIn: 300 });
+const downloadUrl = await plugin.files.url(document.file, { expiresIn: 300 });
 ```
 
 Return that URL only after checking that the current user may read the document. Do not make the bucket public just to serve downloads.
@@ -251,7 +299,7 @@ Scope object permissions to the bucket and, when possible, the configured `keyPr
 - Use a separate `keyPrefix` per application or environment.
 - Keep upload grants short-lived and validate size and content type before signing.
 - The signature covers both `content-type` and `x-amz-checksum-sha256`; changing either makes the provider reject the PUT.
-- Upload and database save cannot share a transaction. Run `sweepOrphans` against the complete set of live references, starting with `{ dryRun: true }`.
+- Upload and database save cannot share a transaction. Run `plugin.files.sweepOrphans()` against the complete set of live references, starting with `{ dryRun: true }`.
 - Uploads are whole-file, single PUT operations. Multipart uploads are not currently implemented.
 
 ## Related

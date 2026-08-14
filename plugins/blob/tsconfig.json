@@ -19,6 +19,7 @@
     },
     "include": [
         "./src/index.ts",
+        "./src/s3.ts",
         "./src/stores/fileSystem.ts",
         "./src/stores/s3.ts"
     ],
