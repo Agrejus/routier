@@ -8,9 +8,11 @@ Welcome to Routier! This section will guide you through setting up Routier in yo
 
 <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 20px 0; border-radius: 4px;">
   <p style="margin: 0 0 8px 0; font-weight: 600; color: #92400e;">✨ Explore Before You Install</p>
-  <p style="margin: 0 0 12px 0; color: #78350f;">Try Routier in a live CodeSandbox environment to see schemas, live queries, and React integration in action before setting up your own project.</p>
+  <p style="margin: 0 0 12px 0; color: #78350f;">Try schemas, live queries, plugins, and React integration before setting up your own project.</p>
   <p style="margin: 0;">
-    <a href="https://codesandbox.io/p/devbox/routier-4nlxsx" target="_blank" rel="noopener noreferrer" style="color: #d97706; font-weight: 600;">Open CodeSandbox Demo →</a>
+    <a href="https://4nlxsx-5180.csb.app/" target="_blank" rel="noopener noreferrer" style="color: #d97706; font-weight: 600;">Open Live Playground →</a>
+    <span style="margin: 0 8px; color: #fbbf24;">|</span>
+    <a href="https://codesandbox.io/p/devbox/routier-4nlxsx" target="_blank" rel="noopener noreferrer" style="color: #d97706; font-weight: 600;">View and Edit Code →</a>
   </p>
 </div>
 

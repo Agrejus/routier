@@ -6,7 +6,7 @@ title: Installation
 
 Install the core libraries, the datastore, and one storage plugin.
 
-> **💡 Try it first:** Want to explore Routier before installing? [Open the CodeSandbox demo](https://codesandbox.io/p/devbox/routier-4nlxsx) to see it in action.
+> **💡 Try it first:** Want to explore Routier before installing? [Open the live playground](https://4nlxsx-5180.csb.app/) to use the demo, or [view and edit its source in CodeSandbox](https://codesandbox.io/p/devbox/routier-4nlxsx).
 
 ## Quick Navigation
 

@@ -8,9 +8,11 @@ Spin up a minimal project and see live queries and optimistic updates in action.
 
 <div style="background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 16px; margin: 20px 0; border-radius: 4px;">
   <p style="margin: 0 0 8px 0; font-weight: 600; color: #1e40af;">🎯 Try This Example Live</p>
-  <p style="margin: 0 0 12px 0; color: #1e3a8a;">See this code running in an interactive CodeSandbox environment with live examples of schemas, queries, and React integration.</p>
+  <p style="margin: 0 0 12px 0; color: #1e3a8a;">Use the live playground immediately, or open its CodeSandbox workspace to inspect and change the source.</p>
   <p style="margin: 0;">
-    <a href="https://codesandbox.io/p/devbox/routier-4nlxsx" target="_blank" rel="noopener noreferrer" style="color: #3b82f6; font-weight: 600;">Open CodeSandbox Demo →</a>
+    <a href="https://4nlxsx-5180.csb.app/" target="_blank" rel="noopener noreferrer" style="color: #3b82f6; font-weight: 600;">Open Live Playground →</a>
+    <span style="margin: 0 8px; color: #93c5fd;">|</span>
+    <a href="https://codesandbox.io/p/devbox/routier-4nlxsx" target="_blank" rel="noopener noreferrer" style="color: #3b82f6; font-weight: 600;">View and Edit Code →</a>
   </p>
 </div>
 

@@ -16,7 +16,10 @@ hero:
       text: Why Routier?
       link: /getting-started/why-routier
     - theme: alt
-      text: Try it in CodeSandbox
+      text: Open Live Playground
+      link: https://4nlxsx-5180.csb.app/
+    - theme: alt
+      text: View Playground Code
       link: https://codesandbox.io/p/devbox/routier-4nlxsx
 
 features:
@@ -73,7 +76,7 @@ beneath it.
 ## Quick Example
 
 ::: tip Try it live
-[Open the CodeSandbox demo](https://codesandbox.io/p/devbox/routier-4nlxsx) to see this code running interactively.
+[Open the live playground](https://4nlxsx-5180.csb.app/) to use the demo immediately, or [view and edit its source in CodeSandbox](https://codesandbox.io/p/devbox/routier-4nlxsx).
 :::
 
 <<< @/_snippets/code/from-docs/index/block-1.ts
