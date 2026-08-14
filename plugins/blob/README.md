@@ -235,5 +235,6 @@ never resolves `node:fs`.
 
 ## See also
 
+- [S3 and SaaS Blob Storage guide](https://routier.dev/integrations/plugins/built-in-plugins/s3-blob-storage) — AWS S3, Cloudflare R2, Google Cloud Storage, MinIO, CORS, permissions, and direct uploads
 - `@routier/dexie-plugin` — metadata in IndexedDB, the natural pairing for a web app
 - `@routier/replication-plugin` — sync metadata to a server

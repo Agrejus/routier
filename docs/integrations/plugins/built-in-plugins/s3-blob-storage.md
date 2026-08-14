@@ -1,0 +1,261 @@
+---
+title: S3 and SaaS Blob Storage
+---
+
+# S3 and SaaS Blob Storage
+
+`@routier/blob-plugin` can store bytes in AWS S3 or an S3-compatible object-storage service while Routier keeps searchable file metadata in your normal database. The same adapter works with Cloudflare R2, Google Cloud Storage's S3-compatible endpoint, MinIO, and other providers that implement the S3 API.
+
+This page expands the [Files and Blob Storage overview](/integrations/plugins/built-in-plugins/files) with production-oriented provider configuration and a complete direct-upload flow.
+
+## Architecture
+
+A file has two parts:
+
+1. The database row stores a `FileReference`: key, size, content type, checksum, and file name.
+2. The object store holds the bytes under a content-addressed SHA-256 key.
+
+Keep the bucket private. Your server holds storage credentials and issues short-lived signed URLs. Browser code never receives an S3 access key.
+
+```text
+Browser ── asks your API for a signed PUT ──> Application server
+Browser ── uploads bytes with signed PUT ──> S3 / R2 / S3-compatible service
+Browser ── saves FileReference ────────────> Routier datastore
+```
+
+## Install
+
+The AWS SDK packages are optional peer dependencies, so install them only when using an S3-compatible store:
+
+```bash
+npm install @routier/blob-plugin @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
+```
+
+`@aws-sdk/client-s3` provides object operations. `@aws-sdk/s3-request-presigner` is required for signed upload and download URLs.
+
+## Configure a provider
+
+Construct the provider's `S3Client`, then pass it to `s3BlobStore`. The bucket must already exist.
+
+### AWS S3
+
+The SDK's default credential chain can read `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, profiles, workload identity, or an IAM role.
+
+```ts
+import { S3Client } from "@aws-sdk/client-s3";
+import { createFiles } from "@routier/blob-plugin";
+import { s3BlobStore } from "@routier/blob-plugin/stores/s3";
+
+const client = new S3Client({
+  region: process.env.AWS_REGION ?? "us-east-1",
+});
+
+export const files = createFiles(
+  s3BlobStore({
+    bucket: process.env.S3_BUCKET!,
+    client,
+    keyPrefix: "production",
+  }),
+);
+```
+
+### Cloudflare R2
+
+Create an R2 API token with object read and write access. R2 exposes an S3-compatible endpoint:
+
+```ts
+const client = new S3Client({
+  region: "auto",
+  endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+  },
+});
+
+export const files = createFiles(
+  s3BlobStore({
+    bucket: process.env.R2_BUCKET!,
+    client,
+    keyPrefix: "production",
+  }),
+);
+```
+
+### Google Cloud Storage
+
+Enable interoperability access and use its access key and secret with the XML API endpoint:
+
+```ts
+const client = new S3Client({
+  region: "auto",
+  endpoint: "https://storage.googleapis.com",
+  credentials: {
+    accessKeyId: process.env.GCS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.GCS_SECRET_ACCESS_KEY!,
+  },
+});
+```
+
+### MinIO or another S3-compatible service
+
+Local MinIO commonly needs path-style addressing:
+
+```ts
+const client = new S3Client({
+  region: "us-east-1",
+  endpoint: process.env.S3_ENDPOINT ?? "http://127.0.0.1:9000",
+  forcePathStyle: true,
+  credentials: {
+    accessKeyId: process.env.S3_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
+  },
+});
+```
+
+For another SaaS provider, use the endpoint, region, and S3 credentials supplied by that provider. `s3BlobStore` does not depend on an AWS hostname.
+
+## Server-managed upload
+
+When the file reaches trusted server code, upload it through `createFiles` and save the returned reference:
+
+```ts
+const reference = await files.upload(requestFile, {
+  contentType: requestFile.type,
+  fileName: requestFile.name,
+});
+
+await store.documents.addAsync({
+  title: "Quarterly report",
+  file: reference,
+});
+await store.saveChangesAsync();
+```
+
+You can also wrap a database plugin in `BlobDbPlugin` and assign raw file content to an `s.file()` property. The wrapper uploads before committing the database row:
+
+```ts
+const plugin = new BlobDbPlugin(new PostgresDbPlugin(connection), files);
+```
+
+If the upload fails, no row is written. If the database save fails afterward, the uploaded object is an orphan that can be collected with `files.sweepOrphans()`.
+
+## Direct browser upload
+
+Direct upload avoids proxying large files through your application server. The server authorizes the request and signs an exact checksum, content type, and object key. The browser uploads directly to the provider.
+
+### 1. Sign on the server
+
+```ts
+import express from "express";
+import type { UploadRequest } from "@routier/blob-plugin";
+
+const app = express();
+app.use(express.json());
+
+app.post("/api/uploads/sign", requireUser, async (request, response) => {
+  const upload = request.body as UploadRequest;
+
+  // These are client claims. Enforce your application policy before signing.
+  if (upload.size > 25 * 1024 * 1024) {
+    return response.status(413).json({ error: "File exceeds the 25 MB limit" });
+  }
+  if (!["image/png", "image/jpeg", "application/pdf"].includes(upload.contentType)) {
+    return response.status(415).json({ error: "Unsupported file type" });
+  }
+
+  const grant = await files.createUploadUrl(upload, { expiresIn: 60 });
+  return response.json(grant);
+});
+```
+
+Authenticate this endpoint. A signed URL is a short-lived bearer token that grants permission to write one object.
+
+### 2. Upload from the browser
+
+```ts
+import { createDirectUploader } from "@routier/blob-plugin";
+
+const uploader = createDirectUploader({
+  requestUpload: async descriptor => {
+    const response = await fetch("/api/uploads/sign", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(descriptor),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Upload authorization failed: ${response.status}`);
+    }
+
+    return response.json();
+  },
+});
+
+const reference = await uploader.upload(fileInput.files![0]);
+
+await store.documents.addAsync({
+  title: "Quarterly report",
+  file: reference,
+});
+await store.saveChangesAsync();
+```
+
+The browser hashes the file before requesting a grant. If those bytes already exist, the server returns the reference without an upload URL and the browser transfers nothing.
+
+## Bucket CORS for browser uploads
+
+A browser cannot use a presigned PUT unless the bucket permits your web origin and signed headers. Start with a rule like this and replace the origin:
+
+```json
+[
+  {
+    "AllowedOrigins": ["https://app.example.com"],
+    "AllowedMethods": ["GET", "HEAD", "PUT"],
+    "AllowedHeaders": ["content-type", "x-amz-checksum-sha256"],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3600
+  }
+]
+```
+
+Configure this in the provider's bucket CORS settings. Do not use `*` for production origins when credentials or private application data are involved.
+
+## Signed downloads
+
+Issue a short-lived private download URL from trusted server code:
+
+```ts
+const document = await store.documents.firstAsync();
+const downloadUrl = await files.url(document.file, { expiresIn: 300 });
+```
+
+Return that URL only after checking that the current user may read the document. Do not make the bucket public just to serve downloads.
+
+## Minimum permissions
+
+The credentials used by your server generally need:
+
+| Capability | S3 permissions |
+| --- | --- |
+| Upload and existence check | `s3:PutObject`, `s3:GetObject` |
+| Signed download | `s3:GetObject` |
+| Explicit deletion | `s3:DeleteObject` |
+| Orphan sweep | `s3:ListBucket`, `s3:DeleteObject` |
+
+Scope object permissions to the bucket and, when possible, the configured `keyPrefix`. If the application never sweeps or deletes objects, omit those permissions.
+
+## Operational notes
+
+- Keep the bucket private and storage credentials on the server.
+- Use a separate `keyPrefix` per application or environment.
+- Keep upload grants short-lived and validate size and content type before signing.
+- The signature covers both `content-type` and `x-amz-checksum-sha256`; changing either makes the provider reject the PUT.
+- Upload and database save cannot share a transaction. Run `sweepOrphans` against the complete set of live references, starting with `{ dryRun: true }`.
+- Uploads are whole-file, single PUT operations. Multipart uploads are not currently implemented.
+
+## Related
+
+- [Files and Blob Storage overview](/integrations/plugins/built-in-plugins/files)
+- [Attachments and Dirty Tracking](/guides/attachments)
+- [Blob Plugin API](/reference/api/plugins/blob/src/README)
