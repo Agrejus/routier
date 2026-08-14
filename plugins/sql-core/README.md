@@ -1,5 +1,9 @@
 # @routier/sql-plugin-core
 
+<p align="center">
+  <img src="https://routier.dev/routier.svg" alt="Routier" width="140" height="140" />
+</p>
+
 Shared SQL generation for Routier's SQL plugins. The SQLite, PostgreSQL, and MySQL plugins all
 build their statements here.
 

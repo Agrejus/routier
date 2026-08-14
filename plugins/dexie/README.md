@@ -1,5 +1,9 @@
 # @routier/dexie-plugin
 
+<p align="center">
+  <img src="https://routier.dev/routier.svg" alt="Routier" width="140" height="140" />
+</p>
+
 Routier storage backed by IndexedDB, through Dexie.
 
 ```ts
@@ -83,4 +87,4 @@ Any browser with IndexedDB. Dexie 4. In Node, the suites use `fake-indexeddb`.
 
 ## See also
 
-- [Dexie plugin guide](../../docs/integrations/plugins/built-in-plugins/dexie/README.md)
+- [Dexie plugin guide](https://routier.dev/integrations/plugins/built-in-plugins/dexie/README)

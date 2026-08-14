@@ -1,5 +1,9 @@
 # @routier/replication-plugin
 
+<p align="center">
+  <img src="https://routier.dev/routier.svg" alt="Routier" width="140" height="140" />
+</p>
+
 HTTP and local-first replication for Routier. Read from local storage first, keep working
 offline, and synchronize with a remote API in the background.
 
@@ -27,7 +31,7 @@ class AppStore extends DataStore {
 | `OptimisticUpdatesDbPlugin` | Memory-first reads over a persistent source plugin |
 
 The full guide is in
-[docs](../../docs/integrations/plugins/built-in-plugins/replication/README.md).
+[docs](https://routier.dev/integrations/plugins/built-in-plugins/replication/README).
 
 ## Contracts
 
@@ -111,5 +115,5 @@ Node 18 or later, and any browser with `fetch`.
 
 ## See also
 
-- [Replication plugin guide](../../docs/integrations/plugins/built-in-plugins/replication/README.md)
-- [Local-first apps](../../docs/guides/local-first-apps.md)
+- [Replication plugin guide](https://routier.dev/integrations/plugins/built-in-plugins/replication/README)
+- [Local-first apps](https://routier.dev/guides/local-first-apps)

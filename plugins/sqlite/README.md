@@ -1,5 +1,9 @@
 # @routier/sqlite-plugin
 
+<p align="center">
+  <img src="https://routier.dev/routier.svg" alt="Routier" width="140" height="140" />
+</p>
+
 Routier storage backed by SQLite, in Node and in the browser.
 
 ```ts
@@ -161,4 +165,4 @@ Browsers need OPFS and module workers: Chrome and Edge 108+, Safari 17+, Firefox
 
 ## See also
 
-- [SQLite plugin guide](../../docs/integrations/plugins/built-in-plugins/sqlite/README.md)
+- [SQLite plugin guide](https://routier.dev/integrations/plugins/built-in-plugins/sqlite/README)

@@ -1,5 +1,9 @@
 # @routier/postgresql-plugin
 
+<p align="center">
+  <img src="https://routier.dev/routier.svg" alt="Routier" width="140" height="140" />
+</p>
+
 Routier storage backed by a PostgreSQL server, through `pg`.
 
 ```ts

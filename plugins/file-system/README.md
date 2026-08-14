@@ -1,5 +1,9 @@
 # @routier/file-system-plugin
 
+<p align="center">
+  <img src="https://routier.dev/routier.svg" alt="Routier" width="140" height="140" />
+</p>
+
 Routier storage backed by JSON files on disk. One directory per database, one file per
 collection.
 
@@ -72,4 +76,4 @@ Node 18 or later. Uses `node:fs` only.
 
 ## See also
 
-- [File system plugin guide](../../docs/integrations/plugins/built-in-plugins/file-system/README.md)
+- [File system plugin guide](https://routier.dev/integrations/plugins/built-in-plugins/file-system/README)
