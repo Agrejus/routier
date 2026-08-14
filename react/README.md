@@ -1,5 +1,9 @@
 # @routier/react
 
+<p align="center">
+  <img src="https://routier.dev/routier.svg" alt="Routier" width="140" height="140" />
+</p>
+
 Lightweight React bindings for Routier collections. This package exports the `useQuery` hook to subscribe to live query results with a simple callback interface.
 
 ## Install

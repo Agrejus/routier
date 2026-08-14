@@ -1,5 +1,9 @@
 # @routier/pouchdb-plugin
 
+<p align="center">
+  <img src="https://routier.dev/routier.svg" alt="Routier" width="140" height="140" />
+</p>
+
 Routier storage backed by PouchDB, with optional replication to CouchDB.
 
 ```ts
@@ -115,5 +119,5 @@ Node 18 or later, and any browser. PouchDB 9. CouchDB 3 for replication.
 
 ## See also
 
-- [PouchDB plugin guide](../../docs/integrations/plugins/built-in-plugins/pouchdb/README.md)
+- [PouchDB plugin guide](https://routier.dev/integrations/plugins/built-in-plugins/pouchdb/README)
 - `e2e/src/couchdbReplication.test.ts` — replication against a real CouchDB

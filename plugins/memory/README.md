@@ -1,5 +1,9 @@
 # @routier/memory-plugin
 
+<p align="center">
+  <img src="https://routier.dev/routier.svg" alt="Routier" width="140" height="140" />
+</p>
+
 In-process storage for Routier. Data lives in JavaScript objects and disappears when the
 process ends.
 
@@ -61,4 +65,4 @@ Node 18 or later, and any browser. The plugin has no dependencies outside `@rout
 
 ## See also
 
-- [Memory plugin guide](../../docs/integrations/plugins/built-in-plugins/memory/README.md)
+- [Memory plugin guide](https://routier.dev/integrations/plugins/built-in-plugins/memory/README)

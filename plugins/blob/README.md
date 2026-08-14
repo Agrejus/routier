@@ -1,5 +1,9 @@
 # @routier/blob-plugin
 
+<p align="center">
+  <img src="https://routier.dev/routier.svg" alt="Routier" width="140" height="140" />
+</p>
+
 Files and media for Routier. **Metadata goes in your database, bytes go in blob storage.**
 
 ```ts

@@ -41,6 +41,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Validate package READMEs
+        run: npm run release:readme-check
+
       - name: Typecheck
         run: npm run typecheck
 

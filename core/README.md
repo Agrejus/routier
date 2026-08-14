@@ -82,7 +82,7 @@ Choosing storage for local-first apps is hard—and the landscape moves fast. Ro
 
 ## Contributing
 
-Issues and PRs welcome! Please see our [Contributing Guide](docs/CONTRIBUTING.md) or open an issue to discuss changes.
+Issues and PRs welcome! Please see our [Contributing Guide](https://github.com/Agrejus/routier/blob/main/docs/CONTRIBUTING.md) or open an issue to discuss changes.
 
 ## License
 

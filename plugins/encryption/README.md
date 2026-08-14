@@ -1,5 +1,9 @@
 # @routier/encryption
 
+<p align="center">
+  <img src="https://routier.dev/routier.svg" alt="Routier" width="140" height="140" />
+</p>
+
 AES-GCM encryption as a Routier **schema transform**. Not a plugin, and it installs nothing:
 your database plugin never learns that encryption happened.
 

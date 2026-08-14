@@ -1,5 +1,9 @@
 # @routier/browser-storage-plugin
 
+<p align="center">
+  <img src="https://routier.dev/routier.svg" alt="Routier" width="140" height="140" />
+</p>
+
 Routier storage backed by a DOM `Storage` object — `localStorage`, `sessionStorage`, or any
 object that implements the same interface.
 
@@ -88,4 +92,4 @@ caller.
 
 ## See also
 
-- [Local storage plugin guide](../../docs/integrations/plugins/built-in-plugins/local-storage/README.md)
+- [Local storage plugin guide](https://routier.dev/integrations/plugins/built-in-plugins/local-storage/README)
