@@ -428,6 +428,18 @@ export abstract class CollectionBase<TEntity extends {}, TStore = unknown> imple
         return queryable.join(inner, outerKey, innerKey);
     }
 
+    /**
+     * Reports where each query option ran — the database or memory — alongside the results.
+     *
+     * See `QueryableAsync.explain`. Starts a query the same way `where` does, so the whole
+     * collection can be explained without filtering it first.
+     */
+    explain(): QueryableAsync<TEntity, InferType<TEntity>, TStore, true> {
+        const request = new RequestContext<TEntity>(this.changeTrackingType);
+
+        return new QueryableAsync<TEntity, InferType<TEntity>, TStore, true>(this.dependencies, request.withExplainOn());
+    }
+
     /** Like `join`, but unmatched rows appear paired with `undefined`. */
     leftJoin<TInner extends {}, TKey extends string | number>(
         inner: JoinTarget<TStore, TInner>,

@@ -95,13 +95,6 @@ export class MongoDbPlugin implements IDbPlugin {
         let filter: MqlFilter = {};
         const find: { sort?: Record<string, 1 | -1>; skip?: number; limit?: number } = {};
 
-        /**
-         * A window may only be pushed down when the rows it windows are already the final
-         * ones. Mongo applies skip and limit after sort, so the two travel together — but a
-         * filter this plugin could NOT translate means the server is looking at a wider set
-         * than the caller asked for, and skipping into that skips the wrong rows.
-         */
-        let filtersAllPushedDown = true;
         const sortKeys: Record<string, 1 | -1> = {};
 
         try {
@@ -138,7 +131,9 @@ export class MongoDbPlugin implements IDbPlugin {
             return;
         }
 
-        translator.pushedDown.filter = filtersAllPushedDown;
+        // Every filter that reaches this plugin ran on the server: Routier routes memory-target
+        // options (and everything after them) away from plugins, and a filter with no MQL form throws above.
+        translator.pushedDown.filter = true;
 
         if (Object.keys(sortKeys).length > 0) {
             find.sort = sortKeys;
@@ -147,7 +142,7 @@ export class MongoDbPlugin implements IDbPlugin {
 
         // Windowing is only safe once the server sees the same rows, in the same order, that
         // the caller's query describes.
-        const canWindow = filtersAllPushedDown && (find.sort != null || options.get("sort").length === 0);
+        const canWindow = find.sort != null || options.get("sort").length === 0;
 
         if (canWindow === false) {
             delete find.skip;
@@ -160,7 +155,16 @@ export class MongoDbPlugin implements IDbPlugin {
         this.driver
             .collection(schema.collectionName)
             .then(collection => collection.find(filter, find as MongoFindOptions))
-            .then(documents => done(PluginEventResult.success(event.id, translator.translate(documents))))
+            .then(documents => {
+                // Mongo has no statement text; the filter and options ARE the query, so they are
+                // what gets reported. After the read, not before — RetryDbPlugin re-invokes with
+                // the same event.
+                event.executedQueries.push({
+                    text: `db.${schema.collectionName}.find(${JSON.stringify(filter)}, ${JSON.stringify(find)})`
+                });
+
+                done(PluginEventResult.success(event.id, translator.translate(documents)));
+            })
             .catch(error => done(PluginEventResult.error(event.id, error)));
     }
 

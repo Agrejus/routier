@@ -12,6 +12,13 @@ module.exports = {
   moduleFileExtensions: ['ts', 'js', 'json'],
   testTimeout: 10000,
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  moduleNameMapper: {
+    '^@routier/core$': '<rootDir>/../../core/src/index.ts',
+    '^@routier/core/(.*)$': '<rootDir>/../../core/src/$1',
+    '^@routier/datastore$': '<rootDir>/../../datastore/src/index.ts',
+    '^@routier/datastore/(.*)$': '<rootDir>/../../datastore/src/$1',
+    '^@routier/test-utils$': '<rootDir>/../../test-utils/src/index.ts'
+  },
   transformIgnorePatterns: [
     'node_modules/(?!(@routier|@faker-js)/)'
   ],

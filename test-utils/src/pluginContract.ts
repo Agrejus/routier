@@ -213,6 +213,63 @@ export function describePluginContract(
             }));
         });
 
+        /**
+         * Reporting is optional in the core contract — a plugin that never pushes gets its
+         * database step marked `executedQueriesUnsupported`. First-party plugins are held to
+         * more than the minimum: every one of them supports explain, so a plugin that quietly
+         * stops pushing fails here rather than silently degrading to "not reported".
+         */
+        section("reports what it executed", () => {
+            test("reports at least one executed query for a read", async () => {
+                const dataStore = await seeded();
+                const { explanation } = await dataStore.products.explain().toArrayAsync();
+
+                expect(explanation.executionSteps.length).toBeGreaterThan(0);
+
+                const reported = explanation.executionSteps.flatMap(step => step.executedQueries ?? []);
+
+                expect(reported.length).toBeGreaterThan(0);
+            });
+
+            test("describes what it executed as a non-empty string", async () => {
+                const dataStore = await seeded();
+                const { explanation } = await dataStore.products
+                    .where(x => x.price > 0)
+                    .explain()
+                    .toArrayAsync();
+
+                const reported = explanation.executionSteps.flatMap(step => step.executedQueries ?? []);
+
+                for (const executed of reported) {
+                    expect(typeof executed.text).toBe("string");
+                    expect(executed.text.trim().length).toBeGreaterThan(0);
+                }
+            });
+
+            test("still returns the rows when explaining", async () => {
+                // One store for both reads: a second seeded() store shares the database on
+                // server-backed plugins (D1), which would double the expected count.
+                const dataStore = await seeded();
+                const plain = await dataStore.products.toArrayAsync();
+                const { data } = await dataStore.products.explain().toArrayAsync();
+
+                expect(data.length).toBe(plain.length);
+                expect(plain.length).toBeGreaterThan(0);
+            });
+
+            test("reports the pushed-down filter on the database step", async () => {
+                const dataStore = await seeded();
+                const { explanation } = await dataStore.products
+                    .where(x => x.price > 0)
+                    .explain()
+                    .toArrayAsync();
+
+                const databaseStep = explanation.executionSteps.find(step => step.executedIn === "database");
+
+                expect(databaseStep).toBeDefined();
+            });
+        });
+
         section("add and query round-trip", () => {
             test("returns nothing from an empty collection", async () => {
                 expect(await store().products.toArrayAsync()).toEqual([]);

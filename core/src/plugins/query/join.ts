@@ -379,7 +379,11 @@ export const loadJoinInnerSide = <TRoot extends {}, TShape>(
         id: `${event.id}-inner`,
         source: event.source,
         action: "query",
-        reason: "join inner side"
+        reason: "join inner side",
+        explain: event.explain,
+        // The same array the outer read pushes into, so a join reports BOTH reads in execution
+        // order. Built fresh rather than spread, so this has to be carried explicitly.
+        executedQueries: event.executedQueries
     };
 
     query(innerEvent, result => {

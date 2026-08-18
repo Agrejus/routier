@@ -351,7 +351,7 @@ produce noise.
   and 76 in `HttpSwrDbPlugin.ts`. As the note above records for the earlier run, these break the
   module at load and never reach a test. They are outside the denominator, which is right, but
   nobody has confirmed none of them hides a real gap.
-- **These numbers are lower than the per-file runs recorded in `HARDENING-HANDOFF.md` §7a** —
+- **These numbers are lower than the per-file runs recorded in `specs/HARDENING-HANDOFF.md` §7a** —
   `httpUtils.ts` 99.01% there against 84.69% here, `UnsyncedQueue.ts` 83.96% against 77.57%.
   The runs are not comparable: §7a mutated one file at a time, so `enableFindRelatedTests`
   selected a different test set per mutant, and the mutant counts differ too (`httpUtils.ts`

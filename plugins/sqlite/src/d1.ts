@@ -259,6 +259,8 @@ export class D1DbPlugin implements IDbPlugin {
 
                     const translator = new SqlTranslator(event.operation, { join: true });
 
+                    event.executedQueries.push({ text: sql, parameters: params });
+
                     done(PluginEventResult.success(event.id, translator.translate(tuples)));
                 })
                 .catch(error => done(PluginEventResult.error(event.id, error)));
@@ -311,7 +313,12 @@ export class D1DbPlugin implements IDbPlugin {
         const { sql, params } = buildFromQueryOperation(event.operation);
 
         try {
-            return (await this.statement(sql, params).all()).results;
+            const results = (await this.statement(sql, params).all()).results;
+
+            // After the statement ran, not before: RetryDbPlugin re-invokes with the same event.
+            event.executedQueries.push({ text: sql, parameters: params });
+
+            return results;
         } catch (error) {
             if (isMissingTable(error) === false) {
                 throw error;
@@ -321,7 +328,11 @@ export class D1DbPlugin implements IDbPlugin {
 
             await this.statement(createTableSql).all();
 
-            return (await this.statement(sql, params).all()).results;
+            const retried = (await this.statement(sql, params).all()).results;
+
+            event.executedQueries.push({ text: sql, parameters: params });
+
+            return retried;
         }
     }
 

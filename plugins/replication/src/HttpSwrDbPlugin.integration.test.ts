@@ -73,6 +73,8 @@ function createQueryEvent(): DbPluginQueryEvent<Record<string, unknown>, unknown
         schemas,
         source: 'test',
         action: 'query',
+        explain: false,
+        executedQueries: [],
         operation: Query.EMPTY(testSchema as any) as any,
     };
 }
@@ -103,6 +105,8 @@ function queryPlugin(plugin: IDbPlugin, schema: any = testSchema): Promise<unkno
             schemas,
             source: 'test',
             action: 'query',
+            explain: false,
+            executedQueries: [],
             operation: Query.EMPTY(schema) as any,
         };
         plugin.query(event, (result) => {

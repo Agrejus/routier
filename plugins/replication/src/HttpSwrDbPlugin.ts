@@ -867,7 +867,8 @@ export class HttpSwrDbPlugin implements IDbPlugin {
     /** The event used to talk to the server and to read the store for comparison. */
     private candidateSetEvent<TRoot extends {}, TShape>(
         event: DbPluginQueryEvent<TRoot, TShape>,
-        reason: string
+        reason: string,
+        timing: 'blocking' | 'background'
     ): DbPluginQueryEvent<TRoot, TShape> {
         return {
             ...event,
@@ -876,6 +877,9 @@ export class HttpSwrDbPlugin implements IDbPlugin {
             action: 'query' as const,
             reason,
             operation: this.windowlessOperation(event.operation),
+            // A background leg runs after the caller's explanation was delivered, so it must
+            // not inherit `explain` or push into the caller's shared array.
+            ...(timing === 'background' ? { explain: false, executedQueries: [] } : {}),
         };
     }
 
@@ -1040,6 +1044,9 @@ export class HttpSwrDbPlugin implements IDbPlugin {
             source: HttpSwrDbPlugin.name,
             action: 'query' as const,
             reason: 'revalidate-sync',
+            // Background: runs after the caller's explanation was delivered.
+            explain: false,
+            executedQueries: [],
             // Windowless, so `existing` and `incoming` describe the same set. Comparing a
             // page of the store against the whole server response would classify every row
             // outside the page as an add, and every row outside the response as a remove.
@@ -1170,7 +1177,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
     ): Promise<void> {
         const collectionName = event.operation.schema.collectionName;
         // The candidate set, not the page: see windowlessOperation.
-        const remoteEvent = this.candidateSetEvent(event, 'revalidate');
+        const remoteEvent = this.candidateSetEvent(event, 'revalidate', 'background');
         return new Promise((resolve) => {
             this.httpPlugin.query(remoteEvent, (result) => {
                 logger.debug('[HttpSwrDbPlugin] runRevalidate() -> httpPlugin query result', { collectionName, result });
@@ -1288,7 +1295,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
     ): Promise<'stored' | 'remote-failed' | 'store-failed'> {
         const collectionName = event.operation.schema.collectionName;
         // The candidate set, not the page: see windowlessOperation.
-        const remoteEvent = this.candidateSetEvent(event, 'cache-miss');
+        const remoteEvent = this.candidateSetEvent(event, 'cache-miss', 'blocking');
         const result = await new Promise<PluginEventResultType<ITranslatedValue<TShape>>>((resolve) => {
             this.httpPlugin.query(remoteEvent, resolve);
         });
@@ -1642,6 +1649,8 @@ export class HttpSwrDbPlugin implements IDbPlugin {
                 schemas,
                 source: HttpSwrDbPlugin.name,
                 action: 'query',
+                explain: false,
+                executedQueries: [],
                 reason: 'persist-echo',
                 operation: Query.EMPTY<UnknownRecord, UnknownRecord>(schema),
             };

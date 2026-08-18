@@ -186,6 +186,8 @@ export class PostgresDbPlugin implements IDbPlugin {
                 // toColumnAssignments); decode them before translation so the entity gets a
                 // structure back rather than a JSON string. Skips properties whose schema
                 // does its own deserialization.
+                event.executedQueries.push({ text: built.sql, parameters: built.params });
+
                 const decoded = decodeJsonColumns(result.data, event.operation.schema);
                 const data = translator.translate(decoded);
 
@@ -247,6 +249,8 @@ export class PostgresDbPlugin implements IDbPlugin {
                         outerSchema: event.operation.schema,
                         innerSchema
                     });
+
+                    event.executedQueries.push({ text: built.sql, parameters: built.params });
 
                     done(PluginEventResult.success(event.id, translator.translate(tuples)));
                 }, innerSchema);

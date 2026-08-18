@@ -1,7 +1,74 @@
 # Change Log
 
 Hand-written, one section per release, grouped by package with breaking changes first. See
-`RELEASING.md` for the procedure.
+`specs/RELEASING.md` for the procedure.
+
+## 0.4.0 (2026-08-18)
+
+Query explain, end to end: `.explain()` on any query — joins included — returns
+`{ data, explanation }`, where the explanation reports which query options ran in the database,
+which ran in memory and why, and the exact statements the plugin executed. Documented at
+`/concepts/queries/explain` on the docs site.
+
+### Versions
+
+**Every publishable package goes to `0.4.0`, in lockstep**, for the same reason as `0.3.0`:
+`@routier/core` changes in a breaking way, every plugin depends on core, and plugin dists bundle
+core source. `@routier/blob-plugin` was already at `0.4.0` from an independent release and has
+no code change; the coordinated publish skips it.
+
+### Breaking — @routier/core
+
+- `DbPluginQueryEvent` gains two required fields: `explain: boolean` (whether the caller asked
+  for an explanation) and `executedQueries: ExecutedQuery[]` (the array a plugin pushes what it
+  ran into, after it runs). Code that constructs query events must supply both. Plugins are not
+  required to push — an explanation then marks their step as `executedQueriesUnsupported`.
+- The wire protocol changes: `SerializedQueryRequest` gains a required `explain: boolean`, and a
+  query response may carry `executedQueries`. The request handler has no explain setting — it
+  returns whatever the plugin reported when the caller asked. Gate access with `authorize`
+  (check `request.explain`) where statement text must not leave the server.
+- `createRequestHandler` no longer accepts `allowExplain` (added and removed within this
+  release cycle; it never shipped).
+
+### Breaking — @routier/datastore
+
+- Terminal return types are now `Explainable<E, T>` — identical to before (`T`) unless
+  `.explain()` is in the chain, in which case terminals return `{ data, explanation }`.
+- `RequestContext.explainedCopy()` is renamed to `withExplainOn()`.
+
+### Explain
+
+- `explainQuery` builds the step analysis from the resolved query options; plugins report what
+  they executed by pushing to `event.executedQueries`. `formatExplanation` renders it for a
+  terminal. Memory-execution reasons are named codes with one-sentence explanations.
+- Every built-in plugin reports: SQL with parameters (sqlite, D1, postgresql, mysql), the find
+  document (mongodb), the access path (dexie, pouchdb, memory-family), `GET <url>`
+  (`HttpDbPlugin`), and `cache hit — no query was executed` (`CacheDbPlugin`).
+- Joins report both reads in execution order. The memory family reports the inner-side scan and
+  whether semi-join narrowing applied.
+- `.explain()` works through `HttpTransportDbPlugin`: the flag crosses the wire and the server's
+  statements come back on the response.
+- `HttpSwrDbPlugin` background revalidation no longer inherits the caller's explain flag or
+  report array, so a revalidation cannot stamp its queries onto a later read's explanation.
+
+### Fixes
+
+- MongoDB: removed `filtersAllPushedDown`, a windowing guard that could never trigger — an
+  untranslatable filter throws instead. Dead code; no behavior change.
+- Shared plugin contract: the explain row-count test now compares two reads of one store, so it
+  holds on server-backed plugins where a second store shares the database.
+
+### Tests and docs
+
+- New shared contract sections exercise explain against every plugin, including a joined
+  explain in the join contract; postgres and mongo container suites gain explain tests; a new
+  overhead benchmark (`plugins/memory/src/tests/overhead.test.ts`) bounds the datastore layer at
+  measured ~2.8µs per returned entity and asserts it in CI.
+- Docs: new `/concepts/queries/explain` page, an "Overhead, measured" section in
+  `/concepts/performance`, and explain references in query architecture, terminal methods,
+  plugin authoring, and HTTP transport. `RELEASING.md`, `PLUGIN_AUDIT.md`,
+  `PRODUCTION-RELEASE-PLAN.md` and `HARDENING-HANDOFF.md` moved from the repository root to
+  `specs/`.
 
 ## 0.3.0 (2026-08-12)
 

@@ -339,7 +339,9 @@ export class SearchQueryable<TEntity extends {}, TShape = Scored<InferType<TEnti
                 schemas: this.dependencies.schemas as SchemaCollection,
                 id: uuid(8),
                 source: "Collection",
-                action: "query"
+                action: "query",
+                explain: false,
+                executedQueries: []
             }, (result) => {
 
                 if (result.ok === Result.ERROR) {

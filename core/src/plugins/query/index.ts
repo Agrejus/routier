@@ -1,3 +1,5 @@
+export * from './explain';
+export * from './formatExplanation';
 export * from './join';
 export * from './Query';
 export * from './QueryOptionsCollection';

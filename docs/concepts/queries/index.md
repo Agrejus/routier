@@ -38,6 +38,7 @@ Routier queries are fluent and can only be performed through a collection. Build
 | `nearest(field, vector, count)` | Rank vector similarity | `ctx.products.nearest(p => p.embedding, query, 10)` |
 | `search(terms, options?)` | Ranked full-text search | `ctx.products.search("copper pipe")` |
 | `subscribe()` | Enable live updates | `ctx.products.subscribe().toArray(callback)` |
+| `explain()` | Return `{ data, explanation }` from terminals | `ctx.products.where(p => p.active).explain()` |
 
 ## Major query features
 
@@ -45,6 +46,7 @@ Routier queries are fluent and can only be performed through a collection. Build
 - [Full-Text Search](/concepts/queries/full-text-search) — ranked search over `.searchable()` strings.
 - [Vector Search](/concepts/queries/vector-search) — cosine-similarity ordering with `s.vector()` and `.nearest()`.
 - [Reusable Queries](/concepts/queries/query-composer) — define a typed query with `Queryable.compose()` and execute it through `collection.apply()`.
+- [Explain](/concepts/queries/explain) — see which options ran in the database, which ran in memory, and the statements the plugin executed.
 
 ## Detailed Examples
 

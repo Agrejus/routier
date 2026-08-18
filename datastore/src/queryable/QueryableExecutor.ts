@@ -1,4 +1,4 @@
-import { DbPluginQueryEvent, distinctJoinKeys, executeJoin, ITranslatedValue, JoinKind, JsonTranslator, loadJoinInnerSide, Query, QueryOptionsCollection, toEntityShape, TupleTranslator } from "@routier/core/plugins";
+import { DbPluginQueryEvent, distinctJoinKeys, executeJoin, ExecutedQuery, explainQuery, ITranslatedValue, JoinKind, JsonTranslator, loadJoinInnerSide, Query, QueryExplanation, QueryOptionsCollection, toEntityShape, TupleTranslator, withExecutedQueries } from "@routier/core/plugins";
 import { CompiledSchema, InferType } from "@routier/core/schema";
 import { CallbackResult, PluginEventCallbackResult, PluginEventResult, PluginEventSuccessType, Result } from "@routier/core/results";
 import { UnknownRecord, uuid } from "@routier/core/utilities";
@@ -10,8 +10,54 @@ import { resolveJoinKey } from "./joinKeys";
 
 export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryBuilderBase<TRoot, TShape, CollectionDependencies<TRoot>> {
 
+    /** Set by `createQueryPayload`; read by `buildExplanation`. Only used when explaining. */
+    private resolvedQueryOptions: QueryOptionsCollection<any> | null = null;
+    private executedQueries: ExecutedQuery[] = [];
+
     constructor(dependencies: CollectionDependencies<TRoot>, request: RequestContext<TRoot>) {
         super(dependencies, request)
+    }
+
+    /**
+     * The explanation for the query that just ran.
+     *
+     * Called after the plugin returns, so `executedQueries` holds whatever the backend pushed.
+     * A plugin that reports nothing still produces a full explanation — everything except the
+     * statements comes from the options.
+     */
+    protected buildExplanation(): QueryExplanation {
+        const options = this.resolvedQueryOptions ?? this.request.queryOptions;
+        const explanation = explainQuery(options, {
+            collection: this.dependencies.schema.collectionName,
+            database: this.dependencies.plugin.databaseName,
+            pluginKind: this.dependencies.plugin.constructor.name
+        });
+
+        return withExecutedQueries(explanation, this.executedQueries);
+    }
+
+    /**
+     * Wraps a terminal's callback so its result is delivered with the explanation beside it.
+     *
+     * Wrapping the CALLBACK rather than each place a terminal calls it: `first`, `some` and the
+     * rest shape their result in two separate bodies — one for the initial read, one for a
+     * subscription re-delivery — and both go through here.
+     */
+    protected deliver<T>(done: CallbackResult<any>): CallbackResult<T> {
+
+        if (this.request.isExplained === false) {
+            return done as CallbackResult<T>;
+        }
+
+        return (result) => {
+
+            if (result.ok === Result.ERROR) {
+                done(result);
+                return;
+            }
+
+            done(Result.success({ data: result.data, explanation: this.buildExplanation() }));
+        };
     }
 
     // Cannot change the root type, it comes from the collection type, only the resulting type (shape)
@@ -247,7 +293,12 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
     protected createQueryPayload<Shape>(): { memoryEvent: DbPluginQueryEvent<TRoot, Shape>, databaseEvent: DbPluginQueryEvent<TRoot, Shape> } {
 
         // send over only the database operations, if there are none its a select all
-        const splitQueryOptions = this.resolveQueryOptions<Shape>().split();
+        const resolvedQueryOptions = this.resolveQueryOptions<Shape>();
+        const splitQueryOptions = resolvedQueryOptions.split();
+
+        // Held for `buildExplanation`, which needs the options as resolved: `split()` re-derives
+        // each half's execution targets without the options that caused them.
+        this.resolvedQueryOptions = resolvedQueryOptions;
 
         return {
             databaseEvent: {
@@ -255,14 +306,23 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
                 schemas: this.dependencies.schemas,
                 id: uuid(8),
                 source: "Collection",
-                action: "query"
+                action: "query",
+                explain: this.request.isExplained,
+                // Always handed over, whether or not explaining, so a plugin that reports
+                // unconditionally has somewhere to push. Whether anyone sees it is decided
+                // here, in `deliver`.
+                executedQueries: this.executedQueries = []
             },
             memoryEvent: {
                 operation: new Query<TRoot, Shape>(splitQueryOptions.memory as any, this.dependencies.schema),
                 schemas: this.dependencies.schemas,
                 id: uuid(8),
                 source: "Collection",
-                action: "query"
+                // The memory half never reaches a plugin; the fields are required by the shared
+                // event type, so they get values nothing reads.
+                action: "query",
+                explain: false,
+                executedQueries: []
             }
         }
     }

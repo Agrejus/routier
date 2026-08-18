@@ -70,6 +70,8 @@ const eventFor = (target: CompiledSchema<any>, filter?: (x: any) => boolean): Db
         schemas: { get: () => target } as never,
         source: "test",
         action: "query",
+        explain: false,
+        executedQueries: [],
     };
 };
 

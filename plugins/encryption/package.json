@@ -1,6 +1,6 @@
 {
     "name": "@routier/encryption",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "main": "./dist/index.cjs",
     "module": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -39,13 +39,13 @@
     ],
     "description": "AES-GCM encryption as a Routier schema transform. Not a plugin: your database never sees it.",
     "peerDependencies": {
-        "@routier/core": ">=0.3.0"
+        "@routier/core": ">=0.4.0"
     },
     "devDependencies": {
-        "@routier/core": "^0.3.0",
-        "@routier/datastore": "^0.3.0",
-        "@routier/memory-plugin": "^0.3.0",
-        "@routier/dexie-plugin": "^0.3.0",
+        "@routier/core": "^0.4.0",
+        "@routier/datastore": "^0.4.0",
+        "@routier/memory-plugin": "^0.4.0",
+        "@routier/dexie-plugin": "^0.4.0",
         "@rspack/cli": "^1.1.8",
         "@rspack/core": "^1.1.8"
     },

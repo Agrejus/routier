@@ -43,6 +43,8 @@ function createQueryEvent(): DbPluginQueryEvent<Record<string, unknown>, unknown
         schemas,
         source: 'test',
         action: 'query',
+        explain: false,
+        executedQueries: [],
         operation: Query.EMPTY(testSchema as any) as any,
     };
 }
@@ -85,6 +87,28 @@ describe('HttpDbPlugin', () => {
             expect(calls[0].url).toBe('https://api.test/httpPlugin');
             expect(calls[0].method).toBe('GET');
             expect(calls[0].headers).toEqual(expect.objectContaining({ Authorization: 'Bearer token-123' }));
+            done();
+        });
+    });
+
+    it('reports the GET it executed, once, and only on success', (done) => {
+        installFetchMock([{ status: 200, body: [] }]);
+        const event = createQueryEvent();
+
+        plugin.query(event, (result) => {
+            expect(result.ok).toBe(Result.SUCCESS);
+            expect(event.executedQueries).toEqual([{ text: 'GET https://api.test/httpPlugin' }]);
+            done();
+        });
+    });
+
+    it('reports nothing for a failed query', (done) => {
+        installFetchMock([{ status: 500 }]);
+        const event = createQueryEvent();
+
+        plugin.query(event, (result) => {
+            expect(result.ok).toBe(Result.ERROR);
+            expect(event.executedQueries).toHaveLength(0);
             done();
         });
     });

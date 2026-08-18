@@ -457,6 +457,9 @@ export class MysqlDbPlugin implements IDbPlugin {
             const { params, sql } = buildJoinQueryOperation(event.operation, innerSchema);
             const [rows] = await connection.execute(sql, bindable(params));
 
+            // After the statement ran, not before: RetryDbPlugin re-invokes with the same event.
+            event.executedQueries.push({ text: sql, parameters: params });
+
             connection.release();
             done(Result.success(rows as TShape));
         } catch (err) {
@@ -491,6 +494,10 @@ export class MysqlDbPlugin implements IDbPlugin {
 
             // Execute query
             const [rows] = await connection.execute(sql, bindable(params));
+
+            // After the statement ran, not before: RetryDbPlugin re-invokes with the same event.
+            event.executedQueries.push({ text: sql, parameters: params });
+
             connection.release();
             done(Result.success(rows as TShape));
         } catch (err) {

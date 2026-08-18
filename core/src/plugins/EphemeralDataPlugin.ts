@@ -340,6 +340,12 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                 innerRows.push(cloneRecord(record));
             }
 
+            const narrowing = outerKeys == null ? "full scan" : `narrowed by ${outerKeys.size} outer ${outerKeys.size === 1 ? "key" : "keys"}`;
+
+            event.executedQueries.push({
+                text: `${innerSchema.collectionName}: scanned ${innerRows.length} in-memory ${innerRows.length === 1 ? "record" : "records"} for join inner side (${narrowing})`
+            });
+
             done({ ok: "success", innerSide: { innerSchema, innerRows } });
         });
     }
@@ -459,6 +465,13 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                  *
                  * `cloned` is in storage shape, so the keys are read by resolved column name.
                  */
+                // No statement to quote — an ephemeral store walks its own records. Said
+                // plainly so `.explain()` does not leave a reader wondering whether the
+                // plugin simply failed to report. Before the inner side, to match execution order.
+                event.executedQueries.push({
+                    text: `${operation.schema.collectionName}: scanned ${cloned.length} in-memory ${cloned.length === 1 ? "record" : "records"}`
+                });
+
                 const joinOption = operation.options.getLast("join");
                 const outerKeys = joinOption == null
                     ? null

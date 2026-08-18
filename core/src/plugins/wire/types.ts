@@ -1,5 +1,6 @@
 import { SerializedExpression } from "../../expressions";
 import { JoinKind } from "../query/join";
+import { ExecutedQuery } from "../query/explain";
 import { QueryOrdering } from "../query/types";
 
 /**
@@ -56,6 +57,12 @@ export type SerializedQueryRequest = {
     kind: "query";
     collectionName: string;
     options: SerializedQueryOption[];
+    /**
+     * Whether the caller wants the response to say what the server ran. Required — a query is
+     * either explained or it is not. A server whose plugin does not report answers `true` the
+     * same as `false`, and the caller's explanation marks the remote step as not reported.
+     */
+    explain: boolean;
 };
 
 /** One entity update, as `EntityUpdateInfo` minus nothing — every field of it is already JSON. */
@@ -86,7 +93,14 @@ export type SerializedRequest = SerializedQueryRequest | SerializedPersistReques
 
 /** What a receiver sends back. Errors are a value, not a transport status. */
 export type SerializedResponse =
-    | { ok: true; kind: "query"; value: unknown }
+    /**
+     * `executedQueries` carries what the SERVER's plugin ran, so `.explain()` on a client sees
+     * through the wire rather than reporting a blank. Optional on the response, unlike on a
+     * local event: a plugin that does not report has nothing to send, and the client's
+     * explanation then marks the remote step as not reported. There is no flag on either end —
+     * the wire forwards whatever the plugin pushed, or nothing.
+     */
+    | { ok: true; kind: "query"; value: unknown; executedQueries?: ExecutedQuery[] }
     | { ok: true; kind: "persist"; changes: Array<{ collectionName: string; adds: unknown[]; updates: unknown[]; removes: unknown[] }> }
     | { ok: true; kind: "destroy" }
     | { ok: false; error: string };

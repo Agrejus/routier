@@ -995,6 +995,8 @@ export class PouchDbPlugin implements IDbPlugin {
                 }
 
                 try {
+                    event.executedQueries.push({ text: `${INDEX_NAME}/${matchingIndex.viewName}: indexed view query` });
+
                     const translated = translator.translate(response.rows.map(w => w.doc));
                     d(Result.success(translated));
                 } catch (e) {
@@ -1022,6 +1024,8 @@ export class PouchDbPlugin implements IDbPlugin {
             }).then(response => {
 
                 try {
+                    event.executedQueries.push({ text: "allDocs({ include_docs: true }): full database scan, no index" });
+
                     const data = response.rows.map(w => w.doc);
                     const translated = translator.translate(data);
                     d(Result.success(translated));
@@ -1046,6 +1050,8 @@ export class PouchDbPlugin implements IDbPlugin {
                 }).then(response => {
                     const data = response.rows.map(w => w.doc);
                     try {
+                        event.executedQueries.push({ text: "allDocs({ include_docs: true }): full database scan, no index" });
+
                         const translated = translator.translate(data);
                         d(Result.success(translated));
                     } catch (e) {
@@ -1071,6 +1077,8 @@ export class PouchDbPlugin implements IDbPlugin {
                 const data = response.rows.map(w => w.value);
 
                 try {
+                    event.executedQueries.push({ text: "view query" });
+
                     const translated = translator.translate(data);
                     d(Result.success(translated));
                 } catch (e) {

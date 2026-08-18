@@ -26,6 +26,7 @@ A plugin must implement a small interface that Routier uses during reads/writes:
 - Compute fields marked as `computed()` after persistence; persist when `tracked()`.
 - For `identity()` columns, return generated values so entities can be updated in memory before `saveChangesAsync()` resolves.
 - For `distinct()`/`index()` ensure unique or indexed storage if supported by the backend.
+- Push what each query executed into `event.executedQueries` after it runs — `{ text, parameters? }`, once per backend read. This is how your plugin supports [`.explain()`](/concepts/queries/explain). A plugin that does not push still works; explanations then mark its step as not reported.
 
 ### Separation for single-collection datastores
 

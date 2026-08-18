@@ -33,6 +33,8 @@ function createQueryEvent(): DbPluginQueryEvent<Record<string, unknown>, unknown
         schemas: buildSchemas(),
         source: 'test',
         action: 'query',
+        explain: false,
+        executedQueries: [],
         operation: Query.EMPTY(testSchema as any) as any,
     };
 }

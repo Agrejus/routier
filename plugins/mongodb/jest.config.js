@@ -13,6 +13,9 @@ module.exports = {
     testTimeout: 10000,
     moduleNameMapper: {
         '^@routier/core$': '<rootDir>/../../core/src/index.ts',
-        '^@routier/core/(.*)$': '<rootDir>/../../core/src/$1'
+        '^@routier/core/(.*)$': '<rootDir>/../../core/src/$1',
+        '^@routier/datastore$': '<rootDir>/../../datastore/src/index.ts',
+        '^@routier/datastore/(.*)$': '<rootDir>/../../datastore/src/$1',
+        '^@routier/test-utils$': '<rootDir>/../../test-utils/src/index.ts'
     }
 };

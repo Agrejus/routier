@@ -105,6 +105,21 @@ suite('MongoDB via testcontainers', () => {
             expect(found.map((x: any) => x.reference)).toEqual(['beta']);
         });
 
+        it('explains a query: reports the find it executed', async () => {
+            await seed();
+            const { data, explanation } = await open().orders
+                .where(x => x.reference === 'beta')
+                .explain()
+                .toArrayAsync();
+
+            expect(data.map(x => x.reference)).toEqual(['beta']);
+
+            const reported = explanation.executionSteps.flatMap(step => step.executedQueries ?? []);
+            expect(reported.length).toBeGreaterThan(0);
+            expect(reported[0].text).toContain('.find(');
+            expect(reported[0].text).toContain('beta');
+        });
+
         it('filters on a nested property with dot notation', async () => {
             await seed();
             const found = await open().orders.where(x => (x as any).payload.inner.value === 'c').toArrayAsync();

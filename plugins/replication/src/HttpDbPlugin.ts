@@ -220,6 +220,10 @@ export class HttpDbPlugin implements IDbPlugin {
                     ? this.translateRemoteResponse(schema as CompiledSchema<UnknownRecord>, body)
                     : body;
             const translated = new JsonTranslator(operation).translate(rows);
+
+            // After the request and only on success, so retried attempts don't each report.
+            event.executedQueries.push({ text: `GET ${url}` });
+
             return { success: true, data: translated };
         } catch (err) {
             const error = err instanceof Error ? err : new Error(String(err));

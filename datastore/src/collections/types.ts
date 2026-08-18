@@ -158,7 +158,29 @@ export class RequestContext<TRoot extends {}> {
     isSubScribed: boolean;
     /** Set by `.join()`/`.leftJoin()`. See `RequestJoinSide`. */
     joinSide: RequestJoinSide | null = null;
+    /** Set by `.explain()`. See `withExplainOn`. */
+    isExplained: boolean = false;
     readonly queryOptions: QueryOptionsCollection<TRoot>;
     readonly changeTrackingType: ChangeTrackingType;
     readonly id: string;
+
+    /**
+     * A copy that explains, sharing this request's query options.
+     *
+     * A copy rather than a flag set in place, because `QueryableExecutor.create` passes the
+     * SAME request to every queryable it derives — so setting `isExplained` here would make an
+     * earlier queryable in the chain start returning `{ data, explanation }` while its type
+     * still says it returns rows. The caller reads `.length` off an object and gets `undefined`,
+     * with nothing to indicate why.
+     *
+     * The options collection is shared, not copied, because that is how every other chained
+     * call already behaves — `.explain()` marks how results are delivered, not what is queried.
+     */
+    withExplainOn(): RequestContext<TRoot> {
+        const copy = Object.create(Object.getPrototypeOf(this)) as RequestContext<TRoot>;
+
+        Object.assign(copy, this, { isExplained: true });
+
+        return copy;
+    }
 }
