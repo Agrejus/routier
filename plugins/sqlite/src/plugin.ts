@@ -171,6 +171,10 @@ export class SqliteDbPluginBase implements IDbPlugin {
 
         this.withConnection(connection => this.runWithTable(connection, sql, params, createTableSQL))
             .then(rows => {
+                // After the statement ran, not before: RetryDbPlugin re-invokes with the same
+                // event, so pushing first would report one entry per failed attempt.
+                event.executedQueries.push({ text: sql, parameters: params });
+
                 // Nested objects and arrays are stored as JSON columns (see
                 // toColumnAssignments); decode them before translation so the entity gets a
                 // structure back rather than a JSON string. Skips properties whose schema
@@ -235,6 +239,8 @@ export class SqliteDbPluginBase implements IDbPlugin {
 
             this.withConnection(connection => this.runWithTable(connection, sql, params, createTables))
                 .then(rows => {
+                    event.executedQueries.push({ text: sql, parameters: params });
+
                     const tuples = splitJoinRows({
                         rows: rows as UnknownRecord[],
                         kind: join.value.kind,

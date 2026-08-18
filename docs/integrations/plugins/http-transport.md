@@ -118,6 +118,19 @@ callers, and one that quietly stops applying is worse than an error.
 
 It still passes through `authorize`.
 
+### Explain crosses the wire
+
+[`.explain()`](/concepts/queries/explain) on a client works against a remote server. When the client asks, the response carries the statements the server's plugin ran, with their parameters. The statements describe your tables, columns, and indexes. To refuse explain for some or all callers, check `request.explain` in `authorize`:
+
+```ts
+authorize: ({ request, context }) => {
+    if (request.kind === "query" && request.explain === true) {
+        return context.isDeveloper || "explain is not allowed here";
+    }
+    return true;
+}
+```
+
 ### With no hooks
 
 An endpoint with neither hook answers anything for anyone, for read *and* write, for every collection

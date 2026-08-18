@@ -5,7 +5,8 @@ import { GenericFunction } from "@routier/core/types";
 import { QueryOptionName } from "@routier/core/plugins";
 import { IdType } from "@routier/core/schema";
 import { CollectionDependencies, RequestContext } from "../collections/types";
-export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExecutor<Root, Shape> {
+import { Explainable } from "./explained";
+export class SelectionQueryable<Root extends {}, Shape, U, E extends boolean = false> extends QueryableExecutor<Root, Shape> {
 
     constructor(dependencies: CollectionDependencies<Root>, request: RequestContext<Root>) {
         super(dependencies, request);
@@ -23,10 +24,10 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExec
         this.distinct = this.distinct.bind(this);
     }
 
-    remove(expression: Filter<Shape>, done: CallbackResult<Shape[]>): void;
-    remove<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<Shape[]>): void;
-    remove(done: CallbackResult<Shape[]>): void;
-    remove<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<Shape[]>, paramsOrDone?: P | CallbackResult<Shape[]>, done?: CallbackResult<Shape[]>): void {
+    remove(expression: Filter<Shape>, done: CallbackResult<Explainable<E, Shape[]>>): void;
+    remove<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<Explainable<E, Shape[]>>): void;
+    remove(done: CallbackResult<Explainable<E, Shape[]>>): void;
+    remove<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<Explainable<E, Shape[]>>, paramsOrDone?: P | CallbackResult<Explainable<E, Shape[]>>, done?: CallbackResult<Explainable<E, Shape[]>>): void {
 
         const restore = this.request.queryOptions.snapshot();
 
@@ -35,7 +36,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExec
             const paramsFilter = doneOrExpression as ParamsFilter<Shape, P>;
             const paramsData = paramsOrDone as P;
             this.setFiltersQueryOption(paramsFilter, paramsData);
-            this._remove(done);
+            this._remove(this.deliver<Shape[]>(done));
             restore();
             return;
         }
@@ -45,26 +46,28 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExec
             const d = paramsOrDone as CallbackResult<never>;
             const genericFilter = doneOrExpression as Filter<Shape>;
             this.setFiltersQueryOption(genericFilter);
-            this._remove(d);
+            this._remove(this.deliver<Shape[]>(d));
             restore();
             return
         }
 
         // no expression, just remove
         const d = doneOrExpression as CallbackResult<never>;
-        this._remove(d);
+        this._remove(this.deliver<Shape[]>(d));
         restore();
     }
 
-    toArray(done: CallbackResult<Shape[]>): U {
-        this.getData(done);
-        return this.subscribeQuery<Shape[]>(done) as U;
+    toArray(done: CallbackResult<Explainable<E, Shape[]>>): U {
+        const d = this.deliver<Shape[]>(done);
+
+        this.getData(d);
+        return this.subscribeQuery<Shape[]>(d) as U;
     }
 
-    first(expression: Filter<Shape>, done: CallbackResult<Shape>): U;
-    first<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<Shape>): U;
-    first(done: CallbackResult<Shape>): U;
-    first<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<Shape>, paramsOrDone?: P | CallbackResult<Shape>, done?: CallbackResult<Shape>): U {
+    first(expression: Filter<Shape>, done: CallbackResult<Explainable<E, Shape>>): U;
+    first<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<Explainable<E, Shape>>): U;
+    first(done: CallbackResult<Explainable<E, Shape>>): U;
+    first<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<Explainable<E, Shape>>, paramsOrDone?: P | CallbackResult<Explainable<E, Shape>>, done?: CallbackResult<Explainable<E, Shape>>): U {
 
         const restore = this.request.queryOptions.snapshot();
 
@@ -85,7 +88,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExec
             return r[0];
         }
 
-        this._query({
+        this._query<P, Shape>({
             doneOrSelector: doneOrExpression,
             done,
             paramsOrDone
@@ -106,7 +109,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExec
             d(Result.success(result));
         });
 
-        const d = done != null ? done : paramsOrDone != null ? paramsOrDone as CallbackResult<Shape> : doneOrExpression as CallbackResult<Shape>;
+        const d = this.deliver<Shape>(done != null ? done : paramsOrDone != null ? paramsOrDone as CallbackResult<Shape> : doneOrExpression as CallbackResult<Shape>);
         const subscription = this.subscribeQuery<Shape[]>((r) => {
 
             if (r.ok === Result.ERROR) {
@@ -123,10 +126,10 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExec
         return subscription;
     }
 
-    firstOrUndefined(expression: Filter<Shape>, done: CallbackResult<Shape | undefined>): U;
-    firstOrUndefined<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<Shape | undefined>): U;
-    firstOrUndefined(done: CallbackResult<Shape | undefined>): U;
-    firstOrUndefined<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<Shape | undefined>, paramsOrDone?: P | CallbackResult<Shape | undefined>, done?: CallbackResult<Shape | undefined>): U {
+    firstOrUndefined(expression: Filter<Shape>, done: CallbackResult<Explainable<E, Shape | undefined>>): U;
+    firstOrUndefined<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<Explainable<E, Shape | undefined>>): U;
+    firstOrUndefined(done: CallbackResult<Explainable<E, Shape | undefined>>): U;
+    firstOrUndefined<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<Explainable<E, Shape | undefined>>, paramsOrDone?: P | CallbackResult<Explainable<E, Shape | undefined>>, done?: CallbackResult<Explainable<E, Shape | undefined>>): U {
 
         const restore = this.request.queryOptions.snapshot();
 
@@ -159,7 +162,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExec
             d(Result.success(r.data[0]));
         });
 
-        const d = done != null ? done : paramsOrDone != null ? paramsOrDone as CallbackResult<Shape> : doneOrExpression as CallbackResult<Shape>;
+        const d = this.deliver<Shape>(done != null ? done : paramsOrDone != null ? paramsOrDone as CallbackResult<Shape> : doneOrExpression as CallbackResult<Shape>);
         const subscription = this.subscribeQuery<Shape[]>((r) => {
             if (r.ok === Result.ERROR) {
                 d(r);
@@ -178,10 +181,10 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExec
         return subscription;
     }
 
-    some(expression: Filter<Shape>, done: CallbackResult<boolean>): U;
-    some<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<boolean>): U;
-    some(done: CallbackResult<boolean>): U;
-    some<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<boolean>, paramsOrDone?: P | CallbackResult<boolean>, done?: CallbackResult<boolean>): U {
+    some(expression: Filter<Shape>, done: CallbackResult<Explainable<E, boolean>>): U;
+    some<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<Explainable<E, boolean>>): U;
+    some(done: CallbackResult<Explainable<E, boolean>>): U;
+    some<P extends {} = never>(doneOrExpression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<Explainable<E, boolean>>, paramsOrDone?: P | CallbackResult<Explainable<E, boolean>>, done?: CallbackResult<Explainable<E, boolean>>): U {
 
         const restore = this.request.queryOptions.snapshot();
 
@@ -196,7 +199,7 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExec
 
         const shaper = (r: Shape[]) => r.length > 0;
 
-        this._query({
+        this._query<P, boolean>({
             doneOrSelector: doneOrExpression,
             done,
             paramsOrDone
@@ -210,21 +213,21 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExec
             d(Result.success(shaper(r.data)))
         });
 
-        const d = done != null ? done : paramsOrDone != null ? paramsOrDone as CallbackResult<boolean> : doneOrExpression as CallbackResult<boolean>;
+        const d = this.deliver<boolean>(done != null ? done : paramsOrDone != null ? paramsOrDone as CallbackResult<boolean> : doneOrExpression as CallbackResult<boolean>);
         const subscription = this.subscribeQuery<boolean>(d) as U;
 
         restore();
         return subscription;
     }
 
-    every(expression: Filter<Shape>, done: CallbackResult<boolean>): U;
-    every<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<boolean>): U;
-    every<P extends {} = never>(expression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<boolean>, paramsOrDone?: P | CallbackResult<boolean>, done?: CallbackResult<boolean>): U {
+    every(expression: Filter<Shape>, done: CallbackResult<Explainable<E, boolean>>): U;
+    every<P extends {}>(expression: ParamsFilter<Shape, P>, params: P, done: CallbackResult<Explainable<E, boolean>>): U;
+    every<P extends {} = never>(expression: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<Explainable<E, boolean>>, paramsOrDone?: P | CallbackResult<Explainable<E, boolean>>, done?: CallbackResult<Explainable<E, boolean>>): U {
 
         // Need to select everything
-        const coalescedDone = done != null ? done : (paramsOrDone as CallbackResult<boolean>);
+        const coalescedDone = (done != null ? done : paramsOrDone) as CallbackResult<Explainable<E, boolean>>;
 
-        return this._query({
+        return this._query<P, boolean>({
             doneOrSelector: coalescedDone
         }, (d, r) => {
 
@@ -251,51 +254,57 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExec
         }) as U;
     }
 
-    min(selector: GenericFunction<Shape, number>, done: CallbackResult<number>): U {
+    min(selector: GenericFunction<Shape, number>, done: CallbackResult<Explainable<E, number>>): U {
         return this._aggregateFunction(selector, "min", done);
     }
 
-    max(selector: GenericFunction<Shape, number>, done: CallbackResult<number>): U {
+    max(selector: GenericFunction<Shape, number>, done: CallbackResult<Explainable<E, number>>): U {
         return this._aggregateFunction(selector, "max", done);
     }
 
-    sum(selector: GenericFunction<Shape, number>, done: CallbackResult<number>): U {
+    sum(selector: GenericFunction<Shape, number>, done: CallbackResult<Explainable<E, number>>): U {
         return this._aggregateFunction(selector, "sum", done);
     }
 
-    count(done: CallbackResult<number>): U {
+    count(done: CallbackResult<Explainable<E, number>>): U {
         // Terminal options are restored after execution so the queryable stays
         // re-executable (subscribed queryables re-run as data changes)
         const restore = this.request.queryOptions.snapshot();
         this.request.queryOptions.add("count", true);
 
-        this.getData<number>(done);
+        const d = this.deliver<number>(done);
 
-        const result = this.subscribeQuery<number>(done) as U;
+        this.getData<number>(d);
+
+        const result = this.subscribeQuery<number>(d) as U;
         restore();
         return result;
     }
 
-    distinct(done: CallbackResult<Shape[]>): U {
+    distinct(done: CallbackResult<Explainable<E, Shape[]>>): U {
 
         const restore = this.request.queryOptions.snapshot();
         this.request.queryOptions.add("distinct", true);
 
-        this.getData<Shape[]>(done);
+        const d = this.deliver<Shape[]>(done);
 
-        const result = this.subscribeQuery<Shape[]>(done) as U;
+        this.getData<Shape[]>(d);
+
+        const result = this.subscribeQuery<Shape[]>(d) as U;
         restore();
         return result;
     }
 
-    toGroup<R extends Shape[keyof Shape] & IdType>(selector: GenericFunction<Shape, R>, done: CallbackResult<Record<R, Shape[]>>): U {
+    toGroup<R extends Shape[keyof Shape] & IdType>(selector: GenericFunction<Shape, R>, done: CallbackResult<Explainable<E, Record<R, Shape[]>>>): U {
 
         const restore = this.request.queryOptions.snapshot();
         this.setGroupQueryOption(selector);
 
-        this.getData<Record<R, Shape[]>>(done);
+        const d = this.deliver<Record<R, Shape[]>>(done);
 
-        const result = this.subscribeQuery<Record<R, Shape[]>>(done) as U;
+        this.getData<Record<R, Shape[]>>(d);
+
+        const result = this.subscribeQuery<Record<R, Shape[]>>(d) as U;
         restore();
         return result;
     }
@@ -329,53 +338,64 @@ export class SelectionQueryable<Root extends {}, Shape, U> extends QueryableExec
         this.request.queryOptions.add("filter", { filter: selector as any, expression });
     }
 
+    /**
+     * Resolves the caller's callback from the overload shapes and runs the query through it.
+     *
+     * The callback arrives WRAPPED (`Explainable<E, R>`) and reaches `resolve` UNWRAPPED, because
+     * `deliver` converts between the two — shapers hand it a bare `R` and it attaches the
+     * explanation. Every terminal but `toArray` and `remove` funnels through here, which is why
+     * explain needs no per-terminal wiring.
+     */
     private _query<P extends {}, R extends {}>(options: {
-        doneOrSelector: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<R>,
-        paramsOrDone?: P | CallbackResult<R>,
-        done?: CallbackResult<R>
+        doneOrSelector: Filter<Shape> | ParamsFilter<Shape, P> | CallbackResult<Explainable<E, R>>,
+        paramsOrDone?: P | CallbackResult<Explainable<E, R>>,
+        done?: CallbackResult<Explainable<E, R>>
     }, resolve: (done: CallbackResult<R>, data: ResultType<Shape[]>, error?: any) => void) {
 
         const { doneOrSelector: doneOrExpression, done, paramsOrDone } = options;
 
         if (done == null && paramsOrDone == null) {
             // empty query
-            const d = doneOrExpression as CallbackResult<R>;
+            const d = this.deliver<R>(doneOrExpression as CallbackResult<R>);
             this.getData<Shape[]>((r) => resolve(d, r));
             return;
         }
 
         if (done != null) {
             // params query
-            this.getData<Shape[]>((r) => resolve(done, r));
+            const d = this.deliver<R>(done);
+            this.getData<Shape[]>((r) => resolve(d, r));
             return;
         }
 
         // regular query
-        const d = paramsOrDone as CallbackResult<R>;
+        const d = this.deliver<R>(paramsOrDone as CallbackResult<R>);
         this.getData<Shape[]>((r) => resolve(d, r));
     }
 
-    private _aggregateFunction(selector: GenericFunction<Shape, number>, name: QueryOptionName, done: CallbackResult<number>) {
+    private _aggregateFunction(selector: GenericFunction<Shape, number>, name: QueryOptionName, done: CallbackResult<Explainable<E, number>>) {
 
         const restore = this.request.queryOptions.snapshot();
         const fields = this.getFields(selector);
         this.request.queryOptions.add("map", { selector: selector as any, fields });
         this.request.queryOptions.add(name, true);
 
+        const d = this.deliver<number>(done);
+
         this.getData<number>((result) => {
 
             if (result.ok === "error") {
-                return done(result);
+                return d(result);
             }
 
             if (result.data == null) {
-                return done(Result.error(new Error("No items found in data source")));
+                return d(Result.error(new Error("No items found in data source")));
             }
 
-            return done(result);
+            return d(result);
         });
 
-        const subscription = this.subscribeQuery<number>(done) as U;
+        const subscription = this.subscribeQuery<number>(d) as U;
 
         restore();
         return subscription;

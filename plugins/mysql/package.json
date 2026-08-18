@@ -1,6 +1,6 @@
 {
     "name": "@routier/mysql-plugin",
-    "version": "0.3.0",
+    "version": "0.4.0",
     "main": "./dist/index.cjs",
     "types": "./dist/index.d.ts",
     "source": "./src/index.ts",
@@ -36,16 +36,16 @@
     ],
     "description": "MySQL plugin for Routier",
     "peerDependencies": {
-        "@routier/core": ">=0.3.0",
-        "@routier/sql-plugin-core": ">=0.3.0"
+        "@routier/core": ">=0.4.0",
+        "@routier/sql-plugin-core": ">=0.4.0"
     },
     "devDependencies": {
         "@faker-js/faker": "^10.0.0",
-        "@routier/core": "^0.3.0",
-        "@routier/datastore": "^0.3.0",
+        "@routier/core": "^0.4.0",
+        "@routier/datastore": "^0.4.0",
         "@rspack/cli": "^1.1.8",
         "@rspack/core": "^1.1.8",
-        "@routier/sql-plugin-core": "^0.3.0"
+        "@routier/sql-plugin-core": "^0.4.0"
     },
     "dependencies": {
         "mysql2": "^3.9.0"

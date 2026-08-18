@@ -228,6 +228,10 @@
             "link": "/concepts/queries/terminal-methods"
           },
           {
+            "text": "Explain",
+            "link": "/concepts/queries/explain"
+          },
+          {
             "text": "Reusable Queries",
             "link": "/concepts/queries/query-composer"
           },

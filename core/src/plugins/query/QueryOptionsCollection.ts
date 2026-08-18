@@ -1,6 +1,6 @@
 import { isPropertyExpression } from "../../assertions";
 import { forEach } from "../../expressions/utils";
-import { QueryOption, QueryOptionName, QueryOptionExecutionTarget, QueryOptionValueMap } from "./types";
+import { MemoryExecutionReason, QueryOption, QueryOptionName, QueryOptionExecutionTarget, QueryOptionValueMap } from "./types";
 
 export type QueryCollectionItem<T, K extends QueryOptionName> = { index: number, option: QueryOption<T, K> };
 
@@ -8,8 +8,32 @@ export class QueryOptionsCollection<T> {
 
     private options: Map<QueryOptionName, QueryCollectionItem<any, any>[]> = new Map<QueryOptionName, QueryCollectionItem<any, any>[]>();
     private nextExecutionTarget: QueryOptionExecutionTarget = "database";
+    private nextExecutionReason: MemoryExecutionReason | null = null;
     private nextIndex: number = 0;
     private enumeratedItems: QueryCollectionItem<any, any>[] = [];
+
+    /** Cuts over to memory execution, keeping the first cause. See `MemoryExecutionReason`. */
+    private cutOverToMemory(reason: MemoryExecutionReason) {
+        this.nextExecutionTarget = "memory";
+
+        if (this.nextExecutionReason == null) {
+            this.nextExecutionReason = reason;
+        }
+    }
+
+    /**
+     * True when `split()` or `splitAt()` produced this collection.
+     *
+     * Those rebuild each half by re-adding its options, which re-derives execution targets
+     * without the options that caused them — a post-join filter alone in the memory half
+     * derives back to `"database"`. Anything reading `target` as a report of where work runs
+     * has to reject a derived collection; see `explainQuery`.
+     */
+    private derived: boolean = false;
+
+    get isDerived() {
+        return this.derived;
+    }
 
     get items() {
         return this.options;
@@ -37,7 +61,7 @@ export class QueryOptionsCollection<T> {
             if (mapValue.fields.some(x => x.isRename === true) || mapValue.fields.some(x => x.property?.isUnmapped === true)) {
                 // Cut over to memory execution since we are renaming a property with .map
                 // We do not want to figure out how the new name flows through the entire query
-                this.nextExecutionTarget = "memory";
+                this.cutOverToMemory("map-rename");
             }
         }
 
@@ -52,14 +76,14 @@ export class QueryOptionsCollection<T> {
             }
 
             if (filterValue.expression.type === "not-parsable") {
-                this.nextExecutionTarget = "memory";
+                this.cutOverToMemory("not-parsable");
             } else {
                 forEach(filterValue.expression, (expression) => {
 
                     if (isPropertyExpression(expression) && expression.property.isUnmapped) {
                         // Cut over to memory execution, unmapped properties are not in the database and
                         // cannot be queried
-                        this.nextExecutionTarget = "memory";
+                        this.cutOverToMemory("unmapped-property");
                         return false;
                     }
 
@@ -68,7 +92,7 @@ export class QueryOptionsCollection<T> {
                         // `from` (storage) names, but filter selectors reference the
                         // in-memory names.  Memory execution runs after deserialization,
                         // where the in-memory names exist
-                        this.nextExecutionTarget = "memory";
+                        this.cutOverToMemory("renamed-property");
                         return false;
                     }
 
@@ -82,8 +106,10 @@ export class QueryOptionsCollection<T> {
 
             // Same rule as filters: sort selectors reference in-memory names, which
             // only exist after deserialization when the property is renamed or unmapped
-            if (sortValue.property != null && (sortValue.property.isUnmapped || sortValue.property.hasRenamedSegments)) {
-                this.nextExecutionTarget = "memory";
+            if (sortValue.property != null && sortValue.property.isUnmapped) {
+                this.cutOverToMemory("unmapped-property");
+            } else if (sortValue.property != null && sortValue.property.hasRenamedSegments) {
+                this.cutOverToMemory("renamed-property");
             }
         }
 
@@ -96,8 +122,10 @@ export class QueryOptionsCollection<T> {
             //
             // This is also what lets every translator's in-memory fallback read the column by
             // its resolved name — anything whose storage name differs never reaches them.
-            if (nearestValue.property != null && (nearestValue.property.isUnmapped || nearestValue.property.hasRenamedSegments)) {
-                this.nextExecutionTarget = "memory";
+            if (nearestValue.property != null && nearestValue.property.isUnmapped) {
+                this.cutOverToMemory("unmapped-property");
+            } else if (nearestValue.property != null && nearestValue.property.hasRenamedSegments) {
+                this.cutOverToMemory("renamed-property");
             }
         }
 
@@ -111,7 +139,7 @@ export class QueryOptionsCollection<T> {
             // Set BEFORE the item is created, unlike `nearest`'s ratchet below, because this
             // moves the join option itself rather than everything after it.
             if (joinValue.crossPlugin === true) {
-                this.nextExecutionTarget = "memory";
+                this.cutOverToMemory("cross-plugin-join");
             }
         }
 
@@ -120,7 +148,8 @@ export class QueryOptionsCollection<T> {
             option: {
                 name,
                 target: this.nextExecutionTarget,
-                value
+                value,
+                ...(this.nextExecutionReason == null ? {} : { reason: this.nextExecutionReason })
             }
         }
 
@@ -144,7 +173,7 @@ export class QueryOptionsCollection<T> {
             //
             // A plugin that DID push the search down loses nothing but the chance to also
             // push down what follows it, which is a limit over ten rows.
-            this.nextExecutionTarget = "memory";
+            this.cutOverToMemory("after-nearest");
         }
 
         if (name === "join") {
@@ -156,7 +185,7 @@ export class QueryOptionsCollection<T> {
             // OUTER rows read, not the pairs produced — a plausible-looking result with the
             // wrong number of rows in it. Conjuncts that can safely run earlier are split off
             // by the query builder BEFORE dispatch, which is the only exception.
-            this.nextExecutionTarget = "memory";
+            this.cutOverToMemory("after-join");
         }
     }
 
@@ -173,6 +202,9 @@ export class QueryOptionsCollection<T> {
         const sortedItems = this.enumeratedItems.toSorted((a, b) => a.index - b.index);
         const before = new QueryOptionsCollection<T>();
         const after = new QueryOptionsCollection<T>();
+
+        before.derived = true;
+        after.derived = true;
         let at: QueryOption<T, K> | null = null;
 
         for (let i = 0, length = sortedItems.length; i < length; i++) {
@@ -201,11 +233,13 @@ export class QueryOptionsCollection<T> {
     snapshot(): () => void {
         const options = new Map([...this.options.entries()].map(([key, items]): [QueryOptionName, QueryCollectionItem<any, any>[]] => [key, [...items]]));
         const nextExecutionTarget = this.nextExecutionTarget;
+        const nextExecutionReason = this.nextExecutionReason;
         const nextIndex = this.nextIndex;
 
         return () => {
             this.options = new Map(options);
             this.nextExecutionTarget = nextExecutionTarget;
+            this.nextExecutionReason = nextExecutionReason;
             this.nextIndex = nextIndex;
             this.enumeratedItems = [];
         };
@@ -217,6 +251,9 @@ export class QueryOptionsCollection<T> {
         const sortedItems = this.enumeratedItems.toSorted((a, b) => a.index - b.index);
         const memoryQueryOptionsCollection = new QueryOptionsCollection<T>();
         const databaseQueryOptionsCollection = new QueryOptionsCollection<T>();
+
+        memoryQueryOptionsCollection.derived = true;
+        databaseQueryOptionsCollection.derived = true;
 
         for (let i = 0, length = sortedItems.length; i < length; i++) {
             const sortedItem = sortedItems[i];

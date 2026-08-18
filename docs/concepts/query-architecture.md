@@ -121,6 +121,8 @@ When expressions cannot be parsed (returns `NOT_PARSABLE`), Routier falls back t
 
 **Best Practice**: Use parameterized queries and avoid complex expressions that cannot be parsed to maintain optimal performance.
 
+To see this split for a real query — which options ran in the database, which ran in memory, and why — add [`.explain()`](/concepts/queries/explain) to the chain.
+
 ### Parameterized Queries
 
 For dynamic filtering with variables, use parameterized queries to ensure database-level optimization:

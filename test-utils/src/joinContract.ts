@@ -241,6 +241,29 @@ export const describeJoinContract = (name: string, pluginFactory: () => IDbPlugi
             expect(await store.teams.leftJoin(s => s.members, t => t._id, m => m.teamId).countAsync()).toBe(4);
         });
 
+        it("explains a joined query: same rows, plus at least one reported read", async () => {
+            const { store } = await seeded();
+
+            const { data, explanation } = await store.teams
+                .join(s => s.members, team => team._id, member => member.teamId)
+                .sort(([team, member]) => `${team.name}:${member.name}`)
+                .explain()
+                .toArrayAsync();
+
+            expect(labels(data)).toEqual(["Alpha:Abe", "Alpha:Ann", "Beta:Bo"]);
+
+            const optionNames = explanation.executionSteps.flatMap(step => step.options.map(option => option.name));
+            expect(optionNames).toContain("join");
+
+            const reported = explanation.executionSteps.flatMap(step => step.executedQueries ?? []);
+            expect(reported.length).toBeGreaterThan(0);
+
+            for (const executed of reported) {
+                expect(typeof executed.text).toBe("string");
+                expect(executed.text.trim().length).toBeGreaterThan(0);
+            }
+        });
+
         it("returns read-only projections, with no change tracking on either half", async () => {
             const { store } = await seeded();
 

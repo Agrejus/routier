@@ -139,4 +139,5 @@ For live results that update automatically, you can chain `.subscribe()` before 
 
 - [Filtering Data](/concepts/queries/filtering) - Filter before terminal methods
 - [Sorting Results](/concepts/queries/sorting) - Sort before terminal methods
+- [Explain](/concepts/queries/explain) - Make terminals return `{ data, explanation }`
 - [Aggregation](/concepts/queries/aggregation) - Aggregation terminal methods

@@ -117,6 +117,8 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
                 schemas: event.schemas,
                 source: "OptimisticReplicationDbPlugin",
                 action: "query",
+                explain: false,
+                executedQueries: [],
                 reason: "hydration",
                 // Select All Data
                 operation: Query.EMPTY<TEntity, TShape>(event.operation.schema)

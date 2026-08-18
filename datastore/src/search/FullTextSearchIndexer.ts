@@ -54,7 +54,9 @@ export class FullTextSearchIndexer {
                 schemas: this.schemas,
                 id: uuid(8),
                 source: "Collection",
-                action: "query"
+                action: "query",
+                explain: false,
+                executedQueries: []
             }, (result) => {
 
                 if (result.ok === Result.ERROR) {

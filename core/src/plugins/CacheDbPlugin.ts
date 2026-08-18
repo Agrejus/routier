@@ -133,6 +133,11 @@ export class CacheDbPlugin implements IDbPlugin {
             this.entries.delete(key);
             this.entries.set(key, cached);
 
+            // Said rather than left blank. A hit means no database was touched, which is a fact
+            // worth reporting — and an empty report would otherwise read as a plugin that failed
+            // to say what it ran.
+            event.executedQueries.push({ text: "cache hit — no query was executed" });
+
             done(PluginEventResult.success(event.id, this.rebuild(cached) as ITranslatedValue<TShape>));
             return;
         }

@@ -3,6 +3,7 @@ import { Expression, Filter, ParamsFilter } from "@routier/core/expressions";
 import { GenericFunction } from "@routier/core/types";
 import { CallbackResult, Result, toPromise } from "@routier/core/results";
 import { CollectionDependencies, RequestContext } from "../collections/types";
+import { Explainable } from "./explained";
 import { QueryableExecutor } from "./QueryableExecutor";
 
 /**
@@ -26,7 +27,7 @@ import { QueryableExecutor } from "./QueryableExecutor";
  */
 export type JoinTuple<TOuter, TInner> = [TOuter, TInner];
 
-export class JoinQueryable<TOuter extends {}, Shape> extends QueryableExecutor<TOuter, Shape> {
+export class JoinQueryable<TOuter extends {}, Shape, E extends boolean = false> extends QueryableExecutor<TOuter, Shape> {
 
     constructor(dependencies: CollectionDependencies<TOuter>, request: RequestContext<TOuter>) {
         super(dependencies, request);
@@ -55,8 +56,8 @@ export class JoinQueryable<TOuter extends {}, Shape> extends QueryableExecutor<T
      * backend; accelerated only where the query builder can split a single-side conjunct off and
      * push it down.
      */
-    where(expression: Filter<Shape>): JoinQueryable<TOuter, Shape>;
-    where<P extends {}>(selector: ParamsFilter<Shape, P>, params: P): JoinQueryable<TOuter, Shape>;
+    where(expression: Filter<Shape>): JoinQueryable<TOuter, Shape, E>;
+    where<P extends {}>(selector: ParamsFilter<Shape, P>, params: P): JoinQueryable<TOuter, Shape, E>;
     where<P extends {} = never>(selector: ParamsFilter<Shape, P> | Filter<Shape>, params?: P) {
         // Recorded as NOT PARSABLE rather than parsed, and this is a correctness point, not a
         // shortcut. `([p, m]) => ...` is indistinguishable from a params filter's
@@ -75,7 +76,7 @@ export class JoinQueryable<TOuter extends {}, Shape> extends QueryableExecutor<T
             params
         });
 
-        return this.create(JoinQueryable<TOuter, Shape>);
+        return this.create(JoinQueryable<TOuter, Shape, E>);
     }
 
     /**
@@ -89,7 +90,7 @@ export class JoinQueryable<TOuter extends {}, Shape> extends QueryableExecutor<T
     map<R>(selector: GenericFunction<Shape, R>) {
         this.request.queryOptions.add("map", { selector: selector as GenericFunction<any, any>, fields: [] });
 
-        return this.create(JoinQueryable<TOuter, R>);
+        return this.create(JoinQueryable<TOuter, R, E>);
     }
 
     /**
@@ -101,12 +102,12 @@ export class JoinQueryable<TOuter extends {}, Shape> extends QueryableExecutor<T
      */
     sort(selector: GenericFunction<Shape, unknown>) {
         this.setTupleSortQueryOption(selector, QueryOrdering.Ascending);
-        return this.create(JoinQueryable<TOuter, Shape>);
+        return this.create(JoinQueryable<TOuter, Shape, E>);
     }
 
     sortDescending(selector: GenericFunction<Shape, unknown>) {
         this.setTupleSortQueryOption(selector, QueryOrdering.Descending);
-        return this.create(JoinQueryable<TOuter, Shape>);
+        return this.create(JoinQueryable<TOuter, Shape, E>);
     }
 
     /**
@@ -124,43 +125,55 @@ export class JoinQueryable<TOuter extends {}, Shape> extends QueryableExecutor<T
 
     skip(amount: number) {
         this.request.queryOptions.add("skip", amount);
-        return this.create(JoinQueryable<TOuter, Shape>);
+        return this.create(JoinQueryable<TOuter, Shape, E>);
     }
 
     take(amount: number) {
         this.request.queryOptions.add("take", amount);
-        return this.create(JoinQueryable<TOuter, Shape>);
+        return this.create(JoinQueryable<TOuter, Shape, E>);
     }
 
-    toArray(done: CallbackResult<Shape[]>): void {
-        this.getData<Shape[]>(done);
+    /** See `QueryableAsync.explain`. Terminals after this deliver `{ data, explanation }`. */
+    explain(): JoinQueryable<TOuter, Shape, true> {
+        return new JoinQueryable<TOuter, Shape, true>(this.dependencies, this.request.withExplainOn());
     }
 
-    toArrayAsync(): Promise<Shape[]> {
-        return toPromise<Shape[]>(w => this.toArray(w));
+    toArray(done: CallbackResult<Explainable<E, Shape[]>>): void {
+        this.getData<Shape[]>(this.deliver(done));
     }
 
-    first(done: CallbackResult<Shape>): void {
-        this.firstOrUndefined(result => {
+    toArrayAsync(): Promise<Explainable<E, Shape[]>> {
+        return toPromise<Explainable<E, Shape[]>>(w => this.toArray(w));
+    }
+
+    first(done: CallbackResult<Explainable<E, Shape>>): void {
+        const d = this.deliver<Shape>(done);
+
+        this._firstOrUndefined(result => {
             if (result.ok === Result.ERROR) {
-                done(result);
+                d(result);
                 return;
             }
 
             if (result.data == null) {
-                done(Result.error(new Error("No items found in data source")));
+                d(Result.error(new Error("No items found in data source")));
                 return;
             }
 
-            done(Result.success(result.data));
+            d(Result.success(result.data));
         });
     }
 
-    firstAsync(): Promise<Shape> {
-        return toPromise<Shape>(w => this.first(w));
+    firstAsync(): Promise<Explainable<E, Shape>> {
+        return toPromise<Explainable<E, Shape>>(w => this.first(w));
     }
 
-    firstOrUndefined(done: CallbackResult<Shape | undefined>): void {
+    firstOrUndefined(done: CallbackResult<Explainable<E, Shape | undefined>>): void {
+        this._firstOrUndefined(this.deliver(done));
+    }
+
+    /** The raw read, so `first` can reuse it without `deliver` wrapping the result twice. */
+    private _firstOrUndefined(done: CallbackResult<Shape | undefined>): void {
         // Restored so this queryable stays re-executable — a terminal option recorded on the
         // shared collection would otherwise stack on a second call.
         const restore = this.request.queryOptions.snapshot();
@@ -179,20 +192,20 @@ export class JoinQueryable<TOuter extends {}, Shape> extends QueryableExecutor<T
         restore();
     }
 
-    firstOrUndefinedAsync(): Promise<Shape | undefined> {
-        return toPromise<Shape | undefined>(w => this.firstOrUndefined(w));
+    firstOrUndefinedAsync(): Promise<Explainable<E, Shape | undefined>> {
+        return toPromise<Explainable<E, Shape | undefined>>(w => this.firstOrUndefined(w));
     }
 
-    count(done: CallbackResult<number>): void {
+    count(done: CallbackResult<Explainable<E, number>>): void {
         const restore = this.request.queryOptions.snapshot();
 
         this.request.queryOptions.add("count", true);
-        this.getData<number>(done);
+        this.getData<number>(this.deliver(done));
 
         restore();
     }
 
-    countAsync(): Promise<number> {
-        return toPromise<number>(w => this.count(w));
+    countAsync(): Promise<Explainable<E, number>> {
+        return toPromise<Explainable<E, number>>(w => this.count(w));
     }
 }

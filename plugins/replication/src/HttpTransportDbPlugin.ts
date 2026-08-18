@@ -196,6 +196,7 @@ export class HttpTransportDbPlugin implements IDbPlugin {
             kind: 'query',
             collectionName: operation.schema.collectionName,
             options: serializeQueryOptions(sendable),
+            explain: event.explain,
         });
 
         if (response.ok === false) {
@@ -206,6 +207,13 @@ export class HttpTransportDbPlugin implements IDbPlugin {
         if (response.kind !== 'query') {
             done(PluginEventResult.error(event.id, new Error(`Expected a query response and received '${response.kind}'.`)));
             return;
+        }
+
+        // What the SERVER ran, if its plugin reported. A server whose plugin reports nothing
+        // omits this, and the explanation marks the remote step as not reported — the rest of
+        // the explanation is built from the query options and does not depend on the remote end.
+        for (const executed of response.executedQueries ?? []) {
+            event.executedQueries.push(executed);
         }
 
         // Whatever the server could not be asked to do, done here with the closures it could not be

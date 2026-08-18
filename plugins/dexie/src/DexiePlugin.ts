@@ -396,6 +396,20 @@ export class DexiePlugin implements IDbPlugin, Disposable {
 
             // Get the data first
             collection.toArray().then(data => {
+                // Dexie has no statement to quote, so `.explain()` gets a description of what
+                // the plugin actually did. Filters are JS predicates over a full cursor walk —
+                // no IndexedDB range query is used — which is the fact that separates a slow
+                // backend from a silent memory fallback when comparing against SQL engines.
+                event.executedQueries.push({
+                    text: [
+                        `${collectionName}.toCollection()`,
+                        ...(hasFilter ? ["filter(<predicate>) — JavaScript predicate over a full cursor walk, no index"] : []),
+                        ...(canPushDownWindow && options.has("skip") ? ["offset(…)"] : []),
+                        ...(canPushDownWindow && options.has("take") ? ["limit(…)"] : []),
+                        ...(translator.options.useTranslatorDistinct === false && options.has("distinct") ? ["distinct()"] : [])
+                    ].join(".")
+                });
+
                 const result = translator.translate(data);
 
                 d(PluginEventResult.success(event.id, result));

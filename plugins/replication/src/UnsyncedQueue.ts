@@ -532,6 +532,8 @@ export class UnsyncedQueue {
                 schemas,
                 source: 'UnsyncedQueue',
                 action: 'query',
+                explain: false,
+                executedQueries: [],
                 operation,
             };
             this.store.query(event, (result) => {

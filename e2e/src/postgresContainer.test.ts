@@ -116,6 +116,20 @@ suite('PostgreSQL via testcontainers', () => {
         expect(found.map(p => p.name).sort()).toEqual(['Banana', 'cherry']);
     });
 
+    it('explains a query: reports the SQL it executed', async () => {
+        const { data, explanation } = await store.products
+            .where(p => p.price > 15)
+            .explain()
+            .toArrayAsync();
+
+        expect(data.map(p => p.name).sort()).toEqual(['Banana', 'cherry']);
+
+        const reported = explanation.executionSteps.flatMap(step => step.executedQueries ?? []);
+        expect(reported.length).toBeGreaterThan(0);
+        expect(reported[0].text).toContain('SELECT');
+        expect(reported[0].parameters).toEqual([15]);
+    });
+
     it('filters with equality on a string', async () => {
         expect(await store.products.where(p => p.category === 'fruit').countAsync()).toBe(2);
     });

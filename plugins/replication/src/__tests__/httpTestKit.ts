@@ -167,6 +167,8 @@ export function createQueryEvent(schema: unknown = testSchema): DbPluginQueryEve
         schemas: schemasFor(schema),
         source: 'test',
         action: 'query',
+        explain: false,
+        executedQueries: [],
         operation: Query.EMPTY(schema as never) as never,
     };
 }

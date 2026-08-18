@@ -23,10 +23,29 @@ export type QueryField = {
 export type QueryOptionExecutionTarget = "database" | "memory";
 export type QueryOptionName = keyof QueryOptionValueMap<unknown>;
 
+/**
+ * Why an option runs in memory rather than in the database.
+ *
+ * A code rather than a sentence, so a test can assert on it — the sentences live in
+ * `MEMORY_EXECUTION_EXPLANATIONS`. Every cause is a ratchet, because `nextExecutionTarget`
+ * never returns to `"database"`, so the code recorded is the FIRST cause and it stays on every
+ * option after it. Reporting a later one would name a symptom of this one.
+ */
+export type MemoryExecutionReason =
+    | "not-parsable"
+    | "unmapped-property"
+    | "renamed-property"
+    | "map-rename"
+    | "after-nearest"
+    | "after-join"
+    | "cross-plugin-join";
+
 export type QueryOption<T, K extends QueryOptionName> = {
     name: QueryOptionName;
     value: QueryOptionValueMap<T>[K],
     target: QueryOptionExecutionTarget;
+    /** Set only when `target` is `"memory"`. */
+    reason?: MemoryExecutionReason;
 }
 
 export type QueryOptionValueMap<T extends {}> = {

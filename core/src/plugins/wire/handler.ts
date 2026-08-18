@@ -4,6 +4,7 @@ import { PluginEventResult, Result } from "../../results";
 import { CompiledSchema } from "../../schema";
 import { UnknownRecord, uuid } from "../../utilities";
 import { IDbPlugin } from "../types";
+import { ExecutedQuery } from "../query/explain";
 import { Query } from "../query/Query";
 import { deserializeBulkPersist, serializePersistResult } from "./persist";
 import { deserializeQueryOptions, SchemaResolver, ScopeProvider } from "./query";
@@ -238,6 +239,8 @@ export const createRequestHandler = <TContext = void>(options: RequestHandlerOpt
                     (target) => scopeExpressionFor(target, context, "query")
                 );
 
+                const executedQueries: ExecutedQuery[] = [];
+
                 return await new Promise<SerializedResponse>(resolve => {
                     plugin.query({
                         // `false`: nothing here attaches to a change tracker — the tracker lives on
@@ -246,14 +249,24 @@ export const createRequestHandler = <TContext = void>(options: RequestHandlerOpt
                         schemas: schemas as never,
                         id: uuid(8),
                         source: "RequestHandler",
-                        action: "query"
+                        action: "query",
+                        explain: request.explain,
+                        executedQueries
                     }, result => {
                         if (result.ok === PluginEventResult.ERROR) {
                             resolve(failed(result.error));
                             return;
                         }
 
-                        resolve({ ok: true, kind: "query", value: result.data.value as unknown });
+                        resolve({
+                            ok: true,
+                            kind: "query",
+                            value: result.data.value as unknown,
+                            // Only when asked, and only what the plugin reported. A plugin
+                            // that reported nothing sends nothing, and the caller marks the
+                            // remote step as not reported.
+                            ...(request.explain === true && executedQueries.length > 0 ? { executedQueries } : {})
+                        });
                     });
                 });
             }

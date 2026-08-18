@@ -8,7 +8,7 @@ import { CompiledSchema, InferType } from "@routier/core/schema";
 import { QueryableComposer } from "./composers/QueryableComposer";
 import { JoinQueryable, JoinTuple } from "./JoinQueryable";
 
-export class Queryable<Root extends {}, Shape, U, TStore = unknown> extends SelectionQueryable<Root, Shape, U> {
+export class Queryable<Root extends {}, Shape, U, TStore = unknown, E extends boolean = false> extends SelectionQueryable<Root, Shape, U, E> {
 
     constructor(dependencies: CollectionDependencies<Root>, request: RequestContext<Root>) {
         super(dependencies, request);
@@ -28,39 +28,49 @@ export class Queryable<Root extends {}, Shape, U, TStore = unknown> extends Sele
         }, new RequestContext<TEntity>());
     }
 
-    where(expression: Filter<Shape>): Queryable<Root, Shape, U, TStore>;
-    where<P extends {}>(selector: ParamsFilter<Shape, P>, params: P): Queryable<Root, Shape, U, TStore>;
+    /**
+     * Reports where each query option ran — the database or memory — alongside the results.
+     *
+     * See `QueryableAsync.explain`. The query still executes; terminals after this deliver
+     * `{ data, explanation }`.
+     */
+    explain(): Queryable<Root, Shape, U, TStore, true> {
+        return new Queryable<Root, Shape, U, TStore, true>(this.dependencies, this.request.withExplainOn());
+    }
+
+    where(expression: Filter<Shape>): Queryable<Root, Shape, U, TStore, E>;
+    where<P extends {}>(selector: ParamsFilter<Shape, P>, params: P): Queryable<Root, Shape, U, TStore, E>;
     where<P extends {} = never>(selector: ParamsFilter<Shape, P> | Filter<Shape>, params?: P) {
         this.setFiltersQueryOption(selector, params);
         // We don't need a params queryable.  Params are localized to the where clause and do not
         // matter to the rest of the query
-        return this.create(Queryable<Root, Shape, U, TStore>);
+        return this.create(Queryable<Root, Shape, U, TStore, E>);
     }
 
     map<R extends Shape[keyof Shape] | Partial<Shape>>(expression: GenericFunction<Shape, R>) {
 
         this.setMapQueryOption(expression);
-        return this.create(Queryable<Root, R, U, TStore>);
+        return this.create(Queryable<Root, R, U, TStore, E>);
     }
 
     skip(amount: number) {
         this.setSkipQueryOption(amount);
-        return this.create(Queryable<Root, Shape, U, TStore>);
+        return this.create(Queryable<Root, Shape, U, TStore, E>);
     }
 
     take(amount: number) {
         this.setTakeQueryOption(amount);
-        return this.create(Queryable<Root, Shape, U, TStore>);
+        return this.create(Queryable<Root, Shape, U, TStore, E>);
     }
 
     sort(expression: GenericFunction<Shape, Shape[keyof Shape]>) {
         this.setSortQueryOption(expression, QueryOrdering.Ascending);
-        return this.create(Queryable<Root, Shape, U, TStore>);
+        return this.create(Queryable<Root, Shape, U, TStore, E>);
     }
 
     sortDescending(expression: GenericFunction<Shape, Shape[keyof Shape]>) {
         this.setSortQueryOption(expression, QueryOrdering.Descending);
-        return this.create(Queryable<Root, Shape, U, TStore>);
+        return this.create(Queryable<Root, Shape, U, TStore, E>);
     }
 
     /**
@@ -77,7 +87,7 @@ export class Queryable<Root extends {}, Shape, U, TStore = unknown> extends Sele
      */
     nearest(expression: GenericFunction<Shape, Shape[keyof Shape]>, vector: number[], count: number) {
         this.setNearestQueryOption(expression, vector, count);
-        return this.create(Queryable<Root, Shape, U, TStore>);
+        return this.create(Queryable<Root, Shape, U, TStore, E>);
     }
 
     /**
@@ -95,7 +105,7 @@ export class Queryable<Root extends {}, Shape, U, TStore = unknown> extends Sele
     ) {
         this.setJoinQueryOption("inner", inner, outerKey, innerKey);
 
-        return new JoinQueryable<Root, JoinTuple<Shape, InferType<TInner>>>(this.dependencies, this.request);
+        return new JoinQueryable<Root, JoinTuple<Shape, InferType<TInner>>, E>(this.dependencies, this.request);
     }
 
     /** Like `join`, but unmatched rows appear paired with `undefined`. */
@@ -106,7 +116,7 @@ export class Queryable<Root extends {}, Shape, U, TStore = unknown> extends Sele
     ) {
         this.setJoinQueryOption("left", inner, outerKey, innerKey);
 
-        return new JoinQueryable<Root, JoinTuple<Shape, InferType<TInner> | undefined>>(this.dependencies, this.request);
+        return new JoinQueryable<Root, JoinTuple<Shape, InferType<TInner> | undefined>, E>(this.dependencies, this.request);
     }
 
     subscribe() {
