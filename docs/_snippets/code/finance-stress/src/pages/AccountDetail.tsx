@@ -9,7 +9,7 @@ import { money, useLiveQuery } from '../hooks';
  */
 export function AccountDetail(props: { accountId: string; onBack: () => void }) {
     const account = useLiveQuery<Account | undefined>(
-        cb => uiStore.accounts.subscribe().where(([a, p]) => a.id === p.id, { id: props.accountId }).firstOrUndefined(cb as any) as any,
+        cb => uiStore.accounts.subscribe().where(([a, p]) => a.id === p.id, { id: props.accountId }).firstOrUndefined(cb),
         [props.accountId],
     );
 
@@ -18,7 +18,7 @@ export function AccountDetail(props: { accountId: string; onBack: () => void }) 
             .where(([t, p]) => t.fromAccountId === p.id || t.toAccountId === p.id, { id: props.accountId })
             .sortDescending(t => t.at)
             .take(50)
-            .toArray(cb as any) as any,
+            .toArray(cb),
         [props.accountId],
     );
 

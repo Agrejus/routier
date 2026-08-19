@@ -40,7 +40,7 @@ class MarketFeed {
                 price: Math.round((20 + Math.random() * 480) * 100) / 100,
                 change: 0,
                 updatedAt: new Date(),
-            } as any);
+            });
         }
 
         await store.saveChangesAsync();

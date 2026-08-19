@@ -94,7 +94,7 @@ class Bot {
             category: pick([...CATEGORIES]),
             memo: `bot ${this.id}`,
             at: new Date(),
-        } as any);
+        });
 
         for (let attempt = 0; attempt < 50; attempt++) {
             const from = this.cache.get(fromId);
@@ -148,15 +148,15 @@ export const simulator = {
             const [user] = await store.users.addAsync({
                 name: `User ${u + 1}`,
                 email: `user${u + 1}@example.test`,
-            } as any);
+            });
 
             for (let a = 0; a < accountsPerUser; a++) {
                 await store.accounts.addAsync({
-                    ownerId: (user as any).id,
-                    name: `${(user as any).name} ${a === 0 ? 'Checking' : a === 1 ? 'Savings' : 'Credit'}`,
+                    ownerId: user.id,
+                    name: `${user.name} ${a === 0 ? 'Checking' : a === 1 ? 'Savings' : 'Credit'}`,
                     kind: a === 0 ? 'checking' : a === 1 ? 'savings' : 'credit',
                     balance: 1000,
-                } as any);
+                });
             }
         }
 

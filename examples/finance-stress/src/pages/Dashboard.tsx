@@ -11,12 +11,12 @@ import { money, useLiveQuery } from '../hooks';
  * two writers racing the same account across stores — surfaced instead of hidden.
  */
 export function Dashboard(props: { onOpenAccount: (id: string) => void }) {
-    const accounts = useLiveQuery<Account[]>(cb => uiStore.accounts.subscribe().toArray(cb as any) as any, []);
+    const accounts = useLiveQuery<Account[]>(cb => uiStore.accounts.subscribe().toArray(cb), []);
     const recent = useLiveQuery<Transaction[]>(
-        cb => uiStore.transactions.subscribe().sortDescending(t => t.at).take(25).toArray(cb as any) as any,
+        cb => uiStore.transactions.subscribe().sortDescending(t => t.at).take(25).toArray(cb),
         [],
     );
-    const txCount = useLiveQuery<number>(cb => uiStore.transactions.subscribe().count(cb as any) as any, []);
+    const txCount = useLiveQuery<number>(cb => uiStore.transactions.subscribe().count(cb), []);
 
     const accountList = accounts.status === 'success' ? accounts.data : [];
     const total = accountList.reduce((sum, account) => sum + account.balance, 0);

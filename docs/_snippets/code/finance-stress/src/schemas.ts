@@ -1,4 +1,4 @@
-import { s } from '@routier/core/schema';
+import { InferType, s } from '@routier/core/schema';
 
 export const userSchema = s.define('users', {
     id: s.string().key().identity(),
@@ -32,14 +32,11 @@ export const instrumentSchema = s.define('instruments', {
     updatedAt: s.date(),
 }).compile();
 
-export type Instrument = { id: string; symbol: string; price: number; change: number; updatedAt: Date };
-
-export type User = { id: string; name: string; email: string };
-export type Account = { id: string; ownerId: string; name: string; kind: 'checking' | 'savings' | 'credit'; balance: number };
-export type Transaction = {
-    id: string; fromAccountId: string; toAccountId: string; amount: number;
-    category: 'transfer' | 'payroll' | 'groceries' | 'rent' | 'utilities' | 'entertainment';
-    memo: string; at: Date;
-};
+// Read off the schemas rather than restated. Adding a property or widening a string union
+// above updates these with no second edit, and nothing can drift out of step.
+export type User = InferType<typeof userSchema>;
+export type Account = InferType<typeof accountSchema>;
+export type Transaction = InferType<typeof transactionSchema>;
+export type Instrument = InferType<typeof instrumentSchema>;
 
 export const CATEGORIES = ['transfer', 'payroll', 'groceries', 'rent', 'utilities', 'entertainment'] as const;

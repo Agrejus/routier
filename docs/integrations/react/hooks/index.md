@@ -167,6 +167,33 @@ Create your DataStore in a simple custom hook:
 
 Alternatively, you can use Context if you prefer a shared instance across your app. See the [Best Practices](/integrations/react/best-practices/) guide for details.
 
+### Typing Query Results With `InferType`
+
+`useQuery<T>` cannot infer `T` for you. Its only mention of `T` is inside the callback **you**
+supply, so there is nothing for TypeScript to infer from, and it falls back to `unknown`:
+
+```ts
+// data is `unknown` — every use of it needs a cast
+const products = useQuery(cb => dataStore.products.subscribe().toArray(cb), []);
+```
+
+Supply the generic instead, and get it from the schema with `InferType`:
+
+```ts
+type Product = InferType<typeof productSchema>;
+
+const products = useQuery<Product[]>(cb => dataStore.products.subscribe().toArray(cb), []);
+```
+
+This is the single most common reason people end up writing `callback as any` or annotating a
+hand-written interface. Neither is necessary — the schema already knows the shape.
+
+<<< @/_snippets/code/from-docs/integrations/react/hooks/index/typing-results.tsx
+
+Use `InferType<typeof schema>` for a single entity, `InferType<typeof schema>[]` for a list,
+and `InferType<typeof schema> | undefined` for `firstOrUndefined`. For the shape you pass to
+`addAsync`, use `InferCreateType` — see [InferType](/concepts/schema/infer-type).
+
 ### Status Checking
 
 Always check status before accessing data:
