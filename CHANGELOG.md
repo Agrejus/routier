@@ -3,6 +3,28 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## @routier/react 0.4.1 (2026-08-19)
+
+An independent patch, so the header names the package: nothing else changes.
+
+### Fixed — @routier/react
+
+- `require("@routier/react")` threw `exports is not defined in ES module scope`. This package is
+  the only one declaring `"type": "module"`, which makes Node read **any** `.js` as ESM — and the
+  vite config named the CommonJS build `index.cjs.js`. Node therefore loaded CommonJS output in an
+  ESM scope and the module was unusable from `require`. The bundle now uses the `.cjs` extension,
+  which forces CommonJS regardless of `type`, and `main`/`module`/`exports` point at
+  `dist/index.cjs` and `dist/index.js` like every other package.
+
+  Only `require` was affected; `import` worked throughout.
+
+### Fixed — release tooling
+
+- `scripts/consumer-check.mjs` had no entry for `@routier/react` or `@routier/mongodb-plugin`, and
+  it only checks packages named in its two lists. It is the one gate that loads built bundles the
+  way a user does, so the defect above shipped in `0.4.0` unnoticed. Both are now covered; the
+  react failure reproduced on the first run.
+
 ## 0.5.0 (2026-08-19)
 
 Telemetry as an explicit plugin instead of runtime reflection, plus a new OpenTelemetry

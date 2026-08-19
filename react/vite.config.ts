@@ -20,7 +20,9 @@ export default defineConfig({
             entry: resolve(__dirname, 'src/index.ts'),
             name: '@routier/react',
             formats: ['es', 'cjs'],
-            fileName: (format) => `index.${format}.js`
+            // `.cjs` rather than `index.cjs.js`: this package sets `type: "module"`, so Node
+            // reads any `.js` as ESM and `require()` hit "exports is not defined".
+            fileName: (format) => (format === 'cjs' ? 'index.cjs' : 'index.js')
         },
         rollupOptions: {
             external: ['react', 'react-dom', '@routier/core', 'routier'],
