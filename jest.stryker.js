@@ -31,6 +31,10 @@ module.exports = function strykerJestConfig(testMatch) {
         transformIgnorePatterns: ['node_modules/(?!(@routier|@faker-js)/)'],
         transform: {
             '^.+\\.tsx?$': ['ts-jest', {
+                // Type-strips instead of running the language service. `disableTypeChecks`
+                // in stryker.base.mjs already discards type errors, so the compile was work
+                // whose only output was thrown away.
+                isolatedModules: true,
                 tsconfig: {
                     lib: ['ESNext', 'ES2023'],
                     target: 'ESNext',
@@ -47,7 +51,11 @@ module.exports = function strykerJestConfig(testMatch) {
         // Stryker copies the repo into .stryker-tmp sandboxes; without this, Jest's Haste
         // map sees several copies of every package.json and refuses to start.
         modulePathIgnorePatterns: ['<rootDir>/.stryker-tmp'],
-        testTimeout: 10000,
+        // The whole suite nets ~1.5s of actual test time, so a mutant still running after five
+        // seconds has hung rather than slowed. A hung mutant is detected either way; the only
+        // thing a longer wait buys is wall clock. 2000 was too tight — it timed out tests that
+        // were merely slow, which cost more than it saved.
+        testTimeout: 5000,
         // Stryker runs one mutant per test run; suite console noise drowns its progress.
         silent: true,
     };

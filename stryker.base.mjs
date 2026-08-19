@@ -38,6 +38,11 @@ export const base = {
         'reports',
         '.stryker-tmp',
     ],
+    // Reuses the previous run's results and re-tests only mutants whose source or covering
+    // tests changed. `--force` refreshes everything. Each area gets its own file below:
+    // `incrementalFile` defaults to one shared path, which would have every area overwrite
+    // the last one's state.
+    incremental: true,
     timeoutMS: 60_000,
     // Codegen builds and evaluates source per compile, so a mutated generator can be much
     // slower than the original without being an infinite loop.
@@ -54,8 +59,13 @@ export const base = {
  * @param {object} [overrides]
  */
 export function area(mutate, breakAt, overrides = {}) {
+    // Derived from the first glob so a new area cannot silently share another's incremental
+    // state by forgetting to name one.
+    const slug = mutate[0].replace(/[^a-z0-9]+/gi, '-').replace(/(^-|-$)/g, '');
+
     return {
         ...base,
+        incrementalFile: `reports/stryker-incremental-${slug}.json`,
         // Tests are excluded from the mutation set here rather than from the sandbox, so
         // they are still available to run against each mutant.
         mutate: [...mutate, '!**/*.test.ts'],
