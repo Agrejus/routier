@@ -47,14 +47,14 @@ describe("mql expression translator", () => {
     describe("comparators with the property on the left", () => {
 
         it("renders equals as a field predicate", () => {
-            expect(toMql(cmp("equals", prop("name"), val("Ada")))).toEqual({
-                name: { $eq: "Ada" },
+            expect(toMql(cmp("equals", prop("name"), val("James")))).toEqual({
+                name: { $eq: "James" },
             });
         });
 
         it("renders negated equals as $ne rather than wrapping in $not", () => {
-            expect(toMql(cmp("equals", prop("name"), val("Ada"), true))).toEqual({
-                name: { $ne: "Ada" },
+            expect(toMql(cmp("equals", prop("name"), val("James"), true))).toEqual({
+                name: { $ne: "James" },
             });
         });
 
@@ -95,8 +95,8 @@ describe("mql expression translator", () => {
         });
 
         it("leaves equals unmirrored", () => {
-            expect(toMql(cmp("equals", val("Ada"), prop("name")))).toEqual({
-                name: { $eq: "Ada" },
+            expect(toMql(cmp("equals", val("James"), prop("name")))).toEqual({
+                name: { $eq: "James" },
             });
         });
 
@@ -225,24 +225,24 @@ describe("mql expression translator", () => {
         it("renders && as $and", () => {
             const expr = new OperatorExpression({
                 operator: "&&",
-                left: cmp("equals", prop("name"), val("Ada")),
+                left: cmp("equals", prop("name"), val("James")),
                 right: cmp("greater-than", prop("price"), val(10)),
             });
 
             expect(toMql(expr)).toEqual({
-                $and: [{ name: { $eq: "Ada" } }, { price: { $gt: 10 } }],
+                $and: [{ name: { $eq: "James" } }, { price: { $gt: 10 } }],
             });
         });
 
         it("renders || as $or", () => {
             const expr = new OperatorExpression({
                 operator: "||",
-                left: cmp("equals", prop("name"), val("Ada")),
+                left: cmp("equals", prop("name"), val("James")),
                 right: cmp("equals", prop("name"), val("Bob")),
             });
 
             expect(toMql(expr)).toEqual({
-                $or: [{ name: { $eq: "Ada" } }, { name: { $eq: "Bob" } }],
+                $or: [{ name: { $eq: "James" } }, { name: { $eq: "Bob" } }],
             });
         });
 
@@ -268,21 +268,21 @@ describe("mql expression translator", () => {
         it("collapses a one-sided operator to the operand itself", () => {
             const expr = new OperatorExpression({
                 operator: "&&",
-                left: cmp("equals", prop("name"), val("Ada")),
+                left: cmp("equals", prop("name"), val("James")),
             });
 
-            expect(toMql(expr)).toEqual({ name: { $eq: "Ada" } });
+            expect(toMql(expr)).toEqual({ name: { $eq: "James" } });
         });
     });
 
     describe("transformers", () => {
 
         it("applies a value-side transformer to the literal, not the query", () => {
-            const value = val("ADA");
+            const value = val("JAMES");
             value.transformer = "to-lower-case";
 
             expect(toMql(cmp("equals", prop("name"), value))).toEqual({
-                name: { $eq: "ada" },
+                name: { $eq: "james" },
             });
         });
 
@@ -290,8 +290,8 @@ describe("mql expression translator", () => {
             const property = prop("name");
             property.transformer = "to-lower-case";
 
-            expect(toMql(cmp("equals", property, val("ada")))).toEqual({
-                $expr: { $eq: [{ $toLower: "$name" }, { $literal: "ada" }] },
+            expect(toMql(cmp("equals", property, val("james")))).toEqual({
+                $expr: { $eq: [{ $toLower: "$name" }, { $literal: "james" }] },
             });
         });
 
@@ -350,7 +350,7 @@ describe("mql expression translator", () => {
         });
 
         it("throws on an unknown comparator", () => {
-            expect(() => toMql(cmp("sounds-like", prop("name"), val("Ada")))).toThrow(
+            expect(() => toMql(cmp("sounds-like", prop("name"), val("James")))).toThrow(
                 /Unsupported comparator/
             );
         });
@@ -387,14 +387,14 @@ describe("mql over parsed expressions", () => {
     const parse = (fn: any, params?: any) => toExpression(schema as any, fn, params);
 
     it("translates a simple equality", () => {
-        expect(toMql(parse((x: any) => x.name === "Ada"))).toEqual({
-            name: { $eq: "Ada" },
+        expect(toMql(parse((x: any) => x.name === "James"))).toEqual({
+            name: { $eq: "James" },
         });
     });
 
     it("translates a conjunction", () => {
-        expect(toMql(parse((x: any) => x.name === "Ada" && x.price > 10))).toEqual({
-            $and: [{ name: { $eq: "Ada" } }, { price: { $gt: 10 } }],
+        expect(toMql(parse((x: any) => x.name === "James" && x.price > 10))).toEqual({
+            $and: [{ name: { $eq: "James" } }, { price: { $gt: 10 } }],
         });
     });
 

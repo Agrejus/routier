@@ -26,7 +26,7 @@ class Store extends DataStore {
 
 const seed = async (store: Store) => {
     store.players.addAsync(
-        { name: 'ada', rank: 20, displayName: 'Ada' } as never,
+        { name: 'james', rank: 20, displayName: 'James' } as never,
         { name: 'grace', rank: 5, displayName: 'Grace' } as never
     );
     await store.saveChangesAsync();
@@ -45,7 +45,7 @@ describe('.explain()', () => {
         const result = await store.players.where(x => x.rank > 10).explain().toArrayAsync();
 
         expect(result.data).toHaveLength(1);
-        expect(result.data[0].name).toBe('ada');
+        expect(result.data[0].name).toBe('james');
         expect(result.explanation.collection).toBe('players');
         expect(result.explanation.summary.database).toBe(1);
     });
@@ -66,7 +66,7 @@ describe('.explain()', () => {
 
     it('reports a memory fallback and names the cause', async () => {
         const { data, explanation } = await store.players
-            .where(x => x.fullName === 'ada!')
+            .where(x => x.fullName === 'james!')
             .explain()
             .toArrayAsync();
 
@@ -80,7 +80,7 @@ describe('.explain()', () => {
 
     it('reports a renamed property as a memory fallback', async () => {
         const { explanation } = await store.players
-            .where(x => x.displayName === 'Ada')
+            .where(x => x.displayName === 'James')
             .explain()
             .toArrayAsync();
 
@@ -92,7 +92,7 @@ describe('.explain()', () => {
         const count = await store.players.explain().countAsync();
         const some = await store.players.explain().someAsync(x => x.rank > 100);
 
-        expect(first.data.name).toBe('ada');
+        expect(first.data.name).toBe('james');
         expect(first.explanation.summary.database).toBeGreaterThan(0);
         expect(count.data).toBe(2);
         expect(count.explanation.collection).toBe('players');

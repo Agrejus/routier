@@ -20,5 +20,5 @@ class AppContext extends DataStore {
 }
 
 const ctx = new AppContext();
-await ctx.users.addAsync({ name: "Ada", email: "ada@example.com" });
+await ctx.users.addAsync({ name: "James", email: "james@example.com" });
 await ctx.saveChangesAsync();

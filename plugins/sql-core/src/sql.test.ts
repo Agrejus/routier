@@ -19,12 +19,12 @@ describe("sql expression translator", () => {
             negated: false,
             strict: false,
             left: prop("name"),
-            right: val("Ada"),
+            right: val("James"),
         });
 
         const result = toSql(expr, "sqlite");
         expect(result.where).toBe(`"name" = ?`);
-        expect(result.params).toEqual(["Ada"]);
+        expect(result.params).toEqual(["James"]);
     });
 
     it("renders null equals using IS NULL without params", () => {
