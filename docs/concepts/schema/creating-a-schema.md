@@ -15,6 +15,7 @@ Schemas in Routier define the structure and behavior of your data entities. The 
 - [Modifier Chaining](#modifier-chaining)
 - [Compiling Schemas](#compiling-schemas)
 - [Getting The Type Out](#getting-the-type-out)
+- [Extending A Schema With `.modify()`](#extending-a-schema-with-modify)
 - [Next Steps](#next-steps)
 
 ## Basic Schema Definition
@@ -99,6 +100,39 @@ Reach for these instead of hand-writing an interface. A hand-written one has to 
 every time the schema changes, and nothing tells you when you have missed one.
 
 See [InferType](/concepts/schema/infer-type) for the full reference.
+
+## Extending A Schema With `.modify()`
+
+`.modify()` runs after `define()` and adds properties that are derived from the entity rather
+than supplied by the caller. It receives three builders:
+
+| Builder | Stored? | You get |
+| --- | --- | --- |
+| `x.computed(fn)` | No | The value `fn` returns, recomputed on read |
+| `x.computed(fn).tracked()` | **Yes** | The same value, persisted so the backend can filter and index it |
+| `x.function(fn)` | No | Whatever `fn` returns — return a function to get a method on the entity |
+| `x.transform({ to, from, stores })` | Stored, converted | An existing property whose stored form differs from its in-memory form |
+
+`fn` receives `(entity, collectionName, injected)`. The `collectionName` argument is why
+`documentType: x.computed((_, collectionName) => collectionName).tracked()` is a common idiom —
+it tags rows when several collections share one physical store.
+
+<<< @/_snippets/code/from-docs/concepts/schema/creating-a-schema/modify-computed.ts
+
+Two things worth being clear about:
+
+**`computed` versus `computed().tracked()` is about the database, not the type.** Both give you
+the same property to read. Only the tracked one exists as a column, so only the tracked one can
+be filtered or sorted in the backend rather than in memory.
+
+**`x.function` holds whatever your function returns.** Returning a value gives you a value;
+returning a function gives you a method, which is the `describe()` case above. Unlike
+`computed`, it can never be `.tracked()` — behavior is not storable.
+
+`x.transform` replaces an existing property under the same name, declaring both directions of a
+storage conversion. See [Schema API](/concepts/schema/schema-api#derived-and-transformed-properties)
+for its options, and [Encryption](/integrations/plugins/built-in-plugins/encryption) for a
+packaged one.
 
 ## Next Steps
 
