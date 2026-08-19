@@ -6,7 +6,7 @@
 
 # Class: DirectUploadPlugin
 
-Defined in: [plugins/blob/src/DirectUploadPlugin.ts:33](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/DirectUploadPlugin.ts#L33)
+Defined in: [plugins/blob/src/DirectUploadPlugin.ts:33](https://github.com/Agrejus/routier/blob/main/plugins/blob/src/DirectUploadPlugin.ts#L33)
 
 Uploads staged `s.file()` content through short-lived signed URLs before an inner plugin saves.
 
@@ -42,7 +42,7 @@ await store.saveChangesAsync(); // signs, uploads, then sends the row over HTTP
 
 > **new DirectUploadPlugin**(`plugin`, `options`): `DirectUploadPlugin`
 
-Defined in: [plugins/blob/src/DirectUploadPlugin.ts:34](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/DirectUploadPlugin.ts#L34)
+Defined in: [plugins/blob/src/DirectUploadPlugin.ts:34](https://github.com/Agrejus/routier/blob/main/plugins/blob/src/DirectUploadPlugin.ts#L34)
 
 #### Parameters
 
@@ -68,7 +68,7 @@ Defined in: [plugins/blob/src/DirectUploadPlugin.ts:34](https://github.com/Agrej
 
 > `readonly` **files**: `object`
 
-Defined in: [plugins/blob/src/BlobDbPlugin.ts:53](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/BlobDbPlugin.ts#L53)
+Defined in: [plugins/blob/src/BlobDbPlugin.ts:53](https://github.com/Agrejus/routier/blob/main/plugins/blob/src/BlobDbPlugin.ts#L53)
 
 #### upload()
 
@@ -104,7 +104,7 @@ Skips the transfer entirely when the server says the content is already stored.
 
 > **get** **databaseName**(): `string`
 
-Defined in: [plugins/blob/src/BlobDbPlugin.ts:56](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/BlobDbPlugin.ts#L56)
+Defined in: [plugins/blob/src/BlobDbPlugin.ts:56](https://github.com/Agrejus/routier/blob/main/plugins/blob/src/BlobDbPlugin.ts#L56)
 
 Uniquely identifies the database this plugin talks to, INCLUDING host or path where a
 bare name would collide — `orders.db` in two directories is two databases, and `mydb`
@@ -140,7 +140,7 @@ host/port/database rather than returning a connection string.
 
 > **query**\<`TRoot`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: [plugins/blob/src/BlobDbPlugin.ts:60](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/BlobDbPlugin.ts#L60)
+Defined in: [plugins/blob/src/BlobDbPlugin.ts:60](https://github.com/Agrejus/routier/blob/main/plugins/blob/src/BlobDbPlugin.ts#L60)
 
 Executes a query operation on the database.
 
@@ -182,7 +182,7 @@ Callback with the result or error.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: [plugins/blob/src/BlobDbPlugin.ts:69](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/BlobDbPlugin.ts#L69)
+Defined in: [plugins/blob/src/BlobDbPlugin.ts:69](https://github.com/Agrejus/routier/blob/main/plugins/blob/src/BlobDbPlugin.ts#L69)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 
@@ -212,7 +212,7 @@ Callback with an optional error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [plugins/blob/src/BlobDbPlugin.ts:76](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/BlobDbPlugin.ts#L76)
+Defined in: [plugins/blob/src/BlobDbPlugin.ts:76](https://github.com/Agrejus/routier/blob/main/plugins/blob/src/BlobDbPlugin.ts#L76)
 
 Executes bulk operations (add, update, remove) on the database.
 

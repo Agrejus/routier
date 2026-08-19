@@ -6,7 +6,7 @@
 
 # Class: JsonTranslator\<TRoot, TShape\>
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:11](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/JsonTranslator.ts#L11)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:11](https://github.com/Agrejus/routier/blob/main/core/src/plugins/translators/JsonTranslator.ts#L11)
 
 ## Extends
 
@@ -28,7 +28,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:11](https://github.c
 
 > **new JsonTranslator**\<`TRoot`, `TShape`\>(`query`, `innerSide?`): `JsonTranslator`\<`TRoot`, `TShape`\>
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:20](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/JsonTranslator.ts#L20)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:20](https://github.com/Agrejus/routier/blob/main/core/src/plugins/translators/JsonTranslator.ts#L20)
 
 #### Parameters
 
@@ -58,7 +58,7 @@ a silently un-joined result.
 
 > **translate**(`data`): [`ITranslatedValue`](../interfaces/ITranslatedValue.md)\<`TShape`\>
 
-Defined in: [core/src/plugins/translators/DataTranslator.ts:75](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/DataTranslator.ts#L75)
+Defined in: [core/src/plugins/translators/DataTranslator.ts:75](https://github.com/Agrejus/routier/blob/main/core/src/plugins/translators/DataTranslator.ts#L75)
 
 #### Parameters
 
@@ -80,7 +80,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:75](https://github.c
 
 > **join**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:33](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/JsonTranslator.ts#L33)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:33](https://github.com/Agrejus/routier/blob/main/core/src/plugins/translators/JsonTranslator.ts#L33)
 
 The hash join itself, over rows already in memory — the floor every non-SQL backend
 stands on.
@@ -119,7 +119,7 @@ caller wrote in the key selectors. A `from`-renamed column reads correctly for f
 
 > **filter**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:56](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/JsonTranslator.ts#L56)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:56](https://github.com/Agrejus/routier/blob/main/core/src/plugins/translators/JsonTranslator.ts#L56)
 
 #### Type Parameters
 
@@ -151,7 +151,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:56](https://github.c
 
 > **map**\<`T`\>(`data`, `option`): `T`
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:75](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/JsonTranslator.ts#L75)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:75](https://github.com/Agrejus/routier/blob/main/core/src/plugins/translators/JsonTranslator.ts#L75)
 
 #### Type Parameters
 
@@ -183,7 +183,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:75](https://github.c
 
 > **group**\<`T`\>(`data`, `option`): `T`
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:105](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/JsonTranslator.ts#L105)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:105](https://github.com/Agrejus/routier/blob/main/core/src/plugins/translators/JsonTranslator.ts#L105)
 
 #### Type Parameters
 
@@ -215,7 +215,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:105](https://github.
 
 > **count**\<`TResult`\>(`data`, `_`): `TResult`
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:149](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/JsonTranslator.ts#L149)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:149](https://github.com/Agrejus/routier/blob/main/core/src/plugins/translators/JsonTranslator.ts#L149)
 
 #### Type Parameters
 
@@ -247,7 +247,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:149](https://github.
 
 > **min**\<`TResult`\>(`data`, `_`): `TResult`
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:162](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/JsonTranslator.ts#L162)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:162](https://github.com/Agrejus/routier/blob/main/core/src/plugins/translators/JsonTranslator.ts#L162)
 
 #### Type Parameters
 
@@ -279,7 +279,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:162](https://github.
 
 > **max**\<`TResult`\>(`data`, `_`): `TResult`
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:180](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/JsonTranslator.ts#L180)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:180](https://github.com/Agrejus/routier/blob/main/core/src/plugins/translators/JsonTranslator.ts#L180)
 
 #### Type Parameters
 
@@ -311,7 +311,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:180](https://github.
 
 > **sort**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:198](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/JsonTranslator.ts#L198)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:198](https://github.com/Agrejus/routier/blob/main/core/src/plugins/translators/JsonTranslator.ts#L198)
 
 #### Type Parameters
 
@@ -343,7 +343,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:198](https://github.
 
 > **nearest**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:236](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/JsonTranslator.ts#L236)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:236](https://github.com/Agrejus/routier/blob/main/core/src/plugins/translators/JsonTranslator.ts#L236)
 
 The similarity search itself, over values already in memory.
 
@@ -382,7 +382,7 @@ arrive in.
 
 > **sum**\<`TResult`\>(`data`, `_`): `TResult`
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:247](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/JsonTranslator.ts#L247)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:247](https://github.com/Agrejus/routier/blob/main/core/src/plugins/translators/JsonTranslator.ts#L247)
 
 #### Type Parameters
 
@@ -414,7 +414,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:247](https://github.
 
 > **distinct**\<`TResult`\>(`data`, `_`): `TResult`
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:273](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/JsonTranslator.ts#L273)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:273](https://github.com/Agrejus/routier/blob/main/core/src/plugins/translators/JsonTranslator.ts#L273)
 
 #### Type Parameters
 
@@ -446,7 +446,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:273](https://github.
 
 > **skip**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:305](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/JsonTranslator.ts#L305)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:305](https://github.com/Agrejus/routier/blob/main/core/src/plugins/translators/JsonTranslator.ts#L305)
 
 #### Type Parameters
 
@@ -478,7 +478,7 @@ Defined in: [core/src/plugins/translators/JsonTranslator.ts:305](https://github.
 
 > **take**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [core/src/plugins/translators/JsonTranslator.ts:325](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/JsonTranslator.ts#L325)
+Defined in: [core/src/plugins/translators/JsonTranslator.ts:325](https://github.com/Agrejus/routier/blob/main/core/src/plugins/translators/JsonTranslator.ts#L325)
 
 #### Type Parameters
 

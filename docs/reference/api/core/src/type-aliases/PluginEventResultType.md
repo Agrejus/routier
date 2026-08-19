@@ -8,7 +8,7 @@
 
 > **PluginEventResultType**\<`T`\> = [`PluginEventErrorType`](PluginEventErrorType.md) \| [`PluginEventSuccessType`](PluginEventSuccessType.md)\<`T`\>
 
-Defined in: [core/src/results/types.ts:14](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/results/types.ts#L14)
+Defined in: [core/src/results/types.ts:14](https://github.com/Agrejus/routier/blob/main/core/src/results/types.ts#L14)
 
 ## Type Parameters
 

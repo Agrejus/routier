@@ -8,7 +8,7 @@
 
 > **JoinTuple**\<`TOuter`, `TInner`\> = \[`TOuter`, `TInner`\]
 
-Defined in: [datastore/src/queryable/JoinQueryable.ts:28](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/JoinQueryable.ts#L28)
+Defined in: [datastore/src/queryable/JoinQueryable.ts:28](https://github.com/Agrejus/routier/blob/main/datastore/src/queryable/JoinQueryable.ts#L28)
 
 A query over JOINED TUPLES.
 

@@ -6,7 +6,7 @@
 
 # Interface: Converter
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:39](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/utils/standardJsonSchema.ts#L39)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:39](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L39)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [core/src/schema/utils/standardJsonSchema.ts:39](https://github.com/
 
 > `readonly` **input**: (`options`) => `Record`\<`string`, `unknown`\>
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:40](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/utils/standardJsonSchema.ts#L40)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:40](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L40)
 
 #### Parameters
 
@@ -32,7 +32,7 @@ Defined in: [core/src/schema/utils/standardJsonSchema.ts:40](https://github.com/
 
 > `readonly` **output**: (`options`) => `Record`\<`string`, `unknown`\>
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:43](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/utils/standardJsonSchema.ts#L43)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:43](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L43)
 
 #### Parameters
 

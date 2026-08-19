@@ -8,7 +8,7 @@
 
 > **FileUploader** = `Pick`\<[`Files`](Files.md), `"upload"`\>
 
-Defined in: [plugins/blob/src/BlobDbPlugin.ts:47](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/BlobDbPlugin.ts#L47)
+Defined in: [plugins/blob/src/BlobDbPlugin.ts:47](https://github.com/Agrejus/routier/blob/main/plugins/blob/src/BlobDbPlugin.ts#L47)
 
 Turns file content into a file reference on the way to your real plugin.
 

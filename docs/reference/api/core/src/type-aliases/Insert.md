@@ -8,7 +8,7 @@
 
 > **Insert** = `object`
 
-Defined in: [core/src/codegen/types.ts:1](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/codegen/types.ts#L1)
+Defined in: [core/src/codegen/types.ts:1](https://github.com/Agrejus/routier/blob/main/core/src/codegen/types.ts#L1)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: [core/src/codegen/types.ts:1](https://github.com/Agrejus/routier/blo
 
 > **index**: `number`
 
-Defined in: [core/src/codegen/types.ts:1](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/codegen/types.ts#L1)
+Defined in: [core/src/codegen/types.ts:1](https://github.com/Agrejus/routier/blob/main/core/src/codegen/types.ts#L1)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [core/src/codegen/types.ts:1](https://github.com/Agrejus/routier/blo
 
 > **type**: `"before"` \| `"after"`
 
-Defined in: [core/src/codegen/types.ts:1](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/codegen/types.ts#L1)
+Defined in: [core/src/codegen/types.ts:1](https://github.com/Agrejus/routier/blob/main/core/src/codegen/types.ts#L1)
 
 ***
 
@@ -32,4 +32,4 @@ Defined in: [core/src/codegen/types.ts:1](https://github.com/Agrejus/routier/blo
 
 > **unshift**: `boolean`
 
-Defined in: [core/src/codegen/types.ts:1](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/codegen/types.ts#L1)
+Defined in: [core/src/codegen/types.ts:1](https://github.com/Agrejus/routier/blob/main/core/src/codegen/types.ts#L1)

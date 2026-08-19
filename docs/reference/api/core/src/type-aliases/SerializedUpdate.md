@@ -8,7 +8,7 @@
 
 > **SerializedUpdate** = `object`
 
-Defined in: [core/src/plugins/wire/types.ts:69](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/types.ts#L69)
+Defined in: [core/src/plugins/wire/types.ts:69](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/types.ts#L69)
 
 One entity update, as `EntityUpdateInfo` minus nothing — every field of it is already JSON.
 
@@ -18,7 +18,7 @@ One entity update, as `EntityUpdateInfo` minus nothing — every field of it is 
 
 > **entity**: `unknown`
 
-Defined in: [core/src/plugins/wire/types.ts:70](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/types.ts#L70)
+Defined in: [core/src/plugins/wire/types.ts:70](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/types.ts#L70)
 
 ***
 
@@ -26,7 +26,7 @@ Defined in: [core/src/plugins/wire/types.ts:70](https://github.com/Agrejus/routi
 
 > **changeType**: `"propertiesChanged"` \| `"markedDirty"` \| `"notModified"`
 
-Defined in: [core/src/plugins/wire/types.ts:71](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/types.ts#L71)
+Defined in: [core/src/plugins/wire/types.ts:71](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/types.ts#L71)
 
 ***
 
@@ -34,7 +34,7 @@ Defined in: [core/src/plugins/wire/types.ts:71](https://github.com/Agrejus/routi
 
 > **delta**: `unknown`
 
-Defined in: [core/src/plugins/wire/types.ts:72](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/types.ts#L72)
+Defined in: [core/src/plugins/wire/types.ts:72](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/types.ts#L72)
 
 ***
 
@@ -42,7 +42,7 @@ Defined in: [core/src/plugins/wire/types.ts:72](https://github.com/Agrejus/routi
 
 > `optional` **concurrency**: `object`
 
-Defined in: [core/src/plugins/wire/types.ts:73](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/types.ts#L73)
+Defined in: [core/src/plugins/wire/types.ts:73](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/types.ts#L73)
 
 #### column
 

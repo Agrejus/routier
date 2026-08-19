@@ -8,7 +8,7 @@
 
 > **SerializedSchemaChanges** = `object`
 
-Defined in: [core/src/plugins/wire/types.ts:76](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/types.ts#L76)
+Defined in: [core/src/plugins/wire/types.ts:76](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/types.ts#L76)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: [core/src/plugins/wire/types.ts:76](https://github.com/Agrejus/routi
 
 > **collectionName**: `string`
 
-Defined in: [core/src/plugins/wire/types.ts:77](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/types.ts#L77)
+Defined in: [core/src/plugins/wire/types.ts:77](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/types.ts#L77)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [core/src/plugins/wire/types.ts:77](https://github.com/Agrejus/routi
 
 > **adds**: `unknown`[]
 
-Defined in: [core/src/plugins/wire/types.ts:78](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/types.ts#L78)
+Defined in: [core/src/plugins/wire/types.ts:78](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/types.ts#L78)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [core/src/plugins/wire/types.ts:78](https://github.com/Agrejus/routi
 
 > **updates**: [`SerializedUpdate`](SerializedUpdate.md)[]
 
-Defined in: [core/src/plugins/wire/types.ts:79](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/types.ts#L79)
+Defined in: [core/src/plugins/wire/types.ts:79](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/types.ts#L79)
 
 ***
 
@@ -40,4 +40,4 @@ Defined in: [core/src/plugins/wire/types.ts:79](https://github.com/Agrejus/routi
 
 > **removes**: `unknown`[]
 
-Defined in: [core/src/plugins/wire/types.ts:80](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/types.ts#L80)
+Defined in: [core/src/plugins/wire/types.ts:80](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/types.ts#L80)

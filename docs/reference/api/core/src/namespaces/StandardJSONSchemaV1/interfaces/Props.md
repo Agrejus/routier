@@ -6,7 +6,7 @@
 
 # Interface: Props\<Input, Output\>
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:34](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/utils/standardJsonSchema.ts#L34)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:34](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L34)
 
 ## Extends
 
@@ -28,7 +28,7 @@ Defined in: [core/src/schema/utils/standardJsonSchema.ts:34](https://github.com/
 
 > `readonly` **version**: `1`
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:18](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/utils/standardJsonSchema.ts#L18)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:18](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L18)
 
 #### Inherited from
 
@@ -40,7 +40,7 @@ Defined in: [core/src/schema/utils/standardJsonSchema.ts:18](https://github.com/
 
 > `readonly` **vendor**: `string`
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:19](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/utils/standardJsonSchema.ts#L19)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:19](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L19)
 
 #### Inherited from
 
@@ -52,7 +52,7 @@ Defined in: [core/src/schema/utils/standardJsonSchema.ts:19](https://github.com/
 
 > `readonly` `optional` **types**: [`Types`](../../StandardTypedV1/interfaces/Types.md)\<`Input`, `Output`\>
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:20](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/utils/standardJsonSchema.ts#L20)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:20](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L20)
 
 #### Inherited from
 
@@ -64,4 +64,4 @@ Defined in: [core/src/schema/utils/standardJsonSchema.ts:20](https://github.com/
 
 > `readonly` **jsonSchema**: [`Converter`](Converter.md)
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:36](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/utils/standardJsonSchema.ts#L36)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:36](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L36)

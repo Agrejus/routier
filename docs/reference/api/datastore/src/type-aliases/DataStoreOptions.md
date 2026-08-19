@@ -8,7 +8,7 @@
 
 > **DataStoreOptions** = `object`
 
-Defined in: [datastore/src/types.ts:6](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/types.ts#L6)
+Defined in: [datastore/src/types.ts:6](https://github.com/Agrejus/routier/blob/main/datastore/src/types.ts#L6)
 
 Store-wide settings. Every field is optional and has a default that suits an ordinary store.
 
@@ -18,7 +18,7 @@ Store-wide settings. Every field is optional and has a default that suits an ord
 
 > `optional` **semiJoinKeyThreshold**: `number`
 
-Defined in: [datastore/src/types.ts:16](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/types.ts#L16)
+Defined in: [datastore/src/types.ts:16](https://github.com/Agrejus/routier/blob/main/datastore/src/types.ts#L16)
 
 How many distinct outer keys are still worth sending as an `IN (...)` prefilter when a join
 reads its inner side. Default 500.
@@ -34,7 +34,7 @@ your engine is happy with long parameter lists, lower it if they are not.
 
 > `optional` **crossTabSync**: `boolean`
 
-Defined in: [datastore/src/types.ts:32](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/types.ts#L32)
+Defined in: [datastore/src/types.ts:32](https://github.com/Agrejus/routier/blob/main/datastore/src/types.ts#L32)
 
 Whether live queries must keep working across browser tabs, or across worker threads in
 Node. Default `true`.

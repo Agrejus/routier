@@ -8,7 +8,7 @@
 
 > **createDirectUploader**(`options`): `object`
 
-Defined in: [plugins/blob/src/direct.ts:94](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/direct.ts#L94)
+Defined in: [plugins/blob/src/direct.ts:94](https://github.com/Agrejus/routier/blob/main/plugins/blob/src/direct.ts#L94)
 
 The browser half. Holds no credentials and never talks to storage except to PUT.
 

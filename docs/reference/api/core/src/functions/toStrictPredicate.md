@@ -8,7 +8,7 @@
 
 > **toStrictPredicate**(`expression`): (`row`) => `boolean`
 
-Defined in: [core/src/expressions/evaluate.ts:230](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/evaluate.ts#L230)
+Defined in: [core/src/expressions/evaluate.ts:230](https://github.com/Agrejus/routier/blob/main/core/src/expressions/evaluate.ts#L230)
 
 `evaluate`, as a predicate that THROWS on anything it cannot judge.
 

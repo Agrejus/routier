@@ -6,7 +6,7 @@
 
 # Class: FileSystemDbCollection
 
-Defined in: [plugins/file-system/src/FileSystemDbCollection.ts:10](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/file-system/src/FileSystemDbCollection.ts#L10)
+Defined in: [plugins/file-system/src/FileSystemDbCollection.ts:10](https://github.com/Agrejus/routier/blob/main/plugins/file-system/src/FileSystemDbCollection.ts#L10)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [plugins/file-system/src/FileSystemDbCollection.ts:10](https://githu
 
 > **new FileSystemDbCollection**(`path`, `schema`): `FileSystemDbCollection`
 
-Defined in: [plugins/file-system/src/FileSystemDbCollection.ts:19](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/file-system/src/FileSystemDbCollection.ts#L19)
+Defined in: [plugins/file-system/src/FileSystemDbCollection.ts:19](https://github.com/Agrejus/routier/blob/main/plugins/file-system/src/FileSystemDbCollection.ts#L19)
 
 #### Parameters
 
@@ -240,7 +240,7 @@ Defined in: core/dist/collections/MemoryDataCollection.d.ts:33
 
 > **destroy**(`done`): `void`
 
-Defined in: [plugins/file-system/src/FileSystemDbCollection.ts:37](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/file-system/src/FileSystemDbCollection.ts#L37)
+Defined in: [plugins/file-system/src/FileSystemDbCollection.ts:37](https://github.com/Agrejus/routier/blob/main/plugins/file-system/src/FileSystemDbCollection.ts#L37)
 
 #### Parameters
 
@@ -262,7 +262,7 @@ Defined in: [plugins/file-system/src/FileSystemDbCollection.ts:37](https://githu
 
 > **load**(`done`): `void`
 
-Defined in: [plugins/file-system/src/FileSystemDbCollection.ts:66](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/file-system/src/FileSystemDbCollection.ts#L66)
+Defined in: [plugins/file-system/src/FileSystemDbCollection.ts:66](https://github.com/Agrejus/routier/blob/main/plugins/file-system/src/FileSystemDbCollection.ts#L66)
 
 #### Parameters
 
@@ -284,7 +284,7 @@ Defined in: [plugins/file-system/src/FileSystemDbCollection.ts:66](https://githu
 
 > **save**(`done`): `void`
 
-Defined in: [plugins/file-system/src/FileSystemDbCollection.ts:130](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/file-system/src/FileSystemDbCollection.ts#L130)
+Defined in: [plugins/file-system/src/FileSystemDbCollection.ts:130](https://github.com/Agrejus/routier/blob/main/plugins/file-system/src/FileSystemDbCollection.ts#L130)
 
 #### Parameters
 

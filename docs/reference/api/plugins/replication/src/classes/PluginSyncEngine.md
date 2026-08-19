@@ -6,7 +6,7 @@
 
 # Class: PluginSyncEngine
 
-Defined in: [plugins/replication/src/PluginSyncEngine.ts:87](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/PluginSyncEngine.ts#L87)
+Defined in: [plugins/replication/src/PluginSyncEngine.ts:87](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L87)
 
 ## Implements
 
@@ -18,7 +18,7 @@ Defined in: [plugins/replication/src/PluginSyncEngine.ts:87](https://github.com/
 
 > **new PluginSyncEngine**(`options`): `PluginSyncEngine`
 
-Defined in: [plugins/replication/src/PluginSyncEngine.ts:107](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/PluginSyncEngine.ts#L107)
+Defined in: [plugins/replication/src/PluginSyncEngine.ts:107](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L107)
 
 #### Parameters
 
@@ -38,7 +38,7 @@ Defined in: [plugins/replication/src/PluginSyncEngine.ts:107](https://github.com
 
 > **get** **databaseName**(): `string`
 
-Defined in: [plugins/replication/src/PluginSyncEngine.ts:103](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/PluginSyncEngine.ts#L103)
+Defined in: [plugins/replication/src/PluginSyncEngine.ts:103](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L103)
 
 The SOURCE's name. Mirrors are copies of one database rather than databases in their own
 right, so the engine identifies itself by what it is a view of.
@@ -57,7 +57,7 @@ right, so the engine identifies itself by what it is a view of.
 
 > **query**\<`TRoot`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: [plugins/replication/src/PluginSyncEngine.ts:124](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/PluginSyncEngine.ts#L124)
+Defined in: [plugins/replication/src/PluginSyncEngine.ts:124](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L124)
 
 Executes a query operation on the database.
 
@@ -99,7 +99,7 @@ Callback with the result or error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [plugins/replication/src/PluginSyncEngine.ts:133](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/PluginSyncEngine.ts#L133)
+Defined in: [plugins/replication/src/PluginSyncEngine.ts:133](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L133)
 
 Executes bulk operations (add, update, remove) on the database.
 
@@ -131,7 +131,7 @@ Callback with the result or error.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: [plugins/replication/src/PluginSyncEngine.ts:142](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/PluginSyncEngine.ts#L142)
+Defined in: [plugins/replication/src/PluginSyncEngine.ts:142](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L142)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 

@@ -8,7 +8,7 @@
 
 > **cosineDistance**(`left`, `right`): `number`
 
-Defined in: [core/src/plugins/query/similarity.ts:28](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/similarity.ts#L28)
+Defined in: [core/src/plugins/query/similarity.ts:28](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/similarity.ts#L28)
 
 Distance in `[0, 2]`, or `Infinity` for a value that cannot be compared.
 

@@ -8,7 +8,7 @@
 
 > **ToSqlOptions** = `object`
 
-Defined in: [plugins/sql-core/src/sql.ts:595](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/sql.ts#L595)
+Defined in: [plugins/sql-core/src/sql.ts:595](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L595)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: [plugins/sql-core/src/sql.ts:595](https://github.com/Agrejus/routier
 
 > `optional` **alias**: `string`
 
-Defined in: [plugins/sql-core/src/sql.ts:604](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/sql.ts#L604)
+Defined in: [plugins/sql-core/src/sql.ts:604](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L604)
 
 Table alias to qualify every column with — `"o"."name"` rather than `"name"`.
 
@@ -31,7 +31,7 @@ rather than an edge one.
 
 > `optional` **paramOffset**: `number`
 
-Defined in: [plugins/sql-core/src/sql.ts:612](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/sql.ts#L612)
+Defined in: [plugins/sql-core/src/sql.ts:612](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L612)
 
 Where this clause's placeholders start counting.
 

@@ -8,7 +8,7 @@
 
 > **ConditionalUpdateOperation** = `object`
 
-Defined in: [plugins/sql-core/src/updates.ts:83](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/updates.ts#L83)
+Defined in: [plugins/sql-core/src/updates.ts:83](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/updates.ts#L83)
 
 One conditional UPDATE per row, for schemas with a `.concurrency()` token.
 
@@ -24,7 +24,7 @@ initializes it) get the same per-row statement without the token clause.
 
 > **sql**: `string`
 
-Defined in: [plugins/sql-core/src/updates.ts:84](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/updates.ts#L84)
+Defined in: [plugins/sql-core/src/updates.ts:84](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/updates.ts#L84)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [plugins/sql-core/src/updates.ts:84](https://github.com/Agrejus/rout
 
 > **params**: `unknown`[]
 
-Defined in: [plugins/sql-core/src/updates.ts:85](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/updates.ts#L85)
+Defined in: [plugins/sql-core/src/updates.ts:85](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/updates.ts#L85)
 
 ***
 
@@ -40,7 +40,7 @@ Defined in: [plugins/sql-core/src/updates.ts:85](https://github.com/Agrejus/rout
 
 > **id**: `unknown`
 
-Defined in: [plugins/sql-core/src/updates.ts:87](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/updates.ts#L87)
+Defined in: [plugins/sql-core/src/updates.ts:87](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/updates.ts#L87)
 
 How a conflict on this row is reported — see conflictIdOf.
 
@@ -50,7 +50,7 @@ How a conflict on this row is reported — see conflictIdOf.
 
 > **keyTuple**: [`KeyTuple`](KeyTuple.md)
 
-Defined in: [plugins/sql-core/src/updates.ts:89](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/updates.ts#L89)
+Defined in: [plugins/sql-core/src/updates.ts:89](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/updates.ts#L89)
 
 The row's full identity, for callers that need to re-select it.
 
@@ -60,6 +60,6 @@ The row's full identity, for callers that need to re-select it.
 
 > **checked**: `boolean`
 
-Defined in: [plugins/sql-core/src/updates.ts:91](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/updates.ts#L91)
+Defined in: [plugins/sql-core/src/updates.ts:91](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/updates.ts#L91)
 
 True when the statement carries a token check — a zero-row result is a CONFLICT.

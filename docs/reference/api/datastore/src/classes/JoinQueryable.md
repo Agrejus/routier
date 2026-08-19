@@ -6,7 +6,7 @@
 
 # Class: JoinQueryable\<TOuter, Shape, E\>
 
-Defined in: [datastore/src/queryable/JoinQueryable.ts:30](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/JoinQueryable.ts#L30)
+Defined in: [datastore/src/queryable/JoinQueryable.ts:30](https://github.com/Agrejus/routier/blob/main/datastore/src/queryable/JoinQueryable.ts#L30)
 
 ## Extends
 
@@ -32,7 +32,7 @@ Defined in: [datastore/src/queryable/JoinQueryable.ts:30](https://github.com/Agr
 
 > **new JoinQueryable**\<`TOuter`, `Shape`, `E`\>(`dependencies`, `request`): `JoinQueryable`\<`TOuter`, `Shape`, `E`\>
 
-Defined in: [datastore/src/queryable/JoinQueryable.ts:32](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/JoinQueryable.ts#L32)
+Defined in: [datastore/src/queryable/JoinQueryable.ts:32](https://github.com/Agrejus/routier/blob/main/datastore/src/queryable/JoinQueryable.ts#L32)
 
 #### Parameters
 
@@ -60,7 +60,7 @@ Defined in: [datastore/src/queryable/JoinQueryable.ts:32](https://github.com/Agr
 
 > **where**(`expression`): `JoinQueryable`\<`TOuter`, `Shape`, `E`\>
 
-Defined in: [datastore/src/queryable/JoinQueryable.ts:59](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/JoinQueryable.ts#L59)
+Defined in: [datastore/src/queryable/JoinQueryable.ts:59](https://github.com/Agrejus/routier/blob/main/datastore/src/queryable/JoinQueryable.ts#L59)
 
 Filters the pairs.
 
@@ -83,7 +83,7 @@ push it down.
 
 > **where**\<`P`\>(`selector`, `params`): `JoinQueryable`\<`TOuter`, `Shape`, `E`\>
 
-Defined in: [datastore/src/queryable/JoinQueryable.ts:60](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/JoinQueryable.ts#L60)
+Defined in: [datastore/src/queryable/JoinQueryable.ts:60](https://github.com/Agrejus/routier/blob/main/datastore/src/queryable/JoinQueryable.ts#L60)
 
 Filters the pairs.
 
@@ -118,7 +118,7 @@ push it down.
 
 > **map**\<`R`\>(`selector`): `JoinQueryable`\<`TOuter`, `R`, `E`\>
 
-Defined in: [datastore/src/queryable/JoinQueryable.ts:90](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/JoinQueryable.ts#L90)
+Defined in: [datastore/src/queryable/JoinQueryable.ts:90](https://github.com/Agrejus/routier/blob/main/datastore/src/queryable/JoinQueryable.ts#L90)
 
 Projects each pair into a shape of your own.
 
@@ -149,7 +149,7 @@ this runs. An invented field list would name properties on a two-element array.
 
 > **sort**(`selector`): `JoinQueryable`\<`TOuter`, `Shape`, `E`\>
 
-Defined in: [datastore/src/queryable/JoinQueryable.ts:103](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/JoinQueryable.ts#L103)
+Defined in: [datastore/src/queryable/JoinQueryable.ts:103](https://github.com/Agrejus/routier/blob/main/datastore/src/queryable/JoinQueryable.ts#L103)
 
 Orders the pairs.
 
@@ -173,7 +173,7 @@ interpretations a caller can observe.
 
 > **sortDescending**(`selector`): `JoinQueryable`\<`TOuter`, `Shape`, `E`\>
 
-Defined in: [datastore/src/queryable/JoinQueryable.ts:108](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/JoinQueryable.ts#L108)
+Defined in: [datastore/src/queryable/JoinQueryable.ts:108](https://github.com/Agrejus/routier/blob/main/datastore/src/queryable/JoinQueryable.ts#L108)
 
 #### Parameters
 
@@ -191,7 +191,7 @@ Defined in: [datastore/src/queryable/JoinQueryable.ts:108](https://github.com/Ag
 
 > **skip**(`amount`): `JoinQueryable`\<`TOuter`, `Shape`, `E`\>
 
-Defined in: [datastore/src/queryable/JoinQueryable.ts:126](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/JoinQueryable.ts#L126)
+Defined in: [datastore/src/queryable/JoinQueryable.ts:126](https://github.com/Agrejus/routier/blob/main/datastore/src/queryable/JoinQueryable.ts#L126)
 
 #### Parameters
 
@@ -209,7 +209,7 @@ Defined in: [datastore/src/queryable/JoinQueryable.ts:126](https://github.com/Ag
 
 > **take**(`amount`): `JoinQueryable`\<`TOuter`, `Shape`, `E`\>
 
-Defined in: [datastore/src/queryable/JoinQueryable.ts:131](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/JoinQueryable.ts#L131)
+Defined in: [datastore/src/queryable/JoinQueryable.ts:131](https://github.com/Agrejus/routier/blob/main/datastore/src/queryable/JoinQueryable.ts#L131)
 
 #### Parameters
 
@@ -227,7 +227,7 @@ Defined in: [datastore/src/queryable/JoinQueryable.ts:131](https://github.com/Ag
 
 > **explain**(): `JoinQueryable`\<`TOuter`, `Shape`, `true`\>
 
-Defined in: [datastore/src/queryable/JoinQueryable.ts:137](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/JoinQueryable.ts#L137)
+Defined in: [datastore/src/queryable/JoinQueryable.ts:137](https://github.com/Agrejus/routier/blob/main/datastore/src/queryable/JoinQueryable.ts#L137)
 
 See `QueryableAsync.explain`. Terminals after this deliver `{ data, explanation }`.
 
@@ -241,7 +241,7 @@ See `QueryableAsync.explain`. Terminals after this deliver `{ data, explanation 
 
 > **toArray**(`done`): `void`
 
-Defined in: [datastore/src/queryable/JoinQueryable.ts:141](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/JoinQueryable.ts#L141)
+Defined in: [datastore/src/queryable/JoinQueryable.ts:141](https://github.com/Agrejus/routier/blob/main/datastore/src/queryable/JoinQueryable.ts#L141)
 
 #### Parameters
 
@@ -259,7 +259,7 @@ Defined in: [datastore/src/queryable/JoinQueryable.ts:141](https://github.com/Ag
 
 > **toArrayAsync**(): `Promise`\<`Explainable`\<`E`, `Shape`[]\>\>
 
-Defined in: [datastore/src/queryable/JoinQueryable.ts:145](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/JoinQueryable.ts#L145)
+Defined in: [datastore/src/queryable/JoinQueryable.ts:145](https://github.com/Agrejus/routier/blob/main/datastore/src/queryable/JoinQueryable.ts#L145)
 
 #### Returns
 
@@ -271,7 +271,7 @@ Defined in: [datastore/src/queryable/JoinQueryable.ts:145](https://github.com/Ag
 
 > **first**(`done`): `void`
 
-Defined in: [datastore/src/queryable/JoinQueryable.ts:149](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/JoinQueryable.ts#L149)
+Defined in: [datastore/src/queryable/JoinQueryable.ts:149](https://github.com/Agrejus/routier/blob/main/datastore/src/queryable/JoinQueryable.ts#L149)
 
 #### Parameters
 
@@ -289,7 +289,7 @@ Defined in: [datastore/src/queryable/JoinQueryable.ts:149](https://github.com/Ag
 
 > **firstAsync**(): `Promise`\<`Explainable`\<`E`, `Shape`\>\>
 
-Defined in: [datastore/src/queryable/JoinQueryable.ts:167](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/JoinQueryable.ts#L167)
+Defined in: [datastore/src/queryable/JoinQueryable.ts:167](https://github.com/Agrejus/routier/blob/main/datastore/src/queryable/JoinQueryable.ts#L167)
 
 #### Returns
 
@@ -301,7 +301,7 @@ Defined in: [datastore/src/queryable/JoinQueryable.ts:167](https://github.com/Ag
 
 > **firstOrUndefined**(`done`): `void`
 
-Defined in: [datastore/src/queryable/JoinQueryable.ts:171](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/JoinQueryable.ts#L171)
+Defined in: [datastore/src/queryable/JoinQueryable.ts:171](https://github.com/Agrejus/routier/blob/main/datastore/src/queryable/JoinQueryable.ts#L171)
 
 #### Parameters
 
@@ -319,7 +319,7 @@ Defined in: [datastore/src/queryable/JoinQueryable.ts:171](https://github.com/Ag
 
 > **firstOrUndefinedAsync**(): `Promise`\<`Explainable`\<`E`, `Shape`\>\>
 
-Defined in: [datastore/src/queryable/JoinQueryable.ts:195](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/JoinQueryable.ts#L195)
+Defined in: [datastore/src/queryable/JoinQueryable.ts:195](https://github.com/Agrejus/routier/blob/main/datastore/src/queryable/JoinQueryable.ts#L195)
 
 #### Returns
 
@@ -331,7 +331,7 @@ Defined in: [datastore/src/queryable/JoinQueryable.ts:195](https://github.com/Ag
 
 > **count**(`done`): `void`
 
-Defined in: [datastore/src/queryable/JoinQueryable.ts:199](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/JoinQueryable.ts#L199)
+Defined in: [datastore/src/queryable/JoinQueryable.ts:199](https://github.com/Agrejus/routier/blob/main/datastore/src/queryable/JoinQueryable.ts#L199)
 
 #### Parameters
 
@@ -349,7 +349,7 @@ Defined in: [datastore/src/queryable/JoinQueryable.ts:199](https://github.com/Ag
 
 > **countAsync**(): `Promise`\<`Explainable`\<`E`, `number`\>\>
 
-Defined in: [datastore/src/queryable/JoinQueryable.ts:208](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/JoinQueryable.ts#L208)
+Defined in: [datastore/src/queryable/JoinQueryable.ts:208](https://github.com/Agrejus/routier/blob/main/datastore/src/queryable/JoinQueryable.ts#L208)
 
 #### Returns
 

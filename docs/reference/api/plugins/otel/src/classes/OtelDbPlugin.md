@@ -6,7 +6,7 @@
 
 # Class: OtelDbPlugin
 
-Defined in: plugins/otel/src/OtelDbPlugin.ts:18
+Defined in: [plugins/otel/src/OtelDbPlugin.ts:18](https://github.com/Agrejus/routier/blob/main/plugins/otel/src/OtelDbPlugin.ts#L18)
 
 ## Implements
 
@@ -18,7 +18,7 @@ Defined in: plugins/otel/src/OtelDbPlugin.ts:18
 
 > **new OtelDbPlugin**(`plugin`, `tracer?`): `OtelDbPlugin`
 
-Defined in: plugins/otel/src/OtelDbPlugin.ts:23
+Defined in: [plugins/otel/src/OtelDbPlugin.ts:23](https://github.com/Agrejus/routier/blob/main/plugins/otel/src/OtelDbPlugin.ts#L23)
 
 #### Parameters
 
@@ -42,7 +42,7 @@ Defined in: plugins/otel/src/OtelDbPlugin.ts:23
 
 > **get** **databaseName**(): `string`
 
-Defined in: plugins/otel/src/OtelDbPlugin.ts:28
+Defined in: [plugins/otel/src/OtelDbPlugin.ts:28](https://github.com/Agrejus/routier/blob/main/plugins/otel/src/OtelDbPlugin.ts#L28)
 
 Uniquely identifies the database this plugin talks to, INCLUDING host or path where a
 bare name would collide — `orders.db` in two directories is two databases, and `mydb`
@@ -78,7 +78,7 @@ host/port/database rather than returning a connection string.
 
 > **query**\<`TRoot`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: plugins/otel/src/OtelDbPlugin.ts:32
+Defined in: [plugins/otel/src/OtelDbPlugin.ts:32](https://github.com/Agrejus/routier/blob/main/plugins/otel/src/OtelDbPlugin.ts#L32)
 
 Executes a query operation on the database.
 
@@ -120,7 +120,7 @@ Callback with the result or error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: plugins/otel/src/OtelDbPlugin.ts:51
+Defined in: [plugins/otel/src/OtelDbPlugin.ts:51](https://github.com/Agrejus/routier/blob/main/plugins/otel/src/OtelDbPlugin.ts#L51)
 
 Executes bulk operations (add, update, remove) on the database.
 
@@ -152,7 +152,7 @@ Callback with the result or error.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: plugins/otel/src/OtelDbPlugin.ts:65
+Defined in: [plugins/otel/src/OtelDbPlugin.ts:65](https://github.com/Agrejus/routier/blob/main/plugins/otel/src/OtelDbPlugin.ts#L65)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 

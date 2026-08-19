@@ -6,7 +6,7 @@
 
 # Class: PouchDbPlugin
 
-Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:56](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/pouchdb/src/PouchDbPlugin.ts#L56)
+Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:56](https://github.com/Agrejus/routier/blob/main/plugins/pouchdb/src/PouchDbPlugin.ts#L56)
 
 ## Implements
 
@@ -18,7 +18,7 @@ Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:56](https://github.com/Agrejus
 
 > **new PouchDbPlugin**(`name`, `options?`): `PouchDbPlugin`
 
-Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:104](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/pouchdb/src/PouchDbPlugin.ts#L104)
+Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:104](https://github.com/Agrejus/routier/blob/main/plugins/pouchdb/src/PouchDbPlugin.ts#L104)
 
 #### Parameters
 
@@ -42,7 +42,7 @@ Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:104](https://github.com/Agreju
 
 > **get** **databaseName**(): `string`
 
-Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:115](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/pouchdb/src/PouchDbPlugin.ts#L115)
+Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:115](https://github.com/Agrejus/routier/blob/main/plugins/pouchdb/src/PouchDbPlugin.ts#L115)
 
 See `IDbPlugin.databaseName`. The local database name — the same value two contexts
 opening one PouchDB database supply, so they share subscription channels. Remote sync
@@ -63,7 +63,7 @@ are still two databases.
 
 > **sync**(`schemas`): `Sync`\<\{ \}\>
 
-Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:119](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/pouchdb/src/PouchDbPlugin.ts#L119)
+Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:119](https://github.com/Agrejus/routier/blob/main/plugins/pouchdb/src/PouchDbPlugin.ts#L119)
 
 #### Parameters
 
@@ -81,7 +81,7 @@ Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:119](https://github.com/Agreju
 
 > **destroy**(`_event`, `done`): `void`
 
-Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:836](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/pouchdb/src/PouchDbPlugin.ts#L836)
+Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:836](https://github.com/Agrejus/routier/blob/main/plugins/pouchdb/src/PouchDbPlugin.ts#L836)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 
@@ -111,7 +111,7 @@ Callback with an optional error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:872](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/pouchdb/src/PouchDbPlugin.ts#L872)
+Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:872](https://github.com/Agrejus/routier/blob/main/plugins/pouchdb/src/PouchDbPlugin.ts#L872)
 
 Executes bulk operations (add, update, remove) on the database.
 
@@ -143,7 +143,7 @@ Callback with the result or error.
 
 > **query**\<`TRoot`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:884](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/pouchdb/src/PouchDbPlugin.ts#L884)
+Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:884](https://github.com/Agrejus/routier/blob/main/plugins/pouchdb/src/PouchDbPlugin.ts#L884)
 
 Executes a query operation on the database.
 
@@ -185,7 +185,7 @@ Callback with the result or error.
 
 > **extractEqualityValueForProperty**(`expression`, `prop`): `any`
 
-Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:911](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/pouchdb/src/PouchDbPlugin.ts#L911)
+Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:911](https://github.com/Agrejus/routier/blob/main/plugins/pouchdb/src/PouchDbPlugin.ts#L911)
 
 #### Parameters
 

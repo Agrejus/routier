@@ -6,7 +6,7 @@
 
 # Class: OperatorExpression
 
-Defined in: [core/src/expressions/types.ts:299](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L299)
+Defined in: [core/src/expressions/types.ts:299](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L299)
 
 A class representing a logical operator (e.g., &&, ||).
 
@@ -20,7 +20,7 @@ A class representing a logical operator (e.g., &&, ||).
 
 > **new OperatorExpression**(`options`): `OperatorExpression`
 
-Defined in: [core/src/expressions/types.ts:305](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L305)
+Defined in: [core/src/expressions/types.ts:305](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L305)
 
 #### Parameters
 
@@ -52,7 +52,7 @@ Defined in: [core/src/expressions/types.ts:305](https://github.com/Agrejus/routi
 
 > `optional` **left**: [`Expression`](Expression.md)
 
-Defined in: [core/src/expressions/types.ts:100](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L100)
+Defined in: [core/src/expressions/types.ts:100](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L100)
 
 The left-hand side of the expression (if applicable).
 
@@ -66,7 +66,7 @@ The left-hand side of the expression (if applicable).
 
 > `optional` **right**: [`Expression`](Expression.md)
 
-Defined in: [core/src/expressions/types.ts:102](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L102)
+Defined in: [core/src/expressions/types.ts:102](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L102)
 
 The right-hand side of the expression (if applicable).
 
@@ -80,7 +80,7 @@ The right-hand side of the expression (if applicable).
 
 > `readonly` **type**: `"operator"`
 
-Defined in: [core/src/expressions/types.ts:301](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L301)
+Defined in: [core/src/expressions/types.ts:301](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L301)
 
 The type of the expression (always 'operator').
 
@@ -94,7 +94,7 @@ The type of the expression (always 'operator').
 
 > **operator**: [`Operator`](../type-aliases/Operator.md)
 
-Defined in: [core/src/expressions/types.ts:303](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L303)
+Defined in: [core/src/expressions/types.ts:303](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L303)
 
 The logical operator.
 
@@ -106,7 +106,7 @@ The logical operator.
 
 > **get** `static` **EMPTY**(): [`EmptyExpression`](EmptyExpression.md)
 
-Defined in: [core/src/expressions/types.ts:109](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L109)
+Defined in: [core/src/expressions/types.ts:109](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L109)
 
 ##### Returns
 
@@ -124,7 +124,7 @@ Defined in: [core/src/expressions/types.ts:109](https://github.com/Agrejus/routi
 
 > **get** `static` **NOT\_PARSABLE**(): [`NotParsableExpression`](NotParsableExpression.md)
 
-Defined in: [core/src/expressions/types.ts:113](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L113)
+Defined in: [core/src/expressions/types.ts:113](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L113)
 
 ##### Returns
 
@@ -140,7 +140,7 @@ Defined in: [core/src/expressions/types.ts:113](https://github.com/Agrejus/routi
 
 > `static` **isEmpty**(`expression`): `boolean`
 
-Defined in: [core/src/expressions/types.ts:117](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L117)
+Defined in: [core/src/expressions/types.ts:117](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L117)
 
 #### Parameters
 
@@ -162,7 +162,7 @@ Defined in: [core/src/expressions/types.ts:117](https://github.com/Agrejus/routi
 
 > `static` **isNotParsable**(`expression`): `boolean`
 
-Defined in: [core/src/expressions/types.ts:121](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L121)
+Defined in: [core/src/expressions/types.ts:121](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L121)
 
 #### Parameters
 
@@ -184,7 +184,7 @@ Defined in: [core/src/expressions/types.ts:121](https://github.com/Agrejus/routi
 
 > `static` **toJson**(`expression`): [`SerializedExpression`](../type-aliases/SerializedExpression.md)
 
-Defined in: [core/src/expressions/types.ts:147](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L147)
+Defined in: [core/src/expressions/types.ts:147](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L147)
 
 Turns a tree into plain JSON, so a whole query can cross a wire.
 
@@ -227,7 +227,7 @@ and import this module — the guards test the same discriminant, so nothing is 
 
 > `static` **fromJson**(`json`, `schema`): [`Expression`](Expression.md)
 
-Defined in: [core/src/expressions/types.ts:211](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L211)
+Defined in: [core/src/expressions/types.ts:211](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L211)
 
 Rebuilds a tree from JSON, rebinding every property against `schema`.
 

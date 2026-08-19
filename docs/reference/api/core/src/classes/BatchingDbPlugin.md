@@ -6,7 +6,7 @@
 
 # Class: BatchingDbPlugin
 
-Defined in: [core/src/plugins/BatchingDbPlugin.ts:88](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/BatchingDbPlugin.ts#L88)
+Defined in: [core/src/plugins/BatchingDbPlugin.ts:88](https://github.com/Agrejus/routier/blob/main/core/src/plugins/BatchingDbPlugin.ts#L88)
 
 Coalesces overlapping writes into single round trips.
 
@@ -54,7 +54,7 @@ specs/write-batching.md
 
 > **new BatchingDbPlugin**(`plugin`, `options`): `BatchingDbPlugin`
 
-Defined in: [core/src/plugins/BatchingDbPlugin.ts:100](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/BatchingDbPlugin.ts#L100)
+Defined in: [core/src/plugins/BatchingDbPlugin.ts:100](https://github.com/Agrejus/routier/blob/main/core/src/plugins/BatchingDbPlugin.ts#L100)
 
 #### Parameters
 
@@ -78,7 +78,7 @@ Defined in: [core/src/plugins/BatchingDbPlugin.ts:100](https://github.com/Agreju
 
 > **get** **databaseName**(): `string`
 
-Defined in: [core/src/plugins/BatchingDbPlugin.ts:107](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/BatchingDbPlugin.ts#L107)
+Defined in: [core/src/plugins/BatchingDbPlugin.ts:107](https://github.com/Agrejus/routier/blob/main/core/src/plugins/BatchingDbPlugin.ts#L107)
 
 Uniquely identifies the database this plugin talks to, INCLUDING host or path where a
 bare name would collide — `orders.db` in two directories is two databases, and `mydb`
@@ -134,7 +134,7 @@ host/port/database rather than returning a connection string.
 
 > **query**\<`TRoot`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: [core/src/plugins/BatchingDbPlugin.ts:112](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/BatchingDbPlugin.ts#L112)
+Defined in: [core/src/plugins/BatchingDbPlugin.ts:112](https://github.com/Agrejus/routier/blob/main/core/src/plugins/BatchingDbPlugin.ts#L112)
 
 Reads are not batched: they have no lock to contend for and no ordering to preserve.
 
@@ -172,7 +172,7 @@ Reads are not batched: they have no lock to contend for and no ordering to prese
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [core/src/plugins/BatchingDbPlugin.ts:119](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/BatchingDbPlugin.ts#L119)
+Defined in: [core/src/plugins/BatchingDbPlugin.ts:119](https://github.com/Agrejus/routier/blob/main/core/src/plugins/BatchingDbPlugin.ts#L119)
 
 Executes bulk operations (add, update, remove) on the database.
 
@@ -204,7 +204,7 @@ Callback with the result or error.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: [core/src/plugins/BatchingDbPlugin.ts:156](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/BatchingDbPlugin.ts#L156)
+Defined in: [core/src/plugins/BatchingDbPlugin.ts:156](https://github.com/Agrejus/routier/blob/main/core/src/plugins/BatchingDbPlugin.ts#L156)
 
 Destroys the inner plugin, answering everything this wrapper is holding first.
 

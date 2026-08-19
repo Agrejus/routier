@@ -8,7 +8,7 @@
 
 > **TelemetryDbPluginOptions** = `object`
 
-Defined in: core/src/plugins/TelemetryDbPlugin.ts:31
+Defined in: [core/src/plugins/TelemetryDbPlugin.ts:31](https://github.com/Agrejus/routier/blob/main/core/src/plugins/TelemetryDbPlugin.ts#L31)
 
 ## Properties
 
@@ -16,6 +16,6 @@ Defined in: core/src/plugins/TelemetryDbPlugin.ts:31
 
 > `optional` **onEvent**: [`TelemetrySink`](TelemetrySink.md)
 
-Defined in: core/src/plugins/TelemetryDbPlugin.ts:33
+Defined in: [core/src/plugins/TelemetryDbPlugin.ts:33](https://github.com/Agrejus/routier/blob/main/core/src/plugins/TelemetryDbPlugin.ts#L33)
 
 Where events go. Default: `loggerSink()`.

@@ -8,7 +8,7 @@
 
 > **CacheDbPluginOptions** = `object`
 
-Defined in: [core/src/plugins/CacheDbPlugin.ts:34](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/CacheDbPlugin.ts#L34)
+Defined in: [core/src/plugins/CacheDbPlugin.ts:34](https://github.com/Agrejus/routier/blob/main/core/src/plugins/CacheDbPlugin.ts#L34)
 
 A read-through LRU in front of a slower plugin.
 
@@ -40,6 +40,6 @@ const store = new MyStore(new CacheDbPlugin(new SomeDbPlugin(...), { max: 100 })
 
 > `optional` **max**: `number`
 
-Defined in: [core/src/plugins/CacheDbPlugin.ts:36](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/CacheDbPlugin.ts#L36)
+Defined in: [core/src/plugins/CacheDbPlugin.ts:36](https://github.com/Agrejus/routier/blob/main/core/src/plugins/CacheDbPlugin.ts#L36)
 
 How many query results to keep. Default 100; the least recently used is evicted.

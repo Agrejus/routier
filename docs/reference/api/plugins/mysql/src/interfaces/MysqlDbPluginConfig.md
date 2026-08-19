@@ -6,7 +6,7 @@
 
 # Interface: MysqlDbPluginConfig
 
-Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:10](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mysql/src/MysqlDbPlugin.ts#L10)
+Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:10](https://github.com/Agrejus/routier/blob/main/plugins/mysql/src/MysqlDbPlugin.ts#L10)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:10](https://github.com/Agrejus/r
 
 > `optional` **host**: `string`
 
-Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:11](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mysql/src/MysqlDbPlugin.ts#L11)
+Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:11](https://github.com/Agrejus/routier/blob/main/plugins/mysql/src/MysqlDbPlugin.ts#L11)
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:11](https://github.com/Agrejus/r
 
 > `optional` **port**: `number`
 
-Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:12](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mysql/src/MysqlDbPlugin.ts#L12)
+Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:12](https://github.com/Agrejus/routier/blob/main/plugins/mysql/src/MysqlDbPlugin.ts#L12)
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:12](https://github.com/Agrejus/r
 
 > `optional` **database**: `string`
 
-Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:14](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mysql/src/MysqlDbPlugin.ts#L14)
+Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:14](https://github.com/Agrejus/routier/blob/main/plugins/mysql/src/MysqlDbPlugin.ts#L14)
 
 Required unless `connectionString` is given, which carries the database itself.
 
@@ -40,7 +40,7 @@ Required unless `connectionString` is given, which carries the database itself.
 
 > `optional` **user**: `string`
 
-Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:15](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mysql/src/MysqlDbPlugin.ts#L15)
+Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:15](https://github.com/Agrejus/routier/blob/main/plugins/mysql/src/MysqlDbPlugin.ts#L15)
 
 ***
 
@@ -48,7 +48,7 @@ Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:15](https://github.com/Agrejus/r
 
 > `optional` **password**: `string`
 
-Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:16](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mysql/src/MysqlDbPlugin.ts#L16)
+Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:16](https://github.com/Agrejus/routier/blob/main/plugins/mysql/src/MysqlDbPlugin.ts#L16)
 
 ***
 
@@ -56,7 +56,7 @@ Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:16](https://github.com/Agrejus/r
 
 > `optional` **connectionString**: `string`
 
-Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:25](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mysql/src/MysqlDbPlugin.ts#L25)
+Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:25](https://github.com/Agrejus/routier/blob/main/plugins/mysql/src/MysqlDbPlugin.ts#L25)
 
 A `mysql://user:password@host:port/database` URI, passed straight to mysql2.
 
@@ -71,7 +71,7 @@ about where their data is going.
 
 > `optional` **pool**: `object`
 
-Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:26](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mysql/src/MysqlDbPlugin.ts#L26)
+Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:26](https://github.com/Agrejus/routier/blob/main/plugins/mysql/src/MysqlDbPlugin.ts#L26)
 
 #### max?
 

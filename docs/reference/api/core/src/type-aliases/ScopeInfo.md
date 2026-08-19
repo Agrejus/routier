@@ -8,7 +8,7 @@
 
 > **ScopeInfo**\<`TContext`\> = `object`
 
-Defined in: [core/src/plugins/wire/handler.ts:85](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/handler.ts#L85)
+Defined in: [core/src/plugins/wire/handler.ts:85](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/handler.ts#L85)
 
 What a scope hook is asked. One collection at a time, since each may be scoped differently.
 
@@ -24,7 +24,7 @@ What a scope hook is asked. One collection at a time, since each may be scoped d
 
 > **collectionName**: `string`
 
-Defined in: [core/src/plugins/wire/handler.ts:86](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/handler.ts#L86)
+Defined in: [core/src/plugins/wire/handler.ts:86](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/handler.ts#L86)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [core/src/plugins/wire/handler.ts:86](https://github.com/Agrejus/rou
 
 > **schema**: [`CompiledSchema`](CompiledSchema.md)\<`any`\>
 
-Defined in: [core/src/plugins/wire/handler.ts:87](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/handler.ts#L87)
+Defined in: [core/src/plugins/wire/handler.ts:87](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/handler.ts#L87)
 
 ***
 
@@ -40,7 +40,7 @@ Defined in: [core/src/plugins/wire/handler.ts:87](https://github.com/Agrejus/rou
 
 > **context**: `TContext`
 
-Defined in: [core/src/plugins/wire/handler.ts:88](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/handler.ts#L88)
+Defined in: [core/src/plugins/wire/handler.ts:88](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/handler.ts#L88)
 
 ***
 
@@ -48,4 +48,4 @@ Defined in: [core/src/plugins/wire/handler.ts:88](https://github.com/Agrejus/rou
 
 > **action**: `"query"` \| `"persist"`
 
-Defined in: [core/src/plugins/wire/handler.ts:89](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/handler.ts#L89)
+Defined in: [core/src/plugins/wire/handler.ts:89](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/handler.ts#L89)

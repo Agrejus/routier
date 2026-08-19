@@ -8,7 +8,7 @@
 
 > **collectingSink**(`into`): [`TelemetrySink`](../type-aliases/TelemetrySink.md)
 
-Defined in: core/src/plugins/TelemetryDbPlugin.ts:49
+Defined in: [core/src/plugins/TelemetryDbPlugin.ts:49](https://github.com/Agrejus/routier/blob/main/core/src/plugins/TelemetryDbPlugin.ts#L49)
 
 Pushes every event into `into`. For tests and custom buffering.
 

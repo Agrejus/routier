@@ -6,7 +6,7 @@
 
 # Class: RetryDbPlugin
 
-Defined in: [core/src/plugins/RetryDbPlugin.ts:66](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/RetryDbPlugin.ts#L66)
+Defined in: [core/src/plugins/RetryDbPlugin.ts:66](https://github.com/Agrejus/routier/blob/main/core/src/plugins/RetryDbPlugin.ts#L66)
 
 Interface for a database plugin, which provides query, destroy, and bulk operations.
 
@@ -20,7 +20,7 @@ Interface for a database plugin, which provides query, destroy, and bulk operati
 
 > **new RetryDbPlugin**(`plugin`, `options`): `RetryDbPlugin`
 
-Defined in: [core/src/plugins/RetryDbPlugin.ts:73](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/RetryDbPlugin.ts#L73)
+Defined in: [core/src/plugins/RetryDbPlugin.ts:73](https://github.com/Agrejus/routier/blob/main/core/src/plugins/RetryDbPlugin.ts#L73)
 
 #### Parameters
 
@@ -44,7 +44,7 @@ Defined in: [core/src/plugins/RetryDbPlugin.ts:73](https://github.com/Agrejus/ro
 
 > **get** **databaseName**(): `string`
 
-Defined in: [core/src/plugins/RetryDbPlugin.ts:82](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/RetryDbPlugin.ts#L82)
+Defined in: [core/src/plugins/RetryDbPlugin.ts:82](https://github.com/Agrejus/routier/blob/main/core/src/plugins/RetryDbPlugin.ts#L82)
 
 Uniquely identifies the database this plugin talks to, INCLUDING host or path where a
 bare name would collide — `orders.db` in two directories is two databases, and `mydb`
@@ -100,7 +100,7 @@ host/port/database rather than returning a connection string.
 
 > **query**\<`TRoot`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: [core/src/plugins/RetryDbPlugin.ts:86](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/RetryDbPlugin.ts#L86)
+Defined in: [core/src/plugins/RetryDbPlugin.ts:86](https://github.com/Agrejus/routier/blob/main/core/src/plugins/RetryDbPlugin.ts#L86)
 
 Executes a query operation on the database.
 
@@ -142,7 +142,7 @@ Callback with the result or error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [core/src/plugins/RetryDbPlugin.ts:131](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/RetryDbPlugin.ts#L131)
+Defined in: [core/src/plugins/RetryDbPlugin.ts:131](https://github.com/Agrejus/routier/blob/main/core/src/plugins/RetryDbPlugin.ts#L131)
 
 Executes bulk operations (add, update, remove) on the database.
 
@@ -174,7 +174,7 @@ Callback with the result or error.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: [core/src/plugins/RetryDbPlugin.ts:140](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/RetryDbPlugin.ts#L140)
+Defined in: [core/src/plugins/RetryDbPlugin.ts:140](https://github.com/Agrejus/routier/blob/main/core/src/plugins/RetryDbPlugin.ts#L140)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 

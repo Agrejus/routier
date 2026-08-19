@@ -8,7 +8,7 @@
 
 > **TursoDriverOptions** = `object`
 
-Defined in: [plugins/sqlite/src/drivers/turso.ts:168](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sqlite/src/drivers/turso.ts#L168)
+Defined in: [plugins/sqlite/src/drivers/turso.ts:168](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/drivers/turso.ts#L168)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: [plugins/sqlite/src/drivers/turso.ts:168](https://github.com/Agrejus
 
 > `readonly` `optional` **deleteDatabase**: () => `Promise`\<`void`\>
 
-Defined in: [plugins/sqlite/src/drivers/turso.ts:180](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sqlite/src/drivers/turso.ts#L180)
+Defined in: [plugins/sqlite/src/drivers/turso.ts:180](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/drivers/turso.ts#L180)
 
 What `destroy` does, which only the caller can know.
 

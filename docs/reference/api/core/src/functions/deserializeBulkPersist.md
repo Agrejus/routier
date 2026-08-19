@@ -8,7 +8,7 @@
 
 > **deserializeBulkPersist**(`request`, `resolveSchema`): `object`
 
-Defined in: [core/src/plugins/wire/persist.ts:63](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/persist.ts#L63)
+Defined in: [core/src/plugins/wire/persist.ts:63](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/persist.ts#L63)
 
 Rebuilds a change set from its wire form, keyed by the RECEIVER's schema ids.
 

@@ -36,6 +36,7 @@
     "excludeInternal": true,
     "hideGenerator": true,
     "disableSources": false,
+    "gitRevision": "main",
     "skipErrorChecking": true,
     "sort": [
         "source-order"

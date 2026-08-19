@@ -8,7 +8,7 @@
 
 > **DbPluginOperationEvent**\<`TOperation`\> = [`DbPluginEvent`](DbPluginEvent.md) & `object`
 
-Defined in: [core/src/plugins/types.ts:127](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/types.ts#L127)
+Defined in: [core/src/plugins/types.ts:127](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L127)
 
 Event for a specific plugin operation, extending the base event with an operation payload.
 

@@ -8,7 +8,7 @@
 
 > **Index** = `object`
 
-Defined in: [core/src/schema/types.ts:140](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L140)
+Defined in: [core/src/schema/types.ts:140](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L140)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: [core/src/schema/types.ts:140](https://github.com/Agrejus/routier/bl
 
 > **properties**: [`PropertyInfo`](../classes/PropertyInfo.md)\<`any`\>[]
 
-Defined in: [core/src/schema/types.ts:141](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L141)
+Defined in: [core/src/schema/types.ts:141](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L141)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [core/src/schema/types.ts:141](https://github.com/Agrejus/routier/bl
 
 > **type**: [`IndexType`](IndexType.md)
 
-Defined in: [core/src/schema/types.ts:142](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L142)
+Defined in: [core/src/schema/types.ts:142](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L142)
 
 ***
 
@@ -32,4 +32,4 @@ Defined in: [core/src/schema/types.ts:142](https://github.com/Agrejus/routier/bl
 
 > **name**: `string`
 
-Defined in: [core/src/schema/types.ts:143](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L143)
+Defined in: [core/src/schema/types.ts:143](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L143)

@@ -6,7 +6,7 @@
 
 # Class: SqliteDbPlugin
 
-Defined in: [plugins/sqlite/src/index.ts:21](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sqlite/src/index.ts#L21)
+Defined in: [plugins/sqlite/src/index.ts:21](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/index.ts#L21)
 
 SQLite for Node, on `node:sqlite`.
 
@@ -29,7 +29,7 @@ Needs Node 22.5 or later. On Node 18 or 20, pass the sqlite3 driver:
 
 > **new SqliteDbPlugin**(`databaseName`, `options`): `SqliteDbPlugin`
 
-Defined in: [plugins/sqlite/src/index.ts:22](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sqlite/src/index.ts#L22)
+Defined in: [plugins/sqlite/src/index.ts:22](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/index.ts#L22)
 
 #### Parameters
 
@@ -55,7 +55,7 @@ Defined in: [plugins/sqlite/src/index.ts:22](https://github.com/Agrejus/routier/
 
 > `readonly` **databaseName**: `string`
 
-Defined in: [plugins/sqlite/src/plugin.ts:53](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sqlite/src/plugin.ts#L53)
+Defined in: [plugins/sqlite/src/plugin.ts:53](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/plugin.ts#L53)
 
 See `IDbPlugin.databaseName`. This is the file path as the caller spelled it, which is
 as far as a plugin that also runs in the browser can go: resolving it needs a file
@@ -72,7 +72,7 @@ two databases and will not share subscription channels. Pass a consistent path.
 
 > **query**\<`TRoot`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: [plugins/sqlite/src/plugin.ts:159](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sqlite/src/plugin.ts#L159)
+Defined in: [plugins/sqlite/src/plugin.ts:159](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/plugin.ts#L159)
 
 Executes a query operation on the database.
 
@@ -114,7 +114,7 @@ Callback with the result or error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [plugins/sqlite/src/plugin.ts:260](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sqlite/src/plugin.ts#L260)
+Defined in: [plugins/sqlite/src/plugin.ts:260](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/plugin.ts#L260)
 
 Executes bulk operations (add, update, remove) on the database.
 
@@ -146,7 +146,7 @@ Callback with the result or error.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: [plugins/sqlite/src/plugin.ts:363](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sqlite/src/plugin.ts#L363)
+Defined in: [plugins/sqlite/src/plugin.ts:363](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/plugin.ts#L363)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 

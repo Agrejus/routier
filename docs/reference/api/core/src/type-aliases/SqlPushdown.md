@@ -8,7 +8,7 @@
 
 > **SqlPushdown** = `object`
 
-Defined in: [core/src/plugins/translators/SqlTranslator.ts:43](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/SqlTranslator.ts#L43)
+Defined in: [core/src/plugins/translators/SqlTranslator.ts:43](https://github.com/Agrejus/routier/blob/main/core/src/plugins/translators/SqlTranslator.ts#L43)
 
 What the statement that produced these rows actually did.
 
@@ -23,6 +23,6 @@ and skipping it is wrong.
 
 > `optional` **join**: `boolean`
 
-Defined in: [core/src/plugins/translators/SqlTranslator.ts:45](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/SqlTranslator.ts#L45)
+Defined in: [core/src/plugins/translators/SqlTranslator.ts:45](https://github.com/Agrejus/routier/blob/main/core/src/plugins/translators/SqlTranslator.ts#L45)
 
 The statement contained a real `INNER JOIN`/`LEFT JOIN` and its rows are already tuples.

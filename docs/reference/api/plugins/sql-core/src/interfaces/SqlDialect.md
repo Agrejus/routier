@@ -6,7 +6,7 @@
 
 # Interface: SqlDialect
 
-Defined in: [plugins/sql-core/src/sql.ts:23](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/sql.ts#L23)
+Defined in: [plugins/sql-core/src/sql.ts:23](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L23)
 
 Dialect interface for generating portable SQL WHERE fragments.
 
@@ -16,7 +16,7 @@ Dialect interface for generating portable SQL WHERE fragments.
 
 > **stringMatchKind**: `"LIKE"` \| `"GLOB"`
 
-Defined in: [plugins/sql-core/src/sql.ts:26](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/sql.ts#L26)
+Defined in: [plugins/sql-core/src/sql.ts:26](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L26)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [plugins/sql-core/src/sql.ts:26](https://github.com/Agrejus/routier/
 
 > **jsonColumnType**: `string`
 
-Defined in: [plugins/sql-core/src/sql.ts:35](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/sql.ts#L35)
+Defined in: [plugins/sql-core/src/sql.ts:35](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L35)
 
 Column type for a nested object or array held in a single column.
 
@@ -38,7 +38,7 @@ plugins a partial entity and the plugin decides how a nested value becomes a col
 
 > **quoteIdentifier**(`name`): `string`
 
-Defined in: [plugins/sql-core/src/sql.ts:24](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/sql.ts#L24)
+Defined in: [plugins/sql-core/src/sql.ts:24](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L24)
 
 #### Parameters
 
@@ -56,7 +56,7 @@ Defined in: [plugins/sql-core/src/sql.ts:24](https://github.com/Agrejus/routier/
 
 > **getPlaceholder**(`paramIndex`): `string`
 
-Defined in: [plugins/sql-core/src/sql.ts:25](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/sql.ts#L25)
+Defined in: [plugins/sql-core/src/sql.ts:25](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L25)
 
 #### Parameters
 
@@ -74,7 +74,7 @@ Defined in: [plugins/sql-core/src/sql.ts:25](https://github.com/Agrejus/routier/
 
 > **likeEscapeClause**(): `string`
 
-Defined in: [plugins/sql-core/src/sql.ts:27](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/sql.ts#L27)
+Defined in: [plugins/sql-core/src/sql.ts:27](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L27)
 
 #### Returns
 
@@ -86,7 +86,7 @@ Defined in: [plugins/sql-core/src/sql.ts:27](https://github.com/Agrejus/routier/
 
 > **encodeJson**(`value`): `unknown`
 
-Defined in: [plugins/sql-core/src/sql.ts:44](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/sql.ts#L44)
+Defined in: [plugins/sql-core/src/sql.ts:44](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L44)
 
 Encodes a nested object or array for a `jsonColumnType` parameter.
 
@@ -111,7 +111,7 @@ caller has to remember.
 
 > **encodeDate**(`value`): `unknown`
 
-Defined in: [plugins/sql-core/src/sql.ts:52](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/sql.ts#L52)
+Defined in: [plugins/sql-core/src/sql.ts:52](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L52)
 
 Bindable form of a value for a `s.date()` property.
 
@@ -135,7 +135,7 @@ separator and the `Z` suffix — so that dialect rewrites it.
 
 > **encodeBoolean**(`value`): `unknown`
 
-Defined in: [plugins/sql-core/src/sql.ts:62](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/sql.ts#L62)
+Defined in: [plugins/sql-core/src/sql.ts:62](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L62)
 
 Bindable form of a value for a `s.boolean()` property.
 
@@ -161,7 +161,7 @@ who should not have to add a serializer for a type the schema already declares.
 
 > **lengthExpression**(`column`, `isJsonArray`): `string`
 
-Defined in: [plugins/sql-core/src/sql.ts:67](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/sql.ts#L67)
+Defined in: [plugins/sql-core/src/sql.ts:67](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L67)
 
 SQL expression for the length of a column: character count for strings,
 element count for arrays (which are stored as `jsonColumnType`).
@@ -186,7 +186,7 @@ element count for arrays (which are stored as `jsonColumnType`).
 
 > **jsonPathExpression**(`rootColumn`, `path`, `leafType`): `string`
 
-Defined in: [plugins/sql-core/src/sql.ts:83](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/sql.ts#L83)
+Defined in: [plugins/sql-core/src/sql.ts:83](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L83)
 
 Reads a value out of a JSON column so a nested property can be filtered on.
 

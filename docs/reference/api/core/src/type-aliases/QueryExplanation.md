@@ -8,7 +8,7 @@
 
 > **QueryExplanation** = `object`
 
-Defined in: [core/src/plugins/query/explain.ts:65](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/explain.ts#L65)
+Defined in: [core/src/plugins/query/explain.ts:65](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L65)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: [core/src/plugins/query/explain.ts:65](https://github.com/Agrejus/ro
 
 > **collection**: `string`
 
-Defined in: [core/src/plugins/query/explain.ts:66](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/explain.ts#L66)
+Defined in: [core/src/plugins/query/explain.ts:66](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L66)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [core/src/plugins/query/explain.ts:66](https://github.com/Agrejus/ro
 
 > **database**: `string`
 
-Defined in: [core/src/plugins/query/explain.ts:67](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/explain.ts#L67)
+Defined in: [core/src/plugins/query/explain.ts:67](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L67)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [core/src/plugins/query/explain.ts:67](https://github.com/Agrejus/ro
 
 > **summary**: [`QueryExplanationSummary`](QueryExplanationSummary.md)
 
-Defined in: [core/src/plugins/query/explain.ts:68](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/explain.ts#L68)
+Defined in: [core/src/plugins/query/explain.ts:68](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L68)
 
 ***
 
@@ -40,7 +40,7 @@ Defined in: [core/src/plugins/query/explain.ts:68](https://github.com/Agrejus/ro
 
 > **executionSteps**: [`ExecutionStep`](ExecutionStep.md)[]
 
-Defined in: [core/src/plugins/query/explain.ts:69](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/explain.ts#L69)
+Defined in: [core/src/plugins/query/explain.ts:69](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L69)
 
 ***
 
@@ -48,7 +48,7 @@ Defined in: [core/src/plugins/query/explain.ts:69](https://github.com/Agrejus/ro
 
 > **plugin**: `object`
 
-Defined in: [core/src/plugins/query/explain.ts:70](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/explain.ts#L70)
+Defined in: [core/src/plugins/query/explain.ts:70](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L70)
 
 #### kind
 

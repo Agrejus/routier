@@ -8,7 +8,7 @@
 
 > **UploadGrant** = `object`
 
-Defined in: [plugins/blob/src/direct.ts:72](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/direct.ts#L72)
+Defined in: [plugins/blob/src/direct.ts:72](https://github.com/Agrejus/routier/blob/main/plugins/blob/src/direct.ts#L72)
 
 What the server sends back.
 
@@ -18,7 +18,7 @@ What the server sends back.
 
 > `optional` **upload**: `object`
 
-Defined in: [plugins/blob/src/direct.ts:77](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/direct.ts#L77)
+Defined in: [plugins/blob/src/direct.ts:77](https://github.com/Agrejus/routier/blob/main/plugins/blob/src/direct.ts#L77)
 
 Where to PUT, and what headers to send. Absent when the content is already stored,
 which is the case worth having: nothing is transferred.
@@ -37,6 +37,6 @@ which is the case worth having: nothing is transferred.
 
 > **reference**: [`FileReference`](FileReference.md)
 
-Defined in: [plugins/blob/src/direct.ts:80](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/direct.ts#L80)
+Defined in: [plugins/blob/src/direct.ts:80](https://github.com/Agrejus/routier/blob/main/plugins/blob/src/direct.ts#L80)
 
 The reference to store on a record, whether or not an upload was needed.
