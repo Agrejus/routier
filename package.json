@@ -17,7 +17,9 @@
     ],
     "scripts": {
         "build": "npm run build -w @routier/core -w @routier/memory-plugin -w @routier/sql-plugin-core && npm run build --workspaces --if-present",
-        "typecheck": "npm run tsc --workspaces --if-present",
+        "typecheck": "npm run tsc --workspaces --if-present && npm run typecheck:snippets && npm run typecheck:examples",
+        "typecheck:snippets": "tsc -p docs/tsconfig.snippets.json",
+        "typecheck:examples": "tsc --noEmit -p examples/finance-stress/tsconfig.json && tsc --noEmit -p examples/relayops/tsconfig.json",
         "build:core": "cd core && npm run tsc",
         "build:routier": "cd routier && npm run tsc",
         "sync:examples": "node scripts/sync-doc-examples.mjs",
