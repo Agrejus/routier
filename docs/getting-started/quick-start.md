@@ -26,6 +26,11 @@ Spin up a minimal project and see live queries and optimistic updates in action.
 
 <<< @/_snippets/code/from-docs/getting-started/quick-start/block-1.ts
 
+Note the last few lines. Query results are already typed from the schema, so you rarely
+annotate anything. When you do want to name the entity type — a function parameter, a React
+prop, an API payload — get it from the schema with `InferType<typeof userSchema>` rather than
+writing an interface by hand, which then has to be kept in step with the schema. See
+[InferType](/concepts/schema/infer-type).
 
 ## What's Next?
 
