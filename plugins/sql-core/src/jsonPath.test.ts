@@ -143,7 +143,7 @@ describe("json path extraction", () => {
         });
 
         it("leaves a root property as a plain column", () => {
-            expect(toSql(equals(nested("name", []), val("Ada")), "postgresql").where).toBe(
+            expect(toSql(equals(nested("name", []), val("James")), "postgresql").where).toBe(
                 `"name" = $1`
             );
         });

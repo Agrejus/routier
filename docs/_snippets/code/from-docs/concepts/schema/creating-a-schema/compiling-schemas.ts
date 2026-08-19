@@ -14,4 +14,4 @@ const userSchema = s.define("users", {
 type User = InferType<typeof userSchema>;
 
 // User is { id: string; name: string; email: string }
-const user: User = { id: "1", name: "Ada", email: "ada@example.com" };
+const user: User = { id: "1", name: "James", email: "james@example.com" };

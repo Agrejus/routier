@@ -14,14 +14,14 @@ or write anything. It is the MongoDB counterpart of `toSql` in `@routier/sql-plu
 import { toMql } from '@routier/mongodb-plugin';
 
 toMql(expression);
-// { $and: [ { name: { $eq: 'Ada' } }, { price: { $gt: 10 } } ] }
+// { $and: [ { name: { $eq: 'James' } }, { price: { $gt: 10 } } ] }
 ```
 
 ## What it emits
 
 | Filter | MQL |
 | --- | --- |
-| `x.name === 'Ada'` | `{ name: { $eq: 'Ada' } }` |
+| `x.name === 'James'` | `{ name: { $eq: 'James' } }` |
 | `x.price > 10` | `{ price: { $gt: 10 } }` |
 | `!(x.price > 10)` | `{ price: { $lte: 10 } }` |
 | `10 > x.price` | `{ price: { $lt: 10 } }` |

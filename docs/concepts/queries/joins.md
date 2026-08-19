@@ -34,7 +34,7 @@ Each result is a `[player, match]` pair — one for every match a player has. Fo
 
 ```ts
 players = [
-  { _id: "p1", name: "Ada" },
+  { _id: "p1", name: "James" },
   { _id: "p2", name: "Lin" },
 ];
 
@@ -49,11 +49,11 @@ The inner join above returns:
 ```ts
 [
   [
-    { _id: "p1", name: "Ada" },
+    { _id: "p1", name: "James" },
     { _id: "m1", playerId: "p1", score: 42 },
   ],
   [
-    { _id: "p1", name: "Ada" },
+    { _id: "p1", name: "James" },
     { _id: "m2", playerId: "p1", score: 18 },
   ],
 ]
