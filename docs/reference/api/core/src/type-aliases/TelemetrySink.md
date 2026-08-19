@@ -8,7 +8,7 @@
 
 > **TelemetrySink** = (`e`) => `void`
 
-Defined in: core/src/plugins/TelemetryDbPlugin.ts:29
+Defined in: [core/src/plugins/TelemetryDbPlugin.ts:29](https://github.com/Agrejus/routier/blob/main/core/src/plugins/TelemetryDbPlugin.ts#L29)
 
 ## Parameters
 

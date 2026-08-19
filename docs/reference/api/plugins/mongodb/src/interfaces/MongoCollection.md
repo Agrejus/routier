@@ -6,7 +6,7 @@
 
 # Interface: MongoCollection
 
-Defined in: [plugins/mongodb/src/driver.ts:32](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mongodb/src/driver.ts#L32)
+Defined in: [plugins/mongodb/src/driver.ts:32](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/driver.ts#L32)
 
 ## Methods
 
@@ -14,7 +14,7 @@ Defined in: [plugins/mongodb/src/driver.ts:32](https://github.com/Agrejus/routie
 
 > **find**(`filter`, `options?`): `Promise`\<`Record`\<`string`, `unknown`\>[]\>
 
-Defined in: [plugins/mongodb/src/driver.ts:33](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mongodb/src/driver.ts#L33)
+Defined in: [plugins/mongodb/src/driver.ts:33](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/driver.ts#L33)
 
 #### Parameters
 
@@ -36,7 +36,7 @@ Defined in: [plugins/mongodb/src/driver.ts:33](https://github.com/Agrejus/routie
 
 > **insertMany**(`documents`): `Promise`\<`void`\>
 
-Defined in: [plugins/mongodb/src/driver.ts:34](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mongodb/src/driver.ts#L34)
+Defined in: [plugins/mongodb/src/driver.ts:34](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/driver.ts#L34)
 
 #### Parameters
 
@@ -54,7 +54,7 @@ Defined in: [plugins/mongodb/src/driver.ts:34](https://github.com/Agrejus/routie
 
 > **updateMany**(`updates`): `Promise`\<`number`[]\>
 
-Defined in: [plugins/mongodb/src/driver.ts:36](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mongodb/src/driver.ts#L36)
+Defined in: [plugins/mongodb/src/driver.ts:36](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/driver.ts#L36)
 
 Returns how many documents each update matched, in the order given.
 
@@ -74,7 +74,7 @@ readonly [`MongoUpdate`](../type-aliases/MongoUpdate.md)[]
 
 > **deleteMany**(`filter`): `Promise`\<`void`\>
 
-Defined in: [plugins/mongodb/src/driver.ts:37](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mongodb/src/driver.ts#L37)
+Defined in: [plugins/mongodb/src/driver.ts:37](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/driver.ts#L37)
 
 #### Parameters
 

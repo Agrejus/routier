@@ -8,7 +8,7 @@
 
 > **AuthorizeHook**\<`TContext`\> = (`info`) => `boolean` \| `string` \| `Promise`\<`boolean` \| `string`\>
 
-Defined in: [core/src/plugins/wire/handler.ts:82](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/handler.ts#L82)
+Defined in: [core/src/plugins/wire/handler.ts:82](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/handler.ts#L82)
 
 May this request proceed?
 

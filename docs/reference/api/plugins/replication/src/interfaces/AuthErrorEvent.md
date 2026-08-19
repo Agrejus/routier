@@ -6,7 +6,7 @@
 
 # Interface: AuthErrorEvent
 
-Defined in: [plugins/replication/src/auth.ts:12](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/auth.ts#L12)
+Defined in: [plugins/replication/src/auth.ts:12](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/auth.ts#L12)
 
 Event passed to onAuthError when the remote returns 401 Unauthorized or 403 Forbidden.
 Higher-level code can use this to trigger re-authentication (e.g. refresh token, redirect to login).
@@ -17,7 +17,7 @@ Higher-level code can use this to trigger re-authentication (e.g. refresh token,
 
 > **status**: `401` \| `403`
 
-Defined in: [plugins/replication/src/auth.ts:14](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/auth.ts#L14)
+Defined in: [plugins/replication/src/auth.ts:14](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/auth.ts#L14)
 
 HTTP status that triggered the event.
 
@@ -27,7 +27,7 @@ HTTP status that triggered the event.
 
 > **message**: `string`
 
-Defined in: [plugins/replication/src/auth.ts:16](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/auth.ts#L16)
+Defined in: [plugins/replication/src/auth.ts:16](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/auth.ts#L16)
 
 Human-readable message (e.g. from response statusText).
 
@@ -37,7 +37,7 @@ Human-readable message (e.g. from response statusText).
 
 > **originalError**: `Error`
 
-Defined in: [plugins/replication/src/auth.ts:18](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/auth.ts#L18)
+Defined in: [plugins/replication/src/auth.ts:18](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/auth.ts#L18)
 
 The error thrown or constructed from the response.
 
@@ -47,6 +47,6 @@ The error thrown or constructed from the response.
 
 > **context**: `"query"` \| `"bulkPersist"`
 
-Defined in: [plugins/replication/src/auth.ts:20](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/auth.ts#L20)
+Defined in: [plugins/replication/src/auth.ts:20](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/auth.ts#L20)
 
 Whether this came from a query (GET) or bulkPersist (POST).

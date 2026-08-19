@@ -8,7 +8,7 @@
 
 > **QuerySort** = `object`
 
-Defined in: [core/src/plugins/query/types.ts:122](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L122)
+Defined in: [core/src/plugins/query/types.ts:122](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L122)
 
 Sort specification for a query.
 
@@ -18,7 +18,7 @@ Sort specification for a query.
 
 > **key**: `string`
 
-Defined in: [core/src/plugins/query/types.ts:122](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L122)
+Defined in: [core/src/plugins/query/types.ts:122](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L122)
 
 ***
 
@@ -26,7 +26,7 @@ Defined in: [core/src/plugins/query/types.ts:122](https://github.com/Agrejus/rou
 
 > **selector**: (`item`) => `unknown`
 
-Defined in: [core/src/plugins/query/types.ts:122](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L122)
+Defined in: [core/src/plugins/query/types.ts:122](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L122)
 
 #### Parameters
 
@@ -44,4 +44,4 @@ Defined in: [core/src/plugins/query/types.ts:122](https://github.com/Agrejus/rou
 
 > **direction**: `"asc"` \| `"desc"`
 
-Defined in: [core/src/plugins/query/types.ts:122](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L122)
+Defined in: [core/src/plugins/query/types.ts:122](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L122)

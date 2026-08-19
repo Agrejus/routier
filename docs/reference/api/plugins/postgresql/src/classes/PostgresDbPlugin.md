@@ -6,7 +6,7 @@
 
 # Class: PostgresDbPlugin
 
-Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:46](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/postgresql/src/PostgresDbPlugin.ts#L46)
+Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:46](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresDbPlugin.ts#L46)
 
 ## Implements
 
@@ -18,7 +18,7 @@ Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:46](https://github.com/A
 
 > **new PostgresDbPlugin**(`config`): `PostgresDbPlugin`
 
-Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:70](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/postgresql/src/PostgresDbPlugin.ts#L70)
+Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:70](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresDbPlugin.ts#L70)
 
 #### Parameters
 
@@ -36,7 +36,7 @@ Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:70](https://github.com/A
 
 > `readonly` **databaseName**: `string`
 
-Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:68](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/postgresql/src/PostgresDbPlugin.ts#L68)
+Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:68](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresDbPlugin.ts#L68)
 
 See `IDbPlugin.databaseName`. Host, port and database rather than the bare database
 name, because `mydb` on two servers is two databases — and without credentials,
@@ -52,7 +52,7 @@ because this value becomes part of a subscription channel key.
 
 > **query**\<`TRoot`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:164](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/postgresql/src/PostgresDbPlugin.ts#L164)
+Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:164](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresDbPlugin.ts#L164)
 
 Executes a query operation on the database.
 
@@ -94,7 +94,7 @@ Callback with the result or error.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:263](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/postgresql/src/PostgresDbPlugin.ts#L263)
+Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:263](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresDbPlugin.ts#L263)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 
@@ -124,7 +124,7 @@ Callback with an optional error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:275](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/postgresql/src/PostgresDbPlugin.ts#L275)
+Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:275](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresDbPlugin.ts#L275)
 
 Executes bulk operations (add, update, remove) on the database.
 

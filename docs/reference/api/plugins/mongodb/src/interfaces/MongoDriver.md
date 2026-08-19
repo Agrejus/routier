@@ -6,7 +6,7 @@
 
 # Interface: MongoDriver
 
-Defined in: [plugins/mongodb/src/driver.ts:51](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mongodb/src/driver.ts#L51)
+Defined in: [plugins/mongodb/src/driver.ts:51](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/driver.ts#L51)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [plugins/mongodb/src/driver.ts:51](https://github.com/Agrejus/routie
 
 > `readonly` **name**: `string`
 
-Defined in: [plugins/mongodb/src/driver.ts:53](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mongodb/src/driver.ts#L53)
+Defined in: [plugins/mongodb/src/driver.ts:53](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/driver.ts#L53)
 
 Names the engine, for errors that would otherwise not say which one failed.
 
@@ -24,7 +24,7 @@ Names the engine, for errors that would otherwise not say which one failed.
 
 > **collection**(`name`): `Promise`\<[`MongoCollection`](MongoCollection.md)\>
 
-Defined in: [plugins/mongodb/src/driver.ts:54](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mongodb/src/driver.ts#L54)
+Defined in: [plugins/mongodb/src/driver.ts:54](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/driver.ts#L54)
 
 #### Parameters
 
@@ -42,7 +42,7 @@ Defined in: [plugins/mongodb/src/driver.ts:54](https://github.com/Agrejus/routie
 
 > **transaction**\<`T`\>(`work`): `Promise`\<`T`\>
 
-Defined in: [plugins/mongodb/src/driver.ts:68](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mongodb/src/driver.ts#L68)
+Defined in: [plugins/mongodb/src/driver.ts:68](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/driver.ts#L68)
 
 Runs `work` exactly once, atomically, and returns what it returned.
 
@@ -78,7 +78,7 @@ it is constructed rather than at the first save.
 
 > **dropDatabase**(): `Promise`\<`void`\>
 
-Defined in: [plugins/mongodb/src/driver.ts:70](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mongodb/src/driver.ts#L70)
+Defined in: [plugins/mongodb/src/driver.ts:70](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/driver.ts#L70)
 
 Removes the database. Succeeds when it does not exist.
 
@@ -92,7 +92,7 @@ Removes the database. Succeeds when it does not exist.
 
 > **close**(): `Promise`\<`void`\>
 
-Defined in: [plugins/mongodb/src/driver.ts:71](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mongodb/src/driver.ts#L71)
+Defined in: [plugins/mongodb/src/driver.ts:71](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/driver.ts#L71)
 
 #### Returns
 

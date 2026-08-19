@@ -8,7 +8,7 @@
 
 > **buildJoinStatement**\<`TOuter`, `TInner`\>(`options`): [`SqlJoinStatement`](../type-aliases/SqlJoinStatement.md)
 
-Defined in: [plugins/sql-core/src/joins.ts:53](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/joins.ts#L53)
+Defined in: [plugins/sql-core/src/joins.ts:53](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/joins.ts#L53)
 
 Builds the whole joined SELECT around an already-built outer statement.
 

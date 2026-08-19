@@ -8,7 +8,7 @@
 
 > **MemoryExecutionReason** = `"not-parsable"` \| `"unmapped-property"` \| `"renamed-property"` \| `"map-rename"` \| `"after-nearest"` \| `"after-join"` \| `"cross-plugin-join"`
 
-Defined in: [core/src/plugins/query/types.ts:34](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L34)
+Defined in: [core/src/plugins/query/types.ts:34](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L34)
 
 Why an option runs in memory rather than in the database.
 

@@ -6,7 +6,7 @@
 
 # Class: SyncronousQueue
 
-Defined in: [core/src/pipeline/SyncronousQueue.ts:3](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/pipeline/SyncronousQueue.ts#L3)
+Defined in: [core/src/pipeline/SyncronousQueue.ts:3](https://github.com/Agrejus/routier/blob/main/core/src/pipeline/SyncronousQueue.ts#L3)
 
 ## Constructors
 
@@ -24,7 +24,7 @@ Defined in: [core/src/pipeline/SyncronousQueue.ts:3](https://github.com/Agrejus/
 
 > **enqueue**(`unitOfWork`): `void`
 
-Defined in: [core/src/pipeline/SyncronousQueue.ts:8](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/pipeline/SyncronousQueue.ts#L8)
+Defined in: [core/src/pipeline/SyncronousQueue.ts:8](https://github.com/Agrejus/routier/blob/main/core/src/pipeline/SyncronousQueue.ts#L8)
 
 #### Parameters
 

@@ -8,7 +8,7 @@
 
 > **loggerSink**(): [`TelemetrySink`](../type-aliases/TelemetrySink.md)
 
-Defined in: core/src/plugins/TelemetryDbPlugin.ts:37
+Defined in: [core/src/plugins/TelemetryDbPlugin.ts:37](https://github.com/Agrejus/routier/blob/main/core/src/plugins/TelemetryDbPlugin.ts#L37)
 
 Default sink: writes through the levelled logger, so ROUTIER_LOG_LEVEL governs it.
 

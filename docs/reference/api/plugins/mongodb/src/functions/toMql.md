@@ -8,7 +8,7 @@
 
 > **toMql**(`expr`): [`MqlFilter`](../type-aliases/MqlFilter.md)
 
-Defined in: [plugins/mongodb/src/mql.ts:349](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mongodb/src/mql.ts#L349)
+Defined in: [plugins/mongodb/src/mql.ts:349](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/mql.ts#L349)
 
 Converts an Expression to a MongoDB filter document.
 

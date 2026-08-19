@@ -8,7 +8,7 @@
 
 > **stringifyObject**(`obj`, `maxDepth`, `currentDepth`): `string`
 
-Defined in: [core/src/utilities/strings.ts:60](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/utilities/strings.ts#L60)
+Defined in: [core/src/utilities/strings.ts:60](https://github.com/Agrejus/routier/blob/main/core/src/utilities/strings.ts#L60)
 
 Converts any value to a readable string representation.
 Handles primitives, objects, arrays, classes, dates, errors, and functions.

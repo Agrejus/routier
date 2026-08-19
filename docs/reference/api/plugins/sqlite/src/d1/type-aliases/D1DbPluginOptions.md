@@ -8,7 +8,7 @@
 
 > **D1DbPluginOptions** = `object`
 
-Defined in: [plugins/sqlite/src/d1.ts:75](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sqlite/src/d1.ts#L75)
+Defined in: [plugins/sqlite/src/d1.ts:75](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L75)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: [plugins/sqlite/src/d1.ts:75](https://github.com/Agrejus/routier/blo
 
 > `optional` **deleteDatabase**: () => `Promise`\<`void`\>
 
-Defined in: [plugins/sqlite/src/d1.ts:85](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sqlite/src/d1.ts#L85)
+Defined in: [plugins/sqlite/src/d1.ts:85](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L85)
 
 How to drop the database, if dropping it is something the caller wants to allow.
 
@@ -36,7 +36,7 @@ same reason: a caller who knows which database this is can supply the teardown.
 
 > `optional` **databaseName**: `string`
 
-Defined in: [plugins/sqlite/src/d1.ts:92](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sqlite/src/d1.ts#L92)
+Defined in: [plugins/sqlite/src/d1.ts:92](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L92)
 
 See `IDbPlugin.databaseName`. A D1 binding carries no name a plugin can read, so this
 is the only way to tell two of them apart. Required in practice if one Worker binds

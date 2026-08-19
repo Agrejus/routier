@@ -8,7 +8,7 @@
 
 > **FileReferenceValue** = `object`
 
-Defined in: [core/src/schema/types.ts:55](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L55)
+Defined in: [core/src/schema/types.ts:55](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L55)
 
 What a file property gives back: where the bytes are and what they are.
 
@@ -21,7 +21,7 @@ carries this shape — and `@routier/blob-plugin` is what puts one here.
 
 > **key**: `string`
 
-Defined in: [core/src/schema/types.ts:57](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L57)
+Defined in: [core/src/schema/types.ts:57](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L57)
 
 Where the bytes live, content-addressed by the blob plugin.
 
@@ -31,7 +31,7 @@ Where the bytes live, content-addressed by the blob plugin.
 
 > **size**: `number`
 
-Defined in: [core/src/schema/types.ts:59](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L59)
+Defined in: [core/src/schema/types.ts:59](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L59)
 
 Byte length.
 
@@ -41,7 +41,7 @@ Byte length.
 
 > **contentType**: `string`
 
-Defined in: [core/src/schema/types.ts:61](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L61)
+Defined in: [core/src/schema/types.ts:61](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L61)
 
 Media type as supplied at upload.
 
@@ -51,7 +51,7 @@ Media type as supplied at upload.
 
 > **checksum**: `string`
 
-Defined in: [core/src/schema/types.ts:63](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L63)
+Defined in: [core/src/schema/types.ts:63](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L63)
 
 SHA-256 of the bytes, lowercase hex.
 
@@ -61,6 +61,6 @@ SHA-256 of the bytes, lowercase hex.
 
 > **fileName**: `string`
 
-Defined in: [core/src/schema/types.ts:65](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L65)
+Defined in: [core/src/schema/types.ts:65](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L65)
 
 The name to show a user. Not part of the key.

@@ -6,7 +6,7 @@
 
 # Class: Result
 
-Defined in: [core/src/results/Result.ts:32](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/results/Result.ts#L32)
+Defined in: [core/src/results/Result.ts:32](https://github.com/Agrejus/routier/blob/main/core/src/results/Result.ts#L32)
 
 ## Extends
 
@@ -32,7 +32,7 @@ Defined in: [core/src/results/Result.ts:32](https://github.com/Agrejus/routier/b
 
 > `static` **ERROR**: `"error"`
 
-Defined in: [core/src/results/Result.ts:4](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/results/Result.ts#L4)
+Defined in: [core/src/results/Result.ts:4](https://github.com/Agrejus/routier/blob/main/core/src/results/Result.ts#L4)
 
 #### Inherited from
 
@@ -44,7 +44,7 @@ Defined in: [core/src/results/Result.ts:4](https://github.com/Agrejus/routier/bl
 
 > `static` **SUCCESS**: `"success"`
 
-Defined in: [core/src/results/Result.ts:5](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/results/Result.ts#L5)
+Defined in: [core/src/results/Result.ts:5](https://github.com/Agrejus/routier/blob/main/core/src/results/Result.ts#L5)
 
 #### Inherited from
 
@@ -56,7 +56,7 @@ Defined in: [core/src/results/Result.ts:5](https://github.com/Agrejus/routier/bl
 
 > `static` **PARTIAL**: `"partial"`
 
-Defined in: [core/src/results/Result.ts:6](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/results/Result.ts#L6)
+Defined in: [core/src/results/Result.ts:6](https://github.com/Agrejus/routier/blob/main/core/src/results/Result.ts#L6)
 
 #### Inherited from
 
@@ -68,7 +68,7 @@ Defined in: [core/src/results/Result.ts:6](https://github.com/Agrejus/routier/bl
 
 > `static` **resolve**\<`T`\>(`result`, `resolve`, `reject`): `void`
 
-Defined in: [core/src/results/Result.ts:8](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/results/Result.ts#L8)
+Defined in: [core/src/results/Result.ts:8](https://github.com/Agrejus/routier/blob/main/core/src/results/Result.ts#L8)
 
 #### Type Parameters
 
@@ -104,7 +104,7 @@ Defined in: [core/src/results/Result.ts:8](https://github.com/Agrejus/routier/bl
 
 > `static` **assertSuccess**\<`T`\>(`result`): `asserts result is { ok: "success"; data: T }`
 
-Defined in: [core/src/results/Result.ts:25](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/results/Result.ts#L25)
+Defined in: [core/src/results/Result.ts:25](https://github.com/Agrejus/routier/blob/main/core/src/results/Result.ts#L25)
 
 #### Type Parameters
 
@@ -134,7 +134,7 @@ Defined in: [core/src/results/Result.ts:25](https://github.com/Agrejus/routier/b
 
 > `static` **success**\<`T`\>(`data`): [`ResultType`](../type-aliases/ResultType.md)\<`T`\>
 
-Defined in: [core/src/results/Result.ts:33](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/results/Result.ts#L33)
+Defined in: [core/src/results/Result.ts:33](https://github.com/Agrejus/routier/blob/main/core/src/results/Result.ts#L33)
 
 ##### Type Parameters
 
@@ -156,7 +156,7 @@ Defined in: [core/src/results/Result.ts:33](https://github.com/Agrejus/routier/b
 
 > `static` **success**(): [`ResultType`](../type-aliases/ResultType.md)\<`never`\>
 
-Defined in: [core/src/results/Result.ts:34](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/results/Result.ts#L34)
+Defined in: [core/src/results/Result.ts:34](https://github.com/Agrejus/routier/blob/main/core/src/results/Result.ts#L34)
 
 ##### Returns
 
@@ -168,7 +168,7 @@ Defined in: [core/src/results/Result.ts:34](https://github.com/Agrejus/routier/b
 
 > `static` **error**\<`T`\>(`error`): [`ResultType`](../type-aliases/ResultType.md)\<`T`\>
 
-Defined in: [core/src/results/Result.ts:42](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/results/Result.ts#L42)
+Defined in: [core/src/results/Result.ts:42](https://github.com/Agrejus/routier/blob/main/core/src/results/Result.ts#L42)
 
 #### Type Parameters
 
@@ -192,7 +192,7 @@ Defined in: [core/src/results/Result.ts:42](https://github.com/Agrejus/routier/b
 
 > `static` **partial**\<`T`\>(`data`, `error`): [`PartialResultType`](../type-aliases/PartialResultType.md)\<`T`\>
 
-Defined in: [core/src/results/Result.ts:49](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/results/Result.ts#L49)
+Defined in: [core/src/results/Result.ts:49](https://github.com/Agrejus/routier/blob/main/core/src/results/Result.ts#L49)
 
 #### Type Parameters
 

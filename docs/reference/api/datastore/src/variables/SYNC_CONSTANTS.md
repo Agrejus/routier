@@ -8,7 +8,7 @@
 
 > `const` **SYNC\_CONSTANTS**: `object`
 
-Defined in: [datastore/src/utils/constants.ts:4](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/utils/constants.ts#L4)
+Defined in: [datastore/src/utils/constants.ts:4](https://github.com/Agrejus/routier/blob/main/datastore/src/utils/constants.ts#L4)
 
 Constants used throughout the sync system
 

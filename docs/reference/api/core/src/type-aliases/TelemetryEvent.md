@@ -8,7 +8,7 @@
 
 > **TelemetryEvent** = `object`
 
-Defined in: core/src/plugins/TelemetryDbPlugin.ts:15
+Defined in: [core/src/plugins/TelemetryDbPlugin.ts:15](https://github.com/Agrejus/routier/blob/main/core/src/plugins/TelemetryDbPlugin.ts#L15)
 
 Measures every operation an inner plugin performs and hands one event per call to a sink.
 
@@ -22,7 +22,7 @@ const store = new MyStore(new TelemetryDbPlugin(new SomeDbPlugin(...)));
 
 > **operation**: `"query"` \| `"bulkPersist"` \| `"destroy"`
 
-Defined in: core/src/plugins/TelemetryDbPlugin.ts:16
+Defined in: [core/src/plugins/TelemetryDbPlugin.ts:16](https://github.com/Agrejus/routier/blob/main/core/src/plugins/TelemetryDbPlugin.ts#L16)
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: core/src/plugins/TelemetryDbPlugin.ts:16
 
 > **eventId**: `string`
 
-Defined in: core/src/plugins/TelemetryDbPlugin.ts:18
+Defined in: [core/src/plugins/TelemetryDbPlugin.ts:18](https://github.com/Agrejus/routier/blob/main/core/src/plugins/TelemetryDbPlugin.ts#L18)
 
 `id` of the plugin event that produced this measurement.
 
@@ -40,7 +40,7 @@ Defined in: core/src/plugins/TelemetryDbPlugin.ts:18
 
 > **source**: `string`
 
-Defined in: core/src/plugins/TelemetryDbPlugin.ts:20
+Defined in: [core/src/plugins/TelemetryDbPlugin.ts:20](https://github.com/Agrejus/routier/blob/main/core/src/plugins/TelemetryDbPlugin.ts#L20)
 
 The class/component that triggered the operation (`event.source`).
 
@@ -50,7 +50,7 @@ The class/component that triggered the operation (`event.source`).
 
 > **schemas**: `string`[]
 
-Defined in: core/src/plugins/TelemetryDbPlugin.ts:22
+Defined in: [core/src/plugins/TelemetryDbPlugin.ts:22](https://github.com/Agrejus/routier/blob/main/core/src/plugins/TelemetryDbPlugin.ts#L22)
 
 Collection names involved, from `event.schemas`.
 
@@ -60,7 +60,7 @@ Collection names involved, from `event.schemas`.
 
 > **durationMs**: `number`
 
-Defined in: core/src/plugins/TelemetryDbPlugin.ts:23
+Defined in: [core/src/plugins/TelemetryDbPlugin.ts:23](https://github.com/Agrejus/routier/blob/main/core/src/plugins/TelemetryDbPlugin.ts#L23)
 
 ***
 
@@ -68,7 +68,7 @@ Defined in: core/src/plugins/TelemetryDbPlugin.ts:23
 
 > **ok**: `"success"` \| `"partial"` \| `"error"`
 
-Defined in: core/src/plugins/TelemetryDbPlugin.ts:24
+Defined in: [core/src/plugins/TelemetryDbPlugin.ts:24](https://github.com/Agrejus/routier/blob/main/core/src/plugins/TelemetryDbPlugin.ts#L24)
 
 ***
 
@@ -76,6 +76,6 @@ Defined in: core/src/plugins/TelemetryDbPlugin.ts:24
 
 > `optional` **error**: `unknown`
 
-Defined in: core/src/plugins/TelemetryDbPlugin.ts:26
+Defined in: [core/src/plugins/TelemetryDbPlugin.ts:26](https://github.com/Agrejus/routier/blob/main/core/src/plugins/TelemetryDbPlugin.ts#L26)
 
 Present when ok is "error" or "partial".

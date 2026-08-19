@@ -8,7 +8,7 @@
 
 > **encryption**(`keyring`, `options`): `PropertyTransform`\<`any`\>
 
-Defined in: [plugins/encryption/src/transform.ts:43](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/encryption/src/transform.ts#L43)
+Defined in: [plugins/encryption/src/transform.ts:43](https://github.com/Agrejus/routier/blob/main/plugins/encryption/src/transform.ts#L43)
 
 AES-GCM encryption as a transform you hand to a schema.
 

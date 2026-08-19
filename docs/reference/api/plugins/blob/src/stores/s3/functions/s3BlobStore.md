@@ -8,7 +8,7 @@
 
 > **s3BlobStore**(`options`): [`BlobStore`](../../../interfaces/BlobStore.md)
 
-Defined in: [plugins/blob/src/stores/s3.ts:141](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/stores/s3.ts#L141)
+Defined in: [plugins/blob/src/stores/s3.ts:141](https://github.com/Agrejus/routier/blob/main/plugins/blob/src/stores/s3.ts#L141)
 
 ## Parameters
 

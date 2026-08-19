@@ -8,7 +8,7 @@
 
 > **UploadUrlOptions** = `object`
 
-Defined in: [plugins/blob/src/stores/types.ts:78](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/stores/types.ts#L78)
+Defined in: [plugins/blob/src/stores/types.ts:78](https://github.com/Agrejus/routier/blob/main/plugins/blob/src/stores/types.ts#L78)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: [plugins/blob/src/stores/types.ts:78](https://github.com/Agrejus/rou
 
 > **contentType**: `string`
 
-Defined in: [plugins/blob/src/stores/types.ts:80](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/stores/types.ts#L80)
+Defined in: [plugins/blob/src/stores/types.ts:80](https://github.com/Agrejus/routier/blob/main/plugins/blob/src/stores/types.ts#L80)
 
 Media type the client will send. Signed, so the client must send exactly this.
 
@@ -26,7 +26,7 @@ Media type the client will send. Signed, so the client must send exactly this.
 
 > `optional` **expiresIn**: `number`
 
-Defined in: [plugins/blob/src/stores/types.ts:83](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/stores/types.ts#L83)
+Defined in: [plugins/blob/src/stores/types.ts:83](https://github.com/Agrejus/routier/blob/main/plugins/blob/src/stores/types.ts#L83)
 
 Seconds the URL stays valid. Keep it short; it is a bearer token for one object.
 
@@ -36,7 +36,7 @@ Seconds the URL stays valid. Keep it short; it is a bearer token for one object.
 
 > `optional` **checksum**: `string`
 
-Defined in: [plugins/blob/src/stores/types.ts:92](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/stores/types.ts#L92)
+Defined in: [plugins/blob/src/stores/types.ts:92](https://github.com/Agrejus/routier/blob/main/plugins/blob/src/stores/types.ts#L92)
 
 SHA-256 of the content, lowercase hex, when the key is content-addressed.
 

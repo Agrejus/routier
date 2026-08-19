@@ -8,7 +8,7 @@
 
 > **QueryField** = `object`
 
-Defined in: [core/src/plugins/query/types.ts:15](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L15)
+Defined in: [core/src/plugins/query/types.ts:15](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L15)
 
 Field mapping for a query result, including source and destination names and a getter function.
 
@@ -18,7 +18,7 @@ Field mapping for a query result, including source and destination names and a g
 
 > **sourceName**: `string`
 
-Defined in: [core/src/plugins/query/types.ts:16](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L16)
+Defined in: [core/src/plugins/query/types.ts:16](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L16)
 
 ***
 
@@ -26,7 +26,7 @@ Defined in: [core/src/plugins/query/types.ts:16](https://github.com/Agrejus/rout
 
 > **destinationName**: `string`
 
-Defined in: [core/src/plugins/query/types.ts:17](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L17)
+Defined in: [core/src/plugins/query/types.ts:17](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L17)
 
 ***
 
@@ -34,7 +34,7 @@ Defined in: [core/src/plugins/query/types.ts:17](https://github.com/Agrejus/rout
 
 > **isRename**: `boolean`
 
-Defined in: [core/src/plugins/query/types.ts:18](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L18)
+Defined in: [core/src/plugins/query/types.ts:18](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L18)
 
 ***
 
@@ -42,7 +42,7 @@ Defined in: [core/src/plugins/query/types.ts:18](https://github.com/Agrejus/rout
 
 > `optional` **property**: [`PropertyInfo`](../classes/PropertyInfo.md)\<`unknown`\>
 
-Defined in: [core/src/plugins/query/types.ts:19](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L19)
+Defined in: [core/src/plugins/query/types.ts:19](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L19)
 
 ***
 
@@ -50,7 +50,7 @@ Defined in: [core/src/plugins/query/types.ts:19](https://github.com/Agrejus/rout
 
 > **getter**: \<`T`\>(`data`) => `T`
 
-Defined in: [core/src/plugins/query/types.ts:20](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L20)
+Defined in: [core/src/plugins/query/types.ts:20](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L20)
 
 #### Type Parameters
 

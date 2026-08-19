@@ -8,7 +8,7 @@
 
 > **EntityUpdateInfo**\<`T`\> = `object`
 
-Defined in: [core/src/plugins/types.ts:182](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/types.ts#L182)
+Defined in: [core/src/plugins/types.ts:182](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L182)
 
 ## Type Parameters
 
@@ -22,7 +22,7 @@ Defined in: [core/src/plugins/types.ts:182](https://github.com/Agrejus/routier/b
 
 > **entity**: [`InferType`](InferType.md)\<`T`\>
 
-Defined in: [core/src/plugins/types.ts:183](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/types.ts#L183)
+Defined in: [core/src/plugins/types.ts:183](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L183)
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: [core/src/plugins/types.ts:183](https://github.com/Agrejus/routier/b
 
 > **changeType**: [`EntityChangeType`](EntityChangeType.md)
 
-Defined in: [core/src/plugins/types.ts:184](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/types.ts#L184)
+Defined in: [core/src/plugins/types.ts:184](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L184)
 
 ***
 
@@ -38,7 +38,7 @@ Defined in: [core/src/plugins/types.ts:184](https://github.com/Agrejus/routier/b
 
 > **delta**: [`EntityDelta`](EntityDelta.md)\<`T`\>
 
-Defined in: [core/src/plugins/types.ts:185](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/types.ts#L185)
+Defined in: [core/src/plugins/types.ts:185](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L185)
 
 ***
 
@@ -46,7 +46,7 @@ Defined in: [core/src/plugins/types.ts:185](https://github.com/Agrejus/routier/b
 
 > `optional` **concurrency**: `object`
 
-Defined in: [core/src/plugins/types.ts:193](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/types.ts#L193)
+Defined in: [core/src/plugins/types.ts:193](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L193)
 
 Present when the schema declares a `.concurrency()` token: the update must be
 applied ONLY IF the stored row's `column` still equals `expected` (the value the
@@ -68,7 +68,7 @@ OptimisticConcurrencyError naming the conflicted rows — never apply partially.
 
 > `optional` **previous**: [`EntityDelta`](EntityDelta.md)\<`T`\>
 
-Defined in: [core/src/plugins/types.ts:213](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/types.ts#L213)
+Defined in: [core/src/plugins/types.ts:213](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L213)
 
 The values these properties held BEFORE this update — keyed like `delta`, which holds
 the values they hold after.

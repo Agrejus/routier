@@ -8,6 +8,6 @@
 
 > **KeySecret** = `Uint8Array`
 
-Defined in: [plugins/encryption/src/keyring.ts:21](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/encryption/src/keyring.ts#L21)
+Defined in: [plugins/encryption/src/keyring.ts:21](https://github.com/Agrejus/routier/blob/main/plugins/encryption/src/keyring.ts#L21)
 
 Raw key material. 32 bytes of real entropy — not a password, not a passphrase.

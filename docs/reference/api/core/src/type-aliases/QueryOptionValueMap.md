@@ -8,7 +8,7 @@
 
 > **QueryOptionValueMap**\<`T`\> = `object`
 
-Defined in: [core/src/plugins/query/types.ts:51](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L51)
+Defined in: [core/src/plugins/query/types.ts:51](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L51)
 
 ## Type Parameters
 
@@ -22,7 +22,7 @@ Defined in: [core/src/plugins/query/types.ts:51](https://github.com/Agrejus/rout
 
 > **skip**: `number`
 
-Defined in: [core/src/plugins/query/types.ts:52](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L52)
+Defined in: [core/src/plugins/query/types.ts:52](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L52)
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: [core/src/plugins/query/types.ts:52](https://github.com/Agrejus/rout
 
 > **take**: `number`
 
-Defined in: [core/src/plugins/query/types.ts:53](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L53)
+Defined in: [core/src/plugins/query/types.ts:53](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L53)
 
 ***
 
@@ -38,7 +38,7 @@ Defined in: [core/src/plugins/query/types.ts:53](https://github.com/Agrejus/rout
 
 > **sort**: `object`
 
-Defined in: [core/src/plugins/query/types.ts:54](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L54)
+Defined in: [core/src/plugins/query/types.ts:54](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L54)
 
 #### selector
 
@@ -62,7 +62,7 @@ Defined in: [core/src/plugins/query/types.ts:54](https://github.com/Agrejus/rout
 
 > **map**: `object`
 
-Defined in: [core/src/plugins/query/types.ts:55](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L55)
+Defined in: [core/src/plugins/query/types.ts:55](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L55)
 
 #### selector
 
@@ -78,7 +78,7 @@ Defined in: [core/src/plugins/query/types.ts:55](https://github.com/Agrejus/rout
 
 > **group**: `object`
 
-Defined in: [core/src/plugins/query/types.ts:56](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L56)
+Defined in: [core/src/plugins/query/types.ts:56](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L56)
 
 #### selector
 
@@ -98,7 +98,7 @@ Defined in: [core/src/plugins/query/types.ts:56](https://github.com/Agrejus/rout
 
 > **filter**: `object`
 
-Defined in: [core/src/plugins/query/types.ts:57](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L57)
+Defined in: [core/src/plugins/query/types.ts:57](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L57)
 
 #### params?
 
@@ -118,7 +118,7 @@ Defined in: [core/src/plugins/query/types.ts:57](https://github.com/Agrejus/rout
 
 > **nearest**: `object`
 
-Defined in: [core/src/plugins/query/types.ts:65](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L65)
+Defined in: [core/src/plugins/query/types.ts:65](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L65)
 
 Similarity search: an ordering plus a limit, never a filter.
 
@@ -152,7 +152,7 @@ approximate index usable, and splitting them would order every row before limiti
 
 > **join**: `object`
 
-Defined in: [core/src/plugins/query/types.ts:78](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L78)
+Defined in: [core/src/plugins/query/types.ts:78](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L78)
 
 An equi-join against a second collection, interpreted by whoever receives it.
 
@@ -222,7 +222,7 @@ join discards the surplus — the same answer by a slower route.
 
 > **min**: `true`
 
-Defined in: [core/src/plugins/query/types.ts:112](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L112)
+Defined in: [core/src/plugins/query/types.ts:112](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L112)
 
 ***
 
@@ -230,7 +230,7 @@ Defined in: [core/src/plugins/query/types.ts:112](https://github.com/Agrejus/rou
 
 > **max**: `true`
 
-Defined in: [core/src/plugins/query/types.ts:113](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L113)
+Defined in: [core/src/plugins/query/types.ts:113](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L113)
 
 ***
 
@@ -238,7 +238,7 @@ Defined in: [core/src/plugins/query/types.ts:113](https://github.com/Agrejus/rou
 
 > **count**: `true`
 
-Defined in: [core/src/plugins/query/types.ts:114](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L114)
+Defined in: [core/src/plugins/query/types.ts:114](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L114)
 
 ***
 
@@ -246,7 +246,7 @@ Defined in: [core/src/plugins/query/types.ts:114](https://github.com/Agrejus/rou
 
 > **sum**: `true`
 
-Defined in: [core/src/plugins/query/types.ts:115](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L115)
+Defined in: [core/src/plugins/query/types.ts:115](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L115)
 
 ***
 
@@ -254,4 +254,4 @@ Defined in: [core/src/plugins/query/types.ts:115](https://github.com/Agrejus/rou
 
 > **distinct**: `true`
 
-Defined in: [core/src/plugins/query/types.ts:116](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L116)
+Defined in: [core/src/plugins/query/types.ts:116](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L116)

@@ -6,7 +6,7 @@
 
 # Class: SchemaPersistResult\<T\>
 
-Defined in: [core/src/collections/Changes.ts:165](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/collections/Changes.ts#L165)
+Defined in: [core/src/collections/Changes.ts:165](https://github.com/Agrejus/routier/blob/main/core/src/collections/Changes.ts#L165)
 
 ## Type Parameters
 
@@ -30,7 +30,7 @@ Defined in: [core/src/collections/Changes.ts:165](https://github.com/Agrejus/rou
 
 > **adds**: [`InferType`](../type-aliases/InferType.md)\<`T`\>[] = `[]`
 
-Defined in: [core/src/collections/Changes.ts:166](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/collections/Changes.ts#L166)
+Defined in: [core/src/collections/Changes.ts:166](https://github.com/Agrejus/routier/blob/main/core/src/collections/Changes.ts#L166)
 
 ***
 
@@ -38,7 +38,7 @@ Defined in: [core/src/collections/Changes.ts:166](https://github.com/Agrejus/rou
 
 > **updates**: [`InferType`](../type-aliases/InferType.md)\<`T`\>[] = `[]`
 
-Defined in: [core/src/collections/Changes.ts:167](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/collections/Changes.ts#L167)
+Defined in: [core/src/collections/Changes.ts:167](https://github.com/Agrejus/routier/blob/main/core/src/collections/Changes.ts#L167)
 
 ***
 
@@ -46,7 +46,7 @@ Defined in: [core/src/collections/Changes.ts:167](https://github.com/Agrejus/rou
 
 > **removes**: [`InferType`](../type-aliases/InferType.md)\<`T`\>[] = `[]`
 
-Defined in: [core/src/collections/Changes.ts:168](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/collections/Changes.ts#L168)
+Defined in: [core/src/collections/Changes.ts:168](https://github.com/Agrejus/routier/blob/main/core/src/collections/Changes.ts#L168)
 
 ## Accessors
 
@@ -56,7 +56,7 @@ Defined in: [core/src/collections/Changes.ts:168](https://github.com/Agrejus/rou
 
 > **get** **hasItems**(): `boolean`
 
-Defined in: [core/src/collections/Changes.ts:170](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/collections/Changes.ts#L170)
+Defined in: [core/src/collections/Changes.ts:170](https://github.com/Agrejus/routier/blob/main/core/src/collections/Changes.ts#L170)
 
 ##### Returns
 
@@ -70,7 +70,7 @@ Defined in: [core/src/collections/Changes.ts:170](https://github.com/Agrejus/rou
 
 > **get** **total**(): `number`
 
-Defined in: [core/src/collections/Changes.ts:174](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/collections/Changes.ts#L174)
+Defined in: [core/src/collections/Changes.ts:174](https://github.com/Agrejus/routier/blob/main/core/src/collections/Changes.ts#L174)
 
 ##### Returns
 

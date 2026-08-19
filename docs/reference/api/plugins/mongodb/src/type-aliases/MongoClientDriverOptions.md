@@ -8,7 +8,7 @@
 
 > **MongoClientDriverOptions** = `object`
 
-Defined in: [plugins/mongodb/src/MongoClientDriver.ts:53](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mongodb/src/MongoClientDriver.ts#L53)
+Defined in: [plugins/mongodb/src/MongoClientDriver.ts:53](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoClientDriver.ts#L53)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: [plugins/mongodb/src/MongoClientDriver.ts:53](https://github.com/Agr
 
 > `readonly` **transactions**: `"required"` \| `"unavailable"`
 
-Defined in: [plugins/mongodb/src/MongoClientDriver.ts:70](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mongodb/src/MongoClientDriver.ts#L70)
+Defined in: [plugins/mongodb/src/MongoClientDriver.ts:70](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoClientDriver.ts#L70)
 
 Whether this deployment can do transactions.
 

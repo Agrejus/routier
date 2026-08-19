@@ -6,7 +6,7 @@
 
 # Interface: Types\<Input, Output\>
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:23](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/utils/standardJsonSchema.ts#L23)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:23](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L23)
 
 ## Type Parameters
 
@@ -24,7 +24,7 @@ Defined in: [core/src/schema/utils/standardJsonSchema.ts:23](https://github.com/
 
 > `readonly` **input**: `Input`
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:24](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/utils/standardJsonSchema.ts#L24)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:24](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L24)
 
 ***
 
@@ -32,4 +32,4 @@ Defined in: [core/src/schema/utils/standardJsonSchema.ts:24](https://github.com/
 
 > `readonly` **output**: `Output`
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:25](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/utils/standardJsonSchema.ts#L25)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:25](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L25)

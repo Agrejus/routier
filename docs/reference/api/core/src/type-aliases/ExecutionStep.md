@@ -8,7 +8,7 @@
 
 > **ExecutionStep** = `object`
 
-Defined in: [core/src/plugins/query/explain.ts:42](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/explain.ts#L42)
+Defined in: [core/src/plugins/query/explain.ts:42](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L42)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: [core/src/plugins/query/explain.ts:42](https://github.com/Agrejus/ro
 
 > **step**: `number`
 
-Defined in: [core/src/plugins/query/explain.ts:43](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/explain.ts#L43)
+Defined in: [core/src/plugins/query/explain.ts:43](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L43)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [core/src/plugins/query/explain.ts:43](https://github.com/Agrejus/ro
 
 > **of**: `number`
 
-Defined in: [core/src/plugins/query/explain.ts:44](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/explain.ts#L44)
+Defined in: [core/src/plugins/query/explain.ts:44](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L44)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [core/src/plugins/query/explain.ts:44](https://github.com/Agrejus/ro
 
 > **executedIn**: [`QueryOptionExecutionTarget`](QueryOptionExecutionTarget.md)
 
-Defined in: [core/src/plugins/query/explain.ts:45](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/explain.ts#L45)
+Defined in: [core/src/plugins/query/explain.ts:45](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L45)
 
 ***
 
@@ -40,7 +40,7 @@ Defined in: [core/src/plugins/query/explain.ts:45](https://github.com/Agrejus/ro
 
 > **description**: `string`
 
-Defined in: [core/src/plugins/query/explain.ts:46](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/explain.ts#L46)
+Defined in: [core/src/plugins/query/explain.ts:46](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L46)
 
 ***
 
@@ -48,7 +48,7 @@ Defined in: [core/src/plugins/query/explain.ts:46](https://github.com/Agrejus/ro
 
 > **options**: [`ExplainedOption`](ExplainedOption.md)[]
 
-Defined in: [core/src/plugins/query/explain.ts:47](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/explain.ts#L47)
+Defined in: [core/src/plugins/query/explain.ts:47](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L47)
 
 ***
 
@@ -56,7 +56,7 @@ Defined in: [core/src/plugins/query/explain.ts:47](https://github.com/Agrejus/ro
 
 > `optional` **executedQueries**: [`ExecutedQuery`](ExecutedQuery.md)[]
 
-Defined in: [core/src/plugins/query/explain.ts:49](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/explain.ts#L49)
+Defined in: [core/src/plugins/query/explain.ts:49](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L49)
 
 Set on database steps once the plugin has reported.
 
@@ -66,7 +66,7 @@ Set on database steps once the plugin has reported.
 
 > `optional` **executedQueriesUnsupported**: `string`
 
-Defined in: [core/src/plugins/query/explain.ts:51](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/explain.ts#L51)
+Defined in: [core/src/plugins/query/explain.ts:51](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L51)
 
 Set on the first database step instead, when the plugin reported nothing.
 
@@ -76,7 +76,7 @@ Set on the first database step instead, when the plugin reported nothing.
 
 > `optional` **reason**: [`MemoryExecutionReason`](MemoryExecutionReason.md)
 
-Defined in: [core/src/plugins/query/explain.ts:53](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/explain.ts#L53)
+Defined in: [core/src/plugins/query/explain.ts:53](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L53)
 
 Set on memory steps only.
 
@@ -86,4 +86,4 @@ Set on memory steps only.
 
 > `optional` **explanation**: `string`
 
-Defined in: [core/src/plugins/query/explain.ts:54](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/explain.ts#L54)
+Defined in: [core/src/plugins/query/explain.ts:54](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L54)

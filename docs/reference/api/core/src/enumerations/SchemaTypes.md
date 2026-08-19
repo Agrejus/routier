@@ -6,7 +6,7 @@
 
 # Enumeration: SchemaTypes
 
-Defined in: [core/src/schema/types.ts:21](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L21)
+Defined in: [core/src/schema/types.ts:21](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L21)
 
 ## Enumeration Members
 
@@ -14,7 +14,7 @@ Defined in: [core/src/schema/types.ts:21](https://github.com/Agrejus/routier/blo
 
 > **Array**: `"Array"`
 
-Defined in: [core/src/schema/types.ts:22](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L22)
+Defined in: [core/src/schema/types.ts:22](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L22)
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: [core/src/schema/types.ts:22](https://github.com/Agrejus/routier/blo
 
 > **Boolean**: `"Boolean"`
 
-Defined in: [core/src/schema/types.ts:23](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L23)
+Defined in: [core/src/schema/types.ts:23](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L23)
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: [core/src/schema/types.ts:23](https://github.com/Agrejus/routier/blo
 
 > **Date**: `"Date"`
 
-Defined in: [core/src/schema/types.ts:24](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L24)
+Defined in: [core/src/schema/types.ts:24](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L24)
 
 ***
 
@@ -38,7 +38,7 @@ Defined in: [core/src/schema/types.ts:24](https://github.com/Agrejus/routier/blo
 
 > **Number**: `"Number"`
 
-Defined in: [core/src/schema/types.ts:25](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L25)
+Defined in: [core/src/schema/types.ts:25](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L25)
 
 ***
 
@@ -46,7 +46,7 @@ Defined in: [core/src/schema/types.ts:25](https://github.com/Agrejus/routier/blo
 
 > **Object**: `"Object"`
 
-Defined in: [core/src/schema/types.ts:26](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L26)
+Defined in: [core/src/schema/types.ts:26](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L26)
 
 ***
 
@@ -54,7 +54,7 @@ Defined in: [core/src/schema/types.ts:26](https://github.com/Agrejus/routier/blo
 
 > **String**: `"String"`
 
-Defined in: [core/src/schema/types.ts:27](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L27)
+Defined in: [core/src/schema/types.ts:27](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L27)
 
 ***
 
@@ -62,7 +62,7 @@ Defined in: [core/src/schema/types.ts:27](https://github.com/Agrejus/routier/blo
 
 > **Definition**: `"Definition"`
 
-Defined in: [core/src/schema/types.ts:28](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L28)
+Defined in: [core/src/schema/types.ts:28](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L28)
 
 ***
 
@@ -70,7 +70,7 @@ Defined in: [core/src/schema/types.ts:28](https://github.com/Agrejus/routier/blo
 
 > **Function**: `"Function"`
 
-Defined in: [core/src/schema/types.ts:29](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L29)
+Defined in: [core/src/schema/types.ts:29](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L29)
 
 ***
 
@@ -78,7 +78,7 @@ Defined in: [core/src/schema/types.ts:29](https://github.com/Agrejus/routier/blo
 
 > **Computed**: `"Computed"`
 
-Defined in: [core/src/schema/types.ts:30](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L30)
+Defined in: [core/src/schema/types.ts:30](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L30)
 
 ***
 
@@ -86,7 +86,7 @@ Defined in: [core/src/schema/types.ts:30](https://github.com/Agrejus/routier/blo
 
 > **File**: `"File"`
 
-Defined in: [core/src/schema/types.ts:35](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L35)
+Defined in: [core/src/schema/types.ts:35](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L35)
 
 Content in, reference out. The only type whose write shape differs from its stored
 shape, and a leaf on purpose — see `SchemaFile`.
@@ -97,7 +97,7 @@ shape, and a leaf on purpose — see `SchemaFile`.
 
 > **Vector**: `"Vector"`
 
-Defined in: [core/src/schema/types.ts:43](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L43)
+Defined in: [core/src/schema/types.ts:43](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L43)
 
 A fixed-length list of numbers, carrying its dimension count — see `SchemaVector`.
 

@@ -6,7 +6,7 @@
 
 # Class: FileSystemPlugin
 
-Defined in: [plugins/file-system/src/FileSystemPlugin.ts:25](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/file-system/src/FileSystemPlugin.ts#L25)
+Defined in: [plugins/file-system/src/FileSystemPlugin.ts:25](https://github.com/Agrejus/routier/blob/main/plugins/file-system/src/FileSystemPlugin.ts#L25)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [plugins/file-system/src/FileSystemPlugin.ts:25](https://github.com/
 
 > **new FileSystemPlugin**(`path`, `databaseName`): `FileSystemPlugin`
 
-Defined in: [plugins/file-system/src/FileSystemPlugin.ts:29](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/file-system/src/FileSystemPlugin.ts#L29)
+Defined in: [plugins/file-system/src/FileSystemPlugin.ts:29](https://github.com/Agrejus/routier/blob/main/plugins/file-system/src/FileSystemPlugin.ts#L29)
 
 #### Parameters
 
@@ -46,7 +46,7 @@ Defined in: [plugins/file-system/src/FileSystemPlugin.ts:29](https://github.com/
 
 > **get** **databaseName**(): `string`
 
-Defined in: [plugins/file-system/src/FileSystemPlugin.ts:53](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/file-system/src/FileSystemPlugin.ts#L53)
+Defined in: [plugins/file-system/src/FileSystemPlugin.ts:53](https://github.com/Agrejus/routier/blob/main/plugins/file-system/src/FileSystemPlugin.ts#L53)
 
 The resolved path, not the bare file name: `orders.json` in two directories is two
 databases, and scoping subscriptions by the name alone would let them notify each other.
@@ -147,7 +147,7 @@ Callback with the result or error.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: [plugins/file-system/src/FileSystemPlugin.ts:87](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/file-system/src/FileSystemPlugin.ts#L87)
+Defined in: [plugins/file-system/src/FileSystemPlugin.ts:87](https://github.com/Agrejus/routier/blob/main/plugins/file-system/src/FileSystemPlugin.ts#L87)
 
 #### Parameters
 

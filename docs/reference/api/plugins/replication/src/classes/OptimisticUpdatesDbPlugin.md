@@ -6,7 +6,7 @@
 
 # Class: OptimisticUpdatesDbPlugin
 
-Defined in: [plugins/replication/src/OptimisticUpdatesDbPlugin.ts:18](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/OptimisticUpdatesDbPlugin.ts#L18)
+Defined in: [plugins/replication/src/OptimisticUpdatesDbPlugin.ts:18](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/OptimisticUpdatesDbPlugin.ts#L18)
 
 ## Implements
 
@@ -18,7 +18,7 @@ Defined in: [plugins/replication/src/OptimisticUpdatesDbPlugin.ts:18](https://gi
 
 > **new OptimisticUpdatesDbPlugin**(`source`): `OptimisticUpdatesDbPlugin`
 
-Defined in: [plugins/replication/src/OptimisticUpdatesDbPlugin.ts:56](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/OptimisticUpdatesDbPlugin.ts#L56)
+Defined in: [plugins/replication/src/OptimisticUpdatesDbPlugin.ts:56](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/OptimisticUpdatesDbPlugin.ts#L56)
 
 #### Parameters
 
@@ -38,7 +38,7 @@ Defined in: [plugins/replication/src/OptimisticUpdatesDbPlugin.ts:56](https://gi
 
 > **get** **databaseName**(): `string`
 
-Defined in: [plugins/replication/src/OptimisticUpdatesDbPlugin.ts:52](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/OptimisticUpdatesDbPlugin.ts#L52)
+Defined in: [plugins/replication/src/OptimisticUpdatesDbPlugin.ts:52](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/OptimisticUpdatesDbPlugin.ts#L52)
 
 The SOURCE's name. The read plugin is a per-instance scratch copy with a uuid name;
 identifying by it would give every instance its own subscription scope and cut two
@@ -58,7 +58,7 @@ stores over one source database off from each other.
 
 > **query**\<`TEntity`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: [plugins/replication/src/OptimisticUpdatesDbPlugin.ts:76](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/OptimisticUpdatesDbPlugin.ts#L76)
+Defined in: [plugins/replication/src/OptimisticUpdatesDbPlugin.ts:76](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/OptimisticUpdatesDbPlugin.ts#L76)
 
 Will query the read plugin if there is one, otherwise the source plugin will be queried
 
@@ -96,7 +96,7 @@ Will query the read plugin if there is one, otherwise the source plugin will be 
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: [plugins/replication/src/OptimisticUpdatesDbPlugin.ts:180](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/OptimisticUpdatesDbPlugin.ts#L180)
+Defined in: [plugins/replication/src/OptimisticUpdatesDbPlugin.ts:180](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/OptimisticUpdatesDbPlugin.ts#L180)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 
@@ -126,7 +126,7 @@ Callback with an optional error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [plugins/replication/src/OptimisticUpdatesDbPlugin.ts:184](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/OptimisticUpdatesDbPlugin.ts#L184)
+Defined in: [plugins/replication/src/OptimisticUpdatesDbPlugin.ts:184](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/OptimisticUpdatesDbPlugin.ts#L184)
 
 Executes bulk operations (add, update, remove) on the database.
 

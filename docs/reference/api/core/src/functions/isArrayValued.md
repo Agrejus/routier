@@ -8,7 +8,7 @@
 
 > **isArrayValued**(`type`): `boolean`
 
-Defined in: [core/src/schema/utils/propertyKind.ts:22](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/utils/propertyKind.ts#L22)
+Defined in: [core/src/schema/utils/propertyKind.ts:22](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/propertyKind.ts#L22)
 
 True when the property's value is a JS array and needs value rather than reference semantics.
 

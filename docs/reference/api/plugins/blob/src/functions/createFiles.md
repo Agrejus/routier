@@ -8,7 +8,7 @@
 
 > **createFiles**(`store`): `object`
 
-Defined in: [plugins/blob/src/files.ts:22](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/files.ts#L22)
+Defined in: [plugins/blob/src/files.ts:22](https://github.com/Agrejus/routier/blob/main/plugins/blob/src/files.ts#L22)
 
 The file half of an application: upload, read back, and clean up.
 

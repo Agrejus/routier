@@ -6,7 +6,7 @@
 
 # Class: MemoryPlugin
 
-Defined in: [plugins/memory/src/MemoryPlugin.ts:9](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/memory/src/MemoryPlugin.ts#L9)
+Defined in: [plugins/memory/src/MemoryPlugin.ts:9](https://github.com/Agrejus/routier/blob/main/plugins/memory/src/MemoryPlugin.ts#L9)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [plugins/memory/src/MemoryPlugin.ts:9](https://github.com/Agrejus/ro
 
 > **new MemoryPlugin**(`databaseName?`): `MemoryPlugin`
 
-Defined in: [plugins/memory/src/MemoryPlugin.ts:11](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/memory/src/MemoryPlugin.ts#L11)
+Defined in: [plugins/memory/src/MemoryPlugin.ts:11](https://github.com/Agrejus/routier/blob/main/plugins/memory/src/MemoryPlugin.ts#L11)
 
 #### Parameters
 
@@ -64,7 +64,7 @@ resolved file path, because one name in two directories is two databases.
 
 > **get** **size**(): `number`
 
-Defined in: [plugins/memory/src/MemoryPlugin.ts:19](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/memory/src/MemoryPlugin.ts#L19)
+Defined in: [plugins/memory/src/MemoryPlugin.ts:19](https://github.com/Agrejus/routier/blob/main/plugins/memory/src/MemoryPlugin.ts#L19)
 
 ##### Returns
 
@@ -157,7 +157,7 @@ Callback with the result or error.
 
 > **getCollectionSize**(`collectionName`): `number`
 
-Defined in: [plugins/memory/src/MemoryPlugin.ts:42](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/memory/src/MemoryPlugin.ts#L42)
+Defined in: [plugins/memory/src/MemoryPlugin.ts:42](https://github.com/Agrejus/routier/blob/main/plugins/memory/src/MemoryPlugin.ts#L42)
 
 #### Parameters
 
@@ -175,7 +175,7 @@ Defined in: [plugins/memory/src/MemoryPlugin.ts:42](https://github.com/Agrejus/r
 
 > **seed**\<`TEntity`\>(`schema`, `data`): `void`
 
-Defined in: [plugins/memory/src/MemoryPlugin.ts:51](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/memory/src/MemoryPlugin.ts#L51)
+Defined in: [plugins/memory/src/MemoryPlugin.ts:51](https://github.com/Agrejus/routier/blob/main/plugins/memory/src/MemoryPlugin.ts#L51)
 
 #### Type Parameters
 
@@ -203,7 +203,7 @@ Defined in: [plugins/memory/src/MemoryPlugin.ts:51](https://github.com/Agrejus/r
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: [plugins/memory/src/MemoryPlugin.ts:66](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/memory/src/MemoryPlugin.ts#L66)
+Defined in: [plugins/memory/src/MemoryPlugin.ts:66](https://github.com/Agrejus/routier/blob/main/plugins/memory/src/MemoryPlugin.ts#L66)
 
 Clears the named database — for EVERY plugin instance using that name, not just this one.
 

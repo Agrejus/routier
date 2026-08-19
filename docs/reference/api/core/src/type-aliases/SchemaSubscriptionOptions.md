@@ -8,7 +8,7 @@
 
 > **SchemaSubscriptionOptions** = `object`
 
-Defined in: [core/src/schema/communication/broadcast.ts:13](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/communication/broadcast.ts#L13)
+Defined in: [core/src/schema/communication/broadcast.ts:13](https://github.com/Agrejus/routier/blob/main/core/src/schema/communication/broadcast.ts#L13)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: [core/src/schema/communication/broadcast.ts:13](https://github.com/A
 
 > `optional` **crossTabSync**: `boolean`
 
-Defined in: [core/src/schema/communication/broadcast.ts:24](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/communication/broadcast.ts#L24)
+Defined in: [core/src/schema/communication/broadcast.ts:24](https://github.com/Agrejus/routier/blob/main/core/src/schema/communication/broadcast.ts#L24)
 
 Whether changes must reach listeners OUTSIDE this process — another browser tab, or
 another worker thread in Node. Default `true`, which is the historical behaviour.

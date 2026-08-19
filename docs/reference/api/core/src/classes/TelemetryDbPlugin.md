@@ -6,7 +6,7 @@
 
 # Class: TelemetryDbPlugin
 
-Defined in: core/src/plugins/TelemetryDbPlugin.ts:53
+Defined in: [core/src/plugins/TelemetryDbPlugin.ts:53](https://github.com/Agrejus/routier/blob/main/core/src/plugins/TelemetryDbPlugin.ts#L53)
 
 Interface for a database plugin, which provides query, destroy, and bulk operations.
 
@@ -20,7 +20,7 @@ Interface for a database plugin, which provides query, destroy, and bulk operati
 
 > **new TelemetryDbPlugin**(`plugin`, `options`): `TelemetryDbPlugin`
 
-Defined in: core/src/plugins/TelemetryDbPlugin.ts:58
+Defined in: [core/src/plugins/TelemetryDbPlugin.ts:58](https://github.com/Agrejus/routier/blob/main/core/src/plugins/TelemetryDbPlugin.ts#L58)
 
 #### Parameters
 
@@ -44,7 +44,7 @@ Defined in: core/src/plugins/TelemetryDbPlugin.ts:58
 
 > **get** **databaseName**(): `string`
 
-Defined in: core/src/plugins/TelemetryDbPlugin.ts:63
+Defined in: [core/src/plugins/TelemetryDbPlugin.ts:63](https://github.com/Agrejus/routier/blob/main/core/src/plugins/TelemetryDbPlugin.ts#L63)
 
 Uniquely identifies the database this plugin talks to, INCLUDING host or path where a
 bare name would collide — `orders.db` in two directories is two databases, and `mydb`
@@ -100,7 +100,7 @@ host/port/database rather than returning a connection string.
 
 > **query**\<`TRoot`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: core/src/plugins/TelemetryDbPlugin.ts:67
+Defined in: [core/src/plugins/TelemetryDbPlugin.ts:67](https://github.com/Agrejus/routier/blob/main/core/src/plugins/TelemetryDbPlugin.ts#L67)
 
 Executes a query operation on the database.
 
@@ -142,7 +142,7 @@ Callback with the result or error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: core/src/plugins/TelemetryDbPlugin.ts:79
+Defined in: [core/src/plugins/TelemetryDbPlugin.ts:79](https://github.com/Agrejus/routier/blob/main/core/src/plugins/TelemetryDbPlugin.ts#L79)
 
 Executes bulk operations (add, update, remove) on the database.
 
@@ -174,7 +174,7 @@ Callback with the result or error.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: core/src/plugins/TelemetryDbPlugin.ts:91
+Defined in: [core/src/plugins/TelemetryDbPlugin.ts:91](https://github.com/Agrejus/routier/blob/main/core/src/plugins/TelemetryDbPlugin.ts#L91)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 

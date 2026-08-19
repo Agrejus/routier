@@ -8,7 +8,7 @@
 
 > **DbPluginQueryEvent**\<`TRoot`, `TShape`\> = [`DbPluginOperationEvent`](DbPluginOperationEvent.md)\<[`IQuery`](IQuery.md)\<`TRoot`, `TShape`\>\> & `object`
 
-Defined in: [core/src/plugins/types.ts:56](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/types.ts#L56)
+Defined in: [core/src/plugins/types.ts:56](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L56)
 
 Event for a query operation, including schema, parent, and the query operation.
 

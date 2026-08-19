@@ -8,7 +8,7 @@
 
 > **SerializedQueryRequest** = `object`
 
-Defined in: [core/src/plugins/wire/types.ts:56](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/types.ts#L56)
+Defined in: [core/src/plugins/wire/types.ts:56](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/types.ts#L56)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: [core/src/plugins/wire/types.ts:56](https://github.com/Agrejus/routi
 
 > **kind**: `"query"`
 
-Defined in: [core/src/plugins/wire/types.ts:57](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/types.ts#L57)
+Defined in: [core/src/plugins/wire/types.ts:57](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/types.ts#L57)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [core/src/plugins/wire/types.ts:57](https://github.com/Agrejus/routi
 
 > **collectionName**: `string`
 
-Defined in: [core/src/plugins/wire/types.ts:58](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/types.ts#L58)
+Defined in: [core/src/plugins/wire/types.ts:58](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/types.ts#L58)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [core/src/plugins/wire/types.ts:58](https://github.com/Agrejus/routi
 
 > **options**: [`SerializedQueryOption`](SerializedQueryOption.md)[]
 
-Defined in: [core/src/plugins/wire/types.ts:59](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/types.ts#L59)
+Defined in: [core/src/plugins/wire/types.ts:59](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/types.ts#L59)
 
 ***
 
@@ -40,7 +40,7 @@ Defined in: [core/src/plugins/wire/types.ts:59](https://github.com/Agrejus/routi
 
 > **explain**: `boolean`
 
-Defined in: [core/src/plugins/wire/types.ts:65](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/types.ts#L65)
+Defined in: [core/src/plugins/wire/types.ts:65](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/types.ts#L65)
 
 Whether the caller wants the response to say what the server ran. Required — a query is
 either explained or it is not. A server whose plugin does not report answers `true` the
