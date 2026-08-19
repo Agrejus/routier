@@ -163,6 +163,10 @@
             "link": "/concepts/schema/creating-a-schema"
           },
           {
+            "text": "Computed & Derived Properties",
+            "link": "/concepts/schema/creating-a-schema#extending-a-schema-with-modify"
+          },
+          {
             "text": "Schema API",
             "link": "/concepts/schema/schema-api"
           },

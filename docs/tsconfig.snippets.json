@@ -108,6 +108,7 @@
         "_snippets/code/from-docs/concepts/schema/creating-a-schema/core-modifiers.ts",
         "_snippets/code/from-docs/concepts/schema/creating-a-schema/inferring-types.ts",
         "_snippets/code/from-docs/concepts/schema/creating-a-schema/literal-constraints.ts",
+        "_snippets/code/from-docs/concepts/schema/creating-a-schema/modify-computed.ts",
         "_snippets/code/from-docs/concepts/schema/infertype-basic.ts",
         "_snippets/code/from-docs/concepts/schema/infertype-comparison.ts",
         "_snippets/code/from-docs/concepts/schema/modifiers/array-example.ts",
