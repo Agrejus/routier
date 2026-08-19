@@ -6,7 +6,7 @@
 
 # Interface: SqliteDriver
 
-Defined in: [plugins/sqlite/src/drivers/types.ts:28](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/sqlite/src/drivers/types.ts#L28)
+Defined in: [plugins/sqlite/src/drivers/types.ts:28](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sqlite/src/drivers/types.ts#L28)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [plugins/sqlite/src/drivers/types.ts:28](https://github.com/Agrejus/
 
 > `readonly` **name**: `string`
 
-Defined in: [plugins/sqlite/src/drivers/types.ts:30](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/sqlite/src/drivers/types.ts#L30)
+Defined in: [plugins/sqlite/src/drivers/types.ts:30](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sqlite/src/drivers/types.ts#L30)
 
 Names the engine, for error messages that would otherwise not say which one failed.
 
@@ -24,7 +24,7 @@ Names the engine, for error messages that would otherwise not say which one fail
 
 > **open**(`databaseName`): `Promise`\<[`SqliteConnection`](SqliteConnection.md)\>
 
-Defined in: [plugins/sqlite/src/drivers/types.ts:40](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/sqlite/src/drivers/types.ts#L40)
+Defined in: [plugins/sqlite/src/drivers/types.ts:40](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sqlite/src/drivers/types.ts#L40)
 
 Opens `databaseName`.
 
@@ -49,7 +49,7 @@ defect #34. Every driver here has to convert that into a rejected promise.
 
 > **deleteDatabase**(`databaseName`): `Promise`\<`void`\>
 
-Defined in: [plugins/sqlite/src/drivers/types.ts:48](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/sqlite/src/drivers/types.ts#L48)
+Defined in: [plugins/sqlite/src/drivers/types.ts:48](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sqlite/src/drivers/types.ts#L48)
 
 Removes the database. Succeeds when it does not exist.
 

@@ -6,7 +6,7 @@
 
 # Abstract Class: Expression
 
-Defined in: [core/src/expressions/types.ts:96](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L96)
+Defined in: [core/src/expressions/types.ts:96](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L96)
 
 The base class for all expression types.
 
@@ -25,7 +25,7 @@ The base class for all expression types.
 
 > **new Expression**(`left?`, `right?`): `Expression`
 
-Defined in: [core/src/expressions/types.ts:104](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L104)
+Defined in: [core/src/expressions/types.ts:104](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L104)
 
 #### Parameters
 
@@ -47,7 +47,7 @@ Defined in: [core/src/expressions/types.ts:104](https://github.com/Agrejus/routi
 
 > `abstract` `readonly` **type**: [`ExpressionType`](../type-aliases/ExpressionType.md)
 
-Defined in: [core/src/expressions/types.ts:98](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L98)
+Defined in: [core/src/expressions/types.ts:98](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L98)
 
 The type of the expression.
 
@@ -57,7 +57,7 @@ The type of the expression.
 
 > `optional` **left**: `Expression`
 
-Defined in: [core/src/expressions/types.ts:100](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L100)
+Defined in: [core/src/expressions/types.ts:100](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L100)
 
 The left-hand side of the expression (if applicable).
 
@@ -67,7 +67,7 @@ The left-hand side of the expression (if applicable).
 
 > `optional` **right**: `Expression`
 
-Defined in: [core/src/expressions/types.ts:102](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L102)
+Defined in: [core/src/expressions/types.ts:102](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L102)
 
 The right-hand side of the expression (if applicable).
 
@@ -79,7 +79,7 @@ The right-hand side of the expression (if applicable).
 
 > **get** `static` **EMPTY**(): [`EmptyExpression`](EmptyExpression.md)
 
-Defined in: [core/src/expressions/types.ts:109](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L109)
+Defined in: [core/src/expressions/types.ts:109](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L109)
 
 ##### Returns
 
@@ -93,7 +93,7 @@ Defined in: [core/src/expressions/types.ts:109](https://github.com/Agrejus/routi
 
 > **get** `static` **NOT\_PARSABLE**(): [`NotParsableExpression`](NotParsableExpression.md)
 
-Defined in: [core/src/expressions/types.ts:113](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L113)
+Defined in: [core/src/expressions/types.ts:113](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L113)
 
 ##### Returns
 
@@ -105,7 +105,7 @@ Defined in: [core/src/expressions/types.ts:113](https://github.com/Agrejus/routi
 
 > `static` **isEmpty**(`expression`): `boolean`
 
-Defined in: [core/src/expressions/types.ts:117](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L117)
+Defined in: [core/src/expressions/types.ts:117](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L117)
 
 #### Parameters
 
@@ -123,7 +123,7 @@ Defined in: [core/src/expressions/types.ts:117](https://github.com/Agrejus/routi
 
 > `static` **isNotParsable**(`expression`): `boolean`
 
-Defined in: [core/src/expressions/types.ts:121](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L121)
+Defined in: [core/src/expressions/types.ts:121](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L121)
 
 #### Parameters
 
@@ -141,7 +141,7 @@ Defined in: [core/src/expressions/types.ts:121](https://github.com/Agrejus/routi
 
 > `static` **toJson**(`expression`): [`SerializedExpression`](../type-aliases/SerializedExpression.md)
 
-Defined in: [core/src/expressions/types.ts:147](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L147)
+Defined in: [core/src/expressions/types.ts:147](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L147)
 
 Turns a tree into plain JSON, so a whole query can cross a wire.
 
@@ -180,7 +180,7 @@ and import this module — the guards test the same discriminant, so nothing is 
 
 > `static` **fromJson**(`json`, `schema`): `Expression`
 
-Defined in: [core/src/expressions/types.ts:211](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L211)
+Defined in: [core/src/expressions/types.ts:211](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L211)
 
 Rebuilds a tree from JSON, rebinding every property against `schema`.
 

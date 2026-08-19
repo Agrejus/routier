@@ -6,7 +6,7 @@
 
 # Class: MongoTranslator\<TRoot, TShape\>
 
-Defined in: [plugins/mongodb/src/MongoTranslator.ts:13](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/mongodb/src/MongoTranslator.ts#L13)
+Defined in: [plugins/mongodb/src/MongoTranslator.ts:13](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mongodb/src/MongoTranslator.ts#L13)
 
 Skips the work the server already did.
 
@@ -37,7 +37,7 @@ The pattern, and the conditions, follow `DexieTranslator`.
 
 > **new MongoTranslator**\<`TRoot`, `TShape`\>(`query`): `MongoTranslator`\<`TRoot`, `TShape`\>
 
-Defined in: [plugins/mongodb/src/MongoTranslator.ts:55](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/mongodb/src/MongoTranslator.ts#L55)
+Defined in: [plugins/mongodb/src/MongoTranslator.ts:55](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mongodb/src/MongoTranslator.ts#L55)
 
 #### Parameters
 
@@ -59,7 +59,7 @@ Defined in: [plugins/mongodb/src/MongoTranslator.ts:55](https://github.com/Agrej
 
 > `readonly` **pushedDown**: `object`
 
-Defined in: [plugins/mongodb/src/MongoTranslator.ts:16](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/mongodb/src/MongoTranslator.ts#L16)
+Defined in: [plugins/mongodb/src/MongoTranslator.ts:16](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mongodb/src/MongoTranslator.ts#L16)
 
 Set by the plugin for each option it actually sent to the server.
 
@@ -409,7 +409,7 @@ Defined in: core/dist/plugins/translators/JsonTranslator.d.ts:39
 
 > **filter**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [plugins/mongodb/src/MongoTranslator.ts:23](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/mongodb/src/MongoTranslator.ts#L23)
+Defined in: [plugins/mongodb/src/MongoTranslator.ts:23](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mongodb/src/MongoTranslator.ts#L23)
 
 #### Type Parameters
 
@@ -441,7 +441,7 @@ Defined in: [plugins/mongodb/src/MongoTranslator.ts:23](https://github.com/Agrej
 
 > **sort**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [plugins/mongodb/src/MongoTranslator.ts:31](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/mongodb/src/MongoTranslator.ts#L31)
+Defined in: [plugins/mongodb/src/MongoTranslator.ts:31](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mongodb/src/MongoTranslator.ts#L31)
 
 #### Type Parameters
 
@@ -473,7 +473,7 @@ Defined in: [plugins/mongodb/src/MongoTranslator.ts:31](https://github.com/Agrej
 
 > **skip**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [plugins/mongodb/src/MongoTranslator.ts:39](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/mongodb/src/MongoTranslator.ts#L39)
+Defined in: [plugins/mongodb/src/MongoTranslator.ts:39](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mongodb/src/MongoTranslator.ts#L39)
 
 #### Type Parameters
 
@@ -505,7 +505,7 @@ Defined in: [plugins/mongodb/src/MongoTranslator.ts:39](https://github.com/Agrej
 
 > **take**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [plugins/mongodb/src/MongoTranslator.ts:47](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/mongodb/src/MongoTranslator.ts#L47)
+Defined in: [plugins/mongodb/src/MongoTranslator.ts:47](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mongodb/src/MongoTranslator.ts#L47)
 
 #### Type Parameters
 

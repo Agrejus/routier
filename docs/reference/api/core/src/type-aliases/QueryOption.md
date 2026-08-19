@@ -8,7 +8,7 @@
 
 > **QueryOption**\<`T`, `K`\> = `object`
 
-Defined in: [core/src/plugins/query/types.ts:26](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/types.ts#L26)
+Defined in: [core/src/plugins/query/types.ts:43](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L43)
 
 ## Type Parameters
 
@@ -26,7 +26,7 @@ Defined in: [core/src/plugins/query/types.ts:26](https://github.com/Agrejus/rout
 
 > **name**: [`QueryOptionName`](QueryOptionName.md)
 
-Defined in: [core/src/plugins/query/types.ts:27](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/types.ts#L27)
+Defined in: [core/src/plugins/query/types.ts:44](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L44)
 
 ***
 
@@ -34,7 +34,7 @@ Defined in: [core/src/plugins/query/types.ts:27](https://github.com/Agrejus/rout
 
 > **value**: [`QueryOptionValueMap`](QueryOptionValueMap.md)\<`T`\>\[`K`\]
 
-Defined in: [core/src/plugins/query/types.ts:28](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/types.ts#L28)
+Defined in: [core/src/plugins/query/types.ts:45](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L45)
 
 ***
 
@@ -42,4 +42,14 @@ Defined in: [core/src/plugins/query/types.ts:28](https://github.com/Agrejus/rout
 
 > **target**: [`QueryOptionExecutionTarget`](QueryOptionExecutionTarget.md)
 
-Defined in: [core/src/plugins/query/types.ts:29](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/types.ts#L29)
+Defined in: [core/src/plugins/query/types.ts:46](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L46)
+
+***
+
+### reason?
+
+> `optional` **reason**: [`MemoryExecutionReason`](MemoryExecutionReason.md)
+
+Defined in: [core/src/plugins/query/types.ts:48](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L48)
+
+Set only when `target` is `"memory"`.

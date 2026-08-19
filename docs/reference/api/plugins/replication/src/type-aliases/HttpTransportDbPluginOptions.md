@@ -8,7 +8,7 @@
 
 > **HttpTransportDbPluginOptions** = `object`
 
-Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:60](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/replication/src/HttpTransportDbPlugin.ts#L60)
+Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:60](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/HttpTransportDbPlugin.ts#L60)
 
 A plugin that owns no database.
 
@@ -55,7 +55,7 @@ arrives at the server is exactly what the caller asked for.
 
 > **url**: `string`
 
-Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:62](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/replication/src/HttpTransportDbPlugin.ts#L62)
+Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:62](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/HttpTransportDbPlugin.ts#L62)
 
 The single endpoint every request is POSTed to.
 
@@ -65,7 +65,7 @@ The single endpoint every request is POSTed to.
 
 > `optional` **databaseName**: `string`
 
-Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:70](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/replication/src/HttpTransportDbPlugin.ts#L70)
+Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:70](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/HttpTransportDbPlugin.ts#L70)
 
 Identifies the database BEHIND the endpoint — see `IDbPlugin.databaseName`.
 
@@ -79,7 +79,7 @@ endpoints front the same database and should therefore be treated as one.
 
 > `optional` **getHeaders**: () => `Record`\<`string`, `string`\> \| `Promise`\<`Record`\<`string`, `string`\>\>
 
-Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:72](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/replication/src/HttpTransportDbPlugin.ts#L72)
+Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:72](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/HttpTransportDbPlugin.ts#L72)
 
 Headers per request, so a token refreshed between calls is picked up. Async is allowed.
 
@@ -93,7 +93,7 @@ Headers per request, so a token refreshed between calls is picked up. Async is a
 
 > `optional` **request**: (`url`, `body`, `headers`) => `Promise`\<`SerializedResponse`\>
 
-Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:74](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/replication/src/HttpTransportDbPlugin.ts#L74)
+Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:74](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/HttpTransportDbPlugin.ts#L74)
 
 Replaces `fetch`, for tests or for a non-fetch transport.
 

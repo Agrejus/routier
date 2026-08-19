@@ -8,7 +8,7 @@
 
 > **JoinKeyReference** = `object`
 
-Defined in: [core/src/plugins/query/join.ts:21](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/join.ts#L21)
+Defined in: [core/src/plugins/query/join.ts:21](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/join.ts#L21)
 
 One side's join key, as a property path plus the resolved property.
 
@@ -22,7 +22,7 @@ on either side of the wire.
 
 > **propertyName**: `string`
 
-Defined in: [core/src/plugins/query/join.ts:22](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/join.ts#L22)
+Defined in: [core/src/plugins/query/join.ts:22](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/join.ts#L22)
 
 ***
 
@@ -30,4 +30,4 @@ Defined in: [core/src/plugins/query/join.ts:22](https://github.com/Agrejus/routi
 
 > **property**: [`PropertyInfo`](../classes/PropertyInfo.md)\<`any`\> \| `null`
 
-Defined in: [core/src/plugins/query/join.ts:23](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/join.ts#L23)
+Defined in: [core/src/plugins/query/join.ts:23](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/join.ts#L23)

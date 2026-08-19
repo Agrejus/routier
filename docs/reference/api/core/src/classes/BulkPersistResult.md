@@ -6,7 +6,7 @@
 
 # Class: BulkPersistResult
 
-Defined in: [core/src/collections/Changes.ts:4](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/Changes.ts#L4)
+Defined in: [core/src/collections/Changes.ts:4](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/collections/Changes.ts#L4)
 
 ## Extends
 
@@ -102,7 +102,7 @@ Defined in: node\_modules/typescript/lib/lib.es2015.symbol.wellknown.d.ts:319
 
 > **get** **aggregate**(): `object`
 
-Defined in: [core/src/collections/Changes.ts:20](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/Changes.ts#L20)
+Defined in: [core/src/collections/Changes.ts:20](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/collections/Changes.ts#L20)
 
 ##### Returns
 
@@ -130,7 +130,7 @@ Defined in: [core/src/collections/Changes.ts:20](https://github.com/Agrejus/rout
 
 > **resolve**\<`T`\>(`schemaId`): [`SchemaPersistResult`](SchemaPersistResult.md)\<`T`\>
 
-Defined in: [core/src/collections/Changes.ts:6](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/Changes.ts#L6)
+Defined in: [core/src/collections/Changes.ts:6](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/collections/Changes.ts#L6)
 
 #### Type Parameters
 
@@ -154,7 +154,7 @@ Defined in: [core/src/collections/Changes.ts:6](https://github.com/Agrejus/routi
 
 > **get**\<`T`\>(`schemaId`): [`SchemaPersistResult`](SchemaPersistResult.md)\<`T`\>
 
-Defined in: [core/src/collections/Changes.ts:16](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/Changes.ts#L16)
+Defined in: [core/src/collections/Changes.ts:16](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/collections/Changes.ts#L16)
 
 Returns a specified element from the Map object. If the value that is associated to the provided key is an object, then you will get a reference to that object and any change made to that object will effectively modify it inside the Map.
 

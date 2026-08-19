@@ -8,7 +8,7 @@
 
 > **DirectUploaderOptions** = `object`
 
-Defined in: [plugins/blob/src/direct.ts:83](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/blob/src/direct.ts#L83)
+Defined in: [plugins/blob/src/direct.ts:83](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/direct.ts#L83)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: [plugins/blob/src/direct.ts:83](https://github.com/Agrejus/routier/b
 
 > **requestUpload**: (`request`) => `Promise`\<[`UploadGrant`](UploadGrant.md)\>
 
-Defined in: [plugins/blob/src/direct.ts:85](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/blob/src/direct.ts#L85)
+Defined in: [plugins/blob/src/direct.ts:85](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/direct.ts#L85)
 
 Asks your server to sign an upload. Usually one `fetch`.
 
@@ -36,6 +36,6 @@ Asks your server to sign an upload. Usually one `fetch`.
 
 > `optional` **fetch**: *typeof* `globalThis.fetch`
 
-Defined in: [plugins/blob/src/direct.ts:88](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/blob/src/direct.ts#L88)
+Defined in: [plugins/blob/src/direct.ts:88](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/direct.ts#L88)
 
 Defaults to the global `fetch`. Injectable so the flow is testable without a network.

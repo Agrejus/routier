@@ -8,7 +8,7 @@
 
 > **fileSystemBlobStore**(`root`): [`BlobStore`](../../../interfaces/BlobStore.md)
 
-Defined in: [plugins/blob/src/stores/fileSystem.ts:17](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/blob/src/stores/fileSystem.ts#L17)
+Defined in: [plugins/blob/src/stores/fileSystem.ts:17](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/stores/fileSystem.ts#L17)
 
 A blob store on the local filesystem.
 

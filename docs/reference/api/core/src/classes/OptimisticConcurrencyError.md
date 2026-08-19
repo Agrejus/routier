@@ -6,7 +6,7 @@
 
 # Class: OptimisticConcurrencyError
 
-Defined in: [core/src/errors/OptimisticConcurrencyError.ts:11](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/errors/OptimisticConcurrencyError.ts#L11)
+Defined in: [core/src/errors/OptimisticConcurrencyError.ts:11](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/errors/OptimisticConcurrencyError.ts#L11)
 
 A save was rejected because another writer changed one of its rows first.
 
@@ -25,7 +25,7 @@ merges fresh values into the canonical instances), reapply the intent, and save 
 
 > **new OptimisticConcurrencyError**(`collectionName`, `conflicts`): `OptimisticConcurrencyError`
 
-Defined in: [core/src/errors/OptimisticConcurrencyError.ts:18](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/errors/OptimisticConcurrencyError.ts#L18)
+Defined in: [core/src/errors/OptimisticConcurrencyError.ts:18](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/errors/OptimisticConcurrencyError.ts#L18)
 
 #### Parameters
 
@@ -51,7 +51,7 @@ Defined in: [core/src/errors/OptimisticConcurrencyError.ts:18](https://github.co
 
 > `readonly` **collectionName**: `string`
 
-Defined in: [core/src/errors/OptimisticConcurrencyError.ts:14](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/errors/OptimisticConcurrencyError.ts#L14)
+Defined in: [core/src/errors/OptimisticConcurrencyError.ts:14](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/errors/OptimisticConcurrencyError.ts#L14)
 
 The collection whose rows conflicted.
 
@@ -61,7 +61,7 @@ The collection whose rows conflicted.
 
 > `readonly` **conflicts**: [`IdType`](../type-aliases/IdType.md)[]
 
-Defined in: [core/src/errors/OptimisticConcurrencyError.ts:16](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/errors/OptimisticConcurrencyError.ts#L16)
+Defined in: [core/src/errors/OptimisticConcurrencyError.ts:16](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/errors/OptimisticConcurrencyError.ts#L16)
 
 Ids of the rows whose stored token no longer matched the writer's read.
 
@@ -141,7 +141,7 @@ Defined in: node\_modules/typescript/lib/lib.es5.d.ts:1078
 
 > `static` **is**(`error`): `error is OptimisticConcurrencyError`
 
-Defined in: [core/src/errors/OptimisticConcurrencyError.ts:29](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/errors/OptimisticConcurrencyError.ts#L29)
+Defined in: [core/src/errors/OptimisticConcurrencyError.ts:29](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/errors/OptimisticConcurrencyError.ts#L29)
 
 Type guard that survives errors crossing realm/serialization boundaries.
 

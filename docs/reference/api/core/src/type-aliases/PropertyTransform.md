@@ -8,7 +8,7 @@
 
 > **PropertyTransform**\<`T`\> = `object`
 
-Defined in: [core/src/schema/types.ts:282](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/types.ts#L282)
+Defined in: [core/src/schema/types.ts:282](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L282)
 
 A two-way transform between the application value and the stored value.
 
@@ -27,7 +27,7 @@ closure works and `injected` is a convenience rather than the only way in.
 
 > **to**: (`value`, `entity`) => `unknown` \| `Promise`\<`unknown`\>
 
-Defined in: [core/src/schema/types.ts:289](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/types.ts#L289)
+Defined in: [core/src/schema/types.ts:289](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L289)
 
 Application value to stored value. Runs before the plugin sees it. May be async.
 
@@ -54,7 +54,7 @@ rather than converting one, which is what `computed` does.
 
 > `optional` **from**: (`value`) => `T` \| `Promise`\<`T`\>
 
-Defined in: [core/src/schema/types.ts:296](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/types.ts#L296)
+Defined in: [core/src/schema/types.ts:296](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L296)
 
 Stored value back to application value. Runs after the plugin returns it.
 
@@ -76,7 +76,7 @@ Optional. Leave it out and the transform is one-way: the stored value is the val
 
 > `optional` **stores**: [`SchemaTypes`](../enumerations/SchemaTypes.md)
 
-Defined in: [core/src/schema/types.ts:305](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/types.ts#L305)
+Defined in: [core/src/schema/types.ts:305](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L305)
 
 What the column becomes, when the stored form is not the property's own type.
 
@@ -90,7 +90,7 @@ caller who uses that library never writes it.
 
 > `optional` **comparable**: `"equality"` \| `"none"`
 
-Defined in: [core/src/schema/types.ts:313](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/types.ts#L313)
+Defined in: [core/src/schema/types.ts:313](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/types.ts#L313)
 
 Whether a filter on this property can still run in the database.
 

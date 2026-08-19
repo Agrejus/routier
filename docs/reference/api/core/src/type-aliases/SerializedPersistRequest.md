@@ -8,7 +8,7 @@
 
 > **SerializedPersistRequest** = `object`
 
-Defined in: [core/src/plugins/wire/types.ts:76](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/wire/types.ts#L76)
+Defined in: [core/src/plugins/wire/types.ts:83](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/types.ts#L83)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: [core/src/plugins/wire/types.ts:76](https://github.com/Agrejus/routi
 
 > **kind**: `"persist"`
 
-Defined in: [core/src/plugins/wire/types.ts:77](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/wire/types.ts#L77)
+Defined in: [core/src/plugins/wire/types.ts:84](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/types.ts#L84)
 
 ***
 
@@ -24,4 +24,4 @@ Defined in: [core/src/plugins/wire/types.ts:77](https://github.com/Agrejus/routi
 
 > **changes**: [`SerializedSchemaChanges`](SerializedSchemaChanges.md)[]
 
-Defined in: [core/src/plugins/wire/types.ts:78](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/wire/types.ts#L78)
+Defined in: [core/src/plugins/wire/types.ts:85](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/types.ts#L85)

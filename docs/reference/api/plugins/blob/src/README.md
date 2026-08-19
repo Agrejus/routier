@@ -9,6 +9,7 @@
 ## Classes
 
 - [BlobDbPlugin](classes/BlobDbPlugin.md)
+- [DirectUploadPlugin](classes/DirectUploadPlugin.md)
 
 ## Interfaces
 
@@ -16,6 +17,8 @@
 
 ## Type Aliases
 
+- [FileUploader](type-aliases/FileUploader.md)
+- [DirectUploadPluginOptions](type-aliases/DirectUploadPluginOptions.md)
 - [FileContent](type-aliases/FileContent.md)
 - [UploadOptions](type-aliases/UploadOptions.md)
 - [UploadRequest](type-aliases/UploadRequest.md)

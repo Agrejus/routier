@@ -6,7 +6,7 @@
 
 # Class: ConcurrencyDbPlugin
 
-Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:57](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/ConcurrencyDbPlugin.ts#L57)
+Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:57](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/ConcurrencyDbPlugin.ts#L57)
 
 Optimistic concurrency as a wrapper plugin — the whole opt-in is one wrap:
 
@@ -66,7 +66,7 @@ augmented DDL automatically.
 
 > **new ConcurrencyDbPlugin**(`plugin`): `ConcurrencyDbPlugin`
 
-Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:67](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/ConcurrencyDbPlugin.ts#L67)
+Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:67](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/ConcurrencyDbPlugin.ts#L67)
 
 #### Parameters
 
@@ -84,7 +84,7 @@ Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:67](https://github.com/Agre
 
 > `readonly` `static` **VERSION\_COLUMN**: `"__version"` = `"__version"`
 
-Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:59](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/ConcurrencyDbPlugin.ts#L59)
+Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:59](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/ConcurrencyDbPlugin.ts#L59)
 
 ## Accessors
 
@@ -94,7 +94,7 @@ Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:59](https://github.com/Agre
 
 > **get** **databaseName**(): `string`
 
-Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:71](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/ConcurrencyDbPlugin.ts#L71)
+Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:71](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/ConcurrencyDbPlugin.ts#L71)
 
 Uniquely identifies the database this plugin talks to, INCLUDING host or path where a
 bare name would collide — `orders.db` in two directories is two databases, and `mydb`
@@ -150,7 +150,7 @@ host/port/database rather than returning a connection string.
 
 > **query**\<`TRoot`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:75](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/ConcurrencyDbPlugin.ts#L75)
+Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:75](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/ConcurrencyDbPlugin.ts#L75)
 
 Executes a query operation on the database.
 
@@ -192,7 +192,7 @@ Callback with the result or error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:100](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/ConcurrencyDbPlugin.ts#L100)
+Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:100](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/ConcurrencyDbPlugin.ts#L100)
 
 Executes bulk operations (add, update, remove) on the database.
 
@@ -224,7 +224,7 @@ Callback with the result or error.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:180](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/ConcurrencyDbPlugin.ts#L180)
+Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:180](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/ConcurrencyDbPlugin.ts#L180)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 

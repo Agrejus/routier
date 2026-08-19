@@ -8,7 +8,7 @@
 
 > **executeJoin**(`options`): [`JoinTuple`](../type-aliases/JoinTuple.md)[]
 
-Defined in: [core/src/plugins/query/join.ts:506](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/join.ts#L506)
+Defined in: [core/src/plugins/query/join.ts:510](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/join.ts#L510)
 
 A join over rows both sides have already deserialized, with the inner side's scopes applied.
 

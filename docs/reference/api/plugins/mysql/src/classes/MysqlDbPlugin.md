@@ -6,7 +6,7 @@
 
 # Class: MysqlDbPlugin
 
-Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:69](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/mysql/src/MysqlDbPlugin.ts#L69)
+Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:69](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mysql/src/MysqlDbPlugin.ts#L69)
 
 ## Implements
 
@@ -18,7 +18,7 @@ Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:69](https://github.com/Agrejus/r
 
 > **new MysqlDbPlugin**(`config`): `MysqlDbPlugin`
 
-Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:80](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/mysql/src/MysqlDbPlugin.ts#L80)
+Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:80](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mysql/src/MysqlDbPlugin.ts#L80)
 
 #### Parameters
 
@@ -36,7 +36,7 @@ Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:80](https://github.com/Agrejus/r
 
 > `readonly` **databaseName**: `string`
 
-Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:78](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/mysql/src/MysqlDbPlugin.ts#L78)
+Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:78](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mysql/src/MysqlDbPlugin.ts#L78)
 
 See `IDbPlugin.databaseName`. Host, port and database rather than the bare name,
 because `mydb` on two servers is two databases.
@@ -51,7 +51,7 @@ because `mydb` on two servers is two databases.
 
 > **query**\<`TRoot`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:130](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/mysql/src/MysqlDbPlugin.ts#L130)
+Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:130](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mysql/src/MysqlDbPlugin.ts#L130)
 
 Executes a query operation on the database.
 
@@ -93,7 +93,7 @@ Callback with the result or error.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:219](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/mysql/src/MysqlDbPlugin.ts#L219)
+Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:219](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mysql/src/MysqlDbPlugin.ts#L219)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 
@@ -123,7 +123,7 @@ Callback with an optional error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:227](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/mysql/src/MysqlDbPlugin.ts#L227)
+Defined in: [plugins/mysql/src/MysqlDbPlugin.ts:227](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/mysql/src/MysqlDbPlugin.ts#L227)
 
 Executes bulk operations (add, update, remove) on the database.
 

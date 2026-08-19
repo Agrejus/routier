@@ -8,7 +8,7 @@
 
 > **isFileReference**(`value`): `value is FileReferenceValue`
 
-Defined in: [plugins/blob/src/BlobDbPlugin.ts:136](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/blob/src/BlobDbPlugin.ts#L136)
+Defined in: [plugins/blob/src/BlobDbPlugin.ts:138](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/BlobDbPlugin.ts#L138)
 
 Whether a value is already a stored reference rather than content waiting to be uploaded.
 

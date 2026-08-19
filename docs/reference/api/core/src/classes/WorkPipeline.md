@@ -6,7 +6,7 @@
 
 # Class: WorkPipeline
 
-Defined in: [core/src/pipeline/TrampolinePipeline.ts:182](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/pipeline/TrampolinePipeline.ts#L182)
+Defined in: [core/src/pipeline/TrampolinePipeline.ts:182](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/pipeline/TrampolinePipeline.ts#L182)
 
 Processes functions with callbacks asynchronously.
 
@@ -30,7 +30,7 @@ flow control and error handling.
 
 > **filter**(`done`): `void`
 
-Defined in: [core/src/pipeline/TrampolinePipeline.ts:186](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/pipeline/TrampolinePipeline.ts#L186)
+Defined in: [core/src/pipeline/TrampolinePipeline.ts:186](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/pipeline/TrampolinePipeline.ts#L186)
 
 #### Parameters
 
@@ -48,7 +48,7 @@ Defined in: [core/src/pipeline/TrampolinePipeline.ts:186](https://github.com/Agr
 
 > **pipe**(`work`): `void`
 
-Defined in: [core/src/pipeline/TrampolinePipeline.ts:312](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/pipeline/TrampolinePipeline.ts#L312)
+Defined in: [core/src/pipeline/TrampolinePipeline.ts:312](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/pipeline/TrampolinePipeline.ts#L312)
 
 #### Parameters
 

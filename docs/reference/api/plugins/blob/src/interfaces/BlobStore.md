@@ -6,7 +6,7 @@
 
 # Interface: BlobStore
 
-Defined in: [plugins/blob/src/stores/types.ts:25](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/blob/src/stores/types.ts#L25)
+Defined in: [plugins/blob/src/stores/types.ts:25](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/stores/types.ts#L25)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [plugins/blob/src/stores/types.ts:25](https://github.com/Agrejus/rou
 
 > `readonly` **name**: `string`
 
-Defined in: [plugins/blob/src/stores/types.ts:27](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/blob/src/stores/types.ts#L27)
+Defined in: [plugins/blob/src/stores/types.ts:27](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/stores/types.ts#L27)
 
 Names the store, so an error says which one failed.
 
@@ -24,7 +24,7 @@ Names the store, so an error says which one failed.
 
 > **put**(`key`, `bytes`, `options`): `Promise`\<`void`\>
 
-Defined in: [plugins/blob/src/stores/types.ts:35](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/blob/src/stores/types.ts#L35)
+Defined in: [plugins/blob/src/stores/types.ts:35](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/stores/types.ts#L35)
 
 Writes bytes at `key`.
 
@@ -57,7 +57,7 @@ identical bytes, and a retried upload has to be harmless rather than a duplicate
 
 > **has**(`key`): `Promise`\<`boolean`\>
 
-Defined in: [plugins/blob/src/stores/types.ts:38](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/blob/src/stores/types.ts#L38)
+Defined in: [plugins/blob/src/stores/types.ts:38](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/stores/types.ts#L38)
 
 Whether `key` already holds bytes. Lets an upload skip work it has already done.
 
@@ -77,7 +77,7 @@ Whether `key` already holds bytes. Lets an upload skip work it has already done.
 
 > **get**(`key`): `Promise`\<`Uint8Array`\<`ArrayBufferLike`\>\>
 
-Defined in: [plugins/blob/src/stores/types.ts:41](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/blob/src/stores/types.ts#L41)
+Defined in: [plugins/blob/src/stores/types.ts:41](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/stores/types.ts#L41)
 
 Reads the bytes back. Rejects when the key is absent.
 
@@ -97,7 +97,7 @@ Reads the bytes back. Rejects when the key is absent.
 
 > **delete**(`key`): `Promise`\<`void`\>
 
-Defined in: [plugins/blob/src/stores/types.ts:44](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/blob/src/stores/types.ts#L44)
+Defined in: [plugins/blob/src/stores/types.ts:44](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/stores/types.ts#L44)
 
 Removes the object. Succeeds when it is already gone.
 
@@ -117,7 +117,7 @@ Removes the object. Succeeds when it is already gone.
 
 > `optional` **url**(`key`, `options?`): `Promise`\<`string`\>
 
-Defined in: [plugins/blob/src/stores/types.ts:53](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/blob/src/stores/types.ts#L53)
+Defined in: [plugins/blob/src/stores/types.ts:53](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/stores/types.ts#L53)
 
 A URL a browser can fetch directly, if the store can issue one.
 
@@ -147,7 +147,7 @@ a browser download bytes without proxying them through your server.
 
 > `optional` **list**(`prefix`): `AsyncIterable`\<`string`\>
 
-Defined in: [plugins/blob/src/stores/types.ts:61](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/blob/src/stores/types.ts#L61)
+Defined in: [plugins/blob/src/stores/types.ts:61](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/stores/types.ts#L61)
 
 Every key under `prefix`.
 
@@ -170,7 +170,7 @@ bucket. Never call it on a read path.
 
 > `optional` **uploadUrl**(`key`, `options`): `Promise`\<[`PresignedUpload`](../type-aliases/PresignedUpload.md)\>
 
-Defined in: [plugins/blob/src/stores/types.ts:75](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/blob/src/stores/types.ts#L75)
+Defined in: [plugins/blob/src/stores/types.ts:75](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/stores/types.ts#L75)
 
 A URL a client can PUT bytes to directly, if the store can issue one.
 

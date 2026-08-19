@@ -8,7 +8,7 @@
 
 > **EntityUpdate** = `object`
 
-Defined in: [plugins/sql-core/src/updates.ts:26](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/sql-core/src/updates.ts#L26)
+Defined in: [plugins/sql-core/src/updates.ts:26](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/updates.ts#L26)
 
 The grouped-UPDATE builder shared by the SQL plugins.
 
@@ -35,7 +35,7 @@ distinguish them.
 
 > **entity**: `Record`\<`string`, `unknown`\>
 
-Defined in: [plugins/sql-core/src/updates.ts:27](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/sql-core/src/updates.ts#L27)
+Defined in: [plugins/sql-core/src/updates.ts:27](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/updates.ts#L27)
 
 ***
 
@@ -43,7 +43,7 @@ Defined in: [plugins/sql-core/src/updates.ts:27](https://github.com/Agrejus/rout
 
 > **delta**: `Record`\<`string`, `unknown`\>
 
-Defined in: [plugins/sql-core/src/updates.ts:28](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/sql-core/src/updates.ts#L28)
+Defined in: [plugins/sql-core/src/updates.ts:28](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/updates.ts#L28)
 
 ***
 
@@ -51,7 +51,7 @@ Defined in: [plugins/sql-core/src/updates.ts:28](https://github.com/Agrejus/rout
 
 > `optional` **concurrency**: `object`
 
-Defined in: [plugins/sql-core/src/updates.ts:30](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/sql-core/src/updates.ts#L30)
+Defined in: [plugins/sql-core/src/updates.ts:30](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/updates.ts#L30)
 
 Present when the row carries an optimistic-concurrency token — see EntityUpdateInfo.
 

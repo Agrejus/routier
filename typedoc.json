@@ -14,6 +14,7 @@
         "plugins/memory/src/index.ts",
         "plugins/mongodb/src/index.ts",
         "plugins/mysql/src/index.ts",
+        "plugins/otel/src/index.ts",
         "plugins/postgresql/src/index.ts",
         "plugins/pouchdb/src/index.ts",
         "plugins/replication/src/index.ts",

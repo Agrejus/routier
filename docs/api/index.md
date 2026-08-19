@@ -70,12 +70,11 @@ The root export mirrors the public subpath exports below. Prefer a focused subpa
 | Import | Main API |
 | --- | --- |
 | `@routier/core/schema` | `s`, schema/property classes, `InferType`, `InferCreateType`, `SchemaDefinition`, property metadata |
-| `@routier/core/plugins` | `IDbPlugin`, events, query options, translators, `CacheDbPlugin`, `RetryDbPlugin`, `ConcurrencyDbPlugin`, `BatchingDbPlugin` |
+| `@routier/core/plugins` | `IDbPlugin`, events, query options, translators, `CacheDbPlugin`, `RetryDbPlugin`, `ConcurrencyDbPlugin`, `BatchingDbPlugin`, `TelemetryDbPlugin` |
 | `@routier/core/expressions` | Expression types, parsing, evaluation, query filter types |
 | `@routier/core/collections` | Persist change/result buckets, schema collections, in-memory collection primitives |
 | `@routier/core/results` | `Result`, `PluginEventResult`, callback/result types and helpers |
 | `@routier/core/errors` | `SchemaError`, `OptimisticConcurrencyError`, `PluginDestroyedError` |
-| `@routier/core/capabilities` | Capability, tracing, and performance instrumentation |
 | `@routier/core/assertions` | Runtime assertions and expression type guards |
 | `@routier/core/utilities` | IDs, hashing, cloning, logger, runtime and collection helpers |
 | `@routier/core/pipeline` | `TrampolinePipeline`, `SyncronousQueue` |

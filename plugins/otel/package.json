@@ -1,0 +1,68 @@
+{
+    "name": "@routier/otel-plugin",
+    "version": "0.4.0",
+    "main": "./dist/index.cjs",
+    "types": "./dist/index.d.ts",
+    "source": "./src/index.ts",
+    "publishConfig": {
+        "access": "public"
+    },
+    "files": [
+        "dist/**/*",
+        "README.md",
+        "LICENSE"
+    ],
+    "scripts": {
+        "build:types": "tsc --emitDeclarationOnly",
+        "build:bundle": "node ../../scripts/clean-dist.mjs && rspack build",
+        "build": "npm run build:bundle && npm run build:types",
+        "test": "jest",
+        "test:watch": "jest --watch",
+        "tsc": "tsc --noEmit",
+        "lint": "oxlint . --ignore-pattern \"**/__tests__/**\" --ignore-pattern \"**/*.test.*\" --ignore-pattern \"**/*.spec.*\" --ignore-pattern \"**/*.mjs\""
+    },
+    "sideEffects": false,
+    "author": "James DeMeuse <james.demeuse@gmail.com>",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Agrejus/routier.git",
+        "directory": "plugins/otel"
+    },
+    "keywords": [
+        "orm",
+        "typescript",
+        "opentelemetry",
+        "otel",
+        "tracing",
+        "observability",
+        "data access layer",
+        "entities",
+        "entity framework",
+        "database"
+    ],
+    "description": "OpenTelemetry plugin for routier",
+    "peerDependencies": {
+        "@opentelemetry/api": "^1.9.0",
+        "@routier/core": ">=0.4.0"
+    },
+    "devDependencies": {
+        "@opentelemetry/api": "^1.9.0",
+        "@opentelemetry/context-async-hooks": "^2.10.0",
+        "@opentelemetry/sdk-trace-base": "^2.0.0",
+        "@routier/core": "^0.4.0",
+        "@routier/datastore": "^0.4.0",
+        "@routier/memory-plugin": "^0.4.0",
+        "@routier/test-utils": "file:../../test-utils",
+        "@rspack/cli": "^1.1.8",
+        "@rspack/core": "^1.1.8"
+    },
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs"
+        }
+    },
+    "module": "./dist/index.js"
+}

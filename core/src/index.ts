@@ -10,4 +10,3 @@ export * from './results';
 export * from './schema';
 export * from './types';
 export * from './utilities';
-export * from './capabilities';

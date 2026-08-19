@@ -6,7 +6,7 @@
 
 # Class: PostgresSqlTranslator\<TRoot, TShape\>
 
-Defined in: [plugins/postgresql/src/PostgresSqlTranslator.ts:21](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/postgresql/src/PostgresSqlTranslator.ts#L21)
+Defined in: [plugins/postgresql/src/PostgresSqlTranslator.ts:21](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/postgresql/src/PostgresSqlTranslator.ts#L21)
 
 ## Extends
 
@@ -28,7 +28,7 @@ Defined in: [plugins/postgresql/src/PostgresSqlTranslator.ts:21](https://github.
 
 > **new PostgresSqlTranslator**\<`TRoot`, `TShape`\>(`query`, `pushedDown`): `PostgresSqlTranslator`\<`TRoot`, `TShape`\>
 
-Defined in: [plugins/postgresql/src/PostgresSqlTranslator.ts:31](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/postgresql/src/PostgresSqlTranslator.ts#L31)
+Defined in: [plugins/postgresql/src/PostgresSqlTranslator.ts:31](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/postgresql/src/PostgresSqlTranslator.ts#L31)
 
 #### Parameters
 
@@ -415,7 +415,7 @@ Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:60
 
 > **nearest**(`data`, `option`): `TShape`
 
-Defined in: [plugins/postgresql/src/PostgresSqlTranslator.ts:43](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/postgresql/src/PostgresSqlTranslator.ts#L43)
+Defined in: [plugins/postgresql/src/PostgresSqlTranslator.ts:43](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/postgresql/src/PostgresSqlTranslator.ts#L43)
 
 Passes through only when PostgreSQL actually did the search.
 
@@ -447,7 +447,7 @@ and its `LIMIT` are in the SQL, and nothing else may claim that.
 
 > **count**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [plugins/postgresql/src/PostgresSqlTranslator.ts:51](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/postgresql/src/PostgresSqlTranslator.ts#L51)
+Defined in: [plugins/postgresql/src/PostgresSqlTranslator.ts:51](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/postgresql/src/PostgresSqlTranslator.ts#L51)
 
 #### Type Parameters
 

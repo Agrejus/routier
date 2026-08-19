@@ -6,7 +6,7 @@
 
 # Interface: Props\<Input, Output\>
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:17](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/utils/standardJsonSchema.ts#L17)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:17](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/utils/standardJsonSchema.ts#L17)
 
 ## Extended by
 
@@ -28,7 +28,7 @@ Defined in: [core/src/schema/utils/standardJsonSchema.ts:17](https://github.com/
 
 > `readonly` **version**: `1`
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:18](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/utils/standardJsonSchema.ts#L18)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:18](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/utils/standardJsonSchema.ts#L18)
 
 ***
 
@@ -36,7 +36,7 @@ Defined in: [core/src/schema/utils/standardJsonSchema.ts:18](https://github.com/
 
 > `readonly` **vendor**: `string`
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:19](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/utils/standardJsonSchema.ts#L19)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:19](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/utils/standardJsonSchema.ts#L19)
 
 ***
 
@@ -44,4 +44,4 @@ Defined in: [core/src/schema/utils/standardJsonSchema.ts:19](https://github.com/
 
 > `readonly` `optional` **types**: [`Types`](Types.md)\<`Input`, `Output`\>
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:20](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/schema/utils/standardJsonSchema.ts#L20)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:20](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/schema/utils/standardJsonSchema.ts#L20)

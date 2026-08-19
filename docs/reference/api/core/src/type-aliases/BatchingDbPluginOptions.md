@@ -8,7 +8,7 @@
 
 > **BatchingDbPluginOptions** = `object`
 
-Defined in: [core/src/plugins/BatchingDbPlugin.ts:9](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/BatchingDbPlugin.ts#L9)
+Defined in: [core/src/plugins/BatchingDbPlugin.ts:9](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/BatchingDbPlugin.ts#L9)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: [core/src/plugins/BatchingDbPlugin.ts:9](https://github.com/Agrejus/
 
 > `optional` **isAtomic**: `boolean`
 
-Defined in: [core/src/plugins/BatchingDbPlugin.ts:22](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/BatchingDbPlugin.ts#L22)
+Defined in: [core/src/plugins/BatchingDbPlugin.ts:22](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/BatchingDbPlugin.ts#L22)
 
 The caller PROMISING that a failed `bulkPersist` beneath this wrapper leaves NOTHING
 applied. Only then may separate callers' saves be merged into one write, because the
@@ -35,7 +35,7 @@ goes without a way to undo them.
 
 > `optional` **maxBatchSize**: `number`
 
-Defined in: [core/src/plugins/BatchingDbPlugin.ts:33](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/BatchingDbPlugin.ts#L33)
+Defined in: [core/src/plugins/BatchingDbPlugin.ts:33](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/BatchingDbPlugin.ts#L33)
 
 The most writes one drain may take. Default 100.
 

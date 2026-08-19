@@ -6,7 +6,7 @@
 
 # Class: TupleTranslator\<TRoot, TShape\>
 
-Defined in: [core/src/plugins/translators/TupleTranslator.ts:26](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/TupleTranslator.ts#L26)
+Defined in: [core/src/plugins/translators/TupleTranslator.ts:26](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/TupleTranslator.ts#L26)
 
 The memory half's pass over JOIN TUPLES.
 
@@ -47,7 +47,7 @@ built an option this API cannot express, and a throw naming it is the honest ans
 
 > **new TupleTranslator**\<`TRoot`, `TShape`\>(`query`): `TupleTranslator`\<`TRoot`, `TShape`\>
 
-Defined in: [core/src/plugins/translators/DataTranslator.ts:27](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/DataTranslator.ts#L27)
+Defined in: [core/src/plugins/translators/DataTranslator.ts:27](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/DataTranslator.ts#L27)
 
 #### Parameters
 
@@ -69,7 +69,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:27](https://github.c
 
 > **translate**(`data`): [`ITranslatedValue`](../interfaces/ITranslatedValue.md)\<`TShape`\>
 
-Defined in: [core/src/plugins/translators/DataTranslator.ts:75](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/DataTranslator.ts#L75)
+Defined in: [core/src/plugins/translators/DataTranslator.ts:75](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/DataTranslator.ts#L75)
 
 #### Parameters
 
@@ -91,7 +91,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:75](https://github.c
 
 > **filter**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [core/src/plugins/translators/TupleTranslator.ts:28](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/TupleTranslator.ts#L28)
+Defined in: [core/src/plugins/translators/TupleTranslator.ts:28](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/TupleTranslator.ts#L28)
 
 #### Type Parameters
 
@@ -123,7 +123,7 @@ Defined in: [core/src/plugins/translators/TupleTranslator.ts:28](https://github.
 
 > **map**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [core/src/plugins/translators/TupleTranslator.ts:44](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/TupleTranslator.ts#L44)
+Defined in: [core/src/plugins/translators/TupleTranslator.ts:44](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/TupleTranslator.ts#L44)
 
 #### Type Parameters
 
@@ -155,7 +155,7 @@ Defined in: [core/src/plugins/translators/TupleTranslator.ts:44](https://github.
 
 > **sort**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [core/src/plugins/translators/TupleTranslator.ts:51](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/TupleTranslator.ts#L51)
+Defined in: [core/src/plugins/translators/TupleTranslator.ts:51](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/TupleTranslator.ts#L51)
 
 #### Type Parameters
 
@@ -187,7 +187,7 @@ Defined in: [core/src/plugins/translators/TupleTranslator.ts:51](https://github.
 
 > **skip**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [core/src/plugins/translators/TupleTranslator.ts:84](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/TupleTranslator.ts#L84)
+Defined in: [core/src/plugins/translators/TupleTranslator.ts:84](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/TupleTranslator.ts#L84)
 
 #### Type Parameters
 
@@ -219,7 +219,7 @@ Defined in: [core/src/plugins/translators/TupleTranslator.ts:84](https://github.
 
 > **take**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [core/src/plugins/translators/TupleTranslator.ts:93](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/TupleTranslator.ts#L93)
+Defined in: [core/src/plugins/translators/TupleTranslator.ts:93](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/TupleTranslator.ts#L93)
 
 #### Type Parameters
 
@@ -251,7 +251,7 @@ Defined in: [core/src/plugins/translators/TupleTranslator.ts:93](https://github.
 
 > **count**\<`TResult`\>(`data`, `_`): `TResult`
 
-Defined in: [core/src/plugins/translators/TupleTranslator.ts:102](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/TupleTranslator.ts#L102)
+Defined in: [core/src/plugins/translators/TupleTranslator.ts:102](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/TupleTranslator.ts#L102)
 
 #### Type Parameters
 
@@ -283,7 +283,7 @@ Defined in: [core/src/plugins/translators/TupleTranslator.ts:102](https://github
 
 > **join**(`data`, `_`): `TShape`
 
-Defined in: [core/src/plugins/translators/TupleTranslator.ts:115](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/TupleTranslator.ts#L115)
+Defined in: [core/src/plugins/translators/TupleTranslator.ts:115](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/TupleTranslator.ts#L115)
 
 Already joined by the time anything reaches here.
 
@@ -314,7 +314,7 @@ before this pass ran, so the option is a record of what happened rather than wor
 
 > **group**\<`TResult`\>(`_`, `__`): `TResult`
 
-Defined in: [core/src/plugins/translators/TupleTranslator.ts:119](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/TupleTranslator.ts#L119)
+Defined in: [core/src/plugins/translators/TupleTranslator.ts:119](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/TupleTranslator.ts#L119)
 
 #### Type Parameters
 
@@ -346,7 +346,7 @@ Defined in: [core/src/plugins/translators/TupleTranslator.ts:119](https://github
 
 > **sum**\<`TResult`\>(`_`, `__`): `TResult`
 
-Defined in: [core/src/plugins/translators/TupleTranslator.ts:123](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/TupleTranslator.ts#L123)
+Defined in: [core/src/plugins/translators/TupleTranslator.ts:123](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/TupleTranslator.ts#L123)
 
 #### Type Parameters
 
@@ -378,7 +378,7 @@ Defined in: [core/src/plugins/translators/TupleTranslator.ts:123](https://github
 
 > **min**\<`TResult`\>(`_`, `__`): `TResult`
 
-Defined in: [core/src/plugins/translators/TupleTranslator.ts:127](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/TupleTranslator.ts#L127)
+Defined in: [core/src/plugins/translators/TupleTranslator.ts:127](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/TupleTranslator.ts#L127)
 
 #### Type Parameters
 
@@ -410,7 +410,7 @@ Defined in: [core/src/plugins/translators/TupleTranslator.ts:127](https://github
 
 > **max**\<`TResult`\>(`_`, `__`): `TResult`
 
-Defined in: [core/src/plugins/translators/TupleTranslator.ts:131](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/TupleTranslator.ts#L131)
+Defined in: [core/src/plugins/translators/TupleTranslator.ts:131](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/TupleTranslator.ts#L131)
 
 #### Type Parameters
 
@@ -442,7 +442,7 @@ Defined in: [core/src/plugins/translators/TupleTranslator.ts:131](https://github
 
 > **distinct**\<`TResult`\>(`_`, `__`): `TResult`
 
-Defined in: [core/src/plugins/translators/TupleTranslator.ts:135](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/TupleTranslator.ts#L135)
+Defined in: [core/src/plugins/translators/TupleTranslator.ts:135](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/TupleTranslator.ts#L135)
 
 #### Type Parameters
 
@@ -474,7 +474,7 @@ Defined in: [core/src/plugins/translators/TupleTranslator.ts:135](https://github
 
 > **nearest**(`_`, `__`): `TShape`
 
-Defined in: [core/src/plugins/translators/TupleTranslator.ts:139](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/TupleTranslator.ts#L139)
+Defined in: [core/src/plugins/translators/TupleTranslator.ts:139](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/TupleTranslator.ts#L139)
 
 Abstract on purpose, unlike the pass-throughs a storage translator can usually inherit.
 

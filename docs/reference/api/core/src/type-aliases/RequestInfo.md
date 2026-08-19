@@ -8,7 +8,7 @@
 
 > **RequestInfo**\<`TContext`\> = `object`
 
-Defined in: [core/src/plugins/wire/handler.ts:63](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/wire/handler.ts#L63)
+Defined in: [core/src/plugins/wire/handler.ts:64](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/handler.ts#L64)
 
 What a hook is told about the request it is judging.
 
@@ -24,7 +24,7 @@ What a hook is told about the request it is judging.
 
 > **action**: `"query"` \| `"persist"` \| `"destroy"`
 
-Defined in: [core/src/plugins/wire/handler.ts:64](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/wire/handler.ts#L64)
+Defined in: [core/src/plugins/wire/handler.ts:65](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/handler.ts#L65)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: [core/src/plugins/wire/handler.ts:64](https://github.com/Agrejus/rou
 
 > **collectionNames**: `string`[]
 
-Defined in: [core/src/plugins/wire/handler.ts:66](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/wire/handler.ts#L66)
+Defined in: [core/src/plugins/wire/handler.ts:67](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/handler.ts#L67)
 
 Every collection this request touches, including the inner side of any join.
 
@@ -42,7 +42,7 @@ Every collection this request touches, including the inner side of any join.
 
 > **context**: `TContext`
 
-Defined in: [core/src/plugins/wire/handler.ts:68](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/wire/handler.ts#L68)
+Defined in: [core/src/plugins/wire/handler.ts:69](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/handler.ts#L69)
 
 Whatever the transport built from the request — a user, a tenant, a token. Never the body.
 
@@ -52,6 +52,6 @@ Whatever the transport built from the request — a user, a tenant, a token. Nev
 
 > **request**: [`SerializedRequest`](SerializedRequest.md)
 
-Defined in: [core/src/plugins/wire/handler.ts:70](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/wire/handler.ts#L70)
+Defined in: [core/src/plugins/wire/handler.ts:71](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/handler.ts#L71)
 
 The raw request, for a policy that needs to look closer. Treat it as caller-controlled input.

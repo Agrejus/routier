@@ -6,7 +6,7 @@
 
 # Class: HttpDbPlugin
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:115](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/replication/src/HttpDbPlugin.ts#L115)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:115](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/HttpDbPlugin.ts#L115)
 
 ## Implements
 
@@ -18,7 +18,7 @@ Defined in: [plugins/replication/src/HttpDbPlugin.ts:115](https://github.com/Agr
 
 > **new HttpDbPlugin**(`options`): `HttpDbPlugin`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:138](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/replication/src/HttpDbPlugin.ts#L138)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:138](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/HttpDbPlugin.ts#L138)
 
 #### Parameters
 
@@ -36,7 +36,7 @@ Defined in: [plugins/replication/src/HttpDbPlugin.ts:138](https://github.com/Agr
 
 > `readonly` **databaseName**: `string`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:136](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/replication/src/HttpDbPlugin.ts#L136)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:136](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/HttpDbPlugin.ts#L136)
 
 See `IDbPlugin.databaseName` and `HttpPluginOptions.databaseName`.
 
@@ -50,7 +50,7 @@ See `IDbPlugin.databaseName` and `HttpPluginOptions.databaseName`.
 
 > **collectionUrl**(`collectionName`): `string`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:156](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/replication/src/HttpDbPlugin.ts#L156)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:156](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/HttpDbPlugin.ts#L156)
 
 Exposed for composing plugins (e.g. HttpSwrDbPlugin) that need to build request URLs.
 
@@ -70,7 +70,7 @@ Exposed for composing plugins (e.g. HttpSwrDbPlugin) that need to build request 
 
 > **requestHeaders**(): `Promise`\<`Record`\<`string`, `string`\>\>
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:161](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/replication/src/HttpDbPlugin.ts#L161)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:161](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/HttpDbPlugin.ts#L161)
 
 Exposed for composing plugins that need to add auth or other headers to fetch/HTTP calls.
 
@@ -84,7 +84,7 @@ Exposed for composing plugins that need to add auth or other headers to fetch/HT
 
 > **notifyAuthError**(`event`): `Promise`\<`boolean`\>
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:170](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/replication/src/HttpDbPlugin.ts#L170)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:170](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/HttpDbPlugin.ts#L170)
 
 Notifies onAuthError and reports whether the handler claims re-auth succeeded
 (a truthy return/resolution). Handler exceptions are logged, never propagated.
@@ -105,7 +105,7 @@ Notifies onAuthError and reports whether the handler claims re-auth succeeded
 
 > **query**\<`TRoot`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:230](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/replication/src/HttpDbPlugin.ts#L230)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:234](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/HttpDbPlugin.ts#L234)
 
 Executes a query operation on the database.
 
@@ -147,7 +147,7 @@ Callback with the result or error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:326](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/replication/src/HttpDbPlugin.ts#L326)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:330](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/HttpDbPlugin.ts#L330)
 
 Executes bulk operations (add, update, remove) on the database.
 
@@ -179,7 +179,7 @@ Callback with the result or error.
 
 > **postJson**(`url`, `body`, `_collectionName`): `Promise`\<`unknown`\>
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:431](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/replication/src/HttpDbPlugin.ts#L431)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:435](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/HttpDbPlugin.ts#L435)
 
 Enqueues a body for batching by URL, then POSTs the merged body through the pacer.
 
@@ -211,7 +211,7 @@ every write bypassed everything this class guarantees.
 
 > **pendingRequestCount**(): `number`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:451](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/replication/src/HttpDbPlugin.ts#L451)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:455](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/HttpDbPlugin.ts#L455)
 
 Calls accepted and not finished, including writes waiting in the batch window.
 
@@ -225,7 +225,7 @@ Calls accepted and not finished, including writes waiting in the batch window.
 
 > **destroy**(`_event`, `done`): `void`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:474](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/replication/src/HttpDbPlugin.ts#L474)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:478](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/HttpDbPlugin.ts#L478)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 

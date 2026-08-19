@@ -6,7 +6,7 @@
 
 # Class: HttpStatusError
 
-Defined in: [plugins/replication/src/httpUtils.ts:8](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/replication/src/httpUtils.ts#L8)
+Defined in: [plugins/replication/src/httpUtils.ts:8](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/httpUtils.ts#L8)
 
 An HTTP failure that keeps its status so callers can classify it.
 
@@ -20,7 +20,7 @@ An HTTP failure that keeps its status so callers can classify it.
 
 > **new HttpStatusError**(`status`, `statusText`, `retryAfterMs`, `responseBody`): `HttpStatusError`
 
-Defined in: [plugins/replication/src/httpUtils.ts:15](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/replication/src/httpUtils.ts#L15)
+Defined in: [plugins/replication/src/httpUtils.ts:15](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/httpUtils.ts#L15)
 
 #### Parameters
 
@@ -54,7 +54,7 @@ Defined in: [plugins/replication/src/httpUtils.ts:15](https://github.com/Agrejus
 
 > `readonly` **status**: `number`
 
-Defined in: [plugins/replication/src/httpUtils.ts:9](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/replication/src/httpUtils.ts#L9)
+Defined in: [plugins/replication/src/httpUtils.ts:9](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/httpUtils.ts#L9)
 
 ***
 
@@ -62,7 +62,7 @@ Defined in: [plugins/replication/src/httpUtils.ts:9](https://github.com/Agrejus/
 
 > `readonly` **retryAfterMs**: `number`
 
-Defined in: [plugins/replication/src/httpUtils.ts:11](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/replication/src/httpUtils.ts#L11)
+Defined in: [plugins/replication/src/httpUtils.ts:11](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/httpUtils.ts#L11)
 
 Retry-After header value in milliseconds, when the server sent one.
 
@@ -72,7 +72,7 @@ Retry-After header value in milliseconds, when the server sent one.
 
 > `readonly` **responseBody**: `unknown`
 
-Defined in: [plugins/replication/src/httpUtils.ts:13](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/replication/src/httpUtils.ts#L13)
+Defined in: [plugins/replication/src/httpUtils.ts:13](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/httpUtils.ts#L13)
 
 Parsed JSON error body when available. Used for structured batch rejection.
 

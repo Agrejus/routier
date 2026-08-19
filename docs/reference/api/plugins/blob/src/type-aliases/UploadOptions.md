@@ -8,7 +8,7 @@
 
 > **UploadOptions** = `object`
 
-Defined in: [plugins/blob/src/content.ts:16](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/blob/src/content.ts#L16)
+Defined in: [plugins/blob/src/content.ts:16](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/content.ts#L16)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: [plugins/blob/src/content.ts:16](https://github.com/Agrejus/routier/
 
 > `optional` **contentType**: `string`
 
-Defined in: [plugins/blob/src/content.ts:23](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/blob/src/content.ts#L23)
+Defined in: [plugins/blob/src/content.ts:23](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/content.ts#L23)
 
 Media type. Taken from a `Blob`/`File` when it has one.
 
@@ -29,6 +29,6 @@ security question, not a convenience one, so it is the caller's to state.
 
 > `optional` **fileName**: `string`
 
-Defined in: [plugins/blob/src/content.ts:26](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/blob/src/content.ts#L26)
+Defined in: [plugins/blob/src/content.ts:26](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/blob/src/content.ts#L26)
 
 The name to show a user. Stored as metadata; it is not part of the key.

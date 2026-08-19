@@ -8,7 +8,7 @@
 
 > **TaggedEntity**\<`T`\> = `object`
 
-Defined in: [core/src/plugins/types.ts:174](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/types.ts#L174)
+Defined in: [core/src/plugins/types.ts:216](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/types.ts#L216)
 
 ## Type Parameters
 
@@ -22,7 +22,7 @@ Defined in: [core/src/plugins/types.ts:174](https://github.com/Agrejus/routier/b
 
 > **entity**: `T`
 
-Defined in: [core/src/plugins/types.ts:175](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/types.ts#L175)
+Defined in: [core/src/plugins/types.ts:217](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/types.ts#L217)
 
 ***
 
@@ -30,4 +30,4 @@ Defined in: [core/src/plugins/types.ts:175](https://github.com/Agrejus/routier/b
 
 > `optional` **tag**: `unknown`
 
-Defined in: [core/src/plugins/types.ts:176](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/types.ts#L176)
+Defined in: [core/src/plugins/types.ts:218](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/types.ts#L218)

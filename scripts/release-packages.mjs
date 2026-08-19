@@ -15,6 +15,7 @@ export const releasePackageDirectories = [
   'plugins/file-system',
   'plugins/mongodb',
   'plugins/mysql',
+  'plugins/otel',
   'plugins/postgresql',
   'plugins/pouchdb',
   'plugins/sqlite',

@@ -18,6 +18,7 @@
 - [plugins/memory/src](plugins/memory/src/README.md)
 - [plugins/mongodb/src](plugins/mongodb/src/README.md)
 - [plugins/mysql/src](plugins/mysql/src/README.md)
+- [plugins/otel/src](plugins/otel/src/README.md)
 - [plugins/postgresql/src](plugins/postgresql/src/README.md)
 - [plugins/pouchdb/src](plugins/pouchdb/src/README.md)
 - [react/src](react/src/README.md)

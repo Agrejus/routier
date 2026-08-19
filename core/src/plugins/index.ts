@@ -5,5 +5,6 @@ export * from './wire';
 export * from './ConcurrencyDbPlugin';
 export * from './EphemeralDataPlugin';
 export * from './RetryDbPlugin';
+export * from './TelemetryDbPlugin';
 export * from './CacheDbPlugin';
 export * from './BatchingDbPlugin';

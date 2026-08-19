@@ -19,9 +19,6 @@
 
 ## Classes
 
-- [Capability](classes/Capability.md)
-- [PerformanceCapability](classes/PerformanceCapability.md)
-- [TracingCapability](classes/TracingCapability.md)
 - [Block](classes/Block.md)
 - [ContainerBlock](classes/ContainerBlock.md)
 - [StringBuilder](classes/StringBuilder.md)
@@ -63,6 +60,7 @@
 - [ConcurrencyDbPlugin](classes/ConcurrencyDbPlugin.md)
 - [EphemeralDataPlugin](classes/EphemeralDataPlugin.md)
 - [RetryDbPlugin](classes/RetryDbPlugin.md)
+- [TelemetryDbPlugin](classes/TelemetryDbPlugin.md)
 - [Query](classes/Query.md)
 - [QueryOptionsCollection](classes/QueryOptionsCollection.md)
 - [DataTranslator](classes/DataTranslator.md)
@@ -106,7 +104,6 @@
 
 ## Interfaces
 
-- [PerformanceMetrics](interfaces/PerformanceMetrics.md)
 - [ITranslatedValue](interfaces/ITranslatedValue.md)
 - [IDbPlugin](interfaces/IDbPlugin.md)
 - [ISchemaSubscription](interfaces/ISchemaSubscription.md)
@@ -115,8 +112,6 @@
 
 ## Type Aliases
 
-- [MethodInfoMetadata](type-aliases/MethodInfoMetadata.md)
-- [MethodInfo](type-aliases/MethodInfo.md)
 - [StringType](type-aliases/StringType.md)
 - [Insert](type-aliases/Insert.md)
 - [CreateBlockOptions](type-aliases/CreateBlockOptions.md)
@@ -138,7 +133,16 @@
 - [BatchingDbPluginOptions](type-aliases/BatchingDbPluginOptions.md)
 - [CacheDbPluginOptions](type-aliases/CacheDbPluginOptions.md)
 - [RetryDbPluginOptions](type-aliases/RetryDbPluginOptions.md)
+- [TelemetryEvent](type-aliases/TelemetryEvent.md)
+- [TelemetrySink](type-aliases/TelemetrySink.md)
+- [TelemetryDbPluginOptions](type-aliases/TelemetryDbPluginOptions.md)
 - [QueryCollectionItem](type-aliases/QueryCollectionItem.md)
+- [ExecutedQuery](type-aliases/ExecutedQuery.md)
+- [ExplainedOption](type-aliases/ExplainedOption.md)
+- [ExecutionStep](type-aliases/ExecutionStep.md)
+- [QueryExplanationSummary](type-aliases/QueryExplanationSummary.md)
+- [QueryExplanation](type-aliases/QueryExplanation.md)
+- [ExplainContext](type-aliases/ExplainContext.md)
 - [JoinKind](type-aliases/JoinKind.md)
 - [JoinKeyReference](type-aliases/JoinKeyReference.md)
 - [JoinQueryOptionValue](type-aliases/JoinQueryOptionValue.md)
@@ -148,6 +152,7 @@
 - [QueryField](type-aliases/QueryField.md)
 - [QueryOptionExecutionTarget](type-aliases/QueryOptionExecutionTarget.md)
 - [QueryOptionName](type-aliases/QueryOptionName.md)
+- [MemoryExecutionReason](type-aliases/MemoryExecutionReason.md)
 - [QueryOption](type-aliases/QueryOption.md)
 - [QueryOptionValueMap](type-aliases/QueryOptionValueMap.md)
 - [QuerySort](type-aliases/QuerySort.md)
@@ -237,6 +242,8 @@
 
 - [EXPRESSION\_TYPES](variables/EXPRESSION_TYPES.md)
 - [measure](variables/measure.md)
+- [MEMORY\_EXECUTION\_EXPLANATIONS](variables/MEMORY_EXECUTION_EXPLANATIONS.md)
+- [EXECUTED\_QUERIES\_UNSUPPORTED](variables/EXECUTED_QUERIES_UNSUPPORTED.md)
 - [DEFAULT\_SEMI\_JOIN\_KEY\_THRESHOLD](variables/DEFAULT_SEMI_JOIN_KEY_THRESHOLD.md)
 - [s](variables/s.md)
 - [LOG\_LEVELS](variables/LOG_LEVELS.md)
@@ -266,6 +273,11 @@
 - [getProperties](functions/getProperties.md)
 - [forEach](functions/forEach.md)
 - [now](functions/now.md)
+- [loggerSink](functions/loggerSink.md)
+- [collectingSink](functions/collectingSink.md)
+- [explainQuery](functions/explainQuery.md)
+- [withExecutedQueries](functions/withExecutedQueries.md)
+- [formatExplanation](functions/formatExplanation.md)
 - [toEntityShape](functions/toEntityShape.md)
 - [readJoinKey](functions/readJoinKey.md)
 - [applyInnerOptions](functions/applyInnerOptions.md)

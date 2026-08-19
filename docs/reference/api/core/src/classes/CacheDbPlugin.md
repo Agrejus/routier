@@ -6,7 +6,7 @@
 
 # Class: CacheDbPlugin
 
-Defined in: [core/src/plugins/CacheDbPlugin.ts:73](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/CacheDbPlugin.ts#L73)
+Defined in: [core/src/plugins/CacheDbPlugin.ts:73](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/CacheDbPlugin.ts#L73)
 
 Interface for a database plugin, which provides query, destroy, and bulk operations.
 
@@ -20,7 +20,7 @@ Interface for a database plugin, which provides query, destroy, and bulk operati
 
 > **new CacheDbPlugin**(`plugin`, `options`): `CacheDbPlugin`
 
-Defined in: [core/src/plugins/CacheDbPlugin.ts:83](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/CacheDbPlugin.ts#L83)
+Defined in: [core/src/plugins/CacheDbPlugin.ts:83](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/CacheDbPlugin.ts#L83)
 
 #### Parameters
 
@@ -44,7 +44,7 @@ Defined in: [core/src/plugins/CacheDbPlugin.ts:83](https://github.com/Agrejus/ro
 
 > **get** **databaseName**(): `string`
 
-Defined in: [core/src/plugins/CacheDbPlugin.ts:88](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/CacheDbPlugin.ts#L88)
+Defined in: [core/src/plugins/CacheDbPlugin.ts:88](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/CacheDbPlugin.ts#L88)
 
 Uniquely identifies the database this plugin talks to, INCLUDING host or path where a
 bare name would collide — `orders.db` in two directories is two databases, and `mydb`
@@ -100,7 +100,7 @@ host/port/database rather than returning a connection string.
 
 > **query**\<`TRoot`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: [core/src/plugins/CacheDbPlugin.ts:124](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/CacheDbPlugin.ts#L124)
+Defined in: [core/src/plugins/CacheDbPlugin.ts:124](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/CacheDbPlugin.ts#L124)
 
 Executes a query operation on the database.
 
@@ -142,7 +142,7 @@ Callback with the result or error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [core/src/plugins/CacheDbPlugin.ts:201](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/CacheDbPlugin.ts#L201)
+Defined in: [core/src/plugins/CacheDbPlugin.ts:206](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/CacheDbPlugin.ts#L206)
 
 Executes bulk operations (add, update, remove) on the database.
 
@@ -174,7 +174,7 @@ Callback with the result or error.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: [core/src/plugins/CacheDbPlugin.ts:220](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/CacheDbPlugin.ts#L220)
+Defined in: [core/src/plugins/CacheDbPlugin.ts:225](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/CacheDbPlugin.ts#L225)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 

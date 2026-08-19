@@ -35,6 +35,7 @@
         "mutate:expressions": "stryker run stryker/expressions.mjs",
         "mutate:codegen": "stryker run stryker/codegen.mjs",
         "mutate:plugins": "stryker run stryker/plugins.mjs",
+        "mutate:otel": "stryker run stryker/otel.mjs",
         "mutate:replication": "stryker run stryker/replication.mjs",
         "mutate:collections": "stryker run stryker/collections.mjs",
         "mutate:datastore": "stryker run stryker/datastore.mjs",

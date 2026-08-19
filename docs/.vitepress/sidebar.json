@@ -105,6 +105,10 @@
             "link": "/integrations/plugins/built-in-plugins/encryption"
           },
           {
+            "text": "OpenTelemetry",
+            "link": "/integrations/plugins/built-in-plugins/otel"
+          },
+          {
             "text": "Composition Recipes",
             "link": "/guides/plugin-compositions"
           }

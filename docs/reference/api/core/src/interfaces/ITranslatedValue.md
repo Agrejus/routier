@@ -6,7 +6,7 @@
 
 # Interface: ITranslatedValue\<T\>
 
-Defined in: [core/src/plugins/translators/types.ts:1](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/types.ts#L1)
+Defined in: [core/src/plugins/translators/types.ts:1](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/types.ts#L1)
 
 ## Type Parameters
 
@@ -20,7 +20,7 @@ Defined in: [core/src/plugins/translators/types.ts:1](https://github.com/Agrejus
 
 > `readonly` **value**: `T`
 
-Defined in: [core/src/plugins/translators/types.ts:2](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/types.ts#L2)
+Defined in: [core/src/plugins/translators/types.ts:2](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/types.ts#L2)
 
 ***
 
@@ -28,7 +28,7 @@ Defined in: [core/src/plugins/translators/types.ts:2](https://github.com/Agrejus
 
 > `readonly` **isTransformed**: `boolean`
 
-Defined in: [core/src/plugins/translators/types.ts:16](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/types.ts#L16)
+Defined in: [core/src/plugins/translators/types.ts:16](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/types.ts#L16)
 
 True if the translator remapped or transformed the data from the database shape;
 false if the data is unchanged and in the same shape as the database.
@@ -39,7 +39,7 @@ false if the data is unchanged and in the same shape as the database.
 
 > `readonly` **isEmpty**: `boolean`
 
-Defined in: [core/src/plugins/translators/types.ts:18](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/types.ts#L18)
+Defined in: [core/src/plugins/translators/types.ts:18](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/types.ts#L18)
 
 ## Methods
 
@@ -47,7 +47,7 @@ Defined in: [core/src/plugins/translators/types.ts:18](https://github.com/Agreju
 
 > **forEach**(`callback`): `void`
 
-Defined in: [core/src/plugins/translators/types.ts:10](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/types.ts#L10)
+Defined in: [core/src/plugins/translators/types.ts:10](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/types.ts#L10)
 
 Iterates over items in the collection, calling the callback for each item.
 If the callback returns a value, that value replaces the original item (e.g. so
