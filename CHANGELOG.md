@@ -3,6 +3,64 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## 0.5.0 (2026-08-19)
+
+Telemetry as an explicit plugin instead of runtime reflection, plus a new OpenTelemetry
+package. Documented at `/integrations/plugins/built-in-plugins/wrappers#telemetrydbplugin` and
+`/integrations/plugins/built-in-plugins/otel`.
+
+### Versions
+
+**Independent, not lockstep.** Only `@routier/core` and the new `@routier/otel-plugin` change.
+The new package starts at `0.1.0` rather than joining core's number: it is unproven, and a
+version is a claim about a package's own history, not a badge of which release it shipped in.
+Unifying can wait until the packages leave `0.x`.
+Unlike `0.3.0` and `0.4.0`, no plugin needs republishing: every plugin declares
+`@routier/core` as a peer at `>=0.4.0`, which `0.5.0` satisfies, and plugin bundles no longer
+inline core — dependencies and peers are externalised, so a dist `require`s core rather than
+carrying a copy of it. The peer floors deliberately stay at `>=0.4.0`, because nothing removed
+here was ever used by a plugin.
+
+### Breaking — @routier/core
+
+- `@routier/core/capabilities` is removed, along with `Capability`, `PerformanceCapability`,
+  `TracingCapability`, `PerformanceMetrics`, `MethodInfo` and `MethodInfoMetadata`. The
+  subpath export and its `typesVersions` entry are gone, so an import of either fails to
+  resolve rather than resolving to something empty.
+
+  These wrapped a datastore by reflection, replacing methods to time and trace them. Replace
+  with `TelemetryDbPlugin` below, which measures the same operations by decorating the plugin
+  the datastore already talks to — no method replacement, and it composes with the other
+  wrappers instead of mutating an instance.
+
+### Added — @routier/core
+
+- `TelemetryDbPlugin` wraps any `IDbPlugin` and emits one `TelemetryEvent` per `query`,
+  `bulkPersist` and `destroy`: `operation`, `durationMs`, `ok`, `eventId`, `source`, the
+  `schemas` touched, and `error` when `ok` is not `"success"`.
+- `TelemetrySink`, `TelemetryEvent` and `TelemetryDbPluginOptions` are exported with it.
+- `loggerSink()` is the default sink and writes through the levelled logger, so
+  `ROUTIER_LOG_LEVEL` governs whether anything is emitted. `collectingSink(array)` buffers
+  into an array for tests and custom aggregation.
+- A sink that throws is swallowed: observability never fails a data operation. The result
+  object reaches the caller by the same reference, never a copy.
+- No new dependencies.
+
+### Added — @routier/otel-plugin 0.1.0 (first release)
+
+- `OtelDbPlugin` wraps any `IDbPlugin` and emits one OpenTelemetry span per operation, named
+  `routier.query`, `routier.bulkPersist` or `routier.destroy`, with `db.system`,
+  `db.collection.name`, `routier.source`, `routier.event.id`, and `db.query.text` when the
+  inner plugin reports what it executed.
+- The inner plugin runs inside the span's context, so spans it creates itself nest underneath
+  rather than becoming roots.
+- A failed or partial operation records the exception and sets status `ERROR`; a partial save
+  also sets the status message to `"partial"`. Span bookkeeping is wrapped so that a throw
+  while setting attributes cannot fail the operation, and the span always ends.
+- `@opentelemetry/api` is a peer dependency and the package has **no runtime dependencies** —
+  the SDK belongs to the host application. Pass a `Tracer` to use your own instrumentation
+  scope; the default is `trace.getTracer("routier")`, a no-op until you register a provider.
+
 ## 0.4.0 (2026-08-18)
 
 Query explain, end to end: `.explain()` on any query — joins included — returns

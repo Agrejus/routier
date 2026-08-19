@@ -49,6 +49,7 @@ const EXPECTED_EXPORT = {
     '@routier/sqlite-plugin': 'SqliteDbPlugin',
     '@routier/blob-plugin': 'createFiles',
     '@routier/encryption': 'encryption',
+    '@routier/otel-plugin': 'OtelDbPlugin',
 };
 
 /**
@@ -62,7 +63,7 @@ const PACKAGE_DIRECTORIES = [
     'core', 'datastore', 'plugins/memory', 'plugins/file-system', 'plugins/browser-storage',
     'plugins/dexie', 'plugins/postgresql', 'plugins/mysql', 'plugins/pouchdb',
     'plugins/replication', 'plugins/sql-core', 'plugins/sqlite', 'plugins/blob',
-    'plugins/encryption',
+    'plugins/encryption', 'plugins/otel',
 ];
 
 const run = (command, args, cwd) =>
