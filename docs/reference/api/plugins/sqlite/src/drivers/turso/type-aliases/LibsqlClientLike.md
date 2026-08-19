@@ -8,7 +8,7 @@
 
 > **LibsqlClientLike** = `object`
 
-Defined in: [plugins/sqlite/src/drivers/turso.ts:69](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/sqlite/src/drivers/turso.ts#L69)
+Defined in: [plugins/sqlite/src/drivers/turso.ts:69](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sqlite/src/drivers/turso.ts#L69)
 
 ## Methods
 
@@ -16,7 +16,7 @@ Defined in: [plugins/sqlite/src/drivers/turso.ts:69](https://github.com/Agrejus/
 
 > **execute**(`statement`): `Promise`\<`LibsqlResult`\>
 
-Defined in: [plugins/sqlite/src/drivers/turso.ts:70](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/sqlite/src/drivers/turso.ts#L70)
+Defined in: [plugins/sqlite/src/drivers/turso.ts:70](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sqlite/src/drivers/turso.ts#L70)
 
 #### Parameters
 
@@ -34,7 +34,7 @@ Defined in: [plugins/sqlite/src/drivers/turso.ts:70](https://github.com/Agrejus/
 
 > **transaction**(`mode`): `Promise`\<`LibsqlTransaction`\>
 
-Defined in: [plugins/sqlite/src/drivers/turso.ts:71](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/sqlite/src/drivers/turso.ts#L71)
+Defined in: [plugins/sqlite/src/drivers/turso.ts:71](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sqlite/src/drivers/turso.ts#L71)
 
 #### Parameters
 
@@ -52,7 +52,7 @@ Defined in: [plugins/sqlite/src/drivers/turso.ts:71](https://github.com/Agrejus/
 
 > **close**(): `void`
 
-Defined in: [plugins/sqlite/src/drivers/turso.ts:72](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/sqlite/src/drivers/turso.ts#L72)
+Defined in: [plugins/sqlite/src/drivers/turso.ts:72](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sqlite/src/drivers/turso.ts#L72)
 
 #### Returns
 

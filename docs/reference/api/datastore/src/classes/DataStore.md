@@ -6,7 +6,7 @@
 
 # Class: DataStore
 
-Defined in: [datastore/src/DataStore.ts:44](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/DataStore.ts#L44)
+Defined in: [datastore/src/DataStore.ts:44](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/DataStore.ts#L44)
 
 The main Routier class, providing collection management, change tracking, and persistence for entities.
 
@@ -24,7 +24,7 @@ Disposable
 
 > **new DataStore**(`dbPlugin`, `options?`): `DataStore`
 
-Defined in: [datastore/src/DataStore.ts:72](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/DataStore.ts#L72)
+Defined in: [datastore/src/DataStore.ts:72](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/DataStore.ts#L72)
 
 Constructs a new Routier instance.
 
@@ -54,7 +54,7 @@ Store-wide settings. Every one has a default; see `DataStoreOptions`.
 
 > **get** **schemas**(): `ReadonlySchemaCollection`
 
-Defined in: [datastore/src/DataStore.ts:63](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/DataStore.ts#L63)
+Defined in: [datastore/src/DataStore.ts:63](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/DataStore.ts#L63)
 
 ##### Returns
 
@@ -66,7 +66,7 @@ Defined in: [datastore/src/DataStore.ts:63](https://github.com/Agrejus/routier/b
 
 > **getDbPlugin**\<`T`\>(): `T`
 
-Defined in: [datastore/src/DataStore.ts:84](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/DataStore.ts#L84)
+Defined in: [datastore/src/DataStore.ts:84](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/DataStore.ts#L84)
 
 #### Type Parameters
 
@@ -84,7 +84,7 @@ Defined in: [datastore/src/DataStore.ts:84](https://github.com/Agrejus/routier/b
 
 > **getCollection**\<`TEntity`\>(`schema`): [`Collection`](Collection.md)\<`TEntity`\>
 
-Defined in: [datastore/src/DataStore.ts:88](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/DataStore.ts#L88)
+Defined in: [datastore/src/DataStore.ts:88](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/DataStore.ts#L88)
 
 #### Type Parameters
 
@@ -108,7 +108,7 @@ Defined in: [datastore/src/DataStore.ts:88](https://github.com/Agrejus/routier/b
 
 > **saveChanges**(`done`): `void`
 
-Defined in: [datastore/src/DataStore.ts:346](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/DataStore.ts#L346)
+Defined in: [datastore/src/DataStore.ts:346](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/DataStore.ts#L346)
 
 Saves all changes in all collections.
 
@@ -130,7 +130,7 @@ Callback with the number of changes saved or an error.
 
 > **saveChangesAsync**(): `Promise`\<`BulkPersistResult`\>
 
-Defined in: [datastore/src/DataStore.ts:377](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/DataStore.ts#L377)
+Defined in: [datastore/src/DataStore.ts:377](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/DataStore.ts#L377)
 
 Saves all changes in all collections asynchronously.
 
@@ -146,7 +146,7 @@ A promise resolving to the number of changes saved.
 
 > **previewChanges**(`done`): `void`
 
-Defined in: [datastore/src/DataStore.ts:388](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/DataStore.ts#L388)
+Defined in: [datastore/src/DataStore.ts:388](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/DataStore.ts#L388)
 
 Computes and returns the pending changes that would be sent to the database plugin's bulkOperations method.
 This method allows inspection of changes before they are actually persisted.
@@ -169,7 +169,7 @@ Callback with the entity changes or an error.
 
 > **previewChangesAsync**(): `Promise`\<`BulkPersistChanges`\>
 
-Defined in: [datastore/src/DataStore.ts:407](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/DataStore.ts#L407)
+Defined in: [datastore/src/DataStore.ts:407](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/DataStore.ts#L407)
 
 Computes and returns the pending changes that would be sent to the database plugin's bulkOperations method asynchronously.
 This method allows inspection of changes before they are actually persisted.
@@ -186,7 +186,7 @@ A promise resolving to the entity changes.
 
 > **hasChanges**(`done`): `void`
 
-Defined in: [datastore/src/DataStore.ts:417](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/DataStore.ts#L417)
+Defined in: [datastore/src/DataStore.ts:417](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/DataStore.ts#L417)
 
 Checks if there are any unsaved changes in the collections.
 
@@ -208,7 +208,7 @@ Callback with the result (true if there are changes) or an error.
 
 > **hasChangesAsync**(): `Promise`\<`boolean`\>
 
-Defined in: [datastore/src/DataStore.ts:445](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/DataStore.ts#L445)
+Defined in: [datastore/src/DataStore.ts:445](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/DataStore.ts#L445)
 
 Checks asynchronously if there are any unsaved changes in the collections.
 
@@ -224,7 +224,7 @@ A promise resolving to true if there are changes, false otherwise.
 
 > **destroy**(`done`): `void`
 
-Defined in: [datastore/src/DataStore.ts:475](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/DataStore.ts#L475)
+Defined in: [datastore/src/DataStore.ts:475](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/DataStore.ts#L475)
 
 Destroys the Routier instance and underlying database plugin.
 
@@ -257,7 +257,7 @@ Callback with an optional error.
 
 > **destroyAsync**(): `Promise`\<`void`\>
 
-Defined in: [datastore/src/DataStore.ts:491](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/DataStore.ts#L491)
+Defined in: [datastore/src/DataStore.ts:491](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/DataStore.ts#L491)
 
 Destroys the Routier instance and underlying database plugin asynchronously.
 
@@ -273,7 +273,7 @@ A promise that resolves when destruction is complete.
 
 > **\[dispose\]**(): `void`
 
-Defined in: [datastore/src/DataStore.ts:500](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/DataStore.ts#L500)
+Defined in: [datastore/src/DataStore.ts:500](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/DataStore.ts#L500)
 
 Disposes the Routier instance, aborting any ongoing operations and subscriptions.
 

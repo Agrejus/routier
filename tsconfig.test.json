@@ -35,6 +35,7 @@
             "@routier/postgresql-plugin": ["./plugins/postgresql/src/index.ts"],
             "@routier/mysql-plugin": ["./plugins/mysql/src/index.ts"],
             "@routier/mongodb-plugin": ["./plugins/mongodb/src/index.ts"],
+            "@routier/otel-plugin": ["./plugins/otel/src/index.ts"],
             "@routier/replication-plugin": ["./plugins/replication/src/index.ts"],
             "@routier/react": ["./react/src/index.ts"],
             "@routier/sync-server": ["./sync-server/src/index.ts"],

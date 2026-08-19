@@ -8,7 +8,7 @@
 
 > **RetryDbPluginOptions** = `object`
 
-Defined in: [core/src/plugins/RetryDbPlugin.ts:32](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/RetryDbPlugin.ts#L32)
+Defined in: [core/src/plugins/RetryDbPlugin.ts:32](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/RetryDbPlugin.ts#L32)
 
 Retries a failed READ, and never a write.
 
@@ -40,7 +40,7 @@ const store = new MyStore(new RetryDbPlugin(new SomeDbPlugin(...), { attempts: 3
 
 > `optional` **attempts**: `number`
 
-Defined in: [core/src/plugins/RetryDbPlugin.ts:39](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/RetryDbPlugin.ts#L39)
+Defined in: [core/src/plugins/RetryDbPlugin.ts:39](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/RetryDbPlugin.ts#L39)
 
 Total attempts, including the first. Default 3, minimum 1.
 
@@ -53,7 +53,7 @@ between three calls and four against a struggling backend.
 
 > `optional` **delayMs**: (`attempt`) => `number`
 
-Defined in: [core/src/plugins/RetryDbPlugin.ts:48](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/RetryDbPlugin.ts#L48)
+Defined in: [core/src/plugins/RetryDbPlugin.ts:48](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/RetryDbPlugin.ts#L48)
 
 Milliseconds to wait before attempt `attempt` (2 for the first retry).
 
@@ -78,7 +78,7 @@ for everyone else.
 
 > `optional` **shouldRetry**: (`error`, `attempt`) => `boolean`
 
-Defined in: [core/src/plugins/RetryDbPlugin.ts:60](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/RetryDbPlugin.ts#L60)
+Defined in: [core/src/plugins/RetryDbPlugin.ts:60](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/RetryDbPlugin.ts#L60)
 
 Whether an error is worth another attempt. Default: every error is.
 

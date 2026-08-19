@@ -6,7 +6,7 @@
 
 # Class: TranslatedSingleValue\<T\>
 
-Defined in: [core/src/plugins/translators/TranslatedSingleValue.ts:3](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/TranslatedSingleValue.ts#L3)
+Defined in: [core/src/plugins/translators/TranslatedSingleValue.ts:3](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/TranslatedSingleValue.ts#L3)
 
 ## Type Parameters
 
@@ -24,7 +24,7 @@ Defined in: [core/src/plugins/translators/TranslatedSingleValue.ts:3](https://gi
 
 > **new TranslatedSingleValue**\<`T`\>(`value`, `isTransformed`): `TranslatedSingleValue`\<`T`\>
 
-Defined in: [core/src/plugins/translators/TranslatedSingleValue.ts:9](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/TranslatedSingleValue.ts#L9)
+Defined in: [core/src/plugins/translators/TranslatedSingleValue.ts:9](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/TranslatedSingleValue.ts#L9)
 
 #### Parameters
 
@@ -46,7 +46,7 @@ Defined in: [core/src/plugins/translators/TranslatedSingleValue.ts:9](https://gi
 
 > **value**: `T`
 
-Defined in: [core/src/plugins/translators/TranslatedSingleValue.ts:5](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/TranslatedSingleValue.ts#L5)
+Defined in: [core/src/plugins/translators/TranslatedSingleValue.ts:5](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/TranslatedSingleValue.ts#L5)
 
 #### Implementation of
 
@@ -58,7 +58,7 @@ Defined in: [core/src/plugins/translators/TranslatedSingleValue.ts:5](https://gi
 
 > `readonly` **isTransformed**: `boolean`
 
-Defined in: [core/src/plugins/translators/TranslatedSingleValue.ts:6](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/TranslatedSingleValue.ts#L6)
+Defined in: [core/src/plugins/translators/TranslatedSingleValue.ts:6](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/TranslatedSingleValue.ts#L6)
 
 True if the translator remapped or transformed the data from the database shape;
 false if the data is unchanged and in the same shape as the database.
@@ -73,7 +73,7 @@ false if the data is unchanged and in the same shape as the database.
 
 > `readonly` **isEmpty**: `boolean`
 
-Defined in: [core/src/plugins/translators/TranslatedSingleValue.ts:7](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/TranslatedSingleValue.ts#L7)
+Defined in: [core/src/plugins/translators/TranslatedSingleValue.ts:7](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/TranslatedSingleValue.ts#L7)
 
 #### Implementation of
 
@@ -85,7 +85,7 @@ Defined in: [core/src/plugins/translators/TranslatedSingleValue.ts:7](https://gi
 
 > **forEach**(`callback`): `void`
 
-Defined in: [core/src/plugins/translators/TranslatedSingleValue.ts:15](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/TranslatedSingleValue.ts#L15)
+Defined in: [core/src/plugins/translators/TranslatedSingleValue.ts:15](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/TranslatedSingleValue.ts#L15)
 
 Iterates over items in the collection, calling the callback for each item.
 If the callback returns a value, that value replaces the original item (e.g. so

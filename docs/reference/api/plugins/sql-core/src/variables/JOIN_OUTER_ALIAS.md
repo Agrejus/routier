@@ -8,6 +8,6 @@
 
 > `const` **JOIN\_OUTER\_ALIAS**: `"o"` = `"o"`
 
-Defined in: [plugins/sql-core/src/joins.ts:32](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/sql-core/src/joins.ts#L32)
+Defined in: [plugins/sql-core/src/joins.ts:32](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sql-core/src/joins.ts#L32)
 
 Alias for the outer side, and the prefix its columns are projected under.

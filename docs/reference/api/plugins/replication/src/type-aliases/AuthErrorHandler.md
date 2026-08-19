@@ -8,7 +8,7 @@
 
 > **AuthErrorHandler** = (`event`) => `void` \| `boolean` \| `Promise`\<`void` \| `boolean`\>
 
-Defined in: [plugins/replication/src/auth.ts:28](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/replication/src/auth.ts#L28)
+Defined in: [plugins/replication/src/auth.ts:28](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/replication/src/auth.ts#L28)
 
 Handler invoked when the remote returns 401/403. May return (or resolve to)
 `true` to signal that re-authentication succeeded — e.g. a token refresh —

@@ -6,7 +6,7 @@
 
 # Class: BrowserStoragePlugin
 
-Defined in: [plugins/browser-storage/src/BrowserStoragePlugin.ts:30](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/browser-storage/src/BrowserStoragePlugin.ts#L30)
+Defined in: [plugins/browser-storage/src/BrowserStoragePlugin.ts:30](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/browser-storage/src/BrowserStoragePlugin.ts#L30)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [plugins/browser-storage/src/BrowserStoragePlugin.ts:30](https://git
 
 > **new BrowserStoragePlugin**(`databaseName`, `storage`): `BrowserStoragePlugin`
 
-Defined in: [plugins/browser-storage/src/BrowserStoragePlugin.ts:34](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/browser-storage/src/BrowserStoragePlugin.ts#L34)
+Defined in: [plugins/browser-storage/src/BrowserStoragePlugin.ts:34](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/browser-storage/src/BrowserStoragePlugin.ts#L34)
 
 #### Parameters
 
@@ -66,7 +66,7 @@ resolved file path, because one name in two directories is two databases.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: [plugins/browser-storage/src/BrowserStoragePlugin.ts:56](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/browser-storage/src/BrowserStoragePlugin.ts#L56)
+Defined in: [plugins/browser-storage/src/BrowserStoragePlugin.ts:56](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/browser-storage/src/BrowserStoragePlugin.ts#L56)
 
 #### Parameters
 

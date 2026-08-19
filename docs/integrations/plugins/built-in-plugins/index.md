@@ -12,6 +12,7 @@ A `DataStore` needs one storage `IDbPlugin`. Start with the backend that owns yo
 | --- | --- |
 | Choose where rows are stored | [Choose a storage plugin](#choose-a-storage-plugin) |
 | Add caching, retries, concurrency, or batching | [Wrapper Plugins](/integrations/plugins/built-in-plugins/wrappers) |
+| Measure or trace database operations | [Wrapper Plugins](/integrations/plugins/built-in-plugins/wrappers#telemetrydbplugin) or [OpenTelemetry](/integrations/plugins/built-in-plugins/otel) |
 | Sync over HTTP or build a local-first/SWR stack | [Replication & SWR](/integrations/plugins/built-in-plugins/replication/README) |
 | Store file attachments or upload directly to S3/R2 | [Files and Blob Storage](/integrations/plugins/built-in-plugins/files) |
 | Encrypt selected schema properties | [Encryption](/integrations/plugins/built-in-plugins/encryption) |
@@ -53,6 +54,8 @@ const plugin = new CacheDbPlugin(
 | `RetryDbPlugin` | `@routier/core/plugins` | Retries reads only |
 | `ConcurrencyDbPlugin` | `@routier/core/plugins` | Hidden version column and optimistic concurrency |
 | `BatchingDbPlugin` | `@routier/core/plugins` | Serializes writes and optionally coalesces atomic saves |
+| `TelemetryDbPlugin` | `@routier/core/plugins` | One timing event per operation, to a sink or the logger |
+| `OtelDbPlugin` | `@routier/otel-plugin` | One OpenTelemetry span per operation |
 | `BlobDbPlugin` | `@routier/blob-plugin` | Uploads `s.file()` content and stores references |
 | `HttpDbPlugin` | `@routier/replication-plugin` | Direct HTTP transport |
 | `HttpSwrDbPlugin` | `@routier/replication-plugin` | Local mirror plus stale-while-revalidate HTTP reads |

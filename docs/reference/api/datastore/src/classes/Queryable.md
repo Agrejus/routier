@@ -4,13 +4,13 @@
 
 [routier-collection](../../../README.md) / [datastore/src](../README.md) / Queryable
 
-# Class: Queryable\<Root, Shape, U, TStore\>
+# Class: Queryable\<Root, Shape, U, TStore, E\>
 
-Defined in: [datastore/src/queryable/Queryable.ts:11](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/Queryable.ts#L11)
+Defined in: [datastore/src/queryable/Queryable.ts:11](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/Queryable.ts#L11)
 
 ## Extends
 
-- `SelectionQueryable`\<`Root`, `Shape`, `U`\>
+- `SelectionQueryable`\<`Root`, `Shape`, `U`, `E`\>
 
 ## Type Parameters
 
@@ -30,13 +30,17 @@ Defined in: [datastore/src/queryable/Queryable.ts:11](https://github.com/Agrejus
 
 `TStore` = `unknown`
 
+### E
+
+`E` *extends* `boolean` = `false`
+
 ## Constructors
 
 ### Constructor
 
-> **new Queryable**\<`Root`, `Shape`, `U`, `TStore`\>(`dependencies`, `request`): `Queryable`\<`Root`, `Shape`, `U`, `TStore`\>
+> **new Queryable**\<`Root`, `Shape`, `U`, `TStore`, `E`\>(`dependencies`, `request`): `Queryable`\<`Root`, `Shape`, `U`, `TStore`, `E`\>
 
-Defined in: [datastore/src/queryable/Queryable.ts:13](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/Queryable.ts#L13)
+Defined in: [datastore/src/queryable/Queryable.ts:13](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/Queryable.ts#L13)
 
 #### Parameters
 
@@ -50,11 +54,11 @@ Defined in: [datastore/src/queryable/Queryable.ts:13](https://github.com/Agrejus
 
 #### Returns
 
-`Queryable`\<`Root`, `Shape`, `U`, `TStore`\>
+`Queryable`\<`Root`, `Shape`, `U`, `TStore`, `E`\>
 
 #### Overrides
 
-`SelectionQueryable<Root, Shape, U>.constructor`
+`SelectionQueryable<Root, Shape, U, E>.constructor`
 
 ## Methods
 
@@ -62,7 +66,7 @@ Defined in: [datastore/src/queryable/Queryable.ts:13](https://github.com/Agrejus
 
 > `static` **compose**\<`TEntity`\>(`schema`): `QueryableComposer`\<`TEntity`, `InferType`\<`TEntity`\>, `void`\>
 
-Defined in: [datastore/src/queryable/Queryable.ts:25](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/Queryable.ts#L25)
+Defined in: [datastore/src/queryable/Queryable.ts:25](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/Queryable.ts#L25)
 
 #### Type Parameters
 
@@ -82,13 +86,30 @@ Defined in: [datastore/src/queryable/Queryable.ts:25](https://github.com/Agrejus
 
 ***
 
+### explain()
+
+> **explain**(): `Queryable`\<`Root`, `Shape`, `U`, `TStore`, `true`\>
+
+Defined in: [datastore/src/queryable/Queryable.ts:37](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/Queryable.ts#L37)
+
+Reports where each query option ran — the database or memory — alongside the results.
+
+See `QueryableAsync.explain`. The query still executes; terminals after this deliver
+`{ data, explanation }`.
+
+#### Returns
+
+`Queryable`\<`Root`, `Shape`, `U`, `TStore`, `true`\>
+
+***
+
 ### where()
 
 #### Call Signature
 
-> **where**(`expression`): `Queryable`\<`Root`, `Shape`, `U`, `TStore`\>
+> **where**(`expression`): `Queryable`\<`Root`, `Shape`, `U`, `TStore`, `E`\>
 
-Defined in: [datastore/src/queryable/Queryable.ts:31](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/Queryable.ts#L31)
+Defined in: [datastore/src/queryable/Queryable.ts:41](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/Queryable.ts#L41)
 
 ##### Parameters
 
@@ -98,13 +119,13 @@ Defined in: [datastore/src/queryable/Queryable.ts:31](https://github.com/Agrejus
 
 ##### Returns
 
-`Queryable`\<`Root`, `Shape`, `U`, `TStore`\>
+`Queryable`\<`Root`, `Shape`, `U`, `TStore`, `E`\>
 
 #### Call Signature
 
-> **where**\<`P`\>(`selector`, `params`): `Queryable`\<`Root`, `Shape`, `U`, `TStore`\>
+> **where**\<`P`\>(`selector`, `params`): `Queryable`\<`Root`, `Shape`, `U`, `TStore`, `E`\>
 
-Defined in: [datastore/src/queryable/Queryable.ts:32](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/Queryable.ts#L32)
+Defined in: [datastore/src/queryable/Queryable.ts:42](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/Queryable.ts#L42)
 
 ##### Type Parameters
 
@@ -124,15 +145,15 @@ Defined in: [datastore/src/queryable/Queryable.ts:32](https://github.com/Agrejus
 
 ##### Returns
 
-`Queryable`\<`Root`, `Shape`, `U`, `TStore`\>
+`Queryable`\<`Root`, `Shape`, `U`, `TStore`, `E`\>
 
 ***
 
 ### map()
 
-> **map**\<`R`\>(`expression`): `Queryable`\<`Root`, `R`, `U`, `TStore`\>
+> **map**\<`R`\>(`expression`): `Queryable`\<`Root`, `R`, `U`, `TStore`, `E`\>
 
-Defined in: [datastore/src/queryable/Queryable.ts:40](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/Queryable.ts#L40)
+Defined in: [datastore/src/queryable/Queryable.ts:50](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/Queryable.ts#L50)
 
 #### Type Parameters
 
@@ -148,15 +169,15 @@ Defined in: [datastore/src/queryable/Queryable.ts:40](https://github.com/Agrejus
 
 #### Returns
 
-`Queryable`\<`Root`, `R`, `U`, `TStore`\>
+`Queryable`\<`Root`, `R`, `U`, `TStore`, `E`\>
 
 ***
 
 ### skip()
 
-> **skip**(`amount`): `Queryable`\<`Root`, `Shape`, `U`, `TStore`\>
+> **skip**(`amount`): `Queryable`\<`Root`, `Shape`, `U`, `TStore`, `E`\>
 
-Defined in: [datastore/src/queryable/Queryable.ts:46](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/Queryable.ts#L46)
+Defined in: [datastore/src/queryable/Queryable.ts:56](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/Queryable.ts#L56)
 
 #### Parameters
 
@@ -166,15 +187,15 @@ Defined in: [datastore/src/queryable/Queryable.ts:46](https://github.com/Agrejus
 
 #### Returns
 
-`Queryable`\<`Root`, `Shape`, `U`, `TStore`\>
+`Queryable`\<`Root`, `Shape`, `U`, `TStore`, `E`\>
 
 ***
 
 ### take()
 
-> **take**(`amount`): `Queryable`\<`Root`, `Shape`, `U`, `TStore`\>
+> **take**(`amount`): `Queryable`\<`Root`, `Shape`, `U`, `TStore`, `E`\>
 
-Defined in: [datastore/src/queryable/Queryable.ts:51](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/Queryable.ts#L51)
+Defined in: [datastore/src/queryable/Queryable.ts:61](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/Queryable.ts#L61)
 
 #### Parameters
 
@@ -184,15 +205,15 @@ Defined in: [datastore/src/queryable/Queryable.ts:51](https://github.com/Agrejus
 
 #### Returns
 
-`Queryable`\<`Root`, `Shape`, `U`, `TStore`\>
+`Queryable`\<`Root`, `Shape`, `U`, `TStore`, `E`\>
 
 ***
 
 ### sort()
 
-> **sort**(`expression`): `Queryable`\<`Root`, `Shape`, `U`, `TStore`\>
+> **sort**(`expression`): `Queryable`\<`Root`, `Shape`, `U`, `TStore`, `E`\>
 
-Defined in: [datastore/src/queryable/Queryable.ts:56](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/Queryable.ts#L56)
+Defined in: [datastore/src/queryable/Queryable.ts:66](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/Queryable.ts#L66)
 
 #### Parameters
 
@@ -202,15 +223,15 @@ Defined in: [datastore/src/queryable/Queryable.ts:56](https://github.com/Agrejus
 
 #### Returns
 
-`Queryable`\<`Root`, `Shape`, `U`, `TStore`\>
+`Queryable`\<`Root`, `Shape`, `U`, `TStore`, `E`\>
 
 ***
 
 ### sortDescending()
 
-> **sortDescending**(`expression`): `Queryable`\<`Root`, `Shape`, `U`, `TStore`\>
+> **sortDescending**(`expression`): `Queryable`\<`Root`, `Shape`, `U`, `TStore`, `E`\>
 
-Defined in: [datastore/src/queryable/Queryable.ts:61](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/Queryable.ts#L61)
+Defined in: [datastore/src/queryable/Queryable.ts:71](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/Queryable.ts#L71)
 
 #### Parameters
 
@@ -220,15 +241,15 @@ Defined in: [datastore/src/queryable/Queryable.ts:61](https://github.com/Agrejus
 
 #### Returns
 
-`Queryable`\<`Root`, `Shape`, `U`, `TStore`\>
+`Queryable`\<`Root`, `Shape`, `U`, `TStore`, `E`\>
 
 ***
 
 ### nearest()
 
-> **nearest**(`expression`, `vector`, `count`): `Queryable`\<`Root`, `Shape`, `U`, `TStore`\>
+> **nearest**(`expression`, `vector`, `count`): `Queryable`\<`Root`, `Shape`, `U`, `TStore`, `E`\>
 
-Defined in: [datastore/src/queryable/Queryable.ts:78](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/Queryable.ts#L78)
+Defined in: [datastore/src/queryable/Queryable.ts:88](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/Queryable.ts#L88)
 
 The `count` rows whose vector is most similar to `vector`, nearest first.
 
@@ -257,15 +278,15 @@ formality.
 
 #### Returns
 
-`Queryable`\<`Root`, `Shape`, `U`, `TStore`\>
+`Queryable`\<`Root`, `Shape`, `U`, `TStore`, `E`\>
 
 ***
 
 ### join()
 
-> **join**\<`TInner`, `TKey`\>(`inner`, `outerKey`, `innerKey`): [`JoinQueryable`](JoinQueryable.md)\<`Root`, [`JoinTuple`](../type-aliases/JoinTuple.md)\<`Shape`, `InferType`\<`TInner`\>\>\>
+> **join**\<`TInner`, `TKey`\>(`inner`, `outerKey`, `innerKey`): [`JoinQueryable`](JoinQueryable.md)\<`Root`, [`JoinTuple`](../type-aliases/JoinTuple.md)\<`Shape`, `InferType`\<`TInner`\>\>, `E`\>
 
-Defined in: [datastore/src/queryable/Queryable.ts:91](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/Queryable.ts#L91)
+Defined in: [datastore/src/queryable/Queryable.ts:101](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/Queryable.ts#L101)
 
 Pairs each row with every matching row of `inner` — an inner equi-join. See
 `QueryableExecutor.setJoinQueryOption`.
@@ -300,15 +321,15 @@ schemas, and `DataBridge.subscribe` is single-schema. The returned queryable has
 
 #### Returns
 
-[`JoinQueryable`](JoinQueryable.md)\<`Root`, [`JoinTuple`](../type-aliases/JoinTuple.md)\<`Shape`, `InferType`\<`TInner`\>\>\>
+[`JoinQueryable`](JoinQueryable.md)\<`Root`, [`JoinTuple`](../type-aliases/JoinTuple.md)\<`Shape`, `InferType`\<`TInner`\>\>, `E`\>
 
 ***
 
 ### leftJoin()
 
-> **leftJoin**\<`TInner`, `TKey`\>(`inner`, `outerKey`, `innerKey`): [`JoinQueryable`](JoinQueryable.md)\<`Root`, [`JoinTuple`](../type-aliases/JoinTuple.md)\<`Shape`, `InferType`\<`TInner`\>\>\>
+> **leftJoin**\<`TInner`, `TKey`\>(`inner`, `outerKey`, `innerKey`): [`JoinQueryable`](JoinQueryable.md)\<`Root`, [`JoinTuple`](../type-aliases/JoinTuple.md)\<`Shape`, `InferType`\<`TInner`\>\>, `E`\>
 
-Defined in: [datastore/src/queryable/Queryable.ts:102](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/Queryable.ts#L102)
+Defined in: [datastore/src/queryable/Queryable.ts:112](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/Queryable.ts#L112)
 
 Like `join`, but unmatched rows appear paired with `undefined`.
 
@@ -338,7 +359,7 @@ Like `join`, but unmatched rows appear paired with `undefined`.
 
 #### Returns
 
-[`JoinQueryable`](JoinQueryable.md)\<`Root`, [`JoinTuple`](../type-aliases/JoinTuple.md)\<`Shape`, `InferType`\<`TInner`\>\>\>
+[`JoinQueryable`](JoinQueryable.md)\<`Root`, [`JoinTuple`](../type-aliases/JoinTuple.md)\<`Shape`, `InferType`\<`TInner`\>\>, `E`\>
 
 ***
 
@@ -346,7 +367,7 @@ Like `join`, but unmatched rows appear paired with `undefined`.
 
 > **subscribe**(): `SubscribedQueryable`\<`Root`, `Shape`, () => `void`\>
 
-Defined in: [datastore/src/queryable/Queryable.ts:112](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/Queryable.ts#L112)
+Defined in: [datastore/src/queryable/Queryable.ts:122](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/Queryable.ts#L122)
 
 #### Returns
 
@@ -360,7 +381,7 @@ Defined in: [datastore/src/queryable/Queryable.ts:112](https://github.com/Agreju
 
 > **remove**(`expression`, `done`): `void`
 
-Defined in: [datastore/src/queryable/SelectionQueryable.ts:26](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/SelectionQueryable.ts#L26)
+Defined in: [datastore/src/queryable/SelectionQueryable.ts:27](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/SelectionQueryable.ts#L27)
 
 ##### Parameters
 
@@ -370,7 +391,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:26](https://github.co
 
 ###### done
 
-`CallbackResult`\<`Shape`[]\>
+`CallbackResult`\<`Explainable`\<`E`, `Shape`[]\>\>
 
 ##### Returns
 
@@ -384,7 +405,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:26](https://github.co
 
 > **remove**\<`P`\>(`expression`, `params`, `done`): `void`
 
-Defined in: [datastore/src/queryable/SelectionQueryable.ts:27](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/SelectionQueryable.ts#L27)
+Defined in: [datastore/src/queryable/SelectionQueryable.ts:28](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/SelectionQueryable.ts#L28)
 
 ##### Type Parameters
 
@@ -404,7 +425,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:27](https://github.co
 
 ###### done
 
-`CallbackResult`\<`Shape`[]\>
+`CallbackResult`\<`Explainable`\<`E`, `Shape`[]\>\>
 
 ##### Returns
 
@@ -418,13 +439,13 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:27](https://github.co
 
 > **remove**(`done`): `void`
 
-Defined in: [datastore/src/queryable/SelectionQueryable.ts:28](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/SelectionQueryable.ts#L28)
+Defined in: [datastore/src/queryable/SelectionQueryable.ts:29](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/SelectionQueryable.ts#L29)
 
 ##### Parameters
 
 ###### done
 
-`CallbackResult`\<`Shape`[]\>
+`CallbackResult`\<`Explainable`\<`E`, `Shape`[]\>\>
 
 ##### Returns
 
@@ -440,13 +461,13 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:28](https://github.co
 
 > **toArray**(`done`): `U`
 
-Defined in: [datastore/src/queryable/SelectionQueryable.ts:59](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/SelectionQueryable.ts#L59)
+Defined in: [datastore/src/queryable/SelectionQueryable.ts:60](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/SelectionQueryable.ts#L60)
 
 #### Parameters
 
 ##### done
 
-`CallbackResult`\<`Shape`[]\>
+`CallbackResult`\<`Explainable`\<`E`, `Shape`[]\>\>
 
 #### Returns
 
@@ -464,7 +485,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:59](https://github.co
 
 > **first**(`expression`, `done`): `U`
 
-Defined in: [datastore/src/queryable/SelectionQueryable.ts:64](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/SelectionQueryable.ts#L64)
+Defined in: [datastore/src/queryable/SelectionQueryable.ts:67](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/SelectionQueryable.ts#L67)
 
 ##### Parameters
 
@@ -474,7 +495,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:64](https://github.co
 
 ###### done
 
-`CallbackResult`\<`Shape`\>
+`CallbackResult`\<`Explainable`\<`E`, `Shape`\>\>
 
 ##### Returns
 
@@ -488,7 +509,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:64](https://github.co
 
 > **first**\<`P`\>(`expression`, `params`, `done`): `U`
 
-Defined in: [datastore/src/queryable/SelectionQueryable.ts:65](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/SelectionQueryable.ts#L65)
+Defined in: [datastore/src/queryable/SelectionQueryable.ts:68](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/SelectionQueryable.ts#L68)
 
 ##### Type Parameters
 
@@ -508,7 +529,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:65](https://github.co
 
 ###### done
 
-`CallbackResult`\<`Shape`\>
+`CallbackResult`\<`Explainable`\<`E`, `Shape`\>\>
 
 ##### Returns
 
@@ -522,13 +543,13 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:65](https://github.co
 
 > **first**(`done`): `U`
 
-Defined in: [datastore/src/queryable/SelectionQueryable.ts:66](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/SelectionQueryable.ts#L66)
+Defined in: [datastore/src/queryable/SelectionQueryable.ts:69](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/SelectionQueryable.ts#L69)
 
 ##### Parameters
 
 ###### done
 
-`CallbackResult`\<`Shape`\>
+`CallbackResult`\<`Explainable`\<`E`, `Shape`\>\>
 
 ##### Returns
 
@@ -546,7 +567,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:66](https://github.co
 
 > **firstOrUndefined**(`expression`, `done`): `U`
 
-Defined in: [datastore/src/queryable/SelectionQueryable.ts:126](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/SelectionQueryable.ts#L126)
+Defined in: [datastore/src/queryable/SelectionQueryable.ts:129](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/SelectionQueryable.ts#L129)
 
 ##### Parameters
 
@@ -556,7 +577,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:126](https://github.c
 
 ###### done
 
-`CallbackResult`\<`Shape`\>
+`CallbackResult`\<`Explainable`\<`E`, `Shape`\>\>
 
 ##### Returns
 
@@ -570,7 +591,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:126](https://github.c
 
 > **firstOrUndefined**\<`P`\>(`expression`, `params`, `done`): `U`
 
-Defined in: [datastore/src/queryable/SelectionQueryable.ts:127](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/SelectionQueryable.ts#L127)
+Defined in: [datastore/src/queryable/SelectionQueryable.ts:130](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/SelectionQueryable.ts#L130)
 
 ##### Type Parameters
 
@@ -590,7 +611,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:127](https://github.c
 
 ###### done
 
-`CallbackResult`\<`Shape`\>
+`CallbackResult`\<`Explainable`\<`E`, `Shape`\>\>
 
 ##### Returns
 
@@ -604,13 +625,13 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:127](https://github.c
 
 > **firstOrUndefined**(`done`): `U`
 
-Defined in: [datastore/src/queryable/SelectionQueryable.ts:128](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/SelectionQueryable.ts#L128)
+Defined in: [datastore/src/queryable/SelectionQueryable.ts:131](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/SelectionQueryable.ts#L131)
 
 ##### Parameters
 
 ###### done
 
-`CallbackResult`\<`Shape`\>
+`CallbackResult`\<`Explainable`\<`E`, `Shape`\>\>
 
 ##### Returns
 
@@ -628,7 +649,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:128](https://github.c
 
 > **some**(`expression`, `done`): `U`
 
-Defined in: [datastore/src/queryable/SelectionQueryable.ts:181](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/SelectionQueryable.ts#L181)
+Defined in: [datastore/src/queryable/SelectionQueryable.ts:184](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/SelectionQueryable.ts#L184)
 
 ##### Parameters
 
@@ -638,7 +659,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:181](https://github.c
 
 ###### done
 
-`CallbackResult`\<`boolean`\>
+`CallbackResult`\<`Explainable`\<`E`, `boolean`\>\>
 
 ##### Returns
 
@@ -652,7 +673,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:181](https://github.c
 
 > **some**\<`P`\>(`expression`, `params`, `done`): `U`
 
-Defined in: [datastore/src/queryable/SelectionQueryable.ts:182](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/SelectionQueryable.ts#L182)
+Defined in: [datastore/src/queryable/SelectionQueryable.ts:185](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/SelectionQueryable.ts#L185)
 
 ##### Type Parameters
 
@@ -672,7 +693,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:182](https://github.c
 
 ###### done
 
-`CallbackResult`\<`boolean`\>
+`CallbackResult`\<`Explainable`\<`E`, `boolean`\>\>
 
 ##### Returns
 
@@ -686,13 +707,13 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:182](https://github.c
 
 > **some**(`done`): `U`
 
-Defined in: [datastore/src/queryable/SelectionQueryable.ts:183](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/SelectionQueryable.ts#L183)
+Defined in: [datastore/src/queryable/SelectionQueryable.ts:186](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/SelectionQueryable.ts#L186)
 
 ##### Parameters
 
 ###### done
 
-`CallbackResult`\<`boolean`\>
+`CallbackResult`\<`Explainable`\<`E`, `boolean`\>\>
 
 ##### Returns
 
@@ -710,7 +731,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:183](https://github.c
 
 > **every**(`expression`, `done`): `U`
 
-Defined in: [datastore/src/queryable/SelectionQueryable.ts:220](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/SelectionQueryable.ts#L220)
+Defined in: [datastore/src/queryable/SelectionQueryable.ts:223](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/SelectionQueryable.ts#L223)
 
 ##### Parameters
 
@@ -720,7 +741,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:220](https://github.c
 
 ###### done
 
-`CallbackResult`\<`boolean`\>
+`CallbackResult`\<`Explainable`\<`E`, `boolean`\>\>
 
 ##### Returns
 
@@ -734,7 +755,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:220](https://github.c
 
 > **every**\<`P`\>(`expression`, `params`, `done`): `U`
 
-Defined in: [datastore/src/queryable/SelectionQueryable.ts:221](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/SelectionQueryable.ts#L221)
+Defined in: [datastore/src/queryable/SelectionQueryable.ts:224](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/SelectionQueryable.ts#L224)
 
 ##### Type Parameters
 
@@ -754,7 +775,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:221](https://github.c
 
 ###### done
 
-`CallbackResult`\<`boolean`\>
+`CallbackResult`\<`Explainable`\<`E`, `boolean`\>\>
 
 ##### Returns
 
@@ -770,7 +791,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:221](https://github.c
 
 > **min**(`selector`, `done`): `U`
 
-Defined in: [datastore/src/queryable/SelectionQueryable.ts:254](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/SelectionQueryable.ts#L254)
+Defined in: [datastore/src/queryable/SelectionQueryable.ts:257](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/SelectionQueryable.ts#L257)
 
 #### Parameters
 
@@ -780,7 +801,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:254](https://github.c
 
 ##### done
 
-`CallbackResult`\<`number`\>
+`CallbackResult`\<`Explainable`\<`E`, `number`\>\>
 
 #### Returns
 
@@ -796,7 +817,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:254](https://github.c
 
 > **max**(`selector`, `done`): `U`
 
-Defined in: [datastore/src/queryable/SelectionQueryable.ts:258](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/SelectionQueryable.ts#L258)
+Defined in: [datastore/src/queryable/SelectionQueryable.ts:261](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/SelectionQueryable.ts#L261)
 
 #### Parameters
 
@@ -806,7 +827,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:258](https://github.c
 
 ##### done
 
-`CallbackResult`\<`number`\>
+`CallbackResult`\<`Explainable`\<`E`, `number`\>\>
 
 #### Returns
 
@@ -822,7 +843,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:258](https://github.c
 
 > **sum**(`selector`, `done`): `U`
 
-Defined in: [datastore/src/queryable/SelectionQueryable.ts:262](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/SelectionQueryable.ts#L262)
+Defined in: [datastore/src/queryable/SelectionQueryable.ts:265](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/SelectionQueryable.ts#L265)
 
 #### Parameters
 
@@ -832,7 +853,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:262](https://github.c
 
 ##### done
 
-`CallbackResult`\<`number`\>
+`CallbackResult`\<`Explainable`\<`E`, `number`\>\>
 
 #### Returns
 
@@ -848,13 +869,13 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:262](https://github.c
 
 > **count**(`done`): `U`
 
-Defined in: [datastore/src/queryable/SelectionQueryable.ts:266](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/SelectionQueryable.ts#L266)
+Defined in: [datastore/src/queryable/SelectionQueryable.ts:269](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/SelectionQueryable.ts#L269)
 
 #### Parameters
 
 ##### done
 
-`CallbackResult`\<`number`\>
+`CallbackResult`\<`Explainable`\<`E`, `number`\>\>
 
 #### Returns
 
@@ -870,13 +891,13 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:266](https://github.c
 
 > **distinct**(`done`): `U`
 
-Defined in: [datastore/src/queryable/SelectionQueryable.ts:279](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/SelectionQueryable.ts#L279)
+Defined in: [datastore/src/queryable/SelectionQueryable.ts:284](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/SelectionQueryable.ts#L284)
 
 #### Parameters
 
 ##### done
 
-`CallbackResult`\<`Shape`[]\>
+`CallbackResult`\<`Explainable`\<`E`, `Shape`[]\>\>
 
 #### Returns
 
@@ -892,7 +913,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:279](https://github.c
 
 > **toGroup**\<`R`\>(`selector`, `done`): `U`
 
-Defined in: [datastore/src/queryable/SelectionQueryable.ts:291](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/datastore/src/queryable/SelectionQueryable.ts#L291)
+Defined in: [datastore/src/queryable/SelectionQueryable.ts:298](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/datastore/src/queryable/SelectionQueryable.ts#L298)
 
 #### Type Parameters
 
@@ -908,7 +929,7 @@ Defined in: [datastore/src/queryable/SelectionQueryable.ts:291](https://github.c
 
 ##### done
 
-`CallbackResult`\<`Record`\<`R`, `Shape`[]\>\>
+`CallbackResult`\<`Explainable`\<`E`, `Record`\<`R`, `Shape`[]\>\>\>
 
 #### Returns
 

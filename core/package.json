@@ -70,11 +70,6 @@
             "import": "./dist/performance/index.js",
             "require": "./dist/performance/index.cjs"
         },
-        "./capabilities": {
-            "types": "./dist/capabilities/index.d.ts",
-            "import": "./dist/capabilities/index.js",
-            "require": "./dist/capabilities/index.cjs"
-        },
         "./types": {
             "types": "./dist/types/index.d.ts",
             "import": "./dist/types/index.js",
@@ -112,9 +107,6 @@
             ],
             "assertions": [
                 "./dist/assertions/index.d.ts"
-            ],
-            "capabilities": [
-                "./dist/capabilities/index.d.ts"
             ],
             "types": [
                 "./dist/types/index.d.ts"

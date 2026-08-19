@@ -12,6 +12,7 @@ import {
   CacheDbPlugin,
   ConcurrencyDbPlugin,
   RetryDbPlugin,
+  TelemetryDbPlugin,
 } from "@routier/core/plugins";
 ```
 
@@ -77,6 +78,35 @@ new BatchingDbPlugin(inner, {
 Serializes overlapping writes. With `isAtomic` omitted or false it sends one queued save at a time. With `isAtomic: true`, overlapping saves may be coalesced into one inner write, up to `maxBatchSize` (default `100`). It never sleeps to fill a batch; only work already waiting is grouped.
 
 `isAtomic: true` is a promise made by your application: when `inner.bulkPersist` reports failure, none of that save was applied. SQLite, PostgreSQL, and MySQL make a save transactional. Do not enable coalescing around a plugin that can partially apply a failed batch.
+
+## TelemetryDbPlugin
+
+```ts
+new TelemetryDbPlugin(inner, { onEvent: event => myMetrics.record(event) })
+```
+
+Measures every operation the inner plugin performs and hands one `TelemetryEvent` per call to a
+sink. It stores nothing and changes nothing: the result object reaches the caller untouched.
+
+Each event carries the `operation` (`"query"`, `"bulkPersist"` or `"destroy"`), `durationMs`,
+`ok` (`"success"`, `"partial"` or `"error"`), the `eventId` and `source` of the plugin event, and
+the `schemas` it touched. `error` is present when `ok` is not `"success"`.
+
+`onEvent` defaults to `loggerSink()`, which writes through the levelled logger — so
+`ROUTIER_LOG_LEVEL` governs whether anything is emitted. `collectingSink(array)` pushes events
+into an array, for tests or custom buffering.
+
+```ts
+import { collectingSink, TelemetryEvent } from "@routier/core/plugins";
+
+const events: TelemetryEvent[] = [];
+const store = new MyStore(new TelemetryDbPlugin(inner, { onEvent: collectingSink(events) }));
+```
+
+A sink that throws is swallowed: observability never fails a data operation.
+
+For OpenTelemetry spans instead of plain events, use
+[`@routier/otel-plugin`](/integrations/plugins/built-in-plugins/otel).
 
 ## Replication wrappers
 

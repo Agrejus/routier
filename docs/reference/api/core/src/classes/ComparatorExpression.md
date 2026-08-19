@@ -6,7 +6,7 @@
 
 # Class: ComparatorExpression
 
-Defined in: [core/src/expressions/types.ts:270](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L270)
+Defined in: [core/src/expressions/types.ts:270](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L270)
 
 A class representing a comparison operation (e.g., equals, greater-than).
 
@@ -20,7 +20,7 @@ A class representing a comparison operation (e.g., equals, greater-than).
 
 > **new ComparatorExpression**(`options`): `ComparatorExpression`
 
-Defined in: [core/src/expressions/types.ts:280](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L280)
+Defined in: [core/src/expressions/types.ts:280](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L280)
 
 #### Parameters
 
@@ -60,7 +60,7 @@ Defined in: [core/src/expressions/types.ts:280](https://github.com/Agrejus/routi
 
 > `optional` **left**: [`Expression`](Expression.md)
 
-Defined in: [core/src/expressions/types.ts:100](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L100)
+Defined in: [core/src/expressions/types.ts:100](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L100)
 
 The left-hand side of the expression (if applicable).
 
@@ -74,7 +74,7 @@ The left-hand side of the expression (if applicable).
 
 > `optional` **right**: [`Expression`](Expression.md)
 
-Defined in: [core/src/expressions/types.ts:102](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L102)
+Defined in: [core/src/expressions/types.ts:102](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L102)
 
 The right-hand side of the expression (if applicable).
 
@@ -88,7 +88,7 @@ The right-hand side of the expression (if applicable).
 
 > `readonly` **type**: `"comparator"`
 
-Defined in: [core/src/expressions/types.ts:272](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L272)
+Defined in: [core/src/expressions/types.ts:272](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L272)
 
 The type of the expression (always 'comparator').
 
@@ -102,7 +102,7 @@ The type of the expression (always 'comparator').
 
 > **comparator**: [`Comparator`](../type-aliases/Comparator.md)
 
-Defined in: [core/src/expressions/types.ts:274](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L274)
+Defined in: [core/src/expressions/types.ts:274](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L274)
 
 The comparator operation (e.g., equals, greater-than).
 
@@ -112,7 +112,7 @@ The comparator operation (e.g., equals, greater-than).
 
 > **negated**: `boolean`
 
-Defined in: [core/src/expressions/types.ts:276](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L276)
+Defined in: [core/src/expressions/types.ts:276](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L276)
 
 Whether the comparison is negated (e.g., not equals).
 
@@ -122,7 +122,7 @@ Whether the comparison is negated (e.g., not equals).
 
 > **strict**: `boolean`
 
-Defined in: [core/src/expressions/types.ts:278](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L278)
+Defined in: [core/src/expressions/types.ts:278](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L278)
 
 Whether the comparison is strict (type-sensitive).
 
@@ -134,7 +134,7 @@ Whether the comparison is strict (type-sensitive).
 
 > **get** `static` **EMPTY**(): [`EmptyExpression`](EmptyExpression.md)
 
-Defined in: [core/src/expressions/types.ts:109](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L109)
+Defined in: [core/src/expressions/types.ts:109](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L109)
 
 ##### Returns
 
@@ -152,7 +152,7 @@ Defined in: [core/src/expressions/types.ts:109](https://github.com/Agrejus/routi
 
 > **get** `static` **NOT\_PARSABLE**(): [`NotParsableExpression`](NotParsableExpression.md)
 
-Defined in: [core/src/expressions/types.ts:113](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L113)
+Defined in: [core/src/expressions/types.ts:113](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L113)
 
 ##### Returns
 
@@ -168,7 +168,7 @@ Defined in: [core/src/expressions/types.ts:113](https://github.com/Agrejus/routi
 
 > `static` **isEmpty**(`expression`): `boolean`
 
-Defined in: [core/src/expressions/types.ts:117](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L117)
+Defined in: [core/src/expressions/types.ts:117](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L117)
 
 #### Parameters
 
@@ -190,7 +190,7 @@ Defined in: [core/src/expressions/types.ts:117](https://github.com/Agrejus/routi
 
 > `static` **isNotParsable**(`expression`): `boolean`
 
-Defined in: [core/src/expressions/types.ts:121](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L121)
+Defined in: [core/src/expressions/types.ts:121](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L121)
 
 #### Parameters
 
@@ -212,7 +212,7 @@ Defined in: [core/src/expressions/types.ts:121](https://github.com/Agrejus/routi
 
 > `static` **toJson**(`expression`): [`SerializedExpression`](../type-aliases/SerializedExpression.md)
 
-Defined in: [core/src/expressions/types.ts:147](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L147)
+Defined in: [core/src/expressions/types.ts:147](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L147)
 
 Turns a tree into plain JSON, so a whole query can cross a wire.
 
@@ -255,7 +255,7 @@ and import this module — the guards test the same discriminant, so nothing is 
 
 > `static` **fromJson**(`json`, `schema`): [`Expression`](Expression.md)
 
-Defined in: [core/src/expressions/types.ts:211](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L211)
+Defined in: [core/src/expressions/types.ts:211](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L211)
 
 Rebuilds a tree from JSON, rebinding every property against `schema`.
 

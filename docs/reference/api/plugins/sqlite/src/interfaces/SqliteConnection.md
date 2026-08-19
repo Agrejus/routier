@@ -6,7 +6,7 @@
 
 # Interface: SqliteConnection
 
-Defined in: [plugins/sqlite/src/drivers/types.ts:12](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/sqlite/src/drivers/types.ts#L12)
+Defined in: [plugins/sqlite/src/drivers/types.ts:12](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sqlite/src/drivers/types.ts#L12)
 
 One open connection. The plugin opens one per operation and closes it on every path.
 
@@ -16,7 +16,7 @@ One open connection. The plugin opens one per operation and closes it on every p
 
 > **all**(`sql`, `params?`): `Promise`\<`unknown`[]\>
 
-Defined in: [plugins/sqlite/src/drivers/types.ts:19](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/sqlite/src/drivers/types.ts#L19)
+Defined in: [plugins/sqlite/src/drivers/types.ts:19](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sqlite/src/drivers/types.ts#L19)
 
 Runs a statement and returns its rows.
 
@@ -43,7 +43,7 @@ readonly `unknown`[]
 
 > **run**(`sql`, `params?`): `Promise`\<`void`\>
 
-Defined in: [plugins/sqlite/src/drivers/types.ts:22](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/sqlite/src/drivers/types.ts#L22)
+Defined in: [plugins/sqlite/src/drivers/types.ts:22](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sqlite/src/drivers/types.ts#L22)
 
 Runs a statement that returns nothing: DDL, `BEGIN`, `COMMIT`, `ROLLBACK`.
 
@@ -67,7 +67,7 @@ readonly `unknown`[]
 
 > **close**(): `Promise`\<`void`\>
 
-Defined in: [plugins/sqlite/src/drivers/types.ts:25](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/plugins/sqlite/src/drivers/types.ts#L25)
+Defined in: [plugins/sqlite/src/drivers/types.ts:25](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/plugins/sqlite/src/drivers/types.ts#L25)
 
 Releases the connection. Called on every completion path, including failures.
 

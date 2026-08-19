@@ -8,7 +8,7 @@
 
 > **ScopeHook**\<`TContext`\> = (`info`) => \{ `filter`: [`Filter`](Filter.md)\<`any`\> \| [`ParamsFilter`](ParamsFilter.md)\<`any`, `any`\>; `params?`: \{ \}; \} \| `null`
 
-Defined in: [core/src/plugins/wire/handler.ts:105](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/wire/handler.ts#L105)
+Defined in: [core/src/plugins/wire/handler.ts:106](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/handler.ts#L106)
 
 The rows of one collection this caller may touch, as a filter.
 

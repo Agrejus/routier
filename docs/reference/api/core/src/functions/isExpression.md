@@ -8,7 +8,7 @@
 
 > **isExpression**(`value`): `value is Expression`
 
-Defined in: [core/src/assertions/index.ts:63](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/assertions/index.ts#L63)
+Defined in: [core/src/assertions/index.ts:63](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/assertions/index.ts#L63)
 
 Type guard: narrows `value` to `Expression` when it is an object with a valid `type` property.
 

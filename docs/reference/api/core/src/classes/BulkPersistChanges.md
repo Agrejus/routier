@@ -6,7 +6,7 @@
 
 # Class: BulkPersistChanges
 
-Defined in: [core/src/collections/Changes.ts:70](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/Changes.ts#L70)
+Defined in: [core/src/collections/Changes.ts:70](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/collections/Changes.ts#L70)
 
 ## Extends
 
@@ -102,7 +102,7 @@ Defined in: node\_modules/typescript/lib/lib.es2015.symbol.wellknown.d.ts:319
 
 > **get** **aggregate**(): `object`
 
-Defined in: [core/src/collections/Changes.ts:86](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/Changes.ts#L86)
+Defined in: [core/src/collections/Changes.ts:86](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/collections/Changes.ts#L86)
 
 ##### Returns
 
@@ -130,7 +130,7 @@ Defined in: [core/src/collections/Changes.ts:86](https://github.com/Agrejus/rout
 
 > **resolve**\<`T`\>(`schemaId`): [`SchemaPersistChanges`](SchemaPersistChanges.md)\<`T`\>
 
-Defined in: [core/src/collections/Changes.ts:72](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/Changes.ts#L72)
+Defined in: [core/src/collections/Changes.ts:72](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/collections/Changes.ts#L72)
 
 #### Type Parameters
 
@@ -154,7 +154,7 @@ Defined in: [core/src/collections/Changes.ts:72](https://github.com/Agrejus/rout
 
 > **get**\<`T`\>(`schemaId`): [`SchemaPersistChanges`](SchemaPersistChanges.md)\<`T`\>
 
-Defined in: [core/src/collections/Changes.ts:82](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/Changes.ts#L82)
+Defined in: [core/src/collections/Changes.ts:82](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/collections/Changes.ts#L82)
 
 Returns a specified element from the Map object. If the value that is associated to the provided key is an object, then you will get a reference to that object and any change made to that object will effectively modify it inside the Map.
 
@@ -186,7 +186,7 @@ Returns the element associated with the specified key. If no element is associat
 
 > **toResult**(): [`BulkPersistResult`](BulkPersistResult.md)
 
-Defined in: [core/src/collections/Changes.ts:139](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/collections/Changes.ts#L139)
+Defined in: [core/src/collections/Changes.ts:139](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/collections/Changes.ts#L139)
 
 Ensures the result has the same result sets as the change sets
 

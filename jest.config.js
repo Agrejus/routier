@@ -26,6 +26,7 @@ const moduleNameMapper = {
     '^@routier/postgresql-plugin$': '<rootDir>/plugins/postgresql/src/index.ts',
     '^@routier/mysql-plugin$': '<rootDir>/plugins/mysql/src/index.ts',
     '^@routier/mongodb-plugin$': '<rootDir>/plugins/mongodb/src/index.ts',
+    '^@routier/otel-plugin$': '<rootDir>/plugins/otel/src/index.ts',
     '^@routier/replication-plugin$': '<rootDir>/plugins/replication/src/index.ts',
     '^@routier/react$': '<rootDir>/react/src/index.ts',
     '^@routier/sync-server$': '<rootDir>/sync-server/src/index.ts',

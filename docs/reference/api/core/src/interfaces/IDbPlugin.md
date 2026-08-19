@@ -6,7 +6,7 @@
 
 # Interface: IDbPlugin
 
-Defined in: [core/src/plugins/types.ts:10](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/types.ts#L10)
+Defined in: [core/src/plugins/types.ts:11](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/types.ts#L11)
 
 Interface for a database plugin, which provides query, destroy, and bulk operations.
 
@@ -16,7 +16,7 @@ Interface for a database plugin, which provides query, destroy, and bulk operati
 
 > `readonly` **databaseName**: `string`
 
-Defined in: [core/src/plugins/types.ts:32](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/types.ts#L32)
+Defined in: [core/src/plugins/types.ts:33](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/types.ts#L33)
 
 Uniquely identifies the database this plugin talks to, INCLUDING host or path where a
 bare name would collide — `orders.db` in two directories is two databases, and `mydb`
@@ -44,7 +44,7 @@ host/port/database rather than returning a connection string.
 
 > **query**\<`TRoot`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: [core/src/plugins/types.ts:38](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/types.ts#L38)
+Defined in: [core/src/plugins/types.ts:39](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/types.ts#L39)
 
 Executes a query operation on the database.
 
@@ -82,7 +82,7 @@ Callback with the result or error.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: [core/src/plugins/types.ts:43](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/types.ts#L43)
+Defined in: [core/src/plugins/types.ts:44](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/types.ts#L44)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 
@@ -108,7 +108,7 @@ Callback with an optional error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [core/src/plugins/types.ts:49](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/types.ts#L49)
+Defined in: [core/src/plugins/types.ts:50](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/types.ts#L50)
 
 Executes bulk operations (add, update, remove) on the database.
 

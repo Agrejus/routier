@@ -6,7 +6,7 @@
 
 # Enumeration: QueryOrdering
 
-Defined in: [core/src/plugins/query/types.ts:7](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/types.ts#L7)
+Defined in: [core/src/plugins/query/types.ts:7](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L7)
 
 ## Enumeration Members
 
@@ -14,7 +14,7 @@ Defined in: [core/src/plugins/query/types.ts:7](https://github.com/Agrejus/routi
 
 > **Descending**: `"desc"`
 
-Defined in: [core/src/plugins/query/types.ts:8](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/types.ts#L8)
+Defined in: [core/src/plugins/query/types.ts:8](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L8)
 
 ***
 
@@ -22,4 +22,4 @@ Defined in: [core/src/plugins/query/types.ts:8](https://github.com/Agrejus/routi
 
 > **Ascending**: `"asc"`
 
-Defined in: [core/src/plugins/query/types.ts:9](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/types.ts#L9)
+Defined in: [core/src/plugins/query/types.ts:9](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/types.ts#L9)

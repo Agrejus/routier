@@ -8,7 +8,7 @@
 
 > **RequestHandlerOptions**\<`TContext`\> = `object`
 
-Defined in: [core/src/plugins/wire/handler.ts:109](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/wire/handler.ts#L109)
+Defined in: [core/src/plugins/wire/handler.ts:110](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/handler.ts#L110)
 
 ## Type Parameters
 
@@ -22,7 +22,7 @@ Defined in: [core/src/plugins/wire/handler.ts:109](https://github.com/Agrejus/ro
 
 > **plugin**: [`IDbPlugin`](../interfaces/IDbPlugin.md)
 
-Defined in: [core/src/plugins/wire/handler.ts:111](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/wire/handler.ts#L111)
+Defined in: [core/src/plugins/wire/handler.ts:112](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/handler.ts#L112)
 
 The plugin that actually holds the data. Anything implementing `IDbPlugin`.
 
@@ -32,7 +32,7 @@ The plugin that actually holds the data. Anything implementing `IDbPlugin`.
 
 > **schemas**: [`ReadonlySchemaCollection`](../classes/ReadonlySchemaCollection.md)
 
-Defined in: [core/src/plugins/wire/handler.ts:113](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/wire/handler.ts#L113)
+Defined in: [core/src/plugins/wire/handler.ts:114](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/handler.ts#L114)
 
 Every collection this endpoint will answer for. A name absent from here is refused.
 
@@ -42,7 +42,7 @@ Every collection this endpoint will answer for. A name absent from here is refus
 
 > `optional` **authorize**: [`AuthorizeHook`](AuthorizeHook.md)\<`TContext`\>
 
-Defined in: [core/src/plugins/wire/handler.ts:115](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/wire/handler.ts#L115)
+Defined in: [core/src/plugins/wire/handler.ts:116](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/handler.ts#L116)
 
 May this caller do this? See `AuthorizeHook`. Absent means yes, to everyone.
 
@@ -52,7 +52,7 @@ May this caller do this? See `AuthorizeHook`. Absent means yes, to everyone.
 
 > `optional` **scope**: [`ScopeHook`](ScopeHook.md)\<`TContext`\>
 
-Defined in: [core/src/plugins/wire/handler.ts:117](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/wire/handler.ts#L117)
+Defined in: [core/src/plugins/wire/handler.ts:118](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/handler.ts#L118)
 
 Which rows may this caller touch? See `ScopeHook`. Absent means all of them.
 
@@ -62,7 +62,7 @@ Which rows may this caller touch? See `ScopeHook`. Absent means all of them.
 
 > `optional` **allowDestroy**: `boolean`
 
-Defined in: [core/src/plugins/wire/handler.ts:126](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/wire/handler.ts#L126)
+Defined in: [core/src/plugins/wire/handler.ts:127](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/wire/handler.ts#L127)
 
 Whether a `destroy` request may drop the database. **Defaults to false.**
 

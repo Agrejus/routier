@@ -6,7 +6,7 @@
 
 # Abstract Class: DataTranslator\<TRoot, TShape\>
 
-Defined in: [core/src/plugins/translators/DataTranslator.ts:8](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/DataTranslator.ts#L8)
+Defined in: [core/src/plugins/translators/DataTranslator.ts:8](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/DataTranslator.ts#L8)
 
 ## Extended by
 
@@ -30,7 +30,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:8](https://github.co
 
 > **new DataTranslator**\<`TRoot`, `TShape`\>(`query`): `DataTranslator`\<`TRoot`, `TShape`\>
 
-Defined in: [core/src/plugins/translators/DataTranslator.ts:27](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/DataTranslator.ts#L27)
+Defined in: [core/src/plugins/translators/DataTranslator.ts:27](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/DataTranslator.ts#L27)
 
 #### Parameters
 
@@ -48,7 +48,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:27](https://github.c
 
 > `abstract` **count**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [core/src/plugins/translators/DataTranslator.ts:32](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/DataTranslator.ts#L32)
+Defined in: [core/src/plugins/translators/DataTranslator.ts:32](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/DataTranslator.ts#L32)
 
 #### Type Parameters
 
@@ -76,7 +76,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:32](https://github.c
 
 > `abstract` **min**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [core/src/plugins/translators/DataTranslator.ts:33](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/DataTranslator.ts#L33)
+Defined in: [core/src/plugins/translators/DataTranslator.ts:33](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/DataTranslator.ts#L33)
 
 #### Type Parameters
 
@@ -104,7 +104,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:33](https://github.c
 
 > `abstract` **max**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [core/src/plugins/translators/DataTranslator.ts:34](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/DataTranslator.ts#L34)
+Defined in: [core/src/plugins/translators/DataTranslator.ts:34](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/DataTranslator.ts#L34)
 
 #### Type Parameters
 
@@ -132,7 +132,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:34](https://github.c
 
 > `abstract` **sum**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [core/src/plugins/translators/DataTranslator.ts:35](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/DataTranslator.ts#L35)
+Defined in: [core/src/plugins/translators/DataTranslator.ts:35](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/DataTranslator.ts#L35)
 
 #### Type Parameters
 
@@ -160,7 +160,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:35](https://github.c
 
 > `abstract` **distinct**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [core/src/plugins/translators/DataTranslator.ts:36](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/DataTranslator.ts#L36)
+Defined in: [core/src/plugins/translators/DataTranslator.ts:36](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/DataTranslator.ts#L36)
 
 #### Type Parameters
 
@@ -188,7 +188,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:36](https://github.c
 
 > `abstract` **filter**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [core/src/plugins/translators/DataTranslator.ts:39](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/DataTranslator.ts#L39)
+Defined in: [core/src/plugins/translators/DataTranslator.ts:39](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/DataTranslator.ts#L39)
 
 #### Type Parameters
 
@@ -216,7 +216,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:39](https://github.c
 
 > `abstract` **skip**(`data`, `option`): `TShape`
 
-Defined in: [core/src/plugins/translators/DataTranslator.ts:40](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/DataTranslator.ts#L40)
+Defined in: [core/src/plugins/translators/DataTranslator.ts:40](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/DataTranslator.ts#L40)
 
 #### Parameters
 
@@ -238,7 +238,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:40](https://github.c
 
 > `abstract` **take**(`data`, `option`): `TShape`
 
-Defined in: [core/src/plugins/translators/DataTranslator.ts:41](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/DataTranslator.ts#L41)
+Defined in: [core/src/plugins/translators/DataTranslator.ts:41](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/DataTranslator.ts#L41)
 
 #### Parameters
 
@@ -260,7 +260,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:41](https://github.c
 
 > `abstract` **sort**(`data`, `option`): `TShape`
 
-Defined in: [core/src/plugins/translators/DataTranslator.ts:42](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/DataTranslator.ts#L42)
+Defined in: [core/src/plugins/translators/DataTranslator.ts:42](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/DataTranslator.ts#L42)
 
 #### Parameters
 
@@ -282,7 +282,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:42](https://github.c
 
 > `abstract` **map**(`data`, `option`): `TShape`
 
-Defined in: [core/src/plugins/translators/DataTranslator.ts:43](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/DataTranslator.ts#L43)
+Defined in: [core/src/plugins/translators/DataTranslator.ts:43](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/DataTranslator.ts#L43)
 
 #### Parameters
 
@@ -304,7 +304,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:43](https://github.c
 
 > `abstract` **group**(`data`, `option`): `TShape`
 
-Defined in: [core/src/plugins/translators/DataTranslator.ts:44](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/DataTranslator.ts#L44)
+Defined in: [core/src/plugins/translators/DataTranslator.ts:44](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/DataTranslator.ts#L44)
 
 #### Parameters
 
@@ -326,7 +326,7 @@ Defined in: [core/src/plugins/translators/DataTranslator.ts:44](https://github.c
 
 > `abstract` **nearest**(`data`, `option`): `TShape`
 
-Defined in: [core/src/plugins/translators/DataTranslator.ts:56](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/DataTranslator.ts#L56)
+Defined in: [core/src/plugins/translators/DataTranslator.ts:56](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/DataTranslator.ts#L56)
 
 Abstract on purpose, unlike the pass-throughs a storage translator can usually inherit.
 
@@ -358,7 +358,7 @@ whether its backend performed the search, and the compiler asks the question.
 
 > `abstract` **join**(`data`, `option`): `TShape`
 
-Defined in: [core/src/plugins/translators/DataTranslator.ts:73](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/DataTranslator.ts#L73)
+Defined in: [core/src/plugins/translators/DataTranslator.ts:73](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/DataTranslator.ts#L73)
 
 Abstract for the same reason as `nearest`, one step further.
 
@@ -394,7 +394,7 @@ fully deserialized into its OWN schema's entity shape.
 
 > **translate**(`data`): [`ITranslatedValue`](../interfaces/ITranslatedValue.md)\<`TShape`\>
 
-Defined in: [core/src/plugins/translators/DataTranslator.ts:75](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/translators/DataTranslator.ts#L75)
+Defined in: [core/src/plugins/translators/DataTranslator.ts:75](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/translators/DataTranslator.ts#L75)
 
 #### Parameters
 

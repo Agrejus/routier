@@ -8,7 +8,7 @@
 
 > **JoinInnerSide** = `object`
 
-Defined in: [core/src/plugins/query/join.ts:39](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/join.ts#L39)
+Defined in: [core/src/plugins/query/join.ts:39](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/join.ts#L39)
 
 The inner side of a join, as the PLUGIN sees it.
 
@@ -26,7 +26,7 @@ them with `innerSchema`, which the outer query's own deserialization would never
 
 > **innerSchema**: [`CompiledSchemaCore`](CompiledSchemaCore.md)\<`any`\>
 
-Defined in: [core/src/plugins/query/join.ts:40](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/join.ts#L40)
+Defined in: [core/src/plugins/query/join.ts:40](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/join.ts#L40)
 
 ***
 
@@ -34,4 +34,4 @@ Defined in: [core/src/plugins/query/join.ts:40](https://github.com/Agrejus/routi
 
 > **innerRows**: readonly `unknown`[]
 
-Defined in: [core/src/plugins/query/join.ts:41](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/plugins/query/join.ts#L41)
+Defined in: [core/src/plugins/query/join.ts:41](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/plugins/query/join.ts#L41)

@@ -8,6 +8,7 @@
 
 ## Type Aliases
 
+- [S3ClientLike](type-aliases/S3ClientLike.md)
 - [S3BlobStoreOptions](type-aliases/S3BlobStoreOptions.md)
 
 ## Functions

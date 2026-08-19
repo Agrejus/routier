@@ -6,7 +6,7 @@
 
 # Class: PluginDestroyedError
 
-Defined in: [core/src/errors/PluginDestroyedError.ts:8](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/errors/PluginDestroyedError.ts#L8)
+Defined in: [core/src/errors/PluginDestroyedError.ts:8](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/errors/PluginDestroyedError.ts#L8)
 
 A write that was accepted but never reached the database, because the plugin holding it was
 destroyed first — or one submitted after the destroy.
@@ -24,7 +24,7 @@ on transient errors must not retry this one. There is no database left to retry 
 
 > **new PluginDestroyedError**(`reason`): `PluginDestroyedError`
 
-Defined in: [core/src/errors/PluginDestroyedError.ts:10](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/errors/PluginDestroyedError.ts#L10)
+Defined in: [core/src/errors/PluginDestroyedError.ts:10](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/errors/PluginDestroyedError.ts#L10)
 
 #### Parameters
 

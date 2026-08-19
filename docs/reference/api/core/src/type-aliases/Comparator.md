@@ -8,6 +8,6 @@
 
 > **Comparator** = `"equals"` \| `"starts-with"` \| `"includes"` \| `"ends-with"` \| `"greater-than"` \| `"greater-than-equals"` \| `"less-than"` \| `"less-than-equals"`
 
-Defined in: [core/src/expressions/types.ts:363](https://github.com/Agrejus/routier/blob/ac734e8213cf35552317a2c803f52af627038ec9/core/src/expressions/types.ts#L363)
+Defined in: [core/src/expressions/types.ts:363](https://github.com/Agrejus/routier/blob/2d0e42a9b099264b175f71d2bfb8e465ace0de7e/core/src/expressions/types.ts#L363)
 
 Supported comparator operations for expressions.
