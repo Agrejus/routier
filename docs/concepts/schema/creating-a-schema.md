@@ -14,6 +14,7 @@ Schemas in Routier define the structure and behavior of your data entities. The 
 - [Complete Example](#complete-example)
 - [Modifier Chaining](#modifier-chaining)
 - [Compiling Schemas](#compiling-schemas)
+- [Getting The Type Out](#getting-the-type-out)
 - [Next Steps](#next-steps)
 
 ## Basic Schema Definition
@@ -74,6 +75,30 @@ Modifiers can be chained in any order, but it's recommended to follow a logical 
 Always call `.compile()` at the end to create the final schema:
 
 <<< @/_snippets/code/from-docs/concepts/schema/creating-a-schema/compiling-schemas.ts
+
+## Getting The Type Out
+
+A compiled schema already describes the shape of your data, so you never write that shape a
+second time. `InferType` reads the entity type back off the schema, the way `z.infer` does in
+Zod:
+
+```ts
+type Product = InferType<typeof productSchema>;
+```
+
+Note that `typeof productSchema` on its own is the type of the **schema object**, not the
+entity — it has no `name` or `price` on it. `InferType` is what unwraps it.
+
+There is a second one worth knowing. `InferCreateType` is the shape you pass when *adding* an
+entity, which omits identity properties and anything with a default, because the store fills
+those in:
+
+<<< @/_snippets/code/from-docs/concepts/schema/creating-a-schema/inferring-types.ts
+
+Reach for these instead of hand-writing an interface. A hand-written one has to be updated
+every time the schema changes, and nothing tells you when you have missed one.
+
+See [InferType](/concepts/schema/infer-type) for the full reference.
 
 ## Next Steps
 

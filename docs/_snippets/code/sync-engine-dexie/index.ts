@@ -20,7 +20,7 @@
 import 'fake-indexeddb/auto';
 import * as http from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { s } from '@routier/core/schema';
+import { InferType, s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
 import { DexiePlugin } from '@routier/dexie-plugin';
 import { HttpDbPlugin, OptimisticUpdatesDbPlugin, PluginSyncEngine } from '@routier/replication-plugin';
@@ -37,7 +37,7 @@ class ProductStore extends DataStore {
     products = this.collection(productSchema).proxy().create();
 }
 
-type Product = { _id: string; name: string; price: number };
+type Product = InferType<typeof productSchema>;
 
 // ---------------------------------------------------------------------------
 // The server: per-collection rows, plus the additive `meta.opIds` dedupe block

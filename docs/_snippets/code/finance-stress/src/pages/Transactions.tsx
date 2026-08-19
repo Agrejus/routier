@@ -8,12 +8,12 @@ export function Transactions() {
 
     const transactions = useLiveQuery<Transaction[]>(
         cb => (category == null
-            ? uiStore.transactions.subscribe().sortDescending(t => t.at).take(100).toArray(cb as any)
+            ? uiStore.transactions.subscribe().sortDescending(t => t.at).take(100).toArray(cb)
             : uiStore.transactions.subscribe()
                 .where(([t, p]) => t.category === p.category, { category })
                 .sortDescending(t => t.at)
                 .take(100)
-                .toArray(cb as any)) as any,
+                .toArray(cb)),
         [category],
     );
 

@@ -4,7 +4,7 @@ import { money, useLiveQuery } from '../hooks';
 
 export function Accounts(props: { onOpenAccount: (id: string) => void }) {
     const accounts = useLiveQuery<Account[]>(
-        cb => uiStore.accounts.subscribe().sort(a => a.name).toArray(cb as any) as any,
+        cb => uiStore.accounts.subscribe().sort(a => a.name).toArray(cb),
         [],
     );
 

@@ -29,7 +29,7 @@ const InstrumentCard = memo(function InstrumentCard(props: { id: string }) {
     const live = useLiveQuery<Instrument | undefined>(
         cb => uiStore.instruments.subscribe()
             .where(([i, p]) => i.id === p.id, { id: props.id })
-            .firstOrUndefined(cb as any) as any,
+            .firstOrUndefined(cb),
         [props.id],
     );
 

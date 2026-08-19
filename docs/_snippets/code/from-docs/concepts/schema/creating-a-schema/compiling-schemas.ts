@@ -1,4 +1,4 @@
-import { s } from "@routier/core/schema";
+import { InferType, s } from "@routier/core/schema";
 
 // Compiling schemas
 const userSchema = s.define("users", {
@@ -7,6 +7,11 @@ const userSchema = s.define("users", {
     email: s.string().distinct(),
 }).compile();
 
-// The compiled schema is ready to use
-// You can now use it with collections, type inference, etc.
-type User = typeof userSchema;
+// The compiled schema is ready to use.
+//
+// To get the ENTITY type, wrap it in InferType. `typeof userSchema` is the type of the
+// schema object itself — it has no `id`, `name` or `email` on it.
+type User = InferType<typeof userSchema>;
+
+// User is { id: string; name: string; email: string }
+const user: User = { id: "1", name: "Ada", email: "ada@example.com" };
