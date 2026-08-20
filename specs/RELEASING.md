@@ -6,9 +6,13 @@ Versioning is **independent by default**. On `0.x` a minor bump claims a breakin
 raising an unaffected package in lockstep tells every consumer to read a migration note that
 does not exist.
 
-`0.3.0` is a deliberate exception: every package moved together. That is only the right call
-when a release changes `@routier/core` in a breaking way, because every plugin declares core as
-a peer dependency and a consumer cannot upgrade one package without upgrading core with it.
+`0.3.0` and `0.4.0` are deliberate exceptions: every package moved together, on the grounds
+that a breaking core change forces every plugin along with it. **That reasoning no longer
+holds.** `scripts/rspack.library.mjs` externalises peer dependencies, so a plugin dist now
+`require`s core rather than inlining a copy of it, and every plugin declares core at
+`>=0.4.0` — a range a higher core satisfies. `0.5.0` shipped core alone for exactly that
+reason. Verify before assuming lockstep: if a plugin bundle no longer contains core symbols,
+a consumer can upgrade core on its own.
 Independent numbers would document a freedom nobody has. Do not treat it as the new default —
 see the reasoning recorded in `CHANGELOG.md` under "Versions".
 
@@ -70,6 +74,32 @@ E2E_CONTAINERS=1 npx jest --selectProjects e2e
 NODE_OPTIONS=--expose-gc STRESS=1 E2E_CONTAINERS=1 npx jest --selectProjects stress
 ```
 
+### If `npm ci` fails before it starts
+
+On a machine with Python 3.12 or newer, `npm ci` can die during install rather than during any
+of the gates:
+
+```
+node_modules/level/node_modules/leveldown
+  ModuleNotFoundError: No module named 'distutils'
+  gyp ERR! node-gyp -v v8.4.1
+```
+
+`leveldown` arrives with the `pouchdb` meta-package, compiles from source, and the `node-gyp`
+that `sqlite3` bundles imports `distutils` — removed from Python in 3.12. Nothing in this
+repository needs the binding: the jest config already routes `pouchdb` to a memory build.
+
+Install a `distutils` provider (`python3 -m pip install setuptools`), or point npm at an older
+interpreter (`npm config set python /opt/homebrew/bin/python3.13`). Failing that:
+
+```
+npm ci --ignore-scripts     # skips the leveldown build
+npm rebuild sqlite3         # sqlite3 fetches a prebuilt binary, so this needs no toolchain
+```
+
+Skipping scripts wholesale without the rebuild leaves `sqlite3` without its binding, which
+fails 66 tests in `plugins/sqlite` for a reason that has nothing to do with your change.
+
 ## 1. Decide the version
 
 Packages are on `0.x`, where **a minor bump signals a breaking change** and a patch bump
@@ -112,12 +142,19 @@ npm install --package-lock-only --ignore-scripts
 ```
 
 `npm` rewrites `package-lock.json` at the indentation it infers from `package.json`, which can
-re-indent all 34,000 lines. Normalise it back to two spaces before committing, or the real
-change is unreviewable:
+re-indent all 34,000 lines. Normalise it back to **four** spaces, which is what the committed
+file uses, or the real change is unreviewable — two spaces produces a ~19,000-line diff:
 
 ```
-node -e 'const f=require("fs");const p=JSON.parse(f.readFileSync("package-lock.json","utf8"));f.writeFileSync("package-lock.json",JSON.stringify(p,null,2)+"\n")'
+node -e 'const f=require("fs");const p=JSON.parse(f.readFileSync("package-lock.json","utf8"));f.writeFileSync("package-lock.json",JSON.stringify(p,null,4)+"\n")'
 ```
+
+**Never regenerate the lockfile to fix a native binding.** Its platform coverage depends on
+whether `node_modules` exists when it is written: with one present — or under a plain `npm
+install` — npm prunes every platform but the current one, which is how the file came to list
+only `linux-x64` rspack and rollup bindings. Declare the binding you need in root
+`optionalDependencies` instead; a declared entry survives pruning, a transitive one does not.
+A full regeneration also moves several hundred versions, so it belongs in its own change.
 
 ## 3. Write the changelog
 
