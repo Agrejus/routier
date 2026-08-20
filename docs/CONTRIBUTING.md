@@ -82,6 +82,12 @@ docs/
 2. Install dependencies: `npm install`
 3. Start the development server: `npm run docs:dev`
 
+If the install fails on `leveldown` with `No module named 'distutils'`, your Python is 3.12 or
+newer and the bundled `node-gyp` predates its removal. Either install a provider
+(`python3 -m pip install setuptools`) or use `npm install --ignore-scripts` followed by
+`npm rebuild sqlite3`. See `specs/RELEASING.md` for the detail — nothing in the repository
+needs the `leveldown` binding.
+
 ### Testing
 
 - Test all links work correctly
