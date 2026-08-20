@@ -92,5 +92,11 @@
         "tsx": "^4.23.1",
         "typedoc": "^0.28.14",
         "typedoc-plugin-markdown": "^4.9.0"
+    },
+    "optionalDependencies": {
+        "@rollup/rollup-darwin-arm64": "4.55.1",
+        "@rollup/rollup-darwin-x64": "4.55.1",
+        "@rspack/binding-darwin-arm64": "1.7.1",
+        "@rspack/binding-darwin-x64": "1.7.1"
     }
 }
