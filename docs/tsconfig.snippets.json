@@ -2,6 +2,7 @@
     "//": "Typechecks the docs code samples. Nothing checked these before, which is how `type User = typeof userSchema` - the schema type, not the entity - shipped on the Compiling Schemas page.",
     "//include": "An explicit allowlist, not a glob. Two kinds of snippet cannot compile and are correct as documentation: fragments with no module syntax (a bare method body, a `user.` line showing IntelliSense), and notation like `{ ... }` elision or `new MemoryPlugin(databaseName: string)`. Compiling them together would also collide their top-level names in one global scope.",
     "//backlog": "106 further module snippets do not compile yet and are not listed. Real defects hide there - a missing `ReplicationDbPlugin` export, imports of helper files absent from the snippet tree, and `unknown` from an un-generic `useQuery`. Fix a file, add it here.",
+    "//known-doc-bugs": "Two snippets import ReplicationDbPlugin from @routier/core/plugins, which does not exist - and ReplicationPluginOptions in core/src/plugins/types.ts is consumed by nothing, so the whole shape looks vestigial. Choosing the replacement (PluginSyncEngine in @routier/replication-plugin is the likely intent) is a maintainer call, not a docs typo, so they are left failing rather than guessed at.",
     "compilerOptions": {
         "noEmit": true,
         "strict": false,
@@ -223,6 +224,7 @@
         "_snippets/code/from-docs/how-to/debug-logging/block-6.ts",
         "_snippets/code/from-docs/index/block-1.ts",
         "_snippets/code/from-docs/integrations/plugins/built-in-plugins/dexie/README/block-1.ts",
+        "_snippets/code/from-docs/integrations/plugins/built-in-plugins/local-storage/README/block-1.ts",
         "_snippets/code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-1.ts",
         "_snippets/code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-2.ts",
         "_snippets/code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-3.ts",

@@ -1,6 +1,6 @@
 import { DataStore } from "@routier/datastore";
 import { s } from "@routier/core/schema";
-import { LocalStoragePlugin } from "@routier/browser-storage-plugin";
+import { BrowserStoragePlugin } from "@routier/browser-storage-plugin";
 
 const userSchema = s
     .define("users", {
@@ -15,7 +15,7 @@ class Ctx extends DataStore {
     users = this.collection(userSchema).proxy().create();
 
     constructor() {
-        super(new LocalStoragePlugin("app"));
+        super(new BrowserStoragePlugin("app", window.localStorage));
     }
 }
 
