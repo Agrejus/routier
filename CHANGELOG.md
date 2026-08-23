@@ -23,7 +23,10 @@ declares `@routier/postgres-plugin-core` as a required peer, and an existing ins
 not add it gets an unmet peer and a failing import. On `0.x` that earns a minor rather than a
 patch.
 
-No other package changes. `@routier/core` is untouched.
+`@routier/sql-plugin-core` goes to `0.5.0` for the `SqlDialect` change described below. Every
+plugin declares it at `>=0.4.0`, so none of them needs republishing.
+
+`@routier/core` is untouched.
 
 ### Added — @routier/postgres-plugin-core 0.1.0 (first release)
 
@@ -87,6 +90,44 @@ No other package changes. `@routier/core` is untouched.
   (`42P07`, `23505`), the pgvector probe, join pushdown refusal, JSON decoding on both paths and
   `OptimisticConcurrencyError` all work exactly as before, and the container suite covers them.
 
+### Fixed — @routier/sql-plugin-core 0.5.0
+
+- `array.includes(value)` produced a string `LIKE` against a JSON column. PostgreSQL and MySQL
+  rejected it (`operator does not exist: jsonb ~~ text`); **SQLite accepted it and returned the
+  wrong rows**, because a substring test matches a longer element and matches across element
+  boundaries. Membership now uses each engine's own containment: `json_each` for SQLite, `@>`
+  for PostgreSQL, `JSON_CONTAINS` for MySQL, `OPENJSON` for SQL Server. See known defect #69.
+- **Breaking for plugin authors.** `SqlDialect` gains `arrayContainsExpression` and
+  `encodeArrayContainsValue`, so a dialect implemented outside this repository no longer
+  compiles. Nothing else changes, and every plugin here declares the peer at `>=0.4.0`, which
+  `0.5.0` satisfies — no plugin needs republishing for it.
+
+### Fixed — dates did not survive a round trip — @routier/postgres-plugin-core, @routier/mysql-plugin 0.5.0
+
+Reported as "a schema with an identity key and a `s.date()` property cannot be saved". That was
+the alarm, not the defect. See known defect #70.
+
+- **PostgreSQL stored `TIMESTAMP`**, which carries no offset, so the driver read the naive value
+  back as local time and every date returned shifted by the client's UTC offset. Now
+  `TIMESTAMPTZ`. Setting the session timezone does not help — the shift happens in the client's
+  parser, and `pg` has no equivalent to mysql2's `timezone` option.
+- **MySQL stored `DATETIME`**, whose default precision is whole seconds, so the milliseconds a
+  JS `Date` carries were truncated. Now `DATETIME(3)`, the exact precision of a JS `Date`.
+
+The identity key was the detector, not the cause. With an explicit key the correlation hash is
+never consulted, so the shifted date was accepted **silently**. Nothing in the hash or codegen
+path changed, deliberately: normalising the date out of the hash would have silenced the
+detector and left the corruption in place.
+
+`@routier/mysql-plugin` goes to `0.5.0` for the DDL change. `@routier/postgresql-plugin` is
+already moving to `0.5.0` above.
+
+**Neither change migrates an existing table.** These plugins create a table when it is missing
+and never alter one, so a table already created with `TIMESTAMP` or `DATETIME` keeps that type
+and the old behaviour. Changing it on live data is a migration.
+
+Pinned by a `dates` block in the conformance matrix, run against all four engines.
+
 ### Added — testing
 
 - PGlite joins the dialect conformance matrix in `e2e/src/dialectConformance.test.ts`. That
@@ -99,6 +140,11 @@ No other package changes. `@routier/core` is untouched.
   differ: `node-postgres` returns `COUNT(*)` as a string and PGlite as a number, which
   `PostgresSqlTranslator` already absorbed.
 - `e2e/browser` gains a PGlite fixture and proves OPFS survives a full page reload in Chromium.
+- An `array membership` block joins the conformance matrix, including the prefix case that
+  SQLite alone got wrong. It is what pins defect #69 across all four engines.
+- `examples/pglite-console` is a working Vite application: PostgreSQL in a browser tab,
+  persisted to OPFS, with a reload button. Building it is what found #69 and the Vite worker
+  format requirement.
 
 ### Changed — test scripts
 

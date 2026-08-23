@@ -66,6 +66,21 @@ export interface SqlDialect {
      */
     lengthExpression(column: string, isJsonArray: boolean): string;
     /**
+     * SQL testing whether a JSON array column holds `value`.
+     *
+     * `tags.includes("featured")` is membership, not substring matching. Rendering it as
+     * `LIKE '%featured%'` is wrong twice over: PostgreSQL and MySQL reject it outright
+     * against a JSON column, and SQLite — which stores JSON as text — accepts it and matches
+     * the wrong rows, because `"feat"` is a substring of `"featured"` and a value in one
+     * element can match against another.
+     *
+     * Pairs with `encodeArrayContainsValue`, because the dialects disagree about whether the
+     * parameter is the raw value or its JSON encoding.
+     */
+    arrayContainsExpression(column: string, placeholder: string): string;
+    /** The parameter `arrayContainsExpression` expects, from the value the caller compared. */
+    encodeArrayContainsValue(value: unknown): unknown;
+    /**
      * Reads a value out of a JSON column so a nested property can be filtered on.
      *
      * A nested subtree is stored as ONE JSON column named for its root (see
@@ -161,6 +176,13 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `json_array_length(${column})` : `LENGTH(${column})`;
         },
+        /** `json_each` expands the array into rows; its `value` column is already typed. */
+        arrayContainsExpression(column, placeholder) {
+            return `EXISTS (SELECT 1 FROM json_each(${column}) WHERE json_each.value = ${placeholder})`;
+        },
+        encodeArrayContainsValue(value) {
+            return typeof value === "boolean" ? integerBoolean(value) : value;
+        },
         /**
          * `json_extract` is the one extractor that already returns a typed value — INTEGER,
          * REAL or TEXT as the document holds it — so SQLite needs no cast. JSON1 has been
@@ -190,6 +212,16 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         encodeBoolean: passThroughBoolean,
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `jsonb_array_length(${column})` : `LENGTH(${column})`;
+        },
+        /**
+         * `@>` is containment, and a scalar on the right asks whether the array holds it:
+         * `'["a","b"]'::jsonb @> '"a"'::jsonb` is true. It uses a GIN index where one exists.
+         */
+        arrayContainsExpression(column, placeholder) {
+            return `${column} @> ${placeholder}::jsonb`;
+        },
+        encodeArrayContainsValue(value) {
+            return JSON.stringify(value);
         },
         /**
          * `->` to navigate and `->>` for the final hop, which yields text. The cast back to
@@ -234,6 +266,13 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `JSON_LENGTH(${column})` : `CHAR_LENGTH(${column})`;
         },
+        /** `JSON_CONTAINS(target, candidate)` wants the candidate as JSON text. */
+        arrayContainsExpression(column, placeholder) {
+            return `JSON_CONTAINS(${column}, ${placeholder})`;
+        },
+        encodeArrayContainsValue(value) {
+            return JSON.stringify(value);
+        },
         /**
          * `JSON_EXTRACT` alone returns a JSON scalar, so a string comes back still wearing
          * its quotes and `= 'deep'` never matches. `JSON_UNQUOTE` strips them.
@@ -274,6 +313,13 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         encodeBoolean: passThroughBoolean,
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `(SELECT COUNT(*) FROM OPENJSON(${column}))` : `LEN(${column})`;
+        },
+        /** `OPENJSON` over an array yields one row per element, with the element in `value`. */
+        arrayContainsExpression(column, placeholder) {
+            return `EXISTS (SELECT 1 FROM OPENJSON(${column}) WHERE value = ${placeholder})`;
+        },
+        encodeArrayContainsValue(value) {
+            return value;
         },
         /** `JSON_VALUE` returns nvarchar, so numbers and booleans both need rewriting. */
         jsonPathExpression(rootColumn, path, leafType) {
@@ -519,6 +565,23 @@ function renderStringPatternComparison(
             const placeholders = value.map(() => placeholder()).join(", ");
             params.push(...value.map(item => typeof item === "boolean" ? d.encodeBoolean(item) : item));
             return cmp.negated ? `${col} NOT IN (${placeholders})` : `${col} IN (${placeholders})`;
+        }
+
+        // `tags.includes(x)` where `tags` is an array property is MEMBERSHIP, not substring
+        // matching, and the two disagree: `LIKE '%feat%'` matches a row whose only tag is
+        // "featured". PostgreSQL and MySQL reject the comparison outright against a JSON
+        // column; SQLite stores JSON as text and answered it wrongly instead.
+        const arrayProperty = propLeft?.property.type === SchemaTypes.Array
+            ? propLeft
+            : propRight?.property.type === SchemaTypes.Array
+              ? propRight
+              : null;
+
+        if (arrayProperty != null) {
+            params.push(d.encodeArrayContainsValue(value));
+            const contains = d.arrayContainsExpression(col, placeholder());
+
+            return cmp.negated ? `NOT (${contains})` : contains;
         }
 
         const escaped = escapeForPattern(String(value), kind);

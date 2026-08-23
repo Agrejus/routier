@@ -30,7 +30,7 @@ out of OPFS, written by the previous page load.
 | --- | --- |
 | Seed 5 | Writes commit, and the table is created lazily on first use |
 | Raise prices 10% | Change tracking produces an `UPDATE`, not a rewrite |
-| Query JSONB + column | A filter reaching into a nested JSONB column runs in PostgreSQL |
+| Query JSONB + array | A filter into a nested JSONB column, and array membership, both run in PostgreSQL |
 | Count + sum | Aggregates run in the database |
 | Reload page | Data persists across a new page, worker and WASM instance |
 
@@ -56,17 +56,3 @@ Two handled failures are logged by PGlite from inside the worker on first use:
 
 Both are recovered. They are noisy because PGlite reports every server error to the console
 before the client decides what to do with it.
-
-## Known defects this example works around
-
-Neither is a PGlite defect. Both reproduce on `main` with `@routier/postgresql-plugin` against a
-real PostgreSQL server, and both pass on SQLite — which stores JSON as text and round-trips
-dates unchanged, so it forgives them.
-
-- **An identity key with a `s.date()` property fails to save.** The echoed row cannot be matched
-  back to the tracked entity, because `TIMESTAMP` returns shifted into local time. The schema
-  here has no date; use an explicit key if you need one.
-- **`arrayColumn.includes(value)` produces invalid SQL.** `includes` is rendered as a string
-  `LIKE` by `@routier/sql-plugin-core`, so against a JSONB array PostgreSQL answers
-  `operator does not exist: jsonb ~~ text`. The example filters on a nested object property and
-  a plain column instead.

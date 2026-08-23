@@ -14,6 +14,7 @@ const sample = (index: number) => ({
     price: Math.round((5 + (index % 17) * 3.25) * 100) / 100,
     tags: index % 2 === 0 ? ['bulk', 'featured'] : ['single'],
     supplier: SUPPLIERS[index % SUPPLIERS.length],
+    createdAt: new Date(),
 });
 
 export function App() {
@@ -85,21 +86,17 @@ export function App() {
      * A filter that reaches INTO a JSONB column, evaluated by PostgreSQL rather than in
      * memory. This is the thing a key-value store in the browser cannot do.
      *
-     * Filtering on the `tags` array is deliberately absent: `tags.includes('featured')`
-     * renders as `LIKE` against a JSONB column and PostgreSQL rejects it with
-     * `operator does not exist: jsonb ~~ text`. That is a defect in the shared
-     * `@routier/sql-plugin-core` string-pattern renderer, not in this plugin, and it affects
-     * @routier/postgresql-plugin identically.
+     * The array filter is membership, not a substring test: PostgreSQL evaluates it with `@>`.
      */
     const queryNested = run('query', async () => {
         const swiss = await store.current!.products
             .where(([p, q]) => p.supplier.country === q.code, { code: 'CH' })
             .toArrayAsync();
-        const cheap = await store.current!.products
-            .where(([p, q]) => p.price < q.limit, { limit: 20 })
+        const featured = await store.current!.products
+            .where(p => p.tags.includes('featured'))
             .toArrayAsync();
 
-        return `supplier.country = CH → ${swiss.length}; price < 20 → ${cheap.length}`;
+        return `supplier.country = CH → ${swiss.length}; tags contains featured → ${featured.length}`;
     });
 
     const aggregate = run('aggregate', async () => {
