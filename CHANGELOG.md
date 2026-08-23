@@ -3,6 +3,122 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## PGlite (2026-08-23)
+
+PostgreSQL in the browser. `@routier/pglite-plugin` runs PGlite — PostgreSQL compiled to
+WebAssembly — persisted to OPFS behind a leader-elected worker, and in Node against a
+directory or memory. It generates the same SQL as `@routier/postgresql-plugin`, because both
+now build their statements from the same package. Documented at
+`/integrations/plugins/built-in-plugins/pglite/README`.
+
+### Versions
+
+`@routier/postgres-plugin-core` and `@routier/pglite-plugin` start at `0.1.0`, for the reason
+recorded under `0.5.0`: a version is a claim about a package's own history, and neither has
+one yet.
+
+`@routier/postgresql-plugin` goes to `0.5.0`. Its public API is unchanged — `PostgresDbPlugin`,
+`PostgresDbPluginConfig` and every symbol that moved is still importable from it — but it now
+declares `@routier/postgres-plugin-core` as a required peer, and an existing install that does
+not add it gets an unmet peer and a failing import. On `0.x` that earns a minor rather than a
+patch.
+
+No other package changes. `@routier/core` is untouched.
+
+### Added — @routier/postgres-plugin-core 0.1.0 (first release)
+
+- The PostgreSQL half of the SQL plugins, with no database client in it. `PostgresDbPluginBase`
+  is a complete `IDbPlugin` minus the engine; a `PostgresDriver` supplies `connect`, `dispose`,
+  and a connection with `all`, `run` and `release`.
+- Moved here unchanged from `@routier/postgresql-plugin`: `compiledSchemaToPostgresTable`,
+  `buildFromQueryOperation`, `buildJoinQueryOperation`, `buildFromPersistOperation`,
+  `PostgresSqlTranslator`, `PostgresVectorSupport` and `NO_VECTOR_SUPPORT`. They imported
+  nothing Node-specific and never needed to live next to `pg`.
+- Transactions are deliberately absent from the driver interface. Every engine behind it is
+  PostgreSQL, so `BEGIN`, `SAVEPOINT` and `ROLLBACK TO SAVEPOINT` are statements the plugin
+  issues through `run`.
+- `RECOVERABLE_SQLSTATE` is exported, because a driver whose transport drops the error code has
+  to put it back. See the PGlite worker note below.
+- Peer dependencies only: `@routier/core` and `@routier/sql-plugin-core`. No runtime
+  dependencies.
+
+### Added — @routier/pglite-plugin 0.1.0 (first release)
+
+- `new PGliteDbPlugin(name)` — PostgreSQL in WebAssembly. The name is PGlite's data directory
+  and its prefix picks the storage: a bare name becomes `opfs-ahp://` in a browser, and
+  `idb://`, `memory://` or a path are passed through. There is no separate `storage` option,
+  because the prefix already says it.
+- Export conditions select the build. The browser entry runs the database in a Web Worker,
+  which is forced rather than chosen: `createSyncAccessHandle` does not exist on the main
+  thread and PGlite's OPFS filesystem needs it. The worker elects a leader, so several tabs
+  share one database — unlike `@routier/sqlite-plugin`, whose SAH pool takes exclusive handles
+  and fails to open in a second tab.
+- **PGlite has one connection, so the driver serialises `connect`.** A save runs `BEGIN`,
+  several statements, `COMMIT`; a query arriving mid-save on the same connection would execute
+  inside that transaction, and a second save's `BEGIN` would be an error. Callers queue
+  instead. This is a fact about this engine and is stated on its driver — `pg` has a pool and
+  pays nothing for it.
+- **`PGliteWorker` rebuilds a worker-side failure as `new Error(message)`, which drops the
+  SQLSTATE.** The plugin reads `code` to decide whether a missing table has to be created, so
+  the first write to any new collection failed — in the browser and nowhere else. The driver
+  restores the code from the message, which is safe there and only there: PGlite is a fixed
+  build running in the C locale, so those strings cannot vary.
+- `s.vector()` and `.nearest()` work with or without pgvector. Without it the embedding goes to
+  JSONB and the search is scored in memory; with it the table gets a real `vector(n)` column
+  and PostgreSQL orders with `<=>`. pgvector is a separate optional peer,
+  `@electric-sql/pglite-pgvector`, and because extensions are built inside the worker a browser
+  application supplies its own worker through `workerUrl`.
+- `pgliteDbPlugin(name, instance)` builds a plugin over a PGlite instance you already have, for
+  sharing one database with a live query, a sync client, or an extension set this package does
+  not know about.
+- `@electric-sql/pglite` is a peer dependency. `opfs-ahp` does not work in Safari, which caps
+  synchronous access handles at 252 while PostgreSQL needs over 300 files; use `idb://` there.
+
+### Changed — @routier/postgresql-plugin 0.5.0
+
+- The plugin is now a subclass over `pgDriver(config)`, and everything it does with a statement
+  lives in `@routier/postgres-plugin-core`. `PostgresDbPlugin` and `PostgresDbPluginConfig` are
+  unchanged, and `index.ts` re-exports the moved symbols, so no import breaks.
+- `@routier/postgres-plugin-core` is a new required peer. This is the only reason the version
+  moves.
+- The three copies of the retry-on-missing-table path — query, query retry, and persist —
+  collapse into one, matching how `@routier/sqlite-plugin` already did it.
+- No behaviour change. Lazy table creation, savepoint recovery, the concurrent-creator races
+  (`42P07`, `23505`), the pgvector probe, join pushdown refusal, JSON decoding on both paths and
+  `OptimisticConcurrencyError` all work exactly as before, and the container suite covers them.
+
+### Added — testing
+
+- PGlite joins the dialect conformance matrix in `e2e/src/dialectConformance.test.ts`. That
+  matrix exists because SQLite is the permissive engine — it stores JSON as text, accepts
+  several statements per call, and serialises writers — so it forgives three classes of bug the
+  others do not. Until now the strict engine ran only behind `E2E_CONTAINERS`; it now runs
+  without Docker.
+- `e2e/src/pgliteParity.test.ts` writes one row through both engines and compares what comes
+  back. They are different clients over one wire protocol, and decoding is where they may
+  differ: `node-postgres` returns `COUNT(*)` as a string and PGlite as a number, which
+  `PostgresSqlTranslator` already absorbed.
+- `e2e/browser` gains a PGlite fixture and proves OPFS survives a full page reload in Chromium.
+
+### Changed — test scripts
+
+- `test:e2e` and `test:e2e:containers` now run Jest under `--experimental-vm-modules`, which
+  PGlite needs: it reaches its WebAssembly through `await import()` from Emscripten's own glue,
+  and a Jest VM context refuses that. The rejection arrives as an uncaught exception, so it
+  cannot be caught — a suite has to check the flag before touching the engine, which
+  `vmModulesEnabled` in `@routier/test-utils` does.
+- The flag is **not** global. Under it Jest refuses to `require` `@faker-js/faker`'s ESM build,
+  which six existing suites import. A bare `npm test` therefore lists the PGlite blocks as
+  skipped rather than running or silently omitting them.
+
+### Changed — architecture
+
+- The `plugins` domain may now import `@routier/postgres-plugin-core`, and the check for
+  "packages under plugins/ implement IDbPlugin" accepts a package that extends a base which
+  does. The bases are named — `EphemeralDataPlugin`, `PostgresDbPluginBase`,
+  `SqliteDbPluginBase` — so `extends Anything` cannot pass by accident.
+- `IDbPlugin` is unchanged, and the `IDbPlugin is frozen` guard still passes.
+
 ## @routier/react 0.4.1 (2026-08-19)
 
 An independent patch, so the header names the package: nothing else changes.
