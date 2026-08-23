@@ -44,6 +44,34 @@ Your bundler emits the worker from `new Worker(new URL(...), { type: "module" })
 
 Serve the `.wasm` and `.data` assets that PGlite loads at run time. COOP and COEP headers are not required.
 
+### Vite
+
+Two settings are required. Without the first, the production build fails.
+
+```ts
+export default defineConfig({
+  worker: { format: "es" },
+  optimizeDeps: {
+    exclude: ["@routier/pglite-plugin", "@routier/postgres-plugin-core", "@electric-sql/pglite"],
+  },
+});
+```
+
+Vite bundles the worker and defaults that build to `iife`, which cannot code-split. PGlite loads its filesystems through dynamic imports, so the build stops with "UMD and IIFE output formats are not supported for code-splitting builds".
+
+Dependency pre-bundling rewrites module URLs. That breaks the worker URL and PGlite's own `.wasm` and `.data` lookups, so exclude the three packages above.
+
+A complete example is in `examples/pglite-console`.
+
+### Console output
+
+PGlite prints every server error to the console before the client acts on it. Two appear on first use and are recovered:
+
+| Message | Cause |
+| --- | --- |
+| `extension "vector" is not available` | The pgvector probe. The plugin stores embeddings as JSONB instead. |
+| `relation "..." does not exist` | The lazy `CREATE TABLE` miss. The plugin creates the table and retries. |
+
 ### Tabs
 
 The plugin is safe across tabs. One tab is elected leader and owns the database. Other tabs send their queries to the leader. A new election runs when the leader closes.

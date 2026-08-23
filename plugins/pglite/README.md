@@ -47,6 +47,31 @@ understand. Pass `workerUrl` if your setup needs a different URL.
 
 No COOP or COEP headers are required.
 
+**Vite needs two settings.** Without the first the production build fails outright:
+
+```ts
+export default defineConfig({
+  // Vite's default worker format is `iife`, which cannot code-split. PGlite reaches its
+  // filesystems through dynamic imports, so the build fails with "UMD and IIFE output
+  // formats are not supported for code-splitting builds".
+  worker: { format: "es" },
+  optimizeDeps: {
+    // esbuild pre-bundling rewrites module URLs, breaking the worker URL and PGlite's own
+    // .wasm/.data lookups.
+    exclude: ["@routier/pglite-plugin", "@routier/postgres-plugin-core", "@electric-sql/pglite"],
+  },
+});
+```
+
+A complete, working setup is in `examples/pglite-console`.
+
+### Expected console output
+
+PGlite reports every server error to the console before the client decides what to do with it,
+so two handled failures are visible on first use: `extension "vector" is not available` (the
+pgvector probe) and `relation "..." does not exist` (the lazy `CREATE TABLE` miss). Both are
+recovered.
+
 ### Durability
 
 OPFS is per origin and survives reload and navigation. A browser may evict it under storage
