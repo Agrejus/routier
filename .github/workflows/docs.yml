@@ -5,6 +5,15 @@ on:
     branches: [main]
     paths:
       - "docs/**"
+      - "examples/db-migration/**"
+      - "core/**"
+      - "datastore/**"
+      - "react/**"
+      - "plugins/browser-storage/**"
+      - "plugins/dexie/**"
+      - "plugins/memory/**"
+      - "plugins/pouchdb/**"
+      - "plugins/sqlite/**"
       - ".github/workflows/docs.yml"
   workflow_dispatch:
 
@@ -25,12 +34,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Install workspace dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Build Routier packages
+        run: npm run build
       - name: Install docs dependencies
         working-directory: docs
         run: npm install --no-audit --no-fund
-      - name: Build site
+      - name: Build Lab and documentation site
         working-directory: docs
-        run: npm run docs:build
+        run: npm run docs:build:with-lab
       - uses: actions/configure-pages@v4
       - uses: actions/upload-pages-artifact@v3
         with:

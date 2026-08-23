@@ -13,9 +13,11 @@ This folder is a [VitePress](https://vitepress.dev) site published to
 ```bash
 cd docs
 npm install
-npm run docs:dev      # dev server with hot reload
-npm run docs:build    # production build (also validates internal links)
-npm run docs:preview  # serve the production build locally
+npm run docs:dev            # docs server with hot reload
+npm run docs:build          # documentation only; validates internal links
+npm run lab:build           # build the React Lab into public/lab
+npm run docs:build:with-lab # production deployment build
+npm run docs:preview        # serve the production build locally
 ```
 
 ## Layout
@@ -27,13 +29,14 @@ npm run docs:preview  # serve the production build locally
 - `_snippets/` — code samples imported into pages with `<<< @/_snippets/...`.
 - `api/index.md` — hand-written public API map.
 - `reference/api/` — generated signatures for every package entry point; regenerate with `npm run typedoc` at the repository root.
-- `public/` — static assets served at the site root (logo, `CNAME`).
+- `public/` — static assets served at the site root (logo, `CNAME`). The Lab build is generated into `public/lab/` and is intentionally gitignored.
+- `../examples/db-migration/` — the React Lab application published at `/lab/`.
 
 ## Deployment
 
-Pushing changes under `docs/` to `main` triggers
-`.github/workflows/docs.yml`, which builds the site and deploys it to
-GitHub Pages.
+Pushing documentation, Lab, or relevant package changes to `main` triggers
+`.github/workflows/docs.yml`. The workflow builds the workspace packages, bundles the Lab at
+`/lab/`, builds VitePress, and deploys the combined output to GitHub Pages.
 
 ## Conventions
 

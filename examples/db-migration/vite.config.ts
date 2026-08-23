@@ -15,9 +15,15 @@ export default defineConfig({
             '@routier/core',
             '@routier/datastore',
             '@routier/memory-plugin',
+            '@routier/browser-storage-plugin',
             '@routier/dexie-plugin',
             '@routier/pouchdb-plugin',
             '@routier/sqlite-plugin',
+            // sqlite-wasm resolves sqlite3.wasm relative to import.meta.url. If Vite
+            // pre-bundles it into .vite/deps, that relative URL points at a missing file
+            // and the SPA fallback returns index.html ("expected magic word 00 61 73 6d,
+            // found 3c 21 64 6f" — the bytes for "<!do").
+            '@sqlite.org/sqlite-wasm',
             '@routier/react',
         ],
     },
