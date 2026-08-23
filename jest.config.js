@@ -16,6 +16,8 @@ const moduleNameMapper = {
     '^@routier/browser-storage-plugin$': '<rootDir>/plugins/browser-storage/src/index.ts',
     '^@routier/file-system-plugin$': '<rootDir>/plugins/file-system/src/index.ts',
     '^@routier/sql-plugin-core$': '<rootDir>/plugins/sql-core/src/index.ts',
+    '^@routier/postgres-plugin-core$': '<rootDir>/plugins/postgres-core/src/index.ts',
+    '^@routier/pglite-plugin$': '<rootDir>/plugins/pglite/src/index.ts',
     '^@routier/blob-plugin$': '<rootDir>/plugins/blob/src/index.ts',
     '^@routier/encryption$': '<rootDir>/plugins/encryption/src/index.ts',
     '^@routier/blob-plugin/(.*)$': '<rootDir>/plugins/blob/src/$1',

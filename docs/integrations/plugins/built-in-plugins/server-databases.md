@@ -28,6 +28,8 @@ const plugin = new PostgresDbPlugin({
 
 A save uses one transaction and one pooled client. Root objects/arrays use JSONB. PostgreSQL uses pgvector for `s.vector()` and `.nearest()` when the extension is available, otherwise Routier scores candidates in memory. `ConcurrencyDbPlugin` is supported.
 
+This plugin needs a server. For the same dialect in a browser or in tests, use the [PGlite plugin](/integrations/plugins/built-in-plugins/pglite/README) — it runs PostgreSQL in WebAssembly and builds its statements from the same package.
+
 ## MySQL
 
 ```bash

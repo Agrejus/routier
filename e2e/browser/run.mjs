@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Runs the SQLite WASM plugin in a real browser and checks that it works and persists.
+ * Runs the SQLite and PGlite WASM plugins in a real browser and checks that they work and persist.
  *
  * This is the only place the browser build is executed. Jest cannot stand in for it: OPFS
  * exists only in a browser, and `createSyncAccessHandle` — which every OPFS VFS is built on —
@@ -124,6 +124,48 @@ try {
         `expected 0 rows after destroy, got ${third.startupRows}`);
 
     check('no uncaught page errors', consoleErrors.length === 0, consoleErrors.join('; '));
+
+    // ---- PGlite: the same claims, against real PostgreSQL in WASM ----
+    //
+    // A separate page, because it is a separate bundle resolving a separate `browser`
+    // condition. The database lives in a leader-elected worker over `opfs-ahp://`, so a
+    // main-thread build or a missing worker asset fails here and nowhere else.
+    const pgPage = await context.newPage();
+    const pgErrors = [];
+    pgPage.on('pageerror', error => pgErrors.push(error.message));
+
+    await pgPage.goto(`${ORIGIN}/pglite.html`);
+    await pgPage.waitForFunction(() => document.getElementById('ready')?.textContent === 'ready');
+
+    // `destroy()` on a PostgreSQL plugin closes the database and keeps the data, so the
+    // fixture clears rows instead. That difference is the contract, not an oversight.
+    await pgPage.evaluate(() => window.routierReset());
+
+    const pgFirst = await pgPage.evaluate(() => window.routierCheck());
+
+    check('pglite starts empty after a clear', pgFirst.startupRows === 0,
+        `expected 0 rows, got ${pgFirst.startupRows}`);
+    check('pglite saves and reads back', pgFirst.afterSave === 2,
+        `expected 2 rows after save, got ${pgFirst.afterSave}`);
+    check('pglite updates in place', pgFirst.adaAge === 37,
+        `expected age 37, got ${pgFirst.adaAge}`);
+    check('pglite decodes a JSONB column', pgFirst.nestedNote === 'first',
+        `expected the nested note back as a structure, got ${JSON.stringify(pgFirst.nestedNote)}`);
+
+    // A full navigation. New page, new worker, new WASM instance, new PostgreSQL. Anything
+    // still readable came out of OPFS.
+    await pgPage.goto(`${ORIGIN}/pglite.html?reload=1`);
+    await pgPage.waitForFunction(() => document.getElementById('ready')?.textContent === 'ready');
+
+    const pgSecond = await pgPage.evaluate(() => window.routierCheck());
+
+    check('pglite data survives a reload', pgSecond.startupRows === 2,
+        `expected the 2 rows written by the previous load, got ${pgSecond.startupRows}`);
+
+    // Leave OPFS clean for the next run.
+    await pgPage.evaluate(() => window.routierReset());
+
+    check('no uncaught page errors (pglite)', pgErrors.length === 0, pgErrors.join('; '));
 } finally {
     await browser.close();
     server.kill();
@@ -134,4 +176,4 @@ if (failures.length > 0) {
     process.exit(1);
 }
 
-console.log('\nBrowser check passed: SQLite runs in the browser and persists across reloads.');
+console.log('\nBrowser check passed: SQLite and PGlite run in the browser and persist across reloads.');

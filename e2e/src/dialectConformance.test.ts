@@ -8,6 +8,9 @@ import { uuidv4 } from '@routier/core';
 import { SqliteDbPlugin } from '@routier/sqlite-plugin';
 import { PostgresDbPlugin } from '@routier/postgresql-plugin';
 import { MysqlDbPlugin } from '@routier/mysql-plugin';
+import { PGlite } from '@electric-sql/pglite';
+import { pgliteDbPlugin, PGliteLike } from '@routier/pglite-plugin';
+import { vmModulesEnabled } from '@routier/test-utils';
 import { describeDialectConformance } from './dialectConformance';
 
 /**
@@ -35,6 +38,40 @@ describe('SQLite', () => {
     describeDialectConformance({
         name: 'sqlite',
         createPlugin: () => new SqliteDbPlugin(file),
+    });
+});
+
+// --- PGlite: real PostgreSQL, in WebAssembly, always on ---
+
+/**
+ * The strict engine, with no container.
+ *
+ * This is the point of having PGlite in the matrix at all. SQLite passing proves very little —
+ * it stores JSON as text, takes several statements per call, and serialises writers — so until
+ * now the engine that catches those three classes of bug only ran behind `E2E_CONTAINERS`. This
+ * is the same PostgreSQL, compiled to WASM, on every `npx jest`.
+ */
+(vmModulesEnabled ? describe : describe.skip)('PGlite', () => {
+    let database: PGlite;
+
+    beforeAll(async () => {
+        database = await PGlite.create('memory://conformance');
+    }, 60_000);
+
+    afterAll(async () => {
+        await database?.close();
+    });
+
+    describeDialectConformance({
+        name: 'pglite',
+        // One database, shared by every store the matrix opens — the same way the other
+        // backends share one server. `close` is dropped because `afterEach` destroys each
+        // store, and closing the engine on the first of them would end the run.
+        createPlugin: () => pgliteDbPlugin('memory://conformance', {
+            query: (sql, params) => database.query(sql, params),
+            exec: (sql) => database.exec(sql),
+            close: () => Promise.resolve(),
+        } satisfies PGliteLike),
     });
 });
 

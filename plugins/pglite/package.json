@@ -1,0 +1,91 @@
+{
+    "name": "@routier/pglite-plugin",
+    "version": "0.4.0",
+    "main": "./dist/index.cjs",
+    "types": "./dist/index.d.ts",
+    "source": "./src/index.ts",
+    "publishConfig": {
+        "access": "public"
+    },
+    "scripts": {
+        "build:types": "tsc --emitDeclarationOnly",
+        "build:bundle": "node ../../scripts/clean-dist.mjs && rspack build",
+        "build": "npm run build:bundle && npm run build:types",
+        "tsc": "tsc --noEmit",
+        "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js",
+        "lint": "oxlint . --ignore-pattern \"**/__tests__/**\" --ignore-pattern \"**/*.test.*\" --ignore-pattern \"**/*.spec.*\" --ignore-pattern \"**/*.mjs\""
+    },
+    "sideEffects": false,
+    "author": "James DeMeuse <james.demeuse@gmail.com>",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Agrejus/routier.git",
+        "directory": "plugins/pglite"
+    },
+    "keywords": [
+        "orm",
+        "typescript",
+        "pglite",
+        "postgres",
+        "postgresql",
+        "wasm",
+        "opfs",
+        "offline",
+        "data access layer",
+        "entities",
+        "database",
+        "routier"
+    ],
+    "description": "PGlite plugin for Routier: real PostgreSQL in WebAssembly, persisted to OPFS in the browser and to disk or memory in Node.",
+    "peerDependencies": {
+        "@electric-sql/pglite": ">=0.5.0",
+        "@electric-sql/pglite-pgvector": ">=0.0.8",
+        "@routier/core": ">=0.4.0",
+        "@routier/postgres-plugin-core": ">=0.4.0",
+        "@routier/sql-plugin-core": ">=0.4.0"
+    },
+    "peerDependenciesMeta": {
+        "@electric-sql/pglite-pgvector": {
+            "optional": true
+        }
+    },
+    "devDependencies": {
+        "@electric-sql/pglite": "^0.5.7",
+        "@electric-sql/pglite-pgvector": "^0.0.8",
+        "@routier/core": "^0.5.0",
+        "@routier/datastore": "^0.4.0",
+        "@routier/postgres-plugin-core": "^0.4.0",
+        "@routier/sql-plugin-core": "^0.4.0",
+        "@routier/test-utils": "^0.3.0",
+        "@rspack/cli": "^1.1.8",
+        "@rspack/core": "^1.1.8"
+    },
+    "files": [
+        "dist/**/*",
+        "README.md",
+        "LICENSE"
+    ],
+    "exports": {
+        ".": {
+            "browser": {
+                "types": "./dist/index.browser.d.ts",
+                "import": "./dist/index.browser.js",
+                "require": "./dist/index.browser.cjs"
+            },
+            "node": {
+                "types": "./dist/index.d.ts",
+                "import": "./dist/index.js",
+                "require": "./dist/index.cjs"
+            },
+            "default": {
+                "types": "./dist/index.d.ts",
+                "import": "./dist/index.js",
+                "require": "./dist/index.cjs"
+            }
+        },
+        "./package.json": "./package.json"
+    },
+    "browser": "./dist/index.browser.js",
+    "module": "./dist/index.js"
+}

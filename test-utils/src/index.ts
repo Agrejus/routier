@@ -4,5 +4,6 @@ export * from './pluginContract';
 export * from './vectorContract';
 export * from './fullTextSearchContract';
 export * from './queryOracle';
+export * from './wasmEngines';
 
 export * from './joinContract';
