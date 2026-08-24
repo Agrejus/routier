@@ -49,6 +49,15 @@ async function copyCollection(source: ShopStore, target: ShopStore, schema: AnyS
  *
  * Read off the schema rather than named here. That is what keeps this generic, and it is why
  * PouchDB's `_id` and `_rev` stay behind without this file ever mentioning PouchDB.
+ *
+ * **This is only safe because nothing here references anything.** These collections have no
+ * foreign keys: an order carries a customer NAME, not a customer id. Drop an assigned id in a
+ * schema where another collection points at it and every one of those references is now
+ * dangling, silently, because the target handed out different ids.
+ *
+ * A schema with references needs the old id kept long enough to rewrite them: copy the parents
+ * first, keep a map from old id to new, then rewrite the child's foreign key as it is copied.
+ * Or carry the ids over unchanged, which works when the target is not assigning its own.
  */
 function withoutAssignedIds(row: Record<string, unknown>, schema: AnySchema) {
     const assigned = schema.idProperties.map(property => property.name);
