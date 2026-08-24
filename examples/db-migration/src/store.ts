@@ -1,5 +1,6 @@
 import { Collection, DataStore } from '@routier/datastore';
 import type { IDbPlugin } from '@routier/core/plugins';
+import type { SchemaId } from '@routier/core/schema';
 import { MemoryPlugin } from '@routier/memory-plugin';
 import { DexiePlugin } from '@routier/dexie-plugin';
 import { PouchDbPlugin } from '@routier/pouchdb-plugin';
@@ -132,13 +133,21 @@ export class ShopStore extends DataStore {
      * — so a migration that took everything would fail on the first one. Filtered by type rather
      * than by probing for the method, which would also accept anything that happened to have it.
      */
-    all(): { name: string; collection: AnyCollection }[] {
+    all(): AnyCollection[] {
         return [...this.collections.values()]
             .filter(collection => collection instanceof Collection)
-            .map(collection => ({
-                name: collection.schema.collectionName,
-                collection: collection as unknown as AnyCollection,
-            }));
+            .map(collection => collection as unknown as AnyCollection);
+    }
+
+    /**
+     * The collection for a schema, by the id the schema already carries.
+     *
+     * Both stores are built from the same compiled schemas, so an id means the same collection
+     * on either one. `DataStore` already keys its collections by that id, so this is a lookup
+     * rather than a second index built alongside the first.
+     */
+    collectionFor(schemaId: SchemaId): AnyCollection | undefined {
+        return this.collections.get(schemaId) as unknown as AnyCollection | undefined;
     }
 }
 
@@ -147,7 +156,7 @@ export class ShopStore extends DataStore {
  * back without looking inside them, so the shape is the schema's business rather than its own.
  */
 export type AnyCollection = {
-    schema: { collectionName: string; idProperties: { name: string }[] };
+    schema: { id: SchemaId; collectionName: string; idProperties: { name: string }[] };
     toArrayAsync(): Promise<Record<string, unknown>[]>;
     addAsync(...entities: Record<string, unknown>[]): Promise<unknown>;
     countAsync(): Promise<number>;

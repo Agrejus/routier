@@ -6,11 +6,10 @@ import { AnyCollection, ShopStore } from './store';
  * This file is displayed verbatim in the UI.
  */
 export async function migrate(source: ShopStore, target: ShopStore): Promise<number> {
-    const targets = new Map(target.all().map(({ name, collection }) => [name, collection]));
     let copied = 0;
 
-    for (const { name, collection } of source.all()) {
-        copied += await copyCollection(collection, targets.get(name)!, target);
+    for (const from of source.all()) {
+        copied += await copyCollection(from, target.collectionFor(from.schema.id)!, target);
     }
 
     return copied;

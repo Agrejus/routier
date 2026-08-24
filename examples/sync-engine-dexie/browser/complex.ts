@@ -42,6 +42,17 @@ const taskSchema = s
 class WorkStore extends DataStore {
     projects = this.collection(projectSchema).proxy().create();
     tasks = this.collection(taskSchema).proxy().create();
+
+    /**
+     * Every collection on this store, so code that works over all of them does not carry a
+     * hand-written list that goes stale the moment a collection is added.
+     */
+    all() {
+        return [...this.collections.values()].map(collection => ({
+            name: collection.schema.collectionName,
+            read: () => collection.toArrayAsync() as Promise<Record<string, unknown>[]>,
+        }));
+    }
 }
 
 const DB_NAME = 'complex-demo';
@@ -233,11 +244,8 @@ async function audit(): Promise<void> {
     const pending = await swr.pendingCount();
     const dead = (await swr.deadLetters()).length;
 
-    for (const [name, read] of [
-        ['projects', () => store.projects.toArrayAsync()],
-        ['tasks', () => store.tasks.toArrayAsync()],
-    ] as const) {
-        const local = await read() as Array<Record<string, unknown>>;
+    for (const { name, read } of store.all()) {
+        const local = await read();
         const remote = (await serverState(name)).rows;
         const remoteById = new Map(remote.map((r) => [String(r._id), r]));
 

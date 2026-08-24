@@ -64,12 +64,13 @@ export class Journey {
         const coldStart = await this.timeColdStart(db, onProgress);
 
         const store = this.open(db);
-        const collections = new Map(store.all().map(({ name, collection }) => [name, collection]));
 
         const arrival = await time(`Seeded ${this.count.toLocaleString()} documents`, async () => {
-            for (const [name, rows] of Object.entries(this.seed)) {
+            for (const collection of store.all()) {
+                const name = collection.schema.collectionName;
+                const rows = this.seed[name] ?? [];
+
                 onProgress(`Seeding ${rows.length.toLocaleString()} ${name}...`);
-                const collection = collections.get(name)!;
 
                 for (let i = 0; i < rows.length; i += CHUNK) {
                     await collection.addAsync(...rows.slice(i, i + CHUNK));
@@ -77,7 +78,7 @@ export class Journey {
                 }
             }
 
-            return `${Object.keys(this.seed).length} collections`;
+            return `${store.all().length} collections`;
         });
 
         this.current = db;
