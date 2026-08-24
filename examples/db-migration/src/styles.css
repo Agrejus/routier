@@ -427,3 +427,21 @@ details[open] .chevron { transform: rotate(180deg); }
 .run-query:disabled { opacity: .6; cursor: default; }
 .plan-source { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 15px; border-top: 1px solid var(--line); color: #7d8a9c; }
 .plan-source span { color: #7d8a9c; font-size: 9px; letter-spacing: .04em; text-transform: uppercase; }
+
+.engine-tabs { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px; background: var(--line); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.engine-tab { display: flex; flex-direction: column; gap: 3px; padding: 10px 8px; border: 0; background: var(--panel); color: #b9c2cf; text-align: left; cursor: pointer; }
+.engine-tab:disabled { cursor: default; }
+.engine-tab strong { font-size: 10px; }
+.engine-tab small { color: #6c7889; font-size: 8px; letter-spacing: .03em; }
+.engine-tab.active { background: rgba(45,212,191,.09); box-shadow: inset 2px 0 0 var(--brand-strong); }
+.engine-tab.active strong { color: var(--brand-strong); }
+.engine-tab.failed small { color: #f8827f; }
+.engine-tab.running small { color: var(--brand-strong); }
+.pushdown-line { display: flex; align-items: center; gap: 7px; padding: 11px 16px; color: var(--brand-strong); font: 500 10px/1.4 'Inter', sans-serif; }
+.statement-list { display: flex; flex-direction: column; gap: 8px; padding: 4px 16px 14px; }
+.statement-label { color: #6c7889; font-size: 8px; letter-spacing: .05em; text-transform: uppercase; }
+.statement pre { margin: 0; padding: 11px 13px; overflow-x: auto; border: 1px solid var(--line); border-radius: 7px; background: #121214; color: #aebbd0; font: 400 10px/1.6 'DM Mono', monospace; white-space: pre-wrap; word-break: break-word; }
+.statement small { display: block; margin-top: 4px; color: #6c7889; font: 400 9px/1.5 'DM Mono', monospace; }
+.plan-details { border-top: 1px solid var(--line); }
+.plan-details summary { padding: 10px 16px; color: #7d8a9c; font-size: 9px; letter-spacing: .04em; text-transform: uppercase; cursor: pointer; }
+@media (max-width: 900px) { .engine-tabs { grid-template-columns: repeat(3, 1fr); } }

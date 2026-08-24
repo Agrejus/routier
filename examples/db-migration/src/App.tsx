@@ -281,53 +281,92 @@ async function seedInspectorStore(engine: DbChoice, rows: number): Promise<Inspe
     return { store, context: { email: String(orders[Math.floor(orders.length / 2)].email) } };
 }
 
+type RunResult = { explanation: any; summary: string; ms: number; error?: string };
+
+/** The statements a plugin actually sent, pulled out of the plan it reported. */
+function executedQueries(explanation: any): { text: string; parameters?: unknown[] }[] {
+    const steps = explanation?.executionSteps;
+
+    return Array.isArray(steps)
+        ? steps.flatMap((step: any) => Array.isArray(step?.executedQueries) ? step.executedQueries : [])
+        : [];
+}
+
+/** "1 option ran in the database, 0 ran in memory." — the line that says where the work went. */
+const pushdownSummary = (explanation: any): string => explanation?.summary?.explanation ?? '';
+
 function QueryInspector({ visits }: { visits: Visit[] }) {
     const [selectedQuery, setSelectedQuery] = useState(0);
     const [selectedVisit, setSelectedVisit] = useState(Math.max(0, visits.length - 1));
     const [copied, setCopied] = useState(false);
     const [engine, setEngine] = useState<DbChoice>('sqlite');
-    const [running, setRunning] = useState(false);
-    const [ran, setRan] = useState<{ engine: DbChoice; query: string; explanation: unknown; summary: string; ms: number } | null>(null);
-    const [runError, setRunError] = useState<string | null>(null);
+    const [busy, setBusy] = useState<DbChoice | 'all' | null>(null);
+    // Every run kept, keyed by query and engine, so switching between plugins is instant and a
+    // comparison is a matter of looking rather than re-running.
+    const [results, setResults] = useState<Record<string, RunResult>>({});
     // One seeded store per engine, kept for the life of the page so a second Run is immediate.
     const seeded = useRef(new Map<DbChoice, Promise<InspectorStore>>());
     const query = QUERIES[selectedQuery];
+    const keyFor = (db: DbChoice, queryIndex = selectedQuery) => `${QUERIES[queryIndex].name}::${db}`;
 
-    const runQuery = async () => {
-        setRunning(true);
-        setRunError(null);
+    const runOn = async (db: DbChoice, queryIndex: number): Promise<void> => {
         try {
-            let store = seeded.current.get(engine);
+            let store = seeded.current.get(db);
 
             if (store == null) {
-                store = seedInspectorStore(engine, INSPECTOR_ROWS);
-                seeded.current.set(engine, store);
+                store = seedInspectorStore(db, INSPECTOR_ROWS);
+                seeded.current.set(db, store);
             }
 
             const { store: shop, context } = await store;
             const started = performance.now();
-            const result = await INSPECTOR_QUERIES[selectedQuery].run(shop, context);
+            const result = await INSPECTOR_QUERIES[queryIndex].run(shop, context);
 
-            setRan({
-                engine,
-                query: query.name,
-                explanation: result.explanation,
-                summary: result.summary,
-                ms: Math.round((performance.now() - started) * 10) / 10,
-            });
+            setResults(current => ({
+                ...current,
+                [keyFor(db, queryIndex)]: {
+                    explanation: result.explanation,
+                    summary: result.summary,
+                    ms: Math.round((performance.now() - started) * 10) / 10,
+                },
+            }));
         } catch (error) {
-            seeded.current.delete(engine);
-            setRunError(error instanceof Error ? error.message : String(error));
-        } finally {
-            setRunning(false);
+            // A store that failed to seed must not be reused, or every later run inherits it.
+            seeded.current.delete(db);
+            setResults(current => ({
+                ...current,
+                [keyFor(db, queryIndex)]: {
+                    explanation: null,
+                    summary: '',
+                    ms: 0,
+                    error: error instanceof Error ? error.message : String(error),
+                },
+            }));
         }
     };
 
-    // What Run produced, when it matches what is selected now. Otherwise fall back to a plan the
-    // migration lab captured, which only ever covers the filter query.
-    const runMatches = ran != null && ran.query === query.name;
-    const planVisit = runMatches ? undefined : (selectedQuery === 0 ? visits[selectedVisit] : undefined);
-    const shownPlan = runMatches ? ran.explanation : planVisit?.explanation;
+    const runOne = async (db: DbChoice) => {
+        setEngine(db);
+        setBusy(db);
+        await runOn(db, selectedQuery);
+        setBusy(null);
+    };
+
+    const runAll = async () => {
+        setBusy('all');
+        // Sequential: several WASM engines seeding at once would compete for the same disk and
+        // report timings that say more about the contention than the query.
+        for (const db of DBS) {
+            await runOn(db, selectedQuery);
+        }
+        setBusy(null);
+    };
+
+    const shown = results[keyFor(engine)];
+    // Only ever captured for the filter query, and only by the migration lab.
+    const planVisit = shown == null && selectedQuery === 0 ? visits[selectedVisit] : undefined;
+    const shownPlan = shown?.explanation ?? planVisit?.explanation;
+    const statements = executedQueries(shownPlan);
 
     const copyQuery = async () => {
         await navigator.clipboard?.writeText(`store.orders${query.code}`);
@@ -366,23 +405,64 @@ function QueryInspector({ visits }: { visits: Visit[] }) {
                         <div className="mini-panel-header">
                             <div>
                                 <h2>Captured execution plan</h2>
-                                <p>{runMatches ? `Ran on ${DATABASES[ran!.engine].name} · ${INSPECTOR_ROWS.toLocaleString()} orders · ${ran!.summary} in ${formatMs(ran!.ms)}` : 'Run this query, or inspect a plan the migration lab captured'}</p>
+                                <p>{shown?.error != null
+                                    ? `${DATABASES[engine].name} could not run this query`
+                                    : shown != null
+                                        ? `${DATABASES[engine].name} · ${INSPECTOR_ROWS.toLocaleString()} orders · ${shown.summary} in ${formatMs(shown.ms)}`
+                                        : planVisit != null
+                                            ? 'Captured by the migration lab · run an engine for this query itself'
+                                            : 'Pick a plugin to run this query, or run every one and compare'}</p>
                             </div>
-                            <div className="plan-run">
-                                <select value={engine} disabled={running} onChange={event => setEngine(event.target.value as DbChoice)}>
-                                    {DBS.map(db => <option value={db} key={db}>{DATABASES[db].name}</option>)}
-                                </select>
-                                <button className="run-query" disabled={running} onClick={runQuery}>
-                                    {running ? <><span className="button-spinner"/>Running…</> : <><Icon name="plan" size={14}/>Run query</>}
-                                </button>
-                            </div>
+                            <button className="run-query" disabled={busy != null} onClick={runAll}>
+                                {busy === 'all' ? <><span className="button-spinner"/>Running all…</> : <><Icon name="chart" size={14}/>Run on every plugin</>}
+                            </button>
                         </div>
-                        {runError != null
-                            ? <div className="plan-empty"><span className="summary-icon"><Icon name="plan" size={16}/></span><div><strong>{DATABASES[engine].name} could not run this query</strong><p>{runError}</p></div></div>
+
+                        <div className="engine-tabs">
+                            {DBS.map(db => {
+                                const result = results[keyFor(db)];
+                                const state = busy === db || busy === 'all' && result == null ? 'running'
+                                    : result?.error != null ? 'failed'
+                                        : result != null ? 'done' : 'idle';
+
+                                return (
+                                    <button
+                                        key={db}
+                                        className={`engine-tab${engine === db ? ' active' : ''} ${state}`}
+                                        disabled={busy != null}
+                                        onClick={() => (results[keyFor(db)] != null ? setEngine(db) : runOne(db))}
+                                    >
+                                        <strong>{DATABASES[db].shortName}</strong>
+                                        <small>{state === 'running' ? 'running…'
+                                            : state === 'failed' ? 'failed'
+                                                : result != null ? formatMs(result.ms) : 'not run'}</small>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {shown?.error != null
+                            ? <div className="plan-empty"><span className="summary-icon"><Icon name="plan" size={16}/></span><div><strong>{DATABASES[engine].name} could not run this query</strong><p>{shown.error}</p></div></div>
                             : shownPlan != null
-                                ? <pre className="code plan-code">{JSON.stringify(shownPlan, null, 2)}</pre>
-                                : <div className="plan-empty"><span className="summary-icon"><Icon name="plan" size={16}/></span><div><strong>No execution plan yet</strong><p>Pick an engine and run the query. It seeds {INSPECTOR_ROWS.toLocaleString()} orders the first time, then answers immediately.</p></div></div>}
-                        {selectedQuery === 0 && visits.length > 0 && !runMatches && <div className="plan-source"><span>Captured from the migration lab</span><select value={Math.min(selectedVisit, visits.length - 1)} onChange={event => setSelectedVisit(Number(event.target.value))}>{visits.map((visit, index) => <option value={index} key={`${visit.db}-${index}`}>{DATABASES[visit.db].name}</option>)}</select></div>}
+                                ? <>
+                                    {pushdownSummary(shownPlan) !== '' && <div className="pushdown-line"><Icon name="arrow" size={13}/><span>{pushdownSummary(shownPlan)}</span></div>}
+                                    <div className="statement-list">
+                                        <span className="statement-label">{statements.length > 0 ? `Sent to ${DATABASES[engine].name}` : 'Nothing was sent to the database — this plugin answered in memory'}</span>
+                                        {statements.map((statement, index) => (
+                                            <div className="statement" key={index}>
+                                                <pre className="code">{statement.text}</pre>
+                                                {Array.isArray(statement.parameters) && statement.parameters.length > 0 && <small>{statement.parameters.map(value => JSON.stringify(value)).join(', ')}</small>}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <details className="plan-details">
+                                        <summary>Full plan</summary>
+                                        <pre className="code plan-code">{JSON.stringify(shownPlan, null, 2)}</pre>
+                                    </details>
+                                </>
+                                : <div className="plan-empty"><span className="summary-icon"><Icon name="plan" size={16}/></span><div><strong>No execution plan yet</strong><p>Pick a plugin above to run this query, or run every one and switch between them. Each seeds {INSPECTOR_ROWS.toLocaleString()} orders the first time, then answers immediately.</p></div></div>}
+
+                        {planVisit != null && visits.length > 0 && <div className="plan-source"><span>Captured from the migration lab</span><select value={Math.min(selectedVisit, visits.length - 1)} onChange={event => setSelectedVisit(Number(event.target.value))}>{visits.map((visit, index) => <option value={index} key={`${visit.db}-${index}`}>{DATABASES[visit.db].name}</option>)}</select></div>}
                     </section>
 
                     <section className="support-matrix panel">
