@@ -94,4 +94,3 @@ per database rather than per row, and folding a one-off cost into a throughput n
 It is the number that separates the engines most: measured headless, SQLite 121ms against
 PGlite 2,249ms, because PGlite builds a PostgreSQL installation where SQLite opens a file.
 
-Measured medians live in `results/`.
