@@ -1,10 +1,10 @@
 /**
- * Bundles the browser fixture the way a web application would.
+ * Bundles the browser fixtures the way a web application would.
  *
  * Nothing is external here, unlike the library builds: this is the consumer, so it resolves
- * `@routier/sqlite-plugin` through the `browser` condition and inlines what it finds. If that
- * condition is missing or points at the Node build, this build fails on `node:sqlite` — which
- * is itself the check.
+ * `@routier/sqlite-plugin` and `@routier/pglite-plugin` through the `browser` condition and
+ * inlines what it finds. If that condition is missing or points at a Node build, this fails on
+ * `node:sqlite` or on `pg` — which is itself the check.
  */
 import { rspack } from '@rspack/core';
 import { dirname, resolve } from 'node:path';
@@ -13,8 +13,19 @@ import { fileURLToPath } from 'node:url';
 const here = dirname(fileURLToPath(import.meta.url));
 
 rspack({
-    entry: resolve(here, 'app.js'),
-    output: { path: resolve(here, 'dist'), filename: 'bundle.js', module: true, chunkFormat: 'module' },
+    entry: {
+        bundle: resolve(here, 'app.js'),
+        'pglite-bundle': resolve(here, 'pglite-app.js'),
+    },
+    output: {
+        path: resolve(here, 'dist'),
+        filename: '[name].js',
+        module: true,
+        chunkFormat: 'module',
+        // PGlite loads its .wasm and .data at runtime through `new URL(..., import.meta.url)`,
+        // so both have to be emitted next to the bundle under their own names.
+        assetModuleFilename: '[name][ext]',
+    },
     experiments: { outputModule: true },
     resolve: { extensions: ['.js', '.ts'], conditionNames: ['browser', 'import', 'default'] },
     target: 'web',
@@ -33,5 +44,5 @@ rspack({
         process.exit(1);
     }
 
-    console.log('bundle built');
+    console.log('bundles built');
 });

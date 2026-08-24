@@ -207,10 +207,12 @@ export const DOMAINS: readonly Domain[] = [
             "A query it cannot answer correctly must throw. Silently widening a filter returns wrong rows; silently falling back to a scan turns a bounded query into a full one. Both are worse than refusing.",
             "Never duplicate a shared builder. The MySQL plugin kept its own copy of toSql and drifted into three defects — ignored .from() renames, unescaped LIKE literals, and no JSON path — none of which were MySQL requirements.",
             "Engine-specific knowledge belongs on a dialect or a driver, stated once, so DDL and query generation cannot disagree.",
+            "Two plugins over one query language share a base and differ only in their driver. The PostgreSQL and PGlite plugins both extend PostgresDbPluginBase; SQLite's engines are drivers behind SqliteDbPluginBase.",
         ],
         mayImport: [
             "@routier/core",
             "@routier/sql-plugin-core",
+            "@routier/postgres-plugin-core",
             "@routier/blob-plugin",
             "@routier/memory-plugin",
         ],

@@ -31,7 +31,10 @@ const schemaTypeToMysqlType = (prop: PropertyInfo<any>): string => {
         case SchemaTypes.Boolean:
             return 'BOOLEAN';
         case SchemaTypes.Date:
-            return 'DATETIME';
+            // DATETIME(3), not DATETIME. The default precision is whole seconds, so MySQL
+            // truncated the milliseconds a JS Date carries and the value read back was not the
+            // value written. 3 is the most a JS Date can express (defect #70).
+            return 'DATETIME(3)';
         case SchemaTypes.Object:
         case SchemaTypes.Array:
         // MySQL has no vector type before 9.0 and no similarity operator to go with one,

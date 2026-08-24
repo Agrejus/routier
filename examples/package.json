@@ -15,7 +15,10 @@
     "@routier/react": "file://../react",
     "@routier/dexie-plugin": "file://../plugins/dexie",
     "@routier/memory-plugin": "file://../plugins/memory",
-    "@routier/pouchdb-plugin": "file://../plugins/pouchdb"
+    "@routier/pouchdb-plugin": "file://../plugins/pouchdb",
+    "@routier/pglite-plugin": "file://../plugins/pglite",
+    "@routier/postgres-plugin-core": "file://../plugins/postgres-core",
+    "@electric-sql/pglite": "^0.5.7"
   },
   "devDependencies": {
     "typescript": "^5.7.2"

@@ -526,3 +526,70 @@ disconnectSuite('PostgreSQL disconnect during use', () => {
         expect(outcome).toBe('rejected');
     });
 });
+
+/**
+ * An identity key with a date property, which could not be saved at all before defect #70.
+ *
+ * The failure was `Cannot find internal addition`: the correlation hash could not match the
+ * echoed row, because a `TIMESTAMP` column returned the value shifted by the client's UTC
+ * offset. The column is `TIMESTAMPTZ` now and the instant survives.
+ */
+const dateSuite = shouldRun ? describe : describe.skip;
+
+dateSuite('identity key with a date property', () => {
+    let container: StartedPostgreSqlContainer;
+
+    beforeAll(async () => {
+        container = await new PostgreSqlContainer('postgres:16-alpine').start();
+    }, 180_000);
+
+    afterAll(async () => {
+        await container?.stop().catch(() => undefined);
+    });
+
+    const dated = s.define('e2e_pg_identity_date', {
+        id: s.string().key().identity(),
+        name: s.string(),
+        createdAt: s.date(),
+    }).compile();
+
+    class DatedStore extends DataStore {
+        rows = this.collection(dated).proxy().create();
+    }
+
+    const openDated = () => new DatedStore(new PostgresDbPlugin({
+        host: container.getHost(),
+        port: container.getPort(),
+        database: container.getDatabase(),
+        user: container.getUsername(),
+        password: container.getPassword(),
+    }));
+
+    it('saves a row whose key is generated and which carries a date', async () => {
+        const store = openDated();
+
+        await store.rows.addAsync({ name: 'x', createdAt: new Date() } as never);
+
+        await expect(store.saveChangesAsync()).resolves.toBeDefined();
+
+        await store.destroyAsync().catch(() => undefined);
+    });
+
+    /**
+     * The defect underneath the one above, and the more dangerous half: with an explicit key
+     * the hash still matched, so a shifted date was accepted without any error at all.
+     */
+    it('reads back the instant that was written, to the millisecond', async () => {
+        const store = openDated();
+        const sent = new Date('2020-01-02T03:04:05.123Z');
+
+        await store.rows.addAsync({ name: 'precise', createdAt: sent } as never);
+        await store.saveChangesAsync();
+
+        const [row] = await store.rows.where(([r, p]) => r.name === p.n, { n: 'precise' }).toArrayAsync();
+
+        expect(new Date(row.createdAt as never).toISOString()).toBe(sent.toISOString());
+
+        await store.destroyAsync().catch(() => undefined);
+    });
+});

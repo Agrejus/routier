@@ -16,7 +16,7 @@
         "benchmark"
     ],
     "scripts": {
-        "build": "npm run build -w @routier/core -w @routier/memory-plugin -w @routier/sql-plugin-core && npm run build --workspaces --if-present",
+        "build": "npm run build -w @routier/core -w @routier/memory-plugin -w @routier/sql-plugin-core -w @routier/postgres-plugin-core && npm run build --workspaces --if-present",
         "typecheck": "npm run tsc --workspaces --if-present && npm run typecheck:snippets && npm run typecheck:examples",
         "typecheck:snippets": "tsc -p docs/tsconfig.snippets.json",
         "typecheck:examples": "tsc --noEmit -p examples/finance-stress/tsconfig.json && tsc --noEmit -p examples/relayops/tsconfig.json",
@@ -42,8 +42,8 @@
         "mutate:collections": "stryker run stryker/collections.mjs",
         "mutate:datastore": "stryker run stryker/datastore.mjs",
         "mutate:incremental": "stryker run stryker/expressions.mjs --incremental",
-        "test:e2e": "jest --selectProjects e2e",
-        "test:e2e:containers": "E2E_CONTAINERS=1 jest --selectProjects e2e",
+        "test:e2e": "node --experimental-vm-modules node_modules/jest/bin/jest.js --selectProjects e2e",
+        "test:e2e:containers": "E2E_CONTAINERS=1 node --experimental-vm-modules node_modules/jest/bin/jest.js --selectProjects e2e",
         "test:stress": "STRESS=1 jest --selectProjects stress",
         "test:stress:containers": "STRESS=1 E2E_CONTAINERS=1 jest --selectProjects stress",
         "benchmark:update": "tsx --tsconfig benchmark/tsconfig.json benchmark/src/run.ts --update-baseline",
@@ -63,6 +63,8 @@
         "@aws-sdk/client-s3": "^3.700.0",
         "@aws-sdk/s3-request-presigner": "^3.700.0",
         "@babel/preset-env": "^7.28.3",
+        "@electric-sql/pglite": "^0.5.7",
+        "@electric-sql/pglite-pgvector": "^0.0.8",
         "@libsql/client": "^0.17.4",
         "@stryker-mutator/core": "^9.6.1",
         "@stryker-mutator/jest-runner": "^9.6.1",

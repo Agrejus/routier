@@ -35,7 +35,12 @@ const schemaTypeToPostgresType = (type: SchemaTypes): string => {
         case SchemaTypes.Boolean:
             return 'BOOLEAN';
         case SchemaTypes.Date:
-            return 'TIMESTAMP';
+            // TIMESTAMPTZ, not TIMESTAMP. A naive column has no offset, so the driver renders
+            // the value one way on the way in and reads it back as local time on the way out:
+            // every date returned shifted by the client's UTC offset. That was silent for a
+            // schema with an explicit key, and surfaced only with an identity key, where the
+            // correlation hash could no longer match the echoed row (defect #70).
+            return 'TIMESTAMPTZ';
         case SchemaTypes.Object:
         case SchemaTypes.Array:
             // One source of truth for this engine's JSON type: the same dialect value

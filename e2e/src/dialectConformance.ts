@@ -59,6 +59,12 @@ const schemasFor = (suffix: string) => ({
         amount: s.number().from('wire_amount'),
     }).compile(),
 
+    dated: s.define(`conf_dated_${suffix}`, {
+        id: s.string().key().identity(),
+        label: s.string(),
+        at: s.date(),
+    }).compile(),
+
     nested: s.define(`conf_nested_${suffix}`, {
         id: s.string().key(),
         payload: s.object({ inner: s.object({ value: s.string(), count: s.number() }) }),
@@ -80,6 +86,10 @@ export function describeDialectConformance(backend: ConformanceBackend) {
 
         class RenamedStore extends DataStore {
             rows = this.collection(schemas.renamed).proxy().create();
+        }
+
+        class DatedStore extends DataStore {
+            rows = this.collection(schemas.dated).proxy().create();
         }
 
         class NestedStore extends DataStore {
@@ -109,9 +119,10 @@ export function describeDialectConformance(backend: ConformanceBackend) {
                 composite = this.collection(schemas.composite).proxy().create();
                 renamed = this.collection(schemas.renamed).proxy().create();
                 nested = this.collection(schemas.nested).proxy().create();
+                dated = this.collection(schemas.dated).proxy().create();
             } as never) as any;
 
-            for (const name of ['products', 'composite', 'renamed', 'nested']) {
+            for (const name of ['products', 'composite', 'renamed', 'nested', 'dated']) {
                 const rows = await cleaner[name].toArrayAsync().catch(() => []);
 
                 if (rows.length > 0) {
@@ -440,6 +451,94 @@ export function describeDialectConformance(backend: ConformanceBackend) {
          * Every engine here has JSON path operators (SQLite via JSON1, built in since 3.38),
          * so unlike full-text search this is a question each one can answer the same way.
          */
+        /**
+         * Membership in an array column — the case where SQLite's permissiveness was actively
+         * misleading.
+         *
+         * `tags.includes('a')` used to render as a string `LIKE '%a%'`. PostgreSQL and MySQL
+         * reject that against a JSON column (`operator does not exist: jsonb ~~ text`), which
+         * is loud and therefore harmless. SQLite stores JSON as text, so it accepted the same
+         * statement and answered it WRONGLY — the substring test matches a longer element and
+         * matches across element boundaries. Every engine now uses its own containment
+         * operator.
+         */
+        /**
+         * A date must come back as the instant it went in, on every engine.
+         *
+         * Two engines got this wrong in different ways and both were invisible until a schema
+         * used an identity key: PostgreSQL stored a naive `TIMESTAMP` and returned it shifted
+         * by the client's UTC offset, and MySQL's `DATETIME` truncated the milliseconds. With
+         * an explicit key the corrupted value was simply accepted. See known defect #70.
+         */
+        describe('dates', () => {
+            it('reads back the instant that was written, to the millisecond', async () => {
+                const store = open(DatedStore);
+                const sent = new Date('2020-01-02T03:04:05.123Z');
+
+                await store.rows.addAsync({ label: 'precise', at: sent } as any);
+                await store.saveChangesAsync();
+
+                const [row] = await open(DatedStore).rows
+                    .where(([r, p]) => (r as any).label === p.n, { n: 'precise' })
+                    .toArrayAsync();
+
+                expect(new Date((row as any).at).toISOString()).toBe(sent.toISOString());
+            });
+
+            /** An identity key has no client-side value, so the echoed row is matched by hash. */
+            it('saves a row with a generated key and a date', async () => {
+                const store = open(DatedStore);
+
+                await store.rows.addAsync({ label: 'generated', at: new Date() } as any);
+
+                await expect(store.saveChangesAsync()).resolves.toBeDefined();
+            });
+        });
+
+        describe('array membership', () => {
+            const seedTagged = async () => {
+                const store = open(NestedStore);
+
+                await store.rows.addAsync(
+                    { id: 't1', payload: { inner: { value: 'x', count: 1 } }, tags: ['featured', 'bulk'] } as any,
+                    { id: 't2', payload: { inner: { value: 'y', count: 2 } }, tags: ['single'] } as any,
+                    { id: 't3', payload: { inner: { value: 'z', count: 3 } }, tags: [] } as any,
+                );
+                await store.saveChangesAsync();
+            };
+
+            it('finds a row by an element of its array', async () => {
+                await seedTagged();
+
+                const found = await open(NestedStore).rows
+                    .where(r => (r as any).tags.includes('featured'))
+                    .toArrayAsync();
+
+                expect(found.map((r: any) => r.id)).toEqual(['t1']);
+            });
+
+            /** A prefix of an element is not an element. `LIKE '%feat%'` said otherwise. */
+            it('does not match on a prefix of an element', async () => {
+                await seedTagged();
+
+                const found = await open(NestedStore).rows
+                    .where(r => (r as any).tags.includes('feat'))
+                    .toArrayAsync();
+
+                expect(found).toEqual([]);
+            });
+
+            it('matches no row when nothing holds the value', async () => {
+                await seedTagged();
+
+                const found = await open(NestedStore).rows
+                    .where(r => (r as any).tags.includes('absent'))
+                    .toArrayAsync();
+
+                expect(found).toEqual([]);
+            });
+        });
+
         describe('nested JSON filters', () => {
             const seedNested = async () => {
                 const store = open(NestedStore);
