@@ -1,7 +1,10 @@
 import { InferType, s } from '@routier/core/schema';
 
+// The key is `_id` and `_rev` rides along because PouchDB requires both. The other
+// databases just see two ordinary columns. That is the one concession in this schema.
 export const orderSchema = s.define('orders', {
-    id: s.string().key().identity(),
+    _id: s.string().key().identity(),
+    _rev: s.string().identity(),
     customer: s.string(),
     email: s.string(),
     status: s.string('pending', 'paid', 'shipped', 'cancelled'),

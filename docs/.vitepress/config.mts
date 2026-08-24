@@ -46,6 +46,9 @@ export default defineConfig({
       { text: "Guides", link: "/guides/" },
       { text: "React", link: "/integrations/react/" },
       { text: "API", link: "/api/" },
+      // target forces a full-page load instead of VitePress client routing: /lab/ is a
+      // standalone React application copied into the Pages artifact.
+      { text: "Lab", link: "/lab/", target: "_self" },
     ],
     sidebar,
     search: { provider: "local" },
