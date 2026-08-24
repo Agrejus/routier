@@ -29,6 +29,18 @@ executed, from `.explain()`. It seeds its own small store of orders rather than 
 migration lab's, so it works on a first visit and is never explaining a plan for rows something
 else is still writing.
 
+"Run on every plugin" runs the selected query across all six and keeps each result, so switching
+between plugins afterwards is instant and comparing them is a matter of looking. Each tab shows
+what that plugin actually sent — which is where the engines stop looking alike:
+
+```
+SQLite   SELECT ... FROM (SELECT ... FROM "orders" ORDER BY "createdAt" DESC) AS subquery_1
+         LIMIT 25 OFFSET 1000
+PGlite   SELECT ... FROM "orders" ORDER BY "createdAt" DESC LIMIT 25 OFFSET 1000
+Dexie    orders.toCollection().filter(<predicate>)
+Memory   orders: scanned 172 in-memory records
+```
+
 ## Run it
 
 1. Build the workspace packages at the repo root: `npm run build`. The app imports the dist
