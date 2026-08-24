@@ -1,4 +1,4 @@
-import { AnyCollection, ShopStore } from './store';
+import { ShopStore } from './store';
 
 /**
  * The whole migration: for every collection on the store, select everything out of the source
@@ -8,8 +8,8 @@ import { AnyCollection, ShopStore } from './store';
 export async function migrate(source: ShopStore, target: ShopStore): Promise<number> {
     let copied = 0;
 
-    for (const from of source.all()) {
-        copied += await copyCollection(from, target.collectionFor(from.schema.id)!, target);
+    for (const [, schema] of source.schemas) {
+        copied += await copyCollection(source, target, schema);
     }
 
     return copied;
@@ -17,14 +17,17 @@ export async function migrate(source: ShopStore, target: ShopStore): Promise<num
 
 const CHUNK = 1000;
 
-async function copyCollection(from: AnyCollection, to: AnyCollection, target: ShopStore): Promise<number> {
-    const rows = await from.toArrayAsync();
+async function copyCollection(source: ShopStore, target: ShopStore, schema: any): Promise<number> {
+    const from = source.getCollection(schema);
+    const to = target.getCollection(schema);
+
+    const rows = await from.toArrayAsync() as Record<string, unknown>[];
     // The identity properties belong to the database that assigned them, so the target assigns
     // its own. Taken from the schema rather than named here, which is what keeps this generic.
-    const assigned = from.schema.idProperties.map(property => property.name);
+    const assigned = schema.idProperties.map((property: { name: string }) => property.name);
 
     for (let i = 0; i < rows.length; i += CHUNK) {
-        await to.addAsync(...rows.slice(i, i + CHUNK).map(row => withoutKeys(row, assigned)));
+        await to.addAsync(...rows.slice(i, i + CHUNK).map(row => withoutKeys(row, assigned)) as never[]);
         // Saved a chunk at a time: one save of every collection at the end would hold the whole
         // dataset as pending changes.
         await target.saveChangesAsync();

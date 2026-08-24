@@ -66,19 +66,19 @@ export class Journey {
         const store = this.open(db);
 
         const arrival = await time(`Seeded ${this.count.toLocaleString()} documents`, async () => {
-            for (const collection of store.all()) {
-                const name = collection.schema.collectionName;
-                const rows = this.seed[name] ?? [];
+            for (const [, schema] of store.schemas) {
+                const rows = this.seed[schema.collectionName] ?? [];
+                const collection = store.getCollection(schema);
 
-                onProgress(`Seeding ${rows.length.toLocaleString()} ${name}...`);
+                onProgress(`Seeding ${rows.length.toLocaleString()} ${schema.collectionName}...`);
 
                 for (let i = 0; i < rows.length; i += CHUNK) {
-                    await collection.addAsync(...rows.slice(i, i + CHUNK));
+                    await collection.addAsync(...rows.slice(i, i + CHUNK) as never[]);
                     await store.saveChangesAsync();
                 }
             }
 
-            return `${store.all().length} collections`;
+            return `${store.schemas.size} collections`;
         });
 
         this.current = db;

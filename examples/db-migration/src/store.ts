@@ -1,6 +1,5 @@
-import { Collection, DataStore } from '@routier/datastore';
+import { DataStore } from '@routier/datastore';
 import type { IDbPlugin } from '@routier/core/plugins';
-import type { SchemaId } from '@routier/core/schema';
 import { MemoryPlugin } from '@routier/memory-plugin';
 import { DexiePlugin } from '@routier/dexie-plugin';
 import { PouchDbPlugin } from '@routier/pouchdb-plugin';
@@ -122,42 +121,4 @@ export class ShopStore extends DataStore {
         .proxy()
         .create();
 
-    /**
-     * Every writable collection on this store, for code that should not have to name them.
-     *
-     * `DataStore.collections` is protected, so this is the seam: a subclass can expose it, an
-     * outside helper cannot reach it. That is what lets the migration copy whatever the store
-     * happens to hold rather than a hand-written list that drifts as collections are added.
-     *
-     * Views live in the same map and are not writable — a `ReadonlyCollection` has no `addAsync`
-     * — so a migration that took everything would fail on the first one. Filtered by type rather
-     * than by probing for the method, which would also accept anything that happened to have it.
-     */
-    all(): AnyCollection[] {
-        return [...this.collections.values()]
-            .filter(collection => collection instanceof Collection)
-            .map(collection => collection as unknown as AnyCollection);
-    }
-
-    /**
-     * The collection for a schema, by the id the schema already carries.
-     *
-     * Both stores are built from the same compiled schemas, so an id means the same collection
-     * on either one. `DataStore` already keys its collections by that id, so this is a lookup
-     * rather than a second index built alongside the first.
-     */
-    collectionFor(schemaId: SchemaId): AnyCollection | undefined {
-        return this.collections.get(schemaId) as unknown as AnyCollection | undefined;
-    }
 }
-
-/**
- * A collection whose entity type is not known here. The migration reads rows out and puts them
- * back without looking inside them, so the shape is the schema's business rather than its own.
- */
-export type AnyCollection = {
-    schema: { id: SchemaId; collectionName: string; idProperties: { name: string }[] };
-    toArrayAsync(): Promise<Record<string, unknown>[]>;
-    addAsync(...entities: Record<string, unknown>[]): Promise<unknown>;
-    countAsync(): Promise<number>;
-};
