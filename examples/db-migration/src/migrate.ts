@@ -1,7 +1,16 @@
 import { CompiledSchema } from '@routier/core/schema';
 import { ShopStore } from './store';
 
-type AnySchema = CompiledSchema<Record<string, unknown>>;
+/**
+ * A schema whose entity type is not known here.
+ *
+ * `any` rather than `Record<string, unknown>`, which is what `store.schemas` hands out. That
+ * type says the properties are `unknown` VALUES, and the schema's create-type inference reads a
+ * non-schema property as no property at all, so `addAsync` ends up demanding
+ * `{ [x: string]: never }` and every row has to be cast. The entity type here is genuinely
+ * unknown, and `any` is how that is spelled without lying about the shape.
+ */
+type AnySchema = CompiledSchema<any>;
 
 /** Saved a chunk at a time. One save at the end would hold the whole dataset as pending changes. */
 const CHUNK = 1000;
@@ -28,9 +37,7 @@ async function copyCollection(source: ShopStore, target: ShopStore, schema: AnyS
     for (let i = 0; i < rows.length; i += CHUNK) {
         const chunk = rows.slice(i, i + CHUNK).map(row => withoutAssignedIds(row, schema));
 
-        // Iterating `schemas` erases the entity type, so these are records as far as the
-        // compiler knows. They are the right shape, it just cannot be shown that here.
-        await to.addAsync(...chunk as never[]);
+        await to.addAsync(...chunk);
         await target.saveChangesAsync();
     }
 
