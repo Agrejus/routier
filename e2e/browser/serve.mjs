@@ -11,7 +11,10 @@ import { extname, join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.wasm': 'application/wasm' };
+const types = {
+    '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript',
+    '.wasm': 'application/wasm', '.data': 'application/octet-stream',
+};
 
 createServer(async (request, response) => {
     // Strip the query first: '/?v=2' is still a request for the index.

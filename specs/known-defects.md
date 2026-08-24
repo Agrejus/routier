@@ -1,8 +1,8 @@
 # Known defects
 
-Status: 67 of 68 fixed. #55 is a documented constraint, not a defect: the schema
+Status: 69 of 70 fixed. #55 is a documented constraint, not a defect: the schema
 codegen cannot survive minification, so minification stays off.
-Date: 2026-08-06
+Date: 2026-08-23
 
 Defects 1–10 came from the functional test program. #11–#13 came from the stress program
 (`stress/`, see `specs/stress-testing.md`) and are the reason it exists: all three are
@@ -1634,6 +1634,75 @@ correctly, and adding it to the copy constructor beside every other flag. The co
 
 Pinned by `core/src/schema/distinct.test.ts`, which asserts the copy constructor carries it
 directly rather than only through the chains that happen to compile today.
+
+## #69 — `array.includes(value)` rendered as a string LIKE — **FIXED** (2026-08-23)
+
+`renderStringPatternComparison` in `@routier/sql-plugin-core` treated `includes` as a string
+pattern in every case. Against an array property — stored as a JSON column by every SQL plugin
+— `tags.includes('featured')` became `tags LIKE '%featured%'`.
+
+Two different failures, and the loud one was the harmless one. PostgreSQL and MySQL reject the
+comparison against a JSON column outright: `operator does not exist: jsonb ~~ text`. SQLite
+stores JSON as text, accepted the same statement, and **answered it wrongly** — a substring
+test matches a longer element (`'feat'` finds `'featured'`) and matches across element
+boundaries. So the engine the fast suite runs against was the one silently returning wrong
+rows, which is the hazard `dialectConformance.ts` was written to catch and had no case for.
+
+Found by building `examples/pglite-console`, not by a test.
+
+Fixed by giving `SqlDialect` an `arrayContainsExpression` and an `encodeArrayContainsValue`,
+beside the existing `lengthExpression(column, isJsonArray)` which already knew about JSON
+arrays. Each engine uses its own containment: `json_each` for SQLite, `@>` for PostgreSQL,
+`JSON_CONTAINS` for MySQL, `OPENJSON` for SQL Server. The renderer routes to it when either
+side is a `SchemaTypes.Array` property; every other `includes` is untouched.
+
+**Breaking for plugin authors.** `SqlDialect` gained two required members, so a dialect
+implemented outside this repository no longer compiles. `@routier/sql-plugin-core` goes to
+`0.5.0` for that reason.
+
+Pinned by an `array membership` block in `e2e/src/dialectConformance.ts`, run against SQLite,
+PGlite, PostgreSQL and MySQL. It includes the prefix case specifically — without the fix,
+SQLite fails that one and only that one.
+
+## #70 — dates did not survive a round trip on PostgreSQL or MySQL — **FIXED** (2026-08-23)
+
+Reported as "a schema with an identity key and a `s.date()` property cannot be saved" —
+`Cannot find internal addition`, with `Canonical Documents: []`. That symptom was the alarm,
+not the defect.
+
+The correlation hash (`core/src/codegen/handlers/hash/`) matches a submitted addition against
+the row the database echoed. Identity values are excluded from it, because the database assigns
+them — so for an identity-keyed schema the OTHER properties are all the evidence there is. A
+date that came back changed made the hashes disagree and the addition could not be found.
+
+The date came back changed because the column types were wrong, differently on each engine:
+
+- **PostgreSQL stored `TIMESTAMP`**, which has no offset. The driver rendered the value one way
+  going in and read the naive value back as LOCAL time, so every date returned shifted by the
+  client's UTC offset. Measured: `2020-01-02T03:04:05.123Z` written, `09:04:05.123Z` read back
+  at UTC-6. Setting the session timezone does not help; only the column type does.
+- **MySQL stored `DATETIME`**, whose default precision is whole seconds, so the milliseconds a
+  JS `Date` carries were truncated. Measured: `.123` written, `.000` read back.
+
+SQLite was unaffected — it stores a date as ISO `TEXT`, which round-trips exactly. So the only
+engine the default test run exercised was the only one that was right, which is the same shape
+as #69.
+
+**The identity key was not the bug, it was the detector.** With an explicit key the hash was
+never consulted, so the corrupted date was accepted silently. Every date written to PostgreSQL
+came back at the wrong instant, with no error anywhere.
+
+Fixed at the DDL: `TIMESTAMPTZ` in `plugins/postgres-core/src/utils.ts` and `DATETIME(3)` in
+`plugins/mysql/src/utils.ts`. Nothing in the hash or codegen path changed, and deliberately so
+— normalising the date out of the hash would have silenced the detector and left the
+corruption in place.
+
+**This does not migrate existing tables.** These plugins create a table if it is missing and
+never alter one, so a table already created with `TIMESTAMP` or `DATETIME` keeps that type and
+keeps the old behaviour. Changing it on live data is a migration and has to be done as one.
+
+Pinned by a `dates` block in `e2e/src/dialectConformance.ts`, run against all four engines, and
+by `identity key with a date property` in `e2e/src/postgresContainer.test.ts`.
 
 ## Orientation for a new session
 

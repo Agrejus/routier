@@ -30,6 +30,7 @@ Application code does not implement query or result translation. Those are plugi
 | [`@routier/dexie-plugin`](/integrations/plugins/built-in-plugins/dexie/README) | Browser IndexedDB | `new DexiePlugin(name, { version? })` | Bump `version` when index/schema layout changes |
 | [`@routier/file-system-plugin`](/integrations/plugins/built-in-plugins/file-system/README) | Node JSON files | `new FileSystemPlugin(path, name)` | One process; rewrites a whole collection |
 | [`@routier/sqlite-plugin`](/integrations/plugins/built-in-plugins/sqlite/README) | Node or browser/OPFS | `new SqliteDbPlugin(name, { driver? })` | Node default needs 22.5+; optional drivers cover older Node/browser |
+| [`@routier/pglite-plugin`](/integrations/plugins/built-in-plugins/pglite/README) | PostgreSQL in WASM; browser/OPFS or Node | `new PGliteDbPlugin(name, { workerUrl? })` | About 3 MB of WASM; `opfs-ahp` does not work in Safari |
 | `@routier/postgresql-plugin` | PostgreSQL via `pg` | `new PostgresDbPlugin(config)` | No automatic schema migration |
 | `@routier/mysql-plugin` | MySQL via `mysql2` | `new MysqlDbPlugin(config)` | No automatic schema migration |
 | `@routier/mongodb-plugin` | MongoDB | `new MongoDbPlugin(driver, databaseName?)` | Transactions require a replica set and an explicit driver choice |

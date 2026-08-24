@@ -1,11 +1,13 @@
 import fs from 'node:fs';
 
 // Dependency order matters during a coordinated release. Datastore and replication have runtime
-// dependencies on memory; SQL plugins have a peer dependency on sql-core.
+// dependencies on memory; SQL plugins have a peer dependency on sql-core, and the PostgreSQL and
+// PGlite plugins have one on postgres-core.
 export const releasePackageDirectories = [
   'core',
   'plugins/memory',
   'plugins/sql-core',
+  'plugins/postgres-core',
   'datastore',
   'plugins/replication',
   'plugins/blob',
@@ -17,6 +19,7 @@ export const releasePackageDirectories = [
   'plugins/mysql',
   'plugins/otel',
   'plugins/postgresql',
+  'plugins/pglite',
   'plugins/pouchdb',
   'plugins/sqlite',
   'react',

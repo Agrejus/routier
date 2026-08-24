@@ -67,6 +67,10 @@
             "link": "/integrations/plugins/built-in-plugins/sqlite/README"
           },
           {
+            "text": "PGlite (Postgres in the browser)",
+            "link": "/integrations/plugins/built-in-plugins/pglite/README"
+          },
+          {
             "text": "PostgreSQL, MySQL & MongoDB",
             "link": "/integrations/plugins/built-in-plugins/server-databases"
           },

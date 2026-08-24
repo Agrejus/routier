@@ -157,7 +157,9 @@ describe("domain manifest", () => {
  */
 describe("packages under plugins/", () => {
 
-    const IMPLEMENTS = /implements\s+IDbPlugin|extends\s+EphemeralDataPlugin|:\s*IDbPlugin\b/;
+    // A backend either implements the interface or extends a base that does. The bases are
+    // named rather than matched loosely, so `extends Anything` cannot pass this by accident.
+    const IMPLEMENTS = /implements\s+IDbPlugin|extends\s+(EphemeralDataPlugin|PostgresDbPluginBase|SqliteDbPluginBase)\b|:\s*IDbPlugin\b/;
 
     it("implement IDbPlugin unless they declare a domain of their own", () => {
         const notPlugins = fs

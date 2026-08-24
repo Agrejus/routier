@@ -46,6 +46,8 @@ const EXPECTED_EXPORT = {
     '@routier/pouchdb-plugin': 'PouchDbPlugin',
     '@routier/replication-plugin': 'HttpDbPlugin',
     '@routier/sql-plugin-core': 'getDialect',
+    '@routier/postgres-plugin-core': 'PostgresDbPluginBase',
+    '@routier/pglite-plugin': 'PGliteDbPlugin',
     '@routier/sqlite-plugin': 'SqliteDbPlugin',
     '@routier/blob-plugin': 'createFiles',
     '@routier/encryption': 'encryption',
@@ -64,7 +66,8 @@ const EXPECTED_EXPORT = {
 const PACKAGE_DIRECTORIES = [
     'core', 'datastore', 'plugins/memory', 'plugins/file-system', 'plugins/browser-storage',
     'plugins/dexie', 'plugins/postgresql', 'plugins/mysql', 'plugins/pouchdb',
-    'plugins/replication', 'plugins/sql-core', 'plugins/sqlite', 'plugins/blob',
+    'plugins/replication', 'plugins/sql-core', 'plugins/postgres-core', 'plugins/pglite',
+    'plugins/sqlite', 'plugins/blob',
     'plugins/encryption', 'plugins/otel', 'plugins/mongodb', 'react',
 ];
 
