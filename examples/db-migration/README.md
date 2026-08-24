@@ -62,6 +62,11 @@ Memory   orders: scanned 172 in-memory records
   threshold: orders are 40% of it now, so 10,000 documents fit where 10,000 orders did not.
 - The schema keys are `_id` + `_rev` because PouchDB requires them (the plugin now refuses
   an identity key under any other name instead of corrupting reads).
+- **Every schema carries a `documentType` and every collection scopes itself to it.** PouchDB
+  stores documents rather than tables, so one database holds every collection, and without the
+  scope every collection reads every other collection's documents — which is exactly what the
+  plugin's README says happens. It is not optional once a store has more than one collection.
+  The other engines carry a redundant column and a redundant predicate for it.
 - Every journey seeds fresh uniquely named databases. The SQLite plugin's OPFS SAH pool
   has a fixed number of file handles, so many runs eventually fail with `SQLITE_CANTOPEN`.
   Clear site data (or OPFS) and rerun.

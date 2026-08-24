@@ -1,0 +1,325 @@
+{
+ "hops": {
+  "Seeded 25,000 orders": {
+   "median": 8400.7,
+   "all": [
+    7055.2,
+    8400.7,
+    9173
+   ]
+  },
+  "Migrated from pouchdb": {
+   "median": 26289,
+   "all": [
+    26065.5,
+    26289,
+    26840.1
+   ]
+  },
+  "Migrated from dexie": {
+   "median": 3117.3,
+   "all": [
+    3012.8,
+    3523.5,
+    3117.3
+   ]
+  },
+  "Migrated from sqlite": {
+   "median": 638.2,
+   "all": [
+    643.3,
+    627.6,
+    638.2
+   ]
+  },
+  "localstorage15k seed": {
+   "median": 228.2,
+   "all": [
+    235,
+    217,
+    228.2
+   ]
+  }
+ },
+ "medians": {
+  "pouchdb": {
+   "Count all": 768.1,
+   "Read all rows": 827.1,
+   "Filter: pending orders in EU": 4835.2,
+   "Page: newest 25, skip 1000": 882.9,
+   "Sum: revenue of paid orders": 10338.4,
+   "Find one order by email": 4764.6,
+   "Update 500 orders + save": 17871.3
+  },
+  "dexie": {
+   "Count all": 203.4,
+   "Read all rows": 197.9,
+   "Filter: pending orders in EU": 242.8,
+   "Page: newest 25, skip 1000": 135.5,
+   "Sum: revenue of paid orders": 229,
+   "Find one order by email": 220,
+   "Update 500 orders + save": 799.7
+  },
+  "sqlite": {
+   "Count all": 2.9,
+   "Read all rows": 346.1,
+   "Filter: pending orders in EU": 25.7,
+   "Page: newest 25, skip 1000": 10.3,
+   "Sum: revenue of paid orders": 3.7,
+   "Find one order by email": 2.6,
+   "Update 500 orders + save": 61.3
+  },
+  "memory": {
+   "Count all": 2.8,
+   "Read all rows": 41.8,
+   "Filter: pending orders in EU": 5.4,
+   "Page: newest 25, skip 1000": 15,
+   "Sum: revenue of paid orders": 3.3,
+   "Find one order by email": 2.1,
+   "Update 500 orders + save": 7.8
+  },
+  "localstorage15k": {
+   "Count all": 1.9,
+   "Read all rows": 25.5,
+   "Filter: pending orders in EU": 4.6,
+   "Page: newest 25, skip 1000": 8.1,
+   "Sum: revenue of paid orders": 2.4,
+   "Find one order by email": 0.8,
+   "Update 500 orders + save": 17
+  }
+ },
+ "raw": {
+  "pouchdb": {
+   "Count all": [
+    768.1,
+    756.8,
+    808.5
+   ],
+   "Read all rows": [
+    828.6,
+    809.1,
+    827.1
+   ],
+   "Filter: pending orders in EU": [
+    4835.9,
+    4755.2,
+    4835.2
+   ],
+   "Page: newest 25, skip 1000": [
+    882.9,
+    826.8,
+    907.3
+   ],
+   "Sum: revenue of paid orders": [
+    10338.4,
+    9736.5,
+    10485.7
+   ],
+   "Find one order by email": [
+    4764.6,
+    4768.4,
+    4429.6
+   ],
+   "Update 500 orders + save": [
+    14287.6,
+    18174.1,
+    17871.3
+   ],
+   "__notes": {
+    "Count all": "25,000 rows",
+    "Read all rows": "25,000 rows",
+    "Filter: pending orders in EU": "1,608 rows",
+    "Page: newest 25, skip 1000": "25 rows",
+    "Sum: revenue of paid orders": "$3,093,616",
+    "Find one order by email": "found",
+    "Update 500 orders + save": "500 rows"
+   }
+  },
+  "dexie": {
+   "Count all": [
+    203.4,
+    179.4,
+    247.9
+   ],
+   "Read all rows": [
+    182.5,
+    202.1,
+    197.9
+   ],
+   "Filter: pending orders in EU": [
+    215.9,
+    265.5,
+    242.8
+   ],
+   "Page: newest 25, skip 1000": [
+    119.1,
+    135.5,
+    142.8
+   ],
+   "Sum: revenue of paid orders": [
+    246.3,
+    229,
+    207.3
+   ],
+   "Find one order by email": [
+    199.9,
+    239.2,
+    220
+   ],
+   "Update 500 orders + save": [
+    799.7,
+    919.8,
+    746.3
+   ],
+   "__notes": {
+    "Count all": "25,000 rows",
+    "Read all rows": "25,000 rows",
+    "Filter: pending orders in EU": "1,608 rows",
+    "Page: newest 25, skip 1000": "25 rows",
+    "Sum: revenue of paid orders": "$3,093,616",
+    "Find one order by email": "found",
+    "Update 500 orders + save": "500 rows"
+   }
+  },
+  "sqlite": {
+   "Count all": [
+    2.9,
+    2.8,
+    7
+   ],
+   "Read all rows": [
+    346.1,
+    351.7,
+    343.8
+   ],
+   "Filter: pending orders in EU": [
+    34.1,
+    25.7,
+    25.4
+   ],
+   "Page: newest 25, skip 1000": [
+    11.7,
+    10.3,
+    10.2
+   ],
+   "Sum: revenue of paid orders": [
+    6.3,
+    3.7,
+    3.1
+   ],
+   "Find one order by email": [
+    5.9,
+    2.6,
+    2.1
+   ],
+   "Update 500 orders + save": [
+    68.3,
+    61.3,
+    59.8
+   ],
+   "__notes": {
+    "Count all": "25,000 rows",
+    "Read all rows": "25,000 rows",
+    "Filter: pending orders in EU": "1,608 rows",
+    "Page: newest 25, skip 1000": "25 rows",
+    "Sum: revenue of paid orders": "$3,093,616",
+    "Find one order by email": "found",
+    "Update 500 orders + save": "500 rows"
+   }
+  },
+  "memory": {
+   "Count all": [
+    2.8,
+    2.7,
+    2.9
+   ],
+   "Read all rows": [
+    42,
+    36.7,
+    41.8
+   ],
+   "Filter: pending orders in EU": [
+    5.6,
+    5.1,
+    5.4
+   ],
+   "Page: newest 25, skip 1000": [
+    16.7,
+    15,
+    14.4
+   ],
+   "Sum: revenue of paid orders": [
+    3.5,
+    2.9,
+    3.3
+   ],
+   "Find one order by email": [
+    2.1,
+    1.7,
+    2.5
+   ],
+   "Update 500 orders + save": [
+    8.2,
+    7.2,
+    7.8
+   ],
+   "__notes": {
+    "Count all": "25,000 rows",
+    "Read all rows": "25,000 rows",
+    "Filter: pending orders in EU": "1,608 rows",
+    "Page: newest 25, skip 1000": "25 rows",
+    "Sum: revenue of paid orders": "$3,093,616",
+    "Find one order by email": "found",
+    "Update 500 orders + save": "500 rows"
+   }
+  },
+  "localstorage15k": {
+   "Count all": [
+    2.4,
+    1.7,
+    1.9
+   ],
+   "Read all rows": [
+    26.6,
+    25.5,
+    20
+   ],
+   "Filter: pending orders in EU": [
+    4.6,
+    4.3,
+    6
+   ],
+   "Page: newest 25, skip 1000": [
+    8.1,
+    7.9,
+    8.6
+   ],
+   "Sum: revenue of paid orders": [
+    2.5,
+    2.3,
+    2.4
+   ],
+   "Find one order by email": [
+    0.8,
+    0.6,
+    0.9
+   ],
+   "Update 500 orders + save": [
+    17,
+    18.4,
+    15.6
+   ],
+   "__notes": {
+    "Count all": "15,000 rows",
+    "Read all rows": "15,000 rows",
+    "Filter: pending orders in EU": "990 rows",
+    "Page: newest 25, skip 1000": "25 rows",
+    "Sum: revenue of paid orders": "$1,848,335",
+    "Find one order by email": "found",
+    "Update 500 orders + save": "500 rows"
+   }
+  }
+ },
+ "quota": "error: QuotaExceededError: Failed to execute 'setItem' on 'Storage': Setting the value of 'shop-1787241040492-localstorage__orders' exceeded the quota.",
+ "environment": "Headless Chromium (playwright-core), Apple silicon macOS, vite preview production build (unminified), median of 3 full journeys (pouchdb -> dexie -> sqlite -> memory) at n=25000; localstorage measured separately at n=15000 (over quota at 25000)"
+}
