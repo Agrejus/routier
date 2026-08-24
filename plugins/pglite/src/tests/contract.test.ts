@@ -4,6 +4,7 @@ import path from 'node:path';
 import { uuidv4 } from '@routier/core';
 import { describePluginContract } from '@routier/test-utils';
 import { PGliteDbPlugin } from '../index';
+import { whenPGliteCanRun } from './vmModules';
 
 /**
  * The shared contract, which this plugin did not run before.
@@ -15,7 +16,7 @@ import { PGliteDbPlugin } from '../index';
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'routier-pglite-contract-'));
 
-describePluginContract(
+whenPGliteCanRun('plugin contract: pglite', () => describePluginContract(
     'pglite',
     () => new PGliteDbPlugin(path.join(root, uuidv4())),
     {
@@ -24,4 +25,4 @@ describePluginContract(
         // to null, and the rich-type cases require that distinction to survive a round trip.
         supportsRichTypes: false,
     },
-);
+));

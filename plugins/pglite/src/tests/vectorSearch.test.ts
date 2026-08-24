@@ -5,6 +5,7 @@ import { uuidv4 } from '@routier/core';
 import { describeVectorSearch } from '@routier/test-utils';
 import { vector } from '@electric-sql/pglite-pgvector';
 import { PGliteDbPlugin } from '../index';
+import { whenPGliteCanRun } from './vmModules';
 
 /**
  * Both vector paths this plugin has: a real `vector` column with pgvector loaded, and the
@@ -15,5 +16,7 @@ import { PGliteDbPlugin } from '../index';
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'routier-pglite-vector-'));
 const dataDir = () => path.join(root, uuidv4());
 
-describeVectorSearch('pglite (pgvector)', () => new PGliteDbPlugin(dataDir(), { extensions: { vector } }));
-describeVectorSearch('pglite (no pgvector)', () => new PGliteDbPlugin(dataDir()));
+whenPGliteCanRun('vector search: pglite', () => {
+    describeVectorSearch('pglite (pgvector)', () => new PGliteDbPlugin(dataDir(), { extensions: { vector } }));
+    describeVectorSearch('pglite (no pgvector)', () => new PGliteDbPlugin(dataDir()));
+});

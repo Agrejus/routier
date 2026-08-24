@@ -4,6 +4,7 @@ import path from 'node:path';
 import { uuidv4 } from '@routier/core';
 import { describeFullTextSearch } from '@routier/test-utils';
 import { PGliteDbPlugin } from '../index';
+import { whenPGliteCanRun } from './vmModules';
 
 /**
  * The feature deliberately does not use an engine's own search — see "Why the engine's own
@@ -13,4 +14,5 @@ import { PGliteDbPlugin } from '../index';
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'routier-pglite-fts-'));
 
-describeFullTextSearch('pglite', () => new PGliteDbPlugin(path.join(root, uuidv4())));
+whenPGliteCanRun('full-text search: pglite', () =>
+    describeFullTextSearch('pglite', () => new PGliteDbPlugin(path.join(root, uuidv4()))));
