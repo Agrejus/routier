@@ -86,14 +86,40 @@ export async function removeStalePGliteDatabases(keep: string): Promise<void> {
     record(stored);
 }
 
+/**
+ * One store, six plugins. The `.scope()` on every collection is what keeps them apart in
+ * PouchDB, which holds every collection in one database — see the plugin's README. The other
+ * engines carry the predicate for nothing, which is the price of one store definition.
+ */
 export class ShopStore extends DataStore {
-    orders = this.collection(orderSchema).proxy().create();
-    products = this.collection(productSchema).proxy().create();
-    customers = this.collection(customerSchema).proxy().create();
-    suppliers = this.collection(supplierSchema).proxy().create();
-    invoices = this.collection(invoiceSchema).proxy().create();
-    shipments = this.collection(shipmentSchema).proxy().create();
-    reviews = this.collection(reviewSchema).proxy().create();
+    orders = this.collection(orderSchema)
+        .scope(([x, p]) => x.documentType === p.collectionName, { ...orderSchema })
+        .proxy()
+        .create();
+    products = this.collection(productSchema)
+        .scope(([x, p]) => x.documentType === p.collectionName, { ...productSchema })
+        .proxy()
+        .create();
+    customers = this.collection(customerSchema)
+        .scope(([x, p]) => x.documentType === p.collectionName, { ...customerSchema })
+        .proxy()
+        .create();
+    suppliers = this.collection(supplierSchema)
+        .scope(([x, p]) => x.documentType === p.collectionName, { ...supplierSchema })
+        .proxy()
+        .create();
+    invoices = this.collection(invoiceSchema)
+        .scope(([x, p]) => x.documentType === p.collectionName, { ...invoiceSchema })
+        .proxy()
+        .create();
+    shipments = this.collection(shipmentSchema)
+        .scope(([x, p]) => x.documentType === p.collectionName, { ...shipmentSchema })
+        .proxy()
+        .create();
+    reviews = this.collection(reviewSchema)
+        .scope(([x, p]) => x.documentType === p.collectionName, { ...reviewSchema })
+        .proxy()
+        .create();
 
     /**
      * Every writable collection on this store, for code that should not have to name them.
