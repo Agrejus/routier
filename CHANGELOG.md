@@ -3,6 +3,38 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## @routier/pouchdb-plugin 0.5.0 (2026-08-23)
+
+An independent release, so the header names the package: nothing else changes.
+
+### Breaking — @routier/pouchdb-plugin
+
+- `pouchdb` moves from `dependencies` to `peerDependencies` at `>=9.0.0`. npm 7 and later
+  install a required peer automatically, so an ordinary `npm install` is unaffected. What
+  changes is that the version is now yours to choose, and you can satisfy the specifier with
+  `pouchdb-core` plus the adapters you actually use rather than the meta-package — which pulls
+  in `leveldown`, a native binding with no prebuilt artifact for current Node.
+
+  It is a REQUIRED peer, not an optional one. A PouchDB plugin cannot load without PouchDB, and
+  marking it optional would have promised an import that works with the package absent while the
+  bundle still needs it on the first line.
+
+- A schema whose identity key is not named `_id` is now refused, with a message naming the
+  collection and the fix. It used to be accepted.
+
+  PouchDB generates a document id as `_id` and echoes it back as `_id`. An identity key under
+  any other name was therefore never filled in, so every entity read back with an undefined key
+  and the change tracker merged them all into one. Corruption with no error — the worst
+  available outcome, and worse than the save failing. A caller-supplied key (`default` or
+  computed) is stored as an ordinary field and round-trips under any name; only `identity` is
+  affected.
+
+### Fixed — @routier/pouchdb-plugin
+
+- Schema validation ran over every schema registered in the store, so one unusable collection
+  blocked saves to collections that were fine. It now checks only the schemas a save actually
+  writes.
+
 ## @routier/react 0.4.1 (2026-08-19)
 
 An independent patch, so the header names the package: nothing else changes.
