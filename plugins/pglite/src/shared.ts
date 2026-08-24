@@ -10,6 +10,10 @@ import { pgliteDriver, PGliteDriverOptions, PGliteLike } from './drivers/pglite'
  *
  * Lives here rather than in either entry point because both export it and it is the same
  * function in each.
+ *
+ * `destroy` closes the instance and then refuses, because the contract says destroy deletes the
+ * data and this plugin cannot know where storage it did not create lives. Pass `deleteStorage`
+ * in the options if the caller knows.
  */
 export const pgliteDbPlugin = (
     databaseName: string,

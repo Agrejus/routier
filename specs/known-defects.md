@@ -1,8 +1,8 @@
 # Known defects
 
-Status: 69 of 70 fixed. #55 is a documented constraint, not a defect: the schema
-codegen cannot survive minification, so minification stays off.
-Date: 2026-08-23
+Status: 70 of 72 fixed. #55 is a documented constraint, not a defect: the schema
+codegen cannot survive minification, so minification stays off. #72 is open.
+Date: 2026-08-24
 
 Defects 1–10 came from the functional test program. #11–#13 came from the stress program
 (`stress/`, see `specs/stress-testing.md`) and are the reason it exists: all three are
@@ -1703,6 +1703,37 @@ keeps the old behaviour. Changing it on live data is a migration and has to be d
 
 Pinned by a `dates` block in `e2e/src/dialectConformance.ts`, run against all four engines, and
 by `identity key with a date property` in `e2e/src/postgresContainer.test.ts`.
+
+## #71 — a PouchDB identity key not named `_id` corrupted every read — **FIXED** (2026-08-23)
+
+Numbered after the fact: it was found and fixed in the same pass as #69 and #70, which had
+already taken the next two numbers, and numbering three branches at once would have collided.
+The fix shipped in `@routier/pouchdb-plugin` 0.5.0.
+
+PouchDB generates a document id as `_id` and echoes it back as `_id`. A schema whose identity
+key was named anything else was accepted, so the key was never filled in: every entity read back
+with an undefined key, and the change tracker merged them all into one.
+
+Corruption with no error, which is the worst available outcome and worse than the save failing.
+A caller-supplied key (`default` or computed) is stored as an ordinary field and round-trips
+under any name, so only `identity` was affected.
+
+Fixed by refusing such a schema outright, with a message naming the collection and the fix.
+
+## #72 — a 5 ms absolute budget makes a merge gate a coin flip — **OPEN**
+
+`plugins/memory/src/tests/overhead.test.ts` asserts `expect(added).toBeLessThan(5)` — an
+absolute 5 ms budget on the difference between two timed runs. On a loaded machine that
+difference is mostly scheduler noise, so the assertion measures the machine rather than the
+code.
+
+Observed failing one run of each of two pull requests and passing the next, on the same commit.
+That is a merge gate that blocks at random, which trains everyone to re-run it — and a gate
+people re-run by reflex no longer reports anything.
+
+A ratio with a floor, or a best-of-N measurement, keeps the guarantee without the coin flip.
+Not fixed here because changing what a performance gate asserts deserves its own decision about
+what the guarantee is.
 
 ## Orientation for a new session
 

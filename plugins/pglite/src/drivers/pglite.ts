@@ -92,7 +92,27 @@ class PGliteConnection implements PostgresConnection {
 export type PGliteDriverOptions = {
     /** Names the engine in errors. Distinguishes the worker-backed driver from the direct one. */
     name?: string;
+
+    /**
+     * Deletes the storage, called inside `destroy` once the engine is closed and while the queue
+     * turn is still held. Holding the turn is what keeps the delete from racing an operation
+     * that is still in flight.
+     *
+     * Required of a driver that owns its storage, because the contract says destroy deletes.
+     * Omitted only when the caller owns the engine — see `pgliteDbPlugin` — and then `destroy`
+     * refuses rather than quietly keeping data it promised to remove.
+     */
+    deleteStorage?: () => Promise<void>;
 };
+
+/**
+ * Where the engine comes from.
+ *
+ * A function means the driver owns the engine and may start it again after `dispose` — which is
+ * what lets a store that shares a disposed engine carry on against a fresh one. An instance
+ * means the caller owns it, so it is closed once and never restarted.
+ */
+export type PGliteSource = Promise<PGliteLike> | (() => Promise<PGliteLike>);
 
 /**
  * PGlite behind the `PostgresDriver` interface.
@@ -112,27 +132,50 @@ export type PGliteDriverOptions = {
  */
 export const pgliteDriver = (
     databaseName: string,
-    database: Promise<PGliteLike>,
+    source: PGliteSource,
     options: PGliteDriverOptions = {}
 ): PostgresDriver => {
     let queue: Promise<unknown> = Promise.resolve();
+    const start = typeof source === 'function' ? source : null;
+    let database: Promise<PGliteLike> | null = start == null ? (source as Promise<PGliteLike>) : null;
+
+    /** Takes the next turn in the queue and returns the release for it. */
+    const takeTurn = async (): Promise<() => void> => {
+        let release!: () => void;
+        const held = new Promise<void>(resolve => { release = resolve; });
+        const ourTurn = queue.then((): void => undefined, (): void => undefined);
+
+        queue = ourTurn.then(() => held);
+
+        await ourTurn;
+
+        return release;
+    };
 
     return {
         name: options.name ?? 'pglite',
         databaseName,
 
         async connect(): Promise<PostgresConnection> {
-            let release!: () => void;
-            const held = new Promise<void>(resolve => { release = resolve; });
-            const ourTurn = queue.then((): void => undefined, (): void => undefined);
-
-            queue = ourTurn.then(() => held);
-
-            await ourTurn;
+            const release = await takeTurn();
 
             try {
+                if (database == null) {
+                    if (start == null) {
+                        throw new Error(`${databaseName} was closed, and this driver does not own the engine to reopen it`);
+                    }
+
+                    database = start();
+                }
+
                 return new PGliteConnection(await database, release);
             } catch (error) {
+                // A failed start must not be remembered, or every later caller inherits the
+                // rejection for the life of the page.
+                if (start != null) {
+                    database = null;
+                }
+
                 // The connection never existed, so nothing will ever release it. Without this
                 // the queue is blocked forever on a database that failed to start.
                 release();
@@ -140,8 +183,41 @@ export const pgliteDriver = (
             }
         },
 
-        async dispose(): Promise<void> {
-            await (await database).close();
+        /**
+         * Closes the engine and deletes the storage, both inside one queue turn.
+         *
+         * Queued because an unqueued close lands in the middle of whatever operation is in
+         * flight: a store sharing this engine would have its transaction closed underneath it,
+         * and a delete would race the same operation. The plugin never holds a connection while
+         * asking for another, so waiting here cannot deadlock.
+         *
+         * The engine is left cold rather than poisoned. A store that shares it and has not been
+         * destroyed starts a fresh one on its next operation, over an empty database.
+         */
+        async destroy(): Promise<void> {
+            const release = await takeTurn();
+
+            try {
+                const started = database;
+
+                database = null;
+
+                if (started != null) {
+                    await (await started).close();
+                }
+
+                if (options.deleteStorage == null) {
+                    throw new Error(
+                        `${databaseName} was closed, but its data was not deleted: this driver was given an engine ` +
+                        `it does not own, so it cannot know where the storage is or whether removing it is wanted. ` +
+                        `Pass deleteStorage to pgliteDbPlugin if the caller knows.`
+                    );
+                }
+
+                await options.deleteStorage();
+            } finally {
+                release();
+            }
         },
     };
 };

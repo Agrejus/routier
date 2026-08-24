@@ -103,7 +103,11 @@ export const pgDriver = (config: PostgresDbPluginConfig): PostgresDriver => {
             return new PooledConnection(client, () => client.release());
         },
 
-        dispose(): Promise<void> {
+        /**
+         * Ends the pool and leaves the data. A server database belongs to whoever runs the
+         * server, so a store destroying itself must not drop it.
+         */
+        destroy(): Promise<void> {
             return pool.end();
         },
     };

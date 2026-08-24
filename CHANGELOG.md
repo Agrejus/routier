@@ -3,6 +3,86 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## PGlite in the browser, and a shared engine per database (2026-08-24)
+
+A coordinated release across the PostgreSQL family plus a SQLite fix. `@routier/pglite-plugin`
+and `@routier/postgres-plugin-core` both take a breaking change.
+
+### Breaking — @routier/postgres-plugin-core 0.2.0
+
+- `PostgresDriver.dispose()` is now `PostgresDriver.destroy()`, and it means "what destroy means
+  for this engine" rather than "release the engine". A server driver ends its pool and leaves the
+  data; an embedded driver, which owns the storage it created, closes **and deletes**.
+
+  One member rather than a release followed by a delete, because for an engine that serialises
+  access the two must happen in one turn — anything in between can start work against a database
+  that is about to be deleted underneath it. Only affects code implementing this driver; nothing
+  in a plugin's public surface changes.
+
+### Breaking — @routier/pglite-plugin 0.2.0
+
+- `destroy()` now **deletes the data**, where before it closed the database and left it. This is
+  what the shared plugin contract requires of an embedded plugin, and what `@routier/dexie-plugin`
+  and `@routier/sqlite-plugin` already did. The plugin was the outlier: it inherited a server's
+  semantics from `@routier/postgres-plugin-core`, where refusing to drop somebody's database is
+  correct. It now runs the shared contract suite, which is what would have caught the divergence.
+
+  To release a database without deleting it, hold the instance yourself and wrap it with
+  `pgliteDbPlugin`.
+
+- A bare database name no longer always resolves to `opfs-ahp://`. It now resolves to the fastest
+  storage that persists on the current browser: OPFS, or IndexedDB on WebKit, which caps
+  synchronous access handles at 252 while a PostgreSQL installation needs over 300 files. Naming
+  a prefix outright still wins, and still fails on WebKit if you ask for OPFS there.
+
+  Every iOS browser is WebKit, not only Safari, and an iPad asking for the desktop site sends a
+  Macintosh user agent — both are handled.
+
+- `pgliteDbPlugin`'s `destroy` closes the instance and then **fails**, rather than reporting
+  success over data it did not delete. It wraps an engine the caller owns, so it cannot know where
+  the storage is. Pass `deleteStorage` in the options to opt back in.
+
+### Added — @routier/pglite-plugin 0.2.0
+
+- One engine per data directory, shared by every store over it, in Node and the browser. A
+  component that rebuilds its store on each mount pays for one worker and one PostgreSQL boot
+  rather than one per mount. The engine starts on first use, and starts again after a destroy, so
+  a store that shares a destroyed database opens a fresh empty one instead of holding a closed
+  connection. Opening one directory twice with a different `workerUrl` or set of `extensions` is
+  refused rather than served by a second engine.
+
+- `@routier/pglite-plugin/browser-storage`, a subpath with `resolveDataDir` for showing a user
+  where the data went and `deleteDataDir` for removing storage that has no live store. A subpath
+  because TypeScript does not resolve the `browser` export condition, so browser-only helpers on
+  the root entry are invisible to it.
+
+### Fixed — @routier/postgres-plugin-core 0.2.0
+
+- A `vector` column no longer fails to create against a database where the extension is missing.
+  The probe that decides whether a real vector column is possible is answered once per plugin
+  instance, and the database it described is not necessarily the one being written to later — an
+  embedded engine another store destroyed is replaced by an empty one. The extension is now
+  installed at table-creation time rather than the DDL failing on `type "vector" does not exist`.
+
+- `destroy` no longer closes the engine out from under work in flight, on a driver that
+  serialises: close and delete take a queue turn like every other operation.
+
+### Fixed — @routier/sqlite-plugin 0.4.1
+
+- The OPFS SAH pool now grows instead of stopping at six databases. It is a fixed set of
+  preallocated file handles and does not grow on demand, so a page holding a seventh open database
+  failed with `SQLITE_CANTOPEN` on a database that was perfectly fine. Headroom is kept for the
+  rollback journal, which is a second file created mid-transaction rather than at open. A pool that
+  is genuinely full now says so, naming the capacity and how to recover.
+
+- Two operations arriving together on one database name share a single open, instead of each
+  opening it — two pool slots for one name, each growing the pool for the other.
+
+### Changed — @routier/postgresql-plugin 0.5.1
+
+- No behaviour change. Its driver implements the renamed `destroy()` member, so it requires
+  `@routier/postgres-plugin-core` at `>=0.2.0`.
+
 ## @routier/pouchdb-plugin 0.5.0 (2026-08-23)
 
 An independent release, so the header names the package: nothing else changes.

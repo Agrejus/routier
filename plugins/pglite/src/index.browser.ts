@@ -1,6 +1,8 @@
 import { PGliteWorker } from '@electric-sql/pglite/worker';
 import { PostgresDbPluginBase } from '@routier/postgres-plugin-core';
 import { pgliteDriver, PGliteLike } from './drivers/pglite';
+import type { PostgresDriver } from '@routier/postgres-plugin-core';
+import { deleteDataDir, resolveDataDir } from './browserStorage';
 
 export type { PGliteLike, PGliteDriverOptions } from './drivers/pglite';
 export { pgliteDriver } from './drivers/pglite';
@@ -22,11 +24,12 @@ export type PGliteDbPluginOptions = {
  *
  * `databaseName` is PGlite's data directory, and its prefix chooses the storage:
  *
- *   new PGliteDbPlugin('opfs-ahp://app')   // the default when no prefix is given
- *   new PGliteDbPlugin('idb://app')        // IndexedDB — slower, but works in Safari
+ *   new PGliteDbPlugin('opfs-ahp://app')   // OPFS
+ *   new PGliteDbPlugin('idb://app')        // IndexedDB — slower, and what WebKit gets
  *   new PGliteDbPlugin('memory://app')     // lost on navigation
  *
- * A bare name becomes `opfs-ahp://`, which is the storage worth defaulting to. There is no
+ * A bare name becomes the fastest storage that persists on the current browser: `opfs-ahp://`,
+ * or `idb://` on WebKit, which cannot hold a PostgreSQL installation in OPFS. There is no
  * separate `storage` option, because the prefix already says it.
  *
  * This entry point is selected by the `browser` condition in the package manifest, so the same
@@ -53,20 +56,77 @@ export type PGliteDbPluginOptions = {
  *
  * ## Safari
  *
- * `opfs-ahp` does NOT work in Safari, which caps synchronous access handles at 252 while a
- * PostgreSQL installation needs over 300 files. Use `idb://` there.
+ * Handled: a bare name resolves to `idb://` on WebKit. `opfs-ahp` cannot open there, because
+ * WebKit caps synchronous access handles at 252 and a PostgreSQL installation needs over 300
+ * files. Naming `opfs-ahp://` outright on WebKit still fails, as it must.
+ *
+ * ## Destroying
+ *
+ * `destroy` closes the database and deletes it, like every other embedded plugin here. It does
+ * not behave like `@routier/postgresql-plugin`, which disconnects from a server it does not own.
+ *
+ * Stores over one directory share an engine, so a destroy takes the data from all of them. The
+ * others carry on against a fresh empty database rather than a closed one.
  */
 export class PGliteDbPlugin extends PostgresDbPluginBase {
     constructor(databaseName: string, options: PGliteDbPluginOptions = {}) {
-        const dataDir = databaseName.includes('://') ? databaseName : `opfs-ahp://${databaseName}`;
-
-        super(pgliteDriver(dataDir, createWorkerDatabase(dataDir, options.workerUrl), {
-            name: 'pglite (worker)',
-        }));
+        super(resolveDriver(resolveDataDir(databaseName, navigator.userAgent), options.workerUrl));
     }
 }
 
-const createWorkerDatabase = (dataDir: string, workerUrl?: string | URL): Promise<PGliteLike> => {
+/**
+ * One driver per data directory, shared by every store over it.
+ *
+ * A worker is bound to the directory it was created with — PGlite builds the database inside
+ * it — so this cannot be one worker per page the way `@routier/sqlite-plugin` manages it. Per
+ * directory is the useful ceiling anyway: it is what a component rebuilding its store on every
+ * mount would otherwise pay, one worker and one PostgreSQL boot at a time.
+ *
+ * The driver is cached rather than the worker, and that part is not an optimisation. PGlite is
+ * one connection and the driver serialises access to it in its own closure, so two drivers over
+ * one instance would each believe they had it to themselves — and one store's `BEGIN` would land
+ * inside another's transaction.
+ *
+ * Entries are never evicted, which is what makes sharing safe. `destroy` closes the engine,
+ * deletes the directory and leaves the entry cold; a store that shares it and was not itself
+ * destroyed starts a fresh engine on its next operation and finds the data gone — the same thing
+ * a surviving `@routier/sqlite-plugin` or `@routier/dexie-plugin` store sees. Reference counting
+ * cannot work here: nothing but `destroy` reaches a plugin, so a store built and abandoned —
+ * which is the ordinary case — would hold a count that never comes back down.
+ */
+type Registered = { driver: PostgresDriver; workerUrl: string };
+
+const drivers = new Map<string, Registered>();
+
+const resolveDriver = (dataDir: string, workerUrl?: string | URL): PostgresDriver => {
+    const requested = String(workerUrl ?? '');
+    const registered = drivers.get(dataDir);
+
+    if (registered != null) {
+        // Keyed on the directory alone, on purpose. Keying on the worker too would put two
+        // drivers over one PGlite instance, and two queues over one connection is how a store's
+        // BEGIN ends up inside another's transaction.
+        if (registered.workerUrl !== requested) {
+            throw new Error(
+                `'${dataDir}' is already open with a different workerUrl. One engine serves a data directory, ` +
+                `so the second worker would be ignored; open a different directory instead.`
+            );
+        }
+
+        return registered.driver;
+    }
+
+    const driver = pgliteDriver(dataDir, () => startWorker(dataDir, workerUrl), {
+        name: 'pglite (worker)',
+        deleteStorage: () => deleteDataDir(dataDir),
+    });
+
+    drivers.set(dataDir, { driver, workerUrl: requested });
+
+    return driver;
+};
+
+const startWorker = (dataDir: string, workerUrl?: string | URL): Promise<PGliteLike> => {
     // Both branches spelled out on purpose. A bundler detects a worker by matching
     // `new Worker(new URL('...', import.meta.url))` as one literal expression at the call site;
     // hand it a variable and it emits nothing, so the build succeeds and the worker 404s.

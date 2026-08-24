@@ -45,6 +45,16 @@ const lostTableCreationRace = (error: unknown): boolean => {
     return code === DUPLICATE_TABLE || code === UNIQUE_VIOLATION;
 };
 
+/**
+ * `42704` undefined_object, raised as `type "vector" does not exist` when DDL asks for a vector
+ * column in a database where the extension is not installed.
+ */
+const UNDEFINED_OBJECT = '42704';
+
+const missingVectorType = (error: unknown): boolean =>
+    errorCode(error) === UNDEFINED_OBJECT
+    && /type "?vector"? does not exist/i.test((error as { message?: unknown })?.message as string ?? '');
+
 type PersistOperation = { op: SqlPersistOperation, type: 'adds' | 'updates' | 'removes' };
 
 /**
@@ -440,6 +450,12 @@ export class PostgresDbPluginBase implements IDbPlugin {
         try {
             await connection.run(createTableSql);
         } catch (error) {
+            if (missingVectorType(error)) {
+                await connection.run(`ROLLBACK TO SAVEPOINT ${savepoint}`);
+                await this.createTableWithVectorExtension(connection, createTableSql, savepoint);
+                return;
+            }
+
             if (lostTableCreationRace(error) === false) {
                 throw error;
             }
@@ -448,10 +464,39 @@ export class PostgresDbPluginBase implements IDbPlugin {
         }
     }
 
+    /**
+     * Installs the extension the DDL needs, then creates the table.
+     *
+     * The vector probe is answered once per plugin instance and its answer is remembered, but the
+     * database it described is not necessarily the one being written to now: an embedded engine
+     * that another store destroyed is replaced by an empty one, with no extensions. So a `vector`
+     * column can reach a database that has no `vector` type, and the fix is to install it rather
+     * than to fail on DDL that was right when it was built.
+     */
+    private async createTableWithVectorExtension(
+        connection: PostgresConnection,
+        createTableSql: string,
+        savepoint: string
+    ): Promise<void> {
+        await connection.run(`SAVEPOINT ${savepoint}_vector`);
+
+        try {
+            await connection.run('CREATE EXTENSION IF NOT EXISTS vector');
+            await connection.run(createTableSql);
+        } catch (error) {
+            // The extension is genuinely unavailable here, so this schema cannot have a real
+            // vector column. Nothing left to try: a JSONB table would contradict the DDL every
+            // other statement in this transaction was built against.
+            await connection.run(`ROLLBACK TO SAVEPOINT ${savepoint}_vector`).catch((): void => undefined);
+
+            throw error;
+        }
+    }
+
     destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
         this.destroyed = true;
 
-        this.driver.dispose()
+        this.driver.destroy()
             .then(() => done(PluginEventResult.success(event.id)))
             .catch(error => done(PluginEventResult.error(event.id, error)));
     }

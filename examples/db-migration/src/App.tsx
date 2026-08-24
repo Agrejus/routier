@@ -4,13 +4,14 @@ import { DbChoice } from './store';
 import opsSource from './ops.ts?raw';
 import migrateSource from './migrate.ts?raw';
 
-const DBS: DbChoice[] = ['memory', 'localstorage', 'dexie', 'pouchdb', 'sqlite'];
+const DBS: DbChoice[] = ['memory', 'localstorage', 'dexie', 'pouchdb', 'sqlite', 'pglite'];
 const DATABASES: Record<DbChoice, { name: string; engine: string; shortName: string }> = {
     memory: { name: 'Memory', engine: 'In-process · volatile', shortName: 'Memory' },
     localstorage: { name: 'localStorage', engine: 'Browser · key/value', shortName: 'localStorage' },
     dexie: { name: 'Dexie', engine: 'IndexedDB · structured', shortName: 'Dexie' },
     pouchdb: { name: 'PouchDB', engine: 'IndexedDB · document', shortName: 'PouchDB' },
     sqlite: { name: 'SQLite', engine: 'OPFS · relational', shortName: 'SQLite' },
+    pglite: { name: 'PGlite', engine: 'WASM · PostgreSQL', shortName: 'PGlite' },
 };
 
 type IconName = 'route' | 'database' | 'chart' | 'code' | 'settings' | 'sparkles' | 'arrow' | 'check' | 'plan';
@@ -51,7 +52,7 @@ function totalTime(visit: Visit) {
 function BenchmarkView({ initialCount, disabledOps }: { initialCount: number; disabledOps: string[] }) {
     const [recordCount, setRecordCount] = useState(Math.min(initialCount, 10000));
     const [results, setResults] = useState<BenchmarkResult[]>([]);
-    const [status, setStatus] = useState('Ready to benchmark all five storage engines');
+    const [status, setStatus] = useState(`Ready to benchmark all ${DBS.length} storage engines`);
     const [busy, setBusy] = useState(false);
 
     const runBenchmark = async () => {
@@ -170,6 +171,13 @@ function BenchmarkView({ initialCount, disabledOps }: { initialCount: number; di
                             <table className="results-table benchmark-table">
                                 <thead><tr><th>Operation</th>{successful.map(result => <th key={result.db}>{DATABASES[result.db].shortName}</th>)}</tr></thead>
                                 <tbody>
+                                    <tr>
+                                        <td><span className="arrival-label" title="Opening the engine and answering one statement on an empty database. Paid once per database, so it is not in the totals.">Cold start</span></td>
+                                        {successful.map(result => {
+                                            const fastest = Math.min(...successful.map(item => item.visit.coldStart.ms));
+                                            return <td className={`metric${result.visit.coldStart.ms === fastest && successful.length > 1 ? ' fastest' : ''}`} key={result.db}>{formatMs(result.visit.coldStart.ms)}</td>;
+                                        })}
+                                    </tr>
                                     <tr>
                                         <td><span className="arrival-label">Seed dataset</span></td>
                                         {successful.map(result => {
@@ -293,7 +301,7 @@ function QueryInspector({ visits }: { visits: Visit[] }) {
                     </section>
 
                     <section className="support-matrix panel">
-                        <div className="mini-panel-header"><div><h2>Plugin compatibility</h2><p>This query is portable across every configured engine.</p></div><span className="compatibility-pill"><Icon name="check" size={12}/>5 of 5 supported</span></div>
+                        <div className="mini-panel-header"><div><h2>Plugin compatibility</h2><p>This query is portable across every configured engine.</p></div><span className="compatibility-pill"><Icon name="check" size={12}/>{DBS.length} of {DBS.length} supported</span></div>
                         <div className="compatibility-grid">{DBS.map(db => <div key={db}><span className="db-icon"><Icon name="database" size={14}/></span><strong>{DATABASES[db].name}</strong><small><Icon name="check" size={11}/>Supported</small></div>)}</div>
                     </section>
                 </div>
@@ -347,7 +355,7 @@ function Configuration({ config, onChange }: { config: LabConfig; onChange: (con
 
                 <aside className="config-summary panel">
                     <span className="suite-kicker">Active profile</span><h2>Local development</h2><p>Preferences are stored in this browser and never leave your device.</p>
-                    <div className="config-summary-list"><div><span>Dataset</span><strong>{draft.defaultCount.toLocaleString()} orders</strong></div><div><span>Operations</span><strong>{OP_OPTIONS.length - draft.disabledOps.length} of {OP_OPTIONS.length}</strong></div><div><span>Storage engines</span><strong>5 enabled</strong></div><div><span>Execution</span><strong>Client-side</strong></div></div>
+                    <div className="config-summary-list"><div><span>Dataset</span><strong>{draft.defaultCount.toLocaleString()} orders</strong></div><div><span>Operations</span><strong>{OP_OPTIONS.length - draft.disabledOps.length} of {OP_OPTIONS.length}</strong></div><div><span>Storage engines</span><strong>{DBS.length} enabled</strong></div><div><span>Execution</span><strong>Client-side</strong></div></div>
                     <button className="apply-button" onClick={apply}>Apply &amp; start new run <Icon name="arrow" size={14}/></button><small>Applying starts a clean workspace with these settings.</small>
                 </aside>
             </div>
@@ -439,7 +447,7 @@ export function App() {
                     <div className="sidebar-note">
                         <Icon name="sparkles" size={18}/>
                         <strong>Portable by design</strong>
-                        <p>One typed data layer. Five storage engines. No application code changes.</p>
+                        <p>One typed data layer. {DBS.length} storage engines. No application code changes.</p>
                     </div>
                 </aside>
 
@@ -449,11 +457,11 @@ export function App() {
                         <div>
                             <p className="eyebrow">Storage portability benchmark</p>
                             <h1>Same application.<br/>Any database.</h1>
-                            <p className="subtitle">Seed, migrate, and benchmark an identical order workload across five browser storage engines—without changing a single query.</p>
+                            <p className="subtitle">Seed, migrate, and benchmark an identical order workload across {DBS.length} browser storage engines—without changing a single query.</p>
                         </div>
                         <div className="run-meta" aria-label="Benchmark configuration">
                             <span className="run-meta-label">Dataset</span><span className="run-meta-value">{count.toLocaleString()} orders</span>
-                            <span className="run-meta-label">Engines</span><span className="run-meta-value">05 available</span>
+                            <span className="run-meta-label">Engines</span><span className="run-meta-value">{String(DBS.length).padStart(2, '0')} available</span>
                             <span className="run-meta-label">Mode</span><span className="run-meta-value">client-side</span>
                         </div>
                     </section>
@@ -511,6 +519,10 @@ export function App() {
                                 <table className="results-table">
                                     <thead><tr><th>Operation</th>{visits.map((visit, index) => <th key={`${visit.db}-${index}`}>{DATABASES[visit.db].shortName}</th>)}</tr></thead>
                                     <tbody>
+                                        <tr>
+                                            <td><span className="arrival-label" title="Opening the engine and answering one statement on an empty database.">Cold start</span></td>
+                                            {visits.map((visit, index) => <td className="metric" key={`${visit.db}-${index}`}>{formatMs(visit.coldStart.ms)}</td>)}
+                                        </tr>
                                         <tr>
                                             <td><span className="arrival-label">Data arrival</span></td>
                                             {visits.map((visit, index) => <td className="metric" key={`${visit.db}-${index}`} title={visit.arrival.note}>{formatMs(visit.arrival.ms)}</td>)}

@@ -24,8 +24,18 @@ export default defineConfig({
             // and the SPA fallback returns index.html ("expected magic word 00 61 73 6d,
             // found 3c 21 64 6f" — the bytes for "<!do").
             '@sqlite.org/sqlite-wasm',
+            '@routier/postgres-plugin-core',
+            '@routier/pglite-plugin',
+            // Same failure mode as sqlite-wasm: PGlite resolves its .wasm and .data
+            // relative to import.meta.url.
+            '@electric-sql/pglite',
             '@routier/react',
         ],
+    },
+    worker: {
+        // Required for PGlite: it reaches its filesystems through dynamic imports, and
+        // Vite's default `iife` worker format cannot code-split, so the build fails.
+        format: 'es',
     },
     build: {
         // The compiled schema's generated code calls core helpers by their source names;

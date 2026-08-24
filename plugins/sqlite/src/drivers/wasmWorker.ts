@@ -23,6 +23,7 @@
  */
 
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
+import { ensurePoolCapacity, isPoolFull, poolFullError } from './wasmPool';
 
 type WasmStatement = {
     bind(params: unknown[]): void;
@@ -48,6 +49,9 @@ export type WorkerResponse =
     | { id: number; ok: false; error: string };
 
 const databases = new Map<string, WasmDatabase>();
+
+/** Opens in flight, so concurrent operations on one name share a single open. */
+const openings = new Map<string, Promise<WasmDatabase>>();
 
 let modulePromise: Promise<any> | null = null;
 let poolPromise: Promise<any> | null = null;
@@ -89,23 +93,46 @@ const loadPool = async (storage: 'opfs' | 'memory') => {
  * an empty database. OPFS would survive that but pay a pool acquisition each time, and the SAH
  * pool takes exclusive handles, so churning them invites an avoidable "database is locked".
  */
-const openDatabase = async (databaseName: string, storage: 'opfs' | 'memory'): Promise<WasmDatabase> => {
+const openDatabase = (databaseName: string, storage: 'opfs' | 'memory'): Promise<WasmDatabase> => {
     const existing = databases.get(databaseName);
 
     if (existing != null) {
-        return existing;
+        return Promise.resolve(existing);
     }
 
+    // Memoised while it is in flight. Two operations arriving together on one name would
+    // otherwise each open the database — two pool slots for one name, and each one growing the
+    // pool for the other. Nothing between the first `await` and `databases.set` yields the map.
+    const opening = openings.get(databaseName) ?? beginOpen(databaseName, storage);
+
+    openings.set(databaseName, opening);
+
+    return opening.finally(() => openings.delete(databaseName));
+};
+
+const beginOpen = async (databaseName: string, storage: 'opfs' | 'memory'): Promise<WasmDatabase> => {
     const sqlite3 = await loadModule();
     const pool = await loadPool(storage);
 
+    if (pool != null) {
+        await ensurePoolCapacity(pool);
+    }
+
     const database: WasmDatabase = pool == null
         ? new sqlite3.oo1.DB(':memory:')
-        : new pool.OpfsSAHPoolDb(`/${databaseName}`);
+        : openPooled(pool, databaseName);
 
     databases.set(databaseName, database);
 
     return database;
+};
+
+const openPooled = (pool: any, databaseName: string): WasmDatabase => {
+    try {
+        return new pool.OpfsSAHPoolDb(`/${databaseName}`);
+    } catch (error) {
+        throw isPoolFull(error) ? poolFullError(pool, databaseName) : error;
+    }
 };
 
 const readRows = (statement: WasmStatement): unknown[] => {
