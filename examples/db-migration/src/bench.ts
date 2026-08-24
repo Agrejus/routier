@@ -1,6 +1,6 @@
 import { QueryExplanation } from '@routier/core/plugins';
 import { createPlugin, databaseNameFor, DbChoice, removeStalePGliteDatabases, ShopStore } from './store';
-import { makeOrders } from './seed';
+import { makeSeed } from './seed';
 import { explainFilter, OPS, OpContext } from './ops';
 import { migrate } from './migrate';
 
@@ -38,9 +38,12 @@ export class Journey {
     private readonly ctx: OpContext;
     current: DbChoice | null = null;
 
+    private readonly seed: ReturnType<typeof makeSeed>;
+
     constructor(public readonly count: number, private readonly skipOps: string[] = []) {
-        const orders = makeOrders(count);
-        this.ctx = { email: orders[Math.floor(orders.length / 2)].email };
+        this.seed = makeSeed(count);
+        const orders = this.seed.orders;
+        this.ctx = { email: String(orders[Math.floor(orders.length / 2)].email) };
     }
 
     private open(db: DbChoice): ShopStore {
@@ -61,14 +64,20 @@ export class Journey {
         const coldStart = await this.timeColdStart(db, onProgress);
 
         const store = this.open(db);
-        const orders = makeOrders(this.count);
+        const collections = new Map(store.all().map(({ name, collection }) => [name, collection]));
 
-        onProgress(`Seeding ${this.count.toLocaleString()} orders...`);
-        const arrival = await time(`Seeded ${this.count.toLocaleString()} orders`, async () => {
-            for (let i = 0; i < orders.length; i += CHUNK) {
-                await store.orders.addAsync(...orders.slice(i, i + CHUNK));
-                await store.saveChangesAsync();
+        const arrival = await time(`Seeded ${this.count.toLocaleString()} documents`, async () => {
+            for (const [name, rows] of Object.entries(this.seed)) {
+                onProgress(`Seeding ${rows.length.toLocaleString()} ${name}...`);
+                const collection = collections.get(name)!;
+
+                for (let i = 0; i < rows.length; i += CHUNK) {
+                    await collection.addAsync(...rows.slice(i, i + CHUNK));
+                    await store.saveChangesAsync();
+                }
             }
+
+            return `${Object.keys(this.seed).length} collections`;
         });
 
         this.current = db;

@@ -1,17 +1,33 @@
 # DB migration bench
 
-One Routier store, six storage plugins, the same queries. This is the app behind the
-"migrating databases" blog post.
+One Routier store, seven collections, six storage plugins, the same queries. This is the app
+behind the "migrating databases" blog post.
 
 The flow is a journey. Pick a starting database and it gets seeded with faker data
-(seeded PRNG, so every run and every database sees identical orders). Then migrate:
-every row is selected out of the current database and inserted into the target, and the
-same queries run there. Each stop adds a column to the results table, and every stop's
+(seeded PRNG, so every run and every database sees identical rows). Then migrate:
+**every collection** is selected out of the current database and inserted into the target, and
+the same queries run there.
+
+The migration names no collection. `ShopStore.all()` exposes `DataStore`'s protected
+`collections` map, so `migrate.ts` copies whatever the store happens to hold and picks up a new
+collection without being edited. It filters to writable collections: views live in the same map
+and a `ReadonlyCollection` has no `addAsync`, so taking everything would fail on the first one.
+Identity properties come from each schema's `idProperties` rather than being named, because the
+target assigns its own.
+
+The dataset is ~10,000 documents over seven collections — orders, products, customers,
+suppliers, invoices, shipments, reviews — split by a fixed share, so any total divides the same
+way. The query suite runs against `orders`, which is why it takes the largest share. Each stop adds a column to the results table, and every stop's
 `.explain()` output for the filter query is shown so you can verify the same expression
 tree ran everywhere.
 
 Databases: Memory, localStorage, Dexie (IndexedDB), PouchDB (IndexedDB), SQLite (OPFS),
 PGlite (PostgreSQL in WebAssembly).
+
+The **Query inspector** runs any of its four queries against any engine and shows the plan that
+executed, from `.explain()`. It seeds its own small store of orders rather than reading the
+migration lab's, so it works on a first visit and is never explaining a plan for rows something
+else is still writing.
 
 ## Run it
 
@@ -29,9 +45,9 @@ PGlite (PostgreSQL in WebAssembly).
 - **Benchmark with the window visible, or headless.** Chrome throttles occluded windows
   and the timings inflate 5-25x without any error. `scripts/` in the blog workflow ran
   this headless for that reason.
-- 25,000 orders serialize to ~7MB, which is over localStorage's 5MB quota — the
-  localStorage stop fails with `QuotaExceededError` at that size on purpose. It fits at
-  15,000.
+- localStorage has a ~5MB quota, so a large enough dataset makes that stop fail with
+  `QuotaExceededError` on purpose. Splitting the total across seven collections moved the
+  threshold: orders are 40% of it now, so 10,000 documents fit where 10,000 orders did not.
 - The schema keys are `_id` + `_rev` because PouchDB requires them (the plugin now refuses
   an identity key under any other name instead of corrupting reads).
 - Every journey seeds fresh uniquely named databases. The SQLite plugin's OPFS SAH pool

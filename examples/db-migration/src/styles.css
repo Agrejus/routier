@@ -420,3 +420,10 @@ details[open] .chevron { transform: rotate(180deg); }
     .config-actions { width: 100%; }
     .config-actions button { flex: 1; }
 }
+
+.plan-run { display: flex; align-items: center; gap: 8px; }
+.plan-run select { min-width: 132px; }
+.run-query { display: inline-flex; align-items: center; gap: 6px; padding: 8px 13px; border: 1px solid var(--brand-strong); border-radius: 8px; background: var(--brand-strong); color: #06131a; font: 600 10px/1 'Inter', sans-serif; letter-spacing: .02em; cursor: pointer; }
+.run-query:disabled { opacity: .6; cursor: default; }
+.plan-source { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 15px; border-top: 1px solid var(--line); color: #7d8a9c; }
+.plan-source span { color: #7d8a9c; font-size: 9px; letter-spacing: .04em; text-transform: uppercase; }
