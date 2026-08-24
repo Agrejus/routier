@@ -1,4 +1,10 @@
+import { CompiledSchema } from '@routier/core/schema';
 import { ShopStore } from './store';
+
+type AnySchema = CompiledSchema<Record<string, unknown>>;
+
+/** Saved a chunk at a time. One save at the end would hold the whole dataset as pending changes. */
+const CHUNK = 1000;
 
 /**
  * The whole migration: for every collection on the store, select everything out of the source
@@ -15,26 +21,32 @@ export async function migrate(source: ShopStore, target: ShopStore): Promise<num
     return copied;
 }
 
-const CHUNK = 1000;
-
-async function copyCollection(source: ShopStore, target: ShopStore, schema: any): Promise<number> {
-    const from = source.getCollection(schema);
+async function copyCollection(source: ShopStore, target: ShopStore, schema: AnySchema): Promise<number> {
+    const rows = await source.getCollection(schema).toArrayAsync();
     const to = target.getCollection(schema);
 
-    const rows = await from.toArrayAsync() as Record<string, unknown>[];
-    // The identity properties belong to the database that assigned them, so the target assigns
-    // its own. Taken from the schema rather than named here, which is what keeps this generic.
-    const assigned = schema.idProperties.map((property: { name: string }) => property.name);
-
     for (let i = 0; i < rows.length; i += CHUNK) {
-        await to.addAsync(...rows.slice(i, i + CHUNK).map(row => withoutKeys(row, assigned)) as never[]);
-        // Saved a chunk at a time: one save of every collection at the end would hold the whole
-        // dataset as pending changes.
+        const chunk = rows.slice(i, i + CHUNK).map(row => withoutAssignedIds(row, schema));
+
+        // Iterating `schemas` erases the entity type, so these are records as far as the
+        // compiler knows. They are the right shape, it just cannot be shown that here.
+        await to.addAsync(...chunk as never[]);
         await target.saveChangesAsync();
     }
 
     return rows.length;
 }
 
-const withoutKeys = (row: Record<string, unknown>, keys: string[]): Record<string, unknown> =>
-    Object.fromEntries(Object.entries(row).filter(([key]) => keys.includes(key) === false));
+/**
+ * Drops the properties the source database assigned, so the target assigns its own.
+ *
+ * Read off the schema rather than named here. That is what keeps this generic, and it is why
+ * PouchDB's `_id` and `_rev` stay behind without this file ever mentioning PouchDB.
+ */
+function withoutAssignedIds(row: Record<string, unknown>, schema: AnySchema) {
+    const assigned = schema.idProperties.map(property => property.name);
+
+    return Object.fromEntries(
+        Object.entries(row).filter(([key]) => assigned.includes(key) === false)
+    );
+}
