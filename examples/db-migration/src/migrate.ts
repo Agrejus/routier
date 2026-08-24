@@ -1,20 +1,38 @@
-import { ShopStore } from './store';
+import { AnyCollection, ShopStore } from './store';
 
 /**
- * The whole migration: select everything out of the source, insert it into the target.
- * Both stores share the schema, so there is nothing to map. This file is displayed
- * verbatim in the UI.
+ * The whole migration: for every collection on the store, select everything out of the source
+ * and insert it into the target. Both stores share the schemas, so there is nothing to map.
+ * This file is displayed verbatim in the UI.
  */
 export async function migrate(source: ShopStore, target: ShopStore): Promise<number> {
-    const rows = await source.orders.toArrayAsync();
+    const targets = new Map(target.all().map(({ name, collection }) => [name, collection]));
+    let copied = 0;
 
-    for (let i = 0; i < rows.length; i += 1000) {
-        // _id is an identity key, so the target database assigns fresh ones. _rev is
-        // PouchDB's revision marker and belongs to the source, so it stays behind too.
-        const chunk = rows.slice(i, i + 1000).map(({ _id, _rev, ...rest }) => rest);
-        await target.orders.addAsync(...chunk);
+    for (const { name, collection } of source.all()) {
+        copied += await copyCollection(collection, targets.get(name)!, target);
+    }
+
+    return copied;
+}
+
+const CHUNK = 1000;
+
+async function copyCollection(from: AnyCollection, to: AnyCollection, target: ShopStore): Promise<number> {
+    const rows = await from.toArrayAsync();
+    // The identity properties belong to the database that assigned them, so the target assigns
+    // its own. Taken from the schema rather than named here, which is what keeps this generic.
+    const assigned = from.schema.idProperties.map(property => property.name);
+
+    for (let i = 0; i < rows.length; i += CHUNK) {
+        await to.addAsync(...rows.slice(i, i + CHUNK).map(row => withoutKeys(row, assigned)));
+        // Saved a chunk at a time: one save of every collection at the end would hold the whole
+        // dataset as pending changes.
         await target.saveChangesAsync();
     }
 
     return rows.length;
 }
+
+const withoutKeys = (row: Record<string, unknown>, keys: string[]): Record<string, unknown> =>
+    Object.fromEntries(Object.entries(row).filter(([key]) => keys.includes(key) === false));

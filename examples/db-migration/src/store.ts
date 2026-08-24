@@ -1,4 +1,4 @@
-import { DataStore } from '@routier/datastore';
+import { Collection, DataStore } from '@routier/datastore';
 import type { IDbPlugin } from '@routier/core/plugins';
 import { MemoryPlugin } from '@routier/memory-plugin';
 import { DexiePlugin } from '@routier/dexie-plugin';
@@ -7,7 +7,10 @@ import { SqliteDbPlugin } from '@routier/sqlite-plugin';
 import { BrowserStoragePlugin } from '@routier/browser-storage-plugin';
 import { PGliteDbPlugin } from '@routier/pglite-plugin';
 import { deleteDataDir, resolveDataDir } from '@routier/pglite-plugin/browser-storage';
-import { orderSchema } from './schemas';
+import {
+    customerSchema, invoiceSchema, orderSchema, productSchema,
+    reviewSchema, shipmentSchema, supplierSchema,
+} from './schemas';
 
 export type DbChoice = 'memory' | 'localstorage' | 'dexie' | 'pouchdb' | 'sqlite' | 'pglite';
 
@@ -85,4 +88,41 @@ export async function removeStalePGliteDatabases(keep: string): Promise<void> {
 
 export class ShopStore extends DataStore {
     orders = this.collection(orderSchema).proxy().create();
+    products = this.collection(productSchema).proxy().create();
+    customers = this.collection(customerSchema).proxy().create();
+    suppliers = this.collection(supplierSchema).proxy().create();
+    invoices = this.collection(invoiceSchema).proxy().create();
+    shipments = this.collection(shipmentSchema).proxy().create();
+    reviews = this.collection(reviewSchema).proxy().create();
+
+    /**
+     * Every writable collection on this store, for code that should not have to name them.
+     *
+     * `DataStore.collections` is protected, so this is the seam: a subclass can expose it, an
+     * outside helper cannot reach it. That is what lets the migration copy whatever the store
+     * happens to hold rather than a hand-written list that drifts as collections are added.
+     *
+     * Views live in the same map and are not writable — a `ReadonlyCollection` has no `addAsync`
+     * — so a migration that took everything would fail on the first one. Filtered by type rather
+     * than by probing for the method, which would also accept anything that happened to have it.
+     */
+    all(): { name: string; collection: AnyCollection }[] {
+        return [...this.collections.values()]
+            .filter(collection => collection instanceof Collection)
+            .map(collection => ({
+                name: collection.schema.collectionName,
+                collection: collection as unknown as AnyCollection,
+            }));
+    }
 }
+
+/**
+ * A collection whose entity type is not known here. The migration reads rows out and puts them
+ * back without looking inside them, so the shape is the schema's business rather than its own.
+ */
+export type AnyCollection = {
+    schema: { collectionName: string; idProperties: { name: string }[] };
+    toArrayAsync(): Promise<Record<string, unknown>[]>;
+    addAsync(...entities: Record<string, unknown>[]): Promise<unknown>;
+    countAsync(): Promise<number>;
+};

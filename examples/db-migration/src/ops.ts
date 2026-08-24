@@ -98,3 +98,57 @@ export function explainFilter(store: ShopStore) {
         .explain()
         .toArrayAsync();
 }
+
+/**
+ * The same four queries the Query Inspector runs, each asking the plugin to explain itself.
+ *
+ * `.explain()` reports what was pushed down to the database and what ran in memory, so the plan
+ * shown in the UI is the one that actually executed rather than a description of it.
+ */
+export const INSPECTOR_QUERIES = [
+    {
+        name: 'Pending orders in EU',
+        run: async (store: ShopStore) => {
+            const { data, explanation } = await store.orders
+                .where(([o, p]) => o.status === p.status && o.region === p.region, { status: 'pending', region: 'eu' })
+                .explain()
+                .toArrayAsync();
+
+            return { explanation, summary: `${data.length.toLocaleString()} rows` };
+        },
+    },
+    {
+        name: 'Newest orders page',
+        run: async (store: ShopStore) => {
+            const { data, explanation } = await store.orders
+                .sortDescending(o => o.createdAt)
+                .skip(1000)
+                .take(25)
+                .explain()
+                .toArrayAsync();
+
+            return { explanation, summary: `${data.length.toLocaleString()} rows` };
+        },
+    },
+    {
+        name: 'Paid order revenue',
+        run: async (store: ShopStore) => {
+            const { data, explanation } = await store.orders
+                .where(([o, p]) => o.status === p.status, { status: 'paid' })
+                .explain()
+                .sumAsync(o => o.total);
+
+            return { explanation, summary: `$${Math.round(data).toLocaleString()}` };
+        },
+    },
+    {
+        name: 'Customer email lookup',
+        run: async (store: ShopStore, ctx: OpContext) => {
+            const { data, explanation } = await store.orders
+                .explain()
+                .firstOrUndefinedAsync(([o, p]) => o.email === p.email, { email: ctx.email });
+
+            return { explanation, summary: data == null ? 'not found' : 'found' };
+        },
+    },
+];

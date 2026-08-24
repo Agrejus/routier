@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Journey, Visit } from './bench';
-import { DbChoice } from './store';
+import { INSPECTOR_QUERIES, OpContext } from './ops';
+import { createPlugin, DbChoice, ShopStore } from './store';
+import { makeOrdersOnly } from './seed';
 import opsSource from './ops.ts?raw';
 import migrateSource from './migrate.ts?raw';
 
@@ -252,12 +254,80 @@ function loadConfig(): LabConfig {
     }
 }
 
+/**
+ * Enough rows for a plan to be worth reading, without making Run feel like a benchmark. Above
+ * the 1,000 the pagination query skips, or that plan would explain an empty result.
+ */
+const INSPECTOR_ROWS = 2500;
+
+type InspectorStore = { store: ShopStore; context: OpContext };
+
+/**
+ * A store the inspector owns, seeded with orders only.
+ *
+ * Its own database rather than the migration lab's: the inspector has to work on a first visit,
+ * and a plan read off a store someone else is still writing to is not the plan for these rows.
+ * Only `orders` is seeded, because every inspector query reads that collection.
+ */
+async function seedInspectorStore(engine: DbChoice, rows: number): Promise<InspectorStore> {
+    const store = new ShopStore(createPlugin(engine, `inspector-${engine}-${Date.now()}`));
+    const orders = makeOrdersOnly(rows);
+
+    for (let i = 0; i < orders.length; i += 1000) {
+        await store.orders.addAsync(...(orders.slice(i, i + 1000) as never[]));
+        await store.saveChangesAsync();
+    }
+
+    return { store, context: { email: String(orders[Math.floor(orders.length / 2)].email) } };
+}
+
 function QueryInspector({ visits }: { visits: Visit[] }) {
     const [selectedQuery, setSelectedQuery] = useState(0);
     const [selectedVisit, setSelectedVisit] = useState(Math.max(0, visits.length - 1));
     const [copied, setCopied] = useState(false);
+    const [engine, setEngine] = useState<DbChoice>('sqlite');
+    const [running, setRunning] = useState(false);
+    const [ran, setRan] = useState<{ engine: DbChoice; query: string; explanation: unknown; summary: string; ms: number } | null>(null);
+    const [runError, setRunError] = useState<string | null>(null);
+    // One seeded store per engine, kept for the life of the page so a second Run is immediate.
+    const seeded = useRef(new Map<DbChoice, Promise<InspectorStore>>());
     const query = QUERIES[selectedQuery];
-    const planVisit = selectedQuery === 0 ? visits[selectedVisit] : undefined;
+
+    const runQuery = async () => {
+        setRunning(true);
+        setRunError(null);
+        try {
+            let store = seeded.current.get(engine);
+
+            if (store == null) {
+                store = seedInspectorStore(engine, INSPECTOR_ROWS);
+                seeded.current.set(engine, store);
+            }
+
+            const { store: shop, context } = await store;
+            const started = performance.now();
+            const result = await INSPECTOR_QUERIES[selectedQuery].run(shop, context);
+
+            setRan({
+                engine,
+                query: query.name,
+                explanation: result.explanation,
+                summary: result.summary,
+                ms: Math.round((performance.now() - started) * 10) / 10,
+            });
+        } catch (error) {
+            seeded.current.delete(engine);
+            setRunError(error instanceof Error ? error.message : String(error));
+        } finally {
+            setRunning(false);
+        }
+    };
+
+    // What Run produced, when it matches what is selected now. Otherwise fall back to a plan the
+    // migration lab captured, which only ever covers the filter query.
+    const runMatches = ran != null && ran.query === query.name;
+    const planVisit = runMatches ? undefined : (selectedQuery === 0 ? visits[selectedVisit] : undefined);
+    const shownPlan = runMatches ? ran.explanation : planVisit?.explanation;
 
     const copyQuery = async () => {
         await navigator.clipboard?.writeText(`store.orders${query.code}`);
@@ -294,10 +364,25 @@ function QueryInspector({ visits }: { visits: Visit[] }) {
 
                     <section className="panel plan-viewer">
                         <div className="mini-panel-header">
-                            <div><h2>Captured execution plan</h2><p>Live output from the migration lab</p></div>
-                            {selectedQuery === 0 && visits.length > 0 && <select value={Math.min(selectedVisit, visits.length - 1)} onChange={event => setSelectedVisit(Number(event.target.value))}>{visits.map((visit, index) => <option value={index} key={`${visit.db}-${index}`}>{DATABASES[visit.db].name}</option>)}</select>}
+                            <div>
+                                <h2>Captured execution plan</h2>
+                                <p>{runMatches ? `Ran on ${DATABASES[ran!.engine].name} · ${INSPECTOR_ROWS.toLocaleString()} orders · ${ran!.summary} in ${formatMs(ran!.ms)}` : 'Run this query, or inspect a plan the migration lab captured'}</p>
+                            </div>
+                            <div className="plan-run">
+                                <select value={engine} disabled={running} onChange={event => setEngine(event.target.value as DbChoice)}>
+                                    {DBS.map(db => <option value={db} key={db}>{DATABASES[db].name}</option>)}
+                                </select>
+                                <button className="run-query" disabled={running} onClick={runQuery}>
+                                    {running ? <><span className="button-spinner"/>Running…</> : <><Icon name="plan" size={14}/>Run query</>}
+                                </button>
+                            </div>
                         </div>
-                        {planVisit ? <pre className="code plan-code">{JSON.stringify(planVisit.explanation, null, 2)}</pre> : <div className="plan-empty"><span className="summary-icon"><Icon name="plan" size={16}/></span><div><strong>{selectedQuery === 0 ? 'No execution plan captured yet' : 'Plan capture is available for the EU filter'}</strong><p>{selectedQuery === 0 ? 'Run an engine in the Migration Lab, then return here to inspect its real pushdown analysis.' : 'Select “Pending orders in EU” to inspect live plugin output, or review this query’s portable expression pipeline above.'}</p></div></div>}
+                        {runError != null
+                            ? <div className="plan-empty"><span className="summary-icon"><Icon name="plan" size={16}/></span><div><strong>{DATABASES[engine].name} could not run this query</strong><p>{runError}</p></div></div>
+                            : shownPlan != null
+                                ? <pre className="code plan-code">{JSON.stringify(shownPlan, null, 2)}</pre>
+                                : <div className="plan-empty"><span className="summary-icon"><Icon name="plan" size={16}/></span><div><strong>No execution plan yet</strong><p>Pick an engine and run the query. It seeds {INSPECTOR_ROWS.toLocaleString()} orders the first time, then answers immediately.</p></div></div>}
+                        {selectedQuery === 0 && visits.length > 0 && !runMatches && <div className="plan-source"><span>Captured from the migration lab</span><select value={Math.min(selectedVisit, visits.length - 1)} onChange={event => setSelectedVisit(Number(event.target.value))}>{visits.map((visit, index) => <option value={index} key={`${visit.db}-${index}`}>{DATABASES[visit.db].name}</option>)}</select></div>}
                     </section>
 
                     <section className="support-matrix panel">
