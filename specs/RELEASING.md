@@ -194,6 +194,40 @@ git tag -d @routier/core@0.3.0
 git push origin :refs/tags/@routier/core@0.3.0
 ```
 
+### Approving the publish job
+
+Every run stops before `Publish to npm` and waits for a review of the `npm` environment. Approve it
+in the run page, or from a terminal:
+
+```
+gh api repos/Agrejus/routier/actions/runs/<RUN_ID>/pending_deployments --jq '.[].environment.id'
+gh api -X POST repos/Agrejus/routier/actions/runs/<RUN_ID>/pending_deployments \
+  -F 'environment_ids[]=<ENV_ID>' -f state=approved -f comment=ok
+```
+
+Confirm each publish against the registry, not the workflow status. A new package can take several
+minutes to appear, so `npm view` can 404 after a successful publish:
+
+```
+curl -s https://registry.npmjs.org/@routier%2Fcore | jq -r '."dist-tags".latest'
+```
+
+### If the publish job fails with a 404 on `PUT`
+
+```
+npm error 404 Not Found - PUT https://registry.npmjs.org/@routier%2fsql-plugin-core
+```
+
+This means **not authorized**. npm returns 404 rather than 403 so it does not reveal whether a
+package exists. Check the credential before anything else: an expired `NPM_TOKEN`, or a missing
+trusted publisher on a package that has one expected. The log reads like success until the last
+line, because a signed tarball and a provenance statement are reported first.
+
+Independent tags publish in parallel. The concurrency group is `npm-release-${{ github.ref }}`, so
+one tag never cancels or queues behind another. Serialise only for a real peer dependency on a
+version that is not yet on npm — peer floors are `>=`, so an already-published older version
+satisfies them.
+
 ### Manual emergency fallback
 
 If GitHub or npm OIDC is unavailable, run the checks above, then publish in the order recorded in
@@ -201,8 +235,10 @@ If GitHub or npm OIDC is unavailable, run the checks above, then publish in the 
 
 ```
 npm publish --workspace @routier/core --access public --provenance
-npm view @routier/core version
 ```
+
+A zero exit status from `npm publish` is the acknowledgement. Confirm with the registry poll
+above rather than `npm view`, which 404s on a package that was just created.
 
 ## Notes
 

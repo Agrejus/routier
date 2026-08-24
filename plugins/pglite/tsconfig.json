@@ -23,7 +23,8 @@
         "./src/index.ts",
         "./src/index.browser.ts",
         "./src/shared.ts",
-        "./src/pgliteWorker.ts"
+        "./src/pgliteWorker.ts",
+        "./src/browserStorage.ts"
     ],
     "exclude": [
         "node_modules",

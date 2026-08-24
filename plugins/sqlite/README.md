@@ -115,6 +115,12 @@ access handles: two tabs on one origin cannot hold the same database, and the se
 open rather than corrupting it. Treat the browser plugin as single-tab unless you coordinate
 above it.
 
+**The pool grows as databases are opened.** It is a fixed set of preallocated file handles —
+six by default — and every database held open takes one, so the seventh used to fail with
+`SQLITE_CANTOPEN` on a database that was perfectly fine. The worker now adds capacity before
+the pool runs out, and keeps slack for the rollback journal, which is a second file created
+mid-transaction rather than at open. `destroyAsync()` unlinks a database and returns its slot.
+
 `BEGIN IMMEDIATE` takes the write lock up front, so a contended file fails the save with
 `SQLITE_BUSY` instead of failing part-way through.
 

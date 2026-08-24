@@ -1,6 +1,6 @@
 # DB migration bench
 
-One Routier store, five storage plugins, the same queries. This is the app behind the
+One Routier store, six storage plugins, the same queries. This is the app behind the
 "migrating databases" blog post.
 
 The flow is a journey. Pick a starting database and it gets seeded with faker data
@@ -10,7 +10,8 @@ same queries run there. Each stop adds a column to the results table, and every 
 `.explain()` output for the filter query is shown so you can verify the same expression
 tree ran everywhere.
 
-Databases: Memory, localStorage, Dexie (IndexedDB), PouchDB (IndexedDB), SQLite (OPFS).
+Databases: Memory, localStorage, Dexie (IndexedDB), PouchDB (IndexedDB), SQLite (OPFS),
+PGlite (PostgreSQL in WebAssembly).
 
 ## Run it
 
@@ -38,5 +39,26 @@ Databases: Memory, localStorage, Dexie (IndexedDB), PouchDB (IndexedDB), SQLite 
   Clear site data (or OPFS) and rerun.
 - Vite minification breaks the compiled schema (generated code calls core helpers by their
   source names), so `build.minify` is off in `vite.config.ts`.
+- **PGlite persists, and a journey cleans up after the one before it.** Its installation is
+  ~1,080 files and ~40MB, and `destroy` closes the database without deleting it. A run cannot
+  remove its own storage either — the worker's OPFS handles are still held when `destroy`
+  returns. So `removeStalePGliteDatabases` runs at the start of each journey and deletes what
+  earlier journeys recorded in `localStorage`. Steady state is one installation, not one per
+  run.
+- The plugin picks the storage: OPFS, or IndexedDB on WebKit, which cannot hold a PostgreSQL
+  installation in OPFS. The lab does not choose, so it needs no browser check of its own.
+- PGlite's first query pays for booting WebAssembly PostgreSQL, so its seed timing carries
+  a fixed startup cost the other engines do not have.
+- PGlite logs two handled errors on first use — `extension "vector" is not available` and
+  `relation "..." does not exist`. Both are recovered; it reports server errors before the
+  client decides what to do with them.
+- `vite.config.ts` sets `worker.format: 'es'` for PGlite. Without it the production build
+  fails outright on code-splitting.
+
+Every stop reports a **cold start** — opening the engine and answering one statement on an
+empty database. It is kept out of the seed timing and out of the totals, because it is paid once
+per database rather than per row, and folding a one-off cost into a throughput number hides both.
+It is the number that separates the engines most: measured headless, SQLite 121ms against
+PGlite 2,249ms, because PGlite builds a PostgreSQL installation where SQLite opens a file.
 
 Measured medians live in `results/`.

@@ -54,10 +54,16 @@ export interface PostgresDriver {
     connect(): Promise<PostgresConnection>;
 
     /**
-     * Releases the engine: ends the pool, closes the instance.
+     * The driver's half of `IDbPlugin.destroy`, and what destroy means for this engine.
      *
-     * Does NOT delete data. `destroy` on a PostgreSQL plugin disconnects — dropping a database
-     * is a separate and explicit act.
+     * A server driver ends its pool and leaves the data: a client destroying its own store must
+     * not drop somebody's database. An embedded driver, which owns the storage it created,
+     * closes the engine **and deletes the data** — that is what the shared plugin contract
+     * requires of an embedded plugin, and what `@routier/sqlite-plugin` does.
+     *
+     * One member rather than a release followed by a delete, because for an engine that
+     * serialises access the two have to happen in one turn. Anything between them can start work
+     * against a database that is about to be deleted underneath it.
      */
-    dispose(): Promise<void>;
+    destroy(): Promise<void>;
 }

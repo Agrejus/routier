@@ -138,3 +138,94 @@ describe('pgliteDriver', () => {
         expect(parameters).toEqual([['x', null]]);
     });
 });
+
+describe('pgliteDriver engine lifetime', () => {
+
+    it('does not start the engine until something connects', async () => {
+        let starts = 0;
+
+        pgliteDriver('memory://lazy', () => { starts++; return Promise.resolve(stub()); });
+
+        expect(starts).toBe(0);
+    });
+
+    it('starts a fresh engine after destroy, so a store sharing it is not left with a closed one', async () => {
+        let starts = 0;
+        const driver = pgliteDriver('memory://restart', () => { starts++; return Promise.resolve(stub()); }, {
+            deleteStorage: async () => undefined,
+        });
+
+        await (await driver.connect()).release();
+        await driver.destroy();
+        await (await driver.connect()).release();
+
+        expect(starts).toBe(2);
+    });
+
+    it('refuses to report a destroy that deleted nothing, when the engine is the caller\'s', async () => {
+        const driver = pgliteDriver('memory://borrowed', Promise.resolve(stub()));
+
+        await (await driver.connect()).release();
+
+        // The contract says destroy deletes. This driver cannot, so it says so rather than
+        // reporting success over data that is still there.
+        await expect(driver.destroy()).rejects.toThrow(/its data was not deleted/);
+        await expect(driver.connect()).rejects.toThrow(/does not own the engine/);
+    });
+
+    it('forgets a failed start, so the next caller tries again instead of inheriting the rejection', async () => {
+        let attempt = 0;
+        const driver = pgliteDriver('memory://retry', () => {
+            attempt++;
+
+            return attempt === 1 ? Promise.reject(new Error('worker 404')) : Promise.resolve(stub());
+        });
+
+        await expect(driver.connect()).rejects.toThrow('worker 404');
+        await expect(driver.connect()).resolves.toBeDefined();
+    });
+
+    it('waits for an in-flight connection before closing, so a transaction is not cut underneath it', async () => {
+        const log: string[] = [];
+        const driver = pgliteDriver('memory://queued', () => Promise.resolve(stub(log)), {
+            deleteStorage: async () => undefined,
+        });
+
+        const held = await driver.connect();
+
+        let disposed = false;
+        const disposing = driver.destroy().then(() => { disposed = true; });
+
+        await new Promise(resolve => setTimeout(resolve, 10));
+        expect(disposed).toBe(false);
+        expect(log).not.toContain('close');
+
+        await held.release();
+        await disposing;
+
+        expect(log).toContain('close');
+    });
+
+    it('deletes only after the engine is closed, and only once', async () => {
+        const log: string[] = [];
+        const driver = pgliteDriver('memory://deleted', () => Promise.resolve(stub(log)), {
+            deleteStorage: async () => { log.push('deleted'); },
+        });
+
+        await (await driver.connect()).release();
+        await driver.destroy();
+
+        expect(log.slice(-2)).toEqual(['close', 'deleted']);
+    });
+
+    it('still deletes when the engine was never started', async () => {
+        const log: string[] = [];
+        const driver = pgliteDriver('memory://cold', () => Promise.resolve(stub(log)), {
+            deleteStorage: async () => { log.push('deleted'); },
+        });
+
+        await driver.destroy();
+
+        expect(log).toEqual(['deleted']);
+    });
+});

@@ -1,5 +1,5 @@
 import { QueryExplanation } from '@routier/core/plugins';
-import { createPlugin, DbChoice, ShopStore } from './store';
+import { createPlugin, databaseNameFor, DbChoice, removeStalePGliteDatabases, ShopStore } from './store';
 import { makeOrders } from './seed';
 import { explainFilter, OPS, OpContext } from './ops';
 import { migrate } from './migrate';
@@ -8,6 +8,14 @@ export type Timing = { step: string; ms: number; note?: string };
 
 export type Visit = {
     db: DbChoice;
+    /**
+     * Opening the engine and getting one statement answered, on an empty database.
+     *
+     * Kept out of `arrival` and out of the totals: it is paid once per database, not per row, so
+     * adding it to a throughput number would hide both. It is the whole cost for an engine that
+     * boots a server — PGlite builds a PostgreSQL installation here, where SQLite opens a file.
+     */
+    coldStart: Timing;
     /** How this database got its data: seeded fresh, or migrated from the previous stop. */
     arrival: Timing;
     timings: Timing[];
@@ -38,7 +46,7 @@ export class Journey {
     private open(db: DbChoice): ShopStore {
         let store = this.stores.get(db);
         if (store == null) {
-            store = new ShopStore(createPlugin(db, `shop-${this.stamp}-${db}`));
+            store = new ShopStore(createPlugin(db, databaseNameFor(this.stamp, db)));
             this.stores.set(db, store);
             (window as any).__STORES__ = this.stores;
         }
@@ -47,6 +55,11 @@ export class Journey {
 
     /** Step 1: seed the starting database. */
     async start(db: DbChoice, onProgress: (m: string) => void): Promise<Visit> {
+        await removeStalePGliteDatabases(databaseNameFor(this.stamp, 'pglite'));
+
+        onProgress('Opening the database...');
+        const coldStart = await this.timeColdStart(db, onProgress);
+
         const store = this.open(db);
         const orders = makeOrders(this.count);
 
@@ -59,12 +72,16 @@ export class Journey {
         });
 
         this.current = db;
-        return { db, arrival, timings: await this.runOps(store, onProgress), explanation: (await explainFilter(store)).explanation };
+        return { db, coldStart, arrival, timings: await this.runOps(store, onProgress), explanation: (await explainFilter(store)).explanation };
     }
 
     /** Step 2..n: select all from the current database, insert into the next. */
     async migrateTo(db: DbChoice, onProgress: (m: string) => void): Promise<Visit> {
         const source = this.open(this.current!);
+
+        onProgress('Opening the database...');
+        const coldStart = await this.timeColdStart(db, onProgress);
+
         const target = this.open(db);
 
         onProgress(`Migrating ${this.current} -> ${db}...`);
@@ -74,7 +91,7 @@ export class Journey {
         });
 
         this.current = db;
-        return { db, arrival, timings: await this.runOps(target, onProgress), explanation: (await explainFilter(target)).explanation };
+        return { db, coldStart, arrival, timings: await this.runOps(target, onProgress), explanation: (await explainFilter(target)).explanation };
     }
 
     /** Release every store and remove its backing database. Benchmark runs use fresh names, so
@@ -85,6 +102,21 @@ export class Journey {
         }
         this.stores.clear();
         this.current = null;
+    }
+
+    /**
+     * The first statement against a database that has nothing in it yet.
+     *
+     * A count rather than a write, so the measurement does not touch the data every other
+     * timing is taken against. It still pays for what a first statement pays for: starting the
+     * engine, and the lazy `CREATE TABLE` the SQL plugins do on first use.
+     */
+    private timeColdStart(db: DbChoice, onProgress: (m: string) => void): Promise<Timing> {
+        onProgress('Cold start');
+
+        return time('Cold start', async () => {
+            await this.open(db).orders.countAsync();
+        });
     }
 
     private async runOps(store: ShopStore, onProgress: (m: string) => void): Promise<Timing[]> {

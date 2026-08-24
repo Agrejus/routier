@@ -78,18 +78,97 @@ afterEach(async () => {
      * over the same data directory, after the first was closed, still has the rows. Same
      * mechanism, a filesystem PGlite can reach from Node.
      */
-    it('keeps data in its data directory after the database is closed and reopened', async () => {
+    it('will not report a destroy that deleted nothing, and keeps the data', async () => {
         const dataDir = dataDirectory();
-        const first = open(dataDir);
+        const database = await PGlite.create(dataDir);
+        const first = new Store(pgliteDbPlugin(dataDir, database));
 
         await first.rows.addAsync({ id: 'kept', name: 'survivor', count: 1, tags: [] });
         await first.saveChangesAsync();
-        await first.destroyAsync();
+
+        // The caller owns this instance, so the plugin cannot know where its storage is. Destroy
+        // closes it and then says the data is still there rather than claiming otherwise.
+        await expect(first.destroyAsync()).rejects.toThrow(/its data was not deleted/);
 
         const second = open(dataDir);
         const [found] = await second.rows.where(w => w.id === 'kept').toArrayAsync();
 
         expect(found?.name).toBe('survivor');
+    });
+
+    it('shares one engine per data directory, and a survivor of a destroy sees an empty database', async () => {
+        const dataDir = dataDirectory();
+        const first = open(dataDir);
+        const second = open(dataDir);
+
+        await first.rows.addAsync({ id: 'shared', name: 'row', count: 1, tags: [] });
+        await first.saveChangesAsync();
+
+        expect(await second.rows.countAsync()).toBe(1);
+
+        await first.destroyAsync();
+
+        // `second` was not destroyed. It opens a fresh engine over the deleted directory rather
+        // than holding a closed one, and finds the data gone.
+        expect(await second.rows.countAsync()).toBe(0);
+    });
+
+    it('survives a vector probe that outlived the database it described', async () => {
+        const vectors = s.define('pglite_stale_vectors', {
+            id: s.string().key(),
+            embedding: s.vector(3),
+        }).compile();
+
+        class VectorStore extends DataStore {
+            items = this.collection(vectors).proxy().create();
+        }
+
+        const dataDir = dataDirectory();
+        const first = new VectorStore(new PGliteDbPlugin(dataDir, { extensions: { vector } }));
+        const second = new VectorStore(new PGliteDbPlugin(dataDir, { extensions: { vector } }));
+        stores.push(first, second);
+
+        // `second` probes and caches "vector available", having created the extension.
+        await second.items.addAsync({ id: 'before', embedding: [1, 0, 0] });
+        await second.saveChangesAsync();
+
+        // `first` destroys the shared database. `second` keeps its cached probe, but the engine
+        // it now opens is empty — no extension, so its `vector(n)` DDL has no type to use.
+        await first.destroyAsync();
+
+        await second.items.addAsync({ id: 'after', embedding: [0, 1, 0] });
+
+        await expect(second.saveChangesAsync()).resolves.not.toThrow();
+        expect(await second.items.countAsync()).toBe(1);
+    });
+
+    it('refuses a second set of extensions over one data directory', () => {
+        const dataDir = dataDirectory();
+
+        open(dataDir);
+
+        expect(() => new Store(new PGliteDbPlugin(dataDir, { extensions: { vector } })))
+            .toThrow(/already open with a different set of extensions/);
+    });
+
+    it('refuses to delete the working directory on destroy', async () => {
+        const store = new Store(new PGliteDbPlugin('.'));
+
+        // `destroy` deletes recursively. A data directory that is really the working directory
+        // would take the whole project with it.
+        await expect(store.destroyAsync()).rejects.toThrow(/Refusing to delete/);
+    });
+
+    it('deletes the data directory on destroy, like every other embedded plugin', async () => {
+        const dataDir = dataDirectory();
+        const store = open(dataDir);
+
+        await store.rows.addAsync({ id: 'doomed', name: 'gone', count: 1, tags: [] });
+        await store.saveChangesAsync();
+        await store.destroyAsync();
+
+        expect(fs.existsSync(dataDir)).toBe(false);
+        expect(await open(dataDir).rows.countAsync()).toBe(0);
     });
 
     it('answers a query issued while a save is in flight, without joining its transaction', async () => {

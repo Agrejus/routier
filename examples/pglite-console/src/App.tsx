@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CATEGORIES, Product } from './schemas';
-import { DATABASE_NAME, openStore, ShopStore } from './store';
+import { DATABASE_NAME, DATA_DIR, openStore, ShopStore } from './store';
 
 const SUPPLIERS = [
     { name: 'Northwind', country: 'US' },
@@ -119,8 +119,8 @@ export function App() {
             <header>
                 <h1>PGlite Console</h1>
                 <p>
-                    PostgreSQL compiled to WebAssembly, in this tab, persisted to OPFS.
-                    Storage: <code>opfs-ahp://{DATABASE_NAME}</code>
+                    PostgreSQL compiled to WebAssembly, in this tab, persisted by the browser.
+                    Storage: <code>{DATA_DIR}</code>
                 </p>
             </header>
 
