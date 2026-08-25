@@ -1,26 +1,29 @@
 {
-  "name": "examples",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "echo \"Skipping lint for examples/\""
-  },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "@routier/datastore": "file://../datastore",
-    "@routier/core": "file://../core",
-    "@routier/react": "file://../react",
-    "@routier/dexie-plugin": "file://../plugins/dexie",
-    "@routier/memory-plugin": "file://../plugins/memory",
-    "@routier/pouchdb-plugin": "file://../plugins/pouchdb",
-    "@routier/pglite-plugin": "file://../plugins/pglite",
-    "@routier/postgres-plugin-core": "file://../plugins/postgres-core",
-    "@electric-sql/pglite": "^0.5.7"
-  },
-  "devDependencies": {
-    "typescript": "^5.7.2"
-  }
+    "name": "examples",
+    "version": "1.0.0",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "lint": "echo \"Skipping lint for examples/\"",
+        "stress:plugins": "node finance-stress/scenarios.mjs"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "@routier/datastore": "file://../datastore",
+        "@routier/core": "file://../core",
+        "@routier/react": "file://../react",
+        "@routier/dexie-plugin": "file://../plugins/dexie",
+        "@routier/memory-plugin": "file://../plugins/memory",
+        "@routier/pouchdb-plugin": "file://../plugins/pouchdb",
+        "@routier/pglite-plugin": "file://../plugins/pglite",
+        "@routier/postgres-plugin-core": "file://../plugins/postgres-core",
+        "@electric-sql/pglite": "^0.5.7",
+        "@routier/sqlite-plugin": "^0.5.0",
+        "@sqlite.org/sqlite-wasm": "^3.53.0-build1"
+    },
+    "devDependencies": {
+        "typescript": "^5.7.2"
+    }
 }

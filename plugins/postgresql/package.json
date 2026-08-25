@@ -43,13 +43,13 @@
     },
     "devDependencies": {
         "@faker-js/faker": "^10.0.0",
-        "@routier/core": "^0.5.0",
+        "@routier/core": "^0.6.0",
         "@routier/datastore": "^0.4.0",
         "@rspack/cli": "^1.1.8",
         "@rspack/core": "^1.1.8",
         "@types/pg": "8.18.0",
-        "@routier/sql-plugin-core": "^0.5.0",
-        "@routier/postgres-plugin-core": "^0.2.0"
+        "@routier/sql-plugin-core": "^0.6.0",
+        "@routier/postgres-plugin-core": "^0.3.0"
     },
     "dependencies": {
         "pg": "^8.11.3"
