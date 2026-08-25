@@ -17,6 +17,11 @@ module.exports = {
         '^@routier/datastore$': '<rootDir>/../../datastore/src/index.ts',
         '^@routier/datastore/(.*)$': '<rootDir>/../../datastore/src/$1',
         '^@routier/sql-plugin-core$': '<rootDir>/../../plugins/sql-core/src/index.ts',
-        '^@routier/test-utils$': '<rootDir>/../../test-utils/src/index.ts'
+        '^@routier/test-utils$': '<rootDir>/../../test-utils/src/index.ts',
+        // Faker ships both builds, and jest picks the wrong one. `jest-environment-node` resolves
+        // `exports` with the condition `node`, faker's map has no `node` key, so it falls through
+        // to `default` — the ESM build — which ts-jest cannot parse and the suite dies at import.
+        // Naming the CJS build the package already publishes is enough; no transform needed.
+        '^@faker-js/faker$': '<rootDir>/../../node_modules/@faker-js/faker/dist/index.cjs'
     }
 };

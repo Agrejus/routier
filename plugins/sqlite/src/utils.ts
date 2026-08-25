@@ -1,7 +1,7 @@
 import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema';
 import { Expression } from '@routier/core/expressions';
-import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, getDialect, sqlColumnProperties, toColumnValueMap, toSql } from '@routier/sql-plugin-core';
-import { IQuery, JoinQueryOptionValue, Query, QueryField } from '@routier/core/plugins';
+import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, entityResultColumns, getDialect, sqlColumnProperties, toColumnValueMap, toSql } from '@routier/sql-plugin-core';
+import { IQuery, JoinQueryOptionValue, mappedResultColumns, Query, QueryField, ResultColumn } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
 import { SqlOperation } from './types';
 
@@ -212,6 +212,9 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
     const allColumns = columnProperties.map(p => `"${p.getResolvedName()}"`);
     const allColumnStr = allColumns.join(', ');
 
+    // Every write RETURNS the same full row, so one description serves all three statement kinds.
+    const returned = entityResultColumns(schema);
+
     // For INSERT operations, exclude identity columns (they're auto-generated)
     const insertProperties = columnProperties.filter(p => !p.isIdentity);
     const insertColumns = insertProperties.map(p => `"${p.getResolvedName()}"`);
@@ -238,7 +241,7 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
             }
         }
 
-        addsOperation = { sql: insertSql, params: addParams };
+        addsOperation = { sql: insertSql, params: addParams, result: returned };
     }
 
     // Handle UPDATE operations (updates). One SqlOperation per changed-column group — the
@@ -254,13 +257,13 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
             updates as { entity: Record<string, unknown>; delta: Record<string, unknown> }[],
             getDialect('sqlite'),
             { suffix: ` RETURNING ${allColumnStr}` }
-        ).map(({ sql, params, id, checked }) => ({ sql, params, conflictCheck: checked ? { id } : undefined }))
+        ).map(({ sql, params, id, checked }) => ({ sql, params, conflictCheck: checked ? { id } : undefined, result: returned }))
         : buildGroupedUpdateOperations(
             schema,
             updates as { entity: Record<string, unknown>; delta: Record<string, unknown> }[],
             getDialect('sqlite'),
             { suffix: ` RETURNING ${allColumnStr}` }
-        ).map(({ sql, params }) => ({ sql, params }));
+        ).map(({ sql, params }) => ({ sql, params, result: returned }));
 
     // Handle DELETE operations (removes)
     let removesOperation: SqlOperation | null = null;
@@ -286,7 +289,7 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 
         const whereClause = whereClauses.join(' OR ');
         const deleteSql = `DELETE FROM "${collectionName}" WHERE ${whereClause} RETURNING ${allColumnStr}`;
-        removesOperation = { sql: deleteSql, params: allParams };
+        removesOperation = { sql: deleteSql, params: allParams, result: returned };
     }
 
     return {
@@ -320,43 +323,36 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
         if (mapFields) break;
     }
 
-    // Build column string based on map fields or all properties
-    let columnsStr: string;
-    if (mapFields && mapFields.length > 0) {
-        // Remapping will happen in the translator after this
-        columnsStr = `"${mapFields[0].sourceName}"`;
-        for (let i = 1; i < mapFields.length; i++) {
-            const fieldName = mapFields[i].sourceName;
-            columnsStr += `, "${fieldName}"`;
-        }
-    } else {
-        /**
-         * Root properties only.
-         *
-         * `schema.properties` is every property in the schema, including the children of a
-         * nested object. Those children are not columns: the object is stored whole in one
-         * JSON column. Using the unfiltered list emitted
-         * `SELECT "nested", "inner", "value", "count" ...` for a schema with one nested
-         * object, naming three columns that do not exist.
-         *
-         * That went unnoticed because `sqlite3` enables SQLite's double-quoted-string
-         * misfeature, which silently reinterprets an unknown `"inner"` as the string literal
-         * `'inner'`. The query then returned three constant columns, which the decoder
-         * ignored, and every test passed. `node:sqlite` compiles with `SQLITE_DQS=0` and
-         * reports it properly.
-         */
-        const rootProperties = sqlColumnProperties(schema);
-        const columnCount = rootProperties.length;
+    /**
+     * ONE ordered list, from which both the select list and the result description are derived.
+     *
+     * Deriving them separately is how a description comes to disagree with the statement it
+     * describes, and the wrong order does not fail — a consumer encoding columnar would file every
+     * column's values under another column's name.
+     *
+     * Root properties only when there is no projection. `schema.properties` is every property in
+     * the schema, including the children of a nested object. Those children are not columns: the
+     * object is stored whole in one JSON column. Using the unfiltered list emitted
+     * `SELECT "nested", "inner", "value", "count" ...` for a schema with one nested object,
+     * naming three columns that do not exist.
+     *
+     * That went unnoticed because `sqlite3` enables SQLite's double-quoted-string misfeature,
+     * which silently reinterprets an unknown `"inner"` as the string literal `'inner'`. The query
+     * then returned three constant columns, which the decoder ignored, and every test passed.
+     * `node:sqlite` compiles with `SQLITE_DQS=0` and reports it properly.
+     */
+    const resultColumns = mapFields != null && mapFields.length > 0
+        ? mappedResultColumns(mapFields)
+        : entityResultColumns(schema);
 
-        if (columnCount === 0) {
-            throw new Error("Need to select at least one column, found zero");
-        }
+    if (resultColumns.length === 0) {
+        throw new Error("Need to select at least one column, found zero");
+    }
 
-        // Use string concatenation instead of array join for better performance
-        columnsStr = `"${rootProperties[0].getResolvedName()}"`;
-        for (let i = 1; i < columnCount; i++) {
-            columnsStr += `, "${rootProperties[i].getResolvedName()}"`;
-        }
+    // Use string concatenation instead of array join for better performance
+    let columnsStr = `"${resultColumns[0].name}"`;
+    for (let i = 1; i < resultColumns.length; i++) {
+        columnsStr += `, "${resultColumns[i].name}"`;
     }
 
     const params: any[] = [];
@@ -508,8 +504,28 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
         }
     }
 
-    return { sql: currentQuery, params };
+    return { sql: currentQuery, params, result: describedResult(otherOps, resultColumns) };
 }
+
+/**
+ * Statement shapes that REPLACE the select list, so the projected columns stop describing what
+ * comes back.
+ *
+ * `count` wraps the query in `SELECT COUNT(*) AS "count"`; the others rewrite it to
+ * `SELECT SUM("x") AS "x"`. Reporting the projected columns for either would be a false
+ * description, so nothing is reported. No consumer loses much: a one-row one-number result
+ * round-trips in 0.014ms cloned against 0.019ms encoded.
+ *
+ * `distinct` is NOT here. It adds the keyword to the existing select list and still returns whole
+ * entity rows.
+ */
+const REWRITES_SELECT_LIST = new Set(['count', 'min', 'max', 'sum']);
+
+const describedResult = (
+    operations: readonly { type: string }[],
+    columns: readonly ResultColumn[]
+): readonly ResultColumn[] | undefined =>
+    operations.some(operation => REWRITES_SELECT_LIST.has(operation.type)) ? undefined : columns;
 
 /**
  * Builds the joined SELECT for a query carrying a `join` option.
@@ -536,7 +552,7 @@ export function buildJoinQueryOperation<TEntity extends {}, TShape, TInner exten
 
     const outer = buildFromQueryOperation(new Query(before, query.schema));
 
-    const joined = buildJoinStatement({
+    const { columns, ...joined } = buildJoinStatement({
         dialect: getDialect('sqlite'),
         join: at.value,
         outerSchema: query.schema,
@@ -545,5 +561,7 @@ export function buildJoinQueryOperation<TEntity extends {}, TShape, TInner exten
         outerParams: outer.params
     });
 
-    return { ...joined, join: at.value };
+    // The FLAT joined row, aliased per side. A driver that decodes it does so before
+    // `splitJoinRows` cuts it in two.
+    return { ...joined, result: columns, join: at.value };
 }

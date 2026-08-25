@@ -1,4 +1,7 @@
 import { RECOVERABLE_SQLSTATE, type PostgresConnection, type PostgresDriver } from '@routier/postgres-plugin-core';
+import { ResultColumn } from '@routier/core/plugins';
+import { buildTransferPlan, parsedValueTransferTypes } from '@routier/core/transfer';
+import { isCodedReadUnavailable, type CodedReadChannel } from '../codedReadChannel';
 
 /**
  * The part of PGlite this driver uses.
@@ -56,13 +59,46 @@ const withSqlState = (error: unknown): unknown => {
 
 class PGliteConnection implements PostgresConnection {
 
-    constructor(private readonly database: PGliteLike, private readonly onRelease: () => void) { }
+    constructor(
+        private readonly database: PGliteLike,
+        private readonly onRelease: () => void,
+        private readonly coded: CodedReads | null
+    ) { }
 
-    async all(sql: string, params?: readonly unknown[]): Promise<unknown[]> {
+    /**
+     * Reads through routier's own channel when it can, and through PGlite's proxy otherwise.
+     *
+     * The proxy carries every result over a `BroadcastChannel`, which cannot transfer anything, so
+     * a large result is structured-cloned on the way out — measured at 19-34% of a read. Encoding
+     * columnar and transferring the buffers reclaims almost all of it.
+     *
+     * The mapping is `parsedValueTransferTypes` because PGlite parses before returning: a date
+     * arrives as a `Date` and a JSONB column as a live object, not as the text a server sends.
+     */
+    async all(sql: string, params?: readonly unknown[], result?: readonly ResultColumn[]): Promise<unknown[]> {
+        const bound = normalizeParams(params);
+        const plan = result == null || this.coded == null
+            ? undefined
+            : buildTransferPlan(result, parsedValueTransferTypes);
+
+        if (plan != null && this.coded != null) {
+            try {
+                return await this.coded.channel.read(sql, bound, plan);
+            } catch (error) {
+                if (isCodedReadUnavailable(error) === false) {
+                    throw withSqlState(error);
+                }
+
+                // This tab is not the leader, so its worker never opened a database. Every later
+                // read takes the proxy too, rather than asking again per statement.
+                this.coded.disable();
+            }
+        }
+
         try {
-            const result = await this.database.query(sql, normalizeParams(params));
+            const queried = await this.database.query(sql, bound);
 
-            return result.rows;
+            return queried.rows;
         } catch (error) {
             throw withSqlState(error);
         }
@@ -89,9 +125,29 @@ class PGliteConnection implements PostgresConnection {
     }
 }
 
+/**
+ * Routier's own read channel, and a latch that turns it off for good.
+ *
+ * Disabled after the worker says it does not hold the database — this tab lost PGlite's leader
+ * election, so it never will, and asking again per statement would cost a round trip each time.
+ */
+type CodedReads = { channel: CodedReadChannel; disable: () => void };
+
 export type PGliteDriverOptions = {
     /** Names the engine in errors. Distinguishes the worker-backed driver from the direct one. */
     name?: string;
+
+    /**
+     * Routier's coded-read channel to the worker holding this database, if there is one.
+     *
+     * A FUNCTION, not a value: the channel does not exist until the worker starts, and the worker
+     * starts on the first operation — after this driver was constructed. Resolved per connection so
+     * a restarted engine is reached through its new worker rather than its old one.
+     *
+     * Supplied only by the worker-backed entry point, which is the only one with a `Worker` to
+     * attach a channel to. Absent for the in-process driver, which crosses no boundary.
+     */
+    codedReads?: () => CodedReadChannel | undefined;
 
     /**
      * Deletes the storage, called inside `destroy` once the engine is closed and while the queue
@@ -136,6 +192,19 @@ export const pgliteDriver = (
     options: PGliteDriverOptions = {}
 ): PostgresDriver => {
     let queue: Promise<unknown> = Promise.resolve();
+    // Latched off once a worker says it does not hold the database: this tab lost PGlite's leader
+    // election and never will, so asking again per statement would cost a round trip each time.
+    let codedDisabled = false;
+
+    const codedReads = (): CodedReads | null => {
+        if (codedDisabled) {
+            return null;
+        }
+
+        const channel = options.codedReads?.();
+
+        return channel == null ? null : { channel, disable: () => { codedDisabled = true; } };
+    };
     const start = typeof source === 'function' ? source : null;
     let database: Promise<PGliteLike> | null = start == null ? (source as Promise<PGliteLike>) : null;
 
@@ -168,7 +237,7 @@ export const pgliteDriver = (
                     database = start();
                 }
 
-                return new PGliteConnection(await database, release);
+                return new PGliteConnection(await database, release, codedReads());
             } catch (error) {
                 // A failed start must not be remembered, or every later caller inherits the
                 // rejection for the life of the page.

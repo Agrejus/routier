@@ -1,3 +1,4 @@
+import { ResultColumn } from '@routier/core/plugins';
 /**
  * The whole of what this plugin needs from a PostgreSQL engine.
  *
@@ -19,7 +20,12 @@ export interface PostgresConnection {
      * Used for `SELECT` and for writes with `RETURNING`, which is how the plugin echoes saved
      * rows back to the change tracker.
      */
-    all(sql: string, params?: readonly unknown[]): Promise<unknown[]>;
+    /**
+     * `result` describes the columns the statement returns, in order, and is a HINT: every driver
+     * may ignore it and return the same rows, which is what every server-backed one does. A driver
+     * that pays to move rows across a worker boundary can encode them columnar instead.
+     */
+    all(sql: string, params?: readonly unknown[], result?: readonly ResultColumn[]): Promise<unknown[]>;
 
     /** Runs a statement whose rows are not wanted: DDL, `BEGIN`, `COMMIT`, `SAVEPOINT`. */
     run(sql: string, params?: readonly unknown[]): Promise<void>;

@@ -53,7 +53,7 @@ describe('sqlite optimistic concurrency', () => {
         await writerA.saveChangesAsync();
 
         b.balance = 1100;
-        const error = await writerB.saveChangesAsync().then(() => null, e => e);
+        const error = await writerB.saveChangesAsync().then((): any => null, (e: any) => e);
 
         expect(OptimisticConcurrencyError.is(error)).toBe(true);
         expect(error.conflicts).toEqual([id]);

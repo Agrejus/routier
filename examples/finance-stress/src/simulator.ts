@@ -58,8 +58,10 @@ class Bot {
 
             try {
                 await this.transferOnce();
-            } catch {
-                metrics.noteFailedSave();
+            } catch (error) {
+                // Recorded, not just counted. A swallowed cause is why a failing backend looks
+                // like a slow one: the counter climbs and nothing says what went wrong.
+                metrics.noteFailedSave((error as Error)?.message ?? String(error));
             }
 
             // Jittered so bots do not phase-lock into synchronized save storms
@@ -144,12 +146,29 @@ export const simulator = {
             return;
         }
 
+        const users = [];
+
         for (let u = 0; u < userCount; u++) {
             const [user] = await store.users.addAsync({
                 name: `User ${u + 1}`,
                 email: `user${u + 1}@example.test`,
             });
 
+            users.push(user);
+        }
+
+        /**
+         * Saved BEFORE the accounts that point at them.
+         *
+         * `id` is `.identity()`, so the value is assigned by the backend on insert and only comes
+         * back on the save. Reading `user.id` while the addition is still pending gives undefined,
+         * and the accounts then reference nothing. An in-memory backend hides this by assigning
+         * immediately; SQLite and PGlite cannot, which is what makes this the portable order
+         * rather than a workaround.
+         */
+        await store.saveChangesAsync();
+
+        for (const user of users) {
             for (let a = 0; a < accountsPerUser; a++) {
                 await store.accounts.addAsync({
                     ownerId: user.id,

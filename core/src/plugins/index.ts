@@ -1,4 +1,5 @@
 export * from './types';
+export * from './resultShape';
 export * from './translators';
 export * from './query';
 export * from './wire';
