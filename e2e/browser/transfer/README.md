@@ -1,16 +1,20 @@
-# Browser tests for the SQLite WASM driver
+# Browser tests for the worker-boundary transfer codec
 
 What the Jest suites cannot reach: a real worker, a real `postMessage`, real buffer transfer, a
 real Content-Security-Policy, and the real cost of the boundary.
 
 Opt-in. Not part of `npm test`, because it needs a browser.
 
+Lives under `e2e/` rather than in the plugin: it drives a `DataStore` over the plugins, and a
+plugin may not depend on the datastore — the dependency runs the other way. `architecture` enforces
+that, and caught it when these files were briefly inside `plugins/sqlite`.
+
 ## Running
 
 ```
 npm i -D playwright-core && npx playwright install chromium   # once
-npm run test:browser          # correctness
-npm run test:browser -- --bench   # correctness, then the measurement
+npm run test:transfer -w @routier/e2e             # correctness
+npm run test:transfer -w @routier/e2e -- --bench  # correctness, then the measurement
 ```
 
 Headless on purpose. A headed browser throttles timers in an occluded or backgrounded window,

@@ -16,9 +16,9 @@
 import { s } from '@routier/core/schema';
 import { isTransferCodecSupported } from '@routier/core/transfer';
 import { DataStore } from '@routier/datastore';
-import { SqliteDbPluginBase } from '../src/plugin';
-import { wasmDriver } from '../src/drivers/wasm';
-import type { SqliteConnection } from '../src/drivers/types';
+import { SqliteDbPluginBase } from '../../../plugins/sqlite/src/plugin';
+import { wasmDriver } from '../../../plugins/sqlite/src/drivers/wasm';
+import type { SqliteConnection } from '../../../plugins/sqlite/src/drivers/types';
 import { entityResultColumns } from '@routier/sql-plugin-core';
 
 const schema = s.define('bench_rows', {

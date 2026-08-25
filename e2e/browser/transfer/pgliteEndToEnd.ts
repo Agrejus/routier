@@ -7,7 +7,7 @@
  */
 import { s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
-import { PGliteDbPlugin } from '../../pglite/src/index.browser';
+import { PGliteDbPlugin } from '../../../plugins/pglite/src/index.browser';
 
 const schema = s.define('pg_rows', {
     // A SERIAL key, not a uuid. The two runs use separate databases — the codec setting is part

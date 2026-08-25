@@ -7,8 +7,10 @@
  * Needs `playwright-core` and a Chromium build. If it is not installed this says so and exits
  * rather than failing obscurely — it is an opt-in check, not part of `npm test`.
  *
- *   node browser-tests/run.mjs           correctness only
- *   node browser-tests/run.mjs --bench   correctness, then the measurement
+ *   node browser/transfer/run.mjs           correctness only
+ *   node browser/transfer/run.mjs --bench   correctness, then the measurement
+ *
+ * Or `npm run test:transfer -w @routier/e2e`.
  */
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -54,7 +56,7 @@ const loadPlaywright = async () => {
         return await import('playwright-core');
     } catch {
         console.error(
-            'browser-tests need playwright-core and a Chromium build:\n' +
+            'the transfer browser tests need playwright-core and a Chromium build:\n' +
             '  npm i -D playwright-core && npx playwright install chromium\n' +
             'Skipping.'
         );

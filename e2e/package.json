@@ -1,10 +1,12 @@
 {
-  "name": "@routier/e2e",
-  "version": "0.0.0",
-  "private": true,
-  "description": "End-to-end tests against real storage engines",
-  "scripts": {
-    "test": "jest -c ../jest.config.js --selectProjects e2e",
-    "test:containers": "E2E_CONTAINERS=1 jest -c ../jest.config.js --selectProjects e2e"
-  }
+    "name": "@routier/e2e",
+    "version": "0.0.0",
+    "private": true,
+    "description": "End-to-end tests against real storage engines",
+    "scripts": {
+        "test": "jest -c ../jest.config.js --selectProjects e2e",
+        "test:containers": "E2E_CONTAINERS=1 jest -c ../jest.config.js --selectProjects e2e",
+        "test:browser": "node browser/run.mjs",
+        "test:transfer": "node browser/transfer/run.mjs"
+    }
 }

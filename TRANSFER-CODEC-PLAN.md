@@ -83,7 +83,7 @@ WASM module — the same reason `wasmPool.ts` exists. The `get({})` overload was
 ### Measured on the real path (browser harness, headless Chromium, medians)
 
 §1's table measured the BOUNDARY IN ISOLATION. On a real read it is one term of a sum, and the
-numbers below are what a caller actually gets. `plugins/sqlite/browser-tests` reproduces all of it.
+numbers below are what a caller actually gets. `e2e/browser/transfer` reproduces all of it.
 
 **Where a 4,000-row read's time went, before any of this work:**
 
