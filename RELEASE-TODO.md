@@ -9,11 +9,19 @@ Written 2026-08-24. The publish it was written for is complete; this is what out
 `NPM_TOKEN` exists only until every package has an npm trusted publisher. Both packages
 first published on 2026-08-24 can be configured now that they exist on npm.
 
+**Now urgent rather than tidy.** Every publish on 2026-08-25 logged:
+
+> npm tokens that bypass 2FA are being restricted for account changes and direct publishing.
+
+npm is phasing the token path out. The workflow still succeeds, but this will start failing, and
+discovering it mid-release is the bad way to find out.
+
 1. Open npmjs.com and sign in.
 2. Configure a trusted publisher for `@routier/postgres-plugin-core`, then for
    `@routier/pglite-plugin`. Owner `Agrejus`, repository `routier`, workflow `release.yml`,
    environment `npm`.
-3. Confirm the other packages already have one.
+3. Confirm the other packages already have one — `@routier/core`, `@routier/sql-plugin-core` and
+   `@routier/sqlite-plugin` all published again on 2026-08-25 and are configurable.
 4. When all of them do, delete the secret: `gh secret delete NPM_TOKEN`.
 
 ## Everything else has a home now
