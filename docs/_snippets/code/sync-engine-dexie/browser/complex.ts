@@ -42,6 +42,7 @@ const taskSchema = s
 class WorkStore extends DataStore {
     projects = this.collection(projectSchema).proxy().create();
     tasks = this.collection(taskSchema).proxy().create();
+
 }
 
 const DB_NAME = 'complex-demo';
@@ -233,11 +234,9 @@ async function audit(): Promise<void> {
     const pending = await swr.pendingCount();
     const dead = (await swr.deadLetters()).length;
 
-    for (const [name, read] of [
-        ['projects', () => store.projects.toArrayAsync()],
-        ['tasks', () => store.tasks.toArrayAsync()],
-    ] as const) {
-        const local = await read() as Array<Record<string, unknown>>;
+    for (const [, schema] of store.schemas) {
+        const name = schema.collectionName;
+        const local = await store.getCollection(schema).toArrayAsync() as Array<Record<string, unknown>>;
         const remote = (await serverState(name)).rows;
         const remoteById = new Map(remote.map((r) => [String(r._id), r]));
 

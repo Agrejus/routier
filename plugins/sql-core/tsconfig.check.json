@@ -1,0 +1,22 @@
+{
+    // Typechecking only. `tsconfig.json` stays the BUILD config and keeps resolving workspace
+    // packages through their built `dist`, so nothing here can change the declarations this
+    // package publishes. See `plugins/sqlite/tsconfig.check.json` for why the two differ.
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "noEmit": true,
+        "declaration": false,
+        "baseUrl": ".",
+        "paths": {
+            "@routier/core": ["../../core/src/index.ts"],
+            "@routier/core/*": ["../../core/src/*"]
+        }
+    },
+    "include": [
+        "./src/**/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist"
+    ]
+}

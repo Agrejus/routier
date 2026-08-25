@@ -5,6 +5,7 @@ import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin,
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
 import { BulkPersistResult } from '@routier/core/collections';
 import { CompiledSchema } from '@routier/core/schema';
+import { ResultColumn } from '@routier/core/plugins';
 import { SqlPersistOperation } from './types';
 import type { SqliteConnection, SqliteDriver } from './drivers/types';
 
@@ -139,12 +140,13 @@ export class SqliteDbPluginBase implements IDbPlugin {
      */
     private async runWithTable(
         connection: SqliteConnection,
-        sql: string,
-        params: readonly unknown[] | undefined,
+        operation: { sql: string; params?: readonly unknown[]; result?: readonly ResultColumn[] },
         createTableSql: string
     ): Promise<unknown[]> {
+        const { sql, params, result } = operation;
+
         try {
-            return await connection.all(sql, params);
+            return await connection.all(sql, params, result);
         } catch (error) {
             if (isMissingTable(error) === false) {
                 throw error;
@@ -152,7 +154,10 @@ export class SqliteDbPluginBase implements IDbPlugin {
 
             await connection.run(createTableSql);
 
-            return await connection.all(sql, params);
+            // The retry passes the SAME description. Dropping it here would leave the one path
+            // that always runs for a new collection — the first read or write against it — on a
+            // slower route than every later one, and nothing would report the difference.
+            return await connection.all(sql, params, result);
         }
     }
 
@@ -167,9 +172,10 @@ export class SqliteDbPluginBase implements IDbPlugin {
 
         const createTableSQL = this.resolveTableCreateStatement(event.operation.schema);
         const translator = new SqlTranslator(event.operation);
-        const { params, sql } = buildFromQueryOperation(event.operation);
+        const operation = buildFromQueryOperation(event.operation);
+        const { params, sql } = operation;
 
-        this.withConnection(connection => this.runWithTable(connection, sql, params, createTableSQL))
+        this.withConnection(connection => this.runWithTable(connection, operation, createTableSQL))
             .then(rows => {
                 // After the statement ran, not before: RetryDbPlugin re-invokes with the same
                 // event, so pushing first would report one entry per failed attempt.
@@ -229,7 +235,8 @@ export class SqliteDbPluginBase implements IDbPlugin {
                 return;
             }
 
-            const { sql, params } = buildJoinQueryOperation(event.operation, innerSchema);
+            const joinOperation = buildJoinQueryOperation(event.operation, innerSchema);
+            const { sql, params } = joinOperation;
             const translator = new SqlTranslator(event.operation, { join: true });
 
             const createTables = [
@@ -237,7 +244,7 @@ export class SqliteDbPluginBase implements IDbPlugin {
                 this.resolveTableCreateStatement(innerSchema)
             ].join("\n");
 
-            this.withConnection(connection => this.runWithTable(connection, sql, params, createTables))
+            this.withConnection(connection => this.runWithTable(connection, joinOperation, createTables))
                 .then(rows => {
                     event.executedQueries.push({ text: sql, parameters: params });
 
@@ -333,7 +340,7 @@ export class SqliteDbPluginBase implements IDbPlugin {
 
             try {
                 for (const { op, type } of operations) {
-                    const rows = await this.runWithTable(connection, op.sql, op.params, op.createTableSql);
+                    const rows = await this.runWithTable(connection, op, op.createTableSql);
 
                     // A token-checked UPDATE that matched no row lost the race: another writer
                     // changed the row after this one read it. Roll everything back and name it.

@@ -23,3 +23,4 @@ export * from './sql';
 export * from './columns';
 export * from './updates';
 export * from './joins';
+export * from './resultShape';

@@ -2,7 +2,8 @@ import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema'
 import { Expression } from '@routier/core/expressions';
 import { IQuery, JoinQueryOptionValue, Query, QueryField } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
-import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, getDialect, sqlColumnProperties, toColumnValueMap, toSql, SqlDialect } from '@routier/sql-plugin-core';
+import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, entityResultColumns, getDialect, sqlColumnProperties, toColumnValueMap, toSql, SqlDialect } from '@routier/sql-plugin-core';
+import { mappedResultColumns, ResultColumn } from '@routier/core/plugins';
 import { SqlOperation } from './types';
 
 /**
@@ -402,6 +403,18 @@ export const postgresJoinKeyCast = <TOuter extends {}, TInner extends {}>(
 /**
  * Builds a complete SQL query from an IQuery object for PostgreSQL.
  */
+/**
+ * Statement shapes that REPLACE the select list, so the projected columns stop describing what
+ * comes back. Reporting them would be a false description.
+ */
+const REWRITES_SELECT_LIST = new Set(['count', 'min', 'max', 'sum']);
+
+const describedResult = (
+    operations: readonly { type: string }[],
+    columns: readonly ResultColumn[]
+): readonly ResultColumn[] | undefined =>
+    operations.some(operation => REWRITES_SELECT_LIST.has(operation.type)) ? undefined : columns;
+
 export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuery<TEntity, TShape>, vectors: PostgresVectorSupport = NO_VECTOR_SUPPORT): SqlOperation & { nearestPushedDown: boolean } {
     const { schema, options } = query;
     const tableName = schema.collectionName;
@@ -417,25 +430,27 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
         if (mapFields) break;
     }
 
-    let columnsStr: string;
-    if (mapFields && mapFields.length > 0) {
-        columnsStr = `"${mapFields[0].sourceName}"`;
-        for (let i = 1; i < mapFields.length; i++) {
-            columnsStr += `, "${mapFields[i].sourceName}"`;
-        }
-    } else {
-        // Root properties only, storage-side names — the layout the DDL creates. A column
-        // per descendant would select phantom columns the table does not have.
-        const columnProperties = sqlColumnProperties(schema);
-        const columnCount = columnProperties.length;
-        if (columnCount === 0) {
-            throw new Error("Need to select at least one column, found zero");
-        }
+    /**
+     * ONE ordered list, from which both the select list and the result description come.
+     *
+     * Deriving them separately is how a description comes to disagree with the statement it
+     * describes, and the wrong order does not fail — a consumer encoding columnar would file every
+     * column's values under another column's name.
+     *
+     * Root properties only when there is no projection: storage-side names, the layout the DDL
+     * creates. A column per descendant would select phantom columns the table does not have.
+     */
+    const resultColumns = mapFields != null && mapFields.length > 0
+        ? mappedResultColumns(mapFields)
+        : entityResultColumns(schema);
 
-        columnsStr = `"${columnProperties[0].getResolvedName()}"`;
-        for (let i = 1; i < columnCount; i++) {
-            columnsStr += `, "${columnProperties[i].getResolvedName()}"`;
-        }
+    if (resultColumns.length === 0) {
+        throw new Error("Need to select at least one column, found zero");
+    }
+
+    let columnsStr = `"${resultColumns[0].name}"`;
+    for (let i = 1; i < resultColumns.length; i++) {
+        columnsStr += `, "${resultColumns[i].name}"`;
     }
 
     const params: any[] = [];
@@ -598,7 +613,7 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
         }
     }
 
-    return { sql: currentQuery, params, nearestPushedDown };
+    return { sql: currentQuery, params, nearestPushedDown, result: describedResult(otherOps, resultColumns) };
 }
 
 /**
@@ -627,7 +642,7 @@ export function buildJoinQueryOperation<TEntity extends {}, TShape, TInner exten
 
     const outer = buildFromQueryOperation(new Query(before, query.schema), vectors);
 
-    const joined = buildJoinStatement({
+    const { columns, ...joined } = buildJoinStatement({
         dialect: getDialect('postgresql'),
         join: at.value,
         outerSchema: query.schema,
@@ -637,5 +652,7 @@ export function buildJoinQueryOperation<TEntity extends {}, TShape, TInner exten
         keyCast: postgresJoinKeyCast(query.schema, innerSchema, at.value)
     });
 
-    return { ...joined, join: at.value };
+    // The FLAT joined row, aliased per side. A driver that decodes it does so before
+    // `splitJoinRows` cuts it in two.
+    return { ...joined, result: columns, join: at.value };
 }

@@ -1,0 +1,35 @@
+{
+    // Typechecking only. `tsconfig.json` stays the BUILD config and keeps resolving workspace
+    // packages through their built `dist`, so nothing here can change the declarations this
+    // package publishes.
+    //
+    // Two things it fixes:
+    //
+    // 1. `paths` resolve `@routier/*` to SOURCE, which is what jest's `moduleNameMapper` already
+    //    does. With the build config the two disagree: a stale `dist` makes `tsc` pass on an
+    //    import jest rejects, and invent errors for code that is fine.
+    // 2. `include` covers `src/**/*`, so TEST files are checked. The build config lists only the
+    //    published entry points, so a type error reachable solely from a test was invisible until
+    //    the suite failed to run.
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "noEmit": true,
+        "declaration": false,
+        "baseUrl": ".",
+        "paths": {
+            "@routier/core": ["../../core/src/index.ts"],
+            "@routier/core/*": ["../../core/src/*"],
+            "@routier/datastore": ["../../datastore/src/index.ts"],
+            "@routier/datastore/*": ["../../datastore/src/*"],
+            "@routier/sql-plugin-core": ["../sql-core/src/index.ts"],
+            "@routier/test-utils": ["../../test-utils/src/index.ts"]
+        }
+    },
+    "include": [
+        "./src/**/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist"
+    ]
+}

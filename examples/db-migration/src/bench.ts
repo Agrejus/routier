@@ -4,6 +4,13 @@ import { makeSeed } from './seed';
 import { explainFilter, OPS, OpContext } from './ops';
 import { migrate } from './migrate';
 
+declare global {
+    interface Window {
+        /** The live stores, so the page can be driven and inspected from a console or a script. */
+        __STORES__?: Map<DbChoice, ShopStore>;
+    }
+}
+
 export type Timing = { step: string; ms: number; note?: string };
 
 export type Visit = {
@@ -51,7 +58,7 @@ export class Journey {
         if (store == null) {
             store = new ShopStore(createPlugin(db, databaseNameFor(this.stamp, db)));
             this.stores.set(db, store);
-            (window as any).__STORES__ = this.stores;
+            window.__STORES__ = this.stores;
         }
         return store;
     }
@@ -64,12 +71,16 @@ export class Journey {
         const coldStart = await this.timeColdStart(db, onProgress);
 
         const store = this.open(db);
-        const collections = new Map(store.all().map(({ name, collection }) => [name, collection]));
 
         const arrival = await time(`Seeded ${this.count.toLocaleString()} documents`, async () => {
-            for (const [name, rows] of Object.entries(this.seed)) {
-                onProgress(`Seeding ${rows.length.toLocaleString()} ${name}...`);
-                const collection = collections.get(name)!;
+            for (const [, schema] of store.schemas) {
+                const rows = this.seed[schema.collectionName] ?? [];
+                // The entity type is left open for the same reason `migrate.ts` explains:
+                // `store.schemas` types its schemas as `CompiledSchema<Record<string, unknown>>`,
+                // which the create-type inference reads as a schema with no properties.
+                const collection = store.getCollection<any>(schema);
+
+                onProgress(`Seeding ${rows.length.toLocaleString()} ${schema.collectionName}...`);
 
                 for (let i = 0; i < rows.length; i += CHUNK) {
                     await collection.addAsync(...rows.slice(i, i + CHUNK));
@@ -77,7 +88,7 @@ export class Journey {
                 }
             }
 
-            return `${Object.keys(this.seed).length} collections`;
+            return `${store.schemas.size} collections`;
         });
 
         this.current = db;

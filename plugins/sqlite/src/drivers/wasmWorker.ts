@@ -24,13 +24,10 @@
 
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import { ensurePoolCapacity, isPoolFull, poolFullError } from './wasmPool';
-
-type WasmStatement = {
-    bind(params: unknown[]): void;
-    step(): boolean;
-    get(row: Record<string, unknown>): Record<string, unknown>;
-    finalize(): void;
-};
+import { readRows, type WasmStatement } from './wasmRows';
+import { streamChunks } from './wasmChunks';
+import { rawSqliteFrom, type RawSqlite } from './wasmRaw';
+import type { EncodedChunk, TransferPlan } from '@routier/core/transfer';
 
 type WasmDatabase = {
     prepare(sql: string): WasmStatement;
@@ -40,25 +37,59 @@ type WasmDatabase = {
 
 export type WorkerRequest =
     | { id: number; kind: 'open'; databaseName: string; storage: 'opfs' | 'memory' }
-    | { id: number; kind: 'all'; databaseName: string; sql: string; params: unknown[] }
+    /**
+     * `plan` present means: encode the rows columnar and stream them back as chunks. Absent means
+     * clone them, which is the only thing this worker did before and still the fallback for
+     * everything the plan cannot describe.
+     */
+    | { id: number; kind: 'all'; databaseName: string; sql: string; params: unknown[]; plan?: TransferPlan }
     | { id: number; kind: 'run'; databaseName: string; sql: string; params: unknown[] }
     | { id: number; kind: 'delete'; databaseName: string; storage: 'opfs' | 'memory' };
 
 export type WorkerResponse =
+    /** Uncoded result, or an operation with no rows. One message per request. */
     | { id: number; ok: true; rows?: unknown[] }
+    /** Coded result, 1..N messages in order, the last carrying `last: true`. */
+    | { id: number; ok: true; chunk: EncodedChunk; last: boolean }
     | { id: number; ok: false; error: string };
+
+const post = (response: WorkerResponse, transferables: readonly ArrayBufferLike[] = []): void => {
+    // The transfer list is a separate argument, never part of the payload. A transport that
+    // ignores it still delivers a correct message; the buffers are just copied instead of moved.
+    (self as unknown as Worker).postMessage(response, transferables as Transferable[]);
+};
 
 const databases = new Map<string, WasmDatabase>();
 
 /** Opens in flight, so concurrent operations on one name share a single open. */
 const openings = new Map<string, Promise<WasmDatabase>>();
 
+/**
+ * The raw reading surface, built once when the module loads.
+ *
+ * Bound to the module rather than per statement: it holds only the export table and a
+ * `TextDecoder`, and both are the same for every database this worker serves.
+ */
+let rawSqlite: RawSqlite | null = null;
+
+const rawApi = (): RawSqlite => {
+    if (rawSqlite == null) {
+        throw new Error('The SQLite module has not finished loading.');
+    }
+
+    return rawSqlite;
+};
+
 let modulePromise: Promise<any> | null = null;
 let poolPromise: Promise<any> | null = null;
 
 const loadModule = () => {
     if (modulePromise == null) {
-        modulePromise = sqlite3InitModule();
+        modulePromise = sqlite3InitModule().then((sqlite3: any) => {
+            rawSqlite = rawSqliteFrom(sqlite3.wasm);
+
+            return sqlite3;
+        });
     }
 
     return modulePromise;
@@ -135,16 +166,6 @@ const openPooled = (pool: any, databaseName: string): WasmDatabase => {
     }
 };
 
-const readRows = (statement: WasmStatement): unknown[] => {
-    const rows: unknown[] = [];
-
-    while (statement.step()) {
-        rows.push(statement.get({}));
-    }
-
-    return rows;
-};
-
 /**
  * Runs a statement and returns its rows.
  *
@@ -161,10 +182,37 @@ const queryStatement = (database: WasmDatabase, sql: string, params: unknown[]):
             statement.bind(params);
         }
 
-        return readRows(statement);
+        return readRows(rawApi(), statement);
     } finally {
         // Not finalising leaks the statement and holds a lock, which surfaces later as an
         // unrelated "database is locked".
+        statement.finalize();
+    }
+};
+
+/**
+ * Runs a statement and streams its rows back as columnar chunks.
+ *
+ * Posts as it goes rather than collecting: the main thread decodes chunk *k* while this fills
+ * *k+1*, which is where most of the codec's win comes from. Every typed array in a chunk is
+ * listed as transferable, so its buffer changes owner instead of being copied — and is DETACHED
+ * here the moment it is posted, which is why nothing reads a chunk after emitting it.
+ */
+const streamStatement = (
+    database: WasmDatabase,
+    request: { id: number; sql: string; params: unknown[]; plan: TransferPlan }
+): void => {
+    const statement = database.prepare(request.sql);
+
+    try {
+        if (request.params.length > 0) {
+            statement.bind(request.params);
+        }
+
+        streamChunks(rawApi(), statement, request.plan, ({ payload, transferables }, last) => {
+            post({ id: request.id, ok: true, chunk: payload, last }, transferables);
+        });
+    } finally {
         statement.finalize();
     }
 };
@@ -233,16 +281,29 @@ self.onmessage = async (event: MessageEvent<WorkerRequest>) => {
     const request = event.data;
 
     try {
+        if (request.kind === 'all' && request.plan != null) {
+            const database = databases.get(request.databaseName);
+
+            if (database == null) {
+                throw new Error(`database '${request.databaseName}' is not open`);
+            }
+
+            // Answers with 1..N messages instead of one. A failure part way through is reported
+            // the same as any other, and the driver discards the chunks it already had.
+            streamStatement(database, { id: request.id, sql: request.sql, params: request.params, plan: request.plan });
+            return;
+        }
+
         const rows = await handle(request);
 
-        (self as unknown as Worker).postMessage({ id: request.id, ok: true, rows } satisfies WorkerResponse);
+        post({ id: request.id, ok: true, rows });
     } catch (error) {
         // Errors do not survive structured cloning with their prototype, and the plugin only
         // reads `message` — it classifies a missing table by text. Send the string.
-        (self as unknown as Worker).postMessage({
+        post({
             id: request.id,
             ok: false,
             error: (error as Error)?.message ?? String(error),
-        } satisfies WorkerResponse);
+        });
     }
 };

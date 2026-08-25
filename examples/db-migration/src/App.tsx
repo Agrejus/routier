@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { QueryExplanation } from '@routier/core/plugins';
 import { Journey, Visit } from './bench';
 import { INSPECTOR_QUERIES, OpContext } from './ops';
 import { createPlugin, DbChoice, ShopStore } from './store';
@@ -274,26 +275,26 @@ async function seedInspectorStore(engine: DbChoice, rows: number): Promise<Inspe
     const orders = makeOrdersOnly(rows);
 
     for (let i = 0; i < orders.length; i += 1000) {
-        await store.orders.addAsync(...(orders.slice(i, i + 1000) as never[]));
+        await store.orders.addAsync(...orders.slice(i, i + 1000));
         await store.saveChangesAsync();
     }
 
     return { store, context: { email: String(orders[Math.floor(orders.length / 2)].email) } };
 }
 
-type RunResult = { explanation: any; summary: string; ms: number; error?: string };
+type RunResult = { explanation: QueryExplanation; summary: string; ms: number; error?: string };
 
 /** The statements a plugin actually sent, pulled out of the plan it reported. */
-function executedQueries(explanation: any): { text: string; parameters?: unknown[] }[] {
+function executedQueries(explanation: QueryExplanation | undefined): { text: string; parameters?: unknown[] }[] {
     const steps = explanation?.executionSteps;
 
     return Array.isArray(steps)
-        ? steps.flatMap((step: any) => Array.isArray(step?.executedQueries) ? step.executedQueries : [])
+        ? steps.flatMap(step => Array.isArray(step?.executedQueries) ? step.executedQueries : [])
         : [];
 }
 
 /** "1 option ran in the database, 0 ran in memory." — the line that says where the work went. */
-const pushdownSummary = (explanation: any): string => explanation?.summary?.explanation ?? '';
+const pushdownSummary = (explanation: QueryExplanation | undefined): string => explanation?.summary?.explanation ?? '';
 
 function QueryInspector({ visits }: { visits: Visit[] }) {
     const [selectedQuery, setSelectedQuery] = useState(0);

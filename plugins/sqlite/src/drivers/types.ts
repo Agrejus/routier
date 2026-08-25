@@ -1,3 +1,5 @@
+import { ResultColumn } from '@routier/core/plugins';
+
 /**
  * The whole of what this plugin needs from a SQLite engine.
  *
@@ -15,8 +17,16 @@ export interface SqliteConnection {
      *
      * Used for `SELECT` and for writes with `RETURNING`, which is how the plugin echoes saved
      * rows back to the change tracker.
+     *
+     * `result` describes the columns the statement returns, in order, and is a HINT: every
+     * driver is free to ignore it and return the same rows, which is what all but the WASM one
+     * do. A driver that pays to move rows across a boundary can use it to encode them columnar
+     * instead — it decides that, because only it knows what shapes its engine hands back.
+     *
+     * Absent when the statement's result cannot be described. Never a promise about the rows'
+     * content; the rows are identical either way.
      */
-    all(sql: string, params?: readonly unknown[]): Promise<unknown[]>;
+    all(sql: string, params?: readonly unknown[], result?: readonly ResultColumn[]): Promise<unknown[]>;
 
     /** Runs a statement that returns nothing: DDL, `BEGIN`, `COMMIT`, `ROLLBACK`. */
     run(sql: string, params?: readonly unknown[]): Promise<void>;

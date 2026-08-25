@@ -1,5 +1,6 @@
 import { faker } from '@faker-js/faker';
-import { CARRIERS, CATEGORIES, REGIONS, STATUSES } from './schemas';
+import { InferCreateType } from '@routier/core/schema';
+import { CARRIERS, CATEGORIES, REGIONS, STATUSES, orderSchema } from './schemas';
 
 /**
  * Seeded faker, so every database receives the exact same rows and every query returns the
@@ -102,7 +103,7 @@ export function makeSeed(total: number): SeedRows {
     };
 }
 
-const build = (count: number, make: (index: number) => Record<string, unknown>) =>
+const build = <T>(count: number, make: (index: number) => T): T[] =>
     Array.from({ length: count }, (_, index) => make(index));
 
 /**
@@ -112,7 +113,7 @@ const build = (count: number, make: (index: number) => Record<string, unknown>) 
  * inspector asks for a number of orders and has to get that number, or a query that pages past
  * the first thousand rows silently returns nothing.
  */
-export function makeOrdersOnly(count: number): Record<string, unknown>[] {
+export function makeOrdersOnly(count: number): InferCreateType<typeof orderSchema>[] {
     faker.seed(42);
 
     return build(count, i => {

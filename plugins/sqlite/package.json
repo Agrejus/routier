@@ -1,6 +1,6 @@
 {
     "name": "@routier/sqlite-plugin",
-    "version": "0.4.1",
+    "version": "0.5.0",
     "main": "./dist/index.cjs",
     "types": "./dist/index.d.ts",
     "source": "./src/index.ts",
@@ -11,7 +11,7 @@
         "build:types": "tsc --emitDeclarationOnly",
         "build:bundle": "node ../../scripts/clean-dist.mjs && rspack build",
         "build": "npm run build:bundle && npm run build:types",
-        "tsc": "tsc --noEmit",
+        "tsc": "tsc --noEmit -p tsconfig.check.json",
         "test": "jest",
         "lint": "oxlint . --ignore-pattern \"**/__tests__/**\" --ignore-pattern \"**/*.test.*\" --ignore-pattern \"**/*.spec.*\" --ignore-pattern \"**/*.mjs\""
     },
@@ -36,16 +36,16 @@
     ],
     "description": "Dexie plugin for routier",
     "peerDependencies": {
-        "@routier/core": ">=0.4.0",
-        "@routier/sql-plugin-core": ">=0.4.0",
+        "@routier/core": ">=0.6.0",
+        "@routier/sql-plugin-core": ">=0.6.0",
         "@sqlite.org/sqlite-wasm": ">=3.46.0",
         "sqlite3": "^5.1.7"
     },
     "devDependencies": {
         "@faker-js/faker": "^10.0.0",
-        "@routier/core": "^0.5.0",
+        "@routier/core": "^0.6.0",
         "@routier/datastore": "^0.4.0",
-        "@routier/sql-plugin-core": "^0.5.0",
+        "@routier/sql-plugin-core": "^0.6.0",
         "@rspack/cli": "^1.1.8",
         "@rspack/core": "^1.1.8",
         "@sqlite.org/sqlite-wasm": "^3.53.0-build1",

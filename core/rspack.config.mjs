@@ -18,6 +18,7 @@ export default libraryConfig({
         "expressions/index": "./src/expressions/index.ts",
         "errors/index": "./src/errors/index.ts",
         "performance/index": "./src/performance/index.ts",
-        "types/index": "./src/types/index.ts"
+        "types/index": "./src/types/index.ts",
+        "transfer/index": "./src/transfer/index.ts"
     },
 });
