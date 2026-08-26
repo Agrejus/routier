@@ -384,15 +384,20 @@ Constants (`PI`, `E`, `LN2`, `LN10`, `LOG2E`, `LOG10E`, `SQRT2`, `SQRT1_2`) are 
 
 Every getter is a **call**. `getTime` and `valueOf` are the same operation.
 
+**Date parts are UTC.** A local part is environment-dependent, and the refusal reasons below already
+rule that out: `EXTRACT(YEAR …)` runs in the engine's timezone and `evaluate.ts` runs in the host
+process's, so a row near a year boundary would be included by one and excluded by the other. The
+local getters are therefore refused, and Mongo is UTC natively.
+
 | method | verdict | call | SQL | Mongo |
 |---|---|---|---|---|
 | `getTime`, `valueOf` | call | `epoch-ms` | dialect-specific | `$toLong` |
-| `getFullYear` | call | `year` | `EXTRACT(YEAR …)` / `strftime` | `$year` |
-| `getMonth` | call | `month` | `EXTRACT(MONTH …)` | `$month` |
-| `getDate` | call | `day-of-month` | `EXTRACT(DAY …)` | `$dayOfMonth` |
-| `getDay` | call | `day-of-week` | `EXTRACT(DOW …)` | `$dayOfWeek` |
-| `getHours`, `getMinutes`, `getSeconds`, `getMilliseconds` | call | `hour`, `minute`, `second`, `millisecond` | `EXTRACT` | `$hour`, … |
-| every `getUTC*` | call | the same names, UTC variant | `EXTRACT` at UTC | Mongo is UTC natively |
+| `getUTCFullYear` | call | `utc-year` | `EXTRACT(YEAR …)` at UTC | `$year` |
+| `getUTCMonth` | call | `utc-month` | `EXTRACT(MONTH …)` at UTC | `$month` |
+| `getUTCDate` | call | `utc-day-of-month` | `EXTRACT(DAY …)` at UTC | `$dayOfMonth` |
+| `getUTCDay` | call | `utc-day-of-week` | `EXTRACT(DOW …)` at UTC | `$dayOfWeek` |
+| `getUTCHours`, `getUTCMinutes`, `getUTCSeconds`, `getUTCMilliseconds` | call | `utc-hour`, `utc-minute`, `utc-second`, `utc-millisecond` | `EXTRACT` at UTC | `$hour`, … |
+| `getFullYear`, `getMonth`, `getDate`, `getDay`, `getHours`, `getMinutes`, `getSeconds`, `getMilliseconds` | refuse | | | environment — the host timezone, which the engine does not share |
 | `toISOString`, `toJSON` | call | `to-iso-string` | `CAST` / `strftime` | `$dateToString` |
 | `getTimezoneOffset` | refuse | | | environment |
 | `toString`, `toDateString`, `toTimeString`, `toUTCString` | refuse | | | environment — host-format dependent |

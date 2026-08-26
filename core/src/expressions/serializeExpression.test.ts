@@ -2,7 +2,8 @@ import { describe, it, expect } from '@jest/globals';
 import { s } from '../schema';
 import { evaluate } from './evaluate';
 import { toExpression } from './parser';
-import { Expression } from './types';
+import { CallExpression, ComparatorExpression, Expression, PropertyExpression, ValueExpression } from './types';
+import type { SerializedExpression } from './types';
 
 /**
  * Can an expression cross a wire as it stands today?
@@ -121,6 +122,73 @@ describe("expression serialization", () => {
             withFunction.right.value = () => "nope";
 
             expect(() => Expression.toJson(withFunction as never)).toThrow(/Cannot serialize this filter value/);
+        });
+    });
+
+    describe("call nodes", () => {
+
+        const property = () => new PropertyExpression({ property: schema.getProperty("name")! });
+
+        it("round-trips a unary call", () => {
+            const rebuilt = overTheWire(new CallExpression({ call: "to-lower-case", expression: property() })) as CallExpression;
+
+            expect(rebuilt.type).toBe("call");
+            expect(rebuilt.call).toBe("to-lower-case");
+            expect((rebuilt.expression as PropertyExpression).property.id).toBe("name");
+            expect(rebuilt.arguments).toEqual([]);
+        });
+
+        it("round-trips a call with two arguments, in order", () => {
+            const rebuilt = overTheWire(new CallExpression({
+                call: "substring",
+                expression: property(),
+                arguments: [new ValueExpression({ value: 0 }), new ValueExpression({ value: 2 })],
+            })) as CallExpression;
+
+            expect(rebuilt.arguments.map(argument => (argument as ValueExpression).value)).toEqual([0, 2]);
+        });
+
+        it("round-trips a nested call, keeping the order it is applied in", () => {
+            const rebuilt = overTheWire(new CallExpression({
+                call: "to-lower-case",
+                expression: new CallExpression({ call: "trim", expression: property() }),
+            })) as CallExpression;
+
+            const inner = rebuilt.expression as CallExpression;
+
+            expect(rebuilt.call).toBe("to-lower-case");
+            expect(inner.call).toBe("trim");
+            expect((inner.expression as PropertyExpression).property.id).toBe("name");
+        });
+
+        it("round-trips a call inside a comparator, on either side", () => {
+            const rebuilt = overTheWire(new ComparatorExpression({
+                comparator: "equals",
+                negated: false,
+                strict: true,
+                left: new CallExpression({ call: "to-lower-case", expression: property() }),
+                right: new ValueExpression({ value: "alpha" }),
+            })) as ComparatorExpression;
+
+            expect((rebuilt.left as CallExpression).call).toBe("to-lower-case");
+            expect((rebuilt.right as ValueExpression).value).toBe("alpha");
+        });
+
+        it("rebuilds a call whose payload omits arguments, rather than throwing a TypeError", () => {
+            const payload: SerializedExpression = {
+                t: "call",
+                call: "trim",
+                expression: { t: "property", path: "name", transformer: null, locale: null },
+            } as SerializedExpression;
+
+            const rebuilt = Expression.fromJson(payload, schema as never) as CallExpression;
+
+            expect(rebuilt.arguments).toEqual([]);
+        });
+
+        it("says which call is missing its operand instead of failing on a property read", () => {
+            expect(() => Expression.fromJson({ t: "call", call: "trim", arguments: [] } as never, schema as never))
+                .toThrow(/'trim' call carries no operand/);
         });
     });
 

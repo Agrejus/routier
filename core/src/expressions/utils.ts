@@ -1,10 +1,6 @@
 import { PropertyInfo } from "../schema";
 import { CallExpression, Expression, PropertyExpression } from "./types";
 
-/**
- * A free function, not a method: `isExpression` is structural, so a plain object with a `type` is an
- * expression here and arrives that way off the wire.
- */
 export function childrenOf(expression: Expression): Expression[] {
 
     if (expression.type === "call") {

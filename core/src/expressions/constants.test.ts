@@ -13,10 +13,17 @@ describe('EXPRESSION_TYPES', () => {
         'comparator',
         'property',
         'value',
+        'call',
         'empty',
         'not-parsable',
     ] as const)('isExpression accepts type "%s"', type => {
         expect(isExpression({ type })).toBe(true);
+    });
+
+    it('lists every member of ExpressionType, so the guard cannot silently reject a new node', () => {
+        expect([...EXPRESSION_TYPES].sort()).toEqual(
+            ['call', 'comparator', 'empty', 'not-parsable', 'operator', 'property', 'value']
+        );
     });
 
     it('isExpression rejects a type outside the list', () => {

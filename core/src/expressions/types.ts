@@ -239,10 +239,17 @@ export abstract class Expression {
         }
 
         if (json.t === "call") {
+            if (json.expression == null) {
+                throw new Error(
+                    `Cannot deserialize a filter: a '${json.call}' call carries no operand.  ` +
+                    `Collection: ${schema.collectionName}.`
+                );
+            }
+
             return new CallExpression({
                 call: json.call,
                 expression: Expression.fromJson(json.expression, schema),
-                arguments: json.arguments.map(argument => Expression.fromJson(argument, schema)),
+                arguments: (json.arguments ?? []).map(argument => Expression.fromJson(argument, schema)),
             });
         }
 
@@ -358,6 +365,7 @@ export class CallExpression extends Expression {
         this.expression = options.expression;
         this.arguments = options.arguments ?? [];
     }
+
 }
 
 /**
@@ -392,14 +400,17 @@ export type ExpressionType = "operator" | "comparator" | "property" | "value" | 
  */
 export type Transformer = "to-lower-case" | "to-upper-case" | "length";
 
-/** `specs/filter-expressions.md` maps each to its SQL and Mongo form, and what is absent and why. */
+/**
+ * The names claimed so far. A name absent here is not refused — `specs/filter-expressions.md` lists
+ * both the refusals and their reasons, and is longer than this union.
+ */
 export type Call =
     | "to-lower-case" | "to-upper-case" | "length" | "trim" | "trim-start" | "trim-end"
     | "index-of" | "substring" | "concat" | "replace" | "replace-all"
     | "absolute" | "floor" | "ceiling" | "round" | "sign" | "square-root" | "power"
     | "add" | "subtract" | "multiply" | "divide" | "modulo"
-    | "year" | "month" | "day-of-month" | "day-of-week"
-    | "hour" | "minute" | "second" | "millisecond" | "epoch-ms"
+    | "utc-year" | "utc-month" | "utc-day-of-month" | "utc-day-of-week"
+    | "utc-hour" | "utc-minute" | "utc-second" | "utc-millisecond" | "epoch-ms"
     | "to-string" | "to-number" | "to-boolean" | "type-of"
     | "some" | "every";
 
