@@ -14,19 +14,21 @@
  *    becomes `{ price: { $gt: 5 } }`), because the alternative — treating the operand
  *    order as irrelevant — silently returns the complement of the intended rows.
  * 2. **Nested properties are first-class.** SQL plugins store a nested object as a JSON
- *    column and cannot filter into it; Mongo addresses `payload.inner.value` with dot
+ *    column and cannot filter into it; Mongo addresses `payload.operand.value` with dot
  *    notation, so the property path is used whole.
  * 3. **A property-side transformer needs `$expr`.** `LOWER(col) = ?` has no equivalent
  *    in a plain filter document. Those comparisons switch to the aggregation-expression
  *    form, which is a different shape rather than a different operator.
  */
 import type {
+    Call,
     ComparatorExpression,
     Expression,
     PropertyExpression,
-    Transformer,
 } from "@routier/core/expressions";
 import {
+    isCallExpression,
+    peelCalls,
     isComparatorExpression,
     isOperatorExpression,
     isPropertyExpression,
@@ -98,19 +100,28 @@ function buildPattern(escapedValue: string, comparator: string): string {
 }
 
 /**
- * Applies a parsed value transformer (e.g. `p.name.toLowerCase()`) to the literal
- * before it is embedded — the database never sees a value transformer, only its result.
+ * Applies a call to a literal before it is embedded — the database never sees a call on a value,
+ * only its result.
  */
-function applyValueTransformer(value: unknown, transformer: Transformer | null): unknown {
-    if (transformer === "to-lower-case" && typeof value === "string") {
-        return value.toLowerCase();
-    }
+function applyCallsToValue(value: unknown, calls: Call[]): unknown {
+    return calls.reduce<unknown>((current, call) => {
+        if (call === "to-lower-case" && typeof current === "string") {
+            return current.toLowerCase();
+        }
 
-    if (transformer === "to-upper-case" && typeof value === "string") {
-        return value.toUpperCase();
-    }
+        if (call === "to-upper-case" && typeof current === "string") {
+            return current.toUpperCase();
+        }
 
-    return value;
+        if (call === "length" && (typeof current === "string" || Array.isArray(current))) {
+            return current.length;
+        }
+
+        throw new Error(
+            `'${call}' cannot be applied to the value '${String(current)}' before embedding it. ` +
+            `Embedding the value unchanged would match against the wrong thing.`
+        );
+    }, value);
 }
 
 /**
@@ -137,21 +148,24 @@ export function toFieldPath(prop: PropertyExpression): string {
 interface PropertyValueSides {
     propLeft: PropertyExpression | null;
     propRight: PropertyExpression | null;
+    callsLeft: Call[];
+    callsRight: Call[];
     valLeft: unknown;
     valRight: unknown;
 }
 
 function getPropertyValueSides(cmp: ComparatorExpression): PropertyValueSides {
-    const propLeft = cmp.left && isPropertyExpression(cmp.left) ? cmp.left : null;
-    const propRight = cmp.right && isPropertyExpression(cmp.right) ? cmp.right : null;
-    const valLeft = cmp.left && isValueExpression(cmp.left)
-        ? applyValueTransformer(cmp.left.value, cmp.left.transformer)
-        : undefined;
-    const valRight = cmp.right && isValueExpression(cmp.right)
-        ? applyValueTransformer(cmp.right.value, cmp.right.transformer)
-        : undefined;
+    const left = peelCalls(cmp.left);
+    const right = peelCalls(cmp.right);
 
-    return { propLeft, propRight, valLeft, valRight };
+    return {
+        propLeft: left != null && isPropertyExpression(left.operand) ? left.operand : null,
+        propRight: right != null && isPropertyExpression(right.operand) ? right.operand : null,
+        callsLeft: left?.calls ?? [],
+        callsRight: right?.calls ?? [],
+        valLeft: left != null && isValueExpression(left.operand) ? applyCallsToValue(left.operand.value, left.calls) : undefined,
+        valRight: right != null && isValueExpression(right.operand) ? applyCallsToValue(right.operand.value, right.calls) : undefined,
+    };
 }
 
 /**
@@ -163,19 +177,20 @@ function getPropertyValueSides(cmp: ComparatorExpression): PropertyValueSides {
  */
 interface OrientedComparison {
     prop: PropertyExpression;
+    calls: Call[];
     value: unknown;
     comparator: string;
 }
 
 function orient(cmp: ComparatorExpression): OrientedComparison | null {
-    const { propLeft, propRight, valLeft, valRight } = getPropertyValueSides(cmp);
+    const { propLeft, propRight, callsLeft, callsRight, valLeft, valRight } = getPropertyValueSides(cmp);
 
     if (propLeft != null && valRight !== undefined) {
-        return { prop: propLeft, value: valRight, comparator: cmp.comparator };
+        return { prop: propLeft, calls: callsLeft, value: valRight, comparator: cmp.comparator };
     }
 
     if (propRight != null && valLeft !== undefined) {
-        return { prop: propRight, value: valLeft, comparator: MIRRORED[cmp.comparator] ?? cmp.comparator };
+        return { prop: propRight, calls: callsRight, value: valLeft, comparator: MIRRORED[cmp.comparator] ?? cmp.comparator };
     }
 
     return null;
@@ -185,24 +200,27 @@ function orient(cmp: ComparatorExpression): OrientedComparison | null {
  * Aggregation expression for a property reference, wrapping it in the operator its
  * transformer calls for. Ignoring the transformer would silently return wrong rows.
  */
-function renderExprOperand(prop: PropertyExpression): unknown {
-    const field = `$${toFieldPath(prop)}`;
+function renderExprOperand(prop: PropertyExpression, calls: Call[]): unknown {
+    return calls.reduce<unknown>((rendered, call) => {
+        if (call === "to-lower-case") {
+            return { $toLower: rendered };
+        }
 
-    if (prop.transformer === "to-lower-case") {
-        return { $toLower: field };
-    }
+        if (call === "to-upper-case") {
+            return { $toUpper: rendered };
+        }
 
-    if (prop.transformer === "to-upper-case") {
-        return { $toUpper: field };
-    }
+        if (call === "length") {
+            return prop.property.type === SchemaTypes.Array
+                ? { $size: rendered }
+                : { $strLenCP: rendered };
+        }
 
-    if (prop.transformer === "length") {
-        return prop.property.type === SchemaTypes.Array
-            ? { $size: field }
-            : { $strLenCP: field };
-    }
-
-    return field;
+        throw new Error(
+            `'${call}' has no MQL form. Rendering the field without it would match against the ` +
+            `stored value instead of the called one.`
+        );
+    }, `$${toFieldPath(prop)}`);
 }
 
 /**
@@ -237,11 +255,23 @@ function renderExprSide(expression: Expression | undefined): unknown {
     }
 
     if (isPropertyExpression(expression)) {
-        return renderExprOperand(expression);
+        return renderExprOperand(expression, []);
     }
 
     if (isValueExpression(expression)) {
-        return { $literal: applyValueTransformer(expression.value, expression.transformer) };
+        return { $literal: expression.value };
+    }
+
+    if (isCallExpression(expression)) {
+        const peeled = peelCalls(expression);
+
+        if (peeled != null && isPropertyExpression(peeled.operand)) {
+            return renderExprOperand(peeled.operand, peeled.calls);
+        }
+
+        if (peeled != null && isValueExpression(peeled.operand)) {
+            return { $literal: applyCallsToValue(peeled.operand.value, peeled.calls) };
+        }
     }
 
     throw new Error(`Unsupported operand in comparison: ${expression.type}`);
@@ -261,7 +291,7 @@ function renderExprStringPattern(cmp: ComparatorExpression): MqlFilter {
     }
 
     const pattern = buildPattern(escapeRegexLiteral(String(oriented.value)), oriented.comparator);
-    const match = { $regexMatch: { input: renderExprOperand(oriented.prop), regex: pattern } };
+    const match = { $regexMatch: { input: renderExprOperand(oriented.prop, oriented.calls), regex: pattern } };
 
     return { $expr: cmp.negated ? { $not: match } : match };
 }
@@ -370,7 +400,7 @@ export function toMql(expr: Expression): MqlFilter {
 
             // Not property-to-value (two properties, or two literals), or a property side
             // that has to be transformed first. Neither can be a field key.
-            if (oriented == null || oriented.prop.transformer != null) {
+            if (oriented == null || oriented.calls.length > 0) {
                 return renderExprComparison(e);
             }
 

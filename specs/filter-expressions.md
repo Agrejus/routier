@@ -164,14 +164,25 @@ Options, none chosen:
 and five consumers: `evaluate.ts`, `plugins/sql-core/src/sql.ts`, `plugins/mongodb/src/mql.ts`,
 `core/src/plugins/query/describeFilter.ts`, `core/src/plugins/EphemeralDataPlugin.ts:37`.
 
-1. `CallExpression` + serialization; the parser emits it for the three existing transformers only.
-   Pure refactor — the suite should stay green with no test edits. If it does not, the migration is
-   wrong.
-2. Delete `transformer`/`locale`; update the five consumers.
+1. **Done.** `CallExpression` + serialization, and the parser emits it for the three transform
+   methods. `peelCalls` in `core/src/expressions/utils.ts` separates an operand from the calls
+   applied to it, and `sql.ts`, `mql.ts` and the tests all use it rather than each keeping a copy.
+2. **Done.** `transformer` and `locale` are gone from both nodes and from the wire. `Transformer`
+   survives only as the parser's internal vocabulary of transform methods.
 3. Rename `t` → `type`, make the value tag optional, move `toJson`/`fromJson` onto the classes.
    `fromJson` accepts both wire forms for one version.
 4. Lift the casing guards (below). With calls they stop being special cases.
 5. Add call names one at a time, each retiring an `it.todo` in `coverage.test.ts`.
+
+Two things learned while doing 1 and 2, both worth keeping:
+
+- **A defaulted `calls` parameter is a trap.** `renderExprOperand(prop, calls = [])` let one call site
+  forget the argument, and the transformer was silently dropped from `$regexMatch` — the exact
+  failure the guard being lifted was written to prevent. Both translators take `calls` as a required
+  parameter now, so an omission is a compile error.
+- **An exhaustive list must be exhaustive by type.** `EXPRESSION_TYPES` was annotated
+  `ExpressionType[]`, which does not require every member, so `call` was missing and `isExpression`
+  rejected the new node. It is a `Record<ExpressionType, true>` now.
 
 ## Piece 2 — the tokenizer and grammar
 

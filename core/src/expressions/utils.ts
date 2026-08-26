@@ -1,5 +1,26 @@
 import { PropertyInfo } from "../schema";
-import { CallExpression, Expression, PropertyExpression } from "./types";
+import { Call, CallExpression, Expression, PropertyExpression } from "./types";
+
+/** An operand with the calls wrapping it, innermost first — the order they are applied in. */
+export type PeeledOperand = { operand: Expression, calls: Call[] };
+
+/**
+ * Separates an operand from the calls applied to it.
+ *
+ * `null` when there is no operand beneath the calls. Every consumer needs this to decide whether a
+ * comparator side is a property or a value, so it lives here rather than in each translator.
+ */
+export function peelCalls(expression: Expression | undefined): PeeledOperand | null {
+    const calls: Call[] = [];
+    let current = expression;
+
+    while (current != null && current.type === "call") {
+        calls.unshift((current as CallExpression).call);
+        current = (current as CallExpression).expression;
+    }
+
+    return current == null ? null : { operand: current, calls };
+}
 
 export function childrenOf(expression: Expression): Expression[] {
 

@@ -34,7 +34,8 @@ const getKeyEqualityValue = (expression: unknown): { value: IdType } | null => {
         return null;
     }
 
-    if (left.property.isKey !== true || left.transformer != null || right.value == null) {
+    // A called property is a CallExpression, so it fails the isPropertyExpression check above
+    if (left.property.isKey !== true || right.value == null) {
         return null;
     }
 

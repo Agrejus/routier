@@ -27,8 +27,8 @@ export type SerializedExpression =
         right?: SerializedExpression;
     }
     | { t: "call"; call: Call; expression: SerializedExpression; arguments: SerializedExpression[] }
-    | { t: "property"; path: string; transformer: Transformer | null; locale: string | null }
-    | { t: "value"; value: SerializedValue; transformer: Transformer | null; locale: string | null };
+    | { t: "property"; path: string }
+    | { t: "value"; value: SerializedValue };
 
 const valueToJson = (value: unknown): SerializedValue => {
     if (value === undefined) {
@@ -189,8 +189,6 @@ export abstract class Expression {
                 t: "property",
                 // The dotted path, which is exactly the key `getProperty` is looking up
                 path: property.property.id,
-                transformer: property.transformer,
-                locale: property.locale,
             };
         }
 
@@ -200,8 +198,6 @@ export abstract class Expression {
             return {
                 t: "value",
                 value: valueToJson(value.value),
-                transformer: value.transformer,
-                locale: value.locale,
             };
         }
 
@@ -264,19 +260,11 @@ export abstract class Expression {
                 );
             }
 
-            const rebuilt = new PropertyExpression({ property });
-            rebuilt.transformer = json.transformer;
-            rebuilt.locale = json.locale;
-
-            return rebuilt;
+            return new PropertyExpression({ property });
         }
 
         if (json.t === "value") {
-            const rebuilt = new ValueExpression({ value: valueFromJson(json.value) });
-            rebuilt.transformer = json.transformer;
-            rebuilt.locale = json.locale;
-
-            return rebuilt;
+            return new ValueExpression({ value: valueFromJson(json.value) });
         }
 
         return json.t === "empty" ? Expression.EMPTY : Expression.NOT_PARSABLE;
@@ -343,8 +331,6 @@ export class PropertyExpression extends Expression {
     readonly type = "property" as const;
     /** The property info for the path. */
     property: PropertyInfo<any>;
-    transformer: Transformer | null = null;
-    locale: string | null = null;
 
     constructor(options: { property: PropertyInfo<any> }) {
         super();
@@ -376,9 +362,6 @@ export class ValueExpression extends Expression {
     readonly type = "value" as const;
     /** The literal value. */
     value: unknown;
-
-    transformer: Transformer | null = null;
-    locale: string | null = null;
 
     constructor(options: {
         value: unknown

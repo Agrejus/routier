@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import { ComparatorExpression, OperatorExpression, PropertyExpression, ValueExpression } from "@routier/core/expressions";
+import { CallExpression, ComparatorExpression, OperatorExpression, PropertyExpression, ValueExpression } from "@routier/core/expressions";
 import { getDialect, toSql } from "./sql";
 
 const prop = (name: string, from?: string) =>
@@ -159,12 +159,12 @@ describe("sql expression translator", () => {
 });
 
 describe("sql expression translator — expanded syntax", () => {
-    const propTyped = (name: string, type: string, transformer: string | null = null) => {
+    const propTyped = (name: string, type: string, call: string | null = null) => {
         const p = new PropertyExpression({
             property: { name, from: null, type, getResolvedName: () => name, getParentPathArray: (): string[] => [] } as any,
         });
-        p.transformer = transformer as any;
-        return p;
+
+        return call == null ? p : new CallExpression({ call: call as never, expression: p });
     };
 
     it("renders an empty expression as a tautology", () => {
@@ -216,8 +216,7 @@ describe("sql expression translator — expanded syntax", () => {
     });
 
     it("applies a value transformer before binding", () => {
-        const lowered = val("MiXeD");
-        lowered.transformer = "to-lower-case";
+        const lowered = new CallExpression({ call: "to-lower-case", expression: val("MiXeD") });
 
         const expr = new ComparatorExpression({
             comparator: "starts-with",

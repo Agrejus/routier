@@ -3,6 +3,7 @@ import { s } from '../schema';
 import { logger } from '../utilities';
 import { toExpression } from './parser';
 import { ComparatorExpression, Expression, OperatorExpression, PropertyExpression, ValueExpression } from './types';
+import { peelCalls } from './utils';
 
 /**
  * The 2026-08 query-language expansion: syntax that used to silently fall back to
@@ -159,7 +160,7 @@ describe('inline array membership', () => {
 
         expect(cmp.comparator).toBe('includes');
         expect((cmp.left as ValueExpression).value).toEqual(['active', 'pending']);
-        expect((cmp.right as PropertyExpression).property.name).toBe('name');
+        expect((peelCalls(cmp.right)?.operand as PropertyExpression).property.name).toBe('name');
     });
 
     it('parses a numeric array', () => {
@@ -191,8 +192,8 @@ describe('property-to-property comparison', () => {
         const cmp = parsed(fromSource('r.name === r.other'));
 
         expect(cmp.comparator).toBe('equals');
-        expect((cmp.left as PropertyExpression).property.name).toBe('name');
-        expect((cmp.right as PropertyExpression).property.name).toBe('other');
+        expect((peelCalls(cmp.left)?.operand as PropertyExpression).property.name).toBe('name');
+        expect((peelCalls(cmp.right)?.operand as PropertyExpression).property.name).toBe('other');
     });
 
     it('parses relational comparison without swapping sides', () => {
@@ -215,15 +216,15 @@ describe('.length on strings and arrays', () => {
     it('parses string length as a length transformer with a numeric value', () => {
         const cmp = parsed(fromSource('r.name.length > 5'));
 
-        expect((cmp.left as PropertyExpression).property.name).toBe('name');
-        expect((cmp.left as PropertyExpression).transformer).toBe('length');
+        expect((peelCalls(cmp.left)?.operand as PropertyExpression).property.name).toBe('name');
+        expect(peelCalls(cmp.left)?.calls).toEqual(['length']);
         expect((cmp.right as ValueExpression).value).toBe(5);
     });
 
     it('parses array length equality', () => {
         const cmp = parsed(fromSource('r.tags.length === 0'));
 
-        expect((cmp.left as PropertyExpression).transformer).toBe('length');
+        expect(peelCalls(cmp.left)?.calls).toEqual(['length']);
         expect((cmp.right as ValueExpression).value).toBe(0);
     });
 
@@ -266,7 +267,7 @@ describe('.length on strings and arrays', () => {
         const result = toExpression(lengthSchema as any, ((r: any) => r.box.length === 5) as any) as ComparatorExpression;
 
         expect(result).not.toStrictEqual(Expression.NOT_PARSABLE);
-        expect((result.left as PropertyExpression).transformer).toBeNull();
+        expect(peelCalls(result.left)?.calls).toEqual([]);
         expect((result.left as PropertyExpression).property.getAssignmentPath()).toBe('box.length');
     });
 });

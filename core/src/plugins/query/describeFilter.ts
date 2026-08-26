@@ -1,4 +1,4 @@
-import type { Comparator, Expression, PropertyExpression, Transformer } from "../../expressions";
+import type { Comparator, Expression, PropertyExpression } from "../../expressions";
 import { renderCallAsJs } from "../../expressions/callSource";
 import {
     isCallExpression,
@@ -50,18 +50,8 @@ const COMPARATOR_METHODS: Partial<Record<Comparator, string>> = {
     "ends-with": "endsWith",
 };
 
-const TRANSFORMER_CALLS: Record<Transformer, string> = {
-    "to-lower-case": ".toLowerCase()",
-    "to-upper-case": ".toUpperCase()",
-    "length": ".length",
-};
-
-const renderProperty = (property: PropertyExpression): string => {
-    const path = property.property.getPathArray().join(".");
-    const transformer = property.transformer;
-
-    return transformer == null ? path : `${path}${TRANSFORMER_CALLS[transformer]}`;
-};
+const renderProperty = (property: PropertyExpression): string =>
+    property.property.getPathArray().join(".");
 
 /**
  * The predicate as JavaScript, with every value replaced by `?`.

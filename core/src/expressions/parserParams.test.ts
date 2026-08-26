@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { s } from '../schema';
 import { toExpression } from './parser';
 import { ComparatorExpression, Expression } from './types';
+import { peelCalls } from './utils';
 
 /**
  * Param-driven property access and value transformers.
@@ -39,12 +40,14 @@ const comparator = (source: string, params: any) => {
 
 /** The schema property the comparison filters on. */
 const filteredProperty = (source: string, params: any) =>
-    (comparator(source, params).left as any)?.property?.name;
+    (peelCalls(comparator(source, params).left)?.operand as any)?.property?.name;
 
-/** The transformer and locale attached to the compared value. */
+/** The call applied to the compared value, and the locale it carries as its argument. */
 const valueTransform = (source: string, params: any) => {
     const right = comparator(source, params).right as any;
-    return { transformer: right?.transformer ?? null, locale: right?.locale ?? null };
+    const calls = peelCalls(right)?.calls ?? [];
+
+    return { transformer: calls[0] ?? null, locale: right?.arguments?.[0]?.value ?? null };
 };
 
 describe('param-driven property access', () => {

@@ -1,6 +1,6 @@
-import { isComparatorExpression, isOperatorExpression, isPropertyExpression, isValueExpression } from "../assertions";
+import { isCallExpression, isComparatorExpression, isOperatorExpression, isPropertyExpression, isValueExpression } from "../assertions";
 import { UnknownRecord } from "../utilities";
-import { Comparator, Expression, Transformer } from "./types";
+import { Call, Comparator, Expression } from "./types";
 
 /**
  * Runs a parsed expression against a row.
@@ -33,26 +33,22 @@ export type EvaluationResult = boolean | undefined;
 /** Reads a property or literal operand, or `UNRESOLVED` when the node is not one. */
 const UNRESOLVED = Symbol("unresolved");
 
-const applyTransformer = (value: unknown, transformer: Transformer | null): unknown | typeof UNRESOLVED => {
-    if (transformer == null) {
-        return value;
-    }
-
-    // A transformer applied to an absent value has no answer, and inventing one ("" for a missing
-    // string) is how a filter starts matching rows it should not.
+const applyCall = (call: Call, value: unknown): unknown | typeof UNRESOLVED => {
+    // A call applied to an absent value has no answer, and inventing one ("" for a missing string)
+    // is how a filter starts matching rows it should not.
     if (value == null) {
         return UNRESOLVED;
     }
 
-    if (transformer === "to-lower-case") {
+    if (call === "to-lower-case") {
         return typeof value === "string" ? value.toLowerCase() : UNRESOLVED;
     }
 
-    if (transformer === "to-upper-case") {
+    if (call === "to-upper-case") {
         return typeof value === "string" ? value.toUpperCase() : UNRESOLVED;
     }
 
-    if (transformer === "length") {
+    if (call === "length") {
         return typeof value === "string" || Array.isArray(value) ? value.length : UNRESOLVED;
     }
 
@@ -65,13 +61,19 @@ const operand = (expression: Expression | undefined, row: UnknownRecord): unknow
     }
 
     if (isValueExpression(expression)) {
-        return applyTransformer(expression.value, expression.transformer);
+        return expression.value;
     }
 
     if (isPropertyExpression(expression)) {
         // Through the PropertyInfo, so a nested path and a `from`-renamed segment resolve the same
         // way every other consumer of the tree resolves them.
-        return applyTransformer(expression.property.getValue(row), expression.transformer);
+        return expression.property.getValue(row);
+    }
+
+    if (isCallExpression(expression)) {
+        const inner = operand(expression.expression, row);
+
+        return inner === UNRESOLVED ? UNRESOLVED : applyCall(expression.call, inner);
     }
 
     return UNRESOLVED;

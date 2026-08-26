@@ -3,7 +3,6 @@ import { s } from '../schema';
 import { evaluate } from './evaluate';
 import { toExpression } from './parser';
 import { CallExpression, ComparatorExpression, Expression, PropertyExpression, ValueExpression } from './types';
-import type { SerializedExpression } from './types';
 
 /**
  * Can an expression cross a wire as it stands today?
@@ -175,13 +174,9 @@ describe("expression serialization", () => {
         });
 
         it("rebuilds a call whose payload omits arguments, rather than throwing a TypeError", () => {
-            const payload: SerializedExpression = {
-                t: "call",
-                call: "trim",
-                expression: { t: "property", path: "name", transformer: null, locale: null },
-            } as SerializedExpression;
+            const payload = { t: "call", call: "trim", expression: { t: "property", path: "name" } };
 
-            const rebuilt = Expression.fromJson(payload, schema as never) as CallExpression;
+            const rebuilt = Expression.fromJson(payload as never, schema as never) as CallExpression;
 
             expect(rebuilt.arguments).toEqual([]);
         });

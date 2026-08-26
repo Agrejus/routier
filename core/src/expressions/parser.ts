@@ -1,7 +1,7 @@
 import { logger } from "../utilities";
 import { assertString } from "../assertions";
 import { CompiledSchema, PropertyInfo, SchemaTypes } from "../schema";
-import { Expression, OperatorExpression, ComparatorExpression, ValueExpression, PropertyExpression, Filter, ParamsFilter, Comparator, Transformer } from "./types";
+import { Expression, OperatorExpression, ComparatorExpression, ValueExpression, PropertyExpression, CallExpression, Filter, ParamsFilter, Comparator, Transformer } from "./types";
 
 // Error message constants
 const ERROR_MESSAGES = {
@@ -1026,26 +1026,23 @@ class ExpressionParser {
         });
     }
 
-    private createPropertyExpression(operand: PropertyOperand): PropertyExpression {
-        const expression = new PropertyExpression({ property: operand.property });
-        expression.transformer = operand.transformer;
-        expression.locale = operand.locale;
-        return expression;
+    private createPropertyExpression(operand: PropertyOperand): Expression {
+        return asCall(new PropertyExpression({ property: operand.property }), operand.transformer, operand.locale);
     }
 
-    private createValueExpression(operand: ValueOperand | ParamOperand, pairedProperty: PropertyInfo<any> | null, applyConverter: boolean): ValueExpression {
+    private createValueExpression(operand: ValueOperand | ParamOperand, pairedProperty: PropertyInfo<any> | null, applyConverter: boolean): Expression {
 
         if (operand.kind === "param") {
-            const expression = new ParamReferenceExpression({ paramPath: operand.path, pairedProperty, applyConverter });
-            expression.transformer = operand.transformer;
-            expression.locale = operand.locale;
-            return expression;
+            return asCall(
+                new ParamReferenceExpression({ paramPath: operand.path, pairedProperty, applyConverter }),
+                operand.transformer,
+                operand.locale
+            );
         }
 
         const expression = new ValueExpression({ value: resolvePairedValue(operand.value, pairedProperty, applyConverter) });
-        expression.transformer = operand.transformer;
-        expression.locale = operand.locale;
-        return expression;
+
+        return asCall(expression, operand.transformer, operand.locale);
     }
 
     // #endregion
@@ -1064,24 +1061,16 @@ const bindExpression = (expression: Expression, paramsName: string | null, param
 
     if (expression instanceof ParamReferenceExpression) {
         const raw = resolveParamPath(paramsName ?? "params", expression.paramPath, params);
-        const bound = new ValueExpression({ value: resolvePairedValue(raw, expression.pairedProperty, expression.applyConverter) });
-        bound.transformer = expression.transformer;
-        bound.locale = expression.locale;
-        return bound;
+
+        return new ValueExpression({ value: resolvePairedValue(raw, expression.pairedProperty, expression.applyConverter) });
     }
 
     if (expression instanceof ValueExpression) {
-        const clone = new ValueExpression({ value: expression.value });
-        clone.transformer = expression.transformer;
-        clone.locale = expression.locale;
-        return clone;
+        return new ValueExpression({ value: expression.value });
     }
 
     if (expression instanceof PropertyExpression) {
-        const clone = new PropertyExpression({ property: expression.property });
-        clone.transformer = expression.transformer;
-        clone.locale = expression.locale;
-        return clone;
+        return new PropertyExpression({ property: expression.property });
     }
 
     if (expression instanceof ComparatorExpression) {
@@ -1102,8 +1091,36 @@ const bindExpression = (expression: Expression, paramsName: string | null, param
         });
     }
 
+    if (expression instanceof CallExpression) {
+        return new CallExpression({
+            call: expression.call,
+            expression: bindExpression(expression.expression, paramsName, params),
+            arguments: expression.arguments.map(argument => bindExpression(argument, paramsName, params)),
+        });
+    }
+
     return expression;
 }
+
+/**
+ * Wraps an operand in the call a transform method named, if there was one.
+ *
+ * `Transformer` and `Call` share these three names, so the transform IS the call name. A locale
+ * becomes the call's first argument, which is where it belongs — it qualifies the casing, not the
+ * property.
+ */
+const asCall = (inner: Expression, transformer: Transformer | null, locale: string | null): Expression => {
+
+    if (transformer == null) {
+        return inner;
+    }
+
+    return new CallExpression({
+        call: transformer,
+        expression: inner,
+        arguments: locale == null ? [] : [new ValueExpression({ value: locale })],
+    });
+};
 
 // #endregion
 

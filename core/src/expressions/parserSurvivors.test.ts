@@ -3,6 +3,7 @@ import { s } from '../schema';
 import { logger } from '../utilities';
 import { toExpression } from './parser';
 import { ComparatorExpression, Expression, ValueExpression } from './types';
+import { peelCalls } from './utils';
 
 /**
  * Survivors of the 2026-08 mutation audit, killed by direct assertion. Two kinds live here:
@@ -261,7 +262,7 @@ describe('value transformers', () => {
     it('a transform on a literal value is carried on the value expression', () => {
         const cmp = parsed(fromSource('r.name.startsWith("X".toLowerCase())'));
 
-        expect((cmp.right as ValueExpression).transformer).toBeTruthy();
+        expect(peelCalls(cmp.right)?.calls.length).toBeGreaterThan(0);
     });
 });
 

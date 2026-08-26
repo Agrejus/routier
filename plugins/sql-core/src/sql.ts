@@ -5,8 +5,10 @@
  * Uses a **Visitor** over the expression AST. Equals comparison uses a Strategy
  * per (column-side, null vs value) case.
  */
-import type { ComparatorExpression, Expression, PropertyExpression, Transformer } from "@routier/core/expressions";
+import type { Call, ComparatorExpression, Expression, PropertyExpression } from "@routier/core/expressions";
 import {
+    isCallExpression,
+    peelCalls,
     isComparatorExpression,
     isOperatorExpression,
     isPropertyExpression,
@@ -84,7 +86,7 @@ export interface SqlDialect {
      * Reads a value out of a JSON column so a nested property can be filtered on.
      *
      * A nested subtree is stored as ONE JSON column named for its root (see
-     * `sqlColumnProperties`), so `payload.inner.value` is not a column — it is a path into
+     * `sqlColumnProperties`), so `payload.operand.value` is not a column — it is a path into
      * the `payload` column. Without this the translator rendered the leaf name alone and
      * emitted `"value" = $1`, a column that does not exist.
      *
@@ -382,19 +384,28 @@ function buildPattern(
 }
 
 /**
- * Applies a parsed value transformer (e.g. `p.name.toLowerCase()`) to the value
- * before it is bound — SQL never sees value transformers, only their result.
+ * Applies a call to a literal before it is bound — SQL never sees a call on a value, only its result.
  */
-function applyValueTransformer(value: unknown, transformer: Transformer | null): unknown {
-    if (transformer === "to-lower-case" && typeof value === "string") {
-        return value.toLowerCase();
-    }
+function applyCallsToValue(value: unknown, calls: Call[]): unknown {
+    return calls.reduce<unknown>((current, call) => {
+        if (call === "to-lower-case" && typeof current === "string") {
+            return current.toLowerCase();
+        }
 
-    if (transformer === "to-upper-case" && typeof value === "string") {
-        return value.toUpperCase();
-    }
+        if (call === "to-upper-case" && typeof current === "string") {
+            return current.toUpperCase();
+        }
 
-    return value;
+        if (call === "length" && (typeof current === "string" || Array.isArray(current))) {
+            return current.length;
+        }
+
+        throw new Error(
+            `'${call}' cannot be applied to the value '${String(current)}' before binding it. Binding ` +
+            `the value unchanged would compare against the wrong thing and return rows that look ` +
+            `correct and are not.`
+        );
+    }, value);
 }
 
 /**
@@ -406,7 +417,7 @@ function applyValueTransformer(value: unknown, transformer: Transformer | null):
  * The column, or the JSON path into it when the property is nested.
  *
  * `getResolvedName()` returns the LEAF name, which is a real column only for a root
- * property. For `payload.inner.value` the storage is a `payload` JSON column and the rest
+ * property. For `payload.operand.value` the storage is a `payload` JSON column and the rest
  * of the chain is a path inside it.
  */
 /**
@@ -435,22 +446,25 @@ function renderColumnBase(prop: PropertyExpression, d: SqlDialect, alias?: strin
     );
 }
 
-function renderColumn(prop: PropertyExpression, d: SqlDialect, alias?: string): string {
-    const col = renderColumnBase(prop, d, alias);
+function renderColumn(prop: PropertyExpression, d: SqlDialect, calls: Call[], alias?: string): string {
+    return calls.reduce((rendered, call) => {
+        if (call === "to-lower-case") {
+            return `LOWER(${rendered})`;
+        }
 
-    if (prop.transformer === "to-lower-case") {
-        return `LOWER(${col})`;
-    }
+        if (call === "to-upper-case") {
+            return `UPPER(${rendered})`;
+        }
 
-    if (prop.transformer === "to-upper-case") {
-        return `UPPER(${col})`;
-    }
+        if (call === "length") {
+            return d.lengthExpression(rendered, prop.property.type === SchemaTypes.Array);
+        }
 
-    if (prop.transformer === "length") {
-        return d.lengthExpression(col, prop.property.type === SchemaTypes.Array);
-    }
-
-    return col;
+        throw new Error(
+            `'${call}' has no SQL form in this dialect. Rendering the column without it would compare ` +
+            `the stored value instead of the called one and return rows that look correct and are not.`
+        );
+    }, renderColumnBase(prop, d, alias));
 }
 
 /**
@@ -464,16 +478,24 @@ function renderColumn(prop: PropertyExpression, d: SqlDialect, alias?: string): 
 interface PropertyValueSides {
     propLeft: PropertyExpression | null;
     propRight: PropertyExpression | null;
+    callsLeft: Call[];
+    callsRight: Call[];
     valLeft: unknown;
     valRight: unknown;
 }
 
 function getPropertyValueSides(cmp: ComparatorExpression): PropertyValueSides {
-    const propLeft = cmp.left && isPropertyExpression(cmp.left) ? cmp.left : null;
-    const propRight = cmp.right && isPropertyExpression(cmp.right) ? cmp.right : null;
-    const valLeft = cmp.left && isValueExpression(cmp.left) ? applyValueTransformer(cmp.left.value, cmp.left.transformer) : undefined;
-    const valRight = cmp.right && isValueExpression(cmp.right) ? applyValueTransformer(cmp.right.value, cmp.right.transformer) : undefined;
-    return { propLeft, propRight, valLeft, valRight };
+    const left = peelCalls(cmp.left);
+    const right = peelCalls(cmp.right);
+
+    return {
+        propLeft: left != null && isPropertyExpression(left.operand) ? left.operand : null,
+        propRight: right != null && isPropertyExpression(right.operand) ? right.operand : null,
+        callsLeft: left?.calls ?? [],
+        callsRight: right?.calls ?? [],
+        valLeft: left != null && isValueExpression(left.operand) ? applyCallsToValue(left.operand.value, left.calls) : undefined,
+        valRight: right != null && isValueExpression(right.operand) ? applyCallsToValue(right.operand.value, right.calls) : undefined,
+    };
 }
 
 // --- Equals: Strategy per (column-side, null vs value) case ---
@@ -543,15 +565,15 @@ function renderStringPatternComparison(
     placeholder: () => string,
     alias?: string
 ): string {
-    const { propLeft, propRight, valLeft, valRight } = getPropertyValueSides(cmp);
+    const { propLeft, propRight, callsLeft, callsRight, valLeft, valRight } = getPropertyValueSides(cmp);
     const kind = d.stringMatchKind;
 
     if (cmp.comparator === "includes") {
         const col =
             propLeft && valRight !== undefined
-                ? renderColumn(propLeft, d, alias)
+                ? renderColumn(propLeft, d, callsLeft, alias)
                 : propRight && valLeft !== undefined
-                  ? renderColumn(propRight, d, alias)
+                  ? renderColumn(propRight, d, callsRight, alias)
                   : null;
         const value = valRight !== undefined ? valRight : valLeft;
 
@@ -598,9 +620,9 @@ function renderStringPatternComparison(
 
     const col =
         propLeft && valRight !== undefined
-            ? renderColumn(propLeft, d, alias)
+            ? renderColumn(propLeft, d, callsLeft, alias)
             : propRight && valLeft !== undefined
-              ? renderColumn(propRight, d, alias)
+              ? renderColumn(propRight, d, callsRight, alias)
               : null;
     const rawValue = valRight !== undefined ? valRight : valLeft;
     const value = rawValue == null ? null : String(rawValue);
@@ -728,12 +750,12 @@ export function toSql(
 
             if (cmp.comparator === "equals") {
                 /* Equals: Strategy per (column-side, null vs value) case. */
-                const { propLeft, propRight, valLeft, valRight } = getPropertyValueSides(cmp);
+                const { propLeft, propRight, callsLeft, callsRight, valLeft, valRight } = getPropertyValueSides(cmp);
                 const col =
                     propLeft && (valRight !== undefined || propRight)
-                        ? renderColumn(propLeft, d, alias)
+                        ? renderColumn(propLeft, d, callsLeft, alias)
                         : propRight && (valLeft !== undefined || propLeft)
-                          ? renderColumn(propRight, d, alias)
+                          ? renderColumn(propRight, d, callsRight, alias)
                           : null;
                 const value = valRight !== undefined ? valRight : valLeft;
                 const columnOnLeft = Boolean(propLeft && cmp.right && isValueExpression(cmp.right));
@@ -761,12 +783,27 @@ export function toSql(
         }
 
         if (isPropertyExpression(e)) {
-            return renderColumn(e, d, alias);
+            return renderColumn(e, d, [], alias);
         }
 
         if (isValueExpression(e)) {
-            params.push(bindable(applyValueTransformer(e.value, e.transformer)));
+            params.push(bindable(e.value));
             return placeholder();
+        }
+
+        if (isCallExpression(e)) {
+            const peeled = peelCalls(e);
+
+            if (peeled != null && isPropertyExpression(peeled.operand)) {
+                return renderColumn(peeled.operand, d, peeled.calls, alias);
+            }
+
+            if (peeled != null && isValueExpression(peeled.operand)) {
+                params.push(bindable(applyCallsToValue(peeled.operand.value, peeled.calls)));
+                return placeholder();
+            }
+
+            throw new Error(`'${e.call}' has no SQL form applied to a ${peeled?.operand.type ?? "missing"} operand.`);
         }
 
         throw new Error(`Unknown expression type: ${(e as Expression).type}`);
