@@ -68,13 +68,13 @@ export interface SqlDialect {
      */
     lengthExpression(column: string, isJsonArray: boolean): string;
     /**
-     * Remainder of two numeric expressions.
+     * Remainder of two numeric expressions, matching JavaScript's `%`.
      *
-     * A dialect method because `%` is not universal: PostgreSQL has no `%` for `double precision`
-     * and MSSQL's does not accept `float`, so both have to cast. SQLite's `%` truncates to integer,
-     * which is a real divergence from JavaScript on a fractional value.
+     * Takes thunks because a dialect may need an operand more than once, and rendering an operand
+     * BINDS it — SQLite has no float remainder, so it computes one from `-`, `*` and a truncating
+     * divide, using each side twice. Call each thunk exactly as many times as the expression needs.
      */
-    moduloExpression(left: string, right: string): string;
+    moduloExpression(left: () => string, right: () => string): string;
     /**
      * SQL testing whether a JSON array column holds `value`.
      *
@@ -183,8 +183,12 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         },
         encodeDate: passThroughDate,
         encodeBoolean: integerBoolean,
+        /**
+         * `%` truncates both operands to integers, so `10.5 % 3` is 1 rather than 1.5. Rebuilt from
+         * `a - b * trunc(a / b)`, which agrees with JavaScript on fractions and on negatives.
+         */
         moduloExpression(left, right) {
-            return `(${left} % ${right})`;
+            return `(${left()} - ${right()} * CAST(${left()} / ${right()} AS INTEGER))`;
         },
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `json_array_length(${column})` : `LENGTH(${column})`;
@@ -225,7 +229,7 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         encodeBoolean: passThroughBoolean,
         /** No `%` for `double precision`, and a bound parameter arrives untyped. */
         moduloExpression(left, right) {
-            return `MOD((${left})::numeric, (${right})::numeric)`;
+            return `MOD((${left()})::numeric, (${right()})::numeric)`;
         },
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `jsonb_array_length(${column})` : `LENGTH(${column})`;
@@ -281,7 +285,7 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         encodeDate: mysqlDate,
         encodeBoolean: passThroughBoolean,
         moduloExpression(left, right) {
-            return `(${left} % ${right})`;
+            return `(${left()} % ${right()})`;
         },
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `JSON_LENGTH(${column})` : `CHAR_LENGTH(${column})`;
@@ -333,7 +337,7 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         encodeBoolean: passThroughBoolean,
         /** `%` rejects `float`, so both sides are cast. */
         moduloExpression(left, right) {
-            return `((${left}) % CAST(${right} AS decimal(38, 10)))`;
+            return `((${left()}) % CAST(${right()} AS decimal(38, 10)))`;
         },
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `(SELECT COUNT(*) FROM OPENJSON(${column}))` : `LEN(${column})`;
@@ -561,23 +565,33 @@ function renderColumn(
     renderArgument: (expression: Expression) => string,
     alias?: string
 ): string {
-    return calls.reduce((rendered, node) => {
+    /**
+     * Built from the outside in as thunks rather than folded into a string, so a dialect that needs
+     * an operand twice re-renders it — and re-binds whatever parameters are inside it.
+     */
+    const upTo = (index: number): string => {
+        if (index < 0) {
+            return renderColumnBase(prop, d, alias);
+        }
+
+        const node = calls[index];
         const call = node.call;
+        const inner = () => upTo(index - 1);
 
         if (call === "to-lower-case") {
-            return `LOWER(${rendered})`;
+            return `LOWER(${inner()})`;
         }
 
         if (call === "to-upper-case") {
-            return `UPPER(${rendered})`;
+            return `UPPER(${inner()})`;
         }
 
         if (call === "length") {
-            return d.lengthExpression(rendered, prop.property.type === SchemaTypes.Array);
+            return d.lengthExpression(inner(), prop.property.type === SchemaTypes.Array);
         }
 
         if (call === "modulo") {
-            return d.moduloExpression(rendered, node.arguments.map(renderArgument).join(", "));
+            return d.moduloExpression(inner, () => renderArgument(node.arguments[0]));
         }
 
         const operator = SQL_ARITHMETIC[call];
@@ -585,14 +599,16 @@ function renderColumn(
         if (operator != null) {
             // Parenthesised, so `(price * ?) > ?` cannot be reassociated by the engine's own
             // precedence into something the caller did not write
-            return `(${rendered} ${operator} ${node.arguments.map(renderArgument).join(` ${operator} `)})`;
+            return `(${inner()} ${operator} ${node.arguments.map(renderArgument).join(` ${operator} `)})`;
         }
 
         throw new Error(
             `'${call}' has no SQL form in this dialect. Rendering the column without it would compare ` +
             `the stored value instead of the called one and return rows that look correct and are not.`
         );
-    }, renderColumnBase(prop, d, alias));
+    };
+
+    return upTo(calls.length - 1);
 }
 
 /**

@@ -140,4 +140,12 @@ suite('casing calls against a real PostgreSQL', () => {
 
         expect(found.map(p => p.name)).toEqual(['Alpha']);
     });
+
+    // The fractional remainder: SQLite's own `%` truncates to integer, PostgreSQL needs numeric,
+    // MSSQL needs a decimal cast, and all four engines have to land on JavaScript's answer
+    it('filters through a remainder of a fractional value', async () => {
+        const found = await store.products.where(p => p.price / 4 % 2 === 0.5).toArrayAsync();
+
+        expect(found.map(p => p.name)).toEqual(['Alpha']);
+    });
 });

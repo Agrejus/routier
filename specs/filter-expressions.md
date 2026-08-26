@@ -288,20 +288,25 @@ This predates calls entirely; a casing call only makes it visible. A schema that
 answer has to declare a `_bin` or `_as_cs` collation on the column. Pinned in
 `e2e/src/mysqlCasing.test.ts` rather than asserted away.
 
-**`%` is not universal, and the dialect has to say so.** PostgreSQL has no `%` operator for
-`double precision` — a filter on a numeric column failed with *"operator does not exist: double
-precision % unknown"* — and MSSQL's `%` rejects `float`. Both cast, through
-`SqlDialect.moduloExpression`:
+**`%` is not universal, so every dialect spells remainder differently.** PostgreSQL has no `%`
+operator for `double precision` — a filter on a numeric column failed with *"operator does not exist:
+double precision % unknown"* — MSSQL's `%` rejects `float`, and SQLite's truncates both operands to
+integers, so its `10.5 % 3` is `1`. All three are wrong in different ways, and all three are handled
+by `SqlDialect.moduloExpression`:
 
-| dialect | modulo |
-|---|---|
-| SQLite, MySQL | `(a % b)` |
-| PostgreSQL | `MOD((a)::numeric, (b)::numeric)` |
-| MSSQL | `((a) % CAST(b AS decimal(38, 10)))` |
+| dialect | remainder | why |
+|---|---|---|
+| SQLite | `(a - b * CAST(a / b AS INTEGER))` | `%` truncates to integer |
+| PostgreSQL | `MOD((a)::numeric, (b)::numeric)` | no `%` for `double precision` |
+| MySQL | `(a % b)` | already matches |
+| MSSQL | `((a) % CAST(b AS decimal(38, 10)))` | `%` rejects `float` |
 
-**SQLite's `%` truncates to integer.** `10.5 % 3` is `1` there and `1.5` in JavaScript, so modulo on a
-fractional column disagrees with the memory fallback. Not covered by a test yet — the contract's
-prices are whole numbers.
+`moduloExpression` takes **thunks**, not rendered strings, because rendering an operand binds it:
+SQLite names each side twice, so `x.age * 2 % 3` binds `[2, 3, 2, 3]`. A placeholder is positional, so
+reusing the text without rebinding would shift every parameter after it.
+
+All four engines now agree with JavaScript, verified directly — `10.5 % 3` is `1.5` on SQLite,
+PostgreSQL, MySQL and MongoDB — and the shared contract covers a fractional remainder end to end.
 
 **Integer division.** On a column typed as an integer, PostgreSQL's `/` is integer division while
 JavaScript's is not. The plugins store numbers as `double precision`, so this does not arise today; it

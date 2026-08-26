@@ -18,7 +18,6 @@ const sql = (filter: (entity: any) => boolean, dialect: 'sqlite' | 'postgresql' 
 describe('arithmetic operators', () => {
 
     it.each([
-        ['modulo', (x: any) => x.age % 2 === 0, '("age" % ?) = ?', [2, 0]],
         ['addition', (x: any) => x.age + 1 > 3, '("age" + ?) > ?', [1, 3]],
         ['subtraction', (x: any) => x.age - 1 === 4, '("age" - ?) = ?', [1, 4]],
         ['multiplication', (x: any) => x.price * 1.2 > 100, '("price" * ?) > ?', [1.2, 100]],
@@ -28,6 +27,24 @@ describe('arithmetic operators', () => {
 
         expect(rendered.where).toBe(where);
         expect(rendered.params).toEqual(params);
+    });
+
+    /**
+     * SQLite's `%` truncates both operands to integers, so it is built from `a - b * trunc(a / b)`.
+     * The divisor is bound twice because the expression names it twice — a placeholder is positional,
+     * so reusing the text without rebinding would shift every parameter after it.
+     */
+    it('renders modulo as JavaScript remainder, not SQLite integer remainder', () => {
+        const rendered = sql((x: any) => x.age % 2 === 0);
+
+        expect(rendered.where).toBe('("age" - ? * CAST("age" / ? AS INTEGER)) = ?');
+        expect(rendered.params).toEqual([2, 2, 0]);
+    });
+
+    it('rebinds the parameters inside the left operand when it is rendered twice', () => {
+        const rendered = sql((x: any) => x.age * 2 % 3 === 0);
+
+        expect(rendered.params).toEqual([2, 3, 2, 3, 0]);
     });
 
     it('renders two properties as two columns, binding nothing', () => {
@@ -58,7 +75,9 @@ describe('arithmetic operators', () => {
     });
 
     it.each([
-        // PostgreSQL has no `%` for double precision, and MSSQL's rejects float, so both cast
+        // Each engine needs a different remainder: PostgreSQL has no `%` for double precision,
+        // MSSQL's rejects float, and SQLite's truncates to integer
+        ['sqlite', '("age" - ? * CAST("age" / ? AS INTEGER)) = ?'],
         ['postgresql', 'MOD(("age")::numeric, ($1)::numeric) = $2'],
         ['mysql', '(`age` % ?) = ?'],
         ['mssql', '(([age]) % CAST(@p1 AS decimal(38, 10))) = @p2'],

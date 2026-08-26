@@ -655,6 +655,19 @@ export function describePluginContract(
                 expect(found.map(p => p.name).sort()).toEqual(["Charlie", "Delta"]);
             });
 
+            /**
+             * A FRACTIONAL remainder, which is where SQLite's own `%` disagrees with JavaScript: it
+             * truncates both operands to integers, so `2.5 % 2` would be 0 rather than 0.5. Prices
+             * are whole numbers, so the fraction has to be produced by the division first.
+             *
+             * 10/4 and 2.5 are both exact in binary, so this is not a floating-point coin toss.
+             */
+            test("filters through a remainder of a fractional value", async () => {
+                const found = await (await seeded()).products.where(p => p.price / 4 % 2 === 0.5).toArrayAsync();
+
+                expect(found.map(p => p.name)).toEqual(["Alpha"]);
+            });
+
             test("filters through addition", async () => {
                 const found = await (await seeded()).products.where(p => p.price + 5 > 35).toArrayAsync();
 
