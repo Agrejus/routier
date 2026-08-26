@@ -127,14 +127,36 @@ case, which needs a schema change rather than a node.
 
 These do not depend on each other and can land in any order. Only the first is about the tree.
 
-## Prerequisite, which ships alone first
+## Prerequisite
 
-`plugins/sql-core/src/sql.ts:772` **throws** on an unknown expression type, and three more in the
-same family throw on an operand shape they do not recognise: `:561`, `:609`, `:649`.
+Two rules, and the second is unresolved.
 
-A translator that meets a node it does not know must **decline**, so the filter falls to memory.
-Declining is already correct behaviour and already wired; throwing turns a new core feature into an
-exception in an old plugin. This lands and publishes on its own, before anything below.
+**Every generic walk goes through `childrenOf`.** `getProperties` and `forEach` recursed
+`left`/`right`, which reaches every child of every node that existed before `call` and none of a
+call's. `QueryOptionsCollection` uses `forEach` to find unmapped and renamed properties and cut the
+query over to memory, so a property the walk cannot reach returns rows the caller excluded. Two
+walkers outside core had the same shape and worse consequences: `datastore/src/transforms/index.ts`
+skipped the encrypt/hash rewrite and compared plaintext against stored ciphertext, and
+`plugins/replication/src/queryParamHelpers.ts` sent `value: undefined` over the wire. Both are fixed.
+
+**A translator that cannot render a node must not push the filter down — and there is no mechanism
+for it to say so.** `sql.ts:772` and `mql.ts:380` throw. Returning `null` instead is not a fix: every
+`toSql` caller embeds the result in a statement, and a statement with no `WHERE` returns too many
+rows rather than too few. The cut-over decision is made in `QueryOptionsCollection.add`, in core,
+before any plugin sees the option, and core does not know which calls the plugin it is talking to can
+render.
+
+Until that is resolved, the invariant holds instead: **the parser emits a call only once every
+translator renders it.** That is what the rest of the stack already assumes — `wire/query.ts` throws
+rather than send a filter a receiver cannot apply. It leaves version skew as the live risk: a new
+core with an older published plugin raises `Unknown expression type: call` instead of falling back.
+Options, none chosen:
+
+| option | cost |
+|---|---|
+| a translator exports the calls it renders; the datastore consults it before pushdown | no `IDbPlugin` change, but a second place to keep in step with each translator |
+| the plugin catches the translator error and re-runs in memory | no contract change; a thrown error as control flow, and the plugin must be able to re-run |
+| a capability member on `IDbPlugin` | direct, and against the contract's four-member rule |
 
 ## Piece 1 — the tree
 
