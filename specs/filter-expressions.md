@@ -7,21 +7,17 @@ work between the two.
 `it.todo` naming the predicate that SHOULD parse, so the work list shows up on every test run.
 Implementing one means replacing its `todo` with a real test — never inverting an expectation.
 
-Nothing here is a decision not to support something, except where a refusal cites one of the five
-reasons under "Refusal reasons", each of which is a property of the code rather than of our appetite.
-
 ## Why an unparsable filter matters
 
 It is not a syntax error and nothing fails. The filter runs, correctly, in memory — after the
-backend has returned every row. A bounded query quietly becomes a full read, and until recently
-`.explain()` said only "not parsable" without showing which predicate it meant.
+backend has returned every row. A bounded query quietly becomes a full read.
 
 That is the cost of everything below.
 
 ## Supported today
 
 Measured 2026-08-26 by running 113 predicates through the real parser against a real compiled
-schema. The parser handles considerably more than a first pass suggested.
+schema.
 
 | category | form |
 |---|---|
@@ -70,7 +66,7 @@ Everything else is subtraction:
 | the value tag becomes optional | absent means "the JSON value as it is". Only the four things `JSON.stringify` destroys carry one |
 | `toJson`/`fromJson` become methods per class | they are two static if-chains today. A new node should ship its own serialization, not add branches in two places |
 
-## Why serialization needs an encoding at all
+## Values JSON cannot carry
 
 `plugins/replication/src/HttpTransportDbPlugin.ts:121` does `JSON.stringify(body)` over `fetch`.
 That is a shipped transport, so the tree must survive JSON, and JSON destroys four things a filter
@@ -124,18 +120,6 @@ filter value (`core/src/expressions/types.ts:63`).
 
 Inside `some(tags)`, a reference to `tags` is the element. See "Array elements" for the object-array
 case, which needs a schema change rather than a node.
-
-## Nodes considered and rejected
-
-Earlier drafts added four more. Each was a special case for a shape a call already fits, and naming
-them here is cheaper than rediscovering them.
-
-| node | why it was dropped |
-|---|---|
-| `quantifier` | `some` is a method call with a predicate argument. Nothing about it needs its own type |
-| `list` | existed only to squeeze three operands through `left`/`right`. A named `arguments` array removes the need |
-| `element` | the loop variable. Scalar arrays reuse the array's own path; object arrays need a schema change, not a node |
-| `never` | `x => false`. A case in every translator's switch, forever, to optimise a predicate nobody writes |
 
 ---
 
@@ -222,13 +206,13 @@ plugins would silently ignore them and return wrong data"*.
 So the parser refuses to produce a tree the whole stack can already handle, and `toSql`'s `LOWER`
 path for relational comparators is **unreachable today**.
 
-Removing the `:1016` guard and changing nothing else was verified end to end: the parser produces a
-well-formed tree, `Expression.toJson`/`fromJson` preserve the transformer, `evaluate.ts` answers
+With the `:1016` guard removed and nothing else changed, the whole path already works: the parser
+produces a well-formed tree, `toJson`/`fromJson` preserve the transformer, `evaluate.ts` answers
 correctly, `toSql` emits `LOWER("name") = ?` in all three dialects, and `toMql` emits
 `{$expr:{$eq:[{$toLower:"$name"},…]}}`.
 
-The same guard fires at `parser.ts:911` for a property-to-property comparison. That case is
-**unverified** and needs the same treatment before it is lifted.
+The same guard fires at `parser.ts:911` for a property-to-property comparison. That path is
+**unverified** — check it the same way before lifting it.
 
 ---
 
@@ -248,11 +232,11 @@ plus every method reachable on the prototypes a schema type can produce — stri
 | **parser** | parser-side only. The resulting tree is one that already works |
 | **token** | needs tokenizer or grammar work first (Piece 2) |
 | **fold** | the schema already answers it, so it should never reach a backend |
-| **refuse** | must not be represented. Every refusal cites a reason below, never absence of effort |
+| **refuse** | must not be represented. Cites a reason below |
 
 ## Refusal reasons
 
-There are five, and they are properties of the code rather than of our appetite.
+Five, and every **refuse** below cites one.
 
 | reason | why a filter cannot contain it |
 |---|---|
@@ -495,8 +479,6 @@ Known hole in step 1: inside `some(tags)`, a reference to `tags` means the eleme
 `x.tags.some(t => x.tags.length > 2)` is misread. Rare, detectable, and closed by step 2.
 
 # Open decisions
-
-Two things this document does not settle.
 
 **Arithmetic as a call, or as a widened `Operator`.** `x.age + 1` as a call is
 `{ call: "add", expression: <age>, arguments: [1] }` — asymmetric slots for a symmetric operation.
