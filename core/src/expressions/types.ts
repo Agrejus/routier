@@ -26,6 +26,7 @@ export type SerializedExpression =
         left?: SerializedExpression;
         right?: SerializedExpression;
     }
+    | { t: "call"; call: Call; expression: SerializedExpression; arguments: SerializedExpression[] }
     | { t: "property"; path: string; transformer: Transformer | null; locale: string | null }
     | { t: "value"; value: SerializedValue; transformer: Transformer | null; locale: string | null };
 
@@ -132,7 +133,7 @@ export abstract class Expression {
      *
      * ## Why it is this small
      *
-     * Of the six node types a bound tree can contain, exactly one holds anything JSON cannot carry:
+     * Of the seven node types a bound tree can contain, exactly one holds anything JSON cannot carry:
      * `PropertyExpression`, whose live `PropertyInfo` has functions, a parent chain and caches. It
      * reduces to a property PATH — `PropertyInfo.id` IS the dotted path, and `getProperty` is keyed by
      * exactly that — so rebinding is one lookup.
@@ -167,6 +168,17 @@ export abstract class Expression {
                 strict: comparator.strict,
                 ...(comparator.left != null && { left: Expression.toJson(comparator.left) }),
                 ...(comparator.right != null && { right: Expression.toJson(comparator.right) }),
+            };
+        }
+
+        if (expression.type === "call") {
+            const call = expression as CallExpression;
+
+            return {
+                t: "call",
+                call: call.call,
+                expression: Expression.toJson(call.expression),
+                arguments: call.arguments.map(Expression.toJson),
             };
         }
 
@@ -223,6 +235,14 @@ export abstract class Expression {
                 strict: json.strict,
                 left: child(json.left),
                 right: child(json.right),
+            });
+        }
+
+        if (json.t === "call") {
+            return new CallExpression({
+                call: json.call,
+                expression: Expression.fromJson(json.expression, schema),
+                arguments: json.arguments.map(argument => Expression.fromJson(argument, schema)),
             });
         }
 
@@ -325,6 +345,21 @@ export class PropertyExpression extends Expression {
     }
 }
 
+export class CallExpression extends Expression {
+    readonly type = "call" as const;
+    call: Call;
+    expression: Expression;
+    /** Empty for a unary call. */
+    arguments: Expression[];
+
+    constructor(options: { call: Call, expression: Expression, arguments?: Expression[] }) {
+        super();
+        this.call = options.call;
+        this.expression = options.expression;
+        this.arguments = options.arguments ?? [];
+    }
+}
+
 /**
  * A class representing a literal value.
  */
@@ -349,13 +384,24 @@ export class ValueExpression extends Expression {
 /**
  * The set of possible expression types.
  */
-export type ExpressionType = "operator" | "comparator" | "property" | "value" | "empty" | "not-parsable";
+export type ExpressionType = "operator" | "comparator" | "property" | "value" | "call" | "empty" | "not-parsable";
 
 /**
  * Supported value transformations that can be applied to values.
  * `length` reads the length of a string or array property.
  */
 export type Transformer = "to-lower-case" | "to-upper-case" | "length";
+
+/** `specs/filter-expressions.md` maps each to its SQL and Mongo form, and what is absent and why. */
+export type Call =
+    | "to-lower-case" | "to-upper-case" | "length" | "trim" | "trim-start" | "trim-end"
+    | "index-of" | "substring" | "concat" | "replace" | "replace-all"
+    | "absolute" | "floor" | "ceiling" | "round" | "sign" | "square-root" | "power"
+    | "add" | "subtract" | "multiply" | "divide" | "modulo"
+    | "year" | "month" | "day-of-month" | "day-of-week"
+    | "hour" | "minute" | "second" | "millisecond" | "epoch-ms"
+    | "to-string" | "to-number" | "to-boolean" | "type-of"
+    | "some" | "every";
 
 /**
  * Supported comparator operations for expressions.

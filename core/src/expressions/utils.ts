@@ -1,5 +1,30 @@
 import { PropertyInfo } from "../schema";
-import { Expression, PropertyExpression } from "./types";
+import { CallExpression, Expression, PropertyExpression } from "./types";
+
+/**
+ * A free function, not a method: `isExpression` is structural, so a plain object with a `type` is an
+ * expression here and arrives that way off the wire.
+ */
+export function childrenOf(expression: Expression): Expression[] {
+
+    if (expression.type === "call") {
+        const call = expression as CallExpression;
+
+        return [call.expression, ...(call.arguments ?? [])].filter(child => child != null);
+    }
+
+    const children: Expression[] = [];
+
+    if (expression.left != null) {
+        children.push(expression.left);
+    }
+
+    if (expression.right != null) {
+        children.push(expression.right);
+    }
+
+    return children;
+}
 
 /**
  * Extracts all properties referenced in an expression
@@ -15,12 +40,8 @@ export function getProperties(expression: Expression): PropertyInfo<any>[] {
             properties.push((expr as PropertyExpression).property);
         }
 
-        // Traverse left and right expressions if they exist
-        if (expr.left) {
-            traverse(expr.left);
-        }
-        if (expr.right) {
-            traverse(expr.right);
+        for (const child of childrenOf(expr)) {
+            traverse(child);
         }
     }
 
@@ -36,14 +57,8 @@ export function forEach(expression: Expression, callback: (expression: Expressio
             return false;
         }
 
-        // Traverse left and right expressions if they exist
-        if (expr.left) {
-            if (!traverse(expr.left)) {
-                return false;
-            }
-        }
-        if (expr.right) {
-            if (!traverse(expr.right)) {
+        for (const child of childrenOf(expr)) {
+            if (!traverse(child)) {
                 return false;
             }
         }
