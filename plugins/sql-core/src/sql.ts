@@ -7,6 +7,7 @@
  */
 import type { Call, CallExpression, ComparatorExpression, Expression, PropertyExpression } from "@routier/core/expressions";
 import {
+    forEach,
     isCallExpression,
     peelCalls,
     isComparatorExpression,
@@ -67,6 +68,13 @@ export interface SqlDialect {
      * element count for arrays (which are stored as `jsonColumnType`).
      */
     lengthExpression(column: string, isJsonArray: boolean): string;
+    /**
+     * Whether this dialect can render a call at all.
+     *
+     * Declared per dialect rather than centrally because it genuinely differs: `REGEXP` is built into
+     * MySQL, absent from SQLite unless the host registers it, and spelled `~` in PostgreSQL.
+     */
+    renders(call: Call): boolean;
     /**
      * Remainder of two numeric expressions, matching JavaScript's `%`.
      *
@@ -165,6 +173,12 @@ const mysqlDate = (value: unknown): unknown => {
     return value;
 };
 
+const UNIVERSAL_CALLS: readonly Call[] = [
+    "to-lower-case", "to-upper-case", "length", "trim",
+    "absolute", "floor", "ceiling", "round",
+    "add", "subtract", "multiply", "divide", "modulo",
+];
+
 const DIALECTS: Record<SqlDialectName, SqlDialect> = {
     sqlite: {
         quoteIdentifier(name) {
@@ -187,6 +201,9 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
          * `%` truncates both operands to integers, so `10.5 % 3` is 1 rather than 1.5. Rebuilt from
          * `a - b * trunc(a / b)`, which agrees with JavaScript on fractions and on negatives.
          */
+        renders(call) {
+            return UNIVERSAL_CALLS.includes(call);
+        },
         moduloExpression(left, right) {
             return `(${left()} - ${right()} * CAST(${left()} / ${right()} AS INTEGER))`;
         },
@@ -228,6 +245,9 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         encodeDate: passThroughDate,
         encodeBoolean: passThroughBoolean,
         /** No `%` for `double precision`, and a bound parameter arrives untyped. */
+        renders(call) {
+            return UNIVERSAL_CALLS.includes(call);
+        },
         moduloExpression(left, right) {
             return `MOD((${left()})::numeric, (${right()})::numeric)`;
         },
@@ -284,6 +304,9 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         },
         encodeDate: mysqlDate,
         encodeBoolean: passThroughBoolean,
+        renders(call) {
+            return UNIVERSAL_CALLS.includes(call);
+        },
         moduloExpression(left, right) {
             return `(${left()} % ${right()})`;
         },
@@ -336,6 +359,9 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         encodeDate: passThroughDate,
         encodeBoolean: passThroughBoolean,
         /** `%` rejects `float`, so both sides are cast. */
+        renders(call) {
+            return UNIVERSAL_CALLS.includes(call);
+        },
         moduloExpression(left, right) {
             return `((${left()}) % CAST(${right()} AS decimal(38, 10)))`;
         },
@@ -840,6 +866,30 @@ export type ToSqlOptions = {
      */
     paramOffset?: number;
 };
+
+/**
+ * Whether every call in a filter has a SQL form in this dialect.
+ *
+ * A plugin asks before pushing down, and hands the option back when the answer is no — see
+ * `QueryOptionsCollection.deferToMemory`. Asking beats attempting: the alternative is a statement the
+ * engine rejects, which is a failed round trip rather than a slower correct one.
+ */
+export function canRenderInSql(expr: Expression, dialect: SqlDialectName | SqlDialect): boolean {
+    const d = typeof dialect === "string" ? getDialect(dialect) : dialect;
+    let renderable = true;
+
+    forEach(expr, expression => {
+        if (isCallExpression(expression) && d.renders(expression.call) === false) {
+            renderable = false;
+
+            return false;
+        }
+
+        return true;
+    });
+
+    return renderable;
+}
 
 /**
  * Converts an Expression to a SQL WHERE clause and bound parameters for the given dialect.

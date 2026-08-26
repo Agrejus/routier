@@ -15,6 +15,7 @@ export const MEMORY_EXECUTION_EXPLANATIONS: Record<MemoryExecutionReason, string
     "map-rename": "A map renames or drops properties, so every option after it refers to names the database does not have.",
     "after-nearest": "A similarity search orders and limits rows, and the plugin cannot report whether it performed the search, so every option after it runs in memory.",
     "after-join": "A join produces [outer, inner] tuples rather than entities, and the plugin cannot report how it joined, so every option after it runs in memory.",
+    "unsupported-by-plugin": "The plugin cannot express one of these options in its engine, so it and every option after it run in memory over the rows the plugin did return.",
     "cross-plugin-join": "The two sides of this join live on different plugins, so neither can read the other's rows and the join runs in the datastore."
 };
 

@@ -141,24 +141,29 @@ walkers outside core had the same shape and worse consequences: `datastore/src/t
 skipped the encrypt/hash rewrite and compared plaintext against stored ciphertext, and
 `plugins/replication/src/queryParamHelpers.ts` sent `value: undefined` over the wire. Both are fixed.
 
-**A translator that cannot render a node must not push the filter down — and there is no mechanism
-for it to say so.** `sql.ts:772` and `mql.ts:380` throw. Returning `null` instead is not a fix: every
-`toSql` caller embeds the result in a statement, and a statement with no `WHERE` returns too many
-rows rather than too few. The cut-over decision is made in `QueryOptionsCollection.add`, in core,
-before any plugin sees the option, and core does not know which calls the plugin it is talking to can
-render.
+**A plugin hands back what its engine cannot express.** Every query option already carries a
+`target` of `"database"` or `"memory"`, and `postProcessQuery` already runs the memory half over
+whatever the plugin returned — *"operations on the result that the plugin will not do"*. So a plugin
+that meets a call it cannot render flips that option's target and returns the rows it could get; the
+datastore runs the rest. Nothing fails, nothing is retried, and `IDbPlugin` stays at four members.
 
-Until that is resolved, the invariant holds instead: **the parser emits a call only once every
-translator renders it.** That is what the rest of the stack already assumes — `wire/query.ts` throws
-rather than send a filter a receiver cannot apply. It leaves version skew as the live risk: a new
-core with an older published plugin raises `Unknown expression type: call` instead of falling back.
-Options, none chosen:
+```ts
+// in the plugin, before translating
+options.deferToMemory(item, "unsupported-by-plugin");
+```
 
-| option | cost |
-|---|---|
-| a translator exports the calls it renders; the datastore consults it before pushdown | no `IDbPlugin` change, but a second place to keep in step with each translator |
-| the plugin catches the translator error and re-runs in memory | no contract change; a thrown error as control flow, and the plugin must be able to re-run |
-| a capability member on `IDbPlugin` | direct, and against the contract's four-member rule |
+`deferToMemory` takes everything AFTER the option with it. A `take` already applied by the database,
+in front of a filter the database did not apply, returns the wrong rows — so the cut is forward-only,
+the same rule `cutOverToMemory` follows when core decides for itself.
+
+Only the plugin can make this call. SQLite's `REGEXP` exists if the host registered the function and
+not otherwise, so two instances in one process can differ; PostgreSQL spells it `~`; MySQL has
+`REGEXP` built in. `SqlDialect.renders(call)` declares it per dialect, and `canRenderInSql` walks a
+filter to answer before anything is pushed down — asking rather than attempting, because attempting
+costs a rejected statement and a wasted round trip.
+
+`.explain()` reports it as `unsupported-by-plugin`, so a query that got slower says which option did
+it and which engine could not take it.
 
 ## Piece 1 — the tree
 

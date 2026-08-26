@@ -38,7 +38,9 @@ export type MemoryExecutionReason =
     | "map-rename"
     | "after-nearest"
     | "after-join"
-    | "cross-plugin-join";
+    | "cross-plugin-join"
+    /** A plugin was handed an option its engine cannot express, and handed it back. */
+    | "unsupported-by-plugin";
 
 export type QueryOption<T, K extends QueryOptionName> = {
     name: QueryOptionName;

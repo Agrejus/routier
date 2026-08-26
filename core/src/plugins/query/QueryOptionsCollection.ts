@@ -245,6 +245,40 @@ export class QueryOptionsCollection<T> {
         };
     }
 
+    /**
+     * A plugin handing an option back, because its engine cannot express it.
+     *
+     * Only the plugin knows: SQLite's `REGEXP` exists if the host registered the function and not
+     * otherwise, so two instances in one process can differ and core cannot decide for them.
+     *
+     * Everything AFTER the option goes with it. A `take` already applied by the database, in front of
+     * a filter the database did not apply, returns the wrong rows — so the cut is forward-only, the
+     * same rule `cutOverToMemory` follows when core makes the decision itself.
+     */
+    deferToMemory(item: QueryCollectionItem<any, any>, reason: MemoryExecutionReason) {
+        this.resolveEnumeration();
+
+        for (const candidate of this.enumeratedItems) {
+            if (candidate.index >= item.index && candidate.option.target === "database") {
+                candidate.option.target = "memory";
+                candidate.option.reason = reason;
+            }
+        }
+    }
+
+    /**
+     * The options a plugin handed back, in the order they were written.
+     *
+     * Read after the plugin returns, so what it declined runs over the rows it did return.
+     */
+    handedBack(): QueryCollectionItem<any, any>[] {
+        this.resolveEnumeration();
+
+        return this.enumeratedItems
+            .filter(item => item.option.target === "memory")
+            .toSorted((a, b) => a.index - b.index);
+    }
+
     split(): { memory: QueryOptionsCollection<T>, database: QueryOptionsCollection<T> } {
         this.resolveEnumeration();
 

@@ -517,9 +517,42 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
         );
     }
 
+    /**
+     * Moves options the plugin declined into the memory pass, in front of what was already there.
+     *
+     * In front, because they came first in the chain the caller wrote: a filter the database refused
+     * has to run before a `skip` that was always going to run in memory.
+     */
+    private absorbHandedBackOptions<TShape>(
+        databaseEvent: DbPluginQueryEvent<TRoot, TShape>,
+        memoryEvent: DbPluginQueryEvent<TRoot, TShape>
+    ) {
+        const handedBack = databaseEvent.operation.options.handedBack();
+
+        if (handedBack.length === 0) {
+            return;
+        }
+
+        const combined = new QueryOptionsCollection<TRoot>();
+
+        for (const item of handedBack) {
+            combined.add(item.option.name, item.option.value);
+        }
+
+        memoryEvent.operation.options.forEach(option => {
+            combined.add(option.name, option.value);
+        });
+
+        memoryEvent.operation = new Query<TRoot, TShape>(combined as any, this.dependencies.schema);
+    }
+
     private postProcessQuery<TShape>(result: PluginEventSuccessType<ITranslatedValue<TShape>>, payload: { databaseEvent: DbPluginQueryEvent<TRoot, TShape>, memoryEvent: DbPluginQueryEvent<TRoot, TShape> }, done: PluginEventCallbackResult<TShape>) {
 
         const { databaseEvent, memoryEvent } = payload;
+
+        // The plugin may have handed options back — its engine could not express them — and those
+        // run here, over the rows it did return, ahead of anything already bound for memory.
+        this.absorbHandedBackOptions(databaseEvent, memoryEvent);
 
         try {
             // Before the tags and change-tracking work below, all of which is about entities of
