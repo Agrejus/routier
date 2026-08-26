@@ -19,20 +19,20 @@ describe('SqlTranslator', () => {
 
     describe('count/min/max/sum shaping', () => {
         it('count returns first row count field for array payloads', () => {
-            const option: QueryOption<any, 'count'> = { name: 'count', value: true, target: 'database' };
+            const option: QueryOption<any, 'count'> = { name: 'count', value: true, target: 'database', reason: 'executed' };
             const result = translator.count([{ count: 7 }], option);
             expect(result).toBe(7);
         });
 
         it('count returns payload unchanged when not array payload', () => {
-            const option: QueryOption<any, 'count'> = { name: 'count', value: true, target: 'database' };
+            const option: QueryOption<any, 'count'> = { name: 'count', value: true, target: 'database', reason: 'executed' };
             expect(translator.count(3, option)).toBe(3);
         });
 
         it('min/max/sum return first row for array payloads', () => {
-            const minOpt: QueryOption<any, 'min'> = { name: 'min', value: true, target: 'database' };
-            const maxOpt: QueryOption<any, 'max'> = { name: 'max', value: true, target: 'database' };
-            const sumOpt: QueryOption<any, 'sum'> = { name: 'sum', value: true, target: 'database' };
+            const minOpt: QueryOption<any, 'min'> = { name: 'min', value: true, target: 'database', reason: 'executed' };
+            const maxOpt: QueryOption<any, 'max'> = { name: 'max', value: true, target: 'database', reason: 'executed' };
+            const sumOpt: QueryOption<any, 'sum'> = { name: 'sum', value: true, target: 'database', reason: 'executed' };
 
             expect(translator.min([{ value: 1 }], minOpt)).toEqual({ value: 1 });
             expect(translator.max([{ value: 9 }], maxOpt)).toEqual({ value: 9 });
@@ -43,18 +43,18 @@ describe('SqlTranslator', () => {
     describe('pass-through operations', () => {
         it('distinct/filter/skip/take/sort return incoming payload', () => {
             const payload = [{ id: 1 }, { id: 2 }];
-            const distinctOpt: QueryOption<any, 'distinct'> = { name: 'distinct', value: true, target: 'database' };
+            const distinctOpt: QueryOption<any, 'distinct'> = { name: 'distinct', value: true, target: 'database', reason: 'executed' };
             const filterOpt: QueryOption<any, 'filter'> = {
                 name: 'filter',
                 value: { filter: () => true, params: null, expression: Expression.NOT_PARSABLE },
-                target: 'database'
+                target: 'database', reason: 'executed'
             };
-            const skipOpt: QueryOption<any, 'skip'> = { name: 'skip', value: 1, target: 'database' };
-            const takeOpt: QueryOption<any, 'take'> = { name: 'take', value: 1, target: 'database' };
+            const skipOpt: QueryOption<any, 'skip'> = { name: 'skip', value: 1, target: 'database', reason: 'executed' };
+            const takeOpt: QueryOption<any, 'take'> = { name: 'take', value: 1, target: 'database', reason: 'executed' };
             const sortOpt: QueryOption<any, 'sort'> = {
                 name: 'sort',
                 value: { selector: (x: any) => x.id, direction: QueryOrdering.Ascending, propertyName: 'id' },
-                target: 'database'
+                target: 'database', reason: 'executed'
             };
 
             expect(translator.distinct(payload, distinctOpt)).toBe(payload);
@@ -79,7 +79,7 @@ describe('SqlTranslator', () => {
                     selector: (item: any) => ({ id: item.id, amount: item.amount }),
                     fields: [{ property } as any]
                 },
-                target: 'database'
+                target: 'database', reason: 'executed'
             };
 
             const result = translator.map(data, option);
@@ -92,7 +92,7 @@ describe('SqlTranslator', () => {
             const option: QueryOption<any, 'map'> = {
                 name: 'map',
                 value: { selector: (item: any) => item.count, fields: [] },
-                target: 'database'
+                target: 'database', reason: 'executed'
             };
 
             const result = translator.map(data, option);
@@ -103,7 +103,7 @@ describe('SqlTranslator', () => {
             const option: QueryOption<any, 'map'> = {
                 name: 'map',
                 value: { selector: (item: any) => item, fields: [] },
-                target: 'database'
+                target: 'database', reason: 'executed'
             };
             expect(() => translator.map({ id: 1 }, option)).toThrow('Can only map an array of data');
         });
@@ -128,7 +128,7 @@ describe('SqlTranslator', () => {
                     key: {} as any,
                     fields: [{ property } as any]
                 },
-                target: 'database'
+                target: 'database', reason: 'executed'
             };
 
             const result = translator.group<Record<string, Array<{ amount: number }>>>(data, option);
@@ -141,7 +141,7 @@ describe('SqlTranslator', () => {
             const option: QueryOption<any, 'group'> = {
                 name: 'group',
                 value: { selector: (x: any) => x.id, key: {} as any, fields: [] },
-                target: 'database'
+                target: 'database', reason: 'executed'
             };
             expect(() => translator.group({ id: 1 }, option)).toThrow('Can only group an array of data');
         });

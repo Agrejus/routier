@@ -24,7 +24,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'filter'> = {
                 name: 'filter',
                 value: { filter: null, params: null, expression: Expression.NOT_PARSABLE },
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.filter(data, option);
@@ -42,7 +42,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'filter'> = {
                 name: 'filter',
                 value: { filter, params: null, expression: Expression.NOT_PARSABLE },
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.filter(data, option) as any;
@@ -65,7 +65,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'filter'> = {
                 name: 'filter',
                 value: { filter, params: { searchTerm: 'test' }, expression: Expression.NOT_PARSABLE },
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.filter(data, option) as any;
@@ -80,7 +80,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'filter'> = {
                 name: 'filter',
                 value: { filter: null, params: null, expression: Expression.NOT_PARSABLE },
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             expect(() => translator.filter(data, option)).toThrow();
@@ -97,7 +97,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'map'> = {
                 name: 'map',
                 value: { selector, fields: [] },
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.map(data, option);
@@ -113,7 +113,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'map'> = {
                 name: 'map',
                 value: { selector, fields: [] },
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             expect(() => translator.map(data, option)).toThrow('Can only map an array of data');
@@ -126,7 +126,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'count'> = {
                 name: 'count',
                 value: true,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.count(data, option);
@@ -139,7 +139,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'count'> = {
                 name: 'count',
                 value: true,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.count(data, option);
@@ -152,7 +152,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'count'> = {
                 name: 'count',
                 value: true,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             expect(() => translator.count(data, option)).toThrow('Cannot count resulting data, it must be an array');
@@ -165,7 +165,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'min'> = {
                 name: 'min',
                 value: true,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.min(data, option);
@@ -180,7 +180,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'min'> = {
                 name: 'min',
                 value: true,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.min(data, option);
@@ -193,7 +193,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'min'> = {
                 name: 'min',
                 value: true,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             expect(translator.min(data, option)).toBeNull();
@@ -207,7 +207,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'min'> = {
                 name: 'min',
                 value: true,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.min(data, option);
@@ -220,7 +220,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'min'> = {
                 name: 'min',
                 value: true,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             expect(() => translator.min(data, option)).toThrow();
@@ -233,7 +233,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'max'> = {
                 name: 'max',
                 value: true,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.max(data, option);
@@ -246,7 +246,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'max'> = {
                 name: 'max',
                 value: true,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.max(data, option);
@@ -259,7 +259,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'max'> = {
                 name: 'max',
                 value: true,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             expect(translator.max(data, option)).toBe(9);
@@ -273,7 +273,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'max'> = {
                 name: 'max',
                 value: true,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.max(data, option);
@@ -285,8 +285,8 @@ describe('JsonTranslator', () => {
     describe('min/max, single pass', () => {
         // These pin the shape of _minMax, not just its answers.  It used to sort the array and
         // take element 0, which mutated the caller's array and cost O(n log n).
-        const minOption: QueryOption<any, 'min'> = { name: 'min', value: true, target: 'memory' };
-        const maxOption: QueryOption<any, 'max'> = { name: 'max', value: true, target: 'memory' };
+        const minOption: QueryOption<any, 'min'> = { name: 'min', value: true, target: 'memory', reason: 'not-parsable' };
+        const maxOption: QueryOption<any, 'max'> = { name: 'max', value: true, target: 'memory', reason: 'not-parsable' };
 
         it('should not reorder the array it was given', () => {
             const data = [5, 2, 8, 1, 9];
@@ -345,7 +345,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'sort'> = {
                 name: 'sort',
                 value: { selector, direction: QueryOrdering.Ascending, propertyName: 'value' },
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.sort(data, option);
@@ -359,7 +359,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'sort'> = {
                 name: 'sort',
                 value: { selector, direction: QueryOrdering.Descending, propertyName: 'value' },
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.sort(data, option);
@@ -377,7 +377,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'sort'> = {
                 name: 'sort',
                 value: { selector, direction: QueryOrdering.Ascending, propertyName: 'id' },
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.sort(data, option);
@@ -395,7 +395,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'sort'> = {
                 name: 'sort',
                 value: { selector, direction: QueryOrdering.Ascending, propertyName: 'id' },
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.sort(data, option);
@@ -419,7 +419,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'sum'> = {
                 name: 'sum',
                 value: true,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.sum(data, option);
@@ -432,7 +432,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'sum'> = {
                 name: 'sum',
                 value: true,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             expect(() => translator.sum(data, option)).toThrow();
@@ -443,7 +443,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'sum'> = {
                 name: 'sum',
                 value: true,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             expect(() => translator.sum(data, option)).toThrow();
@@ -454,7 +454,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'sum'> = {
                 name: 'sum',
                 value: true,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             expect(() => translator.sum(data, option)).toThrow('Cannot sum, property is not a number');
@@ -466,7 +466,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'sum'> = {
                 name: 'sum',
                 value: true,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             expect(() => translator.sum(data, option)).toThrow('sum() operation can only be performed when one field is mapped');
@@ -483,7 +483,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'sum'> = {
                 name: 'sum',
                 value: true,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             expect(() => translator.sum(data, option)).toThrow('sum() operation can only be performed when one field is mapped');
@@ -496,7 +496,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'distinct'> = {
                 name: 'distinct',
                 value: true,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.distinct(data, option);
@@ -509,7 +509,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'distinct'> = {
                 name: 'distinct',
                 value: true,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.distinct(data, option);
@@ -525,7 +525,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'distinct'> = {
                 name: 'distinct',
                 value: true,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.distinct(data, option) as any;
@@ -540,7 +540,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'distinct'> = {
                 name: 'distinct',
                 value: true,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.distinct(data, option);
@@ -553,7 +553,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'distinct'> = {
                 name: 'distinct',
                 value: true,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             expect(() => translator.distinct(data, option)).toThrow();
@@ -566,7 +566,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'skip'> = {
                 name: 'skip',
                 value: 2,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.skip(data, option);
@@ -579,7 +579,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'skip'> = {
                 name: 'skip',
                 value: 5,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.skip(data, option);
@@ -592,7 +592,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'skip'> = {
                 name: 'skip',
                 value: 0,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.skip(data, option);
@@ -605,7 +605,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'skip'> = {
                 name: 'skip',
                 value: -1,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.skip(data, option);
@@ -618,7 +618,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'skip'> = {
                 name: 'skip',
                 value: 2,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.skip(data, option);
@@ -633,7 +633,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'take'> = {
                 name: 'take',
                 value: 3,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.take(data, option);
@@ -646,7 +646,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'take'> = {
                 name: 'take',
                 value: 5,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.take(data, option);
@@ -659,7 +659,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'take'> = {
                 name: 'take',
                 value: 0,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.take(data, option);
@@ -672,7 +672,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'take'> = {
                 name: 'take',
                 value: -1,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.take(data, option);
@@ -685,7 +685,7 @@ describe('JsonTranslator', () => {
             const option: QueryOption<any, 'take'> = {
                 name: 'take',
                 value: 2,
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.take(data, option);
@@ -708,7 +708,7 @@ describe('JsonTranslator', () => {
                     key: {} as any,
                     fields: []
                 },
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.group<Record<string, unknown[]>>(data, option);
@@ -738,7 +738,7 @@ describe('JsonTranslator', () => {
                     key: {} as any,
                     fields: [{ property } as any]
                 },
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             const result = translator.group<Record<string, Array<{ amount: number }>>>(data, option);
@@ -756,7 +756,7 @@ describe('JsonTranslator', () => {
                     key: {} as any,
                     fields: []
                 },
-                target: 'memory'
+                target: 'memory', reason: 'not-parsable'
             };
 
             expect(() => translator.group({ id: 1 }, option)).toThrow('Can only group an array of data');

@@ -518,41 +518,36 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
     }
 
     /**
-     * Moves options the plugin declined into the memory pass, in front of what was already there.
+     * The options that still have to run, once the plugin has said what it did.
      *
-     * In front, because they came first in the chain the caller wrote: a filter the database refused
-     * has to run before a `skip` that was always going to run in memory.
+     * The database options it did not run come FIRST: they were earlier in the chain the caller
+     * wrote, so a filter the engine could not express has to run before a `skip` that was always
+     * bound for memory. Sorting by index gives that for nothing.
      */
-    private absorbHandedBackOptions<TShape>(
+    private memoryPass<TShape>(
         databaseEvent: DbPluginQueryEvent<TRoot, TShape>,
         memoryEvent: DbPluginQueryEvent<TRoot, TShape>
-    ) {
-        const handedBack = databaseEvent.operation.options.handedBack();
+    ): Query<TRoot, TShape> {
+        const notExecuted = databaseEvent.operation.options.notExecuted();
 
-        if (handedBack.length === 0) {
-            return;
+        if (notExecuted.length === 0) {
+            return memoryEvent.operation as Query<TRoot, TShape>;
         }
 
         const combined = new QueryOptionsCollection<TRoot>();
 
-        for (const item of handedBack) {
+        for (const item of notExecuted) {
             combined.add(item.option.name, item.option.value);
         }
 
-        memoryEvent.operation.options.forEach(option => {
-            combined.add(option.name, option.value);
-        });
+        memoryEvent.operation.options.forEach(option => combined.add(option.name, option.value));
 
-        memoryEvent.operation = new Query<TRoot, TShape>(combined as any, this.dependencies.schema);
+        return new Query<TRoot, TShape>(combined as any, this.dependencies.schema);
     }
 
     private postProcessQuery<TShape>(result: PluginEventSuccessType<ITranslatedValue<TShape>>, payload: { databaseEvent: DbPluginQueryEvent<TRoot, TShape>, memoryEvent: DbPluginQueryEvent<TRoot, TShape> }, done: PluginEventCallbackResult<TShape>) {
 
         const { databaseEvent, memoryEvent } = payload;
-
-        // The plugin may have handed options back — its engine could not express them — and those
-        // run here, over the rows it did return, ahead of anything already bound for memory.
-        this.absorbHandedBackOptions(databaseEvent, memoryEvent);
 
         try {
             // Before the tags and change-tracking work below, all of which is about entities of
@@ -574,15 +569,17 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
 
             // This means we are querying on a computed property that is untracked, need to select
             // all and query in memory
-            if (Query.isEmpty(memoryEvent.operation) === false) {
+            const memoryQuery = this.memoryPass<TShape>(databaseEvent, memoryEvent);
+
+            if (Query.isEmpty(memoryQuery) === false) {
 
                 const enriched = result.data.value as InferType<TRoot>[];
 
                 // We need to execute operations on the result that the plugin will not do
-                const translator = new JsonTranslator(memoryEvent.operation);
+                const translator = new JsonTranslator(memoryQuery);
                 const translatedEnrichedData = translator.translate(enriched);
 
-                if (memoryEvent.operation.changeTracking === false) {
+                if (memoryQuery.changeTracking === false) {
                     this.captureDeliveredMembership(translatedEnrichedData.value);
                     return done(PluginEventResult.success(memoryEvent.id, translatedEnrichedData.value));
                 }

@@ -36,7 +36,7 @@ const sortOn = (propertyName: string) => ({
 
 describe('reason codes', () => {
 
-    it('records no reason when everything pushes down', () => {
+    it('records `executed` when everything pushes down', () => {
         const options = optionsWith(o => {
             addFilter(o, (x: any) => x.rank > 10);
             o.add("take", 20);
@@ -46,7 +46,7 @@ describe('reason codes', () => {
         options.forEach(option => targets.push(option.target));
 
         expect(targets).toEqual(["database", "database"]);
-        options.forEach(option => expect(option.reason).toBeUndefined());
+        options.forEach(option => expect(option.reason).toBe("executed"));
     });
 
     it('records renamed-property for a filter on a `from` property', () => {
@@ -92,8 +92,8 @@ describe('reason codes', () => {
         options.forEach(o => recorded.push({ name: o.name, target: o.target, reason: o.reason }));
 
         expect(recorded).toEqual([
-            { name: "filter", target: "database", reason: undefined },
-            { name: "join", target: "database", reason: undefined },
+            { name: "filter", target: "database", reason: "executed" },
+            { name: "join", target: "database", reason: "executed" },
             { name: "take", target: "memory", reason: "after-join" }
         ]);
     });
@@ -153,7 +153,7 @@ describe('reason codes', () => {
         options.forEach(o => recorded.push({ name: o.name, target: o.target, reason: o.reason }));
 
         expect(recorded).toEqual([
-            { name: "nearest", target: "database", reason: undefined },
+            { name: "nearest", target: "database", reason: "executed" },
             { name: "take", target: "memory", reason: "after-nearest" }
         ]);
     });
@@ -175,7 +175,7 @@ describe('reason codes', () => {
         });
     });
 
-    it('restores an ABSENT reason through a snapshot', () => {
+    it('restores a database option through a snapshot', () => {
         // The snapshot has to be taken BEFORE the cut over, or restoring cannot undo anything.
         const options = optionsWith(o => o.add("take", 1));
         const restore = options.snapshot();
@@ -188,8 +188,8 @@ describe('reason codes', () => {
         options.forEach(o => recorded.push({ name: o.name, target: o.target, reason: o.reason }));
 
         expect(recorded).toEqual([
-            { name: "take", target: "database", reason: undefined },
-            { name: "skip", target: "database", reason: undefined }
+            { name: "take", target: "database", reason: "executed" },
+            { name: "skip", target: "database", reason: "executed" }
         ]);
     });
 
@@ -319,7 +319,12 @@ describe('explainQuery', () => {
         expect(explanation.summary).toMatchObject({ database: 0, memory: 0, reasons: [] });
     });
 
-    it('refuses a collection produced by split()', () => {
+    /**
+     * `split()` used to rebuild each half by re-adding, which re-ran the cascade: the post-join
+     * `take`, alone in the memory half, came back out as `database` with no reason. It adopts the
+     * items now, so a half is as good to explain as the whole.
+     */
+    it(`keeps each half's targets when split, so a half can be explained`, () => {
         const options = optionsWith(o => {
             addFilter(o, (x: any) => x.rank > 10);
             o.add("join", {
@@ -334,18 +339,21 @@ describe('explainQuery', () => {
             o.add("take", 20);
         });
 
-        const { memory } = options.split();
+        const { memory, database } = options.split();
 
-        // Proves the trap the guard exists for: alone in the memory half, the post-join `take`
-        // re-derives to "database".
-        memory.forEach(option => expect(option.target).toBe("database"));
-        expect(() => explainQuery(memory, CONTEXT)).toThrow(/before splitting/);
+        memory.forEach(option => expect(option.target).toBe("memory"));
+        database.forEach(option => expect(option.target).toBe("database"));
+        // A synthetic empty database step is always prepended — the plugin is dispatched either
+        // way — so the memory work is the step after it, carrying the reason that put it there.
+        const steps = explainQuery(memory, CONTEXT).executionSteps;
+
+        expect(steps.filter(step => step.executedIn === "memory").map(step => step.reason)).toEqual(["after-join"]);
     });
 
-    it('refuses a collection produced by splitAt()', () => {
+    it('keeps targets through splitAt too', () => {
         const options = optionsWith(o => addFilter(o, (x: any) => x.rank > 10));
 
-        expect(() => explainQuery(options.splitAt("filter").before, CONTEXT)).toThrow(/before splitting/);
+        expect(explainQuery(options.splitAt("filter").before, CONTEXT)).toBeDefined();
     });
 });
 

@@ -31,6 +31,7 @@ export type QueryOptionName = keyof QueryOptionValueMap<unknown>;
  * never returns to `"database"`, so the code recorded is the FIRST cause and it stays on every
  * option after it. Reporting a later one would name a symptom of this one.
  */
+/** Why core planned an option for memory, decided when the option is added. */
 export type MemoryExecutionReason =
     | "not-parsable"
     | "unmapped-property"
@@ -38,17 +39,45 @@ export type MemoryExecutionReason =
     | "map-rename"
     | "after-nearest"
     | "after-join"
-    | "cross-plugin-join"
-    /** A plugin was handed an option its engine cannot express, and handed it back. */
-    | "unsupported-by-plugin";
+    | "cross-plugin-join";
 
-export type QueryOption<T, K extends QueryOptionName> = {
-    name: QueryOptionName;
-    value: QueryOptionValueMap<T>[K],
-    target: QueryOptionExecutionTarget;
-    /** Set only when `target` is `"memory"`. */
-    reason?: MemoryExecutionReason;
-}
+/**
+ * What became of an option planned for the database.
+ *
+ * `missing-capability` is the only value a plugin writes, and the only one core cannot derive: an
+ * engine's capabilities are not knowable from here. SQLite's `REGEXP` exists if the host registered
+ * the function and not otherwise, so two instances in one process can differ.
+ *
+ * `not-reached` is the rest of the database phase after one. The database stops there rather than
+ * carrying on: a window applied in front of a filter that was not applied returns the wrong rows.
+ * Core writes it, so a plugin cannot mark a cascade it does not own.
+ */
+export type DatabaseExecutionReason = "executed" | "missing-capability" | "not-reached";
+
+/**
+ * One option, and where it runs.
+ *
+ * `target` narrows what `reason` can say, so an option cannot carry a reason that does not belong to
+ * the half it was planned for. An option is never moved between arms — the database arm records what
+ * became of it, which is what makes a redirect readable:
+ *
+ * ```ts
+ * option.target === "database" && option.reason === "missing-capability"
+ * ```
+ */
+export type QueryOption<T, K extends QueryOptionName> =
+    | {
+        name: QueryOptionName;
+        value: QueryOptionValueMap<T>[K],
+        target: "database";
+        reason: DatabaseExecutionReason;
+    }
+    | {
+        name: QueryOptionName;
+        value: QueryOptionValueMap<T>[K],
+        target: "memory";
+        reason: MemoryExecutionReason;
+    }
 
 export type QueryOptionValueMap<T extends {}> = {
     skip: number;

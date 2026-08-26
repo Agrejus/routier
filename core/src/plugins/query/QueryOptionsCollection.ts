@@ -11,6 +11,7 @@ export class QueryOptionsCollection<T> {
     private nextExecutionReason: MemoryExecutionReason | null = null;
     private nextIndex: number = 0;
     private enumeratedItems: QueryCollectionItem<any, any>[] = [];
+    private dirty: boolean = true;
 
     /** Cuts over to memory execution, keeping the first cause. See `MemoryExecutionReason`. */
     private cutOverToMemory(reason: MemoryExecutionReason) {
@@ -19,20 +20,6 @@ export class QueryOptionsCollection<T> {
         if (this.nextExecutionReason == null) {
             this.nextExecutionReason = reason;
         }
-    }
-
-    /**
-     * True when `split()` or `splitAt()` produced this collection.
-     *
-     * Those rebuild each half by re-adding its options, which re-derives execution targets
-     * without the options that caused them — a post-join filter alone in the memory half
-     * derives back to `"database"`. Anything reading `target` as a report of where work runs
-     * has to reject a derived collection; see `explainQuery`.
-     */
-    private derived: boolean = false;
-
-    get isDerived() {
-        return this.derived;
     }
 
     get items() {
@@ -143,17 +130,17 @@ export class QueryOptionsCollection<T> {
             }
         }
 
+        // `executed` is the plan, not a record: nothing has run when an option is added. Every
+        // consumer reads it after the plugin returned, so the optimistic window is never observed.
         const item: QueryCollectionItem<T, K> = {
             index: this.nextIndex,
-            option: {
-                name,
-                target: this.nextExecutionTarget,
-                value,
-                ...(this.nextExecutionReason == null ? {} : { reason: this.nextExecutionReason })
-            }
+            option: this.nextExecutionTarget === "database"
+                ? { name, value, target: "database", reason: "executed" }
+                : { name, value, target: "memory", reason: this.nextExecutionReason ?? "not-parsable" }
         }
 
         this.nextIndex++;
+        this.dirty = true;
 
         const found = this.options.get(name);
 
@@ -202,9 +189,6 @@ export class QueryOptionsCollection<T> {
         const sortedItems = this.enumeratedItems.toSorted((a, b) => a.index - b.index);
         const before = new QueryOptionsCollection<T>();
         const after = new QueryOptionsCollection<T>();
-
-        before.derived = true;
-        after.derived = true;
         let at: QueryOption<T, K> | null = null;
 
         for (let i = 0, length = sortedItems.length; i < length; i++) {
@@ -216,7 +200,7 @@ export class QueryOptionsCollection<T> {
             }
 
             const destination = at == null ? before : after;
-            destination.add(option.name, option.value);
+            destination.adopt(sortedItems[i]);
         }
 
         return { before, at, after };
@@ -245,37 +229,44 @@ export class QueryOptionsCollection<T> {
         };
     }
 
-    /**
-     * A plugin handing an option back, because its engine cannot express it.
-     *
-     * Only the plugin knows: SQLite's `REGEXP` exists if the host registered the function and not
-     * otherwise, so two instances in one process can differ and core cannot decide for them.
-     *
-     * Everything AFTER the option goes with it. A `take` already applied by the database, in front of
-     * a filter the database did not apply, returns the wrong rows — so the cut is forward-only, the
-     * same rule `cutOverToMemory` follows when core makes the decision itself.
-     */
-    deferToMemory(item: QueryCollectionItem<any, any>, reason: MemoryExecutionReason) {
-        this.resolveEnumeration();
+    /** Takes an item as it stands — same object, same index, same target and reason. */
+    private adopt(item: QueryCollectionItem<any, any>) {
+        const found = this.options.get(item.option.name);
 
-        for (const candidate of this.enumeratedItems) {
-            if (candidate.index >= item.index && candidate.option.target === "database") {
-                candidate.option.target = "memory";
-                candidate.option.reason = reason;
-            }
-        }
+        this.options.set(item.option.name, [...found ?? [], item]);
+        this.nextIndex = Math.max(this.nextIndex, item.index + 1);
+        this.dirty = true;
     }
 
     /**
-     * The options a plugin handed back, in the order they were written.
+     * A plugin reporting that its engine cannot express one option.
      *
-     * Read after the plugin returns, so what it declined runs over the rows it did return.
+     * The plugin names ONE. Core marks the rest of the database phase `not-reached`, because the
+     * database has to stop there — a window applied in front of a filter that was not applied
+     * returns the wrong rows. Passing the cascade through core is what makes it impossible for a
+     * plugin to mark a non-contiguous cut.
+     *
+     * The option is not moved to the memory arm. It stays where it was planned, which is what keeps
+     * a redirect distinguishable from something core sent to memory in the first place.
      */
-    handedBack(): QueryCollectionItem<any, any>[] {
+    reportMissingCapability(item: QueryCollectionItem<any, any>) {
+        this.resolveEnumeration();
+
+        for (const candidate of this.enumeratedItems) {
+            if (candidate.option.target !== "database" || candidate.index < item.index) {
+                continue;
+            }
+
+            candidate.option.reason = candidate.index === item.index ? "missing-capability" : "not-reached";
+        }
+    }
+
+    /** The options the database did not run, in the order they were written. */
+    notExecuted(): QueryCollectionItem<any, any>[] {
         this.resolveEnumeration();
 
         return this.enumeratedItems
-            .filter(item => item.option.target === "memory")
+            .filter(item => item.option.target === "database" && item.option.reason !== "executed")
             .toSorted((a, b) => a.index - b.index);
     }
 
@@ -286,18 +277,17 @@ export class QueryOptionsCollection<T> {
         const memoryQueryOptionsCollection = new QueryOptionsCollection<T>();
         const databaseQueryOptionsCollection = new QueryOptionsCollection<T>();
 
-        memoryQueryOptionsCollection.derived = true;
-        databaseQueryOptionsCollection.derived = true;
-
         for (let i = 0, length = sortedItems.length; i < length; i++) {
             const sortedItem = sortedItems[i];
+            const half = sortedItem.option.target === "database"
+                ? databaseQueryOptionsCollection
+                : memoryQueryOptionsCollection;
 
-            if (sortedItem.option.target === "database") {
-                databaseQueryOptionsCollection.add(sortedItem.option.name, sortedItem.option.value);
-                continue;
-            }
-
-            memoryQueryOptionsCollection.add(sortedItem.option.name, sortedItem.option.value);
+            // The ITEM, not its name and value. Re-adding would re-derive target and reason from a
+            // fresh cascade, and a memory option re-added alone comes back out as `database` with no
+            // reason at all. Sharing it also means a plugin's report on the database half is the
+            // same object the explanation reads.
+            half.adopt(sortedItem);
         }
 
         return {
@@ -349,8 +339,11 @@ export class QueryOptionsCollection<T> {
     }
 
     private resolveEnumeration() {
-        if (this.enumeratedItems.length != this.nextIndex) {
+        // A flag, not a count: adopting leaves gaps in the indexes, so `length !== nextIndex` is
+        // true forever on a half and the enumeration rebuilds on every read.
+        if (this.dirty === true) {
             this.enumeratedItems = this.getEnumeration();
+            this.dirty = false;
         }
     }
 

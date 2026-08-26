@@ -1,5 +1,5 @@
 import { Expression } from "../../expressions/types";
-import { MemoryExecutionReason, QueryOption, QueryOptionExecutionTarget, QueryOptionName } from "./types";
+import { DatabaseExecutionReason, MemoryExecutionReason, QueryOption, QueryOptionExecutionTarget, QueryOptionName } from "./types";
 import { QueryOptionsCollection } from "./QueryOptionsCollection";
 
 /**
@@ -15,7 +15,6 @@ export const MEMORY_EXECUTION_EXPLANATIONS: Record<MemoryExecutionReason, string
     "map-rename": "A map renames or drops properties, so every option after it refers to names the database does not have.",
     "after-nearest": "A similarity search orders and limits rows, and the plugin cannot report whether it performed the search, so every option after it runs in memory.",
     "after-join": "A join produces [outer, inner] tuples rather than entities, and the plugin cannot report how it joined, so every option after it runs in memory.",
-    "unsupported-by-plugin": "The plugin cannot express one of these options in its engine, so it and every option after it run in memory over the rows the plugin did return.",
     "cross-plugin-join": "The two sides of this join live on different plugins, so neither can read the other's rows and the join runs in the datastore."
 };
 
@@ -40,6 +39,15 @@ export type ExplainedOption = {
 export const EXECUTED_QUERIES_UNSUPPORTED =
     "This plugin did not report what it executed. It may not support explain.";
 
+/**
+ * Why an option planned for the database did not run there. `executed` has no sentence: it needs no
+ * explaining, and a step made of executed options is a database step like any other.
+ */
+export const DATABASE_EXECUTION_EXPLANATIONS: Record<Exclude<DatabaseExecutionReason, "executed">, string> = {
+    "missing-capability": "The plugin's engine cannot express this option, so it runs in memory over the rows the plugin did return. Only the plugin can know this — an engine's capabilities are not visible from here.",
+    "not-reached": "The database stopped at an option it could not express, so this one runs in memory too. Carrying on would apply it to rows the earlier option had not filtered."
+};
+
 export type ExecutionStep = {
     step: number;
     of: number;
@@ -51,7 +59,8 @@ export type ExecutionStep = {
     /** Set on the first database step instead, when the plugin reported nothing. */
     executedQueriesUnsupported?: string;
     /** Set on memory steps only. */
-    reason?: MemoryExecutionReason;
+    /** Why this step is not in the database — core planned it, or the plugin could not do it. */
+    reason?: MemoryExecutionReason | Exclude<DatabaseExecutionReason, "executed">;
     explanation?: string;
 };
 
@@ -59,7 +68,7 @@ export type QueryExplanationSummary = {
     database: number;
     memory: number;
     /** Deduped, in first-seen order. Empty when the whole query pushed down. */
-    reasons: MemoryExecutionReason[];
+    reasons: NonNullable<ExecutionStep["reason"]>[];
     explanation: string;
 };
 
@@ -163,8 +172,11 @@ const explainedOptionsOf = (options: QueryOptionsCollection<any>): ExplainedOpti
     return explained;
 };
 
+/** Every sentence, whoever decided — the summary reads the same either way. */
+const EXPLANATIONS: Record<string, string> = { ...MEMORY_EXECUTION_EXPLANATIONS, ...DATABASE_EXECUTION_EXPLANATIONS };
+
 const summarize = (steps: ExecutionStep[]): QueryExplanationSummary => {
-    const reasons: MemoryExecutionReason[] = [];
+    const reasons: NonNullable<ExecutionStep["reason"]>[] = [];
     let database = 0;
     let memory = 0;
 
@@ -182,7 +194,7 @@ const summarize = (steps: ExecutionStep[]): QueryExplanationSummary => {
     }
 
     const counts = `${database} ${database === 1 ? "option ran" : "options ran"} in the database, ${memory} ran in memory.`;
-    const causes = reasons.map(reason => MEMORY_EXECUTION_EXPLANATIONS[reason]).join(" ");
+    const causes = reasons.map(reason => EXPLANATIONS[reason]).join(" ");
 
     return { database, memory, reasons, explanation: causes.length === 0 ? counts : `${counts} ${causes}` };
 };
@@ -199,6 +211,39 @@ const summarize = (steps: ExecutionStep[]): QueryExplanationSummary => {
  * the feature exists to expose reports "0 in the database" while the backend reads the whole
  * table, which is the opposite of the truth.
  */
+/**
+ * Where an option ran, and why — read off the option rather than off the plan.
+ *
+ * A database option is only reported as having run there if it did. `missing-capability` and
+ * `not-reached` both mean the rows came back unfiltered and the datastore finished the job.
+ */
+type Outcome = {
+    executedIn: QueryOptionExecutionTarget;
+    reason: MemoryExecutionReason | Exclude<DatabaseExecutionReason, "executed"> | null;
+    explanation: string | null;
+};
+
+const outcomeOf = (option: QueryOption<any, any>): Outcome => {
+
+    if (option.target === "memory") {
+        return {
+            executedIn: "memory",
+            reason: option.reason,
+            explanation: MEMORY_EXECUTION_EXPLANATIONS[option.reason]
+        };
+    }
+
+    if (option.reason === "executed") {
+        return { executedIn: "database", reason: null, explanation: null };
+    }
+
+    return {
+        executedIn: "memory",
+        reason: option.reason,
+        explanation: DATABASE_EXECUTION_EXPLANATIONS[option.reason]
+    };
+};
+
 const toExecutionSteps = (options: QueryOptionsCollection<any>): ExecutionStep[] => {
     const steps: ExecutionStep[] = [];
     let index = 0;
@@ -206,8 +251,13 @@ const toExecutionSteps = (options: QueryOptionsCollection<any>): ExecutionStep[]
     options.forEach(option => {
         const explained = explainedOptionOf(option, index++);
         const current = steps[steps.length - 1];
+        const outcome = outcomeOf(option);
 
-        if (current != null && current.executedIn === option.target) {
+        // Grouped by outcome, not by target: an option the database could not express and one core
+        // sent to memory both run in memory, for different reasons a reader needs told apart.
+        // `?? null` because a step with no reason omits the key entirely, and `undefined === null`
+        // is false — without it every database option started a step of its own
+        if (current != null && current.executedIn === outcome.executedIn && (current.reason ?? null) === outcome.reason) {
             current.options.push(explained);
             return;
         }
@@ -215,13 +265,10 @@ const toExecutionSteps = (options: QueryOptionsCollection<any>): ExecutionStep[]
         steps.push({
             step: steps.length + 1,
             of: 0,
-            executedIn: option.target,
-            description: option.target === "database" ? DATABASE_STEP_DESCRIPTION : MEMORY_STEP_DESCRIPTION,
+            executedIn: outcome.executedIn,
+            description: outcome.executedIn === "database" ? DATABASE_STEP_DESCRIPTION : MEMORY_STEP_DESCRIPTION,
             options: [explained],
-            ...(option.reason == null ? {} : {
-                reason: option.reason,
-                explanation: MEMORY_EXECUTION_EXPLANATIONS[option.reason]
-            })
+            ...(outcome.reason == null ? {} : { reason: outcome.reason, explanation: outcome.explanation })
         });
     });
 
@@ -252,15 +299,6 @@ const toExecutionSteps = (options: QueryOptionsCollection<any>): ExecutionStep[]
  * would report memory work as having run in the database.
  */
 export const explainQuery = (options: QueryOptionsCollection<any>, context: ExplainContext): QueryExplanation => {
-
-    if (options.isDerived === true) {
-        throw new Error(
-            "explainQuery was given a collection produced by split() or splitAt(). Those re-derive " +
-            "execution targets without the options that caused them, so the explanation would report " +
-            "memory work as having run in the database. Pass the collection as it was resolved, " +
-            "before splitting."
-        );
-    }
 
     const executionSteps = toExecutionSteps(options);
 
