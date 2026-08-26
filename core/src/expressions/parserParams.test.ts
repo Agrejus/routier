@@ -47,7 +47,7 @@ const valueTransform = (source: string, params: any) => {
     const right = comparator(source, params).right as any;
     const calls = peelCalls(right)?.calls ?? [];
 
-    return { transformer: calls[0] ?? null, locale: right?.arguments?.[0]?.value ?? null };
+    return { transformer: calls[0]?.call ?? null, locale: right?.arguments?.[0]?.value ?? null };
 };
 
 describe('param-driven property access', () => {

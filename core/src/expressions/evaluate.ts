@@ -33,7 +33,15 @@ export type EvaluationResult = boolean | undefined;
 /** Reads a property or literal operand, or `UNRESOLVED` when the node is not one. */
 const UNRESOLVED = Symbol("unresolved");
 
-const applyCall = (call: Call, value: unknown): unknown | typeof UNRESOLVED => {
+const ARITHMETIC: Partial<Record<Call, (left: number, right: number) => number>> = {
+    "add": (left, right) => left + right,
+    "subtract": (left, right) => left - right,
+    "multiply": (left, right) => left * right,
+    "divide": (left, right) => left / right,
+    "modulo": (left, right) => left % right,
+};
+
+const applyCall = (call: Call, value: unknown, args: unknown[]): unknown | typeof UNRESOLVED => {
     // A call applied to an absent value has no answer, and inventing one ("" for a missing string)
     // is how a filter starts matching rows it should not.
     if (value == null) {
@@ -50,6 +58,14 @@ const applyCall = (call: Call, value: unknown): unknown | typeof UNRESOLVED => {
 
     if (call === "length") {
         return typeof value === "string" || Array.isArray(value) ? value.length : UNRESOLVED;
+    }
+
+    const arithmetic = ARITHMETIC[call];
+
+    if (arithmetic != null) {
+        return typeof value === "number" && typeof args[0] === "number"
+            ? arithmetic(value, args[0])
+            : UNRESOLVED;
     }
 
     return UNRESOLVED;
@@ -73,7 +89,23 @@ const operand = (expression: Expression | undefined, row: UnknownRecord): unknow
     if (isCallExpression(expression)) {
         const inner = operand(expression.expression, row);
 
-        return inner === UNRESOLVED ? UNRESOLVED : applyCall(expression.call, inner);
+        if (inner === UNRESOLVED) {
+            return UNRESOLVED;
+        }
+
+        const args: unknown[] = [];
+
+        for (const argument of expression.arguments) {
+            const resolved = operand(argument, row);
+
+            if (resolved === UNRESOLVED) {
+                return UNRESOLVED;
+            }
+
+            args.push(resolved);
+        }
+
+        return applyCall(expression.call, inner, args);
     }
 
     return UNRESOLVED;

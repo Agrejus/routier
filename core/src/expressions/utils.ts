@@ -1,8 +1,13 @@
 import { PropertyInfo } from "../schema";
-import { Call, CallExpression, Expression, PropertyExpression } from "./types";
+import { CallExpression, Expression, PropertyExpression } from "./types";
 
-/** An operand with the calls wrapping it, innermost first — the order they are applied in. */
-export type PeeledOperand = { operand: Expression, calls: Call[] };
+/**
+ * An operand with the calls wrapping it, innermost first — the order they are applied in.
+ *
+ * The nodes rather than their names: a binary call carries arguments, and a consumer that only knows
+ * the name renders `LOWER(col)` correctly and `col + ?` not at all.
+ */
+export type PeeledOperand = { operand: Expression, calls: CallExpression[] };
 
 /**
  * Separates an operand from the calls applied to it.
@@ -11,11 +16,11 @@ export type PeeledOperand = { operand: Expression, calls: Call[] };
  * comparator side is a property or a value, so it lives here rather than in each translator.
  */
 export function peelCalls(expression: Expression | undefined): PeeledOperand | null {
-    const calls: Call[] = [];
+    const calls: CallExpression[] = [];
     let current = expression;
 
     while (current != null && current.type === "call") {
-        calls.unshift((current as CallExpression).call);
+        calls.unshift(current as CallExpression);
         current = (current as CallExpression).expression;
     }
 

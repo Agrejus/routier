@@ -86,9 +86,13 @@ describe('block comments', () => {
     });
 
     it('does not treat a division slash as a comment opener', () => {
-        // `/` not followed by `*` is not a comment. Weakening the second half of the check
-        // would make this swallow the rest of the expression.
-        expectNotParsable('r.price === 10 / 2');
+        // `/` not followed by `*` is division. Weakening the second half of the check would make
+        // this swallow the rest of the expression instead of dividing.
+        const parsed = parse('r.price === 10 / 2') as any;
+
+        expect(parsed.type).toBe('comparator');
+        expect(parsed.right.type).toBe('call');
+        expect(parsed.right.call).toBe('divide');
     });
 
     it('terminates on an unterminated block comment rather than looping', () => {

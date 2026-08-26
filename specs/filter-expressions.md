@@ -201,11 +201,19 @@ Two things learned while doing 1 and 2, both worth keeping:
 
 ## Piece 2 — the tokenizer and grammar
 
-The tree can hold these once Piece 1 lands. The parser cannot read the characters.
+The tree can hold these; the parser has to read the characters.
+
+**Arithmetic is done.** `+ - * / %` parse with JavaScript precedence and left associativity, emit the
+`add`/`subtract`/`multiply`/`divide`/`modulo` calls the union already had, and render in SQL, MQL and
+the in-memory evaluator. The tokenizer needed nothing — those characters were already punctuation
+tokens; only the grammar was missing. Verified against SQLite, PostgreSQL, pglite, MySQL, MongoDB,
+PouchDB, Dexie, memory, file-system and browser-storage.
+
+A call whose operands are all literals is folded at render time, so `x.age + 3 * 4` binds `12` rather
+than asking the database to multiply two constants.
 
 | form | current failure |
 |---|---|
-| `x.age % 2`, `x.age + 1`, `x.price * 1.2`, `-`, `/` | `unexpected token` — no arithmetic at all |
 | `x.age ** 2` | no exponent operator |
 | `x.age & 1`, `\|`, `^`, `~`, `<<`, `>>`, `>>>` | no bitwise operators |
 | `a ? b : c` | `expected ')'` — no conditional operator |
@@ -214,9 +222,14 @@ The tree can hold these once Piece 1 lands. The parser cannot read the character
 | `` `${p.prefix}a` `` | interpolation unsupported; a plain template literal parses |
 | `123n` | no bigint literal |
 
-Nothing here needs a new node. Arithmetic and bitwise become `call`, the conditional becomes
+Nothing here needs a new node. Bitwise becomes `call`, the conditional becomes
 `call: "conditional"`, `??` becomes `call: "coalesce"`, a regex literal becomes a tagged value, and
 interpolation becomes `call: "concat"`.
+
+Three shapes are refused rather than missing, and each has a reason: arithmetic that names no schema
+property is a constant and should be folded by the caller, arithmetic used as a condition instead of
+compared is not a boolean, and arithmetic inside a `startsWith`/`endsWith`/`includes` argument is not
+supported yet.
 
 ## Piece 3 — parser policy
 
@@ -275,8 +288,27 @@ This predates calls entirely; a casing call only makes it visible. A schema that
 answer has to declare a `_bin` or `_as_cs` collation on the column. Pinned in
 `e2e/src/mysqlCasing.test.ts` rather than asserted away.
 
-Nothing equivalent shows up on SQLite, PostgreSQL, MongoDB or any of the in-process plugins: all of
-them agree with JavaScript on the same predicate list.
+**`%` is not universal, and the dialect has to say so.** PostgreSQL has no `%` operator for
+`double precision` — a filter on a numeric column failed with *"operator does not exist: double
+precision % unknown"* — and MSSQL's `%` rejects `float`. Both cast, through
+`SqlDialect.moduloExpression`:
+
+| dialect | modulo |
+|---|---|
+| SQLite, MySQL | `(a % b)` |
+| PostgreSQL | `MOD((a)::numeric, (b)::numeric)` |
+| MSSQL | `((a) % CAST(b AS decimal(38, 10)))` |
+
+**SQLite's `%` truncates to integer.** `10.5 % 3` is `1` there and `1.5` in JavaScript, so modulo on a
+fractional column disagrees with the memory fallback. Not covered by a test yet — the contract's
+prices are whole numbers.
+
+**Integer division.** On a column typed as an integer, PostgreSQL's `/` is integer division while
+JavaScript's is not. The plugins store numbers as `double precision`, so this does not arise today; it
+would the moment a schema declared an integer column.
+
+Otherwise SQLite, PostgreSQL, MongoDB and every in-process plugin agree with JavaScript on the same
+predicate list, arithmetic included.
 
 # The JavaScript surface
 

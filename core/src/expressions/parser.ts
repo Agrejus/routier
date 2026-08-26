@@ -1,7 +1,7 @@
 import { logger } from "../utilities";
 import { assertString } from "../assertions";
 import { CompiledSchema, PropertyInfo, SchemaTypes } from "../schema";
-import { Expression, OperatorExpression, ComparatorExpression, ValueExpression, PropertyExpression, CallExpression, Filter, ParamsFilter, Comparator, Transformer } from "./types";
+import { Expression, OperatorExpression, ComparatorExpression, ValueExpression, PropertyExpression, CallExpression, Filter, ParamsFilter, Call, Comparator, Transformer } from "./types";
 
 // Error message constants
 const ERROR_MESSAGES = {
@@ -358,7 +358,41 @@ type MethodCallOperand = {
     argument: PropertyOperand | ValueOperand | ParamOperand;
 }
 
-type Operand = PropertyOperand | ValueOperand | ParamOperand | MethodCallOperand;
+/**
+ * Arithmetic, which the tree carries as a binary `CallExpression`.
+ *
+ * A parse-time shape rather than an expression because the comparator builders orient on operand
+ * KIND, and they have to be able to see that the property is in here.
+ */
+type ArithmeticOperand = {
+    kind: "arithmetic";
+    call: Call;
+    left: Operand;
+    right: Operand;
+}
+
+type Operand = PropertyOperand | ValueOperand | ParamOperand | MethodCallOperand | ArithmeticOperand;
+
+/** JavaScript precedence: `*`, `/`, `%` bind tighter than `+` and `-`. */
+const MULTIPLICATIVE_OPERATORS: Record<string, Call> = {
+    "*": "multiply",
+    "/": "divide",
+    "%": "modulo",
+};
+
+const ADDITIVE_OPERATORS: Record<string, Call> = {
+    "+": "add",
+    "-": "subtract",
+};
+
+/** Whether a schema property is reachable in here, which decides which side of a comparison it is. */
+const containsProperty = (operand: Operand): boolean => {
+    if (operand.kind === "property") {
+        return true;
+    }
+
+    return operand.kind === "arithmetic" && (containsProperty(operand.left) || containsProperty(operand.right));
+};
 
 const COMPARATOR_METHODS: Record<string, Comparator> = {
     startsWith: "starts-with",
@@ -590,16 +624,40 @@ class ExpressionParser {
             return expression;
         }
 
-        const left = this.parseOperand();
+        const left = this.parseAdditive();
         const operatorToken = this.stream.peek();
 
         if (operatorToken != null && operatorToken.kind === "punctuation" && COMPARISON_OPERATORS[operatorToken.value] != null) {
             this.stream.next();
-            const right = this.parseOperand();
+            const right = this.parseAdditive();
             return this.buildComparison(left, COMPARISON_OPERATORS[operatorToken.value], right);
         }
 
         return this.buildStandalone(left);
+    }
+
+    private parseAdditive(): Operand {
+        return this.parseBinary(ADDITIVE_OPERATORS, () => this.parseMultiplicative());
+    }
+
+    private parseMultiplicative(): Operand {
+        return this.parseBinary(MULTIPLICATIVE_OPERATORS, () => this.parseOperand());
+    }
+
+    /** Left-associative, so `a - b - c` is `(a - b) - c` rather than `a - (b - c)`. */
+    private parseBinary(operators: Record<string, Call>, next: () => Operand): Operand {
+        let left = next();
+
+        for (;;) {
+            const token = this.stream.peek();
+
+            if (token == null || token.kind !== "punctuation" || operators[token.value] == null) {
+                return left;
+            }
+
+            this.stream.next();
+            left = { kind: "arithmetic", call: operators[token.value], left, right: next() };
+        }
     }
 
     private parseOperand(): Operand {
@@ -684,6 +742,10 @@ class ExpressionParser {
                 throw new Error(ERROR_MESSAGES.UNSUPPORTED("nested method call inside .includes()"));
             }
 
+            if (argument.kind === "arithmetic") {
+                throw new Error(ERROR_MESSAGES.UNSUPPORTED("arithmetic inside .includes()"));
+            }
+
             return { kind: "method-call", target: array, method: "includes", argument };
         }
 
@@ -759,6 +821,10 @@ class ExpressionParser {
 
                         if (argument.kind === "method-call") {
                             throw new Error(ERROR_MESSAGES.UNSUPPORTED(`nested method call inside .${method}()`));
+                        }
+
+                        if (argument.kind === "arithmetic") {
+                            throw new Error(ERROR_MESSAGES.UNSUPPORTED(`arithmetic inside .${method}()`));
                         }
 
                         return {
@@ -905,6 +971,20 @@ class ExpressionParser {
             throw new Error(ERROR_MESSAGES.UNSUPPORTED("method call on the right side of a comparison"));
         }
 
+        if (left.kind === "arithmetic" || right.kind === "arithmetic") {
+            if (containsProperty(left) === false && containsProperty(right) === false) {
+                throw new Error(ERROR_MESSAGES.UNSUPPORTED("arithmetic that references no schema property"));
+            }
+
+            return new ComparatorExpression({
+                comparator: operator.comparator,
+                negated: operator.negated,
+                strict: operator.strict,
+                left: this.createOperandExpression(left),
+                right: this.createOperandExpression(right)
+            });
+        }
+
         if (left.kind === "property" && right.kind === "property") {
             return new ComparatorExpression({
                 comparator: operator.comparator,
@@ -941,6 +1021,10 @@ class ExpressionParser {
 
             // Truthy shorthand: `w.isActive` → isActive === true
             return this.buildPropertyComparator(operand, COMPARISON_OPERATORS["==="], { kind: "value", value: true, transformer: null, locale: null }, /* applyConverter */ true);
+        }
+
+        if (operand.kind === "arithmetic") {
+            throw new Error(ERROR_MESSAGES.UNSUPPORTED("arithmetic used as a condition rather than compared"));
         }
 
         // Constant `true` — a tautology, which parseAnd/parseOr simplify away
@@ -1010,6 +1094,34 @@ class ExpressionParser {
             left: this.createPropertyExpression(property),
             right: this.createValueExpression(value, property.property, applyConverter)
         });
+    }
+
+    /**
+     * Any operand as an expression.
+     *
+     * Values inside arithmetic take no paired property: the result is a computed number, so the
+     * property's serializer and type converter do not describe it — the same reason `.length` skips
+     * them.
+     */
+    private createOperandExpression(operand: Operand): Expression {
+
+        if (operand.kind === "arithmetic") {
+            return new CallExpression({
+                call: operand.call,
+                expression: this.createOperandExpression(operand.left),
+                arguments: [this.createOperandExpression(operand.right)]
+            });
+        }
+
+        if (operand.kind === "property") {
+            return this.createPropertyExpression(operand);
+        }
+
+        if (operand.kind === "method-call") {
+            throw new Error(ERROR_MESSAGES.UNSUPPORTED("a method call inside arithmetic"));
+        }
+
+        return this.createValueExpression(operand, null, /* applyConverter */ false);
     }
 
     private createPropertyExpression(operand: PropertyOperand): Expression {

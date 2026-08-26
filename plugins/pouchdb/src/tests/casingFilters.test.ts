@@ -64,6 +64,27 @@ describe("casing calls on a filter", () => {
         expect(found.map(p => p.name).sort()).toEqual(["Bravo", "Charlie"]);
     });
 
+    it("matches through modulo", async () => {
+        const store = await seeded();
+        const found = await store.products.where(p => p.price % 20 === 0).toArrayAsync();
+
+        expect(found.map(p => p.name)).toEqual(["Charlie"]);
+    });
+
+    it("matches through multiplication by a float", async () => {
+        const store = await seeded();
+        const found = await store.products.where(p => p.price * 1.5 > 40).toArrayAsync();
+
+        expect(found.map(p => p.name)).toEqual(["Bravo"]);
+    });
+
+    it("gives multiplication precedence over addition", async () => {
+        const store = await seeded();
+        const found = await store.products.where(p => p.price + 3 * 4 === 22).toArrayAsync();
+
+        expect(found.map(p => p.name)).toEqual(["Alpha"]);
+    });
+
     it("matches through a call on both sides", async () => {
         const store = await seeded();
         const found = await store.products

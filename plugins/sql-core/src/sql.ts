@@ -5,7 +5,7 @@
  * Uses a **Visitor** over the expression AST. Equals comparison uses a Strategy
  * per (column-side, null vs value) case.
  */
-import type { Call, ComparatorExpression, Expression, PropertyExpression } from "@routier/core/expressions";
+import type { Call, CallExpression, ComparatorExpression, Expression, PropertyExpression } from "@routier/core/expressions";
 import {
     isCallExpression,
     peelCalls,
@@ -67,6 +67,14 @@ export interface SqlDialect {
      * element count for arrays (which are stored as `jsonColumnType`).
      */
     lengthExpression(column: string, isJsonArray: boolean): string;
+    /**
+     * Remainder of two numeric expressions.
+     *
+     * A dialect method because `%` is not universal: PostgreSQL has no `%` for `double precision`
+     * and MSSQL's does not accept `float`, so both have to cast. SQLite's `%` truncates to integer,
+     * which is a real divergence from JavaScript on a fractional value.
+     */
+    moduloExpression(left: string, right: string): string;
     /**
      * SQL testing whether a JSON array column holds `value`.
      *
@@ -175,6 +183,9 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         },
         encodeDate: passThroughDate,
         encodeBoolean: integerBoolean,
+        moduloExpression(left, right) {
+            return `(${left} % ${right})`;
+        },
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `json_array_length(${column})` : `LENGTH(${column})`;
         },
@@ -212,6 +223,10 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         },
         encodeDate: passThroughDate,
         encodeBoolean: passThroughBoolean,
+        /** No `%` for `double precision`, and a bound parameter arrives untyped. */
+        moduloExpression(left, right) {
+            return `MOD((${left})::numeric, (${right})::numeric)`;
+        },
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `jsonb_array_length(${column})` : `LENGTH(${column})`;
         },
@@ -265,6 +280,9 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         },
         encodeDate: mysqlDate,
         encodeBoolean: passThroughBoolean,
+        moduloExpression(left, right) {
+            return `(${left} % ${right})`;
+        },
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `JSON_LENGTH(${column})` : `CHAR_LENGTH(${column})`;
         },
@@ -313,6 +331,10 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         },
         encodeDate: passThroughDate,
         encodeBoolean: passThroughBoolean,
+        /** `%` rejects `float`, so both sides are cast. */
+        moduloExpression(left, right) {
+            return `((${left}) % CAST(${right} AS decimal(38, 10)))`;
+        },
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `(SELECT COUNT(*) FROM OPENJSON(${column}))` : `LEN(${column})`;
         },
@@ -386,8 +408,26 @@ function buildPattern(
 /**
  * Applies a call to a literal before it is bound — SQL never sees a call on a value, only its result.
  */
-function applyCallsToValue(value: unknown, calls: Call[]): unknown {
-    return calls.reduce<unknown>((current, call) => {
+const ARITHMETIC_ON_VALUES: Partial<Record<Call, (left: number, right: number) => number>> = {
+    "add": (left, right) => left + right,
+    "subtract": (left, right) => left - right,
+    "multiply": (left, right) => left * right,
+    "divide": (left, right) => left / right,
+    "modulo": (left, right) => left % right,
+};
+
+const SQL_ARITHMETIC: Partial<Record<Call, string>> = {
+    "add": "+",
+    "subtract": "-",
+    "multiply": "*",
+    "divide": "/",
+    "modulo": "%",
+};
+
+function applyCallsToValue(value: unknown, calls: CallExpression[]): unknown {
+    return calls.reduce<unknown>((current, node) => {
+        const call = node.call;
+
         if (call === "to-lower-case" && typeof current === "string") {
             return current.toLowerCase();
         }
@@ -400,6 +440,14 @@ function applyCallsToValue(value: unknown, calls: Call[]): unknown {
             return current.length;
         }
 
+        if (ARITHMETIC_ON_VALUES[call] != null && typeof current === "number") {
+            const right = constantValue(node.arguments[0]);
+
+            if (typeof right === "number") {
+                return ARITHMETIC_ON_VALUES[call]!(current, right);
+            }
+        }
+
         throw new Error(
             `'${call}' cannot be applied to the value '${String(current)}' before binding it. Binding ` +
             `the value unchanged would compare against the wrong thing and return rows that look ` +
@@ -407,6 +455,18 @@ function applyCallsToValue(value: unknown, calls: Call[]): unknown {
         );
     }, value);
 }
+
+/** A call over literals only, folded to its result — the database never needs to compute it. */
+const constantValue = (expression: Expression): unknown => {
+    const peeled = peelCalls(expression);
+
+    if (peeled == null || isValueExpression(peeled.operand) === false) {
+        throw new Error(`Cannot fold '${expression.type}' into a constant.`);
+    }
+
+    return applyCallsToValue((peeled.operand as { value: unknown }).value, peeled.calls);
+};
+
 
 /**
  * Renders a property reference as a column, wrapping it in the SQL function the
@@ -446,8 +506,64 @@ function renderColumnBase(prop: PropertyExpression, d: SqlDialect, alias?: strin
     );
 }
 
-function renderColumn(prop: PropertyExpression, d: SqlDialect, calls: Call[], alias?: string): string {
-    return calls.reduce((rendered, call) => {
+/**
+ * Renders a binary call's operand: a literal binds a parameter, a property becomes another column.
+ *
+ * Recursive, so `x.age * 2 + 1` renders both levels, and it takes the parameter list because that is
+ * what binding a literal appends to.
+ */
+const bindableFor = (d: SqlDialect) => (value: unknown) =>
+    typeof value === "boolean" ? d.encodeBoolean(value) : value;
+
+const argumentRenderer = (
+    d: SqlDialect,
+    params: unknown[],
+    placeholder: () => string,
+    alias?: string
+): ((expression: Expression) => string) => {
+    const bindable = bindableFor(d);
+
+    const render = (expression: Expression): string => {
+        if (isValueExpression(expression)) {
+            params.push(bindable(expression.value));
+
+            return placeholder();
+        }
+
+        const peeled = peelCalls(expression);
+
+        if (peeled != null && isPropertyExpression(peeled.operand)) {
+            return renderColumn(peeled.operand, d, peeled.calls, render, alias);
+        }
+
+        if (peeled != null && isValueExpression(peeled.operand)) {
+            params.push(bindable(applyCallsToValue(peeled.operand.value, peeled.calls)));
+
+            return placeholder();
+        }
+
+        throw new Error(`Cannot render '${expression.type}' as a call operand in SQL.`);
+    };
+
+    return render;
+};
+
+/**
+ * The column, wrapped in whatever the calls applied to it render as.
+ *
+ * `renderArgument` renders a binary call's operand — a value binds a parameter, a property becomes
+ * another column — so it belongs to the caller, which is where the parameter list lives.
+ */
+function renderColumn(
+    prop: PropertyExpression,
+    d: SqlDialect,
+    calls: CallExpression[],
+    renderArgument: (expression: Expression) => string,
+    alias?: string
+): string {
+    return calls.reduce((rendered, node) => {
+        const call = node.call;
+
         if (call === "to-lower-case") {
             return `LOWER(${rendered})`;
         }
@@ -458,6 +574,18 @@ function renderColumn(prop: PropertyExpression, d: SqlDialect, calls: Call[], al
 
         if (call === "length") {
             return d.lengthExpression(rendered, prop.property.type === SchemaTypes.Array);
+        }
+
+        if (call === "modulo") {
+            return d.moduloExpression(rendered, node.arguments.map(renderArgument).join(", "));
+        }
+
+        const operator = SQL_ARITHMETIC[call];
+
+        if (operator != null) {
+            // Parenthesised, so `(price * ?) > ?` cannot be reassociated by the engine's own
+            // precedence into something the caller did not write
+            return `(${rendered} ${operator} ${node.arguments.map(renderArgument).join(` ${operator} `)})`;
         }
 
         throw new Error(
@@ -478,8 +606,8 @@ function renderColumn(prop: PropertyExpression, d: SqlDialect, calls: Call[], al
 interface PropertyValueSides {
     propLeft: PropertyExpression | null;
     propRight: PropertyExpression | null;
-    callsLeft: Call[];
-    callsRight: Call[];
+    callsLeft: CallExpression[];
+    callsRight: CallExpression[];
     valLeft: unknown;
     valRight: unknown;
 }
@@ -571,9 +699,9 @@ function renderStringPatternComparison(
     if (cmp.comparator === "includes") {
         const col =
             propLeft && valRight !== undefined
-                ? renderColumn(propLeft, d, callsLeft, alias)
+                ? renderColumn(propLeft, d, callsLeft, argumentRenderer(d, params, placeholder, alias), alias)
                 : propRight && valLeft !== undefined
-                  ? renderColumn(propRight, d, callsRight, alias)
+                  ? renderColumn(propRight, d, callsRight, argumentRenderer(d, params, placeholder, alias), alias)
                   : null;
         const value = valRight !== undefined ? valRight : valLeft;
 
@@ -620,9 +748,9 @@ function renderStringPatternComparison(
 
     const col =
         propLeft && valRight !== undefined
-            ? renderColumn(propLeft, d, callsLeft, alias)
+            ? renderColumn(propLeft, d, callsLeft, argumentRenderer(d, params, placeholder, alias), alias)
             : propRight && valLeft !== undefined
-              ? renderColumn(propRight, d, callsRight, alias)
+              ? renderColumn(propRight, d, callsRight, argumentRenderer(d, params, placeholder, alias), alias)
               : null;
     const rawValue = valRight !== undefined ? valRight : valLeft;
     const value = rawValue == null ? null : String(rawValue);
@@ -717,7 +845,7 @@ export function toSql(
      * `active = true` against a column holding 1 matches nothing, and returns an empty result
      * rather than an error.
      */
-    const bindable = (value: unknown) => typeof value === "boolean" ? d.encodeBoolean(value) : value;
+    const bindable = bindableFor(d);
     const params: unknown[] = [];
     let paramIndex = options?.paramOffset ?? 0;
 
@@ -753,9 +881,9 @@ export function toSql(
                 const { propLeft, propRight, callsLeft, callsRight, valLeft, valRight } = getPropertyValueSides(cmp);
                 const col =
                     propLeft && (valRight !== undefined || propRight)
-                        ? renderColumn(propLeft, d, callsLeft, alias)
+                        ? renderColumn(propLeft, d, callsLeft, argumentRenderer(d, params, placeholder, alias), alias)
                         : propRight && (valLeft !== undefined || propLeft)
-                          ? renderColumn(propRight, d, callsRight, alias)
+                          ? renderColumn(propRight, d, callsRight, argumentRenderer(d, params, placeholder, alias), alias)
                           : null;
                 const value = valRight !== undefined ? valRight : valLeft;
                 const columnOnLeft = Boolean(propLeft && cmp.right && isValueExpression(cmp.right));
@@ -783,7 +911,7 @@ export function toSql(
         }
 
         if (isPropertyExpression(e)) {
-            return renderColumn(e, d, [], alias);
+            return renderColumn(e, d, [], argumentRenderer(d, params, placeholder, alias), alias);
         }
 
         if (isValueExpression(e)) {
@@ -795,7 +923,7 @@ export function toSql(
             const peeled = peelCalls(e);
 
             if (peeled != null && isPropertyExpression(peeled.operand)) {
-                return renderColumn(peeled.operand, d, peeled.calls, alias);
+                return renderColumn(peeled.operand, d, peeled.calls, argumentRenderer(d, params, placeholder, alias), alias);
             }
 
             if (peeled != null && isValueExpression(peeled.operand)) {

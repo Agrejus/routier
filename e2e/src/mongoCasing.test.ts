@@ -24,6 +24,7 @@ const products = s.define('casing_products', {
     _id: s.string().key().identity(),
     name: s.string(),
     category: s.string(),
+    price: s.number(),
 }).compile();
 
 class CasingStore extends DataStore {
@@ -52,9 +53,10 @@ suite('casing calls against a real MongoDB', () => {
         );
 
         await store.products.addAsync(
-            { name: 'Alpha', category: 'tools' } as never,
-            { name: 'Bravo', category: 'tools' } as never,
-            { name: 'Charlie', category: 'toys' } as never,
+            { name: 'Alpha', category: 'tools', price: 10 } as never,
+            { name: 'Bravo', category: 'tools', price: 30 } as never,
+            { name: 'Charlie', category: 'toys', price: 20 } as never,
+            { name: 'Delta', category: 'toys', price: 40 } as never,
         );
         await store.saveChangesAsync();
 
@@ -70,7 +72,7 @@ suite('casing calls against a real MongoDB', () => {
     it('filters through an upper-case call', async () => {
         const found = await (await seeded()).products.where(p => p.category.toUpperCase() === 'TOYS').toArrayAsync();
 
-        expect(found.map(p => p.name)).toEqual(['Charlie']);
+        expect(found.map(p => p.name).sort()).toEqual(['Charlie', 'Delta']);
     });
 
     // $expr must fold the FIELD, not compare case-insensitively: a case-blind match returns the
@@ -84,7 +86,7 @@ suite('casing calls against a real MongoDB', () => {
     it('filters through a call on a relational comparator', async () => {
         const found = await (await seeded()).products.where(p => p.name.toLowerCase() > 'b').toArrayAsync();
 
-        expect(found.map(p => p.name).sort()).toEqual(['Bravo', 'Charlie']);
+        expect(found.map(p => p.name).sort()).toEqual(['Bravo', 'Charlie', 'Delta']);
     });
 
     it('filters through a call on both sides of a comparison', async () => {
@@ -99,5 +101,29 @@ suite('casing calls against a real MongoDB', () => {
         const found = await (await seeded()).products.where(p => p.name.toLowerCase().startsWith('br')).toArrayAsync();
 
         expect(found.map(p => p.name)).toEqual(['Bravo']);
+    });
+
+    it('filters through modulo, which is $mod', async () => {
+        const found = await (await seeded()).products.where(p => p.price % 20 === 0).toArrayAsync();
+
+        expect(found.map(p => p.name).sort()).toEqual(['Charlie', 'Delta']);
+    });
+
+    it('filters through multiplication by a float', async () => {
+        const found = await (await seeded()).products.where(p => p.price * 1.5 > 45).toArrayAsync();
+
+        expect(found.map(p => p.name)).toEqual(['Delta']);
+    });
+
+    it('filters through division', async () => {
+        const found = await (await seeded()).products.where(p => p.price / 10 === 2).toArrayAsync();
+
+        expect(found.map(p => p.name)).toEqual(['Charlie']);
+    });
+
+    it('gives multiplication precedence over addition', async () => {
+        const found = await (await seeded()).products.where(p => p.price + 3 * 4 === 22).toArrayAsync();
+
+        expect(found.map(p => p.name)).toEqual(['Alpha']);
     });
 });

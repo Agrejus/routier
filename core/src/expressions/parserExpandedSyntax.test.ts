@@ -208,8 +208,8 @@ describe('property-to-property comparison', () => {
     });
 
     it('parses a casing call on either side', () => {
-        expect(peelCalls(parsed(fromSource('r.name.toLowerCase() === r.other')).left)?.calls).toEqual(['to-lower-case']);
-        expect(peelCalls(parsed(fromSource('r.name === r.other.toLowerCase()')).right)?.calls).toEqual(['to-lower-case']);
+        expect(peelCalls(parsed(fromSource('r.name.toLowerCase() === r.other')).left)?.calls.map(c => c.call)).toEqual(['to-lower-case']);
+        expect(peelCalls(parsed(fromSource('r.name === r.other.toLowerCase()')).right)?.calls.map(c => c.call)).toEqual(['to-lower-case']);
     });
 });
 
@@ -218,14 +218,14 @@ describe('.length on strings and arrays', () => {
         const cmp = parsed(fromSource('r.name.length > 5'));
 
         expect((peelCalls(cmp.left)?.operand as PropertyExpression).property.name).toBe('name');
-        expect(peelCalls(cmp.left)?.calls).toEqual(['length']);
+        expect(peelCalls(cmp.left)?.calls.map(c => c.call)).toEqual(['length']);
         expect((cmp.right as ValueExpression).value).toBe(5);
     });
 
     it('parses array length equality', () => {
         const cmp = parsed(fromSource('r.tags.length === 0'));
 
-        expect(peelCalls(cmp.left)?.calls).toEqual(['length']);
+        expect(peelCalls(cmp.left)?.calls.map(c => c.call)).toEqual(['length']);
         expect((cmp.right as ValueExpression).value).toBe(0);
     });
 
@@ -268,7 +268,7 @@ describe('.length on strings and arrays', () => {
         const result = toExpression(lengthSchema as any, ((r: any) => r.box.length === 5) as any) as ComparatorExpression;
 
         expect(result).not.toStrictEqual(Expression.NOT_PARSABLE);
-        expect(peelCalls(result.left)?.calls).toEqual([]);
+        expect(peelCalls(result.left)?.calls.map(c => c.call)).toEqual([]);
         expect((result.left as PropertyExpression).property.getAssignmentPath()).toBe('box.length');
     });
 });

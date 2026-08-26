@@ -22,6 +22,7 @@
  */
 import type {
     Call,
+    CallExpression,
     ComparatorExpression,
     Expression,
     PropertyExpression,
@@ -103,8 +104,26 @@ function buildPattern(escapedValue: string, comparator: string): string {
  * Applies a call to a literal before it is embedded — the database never sees a call on a value,
  * only its result.
  */
-function applyCallsToValue(value: unknown, calls: Call[]): unknown {
-    return calls.reduce<unknown>((current, call) => {
+const ARITHMETIC_ON_VALUES: Partial<Record<Call, (left: number, right: number) => number>> = {
+    "add": (left, right) => left + right,
+    "subtract": (left, right) => left - right,
+    "multiply": (left, right) => left * right,
+    "divide": (left, right) => left / right,
+    "modulo": (left, right) => left % right,
+};
+
+const MQL_ARITHMETIC: Partial<Record<Call, string>> = {
+    "add": "$add",
+    "subtract": "$subtract",
+    "multiply": "$multiply",
+    "divide": "$divide",
+    "modulo": "$mod",
+};
+
+function applyCallsToValue(value: unknown, calls: CallExpression[]): unknown {
+    return calls.reduce<unknown>((current, node) => {
+        const call = node.call;
+
         if (call === "to-lower-case" && typeof current === "string") {
             return current.toLowerCase();
         }
@@ -117,12 +136,32 @@ function applyCallsToValue(value: unknown, calls: Call[]): unknown {
             return current.length;
         }
 
+        if (ARITHMETIC_ON_VALUES[call] != null && typeof current === "number") {
+            const right = constantValue(node.arguments[0]);
+
+            if (typeof right === "number") {
+                return ARITHMETIC_ON_VALUES[call]!(current, right);
+            }
+        }
+
         throw new Error(
             `'${call}' cannot be applied to the value '${String(current)}' before embedding it. ` +
             `Embedding the value unchanged would match against the wrong thing.`
         );
     }, value);
 }
+
+/** A call over literals only, folded to its result — the database never needs to compute it. */
+const constantValue = (expression: Expression): unknown => {
+    const peeled = peelCalls(expression);
+
+    if (peeled == null || isValueExpression(peeled.operand) === false) {
+        throw new Error(`Cannot fold '${expression.type}' into a constant.`);
+    }
+
+    return applyCallsToValue((peeled.operand as { value: unknown }).value, peeled.calls);
+};
+
 
 /**
  * Storage-side dotted path for a property.
@@ -148,8 +187,8 @@ export function toFieldPath(prop: PropertyExpression): string {
 interface PropertyValueSides {
     propLeft: PropertyExpression | null;
     propRight: PropertyExpression | null;
-    callsLeft: Call[];
-    callsRight: Call[];
+    callsLeft: CallExpression[];
+    callsRight: CallExpression[];
     valLeft: unknown;
     valRight: unknown;
 }
@@ -177,7 +216,7 @@ function getPropertyValueSides(cmp: ComparatorExpression): PropertyValueSides {
  */
 interface OrientedComparison {
     prop: PropertyExpression;
-    calls: Call[];
+    calls: CallExpression[];
     value: unknown;
     comparator: string;
 }
@@ -200,8 +239,10 @@ function orient(cmp: ComparatorExpression): OrientedComparison | null {
  * Aggregation expression for a property reference, wrapping it in the operator its
  * transformer calls for. Ignoring the transformer would silently return wrong rows.
  */
-function renderExprOperand(prop: PropertyExpression, calls: Call[]): unknown {
-    return calls.reduce<unknown>((rendered, call) => {
+function renderExprOperand(prop: PropertyExpression, calls: CallExpression[]): unknown {
+    return calls.reduce<unknown>((rendered, node) => {
+        const call = node.call;
+
         if (call === "to-lower-case") {
             return { $toLower: rendered };
         }
@@ -216,11 +257,36 @@ function renderExprOperand(prop: PropertyExpression, calls: Call[]): unknown {
                 : { $strLenCP: rendered };
         }
 
+        const operator = MQL_ARITHMETIC[call];
+
+        if (operator != null) {
+            return { [operator]: [rendered, ...node.arguments.map(renderCallArgument)] };
+        }
+
         throw new Error(
             `'${call}' has no MQL form. Rendering the field without it would match against the ` +
             `stored value instead of the called one.`
         );
     }, `$${toFieldPath(prop)}`);
+}
+
+/** A binary call's operand inside `$expr`: a literal stays a literal, a property becomes a field. */
+function renderCallArgument(expression: Expression): unknown {
+    if (isValueExpression(expression)) {
+        return { $literal: expression.value };
+    }
+
+    const peeled = peelCalls(expression);
+
+    if (peeled != null && isPropertyExpression(peeled.operand)) {
+        return renderExprOperand(peeled.operand, peeled.calls);
+    }
+
+    if (peeled != null && isValueExpression(peeled.operand)) {
+        return { $literal: applyCallsToValue(peeled.operand.value, peeled.calls) };
+    }
+
+    throw new Error(`Cannot render '${expression.type}' as a call operand in MQL.`);
 }
 
 /**

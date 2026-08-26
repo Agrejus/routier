@@ -644,6 +644,48 @@ export function describePluginContract(
                 expect(found).toEqual([]);
             });
 
+            /**
+             * Arithmetic. The expression tree always carried it — `Call` has had `add` through
+             * `modulo` since the node existed — so what is new here is that the grammar reads `%`,
+             * and that every backend computes the same answer as JavaScript.
+             */
+            test("filters through modulo", async () => {
+                const found = await (await seeded()).products.where(p => p.price % 20 === 0).toArrayAsync();
+
+                expect(found.map(p => p.name).sort()).toEqual(["Charlie", "Delta"]);
+            });
+
+            test("filters through addition", async () => {
+                const found = await (await seeded()).products.where(p => p.price + 5 > 35).toArrayAsync();
+
+                expect(found.map(p => p.name)).toEqual(["Delta"]);
+            });
+
+            test("filters through subtraction", async () => {
+                const found = await (await seeded()).products.where(p => p.price - 10 === 0).toArrayAsync();
+
+                expect(found.map(p => p.name)).toEqual(["Alpha"]);
+            });
+
+            test("filters through multiplication by a float", async () => {
+                const found = await (await seeded()).products.where(p => p.price * 1.5 > 45).toArrayAsync();
+
+                expect(found.map(p => p.name)).toEqual(["Delta"]);
+            });
+
+            test("filters through division", async () => {
+                const found = await (await seeded()).products.where(p => p.price / 10 === 2).toArrayAsync();
+
+                expect(found.map(p => p.name)).toEqual(["Charlie"]);
+            });
+
+            // 2 + 3 * 4 is 14, not 20 — a backend that evaluated left to right would return nothing
+            test("gives multiplication precedence over addition", async () => {
+                const found = await (await seeded()).products.where(p => p.price + 3 * 4 === 22).toArrayAsync();
+
+                expect(found.map(p => p.name)).toEqual(["Alpha"]);
+            });
+
             test("returns an empty array when nothing matches", async () => {
                 expect(await (await seeded()).products.where(p => p.price > 10_000).toArrayAsync()).toEqual([]);
             });

@@ -5,7 +5,7 @@ import { CompiledSchema, SchemaTypes } from '../schema';
 import { Expression, ComparatorExpression, OperatorExpression, PropertyExpression, ValueExpression } from './types';
 
 /** The call names wrapping an operand, innermost first, so a test can assert the shape the parser builds. */
-const callsOn = (expression: unknown): string[] => peelCalls(expression as never)?.calls ?? [];
+const callsOn = (expression: unknown): string[] => (peelCalls(expression as never)?.calls ?? []).map(call => call.call);
 
 /** The literal beneath any calls applied to it. */
 const valueOn = (expression: unknown): unknown =>
