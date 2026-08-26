@@ -604,6 +604,46 @@ export function describePluginContract(
                 expect(found.map(p => p.name).sort()).toEqual(["Bravo", "Delta"]);
             });
 
+            /**
+             * A casing call on a relational comparator. The parser refused these until the guards at
+             * `parser.ts:911`/`:1016` came out, so no plugin has ever been asked to answer one — a
+             * translator renders `LOWER(...)`, an in-process plugin runs the caller's closure, and
+             * every one of them has to agree with the others and with plain JavaScript.
+             */
+            test("filters through a lower-case call", async () => {
+                const found = await (await seeded()).products.where(p => p.name.toLowerCase() === "bravo").toArrayAsync();
+
+                expect(found.map(p => p.name)).toEqual(["Bravo"]);
+            });
+
+            test("filters through an upper-case call", async () => {
+                const found = await (await seeded()).products.where(p => p.category.toUpperCase() === "TOYS").toArrayAsync();
+
+                expect(found.map(p => p.name).sort()).toEqual(["Charlie", "Delta"]);
+            });
+
+            // Case-FOLDED, not case-blind: comparing a lower-cased column to a capitalised literal
+            // matches nothing, and a plugin that ignored the call would return the row
+            test("does not match when the call is applied but the literal is not folded", async () => {
+                const found = await (await seeded()).products.where(p => p.name.toLowerCase() === "Bravo").toArrayAsync();
+
+                expect(found).toEqual([]);
+            });
+
+            test("filters through a call on a relational comparator", async () => {
+                const found = await (await seeded()).products.where(p => p.name.toLowerCase() > "c").toArrayAsync();
+
+                expect(found.map(p => p.name).sort()).toEqual(["Charlie", "Delta"]);
+            });
+
+            test("filters through a call on both sides of a comparison", async () => {
+                const found = await (await seeded()).products
+                    .where(p => p.name.toLowerCase() === p.category.toLowerCase())
+                    .toArrayAsync();
+
+                expect(found).toEqual([]);
+            });
+
             test("returns an empty array when nothing matches", async () => {
                 expect(await (await seeded()).products.where(p => p.price > 10_000).toArrayAsync()).toEqual([]);
             });
