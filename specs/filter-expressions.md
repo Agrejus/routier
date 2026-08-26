@@ -258,6 +258,26 @@ Two forms remain unsupported, and are `todo`s rather than refusals: a call chain
 
 ---
 
+# Where a backend disagrees with JavaScript
+
+**MySQL ignores case in every string comparison.** The default collation is `utf8mb4_0900_ai_ci` —
+case- and accent-insensitive — so `'Bravo' = 'bravo'` is true before any `LOWER()` is involved. A
+filter pushed down to MySQL can therefore return rows the in-memory fallback excludes, and it does so
+for plain equality as much as for a casing call. Verified against MySQL 8:
+
+```
+select @@collation_database          -> utf8mb4_0900_ai_ci
+'Bravo' = 'bravo'                    -> true
+LOWER('Bravo') = 'Bravo'             -> true
+```
+
+This predates calls entirely; a casing call only makes it visible. A schema that needs JavaScript's
+answer has to declare a `_bin` or `_as_cs` collation on the column. Pinned in
+`e2e/src/mysqlCasing.test.ts` rather than asserted away.
+
+Nothing equivalent shows up on SQLite, PostgreSQL, MongoDB or any of the in-process plugins: all of
+them agree with JavaScript on the same predicate list.
+
 # The JavaScript surface
 
 Every form a filter predicate can contain. Scope: the ECMAScript expression and statement grammar,
