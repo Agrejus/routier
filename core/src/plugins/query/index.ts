@@ -1,3 +1,4 @@
+export * from './describeFilter';
 export * from './explain';
 export * from './formatExplanation';
 export * from './join';

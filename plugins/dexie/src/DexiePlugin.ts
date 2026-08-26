@@ -1,6 +1,6 @@
 import Dexie from 'dexie';
 import { convertToDexieSchema } from "./utils";
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, joinInPlugin } from '@routier/core/plugins';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, IDbPlugin, ITranslatedValue, joinInPlugin } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
 import { BulkPersistResult, SchemaPersistChanges } from '@routier/core/collections';
 import { CompiledSchema, InferCreateType, PropertyInfo, SchemaId, SchemaTypes } from '@routier/core/schema';
@@ -396,18 +396,29 @@ export class DexiePlugin implements IDbPlugin, Disposable {
 
             // Get the data first
             collection.toArray().then(data => {
-                // Dexie has no statement to quote, so `.explain()` gets a description of what
-                // the plugin actually did. Filters are JS predicates over a full cursor walk —
-                // no IndexedDB range query is used — which is the fact that separates a slow
-                // backend from a silent memory fallback when comparing against SQL engines.
+                /**
+                 * Dexie has no query language of its own here — the plugin hands it a JavaScript
+                 * predicate over a full cursor walk, no IndexedDB range query — so `.explain()`
+                 * reports the predicate AS JavaScript, which is the form the caller wrote it in.
+                 *
+                 * Values come out as `?` with the values listed beside them, the same as a SQL
+                 * plugin's bound statement. That is what makes two runs of one query comparable,
+                 * and it keeps a value out of text that may be logged.
+                 *
+                 * The "no index" note stays: it is the fact that separates a slow backend from a
+                 * silent memory fallback when comparing against SQL engines.
+                 */
+                const described = describeFilters(options.get("filter").map(entry => entry.option.value));
+
                 event.executedQueries.push({
                     text: [
                         `${collectionName}.toCollection()`,
-                        ...(hasFilter ? ["filter(<predicate>) — JavaScript predicate over a full cursor walk, no index"] : []),
+                        ...(hasFilter ? [`filter(${described.text}) — JavaScript predicate over a full cursor walk, no index`] : []),
                         ...(canPushDownWindow && options.has("skip") ? ["offset(…)"] : []),
                         ...(canPushDownWindow && options.has("take") ? ["limit(…)"] : []),
                         ...(translator.options.useTranslatorDistinct === false && options.has("distinct") ? ["distinct()"] : [])
-                    ].join(".")
+                    ].join("."),
+                    parameters: described.parameters.length > 0 ? described.parameters : undefined
                 });
 
                 const result = translator.translate(data);
