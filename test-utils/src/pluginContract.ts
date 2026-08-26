@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "@jest/globals";
 import { IDbPlugin } from "@routier/core";
 import { s } from "@routier/core/schema";
 import { DataStore } from "@routier/datastore";
+import { executedQueriesOf } from "@routier/core/plugins";
 
 /**
  * A behavioral contract every IDbPlugin implementation must satisfy, written once and
@@ -226,7 +227,7 @@ export function describePluginContract(
 
                 expect(explanation.executionSteps.length).toBeGreaterThan(0);
 
-                const reported = explanation.executionSteps.flatMap(step => step.executedQueries ?? []);
+                const reported = executedQueriesOf(explanation);
 
                 expect(reported.length).toBeGreaterThan(0);
             });
@@ -238,7 +239,7 @@ export function describePluginContract(
                     .explain()
                     .toArrayAsync();
 
-                const reported = explanation.executionSteps.flatMap(step => step.executedQueries ?? []);
+                const reported = executedQueriesOf(explanation);
 
                 for (const executed of reported) {
                     expect(typeof executed.text).toBe("string");
@@ -264,7 +265,7 @@ export function describePluginContract(
                     .explain()
                     .toArrayAsync();
 
-                const databaseStep = explanation.executionSteps.find(step => step.executedIn === "database");
+                const databaseStep = explanation.executionSteps.find(step => step.executedIn.kind === "database");
 
                 expect(databaseStep).toBeDefined();
             });

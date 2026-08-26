@@ -73,9 +73,9 @@ describe('.explain()', () => {
         expect(data).toHaveLength(1);
         expect(explanation.summary.memory).toBe(1);
         expect(explanation.summary.reasons).toEqual(['unmapped-property']);
-        expect(explanation.executionSteps[0].executedIn).toBe('database');
+        expect(explanation.executionSteps[0].executedIn.kind).toBe('database');
         expect(explanation.executionSteps[0].options).toHaveLength(0);
-        expect(explanation.executionSteps[1].executedIn).toBe('memory');
+        expect(explanation.executionSteps[1].executedIn.kind).toBe('memory');
     });
 
     it('reports a renamed property as a memory fallback', async () => {

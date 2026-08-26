@@ -3,6 +3,7 @@ import { uuidv4 } from '@routier/core';
 import { s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
 import { MysqlDbPlugin } from '@routier/mysql-plugin';
+import { executedQueriesOf } from '@routier/core/plugins';
 
 /**
  * Casing calls against a real MySQL server.
@@ -128,7 +129,7 @@ suite('casing calls against a real MySQL', () => {
 
         expect(data.map(p => p.name)).toEqual(['Bravo']);
 
-        const reported = explanation.executionSteps.flatMap(step => step.executedQueries ?? []);
+        const reported = executedQueriesOf(explanation);
 
         expect(reported[0].text).toContain('LOWER');
         expect(reported[0].parameters).toEqual(['bravo']);

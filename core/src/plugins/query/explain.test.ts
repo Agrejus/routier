@@ -3,7 +3,7 @@ import { s } from '../../schema';
 import { toExpression } from '../../expressions';
 import { QueryOptionsCollection } from './QueryOptionsCollection';
 import { QueryOrdering } from './types';
-import { explainQuery, withExecutedQueries, MEMORY_EXECUTION_EXPLANATIONS } from './explain';
+import { explainQuery, withExecutedQueries, MEMORY_EXECUTION_EXPLANATIONS, withInnerSide } from './explain';
 import { formatExplanation } from './formatExplanation';
 
 const schema = s.define("players", {
@@ -220,7 +220,7 @@ describe('explainQuery', () => {
         expect(explanation.database).toBe("test.db");
         expect(explanation.plugin.kind).toBe("TestPlugin");
         expect(explanation.executionSteps).toHaveLength(1);
-        expect(explanation.executionSteps[0].executedIn).toBe("database");
+        expect(explanation.executionSteps[0].executedIn).toEqual({ kind: "database", database: "test.db", plugin: "TestPlugin" });
         expect(explanation.executionSteps[0].step).toBe(1);
         expect(explanation.executionSteps[0].of).toBe(1);
         expect(explanation.summary).toMatchObject({ database: 2, memory: 0, reasons: [] });
@@ -245,11 +245,11 @@ describe('explainQuery', () => {
         const { executionSteps, summary } = explainQuery(options, CONTEXT);
 
         expect(executionSteps).toHaveLength(2);
-        expect(executionSteps[0]).toMatchObject({ step: 1, of: 2, executedIn: "database" });
+        expect(executionSteps[0]).toMatchObject({ step: 1, of: 2, executedIn: { kind: "database", database: "test.db", plugin: "TestPlugin" } });
         expect(executionSteps[0].options.map(x => x.name)).toEqual(["filter", "join"]);
-        expect(executionSteps[1]).toMatchObject({ step: 2, of: 2, executedIn: "memory", reason: "after-join" });
+        expect(executionSteps[1]).toMatchObject({ step: 2, of: 2, executedIn: { kind: "memory" }, reason: "after-join" });
         expect(executionSteps[1].options.map(x => x.name)).toEqual(["skip", "take"]);
-        expect(executionSteps[1].explanation).toBe(MEMORY_EXECUTION_EXPLANATIONS["after-join"]);
+        expect((executionSteps[1] as { explanation?: string }).explanation).toBe(MEMORY_EXECUTION_EXPLANATIONS["after-join"]);
         expect(summary).toMatchObject({ database: 2, memory: 2, reasons: ["after-join"] });
     });
 
@@ -305,9 +305,8 @@ describe('explainQuery', () => {
         const { executionSteps, summary } = explainQuery(options, CONTEXT);
 
         expect(executionSteps).toHaveLength(2);
-        expect(executionSteps[0]).toMatchObject({ step: 1, of: 2, executedIn: "database", options: [] });
-        expect(executionSteps[0].description).toContain("whole collection");
-        expect(executionSteps[1]).toMatchObject({ step: 2, of: 2, executedIn: "memory" });
+        expect(executionSteps[0]).toMatchObject({ step: 1, of: 2, executedIn: { kind: "database", database: "test.db", plugin: "TestPlugin" }, options: [] });
+        expect(executionSteps[1]).toMatchObject({ step: 2, of: 2, executedIn: { kind: "memory" } });
         expect(summary).toMatchObject({ database: 0, memory: 1 });
     });
 
@@ -315,7 +314,7 @@ describe('explainQuery', () => {
         const explanation = explainQuery(new QueryOptionsCollection<any>(), CONTEXT);
 
         expect(explanation.executionSteps).toHaveLength(1);
-        expect(explanation.executionSteps[0]).toMatchObject({ step: 1, of: 1, executedIn: "database" });
+        expect(explanation.executionSteps[0]).toMatchObject({ step: 1, of: 1, executedIn: { kind: "database", database: "test.db", plugin: "TestPlugin" } });
         expect(explanation.summary).toMatchObject({ database: 0, memory: 0, reasons: [] });
     });
 
@@ -347,7 +346,7 @@ describe('explainQuery', () => {
         // way — so the memory work is the step after it, carrying the reason that put it there.
         const steps = explainQuery(memory, CONTEXT).executionSteps;
 
-        expect(steps.filter(step => step.executedIn === "memory").map(step => step.reason)).toEqual(["after-join"]);
+        expect(steps.filter(step => step.executedIn.kind === "memory").map(step => (step as { reason?: string }).reason)).toEqual(["after-join"]);
     });
 
     it('keeps targets through splitAt too', () => {
@@ -379,9 +378,9 @@ describe('withExecutedQueries', () => {
             { text: "SELECT * FROM playerMatches WHERE playerId IN (?)", parameters: ["a"] }
         ]);
 
-        expect(merged.executionSteps[0].executedQueries).toHaveLength(2);
-        expect(merged.executionSteps[0].executedQueries?.[0].parameters).toEqual([10]);
-        expect(merged.executionSteps[1].executedQueries).toBeUndefined();
+        expect((merged.executionSteps[0] as { executedQueries: unknown[] }).executedQueries).toHaveLength(2);
+        expect((merged.executionSteps[0] as { executedQueries: { parameters?: unknown[] }[] }).executedQueries[0].parameters).toEqual([10]);
+        expect((merged.executionSteps[1] as { executedQueries?: unknown[] }).executedQueries).toBeUndefined();
     });
 
     it('does not mutate the explanation it was given', () => {
@@ -389,26 +388,28 @@ describe('withExecutedQueries', () => {
 
         withExecutedQueries(original, [{ text: "SELECT 1" }]);
 
-        expect(original.executionSteps[0].executedQueries).toBeUndefined();
+        expect((original.executionSteps[0] as { executedQueries: unknown[] }).executedQueries).toEqual([]);
     });
 
     it('marks the database step as not reported when the plugin reported nothing', () => {
         const marked = withExecutedQueries(twoStep(), []);
 
-        expect(marked.executionSteps[0].executedQueries).toBeUndefined();
-        expect(marked.executionSteps[0].executedQueriesUnsupported).toMatch(/did not report/);
-        expect(marked.executionSteps[1].executedQueriesUnsupported).toBeUndefined();
+        const [databaseStep, memoryStep] = marked.executionSteps as { executedQueries?: unknown[], executedQueriesUnsupported?: string }[];
+
+        expect(databaseStep.executedQueries).toEqual([]);
+        expect(databaseStep.executedQueriesUnsupported).toMatch(/did not report/);
+        expect(memoryStep.executedQueriesUnsupported).toBeUndefined();
     });
 
     it('does not mark any step once the plugin reported', () => {
         const merged = withExecutedQueries(twoStep(), [{ text: "SELECT 1" }]);
 
-        merged.executionSteps.forEach(step => expect(step.executedQueriesUnsupported).toBeUndefined());
+        merged.executionSteps.forEach(step => expect((step as { executedQueriesUnsupported?: string }).executedQueriesUnsupported).toBeUndefined());
     });
 
     it('stamps only the first database step', () => {
         const merged = withExecutedQueries(twoStep(), [{ text: "SELECT 1" }]);
-        const stamped = merged.executionSteps.filter(step => step.executedQueries != null);
+        const stamped = merged.executionSteps.filter(step => ((step as { executedQueries?: unknown[] }).executedQueries?.length ?? 0) > 0);
 
         expect(stamped).toHaveLength(1);
     });
@@ -456,5 +457,60 @@ describe('formatExplanation', () => {
         expect(output).toContain("STEP 1 of 2 — database");
         expect(output).toContain("No option could be pushed down");
         expect(output).toContain("[unmapped-property]");
+    });
+});
+
+describe('withInnerSide', () => {
+
+    const outerOnly = () => explainQuery(optionsWith(o => addFilter(o, (x: any) => x.rank > 10)), CONTEXT);
+
+    /**
+     * A cross-plugin join reads two databases, and until this existed the second one's statement was
+     * filed under the first one's plugin — a PouchDB scan reported as having run in SQLite.
+     */
+    it('reports the inner side as its own step, naming its database and plugin', () => {
+        const explained = withInnerSide(withExecutedQueries(outerOnly(), [{ text: "SELECT * FROM players" }]), {
+            database: "crm",
+            plugin: "PouchDbPlugin",
+            executedQueries: [{ text: "allDocs({ include_docs: true })" }]
+        });
+
+        expect(explained.executionSteps.map(step => step.executedIn)).toEqual([
+            { kind: "database", database: "test.db", plugin: "TestPlugin" },
+            { kind: "database", database: "crm", plugin: "PouchDbPlugin" }
+        ]);
+    });
+
+    it(`keeps each plugin's statements on its own step`, () => {
+        const explained = withInnerSide(withExecutedQueries(outerOnly(), [{ text: "SELECT * FROM players" }]), {
+            database: "crm",
+            plugin: "PouchDbPlugin",
+            executedQueries: [{ text: "allDocs({ include_docs: true })" }]
+        });
+
+        const steps = explained.executionSteps as { executedQueries: { text: string }[] }[];
+
+        expect(steps[0].executedQueries.map(q => q.text)).toEqual(["SELECT * FROM players"]);
+        expect(steps[1].executedQueries.map(q => q.text)).toEqual(["allDocs({ include_docs: true })"]);
+    });
+
+    it('renumbers, so the reader sees how many steps there really are', () => {
+        const explained = withInnerSide(outerOnly(), { database: "crm", plugin: "PouchDbPlugin", executedQueries: [{ text: "allDocs()" }] });
+
+        expect(explained.executionSteps.map(step => `${step.step} of ${step.of}`)).toEqual(["1 of 2", "2 of 2"]);
+    });
+
+    // The join cannot run until both sides are read, so the inner read belongs in front of the
+    // memory work that consumes it
+    it('puts the inner read before the memory steps', () => {
+        const withJoin = explainQuery(optionsWith(o => {
+            addFilter(o, (x: any) => x.rank > 10);
+            o.add("join", { kind: "inner", innerSchemaId: 1, outerKey: { propertyName: "id", property: null }, innerKey: { propertyName: "playerId", property: null }, innerOptions: new QueryOptionsCollection<any>(), crossPlugin: true, semiJoinKeyThreshold: 500 } as never);
+        }), CONTEXT);
+
+        const explained = withInnerSide(withJoin, { database: "crm", plugin: "PouchDbPlugin", executedQueries: [{ text: "allDocs()" }] });
+        const kinds = explained.executionSteps.map(step => step.executedIn.kind);
+
+        expect(kinds.indexOf("memory")).toBeGreaterThan(kinds.lastIndexOf("database"));
     });
 });

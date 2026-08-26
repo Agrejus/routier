@@ -1,4 +1,4 @@
-import { ExecutionStep, ExplainedOption, QueryExplanation } from "./explain";
+import { ExecutionStep, ExplainedOption, QueryExplanation, isDatabaseStep } from "./explain";
 import { renderCallAsJs } from "../../expressions/callSource";
 
 const OPTION_LABEL_WIDTH = 8;
@@ -143,14 +143,35 @@ const describeOption = (option: ExplainedOption): string => {
     return "";
 };
 
+/**
+ * The sentence for a kind of step.
+ *
+ * Here rather than on the step: it is one of two constants keyed off `executedIn`, so carrying it in
+ * the payload put prose beside the field it was derived from.
+ */
+const DATABASE_STEP_DESCRIPTION = "These options are sent to the plugin.";
+const MEMORY_STEP_DESCRIPTION = "Routier runs these over the rows the database returned, after deserializing them.";
+const UNNARROWED_READ_DESCRIPTION = "No option could be pushed down, so the plugin reads the whole collection.";
+
+/** `database · orders.db · SqliteDbPlugin`, so a cross-plugin join says who ran what. */
+const whereItRan = (step: ExecutionStep): string =>
+    isDatabaseStep(step)
+        ? `database · ${step.executedIn.database} · ${step.executedIn.plugin}`
+        : "memory";
+
 const formatStep = (step: ExecutionStep, lines: string[]) => {
-    const reason = step.reason == null ? "" : `  [${step.reason}]`;
+    const reason = isDatabaseStep(step) || step.reason == null ? "" : `  [${step.reason}]`;
 
-    lines.push(`  STEP ${step.step} of ${step.of} — ${step.executedIn}${reason}`);
-    lines.push(...wrap(step.description, "    "));
+    lines.push(`  STEP ${step.step} of ${step.of} — ${whereItRan(step)}${reason}`);
 
-    if (step.explanation != null) {
-        lines.push(...wrap(step.explanation, "    "));
+    if (isDatabaseStep(step)) {
+        lines.push(...wrap(step.options.length === 0 ? UNNARROWED_READ_DESCRIPTION : DATABASE_STEP_DESCRIPTION, "    "));
+    } else {
+        lines.push(...wrap(MEMORY_STEP_DESCRIPTION, "    "));
+
+        if (step.explanation != null) {
+            lines.push(...wrap(step.explanation, "    "));
+        }
     }
 
     lines.push("");
@@ -159,7 +180,12 @@ const formatStep = (step: ExecutionStep, lines: string[]) => {
         lines.push(`    ${option.name.padEnd(OPTION_LABEL_WIDTH)} ${describeOption(option)}`.trimEnd());
     }
 
-    for (const executed of step.executedQueries ?? []) {
+    if (isDatabaseStep(step) === false) {
+        lines.push("");
+        return;
+    }
+
+    for (const executed of step.executedQueries) {
         lines.push("");
         lines.push(...executed.text.split("\n").map(line => `    ${line}`));
 

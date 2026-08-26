@@ -1,4 +1,4 @@
-import { DbPluginQueryEvent, distinctJoinKeys, executeJoin, ExecutedQuery, explainQuery, ITranslatedValue, JoinKind, JsonTranslator, loadJoinInnerSide, Query, QueryExplanation, QueryOptionsCollection, toEntityShape, TupleTranslator, withExecutedQueries } from "@routier/core/plugins";
+import { DbPluginQueryEvent, distinctJoinKeys, executeJoin, ExecutedQuery, explainQuery, ITranslatedValue, JoinKind, JsonTranslator, loadJoinInnerSide, Query, QueryExplanation, QueryOptionsCollection, toEntityShape, TupleTranslator, withExecutedQueries, withInnerSide } from "@routier/core/plugins";
 import { CompiledSchema, InferType } from "@routier/core/schema";
 import { CallbackResult, PluginEventCallbackResult, PluginEventResult, PluginEventSuccessType, Result } from "@routier/core/results";
 import { UnknownRecord, uuid } from "@routier/core/utilities";
@@ -13,6 +13,8 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
     /** Set by `createQueryPayload`; read by `buildExplanation`. Only used when explaining. */
     private resolvedQueryOptions: QueryOptionsCollection<any> | null = null;
     private executedQueries: ExecutedQuery[] = [];
+    /** The cross-plugin inner side's own statements, reported as their own step. */
+    private innerExecutedQueries: ExecutedQuery[] = [];
 
     constructor(dependencies: CollectionDependencies<TRoot>, request: RequestContext<TRoot>) {
         super(dependencies, request)
@@ -33,7 +35,18 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
             pluginKind: this.dependencies.plugin.constructor.name
         });
 
-        return withExecutedQueries(explanation, this.executedQueries);
+        const withOuter = withExecutedQueries(explanation, this.executedQueries);
+        const joinSide = this.request.joinSide;
+
+        if (this.innerExecutedQueries.length === 0 || joinSide == null) {
+            return withOuter;
+        }
+
+        return withInnerSide(withOuter, {
+            database: joinSide.plugin.databaseName,
+            plugin: joinSide.plugin.constructor.name,
+            executedQueries: this.innerExecutedQueries
+        });
     }
 
     /**
@@ -513,7 +526,10 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
                     done(PluginEventResult.error(memoryEvent.id, e));
                 }
             },
-            outerKeys
+            outerKeys,
+            // Its own list. The inner side is a different database on a different plugin, and its
+            // statement filed under this one's name is a lie a reader cannot see through.
+            this.innerExecutedQueries
         );
     }
 

@@ -3,6 +3,7 @@ import { s } from '@routier/core/schema';
 import { uuidv4 } from '@routier/core';
 import { DataStore } from '@routier/datastore';
 import { MemoryPlugin } from '../MemoryPlugin';
+import { executedQueriesOf } from '@routier/core/plugins';
 
 const teamSchema = s.define("explain_teams", {
     _id: s.string().key().identity(),
@@ -40,7 +41,7 @@ describe('memory explain', () => {
 
         expect(data).toHaveLength(1);
 
-        const reported = explanation.executionSteps.flatMap(step => step.executedQueries ?? []);
+        const reported = executedQueriesOf(explanation);
 
         expect(reported).toHaveLength(2);
         expect(reported[0].text).toContain("explain_teams: scanned 2");

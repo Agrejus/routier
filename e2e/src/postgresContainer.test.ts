@@ -5,6 +5,7 @@ import { s } from '@routier/core/schema';
 import { ConcurrencyDbPlugin, OptimisticConcurrencyError } from '@routier/core';
 import { DataStore } from '@routier/datastore';
 import { PostgresDbPlugin } from '@routier/postgresql-plugin';
+import { executedQueriesOf } from '@routier/core/plugins';
 
 /**
  * Routier against a real PostgreSQL server, started in a container.
@@ -124,7 +125,7 @@ suite('PostgreSQL via testcontainers', () => {
 
         expect(data.map(p => p.name).sort()).toEqual(['Banana', 'cherry']);
 
-        const reported = explanation.executionSteps.flatMap(step => step.executedQueries ?? []);
+        const reported = executedQueriesOf(explanation);
         expect(reported.length).toBeGreaterThan(0);
         expect(reported[0].text).toContain('SELECT');
         expect(reported[0].parameters).toEqual([15]);
