@@ -174,7 +174,7 @@ describe("expression serialization", () => {
         });
 
         it("rebuilds a call whose payload omits arguments, rather than throwing a TypeError", () => {
-            const payload = { t: "call", call: "trim", expression: { t: "property", path: "name" } };
+            const payload = { type: "call", call: "trim", expression: { type: "property", path: "name" } };
 
             const rebuilt = Expression.fromJson(payload as never, schema as never) as CallExpression;
 
@@ -182,7 +182,7 @@ describe("expression serialization", () => {
         });
 
         it("says which call is missing its operand instead of failing on a property read", () => {
-            expect(() => Expression.fromJson({ t: "call", call: "trim", arguments: [] } as never, schema as never))
+            expect(() => Expression.fromJson({ type: "call", call: "trim", arguments: [] } as never, schema as never))
                 .toThrow(/'trim' call carries no operand/);
         });
     });

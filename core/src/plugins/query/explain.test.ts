@@ -272,7 +272,7 @@ describe('explainQuery', () => {
         const { executionSteps } = explainQuery(options, CONTEXT);
 
         expect(executionSteps[0].options[0].detail?.expression).toMatchObject({
-            t: "comparator",
+            type: "comparator",
             comparator: "greater-than"
         });
     });

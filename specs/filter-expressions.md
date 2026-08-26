@@ -64,7 +64,7 @@ Everything else is subtraction:
 | `transformer` and `locale` come off `PropertyExpression` and `ValueExpression` | a casing call becomes a `CallExpression` wrapping either one; the fields were a second representation of the same thing, duplicated again on the wire |
 | `t` → `type` on the serialized form | the class field is `type`; the abbreviation earned nothing |
 | the value tag becomes optional | absent means "the JSON value as it is". Only the four things `JSON.stringify` destroys carry one |
-| `toJson`/`fromJson` become methods per class | they are two static if-chains today. A new node should ship its own serialization, not add branches in two places |
+| the serialized keys mirror the class fields | `type`, `left`, `right`, `call`, `expression`, `arguments` — so the format is checkable against the classes at a glance |
 
 ## Values JSON cannot carry
 
@@ -77,7 +77,9 @@ value can legitimately be:
 | `Date` | an ISO string, indistinguishable from a string comparison | `{ "date": "…" }` |
 | `undefined` | the key vanishes | `{ "undefined": true }` |
 | `NaN`, `±Infinity` | `null` | `{ "number": "NaN" }` |
-| `RegExp` | `{}` | `{ "regex": { "source": …, "flags": … } }` |
+| `RegExp` | `{}` | `{ "regex": { "source": …, "flags": … } }` — not yet, arrives with Piece 2 |
+
+An array is written as an array, with each element tagged only if it needs to be.
 
 Everything else is written as itself. Structured clone would carry all four, but it does not exist
 over HTTP, and it cannot carry the tree anyway — `PropertyExpression` holds a live `PropertyInfo`
@@ -169,8 +171,19 @@ and five consumers: `evaluate.ts`, `plugins/sql-core/src/sql.ts`, `plugins/mongo
    applied to it, and `sql.ts`, `mql.ts` and the tests all use it rather than each keeping a copy.
 2. **Done.** `transformer` and `locale` are gone from both nodes and from the wire. `Transformer`
    survives only as the parser's internal vocabulary of transform methods.
-3. Rename `t` → `type`, make the value tag optional, move `toJson`/`fromJson` onto the classes.
-   `fromJson` accepts both wire forms for one version.
+3. **Done, except one part that cannot be done.** `t` is `type`, and a value carries a tag only when
+   JSON would destroy it.
+
+   `toJson`/`fromJson` stay STATIC rather than becoming methods per class. A method requires an
+   instance, and `Expression` is satisfied structurally here — `isExpression`
+   (`core/src/assertions/index.ts:64`) tests a `type` string, callers hand-build object literals, and
+   `explain.test.ts` drives a whole query option from one. `core/src/plugins/query/explain.ts:99`
+   passes whatever it was given straight to `toJson`, so a method would throw
+   `toJson is not a function` on the path whose test is named *"reports a value it cannot serialize
+   instead of throwing"*. The same attempt on `children()` failed the same way, for the same reason.
+
+   Nothing is lost. The goal was a serializer that knows the fields instead of discovering them, and
+   a static switch on `type` is exactly that — the method-versus-static choice does not affect it.
 4. **Done.** Both casing guards are lifted. `casingComparators.test.ts` exists in
    `core/src/expressions`, `plugins/sql-core/src` and `plugins/mongodb/src` — one per backend, over
    the same predicate list, which is what the guard was protecting.

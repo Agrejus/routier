@@ -35,23 +35,27 @@ const COMPARATOR_SYMBOLS: Record<string, string> = {
 };
 
 const describeValue = (value: any): string => {
-    if (value == null) {
+    if (value === null) {
+        return "null";
+    }
+
+    if (value === undefined) {
         return "?";
     }
 
-    if (value.k === "raw") {
-        return typeof value.v === "string" ? `"${value.v}"` : String(value.v);
+    if (Array.isArray(value)) {
+        return `[${value.map(describeValue).join(", ")}]`;
     }
 
-    if (value.k === "date") {
-        return value.v;
+    if (typeof value !== "object") {
+        return typeof value === "string" ? `"${value}"` : String(value);
     }
 
-    if (value.k === "array") {
-        return `[${(value.v as unknown[]).map(describeValue).join(", ")}]`;
+    if ("date" in value) {
+        return value.date;
     }
 
-    return value.k === "undefined" ? "undefined" : String(value.v);
+    return "undefined" in value ? "undefined" : String(value.number);
 };
 
 /** Renders a serialized expression back to something close to the source predicate. */
@@ -61,11 +65,11 @@ const describeExpression = (expression: any): string => {
         return "?";
     }
 
-    if (expression.t === "operator") {
+    if (expression.type === "operator") {
         return `${describeExpression(expression.left)} ${expression.operator} ${describeExpression(expression.right)}`;
     }
 
-    if (expression.t === "comparator") {
+    if (expression.type === "comparator") {
         const left = describeExpression(expression.left);
         const right = describeExpression(expression.right);
         const symbol = COMPARATOR_SYMBOLS[expression.comparator];
@@ -77,15 +81,15 @@ const describeExpression = (expression: any): string => {
         return `${left} ${expression.negated === true ? "!==" : symbol} ${right}`;
     }
 
-    if (expression.t === "property") {
+    if (expression.type === "property") {
         return expression.path;
     }
 
-    if (expression.t === "value") {
+    if (expression.type === "value") {
         return describeValue(expression.value);
     }
 
-    if (expression.t === "call") {
+    if (expression.type === "call") {
         return renderCallAsJs(
             expression.call,
             describeExpression(expression.expression),
@@ -93,12 +97,12 @@ const describeExpression = (expression: any): string => {
         );
     }
 
-    if (expression.t === "empty") {
+    if (expression.type === "empty") {
         return "(no filter)";
     }
 
     // Distinguishable from "(not parsable)", which means the parser gave up and this runs in memory
-    return expression.t === "not-parsable" ? "(not parsable)" : `(unsupported: ${expression.t})`;
+    return expression.type === "not-parsable" ? "(not parsable)" : `(unsupported: ${expression.t})`;
 };
 
 const describeOption = (option: ExplainedOption): string => {

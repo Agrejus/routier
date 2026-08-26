@@ -7,56 +7,56 @@ import { CompiledSchemaCore, PropertyInfo } from "../schema";
  * See `Expression.toJson`.
  */
 export type SerializedValue =
-    | { k: "raw"; v: string | number | boolean | null }
-    | { k: "date"; v: string }
-    | { k: "undefined" }
-    | { k: "number"; v: "NaN" | "Infinity" | "-Infinity" }
-    | { k: "array"; v: SerializedValue[] };
+    | string | number | boolean | null
+    | SerializedValue[]
+    | { date: string }
+    | { undefined: true }
+    | { number: "NaN" | "Infinity" | "-Infinity" };
 
 /** JSON-safe form of an expression tree. See `Expression.toJson`. */
 export type SerializedExpression =
-    | { t: "empty" }
-    | { t: "not-parsable" }
-    | { t: "operator"; operator: Operator; left?: SerializedExpression; right?: SerializedExpression }
+    | { type: "empty" }
+    | { type: "not-parsable" }
+    | { type: "operator"; operator: Operator; left?: SerializedExpression; right?: SerializedExpression }
     | {
-        t: "comparator";
+        type: "comparator";
         comparator: Comparator;
         negated: boolean;
         strict: boolean;
         left?: SerializedExpression;
         right?: SerializedExpression;
     }
-    | { t: "call"; call: Call; expression: SerializedExpression; arguments: SerializedExpression[] }
-    | { t: "property"; path: string }
-    | { t: "value"; value: SerializedValue };
+    | { type: "call"; call: Call; expression: SerializedExpression; arguments: SerializedExpression[] }
+    | { type: "property"; path: string }
+    | { type: "value"; value: SerializedValue };
 
 const valueToJson = (value: unknown): SerializedValue => {
     if (value === undefined) {
-        return { k: "undefined" };
+        return { undefined: true };
     }
 
     if (value === null) {
-        return { k: "raw", v: null };
+        return null;
     }
 
     if (value instanceof Date) {
         // ISO rather than epoch millis: it survives a human reading the payload, and an invalid
         // Date has no ISO form — so it is caught here rather than becoming a silent `null`.
-        return { k: "date", v: value.toISOString() };
+        return { date: value.toISOString() };
     }
 
     if (Array.isArray(value)) {
-        return { k: "array", v: value.map(valueToJson) };
+        return value.map(valueToJson);
     }
 
     if (typeof value === "number" && Number.isFinite(value) === false) {
         // `JSON.stringify` turns all three of these into `null`, which would compare as a different
         // value entirely rather than failing.
-        return { k: "number", v: Number.isNaN(value) ? "NaN" : value > 0 ? "Infinity" : "-Infinity" };
+        return { number: Number.isNaN(value) ? "NaN" : value > 0 ? "Infinity" : "-Infinity" };
     }
 
     if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
-        return { k: "raw", v: value };
+        return value;
     }
 
     throw new Error(
@@ -66,23 +66,25 @@ const valueToJson = (value: unknown): SerializedValue => {
 };
 
 const valueFromJson = (value: SerializedValue): unknown => {
-    if (value.k === "undefined") {
+    if (value === null || typeof value !== "object") {
+        return value;
+    }
+
+    if (Array.isArray(value)) {
+        return value.map(valueFromJson);
+    }
+
+    if ("date" in value) {
+        return new Date(value.date);
+    }
+
+    if ("undefined" in value) {
         return undefined;
     }
 
-    if (value.k === "date") {
-        return new Date(value.v);
-    }
-
-    if (value.k === "array") {
-        return value.v.map(valueFromJson);
-    }
-
-    if (value.k === "number") {
-        return value.v === "NaN" ? Number.NaN : value.v === "Infinity" ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
-    }
-
-    return value.v;
+    return value.number === "NaN"
+        ? Number.NaN
+        : value.number === "Infinity" ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
 };
 
 export type ParsedExpression = {
@@ -151,7 +153,7 @@ export abstract class Expression {
             const operator = expression as OperatorExpression;
 
             return {
-                t: "operator",
+                type: "operator",
                 operator: operator.operator,
                 ...(operator.left != null && { left: Expression.toJson(operator.left) }),
                 ...(operator.right != null && { right: Expression.toJson(operator.right) }),
@@ -162,7 +164,7 @@ export abstract class Expression {
             const comparator = expression as ComparatorExpression;
 
             return {
-                t: "comparator",
+                type: "comparator",
                 comparator: comparator.comparator,
                 negated: comparator.negated,
                 strict: comparator.strict,
@@ -175,7 +177,7 @@ export abstract class Expression {
             const call = expression as CallExpression;
 
             return {
-                t: "call",
+                type: "call",
                 call: call.call,
                 expression: Expression.toJson(call.expression),
                 arguments: call.arguments.map(Expression.toJson),
@@ -186,7 +188,7 @@ export abstract class Expression {
             const property = expression as PropertyExpression;
 
             return {
-                t: "property",
+                type: "property",
                 // The dotted path, which is exactly the key `getProperty` is looking up
                 path: property.property.id,
             };
@@ -196,12 +198,12 @@ export abstract class Expression {
             const value = expression as ValueExpression;
 
             return {
-                t: "value",
+                type: "value",
                 value: valueToJson(value.value),
             };
         }
 
-        return expression.type === "empty" ? { t: "empty" } : { t: "not-parsable" };
+        return expression.type === "empty" ? { type: "empty" } : { type: "not-parsable" };
     }
 
     /**
@@ -220,11 +222,11 @@ export abstract class Expression {
 
         const child = (node: SerializedExpression | undefined) => node == null ? undefined : Expression.fromJson(node, schema);
 
-        if (json.t === "operator") {
+        if (json.type === "operator") {
             return new OperatorExpression({ operator: json.operator, left: child(json.left), right: child(json.right) });
         }
 
-        if (json.t === "comparator") {
+        if (json.type === "comparator") {
             return new ComparatorExpression({
                 comparator: json.comparator,
                 negated: json.negated,
@@ -234,7 +236,7 @@ export abstract class Expression {
             });
         }
 
-        if (json.t === "call") {
+        if (json.type === "call") {
             if (json.expression == null) {
                 throw new Error(
                     `Cannot deserialize a filter: a '${json.call}' call carries no operand.  ` +
@@ -249,7 +251,7 @@ export abstract class Expression {
             });
         }
 
-        if (json.t === "property") {
+        if (json.type === "property") {
             const property = schema.getProperty(json.path);
 
             if (property == null) {
@@ -263,11 +265,11 @@ export abstract class Expression {
             return new PropertyExpression({ property });
         }
 
-        if (json.t === "value") {
+        if (json.type === "value") {
             return new ValueExpression({ value: valueFromJson(json.value) });
         }
 
-        return json.t === "empty" ? Expression.EMPTY : Expression.NOT_PARSABLE;
+        return json.type === "empty" ? Expression.EMPTY : Expression.NOT_PARSABLE;
     }
 }
 
