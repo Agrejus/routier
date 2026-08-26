@@ -134,16 +134,8 @@ describe('transform methods', () => {
         expectRejected(fromSource('r.name.padStart(3) === "x"'));
     });
 
-    it('rejects a transform method outside startsWith/endsWith/includes', () => {
-        expectRejected(fromSource('r.name.toLowerCase()'));
-    });
-
     it('rejects property access after a transform method', () => {
         expectRejected(fromSource('r.name.toLowerCase().length === 3'));
-    });
-
-    it('rejects a method call on the right side of a comparison', () => {
-        expectRejected(fromSource('"x" === r.name.toLowerCase()'));
     });
 
     it('rejects comparing a method call to a non-boolean', () => {

@@ -906,13 +906,6 @@ class ExpressionParser {
         }
 
         if (left.kind === "property" && right.kind === "property") {
-            // Casing transformers are only valid with string-matching comparators,
-            // which cannot produce a property-to-property comparison
-            if (left.transformer === "to-lower-case" || left.transformer === "to-upper-case" ||
-                right.transformer === "to-lower-case" || right.transformer === "to-upper-case") {
-                throw new Error(ERROR_MESSAGES.UNSUPPORTED("transform method outside of startsWith/endsWith/includes"));
-            }
-
             return new ComparatorExpression({
                 comparator: operator.comparator,
                 negated: operator.negated,
@@ -1008,13 +1001,6 @@ class ExpressionParser {
                 left: this.createPropertyExpression(property),
                 right: this.createValueExpression(value, null, /* applyConverter */ false)
             });
-        }
-
-        // Casing transformers on a property are only meaningful with string-matching
-        // comparators; on relational comparators the plugins would silently
-        // ignore them and return wrong data
-        if (property.transformer != null && !isStringMatch) {
-            throw new Error(ERROR_MESSAGES.UNSUPPORTED("transform method outside of startsWith/endsWith/includes"));
         }
 
         return new ComparatorExpression({

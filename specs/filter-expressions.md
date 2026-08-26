@@ -171,7 +171,9 @@ and five consumers: `evaluate.ts`, `plugins/sql-core/src/sql.ts`, `plugins/mongo
    survives only as the parser's internal vocabulary of transform methods.
 3. Rename `t` → `type`, make the value tag optional, move `toJson`/`fromJson` onto the classes.
    `fromJson` accepts both wire forms for one version.
-4. Lift the casing guards (below). With calls they stop being special cases.
+4. **Done.** Both casing guards are lifted. `casingComparators.test.ts` exists in
+   `core/src/expressions`, `plugins/sql-core/src` and `plugins/mongodb/src` — one per backend, over
+   the same predicate list, which is what the guard was protecting.
 5. Add call names one at a time, each retiring an `it.todo` in `coverage.test.ts`.
 
 Two things learned while doing 1 and 2, both worth keeping:
@@ -218,34 +220,28 @@ works**, so there is no translator work and no shape question — only the parse
 | `x => false` | a constant-false predicate. Leaving it in memory is correct; the only cost is a round trip |
 | `p.a === p.b` | references no schema property, so it is constant per execution. Fold to match-all or match-none |
 
-## The stale casing guards
+## The casing guards, and what lifting them enabled
 
-```
-x.name.toLowerCase() === 'ada'
-  -> Unsupported expression format: transform method outside of startsWith/endsWith/includes
-```
+Both are gone. They refused a casing call on anything but `startsWith`/`endsWith`/`includes`, on the
+grounds that *"on relational comparators the plugins would silently ignore them and return wrong
+data"* — which had stopped being true, and which made `renderColumn`'s `LOWER` path for those
+comparators unreachable.
 
-Thrown at `parser.ts:1016`, with the reason stated beside it: *"on relational comparators the
-plugins would silently ignore them and return wrong data"*.
+Now parsing and pushing down:
 
-**That is no longer true.** Every consumer implements transformers on any comparator:
+| predicate | SQL | Mongo |
+|---|---|---|
+| `x.name.toLowerCase() === 'ada'` | `LOWER("name") = ?` | `$expr` + `$toLower` |
+| `x.name.toUpperCase() > 'M'` | `UPPER("name") > ?` | `$expr` + `$toUpper` |
+| `x.name.toLowerCase() === x.other.toLowerCase()` | `LOWER("name") = LOWER("other")` | `$toLower` both sides |
+| `x.name === x.other.toLowerCase()` | `"name" = LOWER("other")` | `'$name'` vs `$toLower` |
+| `x.name === 'ADA'.toLowerCase()` | `"name" = ?` binding `ada` | a plain field predicate |
 
-| consumer | where |
-|---|---|
-| `toSql` | `renderColumn` wraps the column in `LOWER(...)` / `UPPER(...)` for every comparator |
-| `toMql` | the `$expr` path, with `$toLower` / `$toUpper` |
-| `evaluate.ts` | `applyTransformer`, lines 36-56, applied to property expressions at line 74 |
+A call on the value side is still folded before binding, so the database never sees `LOWER(?)`.
 
-So the parser refuses to produce a tree the whole stack can already handle, and `toSql`'s `LOWER`
-path for relational comparators is **unreachable today**.
-
-With the `:1016` guard removed and nothing else changed, the whole path already works: the parser
-produces a well-formed tree, `toJson`/`fromJson` preserve the transformer, `evaluate.ts` answers
-correctly, `toSql` emits `LOWER("name") = ?` in all three dialects, and `toMql` emits
-`{$expr:{$eq:[{$toLower:"$name"},…]}}`.
-
-The same guard fires at `parser.ts:911` for a property-to-property comparison. That path is
-**unverified** — check it the same way before lifting it.
+Two forms remain unsupported, and are `todo`s rather than refusals: a call chained onto a call
+(`x.name.toLowerCase().length === 3`) and a call inside a method argument
+(`x.name.startsWith(x.other.toLowerCase())`).
 
 ---
 

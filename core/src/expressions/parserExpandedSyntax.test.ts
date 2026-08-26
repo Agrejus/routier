@@ -207,8 +207,9 @@ describe('property-to-property comparison', () => {
         expect(cmp.strict).toBe(true);
     });
 
-    it('rejects casing transformers on either side', () => {
-        rejected(fromSource('r.name.toLowerCase() === r.other'));
+    it('parses a casing call on either side', () => {
+        expect(peelCalls(parsed(fromSource('r.name.toLowerCase() === r.other')).left)?.calls).toEqual(['to-lower-case']);
+        expect(peelCalls(parsed(fromSource('r.name === r.other.toLowerCase()')).right)?.calls).toEqual(['to-lower-case']);
     });
 });
 

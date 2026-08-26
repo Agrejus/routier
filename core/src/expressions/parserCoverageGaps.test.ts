@@ -79,9 +79,7 @@ describe('rejection guards', () => {
         expectRejected(fromSource('(r.price === 1) === true'));
     });
 
-    it('rejects a method call on the right side of a comparison', () => {
-        expectRejected(fromSource('r.name === r.other.toLowerCase()'));
-    });
+    it.todo('r.name.toLowerCase().length === 3 — a call chained onto a call');
 
     it('rejects a nested method call inside a method argument', () => {
         expectRejected(fromSource('r.name.startsWith(r.other.toLowerCase())'));

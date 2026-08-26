@@ -67,14 +67,13 @@ describe('describeFilterAsJs', () => {
             .toEqual({ text: 'name.length > ?', parameters: [3] });
     });
 
-    /**
-     * `x.name.toLowerCase() === 'ada'` does not parse today — the parser has no rule for a
-     * case-folding call on the property side, so the whole filter runs in memory. Pinned here
-     * because this is exactly the query a reader would be trying to understand, and the answer
-     * must be "not parsable" rather than a rendering that implies it pushed down.
-     */
-    it('says a filter is not parsable rather than inventing a rendering for it', () => {
+    it('renders a casing call on a relational comparator, which the parser used to refuse', () => {
         expect(describeFilterAsJs(expressionOf((x: any) => x.name.toLowerCase() === 'ada')))
+            .toEqual({ text: 'name.toLowerCase() === ?', parameters: ['ada'] });
+    });
+
+    it('says a filter is not parsable rather than inventing a rendering for it', () => {
+        expect(describeFilterAsJs(expressionOf((x: any) => x.name === outside())))
             .toEqual({ text: '(not parsable)', parameters: [] });
     });
 

@@ -141,10 +141,6 @@ describe('failure messages name their cause', () => {
         expect(failureMessage(fromSource('p.v.startsWith(r.name)', '[r, p]'), { v: 'abc' })).toMatch(/\.startsWith\(\) on a non-property target/);
     });
 
-    it('a transform method outside string matching', () => {
-        expect(failureMessage(fromSource('r.name.toLowerCase() === "x"'))).toMatch(/transform method outside of startsWith\/endsWith\/includes/);
-    });
-
     it('comparing a method call to a non-boolean', () => {
         expect(failureMessage(fromSource('r.name.startsWith("x") === 1'))).toMatch(/comparing a method call to a non-boolean/);
     });

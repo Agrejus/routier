@@ -105,13 +105,6 @@ describe('parse failures report why', () => {
             .toMatch(/after a transform method/i);
     });
 
-    it('names the transform-method restriction for a method on the right', () => {
-        // The bare-transform guard fires before the right-hand-side one, so this is the
-        // message a caller actually sees for `"x" === r.name.toLowerCase()`.
-        expect(failureMessage(fromSource('"x" === r.name.toLowerCase()')))
-            .toMatch(/startsWith\/endsWith\/includes/i);
-    });
-
     it('names comparing a method call to a non-boolean', () => {
         expect(failureMessage(fromSource('r.name.startsWith("a") === "yes"')))
             .toMatch(/non-boolean/i);
