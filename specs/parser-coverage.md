@@ -13,6 +13,9 @@ Implementing one means replacing its `todo` with a real test — never inverting
 
 Nothing here is a decision not to support something. It is a list of what is not done yet.
 
+`specs/expression-shape.md` is the other half: this document measures what the parser does, that one
+gives the tree shape that represents all of it and divides the work into three separable pieces.
+
 ## Why an unparsable filter matters
 
 It is not a syntax error and nothing fails. The filter runs, correctly, in memory — after the
