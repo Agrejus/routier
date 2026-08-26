@@ -1,5 +1,7 @@
 import type { Comparator, Expression, PropertyExpression, Transformer } from "../../expressions";
+import { renderCallAsJs } from "../../expressions/callSource";
 import {
+    isCallExpression,
     isComparatorExpression,
     isOperatorExpression,
     isPropertyExpression,
@@ -91,6 +93,10 @@ export const describeFilterAsJs = (expression: Expression): ParameterisedQuery =
             return hold(part.value);
         }
 
+        if (isCallExpression(part)) {
+            return renderCallAsJs(part.call, side(part.expression), part.arguments.map(side));
+        }
+
         return walk(part);
     };
 
@@ -124,11 +130,15 @@ export const describeFilterAsJs = (expression: Expression): ParameterisedQuery =
             return `${left} ${current.negated ? negate(symbol) : symbol} ${right}`;
         }
 
+        if (isCallExpression(current)) {
+            return renderCallAsJs(current.call, side(current.expression), current.arguments.map(side));
+        }
+
         if (current.type === "empty") {
             return "(no filter)";
         }
 
-        return "(not parsable)";
+        return current.type === "not-parsable" ? "(not parsable)" : `(unsupported: ${current.type})`;
     };
 
     return { text: walk(expression), parameters };

@@ -1,5 +1,6 @@
 import { describe, expect, it } from '@jest/globals';
 import { s } from '../../schema';
+import { CallExpression, ComparatorExpression, PropertyExpression, ValueExpression } from '../../expressions';
 import { toExpression } from '../../expressions';
 import { describeFilterAsJs, describeUnparsableFilter, parameter, parameteriseDocument } from './describeFilter';
 import type { Expression } from '../../expressions';
@@ -75,6 +76,59 @@ describe('describeFilterAsJs', () => {
     it('says a filter is not parsable rather than inventing a rendering for it', () => {
         expect(describeFilterAsJs(expressionOf((x: any) => x.name.toLowerCase() === 'ada')))
             .toEqual({ text: '(not parsable)', parameters: [] });
+    });
+
+    it.each([
+        ['to-lower-case', 'name.toLowerCase()'],
+        ['length', 'name.length'],
+        ['trim', 'name.trim()'],
+        ['absolute', 'Math.abs(name)'],
+        ['type-of', 'typeof name'],
+        ['to-number', 'Number(name)'],
+    ])('renders the %s call as the JavaScript that produced it', (call, expected) => {
+        const expression = new CallExpression({
+            call: call as never,
+            expression: new PropertyExpression({ property: schema.getProperty('name')! }),
+        });
+
+        expect(describeFilterAsJs(expression).text).toBe(expected);
+    });
+
+    it('renders a call argument as a parameter, so a value never lands in the text', () => {
+        const expression = new CallExpression({
+            call: 'substring',
+            expression: new PropertyExpression({ property: schema.getProperty('name')! }),
+            arguments: [new ValueExpression({ value: 0 }), new ValueExpression({ value: 2 })],
+        });
+
+        expect(describeFilterAsJs(expression)).toEqual({ text: 'name.substring(?, ?)', parameters: [0, 2] });
+    });
+
+    it('renders an arithmetic call with its operator', () => {
+        const expression = new CallExpression({
+            call: 'add',
+            expression: new PropertyExpression({ property: schema.getProperty('age')! }),
+            arguments: [new ValueExpression({ value: 1 })],
+        });
+
+        expect(describeFilterAsJs(expression)).toEqual({ text: 'age + ?', parameters: [1] });
+    });
+
+    it('renders a call on both sides of a comparator', () => {
+        const lower = (property: string) => new CallExpression({
+            call: 'to-lower-case',
+            expression: new PropertyExpression({ property: schema.getProperty(property)! }),
+        });
+
+        const described = describeFilterAsJs(new ComparatorExpression({
+            comparator: 'equals', negated: false, strict: true, left: lower('name'), right: lower('id'),
+        }));
+
+        expect(described.text).toBe('name.toLowerCase() === id.toLowerCase()');
+    });
+
+    it('does not call an unrecognised node not-parsable, which would name the wrong problem', () => {
+        expect(describeFilterAsJs({ type: 'quantifier' } as never).text).toBe('(unsupported: quantifier)');
     });
 
     it('says so when there is no filter at all', () => {

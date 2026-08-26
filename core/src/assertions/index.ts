@@ -1,5 +1,5 @@
 import { EXPRESSION_TYPES } from "../expressions/constants";
-import { ComparatorExpression, EmptyExpression, Expression, ExpressionType, NotParsableExpression, OperatorExpression, PropertyExpression, ValueExpression } from "../expressions/types";
+import { CallExpression, ComparatorExpression, EmptyExpression, Expression, ExpressionType, NotParsableExpression, OperatorExpression, PropertyExpression, ValueExpression } from "../expressions/types";
 import { isDate } from "../utilities";
 
 export function assertDate(data: unknown): asserts data is Date {
@@ -90,6 +90,13 @@ export function isPropertyExpression(value: unknown): value is PropertyExpressio
  */
 export function isValueExpression(value: unknown): value is ValueExpression {
     return isObjectWithType(value) && value.type === "value";
+}
+
+/**
+ * Type guard: narrows `value` to `CallExpression` when it is an object with `type === "call"`.
+ */
+export function isCallExpression(value: unknown): value is CallExpression {
+    return isObjectWithType(value) && value.type === "call";
 }
 
 /**

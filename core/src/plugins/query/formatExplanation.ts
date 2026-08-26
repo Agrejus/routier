@@ -1,4 +1,5 @@
 import { ExecutionStep, ExplainedOption, QueryExplanation } from "./explain";
+import { renderCallAsJs } from "../../expressions/callSource";
 
 const OPTION_LABEL_WIDTH = 8;
 const WRAP_WIDTH = 68;
@@ -84,7 +85,20 @@ const describeExpression = (expression: any): string => {
         return describeValue(expression.value);
     }
 
-    return expression.t === "empty" ? "(no filter)" : "(not parsable)";
+    if (expression.t === "call") {
+        return renderCallAsJs(
+            expression.call,
+            describeExpression(expression.expression),
+            (expression.arguments ?? []).map(describeExpression)
+        );
+    }
+
+    if (expression.t === "empty") {
+        return "(no filter)";
+    }
+
+    // Distinguishable from "(not parsable)", which means the parser gave up and this runs in memory
+    return expression.t === "not-parsable" ? "(not parsable)" : `(unsupported: ${expression.t})`;
 };
 
 const describeOption = (option: ExplainedOption): string => {
