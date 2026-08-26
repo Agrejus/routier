@@ -14,7 +14,7 @@ import { toExpression } from './index';
  * the gap is correct. Implementing one means replacing its `todo` with a real test, never
  * inverting an expectation.
  *
- * Measured against `specs/parser-coverage.md`, which groups the gaps by root cause.
+ * Measured against `specs/filter-expressions.md`, which enumerates the whole JavaScript surface.
  */
 
 const schema = s.define('coverage_probe', {
@@ -119,7 +119,7 @@ describe('supported: params', () => {
  * Everything below is a gap, written as the predicate that SHOULD parse.
  *
  * Grouped by root cause rather than by symptom, because several of these are one fix. See
- * `specs/parser-coverage.md`.
+ * `specs/filter-expressions.md`.
  */
 
 /**

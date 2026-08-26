@@ -1,14 +1,52 @@
-# Expression shape
+# Filter expressions
 
-What the expression tree needs in order to represent any filter someone can write, and the work
-to get there.
+What a filter can be pushed down as today, the tree shape that represents everything else, and the
+work between the two.
 
-Pairs with `specs/parser-coverage.md`, which measures what the parser handles today. That document
-says what is missing. This one says what the shape is and how the missing work divides.
+`core/src/expressions/coverage.test.ts` mirrors this. Supported forms are asserted; every gap is an
+`it.todo` naming the predicate that SHOULD parse, so the work list shows up on every test run.
+Implementing one means replacing its `todo` with a real test — never inverting an expectation.
 
-## The change
+Nothing here is a decision not to support something, except where a refusal cites one of the five
+reasons under "Refusal reasons", each of which is a property of the code rather than of our appetite.
 
-**One new node.**
+## Why an unparsable filter matters
+
+It is not a syntax error and nothing fails. The filter runs, correctly, in memory — after the
+backend has returned every row. A bounded query quietly becomes a full read, and until recently
+`.explain()` said only "not parsable" without showing which predicate it meant.
+
+That is the cost of everything below.
+
+## Supported today
+
+Measured 2026-08-26 by running 113 predicates through the real parser against a real compiled
+schema. The parser handles considerably more than a first pass suggested.
+
+| category | form |
+|---|---|
+| comparison | `== === != !== > >= < <=`, either operand order |
+| logic | `&&`, `\|\|`, parenthesised groups, `!(a && b)`, chains of any length |
+| string matching | `.startsWith(v)`, `.endsWith(v)`, `.includes(v)`, including on a nested property |
+| casing | `.toLowerCase()` / `.toUpperCase()` / the `toLocale*` pair — **only** as the target of the three above |
+| length | `x.name.length`, `x.tags.length`, `x.address.city.length` |
+| array membership | `x.tags.includes(v)` |
+| literal membership | `['a', 'b'].includes(x.name)` — becomes `IN (...)` |
+| booleans | `x.active`, `!x.active`, `!!x.active`, `x.active === false` |
+| nested properties | `x.address.city`, `x.address.zip.code` — two levels deep |
+| optional chaining | `x.name?.length`, `x.address?.zip?.code` |
+| null and undefined | `=== null`, `!== null`, `!= null`, `=== undefined`, null on either side |
+| values | zero, floats, negatives, empty strings, strings containing quotes |
+| property to property | `x.name === x.id`, including relational comparators |
+| params | `p.min`, nested `p.range.min`, one param used twice, param arrays in `includes`, `Date` params |
+| syntax | block body with a single `return`, bracket access `x['name']`, plain template literals, comments, unary minus |
+| tautology | `x => true` parses to `empty`, which `toSql` renders `1 = 1` |
+
+---
+
+# The shape
+
+**One new node** represents every gap on this page.
 
 ```ts
 export class CallExpression extends Expression {
@@ -20,7 +58,8 @@ export class CallExpression extends Expression {
 ```
 
 Both child slots are always present. A unary call has `arguments: []` — an empty list, not an
-omitted slot.
+omitted slot. `left`/`right` stay where they belong: a genuinely symmetric binary relation, where
+both sides are always filled and swapping them means something.
 
 Everything else is subtraction:
 
@@ -31,7 +70,7 @@ Everything else is subtraction:
 | the value tag becomes optional | absent means "the JSON value as it is". Only the four things `JSON.stringify` destroys carry one |
 | `toJson`/`fromJson` become methods per class | they are two static if-chains today. A new node should ship its own serialization, not add branches in two places |
 
-### Why serialization needs an encoding at all
+## Why serialization needs an encoding at all
 
 `plugins/replication/src/HttpTransportDbPlugin.ts:121` does `JSON.stringify(body)` over `fetch`.
 That is a shipped transport, so the tree must survive JSON, and JSON destroys four things a filter
@@ -49,9 +88,9 @@ over HTTP, and it cannot carry the tree anyway — `PropertyExpression` holds a 
 with functions, and structured clone throws on a function.
 
 The tag namespace cannot collide with a user value, because a plain object is already rejected as a
-filter value.
+filter value (`core/src/expressions/types.ts:63`).
 
-### Examples
+## Examples
 
 ```jsonc
 // x.name.toLowerCase() === 'ada'
@@ -83,39 +122,50 @@ filter value.
       "right": { "type": "value", "value": "a" } } ] }
 ```
 
-Inside `some(tags)`, a reference to `tags` is the element. See "Array elements" below for the
-object-array case, which needs a schema change rather than a node.
+Inside `some(tags)`, a reference to `tags` is the element. See "Array elements" for the object-array
+case, which needs a schema change rather than a node.
+
+## Nodes considered and rejected
+
+Earlier drafts added four more. Each was a special case for a shape a call already fits, and naming
+them here is cheaper than rediscovering them.
+
+| node | why it was dropped |
+|---|---|
+| `quantifier` | `some` is a method call with a predicate argument. Nothing about it needs its own type |
+| `list` | existed only to squeeze three operands through `left`/`right`. A named `arguments` array removes the need |
+| `element` | the loop variable. Scalar arrays reuse the array's own path; object arrays need a schema change, not a node |
+| `never` | `x => false`. A case in every translator's switch, forever, to optimise a predicate nobody writes |
 
 ---
 
-# The work, in three separable pieces
+# The work, in three pieces
 
 These do not depend on each other and can land in any order. Only the first is about the tree.
 
+## Prerequisite, which ships alone first
+
+`plugins/sql-core/src/sql.ts:772` **throws** on an unknown expression type, and three more in the
+same family throw on an operand shape they do not recognise: `:561`, `:609`, `:649`.
+
+A translator that meets a node it does not know must **decline**, so the filter falls to memory.
+Declining is already correct behaviour and already wired; throwing turns a new core feature into an
+exception in an old plugin. This lands and publishes on its own, before anything below.
+
 ## Piece 1 — the tree
 
-Landing `CallExpression` and the subtractions above. Touches `core/src/expressions/types.ts`, the
-parser, and five consumers: `evaluate.ts`, `plugins/sql-core/src/sql.ts`,
-`plugins/mongodb/src/mql.ts`, `core/src/plugins/query/describeFilter.ts`,
-`core/src/plugins/EphemeralDataPlugin.ts:37`.
+`CallExpression` and the subtractions above. Touches `core/src/expressions/types.ts`, the parser,
+and five consumers: `evaluate.ts`, `plugins/sql-core/src/sql.ts`, `plugins/mongodb/src/mql.ts`,
+`core/src/plugins/query/describeFilter.ts`, `core/src/plugins/EphemeralDataPlugin.ts:37`.
 
-**Prerequisite.** `sql.ts:772` throws on an unknown expression type, and three more in the same
-family throw on an operand shape they do not recognise: `:561`, `:609`, `:649`. A translator that meets a node it does not
-know must **decline**, so the filter falls to memory. Declining is already correct behaviour and
-already wired; throwing turns a new core feature into an exception in an old plugin. This lands and
-publishes first, on its own.
-
-**Order.**
-
-1. Translators decline on unknown nodes instead of throwing. Publish.
-2. `CallExpression` + serialization; the parser emits it for the three existing transformers only.
+1. `CallExpression` + serialization; the parser emits it for the three existing transformers only.
    Pure refactor — the suite should stay green with no test edits. If it does not, the migration is
    wrong.
-3. Delete `transformer`/`locale`; update the five consumers.
-4. Rename `t` → `type`, make the value tag optional, move `toJson`/`fromJson` onto the classes.
+2. Delete `transformer`/`locale`; update the five consumers.
+3. Rename `t` → `type`, make the value tag optional, move `toJson`/`fromJson` onto the classes.
    `fromJson` accepts both wire forms for one version.
-5. Lift the casing guards at `parser.ts:1016` and `:911`. With calls they stop being special cases.
-6. Add call names one at a time, each retiring an `it.todo` in `coverage.test.ts`.
+4. Lift the casing guards (below). With calls they stop being special cases.
+5. Add call names one at a time, each retiring an `it.todo` in `coverage.test.ts`.
 
 ## Piece 2 — the tokenizer and grammar
 
@@ -151,6 +201,35 @@ works**, so there is no translator work and no shape question — only the parse
 | `x => false` | a constant-false predicate. Leaving it in memory is correct; the only cost is a round trip |
 | `p.a === p.b` | references no schema property, so it is constant per execution. Fold to match-all or match-none |
 
+## The stale casing guards
+
+```
+x.name.toLowerCase() === 'ada'
+  -> Unsupported expression format: transform method outside of startsWith/endsWith/includes
+```
+
+Thrown at `parser.ts:1016`, with the reason stated beside it: *"on relational comparators the
+plugins would silently ignore them and return wrong data"*.
+
+**That is no longer true.** Every consumer implements transformers on any comparator:
+
+| consumer | where |
+|---|---|
+| `toSql` | `renderColumn` wraps the column in `LOWER(...)` / `UPPER(...)` for every comparator |
+| `toMql` | the `$expr` path, with `$toLower` / `$toUpper` |
+| `evaluate.ts` | `applyTransformer`, lines 36-56, applied to property expressions at line 74 |
+
+So the parser refuses to produce a tree the whole stack can already handle, and `toSql`'s `LOWER`
+path for relational comparators is **unreachable today**.
+
+Removing the `:1016` guard and changing nothing else was verified end to end: the parser produces a
+well-formed tree, `Expression.toJson`/`fromJson` preserve the transformer, `evaluate.ts` answers
+correctly, `toSql` emits `LOWER("name") = ?` in all three dialects, and `toMql` emits
+`{$expr:{$eq:[{$toLower:"$name"},…]}}`.
+
+The same guard fires at `parser.ts:911` for a property-to-property comparison. That case is
+**unverified** and needs the same treatment before it is lifted.
+
 ---
 
 # The JavaScript surface
@@ -183,13 +262,11 @@ There are five, and they are properties of the code rather than of our appetite.
 | **not-a-value** | produces no operand — a declaration, a jump, a statement used for effect |
 | **environment** | the answer depends on the host's locale, timezone or collation, so the backend and the memory fallback would disagree |
 
-## A note on Tier 3
+## Tier 3
 
-A call no backend can render still gets a node. The tree records what was asked, so `.explain()`
-can say *"`x.name.normalize()` could not be pushed down"* instead of printing the whole closure.
-Only the five reasons above justify producing no node at all.
-
----
+A call no backend can render still gets a node. The tree records what was asked, so `.explain()` can
+say *"`x.name.normalize()` could not be pushed down"* instead of printing the whole closure. Only
+the five reasons above justify producing no node at all.
 
 ## Operators
 
@@ -231,7 +308,7 @@ Only the five reasons above justify producing no node at all.
 | `Infinity`, `-Infinity`, `NaN` | value | tagged on the wire |
 | `Number.MAX_SAFE_INTEGER` and siblings | value | |
 | `Math.PI`, `Math.E`, and the other six constants | value | |
-| `new Date(<literal>)`, `new Date(<literal string>)` | value | a constructed constant. Deterministic, so caching it is safe |
+| `new Date(<literal>)` | value | a constructed constant. Deterministic, so caching it is safe |
 | `new Date()` — no arguments | refuse | non-deterministic |
 | `Date.now()` | refuse | non-deterministic |
 | object literal | refuse | not-a-value as an operand; a plain object is not a filter value |
@@ -257,8 +334,7 @@ Only the five reasons above justify producing no node at all.
 | `throw` | refuse | not-a-value |
 | labeled statement, `break`, `continue` | refuse | not-a-value |
 | nested function or class declaration | refuse | not-a-value |
-| `debugger` | refuse | not-a-value |
-| `with` | refuse | not-a-value |
+| `debugger`, `with` | refuse | not-a-value |
 
 ## String
 
@@ -283,7 +359,7 @@ Only the five reasons above justify producing no node at all.
 | `repeat` | call | `repeat` | `REPEAT` | — |
 | `split` | call | `split` | dialect-specific | `$split` |
 | `match`, `matchAll`, `search` | call | `matches` | `REGEXP` where present | `$regexMatch` |
-| `normalize` | call | `normalize` | — | — |
+| `normalize` | call | `normalize` — Tier 3 | — | — |
 | `isWellFormed`, `toWellFormed` | call | Tier 3 | — | — |
 | `toString`, `valueOf` | call | `to-string` | `CAST` | `$toString` |
 | `localeCompare` | refuse | | | environment — collation differs between host and engine |
@@ -291,7 +367,7 @@ Only the five reasons above justify producing no node at all.
 | `anchor`, `big`, `blink`, `bold`, `fixed`, `fontcolor`, `fontsize`, `italics`, `link`, `small`, `strike`, `sub`, `sup` | refuse | | | not-a-value. Legacy HTML wrappers, no query meaning |
 
 \* parses today only as the target of `startsWith`/`endsWith`/`includes`. The guards at
-`parser.ts:1016` and `:911` block every other comparator, and Piece 1 step 5 lifts them.
+`parser.ts:1016` and `:911` block every other comparator; Piece 1 step 4 lifts them.
 
 ## Number
 
@@ -299,7 +375,7 @@ Only the five reasons above justify producing no node at all.
 |---|---|---|---|
 | `toFixed` | call | `round-to` | `ROUND(c, n)` in SQL, then compared as text |
 | `toPrecision`, `toExponential` | call | Tier 3 | no direct equivalent |
-| `toString` | call | `to-string` | `CAST`; radix argument is Tier 3 |
+| `toString` | call | `to-string` | `CAST`; a radix argument is Tier 3 |
 | `valueOf` | parser | | identity, so drop it |
 | `toLocaleString` | refuse | | environment |
 
@@ -315,14 +391,14 @@ Constants (`PI`, `E`, `LN2`, `LN10`, `LOG2E`, `LOG10E`, `SQRT2`, `SQRT1_2`) are 
 | `sqrt`, `cbrt` | call | `square-root`, `cube-root` | `SQRT` | `$sqrt` |
 | `pow` | call | `power` | `POWER` | `$pow` |
 | `exp`, `log`, `log2`, `log10`, `expm1`, `log1p` | call | `exponent`, `log`, … | `EXP`, `LN`, `LOG` | `$exp`, `$ln`, `$log` |
-| `min`, `max` | call | `minimum`, `maximum` | `MIN`/`LEAST` | `$min`, `$max` |
+| `min`, `max` | call | `minimum`, `maximum` | `MIN` / `LEAST` | `$min`, `$max` |
 | `hypot`, `fround`, `imul`, `clz32` | call | Tier 3 | — | — |
 | `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, and the `*h` hyperbolics | call | Tier 2 | present in most engines | `$sin`, `$cos`, … |
 | `random` | refuse | | | non-deterministic |
 
 ## Date
 
-Every getter is a **call**. `getTime`/`valueOf` are the same operation.
+Every getter is a **call**. `getTime` and `valueOf` are the same operation.
 
 | method | verdict | call | SQL | Mongo |
 |---|---|---|---|---|
@@ -347,20 +423,19 @@ Every getter is a **call**. `getTime`/`valueOf` are the same operation.
 | `length` | have | `length` | `json_array_length` / `$size` |
 | `includes` | have | | a comparator today; `arrayContainsExpression` per dialect |
 | `some` | call | `some` | `EXISTS (SELECT 1 FROM json_each(c) …)` / `$elemMatch` |
-| `every` | call | `every` | `NOT EXISTS (… WHERE NOT …)` |
+| `every` | call | `every` | `NOT EXISTS (… WHERE NOT …)`. `[].every(…)` is `true` and `NOT EXISTS` over zero rows is also true, so the empty case needs no special handling |
 | `find`, `findLast` | parser | rewrite to `some` when compared `!= null` | |
 | `findIndex`, `findLastIndex` | call | Tier 3 | position in a JSON array is expressible but not usefully indexed |
 | `indexOf`, `lastIndexOf` | call | `index-of` | |
 | `filter` | call | `filter` | only meaningful when its result is measured, e.g. `.filter(p).length > 0` — which is `some` |
 | `at` | call | `element-at` | |
 | `join` | call | `join` | `group_concat` / `$reduce` |
-| `flat`, `flatMap` | call | Tier 3 | |
-| `concat` | call | Tier 3 | |
+| `flat`, `flatMap`, `concat` | call | Tier 3 | |
 | `map` | call | Tier 3 | a projection, not a predicate. Gets a node so `.explain()` can name it, but no backend renders it in a filter |
+| `toReversed`, `toSorted`, `toSpliced`, `with` | call | Tier 3 | non-mutating, so representable |
 | `reduce`, `reduceRight` | refuse | | not-a-value. The accumulator is an arbitrary closure |
 | `forEach` | refuse | | not-a-value. Returns `undefined`; used only for effect |
 | `entries`, `keys`, `values` | refuse | | not-a-value. Iterators do not serialize |
-| `toReversed`, `toSorted`, `toSpliced`, `with` | call | Tier 3 | non-mutating, so representable |
 | `sort` | refuse | | mutates. `toSorted` is the representable form |
 | `reverse`, `push`, `pop`, `shift`, `unshift`, `splice`, `fill`, `copyWithin` | refuse | | mutates |
 | `toString`, `toLocaleString` | refuse | | environment |
@@ -375,23 +450,25 @@ Every getter is a **call**. `getTime`/`valueOf` are the same operation.
 | `Number.isInteger`, `Number.isSafeInteger` | call | `is-integer` |
 | `Array.isArray` | fold | the schema declares it |
 | `RegExp.prototype.test`, `.exec` | call | `matches` |
-| `Object.keys`, `.values`, `.entries` | call | Tier 3 for a JSON column; refuse on the entity itself, where the schema answers it |
+| `Object.keys`, `.values`, `.entries` | call | Tier 3 for a JSON column; **fold** on the entity itself, where the schema answers it |
 | `Object.hasOwn`, `hasOwnProperty` | fold | the schema answers it |
 | `Object.assign`, `.freeze`, `.defineProperty`, `.setPrototypeOf` | refuse | mutates |
 | `JSON.stringify` | call | Tier 3 |
 | `JSON.parse` | refuse | not-a-value. Parsing text into a structure inside a predicate has no query equivalent |
 | `encodeURIComponent`, `decodeURIComponent`, `encodeURI`, `decodeURI`, `btoa`, `atob` | call | Tier 3 |
-| `Symbol`, `BigInt`, `Proxy`, `Reflect`, `WeakMap`, `Map`, `Set` | refuse | not-a-value |
+| `Symbol`, `BigInt`, `Proxy`, `Reflect`, `Map`, `Set`, `WeakMap` | refuse | not-a-value |
 | `structuredClone` | refuse | not-a-value |
 | `globalThis`, `window`, `document`, `process`, `require`, `import()` | refuse | not-a-value |
 | a free variable closed over from the enclosing scope | refuse | non-deterministic. Its value is not visible to the parser and not stable across calls. This is the case the "please pass parameters in" message is for, and it should keep saying so |
 
-## Array elements
+---
 
-Object arrays are the one thing on this page that needs work outside the parser and the
-translators.
+# Array elements
 
-`x.orders.some(o => o.total > 100)` needs `o.total` to be a resolvable path. It is not:
+Object arrays are the one item needing work outside the parser and the translators.
+
+`x.orders.some(o => o.total > 100)` needs `o.total` to be a resolvable path. It is not — probed
+against a real compiled schema:
 
 ```
 tags           FOUND type=Array
@@ -406,18 +483,18 @@ registered.
 
 Two steps, in this order:
 
-1. **Scalar arrays first.** `x.tags.some(t => t === 'a')` needs nothing new — inside `some(tags)`,
-   a reference to `tags` is the element. This is the case that generalizes today's
+1. **Scalar arrays first.** `x.tags.some(t => t === 'a')` needs nothing new — inside `some(tags)`, a
+   reference to `tags` is the element. This is the case that generalizes today's
    `x.tags.includes('a')`.
-2. **Then register element paths** so `orders.total` resolves like any nested path, and object
-   arrays become ordinary `PropertyExpression`s. This is a schema-compiler change, and anything that
+2. **Then register element paths** so `orders.total` resolves like any nested path, and object arrays
+   become ordinary `PropertyExpression`s. This is a schema-compiler change, and anything that
    enumerates properties — selects, storage columns, change tracking — will start seeing the new
    paths. Each needs checking before it is called safe.
 
 Known hole in step 1: inside `some(tags)`, a reference to `tags` means the element, so
 `x.tags.some(t => x.tags.length > 2)` is misread. Rare, detectable, and closed by step 2.
 
-## Open decisions
+# Open decisions
 
 Two things this document does not settle.
 
@@ -427,8 +504,17 @@ Adding `+ - * / %` to the `Operator` union instead uses `OperatorExpression`'s `
 is symmetric and adds no node — but it widens that node from "boolean logic" to "any binary
 operator", changing what its children mean. Recorded as a call above.
 
-**Tier 2 methods that produce a computed value.** `replace`, `padStart`, `split`, `toFixed` and the
-trigonometric functions all push down correctly and all defeat every index. Pushing them down may be
-slower than the memory fallback they replace. They are representable either way; whether a translator
-should emit them is a per-backend judgement, and `.explain()` now reports when one of them sent a
-query to memory, so the cost is visible either way.
+**Tier 2 calls that produce a computed value.** `replace`, `padStart`, `split`, `toFixed` and the
+trigonometric functions all push down correctly and all defeat every index, so pushing them down may
+be slower than the memory fallback they replace. They are representable either way; whether a
+translator should emit them is a per-backend judgement, and `.explain()` now reports when one of them
+sent a query to memory, so the cost is visible.
+
+# Re-running the measurement
+
+```
+npx jest core/src/expressions/coverage.test.ts
+```
+
+54 assertions and 49 todos. When a todo is implemented, replace it with a real assertion in the same
+commit as the parser change, so this document and the parser cannot drift apart.
