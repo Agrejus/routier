@@ -75,10 +75,13 @@ const applyCall = (call: Call, value: unknown, args: unknown[]): unknown | typeo
         return typeof value === "string" && args[0] instanceof RegExp ? args[0].test(value) : UNRESOLVED;
     }
 
+    if (call === "to-string") {
+        return String(value);
+    }
+
     if (call === "concat") {
-        return args.every(argument => argument != null)
-            ? [value, ...args].map(String).join("")
-            : UNRESOLVED;
+        // `String(null)` is "null" in a template, so an absent piece is text rather than no answer
+        return [value, ...args].map(String).join("");
     }
 
     const arithmetic = ARITHMETIC[call];

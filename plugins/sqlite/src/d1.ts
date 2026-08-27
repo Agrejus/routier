@@ -237,7 +237,7 @@ export class D1DbPlugin implements IDbPlugin {
 
             // An inner filter with no column to compare against would make the emitted join return
             // rows the inner side's scope excludes. Refusing beats answering wrongly.
-            if (canPushDownJoin(join.value) === false) {
+            if (canPushDownJoin(join.value, "sqlite") === false) {
                 done(PluginEventResult.error(event.id, new Error(
                     `Cannot push this join down to D1: the inner collection has a filter that cannot be expressed as SQL ` +
                     `(an unmapped or renamed property), so the join would return rows its scope excludes.`

@@ -13,7 +13,7 @@ import { CompiledSchema } from "@routier/core/schema";
 import { OptimisticConcurrencyError } from "@routier/core";
 import { UnknownRecord, uuidv4 } from "@routier/core/utilities";
 import { MongoCollection, MongoDriver, MongoFindOptions, MongoUpdate } from "./driver";
-import { MqlFilter, toMql } from "./mql";
+import { MqlFilter, canRenderInMql, toMql } from "./mql";
 import { MongoTranslator } from "./MongoTranslator";
 import { assertMongoSchema } from "./schemaRules";
 
@@ -97,9 +97,25 @@ export class MongoDbPlugin implements IDbPlugin {
 
         const sortKeys: Record<string, 1 | -1> = {};
 
+        /**
+         * Ask before translating.
+         *
+         * MQL has no operator for JavaScript's shifts, and `toMql` throws rather than invent one. That
+         * throw would surface as a failed query for a filter that used to parse as unreadable and run
+         * in memory — correct but slow turning into an error. Reported instead, and the datastore
+         * finishes the query over the documents this one returns.
+         */
+        for (const item of options.get("filter")) {
+            const expression = (item.option.value as { expression?: Parameters<typeof canRenderInMql>[0] }).expression;
+
+            if (expression != null && canRenderInMql(expression) === false) {
+                options.reportMissingCapability(item);
+            }
+        }
+
         try {
             options.forEach(option => {
-                if (option.target !== "database") {
+                if (option.target !== "database" || option.reason !== "executed") {
                     return;
                 }
 

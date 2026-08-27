@@ -271,7 +271,7 @@ export class PostgresDbPluginBase implements IDbPlugin {
 
                 // An inner filter with no column to compare against would make the emitted join
                 // return rows the inner side's scope excludes. Refusing beats answering wrongly.
-                if (canPushDownJoin(join.value) === false) {
+                if (canPushDownJoin(join.value, "postgresql") === false) {
                     throw new Error(
                         `Cannot push this join down to PostgreSQL: the inner collection has a filter that cannot be expressed as SQL ` +
                         `(an unmapped or renamed property), so the join would return rows its scope excludes.`

@@ -83,8 +83,14 @@ export interface SqlDialect {
      * divide, using each side twice. Call each thunk exactly as many times as the expression needs.
      */
     moduloExpression(left: () => string, right: () => string): string;
-    /** `^` on most engines; PostgreSQL spells it `#`, because `^` there is exponentiation. */
-    bitXorExpression(left: string, right: string): string;
+    /**
+     * `^` on most engines; PostgreSQL spells it `#`, because `^` there is exponentiation.
+     *
+     * Thunks, like `moduloExpression`: SQLite has no xor and builds one from `|` and `&`, naming each
+     * operand twice. Rendering an operand binds it, so reusing the text without rebinding would leave
+     * placeholders with no parameters behind them.
+     */
+    bitXorExpression(left: () => string, right: () => string): string;
     /**
      * A numeric operand made safe for a bitwise operator.
      *
@@ -242,8 +248,9 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
             return operand;
         },
         bitXorExpression(left, right) {
-            // No `^`. Built from the operators SQLite does have: a xor b = (a|b) - (a&b)
-            return `((${left} | ${right}) - (${left} & ${right}))`;
+            // No `^`. Built from the operators SQLite does have: a xor b = (a|b) - (a&b). Each side is
+            // named twice, so each thunk is called twice and binds twice.
+            return `((${left()} | ${right()}) - (${left()} & ${right()}))`;
         },
         concatExpression(left, right) {
             return `(${left} || ${right})`;
@@ -305,7 +312,7 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         },
         bitXorExpression(left, right) {
             // `^` is exponentiation in PostgreSQL; `#` is the bitwise xor
-            return `(${left} # ${right})`;
+            return `(${left()} # ${right()})`;
         },
         concatExpression(left, right) {
             return `(${left} || ${right})`;
@@ -376,7 +383,7 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
             return operand;
         },
         bitXorExpression(left, right) {
-            return `(${left} ^ ${right})`;
+            return `(${left()} ^ ${right()})`;
         },
         concatExpression(left, right) {
             return `CONCAT(${left}, ${right})`;
@@ -443,7 +450,7 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
             return `CAST(${operand} AS bigint)`;
         },
         bitXorExpression(left, right) {
-            return `(${left} ^ ${right})`;
+            return `(${left()} ^ ${right()})`;
         },
         concatExpression(left, right) {
             return `(${left} + ${right})`;
@@ -643,12 +650,25 @@ function renderColumnBase(prop: PropertyExpression, d: SqlDialect, alias?: strin
 const bindableFor = (d: SqlDialect) => (value: unknown) =>
     typeof value === "boolean" ? d.encodeBoolean(value) : value;
 
+/**
+ * The placeholder counter, as something a nested render can read and advance.
+ *
+ * `params.length` is not the same number once an outer statement passed a `paramOffset` — a join
+ * does — and a nested render that starts at the wrong index numbers every placeholder after it wrong.
+ */
+export type PlaceholderCursor = {
+    next(): string;
+    at(): number;
+    skip(count: number): void;
+};
+
 const argumentRenderer = (
     d: SqlDialect,
     params: unknown[],
-    placeholder: () => string,
+    cursor: PlaceholderCursor,
     alias?: string
 ): ((expression: Expression) => string) => {
+    const placeholder = () => cursor.next();
     const bindable = bindableFor(d);
 
     const render = (expression: Expression): string => {
@@ -666,9 +686,10 @@ const argumentRenderer = (
         // A boolean operand — the condition of a `conditional`. Rendered by the same function that
         // renders a WHERE, offset so its placeholders continue this statement's numbering.
         if (isComparatorExpression(expression) || isOperatorExpression(expression)) {
-            const nested = toSql(expression, d, { alias, paramOffset: params.length });
+            const nested = toSql(expression, d, { alias, paramOffset: cursor.at() });
 
             params.push(...nested.params);
+            cursor.skip(nested.params.length);
 
             return nested.where;
         }
@@ -677,12 +698,6 @@ const argumentRenderer = (
 
         if (peeled != null && isPropertyExpression(peeled.operand)) {
             return renderColumn(peeled.operand, d, peeled.calls, render, alias);
-        }
-
-        if (peeled != null && isValueExpression(peeled.operand)) {
-            params.push(bindable(applyCallsToValue(peeled.operand.value, peeled.calls)));
-
-            return placeholder();
         }
 
         if (peeled != null && isValueExpression(peeled.operand)) {
@@ -744,7 +759,10 @@ function renderColumn(
         }
 
         if (call === "bit-xor") {
-            return d.bitXorExpression(d.bitwiseOperand(inner()), d.bitwiseOperand(renderArgument(node.arguments[0])));
+            return d.bitXorExpression(
+                () => d.bitwiseOperand(inner()),
+                () => d.bitwiseOperand(renderArgument(node.arguments[0]))
+            );
         }
 
         if (call === "bit-and" || call === "bit-or" || call === "shift-left" || call === "shift-right") {
@@ -885,18 +903,19 @@ function renderStringPatternComparison(
     cmp: ComparatorExpression,
     d: SqlDialect,
     params: unknown[],
-    placeholder: () => string,
+    cursor: PlaceholderCursor,
     alias?: string
 ): string {
+    const placeholder = () => cursor.next();
     const { propLeft, propRight, callsLeft, callsRight, valLeft, valRight } = getPropertyValueSides(cmp);
     const kind = d.stringMatchKind;
 
     if (cmp.comparator === "includes") {
         const col =
             propLeft && valRight !== undefined
-                ? renderColumn(propLeft, d, callsLeft, argumentRenderer(d, params, placeholder, alias), alias)
+                ? renderColumn(propLeft, d, callsLeft, argumentRenderer(d, params, cursor, alias), alias)
                 : propRight && valLeft !== undefined
-                  ? renderColumn(propRight, d, callsRight, argumentRenderer(d, params, placeholder, alias), alias)
+                  ? renderColumn(propRight, d, callsRight, argumentRenderer(d, params, cursor, alias), alias)
                   : null;
         const value = valRight !== undefined ? valRight : valLeft;
 
@@ -943,9 +962,9 @@ function renderStringPatternComparison(
 
     const col =
         propLeft && valRight !== undefined
-            ? renderColumn(propLeft, d, callsLeft, argumentRenderer(d, params, placeholder, alias), alias)
+            ? renderColumn(propLeft, d, callsLeft, argumentRenderer(d, params, cursor, alias), alias)
             : propRight && valLeft !== undefined
-              ? renderColumn(propRight, d, callsRight, argumentRenderer(d, params, placeholder, alias), alias)
+              ? renderColumn(propRight, d, callsRight, argumentRenderer(d, params, cursor, alias), alias)
               : null;
     const rawValue = valRight !== undefined ? valRight : valLeft;
     const value = rawValue == null ? null : String(rawValue);
@@ -1074,6 +1093,12 @@ export function toSql(
         return p;
     }
 
+    const cursor: PlaceholderCursor = {
+        next: placeholder,
+        at: () => paramIndex,
+        skip: count => { paramIndex += count; }
+    };
+
     /** Visitor: map each expression node type to a SQL fragment. */
     function walk(e: Expression): string {
         if (isOperatorExpression(e)) {
@@ -1092,7 +1117,7 @@ export function toSql(
 
             if (isStringPattern) {
                 /* String pattern: includes / starts-with / ends-with → one renderer. */
-                return renderStringPatternComparison(cmp, d, params, placeholder, alias);
+                return renderStringPatternComparison(cmp, d, params, cursor, alias);
             }
 
             if (cmp.comparator === "equals") {
@@ -1100,9 +1125,9 @@ export function toSql(
                 const { propLeft, propRight, callsLeft, callsRight, valLeft, valRight } = getPropertyValueSides(cmp);
                 const col =
                     propLeft && (valRight !== undefined || propRight)
-                        ? renderColumn(propLeft, d, callsLeft, argumentRenderer(d, params, placeholder, alias), alias)
+                        ? renderColumn(propLeft, d, callsLeft, argumentRenderer(d, params, cursor, alias), alias)
                         : propRight && (valLeft !== undefined || propLeft)
-                          ? renderColumn(propRight, d, callsRight, argumentRenderer(d, params, placeholder, alias), alias)
+                          ? renderColumn(propRight, d, callsRight, argumentRenderer(d, params, cursor, alias), alias)
                           : null;
                 const value = valRight !== undefined ? valRight : valLeft;
                 const columnOnLeft = Boolean(propLeft && cmp.right && isValueExpression(cmp.right));
@@ -1130,7 +1155,7 @@ export function toSql(
         }
 
         if (isPropertyExpression(e)) {
-            return renderColumn(e, d, [], argumentRenderer(d, params, placeholder, alias), alias);
+            return renderColumn(e, d, [], argumentRenderer(d, params, cursor, alias), alias);
         }
 
         if (isValueExpression(e)) {
@@ -1139,7 +1164,7 @@ export function toSql(
         }
 
         if (isCallExpression(e)) {
-            return argumentRenderer(d, params, placeholder, alias)(e);
+            return argumentRenderer(d, params, cursor, alias)(e);
         }
 
         throw new Error(`Unknown expression type: ${(e as Expression).type}`);

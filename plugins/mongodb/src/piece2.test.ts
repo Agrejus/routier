@@ -50,12 +50,15 @@ describe('operators MQL has', () => {
             .toEqual({ $expr: { $eq: ['$name', { $concat: ['$other', { $literal: '!' }] }] } });
     });
 
-    /** The condition is a boolean, so it goes back through the comparison renderer as a document. */
-    it('renders the conditional operator as $cond', () => {
+    /**
+     * The condition is an aggregation EXPRESSION, not a match document. `{age: {$gt: 5}}` inside
+     * `$expr` reads as `$gt` invoked with one argument, and the server rejects it.
+     */
+    it('renders the conditional operator as $cond, with an expression condition', () => {
         expect(mql((x: any) => (x.age > 5 ? x.other : 'small') === 'big')).toEqual({
             $expr: {
                 $eq: [
-                    { $cond: [{ age: { $gt: 5 } }, '$other', { $literal: 'small' }] },
+                    { $cond: [{ $gt: ['$age', { $literal: 5 }] }, '$other', { $literal: 'small' }] },
                     { $literal: 'big' },
                 ],
             },

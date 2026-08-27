@@ -245,6 +245,10 @@ slower.
 | `conditional` | rendered, not claimed | rendered, not claimed | rendered, not claimed | rendered, not claimed | `$cond` |
 | `matches` | ❌ `REGEXP` only if the host registered it | rendered, not claimed | rendered, not claimed | ❌ | `$regexMatch` |
 
+A join asks the same question: `canPushDownJoin(join, dialect)` checks the inner side's filters
+against the dialect. Without the dialect argument a join was the one route to a renderer for a call
+the engine does not claim.
+
 PostgreSQL has no bitwise operator for `double precision` — `operator does not exist: double
 precision & unknown` — the same shape as the modulo problem, and fixed the same way, by narrowing the
 operand.
@@ -256,6 +260,18 @@ real server. The renderers stay, so claiming them later is a declaration change 
 
 Verified against SQLite, PostgreSQL 16, pglite, MySQL 8.4, MongoDB 7, PouchDB, Dexie, memory,
 file-system and browser-storage.
+
+### Refused rather than reinterpreted
+
+JavaScript binds `&`, `|`, `^` and `??` LOOSER than a comparison; this grammar reads a comparison's
+operands as values, which puts them tighter. `x.flags & 6 === 2` is `x.flags & (6 === 2)` in
+JavaScript — 0, always falsy — and would be read here as `(x.flags & 6) === 2`, which is true for
+`flags: 2`. So an ungrouped one is refused and the filter runs against the caller's own function,
+which is right by construction. Brackets say which was meant. JavaScript itself makes an unbracketed
+`??` mix a syntax error for the same reason.
+
+An interpolation this parser can only partly read is refused for the same reason:
+`` `${x.age > 5 ? 'a' : 'b'}` `` once parsed as just `x.age`, silently dropping the rest.
 
 ### Still open
 
@@ -352,6 +368,26 @@ PostgreSQL, MySQL and MongoDB — and the shared contract covers a fractional re
 **Integer division.** On a column typed as an integer, PostgreSQL's `/` is integer division while
 JavaScript's is not. The plugins store numbers as `double precision`, so this does not arise today; it
 would the moment a schema declared an integer column.
+
+**Bitwise operators are 32-bit in JavaScript and 64-bit everywhere else.** `&`, `|`, `^` and `~`
+coerce to a SIGNED 32-BIT integer in JavaScript, truncating the fraction and wrapping past 2^31. No
+SQL engine does that:
+
+| case | JavaScript | SQLite / MSSQL | PostgreSQL / MySQL |
+|---|---|---|---|
+| `5.5 & 1` | `1` (truncates to 5) | `1` | `0` — they ROUND to 6 |
+| `2**31 & -1` | `-2147483648` (wraps) | `2147483648` | `2147483648` |
+
+So a bitwise filter on a fractional or very large value answers differently pushed down than in
+memory — the one property the capability mechanism exists to preserve. The contract's case uses small
+whole numbers and cannot see it. Claiming bitwise only for integral columns would close it; until
+then this is the honest statement of where it stands.
+
+**A template over a null column disagrees three ways.** `` `${x.other}!` `` with `other` null gives
+`"null!"` in JavaScript, `NULL` from SQL's `||` — which excludes the row — and `"null!"` from the
+in-memory evaluator, which was changed to match JavaScript. So SQL is the odd one out. Wrapping
+concat operands in `COALESCE` per dialect would fix it, or concat could go unclaimed for a nullable
+column.
 
 Otherwise SQLite, PostgreSQL, MongoDB and every in-process plugin agree with JavaScript on the same
 predicate list, arithmetic included.

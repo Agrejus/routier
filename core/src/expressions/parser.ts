@@ -442,15 +442,6 @@ class TokenStream {
         return token != null && token.kind === "punctuation" && token.value === value;
     }
 
-    /** The current position, for a caller that has to try one reading and fall back to another. */
-    mark(): number {
-        return this.index;
-    }
-
-    reset(mark: number) {
-        this.index = mark;
-    }
-
     /**
      * Whether the group starting here is compared to something once it closes.
      *
@@ -489,6 +480,29 @@ class TokenStream {
         return after != null && after.kind === "punctuation" && COMPARISON_OPERATORS[after.value] != null;
     }
 
+    /** Whether a `?` sits at the top level of what is left, so this is a conditional. */
+    holdsConditional(): boolean {
+        let depth = 0;
+
+        for (let at = this.index; at < this.tokens.length; at++) {
+            const token = this.tokens[at];
+
+            if (token.kind !== "punctuation") {
+                continue;
+            }
+
+            if (token.value === "(" || token.value === "[") {
+                depth++;
+            } else if (token.value === ")" || token.value === "]") {
+                depth--;
+            } else if (token.value === "?" && depth === 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /** Whether the group starting here is `( … ? … : … )` rather than a plain value. */
     groupHoldsConditional(): boolean {
         let depth = 0;
@@ -521,12 +535,6 @@ class TokenStream {
         }
 
         return false;
-    }
-
-    peekPunctuation(value: string): boolean {
-        const token = this.peek();
-
-        return token != null && token.kind === "punctuation" && token.value === value;
     }
 
     matchPunctuation(value: string): boolean {
@@ -592,7 +600,24 @@ type ArithmeticOperand = {
     right: Operand;
     /** The third operand, which only `conditional` has. */
     extra?: Operand;
+    /** Set when brackets around it settled the precedence. See {@link LOOSER_THAN_COMPARISON}. */
+    grouped?: true;
 }
+
+/**
+ * Calls JavaScript binds LOOSER than a comparison.
+ *
+ * This grammar reads a comparison's operands as values, which puts these tighter than they belong:
+ * `x.flags & 6 === 2` is `x.flags & (6 === 2)` in JavaScript and would be read here as
+ * `(x.flags & 6) === 2`. The two answer differently, so an ungrouped one is refused rather than
+ * reinterpreted — the filter then runs in memory against the caller's own function, which is right by
+ * construction. Brackets say which was meant, and JavaScript itself makes an unbracketed `??` mix a
+ * syntax error for the same reason.
+ */
+const LOOSER_THAN_COMPARISON: readonly Call[] = ["bit-and", "bit-or", "bit-xor", "coalesce"];
+
+const needsBrackets = (operand: Operand): boolean =>
+    operand.kind === "arithmetic" && operand.grouped !== true && LOOSER_THAN_COMPARISON.includes(operand.call);
 
 /**
  * `a ? b : c`, where the condition is a BOOLEAN and the branches are values.
@@ -869,7 +894,7 @@ class ExpressionParser {
          * `(x.name ?? '') === 'ada'` — and which one it is is only known at the closing bracket, by
          * what follows. So the boolean reading is tried first and rewound if a comparator turns up.
          */
-        if (this.stream.peekPunctuation("(") && this.stream.comparatorFollowsGroup() === false) {
+        if (this.stream.isPunctuation("(") && this.stream.comparatorFollowsGroup() === false) {
             this.stream.next();
 
             const expression = this.parseOr();
@@ -906,13 +931,42 @@ class ExpressionParser {
      */
     private parseNested(source: string): Operand {
         const nested = new ExpressionParser(this.schema, new TokenStream(tokenize(source)), this.entityName, this.paramsName, this.params);
-        const operand = nested.parseValue();
+        const operand = nested.parseInterpolation();
+
+        // Leftover tokens mean the interpolation held something this reads only part of. Silently
+        // keeping the part it understood is the worst outcome available: `${x.age > 5 ? "a" : "b"}`
+        // would become `x.age`, and the filter would answer a question nobody asked.
+        if (nested.stream.isAtEnd === false) {
+            throw new Error(ERROR_MESSAGES.UNSUPPORTED("an interpolation this parser reads only part of"));
+        }
 
         if (nested.structurallyDependsOnParams === true) {
             this.structurallyDependsOnParams = true;
         }
 
         return operand;
+    }
+
+    /**
+     * The whole of one `${…}`.
+     *
+     * A conditional is read here rather than in `parseValue`, because an interpolation is the one
+     * place a conditional appears without brackets around it.
+     */
+    parseInterpolation(): Operand {
+
+        if (this.stream.holdsConditional()) {
+            const condition = this.parseOr();
+
+            this.stream.expectPunctuation("?");
+            const whenTrue = this.parseValue();
+            this.stream.expectPunctuation(":");
+            const whenFalse = this.parseValue();
+
+            return { kind: "conditional", condition, whenTrue, whenFalse };
+        }
+
+        return this.parseValue();
     }
 
     parseValue(): Operand {
@@ -951,7 +1005,7 @@ class ExpressionParser {
     private parseExponent(): Operand {
         const left = this.parseOperand();
 
-        if (this.stream.peekPunctuation("**") === false) {
+        if (this.stream.isPunctuation("**") === false) {
             return left;
         }
 
@@ -1015,7 +1069,7 @@ class ExpressionParser {
             const inner = this.parseValue();
             this.stream.expectPunctuation(")");
 
-            return inner;
+            return inner.kind === "arithmetic" ? { ...inner, grouped: true } : inner;
         }
 
         /**
@@ -1043,6 +1097,15 @@ class ExpressionParser {
 
             if (pieces.length === 0) {
                 return { kind: "value", value: "", transformer: null, locale: null };
+            }
+
+            // One piece and no chunk means no concat to do the coercion, so the conversion has to be
+            // explicit: `` `${x.age}` `` is the STRING "9", not the number 9.
+            if (pieces.length === 1) {
+                const only = pieces[0];
+                const alreadyText = only.kind === "value" && typeof only.value === "string";
+
+                return alreadyText ? only : { kind: "arithmetic", call: "to-string", left: only, right: { kind: "value", value: undefined, transformer: null, locale: null } };
             }
 
             return pieces.reduce((left, right) => ({ kind: "arithmetic", call: "concat", left, right }));
@@ -1378,6 +1441,12 @@ class ExpressionParser {
 
         if (right.kind === "method-call") {
             throw new Error(ERROR_MESSAGES.UNSUPPORTED("method call on the right side of a comparison"));
+        }
+
+        if (needsBrackets(left) || needsBrackets(right)) {
+            throw new Error(ERROR_MESSAGES.UNSUPPORTED(
+                "a bitwise or nullish operator compared without brackets, which JavaScript reads the other way round"
+            ));
         }
 
         if (left.kind === "arithmetic" || right.kind === "arithmetic" || left.kind === "conditional" || right.kind === "conditional") {

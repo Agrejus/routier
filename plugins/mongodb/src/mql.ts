@@ -310,7 +310,7 @@ function renderExprOperand(prop: PropertyExpression, calls: CallExpression[]): u
         if (call === "conditional") {
             return {
                 $cond: [
-                    toMql(node.expression),
+                    renderConditionAsExpression(node.expression),
                     renderCallArgument(node.arguments[0]),
                     renderCallArgument(node.arguments[1])
                 ]
@@ -357,6 +357,33 @@ function renderCallArgument(expression: Expression): unknown {
  * can — so it is reached for only in the cases a plain predicate cannot express, not as
  * a uniform strategy.
  */
+/**
+ * The condition of a `$cond`, as an aggregation EXPRESSION rather than a match document.
+ *
+ * `toMql` would give `{age: {$gt: 5}}`, which is match syntax. Inside `$expr` that reads as `$gt`
+ * invoked with one argument and the server rejects it — so the condition goes through the `$expr`
+ * renderer and the wrapper is unwrapped.
+ */
+function renderConditionAsExpression(condition: Expression): unknown {
+
+    if (isComparatorExpression(condition)) {
+        const rendered = renderExprComparison(condition) as { $expr?: unknown };
+
+        return rendered.$expr ?? rendered;
+    }
+
+    if (isOperatorExpression(condition)) {
+        const operator = condition.operator === "||" ? "$or" : "$and";
+        const operands = [condition.left, condition.right]
+            .filter((side): side is Expression => side != null)
+            .map(renderConditionAsExpression);
+
+        return { [operator]: operands };
+    }
+
+    throw new Error(`Cannot render '${condition.type}' as the condition of a conditional in MQL.`);
+}
+
 function renderExprComparison(cmp: ComparatorExpression): MqlFilter {
     if (STRING_PATTERN_COMPARATORS.includes(cmp.comparator)) {
         return renderExprStringPattern(cmp);
@@ -392,7 +419,7 @@ function renderExprSide(expression: Expression | undefined): unknown {
     if (isCallExpression(expression) && expression.call === "conditional") {
         return {
             $cond: [
-                toMql(expression.expression),
+                renderConditionAsExpression(expression.expression),
                 renderCallArgument(expression.arguments[0]),
                 renderCallArgument(expression.arguments[1])
             ]

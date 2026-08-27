@@ -159,4 +159,26 @@ suite('casing calls against a real MongoDB', () => {
 
         expect(found.map(p => p.name).sort()).toEqual(['Alpha', 'Bravo']);
     });
+
+    /**
+     * `$cond`'s condition is an aggregation expression, not a match document. The first version
+     * rendered `{age: {$gt: 5}}`, which the server rejects with "$gt takes exactly 2 arguments" —
+     * a shape only a real server can judge, since the fake driver never sees `$expr`.
+     */
+    it('filters through the conditional operator, whose condition is an expression', async () => {
+        const found = await (await seeded()).products
+            .where(p => (p.price > 25 ? p.category : 'cheap') === 'cheap')
+            .toArrayAsync();
+
+        expect(found.map(p => p.name).sort()).toEqual(['Alpha', 'Charlie']);
+    });
+
+    it('filters through nullish coalescing and a bitwise and', async () => {
+        const store = await seeded();
+
+        expect((await store.products.where(p => (p.category ?? 'none') === 'toys').toArrayAsync()).map(p => p.name).sort())
+            .toEqual(['Charlie', 'Delta']);
+        expect((await store.products.where(p => (p.price & 20) === 20).toArrayAsync()).map(p => p.name).sort())
+            .toEqual(['Bravo', 'Charlie']);
+    });
 });

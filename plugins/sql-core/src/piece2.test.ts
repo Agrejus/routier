@@ -43,6 +43,30 @@ describe('universally supported calls', () => {
         expect(can((x: any) => (x.age > 5 ? x.other : 'small') === 'big', 'postgresql')).toBe(false);
     });
 
+    /**
+     * The condition renders through a nested `toSql`, which numbers its own placeholders. Starting it
+     * at the wrong index put `ELSE $1` in the statement — binding the condition's value a second time
+     * and shifting every parameter after it. Invisible on `?` dialects, wrong rows on numbered ones.
+     */
+    it.each([
+        ['sqlite', 'CASE WHEN "age" > ? THEN "other" ELSE ? END = ?'],
+        ['postgresql', 'CASE WHEN "age" > $1 THEN "other" ELSE $2 END = $3'],
+        ['mssql', 'CASE WHEN [age] > @p1 THEN [other] ELSE @p2 END = @p3'],
+    ])('numbers a nested condition\'s placeholders in sequence on %s', (dialect, expected) => {
+        const rendered = sql((x: any) => (x.age > 5 ? x.other : 'small') === 'big', dialect as Dialect);
+
+        expect(rendered.where).toBe(expected);
+        expect(rendered.params).toEqual([5, 'small', 'big']);
+    });
+
+    /** SQLite names each xor operand twice, so each has to be BOUND twice. */
+    it('binds every placeholder it emits for a xor built from other operators', () => {
+        const rendered = sql((x: any) => (x.flags ^ 1) === 5);
+
+        expect(rendered.where.split('?')).toHaveLength(rendered.params.length + 1);
+        expect(rendered.params).toEqual([1, 1, 5]);
+    });
+
     it.each(['sqlite', 'postgresql', 'mysql', 'mssql'] as Dialect[])('every dialect claims coalesce (%s)', dialect => {
         expect(can((x: any) => (x.name ?? 'none') === 'ada', dialect)).toBe(true);
     });

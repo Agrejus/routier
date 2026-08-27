@@ -227,7 +227,7 @@ export class SqliteDbPluginBase implements IDbPlugin {
              * the inner side's scope excludes, so the plugin says it did NOT push down and the
              * translator refuses rather than answering wrongly.
              */
-            if (canPushDownJoin(join.value) === false) {
+            if (canPushDownJoin(join.value, "sqlite") === false) {
                 done(PluginEventResult.error(event.id, new Error(
                     `Cannot push this join down to SQLite: the inner collection has a filter that cannot be expressed as SQL ` +
                     `(an unmapped or renamed property), so the join would return rows its scope excludes.`

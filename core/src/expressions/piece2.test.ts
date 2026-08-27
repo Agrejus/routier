@@ -143,3 +143,55 @@ describe('bigint', () => {
         expect(parsed.type).toBe('comparator');
     });
 });
+
+/**
+ * Four ways this grammar could disagree with JavaScript about the same source.
+ *
+ * Every one produced a tree that answered differently from the caller's own function, with no error —
+ * which is the only failure here worth ranking above everything else.
+ */
+describe('agreeing with JavaScript, or refusing', () => {
+
+    const bothWays = (source: string, row: {}) => {
+        const parsed = toExpression(schema as never, { toString: () => source } as never) as never;
+        const written = new Function('x', `return (${source})(x);`) as (row: {}) => unknown;
+
+        return { tree: evaluate(parsed, row as never), js: written(row) };
+    };
+
+    // `${x.age > 5 ? 'a' : 'b'}` used to parse as just `x.age`, dropping the rest in silence
+    it('does not read part of an interpolation and keep going', () => {
+        const { tree, js } = bothWays("(x) => x.name === `${x.age > 5 ? 'big' : 'small'}`", { age: 9, name: 'big' });
+
+        expect(js).toBe(true);
+        expect(tree === true || tree === undefined).toBe(true);
+    });
+
+    it('stringifies a lone interpolation, which has no concat to coerce it', () => {
+        const { tree, js } = bothWays('(x) => x.name === `${x.age}`', { name: '9', age: 9 });
+
+        expect(js).toBe(true);
+        expect(tree).toBe(true);
+    });
+
+    /**
+     * `x.flags & 6 === 2` is `x.flags & (6 === 2)` in JavaScript — 0, always falsy. Read as
+     * `(x.flags & 6) === 2` it is true for `flags: 2`. Refused, so the caller's function decides.
+     */
+    it('refuses a bitwise comparison without brackets rather than reading it the other way', () => {
+        const parsed = toExpression(schema as never, { toString: () => '(x) => x.flags & 6 === 2' } as never) as { type: string };
+
+        expect(parsed.type).toBe('not-parsable');
+    });
+
+    it('refuses an unbracketed nullish mix, which JavaScript groups the other way', () => {
+        const parsed = toExpression(schema as never, { toString: () => "(x) => x.name === x.other ?? 'zzz'" } as never) as { type: string };
+
+        expect(parsed.type).toBe('not-parsable');
+    });
+
+    it('still reads the bracketed forms, which say which was meant', () => {
+        expect(answers((x: any) => (x.flags & 6) === 2, { flags: 2 })).toBe(true);
+        expect(answers((x: any) => (x.name ?? 'zzz') === 'zzz', { name: null })).toBe(true);
+    });
+});
