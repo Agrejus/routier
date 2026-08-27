@@ -462,15 +462,17 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
      * join), so there is no attach, no freeze, and no delivered-membership capture: a tuple has
      * no id to record.
      */
-    private postProcessJoinQuery<TShape>(result: PluginEventSuccessType<ITranslatedValue<TShape>>, payload: { databaseEvent: DbPluginQueryEvent<TRoot, TShape>, memoryEvent: DbPluginQueryEvent<TRoot, TShape> }, done: PluginEventCallbackResult<TShape>) {
+    private postProcessJoinQuery<TShape>(result: PluginEventSuccessType<ITranslatedValue<TShape>>, payload: { databaseEvent: DbPluginQueryEvent<TRoot, TShape>, memoryEvent: DbPluginQueryEvent<TRoot, TShape>, memoryQuery: Query<TRoot, TShape> }, done: PluginEventCallbackResult<TShape>) {
 
-        const { databaseEvent, memoryEvent } = payload;
+        const { databaseEvent, memoryEvent, memoryQuery } = payload;
         const schema = this.dependencies.schema;
-        const { before, at, after } = memoryEvent.operation.options.splitAt("join");
+        // The combined pass, not the pre-built memory half: an option the plugin could not run has
+        // to reach the join branch too, or it is run by nobody.
+        const { before, at, after } = memoryQuery.options.splitAt("join");
 
         if (at == null) {
             // The plugin joined. `result.data.value` is already an array of tuples.
-            const translated = this.applyTupleOptions(memoryEvent.operation.options, schema, result.data.value);
+            const translated = this.applyTupleOptions(memoryQuery.options, schema, result.data.value);
             done(PluginEventResult.success(memoryEvent.id, translated.value));
             return;
         }
@@ -505,7 +507,10 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
         // regardless — filters are pure, so the second pass over the survivors costs a walk and
         // guarantees the scopes are honoured even if the plugin ignored them.
         loadJoinInnerSide(
-            memoryEvent as unknown as DbPluginQueryEvent<UnknownRecord, UnknownRecord>,
+            // The combined pass, because that is where the join option is when the plugin did not
+            // run it. Handed `memoryEvent`, this finds no join and reports an empty inner side —
+            // silently, with `ok: "success"` — and the query returns no pairs at all.
+            { ...memoryEvent, operation: memoryQuery } as unknown as DbPluginQueryEvent<UnknownRecord, UnknownRecord>,
             (innerEvent, innerDone) => joinSide.plugin.query<UnknownRecord, UnknownRecord>(innerEvent, innerDone),
             innerResult => {
                 try {
@@ -566,10 +571,14 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
         const { databaseEvent, memoryEvent } = payload;
 
         try {
+            // Computed before the join check, because the join branch needs it too — anything the
+            // plugin could not run has to reach whichever branch finishes the query.
+            const memoryQuery = this.memoryPass<TShape>(databaseEvent, memoryEvent);
+
             // Before the tags and change-tracking work below, all of which is about entities of
             // the root schema. A join produces tuples, which have none of it.
-            if (databaseEvent.operation.options.has("join") || memoryEvent.operation.options.has("join")) {
-                this.postProcessJoinQuery(result, payload, done);
+            if (databaseEvent.operation.options.has("join") || memoryQuery.options.has("join")) {
+                this.postProcessJoinQuery(result, { ...payload, memoryQuery }, done);
                 return;
             }
 
@@ -585,8 +594,6 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
 
             // This means we are querying on a computed property that is untracked, need to select
             // all and query in memory
-            const memoryQuery = this.memoryPass<TShape>(databaseEvent, memoryEvent);
-
             if (Query.isEmpty(memoryQuery) === false) {
 
                 const enriched = result.data.value as InferType<TRoot>[];

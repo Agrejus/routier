@@ -226,6 +226,10 @@ export class QueryOptionsCollection<T> {
             this.nextExecutionReason = nextExecutionReason;
             this.nextIndex = nextIndex;
             this.enumeratedItems = [];
+            // Clearing the list is not enough now that staleness is a flag rather than a count:
+            // without this, `resolveEnumeration` believes the empty list is current and every read
+            // of the collection sees no options at all.
+            this.dirty = true;
         };
     }
 

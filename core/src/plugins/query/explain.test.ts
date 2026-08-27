@@ -175,6 +175,29 @@ describe('reason codes', () => {
         });
     });
 
+    /**
+     * Staleness used to be `enumeratedItems.length !== nextIndex`, which made an empty list rebuild
+     * itself, so restore only had to clear it. With a flag, clearing without setting the flag leaves
+     * every later read seeing NO options — a second terminal on the same queryable dispatched with
+     * an empty collection and returned the whole table.
+     */
+    it('enumerates again after a restore that follows a read', () => {
+        const options = optionsWith(o => o.add("take", 1));
+
+        options.forEach(() => undefined);
+
+        const restore = options.snapshot();
+
+        options.add("skip", 5);
+        options.forEach(() => undefined);
+        restore();
+
+        const names: string[] = [];
+        options.forEach(option => names.push(option.name));
+
+        expect(names).toEqual(["take"]);
+    });
+
     it('restores a database option through a snapshot', () => {
         // The snapshot has to be taken BEFORE the cut over, or restoring cannot undo anything.
         const options = optionsWith(o => o.add("take", 1));

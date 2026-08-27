@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { IDbPlugin, uuidv4 } from '@routier/core';
 import { s } from '@routier/core/schema';
+import { Query, QueryOptionsCollection } from '@routier/core/plugins';
 import { MemoryPlugin } from '@routier/memory-plugin';
 import { DataStore } from '../DataStore';
 
@@ -20,20 +21,48 @@ const schema = s.define('handed_back', {
     price: s.number(),
 }).compile();
 
-/** Reports every filter as unsupported, then delegates. */
+const tagSchema = s.define('handed_back_tags', {
+    id: s.string().key().identity(),
+    productId: s.string(),
+    label: s.string(),
+}).compile();
+
+/**
+ * Reports every filter as unsupported, then runs only what it still owns.
+ *
+ * Running the rest would be wrong, and this is the contract a real plugin has to keep: once it
+ * reports, everything at or after that option is core's to run. A plugin that reported a filter and
+ * then performed the join anyway would return tuples while core believed the join had not happened,
+ * and core would join them a second time.
+ */
 class RefusesFilters implements IDbPlugin {
     constructor(private readonly inner: IDbPlugin) { }
 
     get databaseName() { return this.inner.databaseName; }
 
     query<TRoot extends {}, TShape>(event: any, done: any) {
-        const filters = event.operation.options.get('filter');
+        const options = event.operation.options;
 
-        for (const item of filters) {
-            event.operation.options.reportMissingCapability(item);
+        // This collection's own filters only. Core generates a key filter for a join's inner read,
+        // and refusing that would be refusing core's plumbing, not reporting a capability gap.
+        if (event.operation.schema.collectionName === schema.collectionName) {
+            for (const item of options.get('filter')) {
+                options.reportMissingCapability(item);
+            }
         }
 
-        this.inner.query(event, done);
+        // Runs only what it still owns. A plugin that reported a filter and then performed the join
+        // anyway would return tuples while core believed the join had not happened, and core would
+        // join them a second time.
+        const executed = new QueryOptionsCollection<any>();
+
+        options.forEach((option: any) => {
+            if (option.target === 'database' && option.reason === 'executed') {
+                executed.add(option.name, option.value);
+            }
+        });
+
+        this.inner.query({ ...event, operation: new Query(executed as never, event.operation.schema) }, done);
     }
 
     destroy(event: any, done: any) { this.inner.destroy(event, done); }
@@ -42,6 +71,7 @@ class RefusesFilters implements IDbPlugin {
 
 class Store extends DataStore {
     products = this.collection(schema).proxy().create();
+    tags = this.collection(tagSchema).proxy().create();
 }
 
 const seeded = async (plugin: IDbPlugin) => {
@@ -51,6 +81,14 @@ const seeded = async (plugin: IDbPlugin) => {
         { name: 'Bravo', price: 30 } as never,
         { name: 'Charlie', price: 20 } as never,
     );
+    await store.saveChangesAsync();
+
+    const products = await store.products.toArrayAsync();
+
+    for (const product of products) {
+        await store.tags.addAsync({ productId: product.id, label: `tag-${product.name}` } as never);
+    }
+
     await store.saveChangesAsync();
 
     return store;
@@ -120,19 +158,20 @@ describe('an option the plugin cannot express', () => {
         ]);
     });
 
-    // A query that was pure-database takes the memory branch for the first time when the plugin
-    // cannot express something, and that branch is where change tracking is attached
-    it('still tracks changes on entities returned through the memory branch', async () => {
+    /**
+     * The join branch is reached BEFORE the memory pass used to be computed, so an option the plugin
+     * could not run was neither run by the database nor replayed here — it was dropped, and the query
+     * returned every row with no error.
+     */
+    it('runs an unrun filter on a joined query, which takes a different branch entirely', async () => {
         const store = await seeded(refusing());
-        const [found] = await store.products.where(p => p.price === 30).toArrayAsync();
+        const pairs = await store.products
+            .where(p => p.price > 15)
+            .join(s => s.tags, p => p.id, t => t.productId)
+            .toArrayAsync();
 
-        expect(found.name).toBe('Bravo');
+        const outerNames = pairs.map(([product]) => product.name).sort();
 
-        found.name = 'Bravo edited';
-        await store.saveChangesAsync();
-
-        const [reread] = await store.products.where(p => p.price === 30).toArrayAsync();
-
-        expect(reread.name).toBe('Bravo edited');
+        expect(outerNames).toEqual(["Bravo", "Charlie"]);
     });
 });
