@@ -127,14 +127,22 @@ const MQL_ARITHMETIC: Partial<Record<Call, string>> = {
     "bit-xor": "$bitXor",
 };
 
-/** What MQL cannot express: JavaScript's shifts have no aggregation operator. */
-const UNSUPPORTED_IN_MQL: readonly Call[] = ["shift-left", "shift-right", "shift-right-unsigned"];
+/**
+ * The calls this file renders, listed rather than excluded.
+ *
+ * A denylist claims every call the tree gains next, and the renderer throws on one it has no branch
+ * for — so the list has to be the implemented set, and it has to be checked against it.
+ */
+const MQL_CALLS: readonly Call[] = [
+    "to-lower-case", "to-upper-case", "length", "bit-not", "coalesce", "concat", "matches", "conditional",
+    ...Object.keys(MQL_ARITHMETIC) as Call[]
+];
 
 export const canRenderInMql = (expr: Expression): boolean => {
     let renderable = true;
 
     forEach(expr, expression => {
-        if (isCallExpression(expression) && UNSUPPORTED_IN_MQL.includes(expression.call)) {
+        if (isCallExpression(expression) && !MQL_CALLS.includes(expression.call)) {
             renderable = false;
 
             return false;

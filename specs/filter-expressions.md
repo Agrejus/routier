@@ -16,15 +16,15 @@ That is the cost of everything below.
 
 ## Supported today
 
-Measured 2026-08-26 by running 113 predicates through the real parser against a real compiled
-schema.
+Measured 2026-08-27, after all three pieces landed, by running predicates through the real parser
+against a real compiled schema. `core/src/expressions/coverage.test.ts` asserts every row.
 
 | category | form |
 |---|---|
 | comparison | `== === != !== > >= < <=`, either operand order |
 | logic | `&&`, `\|\|`, parenthesised groups, `!(a && b)`, chains of any length |
 | string matching | `.startsWith(v)`, `.endsWith(v)`, `.includes(v)`, including on a nested property |
-| casing | `.toLowerCase()` / `.toUpperCase()` / the `toLocale*` pair — **only** as the target of the three above |
+| casing | `.toLowerCase()` / `.toUpperCase()` / the `toLocale*` pair, under **any** comparator and on either side |
 | length | `x.name.length`, `x.tags.length`, `x.address.city.length` |
 | array membership | `x.tags.includes(v)` |
 | literal membership | `['a', 'b'].includes(x.name)` — becomes `IN (...)` |
@@ -36,7 +36,17 @@ schema.
 | property to property | `x.name === x.id`, including relational comparators |
 | params | `p.min`, nested `p.range.min`, one param used twice, param arrays in `includes`, `Date` params |
 | syntax | block body with a single `return`, bracket access `x['name']`, plain template literals, comments, unary minus |
-| tautology | `x => true` parses to `empty`, which `toSql` renders `1 = 1` |
+| tautology | `x => true` parses to `empty`, which `toSql` renders `1 = 1`. A params comparison that settles true folds to the same thing |
+| arithmetic | `+ - * / % **`, on properties, params and literals |
+| bitwise | `& \| ^ ~ << >> >>>`, bracketed — an unbracketed mix with a comparison is refused, because JavaScript reads it the other way round |
+| conditional | `(c ? a : b)` as a value, and inside an interpolation |
+| coalescing | `(x.name ?? '')` |
+| pattern | `/^a/.test(x.name)` |
+| templates | `` `${p.prefix}a` `` — interpolation, folded to `concat`; a lone `${x.age}` converts to string |
+| calls on a group | `(x.name).toLowerCase()`, `(x.age + 1).length`, and chains of them |
+| destructuring | `({ name }) => …`, `([{ name }, { min }]) => …`, renamed and nested keys |
+| declarations | `const`/`let`/`var` before the return, including one reading another |
+| control flow | `if` / `else if` / `else` with returns, and `switch` with `case`, fallthrough labels and `default` |
 
 ---
 

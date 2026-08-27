@@ -83,6 +83,9 @@ export interface SqlDialect {
      * divide, using each side twice. Call each thunk exactly as many times as the expression needs.
      */
     moduloExpression(left: () => string, right: () => string): string;
+
+    /** `CEILING` in MSSQL and MySQL, `CEIL` in SQLite and PostgreSQL — the same function, two spellings. */
+    ceilingExpression(operand: string): string;
     /**
      * `^` on most engines; PostgreSQL spells it `#`, because `^` there is exponentiation.
      *
@@ -193,8 +196,7 @@ const mysqlDate = (value: unknown): unknown => {
 };
 
 const UNIVERSAL_CALLS: readonly Call[] = [
-    "to-lower-case", "to-upper-case", "length", "trim",
-    "absolute", "floor", "ceiling", "round",
+    "to-lower-case", "to-upper-case", "length", "trim", "absolute", "round",
     "add", "subtract", "multiply", "divide", "modulo",
     // Every engine here has these, spelled the same way
     "bit-and", "bit-or", "bit-not", "coalesce", "concat",
@@ -216,10 +218,12 @@ const UNIVERSAL_CALLS: readonly Call[] = [
  * renderers stay so the check is a declaration change rather than new code.
  */
 const DIALECT_CALLS: Record<SqlDialectName, readonly Call[]> = {
+    // `floor` and `ceil` reached SQLite with the math functions in 3.35, which are a compile-time
+    // option — so a build without them is a real build, and this dialect serves four drivers
     sqlite: [],
-    postgresql: ["power", "bit-xor", "shift-left", "shift-right"],
-    mysql: ["power", "bit-xor", "shift-left", "shift-right"],
-    mssql: ["power", "bit-xor"],
+    postgresql: ["power", "bit-xor", "shift-left", "shift-right", "floor", "ceiling"],
+    mysql: ["power", "bit-xor", "shift-left", "shift-right", "floor", "ceiling"],
+    mssql: ["power", "bit-xor", "floor", "ceiling"],
 };
 
 const DIALECTS: Record<SqlDialectName, SqlDialect> = {
@@ -267,6 +271,9 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         },
         moduloExpression(left, right) {
             return `(${left()} - ${right()} * CAST(${left()} / ${right()} AS INTEGER))`;
+        },
+        ceilingExpression(operand) {
+            return `CEIL(${operand})`;
         },
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `json_array_length(${column})` : `LENGTH(${column})`;
@@ -325,6 +332,9 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         },
         moduloExpression(left, right) {
             return `MOD((${left()})::numeric, (${right()})::numeric)`;
+        },
+        ceilingExpression(operand) {
+            return `CEIL(${operand})`;
         },
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `jsonb_array_length(${column})` : `LENGTH(${column})`;
@@ -397,6 +407,9 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         moduloExpression(left, right) {
             return `(${left()} % ${right()})`;
         },
+        ceilingExpression(operand) {
+            return `CEILING(${operand})`;
+        },
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `JSON_LENGTH(${column})` : `CHAR_LENGTH(${column})`;
         },
@@ -465,6 +478,9 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         },
         moduloExpression(left, right) {
             return `((${left()}) % CAST(${right()} AS decimal(38, 10)))`;
+        },
+        ceilingExpression(operand) {
+            return `CEILING(${operand})`;
         },
         lengthExpression(column, isJsonArray) {
             return isJsonArray ? `(SELECT COUNT(*) FROM OPENJSON(${column}))` : `LEN(${column})`;
@@ -748,6 +764,26 @@ function renderColumn(
 
         if (call === "length") {
             return d.lengthExpression(inner(), prop.property.type === SchemaTypes.Array);
+        }
+
+        if (call === "trim") {
+            return `TRIM(${inner()})`;
+        }
+
+        if (call === "absolute") {
+            return `ABS(${inner()})`;
+        }
+
+        if (call === "floor") {
+            return `FLOOR(${inner()})`;
+        }
+
+        if (call === "ceiling") {
+            return d.ceilingExpression(inner());
+        }
+
+        if (call === "round") {
+            return `ROUND(${inner()})`;
         }
 
         if (call === "modulo") {

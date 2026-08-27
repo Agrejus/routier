@@ -115,29 +115,69 @@ describe('supported: params', () => {
     ])('parses %s', (_, filter, params) => expect(parses(filter, params)).toBe(true));
 });
 
+describe('supported: casing anywhere, not only in the three string matchers', () => {
+
+    it.each([
+        ['a cased property against a literal', (x: any) => x.name.toLowerCase() === 'ada'],
+        ['an upper-cased property', (x: any) => x.name.toUpperCase() === 'ADA'],
+        ['casing on both sides', (x: any) => x.name.toLowerCase() === x.id.toLowerCase()],
+        ['a locale casing method', (x: any) => x.name.toLocaleLowerCase() === 'ada'],
+        ['casing under a relational comparator', (x: any) => x.name.toLowerCase() > 'ada'],
+    ])('parses %s', (_, filter) => expect(parses(filter)).toBe(true));
+});
+
+describe('supported: arithmetic and the rest of the operators', () => {
+
+    it.each([
+        ['modulo', (x: any) => x.age % 2 === 0],
+        ['addition', (x: any) => x.age + 1 > 3],
+        ['multiplication by a float', (x: any) => x.age * 1.2 > 100],
+        ['subtraction and division', (x: any) => x.age - 1 > 3 && x.age / 2 > 1],
+        ['exponentiation', (x: any) => x.age ** 2 > 4],
+        ['a ternary', (x: any) => (x.age > 5 ? x.name : '') === 'ada'],
+        ['nullish coalescing', (x: any) => (x.name ?? '') === 'ada'],
+        ['a regex literal test', (x: any) => /^a/.test(x.name)],
+        ['bitwise and, bracketed', (x: any) => (x.age & 6) === 4],
+        ['bitwise or, bracketed', (x: any) => (x.age | 1) === 5],
+        ['bitwise not', (x: any) => ~x.age === -5],
+        ['a shift, bracketed', (x: any) => (x.age << 1) === 8],
+        ['a call on a parenthesised value', (x: any) => (x.name).toLowerCase() === 'ada'],
+        ['a chain of calls on a group', (x: any) => (x.name).toLowerCase().length === 3],
+    ])('parses %s', (_, filter) => expect(parses(filter)).toBe(true));
+
+    it('parses template literal interpolation', () => {
+        expect(parses(([x, p]: any) => x.name === `${p.prefix}a`, { prefix: 'z' })).toBe(true);
+    });
+});
+
+describe('supported: the function shapes people write without thinking', () => {
+
+    it.each([
+        ['a destructured entity', ({ name }: any) => name === 'a'],
+        ['a renamed destructured key', ({ name: who }: any) => who === 'a'],
+        ['a declaration before the return', (x: any) => { const n = 3; return x.age > n; }],
+        ['a declaration of a property', (x: any) => { const who = x.name; return who === 'a'; }],
+        ['an if with returns', (x: any) => { if (x.age > 3) return true; return false; }],
+        ['an if whose arms are predicates', (x: any) => { if (x.age > 3) return x.name === 'a'; return x.name === 'b'; }],
+        ['an else-if chain', (x: any) => { if (x.age > 9) return true; else if (x.age > 3) return x.name === 'a'; else return false; }],
+        ['a switch', (x: any) => { switch (x.name) { case 'a': case 'b': return true; default: return false; } }],
+    ])('parses %s', (_, filter) => expect(parses(filter)).toBe(true));
+
+    it('parses a destructured entity/params pair', () => {
+        expect(parses(([{ name }, { who }]: any) => name === who, { who: 'a' })).toBe(true);
+    });
+
+    it('folds a params tautology to the match-all tautology', () => {
+        expect(parses(([_x, p]: any) => p.from === p.to, { from: 1, to: 1 })).toBe(true);
+    });
+});
+
 /**
  * Everything below is a gap, written as the predicate that SHOULD parse.
  *
  * Grouped by root cause rather than by symptom, because several of these are one fix. See
  * `specs/filter-expressions.md`.
  */
-
-/**
- * `parser.ts:1016` and `parser.ts:911` refuse a casing transformer with anything but a
- * string-matching comparator, on the stated grounds that "the plugins would silently ignore them
- * and return wrong data".
- *
- * That reason no longer holds. Removing the 1016 guard and changing nothing else was verified end
- * to end: the parser produces a well-formed tree, `Expression.toJson`/`fromJson` preserve the
- * transformer, `evaluate.ts` answers correctly, `toSql` emits `LOWER("name") = ?` in all three
- * dialects, and `toMql` emits `{$expr:{$eq:[{$toLower:"$name"},...]}}`. The 911 case
- * (property-to-property) is unverified and needs the same treatment before it is lifted.
- */
-describe('to support: the stale casing guards', () => {
-    it.todo("x.name.toLowerCase() === 'ada'");
-    it.todo("x.name.toUpperCase() === 'ADA'");
-    it.todo('x.name.toLowerCase() === x.id.toLowerCase()');
-});
 
 /**
  * ONE root cause: the parser has no notion of globals, so any identifier it cannot resolve to the
@@ -148,7 +188,7 @@ describe('to support: the stale casing guards', () => {
  * full read. Passing the date through params works and is not discoverable.
  */
 describe('to support: free identifiers', () => {
-    it.todo('Math.abs(x.age) > 3');
+    it.todo('Math.abs(x.age) > 3 — every SQL dialect renders ABS already');
     it.todo('Math.floor(x.age) > 3');
     it.todo('Math.ceil / Math.round');
     it.todo('Number.isInteger(x.age)');
@@ -163,32 +203,18 @@ describe('to support: free identifiers', () => {
 
 /** Fail in the tokenizer or the grammar, so no lookup entry can fix them. */
 describe('to support: grammar', () => {
-    it.todo('x.age % 2 === 0');
-    it.todo('x.age + 1 > 3');
-    it.todo('x.price * 1.2 > 100');
-    it.todo('subtraction and division');
-    it.todo("(x.age > 5 ? x.name : '') === 'ada' — a ternary");
-    it.todo("(x.name ?? '') === 'ada' — nullish coalescing");
-    it.todo('/^a/.test(x.name) — a regex literal');
     it.todo("'name' in x — the in operator");
     it.todo("[...names].includes(x.name) — a spread");
-    it.todo('`${p.prefix}a` — template literal interpolation');
 });
 
-/** Ordinary JavaScript someone writes without thinking. Parser-side only, no translator work. */
-describe('to support: function shapes', () => {
-    it.todo("({ name }) => name === 'a' — a destructured entity");
-    it.todo('{ const n = 3; return x.age > n; } — a multi-statement block');
-    it.todo('{ if (...) return true; return false; } — an if statement');
-
-    /**
-     * An asymmetry rather than a plain gap: `x => true` parses to the `empty` tautology and
-     * `toSql` renders it `1 = 1`, but `x => false` is refused and there is no match-nothing
-     * counterpart anywhere in the stack.
-     */
-    it.todo('x => false — the match-nothing counterpart of the tautology');
-
-    it.todo('p.a === p.b — a comparison referencing no schema property');
+/**
+ * `x => true` parses to the `empty` tautology and `toSql` renders it `1 = 1`. There is no
+ * match-nothing counterpart anywhere in the stack, so both of these stay in memory: correct, at the
+ * cost of one full read. Adding one means a node every translator has to claim.
+ */
+describe('to support: the match-nothing counterpart of the tautology', () => {
+    it.todo('x => false');
+    it.todo('p.a === p.b where the params differ — the tautology case folds to match-all already');
 });
 
 /** Direct equivalents in SQL and Mongo. A parser table entry plus a render in three translators. */
