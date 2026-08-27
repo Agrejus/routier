@@ -149,6 +149,15 @@ export class CacheDbPlugin implements IDbPlugin {
                 return;
             }
 
+            // A partial answer must never be cached. When the plugin reports an option it cannot
+            // express, these rows are what came back BEFORE the datastore finished the query — and a
+            // later hit skips the plugin entirely, so nothing would report and the rows would be
+            // returned as if they were the whole answer. Unfiltered, silently.
+            if (event.operation.options.notExecuted().length > 0) {
+                done(PluginEventResult.success(event.id, result.data as ITranslatedValue<TShape>));
+                return;
+            }
+
             this.store(key, result.data);
 
             // The caller gets a rebuilt value too, not the one just stored, so that mutating

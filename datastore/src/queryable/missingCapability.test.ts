@@ -174,4 +174,92 @@ describe('an option the plugin cannot express', () => {
 
         expect(outerNames).toEqual(["Bravo", "Charlie"]);
     });
+
+
+});
+
+
+/**
+ * A plugin whose capability can change between dispatches.
+ *
+ * It decides what to RUN from its own capability, never from `reason` — which is what a real plugin
+ * does, and what makes a stale report observable: reading `reason` to decide would make the plugin
+ * self-correct and hide the bug.
+ */
+class LosesCapability implements IDbPlugin {
+    private dispatches = 0;
+
+    constructor(private readonly inner: IDbPlugin, private readonly optionName: string, private readonly regainsAfterFirst: boolean) { }
+
+    get databaseName() { return this.inner.databaseName; }
+
+    query<TRoot extends {}, TShape>(event: any, done: any) {
+        const options = event.operation.options;
+        const mine = event.operation.schema.collectionName === schema.collectionName;
+
+        if (mine) {
+            this.dispatches++;
+        }
+
+        const canDo = this.regainsAfterFirst === true && this.dispatches > 1;
+        const runnable = new QueryOptionsCollection<any>();
+
+        options.forEach((option: any) => {
+            if (option.target !== 'database') {
+                return;
+            }
+
+            if (mine && option.name === this.optionName && canDo === false) {
+                return;
+            }
+
+            runnable.add(option.name, option.value);
+        });
+
+        if (mine && canDo === false) {
+            for (const item of options.get(this.optionName)) {
+                options.reportMissingCapability(item);
+            }
+        }
+
+        this.inner.query({ ...event, operation: new Query(runnable as never, event.operation.schema) }, done);
+    }
+
+    destroy(event: any, done: any) { this.inner.destroy(event, done); }
+    bulkPersist(event: any, done: any) { this.inner.bulkPersist(event, done); }
+}
+
+describe('a report from a previous execution', () => {
+
+    const stores: Store[] = [];
+
+    afterAll(async () => {
+        await Promise.all(stores.splice(0).map(s => s.destroyAsync().catch(() => undefined)));
+    });
+
+    const seededWith = async (plugin: IDbPlugin) => {
+        const store = new Store(plugin);
+        stores.push(store);
+        await store.products.addAsync(
+            { name: 'Alpha', price: 10 } as never,
+            { name: 'Bravo', price: 30 } as never,
+            { name: 'Charlie', price: 20 } as never,
+        );
+        await store.saveChangesAsync();
+        return store;
+    };
+
+    /**
+     * Run one cannot window and reports it; run two can. The report is mutated in place on items the
+     * snapshot shares, so without forgetting it the second run windows in the plugin AND again in
+     * memory — three rows become one.
+     */
+    it('is not carried into the next terminal on the same queryable', async () => {
+        const store = await seededWith(new LosesCapability(new MemoryPlugin(`stale-${uuidv4()}`), 'skip', true));
+        const query = store.products.skip(1);
+
+        expect((await query.toArrayAsync()).length).toBe(2);
+        // Applied twice this is 1, which is what a report left over from the first run produces
+        expect((await query.toArrayAsync()).length).toBe(2);
+    });
 });

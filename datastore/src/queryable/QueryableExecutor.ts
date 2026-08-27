@@ -307,6 +307,11 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
 
         // send over only the database operations, if there are none its a select all
         const resolvedQueryOptions = this.resolveQueryOptions<Shape>();
+
+        // A subscribed queryable dispatches more than once over the same options, and a report from
+        // the last execution is not an answer for this one.
+        resolvedQueryOptions.forgetReports();
+
         const splitQueryOptions = resolvedQueryOptions.split();
 
         // Held for `buildExplanation`, which needs the options as resolved: `split()` re-derives
@@ -563,7 +568,17 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
 
         memoryEvent.operation.options.forEach(option => combined.add(option.name, option.value));
 
-        return new Query<TRoot, TShape>(combined as any, this.dependencies.schema);
+        // Change tracking belongs to the WHOLE query, not to the subset that runs here. Derived from
+        // this subset it can disagree: a fields-bearing `map` the plugin executed is absent from the
+        // pass, so the pass says "track these" while the rows are projections with no id to attach.
+        return new Query<TRoot, TShape>(combined as any, this.dependencies.schema, this.wholeQueryChangeTracking());
+    }
+
+    /** What change tracking the query as a whole asked for, before it was split or reported on. */
+    private wholeQueryChangeTracking(): boolean {
+        const resolved = this.resolvedQueryOptions ?? this.request.queryOptions;
+
+        return new Query<TRoot, any>(resolved as any, this.dependencies.schema).changeTracking;
     }
 
     private postProcessQuery<TShape>(result: PluginEventSuccessType<ITranslatedValue<TShape>>, payload: { databaseEvent: DbPluginQueryEvent<TRoot, TShape>, memoryEvent: DbPluginQueryEvent<TRoot, TShape> }, done: PluginEventCallbackResult<TShape>) {

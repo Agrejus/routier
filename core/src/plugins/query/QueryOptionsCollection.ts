@@ -265,6 +265,24 @@ export class QueryOptionsCollection<T> {
         }
     }
 
+    /**
+     * Forgets what any previous dispatch reported.
+     *
+     * Capability is answered per dispatch, so a report is only an answer for the execution that
+     * produced it. The items are shared with any snapshot, so a report mutated in place otherwise
+     * survives a restore and a second terminal on the same queryable replays options the plugin
+     * did run — a `skip` applied twice, over rows already windowed.
+     */
+    forgetReports() {
+        this.resolveEnumeration();
+
+        for (const item of this.enumeratedItems) {
+            if (item.option.target === "database") {
+                item.option.reason = "executed";
+            }
+        }
+    }
+
     /** The options the database did not run, in the order they were written. */
     notExecuted(): QueryCollectionItem<any, any>[] {
         this.resolveEnumeration();
