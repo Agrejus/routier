@@ -1043,7 +1043,7 @@ export type ToSqlOptions = {
  * Whether every call in a filter has a SQL form in this dialect.
  *
  * A plugin asks before pushing down, and hands the option back when the answer is no — see
- * `QueryOptionsCollection.deferToMemory`. Asking beats attempting: the alternative is a statement the
+ * `QueryOptionsCollection.reportMissingCapability`. Asking beats attempting: the alternative is a statement the
  * engine rejects, which is a failed round trip rather than a slower correct one.
  */
 export function canRenderInSql(expr: Expression, dialect: SqlDialectName | SqlDialect): boolean {

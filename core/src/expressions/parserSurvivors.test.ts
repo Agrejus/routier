@@ -150,8 +150,8 @@ describe('failure messages name their cause', () => {
         expect(failureMessage(withSource('() => true'))).toBe('Invalid Function');
     });
 
-    it('a block body without a single return statement', () => {
-        expect(failureMessage(fromBlock('const x = r.name; return x === "a"'))).toMatch(/block body without a single return statement/);
+    it('a statement the block reader has no rule for', () => {
+        expect(failureMessage(fromBlock('for (;;) return true;'))).toMatch(/the statement 'for'/);
     });
 });
 

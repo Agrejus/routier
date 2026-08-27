@@ -82,8 +82,12 @@ describe('literals the parser cannot represent', () => {
 });
 
 describe('shapes that are not a schema comparison', () => {
-    it('rejects a filter that references no schema property', () => {
-        expectRejected(fromSource('1 === 1'));
+    it('settles a tautology that references no schema property to match-all', () => {
+        expect(toExpression(schema as any, fromSource('1 === 1'))).toStrictEqual(Expression.EMPTY);
+    });
+
+    it('rejects a constant comparison no row satisfies, because no node means match-nothing', () => {
+        expectRejected(fromSource('1 === 2'));
     });
 
     it('accepts a comparison with a schema property on both sides', () => {
@@ -179,8 +183,12 @@ describe('function body shapes', () => {
         expectRejected(fromBlock('const x = r.price;'));
     });
 
-    it('rejects a block body with more than one statement', () => {
-        expectRejected(fromBlock('const x = 1; return r.price > x;'));
+    it('rejects a block that falls off the end of an if', () => {
+        expectRejected(fromBlock('if (r.price > 1) return true;'));
+    });
+
+    it('inlines a declaration and parses the return', () => {
+        expectParsed(fromBlock('const x = 1; return r.price > x;'));
     });
 
     it('accepts a block body that is a single return', () => {

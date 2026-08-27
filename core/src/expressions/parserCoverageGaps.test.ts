@@ -87,7 +87,7 @@ describe('rejection guards', () => {
     });
 
     it('rejects a condition that references no schema property', () => {
-        expectRejected(fromSource('1 === 1'));
+        expectRejected(fromSource('1 === 4'));
     });
 
     it('rejects bare `params` as a comparison operand', () => {

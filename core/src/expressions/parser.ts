@@ -1,6 +1,7 @@
 import { logger } from "../utilities";
 import { assertString } from "../assertions";
 import { CompiledSchema, PropertyInfo, SchemaTypes } from "../schema";
+import { evaluate } from "./evaluate";
 import { Expression, OperatorExpression, ComparatorExpression, ValueExpression, PropertyExpression, CallExpression, Filter, ParamsFilter, Call, Comparator, Transformer } from "./types";
 
 // Error message constants
@@ -411,11 +412,22 @@ const tokenize = (source: string): Token[] => {
  */
 class TokenStream {
 
-    private readonly tokens: Token[];
+    private tokens: Token[];
     private index: number = 0;
 
     constructor(tokens: Token[]) {
         this.tokens = tokens;
+    }
+
+    /** Inserts tokens at the cursor, bracketed so they keep their own precedence. */
+    splice(tokens: Token[]) {
+        const bracketed: Token[] = [
+            { kind: "punctuation", value: "(" },
+            ...tokens,
+            { kind: "punctuation", value: ")" }
+        ];
+
+        this.tokens = [...this.tokens.slice(0, this.index), ...bracketed, ...this.tokens.slice(this.index)];
     }
 
     get isAtEnd() {
@@ -437,20 +449,53 @@ class TokenStream {
         return token;
     }
 
+    /** The tokens of one statement's value, through the `;` or block end that closes it. */
+    takeStatementTokens(): Token[] {
+        const tokens: Token[] = [];
+        let depth = 0;
+
+        while (!this.isAtEnd) {
+            const token = this.peek()!;
+
+            if (token.kind === "punctuation") {
+                if (token.value === "(" || token.value === "[" || token.value === "{") {
+                    depth++;
+                } else if (token.value === ")" || token.value === "]" || token.value === "}") {
+                    if (depth === 0) {
+                        break;
+                    }
+
+                    depth--;
+                } else if (token.value === ";" && depth === 0) {
+                    this.next();
+                    break;
+                }
+            }
+
+            tokens.push(this.next());
+        }
+
+        if (tokens.length === 0) {
+            throw new Error(ERROR_MESSAGES.UNSUPPORTED("a declaration with no value"));
+        }
+
+        return tokens;
+    }
+
     isPunctuation(value: string, offset: number = 0): boolean {
         const token = this.peek(offset);
         return token != null && token.kind === "punctuation" && token.value === value;
     }
 
     /**
-     * Whether the group starting here is compared to something once it closes.
+     * Whether the group starting here holds a value rather than a condition.
      *
-     * `(a && b)` is a boolean sub-expression; `(x.name ?? '') === 'ada'` is a value. Only the token
-     * after the matching bracket tells them apart, so the decision is made by looking ahead rather
-     * than by parsing one way and catching the failure — a rewind on exception would swallow a
-     * genuine syntax error inside the group and report it as something else.
+     * `(a && b)` is a boolean sub-expression; `(x.name ?? '') === 'ada'` and `(x.name).length` are
+     * values. Only the token after the matching bracket tells them apart, so the decision is made by
+     * looking ahead rather than by parsing one way and catching the failure — a rewind on exception
+     * would swallow a genuine syntax error inside the group and report it as something else.
      */
-    comparatorFollowsGroup(): boolean {
+    groupIsValue(): boolean {
         let depth = 0;
         let at = this.index;
 
@@ -477,7 +522,11 @@ class TokenStream {
 
         const after = this.tokens[at + 1];
 
-        return after != null && after.kind === "punctuation" && COMPARISON_OPERATORS[after.value] != null;
+        if (after == null || after.kind !== "punctuation") {
+            return false;
+        }
+
+        return COMPARISON_OPERATORS[after.value] != null || after.value === "." || after.value === "?.";
     }
 
     /** Whether a `?` sits at the top level of what is left, so this is a conditional. */
@@ -672,6 +721,39 @@ const containsProperty = (operand: Operand): boolean => {
         && (containsProperty(operand.left) || containsProperty(operand.right) || (operand.extra != null && containsProperty(operand.extra)));
 };
 
+const DECLARATION_KEYWORDS = new Set(["const", "let", "var"]);
+
+/** An operand whose value only a row can supply. */
+const UNKNOWN_UNTIL_ROW = Symbol("unknown until row");
+
+/** The argument slot of a unary call, which every call carries whether or not it takes one. */
+const noArgument = (): ValueOperand => ({ kind: "value", value: undefined, transformer: null, locale: null });
+
+/** A predicate no row satisfies. Never reaches a tree: no expression node means "match nothing". */
+const NEVER = "never";
+
+type Answer = Expression | typeof NEVER;
+
+const and = (left: Expression, right: Expression): Expression => {
+    if (Expression.isEmpty(left)) {
+        return right;
+    }
+
+    if (Expression.isEmpty(right)) {
+        return left;
+    }
+
+    return new OperatorExpression({ operator: "&&", left, right });
+}
+
+const or = (left: Expression, right: Expression): Expression => {
+    if (Expression.isEmpty(left) || Expression.isEmpty(right)) {
+        return Expression.EMPTY;
+    }
+
+    return new OperatorExpression({ operator: "||", left, right });
+}
+
 const COMPARATOR_METHODS: Record<string, Comparator> = {
     startsWith: "starts-with",
     endsWith: "ends-with",
@@ -792,17 +874,17 @@ class ExpressionParser {
 
     private readonly schema: CompiledSchema<any>;
     private readonly stream: TokenStream;
-    private readonly entityName: string;
+    private readonly scope: Scope;
     private readonly paramsName: string | null;
     private readonly params: unknown;
 
     /** Set when a param value shaped the tree itself (e.g. x[p.name]) — such templates cannot be cached. */
     structurallyDependsOnParams: boolean = false;
 
-    constructor(schema: CompiledSchema<any>, stream: TokenStream, entityName: string, paramsName: string | null, params: unknown) {
+    constructor(schema: CompiledSchema<any>, stream: TokenStream, scope: Scope, paramsName: string | null, params: unknown) {
         this.schema = schema;
         this.stream = stream;
-        this.entityName = entityName;
+        this.scope = scope;
         this.paramsName = paramsName;
         this.params = params;
     }
@@ -815,6 +897,249 @@ class ExpressionParser {
         }
 
         return expression;
+    }
+
+    parseBody(): Expression {
+
+        if (!this.stream.isPunctuation("{")) {
+            return this.parse();
+        }
+
+        const answer = this.parseBlock();
+
+        if (!this.stream.isAtEnd) {
+            throw new Error(ERROR_MESSAGES.UNSUPPORTED(`unexpected token '${this.stream.peek()?.value}'`));
+        }
+
+        if (answer === NEVER) {
+            throw new Error(ERROR_MESSAGES.UNSUPPORTED("a predicate no row can satisfy"));
+        }
+
+        return answer;
+    }
+
+    /** The expression a `{ … }` block answers with. */
+    private parseBlock(): Answer {
+        this.stream.expectPunctuation("{");
+        const answer = this.parseStatements();
+        this.stream.expectPunctuation("}");
+
+        return answer;
+    }
+
+    /** Statements up to the one that returns. What follows a `return` is never read, as in JavaScript. */
+    private parseStatements(): Answer {
+        if (this.stream.isPunctuation("}") || this.stream.isAtEnd) {
+            throw new Error(ERROR_MESSAGES.UNSUPPORTED("a block body that returns nothing"));
+        }
+
+        const keyword = this.stream.peek();
+
+        if (keyword == null || keyword.kind !== "identifier") {
+            throw new Error(ERROR_MESSAGES.UNSUPPORTED(`a statement starting '${keyword?.value}'`));
+        }
+
+        if (DECLARATION_KEYWORDS.has(keyword.value)) {
+            this.declare();
+            return this.parseStatements();
+        }
+
+        if (keyword.value === "return") {
+            this.stream.next();
+            const answer = this.parseReturnedCondition();
+            this.stream.matchPunctuation(";");
+
+            return answer;
+        }
+
+        if (keyword.value === "if") {
+            return this.parseIfStatement();
+        }
+
+        if (keyword.value === "switch") {
+            return this.parseSwitchStatement();
+        }
+
+        throw new Error(ERROR_MESSAGES.UNSUPPORTED(`the statement '${keyword.value}'`));
+    }
+
+    /**
+     * Binds a `const`/`let`/`var` name to the tokens of its initializer — tokens rather than a parsed
+     * expression, so the name works as an operand, an argument, or a call receiver alike.
+     */
+    private declare() {
+        this.stream.next();
+
+        const name = this.stream.next();
+
+        if (name.kind !== "identifier") {
+            throw new Error(ERROR_MESSAGES.UNSUPPORTED(`the declaration '${name.value}'`));
+        }
+
+        this.stream.expectPunctuation("=");
+
+        this.scope.set(name.value, { kind: "inlined", tokens: this.stream.takeStatementTokens() });
+    }
+
+    /** `return false` on its own, which no row satisfies, and every other returned condition. */
+    private parseReturnedCondition(): Answer {
+        const next = this.stream.peek();
+        const after = this.stream.peek(1);
+        const endsHere = after == null || (after.kind === "punctuation" && (after.value === ";" || after.value === "}"));
+
+        if (next != null && next.kind === "identifier" && next.value === "false" && endsHere) {
+            this.stream.next();
+            return NEVER;
+        }
+
+        return this.parseOr();
+    }
+
+    private parseIfStatement(): Answer {
+        this.stream.next();
+
+        this.stream.expectPunctuation("(");
+        const condition = this.parseOr();
+        this.stream.expectPunctuation(")");
+
+        const whenTrue = this.parseBranch();
+
+        if (this.stream.peek()?.value === "else") {
+            this.stream.next();
+            return this.either(condition, whenTrue, this.parseBranch());
+        }
+
+        // Without an `else`, the statements after the `if` are the other branch
+        return this.either(condition, whenTrue, this.parseStatements());
+    }
+
+    /** One arm of an `if`: a block, or a single statement. */
+    private parseBranch(): Answer {
+        return this.stream.isPunctuation("{") ? this.parseBlock() : this.parseStatements();
+    }
+
+    /** A `switch` over one subject, as the disjunction of its cases. */
+    private parseSwitchStatement(): Answer {
+        this.stream.next();
+
+        this.stream.expectPunctuation("(");
+        const subject = this.parseValue();
+        this.stream.expectPunctuation(")");
+        this.stream.expectPunctuation("{");
+
+        let matching: Expression | null = null;
+        let pending: Expression[] = [];
+        let everyLabel: Expression[] = [];
+        let byDefault: Expression | null = null;
+        let anyCaseBroke = false;
+
+        while (!this.stream.matchPunctuation("}")) {
+            const label = this.stream.next();
+
+            if (label.kind !== "identifier" || (label.value !== "case" && label.value !== "default")) {
+                throw new Error(ERROR_MESSAGES.UNSUPPORTED(`'${label.value}' inside a switch`));
+            }
+
+            if (label.value === "case") {
+                const test = this.buildComparison(subject, COMPARISON_OPERATORS["==="], this.parseValue());
+                pending.push(test);
+                everyLabel.push(test);
+            }
+
+            this.stream.expectPunctuation(":");
+
+            // `case 'a':` with no body of its own runs the next case's body
+            if (this.stream.peek()?.value === "case" || this.stream.peek()?.value === "default") {
+                continue;
+            }
+
+            if (this.stream.peek()?.value === "break") {
+                this.stream.next();
+                this.stream.matchPunctuation(";");
+                anyCaseBroke = true;
+                pending = [];
+                continue;
+            }
+
+            const body = this.parseCaseBody();
+
+            if (label.value === "default") {
+                byDefault = body === NEVER ? null : body;
+                continue;
+            }
+
+            if (body !== NEVER && pending.length > 0) {
+                const reached = pending.reduce((left, right) => or(left, right));
+                const term = Expression.isEmpty(body) ? reached : and(reached, body);
+
+                matching = matching == null ? term : or(matching, term);
+            }
+
+            pending = [];
+        }
+
+        // Falling out of the switch continues after it, so the statements there are the default too
+        const afterSwitch = byDefault == null && !this.stream.isPunctuation("}") && !this.stream.isAtEnd
+            ? this.parseStatements()
+            : NEVER;
+
+        if (afterSwitch !== NEVER) {
+            // A `break` also continues after the switch, so its case would take that answer rather
+            // than none — a distinction this rewrite cannot carry
+            if (anyCaseBroke) {
+                throw new Error(ERROR_MESSAGES.UNSUPPORTED("a switch that breaks and then falls into more statements"));
+            }
+
+            byDefault = afterSwitch;
+        }
+
+        // A `default` runs only when every case failed, wherever it was written
+        if (byDefault != null) {
+            const noCaseMatched = everyLabel.length === 0
+                ? byDefault
+                : and(this.negateExpression(everyLabel.reduce((left, right) => or(left, right))), byDefault);
+
+            matching = matching == null ? noCaseMatched : or(matching, noCaseMatched);
+        }
+
+        return matching ?? NEVER;
+    }
+
+    /** One case body, and the `break` that may follow its `return`. */
+    private parseCaseBody(): Answer {
+        const answer = this.parseStatements();
+
+        if (this.stream.peek()?.value === "break") {
+            this.stream.next();
+            this.stream.matchPunctuation(";");
+        }
+
+        return answer;
+    }
+
+    /**
+     * The predicate an `if`/`else` answers: `(condition && whenTrue) || (!condition && whenFalse)`,
+     * with each case below that form after a constant branch cancels out.
+     */
+    private either(condition: Expression, whenTrue: Answer, whenFalse: Answer): Answer {
+
+        if (whenTrue === NEVER) {
+            return whenFalse === NEVER ? NEVER : and(this.negateExpression(condition), whenFalse);
+        }
+
+        if (whenFalse === NEVER) {
+            return and(condition, whenTrue);
+        }
+
+        if (Expression.isEmpty(whenTrue)) {
+            return or(condition, whenFalse);
+        }
+
+        if (Expression.isEmpty(whenFalse)) {
+            return or(this.negateExpression(condition), whenTrue);
+        }
+
+        return or(and(condition, whenTrue), and(this.negateExpression(condition), whenFalse));
     }
 
     // || binds loosest, so it sits at the root of the parse
@@ -869,11 +1194,19 @@ class ExpressionParser {
     /**
      * Applies `!` to an already-parsed expression: comparators flip their
      * negated flag, compound expressions distribute via De Morgan's laws.
+     *
+     * Builds a new tree rather than flipping the flag in place, because an `if` uses its condition
+     * twice — once negated — and a shared node would carry the flip into both branches.
      */
     private negateExpression(expression: Expression): Expression {
         if (expression instanceof ComparatorExpression) {
-            expression.negated = !expression.negated;
-            return expression;
+            return new ComparatorExpression({
+                comparator: expression.comparator,
+                negated: !expression.negated,
+                strict: expression.strict,
+                left: expression.left,
+                right: expression.right
+            });
         }
 
         if (expression instanceof OperatorExpression && expression.left != null && expression.right != null) {
@@ -894,7 +1227,7 @@ class ExpressionParser {
          * `(x.name ?? '') === 'ada'` — and which one it is is only known at the closing bracket, by
          * what follows. So the boolean reading is tried first and rewound if a comparator turns up.
          */
-        if (this.stream.isPunctuation("(") && this.stream.comparatorFollowsGroup() === false) {
+        if (this.stream.isPunctuation("(") && this.stream.groupIsValue() === false) {
             this.stream.next();
 
             const expression = this.parseOr();
@@ -930,7 +1263,7 @@ class ExpressionParser {
      * cached either.
      */
     private parseNested(source: string): Operand {
-        const nested = new ExpressionParser(this.schema, new TokenStream(tokenize(source)), this.entityName, this.paramsName, this.params);
+        const nested = new ExpressionParser(this.schema, new TokenStream(tokenize(source)), this.scope, this.paramsName, this.params);
         const operand = nested.parseInterpolation();
 
         // Leftover tokens mean the interpolation held something this reads only part of. Silently
@@ -1069,7 +1402,9 @@ class ExpressionParser {
             const inner = this.parseValue();
             this.stream.expectPunctuation(")");
 
-            return inner.kind === "arithmetic" ? { ...inner, grouped: true } : inner;
+            const grouped = inner.kind === "arithmetic" ? { ...inner, grouped: true } as Operand : inner;
+
+            return this.withGroupCall(grouped);
         }
 
         /**
@@ -1245,12 +1580,15 @@ class ExpressionParser {
             return { kind: "value", value: undefined, transformer: null, locale: null };
         }
 
-        if (root === this.entityName) {
-            return this.parseChain({ kind: "property", root });
-        }
+        const binding = this.scope.get(root);
 
-        if (this.paramsName != null && root === this.paramsName) {
-            return this.parseChain({ kind: "param", root });
+        if (binding != null) {
+            if (binding.kind === "inlined") {
+                this.stream.splice(binding.tokens);
+                return this.parseOperand();
+            }
+
+            return this.parseChain({ kind: binding.kind, path: [...binding.path] });
         }
 
         // A bare variable from the outer scope — its value cannot be derived from source text
@@ -1261,8 +1599,8 @@ class ExpressionParser {
      * Parses the segments after an entity/params root: dot access, bracket
      * access, transform methods and comparator methods.
      */
-    private parseChain(options: { kind: "property" | "param", root: string }): Operand {
-        const path: string[] = [];
+    private parseChain(options: { kind: "property" | "param", path: string[] }): Operand {
+        const path = options.path;
         let transformer: Transformer | null = null;
         let locale: string | null = null;
 
@@ -1344,14 +1682,16 @@ class ExpressionParser {
         // docs/mutation-backlog.md) — every mutation of this four-conjunct guard reroutes
         // bracket access between two paths that both collapse to NOT_PARSABLE; the
         // experiment recorded there aimed 30 tests at this line and killed none.
-        if (kind === "property" && token.kind === "identifier" && this.paramsName != null && token.value === this.paramsName) {
-            const paramPath: string[] = [];
+        const binding = token.kind === "identifier" ? this.scope.get(token.value) : undefined;
+
+        if (kind === "property" && binding != null && binding.kind === "param") {
+            const paramPath: string[] = [...binding.path];
 
             while (this.stream.matchPunctuation(".") || this.stream.matchPunctuation("?.")) {
                 paramPath.push(this.stream.next().value);
             }
 
-            const resolved = resolveParamPath(this.paramsName, paramPath, this.params);
+            const resolved = resolveParamPath(this.paramsName ?? token.value, paramPath, this.params);
 
             if (typeof resolved !== "string") {
                 throw new ParamDependentParseError(ERROR_MESSAGES.PROPERTY_NOT_FOUND(paramPath.join(".")));
@@ -1399,6 +1739,66 @@ class ExpressionParser {
         }
 
         return { kind: "property", property, transformer, locale };
+    }
+
+    /**
+     * A call on a parenthesised value: `(x.name).toLowerCase()`, `(x.age + 1).length`. Any operand can
+     * receive one here, unlike a property chain, which carries at most one transform.
+     */
+    private withGroupCall(operand: Operand): Operand {
+        let receiver = operand;
+
+        while (this.stream.isPunctuation(".") || this.stream.isPunctuation("?.")) {
+            const segment = this.stream.peek(1);
+
+            if (segment == null || segment.kind !== "identifier") {
+                break;
+            }
+
+            if (segment.value === "length" && !this.stream.isPunctuation("(", 2)) {
+                this.stream.next();
+                this.stream.next();
+
+                receiver = { kind: "arithmetic", call: "length", left: receiver, right: noArgument() };
+                continue;
+            }
+
+            const transform = TRANSFORM_METHODS[segment.value];
+
+            if (transform != null) {
+                this.stream.next();
+                this.stream.next();
+                this.stream.expectPunctuation("(");
+                this.stream.expectPunctuation(")");
+
+                receiver = {
+                    kind: "arithmetic",
+                    call: transform.transformer,
+                    left: receiver,
+                    right: transform.locale == null ? noArgument() : { kind: "value", value: transform.locale, transformer: null, locale: null }
+                };
+                continue;
+            }
+
+            // A comparator method needs a property target, which only an ungrouped chain produces
+            if (COMPARATOR_METHODS[segment.value] != null && receiver.kind === "property") {
+                this.stream.next();
+                this.stream.next();
+                this.stream.expectPunctuation("(");
+                const argument = this.parseOperand();
+                this.stream.expectPunctuation(")");
+
+                if (argument.kind !== "property" && argument.kind !== "value" && argument.kind !== "param") {
+                    throw new Error(ERROR_MESSAGES.UNSUPPORTED(`'.${segment.value}()' on that argument`));
+                }
+
+                return { kind: "method-call", target: receiver, method: segment.value as MethodCallOperand["method"], argument };
+            }
+
+            break;
+        }
+
+        return receiver;
     }
 
     private withValueTransformer(operand: ValueOperand): ValueOperand {
@@ -1482,7 +1882,60 @@ class ExpressionParser {
             return this.buildPropertyComparator(right, swapped, left, /* applyConverter */ true);
         }
 
+        const settled = this.settleConstantComparison(left, operator, right);
+
+        if (settled != null) {
+            return settled;
+        }
+
         throw new Error(ERROR_MESSAGES.UNSUPPORTED("comparison requires a schema property on at least one side"));
+    }
+
+    /**
+     * The answer a comparison of two constants gives, when that answer is `true`. The other answer
+     * excludes every row, which has no expression node.
+     */
+    private settleConstantComparison(left: Operand, operator: { comparator: Comparator, negated: boolean, strict: boolean }, right: Operand): Expression | null {
+        const leftValue = this.constantOf(left);
+        const rightValue = this.constantOf(right);
+
+        if (leftValue === UNKNOWN_UNTIL_ROW || rightValue === UNKNOWN_UNTIL_ROW) {
+            return null;
+        }
+
+        const answer = evaluate(new ComparatorExpression({
+            comparator: operator.comparator,
+            negated: operator.negated,
+            strict: operator.strict,
+            left: new ValueExpression({ value: leftValue }),
+            right: new ValueExpression({ value: rightValue })
+        }), {});
+
+        if (answer === true) {
+            return Expression.EMPTY;
+        }
+
+        // Params decided this, so the refusal must not be cached against the source: the same filter
+        // with other params can be a tautology.
+        if (left.kind === "param" || right.kind === "param") {
+            throw new ParamDependentParseError(ERROR_MESSAGES.UNSUPPORTED("a params comparison no row satisfies"));
+        }
+
+        return null;
+    }
+
+    /** The value an operand holds already, for the operands that do not depend on a row. */
+    private constantOf(operand: Operand): unknown {
+        if (operand.kind === "value" && operand.transformer == null) {
+            return operand.value;
+        }
+
+        if (operand.kind === "param" && operand.transformer == null) {
+            this.structurallyDependsOnParams = true;
+            return resolveParamPath(this.paramsName ?? "params", operand.path, this.params);
+        }
+
+        return UNKNOWN_UNTIL_ROW;
     }
 
     private buildStandalone(operand: Operand): Expression {
@@ -1723,10 +2176,83 @@ const asCall = (inner: Expression, transformer: Transformer | null, locale: stri
 
 // #region Function source handling
 
+/** What an identifier in a filter body stands for. */
+type Binding =
+    | { kind: "property", path: string[] }
+    | { kind: "param", path: string[] }
+    | { kind: "inlined", tokens: Token[] };
+
+type Scope = Map<string, Binding>;
+
 type FunctionShape = {
-    entityName: string;
+    scope: Scope;
     paramsName: string | null;
     body: string;
+}
+
+/** Binds every name a destructuring pattern introduces to the path it reads. */
+const bindPattern = (stream: TokenStream, kind: "property" | "param", path: string[], scope: Scope): void => {
+
+    if (!stream.matchPunctuation("{")) {
+        const name = stream.next();
+
+        if (name.kind !== "identifier") {
+            throw new Error(ERROR_MESSAGES.UNSUPPORTED(`parameter '${name.value}'`));
+        }
+
+        scope.set(name.value, { kind, path });
+        return;
+    }
+
+    while (!stream.matchPunctuation("}")) {
+        const key = stream.next();
+
+        if (key.kind !== "identifier") {
+            throw new Error(ERROR_MESSAGES.UNSUPPORTED(`destructured key '${key.value}'`));
+        }
+
+        if (stream.matchPunctuation(":")) {
+            bindPattern(stream, kind, [...path, key.value], scope);
+        } else {
+            scope.set(key.value, { kind, path: [...path, key.value] });
+        }
+
+        if (!stream.matchPunctuation(",")) {
+            stream.expectPunctuation("}");
+            return;
+        }
+    }
+}
+
+/** Reads a filter's parameter list — the entity alone, or the `[entity, params]` pair — into a scope. */
+const buildScope = (parameterNames: string, hasParams: boolean): { scope: Scope, paramsName: string | null } => {
+
+    const stream = new TokenStream(tokenize(parameterNames));
+    const scope: Scope = new Map();
+
+    if (!stream.matchPunctuation("[")) {
+        bindPattern(stream, "property", [], scope);
+        return { scope, paramsName: null };
+    }
+
+    bindPattern(stream, "property", [], scope);
+
+    if (hasParams && stream.matchPunctuation(",") && !stream.isPunctuation("]")) {
+        bindPattern(stream, "param", [], scope);
+    }
+
+    return { scope, paramsName: wholeParamsName(scope) };
+}
+
+/** The name the whole params object was given, when it was not destructured. Error messages only. */
+const wholeParamsName = (scope: Scope): string | null => {
+    for (const [name, binding] of scope) {
+        if (binding.kind === "param" && binding.path.length === 0) {
+            return name;
+        }
+    }
+
+    return null;
 }
 
 /**
@@ -1769,40 +2295,13 @@ const resolveFunctionShape = (stringifiedFunction: string, hasParams: boolean): 
         }
     }
 
-    let entityName: string;
-    let paramsName: string | null = null;
-
-    if (parameterNames.startsWith("[") && parameterNames.endsWith("]")) {
-        const destructured = parameterNames.slice(1, -1).split(",").map(w => w.trim());
-        entityName = destructured[0];
-
-        if (hasParams) {
-            paramsName = destructured[1] ?? null;
-        }
-    } else {
-        entityName = parameterNames;
-    }
-
-    if (entityName == null || entityName.length === 0) {
+    if (parameterNames.length === 0) {
         throw new Error("Invalid Function");
     }
 
-    // Unwrap a single-return block body: { return <expression>; }
-    if (body.startsWith("{")) {
-        const inner = body.slice(1, body.lastIndexOf("}")).trim();
+    const { scope, paramsName } = buildScope(parameterNames, hasParams);
 
-        if (!inner.startsWith("return")) {
-            throw new Error(ERROR_MESSAGES.UNSUPPORTED("block body without a single return statement"));
-        }
-
-        body = inner.slice("return".length).trim();
-
-        if (body.endsWith(";")) {
-            body = body.slice(0, -1).trim();
-        }
-    }
-
-    return { entityName, paramsName, body };
+    return { scope, paramsName, body };
 }
 
 // #endregion
@@ -1892,7 +2391,8 @@ export const combineExpressions = (...expressions: Expression[]): Expression => 
 export const parseFragment = (schema: CompiledSchema<any>, body: string, rootName: string): Expression => {
     try {
         const stream = new TokenStream(tokenize(body));
-        const parser = new ExpressionParser(schema, stream, rootName, null, undefined);
+        const scope: Scope = new Map([[rootName, { kind: "property", path: [] }]]);
+        const parser = new ExpressionParser(schema, stream, scope, null, undefined);
 
         return parser.parse();
     } catch {
@@ -1936,9 +2436,9 @@ export const toExpression = <T extends any, P extends any>(schema: CompiledSchem
     try {
         const shape = resolveFunctionShape(stringifiedFunction, params != null);
         const stream = new TokenStream(tokenize(shape.body));
-        const parser = new ExpressionParser(schema, stream, shape.entityName, shape.paramsName, params);
+        const parser = new ExpressionParser(schema, stream, shape.scope, shape.paramsName, params);
         paramsName = shape.paramsName;
-        template = parser.parse();
+        template = parser.parseBody();
         structurallyDependsOnParams = parser.structurallyDependsOnParams;
     } catch (error) {
         // Cache the failure so a hot query on an unsupported filter doesn't

@@ -68,7 +68,7 @@ describe('parse failures report why', () => {
         const failures = [
             fromSource('r.name.trim() === "y"'),
             fromSource('r.tags.some(t => t === "a")'),
-            fromSource('2 === 2'),
+            fromSource('2 === 5'),
             fromSource('r.name.trim() === "x"'),
             fromSource('r.name.padStart(4) === "x"'),
             fromSource('!(r.price > someVar)'),
@@ -84,7 +84,7 @@ describe('parse failures report why', () => {
     });
 
     it('names the missing schema property requirement', () => {
-        expect(failureMessage(fromSource('1 === 1'))).toMatch(/schema property/i);
+        expect(failureMessage(fromSource('1 === 3'))).toMatch(/schema property/i);
     });
 
     it('names the at-least-one-side requirement when neither side is a property', () => {
@@ -117,10 +117,10 @@ describe('parse failures report why', () => {
         expect(failureMessage(fromSource('r.name.notAProperty === "x"'))).toMatch(/notAProperty/);
     });
 
-    it('names the block-body restriction', () => {
+    it('names a block body that never returns', () => {
         const blockBody = new Function('return (r) => { const x = r.price; };')();
 
-        expect(failureMessage(blockBody)).toMatch(/block body/i);
+        expect(failureMessage(blockBody)).toMatch(/returns nothing/i);
     });
 
     it('names an unterminated string literal', () => {
@@ -142,7 +142,7 @@ describe('parse failures report why', () => {
 describe('logging context', () => {
     it('includes the collection name so the schema is identifiable', () => {
         warn.mockClear();
-        toExpression(schema as any, fromSource('3 === 3'));
+        toExpression(schema as any, fromSource('3 === 7'));
 
         const [, context] = warn.mock.calls[0] as [string, any];
 
@@ -151,12 +151,12 @@ describe('logging context', () => {
 
     it('includes the offending selector source', () => {
         warn.mockClear();
-        toExpression(schema as any, fromSource('4 === 4'));
+        toExpression(schema as any, fromSource('4 === 9'));
 
         const [, context] = warn.mock.calls[0] as [string, any];
 
         // Without the source text the log names a failure but not which filter caused it.
-        expect(String(context.selector)).toContain('4 === 4');
+        expect(String(context.selector)).toContain('4 === 9');
     });
 
     it('does not log for a filter that parses', () => {

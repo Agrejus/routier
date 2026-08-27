@@ -749,10 +749,11 @@ describe('Parser', () => {
                 expect(valueOn(comp.right)).toBe(18);
             });
 
-            it('should return NOT_PARSABLE for multi-statement block bodies', () => {
-                const expression = toExpression(mockSchema, (entity: any) => { const x = 1; return entity.age > x; });
+            it('should inline a declaration and parse the return that follows it', () => {
+                const expression = toExpression(mockSchema, (entity: any) => { const x = 1; return entity.age > x; }) as ComparatorExpression;
 
-                expect(expression).toStrictEqual(Expression.NOT_PARSABLE);
+                expect(expression.comparator).toBe('greater-than');
+                expect(valueOn(expression.right)).toBe(1);
             });
         });
 

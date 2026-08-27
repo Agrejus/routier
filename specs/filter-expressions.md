@@ -149,10 +149,10 @@ datastore runs the rest. Nothing fails, nothing is retried, and `IDbPlugin` stay
 
 ```ts
 // in the plugin, before translating
-options.deferToMemory(item, "unsupported-by-plugin");
+options.reportMissingCapability(item);
 ```
 
-`deferToMemory` takes everything AFTER the option with it. A `take` already applied by the database,
+`reportMissingCapability` takes everything AFTER the option with it. A `take` already applied by the database,
 in front of a filter the database did not apply, returns the wrong rows — so the cut is forward-only,
 the same rule `cutOverToMemory` follows when core decides for itself.
 
@@ -162,8 +162,8 @@ not otherwise, so two instances in one process can differ; PostgreSQL spells it 
 filter to answer before anything is pushed down — asking rather than attempting, because attempting
 costs a rejected statement and a wasted round trip.
 
-`.explain()` reports it as `unsupported-by-plugin`, so a query that got slower says which option did
-it and which engine could not take it.
+`.explain()` gives the reported option the reason `missing-capability` and every option after it
+`not-reached`, so a query that got slower says which option did it.
 
 ## Piece 1 — the tree
 
@@ -290,18 +290,38 @@ supported yet.
 
 ## Piece 3 — parser policy
 
-Ordinary JavaScript the parser refuses. **The tree these produce is identical to what already
-works**, so there is no translator work and no shape question — only the parser.
+Ordinary JavaScript the parser refused. **The tree these produce is identical to what already
+works**, so there was no translator work and no shape question — only the parser.
 
-| form | what it needs |
+| form | how it reads |
 |---|---|
-| `({ name }) => name === 'a'` | bind a destructured entity parameter |
-| `([{ name }, p]) => …` | the same inside the entity/params pair |
-| `{ const n = 3; return x.age > n; }` | inline a `const`/`let`/`var` binding, then parse the return |
-| `{ if (x.age > 3) return true; return false; }` | rewrite `if`/`else` chains into `call: "conditional"` |
-| `switch` over a property | rewrite into nested conditionals |
-| `x => false` | a constant-false predicate. Leaving it in memory is correct; the only cost is a round trip |
-| `p.a === p.b` | references no schema property, so it is constant per execution. Fold to match-all or match-none |
+| `({ name }) => name === 'a'` | a **scope** maps each identifier to a binding, and the entity parameter binds its own name to the empty property path — so `x.age` and a destructured `age` take one code path |
+| `([{ name }, { min }]) => …` | the same, on either half of the entity/params pair, nested and renamed keys included |
+| `{ const n = 3; return x.age > n; }` | a declaration binds its name to the **tokens** of its initializer, spliced in brackets at each use. Tokens rather than a parsed expression, so a binding works as an operand, an argument, or a call receiver |
+| `{ if (c) return A; return B; }` | boolean algebra, not a conditional: `(c && A) \|\| (!c && B)`. Every common shape cancels a branch and needs no `!` at all — `if (c) return true; return false;` is just `c` |
+| `switch` over a property | the disjunction of its cases. `case 'a': case 'b': return true` is one `\|\|` of two equality tests; a `default` is guarded by **every** case label failing, so a case whose body is `return false` still stops it |
+| `p.a === p.b` | both sides resolve now, so the comparison is settled at parse time. A tautology folds to match-all and drops out of the filter |
+
+Two forms stayed refused, and the reason is the same for both: **no expression node means "match
+nothing"**. `x => false`, and a constant comparison that settles the other way, go to memory, which
+answers correctly and costs one round trip. `Expression.EMPTY` is the match-all sentinel; its
+opposite would be a new node every translator has to claim.
+
+Three refusals are deliberate, because reading them would answer a question nobody asked:
+
+- a block that falls off the end of an `if` — JavaScript returns `undefined` there, which is
+  match-nothing again
+- a `switch` whose case `break`s and then falls into statements written after the switch — that case
+  answers with those statements, which a disjunction of cases cannot express
+- a statement the reader has no rule for, `for` and `while` among them
+
+Two things came along with it, because a spliced declaration needs them:
+
+- **a call on a parenthesised value** — `(x.name).toLowerCase()`, `(x.age + 1).length`, and chains of
+  them. Unlike a property chain, which carries at most one transform, any operand can receive a call
+  here. The one new tree shape in Piece 3: a call whose operand is another call
+- **a group followed by `.`** now reads as a value rather than a condition. Only the token after the
+  closing bracket tells the two apart
 
 ## The casing guards, and what lifting them enabled
 
@@ -485,10 +505,11 @@ the five reasons above justify producing no node at all.
 | form | verdict | notes |
 |---|---|---|
 | a single `return` | have | |
-| `const`, `let`, `var` before the return | parser | inline the binding |
-| `if` / `else if` / `else` with returns | parser | rewrite to `conditional` |
-| `switch` | parser | rewrite to nested `conditional` |
-| a bare block `{ … }` | parser | unwrap |
+| `const`, `let`, `var` before the return | have | the name binds to the tokens of its initializer, spliced in brackets at each use |
+| `if` / `else if` / `else` with returns | have | rewritten as `(c && A) \|\| (!c && B)`, with constant branches cancelled |
+| `switch` | have | rewritten as the disjunction of its cases, the `default` guarded by every label failing |
+| a block that returns nothing | refuse | not-a-value. JavaScript answers `undefined`, which is match-nothing, and no node means that |
+| a `break` that falls into statements after its `switch` | refuse | that case answers with those statements, which a disjunction of cases cannot express |
 | `for`, `for…of`, `for…in`, `while`, `do…while` | refuse | not-a-value. A loop in a predicate has no query equivalent; iteration over a property belongs to `some`/`every` |
 | `try` / `catch` / `finally` | refuse | not-a-value. A query has no exceptions to catch |
 | `throw` | refuse | not-a-value |
