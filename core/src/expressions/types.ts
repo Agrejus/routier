@@ -11,7 +11,9 @@ export type SerializedValue =
     | SerializedValue[]
     | { date: string }
     | { undefined: true }
-    | { number: "NaN" | "Infinity" | "-Infinity" };
+    | { number: "NaN" | "Infinity" | "-Infinity" }
+    | { regex: { source: string, flags: string } }
+    | { bigint: string };
 
 /** JSON-safe form of an expression tree. See `Expression.toJson`. */
 export type SerializedExpression =
@@ -59,6 +61,16 @@ const valueToJson = (value: unknown): SerializedValue => {
         return value;
     }
 
+    if (value instanceof RegExp) {
+        return { regex: { source: value.source, flags: value.flags } };
+    }
+
+    // `JSON.stringify` throws outright on a bigint rather than losing it quietly, so this is the one
+    // tag that turns a crash into a value
+    if (typeof value === "bigint") {
+        return { bigint: value.toString() };
+    }
+
     throw new Error(
         `Cannot serialize this filter value: only strings, numbers, booleans, null, undefined, Dates and arrays of those can cross a wire.  ` +
         `Received: ${Object.prototype.toString.call(value)}`
@@ -80,6 +92,14 @@ const valueFromJson = (value: SerializedValue): unknown => {
 
     if ("undefined" in value) {
         return undefined;
+    }
+
+    if ("regex" in value) {
+        return new RegExp(value.regex.source, value.regex.flags);
+    }
+
+    if ("bigint" in value) {
+        return BigInt(value.bigint);
     }
 
     return value.number === "NaN"
@@ -397,7 +417,10 @@ export type Call =
     | "utc-year" | "utc-month" | "utc-day-of-month" | "utc-day-of-week"
     | "utc-hour" | "utc-minute" | "utc-second" | "utc-millisecond" | "epoch-ms"
     | "to-string" | "to-number" | "to-boolean" | "type-of"
-    | "some" | "every";
+    | "some" | "every"
+    | "power"
+    | "bit-and" | "bit-or" | "bit-xor" | "bit-not" | "shift-left" | "shift-right" | "shift-right-unsigned"
+    | "conditional" | "coalesce" | "matches";
 
 /**
  * Supported comparator operations for expressions.

@@ -83,6 +83,19 @@ export interface SqlDialect {
      * divide, using each side twice. Call each thunk exactly as many times as the expression needs.
      */
     moduloExpression(left: () => string, right: () => string): string;
+    /** `^` on most engines; PostgreSQL spells it `#`, because `^` there is exponentiation. */
+    bitXorExpression(left: string, right: string): string;
+    /**
+     * A numeric operand made safe for a bitwise operator.
+     *
+     * Numbers are stored as `double precision`, and PostgreSQL has no bitwise operator for that —
+     * `operator does not exist: double precision & unknown`. Casting is the whole difference.
+     */
+    bitwiseOperand(operand: string): string;
+    /** `||` in the standard, a function in MySQL, `+` in MSSQL. */
+    concatExpression(left: string, right: string): string;
+    /** Pattern match. Only declared by a dialect whose `renders` admits `matches`. */
+    matchesExpression(subject: string, pattern: string): string;
     /**
      * SQL testing whether a JSON array column holds `value`.
      *
@@ -177,7 +190,31 @@ const UNIVERSAL_CALLS: readonly Call[] = [
     "to-lower-case", "to-upper-case", "length", "trim",
     "absolute", "floor", "ceiling", "round",
     "add", "subtract", "multiply", "divide", "modulo",
+    // Every engine here has these, spelled the same way
+    "bit-and", "bit-or", "bit-not", "coalesce", "concat",
 ];
+
+/**
+ * What each engine can express beyond the universal set.
+ *
+ * Declared per dialect because the differences are real, not stylistic: SQLite has no `POWER` and no
+ * `^`, MSSQL has no shift operators, `REGEXP` is built into MySQL and absent from SQLite unless the
+ * host registers it, and no engine here has JavaScript's unsigned shift.
+ */
+/**
+ * `conditional` and `matches` are rendered but declared by nobody yet.
+ *
+ * PostgreSQL rejects a `CASE` whose branches do not unify — `double precision and text cannot be
+ * matched` — and the `= true` wrapper a bare boolean call carries returned no rows there. Both run in
+ * memory until each engine is checked against a real server, which is correct and merely slower. The
+ * renderers stay so the check is a declaration change rather than new code.
+ */
+const DIALECT_CALLS: Record<SqlDialectName, readonly Call[]> = {
+    sqlite: [],
+    postgresql: ["power", "bit-xor", "shift-left", "shift-right"],
+    mysql: ["power", "bit-xor", "shift-left", "shift-right"],
+    mssql: ["power", "bit-xor"],
+};
 
 const DIALECTS: Record<SqlDialectName, SqlDialect> = {
     sqlite: {
@@ -201,8 +238,25 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
          * `%` truncates both operands to integers, so `10.5 % 3` is 1 rather than 1.5. Rebuilt from
          * `a - b * trunc(a / b)`, which agrees with JavaScript on fractions and on negatives.
          */
+        bitwiseOperand(operand) {
+            return operand;
+        },
+        bitXorExpression(left, right) {
+            // No `^`. Built from the operators SQLite does have: a xor b = (a|b) - (a&b)
+            return `((${left} | ${right}) - (${left} & ${right}))`;
+        },
+        concatExpression(left, right) {
+            return `(${left} || ${right})`;
+        },
+        matchesExpression() {
+            throw new Error(
+                "SQLite has no built-in REGEXP. A host that registers the function can render it; " +
+                "this dialect does not claim it, so `renders('matches')` is false and the plugin " +
+                "reports a missing capability instead."
+            );
+        },
         renders(call) {
-            return UNIVERSAL_CALLS.includes(call);
+            return UNIVERSAL_CALLS.includes(call) || DIALECT_CALLS.sqlite.includes(call);
         },
         moduloExpression(left, right) {
             return `(${left()} - ${right()} * CAST(${left()} / ${right()} AS INTEGER))`;
@@ -245,8 +299,22 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         encodeDate: passThroughDate,
         encodeBoolean: passThroughBoolean,
         /** No `%` for `double precision`, and a bound parameter arrives untyped. */
+        /** No bitwise operator for `double precision`, so the operand is narrowed first. */
+        bitwiseOperand(operand) {
+            return `(${operand})::bigint`;
+        },
+        bitXorExpression(left, right) {
+            // `^` is exponentiation in PostgreSQL; `#` is the bitwise xor
+            return `(${left} # ${right})`;
+        },
+        concatExpression(left, right) {
+            return `(${left} || ${right})`;
+        },
+        matchesExpression(subject, pattern) {
+            return `(${subject} ~ ${pattern})`;
+        },
         renders(call) {
-            return UNIVERSAL_CALLS.includes(call);
+            return UNIVERSAL_CALLS.includes(call) || DIALECT_CALLS.postgresql.includes(call);
         },
         moduloExpression(left, right) {
             return `MOD((${left()})::numeric, (${right()})::numeric)`;
@@ -304,8 +372,20 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         },
         encodeDate: mysqlDate,
         encodeBoolean: passThroughBoolean,
+        bitwiseOperand(operand) {
+            return operand;
+        },
+        bitXorExpression(left, right) {
+            return `(${left} ^ ${right})`;
+        },
+        concatExpression(left, right) {
+            return `CONCAT(${left}, ${right})`;
+        },
+        matchesExpression(subject, pattern) {
+            return `(${subject} REGEXP ${pattern})`;
+        },
         renders(call) {
-            return UNIVERSAL_CALLS.includes(call);
+            return UNIVERSAL_CALLS.includes(call) || DIALECT_CALLS.mysql.includes(call);
         },
         moduloExpression(left, right) {
             return `(${left()} % ${right()})`;
@@ -359,8 +439,22 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         encodeDate: passThroughDate,
         encodeBoolean: passThroughBoolean,
         /** `%` rejects `float`, so both sides are cast. */
+        bitwiseOperand(operand) {
+            return `CAST(${operand} AS bigint)`;
+        },
+        bitXorExpression(left, right) {
+            return `(${left} ^ ${right})`;
+        },
+        concatExpression(left, right) {
+            return `(${left} + ${right})`;
+        },
+        matchesExpression() {
+            throw new Error(
+                "MSSQL has no regular-expression operator, so this dialect does not claim `matches`."
+            );
+        },
         renders(call) {
-            return UNIVERSAL_CALLS.includes(call);
+            return UNIVERSAL_CALLS.includes(call) || DIALECT_CALLS.mssql.includes(call);
         },
         moduloExpression(left, right) {
             return `((${left()}) % CAST(${right()} AS decimal(38, 10)))`;
@@ -452,6 +546,10 @@ const SQL_ARITHMETIC: Partial<Record<Call, string>> = {
     "multiply": "*",
     "divide": "/",
     "modulo": "%",
+    "bit-and": "&",
+    "bit-or": "|",
+    "shift-left": "<<",
+    "shift-right": ">>",
 };
 
 function applyCallsToValue(value: unknown, calls: CallExpression[]): unknown {
@@ -560,10 +658,31 @@ const argumentRenderer = (
             return placeholder();
         }
 
+        // Bottoms out in a boolean rather than a column, so there is nothing to peel to
+        if (isCallExpression(expression) && expression.call === "conditional") {
+            return `CASE WHEN ${render(expression.expression)} THEN ${render(expression.arguments[0])} ELSE ${render(expression.arguments[1])} END`;
+        }
+
+        // A boolean operand — the condition of a `conditional`. Rendered by the same function that
+        // renders a WHERE, offset so its placeholders continue this statement's numbering.
+        if (isComparatorExpression(expression) || isOperatorExpression(expression)) {
+            const nested = toSql(expression, d, { alias, paramOffset: params.length });
+
+            params.push(...nested.params);
+
+            return nested.where;
+        }
+
         const peeled = peelCalls(expression);
 
         if (peeled != null && isPropertyExpression(peeled.operand)) {
             return renderColumn(peeled.operand, d, peeled.calls, render, alias);
+        }
+
+        if (peeled != null && isValueExpression(peeled.operand)) {
+            params.push(bindable(applyCallsToValue(peeled.operand.value, peeled.calls)));
+
+            return placeholder();
         }
 
         if (peeled != null && isValueExpression(peeled.operand)) {
@@ -618,6 +737,40 @@ function renderColumn(
 
         if (call === "modulo") {
             return d.moduloExpression(inner, () => renderArgument(node.arguments[0]));
+        }
+
+        if (call === "bit-not") {
+            return `~${d.bitwiseOperand(inner())}`;
+        }
+
+        if (call === "bit-xor") {
+            return d.bitXorExpression(d.bitwiseOperand(inner()), d.bitwiseOperand(renderArgument(node.arguments[0])));
+        }
+
+        if (call === "bit-and" || call === "bit-or" || call === "shift-left" || call === "shift-right") {
+            return `(${d.bitwiseOperand(inner())} ${SQL_ARITHMETIC[call]} ${d.bitwiseOperand(renderArgument(node.arguments[0]))})`;
+        }
+
+        if (call === "power") {
+            return `POWER(${inner()}, ${renderArgument(node.arguments[0])})`;
+        }
+
+        if (call === "coalesce") {
+            return `COALESCE(${inner()}, ${renderArgument(node.arguments[0])})`;
+        }
+
+        if (call === "concat") {
+            return d.concatExpression(inner(), renderArgument(node.arguments[0]));
+        }
+
+        if (call === "matches") {
+            return d.matchesExpression(inner(), renderArgument(node.arguments[0]));
+        }
+
+        // A CASE, because the condition is a boolean expression rather than a value — it is rendered
+        // by the same walk that renders a WHERE, one level down.
+        if (call === "conditional") {
+            return `CASE WHEN ${renderArgument(node.expression)} THEN ${renderArgument(node.arguments[0])} ELSE ${renderArgument(node.arguments[1])} END`;
         }
 
         const operator = SQL_ARITHMETIC[call];
@@ -986,18 +1139,7 @@ export function toSql(
         }
 
         if (isCallExpression(e)) {
-            const peeled = peelCalls(e);
-
-            if (peeled != null && isPropertyExpression(peeled.operand)) {
-                return renderColumn(peeled.operand, d, peeled.calls, argumentRenderer(d, params, placeholder, alias), alias);
-            }
-
-            if (peeled != null && isValueExpression(peeled.operand)) {
-                params.push(bindable(applyCallsToValue(peeled.operand.value, peeled.calls)));
-                return placeholder();
-            }
-
-            throw new Error(`'${e.call}' has no SQL form applied to a ${peeled?.operand.type ?? "missing"} operand.`);
+            return argumentRenderer(d, params, placeholder, alias)(e);
         }
 
         throw new Error(`Unknown expression type: ${(e as Expression).type}`);

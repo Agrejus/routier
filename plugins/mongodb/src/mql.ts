@@ -28,6 +28,7 @@ import type {
     PropertyExpression,
 } from "@routier/core/expressions";
 import {
+    forEach,
     isCallExpression,
     peelCalls,
     isComparatorExpression,
@@ -118,6 +119,31 @@ const MQL_ARITHMETIC: Partial<Record<Call, string>> = {
     "multiply": "$multiply",
     "divide": "$divide",
     "modulo": "$mod",
+    "power": "$pow",
+    // 6.3 and later. A server older than that reports the operator as unrecognised rather than
+    // returning wrong rows, which is the failure mode to prefer.
+    "bit-and": "$bitAnd",
+    "bit-or": "$bitOr",
+    "bit-xor": "$bitXor",
+};
+
+/** What MQL cannot express: JavaScript's shifts have no aggregation operator. */
+const UNSUPPORTED_IN_MQL: readonly Call[] = ["shift-left", "shift-right", "shift-right-unsigned"];
+
+export const canRenderInMql = (expr: Expression): boolean => {
+    let renderable = true;
+
+    forEach(expr, expression => {
+        if (isCallExpression(expression) && UNSUPPORTED_IN_MQL.includes(expression.call)) {
+            renderable = false;
+
+            return false;
+        }
+
+        return true;
+    });
+
+    return renderable;
 };
 
 function applyCallsToValue(value: unknown, calls: CallExpression[]): unknown {
@@ -257,6 +283,40 @@ function renderExprOperand(prop: PropertyExpression, calls: CallExpression[]): u
                 : { $strLenCP: rendered };
         }
 
+        if (call === "bit-not") {
+            return { $bitNot: rendered };
+        }
+
+        if (call === "coalesce") {
+            return { $ifNull: [rendered, ...node.arguments.map(renderCallArgument)] };
+        }
+
+        if (call === "concat") {
+            return { $concat: [rendered, ...node.arguments.map(renderCallArgument)] };
+        }
+
+        if (call === "matches") {
+            const pattern = node.arguments[0];
+            const regex = isValueExpression(pattern) ? pattern.value as RegExp : null;
+
+            if (regex == null) {
+                throw new Error("A pattern match needs a literal regular expression to render in MQL.");
+            }
+
+            return { $regexMatch: { input: rendered, regex: regex.source, ...(regex.flags === "" ? {} : { options: regex.flags }) } };
+        }
+
+        // The condition is a boolean expression, so it goes back through the comparison renderer
+        if (call === "conditional") {
+            return {
+                $cond: [
+                    toMql(node.expression),
+                    renderCallArgument(node.arguments[0]),
+                    renderCallArgument(node.arguments[1])
+                ]
+            };
+        }
+
         const operator = MQL_ARITHMETIC[call];
 
         if (operator != null) {
@@ -326,6 +386,17 @@ function renderExprSide(expression: Expression | undefined): unknown {
 
     if (isValueExpression(expression)) {
         return { $literal: expression.value };
+    }
+
+    // Bottoms out in a boolean rather than a field, so there is nothing to peel to
+    if (isCallExpression(expression) && expression.call === "conditional") {
+        return {
+            $cond: [
+                toMql(expression.expression),
+                renderCallArgument(expression.arguments[0]),
+                renderCallArgument(expression.arguments[1])
+            ]
+        };
     }
 
     if (isCallExpression(expression)) {

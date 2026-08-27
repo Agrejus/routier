@@ -166,4 +166,29 @@ suite('casing calls against a real MySQL', () => {
 
         expect(found.map(p => p.name)).toEqual(['Alpha']);
     });
+
+    it('filters through a bitwise and, which needs an integer cast on this engine', async () => {
+        const found = await store.products.where(p => (p.price & 20) === 20).toArrayAsync();
+
+        expect(found.map(p => p.name).sort()).toEqual(['Bravo', 'Charlie']);
+    });
+
+    it('filters through nullish coalescing', async () => {
+        const found = await store.products.where(p => (p.category ?? 'none') === 'toys').toArrayAsync();
+
+        expect(found.map(p => p.name).sort()).toEqual(['Charlie', 'Delta']);
+    });
+
+    it('filters through a template literal', async () => {
+        const found = await store.products.where(p => `${p.name}!` === 'Bravo!').toArrayAsync();
+
+        expect(found.map(p => p.name)).toEqual(['Bravo']);
+    });
+
+    // Declared by no dialect yet, so it runs in memory — the rows must still be right
+    it('filters through a regular expression, whoever ends up running it', async () => {
+        const found = await store.products.where(p => /^[AB]/.test(p.name)).toArrayAsync();
+
+        expect(found.map(p => p.name).sort()).toEqual(['Alpha', 'Bravo']);
+    });
 });

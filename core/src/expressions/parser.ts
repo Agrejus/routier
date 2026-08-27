@@ -52,7 +52,7 @@ const converters: Record<SchemaTypes, (value: unknown) => unknown> = {
 
 // #region Tokenizer
 
-type TokenKind = "identifier" | "string" | "number" | "punctuation";
+type TokenKind = "identifier" | "string" | "number" | "bigint" | "regex" | "template" | "punctuation";
 
 type Token = {
     kind: TokenKind;
@@ -60,13 +60,13 @@ type Token = {
 }
 
 // Longest first so multi-character punctuation wins over its prefixes
-const MULTI_CHARACTER_PUNCTUATION = ["===", "!==", "?.", "&&", "||", "==", "!=", ">=", "<=", "=>"] as const;
+const MULTI_CHARACTER_PUNCTUATION = [">>>", "===", "!==", "**", "<<", ">>", "??", "?.", "&&", "||", "==", "!=", ">=", "<=", "=>"] as const;
 // Stryker disable next-line all: documented equivalent cluster (see
 // docs/mutation-backlog.md) — dropping an entry only affects source the parser rejects
 // either way, and the rejection message names the character from the source rather than
 // from this set, so no observable boundary distinguishes the mutant. Established
 // experimentally: 30 message-asserting tests killed 1 of 12.
-const SINGLE_CHARACTER_PUNCTUATION = new Set(["(", ")", "[", "]", "{", "}", ".", ",", ";", "!", ">", "<", "-", "+", "*", "/", "%", "=", "?", ":", "&", "|"]);
+const SINGLE_CHARACTER_PUNCTUATION = new Set(["(", ")", "[", "]", "{", "}", ".", ",", ";", "!", ">", "<", "-", "+", "*", "/", "%", "=", "?", ":", "&", "|", "^", "~"]);
 
 const STRING_ESCAPES: Record<string, string> = {
     "n": "\n",
@@ -76,6 +76,30 @@ const STRING_ESCAPES: Record<string, string> = {
     "f": "\f",
     "v": "\v",
     "0": "\0"
+};
+
+/**
+ * Whether a `/` here opens a regex rather than dividing.
+ *
+ * A regex cannot follow a value. Everything else — the start of the source, an operator, an opening
+ * bracket, a comma — is a position where only a regex makes sense.
+ */
+const regexCanStartHere = (tokens: Token[]): boolean => {
+    const previous = tokens[tokens.length - 1];
+
+    if (previous == null) {
+        return true;
+    }
+
+    if (previous.kind === "number" || previous.kind === "string" || previous.kind === "bigint" || previous.kind === "regex") {
+        return false;
+    }
+
+    if (previous.kind === "identifier") {
+        return false;
+    }
+
+    return previous.value !== ")" && previous.value !== "]";
 };
 
 const isIdentifierStart = (char: string) => /[a-zA-Z_$]/.test(char);
@@ -132,6 +156,58 @@ const tokenize = (source: string): Token[] => {
             continue;
         }
 
+        /**
+         * A regex literal, told from division by what came before it.
+         *
+         * `/` after a value — a number, string, identifier, `)` or `]` — is division. Anywhere else
+         * it opens a regex. That is the same rule a JavaScript lexer uses, and it is why `x.a / 2`
+         * and `/^a/.test(x.a)` can share a character.
+         */
+        if (char === "/" && source[i + 1] !== "/" && source[i + 1] !== "*" && regexCanStartHere(tokens)) {
+            let value = "";
+            let inClass = false;
+            let j = i + 1;
+
+            while (j < source.length) {
+                const current = source[j];
+
+                if (current === "\\") {
+                    value += current + (source[j + 1] ?? "");
+                    j += 2;
+                    continue;
+                }
+
+                if (current === "[") {
+                    inClass = true;
+                } else if (current === "]") {
+                    inClass = false;
+                } else if (current === "/" && inClass === false) {
+                    break;
+                } else if (current === "\n") {
+                    throw new Error(ERROR_MESSAGES.UNSUPPORTED("unterminated regular expression"));
+                }
+
+                value += current;
+                j++;
+            }
+
+            if (j >= source.length) {
+                throw new Error(ERROR_MESSAGES.UNSUPPORTED("unterminated regular expression"));
+            }
+
+            j++;
+            let flags = "";
+
+            while (j < source.length && isIdentifierPart(source[j])) {
+                flags += source[j];
+                j++;
+            }
+
+            i = j;
+            tokens.push({ kind: "regex", value: `${value}\u0000${flags}` });
+            continue;
+        }
+
         // Comments
         if (char === "/" && source[i + 1] === "/") {
             while (i < source.length && source[i] !== "\n") {
@@ -153,6 +229,8 @@ const tokenize = (source: string): Token[] => {
         if (char === "'" || char === "\"" || char === "`") {
             const quote = char;
             let value = "";
+            const chunks: string[] = [];
+            const expressions: string[] = [];
             i++;
 
             while (i < source.length && source[i] !== quote) {
@@ -171,8 +249,51 @@ const tokenize = (source: string): Token[] => {
                     continue;
                 }
 
+                /**
+                 * An interpolation. The literal so far becomes a chunk and the expression source is
+                 * kept whole, to be parsed by its own stream — nesting means the inner source can
+                 * hold anything, including another template.
+                 */
                 if (quote === "`" && source[i] === "$" && source[i + 1] === "{") {
-                    throw new Error(ERROR_MESSAGES.UNSUPPORTED("template literal interpolation"));
+                    let depth = 1;
+                    let expression = "";
+                    let at = i + 2;
+
+                    while (at < source.length && depth > 0) {
+                        const current = source[at];
+
+                        if (current === "{") {
+                            depth++;
+                        } else if (current === "}") {
+                            depth--;
+
+                            if (depth === 0) {
+                                break;
+                            }
+                        } else if (current === "'" || current === '"' || current === "`") {
+                            const closing = current;
+                            expression += current;
+                            at++;
+
+                            while (at < source.length && source[at] !== closing) {
+                                expression += source[at] === "\\" ? source[at] + (source[at + 1] ?? "") : source[at];
+                                at += source[at] === "\\" ? 2 : 1;
+                            }
+                        }
+
+                        expression += source[at];
+                        at++;
+                    }
+
+                    if (depth > 0) {
+                        throw new Error(ERROR_MESSAGES.UNSUPPORTED("unterminated template interpolation"));
+                    }
+
+                    chunks.push(value);
+                    expressions.push(expression);
+                    value = "";
+                    i = at + 1;
+                    continue;
                 }
 
                 value += source[i];
@@ -184,6 +305,13 @@ const tokenize = (source: string): Token[] => {
             }
 
             i++; // consume closing quote
+
+            if (expressions.length > 0) {
+                chunks.push(value);
+                tokens.push({ kind: "template", value: JSON.stringify({ chunks, expressions }) });
+                continue;
+            }
+
             tokens.push({ kind: "string", value });
             continue;
         }
@@ -231,6 +359,12 @@ const tokenize = (source: string): Token[] => {
                         }
                     }
                 }
+            }
+
+            if (source[i] === "n") {
+                i++;
+                tokens.push({ kind: "bigint", value: value.replace(/_/g, "") });
+                continue;
             }
 
             tokens.push({ kind: "number", value: value.replace(/_/g, "") });
@@ -308,6 +442,93 @@ class TokenStream {
         return token != null && token.kind === "punctuation" && token.value === value;
     }
 
+    /** The current position, for a caller that has to try one reading and fall back to another. */
+    mark(): number {
+        return this.index;
+    }
+
+    reset(mark: number) {
+        this.index = mark;
+    }
+
+    /**
+     * Whether the group starting here is compared to something once it closes.
+     *
+     * `(a && b)` is a boolean sub-expression; `(x.name ?? '') === 'ada'` is a value. Only the token
+     * after the matching bracket tells them apart, so the decision is made by looking ahead rather
+     * than by parsing one way and catching the failure — a rewind on exception would swallow a
+     * genuine syntax error inside the group and report it as something else.
+     */
+    comparatorFollowsGroup(): boolean {
+        let depth = 0;
+        let at = this.index;
+
+        for (; at < this.tokens.length; at++) {
+            const token = this.tokens[at];
+
+            if (token.kind !== "punctuation") {
+                continue;
+            }
+
+            if (token.value === "(") {
+                depth++;
+                continue;
+            }
+
+            if (token.value === ")") {
+                depth--;
+
+                if (depth === 0) {
+                    break;
+                }
+            }
+        }
+
+        const after = this.tokens[at + 1];
+
+        return after != null && after.kind === "punctuation" && COMPARISON_OPERATORS[after.value] != null;
+    }
+
+    /** Whether the group starting here is `( … ? … : … )` rather than a plain value. */
+    groupHoldsConditional(): boolean {
+        let depth = 0;
+
+        for (let at = this.index; at < this.tokens.length; at++) {
+            const token = this.tokens[at];
+
+            if (token.kind !== "punctuation") {
+                continue;
+            }
+
+            if (token.value === "(") {
+                depth++;
+                continue;
+            }
+
+            if (token.value === ")") {
+                depth--;
+
+                if (depth === 0) {
+                    return false;
+                }
+
+                continue;
+            }
+
+            if (token.value === "?" && depth === 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    peekPunctuation(value: string): boolean {
+        const token = this.peek();
+
+        return token != null && token.kind === "punctuation" && token.value === value;
+    }
+
     matchPunctuation(value: string): boolean {
         if (this.isPunctuation(value)) {
             this.index++;
@@ -369,9 +590,24 @@ type ArithmeticOperand = {
     call: Call;
     left: Operand;
     right: Operand;
+    /** The third operand, which only `conditional` has. */
+    extra?: Operand;
 }
 
-type Operand = PropertyOperand | ValueOperand | ParamOperand | MethodCallOperand | ArithmeticOperand;
+/**
+ * `a ? b : c`, where the condition is a BOOLEAN and the branches are values.
+ *
+ * Its own kind rather than an arithmetic operand with three slots, because the condition is an
+ * Expression already — a comparison — while the branches are operands still being built.
+ */
+type ConditionalOperand = {
+    kind: "conditional";
+    condition: Expression;
+    whenTrue: Operand;
+    whenFalse: Operand;
+}
+
+type Operand = PropertyOperand | ValueOperand | ParamOperand | MethodCallOperand | ArithmeticOperand | ConditionalOperand;
 
 /** JavaScript precedence: `*`, `/`, `%` bind tighter than `+` and `-`. */
 const MULTIPLICATIVE_OPERATORS: Record<string, Call> = {
@@ -385,13 +621,30 @@ const ADDITIVE_OPERATORS: Record<string, Call> = {
     "-": "subtract",
 };
 
+const SHIFT_OPERATORS: Record<string, Call> = {
+    "<<": "shift-left",
+    ">>": "shift-right",
+    ">>>": "shift-right-unsigned",
+};
+
+const BITWISE_AND_OPERATORS: Record<string, Call> = { "&": "bit-and" };
+const BITWISE_XOR_OPERATORS: Record<string, Call> = { "^": "bit-xor" };
+const BITWISE_OR_OPERATORS: Record<string, Call> = { "|": "bit-or" };
+const COALESCE_OPERATORS: Record<string, Call> = { "??": "coalesce" };
+
 /** Whether a schema property is reachable in here, which decides which side of a comparison it is. */
 const containsProperty = (operand: Operand): boolean => {
     if (operand.kind === "property") {
         return true;
     }
 
-    return operand.kind === "arithmetic" && (containsProperty(operand.left) || containsProperty(operand.right));
+    if (operand.kind === "conditional") {
+        // A comparison always names a schema property, so the condition alone settles it
+        return true;
+    }
+
+    return operand.kind === "arithmetic"
+        && (containsProperty(operand.left) || containsProperty(operand.right) || (operand.extra != null && containsProperty(operand.extra)));
 };
 
 const COMPARATOR_METHODS: Record<string, Comparator> = {
@@ -611,29 +864,79 @@ class ExpressionParser {
 
     private parseComparison(): Expression {
 
-        // Parenthesized group
-        if (this.stream.matchPunctuation("(")) {
+        /**
+         * A parenthesised group is either a boolean sub-expression or a VALUE — `(a && b)` against
+         * `(x.name ?? '') === 'ada'` — and which one it is is only known at the closing bracket, by
+         * what follows. So the boolean reading is tried first and rewound if a comparator turns up.
+         */
+        if (this.stream.peekPunctuation("(") && this.stream.comparatorFollowsGroup() === false) {
+            this.stream.next();
+
             const expression = this.parseOr();
             this.stream.expectPunctuation(")");
-
-            const trailing = this.stream.peek();
-            if (trailing != null && trailing.kind === "punctuation" && COMPARISON_OPERATORS[trailing.value] != null) {
-                throw new Error(ERROR_MESSAGES.UNSUPPORTED("comparison against a parenthesized expression"));
-            }
 
             return expression;
         }
 
-        const left = this.parseAdditive();
+        const left = this.parseValue();
         const operatorToken = this.stream.peek();
 
         if (operatorToken != null && operatorToken.kind === "punctuation" && COMPARISON_OPERATORS[operatorToken.value] != null) {
             this.stream.next();
-            const right = this.parseAdditive();
+            const right = this.parseValue();
             return this.buildComparison(left, COMPARISON_OPERATORS[operatorToken.value], right);
         }
 
         return this.buildStandalone(left);
+    }
+
+    /**
+     * A value, at JavaScript's precedence.
+     *
+     * Lowest first: the conditional operator, then nullish coalescing, then the bitwise levels, then
+     * the shifts, then the arithmetic. Comparison sits between the shifts and the bitwise levels in
+     * JavaScript, but a comparison is a boolean and is handled by `parseComparison` above, so this
+     * chain skips it — a bitwise operand here is always a value.
+     */
+    /**
+     * An operand from its own source, sharing this parser's schema and parameter names.
+     *
+     * A structural dependence found inside propagates outward: the template it belongs to cannot be
+     * cached either.
+     */
+    private parseNested(source: string): Operand {
+        const nested = new ExpressionParser(this.schema, new TokenStream(tokenize(source)), this.entityName, this.paramsName, this.params);
+        const operand = nested.parseValue();
+
+        if (nested.structurallyDependsOnParams === true) {
+            this.structurallyDependsOnParams = true;
+        }
+
+        return operand;
+    }
+
+    parseValue(): Operand {
+        return this.parseCoalesce();
+    }
+
+    private parseCoalesce(): Operand {
+        return this.parseBinary(COALESCE_OPERATORS, () => this.parseBitwiseOr());
+    }
+
+    private parseBitwiseOr(): Operand {
+        return this.parseBinary(BITWISE_OR_OPERATORS, () => this.parseBitwiseXor());
+    }
+
+    private parseBitwiseXor(): Operand {
+        return this.parseBinary(BITWISE_XOR_OPERATORS, () => this.parseBitwiseAnd());
+    }
+
+    private parseBitwiseAnd(): Operand {
+        return this.parseBinary(BITWISE_AND_OPERATORS, () => this.parseShift());
+    }
+
+    private parseShift(): Operand {
+        return this.parseBinary(SHIFT_OPERATORS, () => this.parseAdditive());
     }
 
     private parseAdditive(): Operand {
@@ -641,7 +944,20 @@ class ExpressionParser {
     }
 
     private parseMultiplicative(): Operand {
-        return this.parseBinary(MULTIPLICATIVE_OPERATORS, () => this.parseOperand());
+        return this.parseBinary(MULTIPLICATIVE_OPERATORS, () => this.parseExponent());
+    }
+
+    /** `**` is RIGHT-associative: `2 ** 3 ** 2` is 2 ** 9, not 8 ** 2. */
+    private parseExponent(): Operand {
+        const left = this.parseOperand();
+
+        if (this.stream.peekPunctuation("**") === false) {
+            return left;
+        }
+
+        this.stream.next();
+
+        return { kind: "arithmetic", call: "power", left, right: this.parseExponent() };
     }
 
     /** Left-associative, so `a - b - c` is `(a - b) - c` rather than `a - (b - c)`. */
@@ -675,6 +991,99 @@ class ExpressionParser {
         if (token.kind === "number") {
             this.stream.next();
             return { kind: "value", value: Number(token.value), transformer: null, locale: null };
+        }
+
+        // A parenthesised VALUE — `(x.price & 1)`, `(x.name ?? '')`. The boolean reading of a group
+        // is handled in parseComparison; by the time an operand sees one it is arithmetic.
+        if (token.kind === "punctuation" && token.value === "(") {
+            const conditional = this.stream.groupHoldsConditional();
+
+            this.stream.next();
+
+            if (conditional === true) {
+                const condition = this.parseOr();
+
+                this.stream.expectPunctuation("?");
+                const whenTrue = this.parseValue();
+                this.stream.expectPunctuation(":");
+                const whenFalse = this.parseValue();
+                this.stream.expectPunctuation(")");
+
+                return { kind: "conditional", condition, whenTrue, whenFalse };
+            }
+
+            const inner = this.parseValue();
+            this.stream.expectPunctuation(")");
+
+            return inner;
+        }
+
+        /**
+         * A template with interpolation, folded into `concat`.
+         *
+         * Each `${…}` was kept as source by the tokenizer and is parsed by its own stream, so it can
+         * hold anything an operand can — a property, a param, arithmetic, another template. Empty
+         * chunks are dropped: `${a}${b}` is two operands, not two operands and three empty strings.
+         */
+        if (token.kind === "template") {
+            this.stream.next();
+
+            const { chunks, expressions } = JSON.parse(token.value) as { chunks: string[], expressions: string[] };
+            const pieces: Operand[] = [];
+
+            for (let at = 0; at < chunks.length; at++) {
+                if (chunks[at].length > 0) {
+                    pieces.push({ kind: "value", value: chunks[at], transformer: null, locale: null });
+                }
+
+                if (at < expressions.length) {
+                    pieces.push(this.parseNested(expressions[at]));
+                }
+            }
+
+            if (pieces.length === 0) {
+                return { kind: "value", value: "", transformer: null, locale: null };
+            }
+
+            return pieces.reduce((left, right) => ({ kind: "arithmetic", call: "concat", left, right }));
+        }
+
+        if (token.kind === "bigint") {
+            this.stream.next();
+            return { kind: "value", value: BigInt(token.value), transformer: null, locale: null };
+        }
+
+        if (token.kind === "regex") {
+            this.stream.next();
+
+            const [source, flags] = token.value.split("\u0000");
+            const pattern: ValueOperand = { kind: "value", value: new RegExp(source, flags), transformer: null, locale: null };
+
+            // `/^a/.test(x.name)` — the pattern is the literal, the subject is the argument, and the
+            // tree puts them the other way round: the property is what the call applies to.
+            if (this.stream.isPunctuation(".")) {
+                const method = this.stream.peek(1);
+
+                if (method != null && method.kind === "identifier" && method.value === "test") {
+                    this.stream.next();
+                    this.stream.next();
+                    this.stream.expectPunctuation("(");
+
+                    const subject = this.parseValue();
+                    this.stream.expectPunctuation(")");
+
+                    return { kind: "arithmetic", call: "matches", left: subject, right: pattern };
+                }
+            }
+
+            return pattern;
+        }
+
+        if (token.kind === "punctuation" && token.value === "~") {
+            this.stream.next();
+
+            // Unary, so the tree carries the operand and no argument
+            return { kind: "arithmetic", call: "bit-not", left: this.parseOperand(), right: { kind: "value", value: undefined, transformer: null, locale: null } };
         }
 
         if (token.kind === "punctuation" && token.value === "-") {
@@ -742,7 +1151,7 @@ class ExpressionParser {
                 throw new Error(ERROR_MESSAGES.UNSUPPORTED("nested method call inside .includes()"));
             }
 
-            if (argument.kind === "arithmetic") {
+            if (argument.kind === "arithmetic" || argument.kind === "conditional") {
                 throw new Error(ERROR_MESSAGES.UNSUPPORTED("arithmetic inside .includes()"));
             }
 
@@ -823,7 +1232,7 @@ class ExpressionParser {
                             throw new Error(ERROR_MESSAGES.UNSUPPORTED(`nested method call inside .${method}()`));
                         }
 
-                        if (argument.kind === "arithmetic") {
+                        if (argument.kind === "arithmetic" || argument.kind === "conditional") {
                             throw new Error(ERROR_MESSAGES.UNSUPPORTED(`arithmetic inside .${method}()`));
                         }
 
@@ -971,7 +1380,7 @@ class ExpressionParser {
             throw new Error(ERROR_MESSAGES.UNSUPPORTED("method call on the right side of a comparison"));
         }
 
-        if (left.kind === "arithmetic" || right.kind === "arithmetic") {
+        if (left.kind === "arithmetic" || right.kind === "arithmetic" || left.kind === "conditional" || right.kind === "conditional") {
             if (containsProperty(left) === false && containsProperty(right) === false) {
                 throw new Error(ERROR_MESSAGES.UNSUPPORTED("arithmetic that references no schema property"));
             }
@@ -1023,7 +1432,18 @@ class ExpressionParser {
             return this.buildPropertyComparator(operand, COMPARISON_OPERATORS["==="], { kind: "value", value: true, transformer: null, locale: null }, /* applyConverter */ true);
         }
 
-        if (operand.kind === "arithmetic") {
+        // A boolean-valued call standing alone IS the predicate
+        if (operand.kind === "arithmetic" && operand.call === "matches") {
+            return new ComparatorExpression({
+                comparator: "equals",
+                negated: false,
+                strict: false,
+                left: this.createOperandExpression(operand),
+                right: new ValueExpression({ value: true })
+            });
+        }
+
+        if (operand.kind === "arithmetic" || operand.kind === "conditional") {
             throw new Error(ERROR_MESSAGES.UNSUPPORTED("arithmetic used as a condition rather than compared"));
         }
 
@@ -1105,11 +1525,21 @@ class ExpressionParser {
      */
     private createOperandExpression(operand: Operand): Expression {
 
+        if (operand.kind === "conditional") {
+            return new CallExpression({
+                call: "conditional",
+                expression: operand.condition,
+                arguments: [this.createOperandExpression(operand.whenTrue), this.createOperandExpression(operand.whenFalse)]
+            });
+        }
+
         if (operand.kind === "arithmetic") {
             return new CallExpression({
                 call: operand.call,
                 expression: this.createOperandExpression(operand.left),
-                arguments: [this.createOperandExpression(operand.right)]
+                arguments: operand.extra == null
+                    ? [this.createOperandExpression(operand.right)]
+                    : [this.createOperandExpression(operand.right), this.createOperandExpression(operand.extra)]
             });
         }
 

@@ -59,8 +59,11 @@ function expectParsed(fn: any, params?: any) {
 }
 
 describe('literals the parser cannot represent', () => {
-    it('rejects template literal interpolation', () => {
-        expectRejected(fromSource('r.name === `prefix-${r.other}`'));
+    it('parses template literal interpolation as a concat', () => {
+        const parsed = toExpression(schema as any, fromSource('r.name === `prefix-${r.other}`')) as { type: string, right?: { call?: string } };
+
+        expect(parsed.type).toBe('comparator');
+        expect(parsed.right?.call).toBe('concat');
     });
 
     it('accepts a template literal without interpolation', () => {
@@ -92,8 +95,12 @@ describe('shapes that are not a schema comparison', () => {
         expectParsed(fromSource('r.name === "x"'));
     });
 
-    it('rejects a comparison against a parenthesized expression', () => {
-        expectRejected(fromSource('r.price === (1 + 2)'));
+    it('parses a parenthesised value on the right, which is arithmetic over constants', () => {
+        // The type only, never the tree: a PropertyInfo holds its own parent chain, so handing an
+        // expression to a matcher makes jest try to serialise a cycle.
+        const parsed = toExpression(schema as any, fromSource('r.price === (1 + 2)')) as { type: string };
+
+        expect(parsed.type).toBe('comparator');
     });
 
     it('accepts bracket access with a literal key', () => {
@@ -188,7 +195,7 @@ describe('rejection never yields a partial tree', () => {
     const unsupported = [
         'r.price > 1 && r.name.padStart(3) === "x"',
         'r.name.padStart(3) === "x" || r.price > 1',
-        'r.price === (1 + 2) && r.active === true',
+        'r.tags.some(t => t === "a") && r.active === true',
         'r.name.padStart(3) === "x" && r.price > 1',
     ];
 

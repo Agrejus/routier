@@ -206,30 +206,66 @@ Two things learned while doing 1 and 2, both worth keeping:
 
 ## Piece 2 — the tokenizer and grammar
 
-The tree can hold these; the parser has to read the characters.
+**Done.** Every operator JavaScript has that a filter can contain now parses, at JavaScript's own
+precedence and associativity:
 
-**Arithmetic is done.** `+ - * / %` parse with JavaScript precedence and left associativity, emit the
-`add`/`subtract`/`multiply`/`divide`/`modulo` calls the union already had, and render in SQL, MQL and
-the in-memory evaluator. The tokenizer needed nothing — those characters were already punctuation
-tokens; only the grammar was missing. Verified against SQLite, PostgreSQL, pglite, MySQL, MongoDB,
-PouchDB, Dexie, memory, file-system and browser-storage.
+| form | call | note |
+|---|---|---|
+| `+ - * / %` | `add` … `modulo` | left-associative |
+| `**` | `power` | RIGHT-associative: `2 ** 3 ** 2` is 512, not 64 |
+| `& \| ^ ~ << >> >>>` | `bit-and` … `shift-right-unsigned` | `&` binds tighter than `\|`, both looser than the shifts |
+| `a ?? b` | `coalesce` | falls back on `null` and `undefined`, not on `""` |
+| `a ? b : c` | `conditional` | the condition is a boolean, the branches are values |
+| `/^a/.test(x)` | `matches` | the pattern is a tagged value, the property is the operand |
+| `` `${p.a}b` `` | `concat` | each `${…}` is parsed by its own stream, so it can hold anything |
+| `123n` | — | a tagged value; `JSON.stringify` throws on a bigint outright |
 
-A call whose operands are all literals is folded at render time, so `x.age + 3 * 4` binds `12` rather
-than asking the database to multiply two constants.
+Two lexical decisions worth knowing. A `/` opens a regex unless it follows a value — a number, string,
+identifier, `)` or `]` — which is the rule a JavaScript lexer uses and is how `x.a / 2` and
+`/^a/.test(x.a)` share a character. And a parenthesised group is read as a boolean unless a comparator
+follows its closing bracket, decided by looking ahead rather than by parsing one way and catching the
+failure: rewinding on an exception swallowed a genuine syntax error inside the group and reported it
+as something else.
 
-| form | current failure |
+### What each engine claims
+
+`SqlDialect.renders(call)` declares it, and a plugin asks `canRenderInSql` before translating. An
+option no dialect claims is reported as a missing capability and runs in memory — correct, and merely
+slower.
+
+| call | SQLite | PostgreSQL | MySQL | MSSQL | MQL |
+|---|---|---|---|---|---|
+| bitwise and/or/not | ✅ | ✅ cast to `bigint` | ✅ | ✅ cast to `bigint` | `$bitAnd` etc. |
+| bitwise xor | ✅ from `\|` and `&` | ✅ `#`, since `^` is exponentiation | ✅ `^` | ✅ `^` | `$bitXor` |
+| shifts | ❌ | ✅ | ✅ | ❌ | ❌ no operator |
+| unsigned shift | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `power` | ❌ no `POWER` | ✅ | ✅ | ✅ | `$pow` |
+| `coalesce` | ✅ | ✅ | ✅ | ✅ | `$ifNull` |
+| `concat` | ✅ `\|\|` | ✅ `\|\|` | ✅ `CONCAT` | ✅ `+` | `$concat` |
+| `conditional` | rendered, not claimed | rendered, not claimed | rendered, not claimed | rendered, not claimed | `$cond` |
+| `matches` | ❌ `REGEXP` only if the host registered it | rendered, not claimed | rendered, not claimed | ❌ | `$regexMatch` |
+
+PostgreSQL has no bitwise operator for `double precision` — `operator does not exist: double
+precision & unknown` — the same shape as the modulo problem, and fixed the same way, by narrowing the
+operand.
+
+**`conditional` and `matches` are rendered but claimed by nobody.** PostgreSQL rejects a `CASE` whose
+branches do not unify (`double precision and text cannot be matched`), and the `= true` wrapper a bare
+boolean call carries returned no rows there. Both run in memory until each engine is checked against a
+real server. The renderers stay, so claiming them later is a declaration change rather than new code.
+
+Verified against SQLite, PostgreSQL 16, pglite, MySQL 8.4, MongoDB 7, PouchDB, Dexie, memory,
+file-system and browser-storage.
+
+### Still open
+
+| form | why |
 |---|---|
-| `x.age ** 2` | no exponent operator |
-| `x.age & 1`, `\|`, `^`, `~`, `<<`, `>>`, `>>>` | no bitwise operators |
-| `a ? b : c` | `expected ')'` — no conditional operator |
-| `a ?? b` | `expected ')'` — no nullish coalescing |
-| `/^a/.test(x.name)` | `unexpected character '^'` — no regex literals |
-| `` `${p.prefix}a` `` | interpolation unsupported; a plain template literal parses |
-| `123n` | no bigint literal |
-
-Nothing here needs a new node. Bitwise becomes `call`, the conditional becomes
-`call: "conditional"`, `??` becomes `call: "coalesce"`, a regex literal becomes a tagged value, and
-interpolation becomes `call: "concat"`.
+| `x.name.toLowerCase().length === 3` | a call chained onto a call |
+| `x.name.startsWith(x.other.toLowerCase())` | a call inside a method argument |
+| `x.tags.some(t => t === 'a')` | array iteration — see "Array elements" |
+| `'name' in x` | should fold; the schema answers it |
+| `typeof x.name === 'string'` | should fold; the schema answers it |
 
 Three shapes are refused rather than missing, and each has a reason: arithmetic that names no schema
 property is a constant and should be folded by the caller, arithmetic used as a condition instead of

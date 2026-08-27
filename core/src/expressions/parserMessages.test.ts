@@ -26,6 +26,13 @@ const schema = s.define('parser_messages', {
 const fromSource = (source: string, args = 'r') =>
     new Function(`return (${args}) => ${source};`)() as any;
 
+/** For source the Function constructor would reject outright, so the tokenizer is what judges it. */
+const withSource = (source: string) => {
+    const fn: any = () => true;
+    fn.toString = () => source;
+    return fn;
+};
+
 let warn: any;
 
 beforeEach(() => {
@@ -59,10 +66,10 @@ describe('parse failures report why', () => {
         // Sources are unique within this file: a repeated source would hit the
         // parse-failure cache, which logs only on first discovery.
         const failures = [
-            fromSource('r.name === `y-${r.other}`'),
+            fromSource('r.name.trim() === "y"'),
+            fromSource('r.tags.some(t => t === "a")'),
             fromSource('2 === 2'),
             fromSource('r.name.trim() === "x"'),
-            fromSource('r.price === (2 + 3)'),
             fromSource('r.name.padStart(4) === "x"'),
             fromSource('!(r.price > someVar)'),
         ];
@@ -72,8 +79,8 @@ describe('parse failures report why', () => {
         }
     });
 
-    it('names template literal interpolation', () => {
-        expect(failureMessage(fromSource('r.name === `x-${r.other}`'))).toMatch(/template literal interpolation/i);
+    it('names an unterminated template interpolation', () => {
+        expect(failureMessage(withSource('(r) => r.name === `x-${r.other'))).toMatch(/unterminated template interpolation/i);
     });
 
     it('names the missing schema property requirement', () => {
@@ -84,12 +91,6 @@ describe('parse failures report why', () => {
         expect(failureMessage(fromSource('1 === 2'))).toMatch(/at least one side/i);
     });
 
-    it('reports the offending token for a parenthesized right-hand side', () => {
-        // Reaches the unexpected-token guard before the dedicated parenthesized-expression
-        // one, so the reason is just the token: "Unsupported expression format: (".
-        // Thin, but it does name what the parser choked on.
-        expect(failureMessage(fromSource('r.price === (1 + 2)'))).toMatch(/\(/);
-    });
 
     it('names the unsupported method', () => {
         // The method name has to appear, or the developer cannot tell which call to change.

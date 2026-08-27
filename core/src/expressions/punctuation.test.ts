@@ -54,10 +54,7 @@ describe('rejections name the offending character', () => {
         ['comma', ',', '(r) => r.price === 10, r.name === "x"'],
         ['open brace', '{', '(r) => r.price === 10 {'],
         ['close brace', '}', '(r) => r.price === 10 }'],
-        ['question mark', '?', '(r) => r.price === 10 ? 1 : 2'],
         ['colon', ':', '(r) => r.price === 10 : 2'],
-        ['ampersand', '&', '(r) => r.price === 10 & 2'],
-        ['pipe', '|', '(r) => r.price === 10 | 2'],
     ];
 
     it.each(cases)('names %s in the rejection message', (_name, character, source) => {
@@ -90,6 +87,12 @@ describe('arithmetic characters are recognised as operators', () => {
 
     it.each([
         ['modulo', '(r) => r.price % 2 === 0'],
+        ['question mark', '(r) => (r.price > 5 ? r.price : 0) === 10'],
+        ['ampersand', '(r) => (r.price & 1) === 0'],
+        ['pipe', '(r) => (r.price | 1) === 11'],
+        ['exponent', '(r) => r.price ** 2 === 100'],
+        ['nullish coalescing', "(r) => (r.name ?? '') === 'x'"],
+        ['shift', '(r) => (r.price << 1) === 20'],
         ['asterisk', '(r) => r.price * 2 === 20'],
         ['plus', '(r) => r.price + 1 === 11'],
         ['minus', '(r) => r.price - 1 === 9'],

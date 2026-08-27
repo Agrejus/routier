@@ -700,6 +700,50 @@ export function describePluginContract(
                 expect(found.map(p => p.name)).toEqual(["Alpha"]);
             });
 
+            /**
+             * The rest of the grammar. Every one of these has a JavaScript answer, so a backend that
+             * cannot express it reports a missing capability and the datastore finishes the job —
+             * the row counts below hold either way, which is the point.
+             */
+            test("filters through nullish coalescing", async () => {
+                const found = await (await seeded()).products.where(p => (p.category ?? "none") === "toys").toArrayAsync();
+
+                expect(found.map(p => p.name).sort()).toEqual(["Charlie", "Delta"]);
+            });
+
+            test("filters through the conditional operator", async () => {
+                const found = await (await seeded()).products
+                    .where(p => (p.price > 25 ? p.category : "cheap") === "cheap")
+                    .toArrayAsync();
+
+                expect(found.map(p => p.name).sort()).toEqual(["Alpha", "Charlie"]);
+            });
+
+            test("filters through a bitwise and", async () => {
+                const found = await (await seeded()).products.where(p => (p.price & 20) === 20).toArrayAsync();
+
+                // 30 & 20 is 20 and 20 & 20 is 20; 10 and 40 share no bits with 20
+                expect(found.map(p => p.name).sort()).toEqual(["Bravo", "Charlie"]);
+            });
+
+            test("filters through a template literal", async () => {
+                const found = await (await seeded()).products.where(p => `${p.name}!` === "Bravo!").toArrayAsync();
+
+                expect(found.map(p => p.name)).toEqual(["Bravo"]);
+            });
+
+            test("filters through a regular expression", async () => {
+                const found = await (await seeded()).products.where(p => /^[AB]/.test(p.name)).toArrayAsync();
+
+                expect(found.map(p => p.name).sort()).toEqual(["Alpha", "Bravo"]);
+            });
+
+            test("filters through an exponent", async () => {
+                const found = await (await seeded()).products.where(p => p.price ** 2 === 900).toArrayAsync();
+
+                expect(found.map(p => p.name)).toEqual(["Bravo"]);
+            });
+
             test("returns an empty array when nothing matches", async () => {
                 expect(await (await seeded()).products.where(p => p.price > 10_000).toArrayAsync()).toEqual([]);
             });

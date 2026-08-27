@@ -39,6 +39,13 @@ const ARITHMETIC: Partial<Record<Call, (left: number, right: number) => number>>
     "multiply": (left, right) => left * right,
     "divide": (left, right) => left / right,
     "modulo": (left, right) => left % right,
+    "power": (left, right) => left ** right,
+    "bit-and": (left, right) => left & right,
+    "bit-or": (left, right) => left | right,
+    "bit-xor": (left, right) => left ^ right,
+    "shift-left": (left, right) => left << right,
+    "shift-right": (left, right) => left >> right,
+    "shift-right-unsigned": (left, right) => left >>> right,
 };
 
 const applyCall = (call: Call, value: unknown, args: unknown[]): unknown | typeof UNRESOLVED => {
@@ -58,6 +65,20 @@ const applyCall = (call: Call, value: unknown, args: unknown[]): unknown | typeo
 
     if (call === "length") {
         return typeof value === "string" || Array.isArray(value) ? value.length : UNRESOLVED;
+    }
+
+    if (call === "bit-not") {
+        return typeof value === "number" ? ~value : UNRESOLVED;
+    }
+
+    if (call === "matches") {
+        return typeof value === "string" && args[0] instanceof RegExp ? args[0].test(value) : UNRESOLVED;
+    }
+
+    if (call === "concat") {
+        return args.every(argument => argument != null)
+            ? [value, ...args].map(String).join("")
+            : UNRESOLVED;
     }
 
     const arithmetic = ARITHMETIC[call];
@@ -87,6 +108,27 @@ const operand = (expression: Expression | undefined, row: UnknownRecord): unknow
     }
 
     if (isCallExpression(expression)) {
+
+        /**
+         * `??` and `? :` are the two calls whose whole job is to answer when something is absent, so
+         * they run before the guard that refuses an absent operand.
+         */
+        if (expression.call === "coalesce") {
+            const left = operand(expression.expression, row);
+
+            return left === UNRESOLVED || left == null ? operand(expression.arguments[0], row) : left;
+        }
+
+        if (expression.call === "conditional") {
+            const condition = evaluate(expression.expression, row);
+
+            if (condition === undefined) {
+                return UNRESOLVED;
+            }
+
+            return operand(expression.arguments[condition === true ? 0 : 1], row);
+        }
+
         const inner = operand(expression.expression, row);
 
         if (inner === UNRESOLVED) {

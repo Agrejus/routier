@@ -1,6 +1,6 @@
 import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema';
 import { Expression } from '@routier/core/expressions';
-import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, entityResultColumns, getDialect, sqlColumnProperties, toColumnValueMap, toSql } from '@routier/sql-plugin-core';
+import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, entityResultColumns, getDialect, sqlColumnProperties, toColumnValueMap, toSql, canRenderInSql } from '@routier/sql-plugin-core';
 import { IQuery, JoinQueryOptionValue, mappedResultColumns, Query, QueryField, ResultColumn } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
 import { SqlOperation } from './types';
@@ -358,6 +358,21 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
     const params: any[] = [];
     let currentQuery = `SELECT ${columnsStr} FROM "${tableName}"`;
 
+    /**
+     * Ask before translating.
+     *
+     * Only the plugin knows what this engine can do — SQLite's `REGEXP` exists if the host
+     * registered the function and not otherwise — so an option the dialect cannot render is handed
+     * back here rather than thrown on. The datastore runs it over the rows this query does return.
+     */
+    for (const item of options.get("filter")) {
+        const expression = (item.option.value as { expression?: Expression }).expression;
+
+        if (expression != null && canRenderInSql(expression, "sqlite") === false) {
+            options.reportMissingCapability(item);
+        }
+    }
+
     // Pre-allocate operations array with known size for better performance
     const operations: Array<{ type: string, value: any, index: number }> = [];
 
@@ -368,10 +383,14 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
     }
     operations.length = totalOps;
 
-    // Collect all operations in order - single pass
+    // Collect all operations in order - single pass, skipping anything this engine did not run
     let opIndex = 0;
     for (const [, items] of options.items) {
         for (const item of items) {
+            if (item.option.target === "database" && item.option.reason !== "executed") {
+                continue;
+            }
+
             operations[opIndex++] = {
                 type: item.option.name,
                 value: item.option.value,
@@ -379,6 +398,8 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
             };
         }
     }
+
+    operations.length = opIndex;
 
     // Sort operations by index to maintain order
     operations.sort((a, b) => a.index - b.index);

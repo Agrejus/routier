@@ -11,7 +11,8 @@ export type CallSource =
     | { form: "property", name: string }
     | { form: "function", name: string }
     | { form: "operator", symbol: string }
-    | { form: "prefix", keyword: string };
+    | { form: "prefix", keyword: string }
+    | { form: "conditional" };
 
 export const CALL_SOURCE: Record<Call, CallSource> = {
     "to-lower-case": { form: "method", name: "toLowerCase" },
@@ -32,7 +33,6 @@ export const CALL_SOURCE: Record<Call, CallSource> = {
     "round": { form: "function", name: "Math.round" },
     "sign": { form: "function", name: "Math.sign" },
     "square-root": { form: "function", name: "Math.sqrt" },
-    "power": { form: "function", name: "Math.pow" },
 
     "add": { form: "operator", symbol: "+" },
     "subtract": { form: "operator", symbol: "-" },
@@ -57,6 +57,19 @@ export const CALL_SOURCE: Record<Call, CallSource> = {
 
     "some": { form: "method", name: "some" },
     "every": { form: "method", name: "every" },
+
+    // `Math.pow(a, b)` parses to the same call; `**` is the shorter of the two spellings
+    "power": { form: "operator", symbol: "**" },
+    "bit-and": { form: "operator", symbol: "&" },
+    "bit-or": { form: "operator", symbol: "|" },
+    "bit-xor": { form: "operator", symbol: "^" },
+    "shift-left": { form: "operator", symbol: "<<" },
+    "shift-right": { form: "operator", symbol: ">>" },
+    "shift-right-unsigned": { form: "operator", symbol: ">>>" },
+    "bit-not": { form: "prefix", keyword: "~" },
+    "coalesce": { form: "operator", symbol: "??" },
+    "conditional": { form: "conditional" },
+    "matches": { form: "method", name: "test" },
 };
 
 /**
@@ -85,7 +98,12 @@ export const renderCallAsJs = (call: Call, operand: string, args: string[]): str
     }
 
     if (source.form === "prefix") {
-        return `${source.keyword} ${operand}`;
+        // `~x`, not `~ x` — a bitwise complement is written tight, unlike `typeof`
+        return source.keyword === "~" ? `${source.keyword}${operand}` : `${source.keyword} ${operand}`;
+    }
+
+    if (source.form === "conditional") {
+        return `${operand} ? ${args[0] ?? "?"} : ${args[1] ?? "?"}`;
     }
 
     return `${[operand, ...args].join(` ${source.symbol} `)}`;

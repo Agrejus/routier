@@ -51,8 +51,8 @@ function expectParsed(fn: any, params?: any, target: any = schema) {
 
 describe('tokenizer guards', () => {
     it('rejects a character outside the token tables', () => {
-        // `~` is valid JavaScript but not part of the filter language.
-        expectRejected(fromSource('r.price === ~1'));
+        // `@` is not valid JavaScript in an expression either, so the tokenizer is the only guard
+        expectRejected(withSource('(r) => r.price === @1'));
     });
 
     it('rejects source that ends mid-expression', () => {
@@ -75,7 +75,8 @@ describe('tokenizer guards', () => {
 });
 
 describe('rejection guards', () => {
-    it('rejects a comparison against a parenthesized expression', () => {
+    // A boolean group compared to a boolean is still not a value the grammar reads
+    it('rejects a comparison against a parenthesized boolean', () => {
         expectRejected(fromSource('(r.price === 1) === true'));
     });
 

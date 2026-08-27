@@ -195,8 +195,11 @@ describe('string literal delimiters', () => {
 });
 
 describe('template literal interpolation', () => {
-    it('rejects interpolation in a backtick string', () => {
-        expectNotParsable('r.name === `x-${r.id}`');
+    it('reads interpolation as a concat of the chunks and the expressions', () => {
+        const parsed = parse('r.name === `x-${r.id}`') as any;
+
+        expect(parsed.type).toBe('comparator');
+        expect(parsed.right.call).toBe('concat');
     });
 
     it('accepts a lone dollar sign in a backtick string', () => {

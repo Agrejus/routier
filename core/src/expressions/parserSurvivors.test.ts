@@ -75,7 +75,7 @@ function parsed(fn: any, params?: any): ComparatorExpression {
 
 describe('failure messages name their cause', () => {
     it('an unknown character', () => {
-        expect(failureMessage(fromSource('r.price === ~1'))).toMatch(/unexpected character '~'/);
+        expect(failureMessage(withSource('(r) => r.price === @1'))).toMatch(/unexpected character '@'/);
     });
 
     it('source ending mid-expression', () => {
@@ -90,9 +90,6 @@ describe('failure messages name their cause', () => {
         expect(failureMessage(withSource('(r) => r.name === "a" r'))).toMatch(/unexpected token 'r'/);
     });
 
-    it('comparison against a parenthesized expression', () => {
-        expect(failureMessage(fromSource('(r.price === 1) === true'))).toMatch(/comparison against a parenthesized expression/);
-    });
 
     it("unary '-' on a non-number", () => {
         expect(failureMessage(fromSource('r.price === -"x"'))).toMatch(/unary '-' on a non-number/);
