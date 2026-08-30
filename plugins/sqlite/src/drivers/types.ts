@@ -33,11 +33,22 @@ export interface SqliteConnection {
 
     /** Releases the connection. Called on every completion path, including failures. */
     close(): Promise<void>;
+
+    /**
+     * Replaces a built-in scalar function, deterministically.
+     *
+     * SQLite refuses a non-deterministic function in an index expression, a CHECK, or a generated
+     * column — and refuses to even load a schema that already has one.
+     */
+    defineFunction?(name: string, implementation: (...args: unknown[]) => unknown): void;
 }
 
 export interface SqliteDriver {
     /** Names the engine, for error messages that would otherwise not say which one failed. */
     readonly name: string;
+
+    /** Whether this engine accepts a replacement `lower()`. SQLite's own folds ASCII only. */
+    readonly foldsUnicodeCasing: boolean;
 
     /**
      * Opens `databaseName`.

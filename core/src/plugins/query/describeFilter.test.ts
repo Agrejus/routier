@@ -199,6 +199,37 @@ describe('describeUnparsableFilter', () => {
     });
 });
 
+describe('a filter the parser refused', () => {
+
+    it('names the method it refused, instead of only dumping the closure', () => {
+        const filter = (x: any) => x.name.normalize() === 'a';
+        const expression = toExpression(schema as never, filter as never, undefined as never);
+
+        expect(expression.type).toBe('not-parsable');
+        expect((expression as any).reason).toContain('normalize');
+        expect(describeUnparsableFilter(filter, (expression as any).reason).text).toContain('normalize');
+    });
+
+    it.each([
+        ['a call in the tested operand', '(x) => /^Al/.test(`${x.name}x`)', ['/^Al/', 'x', 'true']],
+        ['a casing call in the tested operand', '(x) => /^Al/.test(x.name.toLowerCase())', ['/^Al/', 'true']],
+    ])('binds the pattern first, because the text names it first — %s', (_, source, expected) => {
+        const expression = toExpression(schema as never, new Function(`return ${source};`)() as never, undefined as never);
+        const { text, parameters } = describeFilterAsJs(expression);
+
+        expect(parameters.map(String)).toEqual(expected);
+        expect(text.split('?')).toHaveLength(parameters.length + 1);
+    });
+
+    it('renders a regex test with the pattern as the receiver, the way it was written', () => {
+        const expression = toExpression(schema as never, ((x: any) => /^Al/.test(x.name)) as never, undefined as never);
+        const { text, parameters } = describeFilterAsJs(expression);
+
+        expect(text).toBe('?.test(name) === ?');
+        expect(parameters[0]).toBeInstanceOf(RegExp);
+    });
+});
+
 function outside(): string {
     return 'ada';
 }

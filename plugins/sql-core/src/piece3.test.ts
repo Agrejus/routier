@@ -53,7 +53,7 @@ describe('the forms Piece 3 taught the parser to read', () => {
     it('renders a switch whose default carries a predicate', () => {
         const result = sql((x: any) => { switch (x.name) { case 'ada': return true; default: return x.age > 3; } });
 
-        expect(result.where).toBe('("name" = ? OR ("name" != ? AND "age" > ?))');
+        expect(result.where).toBe('("name" = ? OR ("name" IS NOT ? AND "age" > ?))');
         expect(result.params).toEqual(['ada', 'ada', 3]);
     });
 

@@ -19,6 +19,7 @@ import { normalizeParams, type SqliteConnection, type SqliteDriver } from './typ
 type DatabaseSyncLike = {
     prepare(sql: string): { all(...params: unknown[]): unknown[]; run(...params: unknown[]): unknown };
     exec(sql: string): void;
+    function(name: string, options: { deterministic: boolean }, implementation: (...args: unknown[]) => unknown): void;
     close(): void;
 };
 
@@ -46,6 +47,10 @@ class NodeSqliteConnection implements SqliteConnection {
         return this.database.prepare(sql).all(...normalizeParams(params));
     }
 
+    defineFunction(name: string, implementation: (...args: unknown[]) => unknown): void {
+        this.database.function(name, { deterministic: true }, implementation);
+    }
+
     async run(sql: string, params?: readonly unknown[]): Promise<void> {
         // `exec` is the only way to run a statement with no parameters that may not be a
         // single statement — transaction control and DDL both arrive here.
@@ -64,6 +69,7 @@ class NodeSqliteConnection implements SqliteConnection {
 
 export const nodeSqliteDriver = (): SqliteDriver => ({
     name: 'node:sqlite',
+    foldsUnicodeCasing: true,
 
     async open(databaseName: string): Promise<SqliteConnection> {
         const { DatabaseSync } = await loadModule();

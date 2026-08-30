@@ -79,7 +79,7 @@ describe('calls that differ by engine', () => {
         ['sqlite', '(("flags" | ?) - ("flags" & ?)) = ?'],
         // Numbers are stored as double precision, and neither engine has a bitwise operator for
         // that, so the operands are narrowed first
-        ['postgresql', '(("flags")::bigint # ($1)::bigint) = $2'],
+        ['postgresql', '((trunc(("flags")::numeric))::bigint # (trunc(($1)::numeric))::bigint) = $2'],
         ['mysql', '(`flags` ^ ?) = ?'],
         ['mssql', '(CAST([flags] AS bigint) ^ CAST(@p1 AS bigint)) = @p2'],
     ])('renders xor on %s', (dialect, expected) => {
@@ -98,7 +98,9 @@ describe('calls that differ by engine', () => {
     // SQLite has no POWER, and no engine here has JavaScript's unsigned shift
     it.each([
         ['power', (x: any) => x.age ** 2 === 100, { sqlite: false, postgresql: true, mysql: true, mssql: true }],
-        ['shift left', (x: any) => (x.flags << 1) === 8, { sqlite: false, postgresql: true, mysql: true, mssql: false }],
+        // Rendered for PG and MySQL, not claimed: both are 64-bit where JavaScript takes the
+        // shift count mod 32, so `4 << 40` is 4398046511104 there and 1024 in JavaScript
+        ['shift left', (x: any) => (x.flags << 1) === 8, { sqlite: false, postgresql: false, mysql: false, mssql: false }],
         ['unsigned shift', (x: any) => (x.flags >>> 1) === 2, { sqlite: false, postgresql: false, mysql: false, mssql: false }],
         // Rendered for PG and MySQL, but not claimed: the `= true` wrapper a bare boolean call
         // carries returned no rows on PostgreSQL, so it runs in memory pending a real-server check
@@ -107,6 +109,14 @@ describe('calls that differ by engine', () => {
         for (const [dialect, supported] of Object.entries(expected)) {
             expect({ dialect, supported: can(filter, dialect as Dialect) }).toEqual({ dialect, supported });
         }
+    });
+
+    // Rendered but claimed by nobody, so nothing else pins the output
+    it.each([
+        ['postgresql', '((trunc(("flags")::numeric))::bigint << $1) = $2'],
+        ['mysql', '(`flags` << ?) = ?'],
+    ])('renders a left shift on %s without claiming it', (dialect, expected) => {
+        expect(sql((x: any) => (x.flags << 1) === 8, dialect as Dialect).where).toBe(expected);
     });
 
     it('renders a pattern match where the engine has one, even while not claiming it', () => {

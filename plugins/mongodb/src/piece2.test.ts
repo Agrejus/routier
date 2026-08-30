@@ -88,8 +88,24 @@ describe('operators MQL does not have', () => {
     });
 
     it('says yes to everything it can express', () => {
-        expect(canRenderInMql(expressionOf((x: any) => (x.flags ^ 1) === 5))).toBe(true);
         expect(canRenderInMql(expressionOf((x: any) => x.age ** 2 === 100))).toBe(true);
         expect(canRenderInMql(expressionOf((x: any) => /^a/.test(x.name)))).toBe(true);
+    });
+
+    it('does not claim a bitwise call, which needs int or long operands', () => {
+        // A JS number reaches BSON as a Double when it is fractional or at least 2^31.
+        expect(canRenderInMql(expressionOf((x: any) => (x.flags ^ 1) === 5))).toBe(false);
+        expect(canRenderInMql(expressionOf((x: any) => (x.flags & 4) === 4))).toBe(false);
+        expect(canRenderInMql(expressionOf((x: any) => ~x.flags === -6))).toBe(false);
+    });
+
+    it('does not claim a regex whose flags change what matches', () => {
+        expect(canRenderInMql(expressionOf((x: any) => /^a/y.test(x.name)))).toBe(false);
+        expect(canRenderInMql(expressionOf((x: any) => /^a/u.test(x.name)))).toBe(false);
+    });
+
+    it('claims a regex whose flags it can drop or render', () => {
+        expect(canRenderInMql(expressionOf((x: any) => /^a/g.test(x.name)))).toBe(true);
+        expect(canRenderInMql(expressionOf((x: any) => /^a/i.test(x.name)))).toBe(true);
     });
 });

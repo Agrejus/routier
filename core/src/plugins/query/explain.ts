@@ -15,7 +15,9 @@ export const MEMORY_EXECUTION_EXPLANATIONS: Record<MemoryExecutionReason, string
     "map-rename": "A map renames or drops properties, so every option after it refers to names the database does not have.",
     "after-nearest": "A similarity search orders and limits rows, and the plugin cannot report whether it performed the search, so every option after it runs in memory.",
     "after-join": "A join produces [outer, inner] tuples rather than entities, and the plugin cannot report how it joined, so every option after it runs in memory.",
-    "cross-plugin-join": "The two sides of this join live on different plugins, so neither can read the other's rows and the join runs in the datastore."
+    "cross-plugin-join": "The two sides of this join live on different plugins, so neither can read the other's rows and the join runs in the datastore.",
+    "after-window": "A skip or take runs before this option, and SQL applies WHERE before LIMIT, so pushing it down would window rows this option had not seen yet. It runs in memory over the windowed rows instead.",
+    "predicate-error": "A strict comparison compares a column against a value of a type it can never equal, so the answer is the same for every row and the filter runs in memory. Check the types in the filter."
 };
 
 /**
@@ -45,6 +47,7 @@ export const EXECUTED_QUERIES_UNSUPPORTED =
  */
 export const DATABASE_EXECUTION_EXPLANATIONS: Record<Exclude<DatabaseExecutionReason, "executed">, string> = {
     "missing-capability": "The plugin's engine cannot express this option, so it runs in memory over the rows the plugin did return. Only the plugin can know this — an engine's capabilities are not visible from here.",
+    "engine-divergence": "The plugin's engine would answer this option differently from JavaScript, so it runs in memory instead and the rows match what the predicate means. Nothing in the query needs changing.",
     "not-reached": "The database stopped at an option it could not express, so this one runs in memory too. Carrying on would apply it to rows the earlier option had not filtered."
 };
 

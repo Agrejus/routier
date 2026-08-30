@@ -43,7 +43,7 @@ function parsed(fn: any, params?: any): ComparatorExpression {
         ? toExpression(schema as any, fn)
         : toExpression(schema as any, fn, params);
 
-    expect(result).not.toStrictEqual(Expression.NOT_PARSABLE);
+    expect(result).not.toHaveProperty('type', 'not-parsable');
     return result as ComparatorExpression;
 }
 
@@ -52,7 +52,7 @@ function rejected(fn: any, params?: any) {
         ? toExpression(schema as any, fn)
         : toExpression(schema as any, fn, params);
 
-    expect(result).toStrictEqual(Expression.NOT_PARSABLE);
+    expect(result).toHaveProperty('type', 'not-parsable');
 }
 
 describe('unicode and hex string escapes', () => {
@@ -267,7 +267,7 @@ describe('.length on strings and arrays', () => {
 
         const result = toExpression(lengthSchema as any, ((r: any) => r.box.length === 5) as any) as ComparatorExpression;
 
-        expect(result).not.toStrictEqual(Expression.NOT_PARSABLE);
+        expect(result).not.toHaveProperty('type', 'not-parsable');
         expect(peelCalls(result.left)?.calls.map(c => c.call)).toEqual([]);
         expect((result.left as PropertyExpression).property.getAssignmentPath()).toBe('box.length');
     });
@@ -322,9 +322,9 @@ describe('parse failure caching', () => {
         }).compile();
         const unsupported = fromSource('r.name.padEnd(3) === "x"');
 
-        expect(toExpression(cacheSchema as any, unsupported)).toStrictEqual(Expression.NOT_PARSABLE);
-        expect(toExpression(cacheSchema as any, unsupported)).toStrictEqual(Expression.NOT_PARSABLE);
-        expect(toExpression(cacheSchema as any, unsupported)).toStrictEqual(Expression.NOT_PARSABLE);
+        expect(toExpression(cacheSchema as any, unsupported)).toHaveProperty('type', 'not-parsable');
+        expect(toExpression(cacheSchema as any, unsupported)).toHaveProperty('type', 'not-parsable');
+        expect(toExpression(cacheSchema as any, unsupported)).toHaveProperty('type', 'not-parsable');
 
         expect(warn).toHaveBeenCalledTimes(1);
     });
@@ -337,11 +337,11 @@ describe('parse failure caching', () => {
         const filter = fromSource('r.name === p.term', '[r, p]');
 
         // Wrong params fail...
-        expect(toExpression(cacheSchema as any, filter, { other: 1 })).toStrictEqual(Expression.NOT_PARSABLE);
+        expect(toExpression(cacheSchema as any, filter, { other: 1 })).toHaveProperty('type', 'not-parsable');
 
         // ...but the same source with the right params must still parse.
         const bound = toExpression(cacheSchema as any, filter, { term: 'x' }) as ComparatorExpression;
-        expect(bound).not.toStrictEqual(Expression.NOT_PARSABLE);
+        expect(bound).not.toHaveProperty('type', 'not-parsable');
         expect((bound.right as ValueExpression).value).toBe('x');
     });
 });

@@ -76,6 +76,6 @@ describe('the calls each dialect claims', () => {
         expect(canRenderInSql(comparisonUsing('power'), 'sqlite')).toBe(false);
         expect(canRenderInSql(comparisonUsing('power'), 'postgresql')).toBe(true);
         expect(canRenderInSql(comparisonUsing('shift-left'), 'mssql')).toBe(false);
-        expect(canRenderInSql(comparisonUsing('shift-left'), 'mysql')).toBe(true);
+        expect(canRenderInSql(comparisonUsing('shift-left'), 'mysql')).toBe(false);
     });
 });

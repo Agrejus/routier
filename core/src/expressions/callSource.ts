@@ -12,7 +12,9 @@ export type CallSource =
     | { form: "function", name: string }
     | { form: "operator", symbol: string }
     | { form: "prefix", keyword: string }
-    | { form: "conditional" };
+    | { form: "conditional" }
+    /** The argument is the receiver in source: `/^a/.test(x.name)`, not `x.name.test(/^a/)`. */
+    | { form: "regex-test" };
 
 export const CALL_SOURCE: Record<Call, CallSource> = {
     "to-lower-case": { form: "method", name: "toLowerCase" },
@@ -69,7 +71,7 @@ export const CALL_SOURCE: Record<Call, CallSource> = {
     "bit-not": { form: "prefix", keyword: "~" },
     "coalesce": { form: "operator", symbol: "??" },
     "conditional": { form: "conditional" },
-    "matches": { form: "method", name: "test" },
+    "matches": { form: "regex-test" },
 };
 
 /**
@@ -78,33 +80,56 @@ export const CALL_SOURCE: Record<Call, CallSource> = {
  *
  * Takes strings so one implementation serves a live tree and a serialized one.
  */
-export const renderCallAsJs = (call: Call, operand: string, args: string[]): string => {
+/**
+ * Thunked because rendering a side can record a parameter, and `regex-test` emits its argument
+ * before its operand — so the two orders have to agree.
+ */
+export const renderCallAsJs = (call: Call, renderOperand: () => string, renderArgs: () => string[]): string => {
     const source = CALL_SOURCE[call];
 
     if (source == null) {
-        return `${operand}.${call}(${args.join(", ")})`;
+        const operand = renderOperand();
+
+        return `${operand}.${call}(${renderArgs().join(", ")})`;
     }
 
     if (source.form === "property") {
-        return `${operand}.${source.name}`;
+        return `${renderOperand()}.${source.name}`;
+    }
+
+    if (source.form === "regex-test") {
+        const pattern = renderArgs()[0] ?? "?";
+
+        return `${pattern}.test(${renderOperand()})`;
     }
 
     if (source.form === "method") {
-        return `${operand}.${source.name}(${args.join(", ")})`;
+        const operand = renderOperand();
+
+        return `${operand}.${source.name}(${renderArgs().join(", ")})`;
     }
 
     if (source.form === "function") {
-        return `${source.name}(${[operand, ...args].join(", ")})`;
+        const operand = renderOperand();
+
+        return `${source.name}(${[operand, ...renderArgs()].join(", ")})`;
     }
 
     if (source.form === "prefix") {
         // `~x`, not `~ x` — a bitwise complement is written tight, unlike `typeof`
+        const operand = renderOperand();
+
         return source.keyword === "~" ? `${source.keyword}${operand}` : `${source.keyword} ${operand}`;
     }
 
     if (source.form === "conditional") {
+        const operand = renderOperand();
+        const args = renderArgs();
+
         return `${operand} ? ${args[0] ?? "?"} : ${args[1] ?? "?"}`;
     }
 
-    return `${[operand, ...args].join(` ${source.symbol} `)}`;
+    const operand = renderOperand();
+
+    return `${[operand, ...renderArgs()].join(` ${source.symbol} `)}`;
 };

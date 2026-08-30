@@ -2,6 +2,7 @@ import { logger } from "../utilities";
 import { assertString } from "../assertions";
 import { CompiledSchema, PropertyInfo, SchemaTypes } from "../schema";
 import { evaluate } from "./evaluate";
+import { foldConstantCalls } from "./fold";
 import { Expression, OperatorExpression, ComparatorExpression, ValueExpression, PropertyExpression, CallExpression, Filter, ParamsFilter, Call, Comparator, Transformer } from "./types";
 
 // Error message constants
@@ -69,7 +70,16 @@ const MULTI_CHARACTER_PUNCTUATION = [">>>", "===", "!==", "**", "<<", ">>", "??"
 // experimentally: 30 message-asserting tests killed 1 of 12.
 const SINGLE_CHARACTER_PUNCTUATION = new Set(["(", ")", "[", "]", "{", "}", ".", ",", ";", "!", ">", "<", "-", "+", "*", "/", "%", "=", "?", ":", "&", "|", "^", "~"]);
 
-const STRING_ESCAPES: Record<string, string> = {
+/**
+ * A lookup table keyed by source text.
+ *
+ * Null-prototype: `TRANSFORM_METHODS["toString"]` otherwise returns `Object.prototype.toString`,
+ * which is truthy, and the parser reads a method it does not support as one it does.
+ */
+const sourceKeyed = <T>(entries: Record<string, T>): Record<string, T> =>
+    Object.assign(Object.create(null) as Record<string, T>, entries);
+
+const STRING_ESCAPES: Record<string, string> = sourceKeyed({
     "n": "\n",
     "r": "\r",
     "t": "\t",
@@ -77,7 +87,7 @@ const STRING_ESCAPES: Record<string, string> = {
     "f": "\f",
     "v": "\v",
     "0": "\0"
-};
+});
 
 /**
  * Whether a `/` here opens a regex rather than dividing.
@@ -684,27 +694,27 @@ type ConditionalOperand = {
 type Operand = PropertyOperand | ValueOperand | ParamOperand | MethodCallOperand | ArithmeticOperand | ConditionalOperand;
 
 /** JavaScript precedence: `*`, `/`, `%` bind tighter than `+` and `-`. */
-const MULTIPLICATIVE_OPERATORS: Record<string, Call> = {
+const MULTIPLICATIVE_OPERATORS: Record<string, Call> = sourceKeyed({
     "*": "multiply",
     "/": "divide",
     "%": "modulo",
-};
+});
 
-const ADDITIVE_OPERATORS: Record<string, Call> = {
+const ADDITIVE_OPERATORS: Record<string, Call> = sourceKeyed({
     "+": "add",
     "-": "subtract",
-};
+});
 
-const SHIFT_OPERATORS: Record<string, Call> = {
+const SHIFT_OPERATORS: Record<string, Call> = sourceKeyed({
     "<<": "shift-left",
     ">>": "shift-right",
     ">>>": "shift-right-unsigned",
-};
+});
 
-const BITWISE_AND_OPERATORS: Record<string, Call> = { "&": "bit-and" };
-const BITWISE_XOR_OPERATORS: Record<string, Call> = { "^": "bit-xor" };
-const BITWISE_OR_OPERATORS: Record<string, Call> = { "|": "bit-or" };
-const COALESCE_OPERATORS: Record<string, Call> = { "??": "coalesce" };
+const BITWISE_AND_OPERATORS: Record<string, Call> = sourceKeyed({ "&": "bit-and" });
+const BITWISE_XOR_OPERATORS: Record<string, Call> = sourceKeyed({ "^": "bit-xor" });
+const BITWISE_OR_OPERATORS: Record<string, Call> = sourceKeyed({ "|": "bit-or" });
+const COALESCE_OPERATORS: Record<string, Call> = sourceKeyed({ "??": "coalesce" });
 
 /** Whether a schema property is reachable in here, which decides which side of a comparison it is. */
 const containsProperty = (operand: Operand): boolean => {
@@ -726,8 +736,10 @@ const DECLARATION_KEYWORDS = new Set(["const", "let", "var"]);
 /** An operand whose value only a row can supply. */
 const UNKNOWN_UNTIL_ROW = Symbol("unknown until row");
 
-/** The argument slot of a unary call, which every call carries whether or not it takes one. */
-const noArgument = (): ValueOperand => ({ kind: "value", value: undefined, transformer: null, locale: null });
+/** The empty argument slot of a unary call. Compared by identity, so a real `undefined` still counts. */
+const NO_ARGUMENT: ValueOperand = Object.freeze({ kind: "value", value: undefined, transformer: null, locale: null }) as ValueOperand;
+
+const noArgument = (): ValueOperand => NO_ARGUMENT;
 
 /** A predicate no row satisfies. Never reaches a tree: no expression node means "match nothing". */
 const NEVER = "never";
@@ -754,20 +766,20 @@ const or = (left: Expression, right: Expression): Expression => {
     return new OperatorExpression({ operator: "||", left, right });
 }
 
-const COMPARATOR_METHODS: Record<string, Comparator> = {
+const COMPARATOR_METHODS: Record<string, Comparator> = sourceKeyed({
     startsWith: "starts-with",
     endsWith: "ends-with",
     includes: "includes"
-};
+});
 
-const TRANSFORM_METHODS: Record<string, { transformer: Transformer, locale: string | null }> = {
+const TRANSFORM_METHODS: Record<string, { transformer: Transformer, locale: string | null }> = sourceKeyed({
     toLowerCase: { transformer: "to-lower-case", locale: null },
     toUpperCase: { transformer: "to-upper-case", locale: null },
     toLocaleLowerCase: { transformer: "to-lower-case", locale: "en-US" },
     toLocaleUpperCase: { transformer: "to-upper-case", locale: "en-US" }
-};
+});
 
-const COMPARISON_OPERATORS: Record<string, { comparator: Comparator, negated: boolean, strict: boolean }> = {
+const COMPARISON_OPERATORS: Record<string, { comparator: Comparator, negated: boolean, strict: boolean }> = sourceKeyed({
     "==": { comparator: "equals", negated: false, strict: false },
     "===": { comparator: "equals", negated: false, strict: true },
     "!=": { comparator: "equals", negated: true, strict: false },
@@ -776,7 +788,7 @@ const COMPARISON_OPERATORS: Record<string, { comparator: Comparator, negated: bo
     ">=": { comparator: "greater-than-equals", negated: false, strict: false },
     "<": { comparator: "less-than", negated: false, strict: false },
     "<=": { comparator: "less-than-equals", negated: false, strict: false }
-};
+});
 
 const SWAPPED_COMPARATORS: Record<Comparator, Comparator> = {
     "equals": "equals",
@@ -1440,7 +1452,7 @@ class ExpressionParser {
                 const only = pieces[0];
                 const alreadyText = only.kind === "value" && typeof only.value === "string";
 
-                return alreadyText ? only : { kind: "arithmetic", call: "to-string", left: only, right: { kind: "value", value: undefined, transformer: null, locale: null } };
+                return alreadyText ? only : { kind: "arithmetic", call: "to-string", left: only, right: noArgument() };
             }
 
             return pieces.reduce((left, right) => ({ kind: "arithmetic", call: "concat", left, right }));
@@ -1481,7 +1493,7 @@ class ExpressionParser {
             this.stream.next();
 
             // Unary, so the tree carries the operand and no argument
-            return { kind: "arithmetic", call: "bit-not", left: this.parseOperand(), right: { kind: "value", value: undefined, transformer: null, locale: null } };
+            return { kind: "arithmetic", call: "bit-not", left: this.parseOperand(), right: noArgument() };
         }
 
         if (token.kind === "punctuation" && token.value === "-") {
@@ -1873,13 +1885,14 @@ class ExpressionParser {
             });
         }
 
+        // Only a loose comparison coerces. `===` records `strict` and honouring it is the point.
         if (left.kind === "property" && right.kind !== "property") {
-            return this.buildPropertyComparator(left, operator, right, /* applyConverter */ true);
+            return this.buildPropertyComparator(left, operator, right, /* applyConverter */ !operator.strict);
         }
 
         if (right.kind === "property" && left.kind !== "property") {
             const swapped = { ...operator, comparator: SWAPPED_COMPARATORS[operator.comparator] };
-            return this.buildPropertyComparator(right, swapped, left, /* applyConverter */ true);
+            return this.buildPropertyComparator(right, swapped, left, /* applyConverter */ !operator.strict);
         }
 
         const settled = this.settleConstantComparison(left, operator, right);
@@ -2059,9 +2072,11 @@ class ExpressionParser {
             return new CallExpression({
                 call: operand.call,
                 expression: this.createOperandExpression(operand.left),
-                arguments: operand.extra == null
-                    ? [this.createOperandExpression(operand.right)]
-                    : [this.createOperandExpression(operand.right), this.createOperandExpression(operand.extra)]
+                arguments: operand.right === NO_ARGUMENT
+                    ? []
+                    : operand.extra == null
+                        ? [this.createOperandExpression(operand.right)]
+                        : [this.createOperandExpression(operand.right), this.createOperandExpression(operand.extra)]
             });
         }
 
@@ -2394,13 +2409,17 @@ export const parseFragment = (schema: CompiledSchema<any>, body: string, rootNam
         const scope: Scope = new Map([[rootName, { kind: "property", path: [] }]]);
         const parser = new ExpressionParser(schema, stream, scope, null, undefined);
 
-        return parser.parse();
+        return foldConstantCalls(parser.parse());
     } catch {
         // The failure is expected and informative — see above — so it is not logged. A caller that
         // parses one conjunct against two schemas would otherwise warn on every successful split.
         return Expression.NOT_PARSABLE;
     }
 };
+
+/** What the parser refused, from a throw that may not be an `Error`. */
+const refusalOf = (error: unknown): string =>
+    error instanceof Error ? error.message : String(error);
 
 export const toExpression = <T extends any, P extends any>(schema: CompiledSchema<any>, fn: Filter<T> | ParamsFilter<T, P>, params?: P) => {
     const stringifiedFunction = fn.toString();
@@ -2415,17 +2434,18 @@ export const toExpression = <T extends any, P extends any>(schema: CompiledSchem
     const cached = getCachedTemplate(schema, stringifiedFunction);
 
     if (cached != null) {
-        // A cached failure — the warning was already logged when it was discovered
+        // A cached failure — the warning was already logged when it was discovered. The template
+        // carries what was refused, and `.explain()` is usually called once the cache is warm.
         if (Expression.isNotParsable(cached.template)) {
-            return Expression.NOT_PARSABLE;
+            return cached.template;
         }
 
         try {
-            return bindExpression(cached.template, cached.paramsName, params);
+            return foldConstantCalls(bindExpression(cached.template, cached.paramsName, params));
         } catch (error) {
             // Binding failures are param-dependent by nature — never cached
             warn(error);
-            return Expression.NOT_PARSABLE;
+            return Expression.notParsable(refusalOf(error));
         }
     }
 
@@ -2444,12 +2464,14 @@ export const toExpression = <T extends any, P extends any>(schema: CompiledSchem
         // Cache the failure so a hot query on an unsupported filter doesn't
         // re-parse and re-warn on every execution.  Param-dependent failures are
         // exempt: the same source can succeed with different params.
+        const refused = Expression.notParsable(refusalOf(error));
+
         if (!(error instanceof ParamDependentParseError)) {
-            setCachedTemplate(schema, stringifiedFunction, { template: Expression.NOT_PARSABLE, paramsName: null });
+            setCachedTemplate(schema, stringifiedFunction, { template: refused, paramsName: null });
         }
 
         warn(error);
-        return Expression.NOT_PARSABLE;
+        return refused;
     }
 
     // Templates whose structure was resolved from param values are only
@@ -2459,9 +2481,9 @@ export const toExpression = <T extends any, P extends any>(schema: CompiledSchem
     }
 
     try {
-        return bindExpression(template, paramsName, params);
+        return foldConstantCalls(bindExpression(template, paramsName, params));
     } catch (error) {
         warn(error);
-        return Expression.NOT_PARSABLE;
+        return Expression.notParsable(refusalOf(error));
     }
 }

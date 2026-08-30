@@ -904,5 +904,105 @@ export function describePluginContract(
                 await expect(store().destroyAsync()).resolves.not.toThrow();
             });
         });
+
+        /** The rows a filter returns must be the rows the JavaScript predicate returns. */
+        section("filter parity with JavaScript", () => {
+
+            /** Values chosen where engines disagree: the shared fixture is integral and ASCII. */
+            const DIVERGENT: Product[] = [
+                { name: "Echo", category: "tools", price: 5 },
+                { name: "\u00c9cho", category: "tools", price: 5.5 },
+                { name: "Fox", category: "toys", price: 20 },
+                { name: "Golf", category: "toys", price: 30 },
+                { name: "Wide", category: "toys", price: 2147483648 },
+            ];
+
+            const seededDivergent = async () => {
+                const dataStore = store();
+                await dataStore.products.addAsync(...(DIVERGENT as any));
+                await dataStore.saveChangesAsync();
+                return dataStore;
+            };
+
+            const agrees = async (title: string, predicate: (product: Product) => boolean) => {
+                const dataStore = await seededDivergent();
+                const found = await dataStore.products.where(predicate as any).toArrayAsync();
+
+                expect({ [title]: found.map((p: any) => p.name).toSorted() })
+                    .toEqual({ [title]: DIVERGENT.filter(predicate).map(p => p.name).toSorted() });
+            };
+
+            test("truncates a fractional bitwise operand the way JavaScript does", async () => {
+                // JavaScript: 5.5 -> 5, and 5 & 1 is 1. An engine that rounds gets 6 & 1 = 0.
+                await agrees("fractional bitwise and", p => ((p.price as number) & 1) === 1);
+            });
+
+            test("folds case beyond ASCII", async () => {
+                await agrees("non-ascii lower", p => p.name.toLowerCase() === "\u00e9cho");
+            });
+
+            test("concatenates a number the way a template literal does", async () => {
+                await agrees("numeric concat", p => `${p.price}!` === "5!");
+            });
+
+            test("takes a shift count mod 32", async () => {
+                // 20 << 37 is 20 << 5 in JavaScript: 640. A 64-bit engine answers 2748779069440.
+                await agrees("wide shift", p => ((p.price as number) << 37) === 640);
+            });
+
+            test("filters through a bitwise xor", async () => {
+                await agrees("xor", p => ((p.price as number) ^ 2) === 28);
+            });
+
+            test("filters through a left shift", async () => {
+                await agrees("shift", p => ((p.price as number) << 1) === 40);
+            });
+
+            test("wraps a bitwise operand to 32 bits, the way JavaScript does", async () => {
+                // JavaScript runs ToInt32 first, so this is -2147483648. A 64-bit engine says otherwise.
+                await agrees("wide bitwise", p => ((p.price as number) | 0) === -2147483648);
+            });
+
+            test("concatenates a computed number the way a template literal does", async () => {
+                // SQLite renders the REAL result of `price + 0` as '5.0'.
+                await agrees("computed concat", p => `${(p.price as number) + 0}!` === "5!");
+            });
+
+            test("matches nothing when a strict comparison compares types that cannot be equal", async () => {
+                // JavaScript answers `5 === "5"` with false, whatever the column holds.
+                await agrees("strict mismatch", p => (p.price as unknown) === "5");
+            });
+
+            test("keeps every row when a strict not-equals compares types that cannot be equal", async () => {
+                await agrees("strict mismatch negated", p => (p.price as unknown) !== "5");
+            });
+
+            test("still coerces a loose comparison, the way JavaScript does", async () => {
+                await agrees("loose coercion", p => (p.price as unknown) == "5");
+            });
+
+            test("applies a filter written after take to the windowed rows", async () => {
+                const dataStore = await seededDivergent();
+                const ordered = [...DIVERGENT].sort((a, b) => a.name < b.name ? -1 : 1);
+
+                const found = await dataStore.products
+                    .sort(p => p.name).take(2).where(p => p.price > 15).toArrayAsync();
+
+                expect(found.map((p: any) => p.name))
+                    .toEqual(ordered.slice(0, 2).filter(p => p.price > 15).map(p => p.name));
+            });
+
+            test("applies a filter written after skip to the rows past the window", async () => {
+                const dataStore = await seededDivergent();
+                const ordered = [...DIVERGENT].sort((a, b) => a.name < b.name ? -1 : 1);
+
+                const found = await dataStore.products
+                    .sort(p => p.name).skip(2).where(p => p.price > 15).toArrayAsync();
+
+                expect(found.map((p: any) => p.name))
+                    .toEqual(ordered.slice(2).filter(p => p.price > 15).map(p => p.name));
+            });
+
+        });
     });
 }

@@ -3,9 +3,12 @@
 What a filter can be pushed down as today, the tree shape that represents everything else, and the
 work between the two.
 
-`core/src/expressions/coverage.test.ts` mirrors this. Supported forms are asserted; every gap is an
-`it.todo` naming the predicate that SHOULD parse, so the work list shows up on every test run.
-Implementing one means replacing its `todo` with a real test — never inverting an expectation.
+`core/src/expressions/coverage.test.ts` mirrors this, in three categories. Supported forms are
+asserted. Every gap is an `it.todo` naming the predicate that SHOULD parse, so the work list shows up
+on every test run. Every **refusal** below is asserted NOT to parse, so "must never be represented"
+is a property the build enforces in both directions.
+
+Implementing a todo means replacing it with a real test — never inverting an expectation.
 
 ## Why an unparsable filter matters
 
@@ -17,7 +20,8 @@ That is the cost of everything below.
 ## Supported today
 
 Measured 2026-08-27, after all three pieces landed, by running predicates through the real parser
-against a real compiled schema. `core/src/expressions/coverage.test.ts` asserts every row.
+against a real compiled schema. `core/src/expressions/coverage.test.ts` asserts most rows; a few sub-clauses are covered by the
+per-piece suites instead.
 
 | category | form |
 |---|---|
@@ -38,7 +42,7 @@ against a real compiled schema. `core/src/expressions/coverage.test.ts` asserts 
 | syntax | block body with a single `return`, bracket access `x['name']`, plain template literals, comments, unary minus |
 | tautology | `x => true` parses to `empty`, which `toSql` renders `1 = 1`. A params comparison that settles true folds to the same thing |
 | arithmetic | `+ - * / % **`, on properties, params and literals |
-| bitwise | `& \| ^ ~ << >> >>>`, bracketed — an unbracketed mix with a comparison is refused, because JavaScript reads it the other way round |
+| bitwise | `& \| ^ ~ << >> >>>`, bracketed — an unbracketed mix with a comparison is refused, because JavaScript reads it the other way round. Parses, but no engine claims it: see "What each engine claims" |
 | conditional | `(c ? a : b)` as a value, and inside an interpolation |
 | coalescing | `(x.name ?? '')` |
 | pattern | `/^a/.test(x.name)` |
@@ -245,15 +249,18 @@ slower.
 
 | call | SQLite | PostgreSQL | MySQL | MSSQL | MQL |
 |---|---|---|---|---|---|
-| bitwise and/or/not | ✅ | ✅ cast to `bigint` | ✅ | ✅ cast to `bigint` | `$bitAnd` etc. |
-| bitwise xor | ✅ from `\|` and `&` | ✅ `#`, since `^` is exponentiation | ✅ `^` | ✅ `^` | `$bitXor` |
-| shifts | ❌ | ✅ | ✅ | ❌ | ❌ no operator |
+| bitwise and/or/not | ❌ rendered, not claimed | ❌ rendered, `trunc` then cast to `bigint` | ❌ rendered, not claimed | ❌ rendered, not claimed | ❌ rendered, not claimed |
+| bitwise xor | ❌ rendered from `\|` and `&` | ❌ rendered `#`, since `^` is exponentiation | ❌ rendered `^` | ❌ rendered `^` | ❌ rendered, not claimed |
+| shifts | ❌ | ❌ rendered, not claimed | ❌ rendered, not claimed | ❌ | ❌ no operator |
 | unsigned shift | ❌ | ❌ | ❌ | ❌ | ❌ |
 | `power` | ❌ no `POWER` | ✅ | ✅ | ✅ | `$pow` |
 | `coalesce` | ✅ | ✅ | ✅ | ✅ | `$ifNull` |
-| `concat` | ✅ `\|\|` | ✅ `\|\|` | ✅ `CONCAT` | ✅ `+` | `$concat` |
+| `concat` | ✅ `\|\|`, unless an operand is a number | ✅ `\|\|` | ✅ `CONCAT` | ✅ `+` | `$concat` |
 | `conditional` | rendered, not claimed | rendered, not claimed | rendered, not claimed | rendered, not claimed | `$cond` |
-| `matches` | ❌ `REGEXP` only if the host registered it | rendered, not claimed | rendered, not claimed | ❌ | `$regexMatch` |
+| casing | ✅ via a replaced `lower()`/`upper()` on `node:sqlite`, otherwise memory | ✅ | ✅ | ✅ | `$toLower` |
+| `trim`, `absolute`, `round` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| `floor`, `ceiling` | ❌ compile-time option | ✅ | ✅ | ✅ | ❌ |
+| `matches` | ❌ `REGEXP` only if the host registered it | rendered, not claimed | rendered, not claimed | ❌ | `$regexMatch` — `i`/`m`/`s` only; `g` and `d` dropped; `y`/`u`/`v` not claimed |
 
 A join asks the same question: `canPushDownJoin(join, dialect)` checks the inner side's filters
 against the dialect. Without the dialect argument a join was the one route to a renderer for a call
@@ -263,13 +270,20 @@ PostgreSQL has no bitwise operator for `double precision` — `operator does not
 precision & unknown` — the same shape as the modulo problem, and fixed the same way, by narrowing the
 operand.
 
-**`conditional` and `matches` are rendered but claimed by nobody.** PostgreSQL rejects a `CASE` whose
+**`conditional` and `matches` are rendered but claimed by no SQL dialect.** MQL claims both. PostgreSQL rejects a `CASE` whose
 branches do not unify (`double precision and text cannot be matched`), and the `= true` wrapper a bare
 boolean call carries returned no rows there. Both run in memory until each engine is checked against a
 real server. The renderers stay, so claiming them later is a declaration change rather than new code.
 
-Verified against SQLite, PostgreSQL 16, pglite, MySQL 8.4, MongoDB 7, PouchDB, Dexie, memory,
-file-system and browser-storage.
+A claim is proven by EXECUTING the rendered output against the engine over the value domain the
+schema admits, not by rendering it. `test-utils/src/pluginContract.ts`'s "filter parity with
+JavaScript" section is that proof: it asserts the pushed-down rows equal `rows.filter(predicate)`,
+seeded with the values engines disagree on — a fractional operand, a non-ASCII name, an integral
+REAL, a shift count over 32. A plugin that pushes down must agree; one that hands the filter back
+passes trivially, so a wrong claim fails and an unclaimed call cannot.
+
+Executed against SQLite and pglite. MySQL, MSSQL and MongoDB claims are unverified — no server —
+and are the next thing to run.
 
 ### Refused rather than reinterpreted
 
@@ -277,11 +291,8 @@ JavaScript binds `&`, `|`, `^` and `??` LOOSER than a comparison; this grammar r
 operands as values, which puts them tighter. `x.flags & 6 === 2` is `x.flags & (6 === 2)` in
 JavaScript — 0, always falsy — and would be read here as `(x.flags & 6) === 2`, which is true for
 `flags: 2`. So an ungrouped one is refused and the filter runs against the caller's own function,
-which is right by construction. Brackets say which was meant. JavaScript itself makes an unbracketed
-`??` mix a syntax error for the same reason.
-
-An interpolation this parser can only partly read is refused for the same reason:
-`` `${x.age > 5 ? 'a' : 'b'}` `` once parsed as just `x.age`, silently dropping the rest.
+which is right by construction. Brackets say which was meant. JavaScript itself makes an unbracketed `??`
+mix with `&&` or `||` a syntax error for the same reason, though not one with a comparison.
 
 ### Still open
 
@@ -292,6 +303,7 @@ An interpolation this parser can only partly read is refused for the same reason
 | `x.tags.some(t => t === 'a')` | array iteration — see "Array elements" |
 | `'name' in x` | should fold; the schema answers it |
 | `typeof x.name === 'string'` | should fold; the schema answers it |
+| `(x.age + 1) * 2 > 5` | a parenthesised group on the LEFT of an arithmetic operator. `groupIsValue()` takes a group as a value only when a comparator, `.` or `?.` follows the bracket. The mirror form `2 * (x.age + 1) > 5` parses |
 
 Three shapes are refused rather than missing, and each has a reason: arithmetic that names no schema
 property is a constant and should be folded by the caller, arithmetic used as a condition instead of
@@ -312,10 +324,11 @@ works**, so there was no translator work and no shape question — only the pars
 | `switch` over a property | the disjunction of its cases. `case 'a': case 'b': return true` is one `\|\|` of two equality tests; a `default` is guarded by **every** case label failing, so a case whose body is `return false` still stops it |
 | `p.a === p.b` | both sides resolve now, so the comparison is settled at parse time. A tautology folds to match-all and drops out of the filter |
 
-Two forms stayed refused, and the reason is the same for both: **no expression node means "match
-nothing"**. `x => false`, and a constant comparison that settles the other way, go to memory, which
-answers correctly and costs one round trip. `Expression.EMPTY` is the match-all sentinel; its
-opposite would be a new node every translator has to claim.
+Two forms stay OPEN — a gap, not a refusal, since none of the five reasons applies. **No expression
+node means "match nothing"**, so `x => false`, and a constant comparison that settles the other way,
+go to memory, which answers correctly and costs one round trip. `Expression.EMPTY` is the match-all
+sentinel; its opposite would be a new node every translator has to claim. `coverage.test.ts` files
+both as todos.
 
 Three refusals are deliberate, because reading them would answer a question nobody asked:
 
@@ -399,28 +412,56 @@ PostgreSQL, MySQL and MongoDB — and the shared contract covers a fractional re
 JavaScript's is not. The plugins store numbers as `double precision`, so this does not arise today; it
 would the moment a schema declared an integer column.
 
-**Bitwise operators are 32-bit in JavaScript and 64-bit everywhere else.** `&`, `|`, `^` and `~`
-coerce to a SIGNED 32-BIT integer in JavaScript, truncating the fraction and wrapping past 2^31. No
-SQL engine does that:
+**Bitwise operators are 32-bit in JavaScript and 64-bit everywhere else, so no engine claims them.**
+`&`, `|`, `^`, `~` and the shifts coerce to a SIGNED 32-BIT integer in JavaScript, truncating the
+fraction and wrapping past 2^31. No SQL engine does that:
 
-| case | JavaScript | SQLite / MSSQL | PostgreSQL / MySQL |
-|---|---|---|---|
-| `5.5 & 1` | `1` (truncates to 5) | `1` | `0` — they ROUND to 6 |
-| `2**31 & -1` | `-2147483648` (wraps) | `2147483648` | `2147483648` |
+| case | JavaScript | SQL |
+|---|---|---|
+| `5.5 & 1` | `1` — truncates to 5 | `1` on SQLite; PostgreSQL ROUNDED to 6 until `trunc` was added |
+| `2147483648 \| 0` | `-2147483648` — wraps | `2147483648` |
+| `4 << 40` | `1024` — the count is taken mod 32 | `4398046511104` |
 
-So a bitwise filter on a fractional or very large value answers differently pushed down than in
-memory — the one property the capability mechanism exists to preserve. The contract's case uses small
-whole numbers and cannot see it. Claiming bitwise only for integral columns would close it; until
-then this is the honest statement of where it stands.
+`s.number()` admits every value in that table, so the divergence is inside the domain the schema
+declares. The whole family is rendered and claimed by nobody: a bitwise filter runs in memory and
+returns what the predicate means. Re-claiming needs an operand wrapper that reproduces `ToInt32`,
+proven by a parity case with a wide value in it.
 
-**A template over a null column disagrees three ways.** `` `${x.other}!` `` with `other` null gives
-`"null!"` in JavaScript, `NULL` from SQL's `||` — which excludes the row — and `"null!"` from the
-in-memory evaluator, which was changed to match JavaScript. So SQL is the odd one out. Wrapping
-concat operands in `COALESCE` per dialect would fix it, or concat could go unclaimed for a nullable
-column.
+**A template over a null column.** `` `${x.other}!` `` with `other` null gives `"null!"` in
+JavaScript and in the in-memory evaluator, and `NULL` from SQL's `||`, which excludes the row. SQL is
+the odd one out. Wrapping concat operands in `COALESCE` per dialect would fix it, or concat could go
+unclaimed for a nullable column.
 
-Otherwise SQLite, PostgreSQL, MongoDB and every in-process plugin agree with JavaScript on the same
-predicate list, arithmetic included.
+**Strict equality used to coerce.** `x.age === "5"` rewrote the literal to the column's type, so
+every engine — the in-memory evaluator included — answered the loose question, and `x.age !== "5"`
+dropped a row the caller asked for. Fixed: a strict comparison whose literal type cannot match the
+column runs in memory with `predicate-error`, and returns what JavaScript returns. Loose `==` and
+`!=` still coerce, which matches JavaScript for numbers and strings — but not booleans, where
+`isActive == 'true'` is false in JavaScript and true here.
+
+**SQL is three-valued and JavaScript is not.** `WHERE` drops a row that answers UNKNOWN. `!=` and
+`!==` against a nullable column are rendered null-safely — `IS NOT`, `IS DISTINCT FROM`, `<=>` — so a
+null row is kept, as JavaScript keeps it. The rest of the family still diverges on SQL, verified:
+
+| predicate | JavaScript | SQL |
+|---|---|---|
+| `x.n <= 3`, `n` null | keeps the row — null coerces to 0 | drops it |
+| `!(x.n > 3)`, `n` null | keeps | drops — renders `<=` |
+| `!x.other?.includes("b")`, null | keeps | drops — `NOT GLOB` |
+| `x.n === x.n`, both null | keeps | drops — renders `"n" = "n"` |
+
+Each needs a `COALESCE` decision that changes index behaviour, so each is its own call. MongoDB's
+`$ne` matches null, but its negated relationals do not. The in-memory fallback answers all of them
+correctly.
+
+**Truthy shorthand is strict against a literal.** `x => x.age` compiles to `age === 1` and
+`x => x.name` to `name === "true"`, not JavaScript truthiness. The string case matches almost nothing.
+Verified; unfixed.
+
+Everything else on the predicate list agrees across SQLite, PostgreSQL and every in-process plugin,
+arithmetic included — and `test-utils/src/pluginContract.ts`'s "filter parity with JavaScript"
+section is the executable form of this paragraph. MySQL, MSSQL and MongoDB are unverified: they need
+a server, and the parity section is written to run against them the moment one is available.
 
 # The JavaScript surface
 
@@ -710,5 +751,5 @@ sent a query to memory, so the cost is visible.
 npx jest core/src/expressions/coverage.test.ts
 ```
 
-54 assertions and 49 todos. When a todo is implemented, replace it with a real assertion in the same
+When a todo is implemented, replace it with a real assertion in the same
 commit as the parser change, so this document and the parser cannot drift apart.

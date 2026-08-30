@@ -1,7 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { IDbPlugin, uuidv4 } from '@routier/core';
 import { s } from '@routier/core/schema';
-import { Query, QueryOptionsCollection } from '@routier/core/plugins';
+import { joinInPlugin, Query, QueryOptionsCollection } from '@routier/core/plugins';
 import { MemoryPlugin } from '@routier/memory-plugin';
 import { DataStore } from '../DataStore';
 
@@ -54,6 +54,50 @@ class RefusesFilters implements IDbPlugin {
         // Runs only what it still owns. A plugin that reported a filter and then performed the join
         // anyway would return tuples while core believed the join had not happened, and core would
         // join them a second time.
+        const executed = new QueryOptionsCollection<any>();
+
+        options.forEach((option: any) => {
+            if (option.target === 'database' && option.reason === 'executed') {
+                executed.add(option.name, option.value);
+            }
+        });
+
+        this.inner.query({ ...event, operation: new Query(executed as never, event.operation.schema) }, done);
+    }
+
+    destroy(event: any, done: any) { this.inner.destroy(event, done); }
+    bulkPersist(event: any, done: any) { this.inner.bulkPersist(event, done); }
+}
+
+/**
+ * Reports its filters and pairs the rows itself, the way the document backends do.
+ *
+ * The report lands on the outer HALF that `joinInPlugin` builds, not on the whole collection, which
+ * is the only shape that exercises the cascade reaching back out of a half.
+ */
+class JoinsInPlugin implements IDbPlugin {
+    constructor(private readonly inner: IDbPlugin) { }
+
+    get databaseName() { return this.inner.databaseName; }
+
+    query<TRoot extends {}, TShape>(event: any, done: any) {
+        if (event.operation.options.has('join')) {
+            joinInPlugin(event, (outerEvent, outerDone) => this.reportAndRun(outerEvent, outerDone), done);
+            return;
+        }
+
+        this.reportAndRun(event, done);
+    }
+
+    private reportAndRun(event: any, done: any) {
+        const options = event.operation.options;
+
+        if (event.operation.schema.collectionName === schema.collectionName) {
+            for (const item of options.get('filter')) {
+                options.reportMissingCapability(item);
+            }
+        }
+
         const executed = new QueryOptionsCollection<any>();
 
         options.forEach((option: any) => {
@@ -261,5 +305,72 @@ describe('a report from a previous execution', () => {
         expect((await query.toArrayAsync()).length).toBe(2);
         // Applied twice this is 1, which is what a report left over from the first run produces
         expect((await query.toArrayAsync()).length).toBe(2);
+    });
+
+    describe('a plugin that pairs the rows itself', () => {
+
+        const pairing = () => new JoinsInPlugin(new MemoryPlugin(`paired-${uuidv4()}`));
+
+        it('pairs only the rows the reported filter keeps', async () => {
+            const store = await seeded(pairing());
+
+            const pairs = await store.products
+                .where(p => p.price > 15)
+                .join(x => x.tags, product => product.id, tag => tag.productId)
+                .toArrayAsync();
+
+            expect(pairs.map(([product]) => product.name).toSorted()).toEqual(['Bravo', 'Charlie']);
+        });
+
+        it('hands back both halves in entity shape', async () => {
+            const store = await seeded(pairing());
+
+            const pairs = await store.products
+                .where(p => p.price > 15)
+                .join(x => x.tags, product => product.id, tag => tag.productId)
+                .toArrayAsync();
+
+            for (const [product, tag] of pairs) {
+                expect(tag.label).toBe(`tag-${product.name}`);
+            }
+        });
+    });
+
+    describe('a strict comparison against a type the column cannot hold', () => {
+
+        it('returns what JavaScript returns, not what a coerced comparison would', async () => {
+            const store = await seeded(new MemoryPlugin(`mismatch-${uuidv4()}`));
+
+            const found = await store.products.where(p => (p.price as unknown) === '10').toArrayAsync();
+
+            expect(found).toEqual([]);
+        });
+
+        it('keeps every row on the negated form', async () => {
+            const store = await seeded(new MemoryPlugin(`mismatch-${uuidv4()}`));
+
+            const found = await store.products.where(p => (p.price as unknown) !== '10').toArrayAsync();
+
+            expect(found.map(p => p.name).toSorted()).toEqual(['Alpha', 'Bravo', 'Charlie']);
+        });
+
+        it('still coerces a loose comparison, which is what JavaScript does', async () => {
+            const store = await seeded(new MemoryPlugin(`mismatch-${uuidv4()}`));
+
+            const found = await store.products.where(p => (p.price as unknown) == '10').toArrayAsync();
+
+            expect(found.map(p => p.name)).toEqual(['Alpha']);
+        });
+
+        it('runs in memory and says why', async () => {
+            const store = await seeded(new MemoryPlugin(`mismatch-${uuidv4()}`));
+
+            const { explanation } = await store.products
+                .where(p => (p.price as unknown) === '10')
+                .explain()
+                .toArrayAsync();
+
+            expect(explanation.summary.reasons).toContain('predicate-error');
+        });
     });
 });

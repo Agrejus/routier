@@ -1,5 +1,6 @@
 export * from './callSource';
 export * from './evaluate';
+export * from './fold';
 export * from './parser';
 export * from './types';
 export * from './utils';

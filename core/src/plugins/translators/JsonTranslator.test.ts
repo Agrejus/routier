@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import { JsonTranslator } from './JsonTranslator';
 import { QueryOption, QueryOrdering } from '../query/types';
+import { QueryOptionsCollection } from '../query/QueryOptionsCollection';
+import { toExpression } from '../../expressions/parser';
+import { s as schemaBuilder } from '../../schema';
 import { Filter, ParamsFilter } from '../../expressions/types';
 import { Expression } from '../../expressions/types';
 
@@ -762,4 +765,34 @@ describe('JsonTranslator', () => {
             expect(() => translator.group({ id: 1 }, option)).toThrow('Can only group an array of data');
         });
     });
-}); 
+
+    describe('an option the plugin reported it could not run', () => {
+
+        const schema = schemaBuilder.define('json_gate', {
+            id: schemaBuilder.string().key(),
+            name: schemaBuilder.string(),
+            price: schemaBuilder.number(),
+        }).compile();
+
+        const ROWS = [{ name: 'Alpha', price: 10 }, { name: 'Bravo', price: 30 }, { name: 'Charlie', price: 40 }];
+
+        it('does not window rows the database never filtered', () => {
+            const filter = (row: any) => row.price > 20;
+            const options = QueryOptionsCollection.EMPTY<any>();
+            options.add('filter', {
+                filter,
+                params: null,
+                expression: toExpression(schema as never, filter as never, undefined as never)
+            } as never);
+            options.add('take', 1 as never);
+
+            const item = options.get('filter')[0];
+            expect(item.option.target).toBe('database');
+            options.reportMissingCapability(item);
+
+            const translated = new JsonTranslator<any, any>({ options } as any).translate(ROWS);
+
+            expect(translated.value).toEqual(ROWS);
+        });
+    });
+});

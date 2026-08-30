@@ -70,21 +70,21 @@ afterEach(() => {
 });
 
 describe('level resolution', () => {
-    it('is silent when nothing is configured', () => {
+    it('warns when nothing is configured, so a caller sees what they have to act on', () => {
         process.env.NODE_ENV = 'production';
         resetLogLevel();
 
-        expect(getLogLevel()).toBe('silent');
+        expect(getLogLevel()).toBe('warn');
     });
 
-    it('is silent under NODE_ENV=test', () => {
+    it('does not raise the level under NODE_ENV=test', () => {
         // The defect this replaces: `test` used to auto-enable, so every Jest run logged. Nothing
         // asks for that, and the cost is real — the S7 stress scenario ran 12.4s with logging and
         // ~6s without.
         process.env.NODE_ENV = 'test';
         resetLogLevel();
 
-        expect(getLogLevel()).toBe('silent');
+        expect(getLogLevel()).toBe('warn');
     });
 
     it('is debug under NODE_ENV=development', () => {
@@ -114,7 +114,7 @@ describe('level resolution', () => {
         process.env.DEBUG = 'some-other-library';
         resetLogLevel();
 
-        expect(getLogLevel()).toBe('silent');
+        expect(getLogLevel()).toBe('warn');
     });
 
     it('honours ROUTIER_LOG_LEVEL', () => {
@@ -140,7 +140,7 @@ describe('level resolution', () => {
         process.env.ROUTIER_LOG_LEVEL = 'verbose';
         resetLogLevel();
 
-        expect(getLogLevel()).toBe('silent');
+        expect(getLogLevel()).toBe('warn');
     });
 
     it('honours __ROUTIER_LOG_LEVEL__ above every environment variable', () => {
@@ -189,7 +189,7 @@ describe('__ROUTIER_DEBUG__', () => {
         (globalThis as any).__ROUTIER_DEBUG__ = 'yes';
         resetLogLevel();
 
-        expect(getLogLevel()).toBe('silent');
+        expect(getLogLevel()).toBe('warn');
     });
 });
 

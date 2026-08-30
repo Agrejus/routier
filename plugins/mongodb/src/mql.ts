@@ -28,6 +28,7 @@ import type {
     PropertyExpression,
 } from "@routier/core/expressions";
 import {
+    foldedOperandValue,
     forEach,
     isCallExpression,
     peelCalls,
@@ -101,18 +102,6 @@ function buildPattern(escapedValue: string, comparator: string): string {
     return escapedValue;
 }
 
-/**
- * Applies a call to a literal before it is embedded — the database never sees a call on a value,
- * only its result.
- */
-const ARITHMETIC_ON_VALUES: Partial<Record<Call, (left: number, right: number) => number>> = {
-    "add": (left, right) => left + right,
-    "subtract": (left, right) => left - right,
-    "multiply": (left, right) => left * right,
-    "divide": (left, right) => left / right,
-    "modulo": (left, right) => left % right,
-};
-
 const MQL_ARITHMETIC: Partial<Record<Call, string>> = {
     "add": "$add",
     "subtract": "$subtract",
@@ -120,8 +109,10 @@ const MQL_ARITHMETIC: Partial<Record<Call, string>> = {
     "divide": "$divide",
     "modulo": "$mod",
     "power": "$pow",
-    // 6.3 and later. A server older than that reports the operator as unrecognised rather than
-    // returning wrong rows, which is the failure mode to prefer.
+};
+
+/** Rendered, not claimed: `$bitAnd` needs int or long, and a JS number can reach BSON as a Double. */
+const MQL_UNCLAIMED_ARITHMETIC: Partial<Record<Call, string>> = {
     "bit-and": "$bitAnd",
     "bit-or": "$bitOr",
     "bit-xor": "$bitXor",
@@ -134,15 +125,38 @@ const MQL_ARITHMETIC: Partial<Record<Call, string>> = {
  * for — so the list has to be the implemented set, and it has to be checked against it.
  */
 const MQL_CALLS: readonly Call[] = [
-    "to-lower-case", "to-upper-case", "length", "bit-not", "coalesce", "concat", "matches", "conditional",
+    "to-lower-case", "to-upper-case", "length", "coalesce", "concat", "matches", "conditional",
     ...Object.keys(MQL_ARITHMETIC) as Call[]
 ];
+
+/** `$regexMatch` takes these. `g` and `d` cannot change one boolean test, so they are dropped. */
+const RENDERABLE_REGEX_FLAGS = /^[ims]*$/;
+const DROPPED_REGEX_FLAGS = /[gd]/g;
+
+const rendersRegexFlags = (expression: CallExpression): boolean => {
+    const pattern = expression.arguments[0];
+    const regex = isValueExpression(pattern) ? pattern.value as RegExp : null;
+
+    return regex instanceof RegExp
+        && RENDERABLE_REGEX_FLAGS.test(regex.flags.replace(DROPPED_REGEX_FLAGS, ""));
+};
 
 export const canRenderInMql = (expr: Expression): boolean => {
     let renderable = true;
 
     forEach(expr, expression => {
-        if (isCallExpression(expression) && !MQL_CALLS.includes(expression.call)) {
+        if (isCallExpression(expression) === false) {
+            return true;
+        }
+
+        // A constant core could not compute. The caller's own predicate answers it in memory.
+        const peeled = peelCalls(expression);
+
+        const call = expression as CallExpression;
+
+        if ((peeled != null && isValueExpression(peeled.operand))
+            || !MQL_CALLS.includes(call.call)
+            || (call.call === "matches" && rendersRegexFlags(call) === false)) {
             renderable = false;
 
             return false;
@@ -153,49 +167,6 @@ export const canRenderInMql = (expr: Expression): boolean => {
 
     return renderable;
 };
-
-function applyCallsToValue(value: unknown, calls: CallExpression[]): unknown {
-    return calls.reduce<unknown>((current, node) => {
-        const call = node.call;
-
-        if (call === "to-lower-case" && typeof current === "string") {
-            return current.toLowerCase();
-        }
-
-        if (call === "to-upper-case" && typeof current === "string") {
-            return current.toUpperCase();
-        }
-
-        if (call === "length" && (typeof current === "string" || Array.isArray(current))) {
-            return current.length;
-        }
-
-        if (ARITHMETIC_ON_VALUES[call] != null && typeof current === "number") {
-            const right = constantValue(node.arguments[0]);
-
-            if (typeof right === "number") {
-                return ARITHMETIC_ON_VALUES[call]!(current, right);
-            }
-        }
-
-        throw new Error(
-            `'${call}' cannot be applied to the value '${String(current)}' before embedding it. ` +
-            `Embedding the value unchanged would match against the wrong thing.`
-        );
-    }, value);
-}
-
-/** A call over literals only, folded to its result — the database never needs to compute it. */
-const constantValue = (expression: Expression): unknown => {
-    const peeled = peelCalls(expression);
-
-    if (peeled == null || isValueExpression(peeled.operand) === false) {
-        throw new Error(`Cannot fold '${expression.type}' into a constant.`);
-    }
-
-    return applyCallsToValue((peeled.operand as { value: unknown }).value, peeled.calls);
-};
-
 
 /**
  * Storage-side dotted path for a property.
@@ -236,8 +207,8 @@ function getPropertyValueSides(cmp: ComparatorExpression): PropertyValueSides {
         propRight: right != null && isPropertyExpression(right.operand) ? right.operand : null,
         callsLeft: left?.calls ?? [],
         callsRight: right?.calls ?? [],
-        valLeft: left != null && isValueExpression(left.operand) ? applyCallsToValue(left.operand.value, left.calls) : undefined,
-        valRight: right != null && isValueExpression(right.operand) ? applyCallsToValue(right.operand.value, right.calls) : undefined,
+        valLeft: left != null && isValueExpression(left.operand) ? foldedOperandValue(left.operand, left.calls) : undefined,
+        valRight: right != null && isValueExpression(right.operand) ? foldedOperandValue(right.operand, right.calls) : undefined,
     };
 }
 
@@ -311,7 +282,9 @@ function renderExprOperand(prop: PropertyExpression, calls: CallExpression[]): u
                 throw new Error("A pattern match needs a literal regular expression to render in MQL.");
             }
 
-            return { $regexMatch: { input: rendered, regex: regex.source, ...(regex.flags === "" ? {} : { options: regex.flags }) } };
+            const flags = regex.flags.replace(DROPPED_REGEX_FLAGS, "");
+
+            return { $regexMatch: { input: rendered, regex: regex.source, ...(flags === "" ? {} : { options: flags }) } };
         }
 
         // The condition is a boolean expression, so it goes back through the comparison renderer
@@ -325,7 +298,7 @@ function renderExprOperand(prop: PropertyExpression, calls: CallExpression[]): u
             };
         }
 
-        const operator = MQL_ARITHMETIC[call];
+        const operator = MQL_ARITHMETIC[call] ?? MQL_UNCLAIMED_ARITHMETIC[call];
 
         if (operator != null) {
             return { [operator]: [rendered, ...node.arguments.map(renderCallArgument)] };
@@ -351,7 +324,7 @@ function renderCallArgument(expression: Expression): unknown {
     }
 
     if (peeled != null && isValueExpression(peeled.operand)) {
-        return { $literal: applyCallsToValue(peeled.operand.value, peeled.calls) };
+        return { $literal: foldedOperandValue(peeled.operand, peeled.calls) };
     }
 
     throw new Error(`Cannot render '${expression.type}' as a call operand in MQL.`);
@@ -442,7 +415,7 @@ function renderExprSide(expression: Expression | undefined): unknown {
         }
 
         if (peeled != null && isValueExpression(peeled.operand)) {
-            return { $literal: applyCallsToValue(peeled.operand.value, peeled.calls) };
+            return { $literal: foldedOperandValue(peeled.operand, peeled.calls) };
         }
     }
 

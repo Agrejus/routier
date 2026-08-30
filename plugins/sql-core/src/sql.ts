@@ -7,6 +7,7 @@
  */
 import type { Call, CallExpression, ComparatorExpression, Expression, PropertyExpression } from "@routier/core/expressions";
 import {
+    foldedOperandValue,
     forEach,
     isCallExpression,
     peelCalls,
@@ -24,6 +25,13 @@ export type SqlDialectName = "sqlite" | "postgresql" | "mysql" | "mssql";
  * Dialect interface for generating portable SQL WHERE fragments.
  */
 export interface SqlDialect {
+    /** Which engine this is. A claim can depend on the engine, not only on the call. */
+    name: SqlDialectName;
+    /**
+     * `a IS DISTINCT FROM b` — inequality that a NULL satisfies, which is what JavaScript means.
+     * Thunked because a dialect that names an operand twice has to bind it twice.
+     */
+    isDistinctFrom(left: () => string, right: () => string): string;
     quoteIdentifier(name: string): string;
     getPlaceholder(paramIndex: number): string;
     stringMatchKind: "LIKE" | "GLOB";
@@ -195,11 +203,14 @@ const mysqlDate = (value: unknown): unknown => {
     return value;
 };
 
+/**
+ * Bitwise is absent on purpose: JavaScript runs ToInt32 on both operands and every engine here is
+ * 64-bit, so `2147483648 | 0` is -2147483648 in JavaScript and 2147483648 in SQL.
+ */
 const UNIVERSAL_CALLS: readonly Call[] = [
     "to-lower-case", "to-upper-case", "length", "trim", "absolute", "round",
     "add", "subtract", "multiply", "divide", "modulo",
-    // Every engine here has these, spelled the same way
-    "bit-and", "bit-or", "bit-not", "coalesce", "concat",
+    "coalesce", "concat",
 ];
 
 /**
@@ -221,13 +232,17 @@ const DIALECT_CALLS: Record<SqlDialectName, readonly Call[]> = {
     // `floor` and `ceil` reached SQLite with the math functions in 3.35, which are a compile-time
     // option — so a build without them is a real build, and this dialect serves four drivers
     sqlite: [],
-    postgresql: ["power", "bit-xor", "shift-left", "shift-right", "floor", "ceiling"],
-    mysql: ["power", "bit-xor", "shift-left", "shift-right", "floor", "ceiling"],
-    mssql: ["power", "bit-xor", "floor", "ceiling"],
+    postgresql: ["power", "floor", "ceiling"],
+    mysql: ["power", "floor", "ceiling"],
+    mssql: ["power", "floor", "ceiling"],
 };
 
 const DIALECTS: Record<SqlDialectName, SqlDialect> = {
     sqlite: {
+        name: "sqlite",
+        isDistinctFrom(left, right) {
+            return `${left()} IS NOT ${right()}`;
+        },
         quoteIdentifier(name) {
             return `"${name.replace(/"/g, '""')}"`;
         },
@@ -296,6 +311,10 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         },
     },
     postgresql: {
+        name: "postgresql",
+        isDistinctFrom(left, right) {
+            return `${left()} IS DISTINCT FROM ${right()}`;
+        },
         quoteIdentifier(name) {
             return `"${name.replace(/"/g, '""')}"`;
         },
@@ -313,9 +332,10 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         encodeDate: passThroughDate,
         encodeBoolean: passThroughBoolean,
         /** No `%` for `double precision`, and a bound parameter arrives untyped. */
-        /** No bitwise operator for `double precision`, so the operand is narrowed first. */
+        /** No bitwise operator for `double precision`. `::bigint` alone ROUNDS; JavaScript truncates. */
         bitwiseOperand(operand) {
-            return `(${operand})::bigint`;
+            // `::numeric` first: a bound parameter arrives untyped and `trunc(unknown)` is ambiguous.
+            return `(trunc((${operand})::numeric))::bigint`;
         },
         bitXorExpression(left, right) {
             // `^` is exponentiation in PostgreSQL; `#` is the bitwise xor
@@ -373,6 +393,10 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         },
     },
     mysql: {
+        name: "mysql",
+        isDistinctFrom(left, right) {
+            return `NOT (${left()} <=> ${right()})`;
+        },
         quoteIdentifier(name) {
             return "`" + name.replace(/`/g, "``") + "`";
         },
@@ -442,6 +466,11 @@ const DIALECTS: Record<SqlDialectName, SqlDialect> = {
         },
     },
     mssql: {
+        name: "mssql",
+        isDistinctFrom(left, right) {
+            // No IS DISTINCT FROM before 2022, and each operand is named once here.
+            return `CASE WHEN EXISTS (SELECT ${left()} INTERSECT SELECT ${right()}) THEN 0 ELSE 1 END = 1`;
+        },
         quoteIdentifier(name) {
             return "[" + name.replace(/]/g, "]]") + "]";
         },
@@ -552,17 +581,6 @@ function buildPattern(
     }
 }
 
-/**
- * Applies a call to a literal before it is bound — SQL never sees a call on a value, only its result.
- */
-const ARITHMETIC_ON_VALUES: Partial<Record<Call, (left: number, right: number) => number>> = {
-    "add": (left, right) => left + right,
-    "subtract": (left, right) => left - right,
-    "multiply": (left, right) => left * right,
-    "divide": (left, right) => left / right,
-    "modulo": (left, right) => left % right,
-};
-
 const SQL_ARITHMETIC: Partial<Record<Call, string>> = {
     "add": "+",
     "subtract": "-",
@@ -573,49 +591,6 @@ const SQL_ARITHMETIC: Partial<Record<Call, string>> = {
     "bit-or": "|",
     "shift-left": "<<",
     "shift-right": ">>",
-};
-
-function applyCallsToValue(value: unknown, calls: CallExpression[]): unknown {
-    return calls.reduce<unknown>((current, node) => {
-        const call = node.call;
-
-        if (call === "to-lower-case" && typeof current === "string") {
-            return current.toLowerCase();
-        }
-
-        if (call === "to-upper-case" && typeof current === "string") {
-            return current.toUpperCase();
-        }
-
-        if (call === "length" && (typeof current === "string" || Array.isArray(current))) {
-            return current.length;
-        }
-
-        if (ARITHMETIC_ON_VALUES[call] != null && typeof current === "number") {
-            const right = constantValue(node.arguments[0]);
-
-            if (typeof right === "number") {
-                return ARITHMETIC_ON_VALUES[call]!(current, right);
-            }
-        }
-
-        throw new Error(
-            `'${call}' cannot be applied to the value '${String(current)}' before binding it. Binding ` +
-            `the value unchanged would compare against the wrong thing and return rows that look ` +
-            `correct and are not.`
-        );
-    }, value);
-}
-
-/** A call over literals only, folded to its result — the database never needs to compute it. */
-const constantValue = (expression: Expression): unknown => {
-    const peeled = peelCalls(expression);
-
-    if (peeled == null || isValueExpression(peeled.operand) === false) {
-        throw new Error(`Cannot fold '${expression.type}' into a constant.`);
-    }
-
-    return applyCallsToValue((peeled.operand as { value: unknown }).value, peeled.calls);
 };
 
 
@@ -717,7 +692,7 @@ const argumentRenderer = (
         }
 
         if (peeled != null && isValueExpression(peeled.operand)) {
-            params.push(bindable(applyCallsToValue(peeled.operand.value, peeled.calls)));
+            params.push(bindable(foldedOperandValue(peeled.operand, peeled.calls)));
 
             return placeholder();
         }
@@ -801,8 +776,13 @@ function renderColumn(
             );
         }
 
-        if (call === "bit-and" || call === "bit-or" || call === "shift-left" || call === "shift-right") {
+        if (call === "bit-and" || call === "bit-or") {
             return `(${d.bitwiseOperand(inner())} ${SQL_ARITHMETIC[call]} ${d.bitwiseOperand(renderArgument(node.arguments[0]))})`;
+        }
+
+        if (call === "shift-left" || call === "shift-right") {
+            // PostgreSQL has `bigint << integer`, not `bigint << bigint`. No dialect claims these.
+            return `(${d.bitwiseOperand(inner())} ${SQL_ARITHMETIC[call]} ${renderArgument(node.arguments[0])})`;
         }
 
         if (call === "power") {
@@ -870,8 +850,8 @@ function getPropertyValueSides(cmp: ComparatorExpression): PropertyValueSides {
         propRight: right != null && isPropertyExpression(right.operand) ? right.operand : null,
         callsLeft: left?.calls ?? [],
         callsRight: right?.calls ?? [],
-        valLeft: left != null && isValueExpression(left.operand) ? applyCallsToValue(left.operand.value, left.calls) : undefined,
-        valRight: right != null && isValueExpression(right.operand) ? applyCallsToValue(right.operand.value, right.calls) : undefined,
+        valLeft: left != null && isValueExpression(left.operand) ? foldedOperandValue(left.operand, left.calls) : undefined,
+        valRight: right != null && isValueExpression(right.operand) ? foldedOperandValue(right.operand, right.calls) : undefined,
     };
 }
 
@@ -880,11 +860,13 @@ function getPropertyValueSides(cmp: ComparatorExpression): PropertyValueSides {
 type EqualsCase = "null-column-left" | "null-column-right" | "value-column-left" | "value-column-right";
 
 interface EqualsRenderContext {
-    col: string;
+    /** Thunked: rendering a column binds its call arguments, so it must happen in emission order. */
+    col: () => string;
     value: unknown;
     negated: boolean;
     params: unknown[];
     placeholder: () => string;
+    dialect: SqlDialect;
 }
 
 function getEqualsCase(
@@ -900,7 +882,7 @@ function getEqualsCase(
 }
 
 function equalsNullColumnLeft(ctx: EqualsRenderContext): string {
-    return ctx.negated ? `${ctx.col} IS NOT NULL` : `${ctx.col} IS NULL`;
+    return ctx.negated ? `${ctx.col()} IS NOT NULL` : `${ctx.col()} IS NULL`;
 }
 
 /**
@@ -911,19 +893,30 @@ function equalsNullColumnLeft(ctx: EqualsRenderContext): string {
  * to {@link equalsNullColumnLeft}, and binds no parameter.
  */
 function equalsNullColumnRight(ctx: EqualsRenderContext): string {
-    return ctx.negated ? `${ctx.col} IS NOT NULL` : `${ctx.col} IS NULL`;
+    return ctx.negated ? `${ctx.col()} IS NOT NULL` : `${ctx.col()} IS NULL`;
+}
+
+function bindValue(ctx: EqualsRenderContext): string {
+    ctx.params.push(ctx.value);
+
+    return ctx.placeholder();
 }
 
 function equalsValueColumnLeft(ctx: EqualsRenderContext): string {
-    ctx.params.push(ctx.value);
-    const ph = ctx.placeholder();
-    return ctx.negated ? `${ctx.col} != ${ph}` : `${ctx.col} = ${ph}`;
+    // `!=` is UNKNOWN against NULL and SQL drops the row; JavaScript keeps it.
+    if (ctx.negated) {
+        return ctx.dialect.isDistinctFrom(() => ctx.col(), () => bindValue(ctx));
+    }
+
+    return `${ctx.col()} = ${bindValue(ctx)}`;
 }
 
 function equalsValueColumnRight(ctx: EqualsRenderContext): string {
-    ctx.params.push(ctx.value);
-    const ph = ctx.placeholder();
-    return ctx.negated ? `${ph} != ${ctx.col}` : `${ph} = ${ctx.col}`;
+    if (ctx.negated) {
+        return ctx.dialect.isDistinctFrom(() => bindValue(ctx), () => ctx.col());
+    }
+
+    return `${bindValue(ctx)} = ${ctx.col()}`;
 }
 
 const EQUALS_STRATEGIES: Record<EqualsCase, (ctx: EqualsRenderContext) => string> = {
@@ -1030,13 +1023,19 @@ function renderStringPatternComparison(
 
 function renderGenericComparison(
     cmp: ComparatorExpression,
-    walk: (e: Expression) => string
+    walk: (e: Expression) => string,
+    d: SqlDialect
 ): string {
+    // `walk` binds as it renders, so a side may only be walked as often as the output names it.
+    if (cmp.comparator === "equals" && cmp.negated) {
+        return d.isDistinctFrom(() => walk(cmp.left!), () => walk(cmp.right!));
+    }
+
     const leftExpr = walk(cmp.left!);
     const rightExpr = walk(cmp.right!);
     switch (cmp.comparator) {
         case "equals":
-            return cmp.negated ? `${leftExpr} != ${rightExpr}` : `${leftExpr} = ${rightExpr}`;
+            return `${leftExpr} = ${rightExpr}`;
         case "greater-than":
             return cmp.negated ? `${leftExpr} <= ${rightExpr}` : `${leftExpr} > ${rightExpr}`;
         case "greater-than-equals":
@@ -1082,12 +1081,52 @@ export type ToSqlOptions = {
  * `QueryOptionsCollection.reportMissingCapability`. Asking beats attempting: the alternative is a statement the
  * engine rejects, which is a failed round trip rather than a slower correct one.
  */
+const readsANumber = (expression: Expression | undefined): boolean => {
+    if (expression == null) {
+        return false;
+    }
+
+    let found = false;
+
+    forEach(expression, node => {
+        if (isPropertyExpression(node) && node.property.type === SchemaTypes.Number) {
+            found = true;
+
+            return false;
+        }
+
+        return true;
+    });
+
+    return found;
+};
+
+/** Calls this engine renders and would answer differently from JavaScript. */
+const answersDifferently = (call: CallExpression, d: SqlDialect): boolean => {
+    // SQLite renders a REAL 5 as '5.0' where a template literal gives '5'.
+    if (d.name === "sqlite" && call.call === "concat") {
+        return [call.expression, ...call.arguments].some(readsANumber);
+    }
+
+    return false;
+};
+
 export function canRenderInSql(expr: Expression, dialect: SqlDialectName | SqlDialect): boolean {
     const d = typeof dialect === "string" ? getDialect(dialect) : dialect;
     let renderable = true;
 
     forEach(expr, expression => {
-        if (isCallExpression(expression) && d.renders(expression.call) === false) {
+        if (isCallExpression(expression) === false) {
+            return true;
+        }
+
+        // A constant core could not compute. The caller's own predicate answers it in memory.
+        const peeled = peelCalls(expression);
+        const call = expression as CallExpression;
+
+        if ((peeled != null && isValueExpression(peeled.operand))
+            || d.renders(call.call) === false
+            || answersDifferently(call, d)) {
             renderable = false;
 
             return false;
@@ -1159,35 +1198,39 @@ export function toSql(
             if (cmp.comparator === "equals") {
                 /* Equals: Strategy per (column-side, null vs value) case. */
                 const { propLeft, propRight, callsLeft, callsRight, valLeft, valRight } = getPropertyValueSides(cmp);
-                const col =
-                    propLeft && (valRight !== undefined || propRight)
-                        ? renderColumn(propLeft, d, callsLeft, argumentRenderer(d, params, cursor, alias), alias)
-                        : propRight && (valLeft !== undefined || propLeft)
-                          ? renderColumn(propRight, d, callsRight, argumentRenderer(d, params, cursor, alias), alias)
-                          : null;
                 const value = valRight !== undefined ? valRight : valLeft;
                 const columnOnLeft = Boolean(propLeft && cmp.right && isValueExpression(cmp.right));
                 const columnOnRight = Boolean(propRight && cmp.left && isValueExpression(cmp.left));
+                const caseKey = value === undefined ? null : getEqualsCase(value, columnOnLeft, columnOnRight);
 
-                if (col !== null && value !== undefined) {
-                    const caseKey = getEqualsCase(value, columnOnLeft, columnOnRight);
-                    if (caseKey !== null) {
+                if (caseKey !== null) {
+                    // Thunked, not rendered here: `renderColumn` binds, and a strategy that emits the
+                    // value first has to bind it first or the parameters swap.
+                    const column =
+                        propLeft && (valRight !== undefined || propRight)
+                            ? { render: () => renderColumn(propLeft, d, callsLeft, argumentRenderer(d, params, cursor, alias), alias) }
+                            : propRight && (valLeft !== undefined || propLeft)
+                              ? { render: () => renderColumn(propRight, d, callsRight, argumentRenderer(d, params, cursor, alias), alias) }
+                              : null;
+
+                    if (column !== null) {
                         const strategy = EQUALS_STRATEGIES[caseKey];
                         return strategy({
-                            col,
+                            col: column.render,
                             // Encoded here rather than inside each strategy: they share one
                             // context and only some of them bind the value at all.
                             value: bindable(value),
                             negated: cmp.negated,
                             params,
                             placeholder,
+                            dialect: d,
                         });
                     }
                 }
             }
 
             /* Generic: walk both sides and emit comparison operator. */
-            return renderGenericComparison(cmp, walk);
+            return renderGenericComparison(cmp, walk, d);
         }
 
         if (isPropertyExpression(e)) {

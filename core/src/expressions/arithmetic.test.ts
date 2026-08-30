@@ -57,7 +57,8 @@ describe('arithmetic operators', () => {
     });
 
     it('nests the tree the way precedence demands', () => {
-        const outer = treeFor((x: any) => x.age + 3 * 4 === 14);
+        // The multiplied operand is a property: a constant one folds away before the tree is read.
+        const outer = treeFor((x: any) => x.age + x.other * 4 === 14);
 
         expect(outer.left.call).toBe('add');
         expect(outer.left.arguments[0].call).toBe('multiply');

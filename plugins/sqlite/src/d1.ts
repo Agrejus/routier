@@ -1,4 +1,4 @@
-import { canPushDownJoin, decodeJsonColumns, splitJoinRows } from '@routier/sql-plugin-core';
+import { canPushDownJoin, CASING_CALLS, casingWarning, decodeJsonColumns, joinToPushDown, reportDivergentCalls, splitJoinRows } from '@routier/sql-plugin-core';
 import { assertIsNotNull, ConcurrencyDbPlugin, UnknownRecord } from '@routier/core';
 import { buildFromPersistOperation, buildFromQueryOperation, buildJoinQueryOperation, compiledSchemaToSqliteTable } from './utils';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, SqlTranslator } from '@routier/core/plugins';
@@ -195,7 +195,10 @@ export class D1DbPlugin implements IDbPlugin {
         event: DbPluginQueryEvent<TRoot, TShape>,
         done: PluginEventCallbackResult<ITranslatedValue<TShape>>
     ): void {
-        if (event.operation.options.has("join")) {
+        // D1 has no way to define a function, so a casing filter is answered in memory.
+        reportDivergentCalls(event.operation.options, CASING_CALLS, casingWarning("D1"));
+
+        if (joinToPushDown(event.operation.options, "sqlite") != null) {
             this.queryJoined(event, done);
             return;
         }
@@ -237,7 +240,8 @@ export class D1DbPlugin implements IDbPlugin {
 
             // An inner filter with no column to compare against would make the emitted join return
             // rows the inner side's scope excludes. Refusing beats answering wrongly.
-            if (canPushDownJoin(join.value, "sqlite") === false) {
+            // D1 has no way to define a function, so casing is never faithful here.
+            if (canPushDownJoin(join.value, "sqlite", CASING_CALLS) === false) {
                 done(PluginEventResult.error(event.id, new Error(
                     `Cannot push this join down to D1: the inner collection has a filter that cannot be expressed as SQL ` +
                     `(an unmapped or renamed property), so the join would return rows its scope excludes.`

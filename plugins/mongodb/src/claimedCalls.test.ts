@@ -69,7 +69,12 @@ describe('the calls MQL claims', () => {
     it('still claims the calls it does render', () => {
         expect(canRenderInMql(comparisonUsing('to-lower-case'))).toBe(true);
         expect(canRenderInMql(comparisonUsing('modulo'))).toBe(true);
-        expect(canRenderInMql(comparisonUsing('bit-and'))).toBe(true);
+    });
+
+    // Rendered so claiming later is a declaration change, but int/long operands are unverified
+    it('renders a bitwise call without claiming it', () => {
+        expect(canRenderInMql(comparisonUsing('bit-and'))).toBe(false);
+        expect(() => toMql(comparisonUsing('bit-and') as never)).not.toThrow();
     });
 
     it('still declines the shifts, which have no aggregation operator', () => {

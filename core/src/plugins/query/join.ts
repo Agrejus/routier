@@ -474,6 +474,13 @@ export const joinInPlugin = <TRoot extends {}, TShape>(
 
             const outerRows = (outerResult.data.value ?? []) as unknown as UnknownRecord[];
 
+            if (at.reason !== "executed") {
+                // The outer read reported something, so the database phase stopped before the join.
+                // The datastore's own join branch pairs these rows.
+                done(PluginEventResult.success(event.id, new TranslatedArrayValue<TShape>(outerRows as never[], false)));
+                return;
+            }
+
             // Storage shape: the plugin returns rows as it holds them, and deserialization is what
             // `executeJoin` does per side below.
             const outerKeys = distinctJoinKeys(outerRows, at.value.outerKey, at.value.semiJoinKeyThreshold, { storageShape: true });

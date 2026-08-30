@@ -232,3 +232,36 @@ describe("expression serialization", () => {
         expect(rebuilt.left.property).toBe(original.left.property);
     });
 });
+
+describe('the shape a unary call serializes as', () => {
+
+    const jsonFor = (source: string) => {
+        const tree = toExpression(schema as never, new Function(`return ${source};`)() as never, undefined as never);
+        const json = Expression.toJson(tree) as any;
+
+        return json.left?.call != null ? json.left : json.right;
+    };
+
+    it.each([
+        ['a lone interpolation', '(x) => `${x.rank}` === "9"', 'to-string'],
+        ['bitwise not', '(x) => ~x.rank === -5', 'bit-not'],
+        ['length on a group', '(x) => (x.name).length > 3', 'length'],
+        ['a casing call on a group', '(x) => (x.name).toLowerCase() === "a"', 'to-lower-case'],
+    ])('serializes %s with no argument at all', (_, source, call) => {
+        const json = jsonFor(source);
+
+        expect(json.call).toBe(call);
+        expect(json.arguments).toEqual([]);
+    });
+});
+
+describe('a refusal that names what it refused', () => {
+
+    it('carries the reason, and survives the wire', () => {
+        const tree = toExpression(schema as never, ((x: any) => x.name.normalize() === 'a') as never, undefined as never);
+        const json = Expression.toJson(tree) as any;
+
+        expect(json).toEqual({ type: 'not-parsable', reason: expect.stringContaining('normalize') });
+        expect((Expression.fromJson(json, schema as never) as any).reason).toContain('normalize');
+    });
+});

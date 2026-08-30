@@ -18,7 +18,7 @@ export type SerializedValue =
 /** JSON-safe form of an expression tree. See `Expression.toJson`. */
 export type SerializedExpression =
     | { type: "empty" }
-    | { type: "not-parsable" }
+    | { type: "not-parsable"; reason?: string }
     | { type: "operator"; operator: Operator; left?: SerializedExpression; right?: SerializedExpression }
     | {
         type: "comparator";
@@ -137,6 +137,11 @@ export abstract class Expression {
         return new NotParsableExpression();
     }
 
+    /** `NOT_PARSABLE`, carrying what the parser refused. */
+    static notParsable(reason: string) {
+        return new NotParsableExpression(reason);
+    }
+
     static isEmpty(expression: Expression) {
         return expression.type === "empty" || expression instanceof EmptyExpression;
     }
@@ -223,7 +228,13 @@ export abstract class Expression {
             };
         }
 
-        return expression.type === "empty" ? { type: "empty" } : { type: "not-parsable" };
+        if (expression.type === "empty") {
+            return { type: "empty" };
+        }
+
+        const reason = (expression as NotParsableExpression).reason;
+
+        return reason == null ? { type: "not-parsable" } : { type: "not-parsable", reason };
     }
 
     /**
@@ -289,7 +300,11 @@ export abstract class Expression {
             return new ValueExpression({ value: valueFromJson(json.value) });
         }
 
-        return json.type === "empty" ? Expression.EMPTY : Expression.NOT_PARSABLE;
+        if (json.type === "empty") {
+            return Expression.EMPTY;
+        }
+
+        return json.reason == null ? Expression.NOT_PARSABLE : Expression.notParsable(json.reason);
     }
 }
 
@@ -299,6 +314,14 @@ export class EmptyExpression extends Expression {
 
 export class NotParsableExpression extends Expression {
     readonly type = "not-parsable" as const;
+
+    /** What the parser refused, when it knows. `.explain()` prints it beside the source. */
+    readonly reason?: string;
+
+    constructor(reason?: string) {
+        super();
+        this.reason = reason;
+    }
 }
 
 /**

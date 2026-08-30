@@ -94,7 +94,7 @@ describe('tokenizer whitespace handling', () => {
     ])('parses a filter separated by %s identically to one separated by spaces', (_label, whitespace) => {
         const expression = parseWithWhitespace(whitespace);
 
-        expect(expression).not.toStrictEqual(Expression.NOT_PARSABLE);
+        expect(expression).not.toHaveProperty('type', 'not-parsable');
         expect(comparatorValue(expression)).toBe(5);
         expect((expression as ComparatorExpression).comparator)
             .toBe((reference as ComparatorExpression).comparator);

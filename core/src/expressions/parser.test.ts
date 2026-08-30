@@ -281,7 +281,8 @@ describe('Parser', () => {
             });
 
             it('should handle to lower case for value and property', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name.toLowerCase().startsWith('test'.toLowerCase()));
+                // 'TEST' rather than 'test' so a dropped value-side call would be visible.
+                const expression = toExpression(mockSchema, (entity: any) => entity.name.toLowerCase().startsWith('TEST'.toLowerCase()));
 
                 expect(expression).toBeInstanceOf(ComparatorExpression);
                 const comp = expression as ComparatorExpression;
@@ -290,7 +291,7 @@ describe('Parser', () => {
                 expect(comp.strict).toBe(false);
                 expect(callsOn(comp.left)).toEqual(['to-lower-case']);
                 expect(valueOn(comp.right)).toBe('test');
-                expect(callsOn(comp.right)).toEqual(['to-lower-case']);
+                expect(callsOn(comp.right)).toEqual([]);
             });
 
             it('should handle value-side toLowerCase', () => {
@@ -302,8 +303,8 @@ describe('Parser', () => {
                 expect(comp.negated).toBe(false);
                 expect(comp.strict).toBe(true);
                 expect(callsOn(comp.left)).toEqual([]);
-                expect(callsOn(comp.right)).toEqual(['to-lower-case']);
-                expect(valueOn(comp.right)).toBe('TEST');
+                expect(callsOn(comp.right)).toEqual([]);
+                expect(valueOn(comp.right)).toBe('test');
             });
 
             it('should handle toLocaleLowerCase', () => {
@@ -343,13 +344,12 @@ describe('Parser', () => {
                 expect(comp.negated).toBe(false);
                 expect(comp.strict).toBe(true);
                 expect(callsOn(comp.left)).toEqual([]);
-                expect(callsOn(comp.right)).toEqual(['to-lower-case']);
-                expect(localeOn(comp.right)).toBe('en-US');
-                expect(valueOn(comp.right)).toBe('TEST');
+                expect(callsOn(comp.right)).toEqual([]);
+                expect(valueOn(comp.right)).toBe('test');
             });
 
             it('should handle combined locale transformations', () => {
-                const expression = toExpression(mockSchema, (entity: any) => entity.name.toLocaleLowerCase().startsWith('test'.toLocaleLowerCase()));
+                const expression = toExpression(mockSchema, (entity: any) => entity.name.toLocaleLowerCase().startsWith('TEST'.toLocaleLowerCase()));
 
                 expect(expression).toBeInstanceOf(ComparatorExpression);
                 const comp = expression as ComparatorExpression;
@@ -359,8 +359,7 @@ describe('Parser', () => {
                 expect(callsOn(comp.left)).toEqual(['to-lower-case']);
                 expect(localeOn(comp.left)).toBe('en-US');
                 expect(valueOn(comp.right)).toBe('test');
-                expect(callsOn(comp.right)).toEqual(['to-lower-case']);
-                expect(localeOn(comp.right)).toBe('en-US');
+                expect(callsOn(comp.right)).toEqual([]);
             });
         });
 
@@ -427,13 +426,13 @@ describe('Parser', () => {
             it('should return NOT_PARSABLE for invalid parameter path', () => {
                 const expression = toExpression(mockSchema, ([entity, params]: [any, { searchTerm: string }]) => entity.name == (params as any).invalidPath, { searchTerm: 'test' });
 
-                expect(expression).toStrictEqual(Expression.NOT_PARSABLE);
+                expect(expression).toHaveProperty('type', 'not-parsable');
             });
 
             it('should return NOT_PARSABLE for invalid parameter usage', () => {
                 const expression = toExpression(mockSchema, ([entity, params]: [any, { searchTerm: string }]) => entity.name == params as any, { searchTerm: 'test' });
 
-                expect(expression).toStrictEqual(Expression.NOT_PARSABLE);
+                expect(expression).toHaveProperty('type', 'not-parsable');
             });
 
             it('should parse parameterized filter with includes method', () => {
@@ -572,25 +571,25 @@ describe('Parser', () => {
             it('should return NOT_PARSABLE for invalid function format', () => {
                 const expression = toExpression(mockSchema, (() => 'invalid') as any);
 
-                expect(expression).toStrictEqual(Expression.NOT_PARSABLE);
+                expect(expression).toHaveProperty('type', 'not-parsable');
             });
 
             it('should return NOT_PARSABLE for unsupported expression format', () => {
                 const expression = toExpression(mockSchema, (entity: any) => entity.name + 'test' as any);
 
-                expect(expression).toStrictEqual(Expression.NOT_PARSABLE);
+                expect(expression).toHaveProperty('type', 'not-parsable');
             });
 
             it('should return NOT_PARSABLE for unknown property', () => {
                 const expression = toExpression(mockSchema, (entity: any) => entity.unknownProperty == 'test');
 
-                expect(expression).toStrictEqual(Expression.NOT_PARSABLE);
+                expect(expression).toHaveProperty('type', 'not-parsable');
             });
 
             it('should return NOT_PARSABLE for invalid parameter usage', () => {
                 const expression = toExpression(mockSchema, ([entity, params]: [any, { searchTerm: string }]) => entity.name == params as any, { searchTerm: 'test' });
 
-                expect(expression).toStrictEqual(Expression.NOT_PARSABLE);
+                expect(expression).toHaveProperty('type', 'not-parsable');
             });
         });
 
@@ -896,7 +895,7 @@ describe('Parser', () => {
 
             //     parsedExpressions.forEach((expression, index) => {
             //         expect(expression).not.toBeNull();
-            //         expect(expression).not.toStrictEqual(Expression.NOT_PARSABLE);
+            //         expect(expression).not.toHaveProperty('type', 'not-parsable');
             //     });
 
             //     expect(duration).toBeLessThan(200); // Should complete in under 200ms
@@ -1088,7 +1087,7 @@ describe('Parser', () => {
                 , complexParams);
 
             expect(expression).not.toBeNull();
-            expect(expression).not.toStrictEqual(Expression.NOT_PARSABLE); // Parser can handle this expression
+            expect(expression).not.toHaveProperty('type', 'not-parsable'); // Parser can handle this expression
         });
     })
 }); 

@@ -1,4 +1,5 @@
-import { CompiledSchema, JoinKind, JoinQueryOptionValue, JoinTuple, toEntityShape, UnknownRecord } from "@routier/core";
+import { Call, CompiledSchema, JoinKind, JoinQueryOptionValue, JoinTuple, toEntityShape, UnknownRecord } from "@routier/core";
+import { holdsAnyCall } from "./capability";
 import { decodeJsonColumns, sqlColumnProperties } from "./columns";
 import { SqlDialect, SqlDialectName, canRenderInSql, toSql } from "./sql";
 import { ResultColumn } from "@routier/core/plugins";
@@ -170,7 +171,11 @@ export const buildJoinStatement = <TOuter extends {}, TInner extends {}>(options
  * `dialect` is optional so an existing caller keeps its meaning; passing it is what closes the
  * second hole.
  */
-export const canPushDownJoin = (join: JoinQueryOptionValue, dialect?: SqlDialectName | SqlDialect): boolean => {
+export const canPushDownJoin = (
+    join: JoinQueryOptionValue,
+    dialect?: SqlDialectName | SqlDialect,
+    divergentCalls: readonly Call[] = []
+): boolean => {
 
     if (join.innerOptions.split().memory.get("filter").length > 0) {
         return false;
@@ -183,7 +188,12 @@ export const canPushDownJoin = (join: JoinQueryOptionValue, dialect?: SqlDialect
     for (const { option } of join.innerOptions.split().database.get("filter")) {
         const expression = option.value.expression;
 
-        if (expression != null && canRenderInSql(expression, dialect) === false) {
+        if (expression == null) {
+            continue;
+        }
+
+        // An inner filter goes into the ON clause, where nothing can report it afterwards.
+        if (canRenderInSql(expression, dialect) === false || holdsAnyCall(expression, divergentCalls)) {
             return false;
         }
     }

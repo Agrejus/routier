@@ -147,8 +147,7 @@ export class MongoDbPlugin implements IDbPlugin {
             return;
         }
 
-        // Every filter that reaches this plugin ran on the server: Routier routes memory-target
-        // options (and everything after them) away from plugins, and a filter with no MQL form throws above.
+        // Only an executed filter is merged above, and the translator skips every other one.
         translator.pushedDown.filter = true;
 
         if (Object.keys(sortKeys).length > 0) {

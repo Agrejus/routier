@@ -31,7 +31,7 @@ import { Call, Comparator, Expression } from "./types";
 export type EvaluationResult = boolean | undefined;
 
 /** Reads a property or literal operand, or `UNRESOLVED` when the node is not one. */
-const UNRESOLVED = Symbol("unresolved");
+export const UNRESOLVED = Symbol("unresolved");
 
 const ARITHMETIC: Partial<Record<Call, (left: number, right: number) => number>> = {
     "add": (left, right) => left + right,
@@ -49,18 +49,43 @@ const ARITHMETIC: Partial<Record<Call, (left: number, right: number) => number>>
 };
 
 const applyCall = (call: Call, value: unknown, args: unknown[]): unknown | typeof UNRESOLVED => {
+    // Above the guard: a template renders null as "null" in JavaScript, so these two are total.
+    if (call === "to-string") {
+        return String(value);
+    }
+
+    if (call === "concat") {
+        return [value, ...args].map(String).join("");
+    }
+
     // A call applied to an absent value has no answer, and inventing one ("" for a missing string)
     // is how a filter starts matching rows it should not.
     if (value == null) {
         return UNRESOLVED;
     }
 
-    if (call === "to-lower-case") {
-        return typeof value === "string" ? value.toLowerCase() : UNRESOLVED;
-    }
+    if (call === "to-lower-case" || call === "to-upper-case") {
+        if (typeof value !== "string") {
+            return UNRESOLVED;
+        }
 
-    if (call === "to-upper-case") {
-        return typeof value === "string" ? value.toUpperCase() : UNRESOLVED;
+        const lower = call === "to-lower-case";
+
+        if (args.length === 0 || args[0] == null) {
+            return lower ? value.toLowerCase() : value.toUpperCase();
+        }
+
+        if (typeof args[0] !== "string") {
+            return UNRESOLVED;
+        }
+
+        try {
+            // An explicit locale is deterministic; dropping it answers a different question in Turkish.
+            return lower ? value.toLocaleLowerCase(args[0]) : value.toLocaleUpperCase(args[0]);
+        } catch {
+            // An invalid language tag throws RangeError; no answer beats the host's default.
+            return UNRESOLVED;
+        }
     }
 
     if (call === "length") {
@@ -72,16 +97,15 @@ const applyCall = (call: Call, value: unknown, args: unknown[]): unknown | typeo
     }
 
     if (call === "matches") {
-        return typeof value === "string" && args[0] instanceof RegExp ? args[0].test(value) : UNRESOLVED;
-    }
+        if (typeof value !== "string" || !(args[0] instanceof RegExp)) {
+            return UNRESOLVED;
+        }
 
-    if (call === "to-string") {
-        return String(value);
-    }
-
-    if (call === "concat") {
-        // `String(null)` is "null" in a template, so an absent piece is text rather than no answer
-        return [value, ...args].map(String).join("");
+        // `test` advances `lastIndex` on a global or sticky pattern, and the pattern is shared with
+        // the cached template, where a source evaluates fresh in JavaScript.
+        return args[0].global || args[0].sticky
+            ? new RegExp(args[0].source, args[0].flags).test(value)
+            : args[0].test(value);
     }
 
     const arithmetic = ARITHMETIC[call];
@@ -95,7 +119,7 @@ const applyCall = (call: Call, value: unknown, args: unknown[]): unknown | typeo
     return UNRESOLVED;
 };
 
-const operand = (expression: Expression | undefined, row: UnknownRecord): unknown | typeof UNRESOLVED => {
+export const operandValue = (expression: Expression | undefined, row: UnknownRecord): unknown | typeof UNRESOLVED => {
     if (expression == null) {
         return UNRESOLVED;
     }
@@ -117,9 +141,9 @@ const operand = (expression: Expression | undefined, row: UnknownRecord): unknow
          * they run before the guard that refuses an absent operand.
          */
         if (expression.call === "coalesce") {
-            const left = operand(expression.expression, row);
+            const left = operandValue(expression.expression, row);
 
-            return left === UNRESOLVED || left == null ? operand(expression.arguments[0], row) : left;
+            return left === UNRESOLVED || left == null ? operandValue(expression.arguments[0], row) : left;
         }
 
         if (expression.call === "conditional") {
@@ -129,10 +153,10 @@ const operand = (expression: Expression | undefined, row: UnknownRecord): unknow
                 return UNRESOLVED;
             }
 
-            return operand(expression.arguments[condition === true ? 0 : 1], row);
+            return operandValue(expression.arguments[condition === true ? 0 : 1], row);
         }
 
-        const inner = operand(expression.expression, row);
+        const inner = operandValue(expression.expression, row);
 
         if (inner === UNRESOLVED) {
             return UNRESOLVED;
@@ -141,7 +165,7 @@ const operand = (expression: Expression | undefined, row: UnknownRecord): unknow
         const args: unknown[] = [];
 
         for (const argument of expression.arguments) {
-            const resolved = operand(argument, row);
+            const resolved = operandValue(argument, row);
 
             if (resolved === UNRESOLVED) {
                 return UNRESOLVED;
@@ -266,8 +290,8 @@ export const evaluate = (expression: Expression, row: UnknownRecord): Evaluation
     }
 
     if (isComparatorExpression(expression)) {
-        const left = operand(expression.left, row);
-        const right = operand(expression.right, row);
+        const left = operandValue(expression.left, row);
+        const right = operandValue(expression.right, row);
 
         if (left === UNRESOLVED || right === UNRESOLVED) {
             return undefined;

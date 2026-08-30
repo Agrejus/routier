@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it } from '@jest/globals';
 import { SqlTranslator } from './SqlTranslator';
 import { QueryOption, QueryOrdering } from '../query/types';
+import { QueryOptionsCollection } from '../query/QueryOptionsCollection';
 import { Expression } from '../../expressions/types';
+import { toExpression } from '../../expressions/parser';
+import { s as schemaBuilder } from '../../schema';
 
 describe('SqlTranslator', () => {
     let translator: SqlTranslator<any, any>;
@@ -144,6 +147,47 @@ describe('SqlTranslator', () => {
                 target: 'database', reason: 'executed'
             };
             expect(() => translator.group({ id: 1 }, option)).toThrow('Can only group an array of data');
+        });
+    });
+
+    describe('an option the plugin reported it could not run', () => {
+
+        const schema = schemaBuilder.define('translator_gate', {
+            id: schemaBuilder.string().key(),
+            name: schemaBuilder.string(),
+            price: schemaBuilder.number(),
+        }).compile();
+
+        const reportedFilterWith = (extra: (options: QueryOptionsCollection<any>) => void) => {
+            const filter = (row: any) => row.price > 20;
+            const options = QueryOptionsCollection.EMPTY<any>();
+            options.add('filter', {
+                filter,
+                params: null,
+                expression: toExpression(schema as never, filter as never, undefined as never)
+            } as never);
+            extra(options);
+
+            const item = options.get('filter')[0];
+            expect(item.option.target).toBe('database');
+            options.reportMissingCapability(item);
+
+            return new SqlTranslator<any, any>({ options } as any);
+        };
+
+        const ROWS = [{ name: 'Alpha', price: 10 }, { name: 'Bravo', price: 30 }];
+
+        it('leaves the rows for the memory pass instead of projecting them', () => {
+            const translator = reportedFilterWith(options =>
+                options.add('map', { selector: (row: any) => row.name, fields: [] } as never));
+
+            expect(translator.translate(ROWS).value).toEqual(ROWS);
+        });
+
+        it('does not collapse the rows to an aggregate the statement never ran', () => {
+            const translator = reportedFilterWith(options => options.add('count', true as never));
+
+            expect(translator.translate(ROWS).value).toEqual(ROWS);
         });
     });
 });

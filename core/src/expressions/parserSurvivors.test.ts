@@ -69,7 +69,7 @@ function parsed(fn: any, params?: any): ComparatorExpression {
         ? toExpression(schema as any, fn)
         : toExpression(schema as any, fn, params);
 
-    expect(result).not.toStrictEqual(Expression.NOT_PARSABLE);
+    expect(result).not.toHaveProperty('type', 'not-parsable');
     return result as ComparatorExpression;
 }
 
@@ -206,8 +206,13 @@ describe('converters on bound params', () => {
         expect((cmp.right as ValueExpression).value).toBe(tags);
     });
 
-    it('a String-typed param is coerced to string, with null passed through', () => {
-        expect((parsed(fromSource('r.name === p.v', '[r, p]'), { v: 123 }).right as ValueExpression).value).toBe('123');
+    it('a String-typed param is coerced to string under a loose comparison', () => {
+        expect((parsed(fromSource('r.name == p.v', '[r, p]'), { v: 123 }).right as ValueExpression).value).toBe('123');
+        expect((parsed(fromSource('r.name == p.v', '[r, p]'), { v: null }).right as ValueExpression).value).toBeNull();
+    });
+
+    it('leaves a strict comparison uncoerced, because 5 === "5" is false in JavaScript', () => {
+        expect((parsed(fromSource('r.name === p.v', '[r, p]'), { v: 123 }).right as ValueExpression).value).toBe(123);
         expect((parsed(fromSource('r.name === p.v', '[r, p]'), { v: null }).right as ValueExpression).value).toBeNull();
     });
 });
@@ -252,10 +257,11 @@ describe('truthy shorthand', () => {
 });
 
 describe('value transformers', () => {
-    it('a transform on a literal value is carried on the value expression', () => {
+    it('a transform on a literal value is computed into the value', () => {
+        // A dropped transform would leave 'X' here, which is what the parser used to lose.
         const cmp = parsed(fromSource('r.name.startsWith("X".toLowerCase())'));
 
-        expect(peelCalls(cmp.right)?.calls.length).toBeGreaterThan(0);
+        expect((cmp.right as ValueExpression).value).toBe('x');
     });
 });
 

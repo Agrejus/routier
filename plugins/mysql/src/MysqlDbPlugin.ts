@@ -1,5 +1,5 @@
 import { createPool, Pool, PoolConnection } from 'mysql2/promise';
-import { canPushDownJoin, decodeJsonColumns, splitJoinRows, sqlColumnProperties } from '@routier/sql-plugin-core';
+import { canPushDownJoin, decodeJsonColumns, joinToPushDown, splitJoinRows, sqlColumnProperties } from '@routier/sql-plugin-core';
 import { buildFromPersistOperation, buildFromQueryOperation, buildJoinQueryOperation, compiledSchemaToMysqlTable, decodeBooleanColumns } from './utils';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, SqlTranslator } from '@routier/core/plugins';
 import { CallbackResult, PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '@routier/core/results';
@@ -128,7 +128,7 @@ export class MysqlDbPlugin implements IDbPlugin {
     }
 
     query<TRoot extends {}, TShape extends any = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
-        if (event.operation.options.has("join")) {
+        if (joinToPushDown(event.operation.options, "mysql") != null) {
             this.queryJoined(event, done);
             return;
         }

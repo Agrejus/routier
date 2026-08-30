@@ -1,5 +1,6 @@
 import { ExecutionStep, ExplainedOption, QueryExplanation, isDatabaseStep } from "./explain";
 import { renderCallAsJs } from "../../expressions/callSource";
+import { SerializedExpression, SerializedValue } from "../../expressions/types";
 
 const OPTION_LABEL_WIDTH = 8;
 const WRAP_WIDTH = 68;
@@ -34,7 +35,8 @@ const COMPARATOR_SYMBOLS: Record<string, string> = {
     "less-than-equals": "<="
 };
 
-const describeValue = (value: any): string => {
+/** Typed against the union so a new OBJECT tag is a compile error here, not an "undefined" in output. */
+const describeValue = (value: SerializedValue | undefined): string => {
     if (value === null) {
         return "null";
     }
@@ -55,11 +57,23 @@ const describeValue = (value: any): string => {
         return value.date;
     }
 
-    return "undefined" in value ? "undefined" : String(value.number);
+    if ("undefined" in value) {
+        return "undefined";
+    }
+
+    if ("regex" in value) {
+        return `/${value.regex.source}/${value.regex.flags}`;
+    }
+
+    if ("bigint" in value) {
+        return `${value.bigint}n`;
+    }
+
+    return value.number;
 };
 
 /** Renders a serialized expression back to something close to the source predicate. */
-const describeExpression = (expression: any): string => {
+const describeExpression = (expression: SerializedExpression): string => {
 
     if (expression == null) {
         return "?";
@@ -92,8 +106,8 @@ const describeExpression = (expression: any): string => {
     if (expression.type === "call") {
         return renderCallAsJs(
             expression.call,
-            describeExpression(expression.expression),
-            (expression.arguments ?? []).map(describeExpression)
+            () => describeExpression(expression.expression),
+            () => (expression.arguments ?? []).map(describeExpression)
         );
     }
 
@@ -102,7 +116,12 @@ const describeExpression = (expression: any): string => {
     }
 
     // Distinguishable from "(not parsable)", which means the parser gave up and this runs in memory
-    return expression.type === "not-parsable" ? "(not parsable)" : `(unsupported: ${expression.t})`;
+    if (expression.type === "not-parsable") {
+        return expression.reason == null ? "(not parsable)" : `(not parsable: ${expression.reason})`;
+    }
+
+    // Unreachable while the union is exhausted above; a payload from a newer sender is not.
+    return `(unsupported: ${(expression as SerializedExpression).type})`;
 };
 
 const describeOption = (option: ExplainedOption): string => {
@@ -115,7 +134,7 @@ const describeOption = (option: ExplainedOption): string => {
     if (option.name === "filter") {
         return detail.expression == null
             ? String(detail.expressionUnavailable ?? "")
-            : describeExpression(detail.expression);
+            : describeExpression(detail.expression as SerializedExpression);
     }
 
     if (option.name === "sort") {

@@ -9,10 +9,12 @@ import { toExpression } from './index';
  * memory, AFTER the backend has returned every row, so a bounded query quietly becomes a full
  * read. That silence is why coverage is worth testing at all.
  *
- * Supported forms are asserted. Everything the parser cannot do yet is a `todo` naming the
- * predicate that should work — a work list that shows up every test run, not an assertion that
- * the gap is correct. Implementing one means replacing its `todo` with a real test, never
- * inverting an expectation.
+ * Three categories, and they are not interchangeable. Supported forms are asserted. A form the
+ * parser cannot do YET is a `todo` naming the predicate that should work — a work list that shows up
+ * every test run, not an assertion that the gap is correct. A form the spec REFUSES is asserted not
+ * to parse, because "must never be represented" is a property worth breaking a build over.
+ *
+ * Implementing a todo means replacing it with a real test, never inverting an expectation.
  *
  * Measured against `specs/filter-expressions.md`, which enumerates the whole JavaScript surface.
  */
@@ -198,7 +200,6 @@ describe('to support: free identifiers', () => {
     it.todo("String(x.age) === '1'");
     it.todo('Number(x.name) > 1');
     it.todo("typeof x.name === 'string'");
-    it.todo('an async arrow predicate');
 });
 
 /** Fail in the tokenizer or the grammar, so no lookup entry can fix them. */
@@ -221,12 +222,15 @@ describe('to support: the match-nothing counterpart of the tautology', () => {
 describe('to support: methods with equivalents everywhere', () => {
     it.todo("x.name.trim() === 'ada' — TRIM / $trim");
     it.todo("x.name.indexOf('a') === 0 — INSTR / $indexOfCP");
+    it.todo('x.name.toLowerCase().length === 3 — a call chained onto a call');
+    it.todo("x.name.startsWith(x.other.toLowerCase()) — a call inside a method argument");
+    it.todo('(x.age + 1) * 2 > 5 — a group on the left of an arithmetic operator');
     it.todo("x.name.slice(0, 2) === 'ad' — SUBSTR / $substrCP");
     it.todo('x.name.substring(0, 2)');
     it.todo('x.name.charAt(0) / x.name.at(0)');
-    it.todo('x.createdAt.getFullYear() === 2026 — EXTRACT / $year');
+    it.todo('x.createdAt.getUTCFullYear() === 2026 — EXTRACT / $year');
     it.todo('x.createdAt.getTime() > 0');
-    it.todo('getMonth / getDate / getHours');
+    it.todo('getUTCMonth / getUTCDate / getUTCHours');
 });
 
 /** A nested predicate over elements: `EXISTS`/`json_each` in SQL, `$elemMatch` in Mongo. */
@@ -248,7 +252,48 @@ describe('to support, or decide against deliberately', () => {
     it.todo("x.name.split(',').length > 1");
     it.todo("x.name.replace('a', 'b') === 'bda'");
     it.todo("x.name.padStart(5, ' ')");
-    it.todo("x.name.localeCompare('ada') === 0");
     it.todo("x.age.toFixed(2) === '1.00'");
     it.todo('x.name.match(/a/) != null');
+});
+
+/**
+ * Refused by design. `specs/filter-expressions.md` gives five reasons a form must not be
+ * represented, and each case below cites the one that applies.
+ */
+describe('refused: the spec says these must never parse', () => {
+
+    /** The five the spec defines. A case citing anything else has drifted from it. */
+    const REFUSAL_REASONS = ['mutates', 'non-deterministic', 'async', 'not-a-value', 'environment'];
+
+
+    // Source text, not a lambda: TypeScript rejects `x.age & 6 === 2` for the very reason the spec
+    // refuses it, and a bundler strips the brackets that make the others what they are.
+    const parsesSource = (source: string): boolean =>
+        parses(new Function(`return ${source};`)());
+
+    it.each([
+        ['an async predicate', '(async (x) => x.age > 3)', 'async'],
+        ['localeCompare', "(x) => x.name.localeCompare('ada') === 0", 'environment'],
+        ['a local date getter', '(x) => x.createdAt.getFullYear() === 2026', 'environment'],
+        ['Date.now()', '(x) => x.age > Date.now()', 'non-deterministic'],
+        ['Math.random()', '(x) => x.age > Math.random()', 'non-deterministic'],
+        ['an ungrouped bitwise and comparison mix', '(x) => x.age & 6 === 2', 'not-a-value'],
+        ['an ungrouped coalesce and comparison mix', "(x) => x.name ?? '' === 'a'", 'not-a-value'],
+        ['an assignment', '(x) => { x.age = 3; return true; }', 'mutates'],
+        ['toLocaleString on a string', '(x) => x.name.toLocaleString() === "a"', 'environment'],
+        ['toLocaleString on a number', '(x) => x.age.toLocaleString() === "1"', 'environment'],
+        ['toLocaleString on a date', '(x) => x.createdAt.toLocaleString() === "a"', 'environment'],
+        ['toString on a date', '(x) => x.createdAt.toString() === "a"', 'environment'],
+        ['toString on an array', '(x) => x.tags.toString() === "a"', 'environment'],
+        ['arithmetic naming no schema property', '(x) => 1 + 2 > x.age && 3 * 4 > 5', 'not-a-value'],
+    ])('refuses %s', (_, source, reason) => {
+        expect(REFUSAL_REASONS).toContain(reason);
+        expect(parsesSource(source)).toBe(false);
+    });
+
+    // A method table is keyed by source text, so an inherited name must not resolve to an entry.
+    it.each(['valueOf', 'constructor', 'hasOwnProperty', 'isPrototypeOf'])(
+        'refuses .%s(), which lives on Object.prototype',
+        method => expect(parsesSource(`(x) => x.name.${method}() === "a"`)).toBe(false)
+    );
 });

@@ -312,6 +312,14 @@
       {
         "text": "HttpSwrDbPlugin with Optimistic Replication",
         "link": "/guides/http-swr-with-optimistic"
+      },
+      {
+        "text": "Strict Comparison Types",
+        "link": "/guides/strict-comparison-types"
+      },
+      {
+        "text": "SQLite Case Folding",
+        "link": "/guides/sqlite-case-folding"
       }
     ],
     "collapsed": false

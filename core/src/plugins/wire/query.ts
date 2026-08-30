@@ -1,4 +1,4 @@
-import { Expression, toStrictPredicate } from "../../expressions";
+import { Expression, foldConstantCalls, toStrictPredicate } from "../../expressions";
 import { CompiledSchema } from "../../schema";
 import { UnknownRecord } from "../../utilities";
 import { JoinKeyReference } from "../query/join";
@@ -248,7 +248,7 @@ export const deserializeQueryOptions = (
             }
 
             case "filter": {
-                const expression = Expression.fromJson(option.value.expression, schema);
+                const expression = foldConstantCalls(Expression.fromJson(option.value.expression, schema));
 
                 options.add("filter", {
                     filter: toStrictPredicate(expression) as never,

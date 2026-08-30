@@ -1,4 +1,4 @@
-import type { Comparator, Expression, PropertyExpression } from "../../expressions";
+import type { Comparator, Expression, NotParsableExpression, PropertyExpression } from "../../expressions";
 import { renderCallAsJs } from "../../expressions/callSource";
 import {
     isCallExpression,
@@ -84,7 +84,7 @@ export const describeFilterAsJs = (expression: Expression): ParameterisedQuery =
         }
 
         if (isCallExpression(part)) {
-            return renderCallAsJs(part.call, side(part.expression), part.arguments.map(side));
+            return renderCallAsJs(part.call, () => side(part.expression), () => part.arguments.map(side));
         }
 
         return walk(part);
@@ -121,7 +121,7 @@ export const describeFilterAsJs = (expression: Expression): ParameterisedQuery =
         }
 
         if (isCallExpression(current)) {
-            return renderCallAsJs(current.call, side(current.expression), current.arguments.map(side));
+            return renderCallAsJs(current.call, () => side(current.expression), () => current.arguments.map(side));
         }
 
         if (current.type === "empty") {
@@ -217,7 +217,7 @@ export const describeFilters = (
 
     const parts = filters.map(entry => {
         const described = entry.expression?.type === "not-parsable"
-            ? describeUnparsableFilter(entry.filter)
+            ? describeUnparsableFilter(entry.filter, (entry.expression as NotParsableExpression).reason)
             : describeFilterAsJs(entry.expression);
 
         parameters.push(...described.parameters);
@@ -239,9 +239,9 @@ export const describeFilters = (
  * push down, and the reason codes say that it happened without showing what it was. There are no
  * parameters — nothing was extracted, because nothing was understood.
  */
-export const describeUnparsableFilter = (filter: unknown): ParameterisedQuery => ({
+export const describeUnparsableFilter = (filter: unknown, reason?: string): ParameterisedQuery => ({
     text: typeof filter === "function"
-        ? `${String(filter)} — could not be parsed, evaluated in memory`
+        ? `${String(filter)} — ${reason ?? "could not be parsed"}, evaluated in memory`
         : "(not parsable)",
     parameters: [],
 });

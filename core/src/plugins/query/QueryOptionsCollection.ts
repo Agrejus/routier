@@ -1,8 +1,63 @@
-import { isPropertyExpression } from "../../assertions";
+import { isComparatorExpression, isPropertyExpression, isValueExpression } from "../../assertions";
+import { ComparatorExpression, Expression } from "../../expressions/types";
 import { forEach } from "../../expressions/utils";
-import { MemoryExecutionReason, QueryOption, QueryOptionName, QueryOptionExecutionTarget, QueryOptionValueMap } from "./types";
+import { SchemaTypes } from "../../schema/types";
+import { logger } from "../../utilities";
+import { DatabaseExecutionReason, MemoryExecutionReason, QueryOption, QueryOptionName, QueryOptionExecutionTarget, QueryOptionValueMap } from "./types";
 
 export type QueryCollectionItem<T, K extends QueryOptionName> = { index: number, option: QueryOption<T, K> };
+
+/** What a schema type is called in JavaScript, where one exists. A value of any other type cannot equal it. */
+const JAVASCRIPT_TYPE_OF: Partial<Record<SchemaTypes, string>> = {
+    [SchemaTypes.Number]: "number",
+    [SchemaTypes.String]: "string",
+    [SchemaTypes.Boolean]: "boolean",
+    [SchemaTypes.Date]: "object",
+};
+
+const mismatchedSide = (property: Expression | undefined, value: Expression | undefined) => {
+    if (property == null || value == null || !isPropertyExpression(property) || !isValueExpression(value)) {
+        return null;
+    }
+
+    const expected = JAVASCRIPT_TYPE_OF[property.property.type];
+
+    if (expected == null || value.value == null || typeof value.value === expected) {
+        return null;
+    }
+
+    return { property, value, expected };
+};
+
+/** A strict comparison whose answer is the same for every row, because the types cannot be equal. */
+const comparesTypesThatCannotMatch = (expression: Expression): boolean => {
+    if (!isComparatorExpression(expression) || expression.strict !== true) {
+        return false;
+    }
+
+    if (expression.comparator !== "equals") {
+        return false;
+    }
+
+    return mismatchedSide(expression.left, expression.right) != null
+        || mismatchedSide(expression.right, expression.left) != null;
+};
+
+/** `JSON.stringify` throws on a BigInt, and this runs inside the guard that exists to catch one. */
+const describeLiteral = (value: unknown): string =>
+    typeof value === "string" ? `"${value}"` : String(value);
+
+const mismatchWarning = (expression: ComparatorExpression): string => {
+    const side = mismatchedSide(expression.left, expression.right)
+        ?? mismatchedSide(expression.right, expression.left)!;
+
+    const outcome = expression.negated ? "every row matches" : "no row matches";
+
+    return `Routier: '${side.property.property.getAssignmentPath()}' is a ${side.expected}, and this filter ` +
+        `compares it against ${describeLiteral(side.value.value)}, which is a ${typeof side.value.value}. ` +
+        `A strict comparison between them is the same answer for every row, so ${outcome} and the filter ` +
+        `runs in memory. https://routier.dev/guides/strict-comparison-types`;
+};
 
 export class QueryOptionsCollection<T> {
 
@@ -12,6 +67,9 @@ export class QueryOptionsCollection<T> {
     private nextIndex: number = 0;
     private enumeratedItems: QueryCollectionItem<any, any>[] = [];
     private dirty: boolean = true;
+
+    /** The collection a `splitAt`/`split` half came from. A capability report belongs to it. */
+    private origin: QueryOptionsCollection<T> | null = null;
 
     /** Cuts over to memory execution, keeping the first cause. See `MemoryExecutionReason`. */
     private cutOverToMemory(reason: MemoryExecutionReason) {
@@ -83,6 +141,12 @@ export class QueryOptionsCollection<T> {
                         return false;
                     }
 
+                    if (comparesTypesThatCannotMatch(expression)) {
+                        logger.warn(mismatchWarning(expression as ComparatorExpression));
+                        this.cutOverToMemory("predicate-error");
+                        return false;
+                    }
+
                     return true;
                 });
             }
@@ -114,6 +178,12 @@ export class QueryOptionsCollection<T> {
             } else if (nearestValue.property != null && nearestValue.property.hasRenamedSegments) {
                 this.cutOverToMemory("renamed-property");
             }
+        }
+
+        if ((name === "filter" || name === "sort") && (this.options.has("skip") || this.options.has("take"))) {
+            // SQL emits WHERE before LIMIT and Mongo's find() filters before skipping, so an option
+            // written after a window can only see the windowed rows if it runs after it.
+            this.cutOverToMemory("after-window");
         }
 
         if (name === "join") {
@@ -203,6 +273,9 @@ export class QueryOptionsCollection<T> {
             destination.adopt(sortedItems[i]);
         }
 
+        before.origin = this.origin ?? this;
+        after.origin = this.origin ?? this;
+
         return { before, at, after };
     }
 
@@ -245,15 +318,37 @@ export class QueryOptionsCollection<T> {
     /**
      * A plugin reporting that its engine cannot express one option.
      *
-     * The plugin names ONE. Core marks the rest of the database phase `not-reached`, because the
-     * database has to stop there — a window applied in front of a filter that was not applied
-     * returns the wrong rows. Passing the cascade through core is what makes it impossible for a
-     * plugin to mark a non-contiguous cut.
+     * Core marks the rest of the database phase `not-reached`, because the database has to stop
+     * there — a window applied in front of a filter that was not applied returns the wrong rows.
+     * Passing the cascade through core is what makes it impossible for a plugin to mark a
+     * non-contiguous cut.
+     *
+     * A report names a culprit and never un-names one, so reports commute.
      *
      * The option is not moved to the memory arm. It stays where it was planned, which is what keeps
      * a redirect distinguishable from something core sent to memory in the first place.
      */
     reportMissingCapability(item: QueryCollectionItem<any, any>) {
+        this.report(item, "missing-capability");
+    }
+
+    /**
+     * A plugin reporting that its engine would answer one option differently from JavaScript.
+     *
+     * Same cascade as `reportMissingCapability`, and a separate reason because the caller can act on
+     * one and not the other. See `DatabaseExecutionReason`.
+     */
+    reportEngineDivergence(item: QueryCollectionItem<any, any>) {
+        this.report(item, "engine-divergence");
+    }
+
+    private report(item: QueryCollectionItem<any, any>, reason: DatabaseExecutionReason) {
+        // A half can only see its own slice, and the database has to stop for the whole dispatch.
+        if (this.origin != null) {
+            this.origin.report(item, reason);
+            return;
+        }
+
         this.resolveEnumeration();
 
         for (const candidate of this.enumeratedItems) {
@@ -261,7 +356,14 @@ export class QueryOptionsCollection<T> {
                 continue;
             }
 
-            candidate.option.reason = candidate.index === item.index ? "missing-capability" : "not-reached";
+            if (candidate.index === item.index) {
+                candidate.option.reason = reason;
+                continue;
+            }
+
+            if (candidate.option.reason === "executed") {
+                candidate.option.reason = "not-reached";
+            }
         }
     }
 
@@ -311,6 +413,9 @@ export class QueryOptionsCollection<T> {
             // same object the explanation reads.
             half.adopt(sortedItem);
         }
+
+        memoryQueryOptionsCollection.origin = this.origin ?? this;
+        databaseQueryOptionsCollection.origin = this.origin ?? this;
 
         return {
             memory: memoryQueryOptionsCollection,

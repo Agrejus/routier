@@ -1,8 +1,8 @@
 import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema';
 import { Expression } from '@routier/core/expressions';
-import { IQuery, JoinQueryOptionValue, Query, QueryField } from '@routier/core/plugins';
+import { IQuery, JoinQueryOptionValue, Query } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
-import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, entityResultColumns, getDialect, sqlColumnProperties, toColumnValueMap, toSql, canRenderInSql, SqlDialect } from '@routier/sql-plugin-core';
+import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, entityResultColumns, getDialect, sqlColumnProperties, toColumnValueMap, toSql, reportUnrenderableFilters, executedMapFields, SqlDialect } from '@routier/sql-plugin-core';
 import { mappedResultColumns, ResultColumn } from '@routier/core/plugins';
 import { SqlOperation } from './types';
 
@@ -419,16 +419,9 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
     const { schema, options } = query;
     const tableName = schema.collectionName;
 
-    let mapFields: QueryField[] | null = null;
-    for (const [, items] of options.items) {
-        for (const item of items) {
-            if (item.option.name === 'map' && item.option.value.fields) {
-                mapFields = item.option.value.fields;
-                break;
-            }
-        }
-        if (mapFields) break;
-    }
+    reportUnrenderableFilters(options, "postgresql");
+
+    const mapFields = executedMapFields(options);
 
     /**
      * ONE ordered list, from which both the select list and the result description come.
@@ -455,18 +448,6 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
 
     const params: any[] = [];
     let currentQuery = `SELECT ${columnsStr} FROM "${tableName}"`;
-
-    /**
-     * Ask before translating: an option this engine cannot express is handed back, and the datastore
-     * runs it over the rows this query does return.
-     */
-    for (const item of options.get("filter")) {
-        const expression = (item.option.value as { expression?: Expression }).expression;
-
-        if (expression != null && canRenderInSql(expression, "postgresql") === false) {
-            options.reportMissingCapability(item);
-        }
-    }
 
     const operations: Array<{ type: string, value: any, index: number }> = [];
     let totalOps = 0;

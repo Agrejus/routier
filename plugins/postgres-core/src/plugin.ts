@@ -1,4 +1,4 @@
-import { canPushDownJoin, decodeJsonColumns, splitJoinRows } from '@routier/sql-plugin-core';
+import { canPushDownJoin, decodeJsonColumns, joinToPushDown, splitJoinRows } from '@routier/sql-plugin-core';
 import { assertIsNotNull, OptimisticConcurrencyError, PluginDestroyedError, UnknownRecord } from '@routier/core';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, ResultColumn } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
@@ -207,7 +207,7 @@ export class PostgresDbPluginBase implements IDbPlugin {
         event: DbPluginQueryEvent<TRoot, TShape>,
         done: PluginEventCallbackResult<ITranslatedValue<TShape>>
     ): void {
-        if (event.operation.options.has("join")) {
+        if (joinToPushDown(event.operation.options, "postgresql") != null) {
             this.queryJoined(event, done);
             return;
         }

@@ -38,7 +38,7 @@ function expectRejected(fn: any, params?: any, target: any = schema) {
         ? toExpression(target as any, fn)
         : toExpression(target as any, fn, params);
 
-    expect(result).toStrictEqual(Expression.NOT_PARSABLE);
+    expect(result).toHaveProperty('type', 'not-parsable');
 }
 
 function expectParsed(fn: any, params?: any, target: any = schema) {
@@ -46,7 +46,7 @@ function expectParsed(fn: any, params?: any, target: any = schema) {
         ? toExpression(target as any, fn)
         : toExpression(target as any, fn, params);
 
-    expect(result).not.toStrictEqual(Expression.NOT_PARSABLE);
+    expect(result).not.toHaveProperty('type', 'not-parsable');
 }
 
 describe('tokenizer guards', () => {
@@ -107,7 +107,7 @@ describe('value resolution', () => {
     it('parses `void 0` as the value undefined', () => {
         const result = toExpression(schema as any, fromSource('r.name === void 0'));
 
-        expect(result).not.toStrictEqual(Expression.NOT_PARSABLE);
+        expect(result).not.toHaveProperty('type', 'not-parsable');
         const cmp = result as ComparatorExpression;
         expect((cmp.right as ValueExpression).value).toBeUndefined();
     });
@@ -118,7 +118,7 @@ describe('value resolution', () => {
         // app-side value is JSON-encoded here the way the wire produces it.
         const result = toExpression(serializedSchema as any, fromSource('r.enc === p.v', '[r, p]'), { v: JSON.stringify('x') });
 
-        expect(result).not.toStrictEqual(Expression.NOT_PARSABLE);
+        expect(result).not.toHaveProperty('type', 'not-parsable');
         const cmp = result as ComparatorExpression;
         expect((cmp.right as ValueExpression).value).toBe('enc:x');
     });

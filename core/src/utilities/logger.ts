@@ -79,13 +79,15 @@ const resolveLevel = (): LogLevel => {
 
         const env = process.env.NODE_ENV?.toLowerCase();
 
-        // `test` is deliberately absent. It used to be here, which meant no test suite anywhere
-        // could run Routier quietly. Opt in with DEBUG=routier or ROUTIER_LOG_LEVEL when a test
-        // needs the output.
         if (env === 'dev' || env === 'development') return 'debug';
     }
 
-    return 'silent';
+    // Warnings are on unless something turns them off.
+    //
+    // Routier warns when a query returns correct rows a slower way than it could, or when a filter
+    // compares types that can never match. Both are the caller's to act on, and a default of
+    // `silent` meant the only people who ever saw them were the ones who already knew to look.
+    return 'warn';
 };
 
 let level: LogLevel = resolveLevel();

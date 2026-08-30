@@ -45,7 +45,7 @@ function expectRejected(fn: any, params?: any) {
         ? toExpression(schema as any, fn)
         : toExpression(schema as any, fn, params);
 
-    expect(result).toStrictEqual(Expression.NOT_PARSABLE);
+    expect(result).toHaveProperty('type', 'not-parsable');
 }
 
 /** Sanity: the same shape of filter, but supported, must still parse. */
@@ -54,7 +54,7 @@ function expectParsed(fn: any, params?: any) {
         ? toExpression(schema as any, fn)
         : toExpression(schema as any, fn, params);
 
-    expect(result).not.toStrictEqual(Expression.NOT_PARSABLE);
+    expect(result).not.toHaveProperty('type', 'not-parsable');
     expect(result).not.toBeNull();
 }
 
