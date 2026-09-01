@@ -1,6 +1,30 @@
 import { CompiledSchema, logger, PropertyInfo, SchemaTypes } from "@routier/core";
 
+const compoundIndexPartners = <T extends {}>(schema: CompiledSchema<T>, property: PropertyInfo<T>) =>
+    schema.properties.filter(other =>
+        other !== property &&
+        other.indexes.some(index => property.indexes.includes(index))
+    );
+
+export const compoundIndexGroupOf = <T extends {}>(schema: CompiledSchema<T>, property: PropertyInfo<T>): string[] =>
+    [property.name, ...compoundIndexPartners(schema, property).map(partner => partner.name)];
+
+const storesCache = new WeakMap<CompiledSchema<any>, string>();
+
 export const convertToDexieSchema = <T extends {}>(schema: CompiledSchema<T>) => {
+    const cached = storesCache.get(schema);
+
+    if (cached != null) {
+        return cached;
+    }
+
+    const stores = deriveDexieSchema(schema);
+
+    storesCache.set(schema, stores);
+    return stores;
+};
+
+const deriveDexieSchema = <T extends {}>(schema: CompiledSchema<T>) => {
     const schemaProperties: string[] = [];
     const existingIndexes: PropertyInfo<any>[] = [];
 
@@ -78,12 +102,9 @@ export const convertToDexieSchema = <T extends {}>(schema: CompiledSchema<T>) =>
         }
 
         // Test for compound indexes
-        const connections = schema.properties.filter(w =>
-            w !== property && // Don't match with self
-            w.indexes.some(index => property.indexes.includes(index))
-        );
+        const connections = compoundIndexPartners(schema, property);
 
-        const properties = [property.name, ...connections.map(w => w.name)];
+        const properties = compoundIndexGroupOf(schema, property);
 
         existingIndexes.push(...connections);
 

@@ -25,9 +25,9 @@
     mod
   ));
 
-  // node_modules/dexie/dist/dexie.js
+  // ../../node_modules/dexie/dist/dexie.js
   var require_dexie = __commonJS({
-    "node_modules/dexie/dist/dexie.js"(exports, module) {
+    "../../node_modules/dexie/dist/dexie.js"(exports, module) {
       (function(global2, factory) {
         typeof exports === "object" && typeof module !== "undefined" ? module.exports = factory() : typeof define === "function" && define.amd ? define(factory) : (global2 = typeof globalThis !== "undefined" ? globalThis : global2 || self, global2.Dexie = factory());
       })(exports, function() {
@@ -6047,14 +6047,14 @@
     }
   });
 
-  // core/dist/schema/index.js
+  // ../../core/dist/schema/index.js
   var __webpack_modules__ = {
-    980(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    980(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         Nl: () => CodeBuilder,
         kF: () => FunctionBuilder
       });
-      var _utilities__rspack_import_0 = __webpack_require__12(618);
+      var _utilities__rspack_import_0 = __webpack_require__11(618);
       class Block {
         name;
         _lines = [];
@@ -6502,8 +6502,8 @@
         }
       }
     },
-    131(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    131(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         A: () => SchemaError
       });
       class SchemaError extends Error {
@@ -6512,8 +6512,8 @@
         }
       }
     },
-    971(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    971(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         t: () => now
       });
       const measurements = (
@@ -6531,8 +6531,8 @@
         null
       );
     },
-    537(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    537(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         $: () => HashType,
         L: () => SchemaTypes
       });
@@ -6556,8 +6556,8 @@
         return HashType2;
       }({});
     },
-    581(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    581(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         vF: () => logger2
       });
       const LOG_LEVELS = [
@@ -6627,8 +6627,8 @@
         table: (...args) => emit("debug", "table", args)
       };
     },
-    615(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    615(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         tW: () => hash
       });
       const hash = (value, seed = 0) => {
@@ -6738,8 +6738,8 @@
         return `{ ${props.join(", ")}${suffix} }`;
       }
     },
-    618(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    618(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         g: () => uuidv4,
         u: () => uuid
       });
@@ -6890,7 +6890,7 @@
       ),
       KC: () => (
         /* reexport */
-        PropertyInfo
+        PropertyInfo3
       ),
       he: () => (
         /* reexport */
@@ -7606,7 +7606,7 @@
       }
     }
     ;
-    class PropertyInfo {
+    class PropertyInfo3 {
       get id() {
         if (this._idCache) {
           return this._idCache;
@@ -10176,7 +10176,7 @@
             for (const [key, value] of Object.entries(innerSchema.instance)) {
               if (value && typeof value === "object" && "type" in value) {
                 const schemaBase = value;
-                const tempProperty = new PropertyInfo(schemaBase, key);
+                const tempProperty = new PropertyInfo3(schemaBase, key);
                 if (!context.useOutputType && (tempProperty.type === types.L.Computed || tempProperty.type === types.L.Function)) {
                   continue;
                 }
@@ -10836,7 +10836,7 @@
             const propertyInstance = instanceObj[key];
             const previousParent = item.parents.length === 0 ? null : item.parents[item.parents.length - 1].propertyInfo;
             if (propertyInstance.type === types.L.Object) {
-              const propertyInfo = new PropertyInfo(propertyInstance, key, previousParent);
+              const propertyInfo = new PropertyInfo3(propertyInstance, key, previousParent);
               explore.push({
                 path: [
                   item.path,
@@ -10859,7 +10859,7 @@
               previousParent.children.push(propertyInfo);
               continue;
             }
-            const childPrimitivePropertyInfo = new PropertyInfo(item.instance[key], key, previousParent);
+            const childPrimitivePropertyInfo = new PropertyInfo3(item.instance[key], key, previousParent);
             if (previousParent === null) {
               properties.push(childPrimitivePropertyInfo);
               continue;
@@ -11577,16 +11577,16 @@
   var __webpack_exports__rehydrateSchemaFromJsonString = __webpack_exports__.Dk;
   var __webpack_exports__s = __webpack_exports__.s;
 
-  // core/dist/collections/index.js
+  // ../../core/dist/collections/index.js
   var __webpack_modules__2 = {
-    533(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    533(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         $E: () => SchemaPersistChanges,
         R7: () => SchemaPersistResult,
         om: () => BulkPersistResult,
         qk: () => BulkPersistChanges
       });
-      var _TagCollection__rspack_import_0 = __webpack_require__12(356);
+      var _TagCollection__rspack_import_0 = __webpack_require__11(356);
       class BulkPersistResult extends Map {
         resolve(schemaId) {
           if (this.has(schemaId)) {
@@ -11718,8 +11718,8 @@
         }
       }
     },
-    995(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    995(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         g: () => ReadonlySchemaCollection
       });
       class ReadonlySchemaCollection {
@@ -11762,11 +11762,11 @@
         }
       }
     },
-    393(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    393(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         w: () => SchemaCollection
       });
-      var _ReadonlySchemaCollection__rspack_import_0 = __webpack_require__12(995);
+      var _ReadonlySchemaCollection__rspack_import_0 = __webpack_require__11(995);
       class SchemaCollection extends _ReadonlySchemaCollection__rspack_import_0.g {
         set(schemaId, schema) {
           this.data.set(schemaId, schema);
@@ -11780,8 +11780,8 @@
         }
       }
     },
-    356(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    356(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         r: () => TagCollection
       });
       class TagCollection {
@@ -11829,8 +11829,8 @@
         }
       }
     },
-    718(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    718(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         Q: () => Result2
       });
       class BaseResult {
@@ -11909,8 +11909,8 @@
         }
       }
     },
-    537(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    537(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         L: () => SchemaTypes
       });
       var SchemaTypes = /* @__PURE__ */ function(SchemaTypes2) {
@@ -11932,8 +11932,8 @@
         null
       );
     },
-    618(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    618(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         g: () => uuidv4
       });
       const uuid = (length = 16) => {
@@ -12257,10 +12257,10 @@
   var __webpack_exports__SchemaPersistResult = __webpack_exports__2.R7;
   var __webpack_exports__TagCollection = __webpack_exports__2.r4;
 
-  // core/dist/results/index.js
+  // ../../core/dist/results/index.js
   var __webpack_modules__3 = {
-    718(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    718(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         D: () => PluginEventResult,
         Q: () => Result2
       });
@@ -12399,10 +12399,10 @@
   var __webpack_exports__Result = __webpack_exports__3.Q7;
   var __webpack_exports__toPromise = __webpack_exports__3.hq;
 
-  // core/dist/plugins/index.js
+  // ../../core/dist/plugins/index.js
   var __webpack_modules__4 = {
-    126(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    126(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         Cv: () => assertString,
         S6: () => isValueExpression,
         e3: () => isPropertyExpression,
@@ -12480,13 +12480,13 @@
         return isObjectWithType(value) && value.type === "not-parsable";
       }
     },
-    533(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    533(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         R7: () => SchemaPersistResult,
         om: () => BulkPersistResult,
         qk: () => BulkPersistChanges
       });
-      var _TagCollection__rspack_import_0 = __webpack_require__12(356);
+      var _TagCollection__rspack_import_0 = __webpack_require__11(356);
       class BulkPersistResult extends Map {
         resolve(schemaId) {
           if (this.has(schemaId)) {
@@ -12618,8 +12618,8 @@
         }
       }
     },
-    995(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    995(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         g: () => ReadonlySchemaCollection
       });
       class ReadonlySchemaCollection {
@@ -12662,11 +12662,11 @@
         }
       }
     },
-    393(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    393(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         w: () => SchemaCollection
       });
-      var _ReadonlySchemaCollection__rspack_import_0 = __webpack_require__12(995);
+      var _ReadonlySchemaCollection__rspack_import_0 = __webpack_require__11(995);
       class SchemaCollection extends _ReadonlySchemaCollection__rspack_import_0.g {
         set(schemaId, schema) {
           this.data.set(schemaId, schema);
@@ -12680,8 +12680,8 @@
         }
       }
     },
-    356(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    356(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         r: () => TagCollection
       });
       class TagCollection {
@@ -12729,8 +12729,8 @@
         }
       }
     },
-    624(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    624(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         V: () => OptimisticConcurrencyError
       });
       class OptimisticConcurrencyError extends Error {
@@ -12750,8 +12750,8 @@
         }
       }
     },
-    850(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    850(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         f: () => PluginDestroyedError
       });
       class PluginDestroyedError extends Error {
@@ -12761,8 +12761,8 @@
         }
       }
     },
-    429(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    429(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         a: () => renderCallAsJs
       });
       const CALL_SOURCE = {
@@ -12998,14 +12998,14 @@
         ].join(` ${source.symbol} `)}`;
       };
     },
-    379(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    379(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         Vv: () => operandValue2,
         _3: () => evaluate,
         gm: () => UNRESOLVED2,
         wS: () => toStrictPredicate
       });
-      var _assertions__rspack_import_0 = __webpack_require__12(126);
+      var _assertions__rspack_import_0 = __webpack_require__11(126);
       const UNRESOLVED2 = Symbol("unresolved");
       const ARITHMETIC = {
         "add": (left, right) => left + right,
@@ -13191,14 +13191,14 @@
         return result;
       };
     },
-    43(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    43(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         F5: () => foldConstantCalls2
       });
-      var _assertions__rspack_import_0 = __webpack_require__12(126);
-      var _evaluate__rspack_import_3 = __webpack_require__12(379);
-      var _types__rspack_import_2 = __webpack_require__12(27);
-      var _utils__rspack_import_1 = __webpack_require__12(63);
+      var _assertions__rspack_import_0 = __webpack_require__11(126);
+      var _evaluate__rspack_import_3 = __webpack_require__11(379);
+      var _types__rspack_import_2 = __webpack_require__11(27);
+      var _utils__rspack_import_1 = __webpack_require__11(63);
       const FOLDABLE = /* @__PURE__ */ new Set([
         "to-lower-case",
         "to-upper-case",
@@ -13290,16 +13290,16 @@
         return value;
       };
     },
-    91(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    91(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         MY: () => toExpression
       });
-      var _utilities__rspack_import_4 = __webpack_require__12(581);
-      var _assertions__rspack_import_0 = __webpack_require__12(126);
-      var _schema__rspack_import_2 = __webpack_require__12(537);
-      var _evaluate__rspack_import_3 = __webpack_require__12(379);
-      var _fold__rspack_import_5 = __webpack_require__12(43);
-      var _types__rspack_import_1 = __webpack_require__12(27);
+      var _utilities__rspack_import_4 = __webpack_require__11(581);
+      var _assertions__rspack_import_0 = __webpack_require__11(126);
+      var _schema__rspack_import_2 = __webpack_require__11(537);
+      var _evaluate__rspack_import_3 = __webpack_require__11(379);
+      var _fold__rspack_import_5 = __webpack_require__11(43);
+      var _types__rspack_import_1 = __webpack_require__11(27);
       const ERROR_MESSAGES = {
         PROPERTY_NOT_FOUND: (path) => `Error parsing query, could not find PropertyInfo for path: ${path}`,
         PARAM_PATH_NOT_FOUND: (value, params) => `Cannot find path in params for .where(). Make sure parameters are not used inline.\r
@@ -15379,8 +15379,8 @@ Issue At: ${value}`,
         }
       };
     },
-    27(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    27(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         DG: () => CallExpression,
         Ko: () => ValueExpression,
         bQ: () => ComparatorExpression,
@@ -15694,8 +15694,8 @@ Issue At: ${value}`,
         }
       }
     },
-    63(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    63(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         LU: () => childrenOf,
         jJ: () => forEach
       });
@@ -15756,12 +15756,12 @@ Issue At: ${value}`,
         traverse(expression);
       }
     },
-    416(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    416(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         U: () => WorkPipeline
       });
-      var _utilities__rspack_import_1 = __webpack_require__12(581);
-      var _results__rspack_import_0 = __webpack_require__12(718);
+      var _utilities__rspack_import_1 = __webpack_require__11(581);
+      var _results__rspack_import_0 = __webpack_require__11(718);
       class TrampolinePipeline {
         _list = [];
         _hasErrored = false;
@@ -15960,14 +15960,14 @@ Issue At: ${value}`,
         }
       }
     },
-    198(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    198(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         H: () => QueryOptionsCollection
       });
-      var _assertions__rspack_import_1 = __webpack_require__12(126);
-      var _expressions_utils__rspack_import_2 = __webpack_require__12(63);
-      var _schema_types__rspack_import_0 = __webpack_require__12(537);
-      var _utilities__rspack_import_3 = __webpack_require__12(581);
+      var _assertions__rspack_import_1 = __webpack_require__11(126);
+      var _expressions_utils__rspack_import_2 = __webpack_require__11(63);
+      var _schema_types__rspack_import_0 = __webpack_require__11(537);
+      var _utilities__rspack_import_3 = __webpack_require__11(581);
       const JAVASCRIPT_TYPE_OF = {
         [_schema_types__rspack_import_0.L.Number]: "number",
         [_schema_types__rspack_import_0.L.String]: "string",
@@ -16321,8 +16321,8 @@ Issue At: ${value}`,
         }
       }
     },
-    718(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    718(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         D: () => PluginEventResult,
         Q: () => Result2
       });
@@ -16401,8 +16401,8 @@ Issue At: ${value}`,
         }
       }
     },
-    537(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    537(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         L: () => SchemaTypes
       });
       var SchemaTypes = /* @__PURE__ */ function(SchemaTypes2) {
@@ -16424,8 +16424,8 @@ Issue At: ${value}`,
         null
       );
     },
-    76(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    76(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         $: () => isDate2
       });
       const isDate2 = (data) => {
@@ -16438,8 +16438,8 @@ Issue At: ${value}`,
         return data instanceof Date;
       };
     },
-    581(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    581(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         vF: () => logger2
       });
       const LOG_LEVELS = [
@@ -16509,8 +16509,8 @@ Issue At: ${value}`,
         table: (...args) => emit("debug", "table", args)
       };
     },
-    618(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    618(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         u: () => uuid
       });
       const uuid = (length = 16) => {
@@ -19948,10 +19948,10 @@ Issue At: ${value}`,
   var __webpack_exports__withExecutedQueries = __webpack_exports__4.Kg;
   var __webpack_exports__withInnerSide = __webpack_exports__4.oJ;
 
-  // core/dist/utilities/index.js
+  // ../../core/dist/utilities/index.js
   var __webpack_modules__5 = {
-    126(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    126(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         S6: () => isValueExpression,
         e3: () => isPropertyExpression,
         xH: () => isComparatorExpression
@@ -20024,8 +20024,8 @@ Issue At: ${value}`,
         return isObjectWithType(value) && value.type === "not-parsable";
       }
     },
-    63(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    63(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         jJ: () => forEach
       });
       function peelCalls(expression) {
@@ -20085,14 +20085,14 @@ Issue At: ${value}`,
         traverse(expression);
       }
     },
-    198(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    198(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         H: () => QueryOptionsCollection
       });
-      var _assertions__rspack_import_1 = __webpack_require__12(126);
-      var _expressions_utils__rspack_import_2 = __webpack_require__12(63);
-      var _schema_types__rspack_import_0 = __webpack_require__12(537);
-      var _utilities__rspack_import_3 = __webpack_require__12(581);
+      var _assertions__rspack_import_1 = __webpack_require__11(126);
+      var _expressions_utils__rspack_import_2 = __webpack_require__11(63);
+      var _schema_types__rspack_import_0 = __webpack_require__11(537);
+      var _utilities__rspack_import_3 = __webpack_require__11(581);
       const JAVASCRIPT_TYPE_OF = {
         [_schema_types__rspack_import_0.L.Number]: "number",
         [_schema_types__rspack_import_0.L.String]: "string",
@@ -20446,8 +20446,8 @@ Issue At: ${value}`,
         }
       }
     },
-    537(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    537(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         L: () => SchemaTypes
       });
       var SchemaTypes = /* @__PURE__ */ function(SchemaTypes2) {
@@ -20469,8 +20469,8 @@ Issue At: ${value}`,
         null
       );
     },
-    76(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    76(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         $: () => isDate2
       });
       const isDate2 = (data) => {
@@ -20483,8 +20483,8 @@ Issue At: ${value}`,
         return data instanceof Date;
       };
     },
-    581(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    581(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         Cg: () => resetLogLevel,
         He: () => setLogLevel,
         Mi: () => isLogLevelEnabled,
@@ -20559,8 +20559,8 @@ Issue At: ${value}`,
         table: (...args) => emit("debug", "table", args)
       };
     },
-    615(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    615(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         Nr: () => fastHash,
         Zm: () => stringifyObject,
         tW: () => hash
@@ -20672,8 +20672,8 @@ Issue At: ${value}`,
         return `{ ${props.join(", ")}${suffix} }`;
       }
     },
-    618(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    618(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         g: () => uuidv4,
         u: () => uuid
       });
@@ -20964,10 +20964,10 @@ Issue At: ${value}`,
   var __webpack_exports__uuid = __webpack_exports__5.uR;
   var __webpack_exports__uuidv4 = __webpack_exports__5.gZ;
 
-  // core/dist/expressions/index.js
+  // ../../core/dist/expressions/index.js
   var __webpack_modules__6 = {
-    126(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    126(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         Cv: () => assertString,
         S6: () => isValueExpression,
         e3: () => isPropertyExpression,
@@ -21043,8 +21043,8 @@ Issue At: ${value}`,
         return isObjectWithType(value) && value.type === "not-parsable";
       }
     },
-    429(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    429(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         N: () => CALL_SOURCE,
         a: () => renderCallAsJs
       });
@@ -21281,8 +21281,8 @@ Issue At: ${value}`,
         ].join(` ${source.symbol} `)}`;
       };
     },
-    835(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    835(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         t: () => EXPRESSION_TYPES2
       });
       const EXPRESSION_TYPE_SET = {
@@ -21296,15 +21296,15 @@ Issue At: ${value}`,
       };
       const EXPRESSION_TYPES2 = Object.keys(EXPRESSION_TYPE_SET);
     },
-    379(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    379(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         Vu: () => toPredicate,
         Vv: () => operandValue2,
         _3: () => evaluate,
         gm: () => UNRESOLVED2,
         wS: () => toStrictPredicate
       });
-      var _assertions__rspack_import_0 = __webpack_require__12(126);
+      var _assertions__rspack_import_0 = __webpack_require__11(126);
       const UNRESOLVED2 = Symbol("unresolved");
       const ARITHMETIC = {
         "add": (left, right) => left + right,
@@ -21490,16 +21490,16 @@ Issue At: ${value}`,
         return result;
       };
     },
-    43(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    43(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         F5: () => foldConstantCalls2,
         Sv: () => FOLDABLE,
         br: () => foldedOperandValue
       });
-      var _assertions__rspack_import_0 = __webpack_require__12(126);
-      var _evaluate__rspack_import_3 = __webpack_require__12(379);
-      var _types__rspack_import_2 = __webpack_require__12(27);
-      var _utils__rspack_import_1 = __webpack_require__12(63);
+      var _assertions__rspack_import_0 = __webpack_require__11(126);
+      var _evaluate__rspack_import_3 = __webpack_require__11(379);
+      var _types__rspack_import_2 = __webpack_require__11(27);
+      var _utils__rspack_import_1 = __webpack_require__11(63);
       const FOLDABLE = /* @__PURE__ */ new Set([
         "to-lower-case",
         "to-upper-case",
@@ -21591,18 +21591,18 @@ Issue At: ${value}`,
         return value;
       };
     },
-    91(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    91(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         MY: () => toExpression,
         oH: () => parseFragment,
         pg: () => combineExpressions
       });
-      var _utilities__rspack_import_5 = __webpack_require__12(581);
-      var _assertions__rspack_import_0 = __webpack_require__12(126);
-      var _schema__rspack_import_2 = __webpack_require__12(537);
-      var _evaluate__rspack_import_3 = __webpack_require__12(379);
-      var _fold__rspack_import_4 = __webpack_require__12(43);
-      var _types__rspack_import_1 = __webpack_require__12(27);
+      var _utilities__rspack_import_5 = __webpack_require__11(581);
+      var _assertions__rspack_import_0 = __webpack_require__11(126);
+      var _schema__rspack_import_2 = __webpack_require__11(537);
+      var _evaluate__rspack_import_3 = __webpack_require__11(379);
+      var _fold__rspack_import_4 = __webpack_require__11(43);
+      var _types__rspack_import_1 = __webpack_require__11(27);
       const ERROR_MESSAGES = {
         PROPERTY_NOT_FOUND: (path) => `Error parsing query, could not find PropertyInfo for path: ${path}`,
         PARAM_PATH_NOT_FOUND: (value, params) => `Cannot find path in params for .where(). Make sure parameters are not used inline.\r
@@ -23682,8 +23682,8 @@ Issue At: ${value}`,
         }
       };
     },
-    27(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    27(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         DG: () => CallExpression,
         Ko: () => ValueExpression,
         SC: () => NotParsableExpression,
@@ -23999,8 +23999,8 @@ Issue At: ${value}`,
         }
       }
     },
-    63(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    63(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         CC: () => peelCalls,
         LU: () => childrenOf,
         jJ: () => forEach,
@@ -24063,8 +24063,8 @@ Issue At: ${value}`,
         traverse(expression);
       }
     },
-    537(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    537(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         L: () => SchemaTypes
       });
       var SchemaTypes = /* @__PURE__ */ function(SchemaTypes2) {
@@ -24086,8 +24086,8 @@ Issue At: ${value}`,
         null
       );
     },
-    581(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    581(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         vF: () => logger2
       });
       const LOG_LEVELS = [
@@ -24325,10 +24325,10 @@ Issue At: ${value}`,
   var __webpack_exports__toPredicate = __webpack_exports__6.Vu;
   var __webpack_exports__toStrictPredicate = __webpack_exports__6.wS;
 
-  // core/dist/index.js
+  // ../../core/dist/index.js
   var __webpack_modules__7 = {
-    126(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    126(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         AF: () => isNotParsableExpression,
         BH: () => isExpression,
         Cv: () => assertString,
@@ -24344,8 +24344,8 @@ Issue At: ${value}`,
         xH: () => isComparatorExpression,
         ys: () => assertIsArray
       });
-      var _expressions_constants__rspack_import_1 = __webpack_require__12(835);
-      var _utilities__rspack_import_0 = __webpack_require__12(76);
+      var _expressions_constants__rspack_import_1 = __webpack_require__11(835);
+      var _utilities__rspack_import_0 = __webpack_require__11(76);
       function assertDate(data) {
         if ((0, _utilities__rspack_import_0.$)(data) === false) {
           throw new TypeError("Value is not a Date");
@@ -24414,8 +24414,8 @@ Issue At: ${value}`,
         return isObjectWithType(value) && value.type === "not-parsable";
       }
     },
-    980(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    980(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         $j: () => ArrayBuilder,
         E2: () => SlotBlock,
         Nl: () => CodeBuilder,
@@ -24431,7 +24431,7 @@ Issue At: ${value}`,
         ot: () => VariableBuilder,
         qY: () => RawBuilder
       });
-      var _utilities__rspack_import_0 = __webpack_require__12(618);
+      var _utilities__rspack_import_0 = __webpack_require__11(618);
       class Block {
         name;
         _lines = [];
@@ -24879,8 +24879,8 @@ Issue At: ${value}`,
         }
       }
     },
-    80(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    80(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         $j: () => (
           /* reexport safe */
           _blocks__rspack_import_0.$j
@@ -24938,16 +24938,16 @@ Issue At: ${value}`,
           _blocks__rspack_import_0.qY
         )
       });
-      var _blocks__rspack_import_0 = __webpack_require__12(980);
+      var _blocks__rspack_import_0 = __webpack_require__11(980);
     },
-    533(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    533(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         $E: () => SchemaPersistChanges,
         R7: () => SchemaPersistResult,
         om: () => BulkPersistResult,
         qk: () => BulkPersistChanges
       });
-      var _TagCollection__rspack_import_0 = __webpack_require__12(356);
+      var _TagCollection__rspack_import_0 = __webpack_require__11(356);
       class BulkPersistResult extends Map {
         resolve(schemaId) {
           if (this.has(schemaId)) {
@@ -25079,8 +25079,8 @@ Issue At: ${value}`,
         }
       }
     },
-    995(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    995(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         g: () => ReadonlySchemaCollection
       });
       class ReadonlySchemaCollection {
@@ -25123,11 +25123,11 @@ Issue At: ${value}`,
         }
       }
     },
-    393(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    393(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         w: () => SchemaCollection
       });
-      var _ReadonlySchemaCollection__rspack_import_0 = __webpack_require__12(995);
+      var _ReadonlySchemaCollection__rspack_import_0 = __webpack_require__11(995);
       class SchemaCollection extends _ReadonlySchemaCollection__rspack_import_0.g {
         set(schemaId, schema) {
           this.data.set(schemaId, schema);
@@ -25141,8 +25141,8 @@ Issue At: ${value}`,
         }
       }
     },
-    356(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    356(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         r: () => TagCollection
       });
       class TagCollection {
@@ -25190,8 +25190,8 @@ Issue At: ${value}`,
         }
       }
     },
-    928(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    928(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         _v: () => (
           /* reexport */
           MemoryDataCollection
@@ -25229,8 +25229,8 @@ Issue At: ${value}`,
           SchemaCollection.w
         )
       });
-      var Changes = __webpack_require__12(533);
-      var TagCollection = __webpack_require__12(356);
+      var Changes = __webpack_require__11(533);
+      var TagCollection = __webpack_require__11(356);
       ;
       class IdSet {
         ids;
@@ -25250,9 +25250,9 @@ Issue At: ${value}`,
           return this.ids.toString();
         }
       }
-      var types = __webpack_require__12(537);
-      var Result2 = __webpack_require__12(718);
-      var utilities_uuid = __webpack_require__12(618);
+      var types = __webpack_require__11(537);
+      var Result2 = __webpack_require__11(718);
+      var utilities_uuid = __webpack_require__11(618);
       ;
       class MemoryDataCollection {
         nextNumericalIds;
@@ -25422,12 +25422,12 @@ Issue At: ${value}`,
           done(Result2.Q.success());
         }
       }
-      var SchemaCollection = __webpack_require__12(393);
-      var ReadonlySchemaCollection = __webpack_require__12(995);
+      var SchemaCollection = __webpack_require__11(393);
+      var ReadonlySchemaCollection = __webpack_require__11(995);
       ;
     },
-    624(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    624(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         V: () => OptimisticConcurrencyError
       });
       class OptimisticConcurrencyError extends Error {
@@ -25447,8 +25447,8 @@ Issue At: ${value}`,
         }
       }
     },
-    850(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    850(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         f: () => PluginDestroyedError
       });
       class PluginDestroyedError extends Error {
@@ -25458,8 +25458,8 @@ Issue At: ${value}`,
         }
       }
     },
-    131(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    131(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         A: () => SchemaError
       });
       class SchemaError extends Error {
@@ -25468,8 +25468,8 @@ Issue At: ${value}`,
         }
       }
     },
-    536(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    536(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         Ar: () => (
           /* reexport safe */
           _SchemaError__rspack_import_0.A
@@ -25483,12 +25483,12 @@ Issue At: ${value}`,
           _PluginDestroyedError__rspack_import_2.f
         )
       });
-      var _SchemaError__rspack_import_0 = __webpack_require__12(131);
-      var _OptimisticConcurrencyError__rspack_import_1 = __webpack_require__12(624);
-      var _PluginDestroyedError__rspack_import_2 = __webpack_require__12(850);
+      var _SchemaError__rspack_import_0 = __webpack_require__11(131);
+      var _OptimisticConcurrencyError__rspack_import_1 = __webpack_require__11(624);
+      var _PluginDestroyedError__rspack_import_2 = __webpack_require__11(850);
     },
-    429(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    429(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         N: () => CALL_SOURCE,
         a: () => renderCallAsJs
       });
@@ -25725,8 +25725,8 @@ Issue At: ${value}`,
         ].join(` ${source.symbol} `)}`;
       };
     },
-    835(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    835(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         t: () => EXPRESSION_TYPES2
       });
       const EXPRESSION_TYPE_SET = {
@@ -25740,15 +25740,15 @@ Issue At: ${value}`,
       };
       const EXPRESSION_TYPES2 = Object.keys(EXPRESSION_TYPE_SET);
     },
-    379(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    379(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         Vu: () => toPredicate,
         Vv: () => operandValue2,
         _3: () => evaluate,
         gm: () => UNRESOLVED2,
         wS: () => toStrictPredicate
       });
-      var _assertions__rspack_import_0 = __webpack_require__12(126);
+      var _assertions__rspack_import_0 = __webpack_require__11(126);
       const UNRESOLVED2 = Symbol("unresolved");
       const ARITHMETIC = {
         "add": (left, right) => left + right,
@@ -25934,16 +25934,16 @@ Issue At: ${value}`,
         return result;
       };
     },
-    43(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    43(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         F5: () => foldConstantCalls2,
         Sv: () => FOLDABLE,
         br: () => foldedOperandValue
       });
-      var _assertions__rspack_import_0 = __webpack_require__12(126);
-      var _evaluate__rspack_import_3 = __webpack_require__12(379);
-      var _types__rspack_import_2 = __webpack_require__12(27);
-      var _utils__rspack_import_1 = __webpack_require__12(63);
+      var _assertions__rspack_import_0 = __webpack_require__11(126);
+      var _evaluate__rspack_import_3 = __webpack_require__11(379);
+      var _types__rspack_import_2 = __webpack_require__11(27);
+      var _utils__rspack_import_1 = __webpack_require__11(63);
       const FOLDABLE = /* @__PURE__ */ new Set([
         "to-lower-case",
         "to-upper-case",
@@ -26035,8 +26035,8 @@ Issue At: ${value}`,
         return value;
       };
     },
-    138(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    138(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         CC: () => (
           /* reexport safe */
           _utils__rspack_import_5.CC
@@ -26142,26 +26142,26 @@ Issue At: ${value}`,
           _evaluate__rspack_import_1.wS
         )
       });
-      var _callSource__rspack_import_0 = __webpack_require__12(429);
-      var _evaluate__rspack_import_1 = __webpack_require__12(379);
-      var _fold__rspack_import_2 = __webpack_require__12(43);
-      var _parser__rspack_import_3 = __webpack_require__12(91);
-      var _types__rspack_import_4 = __webpack_require__12(27);
-      var _utils__rspack_import_5 = __webpack_require__12(63);
-      var _constants__rspack_import_6 = __webpack_require__12(835);
+      var _callSource__rspack_import_0 = __webpack_require__11(429);
+      var _evaluate__rspack_import_1 = __webpack_require__11(379);
+      var _fold__rspack_import_2 = __webpack_require__11(43);
+      var _parser__rspack_import_3 = __webpack_require__11(91);
+      var _types__rspack_import_4 = __webpack_require__11(27);
+      var _utils__rspack_import_5 = __webpack_require__11(63);
+      var _constants__rspack_import_6 = __webpack_require__11(835);
     },
-    91(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    91(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         MY: () => toExpression,
         oH: () => parseFragment,
         pg: () => combineExpressions
       });
-      var _utilities__rspack_import_5 = __webpack_require__12(581);
-      var _assertions__rspack_import_0 = __webpack_require__12(126);
-      var _schema__rspack_import_2 = __webpack_require__12(537);
-      var _evaluate__rspack_import_3 = __webpack_require__12(379);
-      var _fold__rspack_import_4 = __webpack_require__12(43);
-      var _types__rspack_import_1 = __webpack_require__12(27);
+      var _utilities__rspack_import_5 = __webpack_require__11(581);
+      var _assertions__rspack_import_0 = __webpack_require__11(126);
+      var _schema__rspack_import_2 = __webpack_require__11(537);
+      var _evaluate__rspack_import_3 = __webpack_require__11(379);
+      var _fold__rspack_import_4 = __webpack_require__11(43);
+      var _types__rspack_import_1 = __webpack_require__11(27);
       const ERROR_MESSAGES = {
         PROPERTY_NOT_FOUND: (path) => `Error parsing query, could not find PropertyInfo for path: ${path}`,
         PARAM_PATH_NOT_FOUND: (value, params) => `Cannot find path in params for .where(). Make sure parameters are not used inline.\r
@@ -28241,8 +28241,8 @@ Issue At: ${value}`,
         }
       };
     },
-    27(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    27(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         DG: () => CallExpression,
         Ko: () => ValueExpression,
         SC: () => NotParsableExpression,
@@ -28558,8 +28558,8 @@ Issue At: ${value}`,
         }
       }
     },
-    63(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    63(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         CC: () => peelCalls,
         LU: () => childrenOf,
         jJ: () => forEach,
@@ -28622,12 +28622,12 @@ Issue At: ${value}`,
         traverse(expression);
       }
     },
-    971(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    971(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         t: () => now,
         x: () => measure2
       });
-      var _utilities__rspack_import_0 = __webpack_require__12(581);
+      var _utilities__rspack_import_0 = __webpack_require__11(581);
       const measurements = {};
       const now = () => {
         if (typeof performance !== "undefined" && performance.now) {
@@ -28647,13 +28647,13 @@ Issue At: ${value}`,
         }
       };
     },
-    416(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    416(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         U: () => WorkPipeline,
         k: () => TrampolinePipeline
       });
-      var _utilities__rspack_import_0 = __webpack_require__12(581);
-      var _results__rspack_import_1 = __webpack_require__12(718);
+      var _utilities__rspack_import_0 = __webpack_require__11(581);
+      var _results__rspack_import_1 = __webpack_require__11(718);
       class TrampolinePipeline {
         _list = [];
         _hasErrored = false;
@@ -28852,8 +28852,8 @@ Issue At: ${value}`,
         }
       }
     },
-    314(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    314(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         kX: () => (
           /* reexport */
           TrampolinePipeline.k
@@ -28889,11 +28889,11 @@ Issue At: ${value}`,
           });
         }
       }
-      var TrampolinePipeline = __webpack_require__12(416);
+      var TrampolinePipeline = __webpack_require__11(416);
       ;
     },
-    640(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    640(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         jO: () => (
           /* reexport */
           TupleTranslator
@@ -29212,7 +29212,7 @@ Issue At: ${value}`,
           return new TranslatedSingleValue(data, isTransformed);
         }
       }
-      var logger2 = __webpack_require__12(581);
+      var logger2 = __webpack_require__11(581);
       ;
       const cosineDistance = (left, right) => {
         if (left == null || left.length !== right.length) {
@@ -29260,9 +29260,9 @@ Issue At: ${value}`,
         });
         return scored.slice(0, count).map((x) => x.row);
       };
-      var types = __webpack_require__12(27);
-      var Result2 = __webpack_require__12(718);
-      var QueryOptionsCollection = __webpack_require__12(198);
+      var types = __webpack_require__11(27);
+      var Result2 = __webpack_require__11(718);
+      var QueryOptionsCollection = __webpack_require__11(198);
       ;
       class Query {
         options;
@@ -29559,8 +29559,8 @@ Issue At: ${value}`,
           innerKey: option.innerKey
         });
       };
-      var assertions = __webpack_require__12(126);
-      var dates = __webpack_require__12(76);
+      var assertions = __webpack_require__11(126);
+      var dates = __webpack_require__11(76);
       ;
       class JsonTranslator extends DataTranslator {
         innerSide;
@@ -30063,7 +30063,7 @@ Issue At: ${value}`,
         }
       }
       ;
-      var callSource = __webpack_require__12(429);
+      var callSource = __webpack_require__11(429);
       ;
       const COMPARATOR_OPERATORS = {
         "equals": "===",
@@ -30640,8 +30640,8 @@ Issue At: ${value}`,
         return QueryOrdering;
       }({});
       ;
-      var evaluate = __webpack_require__12(379);
-      var fold = __webpack_require__12(43);
+      var evaluate = __webpack_require__11(379);
+      var fold = __webpack_require__11(43);
       ;
       const SENDABLE = /* @__PURE__ */ new Set([
         "skip",
@@ -30840,7 +30840,7 @@ Issue At: ${value}`,
         }
         return options;
       };
-      var Changes = __webpack_require__12(533);
+      var Changes = __webpack_require__11(533);
       ;
       const serializeBulkPersist = (changes, schemas) => {
         const serialized = [];
@@ -30931,8 +30931,8 @@ Issue At: ${value}`,
         }
         return result;
       };
-      var parser = __webpack_require__12(91);
-      var uuid = __webpack_require__12(618);
+      var parser = __webpack_require__11(91);
+      var uuid = __webpack_require__11(618);
       ;
       const collectionsIn = (request) => {
         if (request.kind === "destroy") {
@@ -31111,8 +31111,8 @@ Issue At: ${value}`,
         };
       };
       ;
-      var OptimisticConcurrencyError = __webpack_require__12(624);
-      var schema_types = __webpack_require__12(537);
+      var OptimisticConcurrencyError = __webpack_require__11(624);
+      var schema_types = __webpack_require__11(537);
       ;
       class ConcurrencyDbPlugin {
         static VERSION_COLUMN = "__version";
@@ -31326,7 +31326,7 @@ Issue At: ${value}`,
           return view;
         }
       }
-      var TrampolinePipeline = __webpack_require__12(416);
+      var TrampolinePipeline = __webpack_require__11(416);
       ;
       const getKeyEqualityValue = (expression) => {
         if (!(0, assertions.xH)(expression)) {
@@ -31955,8 +31955,8 @@ Issue At: ${value}`,
           this.plugin.destroy(event, done);
         }
       }
-      var SchemaCollection = __webpack_require__12(393);
-      var PluginDestroyedError = __webpack_require__12(850);
+      var SchemaCollection = __webpack_require__11(393);
+      var PluginDestroyedError = __webpack_require__11(850);
       ;
       const DEFAULT_MAX_BATCH_SIZE = 100;
       class BatchingDbPlugin {
@@ -32198,14 +32198,14 @@ Issue At: ${value}`,
       }
       ;
     },
-    198(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    198(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         H: () => QueryOptionsCollection
       });
-      var _assertions__rspack_import_1 = __webpack_require__12(126);
-      var _expressions_utils__rspack_import_2 = __webpack_require__12(63);
-      var _schema_types__rspack_import_0 = __webpack_require__12(537);
-      var _utilities__rspack_import_3 = __webpack_require__12(581);
+      var _assertions__rspack_import_1 = __webpack_require__11(126);
+      var _expressions_utils__rspack_import_2 = __webpack_require__11(63);
+      var _schema_types__rspack_import_0 = __webpack_require__11(537);
+      var _utilities__rspack_import_3 = __webpack_require__11(581);
       const JAVASCRIPT_TYPE_OF = {
         [_schema_types__rspack_import_0.L.Number]: "number",
         [_schema_types__rspack_import_0.L.String]: "string",
@@ -32559,8 +32559,8 @@ Issue At: ${value}`,
         }
       }
     },
-    718(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    718(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         D: () => PluginEventResult,
         Q: () => Result2
       });
@@ -32639,8 +32639,8 @@ Issue At: ${value}`,
         }
       }
     },
-    264(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    264(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         Dq: () => (
           /* reexport */
           Result2.D
@@ -32654,7 +32654,7 @@ Issue At: ${value}`,
           toPromise
         )
       });
-      var Result2 = __webpack_require__12(718);
+      var Result2 = __webpack_require__11(718);
       ;
       function toPromise(fn) {
         return new Promise((resolve, reject) => {
@@ -32669,8 +32669,8 @@ Issue At: ${value}`,
       }
       ;
     },
-    755(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    755(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         ly: () => (
           /* reexport */
           isArrayValued
@@ -32741,7 +32741,7 @@ Issue At: ${value}`,
         ),
         KC: () => (
           /* reexport */
-          PropertyInfo
+          PropertyInfo3
         ),
         he: () => (
           /* reexport */
@@ -32927,7 +32927,7 @@ Issue At: ${value}`,
           }
         }
       }
-      var logger2 = __webpack_require__12(581);
+      var logger2 = __webpack_require__11(581);
       ;
       class SchemaDistinct extends SchemaBase {
         instance;
@@ -33146,7 +33146,7 @@ Issue At: ${value}`,
           return new SchemaFrom(propertyName, this);
         }
       }
-      var uuid = __webpack_require__12(618);
+      var uuid = __webpack_require__11(618);
       ;
       class SchemaIndex extends SchemaBase {
         instance;
@@ -33184,7 +33184,7 @@ Issue At: ${value}`,
           return new SchemaFrom(propertyName, this);
         }
       }
-      var types = __webpack_require__12(537);
+      var types = __webpack_require__11(537);
       ;
       class SchemaTag extends SchemaBase {
         instance;
@@ -33457,7 +33457,7 @@ Issue At: ${value}`,
         }
       }
       ;
-      class PropertyInfo {
+      class PropertyInfo3 {
         get id() {
           if (this._idCache) {
             return this._idCache;
@@ -33847,7 +33847,7 @@ Issue At: ${value}`,
           return value;
         }
       }
-      var blocks = __webpack_require__12(980);
+      var blocks = __webpack_require__11(980);
       ;
       class SlotPath {
         _path;
@@ -33866,7 +33866,7 @@ Issue At: ${value}`,
           return this._path.slice(0, this._path.length - up).join(".");
         }
       }
-      var SchemaError = __webpack_require__12(131);
+      var SchemaError = __webpack_require__11(131);
       ;
       const countWordOccurance = (text, word) => {
         const wl = word.length;
@@ -35710,8 +35710,8 @@ Issue At: ${value}`,
           return handler;
         }
       }
-      var strings = __webpack_require__12(615);
-      var performance2 = __webpack_require__12(971);
+      var strings = __webpack_require__11(615);
+      var performance2 = __webpack_require__11(971);
       ;
       const registry = {};
       const getChannelKey = (schemaId, scope) => scope == null ? String(schemaId) : `${schemaId}|${scope}`;
@@ -36027,7 +36027,7 @@ Issue At: ${value}`,
               for (const [key, value] of Object.entries(innerSchema.instance)) {
                 if (value && typeof value === "object" && "type" in value) {
                   const schemaBase = value;
-                  const tempProperty = new PropertyInfo(schemaBase, key);
+                  const tempProperty = new PropertyInfo3(schemaBase, key);
                   if (!context.useOutputType && (tempProperty.type === types.L.Computed || tempProperty.type === types.L.Function)) {
                     continue;
                   }
@@ -36687,7 +36687,7 @@ Issue At: ${value}`,
               const propertyInstance = instanceObj[key];
               const previousParent = item.parents.length === 0 ? null : item.parents[item.parents.length - 1].propertyInfo;
               if (propertyInstance.type === types.L.Object) {
-                const propertyInfo = new PropertyInfo(propertyInstance, key, previousParent);
+                const propertyInfo = new PropertyInfo3(propertyInstance, key, previousParent);
                 explore.push({
                   path: [
                     item.path,
@@ -36710,7 +36710,7 @@ Issue At: ${value}`,
                 previousParent.children.push(propertyInfo);
                 continue;
               }
-              const childPrimitivePropertyInfo = new PropertyInfo(item.instance[key], key, previousParent);
+              const childPrimitivePropertyInfo = new PropertyInfo3(item.instance[key], key, previousParent);
               if (previousParent === null) {
                 properties.push(childPrimitivePropertyInfo);
                 continue;
@@ -37387,8 +37387,8 @@ Issue At: ${value}`,
       ;
       ;
     },
-    537(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    537(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         $: () => HashType,
         L: () => SchemaTypes
       });
@@ -37412,8 +37412,8 @@ Issue At: ${value}`,
         return HashType2;
       }({});
     },
-    76(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    76(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         $: () => isDate2
       });
       const isDate2 = (data) => {
@@ -37426,8 +37426,8 @@ Issue At: ${value}`,
         return data instanceof Date;
       };
     },
-    222(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    222(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         N8: () => (
           /* reexport */
           combineQueryOptionsCollections
@@ -37523,8 +37523,8 @@ Issue At: ${value}`,
         }
         return result;
       };
-      var strings = __webpack_require__12(615);
-      var dates = __webpack_require__12(76);
+      var strings = __webpack_require__11(615);
+      var dates = __webpack_require__11(76);
       ;
       const cast = (item) => {
         return item;
@@ -37534,7 +37534,7 @@ Issue At: ${value}`,
       }
       ;
       const isNodeRuntime = () => typeof process !== "undefined" && process.versions != null && process.versions.node != null;
-      var uuid = __webpack_require__12(618);
+      var uuid = __webpack_require__11(618);
       ;
       const resolveBulkPersistChanges = (event, result, bulkPersistChanges) => {
         for (const [schemaId, changes] of event.operation) {
@@ -37545,7 +37545,7 @@ Issue At: ${value}`,
           schemaBulkPersistChanges.adds = schemmaBulkPersistResult.adds;
         }
       };
-      var QueryOptionsCollection = __webpack_require__12(198);
+      var QueryOptionsCollection = __webpack_require__11(198);
       ;
       const combineQueryOptionsCollections = (...collections) => {
         const result = new QueryOptionsCollection.H();
@@ -37613,11 +37613,11 @@ Issue At: ${value}`,
       const unsafeCast = (value) => {
         return value;
       };
-      var logger2 = __webpack_require__12(581);
+      var logger2 = __webpack_require__11(581);
       ;
     },
-    581(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    581(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         Cg: () => resetLogLevel,
         He: () => setLogLevel,
         Mi: () => isLogLevelEnabled,
@@ -37692,8 +37692,8 @@ Issue At: ${value}`,
         table: (...args) => emit("debug", "table", args)
       };
     },
-    615(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    615(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         Nr: () => fastHash,
         Zm: () => stringifyObject,
         tW: () => hash
@@ -37805,8 +37805,8 @@ Issue At: ${value}`,
         return `{ ${props.join(", ")}${suffix} }`;
       }
     },
-    618(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    618(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         g: () => uuidv4,
         u: () => uuid
       });
@@ -38841,10 +38841,10 @@ Issue At: ${value}`,
   var __webpack_exports__withExecutedQueries2 = __webpack_exports__7.KgE;
   var __webpack_exports__withInnerSide2 = __webpack_exports__7.oJY;
 
-  // core/dist/assertions/index.js
+  // ../../core/dist/assertions/index.js
   var __webpack_modules__8 = {
-    835(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    835(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         t: () => EXPRESSION_TYPES2
       });
       const EXPRESSION_TYPE_SET = {
@@ -38858,8 +38858,8 @@ Issue At: ${value}`,
       };
       const EXPRESSION_TYPES2 = Object.keys(EXPRESSION_TYPE_SET);
     },
-    76(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    76(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         $: () => isDate2
       });
       const isDate2 = (data) => {
@@ -39000,15 +39000,15 @@ Issue At: ${value}`,
   var __webpack_exports__isPropertyExpression2 = __webpack_exports__8.e3;
   var __webpack_exports__isValueExpression2 = __webpack_exports__8.S6;
 
-  // core/dist/pipeline/index.js
+  // ../../core/dist/pipeline/index.js
   var __webpack_modules__9 = {
-    416(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    416(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         U: () => WorkPipeline,
         k: () => TrampolinePipeline
       });
-      var _utilities__rspack_import_0 = __webpack_require__12(581);
-      var _results__rspack_import_1 = __webpack_require__12(718);
+      var _utilities__rspack_import_0 = __webpack_require__11(581);
+      var _results__rspack_import_1 = __webpack_require__11(718);
       class TrampolinePipeline {
         _list = [];
         _hasErrored = false;
@@ -39207,8 +39207,8 @@ Issue At: ${value}`,
         }
       }
     },
-    718(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    718(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         Q: () => Result2
       });
       class BaseResult {
@@ -39287,8 +39287,8 @@ Issue At: ${value}`,
         }
       }
     },
-    581(__unused_rspack_module, __webpack_exports__12, __webpack_require__12) {
-      __webpack_require__12.d(__webpack_exports__12, {
+    581(__unused_rspack_module, __webpack_exports__11, __webpack_require__11) {
+      __webpack_require__11.d(__webpack_exports__11, {
         vF: () => logger2
       });
       const LOG_LEVELS = [
@@ -39428,7 +39428,7 @@ Issue At: ${value}`,
   var __webpack_exports__TrampolinePipeline2 = __webpack_exports__9.kX;
   var __webpack_exports__WorkPipeline2 = __webpack_exports__9.UQ;
 
-  // datastore/dist/index.js
+  // ../../datastore/dist/index.js
   var __webpack_require__10 = {};
   (() => {
     __webpack_require__10.d = (exports, definition) => {
@@ -45213,7 +45213,7 @@ Plugin Document: ${JSON.stringify(add2, null, 2)}`;
   var __webpack_exports__Queryable = __webpack_exports__10.hr;
   var __webpack_exports__SYNC_CONSTANTS = __webpack_exports__10.UN;
 
-  // node_modules/dexie/import-wrapper.mjs
+  // ../../node_modules/dexie/import-wrapper.mjs
   var import_dexie = __toESM(require_dexie(), 1);
   var DexieSymbol = Symbol.for("Dexie");
   var Dexie = globalThis[DexieSymbol] || (globalThis[DexieSymbol] = import_dexie.default);
@@ -45235,28 +45235,22 @@ Plugin Document: ${JSON.stringify(add2, null, 2)}`;
   } = Dexie;
   var import_wrapper_default = Dexie;
 
-  // plugins/dexie/dist/index.js
-  var __webpack_require__11 = {};
-  (() => {
-    __webpack_require__11.d = (exports, definition) => {
-      for (var key in definition) {
-        if (__webpack_require__11.o(definition, key) && !__webpack_require__11.o(exports, key)) {
-          Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
-        }
-      }
-    };
-  })();
-  (() => {
-    __webpack_require__11.o = (obj, prop) => Object.prototype.hasOwnProperty.call(obj, prop);
-  })();
-  var __webpack_exports__11 = {};
-  __webpack_require__11.d(__webpack_exports__11, {
-    L: () => (
-      /* reexport */
-      DexiePlugin
-    )
-  });
+  // ../../plugins/dexie/src/utils.ts
+  var compoundIndexPartners = (schema, property) => schema.properties.filter(
+    (other) => other !== property && other.indexes.some((index) => property.indexes.includes(index))
+  );
+  var compoundIndexGroupOf = (schema, property) => [property.name, ...compoundIndexPartners(schema, property).map((partner) => partner.name)];
+  var storesCache = /* @__PURE__ */ new WeakMap();
   var convertToDexieSchema = (schema) => {
+    const cached = storesCache.get(schema);
+    if (cached != null) {
+      return cached;
+    }
+    const stores = deriveDexieSchema(schema);
+    storesCache.set(schema, stores);
+    return stores;
+  };
+  var deriveDexieSchema = (schema) => {
     const schemaProperties = [];
     const existingIndexes = [];
     const compositeKey = schema.idProperties.length > 1;
@@ -45293,12 +45287,8 @@ Plugin Document: ${JSON.stringify(add2, null, 2)}`;
         }
         continue;
       }
-      const connections = schema.properties.filter((w) => w !== property && // Don't match with self
-      w.indexes.some((index) => property.indexes.includes(index)));
-      const properties = [
-        property.name,
-        ...connections.map((w) => w.name)
-      ];
+      const connections = compoundIndexPartners(schema, property);
+      const properties = compoundIndexGroupOf(schema, property);
       existingIndexes.push(...connections);
       if (properties.length === 1) {
         schemaProperties.push(properties[0]);
@@ -45308,120 +45298,251 @@ Plugin Document: ${JSON.stringify(add2, null, 2)}`;
     }
     return schemaProperties.join(",");
   };
-  var isIndexableValue = (value) => typeof value === "string" || typeof value === "number" || value instanceof Date;
-  var equalitySeed = (expression, options) => {
-    if (!__webpack_exports__isComparatorExpression2(expression)) {
-      return null;
+
+  // ../../plugins/dexie/src/indexSeed.ts
+  var seedableIndexesCache = /* @__PURE__ */ new WeakMap();
+  var seedableIndexes = (schema) => {
+    const cached = seedableIndexesCache.get(schema);
+    if (cached != null) {
+      return cached;
     }
-    if (expression.comparator !== "equals" || expression.negated === true || expression.strict !== true) {
-      return null;
-    }
-    const sides = [
-      {
-        propertySide: expression.left,
-        valueSide: expression.right
-      },
-      {
-        propertySide: expression.right,
-        valueSide: expression.left
-      }
-    ];
-    for (const { propertySide, valueSide } of sides) {
-      if (!__webpack_exports__isPropertyExpression2(propertySide) || !__webpack_exports__isValueExpression2(valueSide)) {
-        continue;
-      }
-      const property = propertySide.property;
+    const compositeKey = schema.idProperties.length > 1;
+    const names = /* @__PURE__ */ new Set();
+    const compoundGroups = [];
+    const grouped = /* @__PURE__ */ new Set();
+    for (const property of schema.properties) {
       if (property.level > 0 || property.isRenamed || property.type === __webpack_exports__SchemaTypes.Array) {
         continue;
       }
-      if (property.isKey && options.compositeKey) {
+      if (property.isKey) {
+        if (compositeKey === false) {
+          names.add(property.name);
+        }
         continue;
       }
-      if (!isIndexableValue(valueSide.value)) {
+      if (grouped.has(property.name)) {
         continue;
       }
-      return {
-        indexName: property.name,
-        value: valueSide.value
-      };
+      if (property.isDistinct === false && property.indexes.length === 0) {
+        continue;
+      }
+      const group = compoundIndexGroupOf(schema, property);
+      if (group.length === 1) {
+        names.add(property.name);
+        continue;
+      }
+      compoundGroups.push(group);
+      group.forEach((name) => grouped.add(name));
     }
-    return null;
+    const result = { names, compoundGroups };
+    seedableIndexesCache.set(schema, result);
+    return result;
   };
-  var seedFromConjunction = (expression, options) => {
-    if (!__webpack_exports__isOperatorExpression2(expression) || expression.operator !== "&&") {
+  var isIndexKey = (value) => typeof value === "string" || typeof value === "number" && Number.isNaN(value) === false;
+  var swappedComparators = {
+    "equals": "equals",
+    "greater-than": "less-than",
+    "greater-than-equals": "less-than-equals",
+    "less-than": "greater-than",
+    "less-than-equals": "greater-than-equals"
+  };
+  var rangeComparators = ["greater-than", "greater-than-equals", "less-than", "less-than-equals"];
+  var comparisonOf = (expression) => {
+    if (!__webpack_exports__isComparatorExpression2(expression) || expression.negated === true) {
       return null;
     }
-    for (const side of [
-      expression.left,
-      expression.right
-    ]) {
-      if (side == null) {
+    if (expression.comparator === "equals" && expression.strict !== true) {
+      return null;
+    }
+    const sides = [
+      { propertySide: expression.left, valueSide: expression.right, comparator: expression.comparator },
+      { propertySide: expression.right, valueSide: expression.left, comparator: swappedComparators[expression.comparator] }
+    ];
+    for (const { propertySide, valueSide, comparator } of sides) {
+      if (comparator == null || !__webpack_exports__isPropertyExpression2(propertySide) || !__webpack_exports__isValueExpression2(valueSide)) {
         continue;
       }
-      const direct = equalitySeed(side, options);
-      if (direct != null) {
-        return {
-          ...direct,
-          coversWholeFilter: false
-        };
+      if (propertySide.property.level > 0 || !isIndexKey(valueSide.value)) {
+        continue;
       }
-      const nested = seedFromConjunction(side, options);
-      if (nested != null) {
-        return nested;
-      }
+      return { name: propertySide.property.name, comparator, value: valueSide.value };
     }
     return null;
   };
-  var findIndexSeed = (expression, options) => {
-    const direct = equalitySeed(expression, options);
-    if (direct != null) {
-      return {
-        ...direct,
-        coversWholeFilter: true
-      };
+  var leavesOf = (expression, operator) => {
+    if (expression == null) {
+      return [];
     }
-    return seedFromConjunction(expression, options);
+    if (__webpack_exports__isOperatorExpression2(expression) && expression.operator === operator) {
+      return [...leavesOf(expression.left, operator), ...leavesOf(expression.right, operator)];
+    }
+    return [expression];
   };
+  var anyOfValues = (expression, names) => {
+    const leaves = leavesOf(expression, "||");
+    if (leaves.length < 2) {
+      return null;
+    }
+    const comparisons = leaves.map(comparisonOf);
+    const first = comparisons[0];
+    if (first == null || first.comparator !== "equals" || names.has(first.name) === false) {
+      return null;
+    }
+    if (comparisons.some((c) => c == null || c.comparator !== "equals" || c.name !== first.name)) {
+      return null;
+    }
+    return { name: first.name, values: comparisons.map((c) => c.value) };
+  };
+  var isLowerBound = (comparator) => comparator === "greater-than" || comparator === "greater-than-equals";
+  var toBound = (comparison) => ({
+    value: comparison.value,
+    inclusive: comparison.comparator === "greater-than-equals" || comparison.comparator === "less-than-equals"
+  });
+  var findIndexSeed = (expression, indexes) => {
+    const conjuncts = leavesOf(expression, "&&");
+    const comparisons = conjuncts.map(comparisonOf);
+    const covers = (consumed) => consumed === conjuncts.length;
+    for (const group of indexes.compoundGroups) {
+      const picks = group.map((name2) => comparisons.findIndex((c) => c != null && c.comparator === "equals" && c.name === name2));
+      if (picks.every((index) => index >= 0)) {
+        return {
+          kind: "compound",
+          indexName: `[${group.join("+")}]`,
+          values: picks.map((index) => comparisons[index].value),
+          coversWholeFilter: covers(new Set(picks).size)
+        };
+      }
+    }
+    const equality = comparisons.find((c) => c != null && c.comparator === "equals" && indexes.names.has(c.name));
+    if (equality != null) {
+      return { kind: "equals", indexName: equality.name, value: equality.value, coversWholeFilter: covers(1) };
+    }
+    for (const conjunct of conjuncts) {
+      const anyOf = anyOfValues(conjunct, indexes.names);
+      if (anyOf != null) {
+        return { kind: "anyOf", indexName: anyOf.name, values: anyOf.values, coversWholeFilter: covers(1) };
+      }
+    }
+    const ranges = comparisons.filter((c) => c != null && rangeComparators.includes(c.comparator) && indexes.names.has(c.name));
+    if (ranges.length === 0) {
+      return null;
+    }
+    const name = ranges[0].name;
+    const lower = ranges.find((c) => c.name === name && isLowerBound(c.comparator)) ?? null;
+    const upper = ranges.find((c) => c.name === name && isLowerBound(c.comparator) === false) ?? null;
+    return {
+      kind: "range",
+      indexName: name,
+      lower: lower == null ? null : toBound(lower),
+      upper: upper == null ? null : toBound(upper),
+      coversWholeFilter: covers((lower == null ? 0 : 1) + (upper == null ? 0 : 1))
+    };
+  };
+  var seekReplacesPredicate = (seed) => seed.coversWholeFilter;
+  var sortableTypes = [__webpack_exports__SchemaTypes.String, __webpack_exports__SchemaTypes.Number, __webpack_exports__SchemaTypes.Date];
+  var findSortSeed = (sort, indexes) => {
+    const property = sort.property;
+    if (property == null || property.level > 0 || indexes.names.has(property.name) === false) {
+      return null;
+    }
+    if (property.isNullable || property.isOptional || sortableTypes.includes(property.type) === false) {
+      return null;
+    }
+    return { indexName: property.name, direction: sort.direction === "desc" ? "desc" : "asc" };
+  };
+  var keyOrder = (a, b) => a < b ? -1 : a > b ? 1 : 0;
+  var applySeed = (table, seed) => {
+    const where = table.where(seed.indexName);
+    switch (seed.kind) {
+      case "equals":
+        return [where.equals(seed.value)];
+      case "anyOf":
+        return [...new Set(seed.values)].sort(keyOrder).map((value) => table.where(seed.indexName).equals(value));
+      case "compound":
+        return [where.equals(seed.values)];
+      case "range": {
+        const { lower, upper } = seed;
+        if (lower != null && upper != null) {
+          return [where.between(lower.value, upper.value, lower.inclusive, upper.inclusive)];
+        }
+        if (lower != null) {
+          return [lower.inclusive ? where.aboveOrEqual(lower.value) : where.above(lower.value)];
+        }
+        return [upper.inclusive ? where.belowOrEqual(upper.value) : where.below(upper.value)];
+      }
+    }
+  };
+  var applySort = (table, seed) => {
+    const ordered = table.orderBy(seed.indexName);
+    return seed.direction === "desc" ? ordered.reverse() : ordered;
+  };
+  var describeSeed = (seed) => {
+    const where = `where("${seed.indexName}")`;
+    switch (seed.kind) {
+      case "equals":
+        return { text: `${where}.equals(?)`, parameters: [seed.value] };
+      case "anyOf":
+        return { text: `${where}.anyOf(${seed.values.map(() => "?").join(", ")})`, parameters: seed.values };
+      case "compound":
+        return { text: `${where}.equals([${seed.values.map(() => "?").join(", ")}])`, parameters: seed.values };
+      case "range": {
+        const { lower, upper } = seed;
+        if (lower != null && upper != null) {
+          return { text: `${where}.between(?, ?, ${lower.inclusive}, ${upper.inclusive})`, parameters: [lower.value, upper.value] };
+        }
+        if (lower != null) {
+          return { text: `${where}.${lower.inclusive ? "aboveOrEqual" : "above"}(?)`, parameters: [lower.value] };
+        }
+        return { text: `${where}.${upper.inclusive ? "belowOrEqual" : "below"}(?)`, parameters: [upper.value] };
+      }
+    }
+  };
+  var describeSort = (seed) => `orderBy("${seed.indexName}")${seed.direction === "desc" ? ".reverse()" : ""}`;
+
+  // ../../plugins/dexie/src/DexieTranslator.ts
   var DexieTranslator = class extends __webpack_exports__JsonTranslator {
-    options;
-    // some operations always need to happen here,
-    // others we need to check the target and see if it
-    // happened on the database or if it needs to happen in memory
+    pushedDown = {
+      sort: false,
+      skip: false,
+      take: false,
+      distinct: false
+    };
     constructor(query) {
       super(query);
-      this.options = {
-        useTranslatorDistinct: false,
-        useTranslatorSkip: false,
-        useTranslatorTake: false
-      };
+    }
+    filter(data, _) {
+      return data;
+    }
+    sort(data, option) {
+      if (this.pushedDown.sort) {
+        return data;
+      }
+      return super.sort(data, option);
     }
     skip(data, option) {
-      if (this.options.useTranslatorSkip === true) {
-        return super.skip(data, option);
-      }
-      if (option.target === "database") {
+      if (this.pushedDown.skip && option.target === "database") {
         return data;
       }
       return super.skip(data, option);
     }
     take(data, option) {
-      if (this.options.useTranslatorTake === true) {
-        return super.take(data, option);
-      }
-      if (option.target === "database") {
+      if (this.pushedDown.take && option.target === "database") {
         return data;
       }
       return super.take(data, option);
     }
     distinct(data, option) {
-      if (this.options.useTranslatorDistinct === true) {
-        return super.distinct(data, option);
+      if (this.pushedDown.distinct) {
+        return data;
       }
-      return data;
+      return super.distinct(data, option);
     }
   };
+
+  // ../../plugins/dexie/src/DexiePlugin.ts
   var cache = /* @__PURE__ */ new Map();
   var fingerprintOf = (stores) => Object.keys(stores).sort().map((name) => `${name}=${stores[name]}`).join("|");
+  var countCompatibleOptions = ["filter", "sort", "count"];
   var DexiePlugin = class {
     dbName;
     version;
@@ -45448,9 +45569,10 @@ Plugin Document: ${JSON.stringify(add2, null, 2)}`;
       if (name !== "VersionError" && name !== "SchemaError" && name !== "UpgradeError") {
         return error;
       }
-      return new Error(`Dexie rejected the schema for database '${this.dbName}' at version ${this.version}: ${error.message}. The stored database holds a different index layout for this version. IndexedDB does not re-derive a layout in place \u2014 pass a higher \`version\` to the DexiePlugin constructor so Dexie runs an upgrade, or delete the database if its contents are disposable.`, {
-        cause: error
-      });
+      return new Error(
+        `Dexie rejected the schema for database '${this.dbName}' at version ${this.version}: ${error.message}. The stored database holds a different index layout for this version. IndexedDB does not re-derive a layout in place \u2014 pass a higher \`version\` to the DexiePlugin constructor so Dexie runs an upgrade, or delete the database if its contents are disposable.`,
+        { cause: error }
+      );
     }
     _doWork(event, work, done, shouldClose = true) {
       let db;
@@ -45575,14 +45697,8 @@ Plugin Document: ${JSON.stringify(add2, null, 2)}`;
       if (cached != null && cached.fingerprint === fingerprint) {
         return cached.stores;
       }
-      const merged = {
-        ...cached?.stores,
-        ...derived
-      };
-      cache.set(this.dbName, {
-        fingerprint: fingerprintOf(merged),
-        stores: merged
-      });
+      const merged = { ...cached?.stores, ...derived };
+      cache.set(this.dbName, { fingerprint: fingerprintOf(merged), stores: merged });
       return merged;
     }
     getSelectedProperties(event) {
@@ -45605,82 +45721,88 @@ Plugin Document: ${JSON.stringify(add2, null, 2)}`;
         const { collectionName } = event.operation.schema;
         const { options } = event.operation;
         const translator = new DexieTranslator(event.operation);
+        const indexes = seedableIndexes(event.operation.schema);
+        const filters = options.get("filter").map((entry) => entry.option);
         let indexSeed = null;
-        const seedOptions = {
-          compositeKey: event.operation.schema.idProperties.length > 1
-        };
-        for (const entry of event.operation.options.get("filter")) {
-          indexSeed = findIndexSeed(entry.option.value.expression, seedOptions);
+        let seededFilter = null;
+        for (const filter of filters) {
+          indexSeed = findIndexSeed(filter.value.expression, indexes);
           if (indexSeed != null) {
+            seededFilter = filter;
             break;
           }
         }
-        let collection = indexSeed != null ? db.table(collectionName).where(indexSeed.indexName).equals(indexSeed.value) : db.table(collectionName).toCollection();
-        const hasFilter = options.get("filter").length > 0;
-        const hasSort = options.get("sort").length > 0;
-        const canPushDownWindow = hasFilter === false && hasSort === false;
-        if (canPushDownWindow === false) {
-          translator.options.useTranslatorSkip = true;
-          translator.options.useTranslatorTake = true;
-        }
-        options.forEach((option) => {
-          if (option.name === "filter") {
-            if (option.value.params == null) {
-              collection = collection.filter(option.value.filter);
-            } else {
-              const selector = option.value.filter;
-              collection = collection.filter((item) => selector([
-                item,
-                option.value.params
-              ]));
-            }
-            return;
+        const predicateFilters = new Set(
+          indexSeed != null && seekReplacesPredicate(indexSeed) ? filters.filter((filter) => filter !== seededFilter) : filters
+        );
+        const sorts = options.get("sort").map((entry) => entry.option);
+        const sortSeed = indexSeed == null && sorts.length === 1 ? findSortSeed(sorts[0].value, indexes) : null;
+        const table = db.table(collectionName);
+        let collections = indexSeed != null ? applySeed(table, indexSeed) : [sortSeed != null ? applySort(table, sortSeed) : table.toCollection()];
+        for (const filter of predicateFilters) {
+          if (filter.value.params == null) {
+            collections = collections.map((collection) => collection.filter(filter.value.filter));
+          } else {
+            const selector = filter.value.filter;
+            collections = collections.map((collection) => collection.filter((item) => selector([item, filter.value.params])));
           }
+        }
+        const hasFilter = predicateFilters.size > 0;
+        const hasSort = sorts.length > 0 && sortSeed == null;
+        const canPushDownWindow = hasSort === false && collections.length === 1;
+        const canPushDownCount = options.has("count") && [...options.items.keys()].every((name) => countCompatibleOptions.includes(name));
+        translator.pushedDown.skip = canPushDownWindow;
+        translator.pushedDown.take = canPushDownWindow;
+        translator.pushedDown.sort = sortSeed != null;
+        options.forEach((option) => {
           if (option.name === "skip") {
             if (canPushDownWindow) {
-              collection = collection.offset(option.value);
+              collections = collections.map((collection) => collection.offset(option.value));
             }
             return;
           }
           if (option.name === "take") {
             if (canPushDownWindow) {
-              collection = collection.limit(option.value);
+              collections = collections.map((collection) => collection.limit(option.value));
             }
             return;
           }
           if (option.name === "distinct") {
             const selectedProperties = this.getSelectedProperties(event);
-            if (selectedProperties.some((x) => x.indexes.length === 0)) {
-              translator.options.useTranslatorDistinct = true;
-            } else {
-              collection = collection.distinct();
+            if (selectedProperties.every((x) => x.indexes.length > 0)) {
+              translator.pushedDown.distinct = true;
+              collections = collections.map((collection) => collection.distinct());
             }
             return;
           }
         });
-        collection.toArray().then((data) => {
-          const described = __webpack_exports__describeFilters(options.get("filter").map((entry) => entry.option.value));
+        const described = __webpack_exports__describeFilters([...predicateFilters].map((filter) => filter.value));
+        const seek = indexSeed != null ? describeSeed(indexSeed) : null;
+        const explain = (steps) => {
+          const parameters = [...seek?.parameters ?? [], ...described.parameters];
           event.executedQueries.push({
             text: [
-              indexSeed != null ? `${collectionName}.where("${indexSeed.indexName}").equals(?) \u2014 IndexedDB index seek` : `${collectionName}.toCollection()`,
-              ...hasFilter ? [
-                `filter(${described.text})${indexSeed != null ? " \u2014 JavaScript predicate over the seeked rows" : " \u2014 JavaScript predicate over a full cursor walk, no index"}`
-              ] : [],
-              ...canPushDownWindow && options.has("skip") ? [
-                "offset(\u2026)"
-              ] : [],
-              ...canPushDownWindow && options.has("take") ? [
-                "limit(\u2026)"
-              ] : [],
-              ...translator.options.useTranslatorDistinct === false && options.has("distinct") ? [
-                "distinct()"
-              ] : []
+              seek != null ? `${collectionName}.${seek.text} \u2014 ${collections.length > 1 ? `${collections.length} IndexedDB index seeks` : "IndexedDB index seek"}` : sortSeed != null ? `${collectionName}.${describeSort(sortSeed)} \u2014 IndexedDB index walk in key order` : `${collectionName}.toCollection()`,
+              ...hasFilter ? [`filter(${described.text})${indexSeed != null ? " \u2014 JavaScript predicate over the seeked rows" : " \u2014 JavaScript predicate over a full cursor walk, no index"}`] : [],
+              ...steps
             ].join("."),
-            parameters: indexSeed != null ? [
-              indexSeed.value,
-              ...described.parameters
-            ] : described.parameters.length > 0 ? described.parameters : void 0
+            parameters: parameters.length > 0 ? parameters : void 0
           });
+        };
+        if (canPushDownCount) {
+          Promise.all(collections.map((collection) => collection.count())).then((counts) => {
+            explain(["count()"]);
+            d(__webpack_exports__PluginEventResult.success(event.id, new __webpack_exports__TranslatedSingleValue(counts.reduce((sum, count) => sum + count, 0), true)));
+          }).catch((e) => d(__webpack_exports__PluginEventResult.error(event.id, e)));
+          return;
+        }
+        Promise.all(collections.map((collection) => collection.toArray())).then((parts) => {
+          const data = parts.length === 1 ? parts[0] : parts.flat();
+          explain([
+            ...canPushDownWindow && options.has("skip") ? ["offset(\u2026)"] : [],
+            ...canPushDownWindow && options.has("take") ? ["limit(\u2026)"] : [],
+            ...translator.pushedDown.distinct ? ["distinct()"] : []
+          ]);
           const result = translator.translate(data);
           d(__webpack_exports__PluginEventResult.success(event.id, result));
         }).catch((e) => d(__webpack_exports__PluginEventResult.error(event.id, e)));
@@ -45689,17 +45811,16 @@ Plugin Document: ${JSON.stringify(add2, null, 2)}`;
     [Symbol.dispose]() {
     }
   };
-  var __webpack_exports__DexiePlugin = __webpack_exports__11.L;
 
-  // scratchpad/dexie-bench/main.ts
+  // main.ts
   var orderSchema = __webpack_exports__s.define("orders", {
     _id: __webpack_exports__s.string().key().identity(),
-    email: __webpack_exports__s.string(),
-    region: __webpack_exports__s.string("na", "eu", "apac"),
-    status: __webpack_exports__s.string("pending", "paid", "shipped"),
-    amount: __webpack_exports__s.number(),
+    email: __webpack_exports__s.string().distinct(),
+    region: __webpack_exports__s.string("na", "eu", "apac").index(),
+    status: __webpack_exports__s.string("pending", "paid", "shipped").index(),
+    amount: __webpack_exports__s.number().index(),
     notes: __webpack_exports__s.string(),
-    createdAt: __webpack_exports__s.date().default(() => /* @__PURE__ */ new Date())
+    createdAt: __webpack_exports__s.date().index().default(() => /* @__PURE__ */ new Date())
   }).compile();
   var OrderStore = class extends __webpack_exports__DataStore {
     orders = this.collection(orderSchema).proxy().create();
@@ -45730,7 +45851,7 @@ Plugin Document: ${JSON.stringify(add2, null, 2)}`;
     return stats(samples);
   };
   async function runBench() {
-    const store = new OrderStore(new __webpack_exports__DexiePlugin(`dexie-bench-${Date.now()}`));
+    const store = new OrderStore(new DexiePlugin(`dexie-bench-${Date.now()}`));
     const seedStart = performance.now();
     for (let batch = 0; batch < SEED_ROWS / SEED_BATCH; batch++) {
       for (let i = 0; i < SEED_BATCH; i++) {
@@ -45753,6 +45874,10 @@ Plugin Document: ${JSON.stringify(add2, null, 2)}`;
     const findOneByEmail = await measure(ITERATIONS, () => store.orders.where(([x, p]) => x.email === p.e, { e: "user2500@example.com" }).firstOrUndefinedAsync());
     const sumPaid = await measure(ITERATIONS, () => store.orders.where(([x, p]) => x.status === p.s, { s: "paid" }).sumAsync((x) => x.amount));
     const page = await measure(ITERATIONS, () => store.orders.sort((x) => x.createdAt).skip(1e3).take(25).toArrayAsync());
+    const scopedPage = await measure(ITERATIONS, () => store.orders.where(([x, p]) => x.notes !== p.n, { n: "none" }).sortDescending((x) => x.createdAt).skip(1e3).take(25).toArrayAsync());
+    const scopedCount = await measure(ITERATIONS, () => store.orders.where(([x, p]) => x.notes !== p.n, { n: "none" }).countAsync());
+    const rangeAmount = await measure(ITERATIONS, () => store.orders.where(([x, p]) => x.amount > p.v, { v: 900 }).toArrayAsync());
+    const anyOfStatus = await measure(ITERATIONS, () => store.orders.where(([x, p]) => x.status === p.a || x.status === p.b, { a: "paid", b: "shipped" }).countAsync());
     const { explanation } = await store.orders.where(([x, p]) => x.status === p.s, { s: "paid" }).explain().toArrayAsync();
     return {
       seedRows: SEED_ROWS,
@@ -45764,6 +45889,10 @@ Plugin Document: ${JSON.stringify(add2, null, 2)}`;
       findOneByEmailMs: findOneByEmail,
       sumPaidMs: sumPaid,
       pageMs: page,
+      scopedPageMs: scopedPage,
+      scopedCountMs: scopedCount,
+      rangeAmountMs: rangeAmount,
+      anyOfStatusMs: anyOfStatus,
       explanation
     };
   }

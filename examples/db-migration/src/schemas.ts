@@ -23,12 +23,12 @@ const identity = {
 export const orderSchema = s.define('orders', {
     ...identity,
     customer: s.string(),
-    email: s.string(),
-    status: s.string('pending', 'paid', 'shipped', 'cancelled'),
-    region: s.string('us-east', 'us-west', 'eu', 'apac'),
+    email: s.string().index(),
+    status: s.string('pending', 'paid', 'shipped', 'cancelled').index(),
+    region: s.string('us-east', 'us-west', 'eu', 'apac').index(),
     total: s.number(),
     items: s.number(),
-    createdAt: s.date(),
+    createdAt: s.date().index(),
 }).modify(x => ({
     documentType: x.computed((_, collectionName) => collectionName).tracked()
 })).compile();

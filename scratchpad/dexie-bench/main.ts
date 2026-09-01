@@ -4,12 +4,12 @@ import { DexiePlugin } from "@routier/dexie-plugin";
 
 const orderSchema = s.define("orders", {
     _id: s.string().key().identity(),
-    email: s.string(),
-    region: s.string("na", "eu", "apac"),
-    status: s.string("pending", "paid", "shipped"),
-    amount: s.number(),
+    email: s.string().distinct(),
+    region: s.string("na", "eu", "apac").index(),
+    status: s.string("pending", "paid", "shipped").index(),
+    amount: s.number().index(),
     notes: s.string(),
-    createdAt: s.date().default(() => new Date()),
+    createdAt: s.date().index().default(() => new Date()),
 }).compile();
 
 class OrderStore extends DataStore {
@@ -85,6 +85,18 @@ async function runBench() {
     const page = await measure(ITERATIONS, () =>
         store.orders.sort(x => x.createdAt).skip(1000).take(25).toArrayAsync());
 
+    const scopedPage = await measure(ITERATIONS, () =>
+        store.orders.where(([x, p]) => x.notes !== p.n, { n: "none" }).sortDescending(x => x.createdAt).skip(1000).take(25).toArrayAsync());
+
+    const scopedCount = await measure(ITERATIONS, () =>
+        store.orders.where(([x, p]) => x.notes !== p.n, { n: "none" }).countAsync());
+
+    const rangeAmount = await measure(ITERATIONS, () =>
+        store.orders.where(([x, p]) => x.amount > p.v, { v: 900 }).toArrayAsync());
+
+    const anyOfStatus = await measure(ITERATIONS, () =>
+        store.orders.where(([x, p]) => x.status === p.a || x.status === p.b, { a: "paid", b: "shipped" }).countAsync());
+
     const { explanation } = await store.orders
         .where(([x, p]) => x.status === p.s, { s: "paid" })
         .explain()
@@ -100,6 +112,10 @@ async function runBench() {
         findOneByEmailMs: findOneByEmail,
         sumPaidMs: sumPaid,
         pageMs: page,
+        scopedPageMs: scopedPage,
+        scopedCountMs: scopedCount,
+        rangeAmountMs: rangeAmount,
+        anyOfStatusMs: anyOfStatus,
         explanation,
     };
 }

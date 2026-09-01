@@ -3,6 +3,35 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## Dexie reads use the indexes the schema declares (2026-09-01)
+
+### Fixed — @routier/dexie-plugin 0.4.2
+
+- A filter on a property declared with `.index()`, `.distinct()`, or as the single primary key
+  now becomes an IndexedDB index seek instead of a full cursor walk: a strict equality, an OR of
+  strict equalities on one property (run as one seek per value — Dexie's own `anyOf` is a
+  cursor walk and measured slower than the predicate), one or two range bounds on one property,
+  or an equality on every member of a compound `.index("name")` group. The rest of the filter
+  still runs as the caller's predicate over the seeked rows; when the seek answers the whole
+  filter the predicate is dropped.
+- `skip`/`take` go to Dexie after the predicates, so the cursor stops at the window instead of
+  reading every match. Dexie composes `offset`/`limit` into the filter chain in call order,
+  which is why the predicates are attached first.
+- A single `sort` on an indexed, non-nullable string, number, or Date property runs as an
+  `orderBy` index walk when no seek is in use, with any remaining predicate applied during the
+  walk, so a page deep into a sorted table no longer reads and sorts the whole table.
+- `count()` runs in Dexie when the query has no window or projection.
+- The translator no longer re-runs every filter predicate in memory over rows Dexie already
+  filtered, and the stores string is derived once per compiled schema instead of on every
+  operation.
+- Date values are never used as seek keys: rows store dates as ISO strings, which a Date key
+  does not match, and an `above(Date)` seek would have returned every row.
+- Measured at 4k rows in headless Chromium (p50): sort+skip+take page 15.6→6.2ms, count all
+  15.7→3.0ms, single-property filter 16.2→11.7ms, filtered sum 14.9→10.0ms, range seek 3.6ms,
+  OR-of-two-values count 28→10.4ms.
+- Seeks only follow declared indexes, so a schema without `.index()` still walks. Add
+  `.index()` to the properties you filter and sort by.
+
 ## Filters read as written, and explain says what it ran (2026-09-01)
 
 The filter parser now reads the JavaScript people actually write — the full operator set, with

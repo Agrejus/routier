@@ -61,6 +61,26 @@ connection. Two tabs may both write: each save is atomic, and the last writer wi
 build it on, so `ConcurrencyDbPlugin` cannot detect a stale write here. Use a backend plugin
 if you need it.
 
+### Query execution
+
+A filter runs as a JavaScript predicate over a cursor walk unless part of it can become an
+IndexedDB index seek. A seek needs a property the schema declares with `.index()`,
+`.distinct()`, or as a single primary key, and one of these shapes on a string or number value:
+
+- a strict equality, `x.status === p.s`
+- an OR of strict equalities on one property, `x.status === p.a || x.status === p.b`
+- one or two range bounds on one property, `x.amount >= p.lo && x.amount < p.hi`
+- a strict equality on every member of a compound `.index("name")` group
+
+The rest of the filter runs over the seeked rows. Date values never seek: rows store dates as
+ISO strings, which a Date key does not match. Declare an index on every property you filter
+by; `.explain()` shows which path a query took.
+
+`count()` runs in Dexie when the query has no window or projection. A single sort on an
+indexed, non-nullable string, number, or Date property runs as an index walk when no seek is
+in use; a remaining predicate is applied during the walk. `skip` and `take` run in Dexie after
+the predicates, and stop the cursor early, unless a sort still has to happen in memory.
+
 ### Tab boundary
 
 Several tabs share one IndexedDB database. They do not see each other's writes until they
