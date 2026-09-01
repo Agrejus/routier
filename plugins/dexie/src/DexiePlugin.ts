@@ -1,5 +1,6 @@
 import Dexie from 'dexie';
 import { convertToDexieSchema } from "./utils";
+import { findIndexSeed, type IndexSeed } from "./indexSeed";
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, IDbPlugin, ITranslatedValue, joinInPlugin } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
 import { BulkPersistResult, SchemaPersistChanges } from '@routier/core/collections';
@@ -326,8 +327,21 @@ export class DexiePlugin implements IDbPlugin, Disposable {
             const { options } = event.operation;
             const translator = new DexieTranslator<TEntity, TShape>(event.operation);
 
+            let indexSeed: IndexSeed | null = null;
+            const seedOptions = { compositeKey: event.operation.schema.idProperties.length > 1 };
+
+            for (const entry of event.operation.options.get("filter")) {
+                indexSeed = findIndexSeed(entry.option.value.expression, seedOptions);
+
+                if (indexSeed != null) {
+                    break;
+                }
+            }
+
             // Start with the base collection
-            let collection = db.table(collectionName).toCollection();
+            let collection = indexSeed != null
+                ? db.table(collectionName).where(indexSeed.indexName).equals(indexSeed.value)
+                : db.table(collectionName).toCollection();
 
             // A window may only be pushed down to Dexie when nothing else reorders or
             // reduces the rows first:
@@ -397,28 +411,33 @@ export class DexiePlugin implements IDbPlugin, Disposable {
             // Get the data first
             collection.toArray().then(data => {
                 /**
-                 * Dexie has no query language of its own here — the plugin hands it a JavaScript
-                 * predicate over a full cursor walk, no IndexedDB range query — so `.explain()`
-                 * reports the predicate AS JavaScript, which is the form the caller wrote it in.
+                 * Dexie has no query language of its own here — the plugin seeds the read with an
+                 * IndexedDB index seek when a filter carries a strict equality on an indexed root
+                 * property, and hands the rest to a JavaScript predicate — so `.explain()` reports
+                 * the seek AND the predicate AS JavaScript, which is the form the caller wrote it in.
                  *
                  * Values come out as `?` with the values listed beside them, the same as a SQL
                  * plugin's bound statement. That is what makes two runs of one query comparable,
                  * and it keeps a value out of text that may be logged.
                  *
-                 * The "no index" note stays: it is the fact that separates a slow backend from a
-                 * silent memory fallback when comparing against SQL engines.
+                 * The "no index" note stays on the walk path: it is the fact that separates a slow
+                 * backend from a silent memory fallback when comparing against SQL engines.
                  */
                 const described = describeFilters(options.get("filter").map(entry => entry.option.value));
 
                 event.executedQueries.push({
                     text: [
-                        `${collectionName}.toCollection()`,
-                        ...(hasFilter ? [`filter(${described.text}) — JavaScript predicate over a full cursor walk, no index`] : []),
+                        indexSeed != null
+                            ? `${collectionName}.where("${indexSeed.indexName}").equals(?) — IndexedDB index seek`
+                            : `${collectionName}.toCollection()`,
+                        ...(hasFilter ? [`filter(${described.text})${indexSeed != null ? " — JavaScript predicate over the seeked rows" : " — JavaScript predicate over a full cursor walk, no index"}`] : []),
                         ...(canPushDownWindow && options.has("skip") ? ["offset(…)"] : []),
                         ...(canPushDownWindow && options.has("take") ? ["limit(…)"] : []),
                         ...(translator.options.useTranslatorDistinct === false && options.has("distinct") ? ["distinct()"] : [])
                     ].join("."),
-                    parameters: described.parameters.length > 0 ? described.parameters : undefined
+                    parameters: indexSeed != null
+                        ? [indexSeed.value, ...described.parameters]
+                        : described.parameters.length > 0 ? described.parameters : undefined
                 });
 
                 const result = translator.translate(data);
