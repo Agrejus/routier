@@ -1,6 +1,6 @@
 import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema';
 import { Expression } from '@routier/core/expressions';
-import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, entityResultColumns, getDialect, sqlColumnProperties, toColumnValueMap, toSql, reportUnrenderableFilters, executedMapFields } from '@routier/sql-plugin-core';
+import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, entityResultColumns, getDialect, sqlColumnProperties, toColumnValueMap, toSql, reportUnrenderableFilters, executedMapFields, selectList, columnList } from '@routier/sql-plugin-core';
 import { IQuery, JoinQueryOptionValue, mappedResultColumns, Query, ResultColumn } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
 import { SqlOperation } from './types';
@@ -341,11 +341,11 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
         throw new Error("Need to select at least one column, found zero");
     }
 
-    // Use string concatenation instead of array join for better performance
-    let columnsStr = `"${resultColumns[0].name}"`;
-    for (let i = 1; i < resultColumns.length; i++) {
-        columnsStr += `, "${resultColumns[i].name}"`;
-    }
+    const dialect = getDialect('sqlite');
+    // The inner list reads a nested value out of its JSON column and aliases it; a wrapping query
+    // then selects that alias by name, because the JSON column is not in scope there.
+    const columnsStr = selectList(resultColumns, dialect);
+    const wrappedColumnsStr = columnList(resultColumns, dialect);
 
     const params: any[] = [];
     let currentQuery = `SELECT ${columnsStr} FROM "${tableName}"`;
@@ -447,11 +447,11 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
         if (skipValue !== null && takeValue !== null) {
             // Both skip and take: LIMIT take OFFSET skip
             subqueryCount++;
-            currentQuery = `SELECT ${columnsStr} FROM (${currentQuery}) AS subquery_${subqueryCount} LIMIT ${takeValue} OFFSET ${skipValue}`;
+            currentQuery = `SELECT ${wrappedColumnsStr} FROM (${currentQuery}) AS subquery_${subqueryCount} LIMIT ${takeValue} OFFSET ${skipValue}`;
         } else if (skipValue !== null) {
             // Only skip: Use a large LIMIT with OFFSET (SQLite requires LIMIT before OFFSET)
             subqueryCount++;
-            currentQuery = `SELECT ${columnsStr} FROM (${currentQuery}) AS subquery_${subqueryCount} LIMIT -1 OFFSET ${skipValue}`;
+            currentQuery = `SELECT ${wrappedColumnsStr} FROM (${currentQuery}) AS subquery_${subqueryCount} LIMIT -1 OFFSET ${skipValue}`;
         } else if (takeValue !== null) {
             // Only take: LIMIT take
             currentQuery += ` LIMIT ${takeValue}`;

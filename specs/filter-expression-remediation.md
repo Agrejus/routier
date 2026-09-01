@@ -488,6 +488,59 @@ Also: two refusal cases cited `precedence`, which is not one of the five reasons
 nothing read. The reason is asserted against the five now. Three "Still open" forms gained the todo
 they lacked, and `x => false` is a gap in both places rather than a refusal in one.
 
+## Found by the books app
+
+`e2e/src/books/` keeps a double-entry book end to end — chart of accounts, customers, vendors,
+items, invoices with lines, payments, bills, journal postings, void and reversal — and asserts P&L,
+balance sheet, AR aging and customer statements against hand-computed answers on every engine. The
+trial balance is the invariant: debits minus credits is zero, and a query that loses a row breaks it.
+
+It found three defects the whole suite had no coverage for. **There was no date-filter test anywhere
+in the repository**, and the spec's *Supported today* table lists `Date` params as working.
+
+### A date param matched nothing on every in-memory plugin — FIXED
+
+`EphemeralDataPlugin` holds a `s.date()` as an ISO string and ran the caller's predicate against the
+raw record, so `"2026-01-05T12:00:00.000Z" >= aDate` compared a string to a stringified Date
+lexicographically and was false for every row.
+
+```
+r.at >= p.from   (Date param)     ->  []      wrong
+r.n  >= p.min    (number param)   ->  [6, 7]  fine
+```
+
+Both filter passes had to be fixed, and they are not symmetric. The plugin's leading-filter pass
+converts the row it tests but still returns the stored one, because change tracking, versioning and
+renames all read storage shape — returning the converted row broke optimistic concurrency,
+cross-collection atomicity and every renamed-property test. `JsonTranslator` takes a `storageShape`
+flag instead of guessing, because the same translator runs over storage-shape rows inside a plugin
+and entity-shape rows in the datastore's memory pass.
+
+Affects the memory, file-system and browser-storage plugins.
+
+### A date param could not be bound on SQLite — FIXED
+
+`bindableFor` converted booleans and nothing else, so a `Date` reached the driver raw:
+`Provided value cannot be bound to SQLite parameter 1`. It now routes a `Date` through the
+dialect's `encodeDate`, and the pass-through encoder converts to ISO — the form the column holds.
+MySQL already had its own encoder and is unchanged.
+
+### A nested property could not be projected on SQL — FIXED
+
+`.map(c => c.billing.region)` rendered `SELECT "billing.region"` and the column does not exist.
+Filtering worked, because `renderColumn` uses the dialect's `jsonPathExpression`; the SELECT list
+quoted the field name verbatim instead.
+
+Two halves, and the second is easy to miss. `selectList` in sql-core reads a nested value out of its
+JSON column and aliases it back to the name the result shape expects, and all three SQL plugins use
+it. SQLite also needed `columnList`: a paging query wraps the statement, and the outer SELECT has to
+read the alias rather than re-render the path, because the JSON column is not in scope there.
+
+The row then arrives FLAT, keyed by the alias, so `SqlTranslator.map` lifts it back onto the
+property's path before the selector runs. A `ResultColumn` can also describe something with no
+schema property behind it — a concurrency token, an aggregate — so the helper checks before
+treating one as a property.
+
 ## The regression net
 
 Twenty-two defects behind a green suite is a fixture problem. Three structural guards, in order of

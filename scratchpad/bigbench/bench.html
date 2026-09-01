@@ -1,0 +1,326 @@
+<!doctype html>
+<html>
+<body>
+<script>
+// Main-thread side. Every rows variant ends with `rows` = array of FINAL routier-shaped
+// entities: isActive boolean|null, createdAt Date, updatedAt Date|null, tags array,
+// meta object. Timers wrap the full round trip and, separately, main-thread-only work.
+
+const worker = new Worker('worker.js');
+
+const request = (msg, expectKind) => new Promise((resolve) => {
+    const h = (e) => {
+        if (e.data.kind !== expectKind) return;
+        worker.removeEventListener('message', h);
+        resolve(e.data);
+    };
+    worker.addEventListener('message', h);
+    worker.postMessage(msg);
+});
+
+// --- main-thread decode/shaping per variant --------------------------------
+
+// Mirrors decodeJsonColumns + translator deserialize: mutate cloned raw rows in place.
+const shapeRawRows = (rows) => {
+    for (let i = 0, n = rows.length; i < n; i++) {
+        const r = rows[i];
+        if (typeof r.isActive === 'number') r.isActive = r.isActive !== 0;
+        r.tags = JSON.parse(r.tags);
+        r.meta = JSON.parse(r.meta);
+        r.createdAt = new Date(r.createdAt);
+        if (r.updatedAt != null) r.updatedAt = new Date(r.updatedAt);
+    }
+    return rows;
+};
+
+// Equivalent of the generated (codegen) decode: one object literal per row.
+const decodeHybridRawThenShape = (p) => {
+    const n = p.n;
+    const rows = new Array(n);
+    const { id, amount, isActive, isActiveNull, name, description, createdAt, updatedAt, tags, meta } = p;
+    for (let i = 0; i < n; i++) {
+        const activeNull = (isActiveNull[i >> 3] & (1 << (i & 7))) !== 0;
+        rows[i] = {
+            id: id[i], amount: amount[i],
+            isActive: activeNull ? null : isActive[i],
+            name: name[i], description: description[i],
+            createdAt: createdAt[i], updatedAt: updatedAt[i],
+            tags: tags[i], meta: meta[i],
+        };
+    }
+    return shapeRawRows(rows);
+};
+
+const decodeHybridFinal = (p, jsonPreParsed) => {
+    const n = p.n;
+    const rows = new Array(n);
+    const { id, amount, isActive, isActiveNull, createdAt, createdAtNull, updatedAt, updatedAtNull,
+        name, description } = p;
+    const tags = p.tagsConcat != null ? JSON.parse(p.tagsConcat) : p.tags;
+    const meta = p.metaConcat != null ? JSON.parse(p.metaConcat) : p.meta;
+    const parsed = jsonPreParsed || p.tagsConcat != null;
+    for (let i = 0; i < n; i++) {
+        const byte = i >> 3, bit = 1 << (i & 7);
+        rows[i] = {
+            id: id[i], amount: amount[i],
+            isActive: (isActiveNull[byte] & bit) !== 0 ? null : isActive[i] !== 0,
+            name: name[i], description: description[i],
+            createdAt: (createdAtNull[byte] & bit) !== 0 ? null : new Date(createdAt[i]),
+            updatedAt: (updatedAtNull[byte] & bit) !== 0 ? null : new Date(updatedAt[i]),
+            tags: parsed ? tags[i] : JSON.parse(tags[i]),
+            meta: parsed ? meta[i] : JSON.parse(meta[i]),
+        };
+    }
+    return rows;
+};
+
+// Generated decode when the plan says which columns actually contain nulls:
+// non-null columns skip the bitmap test entirely.
+const decodeHybridFinalNullFlags = (p) => {
+    const n = p.n;
+    const rows = new Array(n);
+    const { id, amount, isActive, isActiveNull, createdAt, updatedAt, updatedAtNull,
+        name, description, tags, meta } = p;
+    for (let i = 0; i < n; i++) {
+        const byte = i >> 3, bit = 1 << (i & 7);
+        rows[i] = {
+            id: id[i], amount: amount[i],
+            isActive: (isActiveNull[byte] & bit) !== 0 ? null : isActive[i] !== 0,
+            name: name[i], description: description[i],
+            createdAt: new Date(createdAt[i]),
+            updatedAt: (updatedAtNull[byte] & bit) !== 0 ? null : new Date(updatedAt[i]),
+            tags: JSON.parse(tags[i]),
+            meta: JSON.parse(meta[i]),
+        };
+    }
+    return rows;
+};
+
+// --- one timed round trip ---------------------------------------------------
+const runOnce = async (variant, n) => {
+    const t0 = performance.now();
+    const resp = await request({ kind: 'rows', variant, n }, 'rows');
+    const tRecv = performance.now();
+
+    let rows;
+    if (variant === 'today') rows = shapeRawRows(resp.payload.rows);
+    else if (variant === 'worker-shaped') rows = resp.payload.rows;
+    else if (variant === 'hybrid-raw') rows = decodeHybridRawThenShape(resp.payload);
+    else if (variant === 'hybrid-final-wparse') rows = decodeHybridFinal(resp.payload, true);
+    else if (variant === 'hybrid-final-nullflags') rows = decodeHybridFinalNullFlags(resp.payload);
+    else rows = decodeHybridFinal(resp.payload, false);
+
+    const tEnd = performance.now();
+
+    const a = rows[0], b = rows[rows.length - 1];
+    const fp = [rows.length, a.id, b.id, a.amount, String(a.isActive), a.createdAt.getTime(),
+        b.updatedAt == null ? 'null' : b.updatedAt.getTime(), a.tags.length, a.meta.audit.by, b.name].join('|');
+
+    return { total: tEnd - t0, mainDecode: tEnd - tRecv, workerEncode: resp.encodeMs, fp };
+};
+
+const runChunkedOnce = (n, chunk, jsonConcat) => new Promise((resolve) => {
+    let rows = [];
+    let firstChunkAt = 0;
+    let mainDecode = 0;
+    const t0 = performance.now();
+    const h = (e) => {
+        const m = e.data;
+        if (m.kind === 'chunk') {
+            const d0 = performance.now();
+            if (firstChunkAt === 0) firstChunkAt = d0 - t0;
+            const part = decodeHybridFinal(m.payload, false);
+            for (let i = 0; i < part.length; i++) rows.push(part[i]);
+            mainDecode += performance.now() - d0;
+            return;
+        }
+        if (m.kind === 'chunks-done') {
+            worker.removeEventListener('message', h);
+            const tEnd = performance.now();
+            const a = rows[0], b = rows[rows.length - 1];
+            const fp = [rows.length, a.id, b.id, a.amount, String(a.isActive), a.createdAt.getTime(),
+                b.updatedAt == null ? 'null' : b.updatedAt.getTime(), a.tags.length, a.meta.audit.by, b.name].join('|');
+            resolve({ total: tEnd - t0, mainDecode, workerEncode: m.encodeMs, firstChunk: firstChunkAt, fp });
+        }
+    };
+    worker.addEventListener('message', h);
+    worker.postMessage({ kind: 'rows-chunked', n, chunk, jsonConcat: jsonConcat === true });
+});
+
+const median = (xs) => { const s = [...xs].sort((x, y) => x - y); return s[s.length >> 1]; };
+
+const runVariant = async (variant, n, warmups, iters, chunk, jsonConcat) => {
+    const once = () => chunk ? runChunkedOnce(n, chunk, jsonConcat) : runOnce(variant, n);
+    for (let i = 0; i < warmups; i++) await once();
+    const totals = [], mains = [], encodes = [], firsts = [];
+    let fp = null;
+    for (let i = 0; i < iters; i++) {
+        const r = await once();
+        totals.push(r.total); mains.push(r.mainDecode); encodes.push(r.workerEncode);
+        if (r.firstChunk != null) firsts.push(r.firstChunk);
+        fp = r.fp;
+    }
+    const out = { variant, n, total: median(totals), mainDecode: median(mains), workerEncode: median(encodes), fp };
+    if (firsts.length) out.firstChunk = median(firsts);
+    return out;
+};
+
+const runBlobs = async (mode, count, size, warmups, iters) => {
+    if (mode === 'blob-objects') await request({ kind: 'blob-setup', count, size }, 'blob-setup');
+    const one = async () => {
+        const t0 = performance.now();
+        const resp = await request({ kind: 'blobs', mode, count, size }, 'blobs');
+        const postMs = performance.now() - t0;
+        // materialize: for buffers this is free (already bytes); for blobs it reads them
+        let readMs = 0;
+        if (mode === 'blob-objects') {
+            const r0 = performance.now();
+            for (const b of resp.buffers) await b.arrayBuffer();
+            readMs = performance.now() - r0;
+        } else {
+            let x = 0;
+            for (const b of resp.buffers) x += b[0];
+        }
+        return { postMs, readMs };
+    };
+    for (let i = 0; i < warmups; i++) await one();
+    const posts = [], reads = [];
+    for (let i = 0; i < iters; i++) { const r = await one(); posts.push(r.postMs); reads.push(r.readMs); }
+    return { mode, count, size, post: median(posts), read: median(reads) };
+};
+
+const runOpfs = async (mode, size, warmups, iters) => {
+    const one = async () => {
+        const t0 = performance.now();
+        const resp = await request({ kind: 'opfs-read', mode }, 'opfs-read');
+        const postMs = performance.now() - t0;
+        let readMs = 0;
+        if (resp.data instanceof Blob) {
+            const r0 = performance.now();
+            await resp.data.arrayBuffer();
+            readMs = performance.now() - r0;
+        }
+        return { postMs, readMs };
+    };
+    for (let i = 0; i < warmups; i++) await one();
+    const posts = [], reads = [];
+    for (let i = 0; i < iters; i++) { const r = await one(); posts.push(r.postMs); reads.push(r.readMs); }
+    return { mode, size, post: median(posts), read: median(reads) };
+};
+
+window.runScale = async () => {
+    const results = [];
+    for (const n of [4000, 20000, 100000, 250000, 500000]) {
+        await request({ kind: 'warm', n }, 'warm');
+        const iters = n >= 250000 ? 5 : (n >= 100000 ? 9 : 13);
+        const warmups = n >= 250000 ? 2 : 3;
+        const fps = new Set();
+        for (const v of ['today', 'hybrid-final']) {
+            const r = await runVariant(v, n, warmups, iters);
+            fps.add(r.fp); delete r.fp;
+            results.push(r);
+        }
+        if (fps.size !== 1) results.push({ variant: 'FINGERPRINT-MISMATCH', n });
+    }
+    return results;
+};
+
+window.runFaster = async () => {
+    const n = 100000;
+    await request({ kind: 'warm', n }, 'warm');
+    const results = [];
+    const fps = new Set();
+    for (const v of ['hybrid-final', 'hybrid-final-exact', 'hybrid-final-jsonconcat', 'hybrid-final-nullflags']) {
+        const r = await runVariant(v, n, 3, 9);
+        fps.add(r.fp); delete r.fp;
+        results.push(r);
+    }
+    for (const chunk of [8192, 25000]) {
+        const r = await runVariant('chunked-' + chunk, n, 2, 9, chunk);
+        fps.add(r.fp); delete r.fp;
+        results.push(r);
+    }
+    for (const chunk of [4096, 8192, 25000]) {
+        const r = await runVariant('chunked-' + chunk + '-jsonconcat', n, 2, 9, chunk, true);
+        fps.add(r.fp); delete r.fp;
+        results.push(r);
+    }
+    if (fps.size !== 1) results.push({ variant: 'FINGERPRINT-MISMATCH', n, count: fps.size });
+    return results;
+};
+
+window.runSmall = async () => {
+    const results = [];
+    const BATCH = 100;
+    for (const n of [1, 10, 100, 1000]) {
+        await request({ kind: 'warm', n }, 'warm');
+        const fps = new Set();
+        const batched = async (variant, chunk, jsonConcat) => {
+            const once = () => chunk ? runChunkedOnce(n, chunk, jsonConcat) : runOnce(variant, n);
+            for (let i = 0; i < 20; i++) await once();
+            const meds = [];
+            for (let rep = 0; rep < 7; rep++) {
+                const t0 = performance.now();
+                let fp;
+                for (let i = 0; i < BATCH; i++) fp = (await once()).fp;
+                meds.push((performance.now() - t0) / BATCH);
+                fps.add(fp);
+            }
+            results.push({ variant, n, total: median(meds) });
+        };
+        await batched('today');
+        await batched('hybrid-final');
+        await batched('chunked-4096-jsonconcat', 4096, true);
+        if (fps.size !== 1) results.push({ variant: 'FINGERPRINT-MISMATCH', n });
+    }
+    for (const mode of ['clone', 'typed']) {
+        const one = async () => {
+            const t0 = performance.now();
+            const resp = await request({ kind: 'count', mode, value: 123456 }, 'count');
+            const v = mode === 'clone' ? resp.rows[0].count : resp.data[0];
+            if (v !== 123456) throw new Error('bad count');
+            return performance.now() - t0;
+        };
+        for (let i = 0; i < 20; i++) await one();
+        const meds = [];
+        for (let rep = 0; rep < 7; rep++) {
+            const t0 = performance.now();
+            for (let i = 0; i < 100; i++) await one();
+            meds.push((performance.now() - t0) / 100);
+        }
+        results.push({ variant: 'count-' + mode, n: 1, total: median(meds) });
+    }
+    return results;
+};
+
+window.runCombinedScale = async () => {
+    const results = [];
+    for (const n of [4000, 20000, 100000, 500000]) {
+        await request({ kind: 'warm', n }, 'warm');
+        const iters = n >= 250000 ? 5 : 9;
+        const fps = new Set();
+        let r = await runVariant('today', n, 2, iters);
+        fps.add(r.fp); delete r.fp; results.push(r);
+        r = await runVariant('chunked-4096-jsonconcat', n, 2, iters, 4096, true);
+        fps.add(r.fp); delete r.fp; results.push(r);
+        if (fps.size !== 1) results.push({ variant: 'FINGERPRINT-MISMATCH', n });
+    }
+    return results;
+};
+
+window.runBinary = async () => {
+    const results = [];
+    const matrix = [[100, 102400], [20, 1048576], [5, 10485760], [1, 52428800]];
+    for (const [count, size] of matrix) {
+        for (const mode of ['clone-buffers', 'transfer-buffers', 'blob-objects']) {
+            results.push(await runBlobs(mode, count, size, 2, 7));
+        }
+    }
+    await request({ kind: 'opfs-setup', size: 10485760 }, 'opfs-setup');
+    results.push(await runOpfs('sync-read-transfer', 10485760, 2, 7));
+    results.push(await runOpfs('post-file', 10485760, 2, 7));
+    return results;
+};
+</script>
+</body>
+</html>

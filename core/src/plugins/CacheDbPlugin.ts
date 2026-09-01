@@ -70,6 +70,36 @@ const describeOption = (option: QueryOption<unknown, QueryOptionName>): string =
     }
 };
 
+/**
+ * Restores a `Date` that `structuredClone` produced outside this realm.
+ *
+ * The clone is a real date and fails `instanceof Date`, which is what a caller checks. Mutated in
+ * place because the clone is already private to this call.
+ */
+const reviveDates = (value: unknown): unknown => {
+    if (value == null || typeof value !== "object") {
+        return value;
+    }
+
+    if (Object.prototype.toString.call(value) === "[object Date]") {
+        return value instanceof Date ? value : new Date(value as Date);
+    }
+
+    if (Array.isArray(value)) {
+        for (let i = 0, length = value.length; i < length; i++) {
+            value[i] = reviveDates(value[i]);
+        }
+
+        return value;
+    }
+
+    for (const key of Object.keys(value)) {
+        (value as Record<string, unknown>)[key] = reviveDates((value as Record<string, unknown>)[key]);
+    }
+
+    return value;
+};
+
 export class CacheDbPlugin implements IDbPlugin {
 
     private readonly plugin: IDbPlugin;
@@ -118,7 +148,7 @@ export class CacheDbPlugin implements IDbPlugin {
      * Pinned by `datastore/src/collections/wrapperStacking.test.ts`.
      */
     private rebuild(entry: CacheEntry): ITranslatedValue<unknown> {
-        return new entry.construct(structuredClone(entry.value), entry.isTransformed);
+        return new entry.construct(reviveDates(structuredClone(entry.value)), entry.isTransformed);
     }
 
     query<TRoot extends {}, TShape extends any = TRoot>(

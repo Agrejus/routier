@@ -167,8 +167,14 @@ const jsonPathLiteral = (path: string[]): string =>
         )
         .join("");
 
-/** Engines that accept ISO-8601 directly. */
-const passThroughDate = (value: unknown): unknown => value;
+/**
+ * Engines that accept ISO-8601 directly.
+ *
+ * A `Date` still has to become one: a driver binds a string, and `s.date()` is stored as ISO, so a
+ * filter comparing a Date param has to be bound in the same form the column holds.
+ */
+const passThroughDate = (value: unknown): unknown =>
+    value instanceof Date ? (Number.isNaN(value.getTime()) ? value : value.toISOString()) : value;
 
 /** Engines with a real boolean type take one as it is. */
 const passThroughBoolean = (value: unknown): unknown => value;
@@ -638,8 +644,14 @@ function renderColumnBase(prop: PropertyExpression, d: SqlDialect, alias?: strin
  * Recursive, so `x.age * 2 + 1` renders both levels, and it takes the parameter list because that is
  * what binding a literal appends to.
  */
-const bindableFor = (d: SqlDialect) => (value: unknown) =>
-    typeof value === "boolean" ? d.encodeBoolean(value) : value;
+const bindableFor = (d: SqlDialect) => (value: unknown) => {
+    if (typeof value === "boolean") {
+        return d.encodeBoolean(value);
+    }
+
+    // A param carries a real Date; the column holds whatever this engine writes.
+    return value instanceof Date ? d.encodeDate(value) : value;
+};
 
 /**
  * The placeholder counter, as something a nested render can read and advance.

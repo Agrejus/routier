@@ -2,7 +2,7 @@ import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema'
 import { Expression } from '@routier/core/expressions';
 import { IQuery, JoinQueryOptionValue, Query } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
-import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, entityResultColumns, getDialect, sqlColumnProperties, toColumnValueMap, toSql, reportUnrenderableFilters, executedMapFields, SqlDialect } from '@routier/sql-plugin-core';
+import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, entityResultColumns, getDialect, sqlColumnProperties, toColumnValueMap, toSql, reportUnrenderableFilters, executedMapFields, selectList, SqlDialect } from '@routier/sql-plugin-core';
 import { mappedResultColumns, ResultColumn } from '@routier/core/plugins';
 import { SqlOperation } from './types';
 
@@ -441,10 +441,7 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
         throw new Error("Need to select at least one column, found zero");
     }
 
-    let columnsStr = `"${resultColumns[0].name}"`;
-    for (let i = 1; i < resultColumns.length; i++) {
-        columnsStr += `, "${resultColumns[i].name}"`;
-    }
+    const columnsStr = selectList(resultColumns, getDialect('postgresql'));
 
     const params: any[] = [];
     let currentQuery = `SELECT ${columnsStr} FROM "${tableName}"`;

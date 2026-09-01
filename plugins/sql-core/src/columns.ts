@@ -1,5 +1,6 @@
 import { SchemaTypes } from '@routier/core';
 import { CompiledSchema, PropertyInfo } from '@routier/core/schema';
+import type { ResultColumn } from '@routier/core/plugins';
 import type { SqlDialect } from './sql';
 
 /**
@@ -67,7 +68,8 @@ const propertyFor = <T extends {}>(schema: CompiledSchema<T>, key: string): Prop
 export const isJsonColumn = (property: PropertyInfo<any>) =>
     property.type === SchemaTypes.Object ||
     property.type === SchemaTypes.Array ||
-    property.type === SchemaTypes.Vector;
+    property.type === SchemaTypes.Vector ||
+    property.type === SchemaTypes.File;
 
 /**
  * Whether this layer should JSON-encode the value, decided on its **runtime shape** rather
@@ -250,3 +252,42 @@ export function decodeJsonColumns<T extends {}>(rows: unknown, schema: CompiledS
 
     return rows;
 }
+
+/**
+ * The SELECT expression for one result column.
+ *
+ * A nested property is not a column: the object is stored whole in one JSON column, so the value
+ * has to be read out by path and aliased back to the name the result shape expects.
+ */
+export const selectExpression = (column: ResultColumn, dialect: SqlDialect): string => {
+    const property = column.property;
+
+    // A column can describe something with no schema property behind it — a version token, an
+    // aggregate — and those are already named exactly as the engine returns them.
+    if (property == null || typeof property.getParentPathArray !== "function") {
+        return dialect.quoteIdentifier(column.name);
+    }
+
+    const parents = property.getParentPathArray({ useFromPropertyName: true });
+
+    if (parents.length === 0) {
+        return dialect.quoteIdentifier(column.name);
+    }
+
+    const [root, ...rest] = parents;
+    const path = dialect.jsonPathExpression(
+        dialect.quoteIdentifier(root),
+        [...rest, property.getResolvedName()],
+        property.type
+    );
+
+    return `${path} AS ${dialect.quoteIdentifier(column.name)}`;
+};
+
+/** The inner SELECT list, reading nested values out of their JSON column. */
+export const selectList = (columns: readonly ResultColumn[], dialect: SqlDialect): string =>
+    columns.map(column => selectExpression(column, dialect)).join(", ");
+
+/** The same columns by name only, for a query that wraps another and reads its aliases. */
+export const columnList = (columns: readonly ResultColumn[], dialect: SqlDialect): string =>
+    columns.map(column => dialect.quoteIdentifier(column.name)).join(", ");

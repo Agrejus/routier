@@ -77,10 +77,45 @@ export class MemoryDataCollection {
         throw new Error(`Id Property '${property.name}' must be string or number, found '${property.type}'`)
     }
 
+    private _dateColumns?: string[];
+
+    /** Date columns, by the name a stored record uses. Nested dates live inside a JSON column. */
+    private get dateColumns(): string[] {
+        if (this._dateColumns == null) {
+            this._dateColumns = this.schema.properties
+                .filter(property => property.type === SchemaTypes.Date
+                    && property.getAssignmentPath().includes(".") === false)
+                .map(property => property.getResolvedName());
+        }
+
+        return this._dateColumns;
+    }
+
+    /**
+     * The record this collection keeps.
+     *
+     * A copy, so a caller holding the entity cannot write into the store afterwards. Dates are held
+     * as Dates: a predicate compares a Date, and a stored ISO string never matches one.
+     */
+    private toStored(item: Record<string, unknown>): Record<string, unknown> {
+        const columns = this.dateColumns;
+        const stored = { ...item };
+
+        for (let i = 0, length = columns.length; i < length; i++) {
+            const value = stored[columns[i]];
+
+            if (typeof value === "string") {
+                stored[columns[i]] = new Date(value);
+            }
+        }
+
+        return stored;
+    }
+
     seed(items: Record<string, unknown>[]) {
         for (let i = 0, length = items.length; i < length; i++) {
             const id = this.resolveIdSet(items[i] as InferType<unknown>);
-            this.data.set(id.toString(), items[i]);
+            this.data.set(id.toString(), this.toStored(items[i]));
         }
     }
 
@@ -130,7 +165,7 @@ export class MemoryDataCollection {
 
     add(item: Record<string, unknown>) {
         const id = this.resolveIdSet(item);
-        this.data.set(id.toString(), item);
+        this.data.set(id.toString(), this.toStored(item));
     }
 
     /**
@@ -143,7 +178,7 @@ export class MemoryDataCollection {
         const key = id.toString();
 
         if (this.data.has(key) === false) {
-            this.data.set(key, item);
+            this.data.set(key, this.toStored(item));
         }
     }
 
@@ -163,7 +198,7 @@ export class MemoryDataCollection {
 
     update(item: Record<string, unknown>) {
         const id = this.resolveCurrentIdSet(item);
-        this.data.set(id.toString(), item);
+        this.data.set(id.toString(), this.toStored(item));
     }
 
     destroy(done: CallbackResult<never>) {

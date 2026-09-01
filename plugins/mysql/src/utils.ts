@@ -1,8 +1,8 @@
 import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema';
 import { Expression } from '@routier/core/expressions';
-import { IQuery, JoinQueryOptionValue, Query } from '@routier/core/plugins';
+import { IQuery, JoinQueryOptionValue, mappedResultColumns, Query } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
-import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, getDialect, sqlColumnProperties, toColumnValueMap, toSql, reportUnrenderableFilters, executedMapFields } from '@routier/sql-plugin-core';
+import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, getDialect, sqlColumnProperties, toColumnValueMap, toSql, reportUnrenderableFilters, executedMapFields, selectList } from '@routier/sql-plugin-core';
 import { uuidv4 } from '@routier/core/utilities';
 import { MysqlAddsOperation, MysqlRemovesOperation, MysqlSelectBack, MysqlUpdatesOperation, SqlOperation } from './types';
 
@@ -380,10 +380,7 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
 
     let columnsStr: string;
     if (mapFields && mapFields.length > 0) {
-        columnsStr = `\`${mapFields[0].sourceName}\``;
-        for (let i = 1; i < mapFields.length; i++) {
-            columnsStr += `, \`${mapFields[i].sourceName}\``;
-        }
+        columnsStr = selectList(mappedResultColumns(mapFields), getDialect('mysql'));
     } else {
         // Root properties only, storage-side names — the layout the DDL creates. A column
         // per descendant would select phantom columns the table does not have.

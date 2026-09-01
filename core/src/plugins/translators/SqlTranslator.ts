@@ -217,10 +217,16 @@ export class SqlTranslator<TRoot extends {}, TShape> extends DataTranslator<TRoo
                 const field = option.value.fields[j];
 
                 if (field.property != null) {
-                    const value = field.property.getValue(data[i]);
+                    const row = data[i] as Record<string, unknown>;
+
+                    // A nested field arrives FLAT, under the alias the statement emitted, because
+                    // the value was read out of a JSON column. `setValue` puts it back on its path.
+                    const value = Object.prototype.hasOwnProperty.call(row, field.sourceName)
+                        ? row[field.sourceName]
+                        : field.property.getValue(row);
 
                     if (value != null) {
-                        field.property.setValue(data[i], field.property.deserialize(value));
+                        field.property.setValue(row, field.property.deserialize(value as never));
                     }
                 }
             }

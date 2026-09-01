@@ -731,7 +731,6 @@ describe('JsonTranslator', () => {
                 getValue: (item: any) => item.amount,
                 setValue: (item: any, value: unknown) => { item.amount = value; },
                 deserialize: (value: unknown) => Number(value),
-                supportsDeserialization: true,
             };
 
             const option: QueryOption<any, 'group'> = {
