@@ -11199,6 +11199,54 @@ var readRows = (raw, statement) => {
   return rows;
 };
 
+// plugins/sqlite/src/drivers/wasmStatements.ts
+var STATEMENT_CACHE_MAX = 64;
+var statementCaches = /* @__PURE__ */ new WeakMap();
+var markMostRecentlyUsed = (cache2, sql, statement) => {
+  cache2.delete(sql);
+  cache2.set(sql, statement);
+  return statement;
+};
+var evictLeastRecentlyUsed = (cache2) => {
+  const [oldestSql, oldest] = cache2.entries().next().value;
+  cache2.delete(oldestSql);
+  oldest.finalize();
+};
+var acquireStatement = (database, sql) => {
+  let cache2 = statementCaches.get(database);
+  if (cache2 == null) {
+    cache2 = /* @__PURE__ */ new Map();
+    statementCaches.set(database, cache2);
+  }
+  const cached2 = cache2.get(sql);
+  if (cached2 != null) {
+    return markMostRecentlyUsed(cache2, sql, cached2);
+  }
+  const statement = database.prepare(sql);
+  cache2.set(sql, statement);
+  if (cache2.size > STATEMENT_CACHE_MAX) {
+    evictLeastRecentlyUsed(cache2);
+  }
+  return statement;
+};
+var discardBrokenStatement = (database, sql, statement) => {
+  statementCaches.get(database)?.delete(sql);
+  try {
+    statement.finalize();
+  } catch {
+    return;
+  }
+};
+var releaseStatement = (database, sql, statement) => {
+  try {
+    statement.reset();
+    statement.clearBindings();
+  } catch (error) {
+    discardBrokenStatement(database, sql, statement);
+    throw error;
+  }
+};
+
 // core/dist/transfer/index.js
 var __webpack_require__ = {};
 (() => {
@@ -11948,46 +11996,6 @@ var openPooled = (pool, databaseName) => {
     return new pool.OpfsSAHPoolDb(`/${databaseName}`);
   } catch (error) {
     throw isPoolFull(error) ? poolFullError(pool, databaseName) : error;
-  }
-};
-var STATEMENT_CACHE_MAX = 64;
-var statementCaches = /* @__PURE__ */ new WeakMap();
-var acquireStatement = (database, sql) => {
-  let cache2 = statementCaches.get(database);
-  if (cache2 == null) {
-    cache2 = /* @__PURE__ */ new Map();
-    statementCaches.set(database, cache2);
-  }
-  const cached2 = cache2.get(sql);
-  if (cached2 != null) {
-    cache2.delete(sql);
-    cache2.set(sql, cached2);
-    return cached2;
-  }
-  const statement = database.prepare(sql);
-  cache2.set(sql, statement);
-  if (cache2.size > STATEMENT_CACHE_MAX) {
-    const [oldestSql, oldest] = cache2.entries().next().value;
-    cache2.delete(oldestSql);
-    oldest.finalize();
-  }
-  return statement;
-};
-var discardBrokenStatement = (database, sql, statement) => {
-  statementCaches.get(database)?.delete(sql);
-  try {
-    statement.finalize();
-  } catch {
-    return;
-  }
-};
-var releaseStatement = (database, sql, statement) => {
-  try {
-    statement.reset();
-    statement.clearBindings();
-  } catch (error) {
-    discardBrokenStatement(database, sql, statement);
-    throw error;
   }
 };
 var queryStatement = (database, sql, params) => {

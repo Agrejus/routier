@@ -25,6 +25,7 @@
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import { ensurePoolCapacity, isPoolFull, poolFullError } from './wasmPool';
 import { readRows, type WasmStatement } from './wasmRows';
+import { acquireStatement, releaseStatement } from './wasmStatements';
 import { streamChunks } from './wasmChunks';
 import { rawSqliteFrom, type RawSqlite } from './wasmRaw';
 import type { EncodedChunk, TransferPlan } from '@routier/core/transfer';
@@ -163,59 +164,6 @@ const openPooled = (pool: any, databaseName: string): WasmDatabase => {
         return new pool.OpfsSAHPoolDb(`/${databaseName}`);
     } catch (error) {
         throw isPoolFull(error) ? poolFullError(pool, databaseName) : error;
-    }
-};
-
-type ReusableStatement = WasmStatement & { reset(): void; clearBindings(): void };
-
-const STATEMENT_CACHE_MAX = 64;
-
-const statementCaches = new WeakMap<WasmDatabase, Map<string, ReusableStatement>>();
-
-const acquireStatement = (database: WasmDatabase, sql: string): ReusableStatement => {
-    let cache = statementCaches.get(database);
-
-    if (cache == null) {
-        cache = new Map();
-        statementCaches.set(database, cache);
-    }
-
-    const cached = cache.get(sql);
-
-    if (cached != null) {
-        cache.delete(sql);
-        cache.set(sql, cached);
-        return cached;
-    }
-
-    const statement = database.prepare(sql) as ReusableStatement;
-    cache.set(sql, statement);
-
-    if (cache.size > STATEMENT_CACHE_MAX) {
-        const [oldestSql, oldest] = cache.entries().next().value as [string, ReusableStatement];
-        cache.delete(oldestSql);
-        oldest.finalize();
-    }
-
-    return statement;
-};
-
-const discardBrokenStatement = (database: WasmDatabase, sql: string, statement: ReusableStatement): void => {
-    statementCaches.get(database)?.delete(sql);
-    try {
-        statement.finalize();
-    } catch {
-        return;
-    }
-};
-
-const releaseStatement = (database: WasmDatabase, sql: string, statement: ReusableStatement): void => {
-    try {
-        statement.reset();
-        statement.clearBindings();
-    } catch (error) {
-        discardBrokenStatement(database, sql, statement);
-        throw error;
     }
 };
 
