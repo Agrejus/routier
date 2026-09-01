@@ -1,0 +1,58 @@
+server on 59487
+browser launched
+page loaded
+[page] building store (opfs)
+[page] opfs: Error initializing OPFS asyncer: Event
+[page] Ignoring inability to install 'opfs' sqlite3_vfs: Error: Loading OPFS async Worker failed for unknown reasons.
+    at W.onerror (http://localhost:59487/wasmWorker.js:9979:45)
+[page] opfs-wl: Error initializing OPFS asyncer: Event
+[page] Ignoring inability to install the opfs-wl sqlite3_vfs: Error: Loading OPFS async Worker failed for unknown reasons.
+    at W.onerror (http://localhost:59487/wasmWorker.js:9979:45)
+[page] store ready, storage=opfs, seeding 4000 rows
+[page] seeded batch 1, 46ms elapsed
+[page] seeded batch 2, 94ms elapsed
+[page] seeded batch 3, 147ms elapsed
+[page] seeded batch 4, 206ms elapsed
+[page] Error parsing expression {error: Error: Cannot derive value from variable, please pass parameters into the expression.
+
+Example: .wh…, collectionName: orders, params: Object, selector: ([x, p]) => Math.abs(x.amount - p.v) < 0.5}
+{
+  "storage": "opfs",
+  "seedRows": 4000,
+  "seedMs": 206,
+  "singleWriteAckMs": {
+    "n": 100,
+    "mean": 6.37,
+    "p50": 6.1,
+    "p95": 8.79,
+    "max": 9.725
+  },
+  "readByIdMs": {
+    "n": 200,
+    "mean": 0.431,
+    "p50": 0.37,
+    "p95": 0.61,
+    "max": 3.495
+  },
+  "readFilteredIndexedMs": {
+    "n": 100,
+    "mean": 0.689,
+    "p50": 0.675,
+    "p95": 1.005,
+    "max": 1.22
+  },
+  "readFallbackMemoryMs": {
+    "n": 20,
+    "mean": 9.362,
+    "p50": 9.105,
+    "p95": 11.33,
+    "max": 11.33
+  },
+  "fullScanMs": {
+    "n": 10,
+    "mean": 12.521,
+    "p50": 12.365,
+    "p95": 13.59,
+    "max": 13.59
+  }
+}
