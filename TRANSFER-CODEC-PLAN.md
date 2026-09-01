@@ -155,6 +155,24 @@ Consequence worth knowing: holding two connections to one database at once now w
 matches `pgliteDriver` and the open/use/close contract the plugin follows, and it caught a genuine
 misuse in the browser harness.
 
+### Follow-ups left open
+
+Shipped on 2026-08-25 as core 0.6.0, sql-plugin-core 0.6.0, postgres-plugin-core 0.3.0,
+sqlite-plugin 0.5.0 and pglite-plugin 0.3.0. What was deliberately not done:
+
+- **`examples/db-migration` has no SQLite real-app check.** `@routier/sqlite-plugin` is not
+  symlinked into `examples/node_modules`, so the SQLite side has no equivalent of the PGlite
+  verification the console and finance-stress apps give. `finance-stress` covers SQLite through
+  `?plugin=sqlite`, so this is a gap in breadth rather than an unverified plugin.
+- **`finance-stress` reports throughput as numbers, not charts.** tx/sec, save p50/p95/p99,
+  propagation and conflicts are all tracked and exposed on `window.__financeStress`; nothing plots
+  them over time, which is what would make a regression visible at a glance.
+- **`ChunkEncoder` allocates full-size buffers for a short chunk** — roughly 100KB to return one
+  row, which is most of the flat ~55µs the codec costs below about 100 rows. Growable buffers
+  would remove the only case where the codec is worse than doing nothing. Measured and accepted as
+  immaterial; see the small-reads note above.
+- **npm token deprecation** is tracked in `RELEASE-TODO.md`, not here.
+
 ### Step 9: PGlite (supersedes §4.1's consumer 2)
 
 **Measured before building, and the answer differed from SQLite's.** PGlite's boundary is a real
