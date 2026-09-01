@@ -1,6 +1,7 @@
 import Dexie from 'dexie';
 import { convertToDexieSchema } from "./utils";
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, IDbPlugin, ITranslatedValue, joinInPlugin } from '@routier/core/plugins';
+import { applySeed, applySort, describeSeed, describeSort, findIndexSeed, findSortSeed, seedableIndexes, seekReplacesPredicate, type IndexSeed } from "./indexSeed";
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, IDbPlugin, ITranslatedValue, joinInPlugin, QueryOption, QueryOptionName, TranslatedSingleValue } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
 import { BulkPersistResult, SchemaPersistChanges } from '@routier/core/collections';
 import { CompiledSchema, InferCreateType, PropertyInfo, SchemaId, SchemaTypes } from '@routier/core/schema';
@@ -42,6 +43,8 @@ export type DexiePluginOptions = {
      */
     version?: number;
 };
+
+const countCompatibleOptions: readonly QueryOptionName[] = ["filter", "sort", "count"];
 
 export class DexiePlugin implements IDbPlugin, Disposable {
 
@@ -326,55 +329,72 @@ export class DexiePlugin implements IDbPlugin, Disposable {
             const { options } = event.operation;
             const translator = new DexieTranslator<TEntity, TShape>(event.operation);
 
-            // Start with the base collection
-            let collection = db.table(collectionName).toCollection();
+            const indexes = seedableIndexes(event.operation.schema);
+            const filters = options.get("filter").map(entry => entry.option);
+            let indexSeed: IndexSeed | null = null;
+            let seededFilter: QueryOption<TShape, "filter"> | null = null;
 
-            // A window may only be pushed down to Dexie when nothing else reorders or
-            // reduces the rows first:
-            //
-            // - Dexie applies `offset`/`limit` while walking the index cursor, before the
-            //   JS callbacks added by `filter`. `where(...).skip(2)` therefore skips two
-            //   rows of the whole table and filters what remains, rather than skipping two
-            //   of the matches.
-            // - Sorting is not pushed down at all (there is no `sort` branch below); the
-            //   translator sorts in memory after this query returns. Offsetting here would
-            //   window the unsorted rows and sort only the survivors.
-            //
-            // In either case the window has to be applied in memory, after filtering and
-            // sorting, so the translator is told to take it over.
-            const hasFilter = options.get("filter").length > 0;
-            const hasSort = options.get("sort").length > 0;
-            const canPushDownWindow = hasFilter === false && hasSort === false;
+            for (const filter of filters) {
+                indexSeed = findIndexSeed(filter.value.expression, indexes);
 
-            if (canPushDownWindow === false) {
-                translator.options.useTranslatorSkip = true;
-                translator.options.useTranslatorTake = true;
+                if (indexSeed != null) {
+                    seededFilter = filter;
+                    break;
+                }
             }
+
+            const predicateFilters = new Set(
+                indexSeed != null && seekReplacesPredicate(indexSeed)
+                    ? filters.filter(filter => filter !== seededFilter)
+                    : filters
+            );
+
+            const sorts = options.get("sort").map(entry => entry.option);
+            const sortSeed = indexSeed == null && sorts.length === 1
+                ? findSortSeed(sorts[0].value, indexes)
+                : null;
+
+            const table = db.table(collectionName);
+
+            let collections = indexSeed != null
+                ? applySeed(table, indexSeed)
+                : [sortSeed != null ? applySort(table, sortSeed) : table.toCollection()];
+
+            for (const filter of predicateFilters) {
+                if (filter.value.params == null) {
+                    collections = collections.map(collection => collection.filter(filter.value.filter));
+                } else {
+                    const selector = filter.value.filter as ParamsFilter<unknown, {}>;
+                    collections = collections.map(collection => collection.filter(item => selector([item, filter.value.params])));
+                }
+            }
+
+            // Dexie composes `offset`/`limit` into the filter chain in call order, so a window
+            // added AFTER the predicates counts matches; added before them it would skip rows
+            // of the whole table. The predicates are attached above for exactly that reason.
+            // A sort the translator still owns has to come before any window, so the window
+            // stays in memory in that case; a union of seeks has no single cursor to window.
+            const hasFilter = predicateFilters.size > 0;
+            const hasSort = sorts.length > 0 && sortSeed == null;
+            const canPushDownWindow = hasSort === false && collections.length === 1;
+            const canPushDownCount = options.has("count") && [...options.items.keys()].every(name => countCompatibleOptions.includes(name));
+
+            translator.pushedDown.skip = canPushDownWindow;
+            translator.pushedDown.take = canPushDownWindow;
+            translator.pushedDown.sort = sortSeed != null;
 
             options.forEach(option => {
 
-                if (option.name === "filter") {
-                    if (option.value.params == null) {
-                        // standard filtering
-                        collection = collection.filter(option.value.filter);
-                    } else {
-                        // params filtering
-                        const selector = option.value.filter as ParamsFilter<unknown, {}>
-                        collection = collection.filter(item => selector([item, option.value.params]));
-                    }
-                    return;
-                }
-
                 if (option.name === "skip") {
                     if (canPushDownWindow) {
-                        collection = collection.offset(option.value);
+                        collections = collections.map(collection => collection.offset(option.value));
                     }
                     return
                 }
 
                 if (option.name === "take") {
                     if (canPushDownWindow) {
-                        collection = collection.limit(option.value);
+                        collections = collections.map(collection => collection.limit(option.value));
                     }
                     return
                 }
@@ -385,41 +405,63 @@ export class DexiePlugin implements IDbPlugin, Disposable {
 
                     // distinct only works on properties that have an index,
                     // convert database operation to memory operation
-                    if (selectedProperties.some(x => x.indexes.length === 0)) {
-                        translator.options.useTranslatorDistinct = true;
-                    } else {
-                        collection = collection.distinct();
+                    if (selectedProperties.every(x => x.indexes.length > 0)) {
+                        translator.pushedDown.distinct = true;
+                        collections = collections.map(collection => collection.distinct());
                     }
                     return
                 }
             });
 
-            // Get the data first
-            collection.toArray().then(data => {
+            const described = describeFilters([...predicateFilters].map(filter => filter.value));
+
+            const seek = indexSeed != null ? describeSeed(indexSeed) : null;
+
+            const explain = (steps: string[]) => {
+                const parameters = [...(seek?.parameters ?? []), ...described.parameters];
+
+                event.executedQueries.push({
+                    text: [
+                        seek != null
+                            ? `${collectionName}.${seek.text} — ${collections.length > 1 ? `${collections.length} IndexedDB index seeks` : "IndexedDB index seek"}`
+                            : sortSeed != null
+                                ? `${collectionName}.${describeSort(sortSeed)} — IndexedDB index walk in key order`
+                                : `${collectionName}.toCollection()`,
+                        ...(hasFilter ? [`filter(${described.text})${indexSeed != null ? " — JavaScript predicate over the seeked rows" : " — JavaScript predicate over a full cursor walk, no index"}`] : []),
+                        ...steps
+                    ].join("."),
+                    parameters: parameters.length > 0 ? parameters : undefined
+                });
+            };
+
+            if (canPushDownCount) {
+                Promise.all(collections.map(collection => collection.count())).then(counts => {
+                    explain(["count()"]);
+                    d(PluginEventResult.success(event.id, new TranslatedSingleValue<TShape>(counts.reduce((sum, count) => sum + count, 0), true)));
+                }).catch(e => d(PluginEventResult.error(event.id, e)));
+                return;
+            }
+
+            Promise.all(collections.map(collection => collection.toArray())).then(parts => {
+                const data = parts.length === 1 ? parts[0] : parts.flat();
                 /**
-                 * Dexie has no query language of its own here — the plugin hands it a JavaScript
-                 * predicate over a full cursor walk, no IndexedDB range query — so `.explain()`
-                 * reports the predicate AS JavaScript, which is the form the caller wrote it in.
+                 * Dexie has no query language of its own here — the plugin seeds the read with an
+                 * IndexedDB index seek when a filter carries a strict equality on an indexed root
+                 * property, and hands the rest to a JavaScript predicate — so `.explain()` reports
+                 * the seek AND the predicate AS JavaScript, which is the form the caller wrote it in.
                  *
                  * Values come out as `?` with the values listed beside them, the same as a SQL
                  * plugin's bound statement. That is what makes two runs of one query comparable,
                  * and it keeps a value out of text that may be logged.
                  *
-                 * The "no index" note stays: it is the fact that separates a slow backend from a
-                 * silent memory fallback when comparing against SQL engines.
+                 * The "no index" note stays on the walk path: it is the fact that separates a slow
+                 * backend from a silent memory fallback when comparing against SQL engines.
                  */
-                const described = describeFilters(options.get("filter").map(entry => entry.option.value));
-
-                event.executedQueries.push({
-                    text: [
-                        `${collectionName}.toCollection()`,
-                        ...(hasFilter ? [`filter(${described.text}) — JavaScript predicate over a full cursor walk, no index`] : []),
-                        ...(canPushDownWindow && options.has("skip") ? ["offset(…)"] : []),
-                        ...(canPushDownWindow && options.has("take") ? ["limit(…)"] : []),
-                        ...(translator.options.useTranslatorDistinct === false && options.has("distinct") ? ["distinct()"] : [])
-                    ].join("."),
-                    parameters: described.parameters.length > 0 ? described.parameters : undefined
-                });
+                explain([
+                    ...(canPushDownWindow && options.has("skip") ? ["offset(…)"] : []),
+                    ...(canPushDownWindow && options.has("take") ? ["limit(…)"] : []),
+                    ...(translator.pushedDown.distinct ? ["distinct()"] : [])
+                ]);
 
                 const result = translator.translate(data);
 
