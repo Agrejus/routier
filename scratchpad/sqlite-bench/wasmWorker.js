@@ -11950,19 +11950,59 @@ var openPooled = (pool, databaseName) => {
     throw isPoolFull(error) ? poolFullError(pool, databaseName) : error;
   }
 };
-var queryStatement = (database, sql, params) => {
+var STATEMENT_CACHE_MAX = 64;
+var statementCaches = /* @__PURE__ */ new WeakMap();
+var acquireStatement = (database, sql) => {
+  let cache2 = statementCaches.get(database);
+  if (cache2 == null) {
+    cache2 = /* @__PURE__ */ new Map();
+    statementCaches.set(database, cache2);
+  }
+  const cached2 = cache2.get(sql);
+  if (cached2 != null) {
+    cache2.delete(sql);
+    cache2.set(sql, cached2);
+    return cached2;
+  }
   const statement = database.prepare(sql);
+  cache2.set(sql, statement);
+  if (cache2.size > STATEMENT_CACHE_MAX) {
+    const [oldestSql, oldest] = cache2.entries().next().value;
+    cache2.delete(oldestSql);
+    oldest.finalize();
+  }
+  return statement;
+};
+var discardBrokenStatement = (database, sql, statement) => {
+  statementCaches.get(database)?.delete(sql);
+  try {
+    statement.finalize();
+  } catch {
+    return;
+  }
+};
+var releaseStatement = (database, sql, statement) => {
+  try {
+    statement.reset();
+    statement.clearBindings();
+  } catch (error) {
+    discardBrokenStatement(database, sql, statement);
+    throw error;
+  }
+};
+var queryStatement = (database, sql, params) => {
+  const statement = acquireStatement(database, sql);
   try {
     if (params.length > 0) {
       statement.bind(params);
     }
     return readRows(rawApi(), statement);
   } finally {
-    statement.finalize();
+    releaseStatement(database, sql, statement);
   }
 };
 var streamStatement = (database, request) => {
-  const statement = database.prepare(request.sql);
+  const statement = acquireStatement(database, request.sql);
   try {
     if (request.params.length > 0) {
       statement.bind(request.params);
@@ -11971,7 +12011,7 @@ var streamStatement = (database, request) => {
       post({ id: request.id, ok: true, chunk: payload, last }, transferables);
     });
   } finally {
-    statement.finalize();
+    releaseStatement(database, request.sql, statement);
   }
 };
 var executeStatement = (database, sql, params) => {

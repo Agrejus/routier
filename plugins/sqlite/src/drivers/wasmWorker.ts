@@ -166,6 +166,59 @@ const openPooled = (pool: any, databaseName: string): WasmDatabase => {
     }
 };
 
+type ReusableStatement = WasmStatement & { reset(): void; clearBindings(): void };
+
+const STATEMENT_CACHE_MAX = 64;
+
+const statementCaches = new WeakMap<WasmDatabase, Map<string, ReusableStatement>>();
+
+const acquireStatement = (database: WasmDatabase, sql: string): ReusableStatement => {
+    let cache = statementCaches.get(database);
+
+    if (cache == null) {
+        cache = new Map();
+        statementCaches.set(database, cache);
+    }
+
+    const cached = cache.get(sql);
+
+    if (cached != null) {
+        cache.delete(sql);
+        cache.set(sql, cached);
+        return cached;
+    }
+
+    const statement = database.prepare(sql) as ReusableStatement;
+    cache.set(sql, statement);
+
+    if (cache.size > STATEMENT_CACHE_MAX) {
+        const [oldestSql, oldest] = cache.entries().next().value as [string, ReusableStatement];
+        cache.delete(oldestSql);
+        oldest.finalize();
+    }
+
+    return statement;
+};
+
+const discardBrokenStatement = (database: WasmDatabase, sql: string, statement: ReusableStatement): void => {
+    statementCaches.get(database)?.delete(sql);
+    try {
+        statement.finalize();
+    } catch {
+        return;
+    }
+};
+
+const releaseStatement = (database: WasmDatabase, sql: string, statement: ReusableStatement): void => {
+    try {
+        statement.reset();
+        statement.clearBindings();
+    } catch (error) {
+        discardBrokenStatement(database, sql, statement);
+        throw error;
+    }
+};
+
 /**
  * Runs a statement and returns its rows.
  *
@@ -175,7 +228,7 @@ const openPooled = (pool: any, databaseName: string): WasmDatabase => {
  * back correctly. A read that silently returns zero rows is the worst shape a bug can take.
  */
 const queryStatement = (database: WasmDatabase, sql: string, params: unknown[]): unknown[] => {
-    const statement = database.prepare(sql);
+    const statement = acquireStatement(database, sql);
 
     try {
         if (params.length > 0) {
@@ -184,9 +237,9 @@ const queryStatement = (database: WasmDatabase, sql: string, params: unknown[]):
 
         return readRows(rawApi(), statement);
     } finally {
-        // Not finalising leaks the statement and holds a lock, which surfaces later as an
-        // unrelated "database is locked".
-        statement.finalize();
+        // Not resetting leaks the statement's cursor and holds a lock, which surfaces later
+        // as an unrelated "database is locked".
+        releaseStatement(database, sql, statement);
     }
 };
 
@@ -202,7 +255,7 @@ const streamStatement = (
     database: WasmDatabase,
     request: { id: number; sql: string; params: unknown[]; plan: TransferPlan }
 ): void => {
-    const statement = database.prepare(request.sql);
+    const statement = acquireStatement(database, request.sql);
 
     try {
         if (request.params.length > 0) {
@@ -213,7 +266,7 @@ const streamStatement = (
             post({ id: request.id, ok: true, chunk: payload, last }, transferables);
         });
     } finally {
-        statement.finalize();
+        releaseStatement(database, request.sql, statement);
     }
 };
 
