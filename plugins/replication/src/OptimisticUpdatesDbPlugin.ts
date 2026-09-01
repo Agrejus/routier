@@ -1,4 +1,4 @@
-import { BulkPersistChanges, BulkPersistResult } from "@routier/core/collections";
+import { BulkPersistChanges, BulkPersistResult, SchemaCollection } from "@routier/core/collections";
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, Query } from "@routier/core/plugins";
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from "@routier/core/results";
 import { CompiledSchema } from "@routier/core/schema";
@@ -14,6 +14,10 @@ const getMemoryPluginCollectionSize = <T extends {}>(plugin: IDbPlugin, schema: 
 
     throw new Error("Cannot get size of collection for MemoryPlugin, not an instance of MemoryPlugin");
 }
+
+export type OptimisticUpdatesDbPluginOptions = {
+    onMirrorError?: (error: Error, context: { plugin: IDbPlugin; eventId: string }) => void;
+};
 
 export class OptimisticUpdatesDbPlugin implements IDbPlugin {
 
@@ -53,7 +57,7 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
         return this.plugins.source.databaseName;
     }
 
-    constructor(source: IDbPlugin) {
+    constructor(source: IDbPlugin, options?: OptimisticUpdatesDbPluginOptions) {
         this.plugins = {
             source,
             // Unique per instance: a shared read database would leak data between
@@ -67,6 +71,7 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
             persistAckMode: "after-source",
             mirrorFailureMode: "swallow",
             mirrorPersistPayloadMode: "resolve-from-source-result",
+            onMirrorError: options?.onMirrorError,
         });
     }
 
@@ -76,7 +81,7 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
     query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
         const collectionName = event.operation.schema.collectionName;
 
-        this.ensureHydrated(event)
+        this.ensureHydrated(event.operation.schema, event.schemas)
             .then(() => {
                 this.plugins.read.query(event, done);
             })
@@ -92,8 +97,8 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
      * remove-all is real data — re-hydrating from the source, whose mirrored writes
      * may still be in flight, would resurrect removed entities).
      */
-    private ensureHydrated<TEntity extends {}, TShape>(event: DbPluginQueryEvent<TEntity, TShape>): Promise<void> {
-        const collectionName = event.operation.schema.collectionName;
+    private ensureHydrated<TEntity extends {}>(schema: CompiledSchema<TEntity>, schemas: SchemaCollection): Promise<void> {
+        const collectionName = schema.collectionName;
 
         if (this.writtenCollections.has(collectionName)) {
             return Promise.resolve();
@@ -104,7 +109,7 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
             return existing;
         }
 
-        const collectionSize = getMemoryPluginCollectionSize(this.plugins.read, event.operation.schema);
+        const collectionSize = getMemoryPluginCollectionSize(this.plugins.read, schema);
         if (collectionSize > 0) {
             return Promise.resolve();
         }
@@ -112,16 +117,16 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
         logger.info('[OptimisticReplicationDbPlugin] hydration starting', { collectionName });
 
         const hydration = new Promise<void>((resolve, reject) => {
-            this.plugins.source.query<TEntity, TShape>({
+            this.plugins.source.query<TEntity, unknown>({
                 id: uuid(8),
-                schemas: event.schemas,
+                schemas,
                 source: "OptimisticReplicationDbPlugin",
                 action: "query",
                 explain: false,
                 executedQueries: [],
                 reason: "hydration",
                 // Select All Data
-                operation: Query.EMPTY<TEntity, TShape>(event.operation.schema)
+                operation: Query.EMPTY<TEntity, unknown>(schema)
             }, (sourceResult) => {
                 if (sourceResult.ok === Result.ERROR) {
                     logger.error('[OptimisticReplicationDbPlugin] hydration failed', { collectionName, error: sourceResult.error });
@@ -139,14 +144,14 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
                 logger.debug('[OptimisticReplicationDbPlugin] hydration success, persisting to read plugin', { collectionName, itemCount });
 
                 const changesCollection = new BulkPersistChanges();
-                const schemaChanges = changesCollection.resolve(event.operation.schema.id);
+                const schemaChanges = changesCollection.resolve(schema.id);
 
                 // Add the existing items into the persist payload as adds
                 schemaChanges.adds = sourceResult.data.value;
 
                 this.plugins.read.bulkPersist({
                     id: uuid(8),
-                    schemas: event.schemas,
+                    schemas,
                     operation: changesCollection,
                     source: "OptimisticReplicationDbPlugin",
                     action: "persist",
@@ -182,6 +187,8 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
     }
 
     bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackPartialResult<BulkPersistResult>): void {
+        const touchedSchemas: CompiledSchema<any>[] = [];
+
         for (const [schemaId, changes] of event.operation) {
             if (changes.hasItems === false) {
                 continue;
@@ -190,15 +197,26 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
             const schema = event.schemas.get(schemaId);
 
             if (schema != null) {
-                this.writtenCollections.add(schema.collectionName);
+                touchedSchemas.push(schema);
             }
         }
 
-        this.syncEngine.bulkPersist({
-            ...event,
-            id: uuid(8),
-            source: "OptimisticReplicationDbPlugin",
-            action: "persist"
-        }, done);
+        Promise.all(touchedSchemas.map((schema) => this.ensureHydrated(schema, event.schemas)))
+            .then(() => {
+                for (const schema of touchedSchemas) {
+                    this.writtenCollections.add(schema.collectionName);
+                }
+
+                this.syncEngine.bulkPersist({
+                    ...event,
+                    id: uuid(8),
+                    source: "OptimisticReplicationDbPlugin",
+                    action: "persist"
+                }, done);
+            })
+            .catch((err) => {
+                logger.error('[OptimisticReplicationDbPlugin] persist failed during hydration', { error: err });
+                done(PluginEventResult.error(event.id, err instanceof Error ? err : new Error(String(err))));
+            });
     }
 }

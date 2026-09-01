@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import { ComparatorExpression, PropertyExpression, ValueExpression } from "@routier/core/expressions";
+import { CallExpression, ComparatorExpression, PropertyExpression, ValueExpression } from "@routier/core/expressions";
 import { SchemaTypes } from "@routier/core";
 import { toSql } from "./sql";
 
@@ -177,8 +177,10 @@ describe("json path extraction", () => {
     describe("composition with other renderers", () => {
 
         it("applies a transformer on top of the extracted value", () => {
-            const property = nested("value", ["payload", "inner"]);
-            property.transformer = "to-lower-case";
+            const property = new CallExpression({
+                call: "to-lower-case",
+                expression: nested("value", ["payload", "inner"]),
+            });
 
             expect(toSql(equals(property, val("deep")), "postgresql").where).toBe(
                 `LOWER("payload"->'inner'->>'value') = $1`

@@ -1,5 +1,52 @@
 import { PropertyInfo } from "../schema";
-import { Expression, PropertyExpression } from "./types";
+import { CallExpression, Expression, PropertyExpression } from "./types";
+
+/**
+ * An operand with the calls wrapping it, innermost first — the order they are applied in.
+ *
+ * The nodes rather than their names: a binary call carries arguments, and a consumer that only knows
+ * the name renders `LOWER(col)` correctly and `col + ?` not at all.
+ */
+export type PeeledOperand = { operand: Expression, calls: CallExpression[] };
+
+/**
+ * Separates an operand from the calls applied to it.
+ *
+ * `null` when there is no operand beneath the calls. Every consumer needs this to decide whether a
+ * comparator side is a property or a value, so it lives here rather than in each translator.
+ */
+export function peelCalls(expression: Expression | undefined): PeeledOperand | null {
+    const calls: CallExpression[] = [];
+    let current = expression;
+
+    while (current != null && current.type === "call") {
+        calls.unshift(current as CallExpression);
+        current = (current as CallExpression).expression;
+    }
+
+    return current == null ? null : { operand: current, calls };
+}
+
+export function childrenOf(expression: Expression): Expression[] {
+
+    if (expression.type === "call") {
+        const call = expression as CallExpression;
+
+        return [call.expression, ...(call.arguments ?? [])].filter(child => child != null);
+    }
+
+    const children: Expression[] = [];
+
+    if (expression.left != null) {
+        children.push(expression.left);
+    }
+
+    if (expression.right != null) {
+        children.push(expression.right);
+    }
+
+    return children;
+}
 
 /**
  * Extracts all properties referenced in an expression
@@ -15,12 +62,8 @@ export function getProperties(expression: Expression): PropertyInfo<any>[] {
             properties.push((expr as PropertyExpression).property);
         }
 
-        // Traverse left and right expressions if they exist
-        if (expr.left) {
-            traverse(expr.left);
-        }
-        if (expr.right) {
-            traverse(expr.right);
+        for (const child of childrenOf(expr)) {
+            traverse(child);
         }
     }
 
@@ -36,14 +79,8 @@ export function forEach(expression: Expression, callback: (expression: Expressio
             return false;
         }
 
-        // Traverse left and right expressions if they exist
-        if (expr.left) {
-            if (!traverse(expr.left)) {
-                return false;
-            }
-        }
-        if (expr.right) {
-            if (!traverse(expr.right)) {
+        for (const child of childrenOf(expr)) {
+            if (!traverse(child)) {
                 return false;
             }
         }

@@ -32,13 +32,13 @@ const parse = (source: string) => toExpression(schema as any, fromSource(source)
 function expectComparison(source: string, value: unknown) {
     const result = parse(source);
 
-    expect(result).not.toStrictEqual(Expression.NOT_PARSABLE);
+    expect(result).not.toHaveProperty('type', 'not-parsable');
     expect(result).toBeInstanceOf(ComparatorExpression);
     expect((((result as ComparatorExpression).right) as ValueExpression)?.value).toEqual(value);
 }
 
 const expectNotParsable = (source: string) =>
-    expect(parse(source)).toStrictEqual(Expression.NOT_PARSABLE);
+    expect(parse(source)).toHaveProperty('type', 'not-parsable');
 
 describe('block comments', () => {
     it('skips a comment between operand and operator', () => {
@@ -86,9 +86,14 @@ describe('block comments', () => {
     });
 
     it('does not treat a division slash as a comment opener', () => {
-        // `/` not followed by `*` is not a comment. Weakening the second half of the check
-        // would make this swallow the rest of the expression.
-        expectNotParsable('r.price === 10 / 2');
+        // `/` not followed by `*` is division. Weakening the second half of the check would make
+        // this swallow the rest of the expression instead of dividing.
+        // The dividend is the property: dividing two literals folds to a value before this reads it.
+        const parsed = parse('r.price / 2 === 5') as any;
+
+        expect(parsed.type).toBe('comparator');
+        expect(parsed.left.type).toBe('call');
+        expect(parsed.left.call).toBe('divide');
     });
 
     it('terminates on an unterminated block comment rather than looping', () => {
@@ -129,11 +134,11 @@ describe('multi-character operators', () => {
     it('parses != without being consumed by !==', () => expectComparison('r.price != 5', 5));
 
     it('parses && between two comparisons', () => {
-        expect(parse('r.price === 5 && r.name === "x"')).not.toStrictEqual(Expression.NOT_PARSABLE);
+        expect(parse('r.price === 5 && r.name === "x"')).not.toHaveProperty('type', 'not-parsable');
     });
 
     it('parses || between two comparisons', () => {
-        expect(parse('r.price === 5 || r.name === "x"')).not.toStrictEqual(Expression.NOT_PARSABLE);
+        expect(parse('r.price === 5 || r.name === "x"')).not.toHaveProperty('type', 'not-parsable');
     });
 
     it('distinguishes === from == in the resulting comparator', () => {
@@ -156,7 +161,7 @@ describe('multi-character operators', () => {
 
     it('parses optional chaining in a property path', () => {
         // `?.` is a two-character entry that must not be split into `?` and `.`.
-        expect(parse('r?.price === 5')).not.toStrictEqual(Expression.NOT_PARSABLE);
+        expect(parse('r?.price === 5')).not.toHaveProperty('type', 'not-parsable');
     });
 });
 
@@ -191,8 +196,11 @@ describe('string literal delimiters', () => {
 });
 
 describe('template literal interpolation', () => {
-    it('rejects interpolation in a backtick string', () => {
-        expectNotParsable('r.name === `x-${r.id}`');
+    it('reads interpolation as a concat of the chunks and the expressions', () => {
+        const parsed = parse('r.name === `x-${r.id}`') as any;
+
+        expect(parsed.type).toBe('comparator');
+        expect(parsed.right.call).toBe('concat');
     });
 
     it('accepts a lone dollar sign in a backtick string', () => {

@@ -67,7 +67,11 @@ function expressionToFilterJson(expr: Expression, ctx: QuerySerializationContext
         const v = val.value instanceof Date ? val.value.toISOString() : val.value;
         return { type: 'value', value: v };
     }
-    return { type: 'value', value: (expr as unknown as { value?: unknown }).value };
+    throw new Error(
+        `Cannot serialize a filter for the wire: no rule for expression type '${expr.type}'.  ` +
+        `Reading '.value' off it would send 'value: undefined', and the receiver would match no rows ` +
+        `and report nothing.  Route this filter to the memory execution target instead.`
+    );
 }
 
 function combineExpressionsAsAnd(expressions: Expression[], ctx: QuerySerializationContext): unknown {

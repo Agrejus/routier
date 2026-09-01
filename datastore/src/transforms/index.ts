@@ -304,6 +304,25 @@ type ExpressionNode = {
     property?: { name?: string };
     left?: ExpressionNode;
     right?: ExpressionNode;
+    call?: string;
+    expression?: ExpressionNode;
+    arguments?: ExpressionNode[];
+};
+
+const childNodes = (node: ExpressionNode): (ExpressionNode | undefined)[] =>
+    node.type === 'call' ? [node.expression, ...(node.arguments ?? [])] : [node.left, node.right];
+
+/** The property a comparator side names, looking through any calls wrapping it. */
+const propertyUnder = (side: ExpressionNode | undefined): { property: ExpressionNode, underCall: boolean } | null => {
+    let current = side;
+    let underCall = false;
+
+    while (current?.type === 'call') {
+        current = current.expression;
+        underCall = true;
+    }
+
+    return current?.type === 'property' ? { property: current, underCall } : null;
 };
 
 type FilterOption = {
@@ -366,8 +385,9 @@ const walk = async (
         await compare(node, byName, transformedValues, plainValues);
     }
 
-    await walk(node.left, byName, transformedValues, plainValues);
-    await walk(node.right, byName, transformedValues, plainValues);
+    for (const child of childNodes(node)) {
+        await walk(child, byName, transformedValues, plainValues);
+    }
 };
 
 const compare = async (
@@ -377,15 +397,24 @@ const compare = async (
     plainValues: Set<unknown>
 ): Promise<void> => {
     const sides = [node.left, node.right];
-    const propertyNode = sides.find(side => side?.type === 'property');
+    const target = sides.map(propertyUnder).find(found => found != null);
     const valueNode = sides.find(side => side?.type === 'value');
 
-    if (propertyNode == null) {
+    if (target == null) {
         return;
     }
 
-    const name = propertyNode.property?.name;
+    const name = target.property.property?.name;
     const found = name == null ? undefined : byName.get(name);
+
+    if (found != null && target.underCall) {
+        throw new Error(
+            `'${name}' is transformed, so no operation can be applied to it in a filter. The ` +
+            'stored value replaced the one you are calling the operation on, so the database ' +
+            'would apply it to the transformed value and match nothing. Compare the property ' +
+            'directly, or query on an untransformed property.'
+        );
+    }
 
     if (found == null) {
         // Recorded so a param carrying this value is left alone.

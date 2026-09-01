@@ -1,6 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
-import { forEach, getProperties } from './utils';
-import { PropertyExpression, ComparatorExpression, OperatorExpression, ValueExpression, EmptyExpression } from './types';
+import { childrenOf, forEach, getProperties } from './utils';
+import { PropertyExpression, ComparatorExpression, OperatorExpression, ValueExpression, EmptyExpression, CallExpression } from './types';
 import { PropertyInfo } from '../schema/PropertyInfo';
 
 const createMockProperty = (name: string): PropertyInfo<any> => ({
@@ -439,5 +439,91 @@ describe('forEach right-link failure propagation', () => {
         });
 
         expect(visited).toEqual(['operator', 'operator', 'a', 'stop']);
+    });
+});
+
+describe('childrenOf', () => {
+
+    it('returns the two sides of a symmetric node', () => {
+        const left = new PropertyExpression({ property: createMockProperty('a') });
+        const right = new ValueExpression({ value: 1 });
+
+        expect(childrenOf(new ComparatorExpression({ comparator: 'equals', negated: false, strict: true, left, right })))
+            .toEqual([left, right]);
+    });
+
+    it('returns the operand and the arguments of a call, operand first', () => {
+        const operand = new PropertyExpression({ property: createMockProperty('name') });
+        const start = new ValueExpression({ value: 0 });
+        const end = new ValueExpression({ value: 2 });
+
+        expect(childrenOf(new CallExpression({ call: 'substring', expression: operand, arguments: [start, end] })))
+            .toEqual([operand, start, end]);
+    });
+
+    it('returns just the operand for a unary call', () => {
+        const operand = new PropertyExpression({ property: createMockProperty('name') });
+
+        expect(childrenOf(new CallExpression({ call: 'to-lower-case', expression: operand })))
+            .toEqual([operand]);
+    });
+
+    it('treats a call with no arguments array as unary, so a hand-built expression walks', () => {
+        const operand = new PropertyExpression({ property: createMockProperty('name') });
+        const handBuilt = { type: 'call', call: 'trim', expression: operand } as unknown as CallExpression;
+
+        expect(childrenOf(handBuilt)).toEqual([operand]);
+    });
+
+    it('returns nothing for a leaf', () => {
+        expect(childrenOf(new ValueExpression({ value: 1 }))).toEqual([]);
+        expect(childrenOf(new EmptyExpression())).toEqual([]);
+    });
+});
+
+describe('walking through a call', () => {
+
+    const nameUnderTwoCalls = (): CallExpression => new CallExpression({
+        call: 'to-lower-case',
+        expression: new CallExpression({
+            call: 'trim',
+            expression: new PropertyExpression({ property: createMockProperty('name') }),
+        }),
+    });
+
+    it('getProperties reaches a property nested inside a call', () => {
+        expect(getProperties(nameUnderTwoCalls()).map(p => p.name)).toEqual(['name']);
+    });
+
+    it('getProperties reaches a property held only in a call argument', () => {
+        const expression = new CallExpression({
+            call: 'index-of',
+            expression: new PropertyExpression({ property: createMockProperty('haystack') }),
+            arguments: [new PropertyExpression({ property: createMockProperty('needle') })],
+        });
+
+        expect(getProperties(expression).map(p => p.name)).toEqual(['haystack', 'needle']);
+    });
+
+    it('forEach visits a property inside a call, which is what cuts a query over to memory', () => {
+        const visited: string[] = [];
+
+        forEach(nameUnderTwoCalls(), expression => {
+            visited.push(expression.type === 'property' ? (expression as PropertyExpression).property.name : expression.type);
+            return true;
+        });
+
+        expect(visited).toEqual(['call', 'call', 'name']);
+    });
+
+    it('forEach stops descending a call when the callback returns false', () => {
+        const visited: string[] = [];
+
+        forEach(nameUnderTwoCalls(), expression => {
+            visited.push(expression.type);
+            return expression.type !== 'call';
+        });
+
+        expect(visited).toEqual(['call']);
     });
 });

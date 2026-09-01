@@ -121,8 +121,17 @@ export function matchesFilter(row: Row, node: FilterNode | undefined): boolean {
         return node.negated === true ? result === false : result;
     }
 
-    // A bare property or value as a predicate: truthiness, matching JavaScript.
-    return Boolean(operand(node, row));
+    if (node.type === 'property' || node.type === 'value') {
+        // A bare property or value as a predicate: truthiness, matching JavaScript.
+        return Boolean(operand(node, row));
+    }
+
+    // Any other node reaches `operand` as undefined, and `Boolean(undefined)` excludes every row —
+    // a filtered read returning nothing, with no error to explain it.
+    throw new Error(
+        `sync-server: unsupported filter node '${(node as { type: string }).type}' in filter. ` +
+        `Refusing rather than excluding every row.`
+    );
 }
 
 /** `?sort=name:asc,price:desc` */

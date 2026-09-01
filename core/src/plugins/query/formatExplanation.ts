@@ -1,4 +1,6 @@
-import { ExecutionStep, ExplainedOption, QueryExplanation } from "./explain";
+import { ExecutionStep, ExplainedOption, QueryExplanation, isDatabaseStep } from "./explain";
+import { renderCallAsJs } from "../../expressions/callSource";
+import { SerializedExpression, SerializedValue } from "../../expressions/types";
 
 const OPTION_LABEL_WIDTH = 8;
 const WRAP_WIDTH = 68;
@@ -33,38 +35,55 @@ const COMPARATOR_SYMBOLS: Record<string, string> = {
     "less-than-equals": "<="
 };
 
-const describeValue = (value: any): string => {
-    if (value == null) {
+/** Typed against the union so a new OBJECT tag is a compile error here, not an "undefined" in output. */
+const describeValue = (value: SerializedValue | undefined): string => {
+    if (value === null) {
+        return "null";
+    }
+
+    if (value === undefined) {
         return "?";
     }
 
-    if (value.k === "raw") {
-        return typeof value.v === "string" ? `"${value.v}"` : String(value.v);
+    if (Array.isArray(value)) {
+        return `[${value.map(describeValue).join(", ")}]`;
     }
 
-    if (value.k === "date") {
-        return value.v;
+    if (typeof value !== "object") {
+        return typeof value === "string" ? `"${value}"` : String(value);
     }
 
-    if (value.k === "array") {
-        return `[${(value.v as unknown[]).map(describeValue).join(", ")}]`;
+    if ("date" in value) {
+        return value.date;
     }
 
-    return value.k === "undefined" ? "undefined" : String(value.v);
+    if ("undefined" in value) {
+        return "undefined";
+    }
+
+    if ("regex" in value) {
+        return `/${value.regex.source}/${value.regex.flags}`;
+    }
+
+    if ("bigint" in value) {
+        return `${value.bigint}n`;
+    }
+
+    return value.number;
 };
 
 /** Renders a serialized expression back to something close to the source predicate. */
-const describeExpression = (expression: any): string => {
+const describeExpression = (expression: SerializedExpression): string => {
 
     if (expression == null) {
         return "?";
     }
 
-    if (expression.t === "operator") {
+    if (expression.type === "operator") {
         return `${describeExpression(expression.left)} ${expression.operator} ${describeExpression(expression.right)}`;
     }
 
-    if (expression.t === "comparator") {
+    if (expression.type === "comparator") {
         const left = describeExpression(expression.left);
         const right = describeExpression(expression.right);
         const symbol = COMPARATOR_SYMBOLS[expression.comparator];
@@ -76,15 +95,33 @@ const describeExpression = (expression: any): string => {
         return `${left} ${expression.negated === true ? "!==" : symbol} ${right}`;
     }
 
-    if (expression.t === "property") {
+    if (expression.type === "property") {
         return expression.path;
     }
 
-    if (expression.t === "value") {
+    if (expression.type === "value") {
         return describeValue(expression.value);
     }
 
-    return expression.t === "empty" ? "(no filter)" : "(not parsable)";
+    if (expression.type === "call") {
+        return renderCallAsJs(
+            expression.call,
+            () => describeExpression(expression.expression),
+            () => (expression.arguments ?? []).map(describeExpression)
+        );
+    }
+
+    if (expression.type === "empty") {
+        return "(no filter)";
+    }
+
+    // Distinguishable from "(not parsable)", which means the parser gave up and this runs in memory
+    if (expression.type === "not-parsable") {
+        return expression.reason == null ? "(not parsable)" : `(not parsable: ${expression.reason})`;
+    }
+
+    // Unreachable while the union is exhausted above; a payload from a newer sender is not.
+    return `(unsupported: ${(expression as SerializedExpression).type})`;
 };
 
 const describeOption = (option: ExplainedOption): string => {
@@ -97,7 +134,7 @@ const describeOption = (option: ExplainedOption): string => {
     if (option.name === "filter") {
         return detail.expression == null
             ? String(detail.expressionUnavailable ?? "")
-            : describeExpression(detail.expression);
+            : describeExpression(detail.expression as SerializedExpression);
     }
 
     if (option.name === "sort") {
@@ -125,14 +162,35 @@ const describeOption = (option: ExplainedOption): string => {
     return "";
 };
 
+/**
+ * The sentence for a kind of step.
+ *
+ * Here rather than on the step: it is one of two constants keyed off `executedIn`, so carrying it in
+ * the payload put prose beside the field it was derived from.
+ */
+const DATABASE_STEP_DESCRIPTION = "These options are sent to the plugin.";
+const MEMORY_STEP_DESCRIPTION = "Routier runs these over the rows the database returned, after deserializing them.";
+const UNNARROWED_READ_DESCRIPTION = "No option could be pushed down, so the plugin reads the whole collection.";
+
+/** `database · orders.db · SqliteDbPlugin`, so a cross-plugin join says who ran what. */
+const whereItRan = (step: ExecutionStep): string =>
+    isDatabaseStep(step)
+        ? `database · ${step.executedIn.database} · ${step.executedIn.plugin}`
+        : "memory";
+
 const formatStep = (step: ExecutionStep, lines: string[]) => {
-    const reason = step.reason == null ? "" : `  [${step.reason}]`;
+    const reason = isDatabaseStep(step) || step.reason == null ? "" : `  [${step.reason}]`;
 
-    lines.push(`  STEP ${step.step} of ${step.of} — ${step.executedIn}${reason}`);
-    lines.push(...wrap(step.description, "    "));
+    lines.push(`  STEP ${step.step} of ${step.of} — ${whereItRan(step)}${reason}`);
 
-    if (step.explanation != null) {
-        lines.push(...wrap(step.explanation, "    "));
+    if (isDatabaseStep(step)) {
+        lines.push(...wrap(step.options.length === 0 ? UNNARROWED_READ_DESCRIPTION : DATABASE_STEP_DESCRIPTION, "    "));
+    } else {
+        lines.push(...wrap(MEMORY_STEP_DESCRIPTION, "    "));
+
+        if (step.explanation != null) {
+            lines.push(...wrap(step.explanation, "    "));
+        }
     }
 
     lines.push("");
@@ -141,7 +199,12 @@ const formatStep = (step: ExecutionStep, lines: string[]) => {
         lines.push(`    ${option.name.padEnd(OPTION_LABEL_WIDTH)} ${describeOption(option)}`.trimEnd());
     }
 
-    for (const executed of step.executedQueries ?? []) {
+    if (isDatabaseStep(step) === false) {
+        lines.push("");
+        return;
+    }
+
+    for (const executed of step.executedQueries) {
         lines.push("");
         lines.push(...executed.text.split("\n").map(line => `    ${line}`));
 

@@ -63,6 +63,7 @@ const recordingDriver = (options: { failFirstWith?: string } = {}) => {
     };
 
     const driver: SqliteDriver = {
+        foldsUnicodeCasing: false,
         name: 'recording',
         async open() { return connection; },
         async deleteDatabase() { },

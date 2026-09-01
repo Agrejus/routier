@@ -1,4 +1,4 @@
-export { OptimisticUpdatesDbPlugin } from './OptimisticUpdatesDbPlugin';
+export { OptimisticUpdatesDbPlugin, type OptimisticUpdatesDbPluginOptions } from './OptimisticUpdatesDbPlugin';
 export { HttpDbPlugin } from './HttpDbPlugin';
 export { HttpSwrDbPlugin } from './HttpSwrDbPlugin';
 export { HttpTransportDbPlugin } from './HttpTransportDbPlugin';

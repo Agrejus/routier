@@ -1,4 +1,4 @@
-import { DbPluginQueryEvent, distinctJoinKeys, executeJoin, ExecutedQuery, explainQuery, ITranslatedValue, JoinKind, JsonTranslator, loadJoinInnerSide, Query, QueryExplanation, QueryOptionsCollection, toEntityShape, TupleTranslator, withExecutedQueries } from "@routier/core/plugins";
+import { DbPluginQueryEvent, distinctJoinKeys, executeJoin, ExecutedQuery, explainQuery, ITranslatedValue, JoinKind, JsonTranslator, loadJoinInnerSide, Query, QueryExplanation, QueryOptionsCollection, toEntityShape, TupleTranslator, withExecutedQueries, withInnerSide } from "@routier/core/plugins";
 import { CompiledSchema, InferType } from "@routier/core/schema";
 import { CallbackResult, PluginEventCallbackResult, PluginEventResult, PluginEventSuccessType, Result } from "@routier/core/results";
 import { UnknownRecord, uuid } from "@routier/core/utilities";
@@ -13,6 +13,8 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
     /** Set by `createQueryPayload`; read by `buildExplanation`. Only used when explaining. */
     private resolvedQueryOptions: QueryOptionsCollection<any> | null = null;
     private executedQueries: ExecutedQuery[] = [];
+    /** The cross-plugin inner side's own statements, reported as their own step. */
+    private innerExecutedQueries: ExecutedQuery[] = [];
 
     constructor(dependencies: CollectionDependencies<TRoot>, request: RequestContext<TRoot>) {
         super(dependencies, request)
@@ -33,7 +35,18 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
             pluginKind: this.dependencies.plugin.constructor.name
         });
 
-        return withExecutedQueries(explanation, this.executedQueries);
+        const withOuter = withExecutedQueries(explanation, this.executedQueries);
+        const joinSide = this.request.joinSide;
+
+        if (this.innerExecutedQueries.length === 0 || joinSide == null) {
+            return withOuter;
+        }
+
+        return withInnerSide(withOuter, {
+            database: joinSide.plugin.databaseName,
+            plugin: joinSide.plugin.constructor.name,
+            executedQueries: this.innerExecutedQueries
+        });
     }
 
     /**
@@ -294,6 +307,11 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
 
         // send over only the database operations, if there are none its a select all
         const resolvedQueryOptions = this.resolveQueryOptions<Shape>();
+
+        // A subscribed queryable dispatches more than once over the same options, and a report from
+        // the last execution is not an answer for this one.
+        resolvedQueryOptions.forgetReports();
+
         const splitQueryOptions = resolvedQueryOptions.split();
 
         // Held for `buildExplanation`, which needs the options as resolved: `split()` re-derives
@@ -449,15 +467,17 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
      * join), so there is no attach, no freeze, and no delivered-membership capture: a tuple has
      * no id to record.
      */
-    private postProcessJoinQuery<TShape>(result: PluginEventSuccessType<ITranslatedValue<TShape>>, payload: { databaseEvent: DbPluginQueryEvent<TRoot, TShape>, memoryEvent: DbPluginQueryEvent<TRoot, TShape> }, done: PluginEventCallbackResult<TShape>) {
+    private postProcessJoinQuery<TShape>(result: PluginEventSuccessType<ITranslatedValue<TShape>>, payload: { databaseEvent: DbPluginQueryEvent<TRoot, TShape>, memoryEvent: DbPluginQueryEvent<TRoot, TShape>, memoryQuery: Query<TRoot, TShape> }, done: PluginEventCallbackResult<TShape>) {
 
-        const { databaseEvent, memoryEvent } = payload;
+        const { databaseEvent, memoryEvent, memoryQuery } = payload;
         const schema = this.dependencies.schema;
-        const { before, at, after } = memoryEvent.operation.options.splitAt("join");
+        // The combined pass, not the pre-built memory half: an option the plugin could not run has
+        // to reach the join branch too, or it is run by nobody.
+        const { before, at, after } = memoryQuery.options.splitAt("join");
 
         if (at == null) {
             // The plugin joined. `result.data.value` is already an array of tuples.
-            const translated = this.applyTupleOptions(memoryEvent.operation.options, schema, result.data.value);
+            const translated = this.applyTupleOptions(memoryQuery.options, schema, result.data.value);
             done(PluginEventResult.success(memoryEvent.id, translated.value));
             return;
         }
@@ -492,7 +512,10 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
         // regardless — filters are pure, so the second pass over the survivors costs a walk and
         // guarantees the scopes are honoured even if the plugin ignored them.
         loadJoinInnerSide(
-            memoryEvent as unknown as DbPluginQueryEvent<UnknownRecord, UnknownRecord>,
+            // The combined pass, because that is where the join option is when the plugin did not
+            // run it. Handed `memoryEvent`, this finds no join and reports an empty inner side —
+            // silently, with `ok: "success"` — and the query returns no pairs at all.
+            { ...memoryEvent, operation: memoryQuery } as unknown as DbPluginQueryEvent<UnknownRecord, UnknownRecord>,
             (innerEvent, innerDone) => joinSide.plugin.query<UnknownRecord, UnknownRecord>(innerEvent, innerDone),
             innerResult => {
                 try {
@@ -513,8 +536,49 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
                     done(PluginEventResult.error(memoryEvent.id, e));
                 }
             },
-            outerKeys
+            outerKeys,
+            // Its own list. The inner side is a different database on a different plugin, and its
+            // statement filed under this one's name is a lie a reader cannot see through.
+            this.innerExecutedQueries
         );
+    }
+
+    /**
+     * The options that still have to run, once the plugin has said what it did.
+     *
+     * The database options it did not run come FIRST: they were earlier in the chain the caller
+     * wrote, so a filter the engine could not express has to run before a `skip` that was always
+     * bound for memory. Sorting by index gives that for nothing.
+     */
+    private memoryPass<TShape>(
+        databaseEvent: DbPluginQueryEvent<TRoot, TShape>,
+        memoryEvent: DbPluginQueryEvent<TRoot, TShape>
+    ): Query<TRoot, TShape> {
+        const notExecuted = databaseEvent.operation.options.notExecuted();
+
+        if (notExecuted.length === 0) {
+            return memoryEvent.operation as Query<TRoot, TShape>;
+        }
+
+        const combined = new QueryOptionsCollection<TRoot>();
+
+        for (const item of notExecuted) {
+            combined.add(item.option.name, item.option.value);
+        }
+
+        memoryEvent.operation.options.forEach(option => combined.add(option.name, option.value));
+
+        // Change tracking belongs to the WHOLE query, not to the subset that runs here. Derived from
+        // this subset it can disagree: a fields-bearing `map` the plugin executed is absent from the
+        // pass, so the pass says "track these" while the rows are projections with no id to attach.
+        return new Query<TRoot, TShape>(combined as any, this.dependencies.schema, this.wholeQueryChangeTracking());
+    }
+
+    /** What change tracking the query as a whole asked for, before it was split or reported on. */
+    private wholeQueryChangeTracking(): boolean {
+        const resolved = this.resolvedQueryOptions ?? this.request.queryOptions;
+
+        return new Query<TRoot, any>(resolved as any, this.dependencies.schema).changeTracking;
     }
 
     private postProcessQuery<TShape>(result: PluginEventSuccessType<ITranslatedValue<TShape>>, payload: { databaseEvent: DbPluginQueryEvent<TRoot, TShape>, memoryEvent: DbPluginQueryEvent<TRoot, TShape> }, done: PluginEventCallbackResult<TShape>) {
@@ -522,10 +586,14 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
         const { databaseEvent, memoryEvent } = payload;
 
         try {
+            // Computed before the join check, because the join branch needs it too — anything the
+            // plugin could not run has to reach whichever branch finishes the query.
+            const memoryQuery = this.memoryPass<TShape>(databaseEvent, memoryEvent);
+
             // Before the tags and change-tracking work below, all of which is about entities of
             // the root schema. A join produces tuples, which have none of it.
-            if (databaseEvent.operation.options.has("join") || memoryEvent.operation.options.has("join")) {
-                this.postProcessJoinQuery(result, payload, done);
+            if (databaseEvent.operation.options.has("join") || memoryQuery.options.has("join")) {
+                this.postProcessJoinQuery(result, { ...payload, memoryQuery }, done);
                 return;
             }
 
@@ -541,15 +609,15 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
 
             // This means we are querying on a computed property that is untracked, need to select
             // all and query in memory
-            if (Query.isEmpty(memoryEvent.operation) === false) {
+            if (Query.isEmpty(memoryQuery) === false) {
 
                 const enriched = result.data.value as InferType<TRoot>[];
 
                 // We need to execute operations on the result that the plugin will not do
-                const translator = new JsonTranslator(memoryEvent.operation);
+                const translator = new JsonTranslator(memoryQuery);
                 const translatedEnrichedData = translator.translate(enriched);
 
-                if (memoryEvent.operation.changeTracking === false) {
+                if (memoryQuery.changeTracking === false) {
                     this.captureDeliveredMembership(translatedEnrichedData.value);
                     return done(PluginEventResult.success(memoryEvent.id, translatedEnrichedData.value));
                 }

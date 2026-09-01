@@ -224,6 +224,7 @@ export const wasmDriver = (options: WasmDriverOptions = {}): SqliteDriver => {
 
     return {
         name: `sqlite-wasm (${storage})`,
+        foldsUnicodeCasing: false,
 
         async open(databaseName: string): Promise<SqliteConnection> {
             const active = resolveChannel(options.workerUrl);

@@ -26,6 +26,13 @@ const schema = s.define('parser_messages', {
 const fromSource = (source: string, args = 'r') =>
     new Function(`return (${args}) => ${source};`)() as any;
 
+/** For source the Function constructor would reject outright, so the tokenizer is what judges it. */
+const withSource = (source: string) => {
+    const fn: any = () => true;
+    fn.toString = () => source;
+    return fn;
+};
+
 let warn: any;
 
 beforeEach(() => {
@@ -59,10 +66,10 @@ describe('parse failures report why', () => {
         // Sources are unique within this file: a repeated source would hit the
         // parse-failure cache, which logs only on first discovery.
         const failures = [
-            fromSource('r.name === `y-${r.other}`'),
-            fromSource('2 === 2'),
+            fromSource('r.name.trim() === "y"'),
+            fromSource('r.tags.some(t => t === "a")'),
+            fromSource('2 === 5'),
             fromSource('r.name.trim() === "x"'),
-            fromSource('r.price === (2 + 3)'),
             fromSource('r.name.padStart(4) === "x"'),
             fromSource('!(r.price > someVar)'),
         ];
@@ -72,24 +79,18 @@ describe('parse failures report why', () => {
         }
     });
 
-    it('names template literal interpolation', () => {
-        expect(failureMessage(fromSource('r.name === `x-${r.other}`'))).toMatch(/template literal interpolation/i);
+    it('names an unterminated template interpolation', () => {
+        expect(failureMessage(withSource('(r) => r.name === `x-${r.other'))).toMatch(/unterminated template interpolation/i);
     });
 
     it('names the missing schema property requirement', () => {
-        expect(failureMessage(fromSource('1 === 1'))).toMatch(/schema property/i);
+        expect(failureMessage(fromSource('1 === 3'))).toMatch(/schema property/i);
     });
 
     it('names the at-least-one-side requirement when neither side is a property', () => {
         expect(failureMessage(fromSource('1 === 2'))).toMatch(/at least one side/i);
     });
 
-    it('reports the offending token for a parenthesized right-hand side', () => {
-        // Reaches the unexpected-token guard before the dedicated parenthesized-expression
-        // one, so the reason is just the token: "Unsupported expression format: (".
-        // Thin, but it does name what the parser choked on.
-        expect(failureMessage(fromSource('r.price === (1 + 2)'))).toMatch(/\(/);
-    });
 
     it('names the unsupported method', () => {
         // The method name has to appear, or the developer cannot tell which call to change.
@@ -105,13 +106,6 @@ describe('parse failures report why', () => {
             .toMatch(/after a transform method/i);
     });
 
-    it('names the transform-method restriction for a method on the right', () => {
-        // The bare-transform guard fires before the right-hand-side one, so this is the
-        // message a caller actually sees for `"x" === r.name.toLowerCase()`.
-        expect(failureMessage(fromSource('"x" === r.name.toLowerCase()')))
-            .toMatch(/startsWith\/endsWith\/includes/i);
-    });
-
     it('names comparing a method call to a non-boolean', () => {
         expect(failureMessage(fromSource('r.name.startsWith("a") === "yes"')))
             .toMatch(/non-boolean/i);
@@ -123,10 +117,10 @@ describe('parse failures report why', () => {
         expect(failureMessage(fromSource('r.name.notAProperty === "x"'))).toMatch(/notAProperty/);
     });
 
-    it('names the block-body restriction', () => {
+    it('names a block body that never returns', () => {
         const blockBody = new Function('return (r) => { const x = r.price; };')();
 
-        expect(failureMessage(blockBody)).toMatch(/block body/i);
+        expect(failureMessage(blockBody)).toMatch(/returns nothing/i);
     });
 
     it('names an unterminated string literal', () => {
@@ -148,7 +142,7 @@ describe('parse failures report why', () => {
 describe('logging context', () => {
     it('includes the collection name so the schema is identifiable', () => {
         warn.mockClear();
-        toExpression(schema as any, fromSource('3 === 3'));
+        toExpression(schema as any, fromSource('3 === 7'));
 
         const [, context] = warn.mock.calls[0] as [string, any];
 
@@ -157,12 +151,12 @@ describe('logging context', () => {
 
     it('includes the offending selector source', () => {
         warn.mockClear();
-        toExpression(schema as any, fromSource('4 === 4'));
+        toExpression(schema as any, fromSource('4 === 9'));
 
         const [, context] = warn.mock.calls[0] as [string, any];
 
         // Without the source text the log names a failure but not which filter caused it.
-        expect(String(context.selector)).toContain('4 === 4');
+        expect(String(context.selector)).toContain('4 === 9');
     });
 
     it('does not log for a filter that parses', () => {

@@ -1,6 +1,7 @@
 import { afterEach, describe, it, expect, jest } from '@jest/globals';
 import { buildFromQueryOperation } from './utils';
-import { DbPluginQueryEvent, ITranslatedValue } from '@routier/core/plugins';
+import { DbPluginQueryEvent, ITranslatedValue, Query, QueryOptionsCollection } from '@routier/core/plugins';
+import { toExpression } from '@routier/core/expressions';
 import { s } from '@routier/core/schema';
 import { SqliteDbPlugin } from './index';
 import { PluginEventCallbackResult } from '@routier/core/results';
@@ -449,8 +450,13 @@ describe('buildQueryFromIQuery Integration Tests', () => {
 
         expect(capturedQuery).toBeDefined();
         const result = buildFromQueryOperation(capturedQuery);
-        expect(result.sql).toBe('SELECT "id", "name", "age" FROM (SELECT "id", "name", "age" FROM "users" WHERE "age" > ? AND "name" IS NOT NULL ORDER BY "name" ASC) AS subquery_1 LIMIT 10 OFFSET 5');
+
+        // The second filter is written AFTER the window, so it cannot go inside it: WHERE runs
+        // before LIMIT, which would filter rows the window had not selected yet.
+        expect(result.sql).toBe('SELECT "id", "name", "age" FROM (SELECT "id", "name", "age" FROM "users" WHERE "age" > ? ORDER BY "name" ASC) AS subquery_1 LIMIT 10 OFFSET 5');
         expect(result.params).toEqual([18]);
+        // Only the filter written before the window reaches the plugin at all.
+        expect(capturedQuery.options.get('filter')).toHaveLength(1);
     });
 
     it('should handle null comparisons correctly', () => {
@@ -536,5 +542,51 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         const result = buildFromQueryOperation(capturedQuery);
         expect(result.sql).toBe('SELECT "id", "name", "age" FROM "users" WHERE ("age" > ? AND ("age" < ? OR "name" GLOB ?))');
         expect(result.params).toEqual([18, 65, 'Admin*']);
+    });
+
+    describe('a filter the engine cannot render', () => {
+
+        const withReportedFilter = (extra: (options: QueryOptionsCollection<any>) => void) => {
+            // SQLite renders no POWER, so this filter is handed back rather than translated.
+            const filter = (row: any) => row.age ** 2 > 400;
+            const options = QueryOptionsCollection.EMPTY<any>();
+            options.add('filter', {
+                filter,
+                params: null,
+                expression: toExpression(compiledUserSchema as never, filter as never, undefined as never)
+            } as never);
+            extra(options);
+
+            return buildFromQueryOperation(new Query(options as never, compiledUserSchema as never));
+        };
+
+        it('selects the columns the memory pass needs, not the ones the map wanted', () => {
+            const { sql } = withReportedFilter(options =>
+                options.add('map', {
+                    selector: (row: any) => row.name,
+                    fields: [{ name: 'name', property: compiledUserSchema.properties.find(p => p.name === 'name')! }]
+                } as never));
+
+            expect(sql).toBe('SELECT "id", "name", "age" FROM "users"');
+        });
+
+        it('marks the map behind it as not reached', () => {
+            const options = QueryOptionsCollection.EMPTY<any>();
+            const filter = (row: any) => row.age ** 2 > 400;
+            options.add('filter', {
+                filter,
+                params: null,
+                expression: toExpression(compiledUserSchema as never, filter as never, undefined as never)
+            } as never);
+            options.add('map', {
+                selector: (row: any) => row.name,
+                fields: [{ name: 'name', property: compiledUserSchema.properties.find(p => p.name === 'name')! }]
+            } as never);
+
+            buildFromQueryOperation(new Query(options as never, compiledUserSchema as never));
+
+            expect(options.getLast('filter')!.reason).toBe('missing-capability');
+            expect(options.getLast('map')!.reason).toBe('not-reached');
+        });
     });
 });

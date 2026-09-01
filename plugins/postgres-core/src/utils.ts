@@ -1,8 +1,8 @@
 import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema';
 import { Expression } from '@routier/core/expressions';
-import { IQuery, JoinQueryOptionValue, Query, QueryField } from '@routier/core/plugins';
+import { IQuery, JoinQueryOptionValue, Query } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
-import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, entityResultColumns, getDialect, sqlColumnProperties, toColumnValueMap, toSql, SqlDialect } from '@routier/sql-plugin-core';
+import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, entityResultColumns, getDialect, sqlColumnProperties, toColumnValueMap, toSql, reportUnrenderableFilters, executedMapFields, selectList, SqlDialect } from '@routier/sql-plugin-core';
 import { mappedResultColumns, ResultColumn } from '@routier/core/plugins';
 import { SqlOperation } from './types';
 
@@ -419,16 +419,9 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
     const { schema, options } = query;
     const tableName = schema.collectionName;
 
-    let mapFields: QueryField[] | null = null;
-    for (const [, items] of options.items) {
-        for (const item of items) {
-            if (item.option.name === 'map' && item.option.value.fields) {
-                mapFields = item.option.value.fields;
-                break;
-            }
-        }
-        if (mapFields) break;
-    }
+    reportUnrenderableFilters(options, "postgresql");
+
+    const mapFields = executedMapFields(options);
 
     /**
      * ONE ordered list, from which both the select list and the result description come.
@@ -448,10 +441,7 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
         throw new Error("Need to select at least one column, found zero");
     }
 
-    let columnsStr = `"${resultColumns[0].name}"`;
-    for (let i = 1; i < resultColumns.length; i++) {
-        columnsStr += `, "${resultColumns[i].name}"`;
-    }
+    const columnsStr = selectList(resultColumns, getDialect('postgresql'));
 
     const params: any[] = [];
     let currentQuery = `SELECT ${columnsStr} FROM "${tableName}"`;
@@ -466,6 +456,10 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
     let opIndex = 0;
     for (const [, items] of options.items) {
         for (const item of items) {
+            if (item.option.target === "database" && item.option.reason !== "executed") {
+                continue;
+            }
+
             operations[opIndex++] = {
                 type: item.option.name,
                 value: item.option.value,
@@ -473,6 +467,10 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
             };
         }
     }
+
+
+    // Pre-sized above, so skipping an option leaves an undefined hole the reader would trip on
+    operations.length = opIndex;
 
     operations.sort((a, b) => a.index - b.index);
 

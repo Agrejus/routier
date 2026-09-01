@@ -2,6 +2,7 @@ import { afterAll, describe, expect, it } from "@jest/globals";
 import { IDbPlugin } from "@routier/core";
 import { InferType, s } from "@routier/core/schema";
 import { DataStore } from "@routier/datastore";
+import { executedQueriesOf } from "@routier/core/plugins";
 
 /**
  * The join suite every backend must pass, however it executes the join.
@@ -255,7 +256,7 @@ export const describeJoinContract = (name: string, pluginFactory: () => IDbPlugi
             const optionNames = explanation.executionSteps.flatMap(step => step.options.map(option => option.name));
             expect(optionNames).toContain("join");
 
-            const reported = explanation.executionSteps.flatMap(step => step.executedQueries ?? []);
+            const reported = executedQueriesOf(explanation);
             expect(reported.length).toBeGreaterThan(0);
 
             for (const executed of reported) {

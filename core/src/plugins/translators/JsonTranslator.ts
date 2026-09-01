@@ -89,9 +89,7 @@ export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRo
                     const value = field.property.getValue(data[i]);
 
                     if (value != null) {
-                        // Some types do not support deserialization (Array, Function, Computed, etc), just directly set the incoming value
-                        const resolvedValue = field.property.supportsDeserialization ? field.property.deserialize(value) : value;
-                        field.property.setValue(data[i], resolvedValue);
+                        field.property.setValue(data[i], field.property.deserialize(value));
                     }
                 }
             }
@@ -127,9 +125,7 @@ export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRo
                     const value = field.property.getValue(data[i]);
 
                     if (value != null) {
-                        // Some types do not support deserialization (Array, Function, Computed, etc), just directly set the incoming value
-                        const resolvedValue = field.property.supportsDeserialization ? field.property.deserialize(value) : value;
-                        field.property.setValue(item, resolvedValue);
+                        field.property.setValue(item, field.property.deserialize(value));
                         continue;
                     }
 

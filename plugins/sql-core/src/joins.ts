@@ -1,6 +1,7 @@
-import { CompiledSchema, JoinKind, JoinQueryOptionValue, JoinTuple, toEntityShape, UnknownRecord } from "@routier/core";
+import { Call, CompiledSchema, JoinKind, JoinQueryOptionValue, JoinTuple, toEntityShape, UnknownRecord } from "@routier/core";
+import { holdsAnyCall } from "./capability";
 import { decodeJsonColumns, sqlColumnProperties } from "./columns";
-import { SqlDialect, toSql } from "./sql";
+import { SqlDialect, SqlDialectName, canRenderInSql, toSql } from "./sql";
 import { ResultColumn } from "@routier/core/plugins";
 
 /**
@@ -157,15 +158,48 @@ export const buildJoinStatement = <TOuter extends {}, TInner extends {}>(options
 };
 
 /**
- * Whether every filter of the inner side can be expressed in SQL.
+ * Whether every filter of the inner side can be expressed in SQL, by this dialect.
  *
- * A plugin must ask this BEFORE claiming a join was pushed down. An inner filter that core
- * marked memory-only — an unmapped or a renamed property — has no column to compare, so the
- * emitted statement would silently return rows the scope excludes. Answering `false` sends the
- * join back to an interpretation that can apply it.
+ * A plugin must ask this BEFORE claiming a join was pushed down. Two ways the answer is no:
+ *
+ *  - core marked an inner filter memory-only — an unmapped or a renamed property — so there is no
+ *    column to compare and the statement would silently return rows the scope excludes;
+ *  - the filter holds a call this ENGINE cannot render. The main read path asks `canRenderInSql`
+ *    before translating, and without the same question here a join was the one way to reach a
+ *    renderer for a call the dialect does not claim.
+ *
+ * `dialect` is optional so an existing caller keeps its meaning; passing it is what closes the
+ * second hole.
  */
-export const canPushDownJoin = (join: JoinQueryOptionValue): boolean =>
-    join.innerOptions.split().memory.get("filter").length === 0;
+export const canPushDownJoin = (
+    join: JoinQueryOptionValue,
+    dialect?: SqlDialectName | SqlDialect,
+    divergentCalls: readonly Call[] = []
+): boolean => {
+
+    if (join.innerOptions.split().memory.get("filter").length > 0) {
+        return false;
+    }
+
+    if (dialect == null) {
+        return true;
+    }
+
+    for (const { option } of join.innerOptions.split().database.get("filter")) {
+        const expression = option.value.expression;
+
+        if (expression == null) {
+            continue;
+        }
+
+        // An inner filter goes into the ON clause, where nothing can report it afterwards.
+        if (canRenderInSql(expression, dialect) === false || holdsAnyCall(expression, divergentCalls)) {
+            return false;
+        }
+    }
+
+    return true;
+};
 
 /**
  * Cuts flat joined rows back into tuples, each half deserialized against its own schema.

@@ -21,13 +21,21 @@ const testSchema = s
     })
     .compile();
 
+const otherSchema = s
+    .define('optimisticIntegrationOther', {
+        id: s.string().key().identity(),
+        name: s.string(),
+    })
+    .compile();
+
 function buildSchemas(): SchemaCollection {
     const schemas = new SchemaCollection();
     schemas.set(testSchema.id, testSchema as any);
+    schemas.set(otherSchema.id, otherSchema as any);
     return schemas;
 }
 
-function createQueryEvent(): DbPluginQueryEvent<Record<string, unknown>, unknown> {
+function createQueryEvent(schema = testSchema): DbPluginQueryEvent<Record<string, unknown>, unknown> {
     return {
         id: uuid(8),
         schemas: buildSchemas(),
@@ -35,13 +43,13 @@ function createQueryEvent(): DbPluginQueryEvent<Record<string, unknown>, unknown
         action: 'query',
         explain: false,
         executedQueries: [],
-        operation: Query.EMPTY(testSchema as any) as any,
+        operation: Query.EMPTY(schema as any) as any,
     };
 }
 
-function createPersistEvent(changes: { adds?: unknown[]; removes?: unknown[] }): DbPluginBulkPersistEvent {
+function createPersistEvent(changes: { adds?: unknown[]; removes?: unknown[] }, schema = testSchema): DbPluginBulkPersistEvent {
     const operation = new BulkPersistChanges();
-    const schemaChanges = operation.resolve(testSchema.id);
+    const schemaChanges = operation.resolve(schema.id);
     schemaChanges.adds = (changes.adds ?? []) as never[];
     schemaChanges.removes = (changes.removes ?? []) as never[];
     return {
@@ -53,9 +61,9 @@ function createPersistEvent(changes: { adds?: unknown[]; removes?: unknown[] }):
     };
 }
 
-function queryRows(plugin: IDbPlugin): Promise<unknown[]> {
+function queryRows(plugin: IDbPlugin, schema = testSchema): Promise<unknown[]> {
     return new Promise((resolve, reject) => {
-        plugin.query(createQueryEvent(), (result) => {
+        plugin.query(createQueryEvent(schema), (result) => {
             if (result.ok === Result.ERROR) {
                 reject(result.error);
                 return;
@@ -67,9 +75,9 @@ function queryRows(plugin: IDbPlugin): Promise<unknown[]> {
     });
 }
 
-function persist(plugin: IDbPlugin, changes: { adds?: unknown[]; removes?: unknown[] }): Promise<unknown> {
+function persist(plugin: IDbPlugin, changes: { adds?: unknown[]; removes?: unknown[] }, schema = testSchema): Promise<unknown> {
     return new Promise((resolve, reject) => {
-        plugin.bulkPersist(createPersistEvent(changes), (result) => {
+        plugin.bulkPersist(createPersistEvent(changes, schema), (result) => {
             if (result.ok === Result.ERROR) {
                 reject(result.error);
                 return;
@@ -146,6 +154,80 @@ describe('OptimisticUpdatesDbPlugin integration', () => {
         // an empty result is real data — not a missed hydration to retry against a
         // source whose mirrored remove may still be in flight.
         expect(await queryRows(plugin)).toHaveLength(0);
+    });
+
+    it('hydrates before a write so pre-existing source rows stay visible', async () => {
+        await persist(source, { adds: [{ name: 'Pre-existing A' }, { name: 'Pre-existing B' }] });
+
+        await persist(plugin, { adds: [{ name: 'New write' }] });
+
+        const rows = await queryRows(plugin) as Array<{ name: string }>;
+        expect(rows).toHaveLength(3);
+        expect(rows.map((r) => r.name)).toEqual(
+            expect.arrayContaining(['Pre-existing A', 'Pre-existing B', 'New write'])
+        );
+    });
+
+    it('does not resurrect a row removed while hydration is in flight', async () => {
+        await persist(source, { adds: [{ name: 'Doomed' }] });
+
+        const slowResultSource: IDbPlugin = {
+            get databaseName() { return source.databaseName; },
+            query: (event, done) => source.query(event, (result) => { setTimeout(() => done(result), 50); }),
+            bulkPersist: (event, done) => source.bulkPersist(event, done),
+            destroy: (event, done) => source.destroy(event, done),
+        };
+        const slow = new OptimisticUpdatesDbPlugin(slowResultSource);
+
+        const hydratingRead = queryRows(slow);
+        const [doomed] = await queryRows(source) as Array<Record<string, unknown>>;
+        await persist(slow, { removes: [doomed] });
+        await hydratingRead;
+
+        expect(await queryRows(slow)).toHaveLength(0);
+    });
+
+    it('fails the write when hydration fails instead of writing into an empty store', async () => {
+        const failingSource: IDbPlugin = {
+            databaseName: 'failing-source',
+            query: (event, done) => done({ ok: Result.ERROR, error: new Error('source down'), id: event.id } as any),
+            bulkPersist: (event, done) => done({ ok: Result.ERROR, error: new Error('source down'), id: event.id } as any),
+            destroy: (_event, done) => done({ ok: Result.SUCCESS, id: '' } as any),
+        };
+        const failing = new OptimisticUpdatesDbPlugin(failingSource);
+
+        await expect(persist(failing, { adds: [{ name: 'Lost' }] })).rejects.toThrow('source down');
+    });
+
+    it('hydrates collections independently', async () => {
+        await persist(source, { adds: [{ name: 'A row' }] });
+        await persist(source, { adds: [{ name: 'Other row' }] }, otherSchema);
+        const sourceQuerySpy = jest.spyOn(source, 'query');
+
+        expect(await queryRows(plugin)).toHaveLength(1);
+        expect(sourceQuerySpy).toHaveBeenCalledTimes(1);
+
+        expect(await queryRows(plugin, otherSchema)).toHaveLength(1);
+        expect(sourceQuerySpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('reports mirror failures through onMirrorError while still acking the write', async () => {
+        const mirrorErrors: Error[] = [];
+        const readOnlySource: IDbPlugin = {
+            databaseName: 'read-only-source',
+            query: (event, done) => source.query(event, done),
+            bulkPersist: (event, done) => done({ ok: Result.ERROR, error: new Error('mirror down'), id: event.id } as any),
+            destroy: (event, done) => source.destroy(event, done),
+        };
+        const withHook = new OptimisticUpdatesDbPlugin(readOnlySource, {
+            onMirrorError: (error) => { mirrorErrors.push(error); },
+        });
+
+        await persist(withHook, { adds: [{ name: 'Acked locally' }] });
+        expect(await queryRows(withHook)).toHaveLength(1);
+
+        await waitFor(async () => mirrorErrors.length === 1);
+        expect(mirrorErrors[0].message).toContain('mirror down');
     });
 
     it('surfaces hydration failure instead of serving an empty result', async () => {

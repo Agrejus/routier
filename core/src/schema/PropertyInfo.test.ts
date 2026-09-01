@@ -209,13 +209,13 @@ describe("PropertyInfo", () => {
             expect(remappedProperty.getSelectrorPath({ parent: "entity", useFromPropertyName: true })).toBe("entity.db_test_property");
         });
 
-        it("should report deserialization support", () => {
-            expect(baseProperty.supportsDeserialization).toBe(true);
-            expect(getProperty("numberProperty").supportsDeserialization).toBe(true);
-            expect(getProperty("booleanProperty").supportsDeserialization).toBe(true);
-            expect(getProperty("dateProperty").supportsDeserialization).toBe(true);
-            expect(getProperty("unsupportedArray").supportsDeserialization).toBe(false);
-            expect(getMemoryProperty("createdAt").supportsDeserialization).toBe(true);
+        it("should deserialize by type and pass unsupported types through unchanged", () => {
+            expect(baseProperty.deserialize(1)).toBe("1");
+            expect(getProperty("numberProperty").deserialize("2")).toBe(2);
+            expect(getProperty("booleanProperty").deserialize(1)).toBe(true);
+            expect(getProperty("dateProperty").deserialize("2024-01-01T00:00:00.000Z")).toEqual(new Date("2024-01-01T00:00:00.000Z"));
+            const arrayValue = ["a", "b"] as unknown as string;
+            expect(getProperty("unsupportedArray").deserialize(arrayValue)).toBe(arrayValue);
         });
     });
 
@@ -277,7 +277,6 @@ describe("PropertyInfo", () => {
             expect(createdAtProperty.type).toBe(SchemaTypes.Date);
             expect(createdAtProperty.defaultValue).toBeDefined();
             expect(createdAtProperty.valueDeserializer).not.toBeNull();
-            expect(createdAtProperty.supportsDeserialization).toBe(true);
         });
 
         it("should expose computed and function metadata from memory schemas", () => {

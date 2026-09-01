@@ -232,4 +232,40 @@ describe("CacheDbPlugin", () => {
 
         expect(inner.queries).toBe(2);
     });
+
+    /**
+     * A partial answer must not be cached.
+     *
+     * When the inner plugin reports an option it cannot express, the rows it returns are what came
+     * back BEFORE the datastore finished the query. A later hit skips the plugin entirely, so nothing
+     * reports, `notExecuted()` is empty, and those rows would be handed back as the whole answer —
+     * unfiltered, with no error.
+     */
+    it('does not cache a result the plugin could not finish', async () => {
+        class Reports implements IDbPlugin {
+            readonly databaseName = "test-db";
+            queries = 0;
+
+            query(event: any, done: any) {
+                this.queries++;
+
+                for (const item of event.operation.options.get("filter")) {
+                    event.operation.options.reportMissingCapability(item);
+                }
+
+                done(PluginEventResult.success(event.id, new TranslatedArrayValue([{ id: "a" }, { id: "b" }], false)));
+            }
+
+            destroy(_: any, done: any) { done(PluginEventResult.success("d", undefined as never)); }
+            bulkPersist(_: any, done: any) { done(PluginEventResult.success("p", undefined as never)); }
+        }
+
+        const inner = new Reports();
+        const cache = new CacheDbPlugin(inner as never);
+
+        await read(cache, eventFor(schema, (x: any) => x.price > 10));
+        await read(cache, eventFor(schema, (x: any) => x.price > 10));
+
+        expect(inner.queries).toBe(2);
+    });
 });

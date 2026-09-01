@@ -2,7 +2,7 @@ import { assertIsNotNull } from '../assertions';
 import { OptimisticConcurrencyError } from '../errors';
 import { BulkPersistResult, SchemaPersistChanges } from '../collections';
 import { WorkPipeline } from '../pipeline';
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, distinctJoinKeys, IDbPlugin, ITranslatedValue, JoinInnerSide, JsonTranslator } from '.';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, distinctJoinKeys, IDbPlugin, ITranslatedValue, JoinInnerSide, JsonTranslator } from '.';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '../results';
 import { CompiledSchema, IdType, InferCreateType } from '../schema';
 import { isComparatorExpression, isPropertyExpression, isValueExpression } from '../assertions';
@@ -34,7 +34,8 @@ const getKeyEqualityValue = (expression: unknown): { value: IdType } | null => {
         return null;
     }
 
-    if (left.property.isKey !== true || left.transformer != null || right.value == null) {
+    // A called property is a CallExpression, so it fails the isPropertyExpression check above
+    if (left.property.isKey !== true || right.value == null) {
         return null;
     }
 
@@ -465,11 +466,22 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                  *
                  * `cloned` is in storage shape, so the keys are read by resolved column name.
                  */
-                // No statement to quote — an ephemeral store walks its own records. Said
-                // plainly so `.explain()` does not leave a reader wondering whether the
-                // plugin simply failed to report. Before the inner side, to match execution order.
+                /**
+                 * No statement to quote — an ephemeral store walks its own records — so the scan
+                 * is said plainly, and the PREDICATE is reported as JavaScript beside it. A count
+                 * alone leaves a reader unable to tell a filter that matched nothing from one
+                 * that was never applied.
+                 *
+                 * Before the inner side, to match execution order.
+                 */
+                const described = describeFilters(
+                    operation.options.get("filter").map(entry => entry.option.value)
+                );
+
                 event.executedQueries.push({
-                    text: `${operation.schema.collectionName}: scanned ${cloned.length} in-memory ${cloned.length === 1 ? "record" : "records"}`
+                    text: `${operation.schema.collectionName}: scanned ${cloned.length} in-memory ` +
+                        `${cloned.length === 1 ? "record" : "records"}, filter ${described.text}`,
+                    parameters: described.parameters.length > 0 ? described.parameters : undefined
                 });
 
                 const joinOption = operation.options.getLast("join");

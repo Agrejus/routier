@@ -45,7 +45,7 @@ function expectRejected(fn: any, params?: any) {
         ? toExpression(schema as any, fn)
         : toExpression(schema as any, fn, params);
 
-    expect(result).toStrictEqual(Expression.NOT_PARSABLE);
+    expect(result).toHaveProperty('type', 'not-parsable');
 }
 
 /** Sanity: the same shape of filter, but supported, must still parse. */
@@ -54,13 +54,16 @@ function expectParsed(fn: any, params?: any) {
         ? toExpression(schema as any, fn)
         : toExpression(schema as any, fn, params);
 
-    expect(result).not.toStrictEqual(Expression.NOT_PARSABLE);
+    expect(result).not.toHaveProperty('type', 'not-parsable');
     expect(result).not.toBeNull();
 }
 
 describe('literals the parser cannot represent', () => {
-    it('rejects template literal interpolation', () => {
-        expectRejected(fromSource('r.name === `prefix-${r.other}`'));
+    it('parses template literal interpolation as a concat', () => {
+        const parsed = toExpression(schema as any, fromSource('r.name === `prefix-${r.other}`')) as { type: string, right?: { call?: string } };
+
+        expect(parsed.type).toBe('comparator');
+        expect(parsed.right?.call).toBe('concat');
     });
 
     it('accepts a template literal without interpolation', () => {
@@ -79,8 +82,12 @@ describe('literals the parser cannot represent', () => {
 });
 
 describe('shapes that are not a schema comparison', () => {
-    it('rejects a filter that references no schema property', () => {
-        expectRejected(fromSource('1 === 1'));
+    it('settles a tautology that references no schema property to match-all', () => {
+        expect(toExpression(schema as any, fromSource('1 === 1'))).toStrictEqual(Expression.EMPTY);
+    });
+
+    it('rejects a constant comparison no row satisfies, because no node means match-nothing', () => {
+        expectRejected(fromSource('1 === 2'));
     });
 
     it('accepts a comparison with a schema property on both sides', () => {
@@ -92,8 +99,12 @@ describe('shapes that are not a schema comparison', () => {
         expectParsed(fromSource('r.name === "x"'));
     });
 
-    it('rejects a comparison against a parenthesized expression', () => {
-        expectRejected(fromSource('r.price === (1 + 2)'));
+    it('parses a parenthesised value on the right, which is arithmetic over constants', () => {
+        // The type only, never the tree: a PropertyInfo holds its own parent chain, so handing an
+        // expression to a matcher makes jest try to serialise a cycle.
+        const parsed = toExpression(schema as any, fromSource('r.price === (1 + 2)')) as { type: string };
+
+        expect(parsed.type).toBe('comparator');
     });
 
     it('accepts bracket access with a literal key', () => {
@@ -134,16 +145,8 @@ describe('transform methods', () => {
         expectRejected(fromSource('r.name.padStart(3) === "x"'));
     });
 
-    it('rejects a transform method outside startsWith/endsWith/includes', () => {
-        expectRejected(fromSource('r.name.toLowerCase()'));
-    });
-
     it('rejects property access after a transform method', () => {
         expectRejected(fromSource('r.name.toLowerCase().length === 3'));
-    });
-
-    it('rejects a method call on the right side of a comparison', () => {
-        expectRejected(fromSource('"x" === r.name.toLowerCase()'));
     });
 
     it('rejects comparing a method call to a non-boolean', () => {
@@ -180,8 +183,12 @@ describe('function body shapes', () => {
         expectRejected(fromBlock('const x = r.price;'));
     });
 
-    it('rejects a block body with more than one statement', () => {
-        expectRejected(fromBlock('const x = 1; return r.price > x;'));
+    it('rejects a block that falls off the end of an if', () => {
+        expectRejected(fromBlock('if (r.price > 1) return true;'));
+    });
+
+    it('inlines a declaration and parses the return', () => {
+        expectParsed(fromBlock('const x = 1; return r.price > x;'));
     });
 
     it('accepts a block body that is a single return', () => {
@@ -196,7 +203,7 @@ describe('rejection never yields a partial tree', () => {
     const unsupported = [
         'r.price > 1 && r.name.padStart(3) === "x"',
         'r.name.padStart(3) === "x" || r.price > 1',
-        'r.price === (1 + 2) && r.active === true',
+        'r.tags.some(t => t === "a") && r.active === true',
         'r.name.padStart(3) === "x" && r.price > 1',
     ];
 

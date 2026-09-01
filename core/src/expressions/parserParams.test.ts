@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { s } from '../schema';
 import { toExpression } from './parser';
 import { ComparatorExpression, Expression } from './types';
+import { peelCalls } from './utils';
 
 /**
  * Param-driven property access and value transformers.
@@ -32,19 +33,21 @@ const parse = (source: string, params: any, args = '[r, p]') =>
 
 const comparator = (source: string, params: any) => {
     const result = parse(source, params);
-    expect(result).not.toStrictEqual(Expression.NOT_PARSABLE);
+    expect(result).not.toHaveProperty('type', 'not-parsable');
     expect(result).toBeInstanceOf(ComparatorExpression);
     return result as ComparatorExpression;
 };
 
 /** The schema property the comparison filters on. */
 const filteredProperty = (source: string, params: any) =>
-    (comparator(source, params).left as any)?.property?.name;
+    (peelCalls(comparator(source, params).left)?.operand as any)?.property?.name;
 
-/** The transformer and locale attached to the compared value. */
+/** The call applied to the compared value, and the locale it carries as its argument. */
 const valueTransform = (source: string, params: any) => {
     const right = comparator(source, params).right as any;
-    return { transformer: right?.transformer ?? null, locale: right?.locale ?? null };
+    const calls = peelCalls(right)?.calls ?? [];
+
+    return { transformer: calls[0]?.call ?? null, locale: right?.arguments?.[0]?.value ?? null };
 };
 
 describe('param-driven property access', () => {
@@ -78,20 +81,20 @@ describe('param-driven property access', () => {
 
     it('rejects a param path that resolves to a non-string', () => {
         // The resolved value names a column, so anything but a string cannot be used.
-        expect(parse('r[p.field] === "x"', { field: 42 })).toStrictEqual(Expression.NOT_PARSABLE);
+        expect(parse('r[p.field] === "x"', { field: 42 })).toHaveProperty('type', 'not-parsable');
     });
 
     it('rejects a param path that resolves to undefined', () => {
-        expect(parse('r[p.field] === "x"', { other: 'name' })).toStrictEqual(Expression.NOT_PARSABLE);
+        expect(parse('r[p.field] === "x"', { other: 'name' })).toHaveProperty('type', 'not-parsable');
     });
 
     it('rejects a param path resolving to an object', () => {
-        expect(parse('r[p.field] === "x"', { field: { nested: true } })).toStrictEqual(Expression.NOT_PARSABLE);
+        expect(parse('r[p.field] === "x"', { field: { nested: true } })).toHaveProperty('type', 'not-parsable');
     });
 
     it('rejects bracket access by a bare identifier that is not the params name', () => {
         // `r[someVar]` cannot be resolved statically and is not a param path.
-        expect(parse('r[unknownVar] === "x"', { field: 'name' })).toStrictEqual(Expression.NOT_PARSABLE);
+        expect(parse('r[unknownVar] === "x"', { field: 'name' })).toHaveProperty('type', 'not-parsable');
     });
 
     it('still accepts bracket access with a string literal', () => {
@@ -100,8 +103,12 @@ describe('param-driven property access', () => {
 });
 
 describe('value transform methods', () => {
-    const transformFor = (method: string) =>
-        valueTransform(`r.name === p.term.${method}()`, { term: 'Value' });
+    /** The property side, because a call over a bound param folds to a value. */
+    const transformFor = (method: string) => {
+        const calls = peelCalls(comparator(`r.name.${method}() === p.term`, { term: 'Value' }).left)?.calls ?? [];
+
+        return { transformer: calls[0]?.call ?? null, locale: (calls[0]?.arguments?.[0] as any)?.value ?? null };
+    };
 
     it('attaches a lower-case transformer for toLowerCase', () => {
         expect(transformFor('toLowerCase').transformer).toBe('to-lower-case');
@@ -135,7 +142,14 @@ describe('value transform methods', () => {
         expect(valueTransform('r.name === p.term', { term: 'Value' }).transformer).toBeNull();
     });
 
+    it('computes the transform into the bound value rather than carrying it', () => {
+        const right = comparator('r.name === p.term.toUpperCase()', { term: 'Value' }).right as any;
+
+        expect(peelCalls(right)?.calls).toEqual([]);
+        expect(right.value).toBe('VALUE');
+    });
+
     it('rejects a method that is not in the transform table', () => {
-        expect(parse('r.name === p.term.trim()', { term: ' x ' })).toStrictEqual(Expression.NOT_PARSABLE);
+        expect(parse('r.name === p.term.trim()', { term: ' x ' })).toHaveProperty('type', 'not-parsable');
     });
 });

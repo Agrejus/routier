@@ -1,4 +1,4 @@
-import { canPushDownJoin, decodeJsonColumns, splitJoinRows } from '@routier/sql-plugin-core';
+import { canPushDownJoin, decodeJsonColumns, joinToPushDown, splitJoinRows } from '@routier/sql-plugin-core';
 import { assertIsNotNull, OptimisticConcurrencyError, PluginDestroyedError, UnknownRecord } from '@routier/core';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, ResultColumn } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
@@ -207,7 +207,7 @@ export class PostgresDbPluginBase implements IDbPlugin {
         event: DbPluginQueryEvent<TRoot, TShape>,
         done: PluginEventCallbackResult<ITranslatedValue<TShape>>
     ): void {
-        if (event.operation.options.has("join")) {
+        if (joinToPushDown(event.operation.options, "postgresql") != null) {
             this.queryJoined(event, done);
             return;
         }
@@ -271,7 +271,7 @@ export class PostgresDbPluginBase implements IDbPlugin {
 
                 // An inner filter with no column to compare against would make the emitted join
                 // return rows the inner side's scope excludes. Refusing beats answering wrongly.
-                if (canPushDownJoin(join.value) === false) {
+                if (canPushDownJoin(join.value, "postgresql") === false) {
                     throw new Error(
                         `Cannot push this join down to PostgreSQL: the inner collection has a filter that cannot be expressed as SQL ` +
                         `(an unmapped or renamed property), so the join would return rows its scope excludes.`

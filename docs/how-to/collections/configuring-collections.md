@@ -40,6 +40,12 @@ class AppStore extends DataStore {
 
 A store cannot contain two collections or views with the same compiled schema. Use separate schemas (or a separate store) when you need two configurations over one physical database.
 
+### Choose `.readonly()` for read-heavy views
+
+Change tracking is not free on reads. A tracked mode wraps every entity a query returns and attaches it to the change tracker, even when the caller only displays the rows. Measured against the SQLite plugin at 4,000 rows, a full read through a `.proxy()` collection took 12.1ms; the same read through a `.readonly()` collection took 8.3ms — attachment is roughly 30% of every tracked read.
+
+Use `.readonly()` for dashboards, lists, search results, and any other surface that never saves what it reads. Keep `.proxy()`, `.diff()`, or `.immutable()` for the entities you mutate.
+
 ### Immutable updates
 
 ```ts

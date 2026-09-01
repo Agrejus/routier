@@ -8,6 +8,7 @@ import { TranslatedArrayValue } from "../translators/TranslatedArrayValue";
 import { Query } from "./Query";
 import { QueryOptionsCollection } from "./QueryOptionsCollection";
 import { QueryOptionValueMap } from "./types";
+import { ExecutedQuery } from "./explain";
 
 export type JoinKind = "inner" | "left";
 
@@ -347,7 +348,9 @@ export const loadJoinInnerSide = <TRoot extends {}, TShape>(
      * before anything else — so it is optional, and its absence costs a wider inner read rather
      * than a wrong one.
      */
-    outerKeys?: ReadonlySet<unknown> | null
+    outerKeys?: ReadonlySet<unknown> | null,
+    /** Where the inner read reports what it executed. Defaults to the outer read's own list. */
+    innerExecutedQueries?: ExecutedQuery[]
 ): void => {
 
     const joinOption = event.operation.options.getLast("join");
@@ -381,9 +384,10 @@ export const loadJoinInnerSide = <TRoot extends {}, TShape>(
         action: "query",
         reason: "join inner side",
         explain: event.explain,
-        // The same array the outer read pushes into, so a join reports BOTH reads in execution
-        // order. Built fresh rather than spread, so this has to be carried explicitly.
-        executedQueries: event.executedQueries
+        // The caller decides where the inner read reports, because only it knows whether the inner
+        // side is the SAME plugin — where both reads belong in one explanation — or a different one,
+        // where a PouchDB scan filed under SqliteDbPlugin is a lie.
+        executedQueries: innerExecutedQueries ?? event.executedQueries
     };
 
     query(innerEvent, result => {
@@ -469,6 +473,13 @@ export const joinInPlugin = <TRoot extends {}, TShape>(
             }
 
             const outerRows = (outerResult.data.value ?? []) as unknown as UnknownRecord[];
+
+            if (at.reason !== "executed") {
+                // The outer read reported something, so the database phase stopped before the join.
+                // The datastore's own join branch pairs these rows.
+                done(PluginEventResult.success(event.id, new TranslatedArrayValue<TShape>(outerRows as never[], false)));
+                return;
+            }
 
             // Storage shape: the plugin returns rows as it holds them, and deserialization is what
             // `executeJoin` does per side below.

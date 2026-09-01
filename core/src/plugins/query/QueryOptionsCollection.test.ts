@@ -1,6 +1,17 @@
 import { describe, it, expect } from '@jest/globals';
 import { QueryOptionsCollection } from './QueryOptionsCollection';
 import { QueryOrdering } from './types';
+import { toExpression } from '../../expressions/parser';
+import { s as schemaBuilder } from '../../schema';
+
+const reportSchema = schemaBuilder.define('report_cascade', {
+    id: schemaBuilder.string().key(),
+    price: schemaBuilder.number(),
+}).compile();
+
+/** A database-target filter: an unparsable one is sent to memory and never carries a report. */
+const parsableExpression = () =>
+    toExpression(reportSchema as never, ((row: any) => row.price > 20) as never, undefined as never);
 
 describe('QueryOptionsCollection', () => {
     it('should create an empty collection', () => {
@@ -83,4 +94,74 @@ describe('QueryOptionsCollection', () => {
 
         expect(namesInOrder).toEqual(expectedByIndex);
     });
-}); 
+
+    describe('reporting more than one missing capability', () => {
+
+        const build = () => {
+            const collection = QueryOptionsCollection.EMPTY<any>();
+            collection.add('filter', { filter: () => true, params: null, expression: parsableExpression() } as never);
+            collection.add('filter', { filter: () => true, params: null, expression: parsableExpression() } as never);
+            collection.add('take', 5 as never);
+
+            return collection;
+        };
+
+        const reasons = (collection: QueryOptionsCollection<any>) => {
+            const found: string[] = [];
+            collection.forEach(option => found.push(`${option.name}:${option.reason}`));
+
+            return found;
+        };
+
+        const expected = ['filter:missing-capability', 'filter:missing-capability', 'take:not-reached'];
+
+        it('keeps every reported option named, whichever order they arrive in', () => {
+            const ascending = build();
+            ascending.reportMissingCapability(ascending.get('filter')[0]);
+            ascending.reportMissingCapability(ascending.get('filter')[1]);
+
+            const descending = build();
+            descending.reportMissingCapability(descending.get('filter')[1]);
+            descending.reportMissingCapability(descending.get('filter')[0]);
+
+            expect(reasons(ascending)).toEqual(expected);
+            expect(reasons(descending)).toEqual(expected);
+        });
+
+        it('is unchanged by reporting the same option twice', () => {
+            const collection = build();
+            collection.reportMissingCapability(collection.get('filter')[0]);
+            collection.reportMissingCapability(collection.get('filter')[0]);
+
+            expect(reasons(collection)).toEqual([
+                'filter:missing-capability', 'filter:not-reached', 'take:not-reached'
+            ]);
+        });
+    });
+
+    describe('a report made on a derived half', () => {
+
+        it('cascades over the whole dispatch, not just the half', () => {
+            const collection = QueryOptionsCollection.EMPTY<any>();
+            collection.add('filter', { filter: () => true, params: null, expression: parsableExpression() } as never);
+            collection.add('join', { schema: reportSchema, key: 'id', joinKey: 'id' } as never);
+
+            const { before, at } = collection.splitAt('join');
+            before.reportMissingCapability(before.get('filter')[0]);
+
+            expect(collection.getLast('filter')!.reason).toBe('missing-capability');
+            expect(at!.reason).toBe('not-reached');
+        });
+
+        it('cascades from the database half of a split', () => {
+            const collection = QueryOptionsCollection.EMPTY<any>();
+            collection.add('filter', { filter: () => true, params: null, expression: parsableExpression() } as never);
+            collection.add('take', 5 as never);
+
+            const { database } = collection.split();
+            database.reportMissingCapability(database.get('filter')[0]);
+
+            expect(collection.getLast('take')!.reason).toBe('not-reached');
+        });
+    });
+});

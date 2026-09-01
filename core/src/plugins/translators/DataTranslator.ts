@@ -77,6 +77,11 @@ export abstract class DataTranslator<TRoot extends {}, TShape> {
         const isTransformed = this.query.options.hasTransformations();
 
         this.query.options.forEach(item => {
+            // The plugin reported it could not run this one, so the memory pass owns it now.
+            if (item.target === "database" && item.reason !== "executed") {
+                return;
+            }
+
             data = this.functionMap[item.name](data, item);
         });
 

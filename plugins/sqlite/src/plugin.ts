@@ -1,4 +1,4 @@
-import { canPushDownJoin, decodeJsonColumns, splitJoinRows } from '@routier/sql-plugin-core';
+import { canPushDownJoin, CASING_CALLS, casingWarning, decodeJsonColumns, joinToPushDown, reportDivergentCalls, splitJoinRows } from '@routier/sql-plugin-core';
 import { assertIsNotNull, OptimisticConcurrencyError, UnknownRecord } from '@routier/core';
 import { buildFromPersistOperation, buildFromQueryOperation, buildJoinQueryOperation, compiledSchemaToSqliteTable } from './utils';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, SqlTranslator } from '@routier/core/plugins';
@@ -8,6 +8,7 @@ import { CompiledSchema } from '@routier/core/schema';
 import { ResultColumn } from '@routier/core/plugins';
 import { SqlPersistOperation } from './types';
 import type { SqliteConnection, SqliteDriver } from './drivers/types';
+import type { Call } from '@routier/core/expressions';
 
 export type SqliteDbPluginOptions = {
     /**
@@ -120,12 +121,24 @@ export class SqliteDbPluginBase implements IDbPlugin {
      * SQLite's own file locking serialize concurrent writers, and a shared handle would make
      * disposal a lifecycle problem for every caller.
      */
+    /** Calls this driver would answer differently from JavaScript, so they must not be pushed down. */
+    protected divergentCalls(): readonly Call[] {
+        return this.driver.foldsUnicodeCasing ? [] : CASING_CALLS;
+    }
+
     private async withConnection<T>(work: (connection: SqliteConnection) => Promise<T>): Promise<T> {
         // An open failure must not be reported as anything else, and must not leave a handle
         // behind: there is nothing to close if the open never succeeded (#34).
         const connection = await this.driver.open(this.databaseName);
 
         try {
+            // SQLite's own `lower()` folds ASCII only. Replacing it is what makes a pushed-down
+            // `.toLowerCase()` return the rows the predicate means.
+            if (this.driver.foldsUnicodeCasing && connection.defineFunction != null) {
+                connection.defineFunction("lower", value => typeof value === "string" ? value.toLowerCase() : value);
+                connection.defineFunction("upper", value => typeof value === "string" ? value.toUpperCase() : value);
+            }
+
             return await work(connection);
         } finally {
             await connection.close().catch((): void => undefined);
@@ -165,7 +178,11 @@ export class SqliteDbPluginBase implements IDbPlugin {
         event: DbPluginQueryEvent<TRoot, TShape>,
         done: PluginEventCallbackResult<ITranslatedValue<TShape>>
     ): void {
-        if (event.operation.options.has("join")) {
+        if (this.driver.foldsUnicodeCasing === false) {
+            reportDivergentCalls(event.operation.options, CASING_CALLS, casingWarning(this.driver.name));
+        }
+
+        if (joinToPushDown(event.operation.options, "sqlite") != null) {
             this.queryJoined(event, done);
             return;
         }
@@ -227,7 +244,7 @@ export class SqliteDbPluginBase implements IDbPlugin {
              * the inner side's scope excludes, so the plugin says it did NOT push down and the
              * translator refuses rather than answering wrongly.
              */
-            if (canPushDownJoin(join.value) === false) {
+            if (canPushDownJoin(join.value, "sqlite", this.divergentCalls()) === false) {
                 done(PluginEventResult.error(event.id, new Error(
                     `Cannot push this join down to SQLite: the inner collection has a filter that cannot be expressed as SQL ` +
                     `(an unmapped or renamed property), so the join would return rows its scope excludes.`

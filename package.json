@@ -82,6 +82,7 @@
         "mongodb": "^7.5.0",
         "oxfmt": "^0.36.0",
         "oxlint": "^1.51.0",
+        "playwright-core": "^1.62.1",
         "pouchdb-adapter-http": "^9.0.0",
         "pouchdb-adapter-memory": "^9.0.0",
         "pouchdb-core": "^9.0.0",

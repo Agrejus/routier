@@ -78,6 +78,7 @@ class Sqlite3Connection implements SqliteConnection {
 
 export const sqlite3Driver = (): SqliteDriver => ({
     name: 'sqlite3',
+    foldsUnicodeCasing: false,
 
     async open(databaseName: string): Promise<SqliteConnection> {
         const { Database } = await loadModule();

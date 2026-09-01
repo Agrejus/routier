@@ -3,6 +3,7 @@ import { s } from '../schema';
 import { logger } from '../utilities';
 import { toExpression } from './parser';
 import { ComparatorExpression, Expression, ValueExpression } from './types';
+import { peelCalls } from './utils';
 
 /**
  * Survivors of the 2026-08 mutation audit, killed by direct assertion. Two kinds live here:
@@ -68,13 +69,13 @@ function parsed(fn: any, params?: any): ComparatorExpression {
         ? toExpression(schema as any, fn)
         : toExpression(schema as any, fn, params);
 
-    expect(result).not.toStrictEqual(Expression.NOT_PARSABLE);
+    expect(result).not.toHaveProperty('type', 'not-parsable');
     return result as ComparatorExpression;
 }
 
 describe('failure messages name their cause', () => {
     it('an unknown character', () => {
-        expect(failureMessage(fromSource('r.price === ~1'))).toMatch(/unexpected character '~'/);
+        expect(failureMessage(withSource('(r) => r.price === @1'))).toMatch(/unexpected character '@'/);
     });
 
     it('source ending mid-expression', () => {
@@ -89,9 +90,6 @@ describe('failure messages name their cause', () => {
         expect(failureMessage(withSource('(r) => r.name === "a" r'))).toMatch(/unexpected token 'r'/);
     });
 
-    it('comparison against a parenthesized expression', () => {
-        expect(failureMessage(fromSource('(r.price === 1) === true'))).toMatch(/comparison against a parenthesized expression/);
-    });
 
     it("unary '-' on a non-number", () => {
         expect(failureMessage(fromSource('r.price === -"x"'))).toMatch(/unary '-' on a non-number/);
@@ -140,10 +138,6 @@ describe('failure messages name their cause', () => {
         expect(failureMessage(fromSource('p.v.startsWith(r.name)', '[r, p]'), { v: 'abc' })).toMatch(/\.startsWith\(\) on a non-property target/);
     });
 
-    it('a transform method outside string matching', () => {
-        expect(failureMessage(fromSource('r.name.toLowerCase() === "x"'))).toMatch(/transform method outside of startsWith\/endsWith\/includes/);
-    });
-
     it('comparing a method call to a non-boolean', () => {
         expect(failureMessage(fromSource('r.name.startsWith("x") === 1'))).toMatch(/comparing a method call to a non-boolean/);
     });
@@ -156,8 +150,8 @@ describe('failure messages name their cause', () => {
         expect(failureMessage(withSource('() => true'))).toBe('Invalid Function');
     });
 
-    it('a block body without a single return statement', () => {
-        expect(failureMessage(fromBlock('const x = r.name; return x === "a"'))).toMatch(/block body without a single return statement/);
+    it('a statement the block reader has no rule for', () => {
+        expect(failureMessage(fromBlock('for (;;) return true;'))).toMatch(/the statement 'for'/);
     });
 });
 
@@ -212,8 +206,13 @@ describe('converters on bound params', () => {
         expect((cmp.right as ValueExpression).value).toBe(tags);
     });
 
-    it('a String-typed param is coerced to string, with null passed through', () => {
-        expect((parsed(fromSource('r.name === p.v', '[r, p]'), { v: 123 }).right as ValueExpression).value).toBe('123');
+    it('a String-typed param is coerced to string under a loose comparison', () => {
+        expect((parsed(fromSource('r.name == p.v', '[r, p]'), { v: 123 }).right as ValueExpression).value).toBe('123');
+        expect((parsed(fromSource('r.name == p.v', '[r, p]'), { v: null }).right as ValueExpression).value).toBeNull();
+    });
+
+    it('leaves a strict comparison uncoerced, because 5 === "5" is false in JavaScript', () => {
+        expect((parsed(fromSource('r.name === p.v', '[r, p]'), { v: 123 }).right as ValueExpression).value).toBe(123);
         expect((parsed(fromSource('r.name === p.v', '[r, p]'), { v: null }).right as ValueExpression).value).toBeNull();
     });
 });
@@ -258,10 +257,11 @@ describe('truthy shorthand', () => {
 });
 
 describe('value transformers', () => {
-    it('a transform on a literal value is carried on the value expression', () => {
+    it('a transform on a literal value is computed into the value', () => {
+        // A dropped transform would leave 'X' here, which is what the parser used to lose.
         const cmp = parsed(fromSource('r.name.startsWith("X".toLowerCase())'));
 
-        expect((cmp.right as ValueExpression).transformer).toBeTruthy();
+        expect((cmp.right as ValueExpression).value).toBe('x');
     });
 });
 

@@ -3,13 +3,6 @@ import { SchemaBase } from './property/base/SchemaBase';
 import { SchemaArray } from './property/types/SchemaArray';
 import { DefaultValue, ForeignKey, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaTypes, PropertyTransform } from './types';
 
-const SUPPORTED_DESERIALIZATION_TYPES = new Set<SchemaTypes>([
-    SchemaTypes.Boolean,
-    SchemaTypes.Date,
-    SchemaTypes.Number,
-    SchemaTypes.String,
-]);
-
 /**
  * Represents metadata and utilities for a property in a schema, including its type, name, parent, children, and serialization details.
  */
@@ -176,10 +169,6 @@ export class PropertyInfo<T extends {}> {
 
     get isRenamed() {
         return !!this.from;
-    }
-
-    get supportsDeserialization() {
-        return this.valueDeserializer != null || SUPPORTED_DESERIALIZATION_TYPES.has(this.type);
     }
 
     private _getPropertyChain(): PropertyInfo<T>[] {
@@ -485,7 +474,7 @@ export class PropertyInfo<T extends {}> {
             return Boolean(value);
         }
 
-        throw new Error(`Unsupported deserialization for type.  Type: ${this.type}`);
+        return value;
     }
 }
 

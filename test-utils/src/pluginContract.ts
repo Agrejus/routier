@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "@jest/globals";
 import { IDbPlugin } from "@routier/core";
 import { s } from "@routier/core/schema";
 import { DataStore } from "@routier/datastore";
+import { executedQueriesOf } from "@routier/core/plugins";
 
 /**
  * A behavioral contract every IDbPlugin implementation must satisfy, written once and
@@ -226,7 +227,7 @@ export function describePluginContract(
 
                 expect(explanation.executionSteps.length).toBeGreaterThan(0);
 
-                const reported = explanation.executionSteps.flatMap(step => step.executedQueries ?? []);
+                const reported = executedQueriesOf(explanation);
 
                 expect(reported.length).toBeGreaterThan(0);
             });
@@ -238,7 +239,7 @@ export function describePluginContract(
                     .explain()
                     .toArrayAsync();
 
-                const reported = explanation.executionSteps.flatMap(step => step.executedQueries ?? []);
+                const reported = executedQueriesOf(explanation);
 
                 for (const executed of reported) {
                     expect(typeof executed.text).toBe("string");
@@ -264,7 +265,7 @@ export function describePluginContract(
                     .explain()
                     .toArrayAsync();
 
-                const databaseStep = explanation.executionSteps.find(step => step.executedIn === "database");
+                const databaseStep = explanation.executionSteps.find(step => step.executedIn.kind === "database");
 
                 expect(databaseStep).toBeDefined();
             });
@@ -604,6 +605,145 @@ export function describePluginContract(
                 expect(found.map(p => p.name).sort()).toEqual(["Bravo", "Delta"]);
             });
 
+            /**
+             * A casing call on a relational comparator. The parser refused these until the guards at
+             * `parser.ts:911`/`:1016` came out, so no plugin has ever been asked to answer one — a
+             * translator renders `LOWER(...)`, an in-process plugin runs the caller's closure, and
+             * every one of them has to agree with the others and with plain JavaScript.
+             */
+            test("filters through a lower-case call", async () => {
+                const found = await (await seeded()).products.where(p => p.name.toLowerCase() === "bravo").toArrayAsync();
+
+                expect(found.map(p => p.name)).toEqual(["Bravo"]);
+            });
+
+            test("filters through an upper-case call", async () => {
+                const found = await (await seeded()).products.where(p => p.category.toUpperCase() === "TOYS").toArrayAsync();
+
+                expect(found.map(p => p.name).sort()).toEqual(["Charlie", "Delta"]);
+            });
+
+            // Case-FOLDED, not case-blind: comparing a lower-cased column to a capitalised literal
+            // matches nothing, and a plugin that ignored the call would return the row
+            test("does not match when the call is applied but the literal is not folded", async () => {
+                const found = await (await seeded()).products.where(p => p.name.toLowerCase() === "Bravo").toArrayAsync();
+
+                expect(found).toEqual([]);
+            });
+
+            test("filters through a call on a relational comparator", async () => {
+                const found = await (await seeded()).products.where(p => p.name.toLowerCase() > "c").toArrayAsync();
+
+                expect(found.map(p => p.name).sort()).toEqual(["Charlie", "Delta"]);
+            });
+
+            test("filters through a call on both sides of a comparison", async () => {
+                const found = await (await seeded()).products
+                    .where(p => p.name.toLowerCase() === p.category.toLowerCase())
+                    .toArrayAsync();
+
+                expect(found).toEqual([]);
+            });
+
+            /**
+             * Arithmetic. The expression tree always carried it — `Call` has had `add` through
+             * `modulo` since the node existed — so what is new here is that the grammar reads `%`,
+             * and that every backend computes the same answer as JavaScript.
+             */
+            test("filters through modulo", async () => {
+                const found = await (await seeded()).products.where(p => p.price % 20 === 0).toArrayAsync();
+
+                expect(found.map(p => p.name).sort()).toEqual(["Charlie", "Delta"]);
+            });
+
+            /**
+             * A FRACTIONAL remainder, which is where SQLite's own `%` disagrees with JavaScript: it
+             * truncates both operands to integers, so `2.5 % 2` would be 0 rather than 0.5. Prices
+             * are whole numbers, so the fraction has to be produced by the division first.
+             *
+             * 10/4 and 2.5 are both exact in binary, so this is not a floating-point coin toss.
+             */
+            test("filters through a remainder of a fractional value", async () => {
+                const found = await (await seeded()).products.where(p => p.price / 4 % 2 === 0.5).toArrayAsync();
+
+                expect(found.map(p => p.name)).toEqual(["Alpha"]);
+            });
+
+            test("filters through addition", async () => {
+                const found = await (await seeded()).products.where(p => p.price + 5 > 35).toArrayAsync();
+
+                expect(found.map(p => p.name)).toEqual(["Delta"]);
+            });
+
+            test("filters through subtraction", async () => {
+                const found = await (await seeded()).products.where(p => p.price - 10 === 0).toArrayAsync();
+
+                expect(found.map(p => p.name)).toEqual(["Alpha"]);
+            });
+
+            test("filters through multiplication by a float", async () => {
+                const found = await (await seeded()).products.where(p => p.price * 1.5 > 45).toArrayAsync();
+
+                expect(found.map(p => p.name)).toEqual(["Delta"]);
+            });
+
+            test("filters through division", async () => {
+                const found = await (await seeded()).products.where(p => p.price / 10 === 2).toArrayAsync();
+
+                expect(found.map(p => p.name)).toEqual(["Charlie"]);
+            });
+
+            // 2 + 3 * 4 is 14, not 20 — a backend that evaluated left to right would return nothing
+            test("gives multiplication precedence over addition", async () => {
+                const found = await (await seeded()).products.where(p => p.price + 3 * 4 === 22).toArrayAsync();
+
+                expect(found.map(p => p.name)).toEqual(["Alpha"]);
+            });
+
+            /**
+             * The rest of the grammar. Every one of these has a JavaScript answer, so a backend that
+             * cannot express it reports a missing capability and the datastore finishes the job —
+             * the row counts below hold either way, which is the point.
+             */
+            test("filters through nullish coalescing", async () => {
+                const found = await (await seeded()).products.where(p => (p.category ?? "none") === "toys").toArrayAsync();
+
+                expect(found.map(p => p.name).sort()).toEqual(["Charlie", "Delta"]);
+            });
+
+            test("filters through the conditional operator", async () => {
+                const found = await (await seeded()).products
+                    .where(p => (p.price > 25 ? p.category : "cheap") === "cheap")
+                    .toArrayAsync();
+
+                expect(found.map(p => p.name).sort()).toEqual(["Alpha", "Charlie"]);
+            });
+
+            test("filters through a bitwise and", async () => {
+                const found = await (await seeded()).products.where(p => (p.price & 20) === 20).toArrayAsync();
+
+                // 30 & 20 is 20 and 20 & 20 is 20; 10 and 40 share no bits with 20
+                expect(found.map(p => p.name).sort()).toEqual(["Bravo", "Charlie"]);
+            });
+
+            test("filters through a template literal", async () => {
+                const found = await (await seeded()).products.where(p => `${p.name}!` === "Bravo!").toArrayAsync();
+
+                expect(found.map(p => p.name)).toEqual(["Bravo"]);
+            });
+
+            test("filters through a regular expression", async () => {
+                const found = await (await seeded()).products.where(p => /^[AB]/.test(p.name)).toArrayAsync();
+
+                expect(found.map(p => p.name).sort()).toEqual(["Alpha", "Bravo"]);
+            });
+
+            test("filters through an exponent", async () => {
+                const found = await (await seeded()).products.where(p => p.price ** 2 === 900).toArrayAsync();
+
+                expect(found.map(p => p.name)).toEqual(["Bravo"]);
+            });
+
             test("returns an empty array when nothing matches", async () => {
                 expect(await (await seeded()).products.where(p => p.price > 10_000).toArrayAsync()).toEqual([]);
             });
@@ -763,6 +903,106 @@ export function describePluginContract(
             test("can be called on a store that never persisted anything", async () => {
                 await expect(store().destroyAsync()).resolves.not.toThrow();
             });
+        });
+
+        /** The rows a filter returns must be the rows the JavaScript predicate returns. */
+        section("filter parity with JavaScript", () => {
+
+            /** Values chosen where engines disagree: the shared fixture is integral and ASCII. */
+            const DIVERGENT: Product[] = [
+                { name: "Echo", category: "tools", price: 5 },
+                { name: "\u00c9cho", category: "tools", price: 5.5 },
+                { name: "Fox", category: "toys", price: 20 },
+                { name: "Golf", category: "toys", price: 30 },
+                { name: "Wide", category: "toys", price: 2147483648 },
+            ];
+
+            const seededDivergent = async () => {
+                const dataStore = store();
+                await dataStore.products.addAsync(...(DIVERGENT as any));
+                await dataStore.saveChangesAsync();
+                return dataStore;
+            };
+
+            const agrees = async (title: string, predicate: (product: Product) => boolean) => {
+                const dataStore = await seededDivergent();
+                const found = await dataStore.products.where(predicate as any).toArrayAsync();
+
+                expect({ [title]: found.map((p: any) => p.name).toSorted() })
+                    .toEqual({ [title]: DIVERGENT.filter(predicate).map(p => p.name).toSorted() });
+            };
+
+            test("truncates a fractional bitwise operand the way JavaScript does", async () => {
+                // JavaScript: 5.5 -> 5, and 5 & 1 is 1. An engine that rounds gets 6 & 1 = 0.
+                await agrees("fractional bitwise and", p => ((p.price as number) & 1) === 1);
+            });
+
+            test("folds case beyond ASCII", async () => {
+                await agrees("non-ascii lower", p => p.name.toLowerCase() === "\u00e9cho");
+            });
+
+            test("concatenates a number the way a template literal does", async () => {
+                await agrees("numeric concat", p => `${p.price}!` === "5!");
+            });
+
+            test("takes a shift count mod 32", async () => {
+                // 20 << 37 is 20 << 5 in JavaScript: 640. A 64-bit engine answers 2748779069440.
+                await agrees("wide shift", p => ((p.price as number) << 37) === 640);
+            });
+
+            test("filters through a bitwise xor", async () => {
+                await agrees("xor", p => ((p.price as number) ^ 2) === 28);
+            });
+
+            test("filters through a left shift", async () => {
+                await agrees("shift", p => ((p.price as number) << 1) === 40);
+            });
+
+            test("wraps a bitwise operand to 32 bits, the way JavaScript does", async () => {
+                // JavaScript runs ToInt32 first, so this is -2147483648. A 64-bit engine says otherwise.
+                await agrees("wide bitwise", p => ((p.price as number) | 0) === -2147483648);
+            });
+
+            test("concatenates a computed number the way a template literal does", async () => {
+                // SQLite renders the REAL result of `price + 0` as '5.0'.
+                await agrees("computed concat", p => `${(p.price as number) + 0}!` === "5!");
+            });
+
+            test("matches nothing when a strict comparison compares types that cannot be equal", async () => {
+                // JavaScript answers `5 === "5"` with false, whatever the column holds.
+                await agrees("strict mismatch", p => (p.price as unknown) === "5");
+            });
+
+            test("keeps every row when a strict not-equals compares types that cannot be equal", async () => {
+                await agrees("strict mismatch negated", p => (p.price as unknown) !== "5");
+            });
+
+            test("still coerces a loose comparison, the way JavaScript does", async () => {
+                await agrees("loose coercion", p => (p.price as unknown) == "5");
+            });
+
+            test("applies a filter written after take to the windowed rows", async () => {
+                const dataStore = await seededDivergent();
+                const ordered = [...DIVERGENT].sort((a, b) => a.name < b.name ? -1 : 1);
+
+                const found = await dataStore.products
+                    .sort(p => p.name).take(2).where(p => p.price > 15).toArrayAsync();
+
+                expect(found.map((p: any) => p.name))
+                    .toEqual(ordered.slice(0, 2).filter(p => p.price > 15).map(p => p.name));
+            });
+
+            test("applies a filter written after skip to the rows past the window", async () => {
+                const dataStore = await seededDivergent();
+                const ordered = [...DIVERGENT].sort((a, b) => a.name < b.name ? -1 : 1);
+
+                const found = await dataStore.products
+                    .sort(p => p.name).skip(2).where(p => p.price > 15).toArrayAsync();
+
+                expect(found.map((p: any) => p.name))
+                    .toEqual(ordered.slice(2).filter(p => p.price > 15).map(p => p.name));
+            });
+
         });
     });
 }

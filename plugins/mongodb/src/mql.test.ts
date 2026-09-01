@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import { ComparatorExpression, Expression, OperatorExpression, PropertyExpression, ValueExpression } from "@routier/core/expressions";
+import { CallExpression, ComparatorExpression, Expression, OperatorExpression, PropertyExpression, ValueExpression } from "@routier/core/expressions";
 import { SchemaTypes, s } from "@routier/core/schema";
 import { toExpression } from "@routier/core/expressions";
 import { toMql } from "./mql";
@@ -12,6 +12,9 @@ import { toMql } from "./mql";
  * directly keeps these tests about translation rather than about schema compilation.
  * The parser-driven suite at the bottom covers the real thing.
  */
+const called = (call: string, expression: unknown) =>
+    new CallExpression({ call: call as never, expression: expression as never });
+
 const prop = (
     name: string,
     options?: { from?: string; parents?: string[]; type?: SchemaTypes }
@@ -278,8 +281,7 @@ describe("mql expression translator", () => {
     describe("transformers", () => {
 
         it("applies a value-side transformer to the literal, not the query", () => {
-            const value = val("JAMES");
-            value.transformer = "to-lower-case";
+            const value = called("to-lower-case", val("JAMES"));
 
             expect(toMql(cmp("equals", prop("name"), value))).toEqual({
                 name: { $eq: "james" },
@@ -287,8 +289,7 @@ describe("mql expression translator", () => {
         });
 
         it("switches to $expr for a property-side to-lower-case", () => {
-            const property = prop("name");
-            property.transformer = "to-lower-case";
+            const property = called("to-lower-case", prop("name"));
 
             expect(toMql(cmp("equals", property, val("james")))).toEqual({
                 $expr: { $eq: [{ $toLower: "$name" }, { $literal: "james" }] },
@@ -296,8 +297,7 @@ describe("mql expression translator", () => {
         });
 
         it("uses $strLenCP for the length of a string property", () => {
-            const property = prop("name");
-            property.transformer = "length";
+            const property = called("length", prop("name"));
 
             expect(toMql(cmp("greater-than", property, val(3)))).toEqual({
                 $expr: { $gt: [{ $strLenCP: "$name" }, { $literal: 3 }] },
@@ -305,8 +305,7 @@ describe("mql expression translator", () => {
         });
 
         it("uses $size for the length of an array property", () => {
-            const property = prop("tags", { type: SchemaTypes.Array });
-            property.transformer = "length";
+            const property = called("length", prop("tags", { type: SchemaTypes.Array }));
 
             expect(toMql(cmp("equals", property, val(2)))).toEqual({
                 $expr: { $eq: [{ $size: "$tags" }, { $literal: 2 }] },
@@ -314,8 +313,7 @@ describe("mql expression translator", () => {
         });
 
         it("mirrors inside $expr when the transformed property is on the right", () => {
-            const property = prop("name");
-            property.transformer = "length";
+            const property = called("length", prop("name"));
 
             // `3 < entity.name.length` — operands stay in source order here because
             // $expr takes an array, so no mirroring is needed, only correct placement.
@@ -325,8 +323,7 @@ describe("mql expression translator", () => {
         });
 
         it("renders a pattern against a transformed property with $regexMatch", () => {
-            const property = prop("name");
-            property.transformer = "to-lower-case";
+            const property = called("to-lower-case", prop("name"));
 
             expect(toMql(cmp("starts-with", property, val("ad")))).toEqual({
                 $expr: { $regexMatch: { input: { $toLower: "$name" }, regex: "^ad" } },

@@ -247,7 +247,7 @@ describe("PluginSyncEngine", () => {
 
 
 describe("PluginSyncEngine mirror error reporting", () => {
-    it("reports the failing mirror's index, not the error-array index", (done) => {
+    it("reports the failing mirror plugin itself, not the error-array position", (done) => {
         const source = createPluginMock();
         const okMirror = createPluginMock();
         const failingMirror = createPluginMock();
@@ -269,8 +269,8 @@ describe("PluginSyncEngine mirror error reporting", () => {
         engine.bulkPersist(event, (result) => {
             expect(result.ok).toBe(Result.SUCCESS);
             expect(onMirrorError).toHaveBeenCalledTimes(1);
-            const [, context] = onMirrorError.mock.calls[0] as [Error, { pluginIndex: number }];
-            expect(context.pluginIndex).toBe(1);
+            const [, context] = onMirrorError.mock.calls[0] as [Error, { plugin: unknown }];
+            expect(context.plugin).toBe(failingMirror);
             done();
         });
     });

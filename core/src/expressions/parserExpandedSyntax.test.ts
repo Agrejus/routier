@@ -3,6 +3,7 @@ import { s } from '../schema';
 import { logger } from '../utilities';
 import { toExpression } from './parser';
 import { ComparatorExpression, Expression, OperatorExpression, PropertyExpression, ValueExpression } from './types';
+import { peelCalls } from './utils';
 
 /**
  * The 2026-08 query-language expansion: syntax that used to silently fall back to
@@ -42,7 +43,7 @@ function parsed(fn: any, params?: any): ComparatorExpression {
         ? toExpression(schema as any, fn)
         : toExpression(schema as any, fn, params);
 
-    expect(result).not.toStrictEqual(Expression.NOT_PARSABLE);
+    expect(result).not.toHaveProperty('type', 'not-parsable');
     return result as ComparatorExpression;
 }
 
@@ -51,7 +52,7 @@ function rejected(fn: any, params?: any) {
         ? toExpression(schema as any, fn)
         : toExpression(schema as any, fn, params);
 
-    expect(result).toStrictEqual(Expression.NOT_PARSABLE);
+    expect(result).toHaveProperty('type', 'not-parsable');
 }
 
 describe('unicode and hex string escapes', () => {
@@ -159,7 +160,7 @@ describe('inline array membership', () => {
 
         expect(cmp.comparator).toBe('includes');
         expect((cmp.left as ValueExpression).value).toEqual(['active', 'pending']);
-        expect((cmp.right as PropertyExpression).property.name).toBe('name');
+        expect((peelCalls(cmp.right)?.operand as PropertyExpression).property.name).toBe('name');
     });
 
     it('parses a numeric array', () => {
@@ -191,8 +192,8 @@ describe('property-to-property comparison', () => {
         const cmp = parsed(fromSource('r.name === r.other'));
 
         expect(cmp.comparator).toBe('equals');
-        expect((cmp.left as PropertyExpression).property.name).toBe('name');
-        expect((cmp.right as PropertyExpression).property.name).toBe('other');
+        expect((peelCalls(cmp.left)?.operand as PropertyExpression).property.name).toBe('name');
+        expect((peelCalls(cmp.right)?.operand as PropertyExpression).property.name).toBe('other');
     });
 
     it('parses relational comparison without swapping sides', () => {
@@ -206,8 +207,9 @@ describe('property-to-property comparison', () => {
         expect(cmp.strict).toBe(true);
     });
 
-    it('rejects casing transformers on either side', () => {
-        rejected(fromSource('r.name.toLowerCase() === r.other'));
+    it('parses a casing call on either side', () => {
+        expect(peelCalls(parsed(fromSource('r.name.toLowerCase() === r.other')).left)?.calls.map(c => c.call)).toEqual(['to-lower-case']);
+        expect(peelCalls(parsed(fromSource('r.name === r.other.toLowerCase()')).right)?.calls.map(c => c.call)).toEqual(['to-lower-case']);
     });
 });
 
@@ -215,15 +217,15 @@ describe('.length on strings and arrays', () => {
     it('parses string length as a length transformer with a numeric value', () => {
         const cmp = parsed(fromSource('r.name.length > 5'));
 
-        expect((cmp.left as PropertyExpression).property.name).toBe('name');
-        expect((cmp.left as PropertyExpression).transformer).toBe('length');
+        expect((peelCalls(cmp.left)?.operand as PropertyExpression).property.name).toBe('name');
+        expect(peelCalls(cmp.left)?.calls.map(c => c.call)).toEqual(['length']);
         expect((cmp.right as ValueExpression).value).toBe(5);
     });
 
     it('parses array length equality', () => {
         const cmp = parsed(fromSource('r.tags.length === 0'));
 
-        expect((cmp.left as PropertyExpression).transformer).toBe('length');
+        expect(peelCalls(cmp.left)?.calls.map(c => c.call)).toEqual(['length']);
         expect((cmp.right as ValueExpression).value).toBe(0);
     });
 
@@ -265,8 +267,8 @@ describe('.length on strings and arrays', () => {
 
         const result = toExpression(lengthSchema as any, ((r: any) => r.box.length === 5) as any) as ComparatorExpression;
 
-        expect(result).not.toStrictEqual(Expression.NOT_PARSABLE);
-        expect((result.left as PropertyExpression).transformer).toBeNull();
+        expect(result).not.toHaveProperty('type', 'not-parsable');
+        expect(peelCalls(result.left)?.calls.map(c => c.call)).toEqual([]);
         expect((result.left as PropertyExpression).property.getAssignmentPath()).toBe('box.length');
     });
 });
@@ -320,9 +322,9 @@ describe('parse failure caching', () => {
         }).compile();
         const unsupported = fromSource('r.name.padEnd(3) === "x"');
 
-        expect(toExpression(cacheSchema as any, unsupported)).toStrictEqual(Expression.NOT_PARSABLE);
-        expect(toExpression(cacheSchema as any, unsupported)).toStrictEqual(Expression.NOT_PARSABLE);
-        expect(toExpression(cacheSchema as any, unsupported)).toStrictEqual(Expression.NOT_PARSABLE);
+        expect(toExpression(cacheSchema as any, unsupported)).toHaveProperty('type', 'not-parsable');
+        expect(toExpression(cacheSchema as any, unsupported)).toHaveProperty('type', 'not-parsable');
+        expect(toExpression(cacheSchema as any, unsupported)).toHaveProperty('type', 'not-parsable');
 
         expect(warn).toHaveBeenCalledTimes(1);
     });
@@ -335,11 +337,11 @@ describe('parse failure caching', () => {
         const filter = fromSource('r.name === p.term', '[r, p]');
 
         // Wrong params fail...
-        expect(toExpression(cacheSchema as any, filter, { other: 1 })).toStrictEqual(Expression.NOT_PARSABLE);
+        expect(toExpression(cacheSchema as any, filter, { other: 1 })).toHaveProperty('type', 'not-parsable');
 
         // ...but the same source with the right params must still parse.
         const bound = toExpression(cacheSchema as any, filter, { term: 'x' }) as ComparatorExpression;
-        expect(bound).not.toStrictEqual(Expression.NOT_PARSABLE);
+        expect(bound).not.toHaveProperty('type', 'not-parsable');
         expect((bound.right as ValueExpression).value).toBe('x');
     });
 });

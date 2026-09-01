@@ -1,5 +1,5 @@
 import { Expression } from "../../expressions/types";
-import { MemoryExecutionReason, QueryOption, QueryOptionExecutionTarget, QueryOptionName } from "./types";
+import { DatabaseExecutionReason, MemoryExecutionReason, QueryOption, QueryOptionExecutionTarget, QueryOptionName } from "./types";
 import { QueryOptionsCollection } from "./QueryOptionsCollection";
 
 /**
@@ -15,7 +15,9 @@ export const MEMORY_EXECUTION_EXPLANATIONS: Record<MemoryExecutionReason, string
     "map-rename": "A map renames or drops properties, so every option after it refers to names the database does not have.",
     "after-nearest": "A similarity search orders and limits rows, and the plugin cannot report whether it performed the search, so every option after it runs in memory.",
     "after-join": "A join produces [outer, inner] tuples rather than entities, and the plugin cannot report how it joined, so every option after it runs in memory.",
-    "cross-plugin-join": "The two sides of this join live on different plugins, so neither can read the other's rows and the join runs in the datastore."
+    "cross-plugin-join": "The two sides of this join live on different plugins, so neither can read the other's rows and the join runs in the datastore.",
+    "after-window": "A skip or take runs before this option, and SQL applies WHERE before LIMIT, so pushing it down would window rows this option had not seen yet. It runs in memory over the windowed rows instead.",
+    "predicate-error": "A strict comparison compares a column against a value of a type it can never equal, so the answer is the same for every row and the filter runs in memory. Check the types in the filter."
 };
 
 /**
@@ -39,26 +41,70 @@ export type ExplainedOption = {
 export const EXECUTED_QUERIES_UNSUPPORTED =
     "This plugin did not report what it executed. It may not support explain.";
 
-export type ExecutionStep = {
-    step: number;
-    of: number;
-    executedIn: QueryOptionExecutionTarget;
-    description: string;
-    options: ExplainedOption[];
-    /** Set on database steps once the plugin has reported. */
-    executedQueries?: ExecutedQuery[];
-    /** Set on the first database step instead, when the plugin reported nothing. */
-    executedQueriesUnsupported?: string;
-    /** Set on memory steps only. */
-    reason?: MemoryExecutionReason;
-    explanation?: string;
+/**
+ * Why an option planned for the database did not run there. `executed` has no sentence: it needs no
+ * explaining, and a step made of executed options is a database step like any other.
+ */
+export const DATABASE_EXECUTION_EXPLANATIONS: Record<Exclude<DatabaseExecutionReason, "executed">, string> = {
+    "missing-capability": "The plugin's engine cannot express this option, so it runs in memory over the rows the plugin did return. Only the plugin can know this — an engine's capabilities are not visible from here.",
+    "engine-divergence": "The plugin's engine would answer this option differently from JavaScript, so it runs in memory instead and the rows match what the predicate means. Nothing in the query needs changing.",
+    "not-reached": "The database stopped at an option it could not express, so this one runs in memory too. Carrying on would apply it to rows the earlier option had not filtered."
 };
+
+/**
+ * Where a step ran.
+ *
+ * A database step names WHICH database, because a cross-plugin join reads from more than one — and a
+ * name alone does not say whether the second was PostgreSQL or PouchDB, which is the difference
+ * between a statement a reader recognises and one they cannot place.
+ */
+export type ExecutedIn =
+    | { kind: "database"; database: string; plugin: string }
+    | { kind: "memory" };
+
+/** Why a step is not in the database. `executed` never appears: those steps ARE in the database. */
+export type StepReason = MemoryExecutionReason | Exclude<DatabaseExecutionReason, "executed">;
+
+/**
+ * One run of options in one place.
+ *
+ * A union, so a memory step cannot carry statements it could not have run and a database step cannot
+ * carry a reason for not being in the database.
+ */
+export type ExecutionStep =
+    | {
+        step: number;
+        of: number;
+        executedIn: Extract<ExecutedIn, { kind: "database" }>;
+        options: ExplainedOption[];
+        /** What the plugin reported running. Empty when it reported nothing. */
+        executedQueries: ExecutedQuery[];
+        /** Set instead, when this plugin does not report what it executed. */
+        executedQueriesUnsupported?: string;
+    }
+    | {
+        step: number;
+        of: number;
+        executedIn: Extract<ExecutedIn, { kind: "memory" }>;
+        options: ExplainedOption[];
+        reason?: StepReason;
+        explanation?: string;
+    };
+
+export type DatabaseStep = Extract<ExecutionStep, { executedQueries: ExecutedQuery[] }>;
+export type MemoryStep = Exclude<ExecutionStep, DatabaseStep>;
+
+/**
+ * TypeScript does not narrow a union from a discriminant nested inside a property, so the two kinds
+ * of step need a guard rather than an inline check.
+ */
+export const isDatabaseStep = (step: ExecutionStep): step is DatabaseStep => step.executedIn.kind === "database";
 
 export type QueryExplanationSummary = {
     database: number;
     memory: number;
     /** Deduped, in first-seen order. Empty when the whole query pushed down. */
-    reasons: MemoryExecutionReason[];
+    reasons: StepReason[];
     explanation: string;
 };
 
@@ -76,9 +122,6 @@ export type ExplainContext = {
     pluginKind: string;
 };
 
-const DATABASE_STEP_DESCRIPTION = "These options are sent to the plugin.";
-const MEMORY_STEP_DESCRIPTION = "Routier runs these over the rows the database returned, after deserializing them.";
-const UNNARROWED_READ_DESCRIPTION = "No option could be pushed down, so the plugin reads the whole collection.";
 
 /**
  * The reportable shape of one option's value.
@@ -162,13 +205,16 @@ const explainedOptionsOf = (options: QueryOptionsCollection<any>): ExplainedOpti
     return explained;
 };
 
+/** Every sentence, whoever decided — the summary reads the same either way. */
+const EXPLANATIONS: Record<string, string> = { ...MEMORY_EXECUTION_EXPLANATIONS, ...DATABASE_EXECUTION_EXPLANATIONS };
+
 const summarize = (steps: ExecutionStep[]): QueryExplanationSummary => {
-    const reasons: MemoryExecutionReason[] = [];
+    const reasons: StepReason[] = [];
     let database = 0;
     let memory = 0;
 
     for (const step of steps) {
-        if (step.executedIn === "database") {
+        if (isDatabaseStep(step)) {
             database += step.options.length;
             continue;
         }
@@ -181,7 +227,7 @@ const summarize = (steps: ExecutionStep[]): QueryExplanationSummary => {
     }
 
     const counts = `${database} ${database === 1 ? "option ran" : "options ran"} in the database, ${memory} ran in memory.`;
-    const causes = reasons.map(reason => MEMORY_EXECUTION_EXPLANATIONS[reason]).join(" ");
+    const causes = reasons.map(reason => EXPLANATIONS[reason]).join(" ");
 
     return { database, memory, reasons, explanation: causes.length === 0 ? counts : `${counts} ${causes}` };
 };
@@ -198,42 +244,88 @@ const summarize = (steps: ExecutionStep[]): QueryExplanationSummary => {
  * the feature exists to expose reports "0 in the database" while the backend reads the whole
  * table, which is the opposite of the truth.
  */
-const toExecutionSteps = (options: QueryOptionsCollection<any>): ExecutionStep[] => {
+/**
+ * Where an option ran, and why — read off the option rather than off the plan.
+ *
+ * A database option is only reported as having run there if it did. `missing-capability` and
+ * `not-reached` both mean the rows came back unfiltered and the datastore finished the job.
+ */
+type Outcome = {
+    executedIn: QueryOptionExecutionTarget;
+    reason: MemoryExecutionReason | Exclude<DatabaseExecutionReason, "executed"> | null;
+    explanation: string | null;
+};
+
+const outcomeOf = (option: QueryOption<any, any>): Outcome => {
+
+    if (option.target === "memory") {
+        return {
+            executedIn: "memory",
+            reason: option.reason,
+            explanation: MEMORY_EXECUTION_EXPLANATIONS[option.reason]
+        };
+    }
+
+    if (option.reason === "executed") {
+        return { executedIn: "database", reason: null, explanation: null };
+    }
+
+    return {
+        executedIn: "memory",
+        reason: option.reason,
+        explanation: DATABASE_EXECUTION_EXPLANATIONS[option.reason]
+    };
+};
+
+/** Whether an option belongs to the step already open, or starts a new one. */
+const continuesStep = (current: ExecutionStep | undefined, outcome: Outcome): boolean => {
+
+    if (current == null) {
+        return false;
+    }
+
+    if (current.executedIn.kind === "database") {
+        return outcome.reason == null;
+    }
+
+    // `?? null` because a step with no reason omits the key, and `undefined === null` is false —
+    // without it every option started a step of its own
+    return outcome.reason != null && ((current as { reason?: StepReason }).reason ?? null) === outcome.reason;
+};
+
+const toExecutionSteps = (options: QueryOptionsCollection<any>, ranIn: Extract<ExecutedIn, { kind: "database" }>): ExecutionStep[] => {
     const steps: ExecutionStep[] = [];
     let index = 0;
 
     options.forEach(option => {
         const explained = explainedOptionOf(option, index++);
         const current = steps[steps.length - 1];
+        const outcome = outcomeOf(option);
 
-        if (current != null && current.executedIn === option.target) {
-            current.options.push(explained);
+        // Grouped by outcome, not by target: an option the database could not express and one core
+        // sent to memory both run in memory, for different reasons a reader needs told apart.
+        if (continuesStep(current, outcome) === true) {
+            current!.options.push(explained);
             return;
         }
 
-        steps.push({
-            step: steps.length + 1,
-            of: 0,
-            executedIn: option.target,
-            description: option.target === "database" ? DATABASE_STEP_DESCRIPTION : MEMORY_STEP_DESCRIPTION,
-            options: [explained],
-            ...(option.reason == null ? {} : {
-                reason: option.reason,
-                explanation: MEMORY_EXECUTION_EXPLANATIONS[option.reason]
-            })
-        });
+        steps.push(outcome.reason == null
+            ? { step: 0, of: 0, executedIn: ranIn, options: [explained], executedQueries: [] }
+            : { step: 0, of: 0, executedIn: { kind: "memory" }, options: [explained], reason: outcome.reason, explanation: outcome.explanation ?? undefined });
     });
 
-    if (steps[0]?.executedIn !== "database") {
-        steps.unshift({
-            step: 0,
-            of: 0,
-            executedIn: "database",
-            description: UNNARROWED_READ_DESCRIPTION,
-            options: []
-        });
+    // A database step even when nothing pushed down: the plugin is dispatched either way, so
+    // reporting "0 in the database" while the backend reads the whole table is the opposite of
+    // the truth.
+    if (steps[0]?.executedIn.kind !== "database") {
+        steps.unshift({ step: 0, of: 0, executedIn: ranIn, options: [], executedQueries: [] });
     }
 
+    return steps;
+};
+
+/** Numbers a finished list, so `step 1 of 3` reads as the shape of the whole query. */
+const numbered = (steps: ExecutionStep[]): ExecutionStep[] => {
     for (let i = 0; i < steps.length; i++) {
         steps[i].step = i + 1;
         steps[i].of = steps.length;
@@ -252,16 +344,11 @@ const toExecutionSteps = (options: QueryOptionsCollection<any>): ExecutionStep[]
  */
 export const explainQuery = (options: QueryOptionsCollection<any>, context: ExplainContext): QueryExplanation => {
 
-    if (options.isDerived === true) {
-        throw new Error(
-            "explainQuery was given a collection produced by split() or splitAt(). Those re-derive " +
-            "execution targets without the options that caused them, so the explanation would report " +
-            "memory work as having run in the database. Pass the collection as it was resolved, " +
-            "before splitting."
-        );
-    }
-
-    const executionSteps = toExecutionSteps(options);
+    const executionSteps = numbered(toExecutionSteps(options, {
+        kind: "database",
+        database: context.database,
+        plugin: context.pluginKind
+    }));
 
     return {
         collection: context.collection,
@@ -291,7 +378,7 @@ export const withExecutedQueries = (explanation: QueryExplanation, executedQueri
         // Only the first database step: a plugin reports what IT ran, and everything it ran
         // was sent as one dispatch. Stamping the same statements onto a second database step
         // would claim they ran twice.
-        if (step.executedIn !== "database" || attached === true) {
+        if (isDatabaseStep(step) === false || attached === true) {
             return { ...step, options: [...step.options] };
         }
 
@@ -305,4 +392,43 @@ export const withExecutedQueries = (explanation: QueryExplanation, executedQueri
     });
 
     return { ...explanation, executionSteps };
+};
+
+/**
+ * Adds the step for a cross-plugin join's inner side.
+ *
+ * Appended by the executor rather than derived from the options, because the inner side's options
+ * live on the join, in its own collection, and were never part of this query's chain. It goes before
+ * the memory steps that consume it — the join cannot run until both sides are read.
+ */
+/**
+ * Every statement the query ran, across every database it touched, in execution order.
+ *
+ * A step is a place, so the statements live on the steps — this is for a caller that wants them all
+ * without caring which plugin ran which.
+ */
+export const executedQueriesOf = (explanation: QueryExplanation): ExecutedQuery[] =>
+    explanation.executionSteps.flatMap(step => isDatabaseStep(step) ? step.executedQueries : []);
+
+export const withInnerSide = (
+    explanation: QueryExplanation,
+    innerSide: { database: string, plugin: string, executedQueries: ExecutedQuery[] }
+): QueryExplanation => {
+    const step: ExecutionStep = {
+        step: 0,
+        of: 0,
+        executedIn: { kind: "database", database: innerSide.database, plugin: innerSide.plugin },
+        options: [],
+        executedQueries: innerSide.executedQueries
+    };
+
+    const firstMemory = explanation.executionSteps.findIndex(current => isDatabaseStep(current) === false);
+    const at = firstMemory === -1 ? explanation.executionSteps.length : firstMemory;
+    const executionSteps = numbered([
+        ...explanation.executionSteps.slice(0, at),
+        step,
+        ...explanation.executionSteps.slice(at)
+    ]);
+
+    return { ...explanation, executionSteps, summary: summarize(executionSteps) };
 };

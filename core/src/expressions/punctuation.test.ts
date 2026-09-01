@@ -49,19 +49,12 @@ function messageFor(source: string): string {
 
 describe('rejections name the offending character', () => {
     const cases: [name: string, character: string, source: string][] = [
-        ['modulo', '%', '(r) => r.price === 10 % 2'],
-        ['asterisk', '*', '(r) => r.price === 10 * 2'],
-        ['plus', '+', '(r) => r.price === 10 + 2'],
-        ['minus', '-', '(r) => r.price === 10 - 2'],
         ['assignment', '=', '(r) => r.price = 10'],
         ['semicolon', ';', '(r) => r.price === 10;'],
         ['comma', ',', '(r) => r.price === 10, r.name === "x"'],
         ['open brace', '{', '(r) => r.price === 10 {'],
         ['close brace', '}', '(r) => r.price === 10 }'],
-        ['question mark', '?', '(r) => r.price === 10 ? 1 : 2'],
         ['colon', ':', '(r) => r.price === 10 : 2'],
-        ['ampersand', '&', '(r) => r.price === 10 & 2'],
-        ['pipe', '|', '(r) => r.price === 10 | 2'],
     ];
 
     it.each(cases)('names %s in the rejection message', (_name, character, source) => {
@@ -72,6 +65,40 @@ describe('rejections name the offending character', () => {
 
     it.each(cases)('rejects rather than silently accepting %s', (_name, _character, source) => {
         expect(messageFor(source).length).toBeGreaterThan(0);
+    });
+});
+
+/**
+ * The arithmetic characters are recognised by PARSING, not by a rejection naming them.
+ *
+ * They were in the rejection list above until the grammar learned precedence. A character dropped
+ * from `SINGLE_CHARACTER_PUNCTUATION` now produces a parse failure instead of a working tree, which
+ * distinguishes the original from the mutant at least as sharply as a message did.
+ */
+describe('arithmetic characters are recognised as operators', () => {
+    const schema = s.define('arithmetic_target', {
+        id: s.string().key(),
+        name: s.string(),
+        price: s.number(),
+    }).compile();
+
+    const parses = (source: string): boolean =>
+        (toExpression(schema as any, { toString: () => source } as any) as { type?: string }).type !== 'not-parsable';
+
+    it.each([
+        ['modulo', '(r) => r.price % 2 === 0'],
+        ['question mark', '(r) => (r.price > 5 ? r.price : 0) === 10'],
+        ['ampersand', '(r) => (r.price & 1) === 0'],
+        ['pipe', '(r) => (r.price | 1) === 11'],
+        ['exponent', '(r) => r.price ** 2 === 100'],
+        ['nullish coalescing', "(r) => (r.name ?? '') === 'x'"],
+        ['shift', '(r) => (r.price << 1) === 20'],
+        ['asterisk', '(r) => r.price * 2 === 20'],
+        ['plus', '(r) => r.price + 1 === 11'],
+        ['minus', '(r) => r.price - 1 === 9'],
+        ['slash', '(r) => r.price / 2 === 5'],
+    ])('parses %s', (_name, source) => {
+        expect(parses(source)).toBe(true);
     });
 });
 

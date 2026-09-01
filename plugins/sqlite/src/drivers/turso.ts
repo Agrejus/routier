@@ -182,6 +182,7 @@ export type TursoDriverOptions = {
 
 export const tursoDriver = (client: LibsqlClientLike, options?: TursoDriverOptions): SqliteDriver => ({
     name: 'turso',
+    foldsUnicodeCasing: false,
 
     async open(_databaseName: string): Promise<SqliteConnection> {
         // The database is whichever one the client was pointed at. A name means nothing here:

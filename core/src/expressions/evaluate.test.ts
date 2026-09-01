@@ -1,6 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
 import { s } from '../schema';
-import { evaluate, toPredicate } from './evaluate';
+import { evaluate, toPredicate, toStrictPredicate } from './evaluate';
 import { toExpression } from './parser';
 import {
     ComparatorExpression,
@@ -22,6 +22,7 @@ import {
 const schema = s.define("evaluate_rows", {
     id: s.string().key(),
     name: s.string(),
+    other: s.string().nullable(),
     rank: s.number(),
     active: s.boolean(),
     when: s.date(),
@@ -202,5 +203,27 @@ describe("evaluate", () => {
             expect(evaluate(and(definitelyTrue, definitelyTrue), row)).toBe(true);
             expect(evaluate(or(definitelyFalse, definitelyFalse), row)).toBe(false);
         });
+    });
+});
+
+describe('a template over a null column', () => {
+
+    const row = {
+        id: "a", name: "ada", other: null, rank: 1, active: true,
+        when: new Date(0), tags: [], nested: { inner: { value: "v" } }
+    } as never;
+
+    it('renders null as "null", the way JavaScript does', () => {
+        const closure = (x: any) => `${x.other}!` === "null!";
+        const expression = toExpression(schema as never, closure as never, undefined as never);
+
+        expect(closure(row)).toBe(true);
+        expect(evaluate(expression, row)).toBe(true);
+    });
+
+    it('answers rather than refusing, so a wire-received filter does not throw', () => {
+        const expression = toExpression(schema as never, ((x: any) => `${x.other}!` === "null!") as never, undefined as never);
+
+        expect(toStrictPredicate(expression)(row)).toBe(true);
     });
 });

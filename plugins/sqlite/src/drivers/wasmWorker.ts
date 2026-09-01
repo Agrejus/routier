@@ -25,6 +25,7 @@
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import { ensurePoolCapacity, isPoolFull, poolFullError } from './wasmPool';
 import { readRows, type WasmStatement } from './wasmRows';
+import { acquireStatement, releaseStatement } from './wasmStatements';
 import { streamChunks } from './wasmChunks';
 import { rawSqliteFrom, type RawSqlite } from './wasmRaw';
 import type { EncodedChunk, TransferPlan } from '@routier/core/transfer';
@@ -175,7 +176,7 @@ const openPooled = (pool: any, databaseName: string): WasmDatabase => {
  * back correctly. A read that silently returns zero rows is the worst shape a bug can take.
  */
 const queryStatement = (database: WasmDatabase, sql: string, params: unknown[]): unknown[] => {
-    const statement = database.prepare(sql);
+    const statement = acquireStatement(database, sql);
 
     try {
         if (params.length > 0) {
@@ -184,9 +185,9 @@ const queryStatement = (database: WasmDatabase, sql: string, params: unknown[]):
 
         return readRows(rawApi(), statement);
     } finally {
-        // Not finalising leaks the statement and holds a lock, which surfaces later as an
-        // unrelated "database is locked".
-        statement.finalize();
+        // Not resetting leaks the statement's cursor and holds a lock, which surfaces later
+        // as an unrelated "database is locked".
+        releaseStatement(database, sql, statement);
     }
 };
 
@@ -202,7 +203,7 @@ const streamStatement = (
     database: WasmDatabase,
     request: { id: number; sql: string; params: unknown[]; plan: TransferPlan }
 ): void => {
-    const statement = database.prepare(request.sql);
+    const statement = acquireStatement(database, request.sql);
 
     try {
         if (request.params.length > 0) {
@@ -213,7 +214,7 @@ const streamStatement = (
             post({ id: request.id, ok: true, chunk: payload, last }, transferables);
         });
     } finally {
-        statement.finalize();
+        releaseStatement(database, request.sql, statement);
     }
 };
 

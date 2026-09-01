@@ -20,6 +20,7 @@
  * `PostgresSqlTranslator`, which handles `pg` returning COUNT(*) as a string.
  */
 export * from './sql';
+export * from './capability';
 export * from './columns';
 export * from './updates';
 export * from './joins';

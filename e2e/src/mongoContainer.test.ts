@@ -4,6 +4,7 @@ import { MongoClient } from 'mongodb';
 import { s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
 import { MongoClientDriver, MongoDbPlugin } from '@routier/mongodb-plugin';
+import { executedQueriesOf } from '@routier/core/plugins';
 
 /**
  * Routier against a real MongoDB server.
@@ -114,7 +115,7 @@ suite('MongoDB via testcontainers', () => {
 
             expect(data.map(x => x.reference)).toEqual(['beta']);
 
-            const reported = explanation.executionSteps.flatMap(step => step.executedQueries ?? []);
+            const reported = executedQueriesOf(explanation);
             expect(reported.length).toBeGreaterThan(0);
             expect(reported[0].text).toContain('.find(');
             expect(reported[0].text).toContain('beta');
