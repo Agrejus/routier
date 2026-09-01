@@ -20,7 +20,7 @@
         "@routier/pglite-plugin": "file://../plugins/pglite",
         "@routier/postgres-plugin-core": "file://../plugins/postgres-core",
         "@electric-sql/pglite": "^0.5.7",
-        "@routier/sqlite-plugin": "^0.5.0",
+        "@routier/sqlite-plugin": "^0.5.1",
         "@sqlite.org/sqlite-wasm": "^3.53.0-build1"
     },
     "devDependencies": {
