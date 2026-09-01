@@ -30,7 +30,7 @@ const stores: DataStore[] = [];
 
 afterEach(async () => {
     for (const store of stores.splice(0)) {
-        await store.destroyAsync().catch(() => undefined);
+        await store.destroyAsync().catch((): undefined => undefined);
     }
 });
 

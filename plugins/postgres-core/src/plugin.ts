@@ -1,6 +1,6 @@
 import { canPushDownJoin, decodeJsonColumns, splitJoinRows } from '@routier/sql-plugin-core';
 import { assertIsNotNull, OptimisticConcurrencyError, PluginDestroyedError, UnknownRecord } from '@routier/core';
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue } from '@routier/core/plugins';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, ResultColumn } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
 import { BulkPersistResult } from '@routier/core/collections';
 import { CompiledSchema } from '@routier/core/schema';
@@ -178,12 +178,13 @@ export class PostgresDbPluginBase implements IDbPlugin {
      */
     private async runWithTable(
         connection: PostgresConnection,
-        sql: string,
-        params: readonly unknown[] | undefined,
+        operation: { sql: string; params?: readonly unknown[]; result?: readonly ResultColumn[] },
         createTableSql: string
     ): Promise<unknown[]> {
+        const { sql, params, result } = operation;
+
         try {
-            return await connection.all(sql, params);
+            return await connection.all(sql, params, result);
         } catch (error) {
             if (errorCode(error) !== UNDEFINED_TABLE) {
                 throw error;
@@ -195,7 +196,10 @@ export class PostgresDbPluginBase implements IDbPlugin {
                 }
             });
 
-            return await connection.all(sql, params);
+            // The retry carries the SAME description. Lazy table creation means the first
+            // statement against a new collection always misses, so dropping it here would leave
+            // that one path slower than every later one with nothing to report it.
+            return await connection.all(sql, params, result);
         }
     }
 
@@ -224,7 +228,7 @@ export class PostgresDbPluginBase implements IDbPlugin {
                 });
 
                 return this.withConnection(connection =>
-                    this.runWithTable(connection, built.sql, built.params, createTableSql)
+                    this.runWithTable(connection, built, createTableSql)
                 ).then(rows => {
                     // After the statement ran, not before: RetryDbPlugin re-invokes with the
                     // same event, so pushing first would report one entry per failed attempt.
@@ -285,7 +289,7 @@ export class PostgresDbPluginBase implements IDbPlugin {
                 ].join("\n");
 
                 return this.withConnection(connection =>
-                    this.runWithTable(connection, built.sql, built.params, createTableSql)
+                    this.runWithTable(connection, built, createTableSql)
                 ).then(rows => {
                     event.executedQueries.push({ text: built.sql, parameters: built.params });
 
@@ -417,7 +421,7 @@ export class PostgresDbPluginBase implements IDbPlugin {
         await connection.run(`SAVEPOINT ${savepoint}`);
 
         try {
-            return await connection.all(op.sql, op.params);
+            return await connection.all(op.sql, op.params, op.result);
         } catch (error) {
             if (errorCode(error) !== UNDEFINED_TABLE) {
                 throw error;
@@ -431,7 +435,7 @@ export class PostgresDbPluginBase implements IDbPlugin {
                 paramsCount: (op.params ?? []).length,
             });
 
-            return await connection.all(op.sql, op.params);
+            return await connection.all(op.sql, op.params, op.result);
         }
     }
 

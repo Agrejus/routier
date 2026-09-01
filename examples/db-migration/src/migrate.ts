@@ -1,4 +1,19 @@
-import { AnyCollection, ShopStore } from './store';
+import { CompiledSchema } from '@routier/core/schema';
+import { ShopStore } from './store';
+
+/**
+ * A schema whose entity type is not known here.
+ *
+ * `any` rather than `Record<string, unknown>`, which is what `store.schemas` hands out. That
+ * type says the properties are `unknown` VALUES, and the schema's create-type inference reads a
+ * non-schema property as no property at all, so `addAsync` ends up demanding
+ * `{ [x: string]: never }` and every row has to be cast. The entity type here is genuinely
+ * unknown, and `any` is how that is spelled without lying about the shape.
+ */
+type AnySchema = CompiledSchema<any>;
+
+/** Saved a chunk at a time. One save at the end would hold the whole dataset as pending changes. */
+const CHUNK = 1000;
 
 /**
  * The whole migration: for every collection on the store, select everything out of the source
@@ -6,33 +21,48 @@ import { AnyCollection, ShopStore } from './store';
  * This file is displayed verbatim in the UI.
  */
 export async function migrate(source: ShopStore, target: ShopStore): Promise<number> {
-    const targets = new Map(target.all().map(({ name, collection }) => [name, collection]));
     let copied = 0;
 
-    for (const { name, collection } of source.all()) {
-        copied += await copyCollection(collection, targets.get(name)!, target);
+    for (const [, schema] of source.schemas) {
+        copied += await copyCollection(source, target, schema);
     }
 
     return copied;
 }
 
-const CHUNK = 1000;
-
-async function copyCollection(from: AnyCollection, to: AnyCollection, target: ShopStore): Promise<number> {
-    const rows = await from.toArrayAsync();
-    // The identity properties belong to the database that assigned them, so the target assigns
-    // its own. Taken from the schema rather than named here, which is what keeps this generic.
-    const assigned = from.schema.idProperties.map(property => property.name);
+async function copyCollection(source: ShopStore, target: ShopStore, schema: AnySchema): Promise<number> {
+    const rows = await source.getCollection(schema).toArrayAsync();
+    const to = target.getCollection(schema);
 
     for (let i = 0; i < rows.length; i += CHUNK) {
-        await to.addAsync(...rows.slice(i, i + CHUNK).map(row => withoutKeys(row, assigned)));
-        // Saved a chunk at a time: one save of every collection at the end would hold the whole
-        // dataset as pending changes.
+        const chunk = rows.slice(i, i + CHUNK).map(row => withoutAssignedIds(row, schema));
+
+        await to.addAsync(...chunk);
         await target.saveChangesAsync();
     }
 
     return rows.length;
 }
 
-const withoutKeys = (row: Record<string, unknown>, keys: string[]): Record<string, unknown> =>
-    Object.fromEntries(Object.entries(row).filter(([key]) => keys.includes(key) === false));
+/**
+ * Drops the properties the source database assigned, so the target assigns its own.
+ *
+ * Read off the schema rather than named here. That is what keeps this generic, and it is why
+ * PouchDB's `_id` and `_rev` stay behind without this file ever mentioning PouchDB.
+ *
+ * Safe here because nothing in these collections references anything: an order carries a
+ * customer NAME, not a customer id. Where collections do reference each other, the target hands
+ * out its own ids and those references would point at nothing.
+ *
+ * That is a few more lines rather than a different approach. `addAsync` returns the rows and the
+ * assigned ids land on them once the save completes, so a migration that needs it copies the
+ * parents first, keeps a map from old id to new, and maps the child's foreign key through it on
+ * the way in.
+ */
+function withoutAssignedIds(row: Record<string, unknown>, schema: AnySchema) {
+    const assigned = schema.idProperties.map(property => property.name);
+
+    return Object.fromEntries(
+        Object.entries(row).filter(([key]) => assigned.includes(key) === false)
+    );
+}

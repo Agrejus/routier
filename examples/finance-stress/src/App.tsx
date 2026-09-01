@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { UNPROTECTED, uiStore } from './store';
+import { useEffect, useRef, useState } from 'react';
+import { PERSIST, PLUGIN, START_RATE, START_USERS, UNPROTECTED, uiStore } from './store';
 import { simulator } from './simulator';
 import { metrics } from './metrics';
 import { Dashboard } from './pages/Dashboard';
@@ -18,13 +18,30 @@ export function App() {
     const [accountId, setAccountId] = useState<string | null>(null);
     const [seeded, setSeeded] = useState(false);
     const [running, setRunning] = useState(false);
-    const [userCount, setUserCount] = useState(10);
-    const [rate, setRate] = useState(50);
+    const [userCount, setUserCount] = useState(START_USERS);
+    const [rate, setRate] = useState(START_RATE);
     const [snap, setSnap] = useState(metrics.snapshot());
+    // Read by the exposed surface above, which is created once and must not close over stale state.
+    const seededRef = useRef(false);
 
     useEffect(() => {
-        simulator.seed(uiStore, USERS_SEEDED, ACCOUNTS_PER_USER).then(() => setSeeded(true));
+        simulator.seed(uiStore, USERS_SEEDED, ACCOUNTS_PER_USER).then(() => { seededRef.current = true; setSeeded(true); });
         metrics.startFpsMeter();
+
+        /**
+         * What a Playwright run reads.
+         *
+         * Exposed rather than scraped: the metrics bar renders `12.3 ms` and `1,024`, and parsing
+         * those back is how a test starts failing on a locale or a rounding change instead of on
+         * the thing it is checking.
+         */
+        (window as unknown as Record<string, unknown>).__financeStress = {
+            plugin: PLUGIN,
+            persisted: PERSIST,
+            protected: UNPROTECTED === false,
+            metrics: () => metrics.snapshot(),
+            seeded: () => seededRef.current,
+        };
 
         const interval = setInterval(() => {
             metrics.tick();
@@ -54,6 +71,9 @@ export function App() {
         <>
             <header>
                 <h1>Routier Finance</h1>
+                <span className="pill" data-testid="plugin" title={PERSIST ? 'persistent storage' : 'in-memory storage'}>
+                    {PLUGIN}{PERSIST ? ' (persisted)' : ''}
+                </span>
                 <span className="pill" style={{ color: UNPROTECTED ? 'var(--bad)' : 'var(--good)', borderColor: 'currentColor' }} data-testid="protection">
                     {UNPROTECTED ? 'UNPROTECTED' : 'ConcurrencyDbPlugin'}
                 </span>
@@ -109,7 +129,7 @@ export function App() {
 
 function Metric(props: { label: string; value: string; tone?: 'good' | 'bad' | 'warn' }) {
     return (
-        <div className="metric">
+        <div className="metric" data-metric={props.label}>
             <div className="label">{props.label}</div>
             <div className={`value ${props.tone ?? ''}`}>{props.value}</div>
         </div>

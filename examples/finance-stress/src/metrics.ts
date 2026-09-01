@@ -9,6 +9,9 @@ const saveLatencies: number[] = [];
 const propagationLatencies: number[] = [];
 let committedTransactions = 0;
 let failedSaves = 0;
+/** Distinct failure reasons, newest last. Counting without the cause is how a backend problem
+ * looks like a performance problem. */
+const failureReasons: string[] = [];
 let concurrencyConflicts = 0;
 let subscriptionDeliveries = 0;
 let windowStart = performance.now();
@@ -34,8 +37,12 @@ export const metrics = {
         }
     },
 
-    noteFailedSave() {
+    noteFailedSave(reason?: string) {
         failedSaves++;
+
+        if (reason != null && failureReasons.includes(reason) === false) {
+            failureReasons.push(reason.slice(0, 200));
+        }
     },
 
     noteConflict() {
@@ -66,6 +73,7 @@ export const metrics = {
         return {
             committedTransactions,
             failedSaves,
+            failureReasons: [...failureReasons],
             concurrencyConflicts,
             subscriptionDeliveries,
             txPerSecond,

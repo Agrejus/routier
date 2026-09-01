@@ -1,6 +1,7 @@
 import { CompiledSchema, JoinKind, JoinQueryOptionValue, JoinTuple, toEntityShape, UnknownRecord } from "@routier/core";
 import { decodeJsonColumns, sqlColumnProperties } from "./columns";
 import { SqlDialect, toSql } from "./sql";
+import { ResultColumn } from "@routier/core/plugins";
 
 /**
  * Native `JOIN` emission, shared by every SQL plugin.
@@ -39,6 +40,14 @@ const INNER_PREFIX = `${JOIN_INNER_ALIAS}__`;
 export type SqlJoinStatement = {
     sql: string;
     params: unknown[];
+    /**
+     * The flat columns the projection emits, in order, aliased per side.
+     *
+     * Returned rather than re-derived by the caller: a transfer plan that disagrees with the
+     * select list files every column under another column's name, and the only way to make that
+     * impossible is for one place to produce both.
+     */
+    columns: ResultColumn[];
 };
 
 /**
@@ -82,11 +91,19 @@ export const buildJoinStatement = <TOuter extends {}, TInner extends {}>(options
         sqlColumnProperties(schema)
             .map(property => {
                 const column = property.getResolvedName();
-                return `${alias}.${quote(column)} AS ${quote(`${prefix}${column}`)}`;
-            })
-            .join(", ");
 
-    const projection = `${project(outerSchema, outerAlias, OUTER_PREFIX)}, ${project(innerSchema, innerAlias, INNER_PREFIX)}`;
+                return {
+                    sql: `${alias}.${quote(column)} AS ${quote(`${prefix}${column}`)}`,
+                    column: { name: `${prefix}${column}`, property } satisfies ResultColumn,
+                };
+            });
+
+    const projected = [
+        ...project(outerSchema, outerAlias, OUTER_PREFIX),
+        ...project(innerSchema, innerAlias, INNER_PREFIX),
+    ];
+
+    const projection = projected.map(entry => entry.sql).join(", ");
 
     const outerKeyColumn = join.outerKey.property?.getResolvedName() ?? join.outerKey.propertyName;
     const innerKeyColumn = join.innerKey.property?.getResolvedName() ?? join.innerKey.propertyName;
@@ -134,7 +151,8 @@ export const buildJoinStatement = <TOuter extends {}, TInner extends {}>(options
 
     return {
         sql: `SELECT ${projection} FROM (${outer}) AS ${outerAlias} ${joinType} ${quote(innerSchema.collectionName)} AS ${innerAlias} ON ${conditions.join(" AND ")}`,
-        params
+        params,
+        columns: projected.map(entry => entry.column)
     };
 };
 
