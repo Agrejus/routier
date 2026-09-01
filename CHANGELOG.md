@@ -3,6 +3,62 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## Filters read as written, and explain says what it ran (2026-09-01)
+
+The filter parser now reads the JavaScript people actually write — the full operator set, with
+each engine declaring which calls it can run instead of claiming ones it cannot render — and
+`.explain()` reports the predicate itself rather than `<predicate>`, with values held out as `?`
+the way a bound statement would. Every plugin released here compiled against new core exports
+(`describeFilters` among them), so each one's core peer floor moves to `>=0.7.0` — that is the
+version the new dists actually require.
+
+### Breaking — @routier/core 0.7.0
+
+- `PropertyInfo.supportsDeserialization` is removed, along with the internal set of supported
+  types it mirrored. `deserialize` is now total: a type it has no conversion for returns the
+  value unchanged instead of throwing, so callers call it unconditionally rather than asking
+  permission first.
+- `EXPRESSION_TYPES` and the `ExpressionType` union are removed from the expressions surface.
+
+### Breaking — @routier/sql-plugin-core 0.7.0
+
+- `canPushDownJoin` is removed. New exports carry the work instead: `canRenderInSql`,
+  `selectExpression`, `selectList`, and `columnList`.
+
+### Breaking — @routier/replication-plugin 0.5.0
+
+- `PluginSyncEngine`'s `onMirrorError` context now hands back the failing `plugin` itself
+  instead of a `pluginIndex` into an array the caller may not hold. A mirror whose promise
+  rejected used to report index `-1`; it now reports the actual plugin too.
+
+### Fixed — @routier/replication-plugin 0.5.0
+
+- `OptimisticUpdatesDbPlugin` hydrates a collection before the first write to it, not only the
+  first read. A write before any read used to mark the collection authoritative while memory
+  held nothing but that write — every pre-existing source row became invisible for the life of
+  the instance. Writes now also wait behind an in-flight hydration, so a stale hydration
+  snapshot can no longer land on top of a remove and resurrect it.
+- `OptimisticUpdatesDbPlugin` accepts options and exposes `onMirrorError`, so a write that acked
+  locally but never reached the durable store is observable instead of being a log line.
+
+### Added — @routier/sqlite-plugin 0.5.1
+
+- The wasm worker caches prepared statements per database (LRU of 64), resetting and rebinding
+  instead of re-preparing. Measured at 4k rows over real OPFS: single-write acks ~17% faster,
+  by-id reads ~30% faster.
+
+### Fixed — the filter remediation, per engine
+
+- `@routier/datastore` 0.4.1 — the queryable pipeline reports what ran where, and a filter an
+  engine refuses runs in memory over the rows the predicate means.
+- `@routier/mongodb-plugin` 0.4.1 — MQL translation covers the expanded operator set and stops
+  claiming calls it cannot render.
+- `@routier/mysql-plugin` 0.5.1 and `@routier/postgres-plugin-core` 0.3.1 — the same claimed-call
+  honesty in their dialects.
+- `@routier/dexie-plugin` 0.4.1 — `.explain()` shows the JavaScript predicate it walks the cursor
+  with, values held out as `?`, keeping the "no index" note that separates a slow backend from a
+  silent memory fallback.
+
 ## PGlite in the browser, and a shared engine per database (2026-08-24)
 
 A coordinated release across the PostgreSQL family plus a SQLite fix. `@routier/pglite-plugin`
