@@ -166,6 +166,70 @@ describe('a plugin with no database', () => {
             expect(members.map(m => m.name)).toEqual(['Abe', 'Bo']);
         });
 
+        /**
+         * A projection or group is defined by a closure, so it runs on this side, over the rows the
+         * server sent. Those crossed as JSON, where a date is a string.
+         */
+        it('runs a projection and a group it keeps over dates, as Dates', async () => {
+            const { client } = await seeded(new MemoryPlugin(uuidv4()));
+
+            const years = await client.teams.map(t => t.founded.getUTCFullYear()).toArrayAsync();
+            // Cast because a group key is typed as a string or a number
+            const groups = await client.teams.toGroupAsync(t => t.founded.getUTCFullYear() as never);
+
+            expect([...years].sort()).toEqual([2001, 2002, 2003]);
+            expect(Object.keys(groups).sort()).toEqual(['2001', '2002', '2003']);
+        });
+
+        /**
+         * Kept on this side. The handler returns its plugin's rows as they are, so an option the far
+         * plugin handed back would come home unapplied — the memory server here would do exactly that.
+         */
+        it('does not send a renamed property, and still answers a filter, sort and take over one', async () => {
+            const renamed = s.define('wire_renamed', {
+                _id: s.string().key().identity(),
+                label: s.string().from('wire_label'),
+                amount: s.number().from('wire_amount'),
+            }).compile();
+
+            class RenamedStore extends DataStore {
+                rows = this.collection(renamed).proxy().create();
+            }
+
+            const serverPlugin = new MemoryPlugin(uuidv4());
+            const server = new RenamedStore(serverPlugin);
+            const handle = createRequestHandler({ plugin: serverPlugin, schemas: server.schemas });
+            const sent: SerializedRequest[] = [];
+
+            const client = new RenamedStore(new HttpTransportDbPlugin({
+                url: 'https://api.test/routier',
+                request: async (_url, body) => {
+                    const overTheWire = JSON.parse(JSON.stringify(body)) as SerializedRequest;
+                    sent.push(overTheWire);
+
+                    return JSON.parse(JSON.stringify(await handle(overTheWire)));
+                },
+            }));
+            stores.push(server, client);
+
+            await client.rows.addAsync(
+                { label: 'bravo', amount: 30 } as any,
+                { label: 'alpha', amount: 10 } as any,
+                { label: 'charlie', amount: 20 } as any,
+            );
+            await client.saveChangesAsync();
+            sent.length = 0;
+
+            const found = await client.rows
+                .where(r => r.amount >= 20)
+                .sortDescending(r => r.label)
+                .take(1)
+                .toArrayAsync();
+
+            expect(found.map(r => r.label)).toEqual(['charlie']);
+            expect(JSON.stringify(sent[0])).not.toContain('"comparator"');
+        });
+
         it('returns an aggregate the server computed, not the rows', async () => {
             const { client, sent } = await seeded(new MemoryPlugin(uuidv4()));
             sent.length = 0;

@@ -2,7 +2,7 @@ import { assertIsNotNull } from '../assertions';
 import { OptimisticConcurrencyError } from '../errors';
 import { BulkPersistResult, SchemaPersistChanges } from '../collections';
 import { WorkPipeline } from '../pipeline';
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, distinctJoinKeys, IDbPlugin, ITranslatedValue, JoinInnerSide, JsonTranslator } from '.';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, distinctJoinKeys, IDbPlugin, ITranslatedValue, JoinInnerSide, JsonTranslator, reportRenamedProperties } from '.';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '../results';
 import { CompiledSchema, IdType, InferCreateType } from '../schema';
 import { isComparatorExpression, isPropertyExpression, isValueExpression } from '../assertions';
@@ -60,6 +60,17 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
     }
 
     protected abstract resolveCollection<TEntity extends {}>(schema: CompiledSchema<TEntity>): MemoryDataCollection;
+
+    /**
+     * Whether the records this plugin holds are in storage shape, keyed by `from` names.
+     *
+     * True for every store of what the datastore serialized, which is why a renamed property is
+     * reported and records are cloned and keyed by their storage names. The datastore's change probe
+     * holds rows the broadcast has already deserialized, so it reads them by in-memory names instead.
+     */
+    protected get holdsStorageShape(): boolean {
+        return true;
+    }
 
     /**
      * All-or-nothing across every collection in the save.
@@ -303,7 +314,9 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
     ) {
         const joinOption = event.operation.options.getLast("join");
 
-        if (joinOption == null) {
+        // Not reached when an option before it was reported: the datastore's own join branch pairs
+        // the rows this read returns.
+        if (joinOption == null || joinOption.reason !== "executed") {
             done({ ok: "success" });
             return;
         }
@@ -331,7 +344,9 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
 
             // Records are held in STORAGE shape, so the key is read by its resolved column name.
             const innerKey = joinOption.value.innerKey;
-            const keyColumn = innerKey.property?.getResolvedName() ?? innerKey.propertyName;
+            const keyColumn = this.holdsStorageShape
+                ? innerKey.property?.getResolvedName() ?? innerKey.propertyName
+                : innerKey.propertyName;
 
             for (const record of innerCollection.values()) {
                 if (outerKeys != null && outerKeys.has(record[keyColumn]) === false) {
@@ -361,7 +376,7 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
      * on EVERY read of EVERY schema that renames a property.
      */
     private recordCloner(schema: CompiledSchema<any>) {
-        const hasRenamedProperties = schema.properties.some(property => property.from != null);
+        const hasRenamedProperties = this.holdsStorageShape && schema.properties.some(property => property.from != null);
 
         return (hasRenamedProperties ? schema.cloneStorage : schema.clone) as (record: Record<string, unknown>) => Record<string, unknown>;
     }
@@ -378,18 +393,27 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
 
             const cloneRecord = this.recordCloner(schema);
 
+            // Records are held in storage shape and every option below runs the caller's lambda
+            // over them, so a `from` property is read by a name the record does not have. Handed
+            // back, and the datastore runs it after deserialization.
+            if (this.holdsStorageShape) {
+                reportRenamedProperties(operation.options);
+            }
+
             collection.load(r => {
                 if (r.ok === Result.ERROR) {
                     done(PluginEventResult.error(event.id, r.error));
                     return;
                 }
 
-                const orderedOptions: { name: string, value: any }[] = [];
+                const orderedOptions: { name: string, value: any, reason: string }[] = [];
                 operation.options.forEach(o => orderedOptions.push(o));
 
                 let leadingFilterCount = 0;
 
-                while (leadingFilterCount < orderedOptions.length && orderedOptions[leadingFilterCount].name === "filter") {
+                // Stops at a reported filter too: the database phase ends there, and the datastore
+                // runs it and everything after it.
+                while (leadingFilterCount < orderedOptions.length && orderedOptions[leadingFilterCount].name === "filter" && orderedOptions[leadingFilterCount].reason === "executed") {
                     leadingFilterCount++;
                 }
 
@@ -475,7 +499,7 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                  * Before the inner side, to match execution order.
                  */
                 const described = describeFilters(
-                    operation.options.get("filter").map(entry => entry.option.value)
+                    operation.options.get("filter").filter(entry => entry.option.reason === "executed").map(entry => entry.option.value)
                 );
 
                 event.executedQueries.push({
@@ -485,9 +509,9 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                 });
 
                 const joinOption = operation.options.getLast("join");
-                const outerKeys = joinOption == null
+                const outerKeys = joinOption == null || joinOption.reason !== "executed"
                     ? null
-                    : distinctJoinKeys(cloned, joinOption.value.outerKey, joinOption.value.semiJoinKeyThreshold, { storageShape: true });
+                    : distinctJoinKeys(cloned, joinOption.value.outerKey, joinOption.value.semiJoinKeyThreshold, { storageShape: this.holdsStorageShape });
 
                 this.resolveJoinInnerSide(event, outerKeys, joinResult => {
                     if (joinResult.ok === "error") {

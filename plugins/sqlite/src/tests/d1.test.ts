@@ -35,8 +35,9 @@ describePluginContract(
     () => new D1DbPlugin(open(), { deleteDatabase: async () => undefined }),
     {
         // Same reasoning as the SQLite plugin: SQLite has no native boolean, date, array or
-        // object column type, and D1 inherits that.
+        // object column type, and D1 inherits that. Dates are serialized to text, as in contract.test.ts.
         supportsRichTypes: false,
+        supportsDates: true,
         knownFailing: [],
     },
 );

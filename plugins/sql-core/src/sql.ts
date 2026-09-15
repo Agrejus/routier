@@ -17,6 +17,7 @@ import {
     isValueExpression,
     SchemaTypes,
 } from "@routier/core";
+import { propertyColumn } from "./columns";
 
 /** Supported SQL dialect names. */
 export type SqlDialectName = "sqlite" | "postgresql" | "mysql" | "mssql";
@@ -605,37 +606,9 @@ const SQL_ARITHMETIC: Partial<Record<Call, string>> = {
  * parsed transformer calls for (LOWER/UPPER/length). Ignoring the transformer
  * here would silently return wrong rows.
  */
-/**
- * The column, or the JSON path into it when the property is nested.
- *
- * `getResolvedName()` returns the LEAF name, which is a real column only for a root
- * property. For `payload.operand.value` the storage is a `payload` JSON column and the rest
- * of the chain is a path inside it.
- */
-/**
- * Qualifies a column identifier with a table alias, when there is one.
- *
- * Applied to the ROOT identifier only. A nested property is read out of a JSON column, so the
- * alias belongs on the column the JSON lives in — `"o"."nested" -> '$.inner'` — not on the path
- * inside it.
- */
-const qualify = (identifier: string, alias: string | undefined, d: SqlDialect): string =>
-    alias == null ? identifier : `${d.quoteIdentifier(alias)}.${identifier}`;
-
+/** The column a filter reads. See `propertyColumn`. */
 function renderColumnBase(prop: PropertyExpression, d: SqlDialect, alias?: string): string {
-    const parents = prop.property.getParentPathArray({ useFromPropertyName: true });
-
-    if (parents.length === 0) {
-        return qualify(d.quoteIdentifier(prop.property.getResolvedName()), alias, d);
-    }
-
-    const [root, ...rest] = parents;
-
-    return d.jsonPathExpression(
-        qualify(d.quoteIdentifier(root), alias, d),
-        [...rest, prop.property.getResolvedName()],
-        prop.property.type
-    );
+    return propertyColumn(prop.property, d, alias);
 }
 
 /**

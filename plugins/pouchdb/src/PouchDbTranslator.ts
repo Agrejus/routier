@@ -1,21 +1,28 @@
 import { assertIsArray } from "@routier/core/assertions";
 import { Filter, ParamsFilter } from "@routier/core/expressions";
 import { IQuery, JsonTranslator, QueryCollectionItem, QueryOption } from "@routier/core/plugins";
-import { CompiledSchema, InferType } from "@routier/core/schema";
+import { getStorageDateReviver, StorageDateReviver } from "@routier/core/schema";
 
 export class PouchDbTranslator<TEntity extends {}, TShape extends unknown = TEntity> extends JsonTranslator<TEntity, TShape> {
 
-    private schema: CompiledSchema<TEntity>;
+    /**
+     * PouchDB stores JSON, so a date comes back as the ISO string the datastore serialized it to.
+     * The caller's lambdas compare and call Dates, so every document is revived before one runs.
+     * Only the dates: keys stay under their `from` names. `null` for a schema with no dates.
+     */
+    private readonly reviveDates: StorageDateReviver | null;
     private cachedMatches: ((item: unknown) => boolean) | null = null;
 
     constructor(query: IQuery<TEntity, TShape>) {
         super(query);
-        this.schema = query.schema;
+        this.reviveDates = getStorageDateReviver(query.schema);
     }
 
     matches(item: unknown) {
         // Get or build cached filter chain
         const filterChain = this.resolveFilterChain();
+
+        this.reviveDates?.(item as Record<string, unknown>);
 
         // Execute the chain (no loops, just recursive function calls)
         return filterChain(item);
@@ -29,7 +36,8 @@ export class PouchDbTranslator<TEntity extends {}, TShape extends unknown = TEnt
 
         // Build and cache the filter chain
         const filters = this.query.options.get("filter");
-        const databaseFilters = filters.filter(x => x.option.target === "database");
+        // Not a filter the plugin reported: the datastore runs that one, after deserialization
+        const databaseFilters = filters.filter(x => x.option.target === "database" && x.option.reason === "executed");
 
         this.cachedMatches = this.buildFilterChain(databaseFilters, 0);
 
@@ -71,26 +79,25 @@ export class PouchDbTranslator<TEntity extends {}, TShape extends unknown = TEnt
     override translate(data: unknown) {
         assertIsArray(data);
 
-        const result: unknown[] = [];
+        const documents: Record<string, unknown>[] = [];
 
         for (let i = 0, length = data.length; i < length; i++) {
-            const entity: any = data[i];
+            const document = data[i] as Record<string, unknown>;
 
             // design docs can be included in the result, ignore them
-            if ("_id" in entity && typeof entity._id === "string" && entity._id.startsWith("_design")) {
+            if (typeof document._id === "string" && document._id.startsWith("_design")) {
                 continue;
             }
 
-            try {
-                // PouchDB converts a Date to a string when it is saved, we need to convert it back when it's selected
-                result.push(this.schema.deserialize(entity as InferType<TEntity>));
-                data[i] = null;
-            } catch (e) {
-                throw new Error(`Error deserializing entity from db.  Message: ${e.message}, Entity: ${JSON.stringify(entity, null, 2)}`)
-            }
+            // Again, whether or not the view predicate revived it: a view may hand back a copy of
+            // what it emitted, and a document read without a view was never revived
+            this.reviveDates?.(document);
+            documents.push(document);
         }
 
-        return super.translate(result);
+        // Documents stay in storage shape. The datastore deserializes the rows this returns, by
+        // their `from` names, and a join does the same per side.
+        return super.translate(documents);
     }
 
 }

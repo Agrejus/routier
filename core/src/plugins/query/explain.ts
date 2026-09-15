@@ -11,7 +11,6 @@ import { QueryOptionsCollection } from "./QueryOptionsCollection";
 export const MEMORY_EXECUTION_EXPLANATIONS: Record<MemoryExecutionReason, string> = {
     "not-parsable": "A filter could not be parsed into an expression tree, so it and every option after it run in memory.",
     "unmapped-property": "The property is not stored in the database, so it can only be read after deserialization.",
-    "renamed-property": "The property is stored under a different name, and selectors use the in-memory name, so it can only be read after deserialization.",
     "map-rename": "A map renames or drops properties, so every option after it refers to names the database does not have.",
     "after-nearest": "A similarity search orders and limits rows, and the plugin cannot report whether it performed the search, so every option after it runs in memory.",
     "after-join": "A join produces [outer, inner] tuples rather than entities, and the plugin cannot report how it joined, so every option after it runs in memory.",

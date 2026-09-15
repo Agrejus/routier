@@ -1,6 +1,6 @@
 import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema';
 import { Expression } from '@routier/core/expressions';
-import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, entityResultColumns, getDialect, sqlColumnProperties, toColumnValueMap, toSql, reportUnrenderableFilters, executedMapFields, selectList, columnList } from '@routier/sql-plugin-core';
+import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, entityResultColumns, getDialect, sqlColumnProperties, toColumnValueMap, toSql, reportUnrenderableFilters, reportUnrenderableSelectors, executedMapFields, selectList, columnList, referencedColumn } from '@routier/sql-plugin-core';
 import { IQuery, JoinQueryOptionValue, mappedResultColumns, Query, ResultColumn } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
 import { SqlOperation } from './types';
@@ -312,6 +312,7 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
 
 
     reportUnrenderableFilters(options, "sqlite");
+    reportUnrenderableSelectors(options);
 
     const mapFields = executedMapFields(options);
 
@@ -423,9 +424,9 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
     }
 
     for (const op of sortOps) {
-        const sortProp = op.value.propertyName;
+        const sortColumn = referencedColumn(op.value.property, op.value.propertyName, dialect);
         const sortDir = op.value.direction === 'asc' ? 'ASC' : 'DESC';
-        currentQuery += ` ORDER BY "${sortProp}" ${sortDir}`;
+        currentQuery += ` ORDER BY ${sortColumn} ${sortDir}`;
     }
 
     // Phase 2: Handle skip/take operations (create subqueries)
@@ -484,15 +485,24 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
                 // Handle aggregate functions - replace the SELECT clause with the aggregate
                 // Pre-compute aggregate field to avoid repeated lookups
                 let aggregateField = 'id'; // Default fallback
+                let aggregateProperty: PropertyInfo<any> | null | undefined = null;
                 for (const otherOp of otherOps) {
                     if (otherOp.type === 'map' && otherOp.value.fields && otherOp.value.fields.length > 0) {
                         const fieldInfo = otherOp.value.fields[0];
                         aggregateField = fieldInfo.destinationName || fieldInfo.sourceName || 'id';
+                        aggregateProperty = fieldInfo.property;
                         break;
                     }
                 }
+                // Read from the storage column, named for the field: the field name is the
+                // in-memory path, which is not a column when the property is renamed or nested
+                const aggregateColumn = subqueryCount > 0
+                    // A window wrapped the query, and only the inner select list's aliases are
+                    // in scope out here
+                    ? dialect.quoteIdentifier(aggregateField)
+                    : referencedColumn(aggregateProperty, aggregateField, dialect);
                 // Use AS to rename the aggregate column to the field name
-                currentQuery = currentQuery.replace(/SELECT .*? FROM/, `SELECT ${op.type.toUpperCase()}("${aggregateField}") AS "${aggregateField}" FROM`);
+                currentQuery = currentQuery.replace(/SELECT .*? FROM/, () => `SELECT ${op.type.toUpperCase()}(${aggregateColumn}) AS "${aggregateField}" FROM`);
                 break;
 
             case 'map':

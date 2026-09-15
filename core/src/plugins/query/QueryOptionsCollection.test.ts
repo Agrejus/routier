@@ -164,4 +164,59 @@ describe('QueryOptionsCollection', () => {
             expect(collection.getLast('take')!.reason).toBe('not-reached');
         });
     });
+
+    describe('a copy for one dispatch', () => {
+
+        const build = () => {
+            const collection = QueryOptionsCollection.EMPTY<any>();
+            collection.add('filter', { filter: () => true, params: null, expression: parsableExpression() } as never);
+            collection.add('take', 5 as never);
+
+            return collection;
+        };
+
+        it('starts with nothing reported, whatever the collection it came from holds', () => {
+            const collection = build();
+            collection.reportMissingCapability(collection.get('filter')[0]);
+
+            const copy = collection.forDispatch();
+
+            expect(copy.notExecuted()).toEqual([]);
+            expect(copy.get('take')[0]).toEqual({ index: 1, option: { name: 'take', value: 5, target: 'database', reason: 'executed' } });
+        });
+
+        it('keeps a report on the copy', () => {
+            const collection = build();
+            const copy = collection.forDispatch();
+
+            copy.reportMissingCapability(copy.get('filter')[0]);
+
+            expect(copy.notExecuted()).toHaveLength(2);
+            expect(collection.notExecuted()).toEqual([]);
+        });
+
+        it('cascades a report on a copied half over that copy, not over the original', () => {
+            const collection = build();
+            const { database } = collection.split();
+            const copy = database.forDispatch();
+
+            copy.reportMissingCapability(copy.get('filter')[0]);
+
+            expect(copy.get('take')[0].option.reason).toBe('not-reached');
+            expect(collection.notExecuted()).toEqual([]);
+            expect(database.notExecuted()).toEqual([]);
+        });
+
+        it('copies a join\'s inner options', () => {
+            const inner = build();
+            const collection = QueryOptionsCollection.EMPTY<any>();
+            collection.add('join', { innerOptions: inner } as never);
+
+            const copied = collection.forDispatch().getLast('join')!.value.innerOptions;
+            copied.reportMissingCapability(copied.get('filter')[0]);
+
+            expect(copied).not.toBe(inner);
+            expect(inner.notExecuted()).toEqual([]);
+        });
+    });
 });

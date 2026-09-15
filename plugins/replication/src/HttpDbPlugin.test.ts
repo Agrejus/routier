@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { HttpDbPlugin } from './HttpDbPlugin';
 import type { DbPluginQueryEvent, DbPluginBulkPersistEvent } from '@routier/core/plugins';
-import { Query } from '@routier/core/plugins';
+import { Query, QueryOptionsCollection } from '@routier/core/plugins';
+import { toExpression } from '@routier/core/expressions';
 import { Result } from '@routier/core/results';
 import { BulkPersistChanges, SchemaCollection } from '@routier/core/collections';
 import { s } from '@routier/core/schema';
@@ -166,6 +167,99 @@ describe('HttpDbPlugin', () => {
                 const rows: unknown[] = [];
                 result.data.forEach((item: unknown) => rows.push(item));
                 expect(rows).toEqual([{ id: 'x', name: 'Wrapped' }]);
+            }
+            done();
+        });
+    });
+
+    /**
+     * The server is sent in-memory names and the translator re-runs the lambdas over rows as the
+     * server returns them, so neither can carry a renamed property. The datastore finishes it.
+     */
+    it('does not send an option over a renamed property, or anything after it', (done) => {
+        const renamed = s.define('httpRenamed', {
+            id: s.string().key().identity(),
+            label: s.string().from('wire_label'),
+        }).compile();
+        const calls = installFetchMock([{ status: 200, body: [{ id: 'a', wire_label: 'x' }, { id: 'b', wire_label: 'y' }] }]);
+
+        const filter = (x: any) => x.label === 'x';
+        const options = new QueryOptionsCollection<any>();
+        options.add('filter', { filter, expression: toExpression(renamed as never, filter), params: undefined } as never);
+        options.add('take', 1);
+
+        const schemas = new SchemaCollection();
+        schemas.set(renamed.id, renamed as any);
+
+        const event = {
+            id: uuid(8),
+            schemas,
+            source: 'test',
+            action: 'query',
+            explain: false,
+            executedQueries: [],
+            operation: new Query(options, renamed as any),
+        } as unknown as DbPluginQueryEvent<Record<string, unknown>, unknown>;
+
+        plugin.query(event, (result) => {
+            expect(result.ok).toBe(Result.SUCCESS);
+            if (result.ok === Result.SUCCESS) {
+                const rows: unknown[] = [];
+                result.data.forEach((item: unknown) => rows.push(item));
+                expect(rows).toHaveLength(2);
+            }
+            expect(calls[0].url).toBe('https://api.test/httpRenamed');
+            expect(options.notExecuted().map(item => item.option.reason)).toEqual(['missing-capability', 'not-reached']);
+            done();
+        });
+    });
+
+    /**
+     * A response is JSON, so a date arrives as a string, and the options this plugin runs itself
+     * compare Dates. Keys stay as the server sent them: the datastore deserializes the rows.
+     */
+    it('compares dates in a response as Dates, and keeps renamed keys', (done) => {
+        const dated = s.define('httpDated', {
+            id: s.string().key().identity(),
+            label: s.string().from('wire_label'),
+            createdDate: s.date(),
+        }).compile();
+        installFetchMock([{
+            status: 200,
+            body: [
+                { id: 'a', wire_label: 'old', createdDate: '2020-01-01T00:00:00.000Z' },
+                { id: 'b', wire_label: 'new', createdDate: '2025-01-01T00:00:00.000Z' },
+            ],
+        }]);
+
+        const filter = ([x, p]: [any, { d: Date }]) => x.createdDate > p.d;
+        const params = { d: new Date('2024-01-01T00:00:00.000Z') };
+        const options = new QueryOptionsCollection<any>();
+        options.add('filter', { filter, expression: toExpression(dated as never, filter as never, params), params } as never);
+
+        const schemas = new SchemaCollection();
+        schemas.set(dated.id, dated as any);
+
+        const event = {
+            id: uuid(8),
+            schemas,
+            source: 'test',
+            action: 'query',
+            explain: false,
+            executedQueries: [],
+            operation: new Query(options, dated as any),
+        } as unknown as DbPluginQueryEvent<Record<string, unknown>, unknown>;
+
+        plugin.query(event, (result) => {
+            if (result.ok !== Result.SUCCESS) {
+                done(result.error);
+                return;
+            }
+            {
+                const rows: Record<string, unknown>[] = [];
+                result.data.forEach((item: unknown) => rows.push(item as Record<string, unknown>));
+                expect(rows.map(row => row.wire_label)).toEqual(['new']);
+                expect(rows[0].createdDate).toEqual(new Date('2025-01-01T00:00:00.000Z'));
             }
             done();
         });

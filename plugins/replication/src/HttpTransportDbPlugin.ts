@@ -8,6 +8,7 @@ import {
     ITranslatedValue,
     JsonTranslator,
     Query,
+    reportRenamedProperties,
     serializeBulkPersist,
     serializeQueryOptions,
     SerializedRequest,
@@ -15,7 +16,7 @@ import {
     splitSendableOptions,
 } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
-import { CompiledSchema } from '@routier/core/schema';
+import { CompiledSchema, getStorageDateReviver } from '@routier/core/schema';
 
 /**
  * A plugin that owns no database.
@@ -170,6 +171,15 @@ export class HttpTransportDbPlugin implements IDbPlugin {
         done: PluginEventCallbackResult<ITranslatedValue<TShape>>
     ): Promise<void> {
         const { operation } = event;
+
+        /**
+         * Renames are handed back rather than sent. What runs them is the server's plugin, which this
+         * side cannot see, and the handler returns that plugin's rows as they are: an option the far
+         * plugin reported would come back unapplied. The rows reach the datastore here, which
+         * finishes the query by the in-memory names.
+         */
+        reportRenamedProperties(operation.options);
+
         const { sendable, local } = splitSendableOptions(operation.options);
 
         /**
@@ -219,6 +229,19 @@ export class HttpTransportDbPlugin implements IDbPlugin {
         // Whatever the server could not be asked to do, done here with the closures it could not be
         // given. An empty `local` makes this a no-op pass.
         const translator = new JsonTranslator(new Query(local, operation.schema, false));
+
+        // The rows crossed as JSON, where a date is a string, and the closures run here compare and
+        // call Dates. Nothing sent defines a projection, so an array is rows (or a join's tuples,
+        // which have no such keys). Only the dates: keys stay as sent, for the datastore to deserialize.
+        const reviveDates = local.items.size > 0 ? getStorageDateReviver(operation.schema) : null;
+
+        if (reviveDates != null && Array.isArray(response.value)) {
+            for (const row of response.value) {
+                if (row != null && typeof row === 'object') {
+                    reviveDates(row as Record<string, unknown>);
+                }
+            }
+        }
 
         done(PluginEventResult.success(event.id, translator.translate(response.value) as ITranslatedValue<TShape>));
     }

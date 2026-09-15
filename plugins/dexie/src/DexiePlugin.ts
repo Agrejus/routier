@@ -1,10 +1,10 @@
 import Dexie from 'dexie';
 import { convertToDexieSchema } from "./utils";
 import { applySeed, applySort, describeSeed, describeSort, findIndexSeed, findSortSeed, seedableIndexes, seekReplacesPredicate, type IndexSeed } from "./indexSeed";
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, IDbPlugin, ITranslatedValue, joinInPlugin, QueryOption, QueryOptionName, TranslatedSingleValue } from '@routier/core/plugins';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, IDbPlugin, ITranslatedValue, joinInPlugin, QueryOption, QueryOptionName, reportRenamedProperties, TranslatedSingleValue } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
 import { BulkPersistResult, SchemaPersistChanges } from '@routier/core/collections';
-import { CompiledSchema, InferCreateType, PropertyInfo, SchemaId, SchemaTypes } from '@routier/core/schema';
+import { CompiledSchema, getStorageDateReviver, InferCreateType, PropertyInfo, SchemaId, SchemaTypes } from '@routier/core/schema';
 import { UnknownRecord, uuidv4 } from '@routier/core/utilities';
 import { ParamsFilter } from '@routier/core/expressions';
 import { DexieTranslator } from './DexieTranslator';
@@ -329,8 +329,13 @@ export class DexiePlugin implements IDbPlugin, Disposable {
             const { options } = event.operation;
             const translator = new DexieTranslator<TEntity, TShape>(event.operation);
 
+            // IndexedDB holds rows as they are stored, and the predicates below are the caller's
+            // lambdas, which name a `from` property by a key the row does not have. Handed back
+            // before anything reads, so every option planned below is one this plugin can run.
+            reportRenamedProperties(options);
+
             const indexes = seedableIndexes(event.operation.schema);
-            const filters = options.get("filter").map(entry => entry.option);
+            const filters = options.get("filter").map(entry => entry.option).filter(filter => filter.reason === "executed");
             let indexSeed: IndexSeed | null = null;
             let seededFilter: QueryOption<TShape, "filter"> | null = null;
 
@@ -349,7 +354,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                     : filters
             );
 
-            const sorts = options.get("sort").map(entry => entry.option);
+            const sorts = options.get("sort").map(entry => entry.option).filter(sort => sort.reason === "executed");
             const sortSeed = indexSeed == null && sorts.length === 1
                 ? findSortSeed(sorts[0].value, indexes)
                 : null;
@@ -360,12 +365,24 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                 ? applySeed(table, indexSeed)
                 : [sortSeed != null ? applySort(table, sortSeed) : table.toCollection()];
 
+            // IndexedDB holds a date as the ISO string the datastore serialized it to, and the
+            // predicates compare Dates. Rows are revived before a predicate sees them, and again
+            // before the translator does, which is a no-op for a row already revived.
+            const reviveDates = getStorageDateReviver(event.operation.schema);
+
             for (const filter of predicateFilters) {
                 if (filter.value.params == null) {
-                    collections = collections.map(collection => collection.filter(filter.value.filter));
+                    const selector = filter.value.filter;
+                    collections = collections.map(collection => collection.filter(item => {
+                        reviveDates?.(item);
+                        return selector(item);
+                    }));
                 } else {
                     const selector = filter.value.filter as ParamsFilter<unknown, {}>;
-                    collections = collections.map(collection => collection.filter(item => selector([item, filter.value.params])));
+                    collections = collections.map(collection => collection.filter(item => {
+                        reviveDates?.(item);
+                        return selector([item, filter.value.params]);
+                    }));
                 }
             }
 
@@ -377,13 +394,22 @@ export class DexiePlugin implements IDbPlugin, Disposable {
             const hasFilter = predicateFilters.size > 0;
             const hasSort = sorts.length > 0 && sortSeed == null;
             const canPushDownWindow = hasSort === false && collections.length === 1;
-            const canPushDownCount = options.has("count") && [...options.items.keys()].every(name => countCompatibleOptions.includes(name));
+            // Not after a report: the count is then the datastore's, over the rows this returns
+            const canPushDownCount = options.has("count")
+                && [...options.items.keys()].every(name => countCompatibleOptions.includes(name))
+                && options.notExecuted().length === 0;
 
             translator.pushedDown.skip = canPushDownWindow;
             translator.pushedDown.take = canPushDownWindow;
             translator.pushedDown.sort = sortSeed != null;
 
             options.forEach(option => {
+
+                // Everything after a reported option runs in the datastore, and a window applied
+                // here too would window twice
+                if (option.reason !== "executed") {
+                    return;
+                }
 
                 if (option.name === "skip") {
                     if (canPushDownWindow) {
@@ -462,6 +488,12 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                     ...(canPushDownWindow && options.has("take") ? ["limit(…)"] : []),
                     ...(translator.pushedDown.distinct ? ["distinct()"] : [])
                 ]);
+
+                if (reviveDates != null) {
+                    for (let i = 0, length = data.length; i < length; i++) {
+                        reviveDates(data[i]);
+                    }
+                }
 
                 const result = translator.translate(data);
 

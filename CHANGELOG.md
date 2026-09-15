@@ -3,6 +3,184 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## Queries on renamed columns reach the SQL engine (unreleased)
+
+A property mapped to a column with `.from()` used to send every filter, sort and similarity
+search over it, and everything after, to memory before any plugin saw the query: the SQL plugins
+read the whole table and filtered it in JavaScript (#43). Versions are set at release; the
+sqlite plugin's next patch is already claimed by an in-flight branch.
+
+Core no longer decides this. A renamed option is planned for the database like any other, with its
+`PropertyInfo` attached, and a plugin that cannot read `.from()` names hands it back through the
+capability report that already exists. `IDbPlugin` is unchanged.
+
+### Changed — @routier/core
+
+- **Breaking, types only:** `MemoryExecutionReason` no longer has `renamed-property`, because core
+  no longer sends a renamed property to memory. A plugin that hands one back records
+  `missing-capability`, and `.explain()` reports that instead.
+- **Breaking:** `QueryOptionsCollection.forgetReports()` is removed. Reports are per dispatch now:
+  `forDispatch()` gives each dispatch a copy with nothing reported, so there is nothing to forget. A
+  caller that reused one collection across dispatches and cleared it in between sends a copy instead.
+- `QueryOptionsCollection` keeps a filter, sort or `nearest` over a renamed property with the
+  database. An unmapped property still runs in memory (`unmapped-property`).
+- The ephemeral plugins (memory, file-system, browser-storage) report renamed options, since they
+  run the caller's lambdas over stored records. Their leading-filter pass and explained scan skip a
+  reported filter, and a join after a report is paired by the datastore.
+- `splitSendableOptions` leaves out options a plugin reported.
+
+### Added — @routier/core
+
+- `getStorageDateReviver(schema)`: for a plugin that runs the caller's lambdas over records a JSON
+  store handed back, turns ISO strings back into Dates at the root, in objects and in arrays, by
+  storage path and in place. Keys are not moved, and a property with a custom serializer,
+  deserializer or transform is left alone. Built once per schema, `null` for a schema with no dates.
+- `reportRenamedProperties(options, names?)`: reports every filter, sort, `nearest`, `map` and `group`
+  over a property with renamed segments, for a plugin that evaluates options over rows as stored. A
+  `map` is reported when any field it selects is renamed, and a `group` when its key is or any field
+  it copies into its members is. `sum`, `min`, `max` and `distinct` read the `map` in front of them,
+  so they are handed back with it.
+- `QueryOptionsCollection.forDispatch()`: a copy of the options for one dispatch, every database
+  option `executed` again. A split half is copied with its origin, so a report on it still cascades
+  over that dispatch alone. A join's inner options are copied too.
+- `parseSelector(schema, selector)`: reads a sort, map, group or `nearest` selector with the filter
+  grammar, for the properties its value is read from (`reads`, and `property` when there is one) and
+  whether the value is that property (`isDirectProperty`). A call the filter grammar has no node for,
+  such as `getFullYear()`, is kept for what it reads. Cached by source per schema, like `toExpression`.
+  The datastore records the result on every `sort` and `nearest` option and every `QueryField`, as
+  optional fields, so an option built without a selector is still read as its property.
+
+### Fixed — dates in options the SQL plugins run in JavaScript (@routier/core, @routier/sqlite-plugin, @routier/test-utils)
+
+- `SqlTranslator` revives dates with `getStorageDateReviver` before running a `group` key or a `map` over
+  rows, after `decodeJsonColumns`, so a date inside a JSON column is revived too. SQLite, D1 and libSQL
+  return a date as the TEXT it was stored as, so `toGroup(r => r.createdDate)` keyed each group by the
+  ISO string rather than the Date, and `toGroup(r => r.createdDate.getFullYear())` threw. Only strings
+  are converted, so PostgreSQL, PGlite and MySQL, which return Dates, are unchanged. Keys stay under
+  their storage names. The defect predates #43, and was hidden in the contract because its dated schema
+  renames properties, which hands every group back to the datastore.
+- `describePluginContract` takes `supportsDates`, which runs the "dates" section and defaults to
+  `supportsRichTypes`. The SQLite, D1, sqlite3, libSQL and PGlite runners turn it on and pass every date
+  case, with nothing gated. The section adds a group by a date and by a date's year over a schema with
+  nothing renamed, so the plugin runs the group itself.
+
+### Fixed — selectors that compute a value (@routier/core, @routier/datastore, @routier/sql-plugin-core, @routier/sqlite-plugin, @routier/postgres-plugin-core, @routier/mysql-plugin, @routier/mongodb-plugin, @routier/dexie-plugin)
+
+- The property a sort, map, group or `nearest` reads was taken by splitting the selector's source on
+  `.`, so `r => r.dueDate.getTime()` resolved no property, and `r => 100 - r.price` resolved `price`.
+  Selectors are now parsed, and an unparsable one (a closure) keeps its old name and property and is
+  never treated as the property itself.
+- SQL plugins hand back a sort, `nearest` or `map` whose selector computes its value, and the aggregate
+  after the `map`. A sort by `100 - x.age` was pushed down as `ORDER BY "age"` and returned the wrong
+  order with no error; `sort(x => x.name.length)`, `map(x => x.amount * 2)` and `sumAsync(x => x.amount * 2)`
+  failed with `no such column`. The defect predates #43.
+- The memory, file-system, browser-storage, Dexie and PouchDB plugins, and `HttpDbPlugin`, hand back a
+  computed selector over a renamed property, as they did a plain one. `sort(r => r.dueDate.getTime())`
+  threw, and `map(r => r.amount * 2)` or `sumAsync` over a renamed `amount` returned `NaN`.
+- MongoDB hands back a computed sort rather than sending the path of the property it reads. Dexie no
+  longer seeds a sort from an index for one. `splitSendableOptions` keeps a computed sort or `nearest`
+  local, since it would travel as the property it reads.
+- The contract suite's `RENAMED_CALL_SELECTOR_TESTS` export is removed; those cases pass on every plugin.
+  A `derived selectors` section covers computed sorts, projections, groups and aggregates.
+
+### Fixed — @routier/datastore
+
+- Capability reports are per dispatch. A report was written onto option items that a queryable
+  keeps, that a snapshot shares, and that a subscription re-sent on every change, so it outlived the
+  dispatch that made it. Every dispatch now sends its own copy of the options (one-shot reads, each
+  terminal, each subscription re-query, and the change probe), and the memory pass reads the copy the
+  plugin answered. A live query on SQLite or PostgreSQL filtering on a renamed column used to fall
+  back to a full table scan after a notification the probe answered empty. Rows were still correct.
+- A subscription's change probe answers a filter on a renamed property itself, since the rows it is
+  seeded with are already deserialized. It used to hand the filter back and match every changed row,
+  so every change re-queried the real plugin, including one the filter excludes.
+- When a plugin reports an option in front of an aggregate or projection, the rows it returns are
+  deserialized before the memory pass. They used to reach it in storage shape whenever the query as
+  a whole turned change tracking off, so `.where(x => x.renamed === 'a').countAsync()` counted zero.
+
+### Changed — @routier/dexie-plugin, @routier/pouchdb-plugin
+
+- Report renamed filters, sorts, `nearest`, projections and groups before choosing an index. Dexie
+  only pushes a window, `count` or `distinct` down when nothing before it was reported; PouchDB builds
+  its view predicate and index lookup from executed filters only.
+
+### Fixed — @routier/core (memory, file-system, browser-storage), @routier/dexie-plugin, @routier/pouchdb-plugin
+
+- A `map`, `sum`, `min`, `max`, `map(...).distinct()` or `toGroup` over a renamed property answers
+  correctly on a read the store was not tracking. These plugins ran the caller's selector over rows
+  as stored, where the property has another key, so a projection came back `undefined`, `sum` threw,
+  `min`/`max` found no items and a group had one `undefined` key. PouchDB, which deserialized before
+  running options, only lost renamed values inside a group's members. The defect predates #43.
+
+### Fixed — @routier/core (memory, file-system, browser-storage), @routier/dexie-plugin, @routier/replication-plugin
+
+- Options run by the plugin see Dates. Every one of these ran the caller's lambdas over dates as the
+  ISO strings the datastore serialized them to, so a date filter against a Date matched nothing and
+  `sort(r => r.date.getTime())` or `map(r => r.date.getFullYear())` threw. The ephemeral plugins
+  already held root dates as Dates, and now hold dates in objects and arrays the same way, including
+  what file-system and browser-storage read back from JSON. Dexie revives rows before its predicates
+  and the translator run. `HttpDbPlugin` revives the rows a response carries, and
+  `HttpTransportDbPlugin` the rows it finishes locally. Rows keep their storage keys.
+
+### Fixed — @routier/pouchdb-plugin
+
+- A property declared with `.from()` reads back. Documents were always stored under the `from`
+  name, but the plugin returned rows it had already deserialized, and the datastore deserialized
+  them again by storage name, so every read from a store that was not still tracking the rows
+  returned the property as `undefined` (and a nested object under a renamed key threw). Rows are now
+  handed back as stored. A projection or aggregate is unchanged. Existing data needs no migration.
+- The translator no longer deserializes documents before running options. It turns dates back into
+  Dates, the one thing PouchDB's JSON changed, at their storage paths, and leaves every key where it
+  is stored. The view predicate sees Dates too, so `where(([r, p]) => r.createdDate > p.d)` returns
+  the matching rows; it returned none. A custom `.serialize()`/`.deserialize()` property now reaches
+  the options as stored, as it does on every other plugin that runs options over its rows.
+- An index view on a renamed property reads its `from` name. It used to read the in-memory name and
+  emit nothing. The view has a new name, so a database with the old design document gets it
+  replaced on its next indexed read.
+- An identity key declared with `.from()` is refused at save, like an identity key not named `_id`.
+  PouchDB fills in `_id`, so the key never read back.
+
+### Fixed — @routier/mongodb-plugin
+
+- A sort on a renamed property sends the stored path. It used to send the in-memory name, which was
+  masked while renamed sorts ran in memory. Filters already used the stored path.
+- A `nearest` over a renamed vector is reported, since it is scored in JavaScript over stored documents.
+- A `map` or `group` over a renamed property is reported for the same reason, and an aggregate after
+  the `map` goes back with it. They used to read the in-memory name from stored documents.
+- A filter against a Date matches. The datastore serializes a date to its ISO string before the plugin
+  inserts it, so documents hold the string, but a Date value was sent as it is and BSON never orders a
+  Date against a string: `where(([r, p]) => r.createdDate > p.d, { d })` and
+  `p.dates.includes(r.createdDate)` matched no documents. Dates are sent as ISO strings in field
+  predicates, `$in` and `$nin` lists, and `$literal` operands. The defect predates #43.
+- Options run in JavaScript see Dates. The translator revives dates at their storage paths before a
+  `group`, `map`, `nearest` or a handed-back option runs, without moving keys, so `toGroup` by a date
+  no longer keys by the ISO string, and `toGroup(r => r.createdDate.getFullYear())` no longer throws.
+
+### Changed — @routier/replication-plugin
+
+- `HttpDbPlugin` and `HttpTransportDbPlugin` report renamed options instead of sending them, as
+  before: neither can know whether the far end reads `.from()` names.
+
+### Fixed — @routier/postgres-plugin-core, @routier/sqlite-plugin (including D1), @routier/mysql-plugin
+
+- A filter on a renamed property now reaches the engine, so `WHERE "display_name" = $1` is issued for
+  a property declared as `.from('display_name')`. A join whose inner scope filters on a renamed
+  property can now be pushed down too.
+- `ORDER BY` names the storage column, or the JSON path through renamed segments for a nested
+  property. It used to emit the in-memory name, which was masked while renamed sorts ran in memory.
+- `sum`/`min`/`max` read the storage column, and a `map` selecting a renamed property aliases it
+  back to the property name. Neither is gated on a filter, so before this fix
+  `.sumAsync(x => x.renamed)` failed in the engine with an unknown column.
+- `toGroup` over a schema with a renamed property is reported. No statement renders a group, and the
+  rows were grouped in JavaScript by in-memory names over rows keyed by column, so every row landed
+  under an `undefined` key.
+
+### Added — @routier/sql-plugin-core
+
+- `propertyColumn` and `referencedColumn`, the one renderer filters, sorts, aggregates and
+  projections now share for a property's storage column. `selectExpression` aliases a renamed
+  root column as well as a nested path.
+
 ## Schemas compile in minified and downleveled builds (2026-09-15)
 
 ### Fixed — @routier/core 0.7.1

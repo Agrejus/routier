@@ -59,6 +59,26 @@ export const contractRenamedSchema = s.define("contract_renamed", {
     amount: s.number().from("wire_amount"),
 }).compile();
 
+/** Dates at the root, under a `.from()` name, inside an object, and in an array. */
+export const contractDatedSchema = s.define("contract_dated", {
+    _id: s.string().key().identity(),
+    label: s.string().from("wire_label"),
+    createdDate: s.date(),
+    dueDate: s.date().from("wire_due"),
+    window: s.object({ opens: s.date() }),
+    history: s.array(s.date()),
+}).compile();
+
+/**
+ * Dates with nothing renamed. A group copies every property into its members, so a schema with one
+ * renamed property hands every group back to the datastore; over this one, a plugin groups itself.
+ */
+export const contractPlainDatedSchema = s.define("contract_plain_dated", {
+    _id: s.string().key().identity(),
+    label: s.string(),
+    createdDate: s.date(),
+}).compile();
+
 class ContractDataStore extends DataStore {
     constructor(plugin: IDbPlugin) {
         super(plugin);
@@ -68,6 +88,8 @@ class ContractDataStore extends DataStore {
     rich = this.collection(contractRichSchema).proxy().create();
     composites = this.collection(contractCompositeSchema).proxy().create();
     renamed = this.collection(contractRenamedSchema).proxy().create();
+    dated = this.collection(contractDatedSchema).proxy().create();
+    plainDated = this.collection(contractPlainDatedSchema).proxy().create();
 }
 
 type Product = { name: string; category: string; price: number };
@@ -100,6 +122,24 @@ const RICH: RichRow[] = [
     { name: "Alpha", inStock: true, createdDate: new Date("2024-01-01T00:00:00.000Z"), tags: ["a"], note: null, rating: 5, dimensions: { width: 1, height: 2 } },
     { name: "Bravo", inStock: false, createdDate: new Date("2024-02-01T00:00:00.000Z"), tags: ["a", "b"], note: "second", rating: 3, dimensions: { width: 3, height: 4 } },
     { name: "Charlie", inStock: true, createdDate: new Date("2024-03-01T00:00:00.000Z"), tags: [], note: null, dimensions: { width: 5, height: 6 } },
+];
+
+type DatedRow = {
+    label: string;
+    createdDate: Date;
+    dueDate: Date;
+    window: { opens: Date };
+    history: Date[];
+};
+
+/**
+ * Each date property orders the rows differently, and falls in a different year for every row, so
+ * a sort, a filter or a projection that read the wrong property, or a string, gives another answer.
+ */
+const DATED: DatedRow[] = [
+    { label: "alpha", createdDate: new Date("2024-01-15T00:00:00.000Z"), dueDate: new Date("2026-04-01T00:00:00.000Z"), window: { opens: new Date("2020-07-01T00:00:00.000Z") }, history: [new Date("2022-01-01T00:00:00.000Z")] },
+    { label: "bravo", createdDate: new Date("2023-05-01T00:00:00.000Z"), dueDate: new Date("2022-03-01T00:00:00.000Z"), window: { opens: new Date("2028-11-01T00:00:00.000Z") }, history: [] },
+    { label: "charlie", createdDate: new Date("2025-09-30T00:00:00.000Z"), dueDate: new Date("2021-02-01T00:00:00.000Z"), window: { opens: new Date("2027-08-01T00:00:00.000Z") }, history: [new Date("2022-06-01T00:00:00.000Z"), new Date("2022-07-01T00:00:00.000Z")] },
 ];
 
 /**
@@ -136,6 +176,15 @@ export type PluginContractOptions = {
      */
     readonly supportsRichTypes?: boolean;
     /**
+     * Whether the store round-trips dates, at the root, under a `.from()` name, in an object and in an
+     * array. Runs the "dates" section, and defaults to `supportsRichTypes`.
+     *
+     * Separate because a SQL engine holds every date the schema serializes (a text or timestamp column,
+     * and JSON inside an object or array column) without holding the rest of the rich types: a column
+     * cannot tell an optional property that was never set from one set to null.
+     */
+    readonly supportsDates?: boolean;
+    /**
      * Test names this plugin is known not to satisfy, registered with `it.failing` so they
      * stay in the report and fail loudly once fixed.
      *
@@ -156,6 +205,14 @@ export type PluginContractOptions = {
      * stable.
      */
     readonly knownUnstable?: readonly string[];
+    /**
+     * A new plugin instance over the data `plugin` persisted, which reads it back from storage.
+     *
+     * For a plugin that keeps what it saved as objects in the process, such as a registry of
+     * collections by name, a read through the same instance never parses anything. Supplied by a
+     * plugin that persists, so the dates section runs again over rows its storage handed back.
+     */
+    readonly reopen?: (plugin: IDbPlugin) => IDbPlugin;
 };
 
 export function describePluginContract(
@@ -189,9 +246,36 @@ export function describePluginContract(
     describe(`plugin contract: ${name}`, () => {
         const stores: ContractDataStore[] = [];
 
+        const pluginOf = new WeakMap<ContractDataStore, IDbPlugin>();
+
         const store = () => {
-            const created = new ContractDataStore(factory());
+            const plugin = factory();
+            const created = new ContractDataStore(plugin);
+            pluginOf.set(created, plugin);
             stores.push(created);
+            return created;
+        };
+
+        /**
+         * A second store over the plugin `writer` saved through, so the same database.
+         *
+         * A store answers a read of rows it saved from its own tracked copies, whatever the plugin
+         * returned, so a read through the writer proves nothing about the rows the plugin hands back.
+         * Sharing the plugin instance rather than calling the factory again is what makes this work for
+         * every plugin: the factory opens a new database each time. Not added to `stores`, because
+         * destroying the writer tears the database down.
+         */
+        const reader = (writer: ContractDataStore) => new ContractDataStore(pluginOf.get(writer)!);
+
+        /**
+         * Stores over a reopened plugin, disposed after each test. Not destroyed: the database is the
+         * writer's, or a copy the runner owns, and PouchDB never settles a second destroy of one database.
+         */
+        const reopenedStores: ContractDataStore[] = [];
+
+        const reopened = (writer: ContractDataStore) => {
+            const created = new ContractDataStore(options.reopen!(pluginOf.get(writer)!));
+            reopenedStores.push(created);
             return created;
         };
 
@@ -212,6 +296,10 @@ export function describePluginContract(
                     // Destroy failures are asserted in their own section.
                 }
             }));
+
+            for (const current of reopenedStores.splice(0)) {
+                current[Symbol.dispose]();
+            }
         });
 
         /**
@@ -389,6 +477,158 @@ export function describePluginContract(
             });
         });
 
+        /**
+         * Dates, read by a store that did not save them.
+         *
+         * The datastore serializes a Date to an ISO string, and a store that keeps JSON hands the
+         * string back. The plugin runs options over its rows before the datastore deserializes them,
+         * so it has to give the caller's lambdas Dates: a string is never greater than a Date, and has
+         * no `getTime()`. A renamed date is handed back and runs after deserialization, and has to give
+         * the same answers. Labels are renamed too, so every answer also proves rows keep their keys.
+         *
+         * Gated by `supportsDates`, which defaults to rich types.
+         */
+        ((options.supportsDates ?? options.supportsRichTypes) === true ? section : describe.skip)("dates", () => {
+            const readers: [string, (writer: ContractDataStore) => ContractDataStore][] = [["a new store", reader]];
+
+            if (options.reopen != null) {
+                readers.push(["a reopened plugin", reopened]);
+            }
+
+            const iso = (value: unknown) => {
+                expect(value).toBeInstanceOf(Date);
+                return (value as Date).toISOString();
+            };
+
+            const labels = (rows: { label: string }[]) => rows.map(r => r.label);
+
+            for (const [through, read] of readers) {
+                describe(`read through ${through}`, () => {
+                    const seededDated = async () => {
+                        const writer = store();
+                        await writer.dated.addAsync(...(DATED as any));
+                        await writer.saveChangesAsync();
+                        return read(writer);
+                    };
+
+                    test("reads every date back as a Date", async () => {
+                        const found = await (await seededDated()).dated.sort(r => r.label).toArrayAsync();
+
+                        expect(labels(found)).toEqual(["alpha", "bravo", "charlie"]);
+
+                        for (let i = 0; i < DATED.length; i++) {
+                            expect(iso(found[i].createdDate)).toBe(DATED[i].createdDate.toISOString());
+                            expect(iso(found[i].dueDate)).toBe(DATED[i].dueDate.toISOString());
+                            expect(iso(found[i].window.opens)).toBe(DATED[i].window.opens.toISOString());
+                            expect(found[i].history.map(iso)).toEqual(DATED[i].history.map(d => d.toISOString()));
+                        }
+                    });
+
+                    test("filters on a date against a literal Date", async () => {
+                        const dataStore = await seededDated();
+
+                        expect(labels(await dataStore.dated.where(r => r.createdDate > new Date("2024-01-01T00:00:00.000Z")).toArrayAsync()).sort()).toEqual(["alpha", "charlie"]);
+                        expect(labels(await dataStore.dated.where(r => r.dueDate > new Date("2022-01-01T00:00:00.000Z")).toArrayAsync()).sort()).toEqual(["alpha", "bravo"]);
+                        expect(labels(await dataStore.dated.where(r => r.window.opens > new Date("2025-01-01T00:00:00.000Z")).toArrayAsync()).sort()).toEqual(["bravo", "charlie"]);
+                    });
+
+                    test("filters on a date against a parameter", async () => {
+                        const dataStore = await seededDated();
+
+                        expect(labels(await dataStore.dated.where(([r, p]) => r.createdDate > p.d, { d: new Date("2024-01-01T00:00:00.000Z") }).toArrayAsync()).sort()).toEqual(["alpha", "charlie"]);
+                        expect(labels(await dataStore.dated.where(([r, p]) => r.dueDate > p.d, { d: new Date("2022-01-01T00:00:00.000Z") }).toArrayAsync()).sort()).toEqual(["alpha", "bravo"]);
+                        expect(labels(await dataStore.dated.where(([r, p]) => r.window.opens > p.d, { d: new Date("2025-01-01T00:00:00.000Z") }).toArrayAsync()).sort()).toEqual(["bravo", "charlie"]);
+                    });
+
+                    test("sorts by a date", async () => {
+                        const dataStore = await seededDated();
+
+                        expect(labels(await dataStore.dated.sort(r => r.createdDate).toArrayAsync())).toEqual(["bravo", "alpha", "charlie"]);
+                        expect(labels(await dataStore.dated.sort(r => r.dueDate).toArrayAsync())).toEqual(["charlie", "bravo", "alpha"]);
+                        expect(labels(await dataStore.dated.sort(r => r.window.opens).toArrayAsync())).toEqual(["alpha", "charlie", "bravo"]);
+                    });
+
+                    test("sorts by a date's time", async () => {
+                        const dataStore = await seededDated();
+
+                        expect(labels(await dataStore.dated.sort(r => r.createdDate.getTime() as never).toArrayAsync())).toEqual(["bravo", "alpha", "charlie"]);
+                        expect(labels(await dataStore.dated.sort(r => r.window.opens.getTime() as never).toArrayAsync())).toEqual(["alpha", "charlie", "bravo"]);
+                    });
+
+                    /**
+                     * Apart from the plain cases: the selector calls a method on a renamed property, so the
+                     * option carries the property it reads, and a plugin that runs it over stored rows has to
+                     * hand it back.
+                     */
+                    test("sorts by a renamed date's time", async () => {
+                        const dataStore = await seededDated();
+
+                        expect(labels(await dataStore.dated.sort(r => r.dueDate.getTime() as never).toArrayAsync())).toEqual(["charlie", "bravo", "alpha"]);
+                    });
+
+                    test("maps a date's year", async () => {
+                        const dataStore = await seededDated();
+
+                        expect([...await dataStore.dated.map(r => r.createdDate.getFullYear()).toArrayAsync()].sort()).toEqual([2023, 2024, 2025]);
+                        expect([...await dataStore.dated.map(r => r.window.opens.getFullYear()).toArrayAsync()].sort()).toEqual([2020, 2027, 2028]);
+                    });
+
+                    test("maps a renamed date's year", async () => {
+                        const dataStore = await seededDated();
+
+                        expect([...await dataStore.dated.map(r => r.dueDate.getFullYear()).toArrayAsync()].sort()).toEqual([2021, 2022, 2026]);
+                    });
+
+                    test("takes the min and max of a date", async () => {
+                        const dataStore = await seededDated();
+
+                        expect(iso(await dataStore.dated.minAsync(r => r.createdDate as never))).toBe("2023-05-01T00:00:00.000Z");
+                        expect(iso(await dataStore.dated.maxAsync(r => r.createdDate as never))).toBe("2025-09-30T00:00:00.000Z");
+                        expect(iso(await dataStore.dated.minAsync(r => r.dueDate as never))).toBe("2021-02-01T00:00:00.000Z");
+                        expect(iso(await dataStore.dated.maxAsync(r => r.dueDate as never))).toBe("2026-04-01T00:00:00.000Z");
+                    });
+
+                    test("groups by a date", async () => {
+                        const dataStore = await seededDated();
+
+                        // A group key is the selected value as an object key, so a Date is keyed by its
+                        // `toString()`, the same as grouping the entities in JavaScript
+                        const expected = (select: (row: DatedRow) => Date) => DATED.map(row => [String(select(row)), [row.label]]).sort();
+
+                        // Cast because a group key is typed as a string or a number
+                        const byCreated = await dataStore.dated.toGroupAsync(r => r.createdDate as never) as unknown as Record<string, DatedRow[]>;
+                        const byDue = await dataStore.dated.toGroupAsync(r => r.dueDate as never) as unknown as Record<string, DatedRow[]>;
+
+                        expect(Object.entries(byCreated).map(([key, rows]) => [key, labels(rows)]).sort()).toEqual(expected(row => row.createdDate));
+                        expect(Object.entries(byDue).map(([key, rows]) => [key, labels(rows)]).sort()).toEqual(expected(row => row.dueDate));
+                        expect(Object.values(byCreated).flat().every(row => row.createdDate instanceof Date && row.dueDate instanceof Date)).toBe(true);
+                    });
+
+                    /**
+                     * Apart from "groups by a date": that schema renames properties, so the group is handed back
+                     * and runs over deserialized rows. Here the plugin runs the key over rows as its store
+                     * returned them, where a SQL engine's date is text.
+                     */
+                    test("groups by a date, and by a date's year, over rows the plugin groups itself", async () => {
+                        const writer = store();
+                        await writer.plainDated.addAsync(...(DATED.map(({ label, createdDate }) => ({ label, createdDate })) as any));
+                        await writer.saveChangesAsync();
+                        const dataStore = read(writer);
+
+                        const byCreated = await dataStore.plainDated.toGroupAsync(r => r.createdDate as never) as unknown as Record<string, { label: string, createdDate: Date }[]>;
+
+                        expect(Object.entries(byCreated).map(([key, rows]) => [key, labels(rows)]).sort()).toEqual(DATED.map(row => [String(row.createdDate), [row.label]]).sort());
+                        expect(Object.values(byCreated).flat().every(row => row.createdDate instanceof Date)).toBe(true);
+
+                        const byYear = await dataStore.plainDated.toGroupAsync(r => r.createdDate.getFullYear() as never) as unknown as Record<string, { label: string }[]>;
+
+                        expect(Object.keys(byYear).sort()).toEqual(["2023", "2024", "2025"]);
+                        expect(labels(byYear["2024"])).toEqual(["alpha"]);
+                    });
+                });
+            }
+        });
+
         section("identity generation", () => {
             test("assigns an identity key on save", async () => {
                 const dataStore = store();
@@ -440,10 +680,26 @@ export function describePluginContract(
         });
 
         section("renamed properties", () => {
+            /**
+             * Every read goes through `reader`. A plugin either reads the `from` name or hands the
+             * option back, and both have to produce these answers; one that does neither runs the
+             * caller's lambda over a key its rows do not have.
+             */
+            const seededRenamed = async (...rows: { label: string, amount: number }[]) => {
+                const writer = store();
+                await writer.renamed.addAsync(...(rows as any));
+                await writer.saveChangesAsync();
+                return reader(writer);
+            };
+
+            const LETTERS = [
+                { label: "bravo", amount: 3 },
+                { label: "alpha", amount: 1 },
+                { label: "charlie", amount: 2 },
+            ];
+
             test("round-trips a renamed string property", async () => {
-                const dataStore = store();
-                await dataStore.renamed.addAsync({ label: "hello", amount: 5 } as any);
-                await dataStore.saveChangesAsync();
+                const dataStore = await seededRenamed({ label: "hello", amount: 5 });
 
                 const [found] = await dataStore.renamed.toArrayAsync();
 
@@ -453,17 +709,193 @@ export function describePluginContract(
             });
 
             test("filters on a renamed property by its application name", async () => {
-                const dataStore = store();
-                await dataStore.renamed.addAsync(
-                    { label: "keep", amount: 1 } as any,
-                    { label: "drop", amount: 2 } as any,
-                );
-                await dataStore.saveChangesAsync();
+                const dataStore = await seededRenamed({ label: "keep", amount: 1 }, { label: "drop", amount: 2 });
 
                 const found = await dataStore.renamed.where(r => r.label === "keep").toArrayAsync();
 
                 expect(found).toHaveLength(1);
                 expect(found[0].label).toBe("keep");
+                expect(found[0].amount).toBe(1);
+            });
+
+            test("sorts on a renamed property by its application name", async () => {
+                const dataStore = await seededRenamed(...LETTERS);
+
+                const found = await dataStore.renamed.sort(r => r.amount).toArrayAsync();
+
+                expect(found.map(r => r.label)).toEqual(["alpha", "charlie", "bravo"]);
+            });
+
+            test("filters, sorts and takes over renamed properties", async () => {
+                const dataStore = await seededRenamed(...LETTERS);
+
+                const found = await dataStore.renamed
+                    .where(r => r.amount >= 2)
+                    .sortDescending(r => r.label)
+                    .take(1)
+                    .toArrayAsync();
+
+                expect(found.map(r => r.label)).toEqual(["charlie"]);
+            });
+
+            test("counts a filter on a renamed property", async () => {
+                const dataStore = await seededRenamed(
+                    { label: "keep", amount: 1 },
+                    { label: "keep", amount: 2 },
+                    { label: "drop", amount: 3 },
+                );
+
+                expect(Number(await dataStore.renamed.where(r => r.label === "keep").countAsync())).toBe(2);
+            });
+
+            test("maps a renamed property", async () => {
+                const dataStore = await seededRenamed(...LETTERS);
+
+                const found = await dataStore.renamed.map(r => r.label).toArrayAsync();
+
+                expect([...found].sort()).toEqual(["alpha", "bravo", "charlie"]);
+            });
+
+            test("maps renamed properties into an object", async () => {
+                const dataStore = await seededRenamed(...LETTERS);
+
+                // Not `{ label: r.label }`: a field keeping its name is planned for memory by core,
+                // and never reaches the plugin
+                const found = await dataStore.renamed.map(r => ({ name: r.label, total: r.amount })).toArrayAsync();
+
+                expect([...found].sort((a, b) => a.total - b.total)).toEqual([
+                    { name: "alpha", total: 1 },
+                    { name: "charlie", total: 2 },
+                    { name: "bravo", total: 3 },
+                ]);
+            });
+
+            test("sums a renamed property", async () => {
+                const dataStore = await seededRenamed(...LETTERS);
+
+                expect(Number(await dataStore.renamed.sumAsync(r => r.amount))).toBe(6);
+            });
+
+            test("takes the min and max of a renamed property", async () => {
+                const dataStore = await seededRenamed(...LETTERS);
+
+                expect(Number(await dataStore.renamed.minAsync(r => r.amount))).toBe(1);
+                expect(Number(await dataStore.renamed.maxAsync(r => r.amount))).toBe(3);
+            });
+
+            test("takes the distinct values of a renamed property", async () => {
+                const dataStore = await seededRenamed(
+                    { label: "keep", amount: 1 },
+                    { label: "keep", amount: 2 },
+                    { label: "drop", amount: 3 },
+                );
+
+                const found = await dataStore.renamed.map(r => r.label).distinctAsync();
+
+                expect([...found].sort()).toEqual(["drop", "keep"]);
+            });
+
+            test("groups on a renamed property", async () => {
+                const dataStore = await seededRenamed(
+                    { label: "keep", amount: 1 },
+                    { label: "keep", amount: 2 },
+                    { label: "drop", amount: 3 },
+                );
+
+                const found = await dataStore.renamed.toGroupAsync(r => r.label);
+
+                expect(Object.keys(found).sort()).toEqual(["drop", "keep"]);
+                expect(found["keep"].map(r => r.amount).sort()).toEqual([1, 2]);
+                expect(found["drop"].map(r => r.amount)).toEqual([3]);
+            });
+
+            test("filters and maps over renamed properties", async () => {
+                const dataStore = await seededRenamed(
+                    { label: "keep", amount: 1 },
+                    { label: "keep", amount: 2 },
+                    { label: "drop", amount: 3 },
+                );
+
+                const found = await dataStore.renamed.where(r => r.label === "keep").map(r => r.amount).toArrayAsync();
+
+                expect([...found].sort()).toEqual([1, 2]);
+            });
+        });
+
+        section("derived selectors", () => {
+            /**
+             * A selector that computes a value from a property rather than naming it.
+             *
+             * The property it reads travels with the option, and so does the fact that the value is
+             * not the property: a backend that orders or projects by column has to hand the option back
+             * rather than order by the column, and one that runs the selector over stored rows has to
+             * hand it back when the property is renamed. Lengths, doubles and upper-cased labels each
+             * order the rows differently from the property itself, so reading the property gives
+             * another answer.
+             */
+            const seededRenamed = async () => {
+                const writer = store();
+                await writer.renamed.addAsync(
+                    { label: "kilo", amount: 3 } as any,
+                    { label: "alpha", amount: 1 } as any,
+                    { label: "ox", amount: 2 } as any,
+                );
+                await writer.saveChangesAsync();
+                return reader(writer);
+            };
+
+            test("sorts by a renamed string's length", async () => {
+                const dataStore = await seededRenamed();
+
+                expect((await dataStore.renamed.sort(r => r.label.length as never).toArrayAsync()).map(r => r.label)).toEqual(["ox", "kilo", "alpha"]);
+                expect((await dataStore.renamed.sortDescending(r => r.label.length as never).toArrayAsync()).map(r => r.label)).toEqual(["alpha", "kilo", "ox"]);
+            });
+
+            test("maps a renamed number doubled", async () => {
+                const dataStore = await seededRenamed();
+
+                expect([...await dataStore.renamed.map(r => r.amount * 2).toArrayAsync()].sort()).toEqual([2, 4, 6]);
+            });
+
+            test("groups by a renamed string upper-cased", async () => {
+                const dataStore = await seededRenamed();
+
+                const found = await dataStore.renamed.toGroupAsync(r => r.label.toUpperCase());
+
+                expect(Object.keys(found).sort()).toEqual(["ALPHA", "KILO", "OX"]);
+                expect(found["KILO"].map(r => r.amount)).toEqual([3]);
+            });
+
+            test("maps direct and derived fields into an object", async () => {
+                const dataStore = await seededRenamed();
+
+                const found = await dataStore.renamed.map(r => ({ name: r.label, double: r.amount * 2 })).toArrayAsync();
+
+                expect([...found].sort((a, b) => a.double - b.double)).toEqual([
+                    { name: "alpha", double: 2 },
+                    { name: "ox", double: 4 },
+                    { name: "kilo", double: 6 },
+                ]);
+            });
+
+            test("sums, and takes the min and max of, a derived value", async () => {
+                const dataStore = await seededRenamed();
+
+                expect(Number(await dataStore.renamed.sumAsync(r => r.amount * 2))).toBe(12);
+                expect(Number(await dataStore.renamed.minAsync(r => r.amount * 2))).toBe(2);
+                expect(Number(await dataStore.renamed.maxAsync(r => r.label.length))).toBe(5);
+            });
+
+            test("sorts, maps and groups by a value derived from a property that is not renamed", async () => {
+                const dataStore = reader(await seeded());
+
+                expect((await dataStore.products.sort(p => 100 - p.price).toArrayAsync()).map(p => p.name)).toEqual(["Delta", "Bravo", "Charlie", "Alpha"]);
+                expect([...await dataStore.products.map(p => p.price * 2).toArrayAsync()].sort((a, b) => a - b)).toEqual([20, 40, 60, 80]);
+
+                const groups = await dataStore.products.toGroupAsync(p => p.category.toUpperCase());
+
+                expect(Object.keys(groups).sort()).toEqual(["TOOLS", "TOYS"]);
+                expect(groups["TOYS"].map(p => p.name).sort()).toEqual(["Charlie", "Delta"]);
             });
         });
 

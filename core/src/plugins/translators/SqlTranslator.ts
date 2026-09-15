@@ -1,9 +1,11 @@
 import { IdType } from "../../schema/types";
+import { getStorageDateReviver } from "../../schema/utils/storageDates";
 import { UnknownRecord } from "../../utilities/types";
 import { QueryOption } from "../query/types";
 import { nearestBy } from "../query/similarity";
 import { IQuery } from "../types";
 import { DataTranslator } from "./DataTranslator";
+import { ITranslatedValue } from "./types";
 
 /**
  * A stored vector as a list of numbers, whatever the driver handed back.
@@ -52,6 +54,38 @@ export class SqlTranslator<TRoot extends {}, TShape> extends DataTranslator<TRoo
     constructor(query: IQuery<TRoot, TShape>, pushedDown: SqlPushdown = {}) {
         super(query);
         this.pushedDown = pushedDown;
+    }
+
+    /**
+     * Dates back as Dates, before the caller's selectors run over the rows.
+     *
+     * A `group` key and a `map` are the caller's lambdas, run here over rows as the engine returned them.
+     * SQLite, D1 and libSQL hand a date back as the TEXT it was stored as, which has no `getFullYear()`
+     * and groups apart from the Date the entity holds. Revived at storage paths and in place, which the
+     * datastore's deserialization still reads, and after `decodeJsonColumns`, so a date inside a JSON
+     * column is revived too. Only a string is converted, so an engine that returns a Date (PostgreSQL,
+     * PGlite, MySQL) is left alone, and so is a row already revived.
+     *
+     * Not a joined statement's rows, which are tuples, each half already deserialized. Nor rows whose
+     * `group` or `map` was handed back, which the datastore runs after deserializing them.
+     */
+    override translate(data: unknown): ITranslatedValue<TShape> {
+        const runsHere = (name: "group" | "map") =>
+            this.query.options.get(name).some(item => item.option.target === "database" && item.option.reason === "executed");
+
+        if (this.pushedDown.join !== true && this.query.schema != null && Array.isArray(data) && (runsHere("group") || runsHere("map"))) {
+            const reviveDates = getStorageDateReviver(this.query.schema);
+
+            for (let i = 0, length = reviveDates == null ? 0 : data.length; i < length; i++) {
+                const row = data[i];
+
+                if (row != null && typeof row === "object") {
+                    reviveDates!(row as Record<string, unknown>);
+                }
+            }
+        }
+
+        return super.translate(data);
     }
 
     count<TResult extends number>(data: unknown, _: QueryOption<TShape, "count">): TResult {

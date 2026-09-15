@@ -8,4 +8,5 @@ export * from './types';
 export type { SchemaSubscriptionOptions } from './communication/broadcast';
 export * from './utils/standardJsonSchema';
 export * from './utils/propertyKind';
+export * from './utils/storageDates';
 export * from './SchemaDefinition';

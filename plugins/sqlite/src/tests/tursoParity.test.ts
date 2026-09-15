@@ -49,8 +49,9 @@ describePluginContract(
     },
     {
         // Same reasoning as contract.test.ts: SQLite has no native boolean, date, array or
-        // object column type, and libSQL inherits that.
+        // object column type, and libSQL inherits that. Dates are serialized to text, as there.
         supportsRichTypes: false,
+        supportsDates: true,
         knownFailing: [],
     },
 );

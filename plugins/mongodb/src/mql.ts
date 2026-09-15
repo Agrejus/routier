@@ -43,6 +43,22 @@ import {
 export type MqlFilter = Record<string, unknown>;
 
 /**
+ * A value as the document holds it.
+ *
+ * The datastore serializes a Date to its ISO string before the plugin inserts it, so a document holds
+ * the string. A Date sent as it is never matches: BSON orders dates and strings apart, so `$gt` of a
+ * string against a Date is false for every document. Arrays are encoded element by element, for `$in`.
+ * The counterpart of `encodeDate` in the SQL dialects.
+ */
+const storedValue = (value: unknown): unknown => {
+    if (value instanceof Date) {
+        return value.toISOString();
+    }
+
+    return Array.isArray(value) ? value.map(storedValue) : value;
+};
+
+/**
  * Comparators that map to a single MQL operator, in both the plain and negated case.
  *
  * The negated form is stated rather than wrapped in `$not` because `$not` on a field
@@ -176,9 +192,14 @@ export const canRenderInMql = (expr: Expression): boolean => {
  * `a.b.c` natively, which is why nested filtering works here and not in the SQL plugins.
  */
 export function toFieldPath(prop: PropertyExpression): string {
-    const parents = prop.property.getParentPathArray({ useFromPropertyName: true });
+    return toStoragePath(prop.property);
+}
 
-    return [...parents, prop.property.getResolvedName()].join(".");
+/** `toFieldPath` for a property on its own, which is how a sort names one. */
+export function toStoragePath(property: PropertyExpression["property"]): string {
+    const parents = property.getParentPathArray({ useFromPropertyName: true });
+
+    return [...parents, property.getResolvedName()].join(".");
 }
 
 /**
@@ -207,8 +228,8 @@ function getPropertyValueSides(cmp: ComparatorExpression): PropertyValueSides {
         propRight: right != null && isPropertyExpression(right.operand) ? right.operand : null,
         callsLeft: left?.calls ?? [],
         callsRight: right?.calls ?? [],
-        valLeft: left != null && isValueExpression(left.operand) ? foldedOperandValue(left.operand, left.calls) : undefined,
-        valRight: right != null && isValueExpression(right.operand) ? foldedOperandValue(right.operand, right.calls) : undefined,
+        valLeft: left != null && isValueExpression(left.operand) ? storedValue(foldedOperandValue(left.operand, left.calls)) : undefined,
+        valRight: right != null && isValueExpression(right.operand) ? storedValue(foldedOperandValue(right.operand, right.calls)) : undefined,
     };
 }
 
@@ -314,7 +335,7 @@ function renderExprOperand(prop: PropertyExpression, calls: CallExpression[]): u
 /** A binary call's operand inside `$expr`: a literal stays a literal, a property becomes a field. */
 function renderCallArgument(expression: Expression): unknown {
     if (isValueExpression(expression)) {
-        return { $literal: expression.value };
+        return { $literal: storedValue(expression.value) };
     }
 
     const peeled = peelCalls(expression);
@@ -324,7 +345,7 @@ function renderCallArgument(expression: Expression): unknown {
     }
 
     if (peeled != null && isValueExpression(peeled.operand)) {
-        return { $literal: foldedOperandValue(peeled.operand, peeled.calls) };
+        return { $literal: storedValue(foldedOperandValue(peeled.operand, peeled.calls)) };
     }
 
     throw new Error(`Cannot render '${expression.type}' as a call operand in MQL.`);
@@ -393,7 +414,7 @@ function renderExprSide(expression: Expression | undefined): unknown {
     }
 
     if (isValueExpression(expression)) {
-        return { $literal: expression.value };
+        return { $literal: storedValue(expression.value) };
     }
 
     // Bottoms out in a boolean rather than a field, so there is nothing to peel to
@@ -415,7 +436,7 @@ function renderExprSide(expression: Expression | undefined): unknown {
         }
 
         if (peeled != null && isValueExpression(peeled.operand)) {
-            return { $literal: foldedOperandValue(peeled.operand, peeled.calls) };
+            return { $literal: storedValue(foldedOperandValue(peeled.operand, peeled.calls)) };
         }
     }
 

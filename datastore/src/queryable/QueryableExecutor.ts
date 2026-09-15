@@ -1,4 +1,4 @@
-import { DbPluginQueryEvent, distinctJoinKeys, executeJoin, ExecutedQuery, explainQuery, ITranslatedValue, JoinKind, JsonTranslator, loadJoinInnerSide, Query, QueryExplanation, QueryOptionsCollection, toEntityShape, TupleTranslator, withExecutedQueries, withInnerSide } from "@routier/core/plugins";
+import { DbPluginQueryEvent, distinctJoinKeys, executeJoin, ExecutedQuery, explainQuery, ITranslatedValue, JoinKind, JsonTranslator, loadJoinInnerSide, Query, QueryExplanation, QueryOptionName, QueryOptionsCollection, toEntityShape, TupleTranslator, withExecutedQueries, withInnerSide } from "@routier/core/plugins";
 import { CompiledSchema, InferType } from "@routier/core/schema";
 import { CallbackResult, PluginEventCallbackResult, PluginEventResult, PluginEventSuccessType, Result } from "@routier/core/results";
 import { UnknownRecord, uuid } from "@routier/core/utilities";
@@ -7,6 +7,9 @@ import { CollectionDependencies, CollectionRef, JoinTarget, RequestContext } fro
 import { QueryBuilderBase } from "./base/QueryBuilderBase";
 import { splitTupleFilter } from "./conjuncts";
 import { resolveJoinKey } from "./joinKeys";
+
+/** Options whose result is no longer rows of the root schema. */
+const TRANSFORMING_OPTIONS: readonly QueryOptionName[] = ["map", "group", "count", "sum", "min", "max", "distinct"];
 
 export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryBuilderBase<TRoot, TShape, CollectionDependencies<TRoot>> {
 
@@ -292,25 +295,28 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
 
         // The membership getter is what lets the bridge detect rows LEAVING this
         // subscriber's result set (defect #24) — the filter alone only sees rows entering.
-        return this.dependencies.dataBridge.subscribe<U, unknown>(databaseEvent, (r) => {
+        //
+        // The bridge sends a copy of `databaseEvent` on every change, and the memory pass has to read
+        // the reports on the copy that plugin received. The memory half never reaches a plugin, so
+        // nothing reports on it and it is shared.
+        return this.dependencies.dataBridge.subscribe<U, unknown>(databaseEvent, (r, dispatched) => {
 
             if (r.ok === Result.ERROR) {
                 done(r);
                 return;
             }
 
-            this.postProcessQuery(r, { databaseEvent, memoryEvent }, done);
+            this.postProcessQuery(r, { databaseEvent: dispatched, memoryEvent }, done);
         }, () => this.lastDeliveredIds);
     }
 
     protected createQueryPayload<Shape>(): { memoryEvent: DbPluginQueryEvent<TRoot, Shape>, databaseEvent: DbPluginQueryEvent<TRoot, Shape> } {
 
         // send over only the database operations, if there are none its a select all
-        const resolvedQueryOptions = this.resolveQueryOptions<Shape>();
-
-        // A subscribed queryable dispatches more than once over the same options, and a report from
-        // the last execution is not an answer for this one.
-        resolvedQueryOptions.forgetReports();
+        //
+        // A copy for this dispatch: the plugin reports on the options it receives, and the ones this
+        // queryable holds are read again by its next terminal.
+        const resolvedQueryOptions = this.resolveQueryOptions<Shape>().forDispatch();
 
         const splitQueryOptions = resolvedQueryOptions.split();
 
@@ -574,6 +580,29 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
         return new Query<TRoot, TShape>(combined as any, this.dependencies.schema, this.wholeQueryChangeTracking());
     }
 
+    /**
+     * Whether the plugin handed back rows rather than a shaped result: it reported an option, and
+     * nothing it did run projects or aggregates. A report stops the database phase, so every
+     * transformation after it was not reached.
+     */
+    private returnedUntransformedRows<TShape>(databaseEvent: DbPluginQueryEvent<TRoot, TShape>): boolean {
+        const options = databaseEvent.operation.options;
+
+        if (options.notExecuted().length === 0) {
+            return false;
+        }
+
+        let transformed = false;
+
+        options.forEach(option => {
+            if (option.reason === "executed" && TRANSFORMING_OPTIONS.includes(option.name)) {
+                transformed = true;
+            }
+        });
+
+        return transformed === false;
+    }
+
     /** What change tracking the query as a whole asked for, before it was split or reported on. */
     private wholeQueryChangeTracking(): boolean {
         const resolved = this.resolvedQueryOptions ?? this.request.queryOptions;
@@ -605,6 +634,12 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
             if (databaseEvent.operation.changeTracking === true) {
                 // Post process the db query results
                 result.data.forEach(item => this.dependencies.schema.postprocess(item as InferType<TRoot>, this.request.changeTrackingType));
+            } else if (this.returnedUntransformedRows(databaseEvent)) {
+                // The plugin stopped before the aggregate or projection that switched tracking off, so
+                // the rows are still in storage shape — and the options left for memory are the
+                // caller's lambdas, which read entity names. A `count` after a filter on a renamed
+                // property would otherwise count nothing.
+                result.data.forEach(item => this.dependencies.schema.postprocess(item as InferType<TRoot>, "diff"));
             }
 
             // This means we are querying on a computed property that is untracked, need to select

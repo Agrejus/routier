@@ -6,6 +6,7 @@ import {
     ITranslatedValue,
     joinInPlugin,
     QueryOrdering,
+    reportRenamedProperties,
 } from "@routier/core/plugins";
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from "@routier/core/results";
 import { BulkPersistResult, SchemaPersistChanges } from "@routier/core/collections";
@@ -13,7 +14,7 @@ import { CompiledSchema } from "@routier/core/schema";
 import { OptimisticConcurrencyError } from "@routier/core";
 import { UnknownRecord, uuidv4 } from "@routier/core/utilities";
 import { MongoCollection, MongoDriver, MongoFindOptions, MongoUpdate } from "./driver";
-import { MqlFilter, canRenderInMql, toMql } from "./mql";
+import { MqlFilter, canRenderInMql, toMql, toStoragePath } from "./mql";
 import { MongoTranslator } from "./MongoTranslator";
 import { assertMongoSchema } from "./schemaRules";
 
@@ -113,6 +114,22 @@ export class MongoDbPlugin implements IDbPlugin {
             }
         }
 
+        /**
+         * Filters and sorts name the stored path, through `from`, so a renamed property stays with the
+         * server. A similarity search, a projection and a group are never sent: `JsonTranslator` runs
+         * them through the caller's selector, over documents as they are stored, which have no key under
+         * the in-memory name. An aggregate reads the projection before it, so it goes back with it.
+         */
+        reportRenamedProperties(options, ["nearest", "map", "group"]);
+
+        // A sort key is a stored path, and `x => x.name.length` is not one: the server would order by
+        // `name`. Handed back, and sorted by the caller's selector.
+        for (const item of options.get("sort")) {
+            if ((item.option.value as { isDirectProperty?: boolean }).isDirectProperty === false) {
+                options.reportMissingCapability(item);
+            }
+        }
+
         try {
             options.forEach(option => {
                 if (option.target !== "database" || option.reason !== "executed") {
@@ -126,8 +143,11 @@ export class MongoDbPlugin implements IDbPlugin {
                 }
 
                 if (option.name === "sort") {
-                    const value = option.value as { propertyName: string; direction: QueryOrdering };
-                    sortKeys[value.propertyName] = value.direction === QueryOrdering.Descending ? -1 : 1;
+                    const value = option.value as { propertyName: string; direction: QueryOrdering; property?: Parameters<typeof toStoragePath>[0] | null };
+                    // The stored path, as filters use: the in-memory name is not a field when the
+                    // property or a parent of it is renamed
+                    const key = value.property != null ? toStoragePath(value.property) : value.propertyName;
+                    sortKeys[key] = value.direction === QueryOrdering.Descending ? -1 : 1;
                     return;
                 }
 

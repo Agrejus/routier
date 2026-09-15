@@ -7,6 +7,6 @@ describePluginContract(
     () => new DexiePlugin(`contract-${uuidv4()}-db`),
     {
         supportsRichTypes: true,
-        knownFailing: [],
+        reopen: plugin => new DexiePlugin(plugin.databaseName!),
     },
 );

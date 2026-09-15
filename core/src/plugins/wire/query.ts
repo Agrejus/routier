@@ -12,10 +12,16 @@ import { SerializedQueryOption } from "./types";
  * Everything except `map` and `group`. Those two are defined BY a closure — the projection is the
  * option — and no data form of them exists to send. Nothing else needs its closure: a sort is a
  * property and a direction, a filter is an expression tree, `nearest` is a vector and a count.
+ *
+ * Except a sort or `nearest` whose selector computes its value, such as `x => x.name.length`. It is sent
+ * as the property it reads, and the receiver would order by that instead. See `isSendable`.
  */
 const SENDABLE: ReadonlySet<QueryOptionName> = new Set<QueryOptionName>([
     "skip", "take", "sort", "filter", "nearest", "join", "count", "min", "max", "sum", "distinct"
 ]);
+
+const isSendable = (name: QueryOptionName, value: unknown): boolean =>
+    SENDABLE.has(name) && ((name !== "sort" && name !== "nearest") || (value as { isDirectProperty?: boolean }).isDirectProperty !== false);
 
 /**
  * Splits options into the PREFIX that can be sent and the remainder that cannot.
@@ -38,7 +44,13 @@ export const splitSendableOptions = <T>(options: QueryOptionsCollection<T>): {
     let stopped = false;
 
     options.forEach(option => {
-        if (stopped === false && SENDABLE.has(option.name) === false) {
+        // Reported by the plugin, so it belongs to the datastore, and so does everything after it —
+        // a report cascades to the end of the database phase, which keeps what is left a prefix
+        if (option.target === "database" && option.reason !== "executed") {
+            return;
+        }
+
+        if (stopped === false && isSendable(option.name, option.value) === false) {
             stopped = true;
         }
 

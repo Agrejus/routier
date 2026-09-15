@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
 import { s } from "@routier/core/schema";
 import { DataStore } from "@routier/datastore";
+import { executedQueriesOf } from "@routier/core/plugins";
 import { MongoDbPlugin } from "../MongoDbPlugin";
 import { FakeMongoDriver } from "./FakeMongoDriver";
 
@@ -131,6 +132,111 @@ describe("MongoDbPlugin", () => {
             const names = await open().products.map(x => x.name).toArrayAsync();
 
             expect([...names].sort()).toEqual(["alpha", "beta", "gamma"]);
+        });
+    });
+
+    /**
+     * The fake only proves what the plugin SENT and that the rows follow from it — a real server is
+     * what proves the MQL. The sort key used to be the in-memory name, masked while core ran every
+     * renamed sort in memory.
+     */
+    describe("renamed properties", () => {
+
+        const labelled = s.define("labelled", {
+            _id: s.string().key().identity(),
+            label: s.string().from("wire_label"),
+            rank: s.number().from("wire_rank"),
+            embedding: s.vector(3).from("wire_embedding"),
+        }).compile();
+
+        class LabelledStore extends DataStore {
+            rows = this.collection(labelled).proxy().create();
+        }
+
+        const seeded = async () => {
+            const store = new LabelledStore(new MongoDbPlugin(driver));
+
+            await store.rows.addAsync(
+                { label: "bravo", rank: 3, embedding: [0, 1, 0] } as any,
+                { label: "alpha", rank: 1, embedding: [1, 0, 0] } as any,
+                { label: "charlie", rank: 2, embedding: [0, 0, 1] } as any,
+            );
+            await store.saveChangesAsync();
+
+            return new LabelledStore(new MongoDbPlugin(driver));
+        };
+
+        it("sorts on the stored name, on the server", async () => {
+            const { data, explanation } = await (await seeded()).rows.sort(x => x.rank).explain().toArrayAsync();
+
+            expect(data.map(x => x.label)).toEqual(["alpha", "charlie", "bravo"]);
+            expect(explanation.summary.memory).toBe(0);
+            expect(executedQueriesOf(explanation)[0].text).toContain('"sort":{"wire_rank":1}');
+        });
+
+        it("filters, sorts and windows over stored names, on the server", async () => {
+            const { data, explanation } = await (await seeded()).rows
+                .where(x => x.rank >= 2)
+                .sortDescending(x => x.label)
+                .take(1)
+                .explain()
+                .toArrayAsync();
+
+            expect(data.map(x => x.label)).toEqual(["charlie"]);
+            expect(explanation.summary.memory).toBe(0);
+            expect(executedQueriesOf(explanation)[0].text).toContain('"wire_rank"');
+            expect(executedQueriesOf(explanation)[0].text).toContain('"sort":{"wire_label":-1}');
+        });
+
+        it("hands a projection of a renamed property back, and still projects it", async () => {
+            const { data, explanation } = await (await seeded()).rows.map(x => x.label).explain().toArrayAsync();
+
+            expect([...data].sort()).toEqual(["alpha", "bravo", "charlie"]);
+            expect(explanation.summary.reasons).toEqual(["missing-capability"]);
+        });
+
+        it("filters on the server, and hands back the projection and the aggregate after it", async () => {
+            const { data, explanation } = await (await seeded()).rows
+                .where(x => x.rank >= 2)
+                .explain()
+                .sumAsync(x => x.rank);
+
+            expect(data).toBe(5);
+            expect(explanation.summary.reasons).toEqual(["missing-capability", "not-reached"]);
+            expect(executedQueriesOf(explanation)[0].text).toContain('"wire_rank"');
+        });
+
+        it("takes the min, max and distinct values of a renamed property", async () => {
+            const store = await seeded();
+
+            expect(await store.rows.minAsync(x => x.rank)).toBe(1);
+            expect(await store.rows.maxAsync(x => x.rank)).toBe(3);
+            expect([...await store.rows.map(x => x.label).distinctAsync()].sort()).toEqual(["alpha", "bravo", "charlie"]);
+        });
+
+        it("groups on a renamed property", async () => {
+            const groups = await (await seeded()).rows.toGroupAsync(x => x.label);
+
+            expect(Object.keys(groups).sort()).toEqual(["alpha", "bravo", "charlie"]);
+            expect(groups["bravo"].map(x => x.rank)).toEqual([3]);
+        });
+
+        it("hands a similarity search over a renamed vector back, and still ranks it", async () => {
+            const { data, explanation } = await (await seeded()).rows
+                .nearest(x => x.embedding, [1, 0.1, 0], 1)
+                .explain()
+                .toArrayAsync();
+
+            expect(data.map(x => x.label)).toEqual(["alpha"]);
+            expect(explanation.summary.reasons).toEqual(["missing-capability"]);
+        });
+
+        it("hands back a sort by a value computed from a property, instead of sorting by the property", async () => {
+            const { data, explanation } = await (await seeded()).rows.sort(x => 10 - x.rank).explain().toArrayAsync();
+
+            expect(data.map(x => x.label)).toEqual(["bravo", "charlie", "alpha"]);
+            expect(explanation.summary.reasons).toEqual(["missing-capability"]);
+            expect(executedQueriesOf(explanation)[0].text).not.toContain('"sort"');
         });
     });
 

@@ -31,6 +31,15 @@ export class ChangeMatchProbe extends EphemeralDataPlugin {
      */
     private readonly collections = new Map<string, MemoryDataCollection>();
 
+    /**
+     * The seeded rows come from the broadcast, which has already deserialized them, so they carry
+     * in-memory names. The caller's lambdas read them as written. Reporting a renamed property here
+     * would hand back every seeded row unfiltered, and every change would re-query the real plugin.
+     */
+    protected override get holdsStorageShape(): boolean {
+        return false;
+    }
+
     protected override resolveCollection<TEntity extends {}>(schema: CompiledSchema<TEntity>): MemoryDataCollection {
         const existing = this.collections.get(schema.collectionName);
 

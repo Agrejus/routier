@@ -73,6 +73,57 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         expect(result.params).toEqual([]);
     });
 
+    /**
+     * A sort whose selector computes its value is handed back rather than rendered. It used to be
+     * rendered from the name its source text gives: `x => 100 - x.age` became `ORDER BY "age"`, the
+     * wrong order with no error, and `x => x.name.length` became `ORDER BY "name.length"`.
+     */
+    it.each([
+        ['arithmetic', (x: any) => 100 - x.age],
+        ['a length', (x: any) => x.name.length],
+    ])('hands back a sort by %s instead of ordering by a column', (_, selector) => {
+        let capturedQuery: any = null;
+
+        const plugin = new SqliteTestPlugin((event) => {
+            capturedQuery = event.operation;
+        });
+
+        open(plugin).users.sort(selector).toArray(jest.fn<any>());
+
+        const result = buildFromQueryOperation(capturedQuery);
+
+        expect(result.sql).toBe('SELECT "id", "name", "age" FROM "users"');
+        expect(capturedQuery.options.get("sort")[0].option.reason).toBe("missing-capability");
+    });
+
+    it('hands back a projection with a computed field, and the aggregate reading it', () => {
+        let capturedQuery: any = null;
+
+        const plugin = new SqliteTestPlugin((event) => {
+            capturedQuery = event.operation;
+        });
+
+        open(plugin).users.sum(x => x.age * 2, jest.fn<any>());
+
+        const result = buildFromQueryOperation(capturedQuery);
+
+        expect(result.sql).toBe('SELECT "id", "name", "age" FROM "users"');
+        expect(capturedQuery.options.get("map")[0].option.reason).toBe("missing-capability");
+        expect(capturedQuery.options.get("sum")[0].option.reason).toBe("not-reached");
+    });
+
+    it('still orders by the column for a sort that is the property', () => {
+        let capturedQuery: any = null;
+
+        const plugin = new SqliteTestPlugin((event) => {
+            capturedQuery = event.operation;
+        });
+
+        open(plugin).users.sort(x => x.age).toArray(jest.fn<any>());
+
+        expect(buildFromQueryOperation(capturedQuery).sql).toBe('SELECT "id", "name", "age" FROM "users" ORDER BY "age" ASC');
+    });
+
     it('should build a query with a filter from natural JavaScript', () => {
         let capturedQuery: any = null;
 
@@ -542,6 +593,83 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         const result = buildFromQueryOperation(capturedQuery);
         expect(result.sql).toBe('SELECT "id", "name", "age" FROM "users" WHERE ("age" > ? AND ("age" < ? OR "name" GLOB ?))');
         expect(result.params).toEqual([18, 65, 'Admin*']);
+    });
+
+    /**
+     * A `.from()` property is stored under its storage name, and a selector names the in-memory
+     * one. Every clause has to emit the storage column (#43).
+     */
+    describe('a renamed property', () => {
+
+        const renamedSchema = s.define('renamed_users', {
+            id: s.number().key().identity(),
+            displayName: s.string().from('display_name'),
+            total: s.number().from('wire_total'),
+            profile: s.object({ city: s.string().from('wire_city') }).from('wire_profile'),
+        }).compile();
+
+        class RenamedStore extends DataStore {
+            users = this.collection(renamedSchema).proxy().create();
+        }
+
+        const renamedStores: RenamedStore[] = [];
+
+        afterEach(() => {
+            for (const store of renamedStores.splice(0)) {
+                store[Symbol.dispose]();
+            }
+        });
+
+        const build = (run: (store: RenamedStore) => void) => {
+            let captured: any = null;
+            const store = new RenamedStore(new SqliteTestPlugin(event => { captured = event.operation; }));
+            renamedStores.push(store);
+
+            run(store);
+
+            expect(captured).toBeDefined();
+            return buildFromQueryOperation(captured);
+        };
+
+        const columns = '"id", "display_name", "wire_total", "wire_profile"';
+
+        it('filters on the storage column', () => {
+            const result = build(store => store.users.where(x => x.displayName === 'ada').toArray(jest.fn<any>()));
+
+            expect(result.sql).toBe(`SELECT ${columns} FROM "renamed_users" WHERE "display_name" = ?`);
+            expect(result.params).toEqual(['ada']);
+        });
+
+        it('sorts on the storage column', () => {
+            const result = build(store => store.users.where(x => x.total > 5).sortDescending(x => x.total).take(3).toArray(jest.fn<any>()));
+
+            expect(result.sql).toBe(`SELECT ${columns} FROM "renamed_users" WHERE "wire_total" > ? ORDER BY "wire_total" DESC LIMIT 3`);
+            expect(result.params).toEqual([5]);
+        });
+
+        it('sorts on a nested path through renamed segments', () => {
+            const result = build(store => store.users.sort((x: any) => x.profile.city).toArray(jest.fn<any>()));
+
+            expect(result.sql).toMatch(/ORDER BY json_extract\("wire_profile", '\$\.wire_city'\) ASC$/);
+        });
+
+        it('aggregates the storage column, named for the property', () => {
+            const result = build(store => store.users.sum(x => x.total, jest.fn<any>()));
+
+            expect(result.sql).toBe('SELECT SUM("wire_total") AS "total" FROM "renamed_users"');
+        });
+
+        it('aggregates the inner alias once a window has wrapped the query', () => {
+            const result = build(store => store.users.skip(1).take(2).sum(x => x.total, jest.fn<any>()));
+
+            expect(result.sql).toMatch(/^SELECT SUM\("total"\) AS "total" FROM \(SELECT .*"wire_total" AS "total".* FROM "renamed_users"\) AS subquery_1/);
+        });
+
+        it('selects the storage column in a map, aliased to the property', () => {
+            const result = build(store => store.users.map(x => x.displayName).toArray(jest.fn<any>()));
+
+            expect(result.sql).toBe('SELECT "display_name" AS "displayName" FROM "renamed_users"');
+        });
     });
 
     describe('a filter the engine cannot render', () => {

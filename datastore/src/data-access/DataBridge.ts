@@ -1,8 +1,8 @@
 import { DatabaseDataAccessStrategy } from "./strategies/DatabaseDataAccessStrategy";
 import { IDataAccessStrategy } from "./types";
 import { ChangeMatchProbe } from "./ChangeMatchProbe";
-import { DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue } from "@routier/core/plugins";
-import { PluginEventCallbackResult, Result } from "@routier/core/results";
+import { DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, Query } from "@routier/core/plugins";
+import { PluginEventCallbackResult, PluginEventResultType, Result } from "@routier/core/results";
 import { BulkPersistResult } from "@routier/core/collections";
 import { uuid, uuidv4 } from "@routier/core/utilities";
 import { CompiledSchema, InferType } from "@routier/core/schema";
@@ -39,18 +39,46 @@ export class DataBridge<T extends {}> {
         this.strategy.query(event, done);
     }
 
+    /**
+     * The query as one dispatch sends it: its own copy of the options, and its own statements list.
+     *
+     * A plugin reports on the options it receives, and a report is only an answer for that dispatch.
+     * Sent as-is, the subscription's event would carry the last dispatch's reports, or the change
+     * probe's, into the next one.
+     */
+    private static forDispatch<T extends {}, TShape>(event: DbPluginQueryEvent<T, TShape>): DbPluginQueryEvent<T, TShape> {
+        return {
+            ...event,
+            operation: new Query<T, TShape>(event.operation.options.forDispatch(), event.operation.schema, event.operation.changeTracking),
+            executedQueries: []
+        };
+    }
+
+    /**
+     * Re-runs a query whenever its schema's rows change.
+     *
+     * `event` is the query as planned and is never sent itself. Each dispatch, the change probe's
+     * included, sends its own copy, and `done` receives the copy the plugin answered, since that is
+     * where its reports are.
+     */
     subscribe<TShape, _U>(
         event: DbPluginQueryEvent<T, TShape>,
-        done: PluginEventCallbackResult<ITranslatedValue<TShape>>,
+        done: (result: PluginEventResultType<ITranslatedValue<TShape>>, dispatched: DbPluginQueryEvent<T, TShape>) => void,
         lastDeliveredIds?: () => ReadonlySet<unknown> | null
     ) {
+        const dispatch = () => {
+            const dispatched = DataBridge.forDispatch(event);
+
+            this.query(dispatched, result => done(result, dispatched));
+        };
+
         const subscription = event.operation.schema.createSubscription(this.signal, this.scope);
         subscription.onMessage((changes) => {
             const filters = event.operation.options.get("filter");
 
             // subscription has no filter, automatically run the query
             if (filters.length === 0) {
-                this.query(event, done);
+                dispatch();
                 return;
             }
 
@@ -65,7 +93,7 @@ export class DataBridge<T extends {}> {
                 const changed = [...changes.adds, ...changes.updates, ...changes.removals, ...changes.unknown];
 
                 if (changed.some(entity => membership.has(schema.getId(entity as InferType<T>)))) {
-                    this.query(event, done);
+                    dispatch();
                     return;
                 }
             }
@@ -81,8 +109,11 @@ export class DataBridge<T extends {}> {
                 // seed the db, we don't care about bulk operations here, we just want to query the raw data
                 ephemeralPlugin.seed(event.operation.schema, [...changes.adds, ...changes.updates, ...changes.removals]);
 
-                // query the temp db to check and see if items match the query
-                ephemeralPlugin.query(event, (r) => {
+                // query the temp db to check and see if items match the query, on a copy of its own so
+                // nothing it reports can reach the real plugin's dispatch
+                const probeEvent = DataBridge.forDispatch(event);
+
+                ephemeralPlugin.query(probeEvent, (r) => {
 
                     ephemeralPlugin.destroy({
                         id: uuid(8),
@@ -92,7 +123,7 @@ export class DataBridge<T extends {}> {
                     }, () => { /* noop */ });
 
                     if (r.ok === Result.ERROR) {
-                        done(r);
+                        done(r, probeEvent);
                         return;
                     }
 
@@ -101,11 +132,11 @@ export class DataBridge<T extends {}> {
                     }
 
                     // If the query returns results, we need to query the db to find all records
-                    this.query(event, done);
+                    dispatch();
                 });
             } else {
                 // No changes in message (e.g. revalidate "invalidate" or payload lost). Re-query anyway so UI refreshes.
-                this.query(event, done);
+                dispatch();
             }
         });
 

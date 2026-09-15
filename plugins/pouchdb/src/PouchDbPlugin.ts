@@ -2,7 +2,7 @@ import PouchDB from 'pouchdb';
 import { PouchDbTranslator } from './PouchDbTranslator';
 import { SyncronousQueue, SyncronousUnitOfWork, WorkPipeline } from '@routier/core/pipeline';
 import { InferCreateType, InferType, PropertyInfo, SchemaId } from '@routier/core/schema';
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, EntityUpdateInfo, IDbPlugin, IQuery, ITranslatedValue, joinInPlugin } from '@routier/core/plugins';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, EntityUpdateInfo, IDbPlugin, IQuery, ITranslatedValue, joinInPlugin, reportRenamedProperties } from '@routier/core/plugins';
 import { CallbackResult, PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '@routier/core/results';
 import { assertIsNotNull } from '@routier/core/assertions';
 import { combineExpressions, ComparatorExpression, Expression, getProperties } from '@routier/core/expressions';
@@ -606,7 +606,11 @@ export class PouchDbPlugin implements IDbPlugin {
     private _prepareProperties(...properties: PropertyInfo<any>[]) {
 
         properties.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
-        const paths = properties.map(w => w.getAssignmentPath({ parent: "doc" }));
+        // A view reads documents as they are stored, where a renamed segment is under its `from`
+        // name. The view name is built from the same paths, so a design document saved when views
+        // read the in-memory name, and so emitted nothing for a renamed property, is missing the new
+        // view and gets replaced.
+        const paths = properties.map(w => w.getAssignmentPath({ parent: "doc", useFromPropertyName: true }));
         const viewName = `by_${paths.join("_")}`;
 
         return {
@@ -640,8 +644,7 @@ export class PouchDbPlugin implements IDbPlugin {
             const { viewName, paths } = this._prepareProperties(...index.properties);
 
             if (index.properties.length === 1) {
-                const property = index.properties[0];
-                const path = property.getAssignmentPath({ parent: "doc" });
+                const path = paths[0];
                 ddoc.views[viewName] = {
                     map: `function(doc) {
                         if (${path}) {
@@ -781,9 +784,11 @@ export class PouchDbPlugin implements IDbPlugin {
             // identity key under any other name is never filled in: every entity reads back with
             // an undefined key and the change tracker merges them all into one. Corruption, not
             // an error — so refuse the schema up front. A caller-supplied key (default/computed)
-            // is stored as an ordinary field and round-trips fine under any name.
+            // is stored as an ordinary field and round-trips fine under any name. A `.from()` on the
+            // identity key is refused for the same reason: it is stored under its `from` name, and
+            // PouchDB fills in `_id`.
             const key = schema.idProperties[0];
-            if (key != null && key.isIdentity && key.name !== "_id") {
+            if (key != null && key.isIdentity && (key.name !== "_id" || key.getResolvedName() !== "_id")) {
                 throw new Error(
                     `PouchDB generates identity keys as '_id'. The schema for collection '${schema.collectionName}' uses ` +
                     `'${key.name}' as its identity key, which PouchDB cannot fill in. ` +
@@ -1111,6 +1116,11 @@ export class PouchDbPlugin implements IDbPlugin {
     }
 
     private _query<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
+        // Documents are matched and sorted by the caller's lambdas, over documents as they are
+        // stored, where a `from` property has a different key. Handed back before any index is
+        // chosen, so neither the index nor the view sees an option this plugin cannot run.
+        reportRenamedProperties(event.operation.options);
+
         this.resolveIndexes(event, (r) => {
             if (r.ok !== Result.SUCCESS) {
                 done(PluginEventResult.error(event.id, r.error))
@@ -1152,7 +1162,7 @@ export class PouchDbPlugin implements IDbPlugin {
     private _getExpressionFromQuery<TEntity extends {}, TShape>(event: DbPluginQueryEvent<TEntity, TShape>) {
         const filters = event.operation.options.get("filter");
 
-        const databaseFilters = filters.filter(x => x.option.target === "database");
+        const databaseFilters = filters.filter(x => x.option.target === "database" && x.option.reason === "executed");
 
         if (databaseFilters.length === 0) {
             return Expression.EMPTY;

@@ -24,6 +24,7 @@ import {
     ITranslatedValue,
     joinInPlugin,
     JsonTranslator,
+    reportRenamedProperties,
 } from '@routier/core/plugins';
 import {
     PluginEventCallbackResult,
@@ -33,6 +34,7 @@ import {
 import { BulkPersistResult } from '@routier/core/collections';
 import { logger, UnknownRecord } from '@routier/core/utilities';
 import { CompiledSchema } from '@routier/core';
+import { getStorageDateReviver } from '@routier/core/schema';
 
 import {
     buildQueryParams,
@@ -219,6 +221,18 @@ export class HttpDbPlugin implements IDbPlugin {
                 this.translateRemoteResponse != null
                     ? this.translateRemoteResponse(schema as CompiledSchema<UnknownRecord>, body)
                     : body;
+            // A date crossed as a string, and the options run below compare Dates. Only the dates:
+            // the rows keep the keys the server sent, for the datastore to deserialize.
+            const reviveDates = getStorageDateReviver(schema as CompiledSchema<UnknownRecord>);
+
+            if (reviveDates != null && Array.isArray(rows)) {
+                for (const row of rows) {
+                    if (row != null && typeof row === 'object') {
+                        reviveDates(row as Record<string, unknown>);
+                    }
+                }
+            }
+
             const translated = new JsonTranslator(operation).translate(rows);
 
             // After the request and only on success, so retried attempts don't each report.
@@ -267,6 +281,12 @@ export class HttpDbPlugin implements IDbPlugin {
     ): Promise<void> {
         const { operation } = event;
         const collectionName = operation.schema.collectionName;
+
+        // The server is not ours to know: it is sent in-memory names, and `JsonTranslator` re-runs
+        // the caller's lambdas over the rows it returns, where a `from` property has another key.
+        // Handed back, so neither the request nor the translator carries it.
+        reportRenamedProperties(operation.options);
+
         const params = buildQueryParams(operation, this.querySerializationContext);
         const url = buildUrlWithQuery(this.collectionUrl(collectionName), params);
         // A successful re-auth raises the ceiling by one rather than spending a retry, so the

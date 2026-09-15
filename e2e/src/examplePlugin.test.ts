@@ -179,13 +179,13 @@ const inMemoryStore = (): KeyValueStore => {
 describePluginContract(
     'example: key-value backend',
     () => new KeyValuePlugin(inMemoryStore(), `example-${uuidv4()}`),
-    { supportsRichTypes: true, knownFailing: [] }
+    { supportsRichTypes: true }
 );
 
 describePluginContract(
     'example: counting wrapper',
     () => new CountingDbPlugin(new KeyValuePlugin(inMemoryStore(), `wrapped-${uuidv4()}`)),
-    { supportsRichTypes: true, knownFailing: [] }
+    { supportsRichTypes: true }
 );
 
 /**

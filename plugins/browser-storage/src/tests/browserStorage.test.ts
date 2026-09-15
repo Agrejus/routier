@@ -61,10 +61,32 @@ describeFullTextSearch(
     () => new BrowserStoragePlugin(`fts-${uuidv4()}`, new FakeStorage()),
 );
 
+/** The storage each contract plugin writes to, so a reopened plugin can read a copy of it. */
+const contractStorages = new WeakMap<object, FakeStorage>();
+
 describePluginContract(
     'browser-storage',
-    () => new BrowserStoragePlugin(`contract-${uuidv4()}`, new FakeStorage()),
-    { supportsRichTypes: true },
+    () => {
+        const storage = new FakeStorage();
+        const plugin = new BrowserStoragePlugin(`contract-${uuidv4()}`, storage);
+        contractStorages.set(plugin, storage);
+        return plugin;
+    },
+    {
+        supportsRichTypes: true,
+        // A copy of the storage: collections are shared process-wide per Storage object, so a plugin
+        // over the same one would read the writer's objects instead of the stored JSON
+        reopen: plugin => {
+            const storage = contractStorages.get(plugin)!;
+            const copy = new FakeStorage();
+
+            for (const key of storage.keys()) {
+                copy.setItem(key, storage.getItem(key)!);
+            }
+
+            return new BrowserStoragePlugin(plugin.databaseName!, copy);
+        },
+    },
 );
 
 const schema = s.define('bs_products', {

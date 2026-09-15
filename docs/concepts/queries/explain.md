@@ -49,7 +49,6 @@ Each memory step carries a `reason` code and a one-sentence `explanation`:
 | ------------------- | ----------------------------------------------------------------------- |
 | `not-parsable`      | A filter could not be parsed into an expression tree.                    |
 | `unmapped-property` | The property is not stored in the database.                              |
-| `renamed-property`  | The property is stored under a different name.                           |
 | `map-rename`        | A `map` renamed or dropped properties, so later options refer to names the database does not have. |
 | `after-nearest`     | Options after a vector search run in memory.                             |
 | `after-join`        | Options after a join run in memory.                                      |
