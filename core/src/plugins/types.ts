@@ -32,22 +32,6 @@ export interface IDbPlugin {
      */
     readonly databaseName: string;
     /**
-     * Whether this plugin reads `.from()` renames itself when it executes a query.
-     *
-     * A selector names the in-memory property, and a backend that evaluates the caller's lambda
-     * over stored rows — memory, Dexie, PouchDB — would read a key the row does not have. So by
-     * default any filter, sort or similarity search over a renamed property runs in memory
-     * (`renamed-property`), along with everything after it.
-     *
-     * A backend that translates the option instead — SQL renders the storage column from the
-     * property — can answer it where the data is. Setting this is a promise that every option
-     * the plugin executes uses `getResolvedName()` and the `from` parent path, never the
-     * in-memory name. A wrapper that forwards queries forwards this too.
-     *
-     * Optional, and absent means false: a plugin that says nothing keeps the safe behaviour.
-     */
-    readonly resolvesRenamedProperties?: boolean;
-    /**
      * Executes a query operation on the database.
      * @param event The query event containing schema, parent, and query operation.
      * @param done Callback with the result or error.

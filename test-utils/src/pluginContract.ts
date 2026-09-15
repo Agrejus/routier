@@ -465,6 +465,54 @@ export function describePluginContract(
                 expect(found).toHaveLength(1);
                 expect(found[0].label).toBe("keep");
             });
+
+            /**
+             * A plugin either reads the `from` name or hands the option back. Both have to produce
+             * these rows; one that does neither runs the lambda over a key its rows do not have.
+             */
+            test("sorts on a renamed property by its application name", async () => {
+                const dataStore = store();
+                await dataStore.renamed.addAsync(
+                    { label: "bravo", amount: 3 } as any,
+                    { label: "alpha", amount: 1 } as any,
+                    { label: "charlie", amount: 2 } as any,
+                );
+                await dataStore.saveChangesAsync();
+
+                const found = await dataStore.renamed.sort(r => r.amount).toArrayAsync();
+
+                expect(found.map(r => r.label)).toEqual(["alpha", "charlie", "bravo"]);
+            });
+
+            test("filters, sorts and takes over renamed properties", async () => {
+                const dataStore = store();
+                await dataStore.renamed.addAsync(
+                    { label: "bravo", amount: 3 } as any,
+                    { label: "alpha", amount: 1 } as any,
+                    { label: "charlie", amount: 2 } as any,
+                );
+                await dataStore.saveChangesAsync();
+
+                const found = await dataStore.renamed
+                    .where(r => r.amount >= 2)
+                    .sortDescending(r => r.label)
+                    .take(1)
+                    .toArrayAsync();
+
+                expect(found.map(r => r.label)).toEqual(["charlie"]);
+            });
+
+            test("counts a filter on a renamed property", async () => {
+                const dataStore = store();
+                await dataStore.renamed.addAsync(
+                    { label: "keep", amount: 1 } as any,
+                    { label: "keep", amount: 2 } as any,
+                    { label: "drop", amount: 3 } as any,
+                );
+                await dataStore.saveChangesAsync();
+
+                expect(Number(await dataStore.renamed.where(r => r.label === "keep").countAsync())).toBe(2);
+            });
         });
 
         section("updates", () => {

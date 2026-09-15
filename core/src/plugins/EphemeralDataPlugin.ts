@@ -2,7 +2,7 @@ import { assertIsNotNull } from '../assertions';
 import { OptimisticConcurrencyError } from '../errors';
 import { BulkPersistResult, SchemaPersistChanges } from '../collections';
 import { WorkPipeline } from '../pipeline';
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, distinctJoinKeys, IDbPlugin, ITranslatedValue, JoinInnerSide, JsonTranslator } from '.';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, distinctJoinKeys, IDbPlugin, ITranslatedValue, JoinInnerSide, JsonTranslator, reportRenamedProperties } from '.';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '../results';
 import { CompiledSchema, IdType, InferCreateType } from '../schema';
 import { isComparatorExpression, isPropertyExpression, isValueExpression } from '../assertions';
@@ -303,7 +303,9 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
     ) {
         const joinOption = event.operation.options.getLast("join");
 
-        if (joinOption == null) {
+        // Not reached when an option before it was reported: the datastore's own join branch pairs
+        // the rows this read returns.
+        if (joinOption == null || joinOption.reason !== "executed") {
             done({ ok: "success" });
             return;
         }
@@ -378,18 +380,25 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
 
             const cloneRecord = this.recordCloner(schema);
 
+            // Records are held in storage shape and every option below runs the caller's lambda
+            // over them, so a `from` property is read by a name the record does not have. Handed
+            // back, and the datastore runs it after deserialization.
+            reportRenamedProperties(operation.options);
+
             collection.load(r => {
                 if (r.ok === Result.ERROR) {
                     done(PluginEventResult.error(event.id, r.error));
                     return;
                 }
 
-                const orderedOptions: { name: string, value: any }[] = [];
+                const orderedOptions: { name: string, value: any, reason: string }[] = [];
                 operation.options.forEach(o => orderedOptions.push(o));
 
                 let leadingFilterCount = 0;
 
-                while (leadingFilterCount < orderedOptions.length && orderedOptions[leadingFilterCount].name === "filter") {
+                // Stops at a reported filter too: the database phase ends there, and the datastore
+                // runs it and everything after it.
+                while (leadingFilterCount < orderedOptions.length && orderedOptions[leadingFilterCount].name === "filter" && orderedOptions[leadingFilterCount].reason === "executed") {
                     leadingFilterCount++;
                 }
 
@@ -475,7 +484,7 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                  * Before the inner side, to match execution order.
                  */
                 const described = describeFilters(
-                    operation.options.get("filter").map(entry => entry.option.value)
+                    operation.options.get("filter").filter(entry => entry.option.reason === "executed").map(entry => entry.option.value)
                 );
 
                 event.executedQueries.push({
@@ -485,7 +494,7 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                 });
 
                 const joinOption = operation.options.getLast("join");
-                const outerKeys = joinOption == null
+                const outerKeys = joinOption == null || joinOption.reason !== "executed"
                     ? null
                     : distinctJoinKeys(cloned, joinOption.value.outerKey, joinOption.value.semiJoinKeyThreshold, { storageShape: true });
 

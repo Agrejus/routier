@@ -10,25 +10,57 @@ search over it, and everything after, to memory before any plugin saw the query:
 read the whole table and filtered it in JavaScript (#43). Versions are set at release; the
 sqlite plugin's next patch is already claimed by an in-flight branch.
 
+Core no longer decides this. A renamed option is planned for the database like any other, with its
+`PropertyInfo` attached, and a plugin that cannot read `.from()` names hands it back through the
+capability report that already exists. `IDbPlugin` is unchanged.
+
+### Changed — @routier/core
+
+- **Breaking, types only:** `MemoryExecutionReason` no longer has `renamed-property`, because core
+  no longer sends a renamed property to memory. A plugin that hands one back records
+  `missing-capability`, and `.explain()` reports that instead.
+- `QueryOptionsCollection` keeps a filter, sort or `nearest` over a renamed property with the
+  database. An unmapped property still runs in memory (`unmapped-property`).
+- The ephemeral plugins (memory, file-system, browser-storage) report renamed options, since they
+  run the caller's lambdas over stored records. Their leading-filter pass and explained scan skip a
+  reported filter, and a join after a report is paired by the datastore.
+- `splitSendableOptions` leaves out options a plugin reported.
+
 ### Added — @routier/core
 
-- `IDbPlugin.resolvesRenamedProperties`, optional and false when absent. A plugin that sets it
-  is promising to read `.from()` names itself, and keeps renamed filters, sorts and `nearest`
-  with the database. `QueryOptionsCollection` takes it as a constructor option and carries it
-  through `split`/`splitAt`. Memory, file-system, browser-storage, Dexie, PouchDB and MongoDB do
-  not set it, so they still report `renamed-property`.
-- `BatchingDbPlugin`, `CacheDbPlugin`, `ConcurrencyDbPlugin`, `RetryDbPlugin` and
-  `TelemetryDbPlugin` forward it from the plugin they wrap.
+- `reportRenamedProperties(options, names?)`: reports every filter, sort and `nearest` over a
+  property with renamed segments, for a plugin that evaluates options over rows as stored.
 
 ### Fixed — @routier/datastore
 
-- A query over a plugin that resolves renamed properties is planned again with that known, so a
-  `where` on a renamed column is sent to the engine instead of running as a full table scan.
+- A subscription's change probe no longer leaves its reports on the query it re-runs, so the real
+  plugin still receives a renamed option it can push down.
+- When a plugin reports an option in front of an aggregate or projection, the rows it returns are
+  deserialized before the memory pass. They used to reach it in storage shape whenever the query as
+  a whole turned change tracking off, so `.where(x => x.renamed === 'a').countAsync()` counted zero.
+
+### Changed — @routier/dexie-plugin, @routier/pouchdb-plugin
+
+- Report renamed filters, sorts and `nearest` before choosing an index. Dexie only pushes a window,
+  `count` or `distinct` down when nothing before it was reported; PouchDB builds its view predicate
+  and index lookup from executed filters only.
+
+### Fixed — @routier/mongodb-plugin
+
+- A sort on a renamed property sends the stored path. It used to send the in-memory name, which was
+  masked while renamed sorts ran in memory. Filters already used the stored path.
+- A `nearest` over a renamed vector is reported, since it is scored in JavaScript over stored documents.
+
+### Changed — @routier/replication-plugin
+
+- `HttpDbPlugin` and `HttpTransportDbPlugin` report renamed options instead of sending them, as
+  before: neither can know whether the far end reads `.from()` names.
 
 ### Fixed — @routier/postgres-plugin-core, @routier/sqlite-plugin (including D1), @routier/mysql-plugin
 
-- These plugins set `resolvesRenamedProperties`, so `WHERE "display_name" = $1` is issued for a
-  property declared as `.from('display_name')`.
+- A filter on a renamed property now reaches the engine, so `WHERE "display_name" = $1` is issued for
+  a property declared as `.from('display_name')`. A join whose inner scope filters on a renamed
+  property can now be pushed down too.
 - `ORDER BY` names the storage column, or the JSON path through renamed segments for a nested
   property. It used to emit the in-memory name, which was masked while renamed sorts ran in memory.
 - `sum`/`min`/`max` read the storage column, and a `map` selecting a renamed property aliases it
@@ -40,10 +72,6 @@ sqlite plugin's next patch is already claimed by an in-flight branch.
 - `propertyColumn` and `referencedColumn`, the one renderer filters, sorts, aggregates and
   projections now share for a property's storage column. `selectExpression` aliases a renamed
   root column as well as a nested path.
-
-### Changed — @routier/otel-plugin
-
-- `OtelDbPlugin` forwards `resolvesRenamedProperties` from the plugin it wraps.
 
 ## Dexie reads use the indexes the schema declares (2026-09-01)
 

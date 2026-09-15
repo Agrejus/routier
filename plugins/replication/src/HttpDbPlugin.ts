@@ -24,6 +24,7 @@ import {
     ITranslatedValue,
     joinInPlugin,
     JsonTranslator,
+    reportRenamedProperties,
 } from '@routier/core/plugins';
 import {
     PluginEventCallbackResult,
@@ -267,6 +268,12 @@ export class HttpDbPlugin implements IDbPlugin {
     ): Promise<void> {
         const { operation } = event;
         const collectionName = operation.schema.collectionName;
+
+        // The server is not ours to know: it is sent in-memory names, and `JsonTranslator` re-runs
+        // the caller's lambdas over the rows it returns, where a `from` property has another key.
+        // Handed back, so neither the request nor the translator carries it.
+        reportRenamedProperties(operation.options);
+
         const params = buildQueryParams(operation, this.querySerializationContext);
         const url = buildUrlWithQuery(this.collectionUrl(collectionName), params);
         // A successful re-auth raises the ceiling by one rather than spending a retry, so the

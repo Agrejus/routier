@@ -101,6 +101,11 @@ function getOrderedQueryOptions<TRoot extends {}, TShape>(
     const items: Array<{ name: string; value: unknown; index: number }> = [];
     for (const [name, collectionItems] of operation.options.items) {
         for (const item of collectionItems) {
+            // Reported by the plugin, so the datastore runs it — and every option after it
+            if (item.option.target === 'database' && item.option.reason !== 'executed') {
+                continue;
+            }
+
             items.push({
                 name: name as string,
                 value: (item.option as { value: unknown }).value,

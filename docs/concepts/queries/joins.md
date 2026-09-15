@@ -229,7 +229,7 @@ Purely a cost knob — the pairs are identical either way.
 
 ## Not Supported Yet
 
-- A join whose **right-hand collection has a scope on an unmapped or renamed property** is refused
+- A join whose **right-hand collection has a scope on an unmapped property** is refused
   on SQL backends rather than pushed down: there is no column to compare, so the join would return
   rows that scope excludes. Nothing silently falls back — a wrong join is worse than a missing one.
 - **The SWR plugin** (`HttpSwrDbPlugin`) refuses a join: it merges a local read with a remote one,

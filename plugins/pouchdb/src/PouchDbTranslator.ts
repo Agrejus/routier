@@ -29,7 +29,8 @@ export class PouchDbTranslator<TEntity extends {}, TShape extends unknown = TEnt
 
         // Build and cache the filter chain
         const filters = this.query.options.get("filter");
-        const databaseFilters = filters.filter(x => x.option.target === "database");
+        // Not a filter the plugin reported: the datastore runs that one, after deserialization
+        const databaseFilters = filters.filter(x => x.option.target === "database" && x.option.reason === "executed");
 
         this.cachedMatches = this.buildFilterChain(databaseFilters, 0);
 

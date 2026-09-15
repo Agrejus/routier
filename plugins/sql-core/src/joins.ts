@@ -162,8 +162,9 @@ export const buildJoinStatement = <TOuter extends {}, TInner extends {}>(options
  *
  * A plugin must ask this BEFORE claiming a join was pushed down. Two ways the answer is no:
  *
- *  - core marked an inner filter memory-only — an unmapped or a renamed property — so there is no
- *    column to compare and the statement would silently return rows the scope excludes;
+ *  - core marked an inner filter memory-only — an unmapped property — so there is no column to
+ *    compare and the statement would silently return rows the scope excludes. A renamed property is
+ *    not one: it renders its storage column, qualified by the inner alias, like any other;
  *  - the filter holds a call this ENGINE cannot render. The main read path asks `canRenderInSql`
  *    before translating, and without the same question here a join was the one way to reach a
  *    renderer for a call the dialect does not claim.

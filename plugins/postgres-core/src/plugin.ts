@@ -72,9 +72,6 @@ export class PostgresDbPluginBase implements IDbPlugin {
     /** See `IDbPlugin.databaseName`. The driver names its own target; see `PostgresDriver`. */
     readonly databaseName: string;
 
-    /** See `IDbPlugin.resolvesRenamedProperties`. Every statement renders columns through `.from()`. */
-    readonly resolvesRenamedProperties = true;
-
     /**
      * Set by `destroy`, so work already in flight fails as a destroyed plugin rather than
      * throwing out of a callback.

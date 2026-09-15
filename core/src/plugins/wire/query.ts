@@ -38,6 +38,12 @@ export const splitSendableOptions = <T>(options: QueryOptionsCollection<T>): {
     let stopped = false;
 
     options.forEach(option => {
+        // Reported by the plugin, so it belongs to the datastore, and so does everything after it —
+        // a report cascades to the end of the database phase, which keeps what is left a prefix
+        if (option.target === "database" && option.reason !== "executed") {
+            return;
+        }
+
         if (stopped === false && SENDABLE.has(option.name) === false) {
             stopped = true;
         }

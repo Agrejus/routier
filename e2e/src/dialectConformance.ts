@@ -21,9 +21,10 @@ import { executedQueriesOf, QueryExplanation } from '@routier/core/plugins';
  * classes of bug the others do not (see known-defects, "things that will mislead you" #3).
  *
  * Queries over RENAMED properties are covered, and every one of them also asserts it was
- * pushed down. The SQL plugins read `from` names themselves, so nothing is sent to memory for
- * a rename — and without the pushdown assertion a case would pass on the JS fallback
- * whatever the SQL layer did.
+ * pushed down. Core leaves a renamed property with the database and a plugin that cannot read
+ * `from` names reports it back; the SQL plugins render the storage column instead, so nothing
+ * runs in memory for a rename — and without the pushdown assertion a case would pass on the JS
+ * fallback whatever the SQL layer did.
  */
 
 export type ConformanceBackend = {

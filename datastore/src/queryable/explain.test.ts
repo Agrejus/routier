@@ -78,16 +78,24 @@ describe('.explain()', () => {
         expect(explanation.executionSteps[1].executedIn.kind).toBe('memory');
     });
 
-    it('reports a renamed property as a memory fallback', async () => {
-        const { explanation } = await store.players
+    /**
+     * A renamed property is planned for the database like any other. The memory plugin holds rows as
+     * they are stored, so it hands the option back, and the datastore runs it by the in-memory name
+     * after deserialization. The SQL plugins keep it — see the dialect conformance suite.
+     */
+    it('reports a renamed property the plugin handed back, and answers it', async () => {
+        const { data, explanation } = await store.players
             .where(x => x.displayName === 'James')
             .explain()
             .toArrayAsync();
 
-        expect(explanation.summary.reasons).toEqual(['renamed-property']);
+        expect(data.map(x => x.name)).toEqual(['james']);
+        expect(explanation.summary.reasons).toEqual(['missing-capability']);
+        expect(explanation.summary.memory).toBe(1);
+        expect(explanation.executionSteps[0].executedIn.kind).toBe('database');
     });
 
-    it('still reports the rename fallback through a wrapper over a plugin that does not resolve renames', async () => {
+    it('reports it through a wrapper plugin too', async () => {
         const wrapped = new Store(new RetryDbPlugin(new MemoryPlugin(`explain-${Math.random()}`)));
         await seed(wrapped);
 
@@ -97,30 +105,24 @@ describe('.explain()', () => {
             .toArrayAsync();
 
         expect(data.map(x => x.name)).toEqual(['james']);
-        expect(explanation.summary.reasons).toEqual(['renamed-property']);
+        expect(explanation.summary.reasons).toEqual(['missing-capability']);
     });
 
-    /**
-     * The planner half only. The memory plugin cannot actually read a renamed property from its
-     * stored rows, so this asserts where the options were planned, never the rows — the SQL
-     * plugins' results are covered by the dialect conformance suite.
-     */
-    it('plans a renamed property for the database when the plugin resolves renames, through a wrapper too', async () => {
-        class ResolvingPlugin extends MemoryPlugin {
-            readonly resolvesRenamedProperties = true;
-        }
-
-        const resolving = new Store(new RetryDbPlugin(new ResolvingPlugin(`explain-${Math.random()}`)));
-
-        const { explanation } = await resolving.players
-            .where(x => x.displayName === 'James')
-            .sort(x => x.displayName)
+    it('returns the right rows for a sort, and for a filter, sort and take, over a renamed property', async () => {
+        const sorted = await store.players.sort(x => x.displayName).toArrayAsync();
+        const windowed = await store.players
+            .where(x => x.displayName !== 'Nobody')
+            .sortDescending(x => x.displayName)
+            .take(1)
             .explain()
             .toArrayAsync();
 
-        expect(explanation.summary.reasons).toEqual([]);
-        expect(explanation.summary.memory).toBe(0);
-        expect(explanation.summary.database).toBe(2);
+        expect(sorted.map(x => x.name)).toEqual(['grace', 'james']);
+        expect(windowed.data.map(x => x.name)).toEqual(['james']);
+        // The sort and take were never reached: a window in front of a filter that did not run
+        // would pick the wrong row
+        expect(windowed.explanation.summary.memory).toBe(3);
+        expect(windowed.explanation.summary.reasons).toEqual(['missing-capability', 'not-reached']);
     });
 
     it('works on the other terminals', async () => {

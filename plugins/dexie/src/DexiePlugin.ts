@@ -1,7 +1,7 @@
 import Dexie from 'dexie';
 import { convertToDexieSchema } from "./utils";
 import { applySeed, applySort, describeSeed, describeSort, findIndexSeed, findSortSeed, seedableIndexes, seekReplacesPredicate, type IndexSeed } from "./indexSeed";
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, IDbPlugin, ITranslatedValue, joinInPlugin, QueryOption, QueryOptionName, TranslatedSingleValue } from '@routier/core/plugins';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, IDbPlugin, ITranslatedValue, joinInPlugin, QueryOption, QueryOptionName, reportRenamedProperties, TranslatedSingleValue } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
 import { BulkPersistResult, SchemaPersistChanges } from '@routier/core/collections';
 import { CompiledSchema, InferCreateType, PropertyInfo, SchemaId, SchemaTypes } from '@routier/core/schema';
@@ -329,8 +329,13 @@ export class DexiePlugin implements IDbPlugin, Disposable {
             const { options } = event.operation;
             const translator = new DexieTranslator<TEntity, TShape>(event.operation);
 
+            // IndexedDB holds rows as they are stored, and the predicates below are the caller's
+            // lambdas, which name a `from` property by a key the row does not have. Handed back
+            // before anything reads, so every option planned below is one this plugin can run.
+            reportRenamedProperties(options);
+
             const indexes = seedableIndexes(event.operation.schema);
-            const filters = options.get("filter").map(entry => entry.option);
+            const filters = options.get("filter").map(entry => entry.option).filter(filter => filter.reason === "executed");
             let indexSeed: IndexSeed | null = null;
             let seededFilter: QueryOption<TShape, "filter"> | null = null;
 
@@ -349,7 +354,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                     : filters
             );
 
-            const sorts = options.get("sort").map(entry => entry.option);
+            const sorts = options.get("sort").map(entry => entry.option).filter(sort => sort.reason === "executed");
             const sortSeed = indexSeed == null && sorts.length === 1
                 ? findSortSeed(sorts[0].value, indexes)
                 : null;
@@ -377,13 +382,22 @@ export class DexiePlugin implements IDbPlugin, Disposable {
             const hasFilter = predicateFilters.size > 0;
             const hasSort = sorts.length > 0 && sortSeed == null;
             const canPushDownWindow = hasSort === false && collections.length === 1;
-            const canPushDownCount = options.has("count") && [...options.items.keys()].every(name => countCompatibleOptions.includes(name));
+            // Not after a report: the count is then the datastore's, over the rows this returns
+            const canPushDownCount = options.has("count")
+                && [...options.items.keys()].every(name => countCompatibleOptions.includes(name))
+                && options.notExecuted().length === 0;
 
             translator.pushedDown.skip = canPushDownWindow;
             translator.pushedDown.take = canPushDownWindow;
             translator.pushedDown.sort = sortSeed != null;
 
             options.forEach(option => {
+
+                // Everything after a reported option runs in the datastore, and a window applied
+                // here too would window twice
+                if (option.reason !== "executed") {
+                    return;
+                }
 
                 if (option.name === "skip") {
                     if (canPushDownWindow) {

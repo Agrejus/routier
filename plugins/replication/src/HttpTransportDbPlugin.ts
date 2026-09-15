@@ -8,6 +8,7 @@ import {
     ITranslatedValue,
     JsonTranslator,
     Query,
+    reportRenamedProperties,
     serializeBulkPersist,
     serializeQueryOptions,
     SerializedRequest,
@@ -170,6 +171,15 @@ export class HttpTransportDbPlugin implements IDbPlugin {
         done: PluginEventCallbackResult<ITranslatedValue<TShape>>
     ): Promise<void> {
         const { operation } = event;
+
+        /**
+         * Renames are handed back rather than sent. What runs them is the server's plugin, which this
+         * side cannot see, and the handler returns that plugin's rows as they are: an option the far
+         * plugin reported would come back unapplied. The rows reach the datastore here, which
+         * finishes the query by the in-memory names.
+         */
+        reportRenamedProperties(operation.options);
+
         const { sendable, local } = splitSendableOptions(operation.options);
 
         /**

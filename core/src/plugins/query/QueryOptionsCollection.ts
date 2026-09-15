@@ -71,18 +71,6 @@ export class QueryOptionsCollection<T> {
     /** The collection a `splitAt`/`split` half came from. A capability report belongs to it. */
     private origin: QueryOptionsCollection<T> | null = null;
 
-    /**
-     * Whether a renamed property can stay with the database. See `IDbPlugin.resolvesRenamedProperties`.
-     *
-     * Decided by whoever builds the collection, because the rule depends on the plugin and this
-     * collection never sees one. The default is the safe direction.
-     */
-    readonly resolvesRenamedProperties: boolean;
-
-    constructor(options?: { resolvesRenamedProperties?: boolean }) {
-        this.resolvesRenamedProperties = options?.resolvesRenamedProperties === true;
-    }
-
     /** Cuts over to memory execution, keeping the first cause. See `MemoryExecutionReason`. */
     private cutOverToMemory(reason: MemoryExecutionReason) {
         this.nextExecutionTarget = "memory";
@@ -123,7 +111,7 @@ export class QueryOptionsCollection<T> {
         }
 
         if (name === "filter") {
-            // Need to check for unmapped and renamed properties
+            // Need to check for unmapped properties
             const filterValue = value as QueryOptionValueMap<T>["filter"];
 
             // A tautology (`x => true`) filters nothing — skip it entirely so
@@ -144,15 +132,10 @@ export class QueryOptionsCollection<T> {
                         return false;
                     }
 
-                    if (isPropertyExpression(expression) && expression.property.hasRenamedSegments && this.resolvesRenamedProperties === false) {
-                        // Cut over to memory execution: the plugin stores data under the
-                        // `from` (storage) names, but filter selectors reference the
-                        // in-memory names.  Memory execution runs after deserialization,
-                        // where the in-memory names exist.  A plugin that resolves the
-                        // storage names itself keeps the filter
-                        this.cutOverToMemory("renamed-property");
-                        return false;
-                    }
+                    // A renamed property stays with the database. Whether the backend can read a
+                    // `from` name is the plugin's to know, not this collection's: the property
+                    // travels with the option, and a plugin that cannot resolve it reports it
+                    // back — see `reportRenamedProperties`
 
                     if (comparesTypesThatCannotMatch(expression)) {
                         logger.warn(mismatchWarning(expression as ComparatorExpression));
@@ -168,28 +151,21 @@ export class QueryOptionsCollection<T> {
         if (name === "sort") {
             const sortValue = value as QueryOptionValueMap<T>["sort"];
 
-            // Same rule as filters: sort selectors reference in-memory names, which
-            // only exist after deserialization when the property is renamed or unmapped
+            // Same rule as filters: an unmapped property only exists after deserialization. A
+            // renamed one stays with the database, for the plugin to resolve or report
             if (sortValue.property != null && sortValue.property.isUnmapped) {
                 this.cutOverToMemory("unmapped-property");
-            } else if (sortValue.property != null && sortValue.property.hasRenamedSegments && this.resolvesRenamedProperties === false) {
-                this.cutOverToMemory("renamed-property");
             }
         }
 
         if (name === "nearest") {
             const nearestValue = value as QueryOptionValueMap<T>["nearest"];
 
-            // Same rule as sort, and for the same reason: the plugin stores the vector under
-            // the `from` name, and an unmapped property is not stored at all. Both are only
-            // readable after deserialization, which is where memory execution runs.
-            //
-            // A plugin that resolves renamed properties keeps the search, and its translator's
-            // in-memory fallback reads the column by its resolved name, which is how the rows arrive.
+            // Same rule as sort, and for the same reason: an unmapped property is not stored at
+            // all, so it is only readable after deserialization, which is where memory execution
+            // runs. A vector stored under a `from` name is the plugin's to resolve or report.
             if (nearestValue.property != null && nearestValue.property.isUnmapped) {
                 this.cutOverToMemory("unmapped-property");
-            } else if (nearestValue.property != null && nearestValue.property.hasRenamedSegments && this.resolvesRenamedProperties === false) {
-                this.cutOverToMemory("renamed-property");
             }
         }
 
@@ -270,8 +246,8 @@ export class QueryOptionsCollection<T> {
         this.resolveEnumeration();
 
         const sortedItems = this.enumeratedItems.toSorted((a, b) => a.index - b.index);
-        const before = new QueryOptionsCollection<T>(this);
-        const after = new QueryOptionsCollection<T>(this);
+        const before = new QueryOptionsCollection<T>();
+        const after = new QueryOptionsCollection<T>();
         let at: QueryOption<T, K> | null = null;
 
         for (let i = 0, length = sortedItems.length; i < length; i++) {
@@ -398,13 +374,6 @@ export class QueryOptionsCollection<T> {
         }
     }
 
-    /** Whether anything was planned for memory only because it names a renamed property. */
-    hasRenamedPropertyFallback(): boolean {
-        this.resolveEnumeration();
-
-        return this.enumeratedItems.some(item => item.option.target === "memory" && item.option.reason === "renamed-property");
-    }
-
     /** The options the database did not run, in the order they were written. */
     notExecuted(): QueryCollectionItem<any, any>[] {
         this.resolveEnumeration();
@@ -418,8 +387,8 @@ export class QueryOptionsCollection<T> {
         this.resolveEnumeration();
 
         const sortedItems = this.enumeratedItems.toSorted((a, b) => a.index - b.index);
-        const memoryQueryOptionsCollection = new QueryOptionsCollection<T>(this);
-        const databaseQueryOptionsCollection = new QueryOptionsCollection<T>(this);
+        const memoryQueryOptionsCollection = new QueryOptionsCollection<T>();
+        const databaseQueryOptionsCollection = new QueryOptionsCollection<T>();
 
         for (let i = 0, length = sortedItems.length; i < length; i++) {
             const sortedItem = sortedItems[i];

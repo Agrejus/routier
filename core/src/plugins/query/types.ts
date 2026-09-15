@@ -35,7 +35,6 @@ export type QueryOptionName = keyof QueryOptionValueMap<unknown>;
 export type MemoryExecutionReason =
     | "not-parsable"
     | "unmapped-property"
-    | "renamed-property"
     | "map-rename"
     | "after-nearest"
     | "after-join"

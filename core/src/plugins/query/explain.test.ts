@@ -2,6 +2,7 @@ import { describe, it, expect } from '@jest/globals';
 import { s } from '../../schema';
 import { toExpression } from '../../expressions';
 import { QueryOptionsCollection } from './QueryOptionsCollection';
+import { reportRenamedProperties } from './renames';
 import { QueryOrdering } from './types';
 import { explainQuery, withExecutedQueries, MEMORY_EXECUTION_EXPLANATIONS, withInnerSide } from './explain';
 import { formatExplanation } from './formatExplanation';
@@ -27,6 +28,14 @@ const addFilter = (options: QueryOptionsCollection<any>, filter: (x: any) => boo
     options.add("filter", { filter, expression: toExpression(schema as never, filter), params: undefined } as never);
 };
 
+const nearestOn = (propertyName: string) => ({
+    selector: (x: any) => x[propertyName],
+    propertyName,
+    property: schema.getProperty(propertyName),
+    vector: [1, 2, 3],
+    count: 10
+});
+
 const sortOn = (propertyName: string) => ({
     selector: (x: any) => x[propertyName],
     direction: QueryOrdering.Ascending,
@@ -49,12 +58,13 @@ describe('reason codes', () => {
         options.forEach(option => expect(option.reason).toBe("executed"));
     });
 
-    it('records renamed-property for a filter on a `from` property', () => {
+    /** The plugin decides whether it can read a `from` name — see `reportRenamedProperties`. */
+    it('keeps a filter on a `from` property with the database', () => {
         const options = optionsWith(o => addFilter(o, (x: any) => x.displayName === "ada"));
 
         options.forEach(option => {
-            expect(option.target).toBe("memory");
-            expect(option.reason).toBe("renamed-property");
+            expect(option.target).toBe("database");
+            expect(option.reason).toBe("executed");
         });
     });
 
@@ -67,63 +77,34 @@ describe('reason codes', () => {
         });
     });
 
-    it('records renamed-property for a sort on a `from` property', () => {
-        const options = optionsWith(o => o.add("sort", sortOn("displayName") as never));
-
-        options.forEach(option => expect(option.reason).toBe("renamed-property"));
-    });
-
-    describe('for a plugin that resolves renamed properties', () => {
-
-        const resolving = (build: (options: QueryOptionsCollection<any>) => void) => {
-            const options = new QueryOptionsCollection<any>({ resolvesRenamedProperties: true });
-            build(options);
-            return options;
-        };
-
-        it('keeps a filter, sort and window on a `from` property with the database', () => {
-            const options = resolving(o => {
-                addFilter(o, (x: any) => x.displayName === "ada");
-                o.add("sort", sortOn("displayName") as never);
-                o.add("take", 20);
-            });
-
-            const recorded: { target: string, reason?: string }[] = [];
-            options.forEach(option => recorded.push({ target: option.target, reason: option.reason }));
-
-            expect(recorded).toEqual([
-                { target: "database", reason: "executed" },
-                { target: "database", reason: "executed" },
-                { target: "database", reason: "executed" }
-            ]);
-            expect(options.hasRenamedPropertyFallback()).toBe(false);
+    it('keeps a sort and a window on a `from` property with the database', () => {
+        const options = optionsWith(o => {
+            o.add("sort", sortOn("displayName") as never);
+            o.add("take", 20);
         });
 
-        it('still sends an unmapped property to memory', () => {
-            const options = resolving(o => addFilter(o, (x: any) => x.fullName === "ada!"));
-
-            options.forEach(option => expect(option.reason).toBe("unmapped-property"));
-        });
-
-        it('carries the setting into both halves of a split', () => {
-            const options = resolving(o => {
-                addFilter(o, (x: any) => x.rank > 10);
-                o.add("take", 20);
-            });
-
-            const { before, after } = options.splitAt("take");
-            const { database, memory } = options.split();
-
-            expect(before.resolvesRenamedProperties).toBe(true);
-            expect(after.resolvesRenamedProperties).toBe(true);
-            expect(database.resolvesRenamedProperties).toBe(true);
-            expect(memory.resolvesRenamedProperties).toBe(true);
+        options.forEach(option => {
+            expect(option.target).toBe("database");
+            expect(option.reason).toBe("executed");
         });
     });
 
-    it('reports the rename fallback only for a collection that fell back', () => {
-        expect(optionsWith(o => addFilter(o, (x: any) => x.displayName === "ada")).hasRenamedPropertyFallback()).toBe(true);
-        expect(optionsWith(o => addFilter(o, (x: any) => x.rank > 10)).hasRenamedPropertyFallback()).toBe(false);
+    it('keeps a similarity search on a `from` property with the database', () => {
+        const options = optionsWith(o => o.add("nearest", nearestOn("displayName") as never));
+
+        options.forEach(option => {
+            expect(option.target).toBe("database");
+            expect(option.reason).toBe("executed");
+        });
+    });
+
+    it('still records unmapped-property for a sort on a computed property', () => {
+        const options = optionsWith(o => o.add("sort", sortOn("fullName") as never));
+
+        options.forEach(option => {
+            expect(option.target).toBe("memory");
+            expect(option.reason).toBe("unmapped-property");
+        });
     });
 
     it('ratchets everything after a join to after-join', () => {
@@ -153,11 +134,14 @@ describe('reason codes', () => {
 
     it('keeps the FIRST cause when several would apply', () => {
         const options = optionsWith(o => {
-            addFilter(o, (x: any) => x.displayName === "ada");
-            o.add("sort", sortOn("fullName") as never);
+            addFilter(o, (x: any) => x.fullName === "ada!");
+            o.add("map", {
+                selector: (x: any) => ({ n: x.name }),
+                fields: [{ sourceName: "name", destinationName: "n", isRename: true }]
+            } as never);
         });
 
-        options.forEach(option => expect(option.reason).toBe("renamed-property"));
+        options.forEach(option => expect(option.reason).toBe("unmapped-property"));
     });
 
     it('records map-rename when a map renames a property', () => {
@@ -271,7 +255,7 @@ describe('reason codes', () => {
 
     it('has an explanation sentence for every reason code', () => {
         const codes = [
-            "not-parsable", "unmapped-property", "renamed-property", "map-rename",
+            "not-parsable", "unmapped-property", "map-rename",
             "after-nearest", "after-join", "cross-plugin-join"
         ] as const;
 
@@ -279,6 +263,89 @@ describe('reason codes', () => {
             expect(typeof MEMORY_EXECUTION_EXPLANATIONS[code]).toBe("string");
             expect(MEMORY_EXECUTION_EXPLANATIONS[code].length).toBeGreaterThan(0);
         }
+    });
+});
+
+describe('reportRenamedProperties', () => {
+
+    const recordOf = (options: QueryOptionsCollection<any>) => {
+        const recorded: { name: string, target: string, reason?: string }[] = [];
+        options.forEach(o => recorded.push({ name: o.name, target: o.target, reason: o.reason }));
+        return recorded;
+    };
+
+    it('hands back a filter on a `from` property, and the rest of the database phase with it', () => {
+        const options = optionsWith(o => {
+            addFilter(o, (x: any) => x.rank > 10);
+            addFilter(o, (x: any) => x.displayName === "ada");
+            o.add("take", 20);
+        });
+
+        reportRenamedProperties(options);
+
+        expect(recordOf(options)).toEqual([
+            { name: "filter", target: "database", reason: "executed" },
+            { name: "filter", target: "database", reason: "missing-capability" },
+            { name: "take", target: "database", reason: "not-reached" }
+        ]);
+    });
+
+    it('hands back a sort and a similarity search on a `from` property', () => {
+        const sorted = optionsWith(o => o.add("sort", sortOn("displayName") as never));
+        const searched = optionsWith(o => o.add("nearest", nearestOn("displayName") as never));
+
+        reportRenamedProperties(sorted);
+        reportRenamedProperties(searched);
+
+        expect(recordOf(sorted)).toEqual([{ name: "sort", target: "database", reason: "missing-capability" }]);
+        expect(recordOf(searched)).toEqual([{ name: "nearest", target: "database", reason: "missing-capability" }]);
+    });
+
+    it('checks only the options it is asked to', () => {
+        const options = optionsWith(o => {
+            o.add("sort", sortOn("displayName") as never);
+            o.add("nearest", nearestOn("displayName") as never);
+        });
+
+        reportRenamedProperties(options, ["nearest"]);
+
+        expect(recordOf(options)).toEqual([
+            { name: "sort", target: "database", reason: "executed" },
+            { name: "nearest", target: "database", reason: "missing-capability" }
+        ]);
+    });
+
+    it('finds a renamed segment anywhere in a nested path', () => {
+        const nested = s.define("nested", {
+            id: s.string().key(),
+            payload: s.object({ value: s.string() }).from("wire_payload")
+        }).compile();
+
+        const filter = (x: any) => x.payload.value === "a";
+        const options = optionsWith(o => o.add("filter", { filter, expression: toExpression(nested as never, filter), params: undefined } as never));
+
+        reportRenamedProperties(options);
+
+        expect(recordOf(options)).toEqual([{ name: "filter", target: "database", reason: "missing-capability" }]);
+    });
+
+    it('leaves options with no renamed property alone', () => {
+        const options = optionsWith(o => {
+            addFilter(o, (x: any) => x.rank > 10);
+            o.add("sort", sortOn("name") as never);
+        });
+
+        reportRenamedProperties(options);
+
+        expect(options.notExecuted()).toEqual([]);
+    });
+
+    it('reads as missing-capability in an explanation', () => {
+        const options = optionsWith(o => addFilter(o, (x: any) => x.displayName === "ada"));
+
+        reportRenamedProperties(options);
+
+        expect(explainQuery(options, CONTEXT).summary.reasons).toEqual(["missing-capability"]);
     });
 });
 
@@ -331,16 +398,16 @@ describe('explainQuery', () => {
 
     it('dedupes reasons in the summary', () => {
         const options = optionsWith(o => {
-            addFilter(o, (x: any) => x.displayName === "ada");
+            addFilter(o, (x: any) => x.fullName === "ada!");
             o.add("skip", 1);
             o.add("take", 2);
         });
 
         const { summary } = explainQuery(options, CONTEXT);
 
-        expect(summary.reasons).toEqual(["renamed-property"]);
+        expect(summary.reasons).toEqual(["unmapped-property"]);
         expect(summary.memory).toBe(3);
-        expect(summary.explanation).toContain(MEMORY_EXECUTION_EXPLANATIONS["renamed-property"]);
+        expect(summary.explanation).toContain(MEMORY_EXECUTION_EXPLANATIONS["unmapped-property"]);
     });
 
     it('serializes a filter expression into the option detail', () => {

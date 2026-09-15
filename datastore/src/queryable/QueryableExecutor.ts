@@ -1,4 +1,4 @@
-import { DbPluginQueryEvent, distinctJoinKeys, executeJoin, ExecutedQuery, explainQuery, ITranslatedValue, JoinKind, JsonTranslator, loadJoinInnerSide, Query, QueryExplanation, QueryOptionsCollection, toEntityShape, TupleTranslator, withExecutedQueries, withInnerSide } from "@routier/core/plugins";
+import { DbPluginQueryEvent, distinctJoinKeys, executeJoin, ExecutedQuery, explainQuery, ITranslatedValue, JoinKind, JsonTranslator, loadJoinInnerSide, Query, QueryExplanation, QueryOptionName, QueryOptionsCollection, toEntityShape, TupleTranslator, withExecutedQueries, withInnerSide } from "@routier/core/plugins";
 import { CompiledSchema, InferType } from "@routier/core/schema";
 import { CallbackResult, PluginEventCallbackResult, PluginEventResult, PluginEventSuccessType, Result } from "@routier/core/results";
 import { UnknownRecord, uuid } from "@routier/core/utilities";
@@ -7,6 +7,9 @@ import { CollectionDependencies, CollectionRef, JoinTarget, RequestContext } fro
 import { QueryBuilderBase } from "./base/QueryBuilderBase";
 import { splitTupleFilter } from "./conjuncts";
 import { resolveJoinKey } from "./joinKeys";
+
+/** Options whose result is no longer rows of the root schema. */
+const TRANSFORMING_OPTIONS: readonly QueryOptionName[] = ["map", "group", "count", "sum", "min", "max", "distinct"];
 
 export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryBuilderBase<TRoot, TShape, CollectionDependencies<TRoot>> {
 
@@ -80,26 +83,12 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
     }
 
     private resolveQueryOptions<T>() {
-        const resolvesRenamedProperties = this.dependencies.plugin.resolvesRenamedProperties === true;
-
-        /**
-         * Options are planned as they are recorded, before anything asks which plugin runs them, so a
-         * renamed property is planned for memory whatever the backend. A plugin that reads `.from()`
-         * names itself gets the options planned again with that known — see
-         * `IDbPlugin.resolvesRenamedProperties`.
-         *
-         * Only when the plan actually fell back for a rename. Re-adding repeats every check `add`
-         * makes, warnings included, and would change nothing otherwise.
-         */
-        const replan = resolvesRenamedProperties
-            && (this.dependencies.scopedQueryOptions.hasRenamedPropertyFallback() || this.request.queryOptions.hasRenamedPropertyFallback());
-
-        if (this.dependencies.scopedQueryOptions.items.size === 0 && replan === false) {
+        if (this.dependencies.scopedQueryOptions.items.size === 0) {
             return this.splitPostJoinConjuncts(this.request.queryOptions as unknown as QueryOptionsCollection<T>);
         }
 
         // Combine scoped options with the built query
-        const resolvedQueryOptions = new QueryOptionsCollection<T>({ resolvesRenamedProperties });
+        const resolvedQueryOptions = new QueryOptionsCollection<T>();
 
         // Add scoped items first
         this.dependencies.scopedQueryOptions.forEach(item => {
@@ -154,7 +143,7 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
             return options;
         }
 
-        const rebuilt = new QueryOptionsCollection<T>(options);
+        const rebuilt = new QueryOptionsCollection<T>();
 
         before.forEach(item => rebuilt.add(item.name, item.value));
 
@@ -588,6 +577,29 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
         return new Query<TRoot, TShape>(combined as any, this.dependencies.schema, this.wholeQueryChangeTracking());
     }
 
+    /**
+     * Whether the plugin handed back rows rather than a shaped result: it reported an option, and
+     * nothing it did run projects or aggregates. A report stops the database phase, so every
+     * transformation after it was not reached.
+     */
+    private returnedUntransformedRows<TShape>(databaseEvent: DbPluginQueryEvent<TRoot, TShape>): boolean {
+        const options = databaseEvent.operation.options;
+
+        if (options.notExecuted().length === 0) {
+            return false;
+        }
+
+        let transformed = false;
+
+        options.forEach(option => {
+            if (option.reason === "executed" && TRANSFORMING_OPTIONS.includes(option.name)) {
+                transformed = true;
+            }
+        });
+
+        return transformed === false;
+    }
+
     /** What change tracking the query as a whole asked for, before it was split or reported on. */
     private wholeQueryChangeTracking(): boolean {
         const resolved = this.resolvedQueryOptions ?? this.request.queryOptions;
@@ -619,6 +631,12 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
             if (databaseEvent.operation.changeTracking === true) {
                 // Post process the db query results
                 result.data.forEach(item => this.dependencies.schema.postprocess(item as InferType<TRoot>, this.request.changeTrackingType));
+            } else if (this.returnedUntransformedRows(databaseEvent)) {
+                // The plugin stopped before the aggregate or projection that switched tracking off, so
+                // the rows are still in storage shape — and the options left for memory are the
+                // caller's lambdas, which read entity names. A `count` after a filter on a renamed
+                // property would otherwise count nothing.
+                result.data.forEach(item => this.dependencies.schema.postprocess(item as InferType<TRoot>, "diff"));
             }
 
             // This means we are querying on a computed property that is untracked, need to select

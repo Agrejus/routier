@@ -100,6 +100,11 @@ export class DataBridge<T extends {}> {
                         return;
                     }
 
+                    // The probe answers from rows as it stores them, so it hands back what it cannot
+                    // read — a renamed property — on the same options the real plugin is about to
+                    // receive. Its reports are not an answer for that plugin.
+                    event.operation.options.forgetReports();
+
                     // If the query returns results, we need to query the db to find all records
                     this.query(event, done);
                 });

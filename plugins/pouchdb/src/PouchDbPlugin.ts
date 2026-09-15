@@ -2,7 +2,7 @@ import PouchDB from 'pouchdb';
 import { PouchDbTranslator } from './PouchDbTranslator';
 import { SyncronousQueue, SyncronousUnitOfWork, WorkPipeline } from '@routier/core/pipeline';
 import { InferCreateType, InferType, PropertyInfo, SchemaId } from '@routier/core/schema';
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, EntityUpdateInfo, IDbPlugin, IQuery, ITranslatedValue, joinInPlugin } from '@routier/core/plugins';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, EntityUpdateInfo, IDbPlugin, IQuery, ITranslatedValue, joinInPlugin, reportRenamedProperties } from '@routier/core/plugins';
 import { CallbackResult, PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from '@routier/core/results';
 import { assertIsNotNull } from '@routier/core/assertions';
 import { combineExpressions, ComparatorExpression, Expression, getProperties } from '@routier/core/expressions';
@@ -1111,6 +1111,11 @@ export class PouchDbPlugin implements IDbPlugin {
     }
 
     private _query<TEntity extends {}, TShape extends unknown = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
+        // Documents are matched and sorted by the caller's lambdas, over documents as they are
+        // stored, where a `from` property has a different key. Handed back before any index is
+        // chosen, so neither the index nor the view sees an option this plugin cannot run.
+        reportRenamedProperties(event.operation.options);
+
         this.resolveIndexes(event, (r) => {
             if (r.ok !== Result.SUCCESS) {
                 done(PluginEventResult.error(event.id, r.error))
@@ -1152,7 +1157,7 @@ export class PouchDbPlugin implements IDbPlugin {
     private _getExpressionFromQuery<TEntity extends {}, TShape>(event: DbPluginQueryEvent<TEntity, TShape>) {
         const filters = event.operation.options.get("filter");
 
-        const databaseFilters = filters.filter(x => x.option.target === "database");
+        const databaseFilters = filters.filter(x => x.option.target === "database" && x.option.reason === "executed");
 
         if (databaseFilters.length === 0) {
             return Expression.EMPTY;

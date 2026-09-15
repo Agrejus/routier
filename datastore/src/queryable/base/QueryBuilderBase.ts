@@ -111,9 +111,8 @@ export abstract class QueryBuilderBase<TRoot extends {}, TShape, TDeps extends C
     protected setSortQueryOption(selector: GenericFunction<TShape, TShape[keyof TShape]>, direction: QueryOrdering) {
         const propertyName = this.getSortPropertyName(selector);
 
-        // Resolve the PropertyInfo so execution targeting can detect unmapped properties, which
-        // must sort in memory after deserialization, and renamed ones, which must too unless the
-        // plugin resolves `.from()` names itself. It is also how a SQL plugin names the column
+        // Resolve the PropertyInfo so execution targeting can detect unmapped or
+        // renamed properties, which must sort in memory after deserialization
         const property = this.dependencies.schema.getProperty(propertyName);
 
         this.request.queryOptions.add("sort", { selector: selector as any, direction, propertyName, property });

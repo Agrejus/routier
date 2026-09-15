@@ -176,9 +176,14 @@ export const canRenderInMql = (expr: Expression): boolean => {
  * `a.b.c` natively, which is why nested filtering works here and not in the SQL plugins.
  */
 export function toFieldPath(prop: PropertyExpression): string {
-    const parents = prop.property.getParentPathArray({ useFromPropertyName: true });
+    return toStoragePath(prop.property);
+}
 
-    return [...parents, prop.property.getResolvedName()].join(".");
+/** `toFieldPath` for a property on its own, which is how a sort names one. */
+export function toStoragePath(property: PropertyExpression["property"]): string {
+    const parents = property.getParentPathArray({ useFromPropertyName: true });
+
+    return [...parents, property.getResolvedName()].join(".");
 }
 
 /**
