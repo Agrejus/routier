@@ -189,11 +189,26 @@ export function describePluginContract(
     describe(`plugin contract: ${name}`, () => {
         const stores: ContractDataStore[] = [];
 
+        const pluginOf = new WeakMap<ContractDataStore, IDbPlugin>();
+
         const store = () => {
-            const created = new ContractDataStore(factory());
+            const plugin = factory();
+            const created = new ContractDataStore(plugin);
+            pluginOf.set(created, plugin);
             stores.push(created);
             return created;
         };
+
+        /**
+         * A second store over the plugin `writer` saved through, so the same database.
+         *
+         * A store answers a read of rows it saved from its own tracked copies, whatever the plugin
+         * returned, so a read through the writer proves nothing about the rows the plugin hands back.
+         * Sharing the plugin instance rather than calling the factory again is what makes this work for
+         * every plugin: the factory opens a new database each time. Not added to `stores`, because
+         * destroying the writer tears the database down.
+         */
+        const reader = (writer: ContractDataStore) => new ContractDataStore(pluginOf.get(writer)!);
 
         const seeded = async () => {
             const dataStore = store();
@@ -440,10 +455,26 @@ export function describePluginContract(
         });
 
         section("renamed properties", () => {
+            /**
+             * Every read goes through `reader`. A plugin either reads the `from` name or hands the
+             * option back, and both have to produce these answers; one that does neither runs the
+             * caller's lambda over a key its rows do not have.
+             */
+            const seededRenamed = async (...rows: { label: string, amount: number }[]) => {
+                const writer = store();
+                await writer.renamed.addAsync(...(rows as any));
+                await writer.saveChangesAsync();
+                return reader(writer);
+            };
+
+            const LETTERS = [
+                { label: "bravo", amount: 3 },
+                { label: "alpha", amount: 1 },
+                { label: "charlie", amount: 2 },
+            ];
+
             test("round-trips a renamed string property", async () => {
-                const dataStore = store();
-                await dataStore.renamed.addAsync({ label: "hello", amount: 5 } as any);
-                await dataStore.saveChangesAsync();
+                const dataStore = await seededRenamed({ label: "hello", amount: 5 });
 
                 const [found] = await dataStore.renamed.toArrayAsync();
 
@@ -453,31 +484,17 @@ export function describePluginContract(
             });
 
             test("filters on a renamed property by its application name", async () => {
-                const dataStore = store();
-                await dataStore.renamed.addAsync(
-                    { label: "keep", amount: 1 } as any,
-                    { label: "drop", amount: 2 } as any,
-                );
-                await dataStore.saveChangesAsync();
+                const dataStore = await seededRenamed({ label: "keep", amount: 1 }, { label: "drop", amount: 2 });
 
                 const found = await dataStore.renamed.where(r => r.label === "keep").toArrayAsync();
 
                 expect(found).toHaveLength(1);
                 expect(found[0].label).toBe("keep");
+                expect(found[0].amount).toBe(1);
             });
 
-            /**
-             * A plugin either reads the `from` name or hands the option back. Both have to produce
-             * these rows; one that does neither runs the lambda over a key its rows do not have.
-             */
             test("sorts on a renamed property by its application name", async () => {
-                const dataStore = store();
-                await dataStore.renamed.addAsync(
-                    { label: "bravo", amount: 3 } as any,
-                    { label: "alpha", amount: 1 } as any,
-                    { label: "charlie", amount: 2 } as any,
-                );
-                await dataStore.saveChangesAsync();
+                const dataStore = await seededRenamed(...LETTERS);
 
                 const found = await dataStore.renamed.sort(r => r.amount).toArrayAsync();
 
@@ -485,13 +502,7 @@ export function describePluginContract(
             });
 
             test("filters, sorts and takes over renamed properties", async () => {
-                const dataStore = store();
-                await dataStore.renamed.addAsync(
-                    { label: "bravo", amount: 3 } as any,
-                    { label: "alpha", amount: 1 } as any,
-                    { label: "charlie", amount: 2 } as any,
-                );
-                await dataStore.saveChangesAsync();
+                const dataStore = await seededRenamed(...LETTERS);
 
                 const found = await dataStore.renamed
                     .where(r => r.amount >= 2)
@@ -503,15 +514,86 @@ export function describePluginContract(
             });
 
             test("counts a filter on a renamed property", async () => {
-                const dataStore = store();
-                await dataStore.renamed.addAsync(
-                    { label: "keep", amount: 1 } as any,
-                    { label: "keep", amount: 2 } as any,
-                    { label: "drop", amount: 3 } as any,
+                const dataStore = await seededRenamed(
+                    { label: "keep", amount: 1 },
+                    { label: "keep", amount: 2 },
+                    { label: "drop", amount: 3 },
                 );
-                await dataStore.saveChangesAsync();
 
                 expect(Number(await dataStore.renamed.where(r => r.label === "keep").countAsync())).toBe(2);
+            });
+
+            test("maps a renamed property", async () => {
+                const dataStore = await seededRenamed(...LETTERS);
+
+                const found = await dataStore.renamed.map(r => r.label).toArrayAsync();
+
+                expect([...found].sort()).toEqual(["alpha", "bravo", "charlie"]);
+            });
+
+            test("maps renamed properties into an object", async () => {
+                const dataStore = await seededRenamed(...LETTERS);
+
+                // Not `{ label: r.label }`: a field keeping its name is planned for memory by core,
+                // and never reaches the plugin
+                const found = await dataStore.renamed.map(r => ({ name: r.label, total: r.amount })).toArrayAsync();
+
+                expect([...found].sort((a, b) => a.total - b.total)).toEqual([
+                    { name: "alpha", total: 1 },
+                    { name: "charlie", total: 2 },
+                    { name: "bravo", total: 3 },
+                ]);
+            });
+
+            test("sums a renamed property", async () => {
+                const dataStore = await seededRenamed(...LETTERS);
+
+                expect(Number(await dataStore.renamed.sumAsync(r => r.amount))).toBe(6);
+            });
+
+            test("takes the min and max of a renamed property", async () => {
+                const dataStore = await seededRenamed(...LETTERS);
+
+                expect(Number(await dataStore.renamed.minAsync(r => r.amount))).toBe(1);
+                expect(Number(await dataStore.renamed.maxAsync(r => r.amount))).toBe(3);
+            });
+
+            test("takes the distinct values of a renamed property", async () => {
+                const dataStore = await seededRenamed(
+                    { label: "keep", amount: 1 },
+                    { label: "keep", amount: 2 },
+                    { label: "drop", amount: 3 },
+                );
+
+                const found = await dataStore.renamed.map(r => r.label).distinctAsync();
+
+                expect([...found].sort()).toEqual(["drop", "keep"]);
+            });
+
+            test("groups on a renamed property", async () => {
+                const dataStore = await seededRenamed(
+                    { label: "keep", amount: 1 },
+                    { label: "keep", amount: 2 },
+                    { label: "drop", amount: 3 },
+                );
+
+                const found = await dataStore.renamed.toGroupAsync(r => r.label);
+
+                expect(Object.keys(found).sort()).toEqual(["drop", "keep"]);
+                expect(found["keep"].map(r => r.amount).sort()).toEqual([1, 2]);
+                expect(found["drop"].map(r => r.amount)).toEqual([3]);
+            });
+
+            test("filters and maps over renamed properties", async () => {
+                const dataStore = await seededRenamed(
+                    { label: "keep", amount: 1 },
+                    { label: "keep", amount: 2 },
+                    { label: "drop", amount: 3 },
+                );
+
+                const found = await dataStore.renamed.where(r => r.label === "keep").map(r => r.amount).toArrayAsync();
+
+                expect([...found].sort()).toEqual([1, 2]);
             });
         });
 

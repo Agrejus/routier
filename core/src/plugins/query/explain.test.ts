@@ -36,6 +36,25 @@ const nearestOn = (propertyName: string) => ({
     count: 10
 });
 
+/** Fields renamed in the projection keep `isRename` false, so core leaves the map with the database. */
+const fieldOn = (propertyName: string) => ({
+    sourceName: propertyName,
+    destinationName: `${propertyName}Out`,
+    isRename: false,
+    property: schema.getProperty(propertyName)
+});
+
+const mapOf = (...propertyNames: string[]) => ({
+    selector: (x: any) => Object.fromEntries(propertyNames.map(name => [`${name}Out`, x[name]])),
+    fields: propertyNames.map(fieldOn)
+});
+
+const groupOn = (propertyName: string, fields: ReturnType<typeof fieldOn>[]) => ({
+    selector: (x: any) => x[propertyName],
+    key: fieldOn(propertyName),
+    fields
+});
+
 const sortOn = (propertyName: string) => ({
     selector: (x: any) => x[propertyName],
     direction: QueryOrdering.Ascending,
@@ -329,10 +348,45 @@ describe('reportRenamedProperties', () => {
         expect(recordOf(options)).toEqual([{ name: "filter", target: "database", reason: "missing-capability" }]);
     });
 
+    it('hands back a map that selects a `from` property, and the aggregate reading it', () => {
+        const options = optionsWith(o => {
+            o.add("map", mapOf("displayName") as never);
+            o.add("max", true);
+        });
+
+        reportRenamedProperties(options);
+
+        expect(recordOf(options)).toEqual([
+            { name: "map", target: "database", reason: "missing-capability" },
+            { name: "max", target: "database", reason: "not-reached" }
+        ]);
+    });
+
+    it('hands back a map with one `from` field among others', () => {
+        const options = optionsWith(o => o.add("map", mapOf("name", "displayName") as never));
+
+        reportRenamedProperties(options);
+
+        expect(recordOf(options)).toEqual([{ name: "map", target: "database", reason: "missing-capability" }]);
+    });
+
+    it('hands back a group keyed on a `from` property, or copying one into its members', () => {
+        const keyed = optionsWith(o => o.add("group", groupOn("displayName", mapOf("name").fields) as never));
+        const copying = optionsWith(o => o.add("group", groupOn("name", mapOf("name", "displayName").fields) as never));
+
+        reportRenamedProperties(keyed);
+        reportRenamedProperties(copying);
+
+        expect(recordOf(keyed)).toEqual([{ name: "group", target: "database", reason: "missing-capability" }]);
+        expect(recordOf(copying)).toEqual([{ name: "group", target: "database", reason: "missing-capability" }]);
+    });
+
     it('leaves options with no renamed property alone', () => {
         const options = optionsWith(o => {
             addFilter(o, (x: any) => x.rank > 10);
             o.add("sort", sortOn("name") as never);
+            o.add("map", mapOf("name", "rank") as never);
+            o.add("group", groupOn("name", mapOf("name", "rank").fields) as never);
         });
 
         reportRenamedProperties(options);

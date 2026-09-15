@@ -14,9 +14,10 @@ import { PouchDbPlugin } from '../PouchDbPlugin';
  * FRESH store over the same database: a store that saved the rows still tracks them, and would
  * answer with its own copies whatever the plugin returned.
  *
- * Filters and sorts over a renamed property are matched by the caller's lambdas over stored
- * documents, where the property has another key. So the plugin hands them back, and the datastore
- * finishes the query after deserialization.
+ * Filters, sorts, projections and groups over a renamed property run the caller's lambdas over
+ * stored documents, where the property has another key. So the plugin hands them back, and the
+ * datastore finishes the query after deserialization. An aggregate reads the projection in front of
+ * it, and goes back with it.
  */
 const renamedSchema = s.define('renamed_rows', {
     _id: s.string().key().identity(),
@@ -189,10 +190,54 @@ describe('renamed properties', () => {
         expect(Number(await db.open().rows.where(r => r.amount >= 2).countAsync())).toBe(2);
     });
 
-    it('maps a renamed property', async () => {
+    it('maps a renamed property, and hands the map back', async () => {
+        const db = await seeded();
+        const { data, explanation } = await db.open().rows.map(r => r.label).explain().toArrayAsync();
+
+        expect([...data].sort()).toEqual(['alpha', 'bravo', 'charlie']);
+        expect(explanation.summary.reasons).toEqual(['missing-capability']);
+    });
+
+    it('maps renamed properties into an object', async () => {
+        const db = await seeded();
+        const found = await db.open().rows.map(r => ({ name: r.label, total: r.amount })).toArrayAsync();
+
+        expect([...found].sort((a, b) => a.total - b.total)).toEqual([
+            { name: 'alpha', total: 1 },
+            { name: 'charlie', total: 2 },
+            { name: 'bravo', total: 3 },
+        ]);
+    });
+
+    it('sums a renamed property, handing back the map and the sum behind it', async () => {
+        const db = await seeded();
+        const { data, explanation } = await db.open().rows.explain().sumAsync(r => r.amount);
+
+        expect(data).toBe(6);
+        expect(explanation.summary.reasons).toEqual(['missing-capability', 'not-reached']);
+    });
+
+    it('takes the min, max and distinct values of a renamed property', async () => {
         const db = await seeded();
 
-        expect((await db.open().rows.map(r => r.label).toArrayAsync()).sort()).toEqual(['alpha', 'bravo', 'charlie']);
+        expect(await db.open().rows.minAsync(r => r.amount)).toBe(1);
+        expect(await db.open().rows.maxAsync(r => r.amount)).toBe(3);
+        expect([...await db.open().rows.map(r => r.label).distinctAsync()].sort()).toEqual(['alpha', 'bravo', 'charlie']);
+    });
+
+    it('groups on a renamed property, with the renamed values in each group', async () => {
+        const db = await seeded();
+        const groups = await db.open().rows.toGroupAsync(r => r.label);
+
+        expect(Object.keys(groups).sort()).toEqual(['alpha', 'bravo', 'charlie']);
+        expect(groups['bravo'].map(r => r.amount)).toEqual([3]);
+    });
+
+    it('filters and maps over renamed properties', async () => {
+        const db = await seeded();
+        const found = await db.open().rows.where(r => r.amount >= 2).map(r => r.label).toArrayAsync();
+
+        expect([...found].sort()).toEqual(['bravo', 'charlie']);
     });
 
     it('keeps a filter that names no renamed property, and still returns the renamed values', async () => {

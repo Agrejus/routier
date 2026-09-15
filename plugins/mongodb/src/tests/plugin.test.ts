@@ -188,6 +188,39 @@ describe("MongoDbPlugin", () => {
             expect(executedQueriesOf(explanation)[0].text).toContain('"sort":{"wire_label":-1}');
         });
 
+        it("hands a projection of a renamed property back, and still projects it", async () => {
+            const { data, explanation } = await (await seeded()).rows.map(x => x.label).explain().toArrayAsync();
+
+            expect([...data].sort()).toEqual(["alpha", "bravo", "charlie"]);
+            expect(explanation.summary.reasons).toEqual(["missing-capability"]);
+        });
+
+        it("filters on the server, and hands back the projection and the aggregate after it", async () => {
+            const { data, explanation } = await (await seeded()).rows
+                .where(x => x.rank >= 2)
+                .explain()
+                .sumAsync(x => x.rank);
+
+            expect(data).toBe(5);
+            expect(explanation.summary.reasons).toEqual(["missing-capability", "not-reached"]);
+            expect(executedQueriesOf(explanation)[0].text).toContain('"wire_rank"');
+        });
+
+        it("takes the min, max and distinct values of a renamed property", async () => {
+            const store = await seeded();
+
+            expect(await store.rows.minAsync(x => x.rank)).toBe(1);
+            expect(await store.rows.maxAsync(x => x.rank)).toBe(3);
+            expect([...await store.rows.map(x => x.label).distinctAsync()].sort()).toEqual(["alpha", "bravo", "charlie"]);
+        });
+
+        it("groups on a renamed property", async () => {
+            const groups = await (await seeded()).rows.toGroupAsync(x => x.label);
+
+            expect(Object.keys(groups).sort()).toEqual(["alpha", "bravo", "charlie"]);
+            expect(groups["bravo"].map(x => x.rank)).toEqual([3]);
+        });
+
         it("hands a similarity search over a renamed vector back, and still ranks it", async () => {
             const { data, explanation } = await (await seeded()).rows
                 .nearest(x => x.embedding, [1, 0.1, 0], 1)

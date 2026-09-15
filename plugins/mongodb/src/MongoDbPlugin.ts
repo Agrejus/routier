@@ -116,10 +116,11 @@ export class MongoDbPlugin implements IDbPlugin {
 
         /**
          * Filters and sorts name the stored path, through `from`, so a renamed property stays with the
-         * server. A similarity search is never sent: `JsonTranslator` scores it through the caller's
-         * selector, over documents as they are stored, which have no key under the in-memory name.
+         * server. A similarity search, a projection and a group are never sent: `JsonTranslator` runs
+         * them through the caller's selector, over documents as they are stored, which have no key under
+         * the in-memory name. An aggregate reads the projection before it, so it goes back with it.
          */
-        reportRenamedProperties(options, ["nearest"]);
+        reportRenamedProperties(options, ["nearest", "map", "group"]);
 
         try {
             options.forEach(option => {

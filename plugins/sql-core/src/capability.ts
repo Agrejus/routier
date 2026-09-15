@@ -1,4 +1,4 @@
-import { Call, CallExpression, Expression, forEach, isCallExpression, logger, QueryField, QueryOption, QueryOptionsCollection } from "@routier/core";
+import { Call, CallExpression, Expression, forEach, isCallExpression, logger, QueryField, QueryOption, QueryOptionsCollection, reportRenamedProperties } from "@routier/core";
 import { canRenderInSql, SqlDialectName } from "./sql";
 
 /** Hands back every filter this dialect cannot render, for the datastore to run in memory. */
@@ -33,12 +33,19 @@ export const executedMapFields = (options: QueryOptionsCollection<any>): QueryFi
     return null;
 };
 
-/** The join to push down, or `null`. Reports first: a JOIN over an unfiltered outer side pairs the wrong rows. */
+/**
+ * The join to push down, or `null`. Reports first: a JOIN over an unfiltered outer side pairs the wrong rows.
+ *
+ * The first thing every SQL plugin's query does, so it is also where a `group` over a renamed property
+ * is handed back. No statement renders a group: `JsonTranslator` groups the rows in JavaScript, by
+ * in-memory names, and a row read from a table is keyed by its columns.
+ */
 export const joinToPushDown = (
     options: QueryOptionsCollection<any>,
     dialect: SqlDialectName
 ): QueryOption<any, "join"> | null => {
     reportUnrenderableFilters(options, dialect);
+    reportRenamedProperties(options, ["group"]);
 
     const join = options.getLast("join");
 

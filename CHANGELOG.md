@@ -31,8 +31,11 @@ capability report that already exists. `IDbPlugin` is unchanged.
 
 ### Added — @routier/core
 
-- `reportRenamedProperties(options, names?)`: reports every filter, sort and `nearest` over a
-  property with renamed segments, for a plugin that evaluates options over rows as stored.
+- `reportRenamedProperties(options, names?)`: reports every filter, sort, `nearest`, `map` and `group`
+  over a property with renamed segments, for a plugin that evaluates options over rows as stored. A
+  `map` is reported when any field it selects is renamed, and a `group` when its key is or any field
+  it copies into its members is. `sum`, `min`, `max` and `distinct` read the `map` in front of them,
+  so they are handed back with it.
 - `QueryOptionsCollection.forDispatch()`: a copy of the options for one dispatch, every database
   option `executed` again. A split half is copied with its origin, so a report on it still cascades
   over that dispatch alone. A join's inner options are copied too.
@@ -54,9 +57,17 @@ capability report that already exists. `IDbPlugin` is unchanged.
 
 ### Changed — @routier/dexie-plugin, @routier/pouchdb-plugin
 
-- Report renamed filters, sorts and `nearest` before choosing an index. Dexie only pushes a window,
-  `count` or `distinct` down when nothing before it was reported; PouchDB builds its view predicate
-  and index lookup from executed filters only.
+- Report renamed filters, sorts, `nearest`, projections and groups before choosing an index. Dexie
+  only pushes a window, `count` or `distinct` down when nothing before it was reported; PouchDB builds
+  its view predicate and index lookup from executed filters only.
+
+### Fixed — @routier/core (memory, file-system, browser-storage), @routier/dexie-plugin, @routier/pouchdb-plugin
+
+- A `map`, `sum`, `min`, `max`, `map(...).distinct()` or `toGroup` over a renamed property answers
+  correctly on a read the store was not tracking. These plugins ran the caller's selector over rows
+  as stored, where the property has another key, so a projection came back `undefined`, `sum` threw,
+  `min`/`max` found no items and a group had one `undefined` key. PouchDB, which deserialized before
+  running options, only lost renamed values inside a group's members. The defect predates #43.
 
 ### Fixed — @routier/pouchdb-plugin
 
@@ -76,6 +87,8 @@ capability report that already exists. `IDbPlugin` is unchanged.
 - A sort on a renamed property sends the stored path. It used to send the in-memory name, which was
   masked while renamed sorts ran in memory. Filters already used the stored path.
 - A `nearest` over a renamed vector is reported, since it is scored in JavaScript over stored documents.
+- A `map` or `group` over a renamed property is reported for the same reason, and an aggregate after
+  the `map` goes back with it. They used to read the in-memory name from stored documents.
 
 ### Changed — @routier/replication-plugin
 
@@ -92,6 +105,9 @@ capability report that already exists. `IDbPlugin` is unchanged.
 - `sum`/`min`/`max` read the storage column, and a `map` selecting a renamed property aliases it
   back to the property name. Neither is gated on a filter, so before this fix
   `.sumAsync(x => x.renamed)` failed in the engine with an unknown column.
+- `toGroup` over a schema with a renamed property is reported. No statement renders a group, and the
+  rows were grouped in JavaScript by in-memory names over rows keyed by column, so every row landed
+  under an `undefined` key.
 
 ### Added — @routier/sql-plugin-core
 
