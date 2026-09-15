@@ -8,28 +8,19 @@ export class EnrichmentFunctionHandler extends PropertyInfoHandler {
 
         if (property.functionBody != null && property.type === SchemaTypes.Function) {
 
-            const parameterNames: string[] = ["enriched", "collectionName"];
+            const factory = builder.get<FunctionFactoryBuilder>("factory");
+            const args: string[] = ["enriched", "collectionName"];
 
             if (property.injected != null) {
-
-                const factory = builder.get<FunctionFactoryBuilder>("factory");
-                const parameter = factory.createParameter(property.injected);
-                factory.parameters(parameter);
-
-                parameterNames.push(parameter.name);
+                args.push(factory.bind(property.injected));
             }
-
-
-            const declarationsSlot = builder.get<SlotBlock>("factory.function.declarations");
-            // Unwrap the functions to removing currying
-            const defaultFunctionWithParameters = this.toNamedFunction(property.functionBody.toString(), declarationsSlot);
-
-            defaultFunctionWithParameters.builder.parameters(...parameterNames.map((w, i) => ({ name: defaultFunctionWithParameters.parameters[i], callName: w })));
 
             const slot = builder.get<SlotBlock>("factory.function.assignment");
             const enrichedAssignmentPath = property.getAssignmentPath({ parent: "enriched" });
 
-            slot.assign(enrichedAssignmentPath).value(defaultFunctionWithParameters.builder.toCallable());
+            // The definition is curried: calling it with the entity returns the function the
+            // property holds
+            slot.assign(enrichedAssignmentPath).value(this.emitBoundCall(factory, property.functionBody, args));
             return builder;
         }
 

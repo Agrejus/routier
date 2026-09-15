@@ -37,11 +37,6 @@ export default defineConfig({
         // Vite's default `iife` worker format cannot code-split, so the build fails.
         format: 'es',
     },
-    build: {
-        // The compiled schema's generated code calls core helpers by their source names;
-        // minification renames them and the schema fails to compile at runtime.
-        minify: false,
-    },
     server: {
         port: 5210,
     },

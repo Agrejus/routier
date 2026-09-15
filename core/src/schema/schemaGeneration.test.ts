@@ -149,12 +149,19 @@ describe("Schema Generation", () => {
         });
     });
 
-    describe("invalid callback styles", () => {
-        it("throws when using function keyword in schema callback parameters", () => {
-            expect(() => s.define("functionKeywordDefault", {
+    describe("callback styles", () => {
+        // Schema callbacks are bound by value, not re-parsed from source, so any function works —
+        // which is what lets a bundler that lowers arrows to `function` expressions build a
+        // working app (#46).
+        it("accepts function-keyword callbacks", () => {
+            const schema = s.define("functionKeywordDefault", {
                 id: s.string().key(),
-                createdAt: s.date().default(function () { return new Date("2020-01-01T00:00:00.000Z"); })
-            }).compile()).toThrow("Only arrow functions are allowed in the schema definition");
+                createdAt: s.date().default(function () { return new Date("2020-01-01T00:00:00.000Z"); }),
+                amount: s.number().deserialize(function (value) { return Number(value) * 2; })
+            }).compile();
+
+            expect(schema.enrich({ id: "1" } as never, "diff").createdAt.toISOString()).toBe("2020-01-01T00:00:00.000Z");
+            expect(schema.deserialize({ id: "1", amount: "21" } as never).amount).toBe(42);
         });
 
         it("allows arrow functions with block bodies and return keyword", () => {

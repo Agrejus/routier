@@ -25,131 +25,13 @@ import { SchemaSubscription, SchemaSubscriptionOptions } from './communication/b
 import { CompareIdsHandlerBuilder } from '../codegen/handlers/CompareIdsHandlerBuilder';
 import { StandardJSONSchemaV1, createStandardJsonSchemaProps, rehydrateSchemaFromJsonString } from './utils/standardJsonSchema';
 import { SetHandlerBuilder } from '../codegen/handlers';
+import { createChangeTracker } from './changeTracker';
 
 function assertPropertyHandled(generatorName: string, property: PropertyInfo<any>, result: unknown): asserts result is {} {
     if (result == null) {
         throw new Error(`Schema compilation failed: no '${generatorName}' code generator handles property '${property.getAssignmentPath()}' (type: ${property.type}). Add a handler for this property shape or mark it not applicable in the ${generatorName} chain.`);
     }
 }
-
-function createChangeTracker() {
-    const DIRTY_ENTITY_MARKER: string = "isDirty";
-    const CHANGES_ENTITY_KEY: string = "changes";
-    const ORIGINAL_ENTITY_KEY: string = "original";
-    const PAUSED_ENTITY_KEY: string = "isPaused";
-    const TRACKING_KEY: string = "__tracking__";
-    const PROXY_MARKER: string = "__isProxy__";
-
-    return <TEntity extends {}>(entity: TEntity, path?: string, parent?: TEntity) => {
-
-        const proxyHandler: ProxyHandler<TEntity> = {
-            set(entity, property, value) {
-                const indexableEntity: { [key: string]: any } = entity;
-
-                // if values are the same, do nothing
-                //
-                // Checked before `String(property)` on purpose. A write that changes
-                // nothing is the common case, not the exception: `schema.merge` copies
-                // every property of a re-read row into the attached entity, and on an
-                // unchanged row every one of those writes lands here and returns.
-                // Building the string key first made that path cost 156ns a write, of
-                // which 125ns was the `String()` call alone; checking first takes it to
-                // 31ns, against a 14ns floor for the same writes on a plain object.
-                // Indexing by `property` rather than by `key` reads the same slot for
-                // string keys, and the correct one for symbols (which `String()` would
-                // have mangled into a "Symbol(x)" lookup).
-                const originalValue = indexableEntity[property as string];
-
-                if (originalValue === value) {
-                    return true;
-                }
-
-                const key = String(property);
-                const resolvedParent: { [key: string]: any } = parent ?? entity;
-
-                if (resolvedParent[TRACKING_KEY] == null) {
-                    // defineProperty, not assignment: a plain assignment creates an ENUMERABLE
-                    // property, and this is the lazy path that runs on the first tracked write —
-                    // so every entity the caller had edited came back from a query with
-                    // `__tracking__` visible to Object.entries, JSON.stringify and any deep
-                    // compare (defect #26). Both bootstrap paths below already define it
-                    // non-enumerable; this one was the outlier.
-                    Object.defineProperty(resolvedParent, TRACKING_KEY, {
-                        value: {
-                            [CHANGES_ENTITY_KEY]: {},
-                            [DIRTY_ENTITY_MARKER]: false,
-                            [ORIGINAL_ENTITY_KEY]: {},
-                            [PAUSED_ENTITY_KEY]: false
-                        },
-                        configurable: true,
-                        writable: true,
-                        enumerable: false
-                    });
-                }
-
-                if (key == TRACKING_KEY) {
-                    return true;
-                }
-
-                if (resolvedParent[TRACKING_KEY] != null && resolvedParent[TRACKING_KEY][PAUSED_ENTITY_KEY] === true) {
-                    Reflect.set(indexableEntity, property, value);
-                    return true;
-                }
-
-                const resolvedPath = path == null ? key : `${path}.${key}`;
-                const changes = resolvedParent[TRACKING_KEY];
-
-                if (changes[CHANGES_ENTITY_KEY][resolvedPath] != null) {
-
-                    if (changes[ORIGINAL_ENTITY_KEY][resolvedPath] === value) {
-                        // we are changing the value back to the original value, remove the change
-                        //
-                        // These two stay `delete`, unlike the `__tracking__` sites on the entity
-                        // itself. Assigning undefined here would be read as "still changed" by
-                        // the isDirty count below, which asks Object.keys — and a key assigned
-                        // undefined is still a key. Counting only defined values does not rescue
-                        // it either: an original value of undefined is legitimate (a property
-                        // that was unset and then given a value), so a defined-value count would
-                        // report a genuinely dirty entity as clean. Removing the key is the only
-                        // representation that keeps "present" and "changed" the same question.
-                        //
-                        // The cost is bounded in a way the entity sites are not: these bags hold
-                        // one key per changed path, they are internal to the tracking record, and
-                        // this branch only runs when a value is set BACK to its original.
-                        delete changes[ORIGINAL_ENTITY_KEY][resolvedPath];
-                        delete changes[CHANGES_ENTITY_KEY][resolvedPath];
-                    } else {
-                        // track the change
-                        changes[CHANGES_ENTITY_KEY][resolvedPath] = value;
-                    }
-
-                } else if (changes[CHANGES_ENTITY_KEY][resolvedPath] == null) {
-                    // don't keep updating, keep the original value
-                    changes[CHANGES_ENTITY_KEY][resolvedPath] = value;
-                    changes[ORIGINAL_ENTITY_KEY][resolvedPath] = originalValue;
-                }
-
-                const isDirty = Object.keys(changes[ORIGINAL_ENTITY_KEY]).length > 0;
-                changes[DIRTY_ENTITY_MARKER] = isDirty;
-
-                Reflect.set(indexableEntity, property, value);
-
-                return true;
-            },
-            get(target, property, receiver) {
-
-                if (property === PROXY_MARKER) {
-                    return true;
-                }
-
-                return Reflect.get(target, property, receiver);
-            }
-        }
-
-        return new Proxy(entity, proxyHandler) as TEntity;
-    }
-}
-
 
 export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
@@ -210,11 +92,26 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
         }
     }
 
+    /**
+     * Compiles `builder` into a function taking `fnArgs`.
+     *
+     * A builder with bindings is compiled one level out: an outer function whose parameters are
+     * the bindings, called once here with their values, returns the function that is kept. The
+     * bound values become closure variables of that function, so the per-call cost is a context
+     * read rather than anything resolved by name.
+     */
     private createFunction<TResult>(builder: CodeBuilder, ...fnArgs: string[]): TResult {
         const body = builder.toString();
+        const bindings = builder.getBindings();
 
         try {
-            return Function(...fnArgs, body) as TResult;
+            if (bindings.length === 0) {
+                return Function(...fnArgs, body) as TResult;
+            }
+
+            const outer = Function(...bindings.map(w => w.name), `return function(${fnArgs.join(", ")}) {\n${body}\n}`);
+
+            return outer(...bindings.map(w => w.value)) as TResult;
         } catch (e) {
             logger.error(`Error compiling schema function.  Function Body: ${body}`)
             throw e;
@@ -413,9 +310,12 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const compareIdsHandler = compareIdsHandlerBuilder.build();
             const setHandlerHanlder = setHandlerBuilder.build();
 
+            // Handed to the generated functions as a value, never embedded as source and called
+            // by name — a minifier renames the declaration and breaks every schema (#40).
+            const changeTracker = createChangeTracker();
+
             const changeTrackingCodeBuilder = new CodeBuilder();
-            changeTrackingCodeBuilder.raw(`${createChangeTracker.toString()}`);
-            changeTrackingCodeBuilder.slot("declarations").variable("enableChangeTracking").value('createChangeTracker()');
+            changeTrackingCodeBuilder.bind(changeTracker, "enableChangeTracking");
             // Nested proxies are installed by assigning through already-proxied parents;
             // pause tracking during setup so those writes don't register as changes
             changeTrackingCodeBuilder.slot("pause").raw('\tconst hadTracking = entity.__tracking__ != null;\n\tif (!hadTracking) { Object.defineProperty(entity, "__tracking__", { value: { changes: {}, isDirty: false, original: {}, isPaused: false }, configurable: true, writable: true, enumerable: false }); }\n\tconst wasPaused = entity.__tracking__.isPaused;\n\tentity.__tracking__.isPaused = true;');
@@ -442,9 +342,10 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
             const enricherCodeBuilder = new CodeBuilder();
 
-            const enricherFunctionRoot = enricherCodeBuilder.factory("factory", { name: "factory" }).parameters({ name: "collectionName", value: this.collectionName });
-            enricherFunctionRoot.slot("changeTracker").raw(`${createChangeTracker.toString()}`);
-            enricherFunctionRoot.slot("changeTrackerFunction").raw(`\tconst changeTracker = createChangeTracker();`);
+            const enricherFunctionRoot = enricherCodeBuilder.factory("factory", { name: "factory" }).parameters(
+                { name: "collectionName", value: this.collectionName },
+                { name: "changeTracker", value: changeTracker }
+            );
             const enricherFunctionBody = enricherFunctionRoot.function(undefined, { name: "function" }).parameters("entity", "changeTrackingType").return();
 
             enricherFunctionBody.slot("enableChangeTracking")
@@ -724,6 +625,8 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             enricherFunctionBody.get<SlotBlock>("append").insert(deserializeCodeBuilder.get<SlotBlock>("result"));
             enricherFunctionBody.get<SlotBlock>("append").insert(deserializeCodeBuilder.get<SlotBlock>("if"));
             enricherFunctionRoot.replace("function", new FunctionBuilder(undefined).parameters("unserialized", "changeTrackingType").return());
+            // The deserialize slots moved in above call the deserializers bound on their own builder
+            enricherFunctionRoot.parameters(...deserializeCodeBuilder.getBindings());
 
             const postProcessGenerator = this.createReturnFunction<Function>(enricherCodeBuilder);
             const postProcessParams = enricherFunctionRoot.getParameters();
@@ -735,6 +638,11 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             preprocessCodeBuilder.get<SlotBlock>("main").insert(serializeCodeBuilder.get<SlotBlock>("assignments"));
             preprocessCodeBuilder.get<SlotBlock>("main").insert(serializeCodeBuilder.get<SlotBlock>("functions"));
             preprocessCodeBuilder.get<SlotBlock>("main").insert(serializeCodeBuilder.get<SlotBlock>("if"));
+
+            // Likewise the serialize slots call the serializers bound on the serialize builder
+            for (const binding of serializeCodeBuilder.getBindings()) {
+                preprocessCodeBuilder.bind(binding.value, binding.name);
+            }
 
             const getIdsFunction = this.createFunction<(entity: InferType<T>) => [IdType]>(idSelectorCodeBuilder, "entity");
             const getHashTypeFunction = this.createFunction<GetHashTypeFunction<T>>(hashTypeCodeBuilder, "entity");
