@@ -58,6 +58,19 @@ capability report that already exists. `IDbPlugin` is unchanged.
   `count` or `distinct` down when nothing before it was reported; PouchDB builds its view predicate
   and index lookup from executed filters only.
 
+### Fixed — @routier/pouchdb-plugin
+
+- A property declared with `.from()` reads back. Documents were always stored under the `from`
+  name, but the plugin returned rows it had already deserialized, and the datastore deserialized
+  them again by storage name, so every read from a store that was not still tracking the rows
+  returned the property as `undefined` (and a nested object under a renamed key threw). Rows are now
+  handed back as stored. A projection or aggregate is unchanged. Existing data needs no migration.
+- An index view on a renamed property reads its `from` name. It used to read the in-memory name and
+  emit nothing. The view has a new name, so a database with the old design document gets it
+  replaced on its next indexed read.
+- An identity key declared with `.from()` is refused at save, like an identity key not named `_id`.
+  PouchDB fills in `_id`, so the key never read back.
+
 ### Fixed — @routier/mongodb-plugin
 
 - A sort on a renamed property sends the stored path. It used to send the in-memory name, which was

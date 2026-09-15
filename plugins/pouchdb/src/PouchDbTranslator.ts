@@ -74,6 +74,9 @@ export class PouchDbTranslator<TEntity extends {}, TShape extends unknown = TEnt
 
         const result: unknown[] = [];
 
+        // Each deserialized row, to the document it was read from.
+        const stored = new Map<unknown, unknown>();
+
         for (let i = 0, length = data.length; i < length; i++) {
             const entity: any = data[i];
 
@@ -84,14 +87,34 @@ export class PouchDbTranslator<TEntity extends {}, TShape extends unknown = TEnt
 
             try {
                 // PouchDB converts a Date to a string when it is saved, we need to convert it back when it's selected
-                result.push(this.schema.deserialize(entity as InferType<TEntity>));
+                const row = this.schema.deserialize(entity as InferType<TEntity>);
+                result.push(row);
+                stored.set(row, entity);
                 data[i] = null;
             } catch (e) {
                 throw new Error(`Error deserializing entity from db.  Message: ${e.message}, Entity: ${JSON.stringify(entity, null, 2)}`)
             }
         }
 
-        return super.translate(result);
+        const translated = super.translate(result);
+
+        // Rows that come through the options as rows go back as they are stored. The datastore
+        // deserializes rows itself, reading renamed properties by their `from` names, and a join
+        // does the same per side, so a row handed back already deserialized loses every renamed
+        // property. A projection or aggregate is not a row and stays as the options produced it.
+        if (Array.isArray(translated.value)) {
+            const value = translated.value as unknown[];
+
+            for (let i = 0, length = value.length; i < length; i++) {
+                const document = stored.get(value[i]);
+
+                if (document !== undefined) {
+                    value[i] = document;
+                }
+            }
+        }
+
+        return translated;
     }
 
 }
