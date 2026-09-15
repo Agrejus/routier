@@ -206,4 +206,9 @@ describe('findSortSeed', () => {
         expect(sortOn('notes')).toBeNull();
         expect(sortOn('amount')).toBeNull();
     });
+
+    it('refuses a value computed from an indexed property, which the index does not order by', () => {
+        // `x => 100 - x.score` reads `score` and orders the other way round
+        expect(findSortSeed({ selector: () => null as never, direction: QueryOrdering.Ascending, propertyName: '100 - x.score', property: schema.getProperty('score') as never, isDirectProperty: false }, indexes)).toBeNull();
+    });
 });

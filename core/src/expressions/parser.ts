@@ -3,6 +3,7 @@ import { assertString } from "../assertions";
 import { CompiledSchema, PropertyInfo, SchemaTypes } from "../schema";
 import { evaluate } from "./evaluate";
 import { foldConstantCalls } from "./fold";
+import { getProperties } from "./utils";
 import { Expression, OperatorExpression, ComparatorExpression, ValueExpression, PropertyExpression, CallExpression, Filter, ParamsFilter, Call, Comparator, Transformer } from "./types";
 
 // Error message constants
@@ -691,7 +692,26 @@ type ConditionalOperand = {
     whenFalse: Operand;
 }
 
-type Operand = PropertyOperand | ValueOperand | ParamOperand | MethodCallOperand | ArithmeticOperand | ConditionalOperand;
+/**
+ * A value the grammar has no node for, such as `x.createdDate.getFullYear()` or `(x.age + 1).toFixed(2)`,
+ * kept only for the operands it reads.
+ *
+ * Produced for a value selector alone (see `parseSelector`). A sort or a projection over one runs the
+ * caller's function, so all it needs from here is which properties the value comes from and that it
+ * is not one of them. A filter never gets one: its tree is what a backend renders.
+ */
+type OpaqueOperand = {
+    kind: "opaque";
+    reads: Operand[];
+}
+
+type Operand = PropertyOperand | ValueOperand | ParamOperand | MethodCallOperand | ArithmeticOperand | ConditionalOperand | OpaqueOperand;
+
+/** One field of an object literal a selector returns. */
+type SelectorField = {
+    name: string;
+    operand: Operand;
+}
 
 /** JavaScript precedence: `*`, `/`, `%` bind tighter than `+` and `-`. */
 const MULTIPLICATIVE_OPERATORS: Record<string, Call> = sourceKeyed({
@@ -725,6 +745,10 @@ const containsProperty = (operand: Operand): boolean => {
     if (operand.kind === "conditional") {
         // A comparison always names a schema property, so the condition alone settles it
         return true;
+    }
+
+    if (operand.kind === "opaque") {
+        return operand.reads.some(containsProperty);
     }
 
     return operand.kind === "arithmetic"
@@ -890,15 +914,22 @@ class ExpressionParser {
     private readonly paramsName: string | null;
     private readonly params: unknown;
 
+    /**
+     * Whether this parses a value selector rather than a filter, and so reads a call it has no node for
+     * as an `OpaqueOperand` instead of refusing it.
+     */
+    private readonly readsValues: boolean;
+
     /** Set when a param value shaped the tree itself (e.g. x[p.name]) — such templates cannot be cached. */
     structurallyDependsOnParams: boolean = false;
 
-    constructor(schema: CompiledSchema<any>, stream: TokenStream, scope: Scope, paramsName: string | null, params: unknown) {
+    constructor(schema: CompiledSchema<any>, stream: TokenStream, scope: Scope, paramsName: string | null, params: unknown, readsValues: boolean = false) {
         this.schema = schema;
         this.stream = stream;
         this.scope = scope;
         this.paramsName = paramsName;
         this.params = params;
+        this.readsValues = readsValues;
     }
 
     parse(): Expression {
@@ -928,6 +959,90 @@ class ExpressionParser {
         }
 
         return answer;
+    }
+
+    /**
+     * What a value selector returns: one value, or the fields of an object literal.
+     *
+     * A block body is read only when it does nothing but return, which is what a transpiler makes of an
+     * arrow function. Anything more is refused, and the caller falls back to running the function.
+     */
+    parseSelector(): Operand | SelectorField[] {
+        const block = this.stream.matchPunctuation("{");
+
+        if (block) {
+            const keyword = this.stream.next();
+
+            if (keyword.kind !== "identifier" || keyword.value !== "return") {
+                throw new Error(ERROR_MESSAGES.UNSUPPORTED("a selector block that does more than return"));
+            }
+        }
+
+        const selected = this.stream.isPunctuation("{")
+            ? this.parseObjectLiteral()
+            : this.stream.isPunctuation("(") && this.stream.isPunctuation("{", 1)
+                ? this.parseBracketedObjectLiteral()
+                : this.parseInterpolation();
+
+        if (block) {
+            this.stream.matchPunctuation(";");
+            this.stream.expectPunctuation("}");
+        }
+
+        if (!this.stream.isAtEnd) {
+            throw new Error(ERROR_MESSAGES.UNSUPPORTED(`unexpected token '${this.stream.peek()?.value}'`));
+        }
+
+        return selected;
+    }
+
+    /** `({ … })`, the arrow body that returns an object. */
+    private parseBracketedObjectLiteral(): SelectorField[] {
+        this.stream.expectPunctuation("(");
+        const fields = this.parseObjectLiteral();
+        this.stream.expectPunctuation(")");
+
+        return fields;
+    }
+
+    /**
+     * The fields of an object literal, each one value.
+     *
+     * A field's value is read without a top-level conditional, which needs brackets here: the look-ahead
+     * for a `?` does not stop at the comma that ends the field.
+     */
+    private parseObjectLiteral(): SelectorField[] {
+        this.stream.expectPunctuation("{");
+
+        const fields: SelectorField[] = [];
+
+        while (!this.stream.matchPunctuation("}")) {
+            const key = this.stream.next();
+
+            if (key.kind !== "identifier" && key.kind !== "string") {
+                throw new Error(ERROR_MESSAGES.UNSUPPORTED(`the object key '${key.value}'`));
+            }
+
+            fields.push({ name: key.value, operand: this.stream.matchPunctuation(":") ? this.parseValue() : this.parseShorthand(key) });
+
+            if (!this.stream.matchPunctuation(",")) {
+                this.stream.expectPunctuation("}");
+                break;
+            }
+        }
+
+        return fields;
+    }
+
+    /** `{ name }`, which reads what the parameter list bound `name` to. */
+    private parseShorthand(key: Token): Operand {
+        const binding = key.kind === "identifier" ? this.scope.get(key.value) : undefined;
+
+        if (binding == null || binding.kind === "inlined") {
+            throw new Error(ERROR_MESSAGES.VARIABLE_VALUE(key.value));
+        }
+
+        return this.parseChain({ kind: binding.kind, path: [...binding.path] });
     }
 
     /** The expression a `{ … }` block answers with. */
@@ -1275,7 +1390,7 @@ class ExpressionParser {
      * cached either.
      */
     private parseNested(source: string): Operand {
-        const nested = new ExpressionParser(this.schema, new TokenStream(tokenize(source)), this.scope, this.paramsName, this.params);
+        const nested = new ExpressionParser(this.schema, new TokenStream(tokenize(source)), this.scope, this.paramsName, this.params, this.readsValues);
         const operand = nested.parseInterpolation();
 
         // Leftover tokens mean the interpolation held something this reads only part of. Silently
@@ -1561,7 +1676,7 @@ class ExpressionParser {
                 throw new Error(ERROR_MESSAGES.UNSUPPORTED("nested method call inside .includes()"));
             }
 
-            if (argument.kind === "arithmetic" || argument.kind === "conditional") {
+            if (argument.kind === "arithmetic" || argument.kind === "conditional" || argument.kind === "opaque") {
                 throw new Error(ERROR_MESSAGES.UNSUPPORTED("arithmetic inside .includes()"));
             }
 
@@ -1645,7 +1760,7 @@ class ExpressionParser {
                             throw new Error(ERROR_MESSAGES.UNSUPPORTED(`nested method call inside .${method}()`));
                         }
 
-                        if (argument.kind === "arithmetic" || argument.kind === "conditional") {
+                        if (argument.kind === "arithmetic" || argument.kind === "conditional" || argument.kind === "opaque") {
                             throw new Error(ERROR_MESSAGES.UNSUPPORTED(`arithmetic inside .${method}()`));
                         }
 
@@ -1657,10 +1772,18 @@ class ExpressionParser {
                         };
                     }
 
+                    if (this.readsValues) {
+                        return this.withGroupCall(this.opaqueCall(this.resolveChain(options.kind, path, transformer, locale)));
+                    }
+
                     throw new Error(ERROR_MESSAGES.UNSUPPORTED(`method '.${method}()'`));
                 }
 
                 if (transformer != null) {
+                    if (this.readsValues) {
+                        return this.withGroupCall({ kind: "opaque", reads: [this.resolveChain(options.kind, path, transformer, locale)] });
+                    }
+
                     throw new Error(ERROR_MESSAGES.UNSUPPORTED("property access after a transform method"));
                 }
 
@@ -1807,10 +1930,37 @@ class ExpressionParser {
                 return { kind: "method-call", target: receiver, method: segment.value as MethodCallOperand["method"], argument };
             }
 
+            // Any other member or call of a value, which a selector reads through
+            if (this.readsValues) {
+                this.stream.next();
+                this.stream.next();
+
+                receiver = this.stream.isPunctuation("(") ? this.opaqueCall(receiver) : { kind: "opaque", reads: [receiver] };
+                continue;
+            }
+
             break;
         }
 
         return receiver;
+    }
+
+    /** A call with no node of its own, from its `(`, kept for what its receiver and arguments read. */
+    private opaqueCall(receiver: Operand): OpaqueOperand {
+        const reads: Operand[] = [receiver];
+
+        this.stream.expectPunctuation("(");
+
+        while (!this.stream.matchPunctuation(")")) {
+            reads.push(this.parseValue());
+
+            if (!this.stream.matchPunctuation(",")) {
+                this.stream.expectPunctuation(")");
+                break;
+            }
+        }
+
+        return { kind: "opaque", reads };
     }
 
     private withValueTransformer(operand: ValueOperand): ValueOperand {
@@ -1853,6 +2003,11 @@ class ExpressionParser {
 
         if (right.kind === "method-call") {
             throw new Error(ERROR_MESSAGES.UNSUPPORTED("method call on the right side of a comparison"));
+        }
+
+        // A comparison is a tree a backend renders, and this operand has no node in one
+        if (left.kind === "opaque" || right.kind === "opaque") {
+            throw new Error(ERROR_MESSAGES.UNSUPPORTED("a call with no expression form inside a comparison"));
         }
 
         if (needsBrackets(left) || needsBrackets(right)) {
@@ -2086,6 +2241,10 @@ class ExpressionParser {
 
         if (operand.kind === "method-call") {
             throw new Error(ERROR_MESSAGES.UNSUPPORTED("a method call inside arithmetic"));
+        }
+
+        if (operand.kind === "opaque") {
+            throw new Error(ERROR_MESSAGES.UNSUPPORTED("a call with no expression form inside arithmetic"));
         }
 
         return this.createValueExpression(operand, null, /* applyConverter */ false);
@@ -2487,3 +2646,129 @@ export const toExpression = <T extends any, P extends any>(schema: CompiledSchem
         return Expression.notParsable(refusalOf(error));
     }
 }
+
+// #region Value selectors
+
+/** What one value a sort, map, group or `nearest` selector returns is read from. */
+export type SelectedValue = {
+    /** The schema property the value is read from, when it reads exactly one. */
+    property: PropertyInfo<any> | null;
+    /** Every schema property the value is read from, at any depth of the schema. */
+    reads: PropertyInfo<any>[];
+    /**
+     * Whether the value is `property` itself. `false` for anything computed from it: a call, arithmetic,
+     * `.length`, or a member of a value that is not a property.
+     */
+    isDirectProperty: boolean;
+};
+
+export type ParsedSelector =
+    | { kind: "value", value: SelectedValue }
+    | { kind: "object", fields: (SelectedValue & { name: string })[] }
+    | { kind: "not-parsable", reason: string };
+
+const collectReads = (operand: Operand, into: Set<PropertyInfo<any>>): void => {
+    switch (operand.kind) {
+        case "property":
+            into.add(operand.property);
+            return;
+        case "method-call":
+            collectReads(operand.target, into);
+            collectReads(operand.argument, into);
+            return;
+        case "arithmetic":
+            collectReads(operand.left, into);
+            collectReads(operand.right, into);
+
+            if (operand.extra != null) {
+                collectReads(operand.extra, into);
+            }
+            return;
+        case "conditional":
+            for (const property of getProperties(operand.condition)) {
+                into.add(property);
+            }
+
+            collectReads(operand.whenTrue, into);
+            collectReads(operand.whenFalse, into);
+            return;
+        case "opaque":
+            for (const read of operand.reads) {
+                collectReads(read, into);
+            }
+            return;
+    }
+};
+
+const selectedValue = (operand: Operand): SelectedValue => {
+    const found = new Set<PropertyInfo<any>>();
+
+    collectReads(operand, found);
+
+    const reads = [...found];
+
+    return {
+        property: reads.length === 1 ? reads[0] : null,
+        reads,
+        isDirectProperty: operand.kind === "property" && operand.transformer == null
+    };
+};
+
+// Keyed like the template cache. A selector takes no params, so every result is cacheable
+const selectorCache = new WeakMap<CompiledSchema<any>, Map<string, ParsedSelector>>();
+
+/**
+ * Reads a sort, map, group or `nearest` selector with the grammar filters use, for what its value is
+ * read from.
+ *
+ * Not for evaluating it: the caller's function stays the value, and nothing here renders one. A plugin
+ * decides from the result whether it can run the option. One that orders or projects by column cannot
+ * run a value that is not the property itself, and one that runs the function over stored rows cannot
+ * run it over a renamed property.
+ *
+ * So the grammar is wider here than for a filter. A call it has no node for, such as `getFullYear()`,
+ * is kept for the operands it reads rather than refused, since the function it came from still runs.
+ *
+ * `not-parsable` is not logged. The option runs as it did before the selector was parsed.
+ *
+ * Cached by function source per schema, like `toExpression`. The result is shared, so it is read-only.
+ */
+export const parseSelector = (schema: CompiledSchema<any>, selector: (...args: any[]) => unknown): ParsedSelector => {
+    const source = selector.toString();
+    let bySource = selectorCache.get(schema);
+    const cached = bySource?.get(source);
+
+    if (cached != null) {
+        return cached;
+    }
+
+    let parsed: ParsedSelector;
+
+    try {
+        const shape = resolveFunctionShape(source, false);
+        const parser = new ExpressionParser(schema, new TokenStream(tokenize(shape.body)), shape.scope, null, undefined, true);
+        const selected = parser.parseSelector();
+
+        parsed = Array.isArray(selected)
+            ? { kind: "object", fields: selected.map(field => ({ name: field.name, ...selectedValue(field.operand) })) }
+            : { kind: "value", value: selectedValue(selected) };
+    } catch (error) {
+        parsed = { kind: "not-parsable", reason: refusalOf(error) };
+    }
+
+    if (bySource == null) {
+        bySource = new Map<string, ParsedSelector>();
+        selectorCache.set(schema, bySource);
+    }
+
+    // Stryker disable next-line all: the same resource bound as the template cache's
+    if (bySource.size >= MAX_CACHED_TEMPLATES_PER_SCHEMA) {
+        bySource.clear();
+    }
+
+    bySource.set(source, parsed);
+
+    return parsed;
+};
+
+// #endregion

@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { afterAll } from '@jest/globals';
-import { describePluginContract, RENAMED_CALL_SELECTOR_TESTS } from '@routier/test-utils';
+import { describePluginContract } from '@routier/test-utils';
 import { uuidv4 } from '@routier/core';
 import { FileSystemPlugin } from '../FileSystemPlugin';
 
@@ -21,7 +21,6 @@ describePluginContract(
     () => new FileSystemPlugin(directory, `contract-${uuidv4()}-db`),
     {
         supportsRichTypes: true,
-        knownFailing: RENAMED_CALL_SELECTOR_TESTS,
         // A copy of the database's files under a new name: collections are shared process-wide by
         // path, so a plugin over the same path would read the writer's objects instead of the file
         reopen: plugin => {

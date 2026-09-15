@@ -43,6 +43,31 @@ capability report that already exists. `IDbPlugin` is unchanged.
 - `QueryOptionsCollection.forDispatch()`: a copy of the options for one dispatch, every database
   option `executed` again. A split half is copied with its origin, so a report on it still cascades
   over that dispatch alone. A join's inner options are copied too.
+- `parseSelector(schema, selector)`: reads a sort, map, group or `nearest` selector with the filter
+  grammar, for the properties its value is read from (`reads`, and `property` when there is one) and
+  whether the value is that property (`isDirectProperty`). A call the filter grammar has no node for,
+  such as `getFullYear()`, is kept for what it reads. Cached by source per schema, like `toExpression`.
+  The datastore records the result on every `sort` and `nearest` option and every `QueryField`, as
+  optional fields, so an option built without a selector is still read as its property.
+
+### Fixed — selectors that compute a value (@routier/core, @routier/datastore, @routier/sql-plugin-core, @routier/sqlite-plugin, @routier/postgres-plugin-core, @routier/mysql-plugin, @routier/mongodb-plugin, @routier/dexie-plugin)
+
+- The property a sort, map, group or `nearest` reads was taken by splitting the selector's source on
+  `.`, so `r => r.dueDate.getTime()` resolved no property, and `r => 100 - r.price` resolved `price`.
+  Selectors are now parsed, and an unparsable one (a closure) keeps its old name and property and is
+  never treated as the property itself.
+- SQL plugins hand back a sort, `nearest` or `map` whose selector computes its value, and the aggregate
+  after the `map`. A sort by `100 - x.age` was pushed down as `ORDER BY "age"` and returned the wrong
+  order with no error; `sort(x => x.name.length)`, `map(x => x.amount * 2)` and `sumAsync(x => x.amount * 2)`
+  failed with `no such column`. The defect predates #43.
+- The memory, file-system, browser-storage, Dexie and PouchDB plugins, and `HttpDbPlugin`, hand back a
+  computed selector over a renamed property, as they did a plain one. `sort(r => r.dueDate.getTime())`
+  threw, and `map(r => r.amount * 2)` or `sumAsync` over a renamed `amount` returned `NaN`.
+- MongoDB hands back a computed sort rather than sending the path of the property it reads. Dexie no
+  longer seeds a sort from an index for one. `splitSendableOptions` keeps a computed sort or `nearest`
+  local, since it would travel as the property it reads.
+- The contract suite's `RENAMED_CALL_SELECTOR_TESTS` export is removed; those cases pass on every plugin.
+  A `derived selectors` section covers computed sorts, projections, groups and aggregates.
 
 ### Fixed — @routier/datastore
 

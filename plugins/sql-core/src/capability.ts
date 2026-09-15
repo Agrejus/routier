@@ -15,6 +15,33 @@ export const reportUnrenderableFilters = (
     }
 };
 
+/**
+ * Hands back every sort, `nearest` and projection whose selector computes a value rather than naming a
+ * property, for the datastore to run in memory.
+ *
+ * A statement orders by a column and selects columns, and `r => r.name.length` is not one. Rendering the
+ * property it reads orders by `name` instead, with no error, and the name the source text gives is not a
+ * column at all. An aggregate reads the projection in front of it, so it goes back with it. A group is not
+ * rendered, so its key is not checked here.
+ */
+export const reportUnrenderableSelectors = (options: QueryOptionsCollection<any>): void => {
+    for (const name of ["sort", "nearest"] as const) {
+        for (const item of options.get(name)) {
+            if ((item.option.value as { isDirectProperty?: boolean }).isDirectProperty === false) {
+                options.reportMissingCapability(item);
+            }
+        }
+    }
+
+    for (const item of options.get("map")) {
+        const fields = (item.option.value as { fields?: QueryField[] }).fields;
+
+        if (fields != null && fields.some(field => field.isDirectProperty === false)) {
+            options.reportMissingCapability(item);
+        }
+    }
+};
+
 /** The columns a `map` narrows the select list to, or `null` to select the entity. */
 export const executedMapFields = (options: QueryOptionsCollection<any>): QueryField[] | null => {
     for (const [, items] of options.items) {
@@ -45,6 +72,7 @@ export const joinToPushDown = (
     dialect: SqlDialectName
 ): QueryOption<any, "join"> | null => {
     reportUnrenderableFilters(options, dialect);
+    reportUnrenderableSelectors(options);
     reportRenamedProperties(options, ["group"]);
 
     const join = options.getLast("join");

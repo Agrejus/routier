@@ -16,7 +16,16 @@ export type QueryField = {
     sourceName: string,
     destinationName: string,
     isRename: boolean;
+    /** The property the field's value is read from, when it reads exactly one. */
     property?: PropertyInfo<unknown>;
+    /** Every property the field's value is read from. Absent when the selector could not be parsed. */
+    reads?: PropertyInfo<unknown>[];
+    /**
+     * `false` when the value is computed from `property` rather than being it, as in `x.createdDate.getTime()`,
+     * or when the selector could not be parsed. Absent on a field built from a property rather than a
+     * selector, which is that property.
+     */
+    isDirectProperty?: boolean;
     getter: <T>(data: Record<string, unknown>) => T;
 };
 
@@ -87,7 +96,8 @@ export type QueryOption<T, K extends QueryOptionName> =
 export type QueryOptionValueMap<T extends {}> = {
     skip: number;
     take: number;
-    sort: { selector: GenericFunction<T, T[keyof T]>, direction: QueryOrdering, propertyName: string, property?: PropertyInfo<T> | null };
+    /** `property`, `reads` and `isDirectProperty` mean what they do on a {@link QueryField}. */
+    sort: { selector: GenericFunction<T, T[keyof T]>, direction: QueryOrdering, propertyName: string, property?: PropertyInfo<T> | null, reads?: PropertyInfo<T>[], isDirectProperty?: boolean };
     map: { selector: GenericFunction<T, any>, fields: QueryField[] };
     group: { selector: GenericFunction<T, any>, key: QueryField, fields: QueryField[] };
     filter: { params?: {}, filter: ParamsFilter<T, {}> | Filter<T>, expression: Expression };
@@ -98,7 +108,7 @@ export type QueryOptionValueMap<T extends {}> = {
      * operation to a backend that can push this down — `ORDER BY ... LIMIT n` is what makes an
      * approximate index usable, and splitting them would order every row before limiting.
      */
-    nearest: { selector: GenericFunction<T, T[keyof T]>, propertyName: string, property?: PropertyInfo<T> | null, vector: number[], count: number };
+    nearest: { selector: GenericFunction<T, T[keyof T]>, propertyName: string, property?: PropertyInfo<T> | null, reads?: PropertyInfo<T>[], isDirectProperty?: boolean, vector: number[], count: number };
     /**
      * An equi-join against a second collection, interpreted by whoever receives it.
      *

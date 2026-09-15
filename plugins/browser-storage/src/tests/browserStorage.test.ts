@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from '@jest/globals';
 import { uuidv4 } from '@routier/core';
 import { s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
-import { describeFullTextSearch, describePluginContract, describeVectorSearch, RENAMED_CALL_SELECTOR_TESTS } from '@routier/test-utils';
+import { describeFullTextSearch, describePluginContract, describeVectorSearch } from '@routier/test-utils';
 import { BrowserStoragePlugin } from '../BrowserStoragePlugin';
 
 /**
@@ -74,7 +74,6 @@ describePluginContract(
     },
     {
         supportsRichTypes: true,
-        knownFailing: RENAMED_CALL_SELECTOR_TESTS,
         // A copy of the storage: collections are shared process-wide per Storage object, so a plugin
         // over the same one would read the writer's objects instead of the stored JSON
         reopen: plugin => {

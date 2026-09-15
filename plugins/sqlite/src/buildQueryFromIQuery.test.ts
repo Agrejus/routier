@@ -73,6 +73,57 @@ describe('buildQueryFromIQuery Integration Tests', () => {
         expect(result.params).toEqual([]);
     });
 
+    /**
+     * A sort whose selector computes its value is handed back rather than rendered. It used to be
+     * rendered from the name its source text gives: `x => 100 - x.age` became `ORDER BY "age"`, the
+     * wrong order with no error, and `x => x.name.length` became `ORDER BY "name.length"`.
+     */
+    it.each([
+        ['arithmetic', (x: any) => 100 - x.age],
+        ['a length', (x: any) => x.name.length],
+    ])('hands back a sort by %s instead of ordering by a column', (_, selector) => {
+        let capturedQuery: any = null;
+
+        const plugin = new SqliteTestPlugin((event) => {
+            capturedQuery = event.operation;
+        });
+
+        open(plugin).users.sort(selector).toArray(jest.fn<any>());
+
+        const result = buildFromQueryOperation(capturedQuery);
+
+        expect(result.sql).toBe('SELECT "id", "name", "age" FROM "users"');
+        expect(capturedQuery.options.get("sort")[0].option.reason).toBe("missing-capability");
+    });
+
+    it('hands back a projection with a computed field, and the aggregate reading it', () => {
+        let capturedQuery: any = null;
+
+        const plugin = new SqliteTestPlugin((event) => {
+            capturedQuery = event.operation;
+        });
+
+        open(plugin).users.sum(x => x.age * 2, jest.fn<any>());
+
+        const result = buildFromQueryOperation(capturedQuery);
+
+        expect(result.sql).toBe('SELECT "id", "name", "age" FROM "users"');
+        expect(capturedQuery.options.get("map")[0].option.reason).toBe("missing-capability");
+        expect(capturedQuery.options.get("sum")[0].option.reason).toBe("not-reached");
+    });
+
+    it('still orders by the column for a sort that is the property', () => {
+        let capturedQuery: any = null;
+
+        const plugin = new SqliteTestPlugin((event) => {
+            capturedQuery = event.operation;
+        });
+
+        open(plugin).users.sort(x => x.age).toArray(jest.fn<any>());
+
+        expect(buildFromQueryOperation(capturedQuery).sql).toBe('SELECT "id", "name", "age" FROM "users" ORDER BY "age" ASC');
+    });
+
     it('should build a query with a filter from natural JavaScript', () => {
         let capturedQuery: any = null;
 

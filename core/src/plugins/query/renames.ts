@@ -38,11 +38,23 @@ const namesRenamedProperty = (expression: Expression | undefined): boolean => {
 
 const isRenamed = (property: PropertyInfo<any> | null | undefined) => property != null && property.hasRenamedSegments;
 
-const readsRenamedField = (fields: QueryField[] | undefined) => fields != null && fields.some(field => isRenamed(field.property));
-
-type PropertyReadingValue = {
-    expression?: Expression,
+type SelectorReads = {
     property?: PropertyInfo<any> | null,
+    reads?: PropertyInfo<any>[]
+};
+
+/**
+ * Whether a selector's value is read from a renamed property, whether it is that property or computed
+ * from it: `r => r.dueDate.getTime()` reads `dueDate` all the same. Every property it reads when the
+ * selector was parsed, and otherwise the property recorded for it.
+ */
+const readsRenamedValue = (value: SelectorReads | undefined) =>
+    value != null && (value.reads != null ? value.reads.some(isRenamed) : isRenamed(value.property));
+
+const readsRenamedField = (fields: QueryField[] | undefined) => fields != null && fields.some(readsRenamedValue);
+
+type PropertyReadingValue = SelectorReads & {
+    expression?: Expression,
     key?: QueryField,
     fields?: QueryField[]
 };
@@ -57,9 +69,9 @@ const readsRenamedProperty = (name: PropertyReadingOption, value: PropertyReadin
         case "group":
             // A group reads its key, then copies every field of the row into its members: every schema
             // property, or what a `map` before it selected
-            return isRenamed(value.key?.property) || readsRenamedField(value.fields);
+            return readsRenamedValue(value.key) || readsRenamedField(value.fields);
         default:
-            return isRenamed(value.property);
+            return readsRenamedValue(value);
     }
 };
 

@@ -149,15 +149,6 @@ function withTimeout<T>(promise: Promise<T>, label: string, ms: number = 2000): 
     });
 }
 
-/**
- * The date tests whose selector calls a method on a renamed property.
- *
- * Core resolves no property for such a selector, so `reportRenamedProperties` cannot see the renamed
- * property it reads, and a plugin that runs lambdas over stored rows reads a key they do not have.
- * Not a date defect: listed as `knownFailing` by those plugins until core can resolve the property.
- */
-export const RENAMED_CALL_SELECTOR_TESTS = ["sorts by a renamed date's time", "maps a renamed date's year"] as const;
-
 export type PluginContractOptions = {
     /**
      * Contract section names this plugin is not expected to satisfy yet. Prefer leaving a
@@ -545,9 +536,9 @@ export function describePluginContract(
                     });
 
                     /**
-                     * Apart from the plain cases, because it fails for a reason that is not about dates:
-                     * core resolves no property for a selector that calls a method, so nothing reports the
-                     * renamed property it reads, and a plugin runs it over a row without that key.
+                     * Apart from the plain cases: the selector calls a method on a renamed property, so the
+                     * option carries the property it reads, and a plugin that runs it over stored rows has to
+                     * hand it back.
                      */
                     test("sorts by a renamed date's time", async () => {
                         const dataStore = await seededDated();
@@ -786,6 +777,83 @@ export function describePluginContract(
                 const found = await dataStore.renamed.where(r => r.label === "keep").map(r => r.amount).toArrayAsync();
 
                 expect([...found].sort()).toEqual([1, 2]);
+            });
+        });
+
+        section("derived selectors", () => {
+            /**
+             * A selector that computes a value from a property rather than naming it.
+             *
+             * The property it reads travels with the option, and so does the fact that the value is
+             * not the property: a backend that orders or projects by column has to hand the option back
+             * rather than order by the column, and one that runs the selector over stored rows has to
+             * hand it back when the property is renamed. Lengths, doubles and upper-cased labels each
+             * order the rows differently from the property itself, so reading the property gives
+             * another answer.
+             */
+            const seededRenamed = async () => {
+                const writer = store();
+                await writer.renamed.addAsync(
+                    { label: "kilo", amount: 3 } as any,
+                    { label: "alpha", amount: 1 } as any,
+                    { label: "ox", amount: 2 } as any,
+                );
+                await writer.saveChangesAsync();
+                return reader(writer);
+            };
+
+            test("sorts by a renamed string's length", async () => {
+                const dataStore = await seededRenamed();
+
+                expect((await dataStore.renamed.sort(r => r.label.length as never).toArrayAsync()).map(r => r.label)).toEqual(["ox", "kilo", "alpha"]);
+                expect((await dataStore.renamed.sortDescending(r => r.label.length as never).toArrayAsync()).map(r => r.label)).toEqual(["alpha", "kilo", "ox"]);
+            });
+
+            test("maps a renamed number doubled", async () => {
+                const dataStore = await seededRenamed();
+
+                expect([...await dataStore.renamed.map(r => r.amount * 2).toArrayAsync()].sort()).toEqual([2, 4, 6]);
+            });
+
+            test("groups by a renamed string upper-cased", async () => {
+                const dataStore = await seededRenamed();
+
+                const found = await dataStore.renamed.toGroupAsync(r => r.label.toUpperCase());
+
+                expect(Object.keys(found).sort()).toEqual(["ALPHA", "KILO", "OX"]);
+                expect(found["KILO"].map(r => r.amount)).toEqual([3]);
+            });
+
+            test("maps direct and derived fields into an object", async () => {
+                const dataStore = await seededRenamed();
+
+                const found = await dataStore.renamed.map(r => ({ name: r.label, double: r.amount * 2 })).toArrayAsync();
+
+                expect([...found].sort((a, b) => a.double - b.double)).toEqual([
+                    { name: "alpha", double: 2 },
+                    { name: "ox", double: 4 },
+                    { name: "kilo", double: 6 },
+                ]);
+            });
+
+            test("sums, and takes the min and max of, a derived value", async () => {
+                const dataStore = await seededRenamed();
+
+                expect(Number(await dataStore.renamed.sumAsync(r => r.amount * 2))).toBe(12);
+                expect(Number(await dataStore.renamed.minAsync(r => r.amount * 2))).toBe(2);
+                expect(Number(await dataStore.renamed.maxAsync(r => r.label.length))).toBe(5);
+            });
+
+            test("sorts, maps and groups by a value derived from a property that is not renamed", async () => {
+                const dataStore = reader(await seeded());
+
+                expect((await dataStore.products.sort(p => 100 - p.price).toArrayAsync()).map(p => p.name)).toEqual(["Delta", "Bravo", "Charlie", "Alpha"]);
+                expect([...await dataStore.products.map(p => p.price * 2).toArrayAsync()].sort((a, b) => a - b)).toEqual([20, 40, 60, 80]);
+
+                const groups = await dataStore.products.toGroupAsync(p => p.category.toUpperCase());
+
+                expect(Object.keys(groups).sort()).toEqual(["TOOLS", "TOYS"]);
+                expect(groups["TOYS"].map(p => p.name).sort()).toEqual(["Charlie", "Delta"]);
             });
         });
 

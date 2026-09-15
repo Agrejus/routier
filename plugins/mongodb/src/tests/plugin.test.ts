@@ -230,6 +230,14 @@ describe("MongoDbPlugin", () => {
             expect(data.map(x => x.label)).toEqual(["alpha"]);
             expect(explanation.summary.reasons).toEqual(["missing-capability"]);
         });
+
+        it("hands back a sort by a value computed from a property, instead of sorting by the property", async () => {
+            const { data, explanation } = await (await seeded()).rows.sort(x => 10 - x.rank).explain().toArrayAsync();
+
+            expect(data.map(x => x.label)).toEqual(["bravo", "charlie", "alpha"]);
+            expect(explanation.summary.reasons).toEqual(["missing-capability"]);
+            expect(executedQueriesOf(explanation)[0].text).not.toContain('"sort"');
+        });
     });
 
     describe("updates", () => {

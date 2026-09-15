@@ -122,6 +122,14 @@ export class MongoDbPlugin implements IDbPlugin {
          */
         reportRenamedProperties(options, ["nearest", "map", "group"]);
 
+        // A sort key is a stored path, and `x => x.name.length` is not one: the server would order by
+        // `name`. Handed back, and sorted by the caller's selector.
+        for (const item of options.get("sort")) {
+            if ((item.option.value as { isDirectProperty?: boolean }).isDirectProperty === false) {
+                options.reportMissingCapability(item);
+            }
+        }
+
         try {
             options.forEach(option => {
                 if (option.target !== "database" || option.reason !== "executed") {

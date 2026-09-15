@@ -224,7 +224,8 @@ const sortableTypes: readonly SchemaTypes[] = [SchemaTypes.String, SchemaTypes.N
 export const findSortSeed = <T>(sort: QueryOption<T, "sort">["value"], indexes: SeedableIndexes): SortSeed | null => {
     const property = sort.property;
 
-    if (property == null || property.level > 0 || indexes.names.has(property.name) === false) {
+    // An index orders by the property, and a value computed from it orders differently
+    if (property == null || sort.isDirectProperty === false || property.level > 0 || indexes.names.has(property.name) === false) {
         return null;
     }
 
