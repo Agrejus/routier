@@ -59,6 +59,16 @@ export const contractRenamedSchema = s.define("contract_renamed", {
     amount: s.number().from("wire_amount"),
 }).compile();
 
+/** Dates at the root, under a `.from()` name, inside an object, and in an array. */
+export const contractDatedSchema = s.define("contract_dated", {
+    _id: s.string().key().identity(),
+    label: s.string().from("wire_label"),
+    createdDate: s.date(),
+    dueDate: s.date().from("wire_due"),
+    window: s.object({ opens: s.date() }),
+    history: s.array(s.date()),
+}).compile();
+
 class ContractDataStore extends DataStore {
     constructor(plugin: IDbPlugin) {
         super(plugin);
@@ -68,6 +78,7 @@ class ContractDataStore extends DataStore {
     rich = this.collection(contractRichSchema).proxy().create();
     composites = this.collection(contractCompositeSchema).proxy().create();
     renamed = this.collection(contractRenamedSchema).proxy().create();
+    dated = this.collection(contractDatedSchema).proxy().create();
 }
 
 type Product = { name: string; category: string; price: number };
@@ -102,6 +113,24 @@ const RICH: RichRow[] = [
     { name: "Charlie", inStock: true, createdDate: new Date("2024-03-01T00:00:00.000Z"), tags: [], note: null, dimensions: { width: 5, height: 6 } },
 ];
 
+type DatedRow = {
+    label: string;
+    createdDate: Date;
+    dueDate: Date;
+    window: { opens: Date };
+    history: Date[];
+};
+
+/**
+ * Each date property orders the rows differently, and falls in a different year for every row, so
+ * a sort, a filter or a projection that read the wrong property, or a string, gives another answer.
+ */
+const DATED: DatedRow[] = [
+    { label: "alpha", createdDate: new Date("2024-01-15T00:00:00.000Z"), dueDate: new Date("2026-04-01T00:00:00.000Z"), window: { opens: new Date("2020-07-01T00:00:00.000Z") }, history: [new Date("2022-01-01T00:00:00.000Z")] },
+    { label: "bravo", createdDate: new Date("2023-05-01T00:00:00.000Z"), dueDate: new Date("2022-03-01T00:00:00.000Z"), window: { opens: new Date("2028-11-01T00:00:00.000Z") }, history: [] },
+    { label: "charlie", createdDate: new Date("2025-09-30T00:00:00.000Z"), dueDate: new Date("2021-02-01T00:00:00.000Z"), window: { opens: new Date("2027-08-01T00:00:00.000Z") }, history: [new Date("2022-06-01T00:00:00.000Z"), new Date("2022-07-01T00:00:00.000Z")] },
+];
+
 /**
  * Rejects if the promise has not settled in time.
  *
@@ -119,6 +148,15 @@ function withTimeout<T>(promise: Promise<T>, label: string, ms: number = 2000): 
         );
     });
 }
+
+/**
+ * The date tests whose selector calls a method on a renamed property.
+ *
+ * Core resolves no property for such a selector, so `reportRenamedProperties` cannot see the renamed
+ * property it reads, and a plugin that runs lambdas over stored rows reads a key they do not have.
+ * Not a date defect: listed as `knownFailing` by those plugins until core can resolve the property.
+ */
+export const RENAMED_CALL_SELECTOR_TESTS = ["sorts by a renamed date's time", "maps a renamed date's year"] as const;
 
 export type PluginContractOptions = {
     /**
@@ -156,6 +194,14 @@ export type PluginContractOptions = {
      * stable.
      */
     readonly knownUnstable?: readonly string[];
+    /**
+     * A new plugin instance over the data `plugin` persisted, which reads it back from storage.
+     *
+     * For a plugin that keeps what it saved as objects in the process, such as a registry of
+     * collections by name, a read through the same instance never parses anything. Supplied by a
+     * plugin that persists, so the dates section runs again over rows its storage handed back.
+     */
+    readonly reopen?: (plugin: IDbPlugin) => IDbPlugin;
 };
 
 export function describePluginContract(
@@ -210,6 +256,18 @@ export function describePluginContract(
          */
         const reader = (writer: ContractDataStore) => new ContractDataStore(pluginOf.get(writer)!);
 
+        /**
+         * Stores over a reopened plugin, disposed after each test. Not destroyed: the database is the
+         * writer's, or a copy the runner owns, and PouchDB never settles a second destroy of one database.
+         */
+        const reopenedStores: ContractDataStore[] = [];
+
+        const reopened = (writer: ContractDataStore) => {
+            const created = new ContractDataStore(options.reopen!(pluginOf.get(writer)!));
+            reopenedStores.push(created);
+            return created;
+        };
+
         const seeded = async () => {
             const dataStore = store();
             await dataStore.products.addAsync(...(PRODUCTS as any));
@@ -227,6 +285,10 @@ export function describePluginContract(
                     // Destroy failures are asserted in their own section.
                 }
             }));
+
+            for (const current of reopenedStores.splice(0)) {
+                current[Symbol.dispose]();
+            }
         });
 
         /**
@@ -402,6 +464,136 @@ export function describePluginContract(
 
                 expect(found.map(r => r.name)).toEqual(["Bravo"]);
             });
+        });
+
+        /**
+         * Dates, read by a store that did not save them.
+         *
+         * The datastore serializes a Date to an ISO string, and a store that keeps JSON hands the
+         * string back. The plugin runs options over its rows before the datastore deserializes them,
+         * so it has to give the caller's lambdas Dates: a string is never greater than a Date, and has
+         * no `getTime()`. A renamed date is handed back and runs after deserialization, and has to give
+         * the same answers. Labels are renamed too, so every answer also proves rows keep their keys.
+         *
+         * Gated like rich types: a SQL engine stores a date only with a per-property serializer.
+         */
+        (options.supportsRichTypes === true ? section : describe.skip)("dates", () => {
+            const readers: [string, (writer: ContractDataStore) => ContractDataStore][] = [["a new store", reader]];
+
+            if (options.reopen != null) {
+                readers.push(["a reopened plugin", reopened]);
+            }
+
+            const iso = (value: unknown) => {
+                expect(value).toBeInstanceOf(Date);
+                return (value as Date).toISOString();
+            };
+
+            const labels = (rows: { label: string }[]) => rows.map(r => r.label);
+
+            for (const [through, read] of readers) {
+                describe(`read through ${through}`, () => {
+                    const seededDated = async () => {
+                        const writer = store();
+                        await writer.dated.addAsync(...(DATED as any));
+                        await writer.saveChangesAsync();
+                        return read(writer);
+                    };
+
+                    test("reads every date back as a Date", async () => {
+                        const found = await (await seededDated()).dated.sort(r => r.label).toArrayAsync();
+
+                        expect(labels(found)).toEqual(["alpha", "bravo", "charlie"]);
+
+                        for (let i = 0; i < DATED.length; i++) {
+                            expect(iso(found[i].createdDate)).toBe(DATED[i].createdDate.toISOString());
+                            expect(iso(found[i].dueDate)).toBe(DATED[i].dueDate.toISOString());
+                            expect(iso(found[i].window.opens)).toBe(DATED[i].window.opens.toISOString());
+                            expect(found[i].history.map(iso)).toEqual(DATED[i].history.map(d => d.toISOString()));
+                        }
+                    });
+
+                    test("filters on a date against a literal Date", async () => {
+                        const dataStore = await seededDated();
+
+                        expect(labels(await dataStore.dated.where(r => r.createdDate > new Date("2024-01-01T00:00:00.000Z")).toArrayAsync()).sort()).toEqual(["alpha", "charlie"]);
+                        expect(labels(await dataStore.dated.where(r => r.dueDate > new Date("2022-01-01T00:00:00.000Z")).toArrayAsync()).sort()).toEqual(["alpha", "bravo"]);
+                        expect(labels(await dataStore.dated.where(r => r.window.opens > new Date("2025-01-01T00:00:00.000Z")).toArrayAsync()).sort()).toEqual(["bravo", "charlie"]);
+                    });
+
+                    test("filters on a date against a parameter", async () => {
+                        const dataStore = await seededDated();
+
+                        expect(labels(await dataStore.dated.where(([r, p]) => r.createdDate > p.d, { d: new Date("2024-01-01T00:00:00.000Z") }).toArrayAsync()).sort()).toEqual(["alpha", "charlie"]);
+                        expect(labels(await dataStore.dated.where(([r, p]) => r.dueDate > p.d, { d: new Date("2022-01-01T00:00:00.000Z") }).toArrayAsync()).sort()).toEqual(["alpha", "bravo"]);
+                        expect(labels(await dataStore.dated.where(([r, p]) => r.window.opens > p.d, { d: new Date("2025-01-01T00:00:00.000Z") }).toArrayAsync()).sort()).toEqual(["bravo", "charlie"]);
+                    });
+
+                    test("sorts by a date", async () => {
+                        const dataStore = await seededDated();
+
+                        expect(labels(await dataStore.dated.sort(r => r.createdDate).toArrayAsync())).toEqual(["bravo", "alpha", "charlie"]);
+                        expect(labels(await dataStore.dated.sort(r => r.dueDate).toArrayAsync())).toEqual(["charlie", "bravo", "alpha"]);
+                        expect(labels(await dataStore.dated.sort(r => r.window.opens).toArrayAsync())).toEqual(["alpha", "charlie", "bravo"]);
+                    });
+
+                    test("sorts by a date's time", async () => {
+                        const dataStore = await seededDated();
+
+                        expect(labels(await dataStore.dated.sort(r => r.createdDate.getTime() as never).toArrayAsync())).toEqual(["bravo", "alpha", "charlie"]);
+                        expect(labels(await dataStore.dated.sort(r => r.window.opens.getTime() as never).toArrayAsync())).toEqual(["alpha", "charlie", "bravo"]);
+                    });
+
+                    /**
+                     * Apart from the plain cases, because it fails for a reason that is not about dates:
+                     * core resolves no property for a selector that calls a method, so nothing reports the
+                     * renamed property it reads, and a plugin runs it over a row without that key.
+                     */
+                    test("sorts by a renamed date's time", async () => {
+                        const dataStore = await seededDated();
+
+                        expect(labels(await dataStore.dated.sort(r => r.dueDate.getTime() as never).toArrayAsync())).toEqual(["charlie", "bravo", "alpha"]);
+                    });
+
+                    test("maps a date's year", async () => {
+                        const dataStore = await seededDated();
+
+                        expect([...await dataStore.dated.map(r => r.createdDate.getFullYear()).toArrayAsync()].sort()).toEqual([2023, 2024, 2025]);
+                        expect([...await dataStore.dated.map(r => r.window.opens.getFullYear()).toArrayAsync()].sort()).toEqual([2020, 2027, 2028]);
+                    });
+
+                    test("maps a renamed date's year", async () => {
+                        const dataStore = await seededDated();
+
+                        expect([...await dataStore.dated.map(r => r.dueDate.getFullYear()).toArrayAsync()].sort()).toEqual([2021, 2022, 2026]);
+                    });
+
+                    test("takes the min and max of a date", async () => {
+                        const dataStore = await seededDated();
+
+                        expect(iso(await dataStore.dated.minAsync(r => r.createdDate as never))).toBe("2023-05-01T00:00:00.000Z");
+                        expect(iso(await dataStore.dated.maxAsync(r => r.createdDate as never))).toBe("2025-09-30T00:00:00.000Z");
+                        expect(iso(await dataStore.dated.minAsync(r => r.dueDate as never))).toBe("2021-02-01T00:00:00.000Z");
+                        expect(iso(await dataStore.dated.maxAsync(r => r.dueDate as never))).toBe("2026-04-01T00:00:00.000Z");
+                    });
+
+                    test("groups by a date", async () => {
+                        const dataStore = await seededDated();
+
+                        // A group key is the selected value as an object key, so a Date is keyed by its
+                        // `toString()`, the same as grouping the entities in JavaScript
+                        const expected = (select: (row: DatedRow) => Date) => DATED.map(row => [String(select(row)), [row.label]]).sort();
+
+                        // Cast because a group key is typed as a string or a number
+                        const byCreated = await dataStore.dated.toGroupAsync(r => r.createdDate as never) as unknown as Record<string, DatedRow[]>;
+                        const byDue = await dataStore.dated.toGroupAsync(r => r.dueDate as never) as unknown as Record<string, DatedRow[]>;
+
+                        expect(Object.entries(byCreated).map(([key, rows]) => [key, labels(rows)]).sort()).toEqual(expected(row => row.createdDate));
+                        expect(Object.entries(byDue).map(([key, rows]) => [key, labels(rows)]).sort()).toEqual(expected(row => row.dueDate));
+                        expect(Object.values(byCreated).flat().every(row => row.createdDate instanceof Date && row.dueDate instanceof Date)).toBe(true);
+                    });
+                });
+            }
         });
 
         section("identity generation", () => {

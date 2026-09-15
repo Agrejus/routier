@@ -1,13 +1,15 @@
-import { describePluginContract } from '@routier/test-utils';
+import { describePluginContract, RENAMED_CALL_SELECTOR_TESTS } from '@routier/test-utils';
 import { uuidv4 } from '@routier/core';
 import { PouchDbPlugin } from '../PouchDbPlugin';
 
 /**
- * Only the renamed-property section for now. The rest of the contract has not been run against
- * PouchDB, and running it here would make this suite a record of divergences rather than of the
- * renames it was added for.
+ * Only the renamed-property and date sections for now. The rest of the contract has not been run
+ * against PouchDB, and running it here would make this suite a record of divergences rather than of
+ * what these sections were added for.
  */
 describePluginContract('pouchdb', () => new PouchDbPlugin(uuidv4()), {
+    supportsRichTypes: true,
+    knownFailing: RENAMED_CALL_SELECTOR_TESTS,
     skipSections: [
         "reports what it executed",
         "add and query round-trip",
@@ -20,4 +22,6 @@ describePluginContract('pouchdb', () => new PouchDbPlugin(uuidv4()), {
         "destroy",
         "filter parity with JavaScript",
     ],
+    // The same database name opens the documents PouchDB persisted, through a new handle
+    reopen: plugin => new PouchDbPlugin(plugin.databaseName!),
 });

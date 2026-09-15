@@ -167,6 +167,21 @@ describe('a plugin with no database', () => {
         });
 
         /**
+         * A projection or group is defined by a closure, so it runs on this side, over the rows the
+         * server sent. Those crossed as JSON, where a date is a string.
+         */
+        it('runs a projection and a group it keeps over dates, as Dates', async () => {
+            const { client } = await seeded(new MemoryPlugin(uuidv4()));
+
+            const years = await client.teams.map(t => t.founded.getUTCFullYear()).toArrayAsync();
+            // Cast because a group key is typed as a string or a number
+            const groups = await client.teams.toGroupAsync(t => t.founded.getUTCFullYear() as never);
+
+            expect([...years].sort()).toEqual([2001, 2002, 2003]);
+            expect(Object.keys(groups).sort()).toEqual(['2001', '2002', '2003']);
+        });
+
+        /**
          * Kept on this side. The handler returns its plugin's rows as they are, so an option the far
          * plugin handed back would come home unapplied — the memory server here would do exactly that.
          */

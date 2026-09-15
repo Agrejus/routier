@@ -214,6 +214,57 @@ describe('HttpDbPlugin', () => {
         });
     });
 
+    /**
+     * A response is JSON, so a date arrives as a string, and the options this plugin runs itself
+     * compare Dates. Keys stay as the server sent them: the datastore deserializes the rows.
+     */
+    it('compares dates in a response as Dates, and keeps renamed keys', (done) => {
+        const dated = s.define('httpDated', {
+            id: s.string().key().identity(),
+            label: s.string().from('wire_label'),
+            createdDate: s.date(),
+        }).compile();
+        installFetchMock([{
+            status: 200,
+            body: [
+                { id: 'a', wire_label: 'old', createdDate: '2020-01-01T00:00:00.000Z' },
+                { id: 'b', wire_label: 'new', createdDate: '2025-01-01T00:00:00.000Z' },
+            ],
+        }]);
+
+        const filter = ([x, p]: [any, { d: Date }]) => x.createdDate > p.d;
+        const params = { d: new Date('2024-01-01T00:00:00.000Z') };
+        const options = new QueryOptionsCollection<any>();
+        options.add('filter', { filter, expression: toExpression(dated as never, filter as never, params), params } as never);
+
+        const schemas = new SchemaCollection();
+        schemas.set(dated.id, dated as any);
+
+        const event = {
+            id: uuid(8),
+            schemas,
+            source: 'test',
+            action: 'query',
+            explain: false,
+            executedQueries: [],
+            operation: new Query(options, dated as any),
+        } as unknown as DbPluginQueryEvent<Record<string, unknown>, unknown>;
+
+        plugin.query(event, (result) => {
+            if (result.ok !== Result.SUCCESS) {
+                done(result.error);
+                return;
+            }
+            {
+                const rows: Record<string, unknown>[] = [];
+                result.data.forEach((item: unknown) => rows.push(item as Record<string, unknown>));
+                expect(rows.map(row => row.wire_label)).toEqual(['new']);
+                expect(rows[0].createdDate).toEqual(new Date('2025-01-01T00:00:00.000Z'));
+            }
+            done();
+        });
+    });
+
     it('POSTs adds/updates/removes and reports them in the result', (done) => {
         const calls = installFetchMock([{ status: 200, body: {} }]);
         const entity = { id: 'n1', name: 'New' };

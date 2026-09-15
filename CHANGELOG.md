@@ -31,6 +31,10 @@ capability report that already exists. `IDbPlugin` is unchanged.
 
 ### Added — @routier/core
 
+- `getStorageDateReviver(schema)`: for a plugin that runs the caller's lambdas over records a JSON
+  store handed back, turns ISO strings back into Dates at the root, in objects and in arrays, by
+  storage path and in place. Keys are not moved, and a property with a custom serializer,
+  deserializer or transform is left alone. Built once per schema, `null` for a schema with no dates.
 - `reportRenamedProperties(options, names?)`: reports every filter, sort, `nearest`, `map` and `group`
   over a property with renamed segments, for a plugin that evaluates options over rows as stored. A
   `map` is reported when any field it selects is renamed, and a `group` when its key is or any field
@@ -69,6 +73,16 @@ capability report that already exists. `IDbPlugin` is unchanged.
   `min`/`max` found no items and a group had one `undefined` key. PouchDB, which deserialized before
   running options, only lost renamed values inside a group's members. The defect predates #43.
 
+### Fixed — @routier/core (memory, file-system, browser-storage), @routier/dexie-plugin, @routier/replication-plugin
+
+- Options run by the plugin see Dates. Every one of these ran the caller's lambdas over dates as the
+  ISO strings the datastore serialized them to, so a date filter against a Date matched nothing and
+  `sort(r => r.date.getTime())` or `map(r => r.date.getFullYear())` threw. The ephemeral plugins
+  already held root dates as Dates, and now hold dates in objects and arrays the same way, including
+  what file-system and browser-storage read back from JSON. Dexie revives rows before its predicates
+  and the translator run. `HttpDbPlugin` revives the rows a response carries, and
+  `HttpTransportDbPlugin` the rows it finishes locally. Rows keep their storage keys.
+
 ### Fixed — @routier/pouchdb-plugin
 
 - A property declared with `.from()` reads back. Documents were always stored under the `from`
@@ -76,6 +90,11 @@ capability report that already exists. `IDbPlugin` is unchanged.
   them again by storage name, so every read from a store that was not still tracking the rows
   returned the property as `undefined` (and a nested object under a renamed key threw). Rows are now
   handed back as stored. A projection or aggregate is unchanged. Existing data needs no migration.
+- The translator no longer deserializes documents before running options. It turns dates back into
+  Dates, the one thing PouchDB's JSON changed, at their storage paths, and leaves every key where it
+  is stored. The view predicate sees Dates too, so `where(([r, p]) => r.createdDate > p.d)` returns
+  the matching rows; it returned none. A custom `.serialize()`/`.deserialize()` property now reaches
+  the options as stored, as it does on every other plugin that runs options over its rows.
 - An index view on a renamed property reads its `from` name. It used to read the in-memory name and
   emit nothing. The view has a new name, so a database with the old design document gets it
   replaced on its next indexed read.

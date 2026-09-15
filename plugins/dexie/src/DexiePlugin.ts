@@ -4,7 +4,7 @@ import { applySeed, applySort, describeSeed, describeSort, findIndexSeed, findSo
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, IDbPlugin, ITranslatedValue, joinInPlugin, QueryOption, QueryOptionName, reportRenamedProperties, TranslatedSingleValue } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
 import { BulkPersistResult, SchemaPersistChanges } from '@routier/core/collections';
-import { CompiledSchema, InferCreateType, PropertyInfo, SchemaId, SchemaTypes } from '@routier/core/schema';
+import { CompiledSchema, getStorageDateReviver, InferCreateType, PropertyInfo, SchemaId, SchemaTypes } from '@routier/core/schema';
 import { UnknownRecord, uuidv4 } from '@routier/core/utilities';
 import { ParamsFilter } from '@routier/core/expressions';
 import { DexieTranslator } from './DexieTranslator';
@@ -365,12 +365,24 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                 ? applySeed(table, indexSeed)
                 : [sortSeed != null ? applySort(table, sortSeed) : table.toCollection()];
 
+            // IndexedDB holds a date as the ISO string the datastore serialized it to, and the
+            // predicates compare Dates. Rows are revived before a predicate sees them, and again
+            // before the translator does, which is a no-op for a row already revived.
+            const reviveDates = getStorageDateReviver(event.operation.schema);
+
             for (const filter of predicateFilters) {
                 if (filter.value.params == null) {
-                    collections = collections.map(collection => collection.filter(filter.value.filter));
+                    const selector = filter.value.filter;
+                    collections = collections.map(collection => collection.filter(item => {
+                        reviveDates?.(item);
+                        return selector(item);
+                    }));
                 } else {
                     const selector = filter.value.filter as ParamsFilter<unknown, {}>;
-                    collections = collections.map(collection => collection.filter(item => selector([item, filter.value.params])));
+                    collections = collections.map(collection => collection.filter(item => {
+                        reviveDates?.(item);
+                        return selector([item, filter.value.params]);
+                    }));
                 }
             }
 
@@ -476,6 +488,12 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                     ...(canPushDownWindow && options.has("take") ? ["limit(…)"] : []),
                     ...(translator.pushedDown.distinct ? ["distinct()"] : [])
                 ]);
+
+                if (reviveDates != null) {
+                    for (let i = 0, length = data.length; i < length; i++) {
+                        reviveDates(data[i]);
+                    }
+                }
 
                 const result = translator.translate(data);
 

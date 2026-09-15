@@ -1,5 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
-import { describePluginContract, describeVectorSearch } from '@routier/test-utils';
+import { describePluginContract, describeVectorSearch, RENAMED_CALL_SELECTOR_TESTS } from '@routier/test-utils';
 import { uuidv4 } from '@routier/core';
 import { EphemeralDataPlugin } from '@routier/core/plugins';
 import type { DbPluginEvent, IDbPlugin, DbPluginQueryEvent, DbPluginBulkPersistEvent, ITranslatedValue } from '@routier/core/plugins';
@@ -179,13 +179,13 @@ const inMemoryStore = (): KeyValueStore => {
 describePluginContract(
     'example: key-value backend',
     () => new KeyValuePlugin(inMemoryStore(), `example-${uuidv4()}`),
-    { supportsRichTypes: true, knownFailing: [] }
+    { supportsRichTypes: true, knownFailing: RENAMED_CALL_SELECTOR_TESTS }
 );
 
 describePluginContract(
     'example: counting wrapper',
     () => new CountingDbPlugin(new KeyValuePlugin(inMemoryStore(), `wrapped-${uuidv4()}`)),
-    { supportsRichTypes: true, knownFailing: [] }
+    { supportsRichTypes: true, knownFailing: RENAMED_CALL_SELECTOR_TESTS }
 );
 
 /**

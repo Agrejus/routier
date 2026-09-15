@@ -1,4 +1,4 @@
-import { CompiledSchema, IdType, InferType, PropertyInfo, SchemaTypes } from "../schema";
+import { CompiledSchema, getStorageDateReviver, IdType, InferType, PropertyInfo, SchemaTypes } from "../schema";
 import { CallbackResult, Result } from "../results";
 import { uuidv4 } from "../utilities";
 import { IdSet } from "./IdSet";
@@ -77,37 +77,17 @@ export class MemoryDataCollection {
         throw new Error(`Id Property '${property.name}' must be string or number, found '${property.type}'`)
     }
 
-    private _dateColumns?: string[];
-
-    /** Date columns, by the name a stored record uses. Nested dates live inside a JSON column. */
-    private get dateColumns(): string[] {
-        if (this._dateColumns == null) {
-            this._dateColumns = this.schema.properties
-                .filter(property => property.type === SchemaTypes.Date
-                    && property.getAssignmentPath().includes(".") === false)
-                .map(property => property.getResolvedName());
-        }
-
-        return this._dateColumns;
-    }
-
     /**
      * The record this collection keeps.
      *
      * A copy, so a caller holding the entity cannot write into the store afterwards. Dates are held
-     * as Dates: a predicate compares a Date, and a stored ISO string never matches one.
+     * as Dates, at the root, in objects and in arrays: a predicate compares a Date, and a stored ISO
+     * string never matches one. A durable subclass hydrates parsed JSON through here too.
      */
     private toStored(item: Record<string, unknown>): Record<string, unknown> {
-        const columns = this.dateColumns;
         const stored = { ...item };
 
-        for (let i = 0, length = columns.length; i < length; i++) {
-            const value = stored[columns[i]];
-
-            if (typeof value === "string") {
-                stored[columns[i]] = new Date(value);
-            }
-        }
+        getStorageDateReviver(this.schema)?.(stored);
 
         return stored;
     }
