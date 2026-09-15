@@ -19,8 +19,9 @@ import { WorkerChannel } from './wasmChannel';
  * cannot persist anything. SQLite's own documentation puts it plainly — only the worker
  * versions can use OPFS. See `wasmWorker.ts`.
  *
- * `@sqlite.org/sqlite-wasm` is an optional peer dependency: a Node application should not
- * download a WASM binary it will never load. Install it in browser projects.
+ * `@sqlite.org/sqlite-wasm` is not declared as a dependency of any kind: a Node application
+ * should not download a WASM binary it will never load, and every upstream release is
+ * prerelease-tagged, so no peer range could match one. Install it in browser projects.
  *
  * ## What a consumer has to do
  *

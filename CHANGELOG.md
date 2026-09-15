@@ -3,6 +3,23 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## SQLite installs again, and tests load the build they can run (2026-09-15)
+
+### Fixed — @routier/sqlite-plugin 0.5.2
+
+- `@sqlite.org/sqlite-wasm` is no longer a peer dependency (#39). Every published release is
+  prerelease-tagged (`3.53.4-build1`), and semver ranges never match a prerelease, so the
+  declared `>=3.46.0` matched nothing and npm failed with `ETARGET`. The browser driver still
+  needs it: install an exact build yourself. The bundle keeps it external, so the worker imports
+  the package you installed rather than an inlined copy.
+- A worker that fails to load now also names the missing package, since an uninstalled
+  `@sqlite.org/sqlite-wasm` fails the same way an unemitted worker does.
+- The README documents which build Vitest and Jest load under jsdom and how to choose (#44).
+  Vitest gets the Node build, which is the right one for logic tests; Jest's jsdom environment
+  gets the browser build and fails with `Worker is not defined` unless
+  `customExportConditions` asks for `node`. OPFS and the worker need a real browser.
+- The manifest describes the SQLite plugin instead of calling itself a Dexie plugin.
+
 ## Modifiers inside nested objects survive inference (unreleased)
 
 ### Fixed — @routier/core 0.7.1

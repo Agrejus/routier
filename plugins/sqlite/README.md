@@ -18,7 +18,8 @@ class AppStore extends DataStore {
 ```
 
 That code runs in both places. The package declares `browser` and `node` conditions, so a
-bundler resolves the WebAssembly build and Node resolves `node:sqlite`.
+bundler targeting the web resolves the WebAssembly build and Node resolves `node:sqlite`. Test
+runners pick one or the other by their own rules — see [Tests](#tests-vitest-jest).
 
 The plugin builds its SQL with `@routier/sql-plugin-core`, which it shares with the PostgreSQL
 and MySQL plugins.
@@ -34,8 +35,9 @@ The plugin talks to SQLite through a small driver interface — `all`, `run`, `c
 | `wasmDriver()` (default in a browser) | any modern browser | OPFS | `@sqlite.org/sqlite-wasm` |
 | `sqlite3Driver()` | Node 18+ | a file | `sqlite3` |
 
-Both optional engines are optional **peer** dependencies: a Node application does not download
-a WASM binary, and a web application does not build a native module.
+Neither optional engine is installed for you: a Node application does not download a WASM
+binary, and a web application does not build a native module. `sqlite3` is an optional **peer**
+dependency. `@sqlite.org/sqlite-wasm` is not declared at all — see [The browser](#the-browser).
 
 ### Node 18 or 20
 
@@ -54,8 +56,14 @@ new SqliteDbPlugin("app.sqlite", { driver: sqlite3Driver() });
 Install the engine, and let your bundler emit the worker and serve the `.wasm` asset:
 
 ```
-npm install @sqlite.org/sqlite-wasm
+npm install @sqlite.org/sqlite-wasm@3.53.0-build1
 ```
+
+`@sqlite.org/sqlite-wasm` is **required** by the browser driver but deliberately **not** declared
+as a peer dependency. Every upstream release is prerelease-tagged (`3.53.0-build1`,
+`3.53.4-build1`), and semver ranges never match a prerelease, so any declared range made npm
+fail with `ETARGET`. Install an exact build. This release is tested against `3.53.0-build1`.
+Without the package, the first query fails with "The SQLite worker failed to load".
 
 Two things are worth knowing.
 
@@ -75,6 +83,39 @@ For a database that should not survive a reload:
 import { SqliteDbPlugin, wasmDriver } from "@routier/sqlite-plugin";
 
 new SqliteDbPlugin("app.sqlite", { driver: wasmDriver({ storage: "memory" }) });
+```
+
+### Tests (Vitest, Jest)
+
+A test runner does not choose a build the way a bundler does.
+
+- **Vitest** externalises `node_modules` and loads them with Node's resolver, which matches
+  `node`, not `browser`. Under `environment: "jsdom"` you get the **Node** build.
+- **Jest** with `jest-environment-jsdom` enables the `browser` condition by default, so you get
+  the **browser** build — which imports fine and then fails on the first open with
+  `Worker is not defined`. jsdom has no `Worker` and no OPFS, and even `storage: "memory"` runs
+  in the worker.
+
+For tests that exercise your data logic, the Node build is the right one: the runner is Node
+22.5+, `node:sqlite` is loaded lazily, and it is the same SQL the browser runs. In Jest, ask for
+it explicitly:
+
+```js
+// jest.config.js
+module.exports = {
+  testEnvironment: "jsdom",
+  testEnvironmentOptions: { customExportConditions: ["node", "node-addons"] },
+};
+```
+
+To cover OPFS and the WASM worker themselves, run in a real browser — Vitest browser mode or
+Playwright. jsdom cannot.
+
+To see which build loaded, list the exports: the browser build has `wasmDriver`, the Node build
+has `nodeSqliteDriver`.
+
+```ts
+console.log(Object.keys(await import("@routier/sqlite-plugin")));
 ```
 
 ## Contracts

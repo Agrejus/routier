@@ -59,7 +59,8 @@ export class WorkerChannel {
             // forever. Fail them all with something that names the cause.
             const error = new Error(
                 `The SQLite worker failed to load (${event.message ?? 'no message'}). ` +
-                'Check that your bundler emitted it and that the .wasm asset is served.'
+                'Check that your bundler emitted it, that the .wasm asset is served, and that ' +
+                '@sqlite.org/sqlite-wasm is installed (npm install @sqlite.org/sqlite-wasm).'
             );
 
             for (const [, waiting] of this.pending) {

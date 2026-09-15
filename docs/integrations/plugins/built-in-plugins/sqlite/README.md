@@ -44,6 +44,12 @@ new SqliteDbPlugin("app.sqlite", { driver: sqlite3Driver() });
 
 Install `@sqlite.org/sqlite-wasm`; the default browser entry uses a worker and OPFS. It uses `opfs-sahpool`, so COOP/COEP headers are not required. For non-durable browser data, pass `wasmDriver({ storage: "memory" })`.
 
+`@sqlite.org/sqlite-wasm` is required for the browser driver but is not declared as a peer dependency: every upstream release is prerelease-tagged, so no semver range can match it. Install an exact build, for example `npm install @sqlite.org/sqlite-wasm@3.53.0-build1` (the version the plugin is tested against).
+
+### Testing
+
+Test runners resolve export conditions differently from bundlers. Vitest loads `node_modules` with Node's resolver, so even `environment: "jsdom"` gets the Node build — which is the right one for logic tests. Jest's `jest-environment-jsdom` enables the `browser` condition and gets the WASM build, which fails with `Worker is not defined`; set `testEnvironmentOptions: { customExportConditions: ["node", "node-addons"] }` to get the Node build. Test OPFS and the worker in a real browser (Vitest browser mode or Playwright). `Object.keys(await import("@routier/sqlite-plugin"))` contains `wasmDriver` in the browser build and `nodeSqliteDriver` in the Node build.
+
 ### Turso/libSQL
 
 ```ts
