@@ -137,6 +137,12 @@ new PGliteDbPlugin("memory://app"); // discarded when the process exits
 
 Useful for tests: it is the strict engine, with no container to start.
 
+Which build a test runner loads is its own decision. Vitest loads `node_modules` through Node's
+resolver, so it gets this build even under `environment: "jsdom"`. Jest with
+`jest-environment-jsdom` enables the `browser` condition and gets the worker build, which jsdom
+cannot run; set `testEnvironmentOptions: { customExportConditions: ["node", "node-addons"] }` to
+get this one. Cover the browser build in a real browser — Vitest browser mode or Playwright.
+
 ## pgvector
 
 `s.vector()` and `.nearest()` work either way. Without the extension the embedding is stored as

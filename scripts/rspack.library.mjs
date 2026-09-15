@@ -32,16 +32,18 @@ const NODE_BUILTINS = [
  * Every package name the manifest says the consumer supplies.
  *
  * Matched on the package name and on any subpath, so `@routier/core/schema` is external for
- * the same reason `@routier/core` is.
+ * the same reason `@routier/core` is. `extra` covers a package the consumer supplies that the
+ * manifest cannot declare — see the `externals` option below.
  */
-const externalPackages = (manifest) => [
+const externalPackages = (manifest, extra) => [
     ...Object.keys(manifest.dependencies ?? {}),
     ...Object.keys(manifest.peerDependencies ?? {}),
+    ...extra,
     ...NODE_BUILTINS,
 ];
 
-const externalsFor = (manifest) => {
-    const names = externalPackages(manifest);
+const externalsFor = (manifest, extra) => {
+    const names = externalPackages(manifest, extra);
 
     return ({ request }, callback) => {
         // Anything `node:`-prefixed is a built-in by definition, including ones not in the
@@ -88,11 +90,13 @@ const swcRule = {
  *                                          exist. Both targets externalise the same modules.
  * @param {Record<string,string>} [options.entry]  Entry map for packages that publish
  *                                          subpaths. `@routier/core` has thirteen.
+ * @param {string[]} [options.externals]  Packages to keep external that are in neither
+ *                                          `dependencies` nor `peerDependencies`.
  */
-export function libraryConfig({ dirname, target = "web", entry = { index: "./src/index.ts" } }) {
+export function libraryConfig({ dirname, target = "web", entry = { index: "./src/index.ts" }, externals: extraExternals = [] }) {
     const require = createRequire(import.meta.url);
     const manifest = require(resolve(dirname, "package.json"));
-    const externals = externalsFor(manifest);
+    const externals = externalsFor(manifest, extraExternals);
 
     const shared = {
         entry,

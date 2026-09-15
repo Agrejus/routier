@@ -8,6 +8,10 @@ export default libraryConfig({
     // how Rspack resolves what it bundles, and every engine here is external, so nothing
     // Node-specific reaches the browser bundle. The browser entry imports no Node built-in.
     target: "node",
+    // Not a peer dependency — every upstream release is prerelease-tagged, so no semver range
+    // matches one — but still the consumer's to install, and never ours to bundle: inlined, its
+    // loader looks for `sqlite3.wasm` next to our worker instead of next to its own module.
+    externals: ["@sqlite.org/sqlite-wasm"],
     entry: {
         index: "./src/index.ts",
         "index.browser": "./src/index.browser.ts",
