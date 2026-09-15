@@ -1,9 +1,7 @@
-import { CodeBuilder, ContainerBlock, IfBuilder, ObjectBuilder, SlotBlock } from '..';
+import { CodeBuilder, IfBuilder, ObjectBuilder, SlotBlock } from '..';
 import { PropertyInfo } from '../../schema/PropertyInfo';
 import { SlotPath } from '../SlotPath';
 import { SchemaError } from '../../errors/SchemaError';
-import { uuid } from '../../utilities/uuid';
-import { countWordOccurance } from '../utils';
 
 export interface IHandler {
     setNext(handler: IHandler): IHandler;
@@ -198,42 +196,16 @@ export abstract class PropertyInfoHandler implements IHandler {
         enriched.property(`${property.name}: ${entitySelectorPath}`);
     }
 
-    protected toNamedFunction(stringifiedFunction: string, parent: ContainerBlock) {
-        const name = `_${uuid()}`;
-
-        const builder = parent.function(name);
-        const occurences = countWordOccurance(stringifiedFunction, "=>")
-
-        if (occurences > 0) {
-
-            const split = stringifiedFunction.split("=>").map(w => w.trim());
-            const parameters = split[0].replace(/\(|\)/g, "").split(",");
-            let body = split[1];
-
-            if (occurences > 1) {
-                // we have a function that returns a function
-                const index = stringifiedFunction.indexOf("=>");
-                body = stringifiedFunction.slice(index + 2, stringifiedFunction.length)
-            }
-
-            if (body.startsWith("{") === true && body.endsWith("}")) {
-
-                // Remove brackets, wrapping function will have them
-                builder.appendBody(body.slice(1, body.length - 1));
-
-                return {
-                    builder,
-                    parameters
-                };
-            }
-
-            builder.appendBody(`return ${body};`);
-            return {
-                builder,
-                parameters
-            }
-        }
-
-        throw new Error("Only arrow functions are allowed in the schema definition:  function () {}  --->  () => {}");
+    /**
+     * Binds a function the schema author supplied (a default, a computed, a serializer) into
+     * the generated code and returns the expression that calls it with `args`.
+     *
+     * The function is passed in by value rather than pasted in as source text. Pasted source
+     * loses the scope it was written in, so a default that called an imported helper threw, and
+     * it had to be parsed back apart, which only worked for arrows: a bundler that lowers arrows
+     * to `function` expressions, or renames what they refer to, broke every schema (#46).
+     */
+    protected emitBoundCall(target: { bind(value: unknown): string }, fn: Function, args: string[]) {
+        return `${target.bind(fn)}(${args.join(", ")})`;
     }
 }

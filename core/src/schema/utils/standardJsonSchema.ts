@@ -708,8 +708,8 @@ export function rehydrateSchemaFromJsonSchema(
                             ? new Function(...params, functionBody)
                             : new Function(functionBody);
 
-                        // Wrap it so toString() returns the original arrow function string
-                        // This is needed because the schema system validates that functions are arrow functions
+                        // Wrap it so toString() returns the original arrow function string, so
+                        // serializing the rehydrated schema writes the same functionSource again
                         recreatedFn = Object.assign(fn, {
                             toString: () => functionSource
                         });
@@ -718,7 +718,7 @@ export function rehydrateSchemaFromJsonSchema(
                         recreatedFn = () => {
                             throw new Error(`Cannot recreate computed property ${computedProp.name}: ${e instanceof Error ? e.message : 'unknown error'}`);
                         };
-                        // Ensure toString returns an arrow function for validation
+                        // Keep functionSource re-parseable if this schema is serialized again
                         Object.assign(recreatedFn, {
                             toString: () => `() => { throw new Error("Cannot recreate computed property ${computedProp.name}"); }`
                         });

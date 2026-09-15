@@ -3,6 +3,24 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## Schemas compile in minified and downleveled builds (2026-09-15)
+
+### Fixed — @routier/core 0.7.1
+
+- A production build that minifies or lowers arrow functions can compile schemas again
+  ([#40](https://github.com/Agrejus/routier/issues/40),
+  [#46](https://github.com/Agrejus/routier/issues/46)). Minified builds threw
+  `createChangeTracker is not defined` on the first schema compiled, and builds that lower arrows
+  threw "Only arrow functions are allowed in the schema definition". Generated schema code no
+  longer refers to anything by its source name or embeds a function's source text: the change
+  tracker and every function a schema supplies are passed into the generated code as values.
+- Schema callbacks — `.default()`, `computed`, `function`, `.serialize()`, `.deserialize()` — may
+  be any function, not only an arrow, and may call helpers they import. A default that called an
+  imported function used to throw `ReferenceError` in an ES module even without minification,
+  because the pasted source had lost the scope it was written in.
+- The example apps no longer set `build.minify: false`. The published `dist` stays unminified by
+  choice.
+
 ## SQLite installs again, and tests load the build they can run (2026-09-15)
 
 ### Fixed — @routier/sqlite-plugin 0.5.2

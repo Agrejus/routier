@@ -1,12 +1,5 @@
 import { describe, expect, it } from '@jest/globals';
 import { CodeBuilder, SlotBlock } from './blocks';
-import { PropertyInfoHandler } from './handlers/types';
-
-class TestPropertyInfoHandler extends PropertyInfoHandler {
-    parseFunction(source: string, parent: SlotBlock) {
-        return this.toNamedFunction(source, parent);
-    }
-}
 
 describe("codegen blocks", () => {
     it("can build and retrieve nested slot paths", () => {
@@ -32,32 +25,38 @@ describe("codegen blocks", () => {
     });
 });
 
-describe("PropertyInfoHandler.toNamedFunction", () => {
-    it("parses single-arrow implicit return", () => {
-        const handler = new TestPropertyInfoHandler();
-        const parent = new CodeBuilder().slot("declarations");
-        const parsed = handler.parseFunction("(x) => x + 1", parent);
+describe("binding values into generated code", () => {
+    it("CodeBuilder.bind returns distinct names and records each value", () => {
+        const root = new CodeBuilder();
+        const first = () => 1;
+        const second = { a: 1 };
 
-        expect(parsed.parameters).toEqual(["x"]);
-        expect(parsed.builder.toString()).toContain("return x + 1;");
+        const firstName = root.bind(first);
+        const secondName = root.bind(second);
+        const namedName = root.bind("x", "named");
+
+        expect(new Set([firstName, secondName, namedName]).size).toBe(3);
+        expect(namedName).toBe("named");
+        expect(root.getBindings()).toEqual([
+            { name: firstName, value: first },
+            { name: secondName, value: second },
+            { name: "named", value: "x" },
+        ]);
     });
 
-    it("parses arrow function with block body", () => {
-        const handler = new TestPropertyInfoHandler();
-        const parent = new CodeBuilder().slot("declarations");
-        const parsed = handler.parseFunction("(x) => { const y = x + 1; return y; }", parent);
+    it("FunctionFactoryBuilder.bind adds a factory parameter carrying the value", () => {
+        const root = new CodeBuilder();
+        const factory = root.factory("factory", { name: "factory" }).parameters({ name: "collectionName", value: "c" });
+        const fn = function (value: number) { return value * 2; };
 
-        expect(parsed.parameters).toEqual(["x"]);
-        expect(parsed.builder.toString()).toContain("const y = x + 1;");
-        expect(parsed.builder.toString()).toContain("return y;");
-    });
+        const name = factory.bind(fn);
+        factory.appendBody(`return ${name}(21);`);
 
-    it("throws when source is not an arrow function", () => {
-        const handler = new TestPropertyInfoHandler();
-        const parent = new CodeBuilder().slot("declarations");
+        const parameters = factory.getParameters();
+        expect(parameters).toEqual([{ name: "collectionName", value: "c" }, { name, value: fn }]);
 
-        expect(() => handler.parseFunction("function (x) { return x; }", parent)).toThrow(
-            "Only arrow functions are allowed in the schema definition"
-        );
+        // Compiled the way SchemaDefinition compiles its factories
+        const compiled = Function(`return ${root.toString()}`)();
+        expect(compiled(...parameters.map(w => w.value))).toBe(42);
     });
 });

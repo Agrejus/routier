@@ -8,22 +8,14 @@ export class EnrichmentComputedValueHandler extends PropertyInfoHandler {
 
         if (property.functionBody != null && property.type === SchemaTypes.Computed) {
 
-            const parameterNames: string[] = ["enriched", "collectionName"];
+            const factory = builder.get<FunctionFactoryBuilder>("factory");
+            const args: string[] = ["enriched", "collectionName"];
 
             if (property.injected != null) {
-
-                const factory = builder.get<FunctionFactoryBuilder>("factory");
-                const parameter = factory.createParameter(property.injected);
-                factory.parameters(parameter);
-
-                parameterNames.push(parameter.name);
+                args.push(factory.bind(property.injected));
             }
 
-            const declarationsSlot = builder.get<SlotBlock>("factory.function.declarations");
-            const defaultFunctionWithParameters = this.toNamedFunction(property.functionBody.toString(), declarationsSlot);
-
-            defaultFunctionWithParameters.builder.parameters(...parameterNames.map((w, i) => ({ name: defaultFunctionWithParameters.parameters[i], callName: w })));
-
+            const call = this.emitBoundCall(factory, property.functionBody, args);
 
             // Compute-once semantics for computed keys/identities: an existing value is
             // carried into the enriched literal and never recomputed — a key must stay
@@ -36,7 +28,7 @@ export class EnrichmentComputedValueHandler extends PropertyInfoHandler {
 
             const ifsSlot = builder.get<SlotBlock>("factory.function.ifs");
             const enrichedAssignmentPath = property.getAssignmentPath({ parent: "enriched" });
-            ifsSlot.if(`${enrichedAssignmentPath} == null`).appendBody(`${enrichedAssignmentPath} = ${defaultFunctionWithParameters.builder.toCallable()}`);
+            ifsSlot.if(`${enrichedAssignmentPath} == null`).appendBody(`${enrichedAssignmentPath} = ${call}`);
 
             return builder;
         }

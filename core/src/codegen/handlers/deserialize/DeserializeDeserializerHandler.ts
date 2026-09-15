@@ -9,7 +9,6 @@ export class DeserializeDeserializerHandler extends PropertyInfoHandler {
 
         if (property.valueDeserializer != null) {
             let objectBuilder = builder.getOrDefault<ObjectBuilder>("result.variable.object");
-            const assignmentBuilder = builder.getOrDefault<SlotBlock>("functions");
             // Read the incoming record by `from` (storage) name
             const entitySelectorPath = property.getSelectrorPath({ parent: "unserialized", useFromPropertyName: true });
 
@@ -19,17 +18,16 @@ export class DeserializeDeserializerHandler extends PropertyInfoHandler {
                     .object({ name: "object" });
             }
 
-            const defaultFunctionWithParameters = this.toNamedFunction(property.valueDeserializer.toString(), assignmentBuilder);
-            defaultFunctionWithParameters.builder.parameters(...defaultFunctionWithParameters.parameters.map((_, i) => ({ name: defaultFunctionWithParameters.parameters[i], callName: entitySelectorPath })));
+            const call = this.emitBoundCall(builder, property.valueDeserializer, [entitySelectorPath]);
 
             if (property.parent == null) {
-                objectBuilder.property(`${property.name}: ${defaultFunctionWithParameters.builder.toCallable()}`);
+                objectBuilder.property(`${property.name}: ${call}`);
                 return builder;
             }
 
             const slotPath = new SlotPath(...property.getParentPathArray());
             objectBuilder = objectBuilder.get<ObjectBuilder>(slotPath.get());
-            objectBuilder.property(`${property.name}: ${defaultFunctionWithParameters.builder.toCallable()}`);
+            objectBuilder.property(`${property.name}: ${call}`);
             return builder;
         }
 

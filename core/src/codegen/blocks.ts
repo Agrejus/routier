@@ -3,7 +3,7 @@ import { CreateBlockOptions } from "./types";
 
 type Line = string | Block;
 
-type Param = { name: string, value: any };
+export type Param = { name: string, value: any };
 type GenericParam = { name: string, callName: string };
 
 
@@ -464,6 +464,16 @@ export class FunctionFactoryBuilder extends ContainerBlock {
         return this;
     }
 
+    /**
+     * Adds a factory parameter carrying `value` and returns its name, for generated code to
+     * refer to. See `CodeBuilder.bind` for why values travel this way.
+     */
+    bind(value: unknown): string {
+        const parameter = this.createParameter(value);
+        this._params.push(parameter);
+        return parameter.name;
+    }
+
     return() {
         this._return = true;
         return this;
@@ -622,6 +632,25 @@ export class IfBuilder extends ContainerBlock {
 }
 
 export class CodeBuilder extends ContainerBlock {
+
+    private _bindings: Param[] = [];
+
+    /**
+     * Makes `value` available to the generated function under the returned name.
+     *
+     * Generated code must never reach a runtime value by its source name or by pasting its
+     * source text: a minifier renames the declaration and cannot see inside the generated
+     * string, and pasted source loses the scope it closed over (#40, #46). A binding is passed
+     * in as a real value when the function is compiled, so it survives any bundler.
+     */
+    bind(value: unknown, name: string = `binding${this._bindings.length}`): string {
+        this._bindings.push({ name, value });
+        return name;
+    }
+
+    getBindings() {
+        return [...this._bindings];
+    }
 
     toString(): string {
         return this._lines.map(line =>
