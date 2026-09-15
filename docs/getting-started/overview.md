@@ -10,9 +10,9 @@ Welcome to Routier! This section will guide you through setting up Routier in yo
   <p style="margin: 0 0 8px 0; font-weight: 600; color: #92400e;">✨ Explore Before You Install</p>
   <p style="margin: 0 0 12px 0; color: #78350f;">Try schemas, live queries, plugins, and React integration before setting up your own project.</p>
   <p style="margin: 0;">
-    <a href="https://4nlxsx-5180.csb.app/" target="_blank" rel="noopener noreferrer" style="color: #d97706; font-weight: 600;">Open Live Playground →</a>
+    <a href="/playground/" target="_self" style="color: #d97706; font-weight: 600;">Open Playground →</a>
     <span style="margin: 0 8px; color: #fbbf24;">|</span>
-    <a href="https://codesandbox.io/p/devbox/routier-4nlxsx" target="_blank" rel="noopener noreferrer" style="color: #d97706; font-weight: 600;">View and Edit Code →</a>
+    <a href="/getting-started/playground#run-it-locally" style="color: #d97706; font-weight: 600;">Run It Locally →</a>
   </p>
 </div>
 

@@ -16,7 +16,9 @@ npm install
 npm run docs:dev            # docs server with hot reload
 npm run docs:build          # documentation only; validates internal links
 npm run lab:build           # build the React Lab into public/lab
-npm run docs:build:with-lab # production deployment build
+npm run playground:dev      # run the Playground with hot reload (http://localhost:5220)
+npm run playground:build    # build the Playground into public/playground
+npm run docs:build:with-lab # production deployment build (Lab + Playground + docs)
 npm run docs:preview        # serve the production build locally
 ```
 
@@ -29,14 +31,15 @@ npm run docs:preview        # serve the production build locally
 - `_snippets/` — code samples imported into pages with `<<< @/_snippets/...`.
 - `api/index.md` — hand-written public API map.
 - `reference/api/` — generated signatures for every package entry point; regenerate with `npm run typedoc` at the repository root.
-- `public/` — static assets served at the site root (logo, `CNAME`). The Lab build is generated into `public/lab/` and is intentionally gitignored.
+- `public/` — static assets served at the site root (logo, `CNAME`). The Lab and Playground builds are generated into `public/lab/` and `public/playground/` and are intentionally gitignored.
 - `../examples/db-migration/` — the React Lab application published at `/lab/`.
+- `../examples/playground/` — the in-browser Playground published at `/playground/`. Its example files are also shown on `getting-started/playground.md`.
 
 ## Deployment
 
-Pushing documentation, Lab, or relevant package changes to `main` triggers
+Pushing documentation, Lab, Playground, or relevant package changes to `main` triggers
 `.github/workflows/docs.yml`. The workflow builds the workspace packages, bundles the Lab at
-`/lab/`, builds VitePress, and deploys the combined output to GitHub Pages.
+`/lab/` and the Playground at `/playground/`, builds VitePress, and deploys the combined output to GitHub Pages.
 
 ## Conventions
 

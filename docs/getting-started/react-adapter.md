@@ -15,9 +15,9 @@ Routier supports two React data-loading styles:
   <p style="margin: 0 0 8px 0; font-weight: 600; color: #166534;">⚛️ See React Integration Live</p>
   <p style="margin: 0 0 12px 0; color: #15803d;">Explore a working React example with <code>useQuery</code>, live queries, and reactive updates.</p>
   <p style="margin: 0;">
-    <a href="https://4nlxsx-5180.csb.app/" target="_blank" rel="noopener noreferrer" style="color: #22c55e; font-weight: 600;">Open Live Playground →</a>
+    <a href="/playground/#react" target="_self" style="color: #22c55e; font-weight: 600;">Open Playground →</a>
     <span style="margin: 0 8px; color: #86efac;">|</span>
-    <a href="https://codesandbox.io/p/devbox/routier-4nlxsx" target="_blank" rel="noopener noreferrer" style="color: #22c55e; font-weight: 600;">View and Edit Code →</a>
+    <a href="/getting-started/playground#run-it-locally" style="color: #22c55e; font-weight: 600;">Run It Locally →</a>
   </p>
 </div>
 

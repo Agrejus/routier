@@ -6,7 +6,9 @@
     "docs:dev": "vitepress dev",
     "docs:build": "vitepress build",
     "lab:build": "../node_modules/.bin/vite build ../examples/db-migration --base=/lab/ --outDir=../../docs/public/lab --emptyOutDir",
-    "docs:build:with-lab": "npm run lab:build && npm run docs:build",
+    "playground:dev": "../node_modules/.bin/vite ../examples/playground",
+    "playground:build": "../node_modules/.bin/vite build ../examples/playground --base=/playground/ --outDir=../../docs/public/playground --emptyOutDir",
+    "docs:build:with-lab": "npm run lab:build && npm run playground:build && npm run docs:build",
     "docs:preview": "vitepress preview",
     "lint": "echo \"Skipping lint for docs/\""
   },

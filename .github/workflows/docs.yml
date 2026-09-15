@@ -6,6 +6,7 @@ on:
     paths:
       - "docs/**"
       - "examples/db-migration/**"
+      - "examples/playground/**"
       - "core/**"
       - "datastore/**"
       - "react/**"

@@ -1,0 +1,87 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="128"
+  height="128"
+  viewBox="0 0 128 128"
+  fill="none"
+  role="img"
+  aria-labelledby="routier-logo-title routier-logo-description"
+>
+  <title id="routier-logo-title">Routier</title>
+  <desc id="routier-logo-description">A fast database represented by a lightning bolt inside a database cylinder</desc>
+
+  <defs>
+    <linearGradient id="database-body" x1="64" y1="23" x2="64" y2="116" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#14B8A6" />
+      <stop offset="1" stop-color="#087F75" />
+    </linearGradient>
+    <linearGradient id="database-top" x1="38" y1="15" x2="91" y2="38" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5EEAD4" />
+      <stop offset="1" stop-color="#14B8A6" />
+    </linearGradient>
+    <mask id="bolt-cutout" x="0" y="0" width="128" height="128" maskUnits="userSpaceOnUse">
+      <rect width="128" height="128" fill="white" />
+      <path
+        d="M72 37 49 72h17l-8 25 27-38H68l4-22Z"
+        transform="translate(0 8)"
+        fill="black"
+        stroke="black"
+        stroke-width="2"
+        stroke-linejoin="round"
+        stroke-linecap="round"
+      />
+    </mask>
+    <filter id="shadow" x="16" y="9" width="96" height="116" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#042F2E" flood-opacity="0.22" />
+    </filter>
+  </defs>
+
+  <g filter="url(#shadow)">
+    <g mask="url(#bolt-cutout)">
+      <!-- A single cylinder keeps the database silhouette readable at favicon size. -->
+      <path
+        d="M25 25v76c0 8.3 17.5 15 39 15s39-6.7 39-15V25H25Z"
+        fill="url(#database-body)"
+        stroke="#075E58"
+        stroke-width="3"
+        stroke-linejoin="round"
+      />
+      <ellipse
+        cx="64"
+        cy="25"
+        rx="39"
+        ry="14"
+        fill="url(#database-top)"
+        stroke="#075E58"
+        stroke-width="3"
+      />
+
+      <!-- Tier lines suggest database pages without competing with the bolt. -->
+      <path
+        d="M25 50c0 8.3 17.5 15 39 15s39-6.7 39-15"
+        stroke="#5EEAD4"
+        stroke-opacity="0.72"
+        stroke-width="3"
+        stroke-linecap="round"
+      />
+      <path
+        d="M25 76c0 8.3 17.5 15 39 15s39-6.7 39-15"
+        stroke="#5EEAD4"
+        stroke-opacity="0.58"
+        stroke-width="3"
+        stroke-linecap="round"
+      />
+    </g>
+
+    <!-- The bolt is transparent—only its database-colored cut edge remains. -->
+    <path
+      d="M72 37 49 72h17l-8 25 27-38H68l4-22Z"
+      transform="translate(0 8)"
+      fill="none"
+      stroke="#075E58"
+      stroke-width="4"
+      stroke-linejoin="round"
+      stroke-linecap="round"
+    />
+  </g>
+</svg>
