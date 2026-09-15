@@ -2,7 +2,7 @@ import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema'
 import { Expression } from '@routier/core/expressions';
 import { IQuery, JoinQueryOptionValue, mappedResultColumns, Query } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
-import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, getDialect, sqlColumnProperties, toColumnValueMap, toSql, reportUnrenderableFilters, executedMapFields, selectList } from '@routier/sql-plugin-core';
+import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, getDialect, sqlColumnProperties, toColumnValueMap, toSql, reportUnrenderableFilters, executedMapFields, selectList, referencedColumn } from '@routier/sql-plugin-core';
 import { uuidv4 } from '@routier/core/utilities';
 import { MysqlAddsOperation, MysqlRemovesOperation, MysqlSelectBack, MysqlUpdatesOperation, SqlOperation } from './types';
 
@@ -469,9 +469,9 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
 
     // Build ORDER BY
     for (const op of sortOps) {
-        const sortProp = op.value.propertyName;
+        const sortColumn = referencedColumn(op.value.property, op.value.propertyName, getDialect('mysql'));
         const sortDir = op.value.direction === 'asc' ? 'ASC' : 'DESC';
-        currentQuery += ` ORDER BY \`${sortProp}\` ${sortDir}`;
+        currentQuery += ` ORDER BY ${sortColumn} ${sortDir}`;
     }
 
     // Handle skip/take
@@ -520,14 +520,19 @@ export function buildFromQueryOperation<TEntity extends {}, TShape>(query: IQuer
             case 'max':
             case 'sum':
                 let aggregateField = 'id';
+                let aggregateProperty: PropertyInfo<any> | null | undefined = null;
                 for (const otherOp of otherOps) {
                     if (otherOp.type === 'map' && otherOp.value.fields && otherOp.value.fields.length > 0) {
                         const fieldInfo = otherOp.value.fields[0];
                         aggregateField = fieldInfo.destinationName || fieldInfo.sourceName || 'id';
+                        aggregateProperty = fieldInfo.property;
                         break;
                     }
                 }
-                currentQuery = currentQuery.replace(/SELECT .*? FROM/, `SELECT ${op.type.toUpperCase()}(\`${aggregateField}\`) AS \`${aggregateField}\` FROM`);
+                // Read from the storage column, named for the field: the field name is the
+                // in-memory path, which is not a column when the property is renamed or nested
+                const aggregateColumn = referencedColumn(aggregateProperty, aggregateField, getDialect('mysql'));
+                currentQuery = currentQuery.replace(/SELECT .*? FROM/, () => `SELECT ${op.type.toUpperCase()}(${aggregateColumn}) AS \`${aggregateField}\` FROM`);
                 break;
 
             case 'map':

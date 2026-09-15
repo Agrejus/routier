@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
 import { s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
 import { IDbPlugin } from '@routier/core';
+import { executedQueriesOf, QueryExplanation } from '@routier/core/plugins';
 
 /**
  * One matrix of SQL behaviour, run against every real engine.
@@ -19,11 +20,10 @@ import { IDbPlugin } from '@routier/core';
  * in one call, and serialises writers at the file level, so it forgives three separate
  * classes of bug the others do not (see known-defects, "things that will mislead you" #3).
  *
- * Not covered here, deliberately: filters on RENAMED properties. Those are routed to
- * in-memory evaluation before a plugin ever sees them (`QueryOptionsCollection` flips the
- * execution target for any renamed or unmapped property), so asserting them here would be
- * asserting the JS fallback and would pass whatever the SQL layer did. Renamed columns are
- * covered on the write/read path instead, which does reach the engine.
+ * Queries over RENAMED properties are covered, and every one of them also asserts it was
+ * pushed down. The SQL plugins read `from` names themselves, so nothing is sent to memory for
+ * a rename — and without the pushdown assertion a case would pass on the JS fallback
+ * whatever the SQL layer did.
  */
 
 export type ConformanceBackend = {
@@ -59,6 +59,11 @@ const schemasFor = (suffix: string) => ({
         amount: s.number().from('wire_amount'),
     }).compile(),
 
+    renamedNested: s.define(`conf_renamed_nested_${suffix}`, {
+        id: s.string().key(),
+        payload: s.object({ inner: s.object({ value: s.string().from('wire_value') }).from('wire_inner') }).from('wire_payload'),
+    }).compile(),
+
     dated: s.define(`conf_dated_${suffix}`, {
         id: s.string().key().identity(),
         label: s.string(),
@@ -86,6 +91,10 @@ export function describeDialectConformance(backend: ConformanceBackend) {
 
         class RenamedStore extends DataStore {
             rows = this.collection(schemas.renamed).proxy().create();
+        }
+
+        class RenamedNestedStore extends DataStore {
+            rows = this.collection(schemas.renamedNested).proxy().create();
         }
 
         class DatedStore extends DataStore {
@@ -118,11 +127,12 @@ export function describeDialectConformance(backend: ConformanceBackend) {
                 products = this.collection(schemas.products).proxy().create();
                 composite = this.collection(schemas.composite).proxy().create();
                 renamed = this.collection(schemas.renamed).proxy().create();
+                renamedNested = this.collection(schemas.renamedNested).proxy().create();
                 nested = this.collection(schemas.nested).proxy().create();
                 dated = this.collection(schemas.dated).proxy().create();
             } as never) as any;
 
-            for (const name of ['products', 'composite', 'renamed', 'nested', 'dated']) {
+            for (const name of ['products', 'composite', 'renamed', 'renamedNested', 'nested', 'dated']) {
                 const rows = await cleaner[name].toArrayAsync().catch(() => []);
 
                 if (rows.length > 0) {
@@ -375,6 +385,175 @@ export function describeDialectConformance(backend: ConformanceBackend) {
                 await editor.saveChangesAsync();
 
                 expect((await open(RenamedStore).rows.firstAsync(r => r.id === 'r2')).label).toBe('after');
+            });
+
+            /**
+             * Queries over renamed properties, each asserting it reached the engine.
+             *
+             * The results alone prove nothing: the in-memory fallback answers every one of these
+             * correctly. What the issue (#43) reported was a full table scan, so the statement
+             * has to name the storage column and nothing may have run in memory.
+             */
+            const seededRenamed = async () => {
+                const store = open(RenamedStore);
+
+                await store.rows.addAsync(
+                    { id: 'r1', label: 'alpha', amount: 10 } as any,
+                    { id: 'r2', label: 'bravo', amount: 30 } as any,
+                    { id: 'r3', label: 'charlie', amount: 20 } as any,
+                );
+                await store.saveChangesAsync();
+
+                return open(RenamedStore);
+            };
+
+            /** Identifier quoting differs by engine: MySQL uses backticks. */
+            const column = (name: string) => `[\`"]${name}[\`"]`;
+
+            const expectPushedDown = (explanation: QueryExplanation, pattern: RegExp) => {
+                expect(explanation.summary.reasons).toEqual([]);
+                expect(explanation.summary.memory).toBe(0);
+
+                const reported = executedQueriesOf(explanation);
+
+                expect(reported).toHaveLength(1);
+                expect(reported[0].text).toMatch(pattern);
+            };
+
+            it('pushes down an equality filter on a renamed column', async () => {
+                const store = await seededRenamed();
+                const { data, explanation } = await store.rows
+                    .where(r => r.label === 'bravo')
+                    .explain()
+                    .toArrayAsync();
+
+                expect(data.map(r => r.id)).toEqual(['r2']);
+                expect(data[0].label).toBe('bravo');
+                expectPushedDown(explanation, new RegExp(`WHERE .*${column('wire_label')}`));
+                expect(executedQueriesOf(explanation)[0].parameters).toContain('bravo');
+            });
+
+            it('pushes down a comparison on a renamed column', async () => {
+                const store = await seededRenamed();
+                const { data, explanation } = await store.rows
+                    .where(r => r.amount > 15)
+                    .explain()
+                    .toArrayAsync();
+
+                expect(data.map(r => r.label).sort()).toEqual(['bravo', 'charlie']);
+                expectPushedDown(explanation, new RegExp(`WHERE .*${column('wire_amount')}`));
+            });
+
+            it('pushes down an ascending sort on a renamed column', async () => {
+                const store = await seededRenamed();
+                const { data, explanation } = await store.rows
+                    .sort(r => r.amount)
+                    .explain()
+                    .toArrayAsync();
+
+                expect(data.map(r => r.label)).toEqual(['alpha', 'charlie', 'bravo']);
+                expectPushedDown(explanation, new RegExp(`ORDER BY ${column('wire_amount')} ASC`));
+            });
+
+            it('pushes down a descending sort on a renamed column', async () => {
+                const store = await seededRenamed();
+                const { data, explanation } = await store.rows
+                    .sortDescending(r => r.label)
+                    .explain()
+                    .toArrayAsync();
+
+                expect(data.map(r => r.label)).toEqual(['charlie', 'bravo', 'alpha']);
+                expectPushedDown(explanation, new RegExp(`ORDER BY ${column('wire_label')} DESC`));
+            });
+
+            it('pushes down a filter, sort and window over renamed columns together', async () => {
+                const store = await seededRenamed();
+                const { data, explanation } = await store.rows
+                    .where(r => r.amount >= 10)
+                    .sortDescending(r => r.amount)
+                    .skip(1)
+                    .take(1)
+                    .explain()
+                    .toArrayAsync();
+
+                expect(data.map(r => r.label)).toEqual(['charlie']);
+                expectPushedDown(explanation, new RegExp(`WHERE .*${column('wire_amount')}.*ORDER BY ${column('wire_amount')} DESC.*LIMIT`));
+            });
+
+            it('pushes down a count filtered on a renamed column', async () => {
+                const store = await seededRenamed();
+                const { data, explanation } = await store.rows
+                    .where(r => r.amount >= 20)
+                    .explain()
+                    .countAsync();
+
+                expect(Number(data)).toBe(2);
+                expectPushedDown(explanation, new RegExp(`COUNT\\(\\*\\).*WHERE .*${column('wire_amount')}`));
+            });
+
+            it('pushes down sum, min and max over a renamed column', async () => {
+                const store = await seededRenamed();
+
+                const sum = await store.rows.explain().sumAsync(r => r.amount);
+                const min = await store.rows.explain().minAsync(r => r.amount);
+                const max = await store.rows.where(r => r.label !== 'bravo').explain().maxAsync(r => r.amount);
+
+                expect(Number(sum.data)).toBe(60);
+                expect(Number(min.data)).toBe(10);
+                expect(Number(max.data)).toBe(20);
+                expectPushedDown(sum.explanation, new RegExp(`SUM\\(${column('wire_amount')}\\)`));
+                expectPushedDown(min.explanation, new RegExp(`MIN\\(${column('wire_amount')}\\)`));
+                expectPushedDown(max.explanation, new RegExp(`MAX\\(${column('wire_amount')}\\).*WHERE .*${column('wire_label')}`));
+            });
+
+            it('pushes down a map selecting a renamed column', async () => {
+                const store = await seededRenamed();
+                const { data, explanation } = await store.rows
+                    .where(r => r.amount < 25)
+                    .map(r => r.label)
+                    .explain()
+                    .toArrayAsync();
+
+                expect([...data].sort()).toEqual(['alpha', 'charlie']);
+                expectPushedDown(explanation, new RegExp(`SELECT ${column('wire_label')}.*WHERE .*${column('wire_amount')}`));
+            });
+
+            it('pushes down a filter on a nested path with renamed segments', async () => {
+                const store = open(RenamedNestedStore);
+
+                await store.rows.addAsync(
+                    { id: 'rn1', payload: { inner: { value: 'keep' } } } as any,
+                    { id: 'rn2', payload: { inner: { value: 'drop' } } } as any,
+                );
+                await store.saveChangesAsync();
+
+                const { data, explanation } = await open(RenamedNestedStore).rows
+                    .where((r: any) => r.payload.inner.value === 'keep')
+                    .explain()
+                    .toArrayAsync();
+
+                expect(data.map(r => r.id)).toEqual(['rn1']);
+                expect((data[0] as any).payload.inner.value).toBe('keep');
+                expectPushedDown(explanation, new RegExp(`WHERE .*${column('wire_payload')}.*wire_inner.*wire_value`));
+            });
+
+            it('pushes down a sort on a nested path with renamed segments', async () => {
+                const store = open(RenamedNestedStore);
+
+                await store.rows.addAsync(
+                    { id: 'rn1', payload: { inner: { value: 'b' } } } as any,
+                    { id: 'rn2', payload: { inner: { value: 'a' } } } as any,
+                    { id: 'rn3', payload: { inner: { value: 'c' } } } as any,
+                );
+                await store.saveChangesAsync();
+
+                const { data, explanation } = await open(RenamedNestedStore).rows
+                    .sort((r: any) => r.payload.inner.value)
+                    .explain()
+                    .toArrayAsync();
+
+                expect(data.map(r => r.id)).toEqual(['rn2', 'rn1', 'rn3']);
+                expectPushedDown(explanation, new RegExp(`ORDER BY .*${column('wire_payload')}.*wire_inner.*wire_value`));
             });
         });
 

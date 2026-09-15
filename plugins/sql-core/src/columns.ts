@@ -254,10 +254,53 @@ export function decodeJsonColumns<T extends {}>(rows: unknown, schema: CompiledS
 }
 
 /**
+ * The column a property is stored in, or the JSON path into it when the property is nested.
+ *
+ * Every segment is read through `.from()`. `getResolvedName()` alone is the LEAF name, which is a
+ * real column only for a root property: `payload.operand.value` is stored in a `payload` JSON
+ * column, and the rest of the chain is a path inside it.
+ *
+ * The alias qualifies the ROOT identifier only, because the alias belongs on the column the JSON
+ * lives in — `"o"."nested" -> '$.inner'` — not on the path inside it.
+ */
+export const propertyColumn = (property: PropertyInfo<any>, dialect: SqlDialect, alias?: string): string => {
+    const qualify = (identifier: string) =>
+        alias == null ? identifier : `${dialect.quoteIdentifier(alias)}.${identifier}`;
+    const parents = property.getParentPathArray({ useFromPropertyName: true });
+
+    if (parents.length === 0) {
+        return qualify(dialect.quoteIdentifier(property.getResolvedName()));
+    }
+
+    const [root, ...rest] = parents;
+
+    return dialect.jsonPathExpression(
+        qualify(dialect.quoteIdentifier(root)),
+        [...rest, property.getResolvedName()],
+        property.type
+    );
+};
+
+/**
+ * The column a sort or aggregate names: the property's storage column when there is a property,
+ * otherwise the name as recorded.
+ *
+ * The recorded name is the IN-MEMORY path, so emitting it for a property is how a renamed column
+ * became `ORDER BY "displayName"` against a table whose column is `display_name`.
+ */
+export const referencedColumn = (
+    property: PropertyInfo<any> | null | undefined,
+    name: string,
+    dialect: SqlDialect
+): string => property != null ? propertyColumn(property, dialect) : dialect.quoteIdentifier(name);
+
+/**
  * The SELECT expression for one result column.
  *
- * A nested property is not a column: the object is stored whole in one JSON column, so the value
- * has to be read out by path and aliased back to the name the result shape expects.
+ * Aliased back to the name the result shape expects whenever that is not where the value is
+ * stored: a nested property is read out of its JSON column by path, and a renamed one is read from
+ * its `.from()` column. A projection names its columns by in-memory name (`mappedResultColumns`),
+ * so without the alias `.map(x => x.displayName)` selects a column the table does not have.
  */
 export const selectExpression = (column: ResultColumn, dialect: SqlDialect): string => {
     const property = column.property;
@@ -268,20 +311,10 @@ export const selectExpression = (column: ResultColumn, dialect: SqlDialect): str
         return dialect.quoteIdentifier(column.name);
     }
 
-    const parents = property.getParentPathArray({ useFromPropertyName: true });
+    const stored = propertyColumn(property, dialect);
+    const named = dialect.quoteIdentifier(column.name);
 
-    if (parents.length === 0) {
-        return dialect.quoteIdentifier(column.name);
-    }
-
-    const [root, ...rest] = parents;
-    const path = dialect.jsonPathExpression(
-        dialect.quoteIdentifier(root),
-        [...rest, property.getResolvedName()],
-        property.type
-    );
-
-    return `${path} AS ${dialect.quoteIdentifier(column.name)}`;
+    return stored === named ? named : `${stored} AS ${named}`;
 };
 
 /** The inner SELECT list, reading nested values out of their JSON column. */

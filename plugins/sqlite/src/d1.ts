@@ -119,6 +119,9 @@ export class D1DbPlugin implements IDbPlugin {
     /** See `IDbPlugin.databaseName` and `D1DbPluginOptions.databaseName`. */
     readonly databaseName: string;
 
+    /** See `IDbPlugin.resolvesRenamedProperties`. Every statement renders columns through `.from()`. */
+    readonly resolvesRenamedProperties = true;
+
     constructor(database: D1Database, options: D1DbPluginOptions = {}) {
         this.database = database;
         this.deleteDatabase = options.deleteDatabase;

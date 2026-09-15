@@ -3,6 +3,48 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## Queries on renamed columns reach the SQL engine (unreleased)
+
+A property mapped to a column with `.from()` used to send every filter, sort and similarity
+search over it, and everything after, to memory before any plugin saw the query: the SQL plugins
+read the whole table and filtered it in JavaScript (#43). Versions are set at release; the
+sqlite plugin's next patch is already claimed by an in-flight branch.
+
+### Added — @routier/core
+
+- `IDbPlugin.resolvesRenamedProperties`, optional and false when absent. A plugin that sets it
+  is promising to read `.from()` names itself, and keeps renamed filters, sorts and `nearest`
+  with the database. `QueryOptionsCollection` takes it as a constructor option and carries it
+  through `split`/`splitAt`. Memory, file-system, browser-storage, Dexie, PouchDB and MongoDB do
+  not set it, so they still report `renamed-property`.
+- `BatchingDbPlugin`, `CacheDbPlugin`, `ConcurrencyDbPlugin`, `RetryDbPlugin` and
+  `TelemetryDbPlugin` forward it from the plugin they wrap.
+
+### Fixed — @routier/datastore
+
+- A query over a plugin that resolves renamed properties is planned again with that known, so a
+  `where` on a renamed column is sent to the engine instead of running as a full table scan.
+
+### Fixed — @routier/postgres-plugin-core, @routier/sqlite-plugin (including D1), @routier/mysql-plugin
+
+- These plugins set `resolvesRenamedProperties`, so `WHERE "display_name" = $1` is issued for a
+  property declared as `.from('display_name')`.
+- `ORDER BY` names the storage column, or the JSON path through renamed segments for a nested
+  property. It used to emit the in-memory name, which was masked while renamed sorts ran in memory.
+- `sum`/`min`/`max` read the storage column, and a `map` selecting a renamed property aliases it
+  back to the property name. Neither is gated on a filter, so before this fix
+  `.sumAsync(x => x.renamed)` failed in the engine with an unknown column.
+
+### Added — @routier/sql-plugin-core
+
+- `propertyColumn` and `referencedColumn`, the one renderer filters, sorts, aggregates and
+  projections now share for a property's storage column. `selectExpression` aliases a renamed
+  root column as well as a nested path.
+
+### Changed — @routier/otel-plugin
+
+- `OtelDbPlugin` forwards `resolvesRenamedProperties` from the plugin it wraps.
+
 ## Dexie reads use the indexes the schema declares (2026-09-01)
 
 ### Fixed — @routier/dexie-plugin 0.4.2

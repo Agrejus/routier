@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from '@jest/globals';
 import { s } from '@routier/core/schema';
-import { formatExplanation } from '@routier/core/plugins';
+import { formatExplanation, RetryDbPlugin } from '@routier/core/plugins';
 import { MemoryPlugin } from '@routier/memory-plugin';
 import { DataStore } from '../DataStore';
 
@@ -85,6 +85,42 @@ describe('.explain()', () => {
             .toArrayAsync();
 
         expect(explanation.summary.reasons).toEqual(['renamed-property']);
+    });
+
+    it('still reports the rename fallback through a wrapper over a plugin that does not resolve renames', async () => {
+        const wrapped = new Store(new RetryDbPlugin(new MemoryPlugin(`explain-${Math.random()}`)));
+        await seed(wrapped);
+
+        const { data, explanation } = await wrapped.players
+            .where(x => x.displayName === 'James')
+            .explain()
+            .toArrayAsync();
+
+        expect(data.map(x => x.name)).toEqual(['james']);
+        expect(explanation.summary.reasons).toEqual(['renamed-property']);
+    });
+
+    /**
+     * The planner half only. The memory plugin cannot actually read a renamed property from its
+     * stored rows, so this asserts where the options were planned, never the rows — the SQL
+     * plugins' results are covered by the dialect conformance suite.
+     */
+    it('plans a renamed property for the database when the plugin resolves renames, through a wrapper too', async () => {
+        class ResolvingPlugin extends MemoryPlugin {
+            readonly resolvesRenamedProperties = true;
+        }
+
+        const resolving = new Store(new RetryDbPlugin(new ResolvingPlugin(`explain-${Math.random()}`)));
+
+        const { explanation } = await resolving.players
+            .where(x => x.displayName === 'James')
+            .sort(x => x.displayName)
+            .explain()
+            .toArrayAsync();
+
+        expect(explanation.summary.reasons).toEqual([]);
+        expect(explanation.summary.memory).toBe(0);
+        expect(explanation.summary.database).toBe(2);
     });
 
     it('works on the other terminals', async () => {

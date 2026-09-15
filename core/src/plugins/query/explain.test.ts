@@ -73,6 +73,59 @@ describe('reason codes', () => {
         options.forEach(option => expect(option.reason).toBe("renamed-property"));
     });
 
+    describe('for a plugin that resolves renamed properties', () => {
+
+        const resolving = (build: (options: QueryOptionsCollection<any>) => void) => {
+            const options = new QueryOptionsCollection<any>({ resolvesRenamedProperties: true });
+            build(options);
+            return options;
+        };
+
+        it('keeps a filter, sort and window on a `from` property with the database', () => {
+            const options = resolving(o => {
+                addFilter(o, (x: any) => x.displayName === "ada");
+                o.add("sort", sortOn("displayName") as never);
+                o.add("take", 20);
+            });
+
+            const recorded: { target: string, reason?: string }[] = [];
+            options.forEach(option => recorded.push({ target: option.target, reason: option.reason }));
+
+            expect(recorded).toEqual([
+                { target: "database", reason: "executed" },
+                { target: "database", reason: "executed" },
+                { target: "database", reason: "executed" }
+            ]);
+            expect(options.hasRenamedPropertyFallback()).toBe(false);
+        });
+
+        it('still sends an unmapped property to memory', () => {
+            const options = resolving(o => addFilter(o, (x: any) => x.fullName === "ada!"));
+
+            options.forEach(option => expect(option.reason).toBe("unmapped-property"));
+        });
+
+        it('carries the setting into both halves of a split', () => {
+            const options = resolving(o => {
+                addFilter(o, (x: any) => x.rank > 10);
+                o.add("take", 20);
+            });
+
+            const { before, after } = options.splitAt("take");
+            const { database, memory } = options.split();
+
+            expect(before.resolvesRenamedProperties).toBe(true);
+            expect(after.resolvesRenamedProperties).toBe(true);
+            expect(database.resolvesRenamedProperties).toBe(true);
+            expect(memory.resolvesRenamedProperties).toBe(true);
+        });
+    });
+
+    it('reports the rename fallback only for a collection that fell back', () => {
+        expect(optionsWith(o => addFilter(o, (x: any) => x.displayName === "ada")).hasRenamedPropertyFallback()).toBe(true);
+        expect(optionsWith(o => addFilter(o, (x: any) => x.rank > 10)).hasRenamedPropertyFallback()).toBe(false);
+    });
+
     it('ratchets everything after a join to after-join', () => {
         const options = optionsWith(o => {
             addFilter(o, (x: any) => x.rank > 10);

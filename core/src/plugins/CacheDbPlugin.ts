@@ -119,6 +119,11 @@ export class CacheDbPlugin implements IDbPlugin {
         return this.plugin.databaseName;
     }
 
+    /** Forwarded: this wrapper hands queries to the inner plugin unchanged in what they name. */
+    get resolvesRenamedProperties(): boolean | undefined {
+        return this.plugin.resolvesRenamedProperties;
+    }
+
     /** `schemaId` first, so invalidating a schema is a prefix match. */
     private keyFor<TRoot extends {}, TShape>(event: DbPluginQueryEvent<TRoot, TShape>): string {
         const parts: string[] = [];

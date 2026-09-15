@@ -80,12 +80,26 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
     }
 
     private resolveQueryOptions<T>() {
-        if (this.dependencies.scopedQueryOptions.items.size === 0) {
+        const resolvesRenamedProperties = this.dependencies.plugin.resolvesRenamedProperties === true;
+
+        /**
+         * Options are planned as they are recorded, before anything asks which plugin runs them, so a
+         * renamed property is planned for memory whatever the backend. A plugin that reads `.from()`
+         * names itself gets the options planned again with that known — see
+         * `IDbPlugin.resolvesRenamedProperties`.
+         *
+         * Only when the plan actually fell back for a rename. Re-adding repeats every check `add`
+         * makes, warnings included, and would change nothing otherwise.
+         */
+        const replan = resolvesRenamedProperties
+            && (this.dependencies.scopedQueryOptions.hasRenamedPropertyFallback() || this.request.queryOptions.hasRenamedPropertyFallback());
+
+        if (this.dependencies.scopedQueryOptions.items.size === 0 && replan === false) {
             return this.splitPostJoinConjuncts(this.request.queryOptions as unknown as QueryOptionsCollection<T>);
         }
 
         // Combine scoped options with the built query
-        const resolvedQueryOptions = new QueryOptionsCollection<T>();
+        const resolvedQueryOptions = new QueryOptionsCollection<T>({ resolvesRenamedProperties });
 
         // Add scoped items first
         this.dependencies.scopedQueryOptions.forEach(item => {
@@ -140,7 +154,7 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
             return options;
         }
 
-        const rebuilt = new QueryOptionsCollection<T>();
+        const rebuilt = new QueryOptionsCollection<T>(options);
 
         before.forEach(item => rebuilt.add(item.name, item.value));
 

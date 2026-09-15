@@ -108,6 +108,11 @@ export class BatchingDbPlugin implements IDbPlugin {
         return this.plugin.databaseName;
     }
 
+    /** Forwarded: this wrapper hands queries to the inner plugin unchanged in what they name. */
+    get resolvesRenamedProperties(): boolean | undefined {
+        return this.plugin.resolvesRenamedProperties;
+    }
+
     /** Reads are not batched: they have no lock to contend for and no ordering to preserve. */
     query<TRoot extends {}, TShape extends any = TRoot>(
         event: DbPluginQueryEvent<TRoot, TShape>,

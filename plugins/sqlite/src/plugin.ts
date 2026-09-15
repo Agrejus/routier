@@ -53,6 +53,9 @@ export class SqliteDbPluginBase implements IDbPlugin {
      * two databases and will not share subscription channels. Pass a consistent path.
      */
     readonly databaseName: string;
+
+    /** See `IDbPlugin.resolvesRenamedProperties`. Every statement renders columns through `.from()`. */
+    readonly resolvesRenamedProperties = true;
     protected readonly driver: SqliteDriver;
 
     /**

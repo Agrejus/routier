@@ -64,6 +64,11 @@ export class TelemetryDbPlugin implements IDbPlugin {
         return this.plugin.databaseName;
     }
 
+    /** Forwarded: this wrapper hands queries to the inner plugin unchanged in what they name. */
+    get resolvesRenamedProperties(): boolean | undefined {
+        return this.plugin.resolvesRenamedProperties;
+    }
+
     query<TRoot extends {}, TShape extends any = TRoot>(
         event: DbPluginQueryEvent<TRoot, TShape>,
         done: PluginEventCallbackResult<ITranslatedValue<TShape>>

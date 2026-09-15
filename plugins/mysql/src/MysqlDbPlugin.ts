@@ -77,6 +77,9 @@ export class MysqlDbPlugin implements IDbPlugin {
      */
     readonly databaseName: string;
 
+    /** See `IDbPlugin.resolvesRenamedProperties`. Every statement renders columns through `.from()`. */
+    readonly resolvesRenamedProperties = true;
+
     constructor(config: MysqlDbPluginConfig) {
         this.databaseName = describeTarget(config);
 
