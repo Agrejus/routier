@@ -8,11 +8,11 @@ Spin up a minimal project and see live queries and optimistic updates in action.
 
 <div style="background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 16px; margin: 20px 0; border-radius: 4px;">
   <p style="margin: 0 0 8px 0; font-weight: 600; color: #1e40af;">🎯 Try This Example Live</p>
-  <p style="margin: 0 0 12px 0; color: #1e3a8a;">Use the live playground immediately, or open its CodeSandbox workspace to inspect and change the source.</p>
+  <p style="margin: 0 0 12px 0; color: #1e3a8a;">Run schemas, queries, and live updates in your browser with nothing to install, or clone the examples and run them on your machine.</p>
   <p style="margin: 0;">
-    <a href="https://4nlxsx-5180.csb.app/" target="_blank" rel="noopener noreferrer" style="color: #3b82f6; font-weight: 600;">Open Live Playground →</a>
+    <a href="/playground/#crud" target="_self" style="color: #3b82f6; font-weight: 600;">Open Playground →</a>
     <span style="margin: 0 8px; color: #93c5fd;">|</span>
-    <a href="https://codesandbox.io/p/devbox/routier-4nlxsx" target="_blank" rel="noopener noreferrer" style="color: #3b82f6; font-weight: 600;">View and Edit Code →</a>
+    <a href="/getting-started/playground#run-it-locally" style="color: #3b82f6; font-weight: 600;">Run It Locally →</a>
   </p>
 </div>
 

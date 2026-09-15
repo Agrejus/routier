@@ -16,11 +16,8 @@ hero:
       text: Why Routier?
       link: /getting-started/why-routier
     - theme: alt
-      text: Open Live Playground
-      link: https://4nlxsx-5180.csb.app/
-    - theme: alt
-      text: View Playground Code
-      link: https://codesandbox.io/p/devbox/routier-4nlxsx
+      text: Try the Playground
+      link: /getting-started/playground
 
 features:
   - icon: 📐
@@ -76,7 +73,7 @@ beneath it.
 ## Quick Example
 
 ::: tip Try it live
-[Open the live playground](https://4nlxsx-5180.csb.app/) to use the demo immediately, or [view and edit its source in CodeSandbox](https://codesandbox.io/p/devbox/routier-4nlxsx).
+[Open the playground](/getting-started/playground) to run examples like this in your browser with nothing to install, or [run them locally](/getting-started/playground#run-it-locally).
 :::
 
 <<< @/_snippets/code/from-docs/index/block-1.ts
