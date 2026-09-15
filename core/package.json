@@ -125,7 +125,7 @@
         "build:types": "tsc --emitDeclarationOnly",
         "build:bundle": "node ../scripts/clean-dist.mjs && rspack build",
         "build": "npm run build:bundle && npm run build:types",
-        "tsc": "tsc --noEmit",
+        "tsc": "tsc --noEmit && tsc -p type-tests",
         "test": "jest",
         "lint": "oxlint . --ignore-pattern \"**/__tests__/**\" --ignore-pattern \"**/*.test.*\" --ignore-pattern \"**/*.spec.*\" --ignore-pattern \"**/*.mjs\""
     },
