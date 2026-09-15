@@ -59,6 +59,27 @@ const mismatchWarning = (expression: ComparatorExpression): string => {
         `runs in memory. https://routier.dev/guides/strict-comparison-types`;
 };
 
+/**
+ * An item as one dispatch receives it: a new object, so a report written on it stays with that dispatch.
+ *
+ * A database option starts `executed` again, because a report is only an answer from the plugin that
+ * made it. A memory option keeps the reason core planned it with. A join's inner options are copied the
+ * same way, since a plugin can report on them too.
+ */
+const toDispatchItem = (item: QueryCollectionItem<any, any>): QueryCollectionItem<any, any> => {
+    const option = item.option as QueryOption<any, any>;
+    const value = option.name === "join"
+        ? { ...option.value, innerOptions: (option.value.innerOptions as QueryOptionsCollection<any>).forDispatch() }
+        : option.value;
+
+    return {
+        index: item.index,
+        option: (option.target === "database"
+            ? { ...option, value, reason: "executed" }
+            : { ...option, value }) as QueryOption<any, any>
+    };
+};
+
 export class QueryOptionsCollection<T> {
 
     private options: Map<QueryOptionName, QueryCollectionItem<any, any>[]> = new Map<QueryOptionName, QueryCollectionItem<any, any>[]>();
@@ -275,6 +296,9 @@ export class QueryOptionsCollection<T> {
      * the shared collection before executing. Without restoring, a re-executed terminal —
      * the whole point of a subscribed queryable — stacks its option a second time and
      * runs it over the first execution's scalar result.
+     *
+     * The item objects are shared with the snapshot. Nothing reports on them, because every
+     * dispatch sends a `forDispatch` copy, so a restore brings back no reports.
      */
     snapshot(): () => void {
         const options = new Map([...this.options.entries()].map(([key, items]): [QueryOptionName, QueryCollectionItem<any, any>[]] => [key, [...items]]));
@@ -357,21 +381,57 @@ export class QueryOptionsCollection<T> {
     }
 
     /**
-     * Forgets what any previous dispatch reported.
+     * A copy of the collection for one dispatch to a plugin, with nothing reported on it.
      *
      * Capability is answered per dispatch, so a report is only an answer for the execution that
-     * produced it. The items are shared with any snapshot, so a report mutated in place otherwise
-     * survives a restore and a second terminal on the same queryable replays options the plugin
-     * did run — a `skip` applied twice, over rows already windowed.
+     * produced it. Reports are written onto items, and the items of a queryable's collection
+     * outlive any one execution: a snapshot shares them, and a subscription dispatches the same
+     * query on every change. A report left on them replays options the plugin did run on the
+     * next execution, such as a `skip` applied twice over rows already windowed, or hands a
+     * renamed filter to memory that the engine could have run.
+     *
+     * Each item keeps its index, name, value and target. A half from `split`/`splitAt` is copied
+     * with a copy of its origin, and its items are that copy's items, so a report on the half still
+     * cascades over the whole dispatch without reaching the collection it was copied from.
      */
-    forgetReports() {
+    forDispatch(): QueryOptionsCollection<T> {
+        if (this.origin == null) {
+            return this.copyForDispatch().copy;
+        }
+
+        const { copy: root, copies } = this.origin.copyForDispatch();
+        const half = new QueryOptionsCollection<T>();
+
         this.resolveEnumeration();
 
         for (const item of this.enumeratedItems) {
-            if (item.option.target === "database") {
-                item.option.reason = "executed";
-            }
+            // An item added to the half after it was split has no counterpart in the origin
+            half.adopt(copies.get(item) ?? toDispatchItem(item));
         }
+
+        half.origin = root;
+
+        return half;
+    }
+
+    private copyForDispatch() {
+        const copy = new QueryOptionsCollection<T>();
+        const copies = new Map<QueryCollectionItem<any, any>, QueryCollectionItem<any, any>>();
+
+        this.resolveEnumeration();
+
+        for (const item of this.enumeratedItems) {
+            const copied = toDispatchItem(item);
+
+            copies.set(item, copied);
+            copy.adopt(copied);
+        }
+
+        copy.nextExecutionTarget = this.nextExecutionTarget;
+        copy.nextExecutionReason = this.nextExecutionReason;
+        copy.nextIndex = this.nextIndex;
+
+        return { copy, copies };
     }
 
     /** The options the database did not run, in the order they were written. */

@@ -60,6 +60,12 @@ const schemasFor = (suffix: string) => ({
         amount: s.number().from('wire_amount'),
     }).compile(),
 
+    renamedTags: s.define(`conf_renamed_tags_${suffix}`, {
+        id: s.string().key(),
+        rowId: s.string().from('wire_row_id'),
+        tag: s.string().from('wire_tag'),
+    }).compile(),
+
     renamedNested: s.define(`conf_renamed_nested_${suffix}`, {
         id: s.string().key(),
         payload: s.object({ inner: s.object({ value: s.string().from('wire_value') }).from('wire_inner') }).from('wire_payload'),
@@ -92,6 +98,12 @@ export function describeDialectConformance(backend: ConformanceBackend) {
 
         class RenamedStore extends DataStore {
             rows = this.collection(schemas.renamed).proxy().create();
+        }
+
+        /** The inner side is scoped on a renamed property, so its filter travels in the join option. */
+        class RenamedJoinStore extends DataStore {
+            rows = this.collection(schemas.renamed).proxy().create();
+            tags = this.collection(schemas.renamedTags).scope(t => t.tag === 'keep').proxy().create();
         }
 
         class RenamedNestedStore extends DataStore {
@@ -128,12 +140,13 @@ export function describeDialectConformance(backend: ConformanceBackend) {
                 products = this.collection(schemas.products).proxy().create();
                 composite = this.collection(schemas.composite).proxy().create();
                 renamed = this.collection(schemas.renamed).proxy().create();
+                renamedTags = this.collection(schemas.renamedTags).proxy().create();
                 renamedNested = this.collection(schemas.renamedNested).proxy().create();
                 nested = this.collection(schemas.nested).proxy().create();
                 dated = this.collection(schemas.dated).proxy().create();
             } as never) as any;
 
-            for (const name of ['products', 'composite', 'renamed', 'renamedNested', 'nested', 'dated']) {
+            for (const name of ['products', 'composite', 'renamed', 'renamedTags', 'renamedNested', 'nested', 'dated']) {
                 const rows = await cleaner[name].toArrayAsync().catch(() => []);
 
                 if (rows.length > 0) {
@@ -555,6 +568,142 @@ export function describeDialectConformance(backend: ConformanceBackend) {
 
                 expect(data.map(r => r.id)).toEqual(['rn2', 'rn1', 'rn3']);
                 expectPushedDown(explanation, new RegExp(`ORDER BY .*${column('wire_payload')}.*wire_inner.*wire_value`));
+            });
+
+            it('pushes down a join whose inner scope filters on a renamed column', async () => {
+                await seededRenamed();
+
+                const seeding = open(RenamedJoinStore);
+                await seeding.tags.addAsync(
+                    { id: 't1', rowId: 'r1', tag: 'keep' } as any,
+                    { id: 't2', rowId: 'r2', tag: 'drop' } as any,
+                    { id: 't3', rowId: 'r3', tag: 'keep' } as any,
+                );
+                await seeding.saveChangesAsync();
+
+                const { data, explanation } = await open(RenamedJoinStore).rows
+                    .join(x => x.tags, r => r.id, t => t.rowId)
+                    .explain()
+                    .toArrayAsync();
+
+                expect(data.map(([row, tag]) => `${row.label}:${tag.id}`).sort()).toEqual(['alpha:t1', 'charlie:t3']);
+                expectPushedDown(explanation, new RegExp(`JOIN .* ON .*${column('wire_row_id')}.*${column('wire_tag')}`));
+                expect(executedQueriesOf(explanation)[0].parameters).toContain('keep');
+            });
+
+            /**
+             * Live queries over a renamed column.
+             *
+             * A subscription dispatches again on every change, and each dispatch has to reach the
+             * engine the way the first one did. The change probe answers from deserialized rows
+             * and must neither hand the filter back on the live query nor re-query for a row the
+             * filter excludes.
+             */
+            describe('subscribed', () => {
+
+                /** Records each query the real plugin runs, by the statements it issued. */
+                class RecordingPlugin implements IDbPlugin {
+                    readonly statements: string[][] = [];
+
+                    constructor(private readonly inner: IDbPlugin) { }
+
+                    get databaseName() { return this.inner.databaseName; }
+
+                    query(event: any, done: any) {
+                        const start = event.executedQueries.length;
+
+                        this.inner.query(event, (result: any) => {
+                            this.statements.push(event.executedQueries.slice(start).map((q: { text: string }) => q.text));
+                            done(result);
+                        });
+                    }
+
+                    bulkPersist(event: any, done: any) { this.inner.bulkPersist(event, done); }
+                    destroy(event: any, done: any) { this.inner.destroy(event, done); }
+                }
+
+                const waitFor = async (condition: () => boolean, timeoutMs = 5000) => {
+                    const started = Date.now();
+
+                    while (condition() === false) {
+                        if (Date.now() - started > timeoutMs) {
+                            throw new Error('Timed out waiting for a subscription delivery');
+                        }
+
+                        await new Promise(r => setTimeout(r, 20));
+                    }
+                };
+
+                const settle = () => new Promise(r => setTimeout(r, 400));
+
+                const subscribed = async () => {
+                    await seededRenamed();
+
+                    const plugin = new RecordingPlugin(backend.createPlugin());
+                    const store = new RenamedStore(plugin);
+                    opened.push(store);
+
+                    const deliveries: string[][] = [];
+                    const unsubscribe = store.rows.subscribe().where(r => r.label === 'bravo').toArray(r => {
+                        if (r.ok !== 'error') {
+                            deliveries.push(r.data.map(row => row.id).sort());
+                        }
+                    });
+
+                    await waitFor(() => deliveries.length === 1);
+
+                    return { plugin, store, deliveries, unsubscribe };
+                };
+
+                /** A notification from outside this store, which is how `unknown` and invalidate arrive. */
+                const notify = (plugin: IDbPlugin, changes: { unknown?: unknown[] }) => {
+                    const subscription = schemas.renamed.createSubscription(undefined, plugin.databaseName);
+                    subscription.send({ adds: [], updates: [], removals: [], unknown: (changes.unknown ?? []) as never[] });
+                    subscription[Symbol.dispose]();
+                };
+
+                const pushedDown = new RegExp(`WHERE .*${column('wire_label')}`);
+
+                it('re-queries in the engine when a change matches', async () => {
+                    const { plugin, store, deliveries, unsubscribe } = await subscribed();
+
+                    await store.rows.addAsync({ id: 'r4', label: 'bravo', amount: 40 } as any);
+                    await store.saveChangesAsync();
+                    await waitFor(() => deliveries.length === 2);
+                    unsubscribe();
+
+                    expect(deliveries[1]).toEqual(['r2', 'r4']);
+                    expect(plugin.statements.at(-1)!.join('\n')).toMatch(pushedDown);
+                });
+
+                it('stays in the engine after a notification that re-queries nothing', async () => {
+                    const { plugin, deliveries, unsubscribe } = await subscribed();
+
+                    // Not in the delivered set and nothing to seed, so the probe answers empty
+                    notify(plugin, { unknown: [{ id: 'rz', label: 'zulu', amount: 0 }] });
+                    await settle();
+
+                    // An invalidate carries no changes and always re-queries
+                    notify(plugin, {});
+                    await waitFor(() => deliveries.length === 2);
+                    unsubscribe();
+
+                    expect(deliveries[1]).toEqual(['r2']);
+                    expect(plugin.statements.at(-1)!.join('\n')).toMatch(pushedDown);
+                });
+
+                it('does not re-query for a change the filter excludes', async () => {
+                    const { plugin, store, deliveries, unsubscribe } = await subscribed();
+                    const before = plugin.statements.length;
+
+                    await store.rows.addAsync({ id: 'r5', label: 'zulu', amount: 50 } as any);
+                    await store.saveChangesAsync();
+                    await settle();
+                    unsubscribe();
+
+                    expect(plugin.statements.length).toBe(before);
+                    expect(deliveries).toHaveLength(1);
+                });
             });
         });
 

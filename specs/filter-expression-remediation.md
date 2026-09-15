@@ -572,16 +572,10 @@ Two operational traps:
 | MySQL bitwise | unverifiable without a container |
 | MSSQL `moduloExpression` casts one side | no MSSQL plugin ships |
 | the value-side locale plumbing is now unobservable | see below |
-| inner-side reports persist across dispatches | see below |
 
-### Inner-side reports are never forgotten
-
-A report on a join's inner scope lands on `join.value.innerOptions`, and `forgetReports()` never
-walks nested collections, so it survives into the next dispatch on the same queryable.
-
-Harmless today: `buildJoinStatement`, `canPushDownJoin` and `executeJoin` all ignore `reason` on the
-inner side, and `split()` already shared those item objects before this work. It becomes real the
-moment anything on the inner side starts honouring `reason`, which phase 3 brings closer.
+Resolved since: inner-side reports used to persist across dispatches, because `forgetReports()` never
+walked `join.value.innerOptions`. `forgetReports()` is gone. Every dispatch sends a
+`QueryOptionsCollection.forDispatch()` copy, which copies a join's inner options too.
 
 ### The value-side locale plumbing is dead
 

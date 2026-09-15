@@ -295,25 +295,28 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
 
         // The membership getter is what lets the bridge detect rows LEAVING this
         // subscriber's result set (defect #24) — the filter alone only sees rows entering.
-        return this.dependencies.dataBridge.subscribe<U, unknown>(databaseEvent, (r) => {
+        //
+        // The bridge sends a copy of `databaseEvent` on every change, and the memory pass has to read
+        // the reports on the copy that plugin received. The memory half never reaches a plugin, so
+        // nothing reports on it and it is shared.
+        return this.dependencies.dataBridge.subscribe<U, unknown>(databaseEvent, (r, dispatched) => {
 
             if (r.ok === Result.ERROR) {
                 done(r);
                 return;
             }
 
-            this.postProcessQuery(r, { databaseEvent, memoryEvent }, done);
+            this.postProcessQuery(r, { databaseEvent: dispatched, memoryEvent }, done);
         }, () => this.lastDeliveredIds);
     }
 
     protected createQueryPayload<Shape>(): { memoryEvent: DbPluginQueryEvent<TRoot, Shape>, databaseEvent: DbPluginQueryEvent<TRoot, Shape> } {
 
         // send over only the database operations, if there are none its a select all
-        const resolvedQueryOptions = this.resolveQueryOptions<Shape>();
-
-        // A subscribed queryable dispatches more than once over the same options, and a report from
-        // the last execution is not an answer for this one.
-        resolvedQueryOptions.forgetReports();
+        //
+        // A copy for this dispatch: the plugin reports on the options it receives, and the ones this
+        // queryable holds are read again by its next terminal.
+        const resolvedQueryOptions = this.resolveQueryOptions<Shape>().forDispatch();
 
         const splitQueryOptions = resolvedQueryOptions.split();
 

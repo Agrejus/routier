@@ -237,6 +237,11 @@ class LosesCapability implements IDbPlugin {
 
     get databaseName() { return this.inner.databaseName; }
 
+    /** Overridable, for a capability that comes and goes on a pattern other than "only the first". */
+    protected capableOn(dispatch: number) {
+        return this.regainsAfterFirst === true && dispatch > 1;
+    }
+
     query<TRoot extends {}, TShape>(event: any, done: any) {
         const options = event.operation.options;
         const mine = event.operation.schema.collectionName === schema.collectionName;
@@ -245,15 +250,18 @@ class LosesCapability implements IDbPlugin {
             this.dispatches++;
         }
 
-        const canDo = this.regainsAfterFirst === true && this.dispatches > 1;
+        const canDo = this.capableOn(this.dispatches);
         const runnable = new QueryOptionsCollection<any>();
+        // Everything after an option it cannot run is core's, as for any plugin that reports
+        let stopped = false;
 
         options.forEach((option: any) => {
-            if (option.target !== 'database') {
+            if (option.target !== 'database' || stopped) {
                 return;
             }
 
             if (mine && option.name === this.optionName && canDo === false) {
+                stopped = true;
                 return;
             }
 
@@ -305,6 +313,58 @@ describe('a report from a previous execution', () => {
         expect((await query.toArrayAsync()).length).toBe(2);
         // Applied twice this is 1, which is what a report left over from the first run produces
         expect((await query.toArrayAsync()).length).toBe(2);
+    });
+
+    /** A window after a skip: a replayed skip shrinks it, a replayed take cannot. */
+    it('is not carried into a second skip and take on the same queryable', async () => {
+        const store = await seededWith(new LosesCapability(new MemoryPlugin(`stale-${uuidv4()}`), 'skip', true));
+        const query = store.products.skip(1).take(2);
+
+        expect((await query.toArrayAsync()).length).toBe(2);
+        expect((await query.toArrayAsync()).length).toBe(2);
+    });
+
+    /** A count runs over rows or over nothing: a replayed filter would run over the engine's number. */
+    it('is not carried into a second count on the same queryable', async () => {
+        const store = await seededWith(new LosesCapability(new MemoryPlugin(`stale-${uuidv4()}`), 'filter', true));
+        const query = store.products.where(p => p.price > 15);
+
+        expect(await query.countAsync()).toBe(2);
+        expect(await query.countAsync()).toBe(2);
+    });
+
+    /**
+     * A subscription dispatches again on every change. The second dispatch cannot skip and the third
+     * can, so a report kept from the second skips the third's rows twice.
+     */
+    it('is not carried into the next dispatch of a subscription', async () => {
+        class LosesItOnce extends LosesCapability {
+            protected override capableOn(dispatch: number) {
+                return dispatch !== 2;
+            }
+        }
+
+        const store = await seededWith(new LosesItOnce(new MemoryPlugin(`stale-${uuidv4()}`), 'skip', true));
+        const wait = (ms: number) => new Promise(r => setTimeout(r, ms));
+        const lengths: number[] = [];
+
+        const unsubscribe = store.products.subscribe().skip(1).toArray(r => {
+            if (r.ok !== 'error') lengths.push(r.data.length);
+        });
+
+        await wait(200);
+
+        await store.products.addAsync({ name: 'Delta', price: 40 } as never);
+        await store.saveChangesAsync();
+        await wait(200);
+
+        await store.products.addAsync({ name: 'Echo', price: 50 } as never);
+        await store.saveChangesAsync();
+        await wait(200);
+
+        unsubscribe();
+
+        expect(lengths).toEqual([2, 3, 4]);
     });
 
     describe('a plugin that pairs the rows itself', () => {

@@ -19,6 +19,9 @@ capability report that already exists. `IDbPlugin` is unchanged.
 - **Breaking, types only:** `MemoryExecutionReason` no longer has `renamed-property`, because core
   no longer sends a renamed property to memory. A plugin that hands one back records
   `missing-capability`, and `.explain()` reports that instead.
+- **Breaking:** `QueryOptionsCollection.forgetReports()` is removed. Reports are per dispatch now:
+  `forDispatch()` gives each dispatch a copy with nothing reported, so there is nothing to forget. A
+  caller that reused one collection across dispatches and cleared it in between sends a copy instead.
 - `QueryOptionsCollection` keeps a filter, sort or `nearest` over a renamed property with the
   database. An unmapped property still runs in memory (`unmapped-property`).
 - The ephemeral plugins (memory, file-system, browser-storage) report renamed options, since they
@@ -30,11 +33,21 @@ capability report that already exists. `IDbPlugin` is unchanged.
 
 - `reportRenamedProperties(options, names?)`: reports every filter, sort and `nearest` over a
   property with renamed segments, for a plugin that evaluates options over rows as stored.
+- `QueryOptionsCollection.forDispatch()`: a copy of the options for one dispatch, every database
+  option `executed` again. A split half is copied with its origin, so a report on it still cascades
+  over that dispatch alone. A join's inner options are copied too.
 
 ### Fixed — @routier/datastore
 
-- A subscription's change probe no longer leaves its reports on the query it re-runs, so the real
-  plugin still receives a renamed option it can push down.
+- Capability reports are per dispatch. A report was written onto option items that a queryable
+  keeps, that a snapshot shares, and that a subscription re-sent on every change, so it outlived the
+  dispatch that made it. Every dispatch now sends its own copy of the options (one-shot reads, each
+  terminal, each subscription re-query, and the change probe), and the memory pass reads the copy the
+  plugin answered. A live query on SQLite or PostgreSQL filtering on a renamed column used to fall
+  back to a full table scan after a notification the probe answered empty. Rows were still correct.
+- A subscription's change probe answers a filter on a renamed property itself, since the rows it is
+  seeded with are already deserialized. It used to hand the filter back and match every changed row,
+  so every change re-queried the real plugin, including one the filter excludes.
 - When a plugin reports an option in front of an aggregate or projection, the rows it returns are
   deserialized before the memory pass. They used to reach it in storage shape whenever the query as
   a whole turned change tracking off, so `.where(x => x.renamed === 'a').countAsync()` counted zero.
