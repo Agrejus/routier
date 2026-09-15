@@ -10,15 +10,8 @@ export class MergeDefaultFunctionHandler extends PropertyInfoHandler {
         // we are changing merge to be more like enrich so we can handle injections
         // we may need to change more.  Need to move towards factories
         if (property.defaultValue != null && typeof property.defaultValue === "function") {
-            const defaultFunctionParameters: string[] = [];
-
-            if (property.injected != null) {
-                const factory = builder.get<FunctionFactoryBuilder>("factory");
-                const parameter = factory.createParameter(property.injected);
-                factory.parameters(parameter);
-
-                defaultFunctionParameters.push(parameter.name);
-            }
+            const factory = builder.get<FunctionFactoryBuilder>("factory");
+            const args = property.injected != null ? [factory.bind(property.injected)] : [];
 
             // A defaulted property still merges from the source; the default only fills
             // the gap when neither side has a value
@@ -30,14 +23,9 @@ export class MergeDefaultFunctionHandler extends PropertyInfoHandler {
             const selectorPath = property.getSelectrorPath({ parent: "destination", assignmentType: "FORCE_NULLABLE_OR_OPTIONAL" });
             const assignmentPath = property.getAssignmentPath({ parent: "destination" });
 
-            const declarationsSlot = builder.get<SlotBlock>("factory.function.header");
-            const defaultFunctionWithParameters = this.toNamedFunction(property.defaultValue.toString(), declarationsSlot);
-
-            defaultFunctionWithParameters.builder.parameters(...defaultFunctionParameters.map((w, i) => ({ name: defaultFunctionWithParameters.parameters[i], callName: w })));
-
             const defaultIf = ifsSlot.if(`${selectorPath} == null`);
             this.emitDestinationAncestorGuards(property, defaultIf);
-            defaultIf.appendBody(`${assignmentPath} = ${defaultFunctionWithParameters.builder.toCallable()}`);
+            defaultIf.appendBody(`${assignmentPath} = ${this.emitBoundCall(factory, property.defaultValue, args)}`);
             return builder;
         }
 

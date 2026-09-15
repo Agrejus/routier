@@ -181,6 +181,57 @@ capability report that already exists. `IDbPlugin` is unchanged.
   projections now share for a property's storage column. `selectExpression` aliases a renamed
   root column as well as a nested path.
 
+## Schemas compile in minified and downleveled builds (2026-09-15)
+
+### Fixed — @routier/core 0.7.1
+
+- A production build that minifies or lowers arrow functions can compile schemas again
+  ([#40](https://github.com/Agrejus/routier/issues/40),
+  [#46](https://github.com/Agrejus/routier/issues/46)). Minified builds threw
+  `createChangeTracker is not defined` on the first schema compiled, and builds that lower arrows
+  threw "Only arrow functions are allowed in the schema definition". Generated schema code no
+  longer refers to anything by its source name or embeds a function's source text: the change
+  tracker and every function a schema supplies are passed into the generated code as values.
+- Schema callbacks — `.default()`, `computed`, `function`, `.serialize()`, `.deserialize()` — may
+  be any function, not only an arrow, and may call helpers they import. A default that called an
+  imported function used to throw `ReferenceError` in an ES module even without minification,
+  because the pasted source had lost the scope it was written in.
+- The example apps no longer set `build.minify: false`. The published `dist` stays unminified by
+  choice.
+
+## SQLite installs again, and tests load the build they can run (2026-09-15)
+
+### Fixed — @routier/sqlite-plugin 0.5.2
+
+- `@sqlite.org/sqlite-wasm` is no longer a peer dependency (#39). Every published release is
+  prerelease-tagged (`3.53.4-build1`), and semver ranges never match a prerelease, so the
+  declared `>=3.46.0` matched nothing and npm failed with `ETARGET`. The browser driver still
+  needs it: install an exact build yourself. The bundle keeps it external, so the worker imports
+  the package you installed rather than an inlined copy.
+- A worker that fails to load now also names the missing package, since an uninstalled
+  `@sqlite.org/sqlite-wasm` fails the same way an unemitted worker does.
+- The README documents which build Vitest and Jest load under jsdom and how to choose (#44).
+  Vitest gets the Node build, which is the right one for logic tests; Jest's jsdom environment
+  gets the browser build and fails with `Worker is not defined` unless
+  `customExportConditions` asks for `node`. OPFS and the worker need a real browser.
+- The manifest describes the SQLite plugin instead of calling itself a Dexie plugin.
+
+## Modifiers inside nested objects survive inference (unreleased)
+
+### Fixed — @routier/core 0.7.1
+
+- `InferType` now keeps `.nullable()`, `.optional()` and `.readonly()` on properties inside
+  `s.object(...)`, including object arrays and objects nested several levels deep (#42).
+  Nested objects were mapped key by key without looking at modifiers, so
+  `s.object({ note: s.string().nullable() }).array()` typed `note` as `string` and a value of
+  `null` was rejected under `strict`.
+- `s.object({...}).nullable()` typed its children as the raw builder classes
+  (`SchemaString<string, never>`) instead of their values; it now infers the object `| null`.
+- Nested create shapes are unchanged: an identity or default inside a nested object is still
+  required in `InferCreateType`.
+- Core's `tsc` script also checks `core/type-tests` under `strict`, against the built typings —
+  core's own config is not strict, so a nullability assertion there passes whatever the type.
+
 ## Dexie reads use the indexes the schema declares (2026-09-01)
 
 ### Fixed — @routier/dexie-plugin 0.4.2

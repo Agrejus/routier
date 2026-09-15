@@ -39,7 +39,7 @@ npm install @routier/memory-plugin
 
 ### Database Name
 
-The database name is used to namespace your data and should be unique within your application:
+The database name identifies the database, the same way a file path identifies a SQLite database. Use a distinct name for separate data, and reuse a name deliberately when stores should share data. If you omit the name, the plugin uses a fixed default name, so every unnamed instance shares one database. See [Shared Named Databases](#shared-named-databases).
 
 <<< @/_snippets/code/from-docs/integrations/plugins/built-in-plugins/memory/README/block-4.ts
 
@@ -56,7 +56,7 @@ The database name is used to namespace your data and should be unique within you
 
 - **Memory usage** - All data must fit in RAM
 - **No persistence** - Data is lost when application restarts
-- **No sharing** - Data is isolated to the current process
+- **No cross-process sharing** - Separate processes, workers, and browser tabs each hold their own databases, even with the same name. Within one process, instances with the same name share data (see [Shared Named Databases](#shared-named-databases))
 
 ## Use Cases
 
@@ -94,15 +94,27 @@ The Memory Plugin implements all standard plugin methods:
 
 ## Shared Named Databases
 
-The plugin keeps one database per NAME, shared by every `MemoryPlugin` instance in the
-process. Two `new MemoryPlugin("app")` instances read and write the same records, which is
-what lets a multi-store test behave like several connections to one database.
+The name addresses a database; it is not a label for the plugin instance. The plugin keeps one
+database per NAME, shared by every `MemoryPlugin` instance in the same JavaScript process. This
+is intended, and it mirrors how other databases work: two plugins pointing at the same SQLite
+file or PostgreSQL database are two connections to the same data.
 
-This has one consequence to plan for: `destroy()` clears the named database for **every** user
-of that name, not only for the instance you call it on. A test that destroys its store empties
-the database out from under any other store that named it.
+- **Same name, same data** - Two `new MemoryPlugin("app")` instances read and write the same
+  records. A different name is a different, empty database.
+- **Unnamed instances share too** - `new MemoryPlugin()` uses a fixed default name, so every
+  unnamed instance connects to the same default database.
+- **Reads are copies** - Each store gets its own copies of records, never shared object
+  references. Only saved changes cross stores: an unsaved edit in one store is invisible to
+  another, and mutating a returned object without saving does not change stored data.
+- **Live queries follow the database** - A subscription in one store updates when another store
+  saves to the same-named database.
+- **`destroy()` affects every instance** - It clears the named database for every user of that
+  name, not only for the instance you call it on.
+- **One process only** - Separate processes, workers, and browser tabs hold separate databases.
 
-Give each test its own database name when the tests run in one process:
+Sharing a name is how you model several stores on one database, such as the tabs of a
+multi-tab app in a single test. When tests should not see each other's data, give each test its
+own database name:
 
 ```ts
 const store = new AppStore(new MemoryPlugin(`test-${crypto.randomUUID()}`));

@@ -8,22 +8,20 @@ export class SerializeSerializerHandler extends PropertyInfoHandler {
 
         if (property.valueSerializer != null) {
             const slot = builder.getOrDefault<SlotBlock>("if");
-            const assignmentBuilder = builder.getOrDefault<SlotBlock>("functions");
             // Serialize maps in-memory shape -> storage shape: read the entity by
             // property name, write the result by `from` (storage) name
             const entitySelectorPath = property.getSelectrorPath({ parent: "entity" });
             const resultSelectorPath = property.getAssignmentPath({ parent: "result", useFromPropertyName: true });
 
-            const defaultFunctionWithParameters = this.toNamedFunction(property.valueSerializer.toString(), assignmentBuilder);
-            defaultFunctionWithParameters.builder.parameters(...defaultFunctionWithParameters.parameters.map((_, i) => ({ name: defaultFunctionWithParameters.parameters[i], callName: entitySelectorPath })));
+            const call = this.emitBoundCall(builder, property.valueSerializer, [entitySelectorPath]);
 
             if (property.parent == null) {
-                slot.if(`Object.hasOwn(entity, "${property.name}")`).appendBody(`${resultSelectorPath} = ${defaultFunctionWithParameters.builder.toCallable()}`);
+                slot.if(`Object.hasOwn(entity, "${property.name}")`).appendBody(`${resultSelectorPath} = ${call}`);
                 return builder;
             }
 
             // Nested serializer: same pattern as SerializeValueHandler — if block for parent existence, then assign via serializer
-            this.emitSerializeNestedAssignment(property, slot, defaultFunctionWithParameters.builder.toCallable());
+            this.emitSerializeNestedAssignment(property, slot, call);
             return builder;
         }
 

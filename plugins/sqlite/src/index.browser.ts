@@ -15,8 +15,9 @@ export { wasmDriver } from './drivers/wasm';
  * `node:sqlite` build and a web application this one. Nothing in this file can reach a Node
  * built-in, which is what makes the package bundleable for the web at all.
  *
- * Install `@sqlite.org/sqlite-wasm` — it is an optional peer dependency so that Node
- * applications do not download a WASM binary they will never load.
+ * Install `@sqlite.org/sqlite-wasm` yourself. It is deliberately not a peer dependency: every
+ * upstream release is prerelease-tagged (`3.53.4-build1`), so no semver range can match one, and
+ * a Node application should not download a WASM binary it will never load.
  *
  * Data persists across reloads. For a database that should not:
  *

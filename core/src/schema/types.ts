@@ -6,7 +6,7 @@ import type { SchemaObject } from "./property/types/SchemaObject";
 import type { PropertyInfo } from "./PropertyInfo";
 import type { DeepPartial } from "../types";
 import type { SchemaFunction } from "./table";
-import type { SchemaOptional, SchemaTag } from "./property/modifiers";
+import type { SchemaOptional, SchemaTag, SchemaNullable } from "./property/modifiers";
 import type { Branded } from "../utilities/types";
 import type { SchemaSubscriptionOptions } from "./communication/broadcast";
 
@@ -353,15 +353,25 @@ type InferTagged<C> = ResolveWrapped<C>;
  * its keys and infers `never` for each, so `s.file().optional()` typed as
  * `{ key: never, size: never, ... }` — which no value can satisfy and no test would catch at
  * runtime.
+ *
+ * A map of child schemas goes through `InferCompiledSchema`, not a plain key map, so the
+ * children's own `.nullable()`, `.optional()` and `.readonly()` survive the way they do at the
+ * top level (#42). That branch cannot take an array — `SchemaObject.array().nullable()` wraps
+ * `C = SchemaObject[]` — so an array is resolved element by element before it.
  */
 type ResolveWrapped<C> =
     C extends string | number | boolean | Date | FileReferenceValue ? C :
     C extends VectorValue ? C :
     C extends SchemaBase<any, any> ? InferPrimitive<C>[] :
-    { [K in keyof C]: InferPrimitive<C[K]> };
+    C extends Array<infer E> ? InferPrimitive<E>[] :
+    InferCompiledSchema<C>;
 
 type InferPrimitive<T> =
     T extends SchemaOptional<infer C, infer __> ? ResolveWrapped<C> :
+    // `null` itself comes from the parent's `nullable` key partition; this resolves what is
+    // underneath. Without it a nullable object fell to the generic `SchemaBase` branch below
+    // and typed its children as the raw builder classes.
+    T extends SchemaNullable<infer C, infer __> ? ResolveWrapped<C> :
     T extends SchemaTag<infer C, infer __> ? InferTagged<C> :
     // Before the generic `SchemaBase` branch below, which would see `X = number[]` and map
     // the element through `InferPrimitive<number>` — no branch matches a bare `number`, so a
@@ -369,7 +379,7 @@ type InferPrimitive<T> =
     T extends SchemaVector<infer __, infer ___> ? VectorValue :
     T extends SchemaArray<infer Y, infer __> ? InferPrimitive<Y>[]
     : T extends SchemaObject<infer Obj, infer _> ?
-    { [K in keyof Obj]: InferPrimitive<Obj[K]> } : // Process nested objects
+    InferCompiledSchema<Obj> : // Nested objects keep their children's modifiers
     T extends SchemaFunction<infer F, infer __> ? F : T extends SchemaBase<infer X, infer _> ?
     X extends Array<infer A> ? InferPrimitive<A>[] : X : // Extract the primitive type
     never;

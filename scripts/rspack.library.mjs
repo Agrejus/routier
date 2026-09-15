@@ -32,16 +32,18 @@ const NODE_BUILTINS = [
  * Every package name the manifest says the consumer supplies.
  *
  * Matched on the package name and on any subpath, so `@routier/core/schema` is external for
- * the same reason `@routier/core` is.
+ * the same reason `@routier/core` is. `extra` covers a package the consumer supplies that the
+ * manifest cannot declare — see the `externals` option below.
  */
-const externalPackages = (manifest) => [
+const externalPackages = (manifest, extra) => [
     ...Object.keys(manifest.dependencies ?? {}),
     ...Object.keys(manifest.peerDependencies ?? {}),
+    ...extra,
     ...NODE_BUILTINS,
 ];
 
-const externalsFor = (manifest) => {
-    const names = externalPackages(manifest);
+const externalsFor = (manifest, extra) => {
+    const names = externalPackages(manifest, extra);
 
     return ({ request }, callback) => {
         // Anything `node:`-prefixed is a built-in by definition, including ones not in the
@@ -88,11 +90,13 @@ const swcRule = {
  *                                          exist. Both targets externalise the same modules.
  * @param {Record<string,string>} [options.entry]  Entry map for packages that publish
  *                                          subpaths. `@routier/core` has thirteen.
+ * @param {string[]} [options.externals]  Packages to keep external that are in neither
+ *                                          `dependencies` nor `peerDependencies`.
  */
-export function libraryConfig({ dirname, target = "web", entry = { index: "./src/index.ts" } }) {
+export function libraryConfig({ dirname, target = "web", entry = { index: "./src/index.ts" }, externals: extraExternals = [] }) {
     const require = createRequire(import.meta.url);
     const manifest = require(resolve(dirname, "package.json"));
-    const externals = externalsFor(manifest);
+    const externals = externalsFor(manifest, extraExternals);
 
     const shared = {
         entry,
@@ -142,16 +146,11 @@ export function libraryConfig({ dirname, target = "web", entry = { index: "./src
         // rather than from minification, which is off — see below.
         mode: "production",
         optimization: {
-            // Routier compiles schemas by generating source at runtime. `SchemaDefinition`
-            // embeds `createChangeTracker.toString()` into that source and then emits a call
-            // to `createChangeTracker()` written as a literal string. A minifier renames the
-            // declaration and cannot see the call, so the generated function throws
-            // "createChangeTracker is not defined" the first time any schema is compiled.
-            //
-            // Every config this replaces used `mode: "development"`, which avoided the
-            // problem by accident. Turning minification off states the constraint instead.
-            // Removing this needs the codegen to stop depending on identifier names —
-            // see `specs/known-defects.md`.
+            // Off by choice, not necessity: the published dist stays readable and debuggable,
+            // and consumers minify their own app builds. Schema codegen no longer depends on
+            // identifier names or function source text, so a minified build — here or in a
+            // consumer's bundler — compiles schemas correctly (known defect #55, issues #40 and
+            // #46; pinned by `core/src/schema/minifiedCodegen.test.ts`).
             minimize: false,
         },
         devtool: "source-map",

@@ -16,11 +16,6 @@ export default defineConfig({
             '@routier/react',
         ],
     },
-    build: {
-        // The compiled schema's generated code calls core helpers by their source names;
-        // minification renames them and the schema fails to compile at runtime.
-        minify: false,
-    },
     server: {
         port: 5220,
     },

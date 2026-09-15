@@ -1,8 +1,7 @@
 # Known defects
 
-Status: 70 of 72 fixed. #55 is a documented constraint, not a defect: the schema
-codegen cannot survive minification, so minification stays off. #72 is open.
-Date: 2026-08-24
+Status: 71 of 72 fixed. #72 is open.
+Date: 2026-09-15
 
 Defects 1–10 came from the functional test program. #11–#13 came from the stress program
 (`stress/`, see `specs/stress-testing.md`) and are the reason it exists: all three are
@@ -1333,20 +1332,36 @@ it — running immediately after a typecheck, from a real install.
 
 ---
 
-## #55 — the codegen breaks under any minifier — **DOCUMENTED CONSTRAINT** (2026-08-06)
+## #55 — the codegen breaks under any minifier — **FIXED** (2026-09-15)
 
-`SchemaDefinition.ts:360` embeds `createChangeTracker.toString()` into generated source and
-then emits a call to `createChangeTracker()` written as a literal string. A minifier renames
-the declaration and cannot see inside the string, so the generated function throws
-`createChangeTracker is not defined` the first time any schema is compiled.
+`SchemaDefinition.ts` embedded `createChangeTracker.toString()` into generated source and
+then emitted a call to `createChangeTracker()` written as a literal string. A minifier renames
+the declaration and cannot see inside the string, so the generated function threw
+`createChangeTracker is not defined` the first time any schema was compiled (GitHub #40).
 
-Every rspack config used `mode: "development"`, which avoided this by accident. The shared
-config sets `mode: "production"` with `optimization.minimize: false` and says why.
+It was one of two ways the codegen depended on source text (GitHub #46). Every function a
+schema author supplies — a `.default()`, a computed, a `.serialize()`/`.deserialize()` — was
+pasted in through `fn.toString()` and split on `=>` to recover its parameters and body. That
+broke on three things a production build does as a matter of course:
 
-This is not fixed, only stated. Fixing it means the codegen must stop depending on identifier
-names — emitting `${createChangeTracker.name}()` instead of a literal would survive
-minification, because `.name` is renamed to match `.toString()`. Every generated call site
-needs the same treatment before minification can be turned on.
+- a bundler that lowers arrows to `function` expressions hit "Only arrow functions are allowed
+  in the schema definition" on the first schema with a default;
+- a default that called anything outside itself — an imported helper — threw
+  `ReferenceError` in any ES module, minified or not, because the pasted source had lost the
+  scope it closed over. It appeared to work only where the helper happened to be global;
+- minified identifiers inside that pasted source pointed at names that no longer existed.
+
+The `.name` workaround proposed here would have fixed only the first of these. Fixed instead by
+passing every runtime value in rather than naming it: the change tracker and each supplied
+function are bound as parameters of the generated factory (`FunctionFactoryBuilder.bind`), or
+of an outer function the single-stage generators are compiled inside (`CodeBuilder.bind`), and
+generated code calls the parameter. The arrow-only restriction is gone with the parser.
+
+Minification is still off in `scripts/rspack.library.mjs`, now as a choice for readable dist
+rather than a constraint, and the four example Vite configs no longer disable it. Pinned by
+`core/src/schema/minifiedCodegen.test.ts`, which bundles a schema from source with esbuild —
+unminified, `minify`, `minifyIdentifiers`, arrows lowered, and minified with arrows lowered —
+and runs every generated function.
 
 ---
 
