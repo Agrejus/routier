@@ -33,12 +33,19 @@ One process. Two processes that use the same database name hold two separate dat
 
 ### Named database registry
 
-The plugin keeps one database per NAME, shared by every plugin instance in the process. Two
-`MemoryPlugin("app")` instances read and write the same records.
+The name addresses a database, like a SQLite file path or a PostgreSQL database name. The
+plugin keeps one database per NAME, shared by every plugin instance in the process. Two
+`MemoryPlugin("app")` instances read and write the same records, and live queries in one store
+update when the other saves. `new MemoryPlugin()` uses a fixed default name, so all unnamed
+instances share one database. This sharing is intended.
+
+Reads return copies, never shared object references. Only saved changes cross stores; an
+unsaved edit in one store is not visible to another.
 
 This makes multi-store tests behave like a real database, and it has one consequence you must
 know: `destroy()` clears the named database for **every** user of that name, not only for the
-instance you call it on. Give each test its own database name if the tests run in one process.
+instance you call it on. Give each test its own database name if the tests run in one process,
+for example ``new MemoryPlugin(`test-${crypto.randomUUID()}`)``.
 
 ### Concurrency
 

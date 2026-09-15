@@ -8,6 +8,12 @@ const dbs: Record<string, MemoryDatabase> = {};
 
 export class MemoryPlugin extends EphemeralDataPlugin {
 
+    /**
+     * @param databaseName Name of the in-process database to connect to. The name addresses a
+     * database shared by every instance in this process that uses it (see `destroy`); it is not
+     * an instance label. Omitted, it defaults to `"__routier-memory-plugin-db__"`, which every
+     * unnamed instance shares.
+     */
     constructor(databaseName?: string) {
         super(databaseName ?? "__routier-memory-plugin-db__");
 
