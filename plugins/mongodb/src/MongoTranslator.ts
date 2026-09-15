@@ -1,4 +1,6 @@
+import { assertIsArray } from "@routier/core/assertions";
 import { IQuery, JsonTranslator, QueryOption } from "@routier/core/plugins";
+import { getStorageDateReviver, StorageDateReviver } from "@routier/core/schema";
 
 /**
  * Skips the work the server already did.
@@ -52,7 +54,28 @@ export class MongoTranslator<TRoot extends {}, TShape> extends JsonTranslator<TR
         return super.take(data, option);
     }
 
+    /**
+     * The datastore writes a date as an ISO string, and a document comes back holding the string. What
+     * this runs in JavaScript (a projection, a group, a similarity search, or anything handed back) is the
+     * caller's lambdas, which compare and call Dates. Only the dates: keys stay under their `from` names.
+     * `null` for a schema with no dates.
+     */
+    private readonly reviveDates: StorageDateReviver | null;
+
     constructor(query: IQuery<TRoot, TShape>) {
         super(query);
+        this.reviveDates = getStorageDateReviver(query.schema);
+    }
+
+    override translate(data: unknown) {
+        assertIsArray(data);
+
+        if (this.reviveDates != null) {
+            for (let i = 0, length = data.length; i < length; i++) {
+                this.reviveDates(data[i] as Record<string, unknown>);
+            }
+        }
+
+        return super.translate(data);
     }
 }

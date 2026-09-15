@@ -133,6 +133,14 @@ capability report that already exists. `IDbPlugin` is unchanged.
 - A `nearest` over a renamed vector is reported, since it is scored in JavaScript over stored documents.
 - A `map` or `group` over a renamed property is reported for the same reason, and an aggregate after
   the `map` goes back with it. They used to read the in-memory name from stored documents.
+- A filter against a Date matches. The datastore serializes a date to its ISO string before the plugin
+  inserts it, so documents hold the string, but a Date value was sent as it is and BSON never orders a
+  Date against a string: `where(([r, p]) => r.createdDate > p.d, { d })` and
+  `p.dates.includes(r.createdDate)` matched no documents. Dates are sent as ISO strings in field
+  predicates, `$in` and `$nin` lists, and `$literal` operands. The defect predates #43.
+- Options run in JavaScript see Dates. The translator revives dates at their storage paths before a
+  `group`, `map`, `nearest` or a handed-back option runs, without moving keys, so `toGroup` by a date
+  no longer keys by the ISO string, and `toGroup(r => r.createdDate.getFullYear())` no longer throws.
 
 ### Changed — @routier/replication-plugin
 
