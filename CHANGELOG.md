@@ -50,6 +50,20 @@ capability report that already exists. `IDbPlugin` is unchanged.
   The datastore records the result on every `sort` and `nearest` option and every `QueryField`, as
   optional fields, so an option built without a selector is still read as its property.
 
+### Fixed — dates in options the SQL plugins run in JavaScript (@routier/core, @routier/sqlite-plugin, @routier/test-utils)
+
+- `SqlTranslator` revives dates with `getStorageDateReviver` before running a `group` key or a `map` over
+  rows, after `decodeJsonColumns`, so a date inside a JSON column is revived too. SQLite, D1 and libSQL
+  return a date as the TEXT it was stored as, so `toGroup(r => r.createdDate)` keyed each group by the
+  ISO string rather than the Date, and `toGroup(r => r.createdDate.getFullYear())` threw. Only strings
+  are converted, so PostgreSQL, PGlite and MySQL, which return Dates, are unchanged. Keys stay under
+  their storage names. The defect predates #43, and was hidden in the contract because its dated schema
+  renames properties, which hands every group back to the datastore.
+- `describePluginContract` takes `supportsDates`, which runs the "dates" section and defaults to
+  `supportsRichTypes`. The SQLite, D1, sqlite3, libSQL and PGlite runners turn it on and pass every date
+  case, with nothing gated. The section adds a group by a date and by a date's year over a schema with
+  nothing renamed, so the plugin runs the group itself.
+
 ### Fixed — selectors that compute a value (@routier/core, @routier/datastore, @routier/sql-plugin-core, @routier/sqlite-plugin, @routier/postgres-plugin-core, @routier/mysql-plugin, @routier/mongodb-plugin, @routier/dexie-plugin)
 
 - The property a sort, map, group or `nearest` reads was taken by splitting the selector's source on

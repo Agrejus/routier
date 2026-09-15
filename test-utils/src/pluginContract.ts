@@ -69,6 +69,16 @@ export const contractDatedSchema = s.define("contract_dated", {
     history: s.array(s.date()),
 }).compile();
 
+/**
+ * Dates with nothing renamed. A group copies every property into its members, so a schema with one
+ * renamed property hands every group back to the datastore; over this one, a plugin groups itself.
+ */
+export const contractPlainDatedSchema = s.define("contract_plain_dated", {
+    _id: s.string().key().identity(),
+    label: s.string(),
+    createdDate: s.date(),
+}).compile();
+
 class ContractDataStore extends DataStore {
     constructor(plugin: IDbPlugin) {
         super(plugin);
@@ -79,6 +89,7 @@ class ContractDataStore extends DataStore {
     composites = this.collection(contractCompositeSchema).proxy().create();
     renamed = this.collection(contractRenamedSchema).proxy().create();
     dated = this.collection(contractDatedSchema).proxy().create();
+    plainDated = this.collection(contractPlainDatedSchema).proxy().create();
 }
 
 type Product = { name: string; category: string; price: number };
@@ -164,6 +175,15 @@ export type PluginContractOptions = {
      * schema-level help.
      */
     readonly supportsRichTypes?: boolean;
+    /**
+     * Whether the store round-trips dates, at the root, under a `.from()` name, in an object and in an
+     * array. Runs the "dates" section, and defaults to `supportsRichTypes`.
+     *
+     * Separate because a SQL engine holds every date the schema serializes (a text or timestamp column,
+     * and JSON inside an object or array column) without holding the rest of the rich types: a column
+     * cannot tell an optional property that was never set from one set to null.
+     */
+    readonly supportsDates?: boolean;
     /**
      * Test names this plugin is known not to satisfy, registered with `it.failing` so they
      * stay in the report and fail loudly once fixed.
@@ -466,9 +486,9 @@ export function describePluginContract(
          * no `getTime()`. A renamed date is handed back and runs after deserialization, and has to give
          * the same answers. Labels are renamed too, so every answer also proves rows keep their keys.
          *
-         * Gated like rich types: a SQL engine stores a date only with a per-property serializer.
+         * Gated by `supportsDates`, which defaults to rich types.
          */
-        (options.supportsRichTypes === true ? section : describe.skip)("dates", () => {
+        ((options.supportsDates ?? options.supportsRichTypes) === true ? section : describe.skip)("dates", () => {
             const readers: [string, (writer: ContractDataStore) => ContractDataStore][] = [["a new store", reader]];
 
             if (options.reopen != null) {
@@ -582,6 +602,28 @@ export function describePluginContract(
                         expect(Object.entries(byCreated).map(([key, rows]) => [key, labels(rows)]).sort()).toEqual(expected(row => row.createdDate));
                         expect(Object.entries(byDue).map(([key, rows]) => [key, labels(rows)]).sort()).toEqual(expected(row => row.dueDate));
                         expect(Object.values(byCreated).flat().every(row => row.createdDate instanceof Date && row.dueDate instanceof Date)).toBe(true);
+                    });
+
+                    /**
+                     * Apart from "groups by a date": that schema renames properties, so the group is handed back
+                     * and runs over deserialized rows. Here the plugin runs the key over rows as its store
+                     * returned them, where a SQL engine's date is text.
+                     */
+                    test("groups by a date, and by a date's year, over rows the plugin groups itself", async () => {
+                        const writer = store();
+                        await writer.plainDated.addAsync(...(DATED.map(({ label, createdDate }) => ({ label, createdDate })) as any));
+                        await writer.saveChangesAsync();
+                        const dataStore = read(writer);
+
+                        const byCreated = await dataStore.plainDated.toGroupAsync(r => r.createdDate as never) as unknown as Record<string, { label: string, createdDate: Date }[]>;
+
+                        expect(Object.entries(byCreated).map(([key, rows]) => [key, labels(rows)]).sort()).toEqual(DATED.map(row => [String(row.createdDate), [row.label]]).sort());
+                        expect(Object.values(byCreated).flat().every(row => row.createdDate instanceof Date)).toBe(true);
+
+                        const byYear = await dataStore.plainDated.toGroupAsync(r => r.createdDate.getFullYear() as never) as unknown as Record<string, { label: string }[]>;
+
+                        expect(Object.keys(byYear).sort()).toEqual(["2023", "2024", "2025"]);
+                        expect(labels(byYear["2024"])).toEqual(["alpha"]);
                     });
                 });
             }

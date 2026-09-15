@@ -20,8 +20,9 @@ describePluginContract(
     () => new SqliteDbPlugin(`contract-sqlite3-${uuidv4()}.sqlite`, { driver: sqlite3Driver() }),
     {
         // Same reasoning as contract.test.ts: SQLite has no native boolean, date, array or
-        // object column type. The engine does not change that.
+        // object column type. The engine does not change that. Dates are serialized to text, as there.
         supportsRichTypes: false,
+        supportsDates: true,
         knownFailing: [],
     },
 );

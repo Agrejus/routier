@@ -190,4 +190,46 @@ describe('SqlTranslator', () => {
             expect(translator.translate(ROWS).value).toEqual(ROWS);
         });
     });
+
+    /**
+     * SQLite hands a date back as the TEXT it was stored as, and a date inside an object as JSON that
+     * `decodeJsonColumns` has already parsed, still holding the string.
+     */
+    describe('dates in rows a group or map runs over', () => {
+
+        const schema = schemaBuilder.define('translator_dates', {
+            id: schemaBuilder.string().key(),
+            label: schemaBuilder.string().from('wire_label'),
+            createdDate: schemaBuilder.date(),
+            window: schemaBuilder.object({ opens: schemaBuilder.date() }),
+        }).compile();
+
+        const rows = () => [
+            { id: 'a', wire_label: 'alpha', createdDate: '2024-06-15T00:00:00.000Z', window: { opens: '2020-06-15T00:00:00.000Z' } },
+            { id: 'b', wire_label: 'bravo', createdDate: '2023-06-15T00:00:00.000Z', window: { opens: '2021-06-15T00:00:00.000Z' } },
+        ];
+
+        const groupedBy = (selector: (row: any) => unknown, report = false) => {
+            const options = QueryOptionsCollection.EMPTY<any>();
+            options.add('group', { selector, key: {} as never, fields: [] } as never);
+
+            if (report) {
+                options.reportMissingCapability(options.get('group')[0]);
+            }
+
+            return new SqlTranslator<any, any>({ options, schema } as any).translate(rows()).value as unknown;
+        };
+
+        it('groups by a date and by a nested date as Dates, keeping storage keys', () => {
+            expect(Object.keys(groupedBy(row => row.createdDate) as object).sort()).toEqual(
+                [String(new Date('2023-06-15T00:00:00.000Z')), String(new Date('2024-06-15T00:00:00.000Z'))].sort()
+            );
+            expect(Object.keys(groupedBy(row => row.window.opens.getFullYear()) as object).sort()).toEqual(['2020', '2021']);
+            expect(Object.keys(groupedBy(row => row.wire_label) as object).sort()).toEqual(['alpha', 'bravo']);
+        });
+
+        it('leaves the rows as the engine returned them when the group was handed back', () => {
+            expect(groupedBy(row => row.createdDate, true)).toEqual(rows());
+        });
+    });
 });

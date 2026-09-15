@@ -24,5 +24,7 @@ whenPGliteCanRun('plugin contract: pglite', () => describePluginContract(
         // a value, so an OPTIONAL property that was never set cannot be told apart from one set
         // to null, and the rich-type cases require that distinction to survive a round trip.
         supportsRichTypes: false,
+        // Every date the dates section writes is set, so that distinction does not arise there
+        supportsDates: true,
     },
 ));

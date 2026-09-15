@@ -10,6 +10,9 @@ describePluginContract(
         // or object column type, so those shapes need per-property serializers at the schema
         // level rather than support from the plugin.
         supportsRichTypes: false,
+        // Dates are not in that list: a date is serialized to TEXT, and a date in an object or array
+        // to JSON text, and both read back through the schema.
+        supportsDates: true,
         knownFailing: [],
     },
 );
