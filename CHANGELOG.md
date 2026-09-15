@@ -3,6 +3,22 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## Modifiers inside nested objects survive inference (unreleased)
+
+### Fixed — @routier/core 0.7.1
+
+- `InferType` now keeps `.nullable()`, `.optional()` and `.readonly()` on properties inside
+  `s.object(...)`, including object arrays and objects nested several levels deep (#42).
+  Nested objects were mapped key by key without looking at modifiers, so
+  `s.object({ note: s.string().nullable() }).array()` typed `note` as `string` and a value of
+  `null` was rejected under `strict`.
+- `s.object({...}).nullable()` typed its children as the raw builder classes
+  (`SchemaString<string, never>`) instead of their values; it now infers the object `| null`.
+- Nested create shapes are unchanged: an identity or default inside a nested object is still
+  required in `InferCreateType`.
+- Core's `tsc` script also checks `core/type-tests` under `strict`, against the built typings —
+  core's own config is not strict, so a nullability assertion there passes whatever the type.
+
 ## Dexie reads use the indexes the schema declares (2026-09-01)
 
 ### Fixed — @routier/dexie-plugin 0.4.2

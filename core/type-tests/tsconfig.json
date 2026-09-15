@@ -1,0 +1,23 @@
+{
+    // Compile-time assertions about inferred types, checked under `strict`.
+    //
+    // Core's own tsconfig is not strict, and without `strictNullChecks` `null` is assignable
+    // to every type — so an assertion that a property is nullable passes whether or not it
+    // is. These files import `@routier/core` through the workspace link, which resolves to
+    // the built `dist` typings, so strict checking covers the published types without
+    // dragging core's source (which is not strict-clean) along with it. Build core first.
+    "compilerOptions": {
+        "strict": true,
+        "noEmit": true,
+        "skipLibCheck": true,
+        "module": "ESNext",
+        "target": "ESNext",
+        "moduleResolution": "bundler",
+        "lib": [
+            "ESNext"
+        ]
+    },
+    "include": [
+        "./**/*.ts"
+    ]
+}
