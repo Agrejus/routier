@@ -671,7 +671,17 @@ if (shouldRun) {
                 // objects and arrays, DATETIME, and booleans decoded back from TINYINT — is
                 // covered against this same server by the 'column shapes' block above.
                 supportsRichTypes: false,
-                knownFailing: [],
+                // MySQL's default collation, utf8mb4_0900_ai_ci, compares strings ignoring case and
+                // accents, so 'Bravo' = 'bravo' and 'Echo' sorts level with 'Écho'. JavaScript does
+                // neither. Documented in specs/filter-expressions.md, "Where a backend disagrees with
+                // JavaScript", and pinned by mysqlCasing.test.ts. The two window cases fail for the
+                // same reason: the ORDER BY puts 'Écho' second rather than last.
+                knownFailing: [
+                    'does not match when the call is applied but the literal is not folded',
+                    'folds case beyond ASCII',
+                    'applies a filter written after take to the windowed rows',
+                    'applies a filter written after skip to the rows past the window',
+                ],
             },
         );
     });

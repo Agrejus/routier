@@ -5,6 +5,7 @@ import { s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
 import { PostgresDbPlugin } from '@routier/postgresql-plugin';
 import { pgliteDbPlugin, PGliteLike } from '@routier/pglite-plugin';
+import { vmModulesEnabled } from '@routier/test-utils';
 
 /**
  * The same values, written and read back through both PostgreSQL engines, compared to each other.
@@ -19,7 +20,9 @@ import { pgliteDbPlugin, PGliteLike } from '@routier/pglite-plugin';
  * Gated with the rest of the container suites: half of it needs a server.
  */
 
-const shouldRun = process.env.E2E_CONTAINERS === '1';
+// PGlite also needs --experimental-vm-modules, as `npm run test:e2e:containers` passes. Without it
+// PGlite.create fails every test instead of skipping — see `vmModulesEnabled`.
+const shouldRun = process.env.E2E_CONTAINERS === '1' && vmModulesEnabled;
 const suite = shouldRun ? describe : describe.skip;
 
 const schema = s.define('e2e_parity_rows', {
