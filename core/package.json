@@ -1,6 +1,6 @@
 {
     "name": "@routier/core",
-    "version": "0.7.0",
+    "version": "0.8.0",
     "main": "./dist/index.cjs",
     "types": "./dist/index.d.ts",
     "source": "./src/index.ts",

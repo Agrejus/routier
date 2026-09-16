@@ -3,25 +3,33 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
-## Queries on renamed columns reach the SQL engine (unreleased)
+## Queries on renamed columns reach the SQL engine (2026-09-15)
 
 A property mapped to a column with `.from()` used to send every filter, sort and similarity
 search over it, and everything after, to memory before any plugin saw the query: the SQL plugins
-read the whole table and filtered it in JavaScript (#43). Versions are set at release; the
-sqlite plugin's next patch is already claimed by an in-flight branch.
+read the whole table and filtered it in JavaScript (#43).
 
 Core no longer decides this. A renamed option is planned for the database like any other, with its
 `PropertyInfo` attached, and a plugin that cannot read `.from()` names hands it back through the
 capability report that already exists. `IDbPlugin` is unchanged.
 
-### Changed — @routier/core
+Every package released here compiles against core exports that first exist in 0.8.0
+(`reportRenamedProperties`, `getStorageDateReviver`, `parseSelector`, `forDispatch`), so each one's
+core peer floor moves to `>=0.8.0`, and the SQL plugins' `@routier/sql-plugin-core` floor to
+`>=0.7.1`. Memory, file-system and browser-storage take their fixes through core 0.8.0 and are not
+re-released.
 
-- **Breaking, types only:** `MemoryExecutionReason` no longer has `renamed-property`, because core
-  no longer sends a renamed property to memory. A plugin that hands one back records
-  `missing-capability`, and `.explain()` reports that instead.
-- **Breaking:** `QueryOptionsCollection.forgetReports()` is removed. Reports are per dispatch now:
-  `forDispatch()` gives each dispatch a copy with nothing reported, so there is nothing to forget. A
-  caller that reused one collection across dispatches and cleared it in between sends a copy instead.
+### Breaking — @routier/core 0.8.0
+
+- `MemoryExecutionReason` no longer has `renamed-property` (types only), because core no longer
+  sends a renamed property to memory. A plugin that hands one back records `missing-capability`,
+  and `.explain()` reports that instead.
+- `QueryOptionsCollection.forgetReports()` is removed. Reports are per dispatch now: `forDispatch()`
+  gives each dispatch a copy with nothing reported, so there is nothing to forget. A caller that
+  reused one collection across dispatches and cleared it in between sends a copy instead.
+
+### Changed — @routier/core 0.8.0
+
 - `QueryOptionsCollection` keeps a filter, sort or `nearest` over a renamed property with the
   database. An unmapped property still runs in memory (`unmapped-property`).
 - The ephemeral plugins (memory, file-system, browser-storage) report renamed options, since they
@@ -29,7 +37,7 @@ capability report that already exists. `IDbPlugin` is unchanged.
   reported filter, and a join after a report is paired by the datastore.
 - `splitSendableOptions` leaves out options a plugin reported.
 
-### Added — @routier/core
+### Added — @routier/core 0.8.0
 
 - `getStorageDateReviver(schema)`: for a plugin that runs the caller's lambdas over records a JSON
   store handed back, turns ISO strings back into Dates at the root, in objects and in arrays, by
@@ -50,7 +58,7 @@ capability report that already exists. `IDbPlugin` is unchanged.
   The datastore records the result on every `sort` and `nearest` option and every `QueryField`, as
   optional fields, so an option built without a selector is still read as its property.
 
-### Fixed — dates in options the SQL plugins run in JavaScript (@routier/core, @routier/sqlite-plugin, @routier/test-utils)
+### Fixed — dates in options the SQL plugins run in JavaScript (@routier/core 0.8.0, @routier/sqlite-plugin 0.5.2, @routier/test-utils)
 
 - `SqlTranslator` revives dates with `getStorageDateReviver` before running a `group` key or a `map` over
   rows, after `decodeJsonColumns`, so a date inside a JSON column is revived too. SQLite, D1 and libSQL
@@ -64,7 +72,7 @@ capability report that already exists. `IDbPlugin` is unchanged.
   case, with nothing gated. The section adds a group by a date and by a date's year over a schema with
   nothing renamed, so the plugin runs the group itself.
 
-### Fixed — selectors that compute a value (@routier/core, @routier/datastore, @routier/sql-plugin-core, @routier/sqlite-plugin, @routier/postgres-plugin-core, @routier/mysql-plugin, @routier/mongodb-plugin, @routier/dexie-plugin)
+### Fixed — selectors that compute a value (@routier/core 0.8.0, @routier/datastore 0.4.2, @routier/sql-plugin-core 0.7.1, @routier/sqlite-plugin 0.5.2, @routier/postgres-plugin-core 0.3.2, @routier/mysql-plugin 0.5.2, @routier/mongodb-plugin 0.4.2, @routier/dexie-plugin 0.4.3)
 
 - The property a sort, map, group or `nearest` reads was taken by splitting the selector's source on
   `.`, so `r => r.dueDate.getTime()` resolved no property, and `r => 100 - r.price` resolved `price`.
@@ -83,7 +91,7 @@ capability report that already exists. `IDbPlugin` is unchanged.
 - The contract suite's `RENAMED_CALL_SELECTOR_TESTS` export is removed; those cases pass on every plugin.
   A `derived selectors` section covers computed sorts, projections, groups and aggregates.
 
-### Fixed — @routier/datastore
+### Fixed — @routier/datastore 0.4.2
 
 - Capability reports are per dispatch. A report was written onto option items that a queryable
   keeps, that a snapshot shares, and that a subscription re-sent on every change, so it outlived the
@@ -98,13 +106,13 @@ capability report that already exists. `IDbPlugin` is unchanged.
   deserialized before the memory pass. They used to reach it in storage shape whenever the query as
   a whole turned change tracking off, so `.where(x => x.renamed === 'a').countAsync()` counted zero.
 
-### Changed — @routier/dexie-plugin, @routier/pouchdb-plugin
+### Changed — @routier/dexie-plugin 0.4.3, @routier/pouchdb-plugin 0.5.1
 
 - Report renamed filters, sorts, `nearest`, projections and groups before choosing an index. Dexie
   only pushes a window, `count` or `distinct` down when nothing before it was reported; PouchDB builds
   its view predicate and index lookup from executed filters only.
 
-### Fixed — @routier/core (memory, file-system, browser-storage), @routier/dexie-plugin, @routier/pouchdb-plugin
+### Fixed — @routier/core 0.8.0 (memory, file-system, browser-storage), @routier/dexie-plugin 0.4.3, @routier/pouchdb-plugin 0.5.1
 
 - A `map`, `sum`, `min`, `max`, `map(...).distinct()` or `toGroup` over a renamed property answers
   correctly on a read the store was not tracking. These plugins ran the caller's selector over rows
@@ -112,7 +120,7 @@ capability report that already exists. `IDbPlugin` is unchanged.
   `min`/`max` found no items and a group had one `undefined` key. PouchDB, which deserialized before
   running options, only lost renamed values inside a group's members. The defect predates #43.
 
-### Fixed — @routier/core (memory, file-system, browser-storage), @routier/dexie-plugin, @routier/replication-plugin
+### Fixed — @routier/core 0.8.0 (memory, file-system, browser-storage), @routier/dexie-plugin 0.4.3, @routier/replication-plugin 0.5.1
 
 - Options run by the plugin see Dates. Every one of these ran the caller's lambdas over dates as the
   ISO strings the datastore serialized them to, so a date filter against a Date matched nothing and
@@ -122,7 +130,7 @@ capability report that already exists. `IDbPlugin` is unchanged.
   and the translator run. `HttpDbPlugin` revives the rows a response carries, and
   `HttpTransportDbPlugin` the rows it finishes locally. Rows keep their storage keys.
 
-### Fixed — @routier/pouchdb-plugin
+### Fixed — @routier/pouchdb-plugin 0.5.1
 
 - A property declared with `.from()` reads back. Documents were always stored under the `from`
   name, but the plugin returned rows it had already deserialized, and the datastore deserialized
@@ -140,7 +148,7 @@ capability report that already exists. `IDbPlugin` is unchanged.
 - An identity key declared with `.from()` is refused at save, like an identity key not named `_id`.
   PouchDB fills in `_id`, so the key never read back.
 
-### Fixed — @routier/mongodb-plugin
+### Fixed — @routier/mongodb-plugin 0.4.2
 
 - A sort on a renamed property sends the stored path. It used to send the in-memory name, which was
   masked while renamed sorts ran in memory. Filters already used the stored path.
@@ -156,12 +164,12 @@ capability report that already exists. `IDbPlugin` is unchanged.
   `group`, `map`, `nearest` or a handed-back option runs, without moving keys, so `toGroup` by a date
   no longer keys by the ISO string, and `toGroup(r => r.createdDate.getFullYear())` no longer throws.
 
-### Changed — @routier/replication-plugin
+### Changed — @routier/replication-plugin 0.5.1
 
 - `HttpDbPlugin` and `HttpTransportDbPlugin` report renamed options instead of sending them, as
   before: neither can know whether the far end reads `.from()` names.
 
-### Fixed — @routier/postgres-plugin-core, @routier/sqlite-plugin (including D1), @routier/mysql-plugin
+### Fixed — @routier/postgres-plugin-core 0.3.2, @routier/sqlite-plugin 0.5.2 (including D1), @routier/mysql-plugin 0.5.2
 
 - A filter on a renamed property now reaches the engine, so `WHERE "display_name" = $1` is issued for
   a property declared as `.from('display_name')`. A join whose inner scope filters on a renamed
@@ -175,7 +183,7 @@ capability report that already exists. `IDbPlugin` is unchanged.
   rows were grouped in JavaScript by in-memory names over rows keyed by column, so every row landed
   under an `undefined` key.
 
-### Added — @routier/sql-plugin-core
+### Added — @routier/sql-plugin-core 0.7.1
 
 - `propertyColumn` and `referencedColumn`, the one renderer filters, sorts, aggregates and
   projections now share for a property's storage column. `selectExpression` aliases a renamed
@@ -183,7 +191,7 @@ capability report that already exists. `IDbPlugin` is unchanged.
 
 ## Schemas compile in minified and downleveled builds (2026-09-15)
 
-### Fixed — @routier/core 0.7.1
+### Fixed — @routier/core 0.8.0
 
 - A production build that minifies or lowers arrow functions can compile schemas again
   ([#40](https://github.com/Agrejus/routier/issues/40),
@@ -216,9 +224,9 @@ capability report that already exists. `IDbPlugin` is unchanged.
   `customExportConditions` asks for `node`. OPFS and the worker need a real browser.
 - The manifest describes the SQLite plugin instead of calling itself a Dexie plugin.
 
-## Modifiers inside nested objects survive inference (unreleased)
+## Modifiers inside nested objects survive inference (2026-09-15)
 
-### Fixed — @routier/core 0.7.1
+### Fixed — @routier/core 0.8.0
 
 - `InferType` now keeps `.nullable()`, `.optional()` and `.readonly()` on properties inside
   `s.object(...)`, including object arrays and objects nested several levels deep (#42).
