@@ -15,6 +15,7 @@ This is a monorepo using npm workspaces. The following packages are included:
 - **`@routier/core`** - Core functionality including schemas, expressions, plugins, and utilities
 - **`@routier/datastore`** - DataStore implementation with collections, queries, change tracking, and views
 - **`@routier/react`** - React integration with hooks and components
+- **`@routier/vue`** - Vue integration with composables
 
 ### Storage Plugins
 

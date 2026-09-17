@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { highlight } from "./highlight.mts";
 
-const source = fileURLToPath(new URL("../../../_snippets/code/home/ProductGrid.tsx", import.meta.url));
+const source = fileURLToPath(new URL("../../../_snippets/code/home/inventory.ts", import.meta.url));
 
 const BASE_IMPORT = 'import { MemoryPlugin } from "@routier/memory-plugin";';
 const BASE_PLUGIN = 'new MemoryPlugin("inventory")';
@@ -79,7 +79,7 @@ export default {
         const code = `${BASE_IMPORT}\n\n${storeClass}`
           .replace(BASE_IMPORT, `import { ${className} } from "${plugin.packageName}";`)
           .replace(BASE_PLUGIN, `new ${className}(${argument})`);
-        const { html } = await highlight(code, new RegExp(`\\b${className}\\b`));
+        const { html } = await highlight(code, "tsx", new RegExp(`\\b${className}\\b`));
         return { ...plugin, html };
       }),
     );
@@ -89,7 +89,7 @@ export default {
 function readStoreClass(text: string): string {
   const storeClass = text.match(STORE_CLASS)?.[0];
   if (!storeClass || !text.includes(BASE_IMPORT) || !storeClass.includes(BASE_PLUGIN)) {
-    throw new Error("ProductGrid.tsx no longer declares InventoryStore on the memory plugin");
+    throw new Error("inventory.ts no longer declares InventoryStore on the memory plugin");
   }
   return storeClass;
 }

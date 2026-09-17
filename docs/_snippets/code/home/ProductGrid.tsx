@@ -1,39 +1,12 @@
-// #region above
-import { useState } from "react";
-import { DataStore } from "@routier/datastore";
-import { MemoryPlugin } from "@routier/memory-plugin";
-import { InferType, s } from "@routier/core/schema";
-import { useQuery } from "@routier/react";
-
-const productSchema = s
-  .define("products", {
-    id: s.string().key().identity(),
-    name: s.string(),
-    category: s.string(),
-    price: s.number(),
-    stock: s.number(),
-  })
-  .compile();
-
-export type Product = InferType<typeof productSchema>;
-
-class InventoryStore extends DataStore {
-  products = this.collection(productSchema).proxy().create();
-
-  constructor() {
-    super(new MemoryPlugin("inventory"));
-  }
-}
-
-export const store = new InventoryStore();
-// #endregion above
-
 // #region focus
+import { useState } from "react";
+import { useQuery } from "@routier/react";
+import { store, type Product } from "./inventory";
+
 export function ProductGrid() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(6);
 
-  // One live page: sort, skip, take, subscribe.
   const rows = useQuery<Product[]>(
     onResult =>
       store.products
@@ -47,12 +20,10 @@ export function ProductGrid() {
 // #endregion focus
 
 // #region below
-  // A live total keeps the pager's last page right.
   const total = useQuery<number>(onResult => store.products.subscribe().count(onResult), []);
   const count = total.status === "success" ? total.data : 0;
   const pageCount = Math.max(1, Math.ceil(count / pageSize));
 
-  // Rows are change-tracked: edit, save, and every live query refreshes.
   const restock = async (product: Product) => {
     product.stock += 10;
     await store.saveChangesAsync();

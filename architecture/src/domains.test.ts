@@ -126,7 +126,7 @@ describe("domain manifest", () => {
      * arrives while the person who knows the answer is still the one holding it.
      */
     it("assigns every workspace source directory to a domain", () => {
-        const workspaceRoots = ["core", "datastore", "react", "sync-server", "test-utils",
+        const workspaceRoots = ["core", "datastore", "react", "vue", "sync-server", "test-utils",
             "e2e", "stress", "benchmark", "architecture"];
         const pluginRoots = fs
             .readdirSync(path.join(REPO_ROOT, "plugins"), { withFileTypes: true })

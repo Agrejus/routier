@@ -412,6 +412,17 @@
     ]
   },
   {
+    "text": "Vue",
+    "link": "/integrations/vue/",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "Overview",
+        "link": "/integrations/vue/index"
+      }
+    ]
+  },
+  {
     "text": "API Reference",
     "link": "/api/",
     "items": [
