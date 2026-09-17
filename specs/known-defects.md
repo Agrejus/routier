@@ -1,6 +1,6 @@
 # Known defects
 
-Status: 71 of 72 fixed. #72 is open.
+Status: 72 of 72 fixed.
 Date: 2026-09-15
 
 Defects 1–10 came from the functional test program. #11–#13 came from the stress program
@@ -1735,7 +1735,7 @@ under any name, so only `identity` was affected.
 
 Fixed by refusing such a schema outright, with a message naming the collection and the fix.
 
-## #72 — a 5 ms absolute budget makes a merge gate a coin flip — **OPEN**
+## #72 — a 5 ms absolute budget makes a merge gate a coin flip — **FIXED** (2026-09-17)
 
 `plugins/memory/src/tests/overhead.test.ts` asserts `expect(added).toBeLessThan(5)` — an
 absolute 5 ms budget on the difference between two timed runs. On a loaded machine that
@@ -1746,9 +1746,20 @@ Observed failing one run of each of two pull requests and passing the next, on t
 That is a merge gate that blocks at random, which trains everyone to re-run it — and a gate
 people re-run by reflex no longer reports anything.
 
-A ratio with a floor, or a best-of-N measurement, keeps the guarantee without the coin flip.
-Not fixed here because changing what a performance gate asserts deserves its own decision about
-what the guarantee is.
+It failed again on `main` after #54 merged: `.explain()` measured 10.85 ms of added cost on a
+commit whose identical tree had passed both pull request runs. Locally the same measurement is
+-0.2 to 0.5 ms.
+
+Interleaving the two timed runs, and comparing best-of-N instead of medians, narrowed the spread
+under CPU load but still crossed 5 ms. No way of timing it made an absolute budget reliable on a
+shared machine.
+
+Fixed by deleting `overhead.test.ts`. A wall-clock budget does not belong in the unit suite,
+which is the rule `jest.config.js` already states for the benchmark project ("a timing
+measurement is not a test"). Its bounds were also too loose to catch a real regression: 5 ms
+against ~0.3 ms, and 25 µs per entity against ~4 µs. The numbers it printed were hidden unless it
+failed. Timing belongs in `npm run benchmark`, which compares against recorded baselines with a
+tolerance.
 
 ## Orientation for a new session
 
