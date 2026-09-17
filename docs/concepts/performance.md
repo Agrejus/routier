@@ -14,10 +14,9 @@ measure your own workload, run the regression benchmark in `benchmark/`.
 ### Overhead, measured
 
 Routier is a layer over a storage plugin, so its overhead is the difference between a query
-through the datastore and the same query sent straight at the plugin. The test
-`plugins/memory/src/tests/overhead.test.ts` measures that difference against the memory plugin,
-where storage adds no I/O to hide the layer's cost. Numbers below are medians from an M-series
-Mac, Node 22:
+through the datastore and the same query sent straight at the plugin. The numbers below measure
+that difference against the memory plugin, where storage adds no I/O to hide the layer's cost.
+They are medians from an M-series Mac, Node 22:
 
 | Measurement                                        | Result           |
 | -------------------------------------------------- | ---------------- |
@@ -28,8 +27,7 @@ Mac, Node 22:
 The per-entity cost covers everything Routier adds: expression parsing, plugin dispatch, result
 translation, deserialization, and change tracking. Read the result as a floor for other plugins:
 a SQLite or HTTP query pays the same layer cost plus its own I/O, so the layer is a smaller
-share of the total there. The test asserts these bounds in CI, so a regression fails a build
-instead of landing silently.
+share of the total there.
 
 ### Reads
 
