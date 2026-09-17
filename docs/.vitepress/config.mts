@@ -6,6 +6,12 @@ export default defineConfig({
   description:
     "Modern, flexible, reactive data access layer for building scalable applications",
   cleanUrls: true,
+  vite: {
+    // The homepage showcase renders a React component (docs/_snippets/code/home).
+    esbuild: { jsx: "automatic" },
+    // One React copy for the component and @routier/react, which links to the workspace.
+    resolve: { dedupe: ["react", "react-dom"] },
+  },
   lastUpdated: true,
   sitemap: { hostname: "https://routier.dev" },
   // TypeDoc emits these extensionless directory links for a few type-only symbols.
