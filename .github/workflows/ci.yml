@@ -92,8 +92,10 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Through the npm script, which adds --experimental-vm-modules: PGlite needs it, and its
+      # suites skip or fail without it.
       - name: E2E with containers
-        run: E2E_CONTAINERS=1 npx jest --selectProjects e2e
+        run: npm run test:e2e:containers
 
       # --expose-gc so the memory scenarios can force a collection and measure what the run
       # RETAINS. Without it they sample whatever V8 has not got round to collecting, which on

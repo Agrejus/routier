@@ -49,7 +49,8 @@ suite('the S3 blob store against MinIO', () => {
     let files: ReturnType<typeof createFiles>;
 
     beforeAll(async () => {
-        container = await new GenericContainer('minio/minio:RELEASE.2024-09-13T20-26-02Z')
+        // From quay.io: MinIO no longer publishes to Docker Hub, and the pinned tag there is gone.
+        container = await new GenericContainer('quay.io/minio/minio:RELEASE.2024-09-13T20-26-02Z')
             .withEnvironment({
                 MINIO_ROOT_USER: ACCESS_KEY,
                 MINIO_ROOT_PASSWORD: SECRET_KEY,
