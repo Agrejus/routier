@@ -25,11 +25,6 @@ features:
     details: Defaults, identity keys, indexes, computed properties, transforms, and property mapping. Bring your own validation with Zod or AJV.
     link: /concepts/schema/
     linkText: Schema guide
-  - icon: 🔌
-    title: Storage and Capability Plugins
-    details: Choose memory, IndexedDB, SQLite, PostgreSQL, MySQL, MongoDB, PouchDB, or files. Then add caching, replication, concurrency, encryption, and blob storage.
-    link: /integrations/plugins/built-in-plugins/
-    linkText: Choose plugins
   - icon: 🔗
     title: Joins and Rich Queries
     details: Inner and left joins across collections, views, stores, and plugins, plus filtering, aggregation, reusable queries, full-text search, and vector similarity.
@@ -56,41 +51,3 @@ features:
     link: /concepts/performance
     linkText: Performance
 ---
-
-## What is Routier?
-
-Routier is a fast, front-end-first data toolkit that augments any datastore with
-schemas, collections, live queries, optimistic mutations, replication, caching,
-and more, without locking you into a specific ORM or backend.
-
-Modern apps inevitably build a data abstraction layer: defaults, business rules,
-computed fields, and adapters for whatever datastore you start with. That works
-until you hit performance ceilings, need local-first, or want to adopt a
-different storage primitive. Routier gives you a datastore-agnostic layer you
-control: keep your domain model and data API intact, and swap the storage plugin
-beneath it.
-
-## Quick Example
-
-::: tip Try it live
-[Open the playground](/getting-started/playground) to run examples like this in your browser with nothing to install, or [run them locally](/getting-started/playground#run-it-locally).
-:::
-
-<<< @/_snippets/code/from-docs/index/block-1.ts
-
-## How Routier Fits Your Stack
-
-- **Enhance, don't replace.** Keep your existing datastore. Add structure (schemas, defaults, serialization), speed (indexes, caching), and better ergonomics (live queries, optimistic updates).
-- **Swap without rewrites.** Move from IndexedDB to SQLite or adopt OPFS by changing the plugin. Your app code remains unchanged.
-- **Type checking by choice.** Use Zod or AJV for validation. Routier handles transformation and persistence.
-- **Client-first, backend-capable.** Routier is designed for the browser and local-first workflows, while remaining adaptable to backend runtimes.
-
-## Next Steps
-
-| I want to…                     | Start here                                                        |
-| ------------------------------ | ----------------------------------------------------------------- |
-| Install and build my first app | [Installation](/getting-started/installation) → [Quick Start](/getting-started/quick-start) |
-| Decide whether Routier fits    | [Why Routier?](/getting-started/why-routier)                     |
-| Understand the core ideas      | [Concepts](/concepts/)                                            |
-| Use Routier with React         | [React Integration](/integrations/react/)                         |
-| Explore real patterns          | [Guides](/guides/)                                                |

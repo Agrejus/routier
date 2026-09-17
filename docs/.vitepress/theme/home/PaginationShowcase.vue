@@ -2,6 +2,8 @@
 import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import type { Root } from "react-dom/client";
 import { data as code } from "./showcase.data.mts";
+import CodeLines from "./CodeLines.vue";
+import HomeSection from "./HomeSection.vue";
 
 const expandAbove = ref(false);
 const expandBelow = ref(false);
@@ -14,8 +16,6 @@ let sideBySide: MediaQueryList | null = null;
 let gridReady = false;
 let disposed = false;
 
-// React, Routier, and the grid load in the browser only; the SSR build renders
-// the empty panel and the highlighted code.
 onMounted(async () => {
   sideBySide = window.matchMedia("(min-width: 1100px)");
   sideBySide.addEventListener("change", matchPanels);
@@ -44,12 +44,6 @@ onBeforeUnmount(() => {
   root?.unmount();
 });
 
-/**
- * Side by side, both panels start at the same height: the taller of the grid
- * (at its starting page size) and the collapsed code. The grid's rows grow to
- * fill any difference, and the code panel keeps that height, scrolling inside
- * when expanded. Other page sizes change only the grid.
- */
 async function matchPanels() {
   const grid = gridPanel.value;
   const panel = codePanel.value;
@@ -82,110 +76,46 @@ async function matchPanels() {
 </script>
 
 <template>
-  <section class="showcase" aria-labelledby="showcase-title">
-    <div class="container">
-      <div class="showcase-intro">
-        <h2 id="showcase-title">A live, paginated grid in one query</h2>
-        <p class="lede">
-          A React component with <code>useQuery</code>: sort, skip, take, and subscribe. The page stays current as data
-          changes, with no cache to invalidate and no refetch to wire up. Try restocking a row or turning on traffic.
-        </p>
-      </div>
+  <HomeSection id="showcase" eyebrow="Live demo" title="A live, paginated grid in one query" lead>
+    <template #lede>
+      This grid is a real React component running on Routier in your browser. One <code>useQuery</code> call sorts,
+      pages, and subscribes, so the page stays current with no cache to invalidate and no refetch to wire up.
+      Try restocking a row, turning on traffic, or changing the page size.
+    </template>
 
-      <div class="showcase-body">
-        <div ref="gridPanel" class="panel grid-panel" />
+    <div class="showcase-body">
+      <div ref="gridPanel" class="panel grid-panel" />
 
-        <div ref="codePanel" class="panel code-panel">
-          <div class="panel-bar">
-            <span class="file">ProductGrid.tsx</span>
+      <div ref="codePanel" class="panel code-panel">
+        <div class="panel-bar">
+          <span class="file">ProductGrid.tsx</span>
+          <span class="badge">the code this grid runs</span>
+        </div>
+
+        <div class="code">
+          <button type="button" class="expander" :aria-expanded="expandAbove" @click="expandAbove = !expandAbove">
+            <span aria-hidden="true">{{ expandAbove ? "▾" : "▴" }}</span>
+            {{ expandAbove ? "Hide store setup" : `Show store setup · ${code.above.lineCount} lines` }}
+          </button>
+          <div class="lines">
+            <CodeLines v-show="expandAbove" :html="code.above.html" :first-line="code.above.firstLine" />
+            <CodeLines :html="code.focus.html" :first-line="code.focus.firstLine" />
+            <CodeLines v-show="expandBelow" :html="code.below.html" :first-line="code.below.firstLine" />
           </div>
-
-          <div class="code">
-            <button type="button" class="expander" :aria-expanded="expandAbove" @click="expandAbove = !expandAbove">
-              <span aria-hidden="true">{{ expandAbove ? "▾" : "▴" }}</span>
-              {{ expandAbove ? "Hide store setup" : `Show store setup · ${code.above.lineCount} lines` }}
-            </button>
-            <div class="lines">
-              <div
-                v-show="expandAbove"
-                class="part"
-                :style="{ counterReset: `line ${code.above.firstLine - 1}` }"
-                v-html="code.above.html"
-              />
-              <div class="part" :style="{ counterReset: `line ${code.focus.firstLine - 1}` }" v-html="code.focus.html" />
-              <div
-                v-show="expandBelow"
-                class="part"
-                :style="{ counterReset: `line ${code.below.firstLine - 1}` }"
-                v-html="code.below.html"
-              />
-            </div>
-            <button type="button" class="expander" :aria-expanded="expandBelow" @click="expandBelow = !expandBelow">
-              <span aria-hidden="true">{{ expandBelow ? "▴" : "▾" }}</span>
-              {{ expandBelow ? "Hide the rest" : `Show the rest of the component · ${code.below.lineCount} lines` }}
-            </button>
-          </div>
+          <button type="button" class="expander" :aria-expanded="expandBelow" @click="expandBelow = !expandBelow">
+            <span aria-hidden="true">{{ expandBelow ? "▴" : "▾" }}</span>
+            {{ expandBelow ? "Hide the rest" : `Show the rest of the component · ${code.below.lineCount} lines` }}
+          </button>
         </div>
       </div>
     </div>
-  </section>
+  </HomeSection>
 </template>
 
 <style scoped>
-/* Same horizontal padding and max width as VitePress's hero and feature grid,
-   so the showcase shares their left and right edges. The hero already leaves
-   64px below itself; the matching bottom padding gives the features the same gap. */
-.showcase {
-  padding: 0 24px 48px;
-}
-
-@media (min-width: 640px) {
-  .showcase {
-    padding: 0 48px 64px;
-  }
-}
-
-@media (min-width: 960px) {
-  .showcase {
-    padding: 0 64px 64px;
-  }
-}
-
-.container {
-  max-width: 1152px;
-  margin: 0 auto;
-}
-
-.showcase-intro {
-  max-width: 680px;
-  margin-bottom: 24px;
-}
-
-/* Section heading and body copy use the doc theme's h2 and paragraph metrics. */
-.showcase-intro h2 {
-  margin: 0;
-  font-size: 24px;
-  line-height: 32px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.lede {
-  margin: 8px 0 0;
-  line-height: 28px;
-  color: var(--vp-c-text-2);
-}
-
-.lede code {
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-family: var(--vp-font-family-mono);
-  font-size: 0.875em;
-  color: var(--vp-code-color);
-  background: var(--vp-code-bg);
-}
-
 .showcase-body {
+  position: relative;
+  isolation: isolate;
   display: grid;
   gap: 20px;
   grid-template-columns: minmax(0, 1fr);
@@ -198,11 +128,21 @@ async function matchPanels() {
   }
 }
 
-/* Matches the feature cards below: soft background, 12px radius, no shadow. */
+.showcase-body::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 12% 6%;
+  background: var(--vp-home-hero-image-background-image);
+  filter: blur(80px);
+  opacity: 0.4;
+}
+
 .panel {
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--vp-c-bg-soft);
+  border: 1px solid var(--vp-c-divider);
+  box-shadow: var(--vp-shadow-3);
   border-radius: 12px;
   background: var(--vp-c-bg-soft);
   overflow: hidden;
@@ -218,12 +158,9 @@ async function matchPanels() {
   border-bottom: 1px solid var(--vp-c-divider);
 }
 
-/* Before React mounts, hold the grid's space so the page does not jump. */
 .grid-panel:empty {
   min-height: 400px;
 }
-
-/* ── Grid (rendered by React, so its elements are reached with :deep) ── */
 
 .grid-panel :deep(.grid-title) {
   font-weight: 600;
@@ -341,7 +278,6 @@ async function matchPanels() {
   background: transparent;
 }
 
-/* Columns: product, category, price, stock, restock. */
 .grid-panel :deep(td:nth-child(1)) {
   font-weight: 500;
 }
@@ -399,12 +335,16 @@ async function matchPanels() {
   }
 }
 
-/* ── Code ── */
-
 .file {
   font-family: var(--vp-font-family-mono);
   font-size: 12px;
   color: var(--vp-c-text-2);
+}
+
+.badge {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--vp-c-text-3);
 }
 
 .code {
@@ -427,8 +367,7 @@ async function matchPanels() {
   font-size: 12px;
   text-align: left;
   color: var(--vp-c-text-2);
-  /* Opaque, so code scrolling under the sticky bar does not show through. */
-  background: linear-gradient(var(--vp-c-default-soft), var(--vp-c-default-soft)), var(--vp-code-block-bg);
+    background: linear-gradient(var(--vp-c-default-soft), var(--vp-c-default-soft)), var(--vp-code-block-bg);
   cursor: pointer;
   transition: color 0.15s;
 }
@@ -448,52 +387,5 @@ async function matchPanels() {
 
 .lines {
   padding: 8px 0;
-}
-
-.part :deep(pre) {
-  margin: 0;
-  padding: 0;
-  overflow-x: auto;
-  background: transparent !important;
-}
-
-.part :deep(code) {
-  display: block;
-  width: fit-content;
-  min-width: 100%;
-  font-family: var(--vp-font-family-mono);
-  font-size: 13px;
-  line-height: 1.7;
-}
-
-.part :deep(.line) {
-  display: block;
-  min-height: 1.7em;
-  padding: 0 20px 0 0;
-  counter-increment: line;
-}
-
-.part :deep(.line)::before {
-  content: counter(line);
-  display: inline-block;
-  width: 2.5em;
-  margin-right: 16px;
-  text-align: right;
-  color: var(--vp-c-text-3);
-  opacity: 0.6;
-  user-select: none;
-}
-
-.part :deep(.line.emphasis) {
-  background: var(--vp-code-line-highlight-color);
-  box-shadow: inset 3px 0 0 var(--vp-c-brand-2);
-}
-
-.part :deep(span) {
-  color: var(--shiki-light);
-}
-
-.dark .part :deep(span) {
-  color: var(--shiki-dark);
 }
 </style>
