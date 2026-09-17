@@ -31,6 +31,7 @@ const moduleNameMapper = {
     '^@routier/otel-plugin$': '<rootDir>/plugins/otel/src/index.ts',
     '^@routier/replication-plugin$': '<rootDir>/plugins/replication/src/index.ts',
     '^@routier/react$': '<rootDir>/react/src/index.ts',
+    '^@routier/vue$': '<rootDir>/vue/src/index.ts',
     '^@routier/sync-server$': '<rootDir>/sync-server/src/index.ts',
 };
 
@@ -92,6 +93,11 @@ module.exports = {
             // project is the one place the suite departs from the node environment.
             testEnvironment: 'jsdom',
             transform: { ...tsTransform, ...babelTransform },
+        },
+        {
+            ...base,
+            displayName: 'vue',
+            testMatch: ['<rootDir>/vue/**/*.test.ts'],
         },
         {
             ...base,

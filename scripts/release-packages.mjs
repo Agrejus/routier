@@ -23,6 +23,7 @@ export const releasePackageDirectories = [
   'plugins/pouchdb',
   'plugins/sqlite',
   'react',
+  'vue',
 ];
 
 export const releasePackages = releasePackageDirectories.map(directory => {

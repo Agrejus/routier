@@ -46,7 +46,7 @@ const CASE_SENSITIVE_FILES = ['README.md', 'LICENSE'];
 
 /** Directories that hold publishable workspaces. A private package is skipped by name. */
 const WORKSPACE_ROOTS = ['plugins'];
-const STANDALONE = ['core', 'datastore', 'react'];
+const STANDALONE = ['core', 'datastore', 'react', 'vue'];
 
 /** Every publishable package must ship these. */
 const REQUIRED = [

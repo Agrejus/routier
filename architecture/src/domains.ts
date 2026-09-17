@@ -272,6 +272,17 @@ export const DOMAINS: readonly Domain[] = [
         mayImport: ["@routier/core", "@routier/datastore"],
     },
     {
+        id: "vue",
+        title: "Vue bindings",
+        paths: ["vue/src"],
+        responsibility: "Exposes a datastore to Vue components as composables.",
+        rules: [
+            "Binds to the datastore's public surface only. A composable that needs plugin internals is a sign the datastore is missing something.",
+            "Subscription lifecycle and reactive dependency tracking live here; change detection lives in the datastore.",
+        ],
+        mayImport: ["@routier/core", "@routier/datastore"],
+    },
+    {
         id: "sync-server",
         title: "Sync server",
         paths: ["sync-server/src"],

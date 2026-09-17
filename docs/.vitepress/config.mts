@@ -7,10 +7,8 @@ export default defineConfig({
     "Modern, flexible, reactive data access layer for building scalable applications",
   cleanUrls: true,
   vite: {
-    // The homepage showcase renders a React component (docs/_snippets/code/home).
     esbuild: { jsx: "automatic" },
-    // One React copy for the component and @routier/react, which links to the workspace.
-    resolve: { dedupe: ["react", "react-dom"] },
+    resolve: { dedupe: ["react", "react-dom", "vue"] },
   },
   lastUpdated: true,
   sitemap: { hostname: "https://routier.dev" },
@@ -50,7 +48,13 @@ export default defineConfig({
       { text: "Queries", link: "/concepts/queries/" },
       { text: "Concepts", link: "/concepts/" },
       { text: "Guides", link: "/guides/" },
-      { text: "React", link: "/integrations/react/" },
+      {
+        text: "Frameworks",
+        items: [
+          { text: "React", link: "/integrations/react/" },
+          { text: "Vue", link: "/integrations/vue/" },
+        ],
+      },
       { text: "API", link: "/api/" },
       // target forces a full-page load instead of VitePress client routing: /playground/ and
       // /lab/ are standalone React applications copied into the Pages artifact.

@@ -1,56 +1,51 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
-import type { Root } from "react-dom/client";
+import { computed, defineAsyncComponent, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { data as code } from "./showcase.data.mts";
+import type { Framework } from "./frameworks";
 import CodeLines from "./CodeLines.vue";
+import FrameworkToggle from "./FrameworkToggle.vue";
 import HomeSection from "./HomeSection.vue";
+import ReactShowcaseGrid from "./ReactShowcaseGrid.vue";
+
+const VueShowcaseGrid = defineAsyncComponent(() => import("../../../_snippets/code/home/ShowcaseGrid.vue"));
+
+const framework = ref<Framework>("react");
+const grid = computed(() => code.grids[framework.value]);
 
 const expandAbove = ref(false);
 const expandBelow = ref(false);
+const gridReady = ref(false);
 
 const gridPanel = ref<HTMLElement | null>(null);
 const codePanel = ref<HTMLElement | null>(null);
 
-let root: Root | null = null;
 let sideBySide: MediaQueryList | null = null;
-let gridReady = false;
-let disposed = false;
 
-onMounted(async () => {
+onMounted(() => {
   sideBySide = window.matchMedia("(min-width: 1100px)");
   sideBySide.addEventListener("change", matchPanels);
-
-  const [{ createElement }, { createRoot }, { ShowcaseGrid }] = await Promise.all([
-    import("react"),
-    import("react-dom/client"),
-    import("../../../_snippets/code/home/ShowcaseGrid"),
-  ]);
-  if (disposed || !gridPanel.value) return;
-
-  root = createRoot(gridPanel.value);
-  root.render(
-    createElement(ShowcaseGrid, {
-      onReady: () => {
-        gridReady = true;
-        void matchPanels();
-      },
-    }),
-  );
 });
 
 onBeforeUnmount(() => {
-  disposed = true;
   sideBySide?.removeEventListener("change", matchPanels);
-  root?.unmount();
 });
 
-async function matchPanels() {
-  const grid = gridPanel.value;
-  const panel = codePanel.value;
-  if (!grid || !panel || !gridReady) return;
+watch(framework, () => {
+  gridReady.value = false;
+});
 
-  grid.style.removeProperty("--row-height");
-  grid.style.minHeight = "";
+function onGridReady() {
+  gridReady.value = true;
+  void matchPanels();
+}
+
+async function matchPanels() {
+  const gridElement = gridPanel.value;
+  const panel = codePanel.value;
+  if (!gridElement || !panel || !gridReady.value) return;
+
+  gridElement.style.removeProperty("--row-height");
+  gridElement.style.minHeight = "";
   panel.style.height = "";
   if (!sideBySide?.matches) return;
 
@@ -60,15 +55,15 @@ async function matchPanels() {
   await nextTick();
 
   const codeHeight = panel.offsetHeight;
-  const gridHeight = grid.offsetHeight;
-  const rows = grid.querySelectorAll("tbody tr").length;
-  const rowHeight = parseFloat(getComputedStyle(grid.querySelector("tbody td") ?? grid).height) || 44;
+  const gridHeight = gridElement.offsetHeight;
+  const rows = gridElement.querySelectorAll("tbody tr").length;
+  const rowHeight = parseFloat(getComputedStyle(gridElement.querySelector("tbody td") ?? gridElement).height) || 44;
   const height = Math.max(codeHeight, gridHeight);
 
   if (rows > 0 && height > gridHeight) {
-    grid.style.setProperty("--row-height", `${rowHeight + (height - gridHeight) / rows}px`);
+    gridElement.style.setProperty("--row-height", `${rowHeight + (height - gridHeight) / rows}px`);
   }
-  grid.style.minHeight = `${height}px`;
+  gridElement.style.minHeight = `${height}px`;
   panel.style.height = `${height}px`;
 
   [expandAbove.value, expandBelow.value] = [above, below];
@@ -78,33 +73,46 @@ async function matchPanels() {
 <template>
   <HomeSection id="showcase" eyebrow="Live demo" title="A live, paginated grid in one query" lead>
     <template #lede>
-      This grid is a real React component running on Routier in your browser. One <code>useQuery</code> call sorts,
-      pages, and subscribes, so the page stays current with no cache to invalidate and no refetch to wire up.
-      Try restocking a row, turning on traffic, or changing the page size.
+      This grid is a real React or Vue component running on Routier in your browser. One <code>useQuery</code> call
+      sorts, pages, and subscribes, so the page stays current with no cache to invalidate and no refetch to wire up.
+      Try restocking a row, turning on traffic, or switching frameworks: both read the same store.
     </template>
 
+    <div class="showcase-toolbar">
+      <FrameworkToggle v-model="framework" />
+    </div>
+
     <div class="showcase-body">
-      <div ref="gridPanel" class="panel grid-panel" />
+      <div ref="gridPanel" class="panel grid-panel" :class="{ 'is-loading': !gridReady }">
+        <ReactShowcaseGrid v-if="framework === 'react'" @ready="onGridReady" />
+        <ClientOnly v-else>
+          <VueShowcaseGrid @ready="onGridReady" />
+        </ClientOnly>
+      </div>
 
       <div ref="codePanel" class="panel code-panel">
         <div class="panel-bar">
-          <span class="file">ProductGrid.tsx</span>
+          <span class="file">{{ grid.file }}</span>
           <span class="badge">the code this grid runs</span>
         </div>
 
         <div class="code">
           <button type="button" class="expander" :aria-expanded="expandAbove" @click="expandAbove = !expandAbove">
             <span aria-hidden="true">{{ expandAbove ? "▾" : "▴" }}</span>
-            {{ expandAbove ? "Hide store setup" : `Show store setup · ${code.above.lineCount} lines` }}
+            {{ expandAbove ? "Hide store setup" : `Show store setup · ${code.store.file} · ${code.store.lineCount} lines` }}
           </button>
           <div class="lines">
-            <CodeLines v-show="expandAbove" :html="code.above.html" :first-line="code.above.firstLine" />
-            <CodeLines :html="code.focus.html" :first-line="code.focus.firstLine" />
-            <CodeLines v-show="expandBelow" :html="code.below.html" :first-line="code.below.firstLine" />
+            <template v-if="expandAbove">
+              <div class="file-caption">{{ code.store.file }}</div>
+              <CodeLines :html="code.store.html" :first-line="code.store.firstLine" />
+              <div class="file-caption">{{ grid.file }}</div>
+            </template>
+            <CodeLines :html="grid.focus.html" :first-line="grid.focus.firstLine" />
+            <CodeLines v-show="expandBelow" :html="grid.below.html" :first-line="grid.below.firstLine" />
           </div>
           <button type="button" class="expander" :aria-expanded="expandBelow" @click="expandBelow = !expandBelow">
             <span aria-hidden="true">{{ expandBelow ? "▴" : "▾" }}</span>
-            {{ expandBelow ? "Hide the rest" : `Show the rest of the component · ${code.below.lineCount} lines` }}
+            {{ expandBelow ? "Hide the rest" : `Show the rest of the component · ${grid.below.lineCount} lines` }}
           </button>
         </div>
       </div>
@@ -113,6 +121,12 @@ async function matchPanels() {
 </template>
 
 <style scoped>
+.showcase-toolbar {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
 .showcase-body {
   position: relative;
   isolation: isolate;
@@ -158,7 +172,7 @@ async function matchPanels() {
   border-bottom: 1px solid var(--vp-c-divider);
 }
 
-.grid-panel:empty {
+.grid-panel.is-loading {
   min-height: 400px;
 }
 
@@ -367,7 +381,7 @@ async function matchPanels() {
   font-size: 12px;
   text-align: left;
   color: var(--vp-c-text-2);
-    background: linear-gradient(var(--vp-c-default-soft), var(--vp-c-default-soft)), var(--vp-code-block-bg);
+  background: linear-gradient(var(--vp-c-default-soft), var(--vp-c-default-soft)), var(--vp-code-block-bg);
   cursor: pointer;
   transition: color 0.15s;
 }
@@ -387,5 +401,16 @@ async function matchPanels() {
 
 .lines {
   padding: 8px 0;
+}
+
+.file-caption {
+  padding: 8px 20px 4px;
+  font-family: var(--vp-font-family-mono);
+  font-size: 11px;
+  color: var(--vp-c-text-3);
+}
+
+.file-caption:first-child {
+  padding-top: 0;
 }
 </style>

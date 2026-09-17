@@ -40,6 +40,7 @@
             "@routier/otel-plugin": ["./plugins/otel/src/index.ts"],
             "@routier/replication-plugin": ["./plugins/replication/src/index.ts"],
             "@routier/react": ["./react/src/index.ts"],
+            "@routier/vue": ["./vue/src/index.ts"],
             "@routier/sync-server": ["./sync-server/src/index.ts"],
 
             // `baseUrl` is the repo root, which contains a directory named `react`. TS tries
@@ -50,7 +51,8 @@
             // unbuilt checkout, where the workspace had no types to find. Pinned explicitly.
             "react": ["./node_modules/react"],
             "react-dom": ["./node_modules/react-dom"],
-            "react-dom/*": ["./node_modules/react-dom/*"]
+            "react-dom/*": ["./node_modules/react-dom/*"],
+            "vue": ["./node_modules/vue"]
         }
     },
     // ts-jest reads only `compilerOptions` from this file. An empty `include` keeps
