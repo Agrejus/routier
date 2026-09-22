@@ -1,5 +1,7 @@
 import DefaultTheme from "vitepress/theme";
 import { h } from "vue";
+import DevtoolsAnnouncement from "./home/DevtoolsAnnouncement.vue";
+import DevtoolsShowcase from "./home/DevtoolsShowcase.vue";
 import FeaturesIntro from "./home/FeaturesIntro.vue";
 import HeroInstall from "./home/HeroInstall.vue";
 import NextSteps from "./home/NextSteps.vue";
@@ -12,8 +14,9 @@ export default {
   extends: DefaultTheme,
   Layout: () =>
     h(DefaultTheme.Layout, null, {
+      "home-hero-info-before": () => h(DevtoolsAnnouncement),
       "home-hero-actions-after": () => h(HeroInstall),
-      "home-features-before": () => [h(PaginationShowcase), h(FeaturesIntro)],
+      "home-features-before": () => [h(PaginationShowcase), h(DevtoolsShowcase), h(FeaturesIntro)],
       "home-features-after": () => [h(StorageSwap), h(StackFit), h(NextSteps)],
     }),
 };
