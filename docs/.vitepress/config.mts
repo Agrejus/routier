@@ -48,8 +48,14 @@ export default defineConfig({
       {
         text: "Frameworks",
         items: [
-          { text: "React", link: "/integrations/react/" },
-          { text: "Vue", link: "/integrations/vue/" },
+          {
+            text: "Frameworks",
+            items: [
+              { text: "React", link: "/integrations/react/" },
+              { text: "Vue", link: "/integrations/vue/" },
+            ],
+          },
+          { text: "Tools", items: [{ text: "Devtools", link: "/integrations/devtools/" }] },
         ],
       },
       { text: "API", link: "/api/" },

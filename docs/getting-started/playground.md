@@ -13,6 +13,12 @@ create, and the code on screen is the exact file that runs.
   <a class="playground-button" href="/playground/" target="_self">Open the Playground →</a>
 </p>
 
+::: tip Devtools are on
+Every example is mounted in [Routier devtools](/integrations/devtools/). Click the **Routier** button in
+the bottom-right corner of the Playground to see the example's collections and rows update as it runs,
+and open the **Queries** tab to see how each query executed.
+:::
+
 ## Examples
 
 ### Schemas & CRUD

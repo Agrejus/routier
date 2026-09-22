@@ -39,3 +39,4 @@ writing an interface by hand, which then has to be kept in step with the schema.
 - **[Explore Queries](/concepts/queries/)** - Query and filter data
 - **[Try Live Queries](/guides/live-queries)** - Build reactive UIs
 - **[Use with React](/getting-started/react-adapter)** - React integration
+- **[Add Devtools](/integrations/devtools/)** - See your store's data and every query it runs, in the page
