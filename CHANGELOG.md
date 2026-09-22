@@ -3,14 +3,24 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
-## Devtools, and a read-only inspection API (unreleased)
+## Devtools, a read-only inspection API, and live queries without BroadcastChannel (2026-09-22)
 
 A new package, `@routier/devtools`, adds a drawer to the page that shows what a store holds: every
 collection and view with a live row count, a paged table of rows, and the full value of any row.
 It updates as saves, syncs, and changes from other tabs land, and works the same in React, Vue, or
 plain JavaScript. It reads the store only through a new public API, `dataStore.inspect()`.
 
-### Added — @routier/datastore
+Every change in this release is additive or a fix, so core and datastore take patch releases.
+Every package's `@routier/core` floor moves to `>=0.8.1` in the repository; packages not released
+here keep their published floors until their next release.
+
+### Fixed — @routier/core 0.8.1
+
+- Live queries work in runtimes without `BroadcastChannel`, such as Cloudflare Workers. A
+  subscription channel that cannot open one now delivers changes to the same store directly, on
+  the next tick and from a structured clone, instead of throwing when the store is built.
+
+### Added — @routier/datastore 0.4.3
 
 - `DataStore.inspect()` returns a read-only `StoreInspection`: every collection and view with its
   name, schema id, and kind, plus `count()`, `watchCount()`, `watchPage({ skip, take })`, and
@@ -24,8 +34,11 @@ plain JavaScript. It reads the store only through a new public API, `dataStore.i
 
 - `mountRoutierDevtools(store, { name })` mounts the drawer and returns an unmount function.
   Mounting the same store twice does nothing; several stores share one drawer behind a picker;
-  without a `document` it does nothing.
-- A **Queries** tab records the app's queries while it is open and shows each one's plan: what
+  without a `document` it does nothing. Called with no store, it shows the drawer straight away
+  and stores join it as they are mounted.
+- The drawer's header names the plugin and database the selected store runs on.
+- Requires `@routier/datastore` `>=0.4.3` and `@routier/core` `>=0.8.1`.
+- A **Queries** tab records the app's queries, across every mounted store, while it is open and shows each one's plan: what
   ran in the database, the statements sent, and what ran in memory and why.
 - In a production build the main entry does nothing and bundlers drop the drawer.
   `@routier/devtools/production` always mounts, and shows every row to anyone who can open the
