@@ -1,6 +1,7 @@
 import { DataStore } from "@routier/datastore";
 import { MemoryPlugin } from "@routier/memory-plugin";
 import { s } from "@routier/core/schema";
+import { showInDevtools } from "../devtools";
 
 type Log = (message: string, value?: unknown) => void;
 
@@ -26,6 +27,7 @@ class ShopStore extends DataStore {
 
 export async function run(log: Log) {
   const store = new ShopStore();
+  showInDevtools(store, "Schemas & CRUD");
 
   // Create: identity keys and defaults are filled in for you.
   const added = await store.products.addAsync(

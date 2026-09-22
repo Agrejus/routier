@@ -137,6 +137,7 @@ suite('Cloudflare D1 via Miniflare', () => {
         () => new D1DbPlugin(contractDatabase, { deleteDatabase: dropEverything(contractDatabase) }),
         {
             supportsRichTypes: false,
+            supportsDates: true,
             knownFailing: [],
         },
     );

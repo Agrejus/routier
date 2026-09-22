@@ -1,3 +1,4 @@
+import { createQueryRecorder } from "../inspection/recordQuery";
 import { DbPluginQueryEvent, distinctJoinKeys, executeJoin, ExecutedQuery, explainQuery, ITranslatedValue, JoinKind, JsonTranslator, loadJoinInnerSide, Query, QueryExplanation, QueryOptionName, QueryOptionsCollection, toEntityShape, TupleTranslator, withExecutedQueries, withInnerSide } from "@routier/core/plugins";
 import { CompiledSchema, InferType } from "@routier/core/schema";
 import { CallbackResult, PluginEventCallbackResult, PluginEventResult, PluginEventSuccessType, Result } from "@routier/core/results";
@@ -60,14 +61,17 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
      * subscription re-delivery — and both go through here.
      */
     protected deliver<T>(done: CallbackResult<any>): CallbackResult<T> {
-
-        if (this.request.isExplained === false) {
-            return done as CallbackResult<T>;
-        }
+        const record = createQueryRecorder(this.dependencies.queryLog, {
+            collection: this.dependencies.schema.collectionName,
+            source: this.request.source,
+            live: this.request.isSubScribed,
+            explain: () => this.buildExplanation(),
+        });
 
         return (result) => {
+            record(result);
 
-            if (result.ok === Result.ERROR) {
+            if (this.request.isExplained === false || result.ok === Result.ERROR) {
                 done(result);
                 return;
             }
@@ -329,7 +333,7 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
                 operation: new Query<TRoot, Shape>(splitQueryOptions.database as any, this.dependencies.schema),
                 schemas: this.dependencies.schemas,
                 id: uuid(8),
-                source: "Collection",
+                source: this.request.source,
                 action: "query",
                 explain: this.request.isExplained,
                 // Always handed over, whether or not explaining, so a plugin that reports
@@ -341,7 +345,7 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
                 operation: new Query<TRoot, Shape>(splitQueryOptions.memory as any, this.dependencies.schema),
                 schemas: this.dependencies.schemas,
                 id: uuid(8),
-                source: "Collection",
+                source: this.request.source,
                 // The memory half never reaches a plugin; the fields are required by the shared
                 // event type, so they get values nothing reads.
                 action: "query",

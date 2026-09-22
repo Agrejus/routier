@@ -1,5 +1,6 @@
 ---
 title: Playground
+description: "Run Routier in your browser — schemas, CRUD, live queries, a paged data grid, React hooks and IndexedDB persistence, with no install."
 ---
 
 # Playground

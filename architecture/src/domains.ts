@@ -283,6 +283,18 @@ export const DOMAINS: readonly Domain[] = [
         mayImport: ["@routier/core", "@routier/datastore"],
     },
     {
+        id: "devtools",
+        title: "Devtools",
+        paths: ["devtools/src"],
+        responsibility: "Shows a running datastore's collections and rows in an in-page drawer.",
+        rules: [
+            "Reads the store only through DataStore.inspect(). A panel that needs anything else is a sign inspect() is missing something.",
+            "Never changes the store and never throws into the app. Every failure is caught, shown in the drawer, and logged through the Routier logger.",
+            "The drawer renders inside a shadow root with Preact bundled into the package, so it places no requirement on the app's framework or styles.",
+        ],
+        mayImport: ["@routier/core", "@routier/datastore"],
+    },
+    {
         id: "sync-server",
         title: "Sync server",
         paths: ["sync-server/src"],

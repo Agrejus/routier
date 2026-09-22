@@ -1,5 +1,6 @@
 ---
 title: Queries
+description: "Query Routier collections with typed expressions: filtering, sorting, pagination, joins, aggregation, full-text and vector search."
 ---
 
 # Queries

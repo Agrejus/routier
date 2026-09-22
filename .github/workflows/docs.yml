@@ -10,6 +10,8 @@ on:
       - "core/**"
       - "datastore/**"
       - "react/**"
+      - "vue/**"
+      - "devtools/**"
       - "plugins/browser-storage/**"
       - "plugins/dexie/**"
       - "plugins/memory/**"

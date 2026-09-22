@@ -423,6 +423,10 @@
     ]
   },
   {
+    "text": "Devtools",
+    "link": "/integrations/devtools/"
+  },
+  {
     "text": "API Reference",
     "link": "/api/",
     "items": [

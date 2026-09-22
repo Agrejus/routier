@@ -3,6 +3,34 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## Devtools, and a read-only inspection API (unreleased)
+
+A new package, `@routier/devtools`, adds a drawer to the page that shows what a store holds: every
+collection and view with a live row count, a paged table of rows, and the full value of any row.
+It updates as saves, syncs, and changes from other tabs land, and works the same in React, Vue, or
+plain JavaScript. It reads the store only through a new public API, `dataStore.inspect()`.
+
+### Added — @routier/datastore
+
+- `DataStore.inspect()` returns a read-only `StoreInspection`: every collection and view with its
+  name, schema id, and kind, plus `count()`, `watchCount()`, `watchPage({ skip, take })`, and
+  `keyOf(row)`, a `disposed` signal, and `watchQueries()`, which reports each query the app runs
+  with its duration, outcome, and `QueryExplanation`. Rows are frozen copies, and nothing on the inspection can
+  change the store. `IDbPlugin` and every existing `DataStore` member are unchanged.
+- Queries made through `inspect()` carry `source: "Inspection"` on the plugin event, exported as
+  `INSPECTION_SOURCE`, so a plugin can tell devtools traffic from the app's own.
+
+### Added — @routier/devtools 0.1.0
+
+- `mountRoutierDevtools(store, { name })` mounts the drawer and returns an unmount function.
+  Mounting the same store twice does nothing; several stores share one drawer behind a picker;
+  without a `document` it does nothing.
+- A **Queries** tab records the app's queries while it is open and shows each one's plan: what
+  ran in the database, the statements sent, and what ran in memory and why.
+- In a production build the main entry does nothing and bundlers drop the drawer.
+  `@routier/devtools/production` always mounts, and shows every row to anyone who can open the
+  page.
+
 ## Queries on renamed columns reach the SQL engine (2026-09-15)
 
 A property mapped to a column with `.from()` used to send every filter, sort and similarity

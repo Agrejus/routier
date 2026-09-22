@@ -1,5 +1,6 @@
 ---
 title: Quick Start
+description: "Build your first Routier store in minutes: define a typed schema, add records, query them, and subscribe to live results."
 ---
 
 ## Quick Start

@@ -1,5 +1,8 @@
 ---
 layout: home
+title: Routier
+titleTemplate: Reactive data for any datastore
+description: "Routier is a TypeScript data layer for front-end apps — typed schemas, live queries that re-run on change, optimistic mutations, and one API over IndexedDB, SQLite, PostgreSQL, PouchDB and more."
 
 hero:
   name: Routier

@@ -20,14 +20,24 @@ const gridPanel = ref<HTMLElement | null>(null);
 const codePanel = ref<HTMLElement | null>(null);
 
 let sideBySide: MediaQueryList | null = null;
+let unmountDevtools = () => {};
+let unmounted = false;
 
-onMounted(() => {
+onMounted(async () => {
   sideBySide = window.matchMedia("(min-width: 1100px)");
   sideBySide.addEventListener("change", matchPanels);
+
+  const [{ mountRoutierDevtools }, { store }] = await Promise.all([
+    import("@routier/devtools/production"),
+    import("../../../_snippets/code/home/inventory"),
+  ]);
+  if (!unmounted) unmountDevtools = mountRoutierDevtools(store, { name: "Homepage inventory" });
 });
 
 onBeforeUnmount(() => {
+  unmounted = true;
   sideBySide?.removeEventListener("change", matchPanels);
+  unmountDevtools();
 });
 
 watch(framework, () => {

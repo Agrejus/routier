@@ -55,6 +55,7 @@ const EXPECTED_EXPORT = {
     '@routier/mongodb-plugin': 'MongoDbPlugin',
     '@routier/react': 'useQuery',
     '@routier/vue': 'useQuery',
+    '@routier/devtools': 'mountRoutierDevtools',
 };
 
 /**
@@ -69,7 +70,7 @@ const PACKAGE_DIRECTORIES = [
     'plugins/dexie', 'plugins/postgresql', 'plugins/mysql', 'plugins/pouchdb',
     'plugins/replication', 'plugins/sql-core', 'plugins/postgres-core', 'plugins/pglite',
     'plugins/sqlite', 'plugins/blob',
-    'plugins/encryption', 'plugins/otel', 'plugins/mongodb', 'react', 'vue',
+    'plugins/encryption', 'plugins/otel', 'plugins/mongodb', 'react', 'vue', 'devtools',
 ];
 
 const run = (command, args, cwd) =>

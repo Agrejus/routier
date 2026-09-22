@@ -1,5 +1,6 @@
 ---
 title: React
+description: "Use Routier in React with the useQuery hook: components re-render from live queries as your data changes."
 ---
 
 # React Integration

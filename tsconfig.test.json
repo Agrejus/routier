@@ -41,6 +41,8 @@
             "@routier/replication-plugin": ["./plugins/replication/src/index.ts"],
             "@routier/react": ["./react/src/index.ts"],
             "@routier/vue": ["./vue/src/index.ts"],
+            "@routier/devtools": ["./devtools/src/index.ts"],
+            "@routier/devtools/production": ["./devtools/src/production.ts"],
             "@routier/sync-server": ["./sync-server/src/index.ts"],
 
             // `baseUrl` is the repo root, which contains a directory named `react`. TS tries

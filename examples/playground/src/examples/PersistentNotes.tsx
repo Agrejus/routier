@@ -1,8 +1,9 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { DataStore } from "@routier/datastore";
 import { DexiePlugin } from "@routier/dexie-plugin";
 import { InferType, s } from "@routier/core/schema";
 import { useQuery } from "@routier/react";
+import { showInDevtools } from "../devtools";
 
 const noteSchema = s
   .define("notes", {
@@ -26,6 +27,7 @@ class NotesStore extends DataStore {
 
 export function NotesApp() {
   const store = useMemo(() => new NotesStore(), []);
+  useEffect(() => showInDevtools(store, "IndexedDB notes"), [store]);
   const [text, setText] = useState("");
 
   const notes = useQuery<Note[]>(

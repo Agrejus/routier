@@ -1,0 +1,11 @@
+import { area } from '../stryker.base.mjs';
+
+export default area([
+    'devtools/src/mount.ts:15-15',
+], 100, {
+    jest: {
+        projectType: 'custom',
+        configFile: 'stryker/jest.devtools.node.js',
+        enableFindRelatedTests: true,
+    },
+});
