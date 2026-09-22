@@ -52,6 +52,7 @@ export default defineConfig({
           { text: "Vue", link: "/integrations/vue/" },
         ],
       },
+      { text: "Devtools", link: "/integrations/devtools/" },
       { text: "API", link: "/api/" },
       // target forces a full-page load instead of VitePress client routing: /playground/ and
       // /lab/ are standalone React applications copied into the Pages artifact.

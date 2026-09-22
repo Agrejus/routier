@@ -16,6 +16,11 @@ const { data, explanation } = await ctx.products
 
 Use it as a development tool: add it, read the output, delete it.
 
+::: tip See every query's plan without changing code
+The **Queries** tab in [Routier devtools](/integrations/devtools/#queries) records every query your app
+runs and shows the same explanation for each one, with nothing added to the chain.
+:::
+
 ## Why it exists
 
 Routier pushes as much of a query as possible down to the storage plugin. Options the plugin cannot run are executed in memory, over the rows the plugin returned. This split is invisible in normal use. `.explain()` makes it visible, so you can see when a query reads more rows than it returns and why.

@@ -6,6 +6,8 @@ title: Devtools
 
 `@routier/devtools` adds a drawer to your page that shows what your store holds. It lists every collection and view with a live row count, pages through a collection's rows 50 at a time, and opens any row to show its full value. Everything updates as saves, syncs, and changes from other tabs land.
 
+![The Routier devtools Data view: collections with live row counts, a table of rows, and one row's full value.](/devtools/data.png)
+
 ::: tip Try it here
 Devtools are mounted on this site. Open the [homepage](/), the [Playground](/playground/), or the [Lab](/lab/) and click the **Routier** button in the bottom-right corner. In the Lab, open the **Queries** tab and run a query from the Query inspector to see its plan.
 :::
@@ -84,6 +86,8 @@ Devtools show every value unmasked. Masking will arrive with sensitive-field sup
 :::
 
 ### Queries
+
+![The Routier devtools Queries tab: a recorded query on SQLite with the SQL statement and bound parameters it sent.](/devtools/queries.png)
 
 The **Queries** tab records every query your app runs while the tab is open, across every mounted store, newest first, keeping the last 200. Each entry shows the collection and its store, whether it is a live query, how many options ran in the database and how many in memory, and how long it took. Select one to see the plan `.explain()` would give you: each execution step, the options in it, the statements the plugin sent with their parameters, and why anything ran in memory.
 

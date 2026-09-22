@@ -86,6 +86,8 @@ async function matchPanels() {
       This grid is a real React or Vue component running on Routier in your browser. One <code>useQuery</code> call
       sorts, pages, and subscribes, so the page stays current with no cache to invalidate and no refetch to wire up.
       Try restocking a row, turning on traffic, or switching frameworks: both read the same store.
+      Then open the Routier button in the bottom-right corner:
+      <a href="/integrations/devtools/">devtools</a> shows this store's rows and every query the grid runs.
     </template>
 
     <div class="showcase-toolbar">

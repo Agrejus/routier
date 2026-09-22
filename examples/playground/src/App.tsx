@@ -187,6 +187,10 @@ export function App() {
                         Every example runs right here on this page. There's nothing to install and no account to create. The code
                         shown with each example is the exact file being executed.
                     </p>
+                    <p>
+                        Open the <strong>Routier</strong> button in the bottom-right corner to watch the example's data change and see how
+                        each query ran, in <a href={`${DOCS}/integrations/devtools/`}>Routier devtools</a>.
+                    </p>
                 </section>
 
                 <div className="tabs" role="tablist">
