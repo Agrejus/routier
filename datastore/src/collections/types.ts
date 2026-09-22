@@ -1,3 +1,4 @@
+import type { QueryLog } from "../inspection/QueryLog";
 import { SchemaCollection } from "@routier/core/collections";
 import { AuditRegistry } from "../collection-builder/audit";
 import { FullTextSearchRegistry } from "../collection-builder/fullTextSearch";
@@ -46,6 +47,7 @@ export class CollectionDependencies<TRoot extends {}> extends ComposerDependenci
     readonly store: unknown;
     /** Store-wide settings, defaults already filled in. */
     readonly storeOptions: ResolvedDataStoreOptions;
+    readonly queryLog: QueryLog;
 
     constructor(
         plugin: IDbPlugin,
@@ -60,7 +62,8 @@ export class CollectionDependencies<TRoot extends {}> extends ComposerDependenci
         audits: AuditRegistry,
         store: unknown,
         storeOptions: ResolvedDataStoreOptions,
-        fullTextSearches: FullTextSearchRegistry
+        fullTextSearches: FullTextSearchRegistry,
+        queryLog: QueryLog
     ) {
         super(schema);
         this.plugin = plugin;
@@ -73,6 +76,7 @@ export class CollectionDependencies<TRoot extends {}> extends ComposerDependenci
         this.scopedQueryOptions = scopedQueryOptions;
         this.audits = audits;
         this.store = store;
+        this.queryLog = queryLog;
         this.storeOptions = storeOptions;
         this.fullTextSearches = fullTextSearches;
     }
@@ -148,10 +152,11 @@ export class RequestContext<TRoot extends {}> {
      *   override it, and hardcoding "proxy" meant their queries installed tracking proxies
      *   anyway — so those modes only ever applied to writes, never to reads.
      */
-    constructor(changeTrackingType: ChangeTrackingType = "proxy") {
+    constructor(changeTrackingType: ChangeTrackingType = "proxy", source: string = "Collection") {
         this.queryOptions = new QueryOptionsCollection<TRoot>();
         this.isSubScribed = false;
         this.changeTrackingType = changeTrackingType;
+        this.source = source;
         this.id = uuid(8);
     }
 
@@ -162,6 +167,7 @@ export class RequestContext<TRoot extends {}> {
     isExplained: boolean = false;
     readonly queryOptions: QueryOptionsCollection<TRoot>;
     readonly changeTrackingType: ChangeTrackingType;
+    readonly source: string;
     readonly id: string;
 
     /**

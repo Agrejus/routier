@@ -1,33 +1,30 @@
 import { defineConfig } from "vitepress";
 import sidebar from "./sidebar.json";
+import { isIndexable, pageHead, SITE_DESCRIPTION, SITE_NAME, SITE_URL, siteHead } from "./seo";
 
 export default defineConfig({
-  title: "Routier",
-  description:
-    "Modern, flexible, reactive data access layer for building scalable applications",
+  title: SITE_NAME,
+  description: SITE_DESCRIPTION,
   cleanUrls: true,
   vite: {
-    esbuild: { jsx: "automatic" },
+    esbuild: { jsx: "automatic", keepNames: true },
     resolve: { dedupe: ["react", "react-dom", "vue"] },
   },
   lastUpdated: true,
-  sitemap: { hostname: "https://routier.dev" },
+  sitemap: {
+    hostname: SITE_URL,
+    transformItems: (items) => items.filter((item) => isIndexable(item.url)),
+  },
   // TypeDoc emits these extensionless directory links for a few type-only symbols.
   // VitePress reports them even though they are absent from the generated Markdown.
   ignoreDeadLinks: [/^\.\/index$/, /^\.\/type-aliases\/index$/],
-  head: [
-    ["link", { rel: "icon", type: "image/svg+xml", href: "/routier.svg" }],
-    ["meta", { name: "theme-color", content: "#00bfa6" }],
-    ["meta", { property: "og:title", content: "Routier" }],
-    [
-      "meta",
-      {
-        property: "og:description",
-        content:
-          "A fast, front-end-first data toolkit: schemas, live queries, optimistic mutations, and swappable storage plugins.",
-      },
-    ],
-  ],
+  head: siteHead(),
+  transformPageData: (pageData) => {
+    pageData.frontmatter.head = [
+      ...(pageData.frontmatter.head ?? []),
+      ...pageHead(pageData),
+    ];
+  },
   themeConfig: {
     logo: "/routier.svg",
     nav: [

@@ -1,5 +1,6 @@
 ---
 title: API Reference
+description: "The public Routier API: DataStore, collections, schema builders, query operators, plugins and results."
 ---
 
 # API Reference

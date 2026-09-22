@@ -18,6 +18,9 @@ import { CollectionDependencies } from './collections/types';
 import { ChangeTracker } from './change-tracking/ChangeTracker';
 import { DataBridge } from './data-access/DataBridge';
 import { assertIsNotNull } from '@routier/core';
+import { inspectStore } from './inspection/inspectStore';
+import { QueryLog } from './inspection/QueryLog';
+import type { StoreInspection } from './inspection/types';
 
 /**
  * Removes the datastore-internal `previous` values from every update in a save.
@@ -59,6 +62,7 @@ export class DataStore implements Disposable {
     protected readonly _fullTextSearches = new FullTextSearchRegistry();
     /** Store-wide settings with defaults resolved. See `DataStoreOptions`. */
     protected readonly storeOptions: ResolvedDataStoreOptions;
+    protected readonly queryLog = new QueryLog();
 
     get schemas() {
         return new ReadonlySchemaCollection([...this._schemas]);
@@ -129,7 +133,8 @@ export class DataStore implements Disposable {
             this._audits,
             this,
             this.storeOptions,
-            this._fullTextSearches
+            this._fullTextSearches,
+            this.queryLog
         );
 
         // No mode is chosen here on purpose: the returned builder has no create() until
@@ -182,7 +187,8 @@ export class DataStore implements Disposable {
             this._audits,
             this,
             this.storeOptions,
-            this._fullTextSearches
+            this._fullTextSearches,
+            this.queryLog
         );
 
         return new ViewBuilder<TEntity, View<TEntity, this>, this>({
@@ -454,6 +460,10 @@ export class DataStore implements Disposable {
                 resolve(r.data);
             })
         });
+    }
+
+    inspect(): StoreInspection {
+        return inspectStore(this.dbPlugin, this.collections, this.abortController.signal, this.queryLog);
     }
 
     /**

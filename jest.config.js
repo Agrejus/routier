@@ -32,11 +32,17 @@ const moduleNameMapper = {
     '^@routier/replication-plugin$': '<rootDir>/plugins/replication/src/index.ts',
     '^@routier/react$': '<rootDir>/react/src/index.ts',
     '^@routier/vue$': '<rootDir>/vue/src/index.ts',
+    '^@routier/devtools/production$': '<rootDir>/devtools/src/production.ts',
+    '^@routier/devtools$': '<rootDir>/devtools/src/index.ts',
     '^@routier/sync-server$': '<rootDir>/sync-server/src/index.ts',
 };
 
 const tsTransform = {
     '^.+\\.tsx?$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.test.json' }],
+};
+
+const devtoolsTransform = {
+    '^.+\\.tsx?$': ['ts-jest', { tsconfig: '<rootDir>/devtools/tsconfig.test.json' }],
 };
 
 // Some workspace packages and @faker-js ship ESM-only .js that Jest cannot parse
@@ -98,6 +104,23 @@ module.exports = {
             ...base,
             displayName: 'vue',
             testMatch: ['<rootDir>/vue/**/*.test.ts'],
+        },
+        {
+            ...base,
+            displayName: 'devtools',
+            testMatch: ['<rootDir>/devtools/**/*.test.ts?(x)'],
+            testPathIgnorePatterns: ['/node_modules/', '\\.node\\.test\\.ts$'],
+            testEnvironment: 'jsdom',
+            testEnvironmentOptions: { customExportConditions: ['node', 'require', 'default'] },
+            setupFilesAfterEnv: ['<rootDir>/devtools/jest.setup.js'],
+            transform: devtoolsTransform,
+        },
+        {
+            ...base,
+            displayName: 'devtools-node',
+            testMatch: ['<rootDir>/devtools/**/*.node.test.ts'],
+            testEnvironmentOptions: { customExportConditions: ['node', 'require', 'default'] },
+            transform: devtoolsTransform,
         },
         {
             ...base,

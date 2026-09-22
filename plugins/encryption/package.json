@@ -39,11 +39,11 @@
     ],
     "description": "AES-GCM encryption as a Routier schema transform. Not a plugin: your database never sees it.",
     "peerDependencies": {
-        "@routier/core": ">=0.8.0"
+        "@routier/core": ">=0.8.1"
     },
     "devDependencies": {
-        "@routier/core": "^0.8.0",
-        "@routier/datastore": "^0.4.2",
+        "@routier/core": "^0.8.1",
+        "@routier/datastore": "^0.4.3",
         "@routier/memory-plugin": "^0.4.0",
         "@routier/dexie-plugin": "^0.4.3",
         "@rspack/cli": "^1.1.8",

@@ -14,6 +14,7 @@ import { unsafeCast } from "@routier/core";
 import { QueryableBuilder, QueryBuilderContext } from "../queryable/composers/QueryableBuilder";
 import { FullTextSearchIndexer } from "../search/FullTextSearchIndexer";
 import { createSearch, SearchOptions, SearchQueryable } from "../search/SearchQueryable";
+import { INSPECTION_SOURCE, inspectionQueryable } from "../inspection/inspectionSource";
 
 export abstract class CollectionBase<TEntity extends {}, TStore = unknown> implements Disposable {
 
@@ -159,6 +160,11 @@ export abstract class CollectionBase<TEntity extends {}, TStore = unknown> imple
 
     [Symbol.dispose]() {
         this.dispose();
+    }
+
+    [inspectionQueryable]() {
+        const request = new RequestContext<TEntity>(this.changeTrackingType, INSPECTION_SOURCE);
+        return new QueryableAsync<TEntity, InferType<TEntity>, TStore>(this.dependencies, request);
     }
 
     dispose() {

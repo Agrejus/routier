@@ -311,3 +311,115 @@ describe("SchemaSubscription broadcast contract", () => {
         expect(payload.adds[0].createdAt).toBeInstanceOf(Date);
     });
 });
+
+describe("SchemaSubscription without BroadcastChannel", () => {
+    const originalBroadcastChannel = globalThis.BroadcastChannel;
+    const nextTask = () => new Promise(resolve => setTimeout(resolve, 0));
+    type FallbackChanges = { adds: { id: number; when: Date }[]; updates: never[]; removals: never[]; unknown: never[] };
+    const changes = (): FallbackChanges => ({ adds: [{ id: 1, when: new Date(0) }], updates: [], removals: [], unknown: [] });
+
+    beforeEach(() => {
+        Reflect.deleteProperty(globalThis, "BroadcastChannel");
+    });
+
+    afterEach(() => {
+        globalThis.BroadcastChannel = originalBroadcastChannel;
+    });
+
+    it("constructs, sends, and disposes without throwing", () => {
+        const subscription = new SchemaSubscription(mockSchema("fallback-construct"));
+
+        expect(() => subscription.send(changes())).not.toThrow();
+        expect(() => subscription.dispose()).not.toThrow();
+    });
+
+    it("delivers to a listener in the same process on a later task", async () => {
+        const schema = mockSchema("fallback-deliver");
+        const sender = new SchemaSubscription(schema);
+        const receiver = new SchemaSubscription(schema);
+        const callback = jest.fn();
+        receiver.onMessage(callback);
+
+        sender.send(changes());
+
+        expect(callback).not.toHaveBeenCalled();
+
+        await nextTask();
+
+        expect(callback).toHaveBeenCalledTimes(1);
+        expect(callback).toHaveBeenCalledWith(changes());
+    });
+
+    it("delivers a copy rather than the sender's objects", async () => {
+        const schema = mockSchema("fallback-copy");
+        const sender = new SchemaSubscription(schema);
+        const receiver = new SchemaSubscription(schema);
+        const received: object[] = [];
+        receiver.onMessage(delivered => received.push(delivered.adds[0]));
+        const sent = changes();
+
+        sender.send(sent);
+        sent.adds[0].id = 2;
+        await nextTask();
+
+        expect(received).toEqual([{ id: 1, when: new Date(0) }]);
+        expect(received[0]).not.toBe(sent.adds[0]);
+    });
+
+    it("fans out to every listener on the channel", async () => {
+        const schema = mockSchema("fallback-fanout");
+        const sender = new SchemaSubscription(schema);
+        const first = jest.fn();
+        const second = jest.fn();
+        new SchemaSubscription(schema).onMessage(first);
+        new SchemaSubscription(schema).onMessage(second);
+
+        sender.send(changes());
+        await nextTask();
+
+        expect(first).toHaveBeenCalledTimes(1);
+        expect(second).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not deliver to a listener disposed before the task runs", async () => {
+        const schema = mockSchema("fallback-dispose");
+        const sender = new SchemaSubscription(schema);
+        const receiver = new SchemaSubscription(schema);
+        const callback = jest.fn();
+        receiver.onMessage(callback);
+
+        sender.send(changes());
+        receiver.dispose();
+        sender.dispose();
+        await nextTask();
+
+        expect(callback).not.toHaveBeenCalled();
+    });
+
+    it("isolates channels by schema and by scope", async () => {
+        const schema = mockSchema("fallback-isolation");
+        const otherSchema = new SchemaSubscription(mockSchema("fallback-isolation-other"));
+        const otherScope = new SchemaSubscription(schema, undefined, "db-b");
+        const callback = jest.fn();
+        otherSchema.onMessage(callback);
+        otherScope.onMessage(callback);
+
+        new SchemaSubscription(schema, undefined, "db-a").send(changes());
+        await nextTask();
+
+        expect(callback).not.toHaveBeenCalled();
+    });
+
+    it("keeps working after every subscription on a channel is disposed and a new one opens", async () => {
+        const schema = mockSchema("fallback-reopen");
+        new SchemaSubscription(schema).dispose();
+
+        const sender = new SchemaSubscription(schema);
+        const callback = jest.fn();
+        new SchemaSubscription(schema).onMessage(callback);
+        sender.send(changes());
+        await nextTask();
+
+        expect(callback).toHaveBeenCalledTimes(1);
+    });
+});

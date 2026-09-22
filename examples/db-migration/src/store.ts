@@ -11,6 +11,7 @@ import {
     customerSchema, invoiceSchema, orderSchema, productSchema,
     reviewSchema, shipmentSchema, supplierSchema,
 } from './schemas';
+import { showInDevtools } from './devtools';
 
 export type DbChoice = 'memory' | 'localstorage' | 'dexie' | 'pouchdb' | 'sqlite' | 'pglite';
 
@@ -121,4 +122,8 @@ export class ShopStore extends DataStore {
         .proxy()
         .create();
 
+    constructor(plugin: IDbPlugin) {
+        super(plugin);
+        showInDevtools(this, plugin.databaseName);
+    }
 }

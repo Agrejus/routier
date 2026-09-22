@@ -1,8 +1,9 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { DataStore } from "@routier/datastore";
 import { MemoryPlugin } from "@routier/memory-plugin";
 import { InferType, s } from "@routier/core/schema";
 import { useQuery } from "@routier/react";
+import { showInDevtools } from "../devtools";
 
 const todoSchema = s
   .define("todos", {
@@ -26,6 +27,7 @@ class TodoStore extends DataStore {
 export function TodoApp() {
   // Memoize the store: a new DataStore on every render would resubscribe forever.
   const store = useMemo(() => new TodoStore(), []);
+  useEffect(() => showInDevtools(store, "React todos"), [store]);
   const [title, setTitle] = useState("");
 
   // Both hooks re-render the component whenever a saved change affects their query.

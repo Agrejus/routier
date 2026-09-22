@@ -1,5 +1,6 @@
 ---
 title: Installation
+description: "Install Routier with npm, pnpm or yarn, pick a storage plugin, and add the React or Vue adapter."
 ---
 
 ## Installation

@@ -7,6 +7,7 @@
         "test": "jest -c ../jest.config.js --selectProjects e2e",
         "test:containers": "E2E_CONTAINERS=1 jest -c ../jest.config.js --selectProjects e2e",
         "test:browser": "node browser/run.mjs",
-        "test:transfer": "node browser/transfer/run.mjs"
+        "test:transfer": "node browser/transfer/run.mjs",
+        "test:devtools": "node browser/devtools/run.mjs"
     }
 }

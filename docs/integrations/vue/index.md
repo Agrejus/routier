@@ -1,5 +1,6 @@
 ---
 title: Vue
+description: "Use Routier in Vue with the useQuery composable: reactive live queries with no dependency array."
 ---
 
 # Vue Integration

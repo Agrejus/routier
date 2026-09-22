@@ -3,6 +3,7 @@ import { DataStore } from "@routier/datastore";
 import { MemoryPlugin } from "@routier/memory-plugin";
 import { InferType, s } from "@routier/core/schema";
 import { useQuery, type LiveQueryState } from "@routier/react";
+import { showInDevtools } from "../devtools";
 
 const productSchema = s
   .define("products", {
@@ -48,6 +49,7 @@ function matching(store: InventoryStore, filters: Filters) {
 
 export function LiveGrid() {
   const store = useMemo(() => new InventoryStore(), []);
+  useEffect(() => showInDevtools(store, "Live data grid"), [store]);
   const [filters, setFilters] = useState<Filters>({ category: "All", search: "" });
   const [sort, setSort] = useState<{ key: SortKey; descending: boolean }>({ key: "name", descending: false });
   const [page, setPage] = useState(1);

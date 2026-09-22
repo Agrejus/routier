@@ -37,14 +37,14 @@
     ],
     "description": "PostgreSQL plugin for Routier",
     "peerDependencies": {
-        "@routier/core": ">=0.8.0",
+        "@routier/core": ">=0.8.1",
         "@routier/sql-plugin-core": ">=0.7.1",
         "@routier/postgres-plugin-core": ">=0.3.2"
     },
     "devDependencies": {
         "@faker-js/faker": "^10.0.0",
-        "@routier/core": "^0.8.0",
-        "@routier/datastore": "^0.4.2",
+        "@routier/core": "^0.8.1",
+        "@routier/datastore": "^0.4.3",
         "@rspack/cli": "^1.1.8",
         "@rspack/core": "^1.1.8",
         "@types/pg": "8.18.0",

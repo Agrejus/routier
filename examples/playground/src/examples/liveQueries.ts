@@ -1,4 +1,5 @@
 import { DataStore } from "@routier/datastore";
+import { showInDevtools } from "../devtools";
 import { MemoryPlugin } from "@routier/memory-plugin";
 import { s } from "@routier/core/schema";
 
@@ -24,6 +25,7 @@ const pause = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export async function run(log: Log) {
   const store = new TaskStore();
+  showInDevtools(store, "Live queries");
 
   // subscribe() makes the query live: the callback receives the current result now,
   // and again every time a saved change affects it.

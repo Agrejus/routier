@@ -24,6 +24,7 @@ export const releasePackageDirectories = [
   'plugins/sqlite',
   'react',
   'vue',
+  'devtools',
 ];
 
 export const releasePackages = releasePackageDirectories.map(directory => {

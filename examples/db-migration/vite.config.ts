@@ -8,6 +8,7 @@ import react from '@vitejs/plugin-react';
  */
 export default defineConfig({
     plugins: [react()],
+    esbuild: { keepNames: true },
     optimizeDeps: {
         // esbuild pre-bundling rewrites module URLs, which breaks the sqlite plugin's
         // `new Worker(new URL('./wasmWorker.js', import.meta.url))` resolution.

@@ -54,7 +54,6 @@ const getChannelRegistry = <T>(schemaId: SchemaId, scope?: string): SchemaChanne
     return channel;
 }
 
-// Must have a sender and receiver.  Sender cannot listen for it's own message
 class SchemaChannel<T> {
 
     readonly sender: SchemaChannelSender<T>;
@@ -66,8 +65,8 @@ class SchemaChannel<T> {
     private subscribers: number = 0;
 
     constructor(channelKey: string) {
-        this.sender = new SchemaChannelSender<T>(channelKey);
         this.receiver = new SchemaChannelReceiver<T>(channelKey);
+        this.sender = new SchemaChannelSender<T>(channelKey, this.receiver);
     }
 
     /**
@@ -98,65 +97,65 @@ class SchemaChannel<T> {
     }
 }
 
-/**
- * Stops a channel from holding the process open.
- *
- * A DataStore opens a sender and a receiver per collection, and in Node an open
- * BroadcastChannel is a referenced handle. Without this, any script that builds a store and
- * does not call `destroyAsync()` runs to the end of its code and then hangs forever with two
- * live MessagePorts per collection — including the example in the README.
- *
- * `unref` is Node-only; the browser's BroadcastChannel has no such method and needs none.
- * A channel that is unreferenced still sends and receives normally. It only stops being a
- * reason for the process to stay alive, which is the correct default for a library: a program
- * with no work left should exit.
- */
-const unreference = (channel: BroadcastChannelType) => {
+const openBroadcastChannel = (channelKey: string): BroadcastChannelType | null => {
+    if (typeof BroadcastChannel !== "function") {
+        return null;
+    }
+
+    const channel = new BroadcastChannel(`__routier-schema-subscription-channel:${channelKey}`);
     const maybeUnref = (channel as { unref?: () => void }).unref;
 
-    if (typeof maybeUnref === 'function') {
+    if (typeof maybeUnref === "function") {
         maybeUnref.call(channel);
     }
+
+    return channel;
 };
 
 class SchemaChannelSender<T> {
 
-    private readonly broadcastChannel: BroadcastChannelType;
+    private readonly broadcastChannel: BroadcastChannelType | null;
+    private readonly localReceiver: SchemaChannelReceiver<T>;
 
-    constructor(channelKey: string) {
-        this.broadcastChannel = new BroadcastChannel(`__routier-schema-subscription-channel:${channelKey}`);
-        unreference(this.broadcastChannel);
+    constructor(channelKey: string, localReceiver: SchemaChannelReceiver<T>) {
+        this.broadcastChannel = openBroadcastChannel(channelKey);
+        this.localReceiver = localReceiver;
     }
 
     send(changes: StampedChanges<T>) {
-        this.broadcastChannel.postMessage(changes)
+        if (this.broadcastChannel != null) {
+            this.broadcastChannel.postMessage(changes);
+            return;
+        }
+
+        const copy = structuredClone(changes);
+        setTimeout(() => this.localReceiver.dispatch(copy), 0);
     }
 
     close() {
-        this.broadcastChannel.close();
+        this.broadcastChannel?.close();
     }
 }
 
 class SchemaChannelReceiver<T> {
 
-    private readonly broadcastChannel: BroadcastChannelType;
+    private readonly broadcastChannel: BroadcastChannelType | null;
     private subscriptions: SubscriptionListener<T>[] = [];
 
     constructor(channelKey: string) {
-        this.broadcastChannel = new BroadcastChannel(`__routier-schema-subscription-channel:${channelKey}`);
-        unreference(this.broadcastChannel);
+        this.broadcastChannel = openBroadcastChannel(channelKey);
 
-        this.broadcastChannel.onmessage = (e) => {
+        if (this.broadcastChannel != null) {
+            this.broadcastChannel.onmessage = (e) => this.dispatch(e.data as StampedChanges<T>);
+        }
+    }
 
-            // We can't send to the same instance it is not possbile
-            const stampedChanges = e.data as StampedChanges<T>;
+    dispatch(changes: StampedChanges<T>) {
+        const subscriptions = this.subscriptions;
 
-            for (let i = 0, length = this.subscriptions.length; i < length; i++) {
-                const subscription = this.subscriptions[i];
-
-                subscription.action(stampedChanges);
-            }
-        };
+        for (let i = 0, length = subscriptions.length; i < length; i++) {
+            subscriptions[i].action(changes);
+        }
     }
 
     get listenerCount() {
@@ -173,8 +172,11 @@ class SchemaChannelReceiver<T> {
 
     close() {
         this.subscriptions = [];
-        this.broadcastChannel.onmessage = null;
-        this.broadcastChannel.close();
+
+        if (this.broadcastChannel != null) {
+            this.broadcastChannel.onmessage = null;
+            this.broadcastChannel.close();
+        }
     }
 }
 

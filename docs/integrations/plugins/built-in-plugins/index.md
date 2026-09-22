@@ -1,5 +1,6 @@
 ---
 title: Plugins
+description: "Choose a Routier storage plugin: memory, localStorage, IndexedDB via Dexie or PouchDB, SQLite, PostgreSQL, PGlite, MongoDB, MySQL and more."
 ---
 
 # Plugins
