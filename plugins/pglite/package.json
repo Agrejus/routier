@@ -54,7 +54,7 @@
         "@electric-sql/pglite": "^0.5.7",
         "@electric-sql/pglite-pgvector": "^0.0.8",
         "@routier/core": "^0.8.1",
-        "@routier/datastore": "^0.4.3",
+        "@routier/datastore": "^0.4.4",
         "@routier/postgres-plugin-core": "^0.3.2",
         "@routier/sql-plugin-core": "^0.7.1",
         "@routier/test-utils": "^0.3.0",

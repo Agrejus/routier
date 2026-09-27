@@ -52,7 +52,7 @@
     "devDependencies": {
         "@faker-js/faker": "^10.0.0",
         "@routier/core": "^0.8.1",
-        "@routier/datastore": "^0.4.3",
+        "@routier/datastore": "^0.4.4",
         "@routier/memory-plugin": "file://../memory",
         "@routier/test-utils": "^0.3.0",
         "@rspack/cli": "^1.1.8",

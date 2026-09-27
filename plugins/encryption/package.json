@@ -43,7 +43,7 @@
     },
     "devDependencies": {
         "@routier/core": "^0.8.1",
-        "@routier/datastore": "^0.4.3",
+        "@routier/datastore": "^0.4.4",
         "@routier/memory-plugin": "^0.4.0",
         "@routier/dexie-plugin": "^0.4.3",
         "@rspack/cli": "^1.1.8",
