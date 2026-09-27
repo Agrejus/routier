@@ -8,7 +8,7 @@
 
 > **useQuery**\<`T`\>(`query`, `deps`): [`LiveQueryState`](../type-aliases/LiveQueryState.md)\<`T`\>
 
-Defined in: [react/src/useQuery.tsx:26](https://github.com/Agrejus/routier/blob/main/react/src/useQuery.tsx#L26)
+Defined in: [react/src/useQuery.tsx:6](https://github.com/Agrejus/routier/blob/main/react/src/useQuery.tsx#L6)
 
 ## Type Parameters
 
@@ -20,11 +20,11 @@ Defined in: [react/src/useQuery.tsx:26](https://github.com/Agrejus/routier/blob/
 
 ### query
 
-(`callback`) => `void` \| () => `void`
+[`LiveQuery`](../type-aliases/LiveQuery.md)\<`T`\>
 
 ### deps
 
-`unknown`[] = `[]`
+`DependencyList` = `[]`
 
 ## Returns
 
