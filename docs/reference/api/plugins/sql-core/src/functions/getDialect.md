@@ -8,7 +8,7 @@
 
 > **getDialect**(`name`): [`SqlDialect`](../interfaces/SqlDialect.md)
 
-Defined in: [plugins/sql-core/src/sql.ts:295](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L295)
+Defined in: [plugins/sql-core/src/sql.ts:548](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L548)
 
 ## Parameters
 

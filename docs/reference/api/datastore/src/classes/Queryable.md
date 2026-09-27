@@ -363,11 +363,47 @@ Like `join`, but unmatched rows appear paired with `undefined`.
 
 ***
 
+### groupJoin()
+
+> **groupJoin**\<`TInner`, `TKey`\>(`inner`, `outerKey`, `innerKey`): [`JoinQueryable`](JoinQueryable.md)\<`Root`, [`JoinTuple`](../type-aliases/JoinTuple.md)\<`Shape`, `InferType`\<`TInner`\>[]\>, `E`\>
+
+Defined in: [datastore/src/queryable/Queryable.ts:122](https://github.com/Agrejus/routier/blob/main/datastore/src/queryable/Queryable.ts#L122)
+
+#### Type Parameters
+
+##### TInner
+
+`TInner` *extends* `object`
+
+##### TKey
+
+`TKey` *extends* `string` \| `number`
+
+#### Parameters
+
+##### inner
+
+`JoinTarget`\<`TStore`, `TInner`\>
+
+##### outerKey
+
+(`outer`) => `TKey`
+
+##### innerKey
+
+(`inner`) => `TKey`
+
+#### Returns
+
+[`JoinQueryable`](JoinQueryable.md)\<`Root`, [`JoinTuple`](../type-aliases/JoinTuple.md)\<`Shape`, `InferType`\<`TInner`\>[]\>, `E`\>
+
+***
+
 ### subscribe()
 
 > **subscribe**(): `SubscribedQueryable`\<`Root`, `Shape`, () => `void`\>
 
-Defined in: [datastore/src/queryable/Queryable.ts:122](https://github.com/Agrejus/routier/blob/main/datastore/src/queryable/Queryable.ts#L122)
+Defined in: [datastore/src/queryable/Queryable.ts:132](https://github.com/Agrejus/routier/blob/main/datastore/src/queryable/Queryable.ts#L132)
 
 #### Returns
 

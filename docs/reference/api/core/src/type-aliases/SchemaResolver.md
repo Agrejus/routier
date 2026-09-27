@@ -8,7 +8,7 @@
 
 > **SchemaResolver** = (`collectionName`) => [`CompiledSchema`](CompiledSchema.md)\<`any`\> \| `null`
 
-Defined in: [core/src/plugins/wire/query.ts:164](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/query.ts#L164)
+Defined in: [core/src/plugins/wire/query.ts:176](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/query.ts#L176)
 
 How the receiver finds a collection it was sent the NAME of.
 

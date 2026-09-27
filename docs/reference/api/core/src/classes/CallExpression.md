@@ -1,0 +1,301 @@
+[**routier-collection**](../../../README.md)
+
+***
+
+[routier-collection](../../../README.md) / [core/src](../README.md) / CallExpression
+
+# Class: CallExpression
+
+Defined in: [core/src/expressions/types.ts:386](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L386)
+
+The base class for all expression types.
+
+## Extends
+
+- [`Expression`](Expression.md)
+
+## Constructors
+
+### Constructor
+
+> **new CallExpression**(`options`): `CallExpression`
+
+Defined in: [core/src/expressions/types.ts:393](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L393)
+
+#### Parameters
+
+##### options
+
+###### call
+
+[`Call`](../type-aliases/Call.md)
+
+###### expression
+
+[`Expression`](Expression.md)
+
+###### arguments?
+
+[`Expression`](Expression.md)[]
+
+#### Returns
+
+`CallExpression`
+
+#### Overrides
+
+[`Expression`](Expression.md).[`constructor`](Expression.md#constructor)
+
+## Properties
+
+### left?
+
+> `optional` **left**: [`Expression`](Expression.md)
+
+Defined in: [core/src/expressions/types.ts:123](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L123)
+
+The left-hand side of the expression (if applicable).
+
+#### Inherited from
+
+[`Expression`](Expression.md).[`left`](Expression.md#left)
+
+***
+
+### right?
+
+> `optional` **right**: [`Expression`](Expression.md)
+
+Defined in: [core/src/expressions/types.ts:125](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L125)
+
+The right-hand side of the expression (if applicable).
+
+#### Inherited from
+
+[`Expression`](Expression.md).[`right`](Expression.md#right)
+
+***
+
+### type
+
+> `readonly` **type**: `"call"`
+
+Defined in: [core/src/expressions/types.ts:387](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L387)
+
+The type of the expression.
+
+#### Overrides
+
+[`Expression`](Expression.md).[`type`](Expression.md#type)
+
+***
+
+### call
+
+> **call**: [`Call`](../type-aliases/Call.md)
+
+Defined in: [core/src/expressions/types.ts:388](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L388)
+
+***
+
+### expression
+
+> **expression**: [`Expression`](Expression.md)
+
+Defined in: [core/src/expressions/types.ts:389](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L389)
+
+***
+
+### arguments
+
+> **arguments**: [`Expression`](Expression.md)[]
+
+Defined in: [core/src/expressions/types.ts:391](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L391)
+
+Empty for a unary call.
+
+## Accessors
+
+### EMPTY
+
+#### Get Signature
+
+> **get** `static` **EMPTY**(): [`EmptyExpression`](EmptyExpression.md)
+
+Defined in: [core/src/expressions/types.ts:132](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L132)
+
+##### Returns
+
+[`EmptyExpression`](EmptyExpression.md)
+
+#### Inherited from
+
+[`Expression`](Expression.md).[`EMPTY`](Expression.md#empty)
+
+***
+
+### NOT\_PARSABLE
+
+#### Get Signature
+
+> **get** `static` **NOT\_PARSABLE**(): [`NotParsableExpression`](NotParsableExpression.md)
+
+Defined in: [core/src/expressions/types.ts:136](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L136)
+
+##### Returns
+
+[`NotParsableExpression`](NotParsableExpression.md)
+
+#### Inherited from
+
+[`Expression`](Expression.md).[`NOT_PARSABLE`](Expression.md#not_parsable)
+
+## Methods
+
+### notParsable()
+
+> `static` **notParsable**(`reason`): [`NotParsableExpression`](NotParsableExpression.md)
+
+Defined in: [core/src/expressions/types.ts:141](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L141)
+
+`NOT_PARSABLE`, carrying what the parser refused.
+
+#### Parameters
+
+##### reason
+
+`string`
+
+#### Returns
+
+[`NotParsableExpression`](NotParsableExpression.md)
+
+#### Inherited from
+
+[`Expression`](Expression.md).[`notParsable`](Expression.md#notparsable)
+
+***
+
+### isEmpty()
+
+> `static` **isEmpty**(`expression`): `boolean`
+
+Defined in: [core/src/expressions/types.ts:145](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L145)
+
+#### Parameters
+
+##### expression
+
+[`Expression`](Expression.md)
+
+#### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`Expression`](Expression.md).[`isEmpty`](Expression.md#isempty)
+
+***
+
+### isNotParsable()
+
+> `static` **isNotParsable**(`expression`): `boolean`
+
+Defined in: [core/src/expressions/types.ts:149](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L149)
+
+#### Parameters
+
+##### expression
+
+[`Expression`](Expression.md)
+
+#### Returns
+
+`boolean`
+
+#### Inherited from
+
+[`Expression`](Expression.md).[`isNotParsable`](Expression.md#isnotparsable)
+
+***
+
+### toJson()
+
+> `static` **toJson**(`expression`): [`SerializedExpression`](../type-aliases/SerializedExpression.md)
+
+Defined in: [core/src/expressions/types.ts:175](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L175)
+
+Turns a tree into plain JSON, so a whole query can cross a wire.
+
+On the class rather than beside it, because this is the type's own REPRESENTATION — there is one
+right answer and it belongs with the thing being represented, next to `EMPTY` and `isEmpty`.
+Rendering a tree into some other language (`toSql`, `toMql`, `evaluate`) is a different kind of
+thing: there are many, each belongs to its consumer, and none of them is canonical.
+
+## Why it is this small
+
+Of the seven node types a bound tree can contain, exactly one holds anything JSON cannot carry:
+`PropertyExpression`, whose live `PropertyInfo` has functions, a parent chain and caches. It
+reduces to a property PATH — `PropertyInfo.id` IS the dotted path, and `getProperty` is keyed by
+exactly that — so rebinding is one lookup.
+
+`ParamReferenceExpression` never appears: it is a parse-time placeholder that binding replaces
+with a plain `ValueExpression` holding the resolved value. A serialized tree is always already
+bound, so there is no params object to send alongside it.
+
+Switches on `type` rather than using the `isXExpression` guards, which live in `../assertions`
+and import this module — the guards test the same discriminant, so nothing is lost.
+
+#### Parameters
+
+##### expression
+
+[`Expression`](Expression.md)
+
+#### Returns
+
+[`SerializedExpression`](../type-aliases/SerializedExpression.md)
+
+#### Inherited from
+
+[`Expression`](Expression.md).[`toJson`](Expression.md#tojson)
+
+***
+
+### fromJson()
+
+> `static` **fromJson**(`json`, `schema`): [`Expression`](Expression.md)
+
+Defined in: [core/src/expressions/types.ts:252](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L252)
+
+Rebuilds a tree from JSON, rebinding every property against `schema`.
+
+The schema is SUPPLIED rather than read out of the payload. A filter always belongs to a known
+collection, and the RECEIVER's schema is the authority on what its properties are — taking an
+id from the payload would mean rebinding against a schema the sender chose, which is backwards
+for anything crossing a trust boundary.
+
+#### Parameters
+
+##### json
+
+[`SerializedExpression`](../type-aliases/SerializedExpression.md)
+
+##### schema
+
+[`CompiledSchemaCore`](../type-aliases/CompiledSchemaCore.md)\<`any`\>
+
+#### Returns
+
+[`Expression`](Expression.md)
+
+#### Throws
+
+when a property path is not declared by `schema`. Not `NOT_PARSABLE`: on a receiver, a
+filter that silently stops filtering returns rows the requester excluded, which is the one
+failure here worse than an error.
+
+#### Inherited from
+
+[`Expression`](Expression.md).[`fromJson`](Expression.md#fromjson)

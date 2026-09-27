@@ -8,7 +8,7 @@
 
 > **SqliteDbPluginOptions** = `object`
 
-Defined in: [plugins/sqlite/src/plugin.ts:11](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/plugin.ts#L11)
+Defined in: [plugins/sqlite/src/plugin.ts:13](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/plugin.ts#L13)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: [plugins/sqlite/src/plugin.ts:11](https://github.com/Agrejus/routier
 
 > `optional` **driver**: [`SqliteDriver`](../interfaces/SqliteDriver.md)
 
-Defined in: [plugins/sqlite/src/plugin.ts:20](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/plugin.ts#L20)
+Defined in: [plugins/sqlite/src/plugin.ts:22](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/plugin.ts#L22)
 
 The engine to run against.
 

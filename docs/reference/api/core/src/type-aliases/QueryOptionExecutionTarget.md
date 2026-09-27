@@ -8,4 +8,4 @@
 
 > **QueryOptionExecutionTarget** = `"database"` \| `"memory"`
 
-Defined in: [core/src/plugins/query/types.ts:23](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L23)
+Defined in: [core/src/plugins/query/types.ts:32](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L32)

@@ -8,7 +8,7 @@
 
 > **getLogLevel**(): `"error"` \| `"silent"` \| `"warn"` \| `"info"` \| `"debug"`
 
-Defined in: [core/src/utilities/logger.ts:110](https://github.com/Agrejus/routier/blob/main/core/src/utilities/logger.ts#L110)
+Defined in: [core/src/utilities/logger.ts:112](https://github.com/Agrejus/routier/blob/main/core/src/utilities/logger.ts#L112)
 
 ## Returns
 

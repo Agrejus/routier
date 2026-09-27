@@ -8,7 +8,7 @@
 
 > **combineExpressions**(...`expressions`): [`Expression`](../classes/Expression.md)
 
-Defined in: [core/src/expressions/parser.ts:1234](https://github.com/Agrejus/routier/blob/main/core/src/expressions/parser.ts#L1234)
+Defined in: [core/src/expressions/parser.ts:2521](https://github.com/Agrejus/routier/blob/main/core/src/expressions/parser.ts#L2521)
 
 ## Parameters
 

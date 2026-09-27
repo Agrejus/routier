@@ -6,7 +6,7 @@
 
 # Class: CodeBuilder
 
-Defined in: [core/src/codegen/blocks.ts:624](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L624)
+Defined in: [core/src/codegen/blocks.ts:634](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L634)
 
 ## Extends
 
@@ -544,11 +544,52 @@ Defined in: [core/src/codegen/blocks.ts:193](https://github.com/Agrejus/routier/
 
 ***
 
+### bind()
+
+> **bind**(`value`, `name`): `string`
+
+Defined in: [core/src/codegen/blocks.ts:646](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L646)
+
+Makes `value` available to the generated function under the returned name.
+
+Generated code must never reach a runtime value by its source name or by pasting its
+source text: a minifier renames the declaration and cannot see inside the generated
+string, and pasted source loses the scope it closed over (#40, #46). A binding is passed
+in as a real value when the function is compiled, so it survives any bundler.
+
+#### Parameters
+
+##### value
+
+`unknown`
+
+##### name
+
+`string` = `...`
+
+#### Returns
+
+`string`
+
+***
+
+### getBindings()
+
+> **getBindings**(): [`Param`](../type-aliases/Param.md)[]
+
+Defined in: [core/src/codegen/blocks.ts:651](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L651)
+
+#### Returns
+
+[`Param`](../type-aliases/Param.md)[]
+
+***
+
 ### toString()
 
 > **toString**(): `string`
 
-Defined in: [core/src/codegen/blocks.ts:626](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L626)
+Defined in: [core/src/codegen/blocks.ts:655](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L655)
 
 #### Returns
 

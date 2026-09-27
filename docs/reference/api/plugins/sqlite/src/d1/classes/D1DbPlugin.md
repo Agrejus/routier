@@ -96,7 +96,7 @@ Callback with the result or error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [plugins/sqlite/src/d1.ts:339](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L339)
+Defined in: [plugins/sqlite/src/d1.ts:343](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L343)
 
 Executes bulk operations (add, update, remove) on the database.
 
@@ -128,7 +128,7 @@ Callback with the result or error.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: [plugins/sqlite/src/d1.ts:449](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L449)
+Defined in: [plugins/sqlite/src/d1.ts:453](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L453)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 

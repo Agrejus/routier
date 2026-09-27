@@ -8,7 +8,7 @@
 
 > **readJoinKey**(`row`, `reference`): `unknown`
 
-Defined in: [core/src/plugins/query/join.ts:88](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/join.ts#L88)
+Defined in: [core/src/plugins/query/join.ts:89](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/join.ts#L89)
 
 Reads a join key off an entity-shape row.
 

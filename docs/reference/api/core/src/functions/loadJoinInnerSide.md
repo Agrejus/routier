@@ -6,9 +6,9 @@
 
 # Function: loadJoinInnerSide()
 
-> **loadJoinInnerSide**\<`TRoot`, `TShape`\>(`event`, `query`, `done`, `outerKeys?`): `void`
+> **loadJoinInnerSide**\<`TRoot`, `TShape`\>(`event`, `query`, `done`, `outerKeys?`, `innerExecutedQueries?`): `void`
 
-Defined in: [core/src/plugins/query/join.ts:339](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/join.ts#L339)
+Defined in: [core/src/plugins/query/join.ts:340](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/join.ts#L340)
 
 Loads a join's inner side by asking the plugin to run an ORDINARY query for it.
 
@@ -60,6 +60,12 @@ The outer side's distinct keys, when the caller already has them.
 Only a plugin that runs its outer query FIRST can supply these, and most run this loader
 before anything else — so it is optional, and its absence costs a wider inner read rather
 than a wrong one.
+
+### innerExecutedQueries?
+
+[`ExecutedQuery`](../type-aliases/ExecutedQuery.md)[]
+
+Where the inner read reports what it executed. Defaults to the outer read's own list.
 
 ## Returns
 

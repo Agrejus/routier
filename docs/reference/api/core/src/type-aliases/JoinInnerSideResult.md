@@ -8,6 +8,6 @@
 
 > **JoinInnerSideResult** = \{ `ok`: `"success"`; `innerSide?`: [`JoinInnerSide`](JoinInnerSide.md); \} \| \{ `ok`: `"error"`; `error`: `unknown`; \}
 
-Defined in: [core/src/plugins/query/join.ts:47](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/join.ts#L47)
+Defined in: [core/src/plugins/query/join.ts:48](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/join.ts#L48)
 
 `undefined` when the query has no join at all, which is the common case and not an error.

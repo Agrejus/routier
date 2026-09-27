@@ -8,7 +8,7 @@
 
 > **ExplainedOption** = `object`
 
-Defined in: [core/src/plugins/query/explain.ts:33](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L33)
+Defined in: [core/src/plugins/query/explain.ts:34](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L34)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: [core/src/plugins/query/explain.ts:33](https://github.com/Agrejus/ro
 
 > **index**: `number`
 
-Defined in: [core/src/plugins/query/explain.ts:34](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L34)
+Defined in: [core/src/plugins/query/explain.ts:35](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L35)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: [core/src/plugins/query/explain.ts:34](https://github.com/Agrejus/ro
 
 > **name**: [`QueryOptionName`](QueryOptionName.md)
 
-Defined in: [core/src/plugins/query/explain.ts:35](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L35)
+Defined in: [core/src/plugins/query/explain.ts:36](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L36)
 
 ***
 
@@ -32,4 +32,4 @@ Defined in: [core/src/plugins/query/explain.ts:35](https://github.com/Agrejus/ro
 
 > `optional` **detail**: `Record`\<`string`, `unknown`\>
 
-Defined in: [core/src/plugins/query/explain.ts:36](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L36)
+Defined in: [core/src/plugins/query/explain.ts:37](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L37)

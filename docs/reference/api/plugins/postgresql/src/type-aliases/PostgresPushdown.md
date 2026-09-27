@@ -8,7 +8,7 @@
 
 > **PostgresPushdown** = `SqlPushdown` & `object`
 
-Defined in: [plugins/postgresql/src/PostgresSqlTranslator.ts:16](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresSqlTranslator.ts#L16)
+Defined in: plugins/postgres-core/dist/PostgresSqlTranslator.d.ts:15
 
 What Postgres can push down: everything the base class knows about, plus the vector ordering.
 

@@ -8,7 +8,7 @@
 
 > **ParamsFilter**\<`T`, `P`\> = (`payload`) => `boolean`
 
-Defined in: [core/src/expressions/types.ts:386](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L386)
+Defined in: [core/src/expressions/types.ts:474](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L474)
 
 A function that filters a value of type T with additional parameters P.
 

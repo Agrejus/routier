@@ -42,7 +42,31 @@ Defined in: [core/src/plugins/query/types.ts:18](https://github.com/Agrejus/rout
 
 > `optional` **property**: [`PropertyInfo`](../classes/PropertyInfo.md)\<`unknown`\>
 
-Defined in: [core/src/plugins/query/types.ts:19](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L19)
+Defined in: [core/src/plugins/query/types.ts:20](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L20)
+
+The property the field's value is read from, when it reads exactly one.
+
+***
+
+### reads?
+
+> `optional` **reads**: [`PropertyInfo`](../classes/PropertyInfo.md)\<`unknown`\>[]
+
+Defined in: [core/src/plugins/query/types.ts:22](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L22)
+
+Every property the field's value is read from. Absent when the selector could not be parsed.
+
+***
+
+### isDirectProperty?
+
+> `optional` **isDirectProperty**: `boolean`
+
+Defined in: [core/src/plugins/query/types.ts:28](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L28)
+
+`false` when the value is computed from `property` rather than being it, as in `x.createdDate.getTime()`,
+or when the selector could not be parsed. Absent on a field built from a property rather than a
+selector, which is that property.
 
 ***
 
@@ -50,7 +74,7 @@ Defined in: [core/src/plugins/query/types.ts:19](https://github.com/Agrejus/rout
 
 > **getter**: \<`T`\>(`data`) => `T`
 
-Defined in: [core/src/plugins/query/types.ts:20](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L20)
+Defined in: [core/src/plugins/query/types.ts:29](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L29)
 
 #### Type Parameters
 

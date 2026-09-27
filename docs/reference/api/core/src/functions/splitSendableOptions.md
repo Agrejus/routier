@@ -8,7 +8,7 @@
 
 > **splitSendableOptions**\<`T`\>(`options`): `object`
 
-Defined in: [core/src/plugins/wire/query.ts:31](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/query.ts#L31)
+Defined in: [core/src/plugins/wire/query.ts:37](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/query.ts#L37)
 
 Splits options into the PREFIX that can be sent and the remainder that cannot.
 

@@ -8,7 +8,7 @@
 
 > **decodeJsonColumns**\<`T`\>(`rows`, `schema`): `unknown`
 
-Defined in: [plugins/sql-core/src/columns.ts:195](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/columns.ts#L195)
+Defined in: [plugins/sql-core/src/columns.ts:197](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/columns.ts#L197)
 
 Reverses `toColumnAssignments` on the way back out of the database.
 

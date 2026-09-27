@@ -550,19 +550,19 @@ Defined in: [core/src/codegen/blocks.ts:193](https://github.com/Agrejus/routier/
 
 ### getParameters()
 
-> **getParameters**(): `Param`[]
+> **getParameters**(): [`Param`](../type-aliases/Param.md)[]
 
 Defined in: [core/src/codegen/blocks.ts:450](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L450)
 
 #### Returns
 
-`Param`[]
+[`Param`](../type-aliases/Param.md)[]
 
 ***
 
 ### createParameter()
 
-> **createParameter**(`value`): `Param`
+> **createParameter**(`value`): [`Param`](../type-aliases/Param.md)
 
 Defined in: [core/src/codegen/blocks.ts:454](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L454)
 
@@ -574,7 +574,7 @@ Defined in: [core/src/codegen/blocks.ts:454](https://github.com/Agrejus/routier/
 
 #### Returns
 
-`Param`
+[`Param`](../type-aliases/Param.md)
 
 ***
 
@@ -588,7 +588,7 @@ Defined in: [core/src/codegen/blocks.ts:462](https://github.com/Agrejus/routier/
 
 ##### params
 
-...`Param`[]
+...[`Param`](../type-aliases/Param.md)[]
 
 #### Returns
 
@@ -596,11 +596,32 @@ Defined in: [core/src/codegen/blocks.ts:462](https://github.com/Agrejus/routier/
 
 ***
 
+### bind()
+
+> **bind**(`value`): `string`
+
+Defined in: [core/src/codegen/blocks.ts:471](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L471)
+
+Adds a factory parameter carrying `value` and returns its name, for generated code to
+refer to. See `CodeBuilder.bind` for why values travel this way.
+
+#### Parameters
+
+##### value
+
+`unknown`
+
+#### Returns
+
+`string`
+
+***
+
 ### return()
 
 > **return**(): `FunctionFactoryBuilder`
 
-Defined in: [core/src/codegen/blocks.ts:467](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L467)
+Defined in: [core/src/codegen/blocks.ts:477](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L477)
 
 #### Returns
 
@@ -612,7 +633,7 @@ Defined in: [core/src/codegen/blocks.ts:467](https://github.com/Agrejus/routier/
 
 > **appendBody**(`line`): `this`
 
-Defined in: [core/src/codegen/blocks.ts:472](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L472)
+Defined in: [core/src/codegen/blocks.ts:482](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L482)
 
 #### Parameters
 
@@ -630,7 +651,7 @@ Defined in: [core/src/codegen/blocks.ts:472](https://github.com/Agrejus/routier/
 
 > **invoke**(): `any`
 
-Defined in: [core/src/codegen/blocks.ts:477](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L477)
+Defined in: [core/src/codegen/blocks.ts:487](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L487)
 
 #### Returns
 
@@ -642,7 +663,7 @@ Defined in: [core/src/codegen/blocks.ts:477](https://github.com/Agrejus/routier/
 
 > **toString**(): `string`
 
-Defined in: [core/src/codegen/blocks.ts:493](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L493)
+Defined in: [core/src/codegen/blocks.ts:503](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L503)
 
 #### Returns
 

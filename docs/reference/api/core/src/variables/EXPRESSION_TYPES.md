@@ -8,4 +8,4 @@
 
 > `const` **EXPRESSION\_TYPES**: [`ExpressionType`](../type-aliases/ExpressionType.md)[]
 
-Defined in: [core/src/expressions/constants.ts:3](https://github.com/Agrejus/routier/blob/main/core/src/expressions/constants.ts#L3)
+Defined in: [core/src/expressions/constants.ts:17](https://github.com/Agrejus/routier/blob/main/core/src/expressions/constants.ts#L17)

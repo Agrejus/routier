@@ -8,7 +8,7 @@
 
 > **withExecutedQueries**(`explanation`, `executedQueries`): [`QueryExplanation`](../type-aliases/QueryExplanation.md)
 
-Defined in: [core/src/plugins/query/explain.ts:286](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L286)
+Defined in: [core/src/plugins/query/explain.ts:372](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L372)
 
 Attaches what the backend reported to the step that was sent to it.
 

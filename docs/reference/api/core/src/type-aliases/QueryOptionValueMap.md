@@ -8,7 +8,7 @@
 
 > **QueryOptionValueMap**\<`T`\> = `object`
 
-Defined in: [core/src/plugins/query/types.ts:51](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L51)
+Defined in: [core/src/plugins/query/types.ts:96](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L96)
 
 ## Type Parameters
 
@@ -22,7 +22,7 @@ Defined in: [core/src/plugins/query/types.ts:51](https://github.com/Agrejus/rout
 
 > **skip**: `number`
 
-Defined in: [core/src/plugins/query/types.ts:52](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L52)
+Defined in: [core/src/plugins/query/types.ts:97](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L97)
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: [core/src/plugins/query/types.ts:52](https://github.com/Agrejus/rout
 
 > **take**: `number`
 
-Defined in: [core/src/plugins/query/types.ts:53](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L53)
+Defined in: [core/src/plugins/query/types.ts:98](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L98)
 
 ***
 
@@ -38,7 +38,9 @@ Defined in: [core/src/plugins/query/types.ts:53](https://github.com/Agrejus/rout
 
 > **sort**: `object`
 
-Defined in: [core/src/plugins/query/types.ts:54](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L54)
+Defined in: [core/src/plugins/query/types.ts:100](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L100)
+
+`property`, `reads` and `isDirectProperty` mean what they do on a [QueryField](QueryField.md).
 
 #### selector
 
@@ -56,13 +58,21 @@ Defined in: [core/src/plugins/query/types.ts:54](https://github.com/Agrejus/rout
 
 > `optional` **property**: [`PropertyInfo`](../classes/PropertyInfo.md)\<`T`\> \| `null`
 
+#### reads?
+
+> `optional` **reads**: [`PropertyInfo`](../classes/PropertyInfo.md)\<`T`\>[]
+
+#### isDirectProperty?
+
+> `optional` **isDirectProperty**: `boolean`
+
 ***
 
 ### map
 
 > **map**: `object`
 
-Defined in: [core/src/plugins/query/types.ts:55](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L55)
+Defined in: [core/src/plugins/query/types.ts:101](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L101)
 
 #### selector
 
@@ -78,7 +88,7 @@ Defined in: [core/src/plugins/query/types.ts:55](https://github.com/Agrejus/rout
 
 > **group**: `object`
 
-Defined in: [core/src/plugins/query/types.ts:56](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L56)
+Defined in: [core/src/plugins/query/types.ts:102](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L102)
 
 #### selector
 
@@ -98,7 +108,7 @@ Defined in: [core/src/plugins/query/types.ts:56](https://github.com/Agrejus/rout
 
 > **filter**: `object`
 
-Defined in: [core/src/plugins/query/types.ts:57](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L57)
+Defined in: [core/src/plugins/query/types.ts:103](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L103)
 
 #### params?
 
@@ -118,7 +128,7 @@ Defined in: [core/src/plugins/query/types.ts:57](https://github.com/Agrejus/rout
 
 > **nearest**: `object`
 
-Defined in: [core/src/plugins/query/types.ts:65](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L65)
+Defined in: [core/src/plugins/query/types.ts:111](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L111)
 
 Similarity search: an ordering plus a limit, never a filter.
 
@@ -138,6 +148,14 @@ approximate index usable, and splitting them would order every row before limiti
 
 > `optional` **property**: [`PropertyInfo`](../classes/PropertyInfo.md)\<`T`\> \| `null`
 
+#### reads?
+
+> `optional` **reads**: [`PropertyInfo`](../classes/PropertyInfo.md)\<`T`\>[]
+
+#### isDirectProperty?
+
+> `optional` **isDirectProperty**: `boolean`
+
 #### vector
 
 > **vector**: `number`[]
@@ -152,7 +170,7 @@ approximate index usable, and splitting them would order every row before limiti
 
 > **join**: `object`
 
-Defined in: [core/src/plugins/query/types.ts:78](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L78)
+Defined in: [core/src/plugins/query/types.ts:124](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L124)
 
 An equi-join against a second collection, interpreted by whoever receives it.
 
@@ -222,7 +240,7 @@ join discards the surplus — the same answer by a slower route.
 
 > **min**: `true`
 
-Defined in: [core/src/plugins/query/types.ts:112](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L112)
+Defined in: [core/src/plugins/query/types.ts:158](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L158)
 
 ***
 
@@ -230,7 +248,7 @@ Defined in: [core/src/plugins/query/types.ts:112](https://github.com/Agrejus/rou
 
 > **max**: `true`
 
-Defined in: [core/src/plugins/query/types.ts:113](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L113)
+Defined in: [core/src/plugins/query/types.ts:159](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L159)
 
 ***
 
@@ -238,7 +256,7 @@ Defined in: [core/src/plugins/query/types.ts:113](https://github.com/Agrejus/rou
 
 > **count**: `true`
 
-Defined in: [core/src/plugins/query/types.ts:114](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L114)
+Defined in: [core/src/plugins/query/types.ts:160](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L160)
 
 ***
 
@@ -246,7 +264,7 @@ Defined in: [core/src/plugins/query/types.ts:114](https://github.com/Agrejus/rou
 
 > **sum**: `true`
 
-Defined in: [core/src/plugins/query/types.ts:115](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L115)
+Defined in: [core/src/plugins/query/types.ts:161](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L161)
 
 ***
 
@@ -254,4 +272,4 @@ Defined in: [core/src/plugins/query/types.ts:115](https://github.com/Agrejus/rou
 
 > **distinct**: `true`
 
-Defined in: [core/src/plugins/query/types.ts:116](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L116)
+Defined in: [core/src/plugins/query/types.ts:162](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L162)

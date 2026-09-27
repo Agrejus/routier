@@ -6,84 +6,69 @@
 
 # Type Alias: ExecutionStep
 
-> **ExecutionStep** = `object`
+> **ExecutionStep** = \{ `step`: `number`; `of`: `number`; `executedIn`: `Extract`\<[`ExecutedIn`](ExecutedIn.md), \{ `kind`: `"database"`; \}\>; `options`: [`ExplainedOption`](ExplainedOption.md)[]; `executedQueries`: [`ExecutedQuery`](ExecutedQuery.md)[]; `executedQueriesUnsupported?`: `string`; \} \| \{ `step`: `number`; `of`: `number`; `executedIn`: `Extract`\<[`ExecutedIn`](ExecutedIn.md), \{ `kind`: `"memory"`; \}\>; `options`: [`ExplainedOption`](ExplainedOption.md)[]; `reason?`: [`StepReason`](StepReason.md); `explanation?`: `string`; \}
 
-Defined in: [core/src/plugins/query/explain.ts:42](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L42)
+Defined in: [core/src/plugins/query/explain.ts:73](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L73)
 
-## Properties
+One run of options in one place.
+
+A union, so a memory step cannot carry statements it could not have run and a database step cannot
+carry a reason for not being in the database.
+
+## Type Declaration
+
+\{ `step`: `number`; `of`: `number`; `executedIn`: `Extract`\<[`ExecutedIn`](ExecutedIn.md), \{ `kind`: `"database"`; \}\>; `options`: [`ExplainedOption`](ExplainedOption.md)[]; `executedQueries`: [`ExecutedQuery`](ExecutedQuery.md)[]; `executedQueriesUnsupported?`: `string`; \}
 
 ### step
 
 > **step**: `number`
 
-Defined in: [core/src/plugins/query/explain.ts:43](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L43)
-
-***
-
 ### of
 
 > **of**: `number`
 
-Defined in: [core/src/plugins/query/explain.ts:44](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L44)
-
-***
-
 ### executedIn
 
-> **executedIn**: [`QueryOptionExecutionTarget`](QueryOptionExecutionTarget.md)
-
-Defined in: [core/src/plugins/query/explain.ts:45](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L45)
-
-***
-
-### description
-
-> **description**: `string`
-
-Defined in: [core/src/plugins/query/explain.ts:46](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L46)
-
-***
+> **executedIn**: `Extract`\<[`ExecutedIn`](ExecutedIn.md), \{ `kind`: `"database"`; \}\>
 
 ### options
 
 > **options**: [`ExplainedOption`](ExplainedOption.md)[]
 
-Defined in: [core/src/plugins/query/explain.ts:47](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L47)
+### executedQueries
 
-***
+> **executedQueries**: [`ExecutedQuery`](ExecutedQuery.md)[]
 
-### executedQueries?
-
-> `optional` **executedQueries**: [`ExecutedQuery`](ExecutedQuery.md)[]
-
-Defined in: [core/src/plugins/query/explain.ts:49](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L49)
-
-Set on database steps once the plugin has reported.
-
-***
+What the plugin reported running. Empty when it reported nothing.
 
 ### executedQueriesUnsupported?
 
 > `optional` **executedQueriesUnsupported**: `string`
 
-Defined in: [core/src/plugins/query/explain.ts:51](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L51)
+Set instead, when this plugin does not report what it executed.
 
-Set on the first database step instead, when the plugin reported nothing.
+\{ `step`: `number`; `of`: `number`; `executedIn`: `Extract`\<[`ExecutedIn`](ExecutedIn.md), \{ `kind`: `"memory"`; \}\>; `options`: [`ExplainedOption`](ExplainedOption.md)[]; `reason?`: [`StepReason`](StepReason.md); `explanation?`: `string`; \}
 
-***
+### step
+
+> **step**: `number`
+
+### of
+
+> **of**: `number`
+
+### executedIn
+
+> **executedIn**: `Extract`\<[`ExecutedIn`](ExecutedIn.md), \{ `kind`: `"memory"`; \}\>
+
+### options
+
+> **options**: [`ExplainedOption`](ExplainedOption.md)[]
 
 ### reason?
 
-> `optional` **reason**: [`MemoryExecutionReason`](MemoryExecutionReason.md)
-
-Defined in: [core/src/plugins/query/explain.ts:53](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L53)
-
-Set on memory steps only.
-
-***
+> `optional` **reason**: [`StepReason`](StepReason.md)
 
 ### explanation?
 
 > `optional` **explanation**: `string`
-
-Defined in: [core/src/plugins/query/explain.ts:54](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L54)

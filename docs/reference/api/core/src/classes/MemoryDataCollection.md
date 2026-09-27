@@ -74,7 +74,7 @@ Iterates stored records without materializing them into an array.
 
 > **seed**(`items`): `void`
 
-Defined in: [core/src/collections/MemoryDataCollection.ts:80](https://github.com/Agrejus/routier/blob/main/core/src/collections/MemoryDataCollection.ts#L80)
+Defined in: [core/src/collections/MemoryDataCollection.ts:95](https://github.com/Agrejus/routier/blob/main/core/src/collections/MemoryDataCollection.ts#L95)
 
 #### Parameters
 
@@ -92,7 +92,7 @@ Defined in: [core/src/collections/MemoryDataCollection.ts:80](https://github.com
 
 > **add**(`item`): `void`
 
-Defined in: [core/src/collections/MemoryDataCollection.ts:131](https://github.com/Agrejus/routier/blob/main/core/src/collections/MemoryDataCollection.ts#L131)
+Defined in: [core/src/collections/MemoryDataCollection.ts:146](https://github.com/Agrejus/routier/blob/main/core/src/collections/MemoryDataCollection.ts#L146)
 
 #### Parameters
 
@@ -110,7 +110,7 @@ Defined in: [core/src/collections/MemoryDataCollection.ts:131](https://github.co
 
 > **addIfAbsent**(`item`): `void`
 
-Defined in: [core/src/collections/MemoryDataCollection.ts:141](https://github.com/Agrejus/routier/blob/main/core/src/collections/MemoryDataCollection.ts#L141)
+Defined in: [core/src/collections/MemoryDataCollection.ts:156](https://github.com/Agrejus/routier/blob/main/core/src/collections/MemoryDataCollection.ts#L156)
 
 Adds a record only when no record with the same key is present. Durable
 collections use this to hydrate stored records around in-memory mutations
@@ -132,7 +132,7 @@ without clobbering them.
 
 > **getByIds**(`ids`): `Record`\<`string`, `unknown`\>
 
-Defined in: [core/src/collections/MemoryDataCollection.ts:155](https://github.com/Agrejus/routier/blob/main/core/src/collections/MemoryDataCollection.ts#L155)
+Defined in: [core/src/collections/MemoryDataCollection.ts:170](https://github.com/Agrejus/routier/blob/main/core/src/collections/MemoryDataCollection.ts#L170)
 
 Looks up a single record by its key values without scanning the collection.
 
@@ -156,7 +156,7 @@ The matching record or undefined when no record has the given key
 
 > **remove**(`item`): `void`
 
-Defined in: [core/src/collections/MemoryDataCollection.ts:159](https://github.com/Agrejus/routier/blob/main/core/src/collections/MemoryDataCollection.ts#L159)
+Defined in: [core/src/collections/MemoryDataCollection.ts:174](https://github.com/Agrejus/routier/blob/main/core/src/collections/MemoryDataCollection.ts#L174)
 
 #### Parameters
 
@@ -174,7 +174,7 @@ Defined in: [core/src/collections/MemoryDataCollection.ts:159](https://github.co
 
 > **update**(`item`): `void`
 
-Defined in: [core/src/collections/MemoryDataCollection.ts:164](https://github.com/Agrejus/routier/blob/main/core/src/collections/MemoryDataCollection.ts#L164)
+Defined in: [core/src/collections/MemoryDataCollection.ts:179](https://github.com/Agrejus/routier/blob/main/core/src/collections/MemoryDataCollection.ts#L179)
 
 #### Parameters
 
@@ -192,7 +192,7 @@ Defined in: [core/src/collections/MemoryDataCollection.ts:164](https://github.co
 
 > **destroy**(`done`): `void`
 
-Defined in: [core/src/collections/MemoryDataCollection.ts:169](https://github.com/Agrejus/routier/blob/main/core/src/collections/MemoryDataCollection.ts#L169)
+Defined in: [core/src/collections/MemoryDataCollection.ts:184](https://github.com/Agrejus/routier/blob/main/core/src/collections/MemoryDataCollection.ts#L184)
 
 #### Parameters
 
@@ -210,7 +210,7 @@ Defined in: [core/src/collections/MemoryDataCollection.ts:169](https://github.co
 
 > **load**(`done`): `void`
 
-Defined in: [core/src/collections/MemoryDataCollection.ts:175](https://github.com/Agrejus/routier/blob/main/core/src/collections/MemoryDataCollection.ts#L175)
+Defined in: [core/src/collections/MemoryDataCollection.ts:190](https://github.com/Agrejus/routier/blob/main/core/src/collections/MemoryDataCollection.ts#L190)
 
 #### Parameters
 
@@ -228,7 +228,7 @@ Defined in: [core/src/collections/MemoryDataCollection.ts:175](https://github.co
 
 > **save**(`done`): `void`
 
-Defined in: [core/src/collections/MemoryDataCollection.ts:179](https://github.com/Agrejus/routier/blob/main/core/src/collections/MemoryDataCollection.ts#L179)
+Defined in: [core/src/collections/MemoryDataCollection.ts:194](https://github.com/Agrejus/routier/blob/main/core/src/collections/MemoryDataCollection.ts#L194)
 
 #### Parameters
 

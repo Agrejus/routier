@@ -8,7 +8,7 @@
 
 > **toEntityShape**(`schema`, `rows`): [`UnknownRecord`](../type-aliases/UnknownRecord.md)[]
 
-Defined in: [core/src/plugins/query/join.ts:71](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/join.ts#L71)
+Defined in: [core/src/plugins/query/join.ts:72](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/join.ts#L72)
 
 Turns storage-shape records into entity-shape values, one side of a join at a time.
 

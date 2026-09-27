@@ -8,4 +8,4 @@
 
 > **JoinKind** = `"inner"` \| `"left"`
 
-Defined in: [core/src/plugins/query/join.ts:12](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/join.ts#L12)
+Defined in: [core/src/plugins/query/join.ts:13](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/join.ts#L13)

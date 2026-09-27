@@ -6,16 +6,23 @@
 
 # Function: canPushDownJoin()
 
-> **canPushDownJoin**(`join`): `boolean`
+> **canPushDownJoin**(`join`, `dialect?`, `divergentCalls?`): `boolean`
 
-Defined in: [plugins/sql-core/src/joins.ts:149](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/joins.ts#L149)
+Defined in: [plugins/sql-core/src/joins.ts:175](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/joins.ts#L175)
 
-Whether every filter of the inner side can be expressed in SQL.
+Whether every filter of the inner side can be expressed in SQL, by this dialect.
 
-A plugin must ask this BEFORE claiming a join was pushed down. An inner filter that core
-marked memory-only — an unmapped or a renamed property — has no column to compare, so the
-emitted statement would silently return rows the scope excludes. Answering `false` sends the
-join back to an interpretation that can apply it.
+A plugin must ask this BEFORE claiming a join was pushed down. Two ways the answer is no:
+
+ - core marked an inner filter memory-only — an unmapped property — so there is no column to
+   compare and the statement would silently return rows the scope excludes. A renamed property is
+   not one: it renders its storage column, qualified by the inner alias, like any other;
+ - the filter holds a call this ENGINE cannot render. The main read path asks `canRenderInSql`
+   before translating, and without the same question here a join was the one way to reach a
+   renderer for a call the dialect does not claim.
+
+`dialect` is optional so an existing caller keeps its meaning; passing it is what closes the
+second hole.
 
 ## Parameters
 
@@ -71,6 +78,14 @@ serializes; a reference to the store would not.
 
 Cost only. Above the threshold the inner side is read under its own scopes and the hash
 join discards the surplus — the same answer by a slower route.
+
+### dialect?
+
+[`SqlDialectName`](../type-aliases/SqlDialectName.md) | [`SqlDialect`](../interfaces/SqlDialect.md)
+
+### divergentCalls?
+
+readonly `Call`[] = `[]`
 
 ## Returns
 

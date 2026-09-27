@@ -8,7 +8,7 @@
 
 > **ExecutedQuery** = `object`
 
-Defined in: [core/src/plugins/query/explain.ts:28](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L28)
+Defined in: [core/src/plugins/query/explain.ts:29](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L29)
 
 One thing a backend actually executed, in the backend's own language.
 
@@ -22,7 +22,7 @@ key-value store describes what it did in whatever terms it has.
 
 > **text**: `string`
 
-Defined in: [core/src/plugins/query/explain.ts:29](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L29)
+Defined in: [core/src/plugins/query/explain.ts:30](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L30)
 
 ***
 
@@ -30,4 +30,4 @@ Defined in: [core/src/plugins/query/explain.ts:29](https://github.com/Agrejus/ro
 
 > `optional` **parameters**: `unknown`[]
 
-Defined in: [core/src/plugins/query/explain.ts:30](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L30)
+Defined in: [core/src/plugins/query/explain.ts:31](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L31)

@@ -140,9 +140,9 @@ Optional hook for swallowed mirror failures (after-source or swallow mode).
 
 ##### context
 
-###### pluginIndex
+###### plugin
 
-`number`
+`IDbPlugin`
 
 ###### eventId
 

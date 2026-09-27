@@ -8,7 +8,7 @@
 
 > **toFieldPath**(`prop`): `string`
 
-Defined in: [plugins/mongodb/src/mql.ts:123](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/mql.ts#L123)
+Defined in: [plugins/mongodb/src/mql.ts:194](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/mql.ts#L194)
 
 Storage-side dotted path for a property.
 

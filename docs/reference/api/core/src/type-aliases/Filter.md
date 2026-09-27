@@ -8,7 +8,7 @@
 
 > **Filter**\<`T`\> = (`value`) => `boolean`
 
-Defined in: [core/src/expressions/types.ts:381](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L381)
+Defined in: [core/src/expressions/types.ts:469](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L469)
 
 A function that filters a value of type T and returns a boolean.
 

@@ -8,6 +8,6 @@
 
 > `const` **JOIN\_INNER\_ALIAS**: `"i"` = `"i"`
 
-Defined in: [plugins/sql-core/src/joins.ts:34](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/joins.ts#L34)
+Defined in: [plugins/sql-core/src/joins.ts:36](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/joins.ts#L36)
 
 Alias for the inner side, and the prefix its columns are projected under.

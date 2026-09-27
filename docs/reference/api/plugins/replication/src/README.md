@@ -27,6 +27,7 @@
 ## Type Aliases
 
 - [HttpTransportDbPluginOptions](type-aliases/HttpTransportDbPluginOptions.md)
+- [OptimisticUpdatesDbPluginOptions](type-aliases/OptimisticUpdatesDbPluginOptions.md)
 - [QueryFailureMode](type-aliases/QueryFailureMode.md)
 - [MirrorFailureMode](type-aliases/MirrorFailureMode.md)
 - [PersistAckMode](type-aliases/PersistAckMode.md)

@@ -6,7 +6,7 @@
 
 # Interface: PostgresDbPluginConfig
 
-Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:13](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresDbPlugin.ts#L13)
+Defined in: [plugins/postgresql/src/drivers/pg.ts:6](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/drivers/pg.ts#L6)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:13](https://github.com/A
 
 > `optional` **host**: `string`
 
-Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:14](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresDbPlugin.ts#L14)
+Defined in: [plugins/postgresql/src/drivers/pg.ts:7](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/drivers/pg.ts#L7)
 
 ***
 
@@ -22,7 +22,7 @@ Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:14](https://github.com/A
 
 > `optional` **port**: `number`
 
-Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:15](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresDbPlugin.ts#L15)
+Defined in: [plugins/postgresql/src/drivers/pg.ts:8](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/drivers/pg.ts#L8)
 
 ***
 
@@ -30,7 +30,7 @@ Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:15](https://github.com/A
 
 > **database**: `string`
 
-Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:16](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresDbPlugin.ts#L16)
+Defined in: [plugins/postgresql/src/drivers/pg.ts:9](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/drivers/pg.ts#L9)
 
 ***
 
@@ -38,7 +38,7 @@ Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:16](https://github.com/A
 
 > `optional` **user**: `string`
 
-Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:17](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresDbPlugin.ts#L17)
+Defined in: [plugins/postgresql/src/drivers/pg.ts:10](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/drivers/pg.ts#L10)
 
 ***
 
@@ -46,7 +46,7 @@ Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:17](https://github.com/A
 
 > `optional` **password**: `string`
 
-Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:18](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresDbPlugin.ts#L18)
+Defined in: [plugins/postgresql/src/drivers/pg.ts:11](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/drivers/pg.ts#L11)
 
 ***
 
@@ -54,7 +54,7 @@ Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:18](https://github.com/A
 
 > `optional` **connectionString**: `string`
 
-Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:19](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresDbPlugin.ts#L19)
+Defined in: [plugins/postgresql/src/drivers/pg.ts:12](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/drivers/pg.ts#L12)
 
 ***
 
@@ -62,7 +62,7 @@ Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:19](https://github.com/A
 
 > `optional` **pool**: `object`
 
-Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:20](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresDbPlugin.ts#L20)
+Defined in: [plugins/postgresql/src/drivers/pg.ts:13](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/drivers/pg.ts#L13)
 
 #### min?
 

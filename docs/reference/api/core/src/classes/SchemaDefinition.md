@@ -6,7 +6,7 @@
 
 # Class: SchemaDefinition\<T\>
 
-Defined in: [core/src/schema/SchemaDefinition.ts:154](https://github.com/Agrejus/routier/blob/main/core/src/schema/SchemaDefinition.ts#L154)
+Defined in: [core/src/schema/SchemaDefinition.ts:36](https://github.com/Agrejus/routier/blob/main/core/src/schema/SchemaDefinition.ts#L36)
 
 ## Extends
 
@@ -24,7 +24,7 @@ Defined in: [core/src/schema/SchemaDefinition.ts:154](https://github.com/Agrejus
 
 > **new SchemaDefinition**\<`T`\>(`collectionName`, `schema`): `SchemaDefinition`\<`T`\>
 
-Defined in: [core/src/schema/SchemaDefinition.ts:160](https://github.com/Agrejus/routier/blob/main/core/src/schema/SchemaDefinition.ts#L160)
+Defined in: [core/src/schema/SchemaDefinition.ts:42](https://github.com/Agrejus/routier/blob/main/core/src/schema/SchemaDefinition.ts#L42)
 
 #### Parameters
 
@@ -50,7 +50,7 @@ Defined in: [core/src/schema/SchemaDefinition.ts:160](https://github.com/Agrejus
 
 > **instance**: `T`
 
-Defined in: [core/src/schema/SchemaDefinition.ts:156](https://github.com/Agrejus/routier/blob/main/core/src/schema/SchemaDefinition.ts#L156)
+Defined in: [core/src/schema/SchemaDefinition.ts:38](https://github.com/Agrejus/routier/blob/main/core/src/schema/SchemaDefinition.ts#L38)
 
 #### Overrides
 
@@ -62,7 +62,7 @@ Defined in: [core/src/schema/SchemaDefinition.ts:156](https://github.com/Agrejus
 
 > **type**: [`SchemaTypes`](../enumerations/SchemaTypes.md) = `SchemaTypes.Definition`
 
-Defined in: [core/src/schema/SchemaDefinition.ts:157](https://github.com/Agrejus/routier/blob/main/core/src/schema/SchemaDefinition.ts#L157)
+Defined in: [core/src/schema/SchemaDefinition.ts:39](https://github.com/Agrejus/routier/blob/main/core/src/schema/SchemaDefinition.ts#L39)
 
 #### Overrides
 
@@ -74,7 +74,7 @@ Defined in: [core/src/schema/SchemaDefinition.ts:157](https://github.com/Agrejus
 
 > **collectionName**: [`CollectionName`](../type-aliases/CollectionName.md)
 
-Defined in: [core/src/schema/SchemaDefinition.ts:158](https://github.com/Agrejus/routier/blob/main/core/src/schema/SchemaDefinition.ts#L158)
+Defined in: [core/src/schema/SchemaDefinition.ts:40](https://github.com/Agrejus/routier/blob/main/core/src/schema/SchemaDefinition.ts#L40)
 
 ***
 
@@ -386,7 +386,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:73](https://github.com/
 
 > **get** **~standard**(): [`Props`](../namespaces/StandardJSONSchemaV1/interfaces/Props.md)\<[`InferCreateType`](../type-aliases/InferCreateType.md)\<`T`\>, [`InferType`](../type-aliases/InferType.md)\<`T`\>\>
 
-Defined in: [core/src/schema/SchemaDefinition.ts:197](https://github.com/Agrejus/routier/blob/main/core/src/schema/SchemaDefinition.ts#L197)
+Defined in: [core/src/schema/SchemaDefinition.ts:79](https://github.com/Agrejus/routier/blob/main/core/src/schema/SchemaDefinition.ts#L79)
 
 Standard JSON Schema V1 implementation.
 Provides JSON Schema conversion for Routier schemas.
@@ -401,7 +401,7 @@ Provides JSON Schema conversion for Routier schemas.
 
 > `static` **fromJson**(`jsonString`, `collectionName?`): [`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`any`\>
 
-Defined in: [core/src/schema/SchemaDefinition.ts:188](https://github.com/Agrejus/routier/blob/main/core/src/schema/SchemaDefinition.ts#L188)
+Defined in: [core/src/schema/SchemaDefinition.ts:70](https://github.com/Agrejus/routier/blob/main/core/src/schema/SchemaDefinition.ts#L70)
 
 Creates a SchemaDefinition from a JSON string containing a JSON Schema.
 Parses the JSON string, rehydrates the schema structure, and compiles it.
@@ -448,7 +448,7 @@ const rehydratedSchema = SchemaDefinition.fromJson(jsonString);
 
 > **modify**\<`R`\>(`builder`): `SchemaDefinition`\<`R` & `T`\>
 
-Defined in: [core/src/schema/SchemaDefinition.ts:224](https://github.com/Agrejus/routier/blob/main/core/src/schema/SchemaDefinition.ts#L224)
+Defined in: [core/src/schema/SchemaDefinition.ts:121](https://github.com/Agrejus/routier/blob/main/core/src/schema/SchemaDefinition.ts#L121)
 
 #### Type Parameters
 
@@ -474,7 +474,7 @@ Defined in: [core/src/schema/SchemaDefinition.ts:224](https://github.com/Agrejus
 
 > **compile**\<`TMetadata`\>(`metadata`): [`CompiledSchemaWithMetadata`](../type-aliases/CompiledSchemaWithMetadata.md)\<`T`, `TMetadata`\>
 
-Defined in: [core/src/schema/SchemaDefinition.ts:376](https://github.com/Agrejus/routier/blob/main/core/src/schema/SchemaDefinition.ts#L376)
+Defined in: [core/src/schema/SchemaDefinition.ts:273](https://github.com/Agrejus/routier/blob/main/core/src/schema/SchemaDefinition.ts#L273)
 
 ##### Type Parameters
 
@@ -496,7 +496,7 @@ Defined in: [core/src/schema/SchemaDefinition.ts:376](https://github.com/Agrejus
 
 > **compile**(): [`CompiledSchema`](../type-aliases/CompiledSchema.md)\<`T`\>
 
-Defined in: [core/src/schema/SchemaDefinition.ts:377](https://github.com/Agrejus/routier/blob/main/core/src/schema/SchemaDefinition.ts#L377)
+Defined in: [core/src/schema/SchemaDefinition.ts:274](https://github.com/Agrejus/routier/blob/main/core/src/schema/SchemaDefinition.ts#L274)
 
 ##### Returns
 

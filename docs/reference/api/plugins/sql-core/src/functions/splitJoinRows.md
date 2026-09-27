@@ -8,7 +8,7 @@
 
 > **splitJoinRows**\<`TOuter`, `TInner`\>(`options`): `JoinTuple`[]
 
-Defined in: [plugins/sql-core/src/joins.ts:160](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/joins.ts#L160)
+Defined in: [plugins/sql-core/src/joins.ts:213](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/joins.ts#L213)
 
 Cuts flat joined rows back into tuples, each half deserialized against its own schema.
 

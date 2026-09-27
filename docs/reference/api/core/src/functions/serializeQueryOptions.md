@@ -8,7 +8,7 @@
 
 > **serializeQueryOptions**\<`T`\>(`options`): [`SerializedQueryOption`](../type-aliases/SerializedQueryOption.md)[]
 
-Defined in: [core/src/plugins/wire/query.ts:54](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/query.ts#L54)
+Defined in: [core/src/plugins/wire/query.ts:66](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/query.ts#L66)
 
 ## Type Parameters
 

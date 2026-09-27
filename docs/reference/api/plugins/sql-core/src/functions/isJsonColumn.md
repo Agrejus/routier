@@ -8,7 +8,7 @@
 
 > **isJsonColumn**(`property`): `boolean`
 
-Defined in: [plugins/sql-core/src/columns.ts:67](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/columns.ts#L67)
+Defined in: [plugins/sql-core/src/columns.ts:68](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/columns.ts#L68)
 
 True when the property's value is encoded as JSON rather than bound as a scalar.
 
