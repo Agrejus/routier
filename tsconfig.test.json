@@ -41,6 +41,11 @@
             "@routier/replication-plugin": ["./plugins/replication/src/index.ts"],
             "@routier/react": ["./react/src/index.ts"],
             "@routier/vue": ["./vue/src/index.ts"],
+            "@routier/svelte": ["./svelte/src/index.ts"],
+            "@routier/solid": ["./solid/src/index.ts"],
+            "@routier/angular": ["./angular/src/index.ts"],
+            "@routier/tanstack-query": ["./tanstack-query/src/index.ts"],
+            "@routier/lit": ["./lit/src/index.ts"],
             "@routier/devtools": ["./devtools/src/index.ts"],
             "@routier/devtools/production": ["./devtools/src/production.ts"],
             "@routier/sync-server": ["./sync-server/src/index.ts"],
@@ -54,7 +59,8 @@
             "react": ["./node_modules/react"],
             "react-dom": ["./node_modules/react-dom"],
             "react-dom/*": ["./node_modules/react-dom/*"],
-            "vue": ["./node_modules/vue"]
+            "vue": ["./node_modules/vue"],
+            "lit": ["./node_modules/lit"]
         }
     },
     // ts-jest reads only `compilerOptions` from this file. An empty `include` keeps

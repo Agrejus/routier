@@ -1,0 +1,56 @@
+{
+    "name": "@routier/angular",
+    "version": "0.1.0",
+    "description": "Angular signals and Observables for Routier live queries",
+    "private": false,
+    "type": "module",
+    "publishConfig": {
+        "access": "public"
+    },
+    "files": [
+        "dist/**/*",
+        "!dist/**/*.test.*",
+        "!dist/**/*.spec.*",
+        "README.md",
+        "LICENSE"
+    ],
+    "scripts": {
+        "build:types": "tsc -p tsconfig.types.json",
+        "build": "vite build && npm run build:types",
+        "tsc": "tsc --noEmit -p tsconfig.json",
+        "lint": "oxlint . --ignore-pattern \"**/*.test.*\""
+    },
+    "peerDependencies": {
+        "@routier/core": ">=0.8.2",
+        "@angular/core": ">=19.0.0",
+        "rxjs": ">=7.4.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.2.2",
+        "vite": "^5.0.8",
+        "@angular/core": "^22.2.0",
+        "@angular/compiler": "^22.2.0",
+        "@angular/platform-browser": "^22.2.0",
+        "@angular/common": "^22.2.0",
+        "rxjs": "^7.8.2"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs",
+            "types": "./dist/index.d.ts"
+        }
+    },
+    "sideEffects": false,
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Agrejus/routier.git",
+        "directory": "angular"
+    }
+}

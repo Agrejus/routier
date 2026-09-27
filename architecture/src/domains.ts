@@ -283,6 +283,61 @@ export const DOMAINS: readonly Domain[] = [
         mayImport: ["@routier/core", "@routier/datastore"],
     },
     {
+        id: "svelte",
+        title: "Svelte bindings",
+        paths: ["svelte/src"],
+        responsibility: "Exposes a datastore to Svelte components as readable stores.",
+        rules: [
+            "Binds to the datastore's public surface only. A store that needs plugin internals is a sign the datastore is missing something.",
+            "Subscription lifecycle lives here, tied to the store's first and last subscriber; change detection lives in the datastore.",
+        ],
+        mayImport: ["@routier/core", "@routier/datastore"],
+    },
+    {
+        id: "solid",
+        title: "Solid bindings",
+        paths: ["solid/src"],
+        responsibility: "Exposes a datastore to Solid components as signals.",
+        rules: [
+            "Binds to the datastore's public surface only. A primitive that needs plugin internals is a sign the datastore is missing something.",
+            "Subscription lifecycle and reactive dependency tracking live here; change detection lives in the datastore.",
+        ],
+        mayImport: ["@routier/core", "@routier/datastore"],
+    },
+    {
+        id: "angular",
+        title: "Angular bindings",
+        paths: ["angular/src"],
+        responsibility: "Exposes a datastore to Angular as signals and Observables.",
+        rules: [
+            "Binds to the datastore's public surface only. An injectable that needs plugin internals is a sign the datastore is missing something.",
+            "Subscription lifecycle and reactive dependency tracking live here; change detection lives in the datastore.",
+        ],
+        mayImport: ["@routier/core", "@routier/datastore"],
+    },
+    {
+        id: "tanstack-query",
+        title: "TanStack Query bridge",
+        paths: ["tanstack-query/src"],
+        responsibility: "Exposes a datastore's live queries as TanStack Query options, so an app keeps its existing cache layer.",
+        rules: [
+            "Binds to the datastore's public surface only. An option that needs plugin internals is a sign the datastore is missing something.",
+            "A live query's first result resolves the query function; later results are written into the query cache. Change detection lives in the datastore.",
+        ],
+        mayImport: ["@routier/core", "@routier/datastore"],
+    },
+    {
+        id: "lit",
+        title: "Lit bindings",
+        paths: ["lit/src"],
+        responsibility: "Exposes a datastore to Lit and other web components as a reactive controller.",
+        rules: [
+            "Binds to the datastore's public surface only. A controller that needs plugin internals is a sign the datastore is missing something.",
+            "Subscription lifecycle follows the host's connect and disconnect; change detection lives in the datastore.",
+        ],
+        mayImport: ["@routier/core", "@routier/datastore"],
+    },
+    {
         id: "devtools",
         title: "Devtools",
         paths: ["devtools/src"],

@@ -4,5 +4,5 @@ const { withPreact } = require('./jest.devtools');
 module.exports = {
     ...withPreact(config(['<rootDir>/devtools/src/**/*.test.tsx'])),
     testEnvironment: 'jsdom',
-    setupFilesAfterEnv: ['<rootDir>/devtools/jest.setup.js'],
+    setupFilesAfterEnv: ['<rootDir>/jest.jsdom.setup.js'],
 };

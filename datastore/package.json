@@ -61,13 +61,13 @@
     ],
     "description": "Data abstraction layer that routes all database operations to any ORM or data store",
     "peerDependencies": {
-        "@routier/core": ">=0.8.1"
+        "@routier/core": ">=0.8.2"
     },
     "dependencies": {
         "@routier/memory-plugin": "^0.4.0"
     },
     "devDependencies": {
-        "@routier/core": "^0.8.1",
+        "@routier/core": "^0.8.2",
         "@routier/test-utils": "^0.3.0",
         "@rspack/cli": "^1.1.8",
         "@rspack/core": "^1.1.8",
