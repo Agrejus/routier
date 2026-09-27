@@ -50,6 +50,13 @@ export default defineConfig({
         items: [
           { text: "React", link: "/integrations/react/" },
           { text: "Vue", link: "/integrations/vue/" },
+          { text: "Svelte", link: "/integrations/svelte/" },
+          { text: "Solid", link: "/integrations/solid/" },
+          { text: "Angular", link: "/integrations/angular/" },
+          { text: "Lit", link: "/integrations/lit/" },
+          { text: "Preact", link: "/integrations/preact/" },
+          { text: "React Native", link: "/integrations/react-native/" },
+          { text: "TanStack Query", link: "/integrations/tanstack-query/" },
         ],
       },
       { text: "Devtools", link: "/integrations/devtools/" },
