@@ -8,7 +8,7 @@
 
 > **ScopeProvider** = (`schema`) => [`Expression`](../classes/Expression.md) \| `null`
 
-Defined in: [core/src/plugins/wire/query.ts:172](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/query.ts#L172)
+Defined in: [core/src/plugins/wire/query.ts:184](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/query.ts#L184)
 
 A filter the RECEIVER adds to every read of a collection, whatever the sender asked for.
 

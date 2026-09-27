@@ -51,7 +51,7 @@
         "@opentelemetry/context-async-hooks": "^2.10.0",
         "@opentelemetry/sdk-trace-base": "^2.0.0",
         "@routier/core": "^0.8.1",
-        "@routier/datastore": "^0.4.3",
+        "@routier/datastore": "^0.4.4",
         "@routier/memory-plugin": "^0.4.0",
         "@routier/test-utils": "file:../../test-utils",
         "@rspack/cli": "^1.1.8",

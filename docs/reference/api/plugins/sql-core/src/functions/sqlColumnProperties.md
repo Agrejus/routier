@@ -8,7 +8,7 @@
 
 > **sqlColumnProperties**\<`T`\>(`schema`): `PropertyInfo`\<`T`\>[]
 
-Defined in: [plugins/sql-core/src/columns.ts:39](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/columns.ts#L39)
+Defined in: [plugins/sql-core/src/columns.ts:40](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/columns.ts#L40)
 
 Root properties only — nested children are reached through their parent's value.
 

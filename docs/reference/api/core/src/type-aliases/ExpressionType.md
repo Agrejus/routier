@@ -6,8 +6,8 @@
 
 # Type Alias: ExpressionType
 
-> **ExpressionType** = `"operator"` \| `"comparator"` \| `"property"` \| `"value"` \| `"empty"` \| `"not-parsable"`
+> **ExpressionType** = `"operator"` \| `"comparator"` \| `"property"` \| `"value"` \| `"call"` \| `"empty"` \| `"not-parsable"`
 
-Defined in: [core/src/expressions/types.ts:352](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L352)
+Defined in: [core/src/expressions/types.ts:423](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L423)
 
 The set of possible expression types.

@@ -309,9 +309,16 @@ places).
 8. **Subscriptions on joins: out of v1** (a join subscription must listen to both schemas and
    re-run; `DataBridge.subscribe` is single-schema today). `search()` in the full-text spec
    does not promise subscriptions either.
-9. **`groupJoin`, chained joins (3+), and aggregates beyond `count`: out of v1.** The tuple
+9. **Chained joins (3+) and aggregates beyond `count`: out of v1.** The tuple
    queryable's terminator set is fixed in the API section; `sum`/`min`/`max`/`distinct` are
    absent from the type. `count` runs in the memory half over tuples. No speculative hooks.
+   **`groupJoin` shipped later, without a new option or any plugin change.** It records an
+   ordinary `left` join option and sets `grouped` on the request's `joinSide`. The datastore groups
+   the tuples by the outer row's id (`groupJoinTuples`) before running the post-join options, so
+   everything after it sees `[outer, inner[]]` and `count`/`take` work on groups. Every option after
+   a join already runs in memory, which is what makes this safe on every backend. The query builder
+   does not push inner-side conjuncts down for a grouped join: the inner root is an array there, and
+   `members.length` must not become a filter on an inner `length` property.
 10. **Mongo `$lookup` is deliberately not used in v1** — interpretation 2 is correct there,
     and the translator surface for `$lookup` is not worth it until measured.
 

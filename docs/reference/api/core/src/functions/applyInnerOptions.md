@@ -8,7 +8,7 @@
 
 > **applyInnerOptions**(`rows`, `innerOptions`): [`UnknownRecord`](../type-aliases/UnknownRecord.md)[]
 
-Defined in: [core/src/plugins/query/join.ts:140](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/join.ts#L140)
+Defined in: [core/src/plugins/query/join.ts:141](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/join.ts#L141)
 
 Applies an inner side's own filters to its rows.
 

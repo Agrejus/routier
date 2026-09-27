@@ -8,7 +8,7 @@
 
 > **explainQuery**(`options`, `context`): [`QueryExplanation`](../type-aliases/QueryExplanation.md)
 
-Defined in: [core/src/plugins/query/explain.ts:253](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L253)
+Defined in: [core/src/plugins/query/explain.ts:344](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L344)
 
 Builds the explanation from the resolved options, with no plugin involvement.
 

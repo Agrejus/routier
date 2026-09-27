@@ -8,7 +8,7 @@
 
 > **QueryExplanationSummary** = `object`
 
-Defined in: [core/src/plugins/query/explain.ts:57](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L57)
+Defined in: [core/src/plugins/query/explain.ts:102](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L102)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: [core/src/plugins/query/explain.ts:57](https://github.com/Agrejus/ro
 
 > **database**: `number`
 
-Defined in: [core/src/plugins/query/explain.ts:58](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L58)
+Defined in: [core/src/plugins/query/explain.ts:103](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L103)
 
 ***
 
@@ -24,15 +24,15 @@ Defined in: [core/src/plugins/query/explain.ts:58](https://github.com/Agrejus/ro
 
 > **memory**: `number`
 
-Defined in: [core/src/plugins/query/explain.ts:59](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L59)
+Defined in: [core/src/plugins/query/explain.ts:104](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L104)
 
 ***
 
 ### reasons
 
-> **reasons**: [`MemoryExecutionReason`](MemoryExecutionReason.md)[]
+> **reasons**: [`StepReason`](StepReason.md)[]
 
-Defined in: [core/src/plugins/query/explain.ts:61](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L61)
+Defined in: [core/src/plugins/query/explain.ts:106](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L106)
 
 Deduped, in first-seen order. Empty when the whole query pushed down.
 
@@ -42,4 +42,4 @@ Deduped, in first-seen order. Empty when the whole query pushed down.
 
 > **explanation**: `string`
 
-Defined in: [core/src/plugins/query/explain.ts:62](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L62)
+Defined in: [core/src/plugins/query/explain.ts:107](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L107)

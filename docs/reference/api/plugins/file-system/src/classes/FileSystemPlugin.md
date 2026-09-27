@@ -66,7 +66,7 @@ Same value as the registry key, which is the same question asked about collectio
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: core/dist/plugins/EphemeralDataPlugin.d.ts:30
+Defined in: core/dist/plugins/EphemeralDataPlugin.d.ts:38
 
 All-or-nothing across every collection in the save.
 
@@ -105,7 +105,7 @@ a memory-first plugin does not pretend to have.
 
 > **query**\<`TEntity`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: core/dist/plugins/EphemeralDataPlugin.d.ts:66
+Defined in: core/dist/plugins/EphemeralDataPlugin.d.ts:74
 
 Executes a query operation on the database.
 

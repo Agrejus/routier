@@ -8,7 +8,7 @@
 
 > **deserializeQueryOptions**(`serialized`, `schema`, `resolveSchema`, `scopeFor?`): [`QueryOptionsCollection`](../classes/QueryOptionsCollection.md)\<`any`\>
 
-Defined in: [core/src/plugins/wire/query.ts:187](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/query.ts#L187)
+Defined in: [core/src/plugins/wire/query.ts:199](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/query.ts#L199)
 
 Rebuilds query options from their wire form, against the receiver's own schemas.
 

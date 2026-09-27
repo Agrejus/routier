@@ -22,7 +22,7 @@
     },
     "peerDependencies": {
         "@routier/core": ">=0.8.1",
-        "@routier/datastore": ">=0.4.3"
+        "@routier/datastore": ">=0.4.4"
     },
     "dependencies": {
         "preact": "^10.27.2"

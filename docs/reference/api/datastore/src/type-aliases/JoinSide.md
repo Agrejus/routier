@@ -8,7 +8,7 @@
 
 > **JoinSide**\<`TInner`\> = `object`
 
-Defined in: [datastore/src/collections/types.ts:93](https://github.com/Agrejus/routier/blob/main/datastore/src/collections/types.ts#L93)
+Defined in: [datastore/src/collections/types.ts:97](https://github.com/Agrejus/routier/blob/main/datastore/src/collections/types.ts#L97)
 
 What a join needs from the collection on the OTHER side.
 
@@ -33,7 +33,7 @@ interpreters, and neither can read the other's rows.
 
 > `readonly` **schema**: `CompiledSchema`\<`TInner`\>
 
-Defined in: [datastore/src/collections/types.ts:94](https://github.com/Agrejus/routier/blob/main/datastore/src/collections/types.ts#L94)
+Defined in: [datastore/src/collections/types.ts:98](https://github.com/Agrejus/routier/blob/main/datastore/src/collections/types.ts#L98)
 
 ***
 
@@ -41,7 +41,7 @@ Defined in: [datastore/src/collections/types.ts:94](https://github.com/Agrejus/r
 
 > `readonly` **plugin**: `IDbPlugin`
 
-Defined in: [datastore/src/collections/types.ts:95](https://github.com/Agrejus/routier/blob/main/datastore/src/collections/types.ts#L95)
+Defined in: [datastore/src/collections/types.ts:99](https://github.com/Agrejus/routier/blob/main/datastore/src/collections/types.ts#L99)
 
 ***
 
@@ -49,4 +49,4 @@ Defined in: [datastore/src/collections/types.ts:95](https://github.com/Agrejus/r
 
 > `readonly` **scopedQueryOptions**: `QueryOptionsCollection`\<`TInner`\>
 
-Defined in: [datastore/src/collections/types.ts:96](https://github.com/Agrejus/routier/blob/main/datastore/src/collections/types.ts#L96)
+Defined in: [datastore/src/collections/types.ts:100](https://github.com/Agrejus/routier/blob/main/datastore/src/collections/types.ts#L100)

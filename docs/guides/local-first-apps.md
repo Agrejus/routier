@@ -237,7 +237,7 @@ Collection scopes are useful for tenant/user filters, but the server must enforc
 
 ### Plan schema evolution
 
-A local cache can survive many application releases. Test old stored rows against new defaults, mappings, transforms, and backend migrations. Do not assume clearing all local data is safe while unsynced work exists.
+A local cache can survive many application releases. Test old stored rows against new defaults, mappings, transforms, and backend migrations. Do not assume clearing all local data is safe while unsynced work exists. See [Migrating Stored Data](/guides/schema-migrations) for backfill and reshape recipes.
 
 ### Cache only what can be local
 

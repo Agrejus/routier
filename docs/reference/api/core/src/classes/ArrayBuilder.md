@@ -6,7 +6,7 @@
 
 # Class: ArrayBuilder
 
-Defined in: [core/src/codegen/blocks.ts:566](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L566)
+Defined in: [core/src/codegen/blocks.ts:576](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L576)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [core/src/codegen/blocks.ts:566](https://github.com/Agrejus/routier/
 
 > **new ArrayBuilder**(`accessor`, `name?`, `parentIndent?`, `parent?`): `ArrayBuilder`
 
-Defined in: [core/src/codegen/blocks.ts:567](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L567)
+Defined in: [core/src/codegen/blocks.ts:577](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L577)
 
 #### Parameters
 
@@ -326,7 +326,7 @@ Defined in: [core/src/codegen/blocks.ts:97](https://github.com/Agrejus/routier/b
 
 > **append**(`accessor`): `ArrayBuilder`
 
-Defined in: [core/src/codegen/blocks.ts:572](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L572)
+Defined in: [core/src/codegen/blocks.ts:582](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L582)
 
 #### Parameters
 
@@ -344,7 +344,7 @@ Defined in: [core/src/codegen/blocks.ts:572](https://github.com/Agrejus/routier/
 
 > **toString**(): `string`
 
-Defined in: [core/src/codegen/blocks.ts:577](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L577)
+Defined in: [core/src/codegen/blocks.ts:587](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L587)
 
 #### Returns
 

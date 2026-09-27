@@ -8,7 +8,7 @@
 
 > **parseFragment**(`schema`, `body`, `rootName`): [`Expression`](../classes/Expression.md)
 
-Defined in: [core/src/expressions/parser.ts:1278](https://github.com/Agrejus/routier/blob/main/core/src/expressions/parser.ts#L1278)
+Defined in: [core/src/expressions/parser.ts:2565](https://github.com/Agrejus/routier/blob/main/core/src/expressions/parser.ts#L2565)
 
 Parses an expression SOURCE FRAGMENT against one schema and one root name.
 

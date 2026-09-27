@@ -6,7 +6,7 @@
 
 # Class: MongoTranslator\<TRoot, TShape\>
 
-Defined in: [plugins/mongodb/src/MongoTranslator.ts:13](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoTranslator.ts#L13)
+Defined in: [plugins/mongodb/src/MongoTranslator.ts:15](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoTranslator.ts#L15)
 
 Skips the work the server already did.
 
@@ -37,7 +37,7 @@ The pattern, and the conditions, follow `DexieTranslator`.
 
 > **new MongoTranslator**\<`TRoot`, `TShape`\>(`query`): `MongoTranslator`\<`TRoot`, `TShape`\>
 
-Defined in: [plugins/mongodb/src/MongoTranslator.ts:55](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoTranslator.ts#L55)
+Defined in: [plugins/mongodb/src/MongoTranslator.ts:65](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoTranslator.ts#L65)
 
 #### Parameters
 
@@ -59,7 +59,7 @@ Defined in: [plugins/mongodb/src/MongoTranslator.ts:55](https://github.com/Agrej
 
 > `readonly` **pushedDown**: `object`
 
-Defined in: [plugins/mongodb/src/MongoTranslator.ts:16](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoTranslator.ts#L16)
+Defined in: [plugins/mongodb/src/MongoTranslator.ts:18](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoTranslator.ts#L18)
 
 Set by the plugin for each option it actually sent to the server.
 
@@ -80,28 +80,6 @@ Set by the plugin for each option it actually sent to the server.
 > **take**: `boolean` = `false`
 
 ## Methods
-
-### translate()
-
-> **translate**(`data`): `ITranslatedValue`\<`TShape`\>
-
-Defined in: core/dist/plugins/translators/DataTranslator.d.ts:47
-
-#### Parameters
-
-##### data
-
-`unknown`
-
-#### Returns
-
-`ITranslatedValue`\<`TShape`\>
-
-#### Inherited from
-
-`JsonTranslator.translate`
-
-***
 
 ### join()
 
@@ -409,7 +387,7 @@ Defined in: core/dist/plugins/translators/JsonTranslator.d.ts:39
 
 > **filter**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [plugins/mongodb/src/MongoTranslator.ts:23](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoTranslator.ts#L23)
+Defined in: [plugins/mongodb/src/MongoTranslator.ts:25](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoTranslator.ts#L25)
 
 #### Type Parameters
 
@@ -441,7 +419,7 @@ Defined in: [plugins/mongodb/src/MongoTranslator.ts:23](https://github.com/Agrej
 
 > **sort**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [plugins/mongodb/src/MongoTranslator.ts:31](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoTranslator.ts#L31)
+Defined in: [plugins/mongodb/src/MongoTranslator.ts:33](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoTranslator.ts#L33)
 
 #### Type Parameters
 
@@ -473,7 +451,7 @@ Defined in: [plugins/mongodb/src/MongoTranslator.ts:31](https://github.com/Agrej
 
 > **skip**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [plugins/mongodb/src/MongoTranslator.ts:39](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoTranslator.ts#L39)
+Defined in: [plugins/mongodb/src/MongoTranslator.ts:41](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoTranslator.ts#L41)
 
 #### Type Parameters
 
@@ -505,7 +483,7 @@ Defined in: [plugins/mongodb/src/MongoTranslator.ts:39](https://github.com/Agrej
 
 > **take**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [plugins/mongodb/src/MongoTranslator.ts:47](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoTranslator.ts#L47)
+Defined in: [plugins/mongodb/src/MongoTranslator.ts:49](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoTranslator.ts#L49)
 
 #### Type Parameters
 
@@ -530,3 +508,25 @@ Defined in: [plugins/mongodb/src/MongoTranslator.ts:47](https://github.com/Agrej
 #### Overrides
 
 `JsonTranslator.take`
+
+***
+
+### translate()
+
+> **translate**(`data`): `ITranslatedValue`\<`TShape`\>
+
+Defined in: [plugins/mongodb/src/MongoTranslator.ts:70](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoTranslator.ts#L70)
+
+#### Parameters
+
+##### data
+
+`unknown`
+
+#### Returns
+
+`ITranslatedValue`\<`TShape`\>
+
+#### Overrides
+
+`JsonTranslator.translate`

@@ -92,7 +92,7 @@ Defined in: [plugins/browser-storage/src/BrowserStoragePlugin.ts:56](https://git
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: core/dist/plugins/EphemeralDataPlugin.d.ts:30
+Defined in: core/dist/plugins/EphemeralDataPlugin.d.ts:38
 
 All-or-nothing across every collection in the save.
 
@@ -131,7 +131,7 @@ a memory-first plugin does not pretend to have.
 
 > **query**\<`TEntity`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: core/dist/plugins/EphemeralDataPlugin.d.ts:66
+Defined in: core/dist/plugins/EphemeralDataPlugin.d.ts:74
 
 Executes a query operation on the database.
 

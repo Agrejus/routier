@@ -8,7 +8,7 @@
 
 > **toSql**(`expr`, `dialect`, `options?`): [`ToSqlResult`](../interfaces/ToSqlResult.md)
 
-Defined in: [plugins/sql-core/src/sql.ts:618](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L618)
+Defined in: [plugins/sql-core/src/sql.ts:1129](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/sql.ts#L1129)
 
 Converts an Expression to a SQL WHERE clause and bound parameters for the given dialect.
 

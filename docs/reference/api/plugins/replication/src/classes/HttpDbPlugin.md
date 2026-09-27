@@ -6,7 +6,7 @@
 
 # Class: HttpDbPlugin
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:115](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L115)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:117](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L117)
 
 ## Implements
 
@@ -18,7 +18,7 @@ Defined in: [plugins/replication/src/HttpDbPlugin.ts:115](https://github.com/Agr
 
 > **new HttpDbPlugin**(`options`): `HttpDbPlugin`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:138](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L138)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:140](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L140)
 
 #### Parameters
 
@@ -36,7 +36,7 @@ Defined in: [plugins/replication/src/HttpDbPlugin.ts:138](https://github.com/Agr
 
 > `readonly` **databaseName**: `string`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:136](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L136)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:138](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L138)
 
 See `IDbPlugin.databaseName` and `HttpPluginOptions.databaseName`.
 
@@ -50,7 +50,7 @@ See `IDbPlugin.databaseName` and `HttpPluginOptions.databaseName`.
 
 > **collectionUrl**(`collectionName`): `string`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:156](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L156)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:158](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L158)
 
 Exposed for composing plugins (e.g. HttpSwrDbPlugin) that need to build request URLs.
 
@@ -70,7 +70,7 @@ Exposed for composing plugins (e.g. HttpSwrDbPlugin) that need to build request 
 
 > **requestHeaders**(): `Promise`\<`Record`\<`string`, `string`\>\>
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:161](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L161)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:163](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L163)
 
 Exposed for composing plugins that need to add auth or other headers to fetch/HTTP calls.
 
@@ -84,7 +84,7 @@ Exposed for composing plugins that need to add auth or other headers to fetch/HT
 
 > **notifyAuthError**(`event`): `Promise`\<`boolean`\>
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:170](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L170)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:172](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L172)
 
 Notifies onAuthError and reports whether the handler claims re-auth succeeded
 (a truthy return/resolution). Handler exceptions are logged, never propagated.
@@ -105,7 +105,7 @@ Notifies onAuthError and reports whether the handler claims re-auth succeeded
 
 > **query**\<`TRoot`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:234](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L234)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:248](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L248)
 
 Executes a query operation on the database.
 
@@ -147,7 +147,7 @@ Callback with the result or error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:330](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L330)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:350](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L350)
 
 Executes bulk operations (add, update, remove) on the database.
 
@@ -179,7 +179,7 @@ Callback with the result or error.
 
 > **postJson**(`url`, `body`, `_collectionName`): `Promise`\<`unknown`\>
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:435](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L435)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:455](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L455)
 
 Enqueues a body for batching by URL, then POSTs the merged body through the pacer.
 
@@ -211,7 +211,7 @@ every write bypassed everything this class guarantees.
 
 > **pendingRequestCount**(): `number`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:455](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L455)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:475](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L475)
 
 Calls accepted and not finished, including writes waiting in the batch window.
 
@@ -225,7 +225,7 @@ Calls accepted and not finished, including writes waiting in the batch window.
 
 > **destroy**(`_event`, `done`): `void`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:478](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L478)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:498](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L498)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 

@@ -8,4 +8,4 @@
 
 > **QueryOptionName** = keyof [`QueryOptionValueMap`](QueryOptionValueMap.md)\<`unknown`\>
 
-Defined in: [core/src/plugins/query/types.ts:24](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L24)
+Defined in: [core/src/plugins/query/types.ts:33](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L33)

@@ -119,6 +119,16 @@ export class Queryable<Root extends {}, Shape, U, TStore = unknown, E extends bo
         return new JoinQueryable<Root, JoinTuple<Shape, InferType<TInner> | undefined>, E>(this.dependencies, this.request);
     }
 
+    groupJoin<TInner extends {}, TKey extends string | number>(
+        inner: JoinTarget<TStore, TInner>,
+        outerKey: (outer: Shape) => TKey | null | undefined,
+        innerKey: (inner: InferType<TInner>) => TKey | null | undefined
+    ) {
+        this.setJoinQueryOption("group", inner, outerKey, innerKey);
+
+        return new JoinQueryable<Root, JoinTuple<Shape, InferType<TInner>[]>, E>(this.dependencies, this.request);
+    }
+
     subscribe() {
         this.request.isSubScribed = true;
         return this.create(SubscribedQueryable<Root, Shape, () => void>);

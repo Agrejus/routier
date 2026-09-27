@@ -6,7 +6,7 @@
 
 # Type Alias: SerializedValue
 
-> **SerializedValue** = \{ `k`: `"raw"`; `v`: `string` \| `number` \| `boolean` \| `null`; \} \| \{ `k`: `"date"`; `v`: `string`; \} \| \{ `k`: `"undefined"`; \} \| \{ `k`: `"number"`; `v`: `"NaN"` \| `"Infinity"` \| `"-Infinity"`; \} \| \{ `k`: `"array"`; `v`: `SerializedValue`[]; \}
+> **SerializedValue** = `string` \| `number` \| `boolean` \| `null` \| `SerializedValue`[] \| \{ `date`: `string`; \} \| \{ `undefined`: `true`; \} \| \{ `number`: `"NaN"` \| `"Infinity"` \| `"-Infinity"`; \} \| \{ `regex`: \{ `source`: `string`; `flags`: `string`; \}; \} \| \{ `bigint`: `string`; \}
 
 Defined in: [core/src/expressions/types.ts:9](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L9)
 

@@ -8,7 +8,7 @@
 
 > **toExpression**\<`T`, `P`\>(`schema`, `fn`, `params?`): [`Expression`](../classes/Expression.md)
 
-Defined in: [core/src/expressions/parser.ts:1291](https://github.com/Agrejus/routier/blob/main/core/src/expressions/parser.ts#L1291)
+Defined in: [core/src/expressions/parser.ts:2583](https://github.com/Agrejus/routier/blob/main/core/src/expressions/parser.ts#L2583)
 
 ## Type Parameters
 

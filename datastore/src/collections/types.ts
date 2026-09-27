@@ -142,6 +142,7 @@ export type JoinTarget<TStore, TInner extends {}> =
 export type RequestJoinSide = {
     readonly plugin: IDbPlugin;
     readonly schema: CompiledSchema<any>;
+    readonly grouped: boolean;
 };
 
 export class RequestContext<TRoot extends {}> {

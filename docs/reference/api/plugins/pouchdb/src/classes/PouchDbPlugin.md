@@ -81,7 +81,7 @@ Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:119](https://github.com/Agreju
 
 > **destroy**(`_event`, `done`): `void`
 
-Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:836](https://github.com/Agrejus/routier/blob/main/plugins/pouchdb/src/PouchDbPlugin.ts#L836)
+Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:862](https://github.com/Agrejus/routier/blob/main/plugins/pouchdb/src/PouchDbPlugin.ts#L862)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 
@@ -111,7 +111,7 @@ Callback with an optional error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:872](https://github.com/Agrejus/routier/blob/main/plugins/pouchdb/src/PouchDbPlugin.ts#L872)
+Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:898](https://github.com/Agrejus/routier/blob/main/plugins/pouchdb/src/PouchDbPlugin.ts#L898)
 
 Executes bulk operations (add, update, remove) on the database.
 
@@ -143,7 +143,7 @@ Callback with the result or error.
 
 > **query**\<`TRoot`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:884](https://github.com/Agrejus/routier/blob/main/plugins/pouchdb/src/PouchDbPlugin.ts#L884)
+Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:910](https://github.com/Agrejus/routier/blob/main/plugins/pouchdb/src/PouchDbPlugin.ts#L910)
 
 Executes a query operation on the database.
 
@@ -185,7 +185,7 @@ Callback with the result or error.
 
 > **extractEqualityValueForProperty**(`expression`, `prop`): `any`
 
-Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:911](https://github.com/Agrejus/routier/blob/main/plugins/pouchdb/src/PouchDbPlugin.ts#L911)
+Defined in: [plugins/pouchdb/src/PouchDbPlugin.ts:937](https://github.com/Agrejus/routier/blob/main/plugins/pouchdb/src/PouchDbPlugin.ts#L937)
 
 #### Parameters
 

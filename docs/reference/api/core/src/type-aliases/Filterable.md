@@ -8,7 +8,7 @@
 
 > **Filterable**\<`T`, `P`\> = `object`
 
-Defined in: [core/src/expressions/types.ts:396](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L396)
+Defined in: [core/src/expressions/types.ts:484](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L484)
 
 An object that can be filtered using a composite filter and optional parameters.
 
@@ -28,7 +28,7 @@ An object that can be filtered using a composite filter and optional parameters.
 
 > **filter**: [`CompositeFilter`](CompositeFilter.md)\<`T`, `P`\>
 
-Defined in: [core/src/expressions/types.ts:398](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L398)
+Defined in: [core/src/expressions/types.ts:486](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L486)
 
 The filter function.
 
@@ -38,6 +38,6 @@ The filter function.
 
 > `optional` **params**: `P`
 
-Defined in: [core/src/expressions/types.ts:400](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L400)
+Defined in: [core/src/expressions/types.ts:488](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L488)
 
 Optional parameters for the filter.

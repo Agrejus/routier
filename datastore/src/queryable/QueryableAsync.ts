@@ -107,6 +107,16 @@ export class QueryableAsync<Root extends {}, Shape, TStore = unknown, E extends 
         return new JoinQueryable<Root, JoinTuple<Shape, InferType<TInner> | undefined>, E>(this.dependencies, this.request);
     }
 
+    groupJoin<TInner extends {}, TKey extends string | number>(
+        inner: JoinTarget<TStore, TInner>,
+        outerKey: (outer: Shape) => TKey | null | undefined,
+        innerKey: (inner: InferType<TInner>) => TKey | null | undefined
+    ) {
+        this.setJoinQueryOption("group", inner, outerKey, innerKey);
+
+        return new JoinQueryable<Root, JoinTuple<Shape, InferType<TInner>[]>, E>(this.dependencies, this.request);
+    }
+
     // does not allow for async functions due to the subscription
     subscribe() {
         this.request.isSubScribed = true;

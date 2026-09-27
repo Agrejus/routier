@@ -8,7 +8,7 @@
 
 > **CollectionRef**\<`TInner`\> = `object`
 
-Defined in: [datastore/src/collections/types.ts:107](https://github.com/Agrejus/routier/blob/main/datastore/src/collections/types.ts#L107)
+Defined in: [datastore/src/collections/types.ts:111](https://github.com/Agrejus/routier/blob/main/datastore/src/collections/types.ts#L111)
 
 A collection or view, seen as the inner side of a join.
 
@@ -29,7 +29,7 @@ to its source collection.
 
 > **joinSide**(): [`JoinSide`](JoinSide.md)\<`TInner`\>
 
-Defined in: [datastore/src/collections/types.ts:108](https://github.com/Agrejus/routier/blob/main/datastore/src/collections/types.ts#L108)
+Defined in: [datastore/src/collections/types.ts:112](https://github.com/Agrejus/routier/blob/main/datastore/src/collections/types.ts#L112)
 
 #### Returns
 

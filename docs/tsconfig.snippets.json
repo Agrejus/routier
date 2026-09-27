@@ -52,6 +52,12 @@
             "@routier/react": [
                 "react/src/index.ts"
             ],
+            "@routier/vue": [
+                "vue/src/index.ts"
+            ],
+            "vue": [
+                "node_modules/vue"
+            ],
             "react": [
                 "node_modules/react"
             ],
@@ -85,6 +91,7 @@
         "_snippets/code/from-docs/concepts/queries/aggregation-set-operations.ts",
         "_snippets/code/from-docs/concepts/queries/basic-querying.ts",
         "_snippets/code/from-docs/concepts/queries/computed-unmapped-properties.ts",
+        "_snippets/code/from-docs/concepts/queries/joins/group-join.ts",
         "_snippets/code/from-docs/concepts/queries/dynamic-query-building.ts",
         "_snippets/code/from-docs/concepts/queries/example-removal.ts",
         "_snippets/code/from-docs/concepts/queries/filtering-multiple.ts",
@@ -148,6 +155,16 @@
         "_snippets/code/from-docs/guides/entity-tagging/block-3.tsx",
         "_snippets/code/from-docs/guides/history-tracking/block-1.ts",
         "_snippets/code/from-docs/guides/http-swr-with-optimistic/block-4.ts",
+        "_snippets/code/from-docs/guides/related-data/attach-posts.ts",
+        "_snippets/code/from-docs/guides/related-data/flat-pairs.ts",
+        "_snippets/code/from-docs/guides/related-data/load-users-with-posts.ts",
+        "_snippets/code/from-docs/guides/related-data/react/UsersWithPosts.tsx",
+        "_snippets/code/from-docs/guides/related-data/react/useUsersWithPosts.ts",
+        "_snippets/code/from-docs/guides/related-data/store.ts",
+        "_snippets/code/from-docs/guides/related-data/vue/useUsersWithPosts.ts",
+        "_snippets/code/from-docs/guides/schema-migrations/backfill.ts",
+        "_snippets/code/from-docs/guides/schema-migrations/reshape.ts",
+        "_snippets/code/from-docs/guides/schema-migrations/snapshot.ts",
         "_snippets/code/from-docs/how-to/collections/extending-collections/block-2.ts",
         "_snippets/code/from-docs/how-to/crud/create/appropriate-defaults.ts",
         "_snippets/code/from-docs/how-to/crud/create/batch-creation.ts",

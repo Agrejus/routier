@@ -6,11 +6,16 @@
 
 # Class: PostgresDbPlugin
 
-Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:46](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresDbPlugin.ts#L46)
+Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:12](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresDbPlugin.ts#L12)
 
-## Implements
+PostgreSQL over the network, through `node-postgres`.
 
-- `IDbPlugin`
+Everything this plugin does with a statement lives in `@routier/postgres-plugin-core`, which
+knows nothing about `pg` and nothing about Node. This class supplies the engine.
+
+## Extends
+
+- [`PostgresDbPluginBase`](PostgresDbPluginBase.md)
 
 ## Constructors
 
@@ -18,7 +23,7 @@ Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:46](https://github.com/A
 
 > **new PostgresDbPlugin**(`config`): `PostgresDbPlugin`
 
-Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:70](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresDbPlugin.ts#L70)
+Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:13](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresDbPlugin.ts#L13)
 
 #### Parameters
 
@@ -30,21 +35,23 @@ Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:70](https://github.com/A
 
 `PostgresDbPlugin`
 
+#### Overrides
+
+[`PostgresDbPluginBase`](PostgresDbPluginBase.md).[`constructor`](PostgresDbPluginBase.md#constructor)
+
 ## Properties
 
 ### databaseName
 
 > `readonly` **databaseName**: `string`
 
-Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:68](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresDbPlugin.ts#L68)
+Defined in: plugins/postgres-core/dist/plugin.d.ts:27
 
-See `IDbPlugin.databaseName`. Host, port and database rather than the bare database
-name, because `mydb` on two servers is two databases — and without credentials,
-because this value becomes part of a subscription channel key.
+See `IDbPlugin.databaseName`. The driver names its own target; see `PostgresDriver`.
 
-#### Implementation of
+#### Inherited from
 
-`IDbPlugin.databaseName`
+[`PostgresDbPluginBase`](PostgresDbPluginBase.md).[`databaseName`](PostgresDbPluginBase.md#databasename)
 
 ## Methods
 
@@ -52,7 +59,7 @@ because this value becomes part of a subscription channel key.
 
 > **query**\<`TRoot`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:164](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresDbPlugin.ts#L164)
+Defined in: plugins/postgres-core/dist/plugin.d.ts:78
 
 Executes a query operation on the database.
 
@@ -84,39 +91,9 @@ Callback with the result or error.
 
 `void`
 
-#### Implementation of
+#### Inherited from
 
-`IDbPlugin.query`
-
-***
-
-### destroy()
-
-> **destroy**(`event`, `done`): `void`
-
-Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:263](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresDbPlugin.ts#L263)
-
-Destroys or cleans up the plugin, closing connections or freeing resources.
-
-#### Parameters
-
-##### event
-
-`DbPluginEvent`
-
-##### done
-
-`PluginEventCallbackResult`\<`never`\>
-
-Callback with an optional error.
-
-#### Returns
-
-`void`
-
-#### Implementation of
-
-`IDbPlugin.destroy`
+[`PostgresDbPluginBase`](PostgresDbPluginBase.md).[`query`](PostgresDbPluginBase.md#query)
 
 ***
 
@@ -124,7 +101,7 @@ Callback with an optional error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [plugins/postgresql/src/PostgresDbPlugin.ts:275](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresDbPlugin.ts#L275)
+Defined in: plugins/postgres-core/dist/plugin.d.ts:87
 
 Executes bulk operations (add, update, remove) on the database.
 
@@ -146,6 +123,36 @@ Callback with the result or error.
 
 `void`
 
-#### Implementation of
+#### Inherited from
 
-`IDbPlugin.bulkPersist`
+[`PostgresDbPluginBase`](PostgresDbPluginBase.md).[`bulkPersist`](PostgresDbPluginBase.md#bulkpersist)
+
+***
+
+### destroy()
+
+> **destroy**(`event`, `done`): `void`
+
+Defined in: plugins/postgres-core/dist/plugin.d.ts:113
+
+Destroys or cleans up the plugin, closing connections or freeing resources.
+
+#### Parameters
+
+##### event
+
+`DbPluginEvent`
+
+##### done
+
+`PluginEventCallbackResult`\<`never`\>
+
+Callback with an optional error.
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+[`PostgresDbPluginBase`](PostgresDbPluginBase.md).[`destroy`](PostgresDbPluginBase.md#destroy)

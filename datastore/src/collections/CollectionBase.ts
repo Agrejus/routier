@@ -128,6 +128,7 @@ export abstract class CollectionBase<TEntity extends {}, TStore = unknown> imple
         this.joinSide = this.joinSide.bind(this);
         this.join = this.join.bind(this);
         this.leftJoin = this.leftJoin.bind(this);
+        this.groupJoin = this.groupJoin.bind(this);
         this.sort = this.sort.bind(this);
         this.sortDescending = this.sortDescending.bind(this);
         this.nearest = this.nearest.bind(this);
@@ -456,6 +457,17 @@ export abstract class CollectionBase<TEntity extends {}, TStore = unknown> imple
         const queryable = new QueryableAsync<TEntity, InferType<TEntity>, TStore>(this.dependencies, request);
 
         return queryable.leftJoin(inner, outerKey, innerKey);
+    }
+
+    groupJoin<TInner extends {}, TKey extends string | number>(
+        inner: JoinTarget<TStore, TInner>,
+        outerKey: (outer: InferType<TEntity>) => TKey | null | undefined,
+        innerKey: (inner: InferType<TInner>) => TKey | null | undefined
+    ) {
+        const request = new RequestContext<TEntity>(this.changeTrackingType);
+        const queryable = new QueryableAsync<TEntity, InferType<TEntity>, TStore>(this.dependencies, request);
+
+        return queryable.groupJoin(inner, outerKey, innerKey);
     }
 
     /**

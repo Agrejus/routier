@@ -8,7 +8,7 @@
 
 > **setLogLevel**(`next`): `void`
 
-Defined in: [core/src/utilities/logger.ts:101](https://github.com/Agrejus/routier/blob/main/core/src/utilities/logger.ts#L101)
+Defined in: [core/src/utilities/logger.ts:103](https://github.com/Agrejus/routier/blob/main/core/src/utilities/logger.ts#L103)
 
 Overrides the level for the rest of the process.
 

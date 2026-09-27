@@ -8,7 +8,7 @@
 
 > **nodeSqliteDriver**(): [`SqliteDriver`](../interfaces/SqliteDriver.md)
 
-Defined in: [plugins/sqlite/src/drivers/nodeSqlite.ts:65](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/drivers/nodeSqlite.ts#L65)
+Defined in: [plugins/sqlite/src/drivers/nodeSqlite.ts:70](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/drivers/nodeSqlite.ts#L70)
 
 ## Returns
 

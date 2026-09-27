@@ -8,7 +8,7 @@
 
 > **ColumnAssignment** = `object`
 
-Defined in: [plugins/sql-core/src/columns.ts:19](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/columns.ts#L19)
+Defined in: [plugins/sql-core/src/columns.ts:20](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/columns.ts#L20)
 
 Turning a partial entity into column assignments.
 
@@ -28,7 +28,7 @@ driver as an object and either threw or was coerced to `"[object Object]"`.
 
 > `readonly` **column**: `string`
 
-Defined in: [plugins/sql-core/src/columns.ts:21](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/columns.ts#L21)
+Defined in: [plugins/sql-core/src/columns.ts:22](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/columns.ts#L22)
 
 Storage-side column name, already resolved through any `.from()` rename.
 
@@ -38,6 +38,6 @@ Storage-side column name, already resolved through any `.from()` rename.
 
 > `readonly` **value**: `unknown`
 
-Defined in: [plugins/sql-core/src/columns.ts:23](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/columns.ts#L23)
+Defined in: [plugins/sql-core/src/columns.ts:24](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/columns.ts#L24)
 
 Parameter value, JSON-encoded when the property is nested.

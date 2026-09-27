@@ -3,6 +3,40 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## Group joins, and guides for migrating stored data and loading related data (2026-09-27)
+
+`groupJoin` returns each left row once, paired with an array of every matching right row: the
+"user with their posts" shape, without regrouping pairs by hand. It works on every plugin with no
+plugin change. The join is recorded as an ordinary left join, and the datastore groups the pairs
+before anything chained after it runs.
+
+This is additive, so only the datastore takes a patch release. The `@routier/datastore` range in
+each package moves to `^0.4.4` (`>=0.4.4` for devtools) in the repository; packages not released
+here keep their published ranges until their next release.
+
+### Added — @routier/datastore 0.4.4
+
+- `groupJoin(inner, outerKey, innerKey)` on collections and queries, with the same arguments as
+  `join` and `leftJoin`. It returns `[row, matches[]]` tuples. A left row with no match, including
+  one with a `null` key, gets an empty array. `where`, `sort`, `map`, `skip`, `take`, `first` and
+  `count` after it work on the groups, so `count()` counts left rows and `take(10)` returns ten
+  left rows with all of their matches. A window before it limits the left rows. The inner side's
+  scopes and soft delete, cross-store joins, read-only results and the key rules are the same as
+  for `join`.
+- A condition in a `where` after a group join that names the matches array is never pushed down
+  to the inner read. The inner root is an array there, so `matches.length > 1` could otherwise
+  become a filter on an inner property called `length`.
+
+### Docs
+
+- New guide, **Migrating Stored Data**: how old rows behave under a changed schema (reads fill
+  defaults, queries see only what is stored), backfilling with `markDirty`, reshaping with typed
+  before and after schemas and a version marker, committing JSON Schema snapshots, and the steps
+  specific to each plugin.
+- New guide, **Loading Related Data**: flat pairs with `join`, nested shapes with `groupJoin`, live
+  related data with two live queries, and what `.foreignKey()` does and does not do.
+- The Joins page has a Group Joins section.
+
 ## Devtools, a read-only inspection API, and live queries without BroadcastChannel (2026-09-22)
 
 A new package, `@routier/devtools`, adds a drawer to the page that shows what a store holds: every

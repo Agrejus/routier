@@ -6,7 +6,7 @@
 
 # Interface: SqliteDriver
 
-Defined in: [plugins/sqlite/src/drivers/types.ts:28](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/drivers/types.ts#L28)
+Defined in: [plugins/sqlite/src/drivers/types.ts:46](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/drivers/types.ts#L46)
 
 ## Properties
 
@@ -14,9 +14,19 @@ Defined in: [plugins/sqlite/src/drivers/types.ts:28](https://github.com/Agrejus/
 
 > `readonly` **name**: `string`
 
-Defined in: [plugins/sqlite/src/drivers/types.ts:30](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/drivers/types.ts#L30)
+Defined in: [plugins/sqlite/src/drivers/types.ts:48](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/drivers/types.ts#L48)
 
 Names the engine, for error messages that would otherwise not say which one failed.
+
+***
+
+### foldsUnicodeCasing
+
+> `readonly` **foldsUnicodeCasing**: `boolean`
+
+Defined in: [plugins/sqlite/src/drivers/types.ts:51](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/drivers/types.ts#L51)
+
+Whether this engine accepts a replacement `lower()`. SQLite's own folds ASCII only.
 
 ## Methods
 
@@ -24,7 +34,7 @@ Names the engine, for error messages that would otherwise not say which one fail
 
 > **open**(`databaseName`): `Promise`\<[`SqliteConnection`](SqliteConnection.md)\>
 
-Defined in: [plugins/sqlite/src/drivers/types.ts:40](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/drivers/types.ts#L40)
+Defined in: [plugins/sqlite/src/drivers/types.ts:61](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/drivers/types.ts#L61)
 
 Opens `databaseName`.
 
@@ -49,7 +59,7 @@ defect #34. Every driver here has to convert that into a rejected promise.
 
 > **deleteDatabase**(`databaseName`): `Promise`\<`void`\>
 
-Defined in: [plugins/sqlite/src/drivers/types.ts:48](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/drivers/types.ts#L48)
+Defined in: [plugins/sqlite/src/drivers/types.ts:69](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/drivers/types.ts#L69)
 
 Removes the database. Succeeds when it does not exist.
 

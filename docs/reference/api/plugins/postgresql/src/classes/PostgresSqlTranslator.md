@@ -6,7 +6,7 @@
 
 # Class: PostgresSqlTranslator\<TRoot, TShape\>
 
-Defined in: [plugins/postgresql/src/PostgresSqlTranslator.ts:21](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresSqlTranslator.ts#L21)
+Defined in: plugins/postgres-core/dist/PostgresSqlTranslator.d.ts:19
 
 ## Extends
 
@@ -26,9 +26,9 @@ Defined in: [plugins/postgresql/src/PostgresSqlTranslator.ts:21](https://github.
 
 ### Constructor
 
-> **new PostgresSqlTranslator**\<`TRoot`, `TShape`\>(`query`, `pushedDown`): `PostgresSqlTranslator`\<`TRoot`, `TShape`\>
+> **new PostgresSqlTranslator**\<`TRoot`, `TShape`\>(`query`, `pushedDown?`): `PostgresSqlTranslator`\<`TRoot`, `TShape`\>
 
-Defined in: [plugins/postgresql/src/PostgresSqlTranslator.ts:31](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresSqlTranslator.ts#L31)
+Defined in: plugins/postgres-core/dist/PostgresSqlTranslator.d.ts:27
 
 #### Parameters
 
@@ -36,9 +36,9 @@ Defined in: [plugins/postgresql/src/PostgresSqlTranslator.ts:31](https://github.
 
 `IQuery`\<`TRoot`, `TShape`\>
 
-##### pushedDown
+##### pushedDown?
 
-[`PostgresPushdown`](../type-aliases/PostgresPushdown.md) = `{}`
+[`PostgresPushdown`](../type-aliases/PostgresPushdown.md)
 
 What the statement that produced these rows actually contained. Supplied
 by the plugin because only the query builder knows: pgvector may be missing, a window may
@@ -59,7 +59,19 @@ have made a pushdown unsafe, an inner join filter may have had no column to comp
 
 > **translate**(`data`): `ITranslatedValue`\<`TShape`\>
 
-Defined in: core/dist/plugins/translators/DataTranslator.d.ts:47
+Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:33
+
+Dates back as Dates, before the caller's selectors run over the rows.
+
+A `group` key and a `map` are the caller's lambdas, run here over rows as the engine returned them.
+SQLite, D1 and libSQL hand a date back as the TEXT it was stored as, which has no `getFullYear()`
+and groups apart from the Date the entity holds. Revived at storage paths and in place, which the
+datastore's deserialization still reads, and after `decodeJsonColumns`, so a date inside a JSON
+column is revived too. Only a string is converted, so an engine that returns a Date (PostgreSQL,
+PGlite, MySQL) is left alone, and so is a row already revived.
+
+Not a joined statement's rows, which are tuples, each half already deserialized. Nor rows whose
+`group` or `map` was handed back, which the datastore runs after deserializing them.
 
 #### Parameters
 
@@ -81,7 +93,7 @@ Defined in: core/dist/plugins/translators/DataTranslator.d.ts:47
 
 > **min**\<`TResult`\>(`data`, `_`): `TResult`
 
-Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:20
+Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:35
 
 #### Type Parameters
 
@@ -113,7 +125,7 @@ Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:20
 
 > **max**\<`TResult`\>(`data`, `_`): `TResult`
 
-Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:21
+Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:36
 
 #### Type Parameters
 
@@ -145,7 +157,7 @@ Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:21
 
 > **sum**\<`TResult`\>(`data`, `_`): `TResult`
 
-Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:22
+Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:37
 
 #### Type Parameters
 
@@ -177,7 +189,7 @@ Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:22
 
 > **distinct**\<`TResult`\>(`data`, `_`): `TResult`
 
-Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:24
+Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:39
 
 #### Type Parameters
 
@@ -209,7 +221,7 @@ Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:24
 
 > **filter**\<`TResult`\>(`data`, `_`): `TResult`
 
-Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:25
+Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:40
 
 #### Type Parameters
 
@@ -241,7 +253,7 @@ Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:25
 
 > **skip**(`data`, `_`): `TShape`
 
-Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:26
+Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:41
 
 #### Parameters
 
@@ -267,7 +279,7 @@ Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:26
 
 > **take**(`data`, `_`): `TShape`
 
-Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:27
+Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:42
 
 #### Parameters
 
@@ -293,7 +305,7 @@ Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:27
 
 > **sort**(`data`, `_`): `TShape`
 
-Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:28
+Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:43
 
 #### Parameters
 
@@ -319,7 +331,7 @@ Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:28
 
 > **join**(`data`, `option`): `TShape`
 
-Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:58
+Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:73
 
 Passes through only when the statement really did contain the `JOIN`, and refuses otherwise.
 
@@ -357,7 +369,7 @@ already split each flat row into its two deserialized halves (`splitJoinRows` in
 
 > **group**\<`T`\>(`data`, `option`): `T`
 
-Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:59
+Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:74
 
 #### Type Parameters
 
@@ -389,7 +401,7 @@ Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:59
 
 > **map**(`data`, `option`): `TShape`
 
-Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:60
+Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:75
 
 #### Parameters
 
@@ -415,7 +427,7 @@ Defined in: core/dist/plugins/translators/SqlTranslator.d.ts:60
 
 > **nearest**(`data`, `option`): `TShape`
 
-Defined in: [plugins/postgresql/src/PostgresSqlTranslator.ts:43](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresSqlTranslator.ts#L43)
+Defined in: plugins/postgres-core/dist/PostgresSqlTranslator.d.ts:35
 
 Passes through only when PostgreSQL actually did the search.
 
@@ -447,7 +459,7 @@ and its `LIMIT` are in the SQL, and nothing else may claim that.
 
 > **count**\<`TResult`\>(`data`, `option`): `TResult`
 
-Defined in: [plugins/postgresql/src/PostgresSqlTranslator.ts:51](https://github.com/Agrejus/routier/blob/main/plugins/postgresql/src/PostgresSqlTranslator.ts#L51)
+Defined in: plugins/postgres-core/dist/PostgresSqlTranslator.d.ts:36
 
 #### Type Parameters
 

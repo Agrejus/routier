@@ -8,7 +8,7 @@
 
 > **ParsedExpression** = `object`
 
-Defined in: [core/src/expressions/types.ts:87](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L87)
+Defined in: [core/src/expressions/types.ts:110](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L110)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: [core/src/expressions/types.ts:87](https://github.com/Agrejus/routie
 
 > **expression**: [`Expression`](../classes/Expression.md)
 
-Defined in: [core/src/expressions/types.ts:88](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L88)
+Defined in: [core/src/expressions/types.ts:111](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L111)
 
 ***
 
@@ -24,4 +24,4 @@ Defined in: [core/src/expressions/types.ts:88](https://github.com/Agrejus/routie
 
 > **executionTarget**: [`QueryOptionExecutionTarget`](QueryOptionExecutionTarget.md)
 
-Defined in: [core/src/expressions/types.ts:90](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L90)
+Defined in: [core/src/expressions/types.ts:113](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L113)

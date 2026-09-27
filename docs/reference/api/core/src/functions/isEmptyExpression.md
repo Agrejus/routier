@@ -8,7 +8,7 @@
 
 > **isEmptyExpression**(`value`): `value is EmptyExpression`
 
-Defined in: [core/src/assertions/index.ts:98](https://github.com/Agrejus/routier/blob/main/core/src/assertions/index.ts#L98)
+Defined in: [core/src/assertions/index.ts:105](https://github.com/Agrejus/routier/blob/main/core/src/assertions/index.ts#L105)
 
 Type guard: narrows `value` to `EmptyExpression` when it is an object with `type === "empty"`.
 

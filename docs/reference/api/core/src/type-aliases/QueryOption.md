@@ -6,9 +6,19 @@
 
 # Type Alias: QueryOption\<T, K\>
 
-> **QueryOption**\<`T`, `K`\> = `object`
+> **QueryOption**\<`T`, `K`\> = \{ `name`: [`QueryOptionName`](QueryOptionName.md); `value`: [`QueryOptionValueMap`](QueryOptionValueMap.md)\<`T`\>\[`K`\]; `target`: `"database"`; `reason`: [`DatabaseExecutionReason`](DatabaseExecutionReason.md); \} \| \{ `name`: [`QueryOptionName`](QueryOptionName.md); `value`: [`QueryOptionValueMap`](QueryOptionValueMap.md)\<`T`\>\[`K`\]; `target`: `"memory"`; `reason`: [`MemoryExecutionReason`](MemoryExecutionReason.md); \}
 
-Defined in: [core/src/plugins/query/types.ts:43](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L43)
+Defined in: [core/src/plugins/query/types.ts:82](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L82)
+
+One option, and where it runs.
+
+`target` narrows what `reason` can say, so an option cannot carry a reason that does not belong to
+the half it was planned for. An option is never moved between arms — the database arm records what
+became of it, which is what makes a redirect readable:
+
+```ts
+option.target === "database" && option.reason === "missing-capability"
+```
 
 ## Type Parameters
 
@@ -19,37 +29,3 @@ Defined in: [core/src/plugins/query/types.ts:43](https://github.com/Agrejus/rout
 ### K
 
 `K` *extends* [`QueryOptionName`](QueryOptionName.md)
-
-## Properties
-
-### name
-
-> **name**: [`QueryOptionName`](QueryOptionName.md)
-
-Defined in: [core/src/plugins/query/types.ts:44](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L44)
-
-***
-
-### value
-
-> **value**: [`QueryOptionValueMap`](QueryOptionValueMap.md)\<`T`\>\[`K`\]
-
-Defined in: [core/src/plugins/query/types.ts:45](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L45)
-
-***
-
-### target
-
-> **target**: [`QueryOptionExecutionTarget`](QueryOptionExecutionTarget.md)
-
-Defined in: [core/src/plugins/query/types.ts:46](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L46)
-
-***
-
-### reason?
-
-> `optional` **reason**: [`MemoryExecutionReason`](MemoryExecutionReason.md)
-
-Defined in: [core/src/plugins/query/types.ts:48](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/types.ts#L48)
-
-Set only when `target` is `"memory"`.

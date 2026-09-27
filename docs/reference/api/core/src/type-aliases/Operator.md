@@ -8,6 +8,6 @@
 
 > **Operator** = `"&&"` \| "\|\|"
 
-Defined in: [core/src/expressions/types.ts:376](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L376)
+Defined in: [core/src/expressions/types.ts:464](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L464)
 
 Supported logical operators for expressions.

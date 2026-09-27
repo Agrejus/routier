@@ -6,7 +6,7 @@
 
 # Abstract Class: Expression
 
-Defined in: [core/src/expressions/types.ts:96](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L96)
+Defined in: [core/src/expressions/types.ts:119](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L119)
 
 The base class for all expression types.
 
@@ -17,6 +17,7 @@ The base class for all expression types.
 - [`ComparatorExpression`](ComparatorExpression.md)
 - [`OperatorExpression`](OperatorExpression.md)
 - [`PropertyExpression`](PropertyExpression.md)
+- [`CallExpression`](CallExpression.md)
 - [`ValueExpression`](ValueExpression.md)
 
 ## Constructors
@@ -25,7 +26,7 @@ The base class for all expression types.
 
 > **new Expression**(`left?`, `right?`): `Expression`
 
-Defined in: [core/src/expressions/types.ts:104](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L104)
+Defined in: [core/src/expressions/types.ts:127](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L127)
 
 #### Parameters
 
@@ -47,7 +48,7 @@ Defined in: [core/src/expressions/types.ts:104](https://github.com/Agrejus/routi
 
 > `abstract` `readonly` **type**: [`ExpressionType`](../type-aliases/ExpressionType.md)
 
-Defined in: [core/src/expressions/types.ts:98](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L98)
+Defined in: [core/src/expressions/types.ts:121](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L121)
 
 The type of the expression.
 
@@ -57,7 +58,7 @@ The type of the expression.
 
 > `optional` **left**: `Expression`
 
-Defined in: [core/src/expressions/types.ts:100](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L100)
+Defined in: [core/src/expressions/types.ts:123](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L123)
 
 The left-hand side of the expression (if applicable).
 
@@ -67,7 +68,7 @@ The left-hand side of the expression (if applicable).
 
 > `optional` **right**: `Expression`
 
-Defined in: [core/src/expressions/types.ts:102](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L102)
+Defined in: [core/src/expressions/types.ts:125](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L125)
 
 The right-hand side of the expression (if applicable).
 
@@ -79,7 +80,7 @@ The right-hand side of the expression (if applicable).
 
 > **get** `static` **EMPTY**(): [`EmptyExpression`](EmptyExpression.md)
 
-Defined in: [core/src/expressions/types.ts:109](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L109)
+Defined in: [core/src/expressions/types.ts:132](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L132)
 
 ##### Returns
 
@@ -93,7 +94,7 @@ Defined in: [core/src/expressions/types.ts:109](https://github.com/Agrejus/routi
 
 > **get** `static` **NOT\_PARSABLE**(): [`NotParsableExpression`](NotParsableExpression.md)
 
-Defined in: [core/src/expressions/types.ts:113](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L113)
+Defined in: [core/src/expressions/types.ts:136](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L136)
 
 ##### Returns
 
@@ -101,11 +102,31 @@ Defined in: [core/src/expressions/types.ts:113](https://github.com/Agrejus/routi
 
 ## Methods
 
+### notParsable()
+
+> `static` **notParsable**(`reason`): [`NotParsableExpression`](NotParsableExpression.md)
+
+Defined in: [core/src/expressions/types.ts:141](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L141)
+
+`NOT_PARSABLE`, carrying what the parser refused.
+
+#### Parameters
+
+##### reason
+
+`string`
+
+#### Returns
+
+[`NotParsableExpression`](NotParsableExpression.md)
+
+***
+
 ### isEmpty()
 
 > `static` **isEmpty**(`expression`): `boolean`
 
-Defined in: [core/src/expressions/types.ts:117](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L117)
+Defined in: [core/src/expressions/types.ts:145](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L145)
 
 #### Parameters
 
@@ -123,7 +144,7 @@ Defined in: [core/src/expressions/types.ts:117](https://github.com/Agrejus/routi
 
 > `static` **isNotParsable**(`expression`): `boolean`
 
-Defined in: [core/src/expressions/types.ts:121](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L121)
+Defined in: [core/src/expressions/types.ts:149](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L149)
 
 #### Parameters
 
@@ -141,7 +162,7 @@ Defined in: [core/src/expressions/types.ts:121](https://github.com/Agrejus/routi
 
 > `static` **toJson**(`expression`): [`SerializedExpression`](../type-aliases/SerializedExpression.md)
 
-Defined in: [core/src/expressions/types.ts:147](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L147)
+Defined in: [core/src/expressions/types.ts:175](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L175)
 
 Turns a tree into plain JSON, so a whole query can cross a wire.
 
@@ -152,7 +173,7 @@ thing: there are many, each belongs to its consumer, and none of them is canonic
 
 ## Why it is this small
 
-Of the six node types a bound tree can contain, exactly one holds anything JSON cannot carry:
+Of the seven node types a bound tree can contain, exactly one holds anything JSON cannot carry:
 `PropertyExpression`, whose live `PropertyInfo` has functions, a parent chain and caches. It
 reduces to a property PATH — `PropertyInfo.id` IS the dotted path, and `getProperty` is keyed by
 exactly that — so rebinding is one lookup.
@@ -180,7 +201,7 @@ and import this module — the guards test the same discriminant, so nothing is 
 
 > `static` **fromJson**(`json`, `schema`): `Expression`
 
-Defined in: [core/src/expressions/types.ts:211](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L211)
+Defined in: [core/src/expressions/types.ts:252](https://github.com/Agrejus/routier/blob/main/core/src/expressions/types.ts#L252)
 
 Rebuilds a tree from JSON, rebinding every property against `schema`.
 
