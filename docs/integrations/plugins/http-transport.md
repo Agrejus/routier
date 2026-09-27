@@ -147,7 +147,7 @@ named, never described, so the server's definition of a collection is always the
 | `where` | As an expression tree, so the server can push it to an index or a `WHERE` clause |
 | `sort`, `skip`, `take` | The selector is rebuilt from the property on arrival |
 | `count`, `min`, `max`, `sum`, `distinct` | The server returns the answer, not the rows |
-| `join` / `leftJoin` | Including the inner side's scopes — one request, not two |
+| `join` / `leftJoin` / `groupJoin` | Including the inner side's scopes — one request, not two. A group join is sent as a left join and grouped on the client |
 | `nearest` | Vector and count |
 | Saves | Adds, updates and removes, with the echo returned so identities come back |
 

@@ -48,7 +48,7 @@ See [Configuring Collections](/how-to/collections/configuring-collections) for t
 | Create | `instance`, `add`/`addAsync` (writable modes) |
 | Update | direct mutation (`proxy`, `diff`); `update`, `current`, `isCurrent` (`immutable`) |
 | Delete | `remove`/`removeAsync`, `removeAll`/`removeAllAsync` (writable modes) |
-| Compose | `where`, `sort`, `sortDescending`, `skip`, `take`, `map`, `nearest`, `search`, `join`, `leftJoin`, `toQueryable`, `apply` |
+| Compose | `where`, `sort`, `sortDescending`, `skip`, `take`, `map`, `nearest`, `search`, `join`, `leftJoin`, `groupJoin`, `toQueryable`, `apply` |
 | Reusable query | `Queryable.compose(schema)` builds a definition; `collection.apply(composer)` attaches it |
 | Execute | `toArray`, `first`, `firstOrUndefined`, `some`, `every`, `min`, `max`, `sum`, `count`, `distinct`, `toGroup` and each `*Async` form |
 | Live query | `subscribe()` followed by a terminal method; the terminal callback returns an unsubscribe function |

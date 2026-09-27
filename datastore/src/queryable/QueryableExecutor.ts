@@ -1,5 +1,5 @@
 import { createQueryRecorder } from "../inspection/recordQuery";
-import { DbPluginQueryEvent, distinctJoinKeys, executeJoin, ExecutedQuery, explainQuery, ITranslatedValue, JoinKind, JsonTranslator, loadJoinInnerSide, Query, QueryExplanation, QueryOptionName, QueryOptionsCollection, toEntityShape, TupleTranslator, withExecutedQueries, withInnerSide } from "@routier/core/plugins";
+import { DbPluginQueryEvent, distinctJoinKeys, executeJoin, ExecutedQuery, explainQuery, ITranslatedValue, JoinKind, JoinTuple, JsonTranslator, loadJoinInnerSide, Query, QueryExplanation, QueryOptionName, QueryOptionsCollection, toEntityShape, TupleTranslator, withExecutedQueries, withInnerSide } from "@routier/core/plugins";
 import { CompiledSchema, InferType } from "@routier/core/schema";
 import { CallbackResult, PluginEventCallbackResult, PluginEventResult, PluginEventSuccessType, Result } from "@routier/core/results";
 import { UnknownRecord, uuid } from "@routier/core/utilities";
@@ -7,6 +7,7 @@ import { GenericFunction } from "@routier/core/types";
 import { CollectionDependencies, CollectionRef, JoinTarget, RequestContext } from "../collections/types";
 import { QueryBuilderBase } from "./base/QueryBuilderBase";
 import { splitTupleFilter } from "./conjuncts";
+import { groupJoinTuples, JoinGroup } from "./groupJoinTuples";
 import { resolveJoinKey } from "./joinKeys";
 
 /** Options whose result is no longer rows of the root schema. */
@@ -163,7 +164,7 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
         at.value.innerOptions.forEach(item => innerOptions.add(item.name, item.value));
 
         for (const conjunct of split) {
-            if (conjunct.side === "inner") {
+            if (conjunct.side === "inner" && joinSide.grouped === false) {
                 innerOptions.add("filter", conjunct.filter as never);
             }
         }
@@ -223,18 +224,19 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
      * this query, and an option collection is mutable.
      */
     protected setJoinQueryOption<TInner extends {}>(
-        kind: JoinKind,
+        kind: JoinKind | "group",
         inner: JoinTarget<any, TInner>,
         outerKeySelector: GenericFunction<any, any>,
         innerKeySelector: GenericFunction<any, any>
     ) {
         const side = this.resolveJoinTarget(inner).joinSide();
+        const grouped = kind === "group";
 
         const innerOptions = new QueryOptionsCollection<TInner>();
         side.scopedQueryOptions.forEach(item => innerOptions.add(item.name, item.value));
 
         this.request.queryOptions.add("join", {
-            kind,
+            kind: grouped ? "left" : kind,
             innerSchemaId: side.schema.id,
             outerKey: resolveJoinKey("outer", this.dependencies.schema, outerKeySelector),
             innerKey: resolveJoinKey("inner", side.schema, innerKeySelector),
@@ -243,7 +245,7 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
             semiJoinKeyThreshold: this.dependencies.storeOptions.semiJoinKeyThreshold
         });
 
-        this.request.joinSide = { plugin: side.plugin, schema: side.schema };
+        this.request.joinSide = { plugin: side.plugin, schema: side.schema, grouped };
     }
 
     /**
@@ -484,18 +486,18 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
         // The combined pass, not the pre-built memory half: an option the plugin could not run has
         // to reach the join branch too, or it is run by nobody.
         const { before, at, after } = memoryQuery.options.splitAt("join");
-
-        if (at == null) {
-            // The plugin joined. `result.data.value` is already an array of tuples.
-            const translated = this.applyTupleOptions(memoryQuery.options, schema, result.data.value);
-            done(PluginEventResult.success(memoryEvent.id, translated.value));
-            return;
-        }
-
         const joinSide = this.request.joinSide;
 
         if (joinSide == null) {
             done(PluginEventResult.error(databaseEvent.id, new Error("Cannot join: the inner side was not recorded on the request.")));
+            return;
+        }
+
+        if (at == null) {
+            // The plugin joined. `result.data.value` is already an array of tuples.
+            const tuples = this.shapeJoinResult(result.data.value as JoinTuple[], joinSide.grouped);
+            const translated = this.applyTupleOptions(memoryQuery.options, schema, tuples);
+            done(PluginEventResult.success(memoryEvent.id, translated.value));
             return;
         }
 
@@ -540,7 +542,7 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
                         innerRows: toEntityShape(joinSide.schema, innerResult.innerSide?.innerRows ?? [])
                     });
 
-                    const translated = this.applyTupleOptions(after, schema, tuples);
+                    const translated = this.applyTupleOptions(after, schema, this.shapeJoinResult(tuples, joinSide.grouped));
                     done(PluginEventResult.success(memoryEvent.id, translated.value));
                 } catch (e) {
                     done(PluginEventResult.error(memoryEvent.id, e));
@@ -551,6 +553,16 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
             // statement filed under this one's name is a lie a reader cannot see through.
             this.innerExecutedQueries
         );
+    }
+
+    private shapeJoinResult(tuples: JoinTuple[], grouped: boolean): JoinTuple[] | JoinGroup[] {
+        if (grouped === false) {
+            return tuples;
+        }
+
+        const schema = this.dependencies.schema;
+
+        return groupJoinTuples(tuples, outer => schema.getId(outer as InferType<TRoot>));
     }
 
     /**

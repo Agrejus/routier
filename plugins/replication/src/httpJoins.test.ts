@@ -175,6 +175,16 @@ describe('joins over HTTP', () => {
         expect(pairs).toEqual(['Alpha:Abe', 'Alpha:Ann', 'Beta:Bo', 'Gamma:-']);
     });
 
+    it('groups matches under each outer row on a group join', async () => {
+        const groups = await store().teams
+            .groupJoin(s => s.members, t => t.id, m => m.teamId)
+            .sort(([team]) => team.name)
+            .map(([team, members]) => `${team.name}:${members.map(m => m.name).sort().join(',')}`)
+            .toArrayAsync();
+
+        expect(groups).toEqual(['Alpha:Abe,Ann', 'Beta:Bo', 'Gamma:']);
+    });
+
     // Refused rather than attempted: this plugin merges a local read with a remote one, and the
     // two would disagree about whether a row is an entity or a pair.
     it('is refused by the SWR plugin, with a message naming the alternative', async () => {

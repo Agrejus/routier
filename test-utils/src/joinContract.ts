@@ -94,6 +94,9 @@ type Member = InferType<typeof joinContractMemberSchema>;
 const labels = (pairs: [Team, Member | undefined][]) =>
     pairs.map(([team, member]) => `${team.name}:${member?.name ?? "-"}`);
 
+const groupLabels = (groups: [Team, Member[]][]) =>
+    groups.map(([team, members]) => `${team.name}:${members.map(member => member.name).sort().join(",")}`);
+
 export const describeJoinContract = (name: string, pluginFactory: () => IDbPlugin) => {
 
     const stores: JoinContractDataStore[] = [];
@@ -263,6 +266,109 @@ export const describeJoinContract = (name: string, pluginFactory: () => IDbPlugi
                 expect(typeof executed.text).toBe("string");
                 expect(executed.text.trim().length).toBeGreaterThan(0);
             }
+        });
+
+        it("groups every match under its outer row on a group join, with an empty array for none", async () => {
+            const { store } = await seeded();
+
+            const groups = await store.teams
+                .groupJoin(s => s.members, team => team._id, member => member.teamId)
+                .sort(([team]) => team.name)
+                .toArrayAsync();
+
+            expect(groupLabels(groups)).toEqual(["Alpha:Abe,Ann", "Beta:Bo", "Gamma:"]);
+        });
+
+        it("keeps a null-keyed outer row on a group join, with no matches", async () => {
+            const { store } = await seeded();
+
+            const groups = await store.members
+                .groupJoin(s => s.teams, member => member.teamId, team => team._id)
+                .toArrayAsync();
+
+            const nullKeyed = groups.filter(([member]) => member.name === "Nil");
+
+            expect(groups).toHaveLength(5);
+            expect(nullKeyed).toHaveLength(1);
+            expect(nullKeyed[0][1]).toEqual([]);
+        });
+
+        it("applies the inner side's soft-delete and scopes inside each group", async () => {
+            const { store, alpha } = await seeded();
+
+            await store.members.removeAsync(await store.members.firstAsync(member => member.name === "Ann"));
+            await store.partners.addAsync(
+                { teamId: alpha._id, tier: "gold" },
+                { teamId: alpha._id, tier: "silver" }
+            );
+            await store.saveChangesAsync();
+
+            const members = await store.teams
+                .groupJoin(s => s.members, team => team._id, member => member.teamId)
+                .sort(([team]) => team.name)
+                .toArrayAsync();
+            const partners = await store.teams
+                .groupJoin(s => s.partners, team => team._id, partner => partner.teamId)
+                .where(([team]) => team.name === "Alpha")
+                .toArrayAsync();
+
+            expect(groupLabels(members)).toEqual(["Alpha:Abe", "Beta:Bo", "Gamma:"]);
+            expect(partners[0][1].map(partner => partner.tier)).toEqual(["gold"]);
+        });
+
+        it("runs post-join options over the groups rather than the pairs", async () => {
+            const { store } = await seeded();
+
+            const staffedInEast = await store.teams
+                .groupJoin(s => s.members, team => team._id, member => member.teamId)
+                .where(([team, members]) => team.region === "east" && members.length > 0)
+                .map(([team, members]) => `${team.name}/${members.length}`)
+                .toArrayAsync();
+            const second = await store.teams
+                .groupJoin(s => s.members, team => team._id, member => member.teamId)
+                .sort(([team]) => team.name)
+                .skip(1)
+                .take(1)
+                .toArrayAsync();
+
+            expect(staffedInEast).toEqual(["Alpha/2"]);
+            expect(groupLabels(second)).toEqual(["Beta:Bo"]);
+        });
+
+        it("counts groups, and returns the first group or undefined", async () => {
+            const { store } = await seeded();
+
+            const query = () => store.teams.groupJoin(s => s.members, team => team._id, member => member.teamId);
+
+            expect(await query().countAsync()).toBe(3);
+            expect(groupLabels([await query().sort(([team]) => team.name).firstAsync()])).toEqual(["Alpha:Abe,Ann"]);
+            expect(await query().where(([team]) => team.name === "Nobody").firstOrUndefinedAsync()).toBeUndefined();
+        });
+
+        it("limits the outer rows, not the matches, when the window comes before a group join", async () => {
+            const { store } = await seeded();
+
+            const groups = await store.teams
+                .sort(team => team.name)
+                .take(1)
+                .groupJoin(s => s.members, team => team._id, member => member.teamId)
+                .toArrayAsync();
+
+            expect(groupLabels(groups)).toEqual(["Alpha:Abe,Ann"]);
+        });
+
+        it("returns read-only groups, with no change tracking on either side", async () => {
+            const { store } = await seeded();
+
+            const [[team, members]] = await store.teams
+                .groupJoin(s => s.members, t => t._id, m => m.teamId)
+                .where(([t]) => t.name === "Alpha")
+                .toArrayAsync();
+
+            team.name = "changed";
+            members[0].name = "changed too";
+
+            expect(await store.hasChangesAsync()).toBe(false);
         });
 
         it("returns read-only projections, with no change tracking on either half", async () => {

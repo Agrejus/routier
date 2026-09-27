@@ -36,6 +36,7 @@ Routier queries are fluent and can only be performed through a collection. Build
 | `skip(count)` / `take(count)` | Window results | `ctx.products.skip(10).take(5)` |
 | `join(inner, outerKey, innerKey)` | Return matching tuples | `ctx.teams.join(s => s.members, t => t.id, m => m.teamId)` |
 | `leftJoin(...)` | Keep unmatched left rows | `ctx.teams.leftJoin(s => s.members, t => t.id, m => m.teamId)` |
+| `groupJoin(...)` | Each left row with an array of its matches | `ctx.teams.groupJoin(s => s.members, t => t.id, m => m.teamId)` |
 | `nearest(field, vector, count)` | Rank vector similarity | `ctx.products.nearest(p => p.embedding, query, 10)` |
 | `search(terms, options?)` | Ranked full-text search | `ctx.products.search("copper pipe")` |
 | `subscribe()` | Enable live updates | `ctx.products.subscribe().toArray(callback)` |

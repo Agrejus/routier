@@ -10,6 +10,7 @@ Pair rows from two collections on a matching key with `join` and `leftJoin`.
 
 - [A First Join](#a-first-join)
 - [Left Joins](#left-joins)
+- [Group Joins](#group-joins)
 - [Naming The Inner Side](#naming-the-inner-side)
 - [What You Get Back](#what-you-get-back)
 - [Working With The Pairs](#working-with-the-pairs)
@@ -90,6 +91,39 @@ agree on type: joining a `string` key to a `number` key does not compile.
 
 The unmatched half is `undefined` — never an entity whose properties are all null.
 
+## Group Joins
+
+`groupJoin` returns one result per left row instead of one per pair: the row, and an array of
+every right row that matches it. With the players and matches from [A First Join](#a-first-join):
+
+```ts
+[
+  [{ _id: "p1", name: "James" }, [{ _id: "m1", score: 42 }, { _id: "m2", score: 18 }]],
+  [{ _id: "p2", name: "Lin" }, []],
+]
+```
+
+It's the shape a screen usually wants (each player with their matches), without regrouping pairs
+yourself:
+
+<<< @/_snippets/code/from-docs/concepts/queries/joins/group-join.ts
+
+- **Every left row appears exactly once.** A row with no matches, including one whose key is
+  `null`, gets an empty array. A group join never drops a left row, so it behaves like `leftJoin`.
+- **Everything after it works on groups.** `where`, `sort`, `map`, `skip`, `take`, `first` and
+  `count` see `[row, matches[]]`, so `count()` counts left rows and `take(10)` returns ten left
+  rows with all of their matches. A condition on the array, such as
+  `([p, matches]) => matches.length > 2`, is allowed.
+- **A window before it limits the left rows.** `.sort(...).take(10).groupJoin(...)` returns the
+  first ten players, each with all of their matches.
+- **Order is undefined without `sort`**, and that includes the order of the matches inside each
+  array. Sort the array in `map` if its order matters.
+- The key rules, the inner side's scopes and soft delete, cross-store joins, and read-only results
+  are the same as for `join`.
+
+It runs as a left join on every backend, and Routier groups the pairs before anything chained
+after it runs. The cost is a left join plus one pass over the pairs.
+
 ## Naming The Inner Side
 
 Two forms, and the difference is only which store the inner collection lives on:
@@ -149,7 +183,7 @@ about the left side:
 <<< @/_snippets/code/from-docs/concepts/queries/joins/block-7.ts
 
 
-The terminal methods available on a join are `toArray`/`toArrayAsync`, `first`/`firstAsync`,
+The terminal methods available on a join or group join are `toArray`/`toArrayAsync`, `first`/`firstAsync`,
 `firstOrUndefined`/`firstOrUndefinedAsync`, and `count`/`countAsync`. `map()` changes the result
 shape but deliberately keeps that same join terminal surface. `sum`, `min`, `max`, `distinct`,
 `toGroup`, `remove`, and `subscribe` are not exposed on `JoinQueryable`.
@@ -235,7 +269,7 @@ Purely a cost knob — the pairs are identical either way.
 - **The SWR plugin** (`HttpSwrDbPlugin`) refuses a join: it merges a local read with a remote one,
   and the two would disagree about whether a row is an entity or a pair. Use `HttpDbPlugin`.
 - **Subscriptions** are not available on a join — the returned query has no `subscribe`.
-- **Three or more collections** in one join, and `groupJoin`.
+- **Three or more collections** in one join.
 
 ## Related
 
@@ -243,3 +277,4 @@ Purely a cost knob — the pairs are identical either way.
 - [Field Selection](/concepts/queries/field-selection) — project pairs into your own shape
 - [Terminal Methods](/concepts/queries/terminal-methods) — how a query executes
 - [Views](/how-to/collections/views) — views as a join side
+- [Loading Related Data](/guides/related-data) — nested shapes and live related data, which a join does not cover

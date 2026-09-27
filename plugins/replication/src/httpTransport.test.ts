@@ -318,6 +318,20 @@ describe('a plugin with no database', () => {
             expect(pairs.sort()).toEqual(['Alpha:Abe', 'Alpha:Ann', 'Beta:Bo', 'Gamma:-']);
         });
 
+        it('sends a group join as one left join and groups the pairs on the client', async () => {
+            const { client, sent } = await seeded(new MemoryPlugin(uuidv4()));
+            sent.length = 0;
+
+            const groups = await client.teams
+                .groupJoin(s => s.members, t => t._id, m => m.teamId)
+                .map(([team, members]) => `${team.name}:${members.map(m => m.name).sort().join(',')}`)
+                .toArrayAsync();
+
+            expect(groups.sort()).toEqual(['Alpha:Abe,Ann', 'Beta:Bo', 'Gamma:']);
+            expect(sent).toHaveLength(1);
+            expect(JSON.stringify(sent[0])).toContain('"left"');
+        });
+
         // A real SQL engine on the far side, so the forwarded join becomes an actual `JOIN`
         it('executes a forwarded join as native SQL when the server is SQLite', async () => {
             const { client } = await seeded(new SqliteDbPlugin(`wire-${uuidv4()}.sqlite`));

@@ -18,7 +18,12 @@ with Zod. Multi-tenancy was deliberately closed without building (see
 
 ## Tier 1: gaps that block adoption
 
-### 1. Schema migrations
+### 1. Schema migrations - DONE (docs)
+
+Resolved as a documented pattern rather than a feature: `docs/guides/schema-migrations.md`
+covers backfills and before/after-schema reshapes with `markDirty` and a defaulted version
+marker. The diff engine and CLI below were dropped, because a schema diff cannot infer renames
+or semantic changes and the server backends already have mature migration tools.
 
 This is the biggest hole.
 
@@ -36,7 +41,7 @@ This is the biggest hole.
 - **Local-first data transforms:** these matter even more here, because old clients hold
   old-shape rows that must be upgraded on open.
 
-### 2. Devtools
+### 2. Devtools - DONE
 
 None were found.
 
@@ -47,7 +52,13 @@ None were found.
 - **Why it matters:** TanStack Query's and Redux's devtools drove much of their adoption, and a
   panel like this makes an orchestrator's behavior visible to someone evaluating it.
 
-### 3. Relations and eager loading
+### 3. Relations and eager loading - DONE (groupJoin + docs)
+
+Resolved with `groupJoin`, which returns `[row, matches[]]` per outer row on every backend (a
+left join grouped in the datastore, with no plugin changes), plus the "Loading Related Data"
+guide. Declared relations and nested `.include()` were dropped: they need nested type inference
+and graph change tracking, and `groupJoin` covers the nested-shape use case. Live joins remain
+open; the guide shows two live queries joined in `useMemo`/`computed` meanwhile.
 
 - **Current state:** joins exist, but they are two collections only, return `[a, b]` pairs, and
   have no subscriptions and no `groupJoin`.

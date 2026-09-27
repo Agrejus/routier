@@ -282,6 +282,14 @@
         "link": "/guides/local-first-apps"
       },
       {
+        "text": "Migrating Stored Data",
+        "link": "/guides/schema-migrations"
+      },
+      {
+        "text": "Loading Related Data",
+        "link": "/guides/related-data"
+      },
+      {
         "text": "Plugin Compositions",
         "link": "/guides/plugin-compositions"
       },
