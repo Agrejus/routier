@@ -76,9 +76,15 @@ PGlite prints every server error to the console before the client acts on it. Tw
 
 The plugin is safe across tabs. One tab is elected leader and owns the database. Other tabs send their queries to the leader. A new election runs when the leader closes.
 
+All tabs share the leader's single PostgreSQL session, so each operation holds a Web Lock named for the data directory while it runs. A save in one tab waits for a save in another instead of landing inside its transaction.
+
+### When OPFS will not start
+
+Some sandboxed browsers, such as Flatpak-packaged Chrome, hang forever when PGlite boots a database in OPFS. For a bare name, the plugin records each OPFS boot in `localStorage`. If a first boot does not finish within `opfsBootTimeoutMs` (default 10 seconds), it stops the worker and opens the same name on IndexedDB. If a boot never finished because the tab froze, the next load goes straight to IndexedDB. A directory that has booted on OPFS before never falls back, and an explicit `opfs-ahp://` or `idb://` name is always used as given.
+
 ### Safari
 
-`opfs-ahp` does not work in Safari. Safari limits an origin to 252 open sync access handles. A PostgreSQL installation needs more than 300 files. Use `idb://` in Safari.
+`opfs-ahp` does not work in Safari. Safari limits an origin to 252 open sync access handles. A PostgreSQL installation needs more than 300 files. A bare name resolves to `idb://` on Safari and every iOS browser automatically. Naming `opfs-ahp://` outright still fails there.
 
 ### Download size
 
@@ -153,5 +159,5 @@ const store = new AppStore(pgliteDbPlugin("app", existingPGliteInstance));
 - The plugin creates a missing table on first use. It does not run migrations.
 - Root objects and arrays use JSONB.
 - `ConcurrencyDbPlugin` is supported. A conflict raises `OptimisticConcurrencyError`.
-- `destroy()` closes the database and keeps the data. `@routier/sqlite-plugin` deletes the database instead.
+- `destroy()` closes the database and deletes it, the same as `@routier/dexie-plugin` and `@routier/sqlite-plugin`. `pgliteDbPlugin` closes an instance you handed it and does not delete it.
 - PGlite has one connection. The plugin runs one operation at a time. A save and a view reconcile queue instead of running together.

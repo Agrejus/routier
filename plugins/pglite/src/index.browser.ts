@@ -4,6 +4,8 @@ import { pgliteDriver, PGliteLike } from './drivers/pglite';
 import type { PostgresDriver } from '@routier/postgres-plugin-core';
 import { deleteDataDir, resolveDataDir } from './browserStorage';
 import { codedReadChannel, type CodedReadChannel } from './codedReadChannel';
+import { webLock } from './crossTabLock';
+import { bootWithFallback, planStorage, storageBootRecord, type BootRecord } from './opfsBoot';
 
 export type { PGliteLike, PGliteDriverOptions } from './drivers/pglite';
 export { pgliteDriver } from './drivers/pglite';
@@ -31,7 +33,14 @@ export type PGliteDbPluginOptions = {
      * extensions are constructed inside the worker and cannot be sent across `postMessage`.
      */
     workerUrl?: string | URL;
+
+    opfsBootTimeoutMs?: number;
 };
+
+const DEFAULT_OPFS_BOOT_TIMEOUT_MS = 10_000;
+
+const bootRecord = (): BootRecord | null =>
+    typeof localStorage === 'undefined' ? null : storageBootRecord(localStorage);
 
 /**
  * PostgreSQL in the browser: WebAssembly, persisted to OPFS.
@@ -84,11 +93,7 @@ export type PGliteDbPluginOptions = {
  */
 export class PGliteDbPlugin extends PostgresDbPluginBase {
     constructor(databaseName: string, options: PGliteDbPluginOptions = {}) {
-        super(resolveDriver(
-            resolveDataDir(databaseName, navigator.userAgent),
-            options.workerUrl,
-            options.codec ?? true
-        ));
+        super(resolveDriver(databaseName, options));
     }
 }
 
@@ -116,7 +121,11 @@ type Registered = { driver: PostgresDriver; workerUrl: string; codec: boolean };
 
 const drivers = new Map<string, Registered>();
 
-const resolveDriver = (dataDir: string, workerUrl?: string | URL, codec = true): PostgresDriver => {
+const resolveDriver = (databaseName: string, options: PGliteDbPluginOptions): PostgresDriver => {
+    const dataDir = resolveDataDir(databaseName, navigator.userAgent);
+    const workerUrl = options.workerUrl;
+    const codec = options.codec ?? true;
+    const timeoutMs = options.opfsBootTimeoutMs ?? DEFAULT_OPFS_BOOT_TIMEOUT_MS;
     const requested = String(workerUrl ?? '');
     const registered = drivers.get(dataDir);
 
@@ -143,17 +152,27 @@ const resolveDriver = (dataDir: string, workerUrl?: string | URL, codec = true):
 
     // Started per driver start, so a restarted engine gets a channel to its new worker.
     let channel: CodedReadChannel | null = null;
+    let active = dataDir;
 
-    const driver = pgliteDriver(dataDir, () => {
-        const started = startWorker(dataDir, workerUrl);
+    const boot = (directory: string) => {
+        const started = startWorker(directory, workerUrl);
 
         channel = started.codedReads;
 
-        return started.database;
+        return started;
+    };
+
+    const driver = pgliteDriver(dataDir, async () => {
+        const booted = await bootWithFallback(planStorage(databaseName, dataDir, bootRecord()), boot, timeoutMs);
+
+        active = booted.dataDir;
+
+        return booted.database;
     }, {
         name: 'pglite (worker)',
         codedReads: codec ? () => channel ?? undefined : undefined,
-        deleteStorage: () => deleteDataDir(dataDir),
+        deleteStorage: () => deleteDataDir(active),
+        lock: webLock(`routier-pglite:${dataDir}`),
     });
 
     drivers.set(dataDir, { driver, workerUrl: requested, codec });
@@ -168,7 +187,7 @@ const resolveDriver = (dataDir: string, workerUrl?: string | URL, codec = true):
  * PGlite leaves free once start-up is done, because its own RPC moves to a `BroadcastChannel`. See
  * `codedReads.ts`.
  */
-const startWorker = (dataDir: string, workerUrl?: string | URL): { database: Promise<PGliteLike>; codedReads: CodedReadChannel } => {
+const startWorker = (dataDir: string, workerUrl?: string | URL): { database: Promise<PGliteLike>; codedReads: CodedReadChannel; stop: () => void } => {
     // Both branches spelled out on purpose. A bundler detects a worker by matching
     // `new Worker(new URL('...', import.meta.url))` as one literal expression at the call site;
     // hand it a variable and it emits nothing, so the build succeeds and the worker 404s.
@@ -179,5 +198,6 @@ const startWorker = (dataDir: string, workerUrl?: string | URL): { database: Pro
     return {
         database: PGliteWorker.create(instance, { dataDir }) as unknown as Promise<PGliteLike>,
         codedReads: codedReadChannel(instance),
+        stop: () => instance.terminate(),
     };
 };

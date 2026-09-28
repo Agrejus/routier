@@ -228,4 +228,79 @@ describe('pgliteDriver engine lifetime', () => {
 
         expect(log).toEqual(['deleted']);
     });
+
+    describe('with a cross-context lock', () => {
+        const sharedLock = () => {
+            let chain: Promise<void> = Promise.resolve();
+            const events: string[] = [];
+            const lock = async (): Promise<() => void> => {
+                let release!: () => void;
+                const held = new Promise<void>(resolve => { release = resolve; });
+                const previous = chain;
+                chain = previous.then(() => held);
+                await previous;
+                events.push('locked');
+                return () => {
+                    events.push('unlocked');
+                    release();
+                };
+            };
+            return { lock, events };
+        };
+
+        it('holds the lock for exactly as long as the connection', async () => {
+            const { lock, events } = sharedLock();
+            const driver = pgliteDriver('memory://locked', Promise.resolve(stub()), { lock });
+
+            const connection = await driver.connect();
+            expect(events).toEqual(['locked']);
+
+            await connection.release();
+            expect(events).toEqual(['locked', 'unlocked']);
+        });
+
+        it('keeps two drivers sharing one lock from holding connections at the same time', async () => {
+            const { lock } = sharedLock();
+            const database = Promise.resolve(stub());
+            const tabA = pgliteDriver('memory://shared', database, { lock });
+            const tabB = pgliteDriver('memory://shared', database, { lock });
+
+            const first = await tabA.connect();
+            let secondArrived = false;
+            const second = tabB.connect().then(connection => {
+                secondArrived = true;
+                return connection;
+            });
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            expect(secondArrived).toBe(false);
+            await first.release();
+            await (await second).release();
+            expect(secondArrived).toBe(true);
+        });
+
+        it('gives the turn back when the lock cannot be taken, so later callers still run', async () => {
+            let attempts = 0;
+            const lock = async (): Promise<() => void> => {
+                attempts++;
+                if (attempts === 1) {
+                    throw new Error('lock refused');
+                }
+                return () => undefined;
+            };
+            const driver = pgliteDriver('memory://refused', Promise.resolve(stub()), { lock });
+
+            await expect(driver.connect()).rejects.toThrow('lock refused');
+            await expect(driver.connect()).resolves.toBeDefined();
+        });
+
+        it('takes the lock for destroy too', async () => {
+            const { lock, events } = sharedLock();
+            const driver = pgliteDriver('memory://destroyed', Promise.resolve(stub()), { lock, deleteStorage: async () => undefined });
+
+            await driver.destroy();
+
+            expect(events).toEqual(['locked', 'unlocked']);
+        });
+    });
 });

@@ -159,7 +159,11 @@ export type PGliteDriverOptions = {
      * refuses rather than quietly keeping data it promised to remove.
      */
     deleteStorage?: () => Promise<void>;
+
+    lock?: () => Promise<() => void>;
 };
+
+const noLock = async (): Promise<() => void> => () => undefined;
 
 /**
  * Where the engine comes from.
@@ -218,7 +222,17 @@ export const pgliteDriver = (
 
         await ourTurn;
 
-        return release;
+        try {
+            const unlock = await (options.lock ?? noLock)();
+
+            return () => {
+                unlock();
+                release();
+            };
+        } catch (error) {
+            release();
+            throw error;
+        }
     };
 
     return {

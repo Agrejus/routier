@@ -87,6 +87,28 @@ pressure unless the origin is persisted — `navigator.storage.persist()` asks.
 Multi-tab safe. One tab is elected leader and owns the database; the rest proxy their queries to
 it, and another election runs when the leader closes.
 
+Every tab's statements run in the leader's single PostgreSQL session, so two tabs must not
+interleave inside one transaction. Each operation holds a Web Lock named for the data directory
+(`routier-pglite:<dataDir>`) from its first statement to its last, so a save in one tab waits for
+a save in another instead of landing inside it. Where the Web Locks API is missing, operations
+are only ordered within their own tab.
+
+### When OPFS will not start
+
+Some sandboxed browsers, Flatpak-packaged Chrome among them, can open OPFS but hang forever when
+PGlite boots a database there. For a bare name, the plugin guards against that:
+
+- Before the first OPFS boot of a data directory it records the attempt in `localStorage`, and
+  records success once the boot completes.
+- If the boot does not finish within `opfsBootTimeoutMs` (default 10 seconds), the worker is
+  stopped and the same database name is opened on IndexedDB instead.
+- If a boot never finished, because the tab froze or was closed, the next page load goes straight
+  to IndexedDB.
+
+A directory that has booted on OPFS before never falls back, so a slow start cannot swap your data
+for an empty IndexedDB database. An explicit `opfs-ahp://` or `idb://` name is always used as
+given.
+
 ### Safari, and every browser on iOS
 
 Handled, as long as you pass a bare name. WebKit caps synchronous access handles at 252 and a
