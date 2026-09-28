@@ -17,6 +17,7 @@ const moduleNameMapper = {
     '^@routier/file-system-plugin$': '<rootDir>/plugins/file-system/src/index.ts',
     '^@routier/sql-plugin-core$': '<rootDir>/plugins/sql-core/src/index.ts',
     '^@routier/postgres-plugin-core$': '<rootDir>/plugins/postgres-core/src/index.ts',
+    '^@routier/pglite-plugin/browser-storage$': '<rootDir>/plugins/pglite/src/browserStorage.ts',
     '^@routier/pglite-plugin$': '<rootDir>/plugins/pglite/src/index.ts',
     '^@routier/blob-plugin$': '<rootDir>/plugins/blob/src/index.ts',
     '^@routier/encryption$': '<rootDir>/plugins/encryption/src/index.ts',
@@ -127,6 +128,16 @@ module.exports = {
             ...base,
             displayName: 'tanstack-query',
             testMatch: ['<rootDir>/tanstack-query/**/*.test.ts'],
+        },
+        {
+            ...base,
+            displayName: 'lab',
+            testMatch: ['<rootDir>/examples/db-migration/src/**/*.test.ts'],
+            testEnvironmentOptions: { customExportConditions: ['node', 'require', 'default'] },
+            transform: {
+                '^.+\\.tsx?$': ['ts-jest', { tsconfig: '<rootDir>/examples/db-migration/tsconfig.test.json' }],
+                ...babelTransform,
+            },
         },
         {
             ...base,

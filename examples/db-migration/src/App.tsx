@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { QueryExplanation } from '@routier/core/plugins';
 import { Journey, Visit } from './bench';
-import { INSPECTOR_QUERIES, OpContext } from './ops';
-import { createPlugin, DbChoice, ShopStore } from './store';
-import { makeOrdersOnly } from './seed';
+import { INSPECTOR_QUERIES } from './ops';
+import { DbChoice } from './store';
+import { INSPECTOR_ROWS, InspectorStore, openInspectorStore } from './inspectorStore';
+import { removeLegacyInspectorDatabases } from './legacyInspectorDatabases';
 import opsSource from './ops.ts?raw';
 import migrateSource from './migrate.ts?raw';
 
@@ -255,33 +256,6 @@ function loadConfig(): LabConfig {
     }
 }
 
-/**
- * Enough rows for a plan to be worth reading, without making Run feel like a benchmark. Above
- * the 1,000 the pagination query skips, or that plan would explain an empty result.
- */
-const INSPECTOR_ROWS = 2500;
-
-type InspectorStore = { store: ShopStore; context: OpContext };
-
-/**
- * A store the inspector owns, seeded with orders only.
- *
- * Its own database rather than the migration lab's: the inspector has to work on a first visit,
- * and a plan read off a store someone else is still writing to is not the plan for these rows.
- * Only `orders` is seeded, because every inspector query reads that collection.
- */
-async function seedInspectorStore(engine: DbChoice, rows: number): Promise<InspectorStore> {
-    const store = new ShopStore(createPlugin(engine, `inspector-${engine}-${Date.now()}`));
-    const orders = makeOrdersOnly(rows);
-
-    for (let i = 0; i < orders.length; i += 1000) {
-        await store.orders.addAsync(...orders.slice(i, i + 1000));
-        await store.saveChangesAsync();
-    }
-
-    return { store, context: { email: String(orders[Math.floor(orders.length / 2)].email) } };
-}
-
 type RunResult = { explanation: QueryExplanation; summary: string; ms: number; error?: string };
 
 /** The statements a plugin actually sent, pulled out of the plan it reported. */
@@ -307,6 +281,10 @@ function QueryInspector({ visits }: { visits: Visit[] }) {
     const [results, setResults] = useState<Record<string, RunResult>>({});
     // One seeded store per engine, kept for the life of the page so a second Run is immediate.
     const seeded = useRef(new Map<DbChoice, Promise<InspectorStore>>());
+
+    useEffect(() => {
+        removeLegacyInspectorDatabases().catch(error => console.warn('Removing old inspector databases failed', error));
+    }, []);
     const query = QUERIES[selectedQuery];
     const keyFor = (db: DbChoice, queryIndex = selectedQuery) => `${QUERIES[queryIndex].name}::${db}`;
 
@@ -315,7 +293,7 @@ function QueryInspector({ visits }: { visits: Visit[] }) {
             let store = seeded.current.get(db);
 
             if (store == null) {
-                store = seedInspectorStore(db, INSPECTOR_ROWS);
+                store = openInspectorStore(db, INSPECTOR_ROWS);
                 seeded.current.set(db, store);
             }
 
