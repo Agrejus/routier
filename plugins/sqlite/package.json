@@ -38,13 +38,13 @@
     ],
     "description": "SQLite plugin for routier: node:sqlite in Node, WebAssembly and OPFS in the browser",
     "peerDependencies": {
-        "@routier/core": ">=0.8.1",
+        "@routier/core": ">=0.8.2",
         "@routier/sql-plugin-core": ">=0.7.1",
         "sqlite3": "^5.1.7"
     },
     "devDependencies": {
         "@faker-js/faker": "^10.0.0",
-        "@routier/core": "^0.8.1",
+        "@routier/core": "^0.8.2",
         "@routier/datastore": "^0.4.4",
         "@routier/sql-plugin-core": "^0.7.1",
         "@rspack/cli": "^1.1.8",

@@ -7,3 +7,5 @@ export * from './queryOracle';
 export * from './wasmEngines';
 
 export * from './joinContract';
+
+export * from './liveQueryFixture';

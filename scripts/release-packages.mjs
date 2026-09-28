@@ -24,6 +24,11 @@ export const releasePackageDirectories = [
   'plugins/sqlite',
   'react',
   'vue',
+  'svelte',
+  'solid',
+  'angular',
+  'tanstack-query',
+  'lit',
   'devtools',
 ];
 

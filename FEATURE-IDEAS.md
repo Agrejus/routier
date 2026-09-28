@@ -81,7 +81,12 @@ open; the guide shows two live queries joined in `useMemo`/`computed` meanwhile.
 
 ## Tier 2: strong differentiators
 
-### 5. More framework adapters
+### 5. More framework adapters - DONE
+
+Shipped `@routier/svelte`, `@routier/solid`, `@routier/angular` (signal and Observable),
+`@routier/lit` and `@routier/tanstack-query`, all built on core's `subscribeLiveQuery`, which React
+and Vue now share. Preact (through `preact/compat`) and React Native are documented rather than
+packaged. Not done: Qwik, Ember and Alpine, and a React Native storage driver.
 
 - **Current state:** only React and Vue.
 - **Proposal:** Svelte (a store or runes), Solid (a signal) and Angular (a signal or

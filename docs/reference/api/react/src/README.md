@@ -8,6 +8,7 @@
 
 ## Type Aliases
 
+- [LiveQuery](type-aliases/LiveQuery.md)
 - [LiveQueryState](type-aliases/LiveQueryState.md)
 
 ## Functions

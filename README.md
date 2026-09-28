@@ -16,6 +16,11 @@ This is a monorepo using npm workspaces. The following packages are included:
 - **`@routier/datastore`** - DataStore implementation with collections, queries, change tracking, and views
 - **`@routier/react`** - React integration with hooks and components
 - **`@routier/vue`** - Vue integration with composables
+- **`@routier/svelte`** - Svelte integration with readable stores
+- **`@routier/solid`** - Solid integration with signals
+- **`@routier/angular`** - Angular integration with signals and Observables
+- **`@routier/lit`** - Lit integration with a reactive controller
+- **`@routier/tanstack-query`** - Live queries as TanStack Query options
 - **`@routier/devtools`** - An in-page drawer that shows your store's data and every query it runs ([docs](https://routier.dev/integrations/devtools/))
 
 ### Storage Plugins

@@ -3,16 +3,51 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
-## Group joins, and guides for migrating stored data and loading related data (2026-09-27)
+## Svelte, Solid, Angular, Lit and TanStack Query bindings, and group joins (2026-09-27)
+
+Five new packages connect Routier live queries to more frameworks: `@routier/svelte` (a readable
+store), `@routier/solid` (a signal), `@routier/angular` (a signal and an Observable), `@routier/lit`
+(a reactive controller) and `@routier/tanstack-query` (query options that feed an existing TanStack
+Query cache). They share one small piece of core, `subscribeLiveQuery`, which React and Vue now
+use as well, so every binding maps results and cleans up the same way.
 
 `groupJoin` returns each left row once, paired with an array of every matching right row: the
 "user with their posts" shape, without regrouping pairs by hand. It works on every plugin with no
 plugin change. The join is recorded as an ordinary left join, and the datastore groups the pairs
 before anything chained after it runs.
 
-This is additive, so only the datastore takes a patch release. The `@routier/datastore` range in
-each package moves to `^0.4.4` (`>=0.4.4` for devtools) in the repository; packages not released
-here keep their published ranges until their next release.
+Everything here is additive or a fix, so existing packages take patch releases and the new ones
+start at 0.1.0. Every package's `@routier/core` floor moves to `>=0.8.2`, and the
+`@routier/datastore` range to `^0.4.4` (`>=0.4.4` for devtools), in the repository; packages not
+released here keep their published ranges until their next release.
+
+### Added — @routier/core 0.8.2
+
+- `@routier/core/results` exports `LiveQuery`, `LiveQueryState`, `SettledLiveQueryState`,
+  `pendingLiveQueryState`, `toLiveQueryState` and `subscribeLiveQuery`. `subscribeLiveQuery(query,
+  onState)` runs a live query, maps each result to a state, and returns a stop function after which
+  late results are ignored. The framework bindings are built on it.
+
+### Added — @routier/svelte 0.1.0, @routier/solid 0.1.0, @routier/angular 0.1.0, @routier/lit 0.1.0, @routier/tanstack-query 0.1.0
+
+- `liveQuery(query)` (Svelte): a readable store. The query runs on the first subscriber, is
+  shared by every subscriber, and stops with the last. Works in Svelte 4 and 5.
+- `createLiveQuery(query)` (Solid): a signal. Signals the query reads are tracked, and a change
+  stops the previous query and runs it again.
+- `injectLiveQuery(query, { injector? })` (Angular 19+): a signal, tracked through an Angular
+  `effect` and stopped when its injector is destroyed. `fromLiveQuery(query)`: an Observable that
+  emits `pending`, then every result, with a failed query as an `error` state.
+- `LiveQueryController` (Lit): subscribes on connect and stops on disconnect. With `args`, it
+  re-queries when any argument changes between host updates.
+- `liveQueryOptions({ queryKey, query })` (TanStack Query, `@tanstack/query-core` 5.66+): the first
+  result resolves the query, later results are written into the cache, a later error invalidates
+  it, and the subscription stops when the query leaves the cache.
+
+### Changed — @routier/react 0.4.2, @routier/vue 0.1.1
+
+- Both are built on `subscribeLiveQuery`. Their exports and behaviour are unchanged, except that
+  `useQuery` in React now ignores a result that arrives after the component has unmounted or its
+  dependencies have changed, as Vue's already did. React also exports the `LiveQuery` type.
 
 ### Added — @routier/datastore 0.4.4
 
@@ -36,6 +71,9 @@ here keep their published ranges until their next release.
 - New guide, **Loading Related Data**: flat pairs with `join`, nested shapes with `groupJoin`, live
   related data with two live queries, and what `.foreignKey()` does and does not do.
 - The Joins page has a Group Joins section.
+- New integration pages for Svelte, Solid, Angular, Lit and TanStack Query, plus Preact (which
+  uses `@routier/react` through `preact/compat`, tested) and React Native (the `structuredClone`
+  polyfill Hermes may need, and which storage plugin to use).
 
 ## Devtools, a read-only inspection API, and live queries without BroadcastChannel (2026-09-22)
 

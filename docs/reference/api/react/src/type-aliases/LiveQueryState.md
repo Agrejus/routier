@@ -8,7 +8,7 @@
 
 > **LiveQueryState**\<`T`\> = \{ `status`: `"pending"`; `loading`: `true`; `isSuccess`: `false`; `isError`: `false`; \} \| \{ `status`: `"error"`; `loading`: `false`; `error`: `Error`; `isSuccess`: `false`; `isError`: `true`; \} \| \{ `status`: `"success"`; `loading`: `false`; `data`: `T`; `isSuccess`: `true`; `isError`: `false`; \}
 
-Defined in: [react/src/useQuery.tsx:4](https://github.com/Agrejus/routier/blob/main/react/src/useQuery.tsx#L4)
+Defined in: core/dist/results/liveQuery.d.ts:3
 
 ## Type Parameters
 

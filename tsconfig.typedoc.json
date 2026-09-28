@@ -1,6 +1,9 @@
 {
     "compilerOptions": {
         "baseUrl": ".",
+        "paths": {
+            "lit": ["node_modules/lit"]
+        },
         "target": "ES2020",
         "lib": [
             "ES2020",
@@ -24,6 +27,12 @@
         "core/src/**/*",
         "datastore/src/**/*",
         "react/src/**/*",
+        "vue/src/**/*",
+        "svelte/src/**/*",
+        "solid/src/**/*",
+        "angular/src/**/*",
+        "tanstack-query/src/**/*",
+        "lit/src/**/*",
         "plugins/*/src/**/*"
     ],
     "exclude": [
