@@ -1,5 +1,6 @@
 import Dexie from 'dexie';
 import { convertToDexieSchema } from "./utils";
+import { dexieKey, stampAddedEtags, stampUpdatedEtags } from "./etags";
 import { applySeed, applySort, describeSeed, describeSort, findIndexSeed, findSortSeed, seedableIndexes, seekReplacesPredicate, type IndexSeed } from "./indexSeed";
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, IDbPlugin, ITranslatedValue, joinInPlugin, QueryOption, QueryOptionName, reportRenamedProperties, TranslatedSingleValue } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
@@ -183,18 +184,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                         const schemaSpecificResult = operationResult.get(schemaId);
 
                         if (changes.removes.length > 0) {
-                            const ids = changes.removes.map(x => {
-
-                                if (schema.idProperties.length === 1) {
-                                    // Handle single key, return the value
-                                    return schema.getIds(x)[0];
-                                }
-
-                                // Handle composite keys, should return a tuple
-                                return schema.getIds(x);
-                            });
-
-                            await collection.bulkDelete(ids);
+                            await collection.bulkDelete(changes.removes.map(x => dexieKey(schema, x)));
                             schemaSpecificResult.removes.push(...changes.removes);
                         }
                     }
@@ -206,6 +196,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                         if (changes.updates.length > 0) {
                             const updatedDocuments = changes.updates.map(x => x.entity);
 
+                            await stampUpdatedEtags(collection, schema.etagProperty, updatedDocuments.map(x => dexieKey(schema, x)), updatedDocuments);
                             await collection.bulkPut(updatedDocuments);
                             schemaSpecificResult.updates.push(...updatedDocuments);
                         }
@@ -218,6 +209,8 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                         if (changes.adds.length === 0) {
                             continue;
                         }
+
+                        stampAddedEtags(schema.etagProperty, changes.adds);
 
                         if (schema.hasIdentities !== true) {
                             await collection.bulkAdd(changes.adds);

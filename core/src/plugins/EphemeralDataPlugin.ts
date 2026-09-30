@@ -8,6 +8,7 @@ import { CompiledSchema, IdType, InferCreateType } from '../schema';
 import { isComparatorExpression, isPropertyExpression, isValueExpression } from '../assertions';
 import { DeepPartial } from '../types';
 import { MemoryDataCollection } from '../collections/MemoryDataCollection';
+import { stampEtag } from '../collections/etagStamp';
 import { UnknownRecord } from '../utilities';
 
 /**
@@ -207,6 +208,7 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
 
                             for (let j = 0; j < adds.length; j++) {
                                 const item = adds[j];
+                                stampEtag(schema.etagProperty, item, undefined);
                                 collection.add(item);
                                 undo.push(() => collection.remove(item));
                                 result.adds[j] = item as DeepPartial<InferCreateType<UnknownRecord>>;
@@ -215,6 +217,7 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                             for (let j = 0; j < updates.length; j++) {
                                 const item = updates[j].entity;
                                 const prior = collection.getByIds(schema.getIds(item as never)) as Record<string, unknown> | undefined;
+                                stampEtag(schema.etagProperty, item, prior);
                                 collection.update(item);
                                 undo.push(prior != null ? () => collection.update(prior) : () => collection.remove(item));
                                 result.updates[j] = item;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import { etags, InferCreateType, InferType, s } from ".";
+import { etags, HashType, InferCreateType, InferType, s } from ".";
 
 const versioned = s.define("etag_versioned", {
     id: s.string().key(),
@@ -111,6 +111,29 @@ describe("etag()", () => {
         const nullableReadonly: IsReadonly<NullableEtag, "revision"> = true;
 
         expect([optional, nullableRequired, optionalReadonly, nullableReadonly]).toEqual([true, false, true, true]);
+    });
+});
+
+describe("etag in generated functions", () => {
+    const hashOf = (row: Versioned) => versioned.hash(row, HashType.Object);
+
+    it("leaves the etag out of the object hash", () => {
+        expect(hashOf({ id: "a", name: "same", version: 1 })).toBe(hashOf({ id: "a", name: "same", version: 2 }));
+    });
+
+    it("keeps leaving identities out of the object hash", () => {
+        const identified = s.define("etag_identified", {
+            id: s.string().key(),
+            serial: s.number().identity(),
+            name: s.string(),
+        }).compile();
+        const hashIdentified = (row: InferType<typeof identified>) => identified.hash(row, HashType.Object);
+
+        expect(hashIdentified({ id: "a", serial: 1, name: "same" })).toBe(hashIdentified({ id: "a", serial: 2, name: "same" }));
+    });
+
+    it("still hashes the other properties", () => {
+        expect(hashOf({ id: "a", name: "one", version: 1 })).not.toBe(hashOf({ id: "a", name: "two", version: 1 }));
     });
 });
 
