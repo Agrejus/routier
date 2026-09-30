@@ -1,6 +1,12 @@
 # ETags on the schema
 
-Status: **Core built** on `feature/schema-etag` (builder, compiled schema, comparators, serialization). No plugin supports ETags yet.
+Status: **In progress** on `feature/schema-etag`.
+
+- Built: the builder, compiled schema, comparators and serialization; etag generation in
+  memory, browser-storage, file-system and Dexie; the `etags: 'keep'` write mode;
+  `HttpSwrDbPlugin` revalidation by row etag and by `If-None-Match` (#63).
+- Not built: the SQL plugins, MongoDB, PouchDB and `pouchRevision`, the wrapping plugins, and
+  `ConcurrencyDbPlugin` using a declared etag.
 Date: 2026-09-30
 Related: #63 (`HttpSwrDbPlugin` ETag / 304 revalidation), `specs/optimistic-concurrency.md`
 
@@ -135,6 +141,20 @@ Mutation testing cannot instrument `core/src/schema/etags.ts` and run the round-
 once: Stryker's inserted calls become part of the comparator's source text, which then does
 not rebuild. Mutate `etags.ts` with `etag.test.ts` alone, and the serialization code with the
 round-trip tests.
+
+## Keeping etags
+
+A persist event may carry `etags: 'keep'` (the default is `'generate'`). A store told to keep
+stores the etag each row carries instead of generating one. Every plugin that generates etags
+honors it. It is set wherever another store owns the etags:
+
+- `HttpSwrDbPlugin`, on every write to its local cache: the server owns the etags.
+- `PluginSyncEngine`, on every mirror write: the source owns them.
+- `OptimisticUpdatesDbPlugin`, when it hydrates its memory copy from the source.
+
+`BatchingDbPlugin` never merges writes with different modes. The shared contract suite
+`describeEtagContract` in `@routier/test-utils` covers generation and both modes; every plugin
+that supports etags runs it.
 
 ## Plugins
 
