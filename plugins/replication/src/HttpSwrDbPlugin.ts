@@ -36,7 +36,7 @@ import { assertIsNotNull } from '@routier/core';
 
 import { buildAuthErrorEvent } from './auth';
 import { UnsyncedQueue, type DeadLetteredChange, type QueuedChange, type UnsyncedFlushUnit, type UnsyncedQueueRow } from './UnsyncedQueue';
-import { buildUpdatePayload, entityIdKey, resultSetsEqual } from './swrUtils';
+import { buildUpdatePayload, entityIdKey, etagOrder, resultSetsEqual } from './swrUtils';
 import { SWR_DEFAULTS } from './constants';
 import { buildQueryParams } from './queryParamHelpers';
 import { backoffDelayMs, HttpStatusError, isAuthStatus, isConflictStatus, isPermanentStatus, KeyedMutex, RequestPacer } from './httpUtils';
@@ -920,9 +920,14 @@ export class HttpSwrDbPlugin implements IDbPlugin {
                 if (isUnsynced(r)) {
                     return false;
                 }
-                const id = schema.hash(r as never, HashType.Ids);
-                const existing = existingById.get(id);
-                return existing != null && !schema.compare(r as never, existing as never);
+                const existing = existingById.get(schema.hash(r as never, HashType.Ids));
+
+                if (existing == null) {
+                    return false;
+                }
+
+                const order = etagOrder(schema, existing, r);
+                return order == null ? !schema.compare(r as never, existing as never) : order < 0;
             })
             .map((entity) => ({ entity, changeType: 'markedDirty' as const, delta: {} as Record<string, unknown> }));
 

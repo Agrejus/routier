@@ -2,7 +2,7 @@
  * Shared utilities for SWR (stale-while-revalidate) logic.
  */
 
-import type { CompiledSchema } from '@routier/core/schema';
+import type { CompiledSchema, EtagValue } from '@routier/core/schema';
 
 /**
  * Serializes entity id(s) to a stable string key (e.g. for unsynced queue or deduplication).
@@ -95,4 +95,26 @@ export function resultSetsEqual(
         }
     }
     return true;
+}
+
+function readEtag(name: string, row: unknown): EtagValue | null {
+    if (typeof row !== 'object' || row === null) {
+        return null;
+    }
+
+    const value = Reflect.get(row, name);
+    return typeof value === 'number' || typeof value === 'string' ? value : null;
+}
+
+export function etagOrder<T extends {}>(schema: CompiledSchema<T>, stored: unknown, incoming: unknown): number | null {
+    const property = schema.etagProperty;
+
+    if (property?.etagComparator == null) {
+        return null;
+    }
+
+    const storedEtag = readEtag(property.name, stored);
+    const incomingEtag = readEtag(property.name, incoming);
+
+    return storedEtag == null || incomingEtag == null ? null : property.etagComparator(storedEtag, incomingEtag);
 }
