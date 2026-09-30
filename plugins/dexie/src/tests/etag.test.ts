@@ -5,7 +5,7 @@ import { DataStore } from '@routier/datastore';
 import { describeEtagContract } from '@routier/test-utils';
 import { DexiePlugin } from '../DexiePlugin';
 
-describeEtagContract('dexie', () => new DexiePlugin(`etag-contract-${uuidv4()}-db`));
+describeEtagContract('dexie', () => new DexiePlugin(`etag-contract-${uuidv4()}-db`), { supportsConcurrency: false });
 
 const numberKeySchema = s.define('etag_number_keys', {
     id: s.number().key().identity(),

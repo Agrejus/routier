@@ -1,6 +1,6 @@
 import { BulkPersistResult, SchemaCollection } from "../collections";
 import { OptimisticConcurrencyError } from "../errors";
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue } from ".";
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, EntityUpdateInfo, IDbPlugin, ITranslatedValue } from ".";
 import { Query } from "./query/Query";
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult } from "../results";
 import { CompiledSchema, IdType, InferType, PropertyInfo, SchemaId, SchemaTypes } from "../schema";
@@ -108,6 +108,12 @@ export class ConcurrencyDbPlugin implements IDbPlugin {
             }
 
             const schema = event.schemas.get(schemaId);
+
+            if (schema.etagProperty != null) {
+                guardByEtag(schema.etagProperty.getResolvedName(), changes.updates);
+                continue;
+            }
+
             const versions = this.versionsFor(schema.collectionName);
 
             for (const add of changes.adds) {
@@ -266,6 +272,10 @@ export class ConcurrencyDbPlugin implements IDbPlugin {
      * generated functions, ids, id properties — delegates to the real schema.
      */
     private augment<T extends {}>(schema: CompiledSchema<T>): CompiledSchema<T> {
+        if (schema.etagProperty != null) {
+            return schema;
+        }
+
         const cached = this.augmentedSchemas.get(schema.id);
 
         if (cached != null) {
@@ -308,5 +318,15 @@ export class ConcurrencyDbPlugin implements IDbPlugin {
         this.augmentedSchemas.set(schema.id, view);
 
         return view;
+    }
+}
+
+function guardByEtag(column: string, updates: EntityUpdateInfo<Record<string, unknown>>[]): void {
+    for (const update of updates) {
+        const expected = update.entity[column];
+
+        if (typeof expected === "number" || typeof expected === "string") {
+            update.concurrency = { column, expected };
+        }
     }
 }

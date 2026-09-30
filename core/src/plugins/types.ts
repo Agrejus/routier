@@ -1,7 +1,7 @@
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult } from "../results";
 import { ExecutedQuery } from "./query/explain";
 import { QueryOptionsCollection } from "./query/QueryOptionsCollection";
-import { CompiledSchema, EtagMode, InferType } from '../schema';
+import { CompiledSchema, EtagMode, EtagValue, InferType } from '../schema';
 import { BulkPersistChanges, BulkPersistResult, SchemaCollection } from "../collections";
 import { ITranslatedValue } from "./translators";
 
@@ -192,7 +192,7 @@ export type EntityUpdateInfo<T extends {}> = {
      * A plugin that finds a mismatch must fail the whole save with an
      * OptimisticConcurrencyError naming the conflicted rows — never apply partially.
      */
-    concurrency?: { column: string; expected: number };
+    concurrency?: { column: string; expected: EtagValue };
     /**
      * The values these properties held BEFORE this update — keyed like `delta`, which holds
      * the values they hold after.

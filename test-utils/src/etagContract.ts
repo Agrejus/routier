@@ -1,30 +1,30 @@
 import { afterAll, describe, expect, it } from "@jest/globals";
-import { EtagMode, IDbPlugin } from "@routier/core";
+import { ConcurrencyDbPlugin, EtagMode, IDbPlugin, OptimisticConcurrencyError } from "@routier/core";
 import { BulkPersistChanges, BulkPersistResult, SchemaCollection } from "@routier/core/collections";
 import { PluginEventPartialResultType } from "@routier/core/results";
 import { etags, InferRoot, InferType, s } from "@routier/core/schema";
 import { DataStore } from "@routier/datastore";
 
 const numberSchema = s.define("contract_etag_numbers", {
-    id: s.string().key().identity(),
+    _id: s.string().key().identity(),
     name: s.string(),
     version: s.number().etag(etags.numeric),
 }).compile();
 
 const diffSchema = s.define("contract_etag_diff", {
-    id: s.string().key().identity(),
+    _id: s.string().key().identity(),
     name: s.string(),
     version: s.number().etag(etags.numeric),
 }).compile();
 
 const immutableSchema = s.define("contract_etag_immutable", {
-    id: s.string().key().identity(),
+    _id: s.string().key().identity(),
     name: s.string(),
     version: s.number().etag(etags.numeric),
 }).compile();
 
 const tokenSchema = s.define("contract_etag_tokens", {
-    id: s.string().key().identity(),
+    _id: s.string().key().identity(),
     name: s.string(),
     revision: s.string().etag(etags.lexical),
 }).compile();
@@ -62,7 +62,11 @@ const persistNumbers = (plugin: IDbPlugin, changes: { adds?: NumberRow[], update
     }, resolve));
 };
 
-export function describeEtagContract(name: string, factory: () => IDbPlugin) {
+export type EtagContractOptions = {
+    readonly supportsConcurrency?: boolean;
+};
+
+export function describeEtagContract(name: string, factory: () => IDbPlugin, options: EtagContractOptions = {}) {
     describe(`etag: ${name}`, () => {
         const stores: EtagDataStore[] = [];
 
@@ -161,7 +165,7 @@ export function describeEtagContract(name: string, factory: () => IDbPlugin) {
 
         it("keeps the etag an insert carries when told to keep etags", async () => {
             const { plugin, store } = open();
-            const result = await persistNumbers(plugin, { adds: [{ id: "kept", name: "first", version: 7 }] }, "keep");
+            const result = await persistNumbers(plugin, { adds: [{ _id: "kept", name: "first", version: 7 }] }, "keep");
 
             const [stored] = await store.numbers.toArrayAsync();
 
@@ -170,17 +174,36 @@ export function describeEtagContract(name: string, factory: () => IDbPlugin) {
 
         it("keeps the etag an update carries when told to keep etags", async () => {
             const { plugin, store } = open();
-            await persistNumbers(plugin, { adds: [{ id: "kept", name: "first", version: 7 }] }, "keep");
-            await persistNumbers(plugin, { updates: [{ id: "kept", name: "second", version: 4 }] }, "keep");
+            await persistNumbers(plugin, { adds: [{ _id: "kept", name: "first", version: 7 }] }, "keep");
+            const [inserted] = await store.numbers.toArrayAsync();
+            await persistNumbers(plugin, { updates: [{ _id: required(inserted)._id, name: "second", version: 4 }] }, "keep");
 
             const [stored] = await store.numbers.toArrayAsync();
 
             expect([stored?.name, stored?.version]).toEqual(["second", 4]);
         });
 
+        (options.supportsConcurrency === false ? it.skip : it)("rejects a write made from a stale etag behind ConcurrencyDbPlugin", async () => {
+            const plugin = new ConcurrencyDbPlugin(factory());
+            const writerA = new EtagDataStore(plugin);
+            const writerB = new EtagDataStore(plugin);
+            stores.push(writerA);
+            await writerA.numbers.addAsync({ name: "first" });
+            await writerA.saveChangesAsync();
+            const a = required((await writerA.numbers.toArrayAsync())[0]);
+            const b = required((await writerB.numbers.toArrayAsync())[0]);
+
+            a.name = "second";
+            await writerA.saveChangesAsync();
+            b.name = "stale";
+
+            await expect(writerB.saveChangesAsync()).rejects.toThrow(OptimisticConcurrencyError);
+            expect((await writerA.numbers.toArrayAsync()).map(row => [row.name, row.version])).toEqual([["second", 2]]);
+        });
+
         it("generates the etag when told to generate etags", async () => {
             const { plugin, store } = open();
-            await persistNumbers(plugin, { adds: [{ id: "made", name: "first", version: 7 }] }, "generate");
+            await persistNumbers(plugin, { adds: [{ _id: "made", name: "first", version: 7 }] }, "generate");
 
             const [stored] = await store.numbers.toArrayAsync();
 

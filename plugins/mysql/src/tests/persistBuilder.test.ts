@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { s } from '@routier/core/schema';
+import { etags, s } from '@routier/core/schema';
 import { buildFromPersistOperation } from '../utils';
 
 /**
@@ -113,5 +113,39 @@ describe('mysql buildFromPersistOperation', () => {
             expect(removes!.selectSql).toBe('SELECT `p`, `q`, `a` FROM `mysql_composite` WHERE (`p` = ? AND `q` = ?)');
             expect(removes!.params).toEqual(['p1', 'q1']);
         });
+    });
+});
+
+describe('mysql buildFromPersistOperation with an etag', () => {
+    const versionedSchema = s.define('mysql_versioned', {
+        id: s.string().key(),
+        a: s.string(),
+        version: s.number().etag(etags.numeric),
+    }).compile();
+
+    it('sets a new row etag to 1', () => {
+        const { adds } = buildFromPersistOperation(versionedSchema, changes([{ id: 'x', a: '1', version: 9 }]));
+
+        expect(adds?.params).toEqual(['x', '1', 1]);
+    });
+
+    it('keeps a new row etag when told to keep etags', () => {
+        const { adds } = buildFromPersistOperation(versionedSchema, changes([{ id: 'x', a: '1', version: 9 }]), 'keep');
+
+        expect(adds?.params).toEqual(['x', '1', 9]);
+    });
+
+    it('increments the etag of an updated row in the database', () => {
+        const [update] = buildFromPersistOperation(versionedSchema, changes([], [{ entity: { id: 'x', a: '2', version: 9 }, delta: {} }])).updates;
+
+        expect(update?.sql).toBe('UPDATE `mysql_versioned` SET `a` = CASE `id` WHEN ? THEN ? ELSE `a` END, `version` = COALESCE(`version`, 0) + 1 WHERE `id` IN (?)');
+    });
+
+    it('increments the etag of a checked update in the database', () => {
+        const checked = changes([], [{ entity: { id: 'x', a: '2', version: 9 }, delta: {}, concurrency: { column: 'version', expected: 9 } }]);
+
+        const [update] = buildFromPersistOperation(versionedSchema, checked).updates;
+
+        expect(update?.sql).toBe('UPDATE `mysql_versioned` SET `a` = ?, `version` = COALESCE(`version`, 0) + 1 WHERE `id` = ? AND `version` = ?');
     });
 });

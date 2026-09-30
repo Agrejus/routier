@@ -2,7 +2,9 @@ import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema'
 import { Expression } from '@routier/core/expressions';
 import { IQuery, JoinQueryOptionValue, mappedResultColumns, Query } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
-import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, getDialect, sqlColumnProperties, toColumnValueMap, toSql, reportUnrenderableFilters, reportUnrenderableSelectors, executedMapFields, selectList, referencedColumn } from '@routier/sql-plugin-core';
+import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, getDialect, sqlColumnProperties, toColumnValueMap, toSql, reportUnrenderableFilters, reportUnrenderableSelectors, executedMapFields, selectList, referencedColumn, sqlEtagOf } from '@routier/sql-plugin-core';
+import { etagToGenerate, stampEtag } from '@routier/core/collections';
+import type { EtagMode } from '@routier/core/schema';
 import { uuidv4 } from '@routier/core/utilities';
 import { MysqlAddsOperation, MysqlRemovesOperation, MysqlSelectBack, MysqlUpdatesOperation, SqlOperation } from './types';
 
@@ -215,7 +217,7 @@ export function buildSelectFromExpression<TEntity extends {}, TShape>(options: {
     return { sql, params };
 }
 
-export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSchema<TEntity>, changes: SchemaPersistChanges<Record<string, unknown>>): {
+export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSchema<TEntity>, changes: SchemaPersistChanges<Record<string, unknown>>, etagMode?: EtagMode): {
     adds: MysqlAddsOperation | null;
     updates: MysqlUpdatesOperation[];
     removes: MysqlRemovesOperation | null;
@@ -230,6 +232,13 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 
     if (!hasItems) {
         return { adds: null, updates: [], removes: null };
+    }
+
+    const etag = sqlEtagOf(schema, etagMode);
+    const generatedEtag = etagToGenerate(schema, etagMode);
+
+    for (const add of adds) {
+        stampEtag(generatedEtag, add, undefined);
     }
 
     // Column identifiers are storage-side names (PropertyInfo.from ?? name), one column per
@@ -318,7 +327,8 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
         ? buildConditionalUpdateOperations(
             schema,
             updates as { entity: Record<string, unknown>; delta: Record<string, unknown> }[],
-            getDialect('mysql')
+            getDialect('mysql'),
+            { etag }
         ).map(({ sql, params, id, keyTuple, checked }) => ({
             sql,
             params,
@@ -329,7 +339,8 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
         : buildGroupedUpdateOperations(
             schema,
             updates as { entity: Record<string, unknown>; delta: Record<string, unknown> }[],
-            getDialect('mysql')
+            getDialect('mysql'),
+            { etag }
         );
 
     // Handle DELETE operations (removes)

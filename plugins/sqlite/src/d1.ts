@@ -368,7 +368,7 @@ export class D1DbPlugin implements IDbPlugin {
             }
 
             const schema = event.schemas.get(schemaId);
-            const persistOperations = buildFromPersistOperation(schema, changes);
+            const persistOperations = buildFromPersistOperation(schema, changes, event.etags);
             const createTableSql = this.resolveTableCreateStatement(schema);
 
             creates.set(schema.collectionName, createTableSql);

@@ -1,6 +1,6 @@
-import { CacheDbPlugin, RetryDbPlugin } from '@routier/core/plugins';
+import { BatchingDbPlugin, CacheDbPlugin, RetryDbPlugin, TelemetryDbPlugin } from '@routier/core/plugins';
 import { uuidv4 } from '@routier/core';
-import { describePluginContract, describeVectorSearch } from '@routier/test-utils';
+import { describeEtagContract, describePluginContract, describeVectorSearch } from '@routier/test-utils';
 import { MemoryPlugin } from '../MemoryPlugin';
 
 /**
@@ -31,3 +31,11 @@ describeVectorSearch(
     'memory behind CacheDbPlugin',
     () => new CacheDbPlugin(new MemoryPlugin(`cache-vector-${uuidv4()}`)),
 );
+
+describeEtagContract('memory behind RetryDbPlugin', () => new RetryDbPlugin(new MemoryPlugin(`retry-etag-${uuidv4()}`)));
+
+describeEtagContract('memory behind CacheDbPlugin', () => new CacheDbPlugin(new MemoryPlugin(`cache-etag-${uuidv4()}`)));
+
+describeEtagContract('memory behind BatchingDbPlugin', () => new BatchingDbPlugin(new MemoryPlugin(`batching-etag-${uuidv4()}`), { isAtomic: true }));
+
+describeEtagContract('memory behind TelemetryDbPlugin', () => new TelemetryDbPlugin(new MemoryPlugin(`telemetry-etag-${uuidv4()}`)));

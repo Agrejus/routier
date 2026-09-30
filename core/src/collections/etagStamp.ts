@@ -19,7 +19,7 @@ export function stampEtag(property: PropertyInfo<{}> | null, item: StoredRecord,
 
     item[property.name] = property.type === SchemaTypes.Number
         ? nextNumber(prior, property.name)
-        : nextToken();
+        : nextEtagToken();
 }
 
 function nextNumber(prior: StoredRecord | undefined, name: string): number {
@@ -27,7 +27,7 @@ function nextNumber(prior: StoredRecord | undefined, name: string): number {
     return typeof current === 'number' ? current + 1 : 1;
 }
 
-function nextToken(): string {
+export function nextEtagToken(): string {
     const now = Date.now();
 
     if (now > lastTokenTime) {

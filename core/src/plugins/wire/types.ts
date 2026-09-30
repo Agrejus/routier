@@ -70,7 +70,7 @@ export type SerializedUpdate = {
     entity: unknown;
     changeType: "propertiesChanged" | "markedDirty" | "notModified";
     delta: unknown;
-    concurrency?: { column: string; expected: number };
+    concurrency?: { column: string; expected: number | string };
 };
 
 export type SerializedSchemaChanges = {

@@ -1,15 +1,11 @@
 # ETags on the schema
 
-Status: **In progress** on `feature/schema-etag`.
+Status: **Built** on `feature/schema-etag`. Every plugin supports etags.
 
-- Built: the builder, compiled schema, comparators and serialization; etag generation in
-  memory, browser-storage, file-system and Dexie; the `etags: 'keep'` write mode;
-  `HttpSwrDbPlugin` revalidation by row etag and by `If-None-Match` (#63); `pouchRevision` and
-  `_rev` declared as the PouchDB etag.
-- Not built: the SQL plugins, MongoDB, the wrapping plugins, and `ConcurrencyDbPlugin` using a
+- Built: the builder, compiled schema, comparators and serialization; etag generation in every
+  plugin; the `etags: 'keep'` write mode and `etagOwner`; `HttpSwrDbPlugin` revalidation by row
+  etag and by `If-None-Match` (#63); `pouchRevision`; `ConcurrencyDbPlugin` guarding by a
   declared etag.
-Date: 2026-09-30
-Related: #63 (`HttpSwrDbPlugin` ETag / 304 revalidation), `specs/optimistic-concurrency.md`
 
 ## The idea
 
@@ -179,6 +175,31 @@ PouchDB creates and updates `_rev` itself, so the plugin needs no etag code: a s
 `_rev: s.string().identity()`, because `test-utils` cannot import `pouchRevision` (the PouchDB
 plugin depends on `test-utils`), and those suites do not exercise revisions.
 
-`ConcurrencyDbPlugin` (`core/src/plugins/ConcurrencyDbPlugin.ts`) uses the declared ETag
-instead of its hidden `__version` column when the schema has one, and keeps the hidden
-column for schemas without one.
+### SQL
+
+`sql-core` owns the update builders every SQL plugin uses, so etags live there
+(`sql-core/src/etags.ts`). The builders drop the etag column from whatever the delta or
+whole-entity fallback supplies, then:
+
+- generate, number etag: `SET "version" = COALESCE("version", 0) + 1`, atomic, with no read
+  first; the new value reaches the entity through the read-back each plugin already does
+  (`RETURNING`, or MySQL's select after the write)
+- generate, string etag: a fresh token as a parameter
+- keep: the value the row carries, as a parameter
+
+Inserts get their etag in JS before the `INSERT`.
+
+### MongoDB
+
+MongoDB echoes the entities it wrote rather than reading them back, so the plugin reads the
+stored etags of the updated documents inside the save's transaction, generates the next value
+in JS, and adds it to the `$set`. An update with an empty delta now writes the whole entity,
+which is core's convention; it used to write nothing.
+
+### Concurrency
+
+`ConcurrencyDbPlugin` uses the declared etag when the schema has one: each update carries
+`concurrency: { column: <etag>, expected: <the etag the entity holds> }`, the store generates the
+next etag as usual, and a stale write matches no row and fails with
+`OptimisticConcurrencyError`. No hidden `__version` column is added and no versions are tracked.
+Schemas without an etag keep the hidden column. Dexie and D1 do not detect conflicts, as before.
