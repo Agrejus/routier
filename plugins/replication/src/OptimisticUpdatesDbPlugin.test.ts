@@ -276,13 +276,23 @@ describe('OptimisticUpdatesDbPlugin etags', () => {
         expect(hydrated.revision).toBe('seeded');
     });
 
-    it('stores the etag it generated in the source unchanged', async () => {
+    it('lets the source generate the etag on an update', async () => {
         const { source, store, hydrated } = await seededStore();
         hydrated.name = 'second';
         await store.saveChangesAsync();
 
         const [durable] = await new VersionedStore(source).items.toArrayAsync();
 
-        expect([durable?.revision === hydrated.revision, hydrated.revision === 'seeded']).toEqual([true, false]);
+        expect([durable?.name, durable?.revision === 'seeded']).toEqual(['second', false]);
+    });
+
+    it('does not generate an etag in its memory copy', async () => {
+        const { store, hydrated } = await seededStore();
+        hydrated.name = 'second';
+        await store.saveChangesAsync();
+
+        const [cached] = await store.items.toArrayAsync();
+
+        expect(cached?.revision).toBe('seeded');
     });
 });

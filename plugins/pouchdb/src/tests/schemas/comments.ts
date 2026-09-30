@@ -1,8 +1,9 @@
+import { pouchRevision } from '../../pouchRevision';
 import { s } from "@routier/core/schema";
 
 export const commentsSchema = s.define("comments", {
     _id: s.string().key().identity(),
-    _rev: s.string().identity(),
+    _rev: s.string().etag(pouchRevision),
     author: s.string(),
     content: s.string(),
     replies: s.number().default(0),

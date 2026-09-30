@@ -10,7 +10,7 @@ import { Query } from "@routier/core/plugins";
 import { PluginEventResult, Result } from "@routier/core/results";
 import { SchemaCollection } from "@routier/core/collections";
 import { BulkPersistChanges, BulkPersistResult } from "@routier/core/collections";
-import { InferRoot, s } from "@routier/core/schema";
+import { etags, InferRoot, s } from "@routier/core/schema";
 import { PluginSyncEngine } from "./PluginSyncEngine";
 
 const testSchema = s
@@ -319,4 +319,113 @@ describe("PluginSyncEngine etag mode", () => {
             expect([sourceEvents[0]?.etags ?? "generate", mirrorEvents[0]?.etags]).toEqual(["generate", "keep"]);
         }
     );
+
+    const versionedSchema = s.define("syncVersioned", {
+        id: s.string().key(),
+        name: s.string(),
+        version: s.number().etag(etags.numeric),
+    }).compile();
+
+    const versionedEvent = (): DbPluginBulkPersistEvent => {
+        const operation = new BulkPersistChanges();
+        const changes = operation.resolve<InferRoot<typeof versionedSchema>>(versionedSchema.id);
+        const row = { id: "a", name: "A", version: 4 };
+        changes.adds.push(row);
+        changes.updates.push({ entity: row, changeType: "markedDirty", delta: {} });
+        changes.removes.push(row);
+        return {
+            id: "versioned-event",
+            schemas: new SchemaCollection().set(versionedSchema.id, versionedSchema),
+            source: "test",
+            action: "persist",
+            operation,
+        };
+    };
+
+    const echoingPlugin = (events: DbPluginBulkPersistEvent[]): IDbPlugin => ({
+        ...recordingPlugin(events),
+        bulkPersist: (event, done) => {
+            events.push(event);
+            const result = new BulkPersistResult();
+            for (const [schemaId, changes] of event.operation) {
+                const echoed = result.resolve(schemaId);
+                echoed.adds.push(...changes.adds);
+                echoed.updates.push(...changes.updates.map(update => update.entity));
+                echoed.removes.push(...changes.removes);
+            }
+            done(PluginEventResult.success(event.id, result));
+        },
+    });
+
+    it.each(["original-event", "resolve-from-source-result"] as const)(
+        "keeps etags in the source and lets the mirrors generate them when the mirrors own them (%s)",
+        async (mirrorPersistPayloadMode) => {
+            const sourceEvents: DbPluginBulkPersistEvent[] = [];
+            const mirrorEvents: DbPluginBulkPersistEvent[] = [];
+            const engine = new PluginSyncEngine({
+                source: echoingPlugin(sourceEvents),
+                mirrorPlugins: [echoingPlugin(mirrorEvents)],
+                persistAckMode: "after-all",
+                mirrorPersistPayloadMode,
+                etagOwner: "mirrors",
+            });
+
+            await new Promise(resolve => engine.bulkPersist(versionedEvent(), resolve));
+
+            expect([sourceEvents[0]?.etags, mirrorEvents[0]?.etags]).toEqual(["keep", "generate"]);
+        }
+    );
+
+    it.each([
+        [undefined, "mirror-resolved"],
+        ["hydration", "hydration"],
+    ])("gives a resolved mirror write the reason %p as %p", async (reason, expected) => {
+        const mirrorEvents: DbPluginBulkPersistEvent[] = [];
+        const engine = new PluginSyncEngine({
+            source: echoingPlugin([]),
+            mirrorPlugins: [echoingPlugin(mirrorEvents)],
+            persistAckMode: "after-all",
+            mirrorPersistPayloadMode: "resolve-from-source-result",
+        });
+
+        await new Promise(resolve => engine.bulkPersist({ ...versionedEvent(), reason }, resolve));
+
+        expect(mirrorEvents[0]?.reason).toBe(expected);
+    });
+
+    it("sends the mirrors every row without its etag when the mirrors own them", async () => {
+        const mirrorEvents: DbPluginBulkPersistEvent[] = [];
+        const engine = new PluginSyncEngine({
+            source: recordingPlugin([]),
+            mirrorPlugins: [recordingPlugin(mirrorEvents)],
+            persistAckMode: "after-all",
+            etagOwner: "mirrors",
+        });
+        const event = versionedEvent();
+
+        await new Promise(resolve => engine.bulkPersist(event, resolve));
+
+        const mirrored = mirrorEvents[0]?.operation.get(versionedSchema.id);
+        expect([mirrored?.adds, mirrored?.updates.map(update => update.entity), mirrored?.removes]).toEqual([
+            [{ id: "a", name: "A" }],
+            [{ id: "a", name: "A" }],
+            [{ id: "a", name: "A" }],
+        ]);
+        expect(event.operation.get(versionedSchema.id)?.adds).toEqual([{ id: "a", name: "A", version: 4 }]);
+    });
+
+    it("passes through the changes of a schema without an etag when the mirrors own them", async () => {
+        const mirrorEvents: DbPluginBulkPersistEvent[] = [];
+        const engine = new PluginSyncEngine({
+            source: recordingPlugin([]),
+            mirrorPlugins: [recordingPlugin(mirrorEvents)],
+            persistAckMode: "after-all",
+            etagOwner: "mirrors",
+        });
+        const event = persistEvent();
+
+        await new Promise(resolve => engine.bulkPersist(event, resolve));
+
+        expect(mirrorEvents[0]?.operation.get(testSchema.id)).toBe(event.operation.get(testSchema.id));
+    });
 });

@@ -4,9 +4,10 @@ Status: **In progress** on `feature/schema-etag`.
 
 - Built: the builder, compiled schema, comparators and serialization; etag generation in
   memory, browser-storage, file-system and Dexie; the `etags: 'keep'` write mode;
-  `HttpSwrDbPlugin` revalidation by row etag and by `If-None-Match` (#63).
-- Not built: the SQL plugins, MongoDB, PouchDB and `pouchRevision`, the wrapping plugins, and
-  `ConcurrencyDbPlugin` using a declared etag.
+  `HttpSwrDbPlugin` revalidation by row etag and by `If-None-Match` (#63); `pouchRevision` and
+  `_rev` declared as the PouchDB etag.
+- Not built: the SQL plugins, MongoDB, the wrapping plugins, and `ConcurrencyDbPlugin` using a
+  declared etag.
 Date: 2026-09-30
 Related: #63 (`HttpSwrDbPlugin` ETag / 304 revalidation), `specs/optimistic-concurrency.md`
 
@@ -149,7 +150,13 @@ stores the etag each row carries instead of generating one. Every plugin that ge
 honors it. It is set wherever another store owns the etags:
 
 - `HttpSwrDbPlugin`, on every write to its local cache: the server owns the etags.
-- `PluginSyncEngine`, on every mirror write: the source owns them.
+- `PluginSyncEngine`, on every mirror write, when the source owns them (`etagOwner: 'source'`,
+  the default).
+- `PluginSyncEngine` with `etagOwner: 'mirrors'`: the source write keeps, and each mirror gets
+  every row with its etag removed and generates a new one. `OptimisticUpdatesDbPlugin` uses
+  this: its memory copy is the engine's source, but the durable store owns the etags. A PouchDB
+  mirror then resolves the current `_rev` itself; a `_rev` from the memory copy would be stale
+  or foreign, and PouchDB would reject the write.
 - `OptimisticUpdatesDbPlugin`, when it hydrates its memory copy from the source.
 
 `BatchingDbPlugin` never merges writes with different modes. The shared contract suite
@@ -166,6 +173,11 @@ storage. Order:
 2. The SQL plugins: `sql-core`, `sqlite`, `postgres-core`, `postgresql`, `pglite`, `mysql`
 3. The rest: `browser-storage`, `file-system`, `mongodb`, `pouchdb`, and the wrapping plugins
    (`encryption`, `otel`, `blob`) where they need to pass the ETag through
+
+PouchDB creates and updates `_rev` itself, so the plugin needs no etag code: a schema declares
+`_rev: s.string().etag(pouchRevision)`. The contract suites in `@routier/test-utils` keep
+`_rev: s.string().identity()`, because `test-utils` cannot import `pouchRevision` (the PouchDB
+plugin depends on `test-utils`), and those suites do not exercise revisions.
 
 `ConcurrencyDbPlugin` (`core/src/plugins/ConcurrencyDbPlugin.ts`) uses the declared ETag
 instead of its hidden `__version` column when the schema has one, and keeps the hidden

@@ -1,3 +1,4 @@
+import { pouchRevision } from '../pouchRevision';
 import { afterEach, describe, expect, it } from '@jest/globals';
 import { uuidv4 } from '@routier/core';
 import { s } from '@routier/core/schema';
@@ -16,12 +17,9 @@ import { PouchDbPlugin } from '../PouchDbPlugin';
  * None of that shows up in a single-store test, which is why it survived a 119-case suite.
  */
 
-// The `_rev` identity and the `documentType` scope follow the shape every other suite in
-// this package uses: PouchDB assigns `_rev` on write, and one database holds every
-// collection, so a collection has to filter itself out of it.
 const schema = s.define('isolation_rows', {
     _id: s.string().key().identity(),
-    _rev: s.string().identity(),
+    _rev: s.string().etag(pouchRevision),
     label: s.string(),
 }).modify(x => ({
     documentType: x.computed((_, collectionName) => collectionName).tracked()

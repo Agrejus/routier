@@ -1,9 +1,10 @@
+import { pouchRevision } from '../../pouchRevision';
 import { s } from '@routier/core';
 
 // A more practical example showing computed and function modifiers
 export const userProfileSchema = s.define("userProfiles", {
     _id: s.string().key().identity(),
-    _rev: s.string().identity(),
+    _rev: s.string().etag(pouchRevision),
     firstName: s.string(),
     lastName: s.string(),
     email: s.string(),

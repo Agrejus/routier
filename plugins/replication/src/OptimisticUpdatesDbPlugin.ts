@@ -71,6 +71,7 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
             persistAckMode: "after-source",
             mirrorFailureMode: "swallow",
             mirrorPersistPayloadMode: "resolve-from-source-result",
+            etagOwner: "mirrors",
             onMirrorError: options?.onMirrorError,
         });
     }

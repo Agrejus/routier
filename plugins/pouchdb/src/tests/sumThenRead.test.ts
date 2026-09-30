@@ -1,3 +1,4 @@
+import { pouchRevision } from '../pouchRevision';
 import { describe, it, expect, afterAll } from '@jest/globals';
 import { s } from '@routier/core/schema';
 import { IDbPlugin, uuidv4 } from '@routier/core';
@@ -19,7 +20,7 @@ const plainIdSchema = s.define('orders', {
 
 const orderSchema = s.define('orders', {
     _id: s.string().key().identity(),
-    _rev: s.string().identity(),
+    _rev: s.string().etag(pouchRevision),
     status: s.string('pending', 'paid'),
     region: s.string('us-east', 'eu'),
     total: s.number(),

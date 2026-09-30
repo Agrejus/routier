@@ -1,3 +1,4 @@
+import { pouchRevision } from '../pouchRevision';
 import { describe, it, expect, afterAll } from '@jest/globals';
 import PouchDB from 'pouchdb';
 import { s } from '@routier/core/schema';
@@ -21,7 +22,7 @@ import { PouchDbPlugin } from '../PouchDbPlugin';
  */
 const renamedSchema = s.define('renamed_rows', {
     _id: s.string().key().identity(),
-    _rev: s.string().identity(),
+    _rev: s.string().etag(pouchRevision),
     label: s.string().from('wire_label'),
     amount: s.number().from('wire_amount'),
 }).compile();

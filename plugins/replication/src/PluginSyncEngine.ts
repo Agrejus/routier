@@ -16,6 +16,7 @@ import { PluginEventResult, Result } from "@routier/core/results";
 import type { BulkPersistResult } from "@routier/core/collections";
 import { BulkPersistChanges } from "@routier/core/collections";
 import { logger, resolveBulkPersistChanges } from "@routier/core/utilities";
+import { withoutEtags, type EtagOwner } from "./mirrorEtags";
 
 export type QueryFailureMode = "surface-first" | "surface-last";
 export type MirrorFailureMode = "surface" | "swallow";
@@ -75,6 +76,7 @@ export type PluginSyncEngineOptions = {
      * @default "original-event"
      */
     mirrorPersistPayloadMode?: MirrorPersistPayloadMode;
+    etagOwner?: EtagOwner;
     /**
      * Max time (ms) to wait for a composed plugin to call done() before treating the call
      * as failed. Guards the engine against a plugin that never completes — otherwise one
@@ -94,6 +96,7 @@ export class PluginSyncEngine implements IDbPlugin {
     private readonly destroyFailureMode: DestroyFailureMode;
     private readonly onMirrorError?: (error: Error, context: { plugin: IDbPlugin; eventId: string }) => void;
     private readonly mirrorPersistPayloadMode: MirrorPersistPayloadMode;
+    private readonly etagOwner: EtagOwner | undefined;
     private readonly pluginCallTimeoutMs: number;
 
     /**
@@ -114,6 +117,7 @@ export class PluginSyncEngine implements IDbPlugin {
         this.destroyFailureMode = options.destroyFailureMode ?? "surface-last";
         this.onMirrorError = options.onMirrorError;
         this.mirrorPersistPayloadMode = options.mirrorPersistPayloadMode ?? "original-event";
+        this.etagOwner = options.etagOwner;
         this.pluginCallTimeoutMs = options.pluginCallTimeoutMs ?? 60_000;
 
         if (this.persistAckMode === "after-source" && this.mirrorFailureMode === "surface") {
@@ -177,7 +181,7 @@ export class PluginSyncEngine implements IDbPlugin {
         event: DbPluginBulkPersistEvent,
         done: PluginEventCallbackPartialResult<BulkPersistResult>
     ) {
-        const sourceResult = await this.persistPlugin(this.source, event);
+        const sourceResult = await this.persistPlugin(this.source, this.etagOwner === "mirrors" ? { ...event, etags: "keep" } : event);
 
         if (sourceResult.ok !== Result.SUCCESS) {
             done(sourceResult);
@@ -294,19 +298,21 @@ export class PluginSyncEngine implements IDbPlugin {
         event: DbPluginBulkPersistEvent,
         sourceResult: PluginEventSuccessType<BulkPersistResult>
     ): DbPluginBulkPersistEvent {
-        if (this.mirrorPersistPayloadMode === "original-event") {
-            return { ...event, etags: "keep" };
-        }
+        const mirrored = this.mirrorPersistPayloadMode === "original-event" ? event : this.resolveMirrorEvent(event, sourceResult);
 
+        return this.etagOwner === "mirrors"
+            ? { ...mirrored, operation: withoutEtags(mirrored.operation, mirrored.schemas), etags: "generate" }
+            : { ...mirrored, etags: "keep" };
+    }
+
+    private resolveMirrorEvent(
+        event: DbPluginBulkPersistEvent,
+        sourceResult: PluginEventSuccessType<BulkPersistResult>
+    ): DbPluginBulkPersistEvent {
         const resolvedChanges = new BulkPersistChanges();
         resolveBulkPersistChanges(event, sourceResult.data, resolvedChanges);
 
-        return {
-            ...event,
-            operation: resolvedChanges,
-            reason: event.reason ?? "mirror-resolved",
-            etags: "keep",
-        };
+        return { ...event, operation: resolvedChanges, reason: event.reason ?? "mirror-resolved" };
     }
 
     /**
