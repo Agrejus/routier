@@ -4,7 +4,8 @@ import type { DbPluginQueryEvent, DbPluginBulkPersistEvent, IDbPlugin } from '@r
 import { Query } from '@routier/core/plugins';
 import { Result } from '@routier/core/results';
 import { BulkPersistChanges, SchemaCollection } from '@routier/core/collections';
-import { s } from '@routier/core/schema';
+import { etags, s } from '@routier/core/schema';
+import { DataStore } from '@routier/datastore';
 import { uuid } from '@routier/core/utilities';
 import { MemoryPlugin } from '@routier/memory-plugin';
 
@@ -242,5 +243,46 @@ describe('OptimisticUpdatesDbPlugin integration', () => {
         await expect(queryRows(failing)).rejects.toThrow('source down');
         // And subsequent queries fail fast rather than serving a silently-empty store
         await expect(queryRows(failing)).rejects.toBeDefined();
+    });
+});
+
+describe('OptimisticUpdatesDbPlugin etags', () => {
+    const versionedSchema = s.define('optimisticVersioned', {
+        id: s.string().key().identity(),
+        name: s.string(),
+        revision: s.string().etag(etags.lexical),
+    }).compile();
+
+    class VersionedStore extends DataStore {
+        items = this.collection(versionedSchema).proxy().create();
+    }
+
+    const seededStore = async () => {
+        const source = new MemoryPlugin(`optimistic-etag-${uuid(8)}`);
+        source.seed(versionedSchema, [{ id: 'a', name: 'first', revision: 'seeded' }]);
+        const store = new VersionedStore(new OptimisticUpdatesDbPlugin(source));
+        const [hydrated] = await store.items.toArrayAsync();
+
+        if (hydrated == null) {
+            throw new Error('nothing hydrated');
+        }
+
+        return { source, store, hydrated };
+    };
+
+    it('keeps the source etag when it hydrates', async () => {
+        const { hydrated } = await seededStore();
+
+        expect(hydrated.revision).toBe('seeded');
+    });
+
+    it('stores the etag it generated in the source unchanged', async () => {
+        const { source, store, hydrated } = await seededStore();
+        hydrated.name = 'second';
+        await store.saveChangesAsync();
+
+        const [durable] = await new VersionedStore(source).items.toArrayAsync();
+
+        expect([durable?.revision === hydrated.revision, hydrated.revision === 'seeded']).toEqual([true, false]);
     });
 });

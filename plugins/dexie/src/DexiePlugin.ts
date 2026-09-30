@@ -4,7 +4,7 @@ import { dexieKey, stampAddedEtags, stampUpdatedEtags } from "./etags";
 import { applySeed, applySort, describeSeed, describeSort, findIndexSeed, findSortSeed, seedableIndexes, seekReplacesPredicate, type IndexSeed } from "./indexSeed";
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, IDbPlugin, ITranslatedValue, joinInPlugin, QueryOption, QueryOptionName, reportRenamedProperties, TranslatedSingleValue } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
-import { BulkPersistResult, SchemaPersistChanges } from '@routier/core/collections';
+import { BulkPersistResult, etagToGenerate, SchemaPersistChanges } from '@routier/core/collections';
 import { CompiledSchema, getStorageDateReviver, InferCreateType, PropertyInfo, SchemaId, SchemaTypes } from '@routier/core/schema';
 import { UnknownRecord, uuidv4 } from '@routier/core/utilities';
 import { ParamsFilter } from '@routier/core/expressions';
@@ -196,7 +196,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                         if (changes.updates.length > 0) {
                             const updatedDocuments = changes.updates.map(x => x.entity);
 
-                            await stampUpdatedEtags(collection, schema.etagProperty, updatedDocuments.map(x => dexieKey(schema, x)), updatedDocuments);
+                            await stampUpdatedEtags(collection, etagToGenerate(schema, event.etags), updatedDocuments.map(x => dexieKey(schema, x)), updatedDocuments);
                             await collection.bulkPut(updatedDocuments);
                             schemaSpecificResult.updates.push(...updatedDocuments);
                         }
@@ -210,7 +210,7 @@ export class DexiePlugin implements IDbPlugin, Disposable {
                             continue;
                         }
 
-                        stampAddedEtags(schema.etagProperty, changes.adds);
+                        stampAddedEtags(etagToGenerate(schema, event.etags), changes.adds);
 
                         if (schema.hasIdentities !== true) {
                             await collection.bulkAdd(changes.adds);

@@ -295,7 +295,7 @@ export class PluginSyncEngine implements IDbPlugin {
         sourceResult: PluginEventSuccessType<BulkPersistResult>
     ): DbPluginBulkPersistEvent {
         if (this.mirrorPersistPayloadMode === "original-event") {
-            return event;
+            return { ...event, etags: "keep" };
         }
 
         const resolvedChanges = new BulkPersistChanges();
@@ -305,6 +305,7 @@ export class PluginSyncEngine implements IDbPlugin {
             ...event,
             operation: resolvedChanges,
             reason: event.reason ?? "mirror-resolved",
+            etags: "keep",
         };
     }
 

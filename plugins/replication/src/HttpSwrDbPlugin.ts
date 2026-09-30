@@ -970,6 +970,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
             source: HttpSwrDbPlugin.name,
             action: 'persist' as const,
             reason: 'revalidate',
+            etags: 'keep',
         };
 
         logger.debug('[HttpSwrDbPlugin] applyRevalidatePersist() -> before persist', {
@@ -1343,6 +1344,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
                 source: HttpSwrDbPlugin.name,
                 action: 'persist' as const,
                 reason: 'optimistic',
+                etags: 'keep',
             };
             logger.debug('[HttpSwrDbPlugin] persistToSwrStore', { swrEvent });
             this.swrStore.bulkPersist(swrEvent, (persistResult) => {
@@ -1719,6 +1721,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
                     source: HttpSwrDbPlugin.name,
                     action: 'persist',
                     reason: 'persist-echo',
+                    etags: 'keep',
                 }, (persistResult) => {
                     if (persistResult.ok === Result.ERROR) {
                         reject(persistResult.error);

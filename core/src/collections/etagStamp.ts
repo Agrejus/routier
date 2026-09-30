@@ -1,4 +1,4 @@
-import { PropertyInfo, SchemaTypes } from '../schema';
+import { CompiledSchema, EtagMode, PropertyInfo, SchemaTypes } from '../schema';
 
 type StoredRecord = Record<string, unknown>;
 
@@ -7,6 +7,10 @@ const SEQUENCE_WIDTH = 6;
 
 let lastTokenTime = 0;
 let tokenSequence = 0;
+
+export function etagToGenerate<T extends {}>(schema: CompiledSchema<T>, mode: EtagMode | undefined): PropertyInfo<T> | null {
+    return mode === 'keep' ? null : schema.etagProperty;
+}
 
 export function stampEtag(property: PropertyInfo<{}> | null, item: StoredRecord, prior: StoredRecord | undefined): void {
     if (property == null) {

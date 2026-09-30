@@ -155,7 +155,8 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
                     operation: changesCollection,
                     source: "OptimisticReplicationDbPlugin",
                     action: "persist",
-                    reason: "hydration"
+                    reason: "hydration",
+                    etags: "keep"
                 }, (readPersistResult) => {
                     if (readPersistResult.ok === Result.ERROR) {
                         logger.error('[OptimisticReplicationDbPlugin] hydration read-plugin bulkPersist failed', { collectionName, error: readPersistResult.error });

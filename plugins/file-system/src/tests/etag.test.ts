@@ -1,10 +1,11 @@
-import { describe, expect, it } from '@jest/globals';
+import { afterAll, describe, expect, it } from '@jest/globals';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { IDbPlugin, uuidv4 } from '@routier/core';
 import { etags, s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
+import { describeEtagContract } from '@routier/test-utils';
 import { FileSystemPlugin } from '../FileSystemPlugin';
 
 const versionedSchema = s.define('versioned', {
@@ -20,6 +21,12 @@ class VersionedStore extends DataStore {
 
     versioned = this.collection(versionedSchema).proxy().create();
 }
+
+const contractRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'routier-etag-contract-'));
+
+afterAll(() => fs.rmSync(contractRoot, { recursive: true, force: true }));
+
+describeEtagContract('file-system', () => new FileSystemPlugin(contractRoot, `db-${uuidv4()}`));
 
 describe('FileSystemPlugin etag', () => {
     it('keeps the etag it set across a reopen', async () => {

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from '@jest/globals';
 import { uuidv4 } from '@routier/core';
 import { etags, s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
-import { describeFullTextSearch, describePluginContract, describeVectorSearch } from '@routier/test-utils';
+import { describeEtagContract, describeFullTextSearch, describePluginContract, describeVectorSearch } from '@routier/test-utils';
 import { BrowserStoragePlugin } from '../BrowserStoragePlugin';
 
 /**
@@ -50,6 +50,11 @@ class FakeStorage implements Storage {
         return Array.from(this.entries.keys());
     }
 }
+
+describeEtagContract(
+    'browser-storage',
+    () => new BrowserStoragePlugin(`etag-${uuidv4()}`, new FakeStorage()),
+);
 
 describeVectorSearch(
     'browser-storage',

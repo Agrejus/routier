@@ -9,8 +9,8 @@ import type {
 import { Query } from "@routier/core/plugins";
 import { PluginEventResult, Result } from "@routier/core/results";
 import { SchemaCollection } from "@routier/core/collections";
-import { BulkPersistChanges } from "@routier/core/collections";
-import { s } from "@routier/core/schema";
+import { BulkPersistChanges, BulkPersistResult } from "@routier/core/collections";
+import { InferRoot, s } from "@routier/core/schema";
 import { PluginSyncEngine } from "./PluginSyncEngine";
 
 const testSchema = s
@@ -274,4 +274,49 @@ describe("PluginSyncEngine mirror error reporting", () => {
             done();
         });
     });
+});
+
+describe("PluginSyncEngine etag mode", () => {
+    const recordingPlugin = (events: DbPluginBulkPersistEvent[]): IDbPlugin => ({
+        databaseName: "recording",
+        query: (event, done) => done(PluginEventResult.error(event.id, new Error("not queried"))),
+        bulkPersist: (event, done) => {
+            events.push(event);
+            const result = new BulkPersistResult();
+            result.resolve<InferRoot<typeof testSchema>>(testSchema.id).adds.push({ id: "resolved", name: "Resolved" });
+            done(PluginEventResult.success(event.id, result));
+        },
+        destroy: (event, done) => done(PluginEventResult.success(event.id)),
+    });
+
+    const persistEvent = (): DbPluginBulkPersistEvent => {
+        const operation = new BulkPersistChanges();
+        operation.resolve<InferRoot<typeof testSchema>>(testSchema.id).adds.push({ name: "Temp" });
+        return {
+            id: "etag-event",
+            schemas: new SchemaCollection().set(testSchema.id, testSchema),
+            source: "test",
+            action: "persist",
+            operation,
+        };
+    };
+
+    it.each(["original-event", "resolve-from-source-result"] as const)(
+        "lets the source generate etags and tells the mirror to keep them (%s)",
+        async (mirrorPersistPayloadMode) => {
+            const sourceEvents: DbPluginBulkPersistEvent[] = [];
+            const mirrorEvents: DbPluginBulkPersistEvent[] = [];
+            const engine = new PluginSyncEngine({
+                source: recordingPlugin(sourceEvents),
+                mirrorPlugins: [recordingPlugin(mirrorEvents)],
+                persistAckMode: "after-all",
+                mirrorFailureMode: "surface",
+                mirrorPersistPayloadMode,
+            });
+
+            await new Promise(resolve => engine.bulkPersist(persistEvent(), resolve));
+
+            expect([sourceEvents[0]?.etags ?? "generate", mirrorEvents[0]?.etags]).toEqual(["generate", "keep"]);
+        }
+    );
 });
