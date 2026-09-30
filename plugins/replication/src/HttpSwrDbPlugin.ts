@@ -26,7 +26,6 @@ import {
     PluginEventCallbackResult,
     PluginEventCallbackPartialResult,
     PluginEventResult,
-    type PluginEventResultType,
     Result,
 } from '@routier/core/results';
 import { BulkPersistResult, BulkPersistChanges, SchemaCollection, SchemaPersistChanges } from '@routier/core/collections';
@@ -36,7 +35,8 @@ import { assertIsNotNull } from '@routier/core';
 
 import { buildAuthErrorEvent } from './auth';
 import { UnsyncedQueue, type DeadLetteredChange, type QueuedChange, type UnsyncedFlushUnit, type UnsyncedQueueRow } from './UnsyncedQueue';
-import { buildUpdatePayload, entityIdKey, etagOrder, resultSetsEqual } from './swrUtils';
+import { buildUpdatePayload, entityIdKey, etagOrder } from './swrUtils';
+import { ConditionalRevalidation } from './conditionalRevalidation';
 import { SWR_DEFAULTS } from './constants';
 import { buildQueryParams } from './queryParamHelpers';
 import { backoffDelayMs, HttpStatusError, isAuthStatus, isConflictStatus, isPermanentStatus, KeyedMutex, RequestPacer } from './httpUtils';
@@ -137,6 +137,8 @@ export interface HttpSwrDbPluginOptions extends HttpPluginOptions {
      * Revalidate failures are not reported back via done(); the UI keeps showing cached data.
      */
     onRevalidateError?: (error: Error, context: { collectionName: string; cacheKey?: string }) => void;
+    conditionalRevalidation?: boolean;
+    onRevalidateNotModified?: (context: { collectionName: string; cacheKey: string }) => void;
     /**
      * Called when the queue permanently gives up on changes: the server rejected them with a
      * non-retryable status (4xx other than 401/403/408/429). Dead-lettered changes stop
@@ -225,6 +227,8 @@ export class HttpSwrDbPlugin implements IDbPlugin {
     private readonly bulkPersistRetryMaxDelayMs: number;
     private readonly bulkPersistRetryMaxAttempts: number;
     private readonly onRevalidateError?: (error: Error, context: { collectionName: string; cacheKey?: string }) => void;
+    private readonly onRevalidateNotModified?: (context: { collectionName: string; cacheKey: string }) => void;
+    private readonly conditional: ConditionalRevalidation | null;
     private readonly onSyncDeadLetter?: (changes: DeadLetteredChange[], error: Error) => void;
     private readonly onConflict?: (context: { collectionName: string; entities: unknown[]; error: Error }) => void;
     private readonly translatePersistResponse?: (schema: CompiledSchema<UnknownRecord>, responseBody: unknown) => unknown[] | null;
@@ -295,6 +299,8 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         this.bulkPersistRetryMaxDelayMs = options?.bulkPersistRetryMaxDelayMs ?? SWR_DEFAULTS.bulkPersistRetryMaxDelayMs;
         this.bulkPersistRetryMaxAttempts = options?.bulkPersistRetryMaxAttempts ?? SWR_DEFAULTS.bulkPersistRetryMaxAttempts;
         this.onRevalidateError = options?.onRevalidateError;
+        this.onRevalidateNotModified = options.onRevalidateNotModified;
+        this.conditional = options.conditionalRevalidation === false ? null : new ConditionalRevalidation(swrStore);
         this.onSyncDeadLetter = options?.onSyncDeadLetter;
         this.onConflict = options?.onConflict;
         this.translatePersistResponse = options?.translatePersistResponse;
@@ -1163,8 +1169,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
 
     private startRevalidate<TRoot extends {}, TShape>(
         cacheKey: string,
-        event: DbPluginQueryEvent<TRoot, TShape>,
-        cachedTranslated: ITranslatedValue<TShape>
+        event: DbPluginQueryEvent<TRoot, TShape>
     ): void {
         const collectionName = event.operation.schema.collectionName;
         logger.debug('[HttpSwrDbPlugin] revalidate requested', { collectionName, cacheKey });
@@ -1172,47 +1177,68 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         // A revalidate already running for this query is the answer for this one too. Deduped
         // here as well as in the transport because this covers the store write, not just the GET.
         void this.missPacer
-            .share(`revalidate:${cacheKey}`, () => this.runRevalidate(cacheKey, event, cachedTranslated))
+            .share(`revalidate:${cacheKey}`, () => this.runRevalidate(cacheKey, event))
             .catch((err: unknown) => logger.warn('[HttpSwrDbPlugin] revalidate failed', { collectionName, error: err }));
     }
 
-    private runRevalidate<TRoot extends {}, TShape>(
+    private async runRevalidate<TRoot extends {}, TShape>(
         cacheKey: string,
-        event: DbPluginQueryEvent<TRoot, TShape>,
-        cachedTranslated: ITranslatedValue<TShape>
+        event: DbPluginQueryEvent<TRoot, TShape>
     ): Promise<void> {
         const collectionName = event.operation.schema.collectionName;
-        // The candidate set, not the page: see windowlessOperation.
         const remoteEvent = this.candidateSetEvent(event, 'revalidate', 'background');
+        const ifNoneMatch = await this.storedEtag(cacheKey, remoteEvent);
+        const result = await this.httpPlugin.queryConditional(remoteEvent, ifNoneMatch);
+
+        if (result.kind === 'failed') {
+            this.onRevalidateError?.(result.error, { collectionName, cacheKey });
+            return;
+        }
+
+        if (result.kind === 'not-modified') {
+            this.setRevalidated(cacheKey);
+            this.onRevalidateNotModified?.({ collectionName, cacheKey });
+            return;
+        }
+
+        try {
+            await this.persistToStore(event, result.data);
+        } catch {
+            return;
+        }
+
+        this.setRevalidated(cacheKey);
+        await this.rememberEtag(cacheKey, remoteEvent, result.etag);
+    }
+
+    private async storedEtag<TRoot extends {}, TShape>(cacheKey: string, remoteEvent: DbPluginQueryEvent<TRoot, TShape>): Promise<string | null> {
+        const conditional = this.conditional;
+
+        if (conditional == null) {
+            return null;
+        }
+
+        return conditional.ifNoneMatch(cacheKey, await this.countStoreRows(remoteEvent));
+    }
+
+    private async rememberEtag<TRoot extends {}, TShape>(cacheKey: string, remoteEvent: DbPluginQueryEvent<TRoot, TShape>, etag: string | null): Promise<void> {
+        const conditional = this.conditional;
+
+        if (conditional == null) {
+            return;
+        }
+
+        const rowCount = await this.countStoreRows(remoteEvent);
+
+        if (rowCount != null) {
+            await conditional.remember(cacheKey, etag, rowCount);
+        }
+    }
+
+    private countStoreRows<TRoot extends {}, TShape>(remoteEvent: DbPluginQueryEvent<TRoot, TShape>): Promise<number | null> {
         return new Promise((resolve) => {
-            this.httpPlugin.query(remoteEvent, (result) => {
-                logger.debug('[HttpSwrDbPlugin] runRevalidate() -> httpPlugin query result', { collectionName, result });
-                if (result.ok === Result.SUCCESS) {
-                    const schema = event.operation.schema as CompiledSchema<Record<string, unknown>>;
-                    const cachedArr = this.queryResultToArray(cachedTranslated);
-                    const sourceArr = this.queryResultToArray(result.data);
-                    const same = resultSetsEqual(schema, cachedArr, sourceArr);
-                    logger.debug('[HttpSwrDbPlugin] runRevalidate() -> httpPlugin query success', {
-                        collectionName,
-                        result,
-                        same
-                    });
-                    if (same) {
-                        this.setRevalidated(cacheKey);
-                        resolve();
-                    } else {
-                        this.persistToStore(event, result.data).then(
-                            () => {
-                                this.setRevalidated(cacheKey);
-                                resolve();
-                            },
-                            () => resolve()
-                        );
-                    }
-                } else {
-                    this.onRevalidateError?.(result.error, { collectionName, cacheKey });
-                    resolve();
-                }
+            this.swrStore.query({ ...remoteEvent, id: uuid(8) }, (result) => {
+                resolve(result.ok === Result.SUCCESS ? this.queryResultToArray(result.data).length : null);
             });
         });
     }
@@ -1248,7 +1274,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
 
             if (this.isStale(cacheKey)) {
                 logger.info('[HttpSwrDbPlugin] Cache is stale, starting revalidation', { collectionName });
-                setTimeout(() => this.startRevalidate(cacheKey, event, swrResponse.data), 0);
+                setTimeout(() => this.startRevalidate(cacheKey, event), 0);
             } else {
                 logger.info('[HttpSwrDbPlugin] cache not stale');
             }
@@ -1302,17 +1328,16 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         const collectionName = event.operation.schema.collectionName;
         // The candidate set, not the page: see windowlessOperation.
         const remoteEvent = this.candidateSetEvent(event, 'cache-miss', 'blocking');
-        const result = await new Promise<PluginEventResultType<ITranslatedValue<TShape>>>((resolve) => {
-            this.httpPlugin.query(remoteEvent, resolve);
-        });
+        const result = await this.httpPlugin.queryConditional(remoteEvent, null);
 
-        if (result.ok !== Result.SUCCESS) {
+        if (result.kind !== 'modified') {
             return 'remote-failed';
         }
 
         try {
             await this.persistOnCacheMiss(event, result.data);
             this.setRevalidated(cacheKey);
+            await this.rememberEtag(cacheKey, remoteEvent, result.etag);
             return 'stored';
         } catch (err) {
             this.onRevalidateError?.(err instanceof Error ? err : new Error(String(err)), { collectionName });

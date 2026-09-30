@@ -101,8 +101,8 @@ For each serialized query, `HttpSwrDbPlugin` tracks cache freshness independentl
 1. **Read local first.** The wrapped plugin executes the Routier query. With the optimistic wrapper, the first query hydrates that collection from the durable cache into memory.
 2. **Handle a cache miss.** The HTTP request is blocking because there is no local result to display. A successful response is translated, persisted locally, and returned.
 3. **Return a fresh hit.** Before `maxAgeMs` expires, the local result is returned without revalidation.
-4. **Return a stale hit.** The stale result is returned immediately. Revalidation runs in the background.
-5. **Apply the remote diff.** Server rows are compared with the cache. Adds, updates, and removals are persisted locally; subscribed queries are notified.
+4. **Return a stale hit.** The stale result is returned immediately. Revalidation runs in the background, sending the last response's `ETag` as `If-None-Match`. A `304 Not Modified` keeps the local rows and marks the query fresh; observe it through `onRevalidateNotModified`, or turn it off with `conditionalRevalidation: false`.
+5. **Apply the remote diff.** Server rows are compared with the cache. When the schema declares an `.etag()`, a newer server row replaces the local one, the same etag is skipped, and an older one is ignored. Adds, updates, and removals are persisted locally; subscribed queries are notified.
 6. **Keep stale data on failure.** A failed background revalidation does not replace a successful cached result. Observe it through `onRevalidateError`.
 
 Concurrent reads for the same URL are coalesced, and concurrent revalidations for the same cache key share work.

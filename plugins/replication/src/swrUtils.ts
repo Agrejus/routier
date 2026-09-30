@@ -61,42 +61,6 @@ export function mergeUpdatePayloads(
     return { ...older, ...newer };
 }
 
-/**
- * Compares two result arrays using the schema's compare and compareIds.
- * Order-independent: treats as sets (match by id, then compare).
- */
-export function resultSetsEqual(
-    schema: CompiledSchema<Record<string, unknown>>,
-    cached: unknown[],
-    source: unknown[]
-): boolean {
-    if (cached.length !== source.length) {
-        return false;
-    }
-    const used = new Set<number>();
-    for (const sourceItem of source) {
-        let found = false;
-        for (let i = 0; i < cached.length; i++) {
-            if (used.has(i)) {
-                continue;
-            }
-            const cachedItem = cached[i];
-            if (
-                schema.compareIds(sourceItem as never, cachedItem as never) &&
-                schema.compare(sourceItem as never, cachedItem as never)
-            ) {
-                used.add(i);
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            return false;
-        }
-    }
-    return true;
-}
-
 function readEtag(name: string, row: unknown): EtagValue | null {
     if (typeof row !== 'object' || row === null) {
         return null;

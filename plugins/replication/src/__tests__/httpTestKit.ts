@@ -15,6 +15,9 @@ import type { CompiledSchema } from '@routier/core/schema';
 import { BulkPersistChanges, SchemaCollection } from '@routier/core/collections';
 import type { DbPluginBulkPersistEvent, DbPluginQueryEvent, IDbPlugin } from '@routier/core/plugins';
 import { Query } from '@routier/core/plugins';
+import { MemoryPlugin } from '@routier/memory-plugin';
+import type { BulkPersistResult } from '@routier/core/collections';
+import type { PluginEventCallbackPartialResult } from '@routier/core/results';
 import { Result } from '@routier/core/results';
 import { uuid } from '@routier/core/utilities';
 
@@ -23,6 +26,7 @@ export interface HttpResponseSpec {
     status: number;
     body?: unknown;
     headers?: Record<string, string>;
+    text?: string;
     /** Answer only after this many ms (abortable). */
     delayMs?: number;
     /** Never answer at all — only an abort ends the request. */
@@ -98,6 +102,7 @@ export function installFetchMock() {
             statusText: `status-${spec.status}`,
             headers: { get: (name: string) => spec.headers?.[name] ?? spec.headers?.[name.toLowerCase()] ?? null },
             json: async () => spec.body ?? {},
+            ...(spec.text === undefined ? {} : { text: async () => spec.text }),
         }));
     });
 
@@ -303,4 +308,13 @@ export function sleep(ms: number): Promise<void> {
 export function suspendBackgroundSync(plugin: unknown): void {
     (plugin as { stopBackgroundSync: () => void }).stopBackgroundSync();
     (plugin as { isDestroyed: boolean }).isDestroyed = false;
+}
+
+export class RecordingMemoryPlugin extends MemoryPlugin {
+    readonly writes: DbPluginBulkPersistEvent[] = [];
+
+    override bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackPartialResult<BulkPersistResult>): void {
+        this.writes.push(event);
+        super.bulkPersist(event, done);
+    }
 }

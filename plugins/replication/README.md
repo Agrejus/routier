@@ -12,11 +12,13 @@ import { DataStore } from "@routier/datastore";
 import { HttpSwrDbPlugin } from "@routier/replication-plugin";
 import { DexiePlugin } from "@routier/dexie-plugin";
 
+const cache = new DexiePlugin("app");
+
 class AppStore extends DataStore {
   constructor() {
-    super(new HttpSwrDbPlugin({
-      source: new DexiePlugin("app"),
-      baseUrl: "https://api.example.com",
+    super(new HttpSwrDbPlugin(cache, {
+      getUrl: (collectionName) => `https://api.example.com/${collectionName}`,
+      unsyncedQueueStore: cache,
     }));
   }
 }
@@ -50,6 +52,19 @@ A write applies locally first and reaches the server later.
 
 The server is the authority. When a response echoes entities back, they upsert into the local
 store under the collection's mutex, and subscribers are notified.
+
+### Revalidation and etags
+
+A revalidation sends the `ETag` of the last response for that query as `If-None-Match`. On
+`304 Not Modified` the local rows stay as they are and the query counts as fresh. The etag is
+stored in the local store, so it survives a reload. It is only sent while the local store still
+holds as many rows for the query as it did when the etag was stored. Turn this off with
+`conditionalRevalidation: false`, and observe it with `onRevalidateNotModified`.
+
+When the schema declares an `.etag()`, a returned row that the local store already has is
+compared by etag: a newer server row replaces the local one, the same etag is skipped, and an
+older one is ignored. Rows without an etag are compared field by field. The server owns etags:
+the local store keeps the values the server sent and never generates its own.
 
 ### Pagination
 

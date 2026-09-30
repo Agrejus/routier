@@ -23,7 +23,6 @@ import {
     DbPluginEvent,
     ITranslatedValue,
     joinInPlugin,
-    JsonTranslator,
     reportRenamedProperties,
 } from '@routier/core/plugins';
 import {
@@ -34,15 +33,15 @@ import {
 import { BulkPersistResult } from '@routier/core/collections';
 import { logger, UnknownRecord } from '@routier/core/utilities';
 import { CompiledSchema } from '@routier/core';
-import { getStorageDateReviver } from '@routier/core/schema';
 
 import {
     buildQueryParams,
     buildUrlWithQuery,
     type QuerySerializationContext,
 } from './queryParamHelpers';
-import { backoffDelayMs, HttpStatusError, isAuthStatus, JsonWriteBatcher, readRetryAfterMs, RequestPacer, RequestTracker } from './httpUtils';
+import { HttpStatusError, isAuthStatus, JsonWriteBatcher, RequestPacer, RequestTracker } from './httpUtils';
 import { buildAuthErrorEvent, type AuthErrorEvent, type AuthErrorHandler } from './auth';
+import { HttpQueryRunner, type ConditionalQueryResult } from './httpQueryRunner';
 
 export interface HttpPluginOptions {
     getUrl: (collectionName: string) => string;
@@ -109,16 +108,10 @@ const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
 const DEFAULT_MIN_REQUEST_INTERVAL_MS = 100;
 const DEFAULT_WRITE_BATCH_DELAY_MS = 25;
 
-/** Result of a single HTTP query attempt (no retry decision). */
-type QueryAttemptResult<TShape> =
-    | { success: true; data: ITranslatedValue<TShape> }
-    | { success: false; error: Error; isAuthError: boolean; status?: number; retryAfterMs?: number | null };
-
 export class HttpDbPlugin implements IDbPlugin {
     protected readonly getUrl: (collectionName: string) => string;
     protected readonly getHeaders?: () => Promise<Record<string, string>> | Record<string, string>;
     protected readonly querySerializationContext: QuerySerializationContext;
-    protected readonly translateRemoteResponse?: (schema: CompiledSchema<UnknownRecord>, data: unknown) => unknown;
     protected readonly requests = new RequestTracker();
     /**
      * Paces everything outbound. Reads share by URL — the URL *is* the request, so ten callers
@@ -129,10 +122,8 @@ export class HttpDbPlugin implements IDbPlugin {
     /** Coalesces logical writes before they enter the per-URL transport pacer. */
     private readonly writeBatcher: JsonWriteBatcher;
     protected readonly requestTimeoutMs: number;
-    private readonly queryRetryBaseDelayMs: number;
-    private readonly queryRetryMaxDelayMs: number;
-    private readonly queryRetryMaxAttempts: number;
     private readonly onAuthError?: AuthErrorHandler;
+    private readonly queryRunner: HttpQueryRunner;
 
     /** See `IDbPlugin.databaseName` and `HttpPluginOptions.databaseName`. */
     readonly databaseName: string;
@@ -141,10 +132,6 @@ export class HttpDbPlugin implements IDbPlugin {
         this.databaseName = options.databaseName ?? "http";
         this.getUrl = options.getUrl;
         this.getHeaders = options.getHeaders;
-        this.translateRemoteResponse = options.translateRemoteResponse;
-        this.queryRetryBaseDelayMs = options.queryRetryBaseDelayMs ?? 0;
-        this.queryRetryMaxDelayMs = options.queryRetryMaxDelayMs ?? 60_000;
-        this.queryRetryMaxAttempts = options.queryRetryMaxAttempts ?? 10;
         this.requestTimeoutMs = options.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
         this.pacer = new RequestPacer(options.minRequestIntervalMs ?? DEFAULT_MIN_REQUEST_INTERVAL_MS);
         this.writeBatcher = new JsonWriteBatcher(options.writeBatchDelayMs ?? DEFAULT_WRITE_BATCH_DELAY_MS);
@@ -152,6 +139,17 @@ export class HttpDbPlugin implements IDbPlugin {
         this.querySerializationContext = {
             ignoreQueryForCollections: options.ignoreQueryForCollections ?? [],
         };
+        this.queryRunner = new HttpQueryRunner({
+            requests: this.requests,
+            pacer: this.pacer,
+            requestTimeoutMs: this.requestTimeoutMs,
+            retryBaseDelayMs: options.queryRetryBaseDelayMs ?? 0,
+            retryMaxDelayMs: options.queryRetryMaxDelayMs ?? 60_000,
+            retryMaxAttempts: options.queryRetryMaxAttempts ?? 10,
+            translateRemoteResponse: options.translateRemoteResponse,
+            requestHeaders: () => this.requestHeaders(),
+            notifyAuthError: (event) => this.notifyAuthError(event),
+        });
     }
 
     /** Exposed for composing plugins (e.g. HttpSwrDbPlugin) that need to build request URLs. */
@@ -180,68 +178,6 @@ export class HttpDbPlugin implements IDbPlugin {
         } catch (err) {
             logger.error('[HttpDbPlugin] onAuthError threw', { error: err });
             return false;
-        }
-    }
-
-    /**
-     * Performs one GET request, parses and translates the response. Does not retry; returns success or failure with isAuthError.
-     */
-    private async executeQueryAttempt<TRoot extends {}, TShape>(
-        event: DbPluginQueryEvent<TRoot, TShape>,
-        url: string,
-        attempt: number
-    ): Promise<QueryAttemptResult<TShape>> {
-        const { operation } = event;
-        const { schema } = operation;
-        const collectionName = schema.collectionName;
-
-        try {
-            logger.debug('[HttpDbPlugin] query', { collectionName, eventId: event.id, attempt: attempt + 1 });
-            // Headers per attempt: a token refreshed mid-loop is picked up immediately
-            const headers = await this.requestHeaders();
-            const fetched = await this.getShared(url, headers);
-
-            if (!fetched.ok) {
-                const err = new HttpStatusError(fetched.status, fetched.statusText, fetched.retryAfterMs);
-                const isAuthError = isAuthStatus(fetched.status);
-                return {
-                    success: false,
-                    error: err,
-                    isAuthError,
-                    retryAfterMs: err.retryAfterMs,
-                    ...(isAuthError && { status: fetched.status as 401 | 403 }),
-                };
-            }
-
-            // Parsed per caller, from the shared TEXT. Sharing one parsed body would be cheaper
-            // and wrong: JsonTranslator deserializes in place and sorts in place, so two callers
-            // translating one object graph corrupt each other's results.
-            const body = fetched.text === '' ? null : JSON.parse(fetched.text);
-            const rows =
-                this.translateRemoteResponse != null
-                    ? this.translateRemoteResponse(schema as CompiledSchema<UnknownRecord>, body)
-                    : body;
-            // A date crossed as a string, and the options run below compare Dates. Only the dates:
-            // the rows keep the keys the server sent, for the datastore to deserialize.
-            const reviveDates = getStorageDateReviver(schema as CompiledSchema<UnknownRecord>);
-
-            if (reviveDates != null && Array.isArray(rows)) {
-                for (const row of rows) {
-                    if (row != null && typeof row === 'object') {
-                        reviveDates(row as Record<string, unknown>);
-                    }
-                }
-            }
-
-            const translated = new JsonTranslator(operation).translate(rows);
-
-            // After the request and only on success, so retried attempts don't each report.
-            event.executedQueries.push({ text: `GET ${url}` });
-
-            return { success: true, data: translated };
-        } catch (err) {
-            const error = err instanceof Error ? err : new Error(String(err));
-            return { success: false, error, isAuthError: false };
         }
     }
 
@@ -279,72 +215,25 @@ export class HttpDbPlugin implements IDbPlugin {
         event: DbPluginQueryEvent<TRoot, TShape>,
         done: PluginEventCallbackResult<ITranslatedValue<TShape>>
     ): Promise<void> {
-        const { operation } = event;
-        const collectionName = operation.schema.collectionName;
+        const result = await this.queryConditional(event, null);
 
-        // The server is not ours to know: it is sent in-memory names, and `JsonTranslator` re-runs
-        // the caller's lambdas over the rows it returns, where a `from` property has another key.
-        // Handed back, so neither the request nor the translator carries it.
-        reportRenamedProperties(operation.options);
-
-        const params = buildQueryParams(operation, this.querySerializationContext);
-        const url = buildUrlWithQuery(this.collectionUrl(collectionName), params);
-        // A successful re-auth raises the ceiling by one rather than spending a retry, so the
-        // promised single re-auth attempt happens even when queryRetryMaxAttempts is 1.
-        let attemptsAllowed = Math.max(1, this.queryRetryMaxAttempts);
-        let reauthAttempted = false;
-
-        for (let attempt = 0; attempt < attemptsAllowed; attempt++) {
-            const result = await this.executeQueryAttempt(event, url, attempt);
-
-            if (result.success === true) {
-                done(PluginEventResult.success(event.id, result.data));
-                return;
-            }
-
-            const { error, isAuthError, status, retryAfterMs } = result;
-            if (isAuthError) {
-                const reauthSucceeded = await this.notifyAuthError(buildAuthErrorEvent(error, 'query'));
-
-                if (reauthSucceeded && !reauthAttempted) {
-                    reauthAttempted = true;
-                    attemptsAllowed++;
-                    logger.info('[HttpDbPlugin] re-auth succeeded, retrying query once', { collectionName });
-                    continue;
-                }
-
-                logger.warn('[HttpDbPlugin] query auth error, not retrying', {
-                    collectionName,
-                    status,
-                });
-                done(PluginEventResult.error(event.id, error));
-                return;
-            }
-
-            const hasMoreAttempts = attempt < attemptsAllowed - 1;
-            if (this.queryRetryBaseDelayMs > 0 && hasMoreAttempts) {
-                const delayMs = backoffDelayMs(attempt, this.queryRetryBaseDelayMs, this.queryRetryMaxDelayMs, retryAfterMs ?? null);
-                logger.warn('[HttpDbPlugin] query failed, retrying', {
-                    collectionName,
-                    attempt: attempt + 1,
-                    maxAttempts: attemptsAllowed,
-                    delayMs,
-                    error,
-                });
-                await new Promise((r) => setTimeout(r, delayMs));
-                continue;
-            }
-
-            logger.error('[HttpDbPlugin] query failed', { collectionName, eventId: event.id, error });
-            done(PluginEventResult.error(event.id, error));
+        if (result.kind === 'modified') {
+            done(PluginEventResult.success(event.id, result.data));
             return;
         }
 
-        // Unreachable by design — every path above settles. It exists because the one thing
-        // worse than a failed query is one that never answers: a caller awaiting done() would
-        // hang forever, and the SWR plugin's cache-miss path would never fall back to the store.
-        logger.error('[HttpDbPlugin] query exhausted its attempts without settling', { collectionName, eventId: event.id });
-        done(PluginEventResult.error(event.id, new Error(`Query for ${collectionName} exhausted ${attemptsAllowed} attempts without a result`)));
+        done(PluginEventResult.error(event.id, result.kind === 'failed' ? result.error : new HttpStatusError(304, 'Not Modified', null)));
+    }
+
+    queryConditional<TRoot extends {}, TShape>(event: DbPluginQueryEvent<TRoot, TShape>, ifNoneMatch: string | null): Promise<ConditionalQueryResult<TShape>> {
+        const { operation } = event;
+
+        reportRenamedProperties(operation.options);
+
+        const params = buildQueryParams(operation, this.querySerializationContext);
+        const url = buildUrlWithQuery(this.collectionUrl(operation.schema.collectionName), params);
+
+        return this.queryRunner.run(event, url, ifNoneMatch);
     }
 
     bulkPersist(
@@ -402,47 +291,6 @@ export class HttpDbPlugin implements IDbPlugin {
             logger.error('[HttpDbPlugin] bulkPersist failed', { eventId: event.id, error: err });
             done(PluginEventResult.error(event.id, err instanceof Error ? err : new Error(String(err))));
         }
-    }
-
-    /**
-     * One GET, shared with every concurrent caller asking for the same URL.
-     *
-     * Returns the response TEXT rather than a parsed body precisely because it is shared — see
-     * the note at the parse site. Non-2xx responses are shared too: callers that would all have
-     * failed together should not each spend a request finding that out.
-     */
-    protected getShared(url: string, headers: Record<string, string>): Promise<{
-        ok: boolean;
-        status: number;
-        statusText: string;
-        retryAfterMs: number | null;
-        text: string;
-    }> {
-        return this.pacer.share(`GET ${url}`, async () => {
-            const res = await this.requests.raw(url, {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json', ...headers },
-            }, this.requestTimeoutMs) as {
-                ok: boolean;
-                status: number;
-                statusText: string;
-                headers?: { get?: (name: string) => string | null };
-                json: () => Promise<unknown>;
-                text?: () => Promise<string>;
-            };
-
-            if (!res.ok) {
-                return { ok: false, status: res.status, statusText: res.statusText, retryAfterMs: readRetryAfterMs(res), text: '' };
-            }
-
-            // `text()` where the platform offers it; the fetch mocks in the suites only implement
-            // `json()`, so fall back to re-serializing what they gave us
-            const text = typeof res.text === 'function'
-                ? await res.text()
-                : JSON.stringify(await res.json());
-
-            return { ok: true, status: res.status, statusText: res.statusText, retryAfterMs: null as number | null, text };
-        });
     }
 
     /**

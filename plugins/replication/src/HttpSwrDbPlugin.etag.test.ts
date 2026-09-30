@@ -1,12 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from '@jest/globals';
-import { BulkPersistResult } from '@routier/core/collections';
-import { DbPluginBulkPersistEvent } from '@routier/core/plugins';
-import { PluginEventCallbackPartialResult } from '@routier/core/results';
 import { etags, s } from '@routier/core/schema';
 import { uuid } from '@routier/core/utilities';
 import { MemoryPlugin } from '@routier/memory-plugin';
 import { HttpSwrDbPlugin } from './HttpSwrDbPlugin';
-import { destroyEvent, installFetchMock, persistPlugin, queryPlugin, sleep, waitFor } from './__tests__/httpTestKit';
+import { destroyEvent, installFetchMock, persistPlugin, queryPlugin, RecordingMemoryPlugin, sleep, waitFor } from './__tests__/httpTestKit';
 
 const versionedSchema = s.define('swrVersioned', {
     id: s.string().key().identity(),
@@ -16,14 +13,6 @@ const versionedSchema = s.define('swrVersioned', {
 
 type VersionedRow = { id: string, name: string, version?: number };
 
-class RecordingMemoryPlugin extends MemoryPlugin {
-    readonly writes: DbPluginBulkPersistEvent[] = [];
-
-    override bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackPartialResult<BulkPersistResult>): void {
-        this.writes.push(event);
-        super.bulkPersist(event, done);
-    }
-}
 
 describe('HttpSwrDbPlugin etags', () => {
     let http: ReturnType<typeof installFetchMock>;
