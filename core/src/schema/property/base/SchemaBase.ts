@@ -1,4 +1,4 @@
-import { DefaultValue, ForeignKey, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes, PropertyTransform } from "../../types";
+import { DefaultValue, EtagComparator, EtagValue, ForeignKey, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes, PropertyTransform } from "../../types";
 
 export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifiers> {
 
@@ -12,6 +12,8 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
     isIdentity: boolean = false;
     isReadonly: boolean = false;
     isDistinct: boolean = false;
+    isEtag: boolean = false;
+    etagComparator: EtagComparator<EtagValue> | null = null;
     /**
      * Set by `.modify(x => x.transform(...))`. A live reference, never stringified.
      * `null` when the property is stored as it is.
@@ -94,6 +96,8 @@ export abstract class SchemaBase<T extends any, TModifiers extends SchemaModifie
             this.maxLength = entity.maxLength;
             this.isSearchable = entity.isSearchable;
             this.isDistinct = entity.isDistinct;
+            this.isEtag = entity.isEtag;
+            this.etagComparator = entity.etagComparator;
         }
 
         if (literals) {

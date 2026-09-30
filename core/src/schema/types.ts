@@ -227,6 +227,7 @@ export type CompiledSchema<TEntity extends {}> = {
     hasIdentities: boolean;
     /** List of properties that are identity keys. */
     idProperties: PropertyInfo<TEntity>[];
+    etagProperty: PropertyInfo<TEntity> | null;
     /** All property metadata for the schema. */
     properties: PropertyInfo<TEntity>[],
     /** The hash type used for this schema. */
@@ -321,7 +322,11 @@ export type SchemaModifiers = "default" | "deserialize" |
     "nullable" | "optional" |
     "readonly" | "serialize" |
     "unmapped" | "computed" |
-    "distinct" | "searchable";
+    "distinct" | "searchable" | "etag";
+
+export type EtagValue = number | string;
+
+export type EtagComparator<T> = (prev: T, next: T) => number;
 
 /**
  * What a tagged property infers to.
@@ -398,19 +403,32 @@ type IsPlainProperty<T, K extends keyof T> =
     [
         HasModifier<T, K, "readonly">,
         HasModifier<T, K, "optional">,
-        HasModifier<T, K, "nullable">
+        HasModifier<T, K, "nullable">,
+        HasModifier<T, K, "etag">
     ] extends [
+        false,
         false,
         false,
         false
     ] ? true : false;
 
+type IsModifiedProperty<T, K extends keyof T, M extends SchemaModifiers> =
+    [HasModifier<T, K, M>, HasModifier<T, K, "etag">] extends [true, false] ? true : false;
+
+type IsEtagProperty<T, K extends keyof T, TOptional extends boolean> =
+    [HasModifier<T, K, "etag">, HasModifier<T, K, "optional">] extends [true, TOptional] ? true : false;
+
+type InferEtagValue<T, K extends keyof T> =
+    HasModifier<T, K, "nullable"> extends true ? null | InferPrimitive<T[K]> : InferPrimitive<T[K]>;
+
 type IsCreateExcluded<T, K extends keyof T> =
     [
         HasModifier<T, K, "identity">,
         HasModifier<T, K, "computed">,
-        HasModifier<T, K, "unmapped">
+        HasModifier<T, K, "unmapped">,
+        HasModifier<T, K, "etag">
     ] extends [
+        false,
         false,
         false,
         false
@@ -455,12 +473,18 @@ type InferCreateProperty<T, K extends keyof T> =
 type InferCompiledSchema<T> = CoalesceEmpty<{
     [K in keyof T as IsPlainProperty<T, K> extends true ? K : never]: InferPrimitive<T[K]>
 }, {
-        readonly [K in keyof T as HasModifier<T, K, "readonly"> extends true ? K : never]: InferPrimitive<T[K]>
+        readonly [K in keyof T as IsModifiedProperty<T, K, "readonly"> extends true ? K : never]: InferPrimitive<T[K]>
     }, {
-        [K in keyof T as HasModifier<T, K, "optional"> extends true ? K : never]?: InferPrimitive<T[K]>
+        [K in keyof T as IsModifiedProperty<T, K, "optional"> extends true ? K : never]?: InferPrimitive<T[K]>
     }, {
-        [K in keyof T as HasModifier<T, K, "nullable"> extends true ? K : never]: null | InferPrimitive<T[K]>
-}>;
+        [K in keyof T as IsModifiedProperty<T, K, "nullable"> extends true ? K : never]: null | InferPrimitive<T[K]>
+}> & InferEtagSchema<T>;
+
+type InferEtagSchema<T> = CoalesceEmpty<{
+    readonly [K in keyof T as IsEtagProperty<T, K, false> extends true ? K : never]: InferEtagValue<T, K>
+}, {
+        readonly [K in keyof T as IsEtagProperty<T, K, true> extends true ? K : never]?: InferEtagValue<T, K>
+    }, {}, {}>;
 
 type InferCompiledCreateSchema<T> = {
     [K in keyof T as IsCreateExcluded<T, K> extends true ? never

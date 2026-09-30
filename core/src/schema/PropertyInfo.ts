@@ -1,7 +1,7 @@
 import { UnknownRecord } from '../utilities';
 import { SchemaBase } from './property/base/SchemaBase';
 import { SchemaArray } from './property/types/SchemaArray';
-import { DefaultValue, ForeignKey, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaTypes, PropertyTransform } from './types';
+import { DefaultValue, EtagComparator, EtagValue, ForeignKey, FunctionBody, PropertyDeserializer, PropertySerializer, SchemaTypes, PropertyTransform } from './types';
 
 /**
  * Represents metadata and utilities for a property in a schema, including its type, name, parent, children, and serialization details.
@@ -35,6 +35,8 @@ export class PropertyInfo<T extends {}> {
     readonly isIdentity: boolean;
     /** Whether the property is readonly. */
     readonly isReadonly: boolean;
+    readonly isEtag: boolean;
+    readonly etagComparator: EtagComparator<EtagValue> | null;
     /** Whether the property is unmapped. */
     readonly isUnmapped: boolean;
     /** Whether the property is distinct. */
@@ -119,6 +121,8 @@ export class PropertyInfo<T extends {}> {
         this.isKey = schema.isKey;
         this.isIdentity = schema.isIdentity;
         this.isReadonly = schema.isReadonly;
+        this.isEtag = schema.isEtag;
+        this.etagComparator = schema.etagComparator;
         this.isUnmapped = schema.isUnmapped;
         this.injected = schema.injected;
         this.isDistinct = schema.isDistinct;

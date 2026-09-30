@@ -26,6 +26,7 @@ import { CompareIdsHandlerBuilder } from '../codegen/handlers/CompareIdsHandlerB
 import { StandardJSONSchemaV1, createStandardJsonSchemaProps, rehydrateSchemaFromJsonString } from './utils/standardJsonSchema';
 import { SetHandlerBuilder } from '../codegen/handlers';
 import { createChangeTracker } from './changeTracker';
+import { findEtagProperty } from './utils/etagProperty';
 
 function assertPropertyHandled(generatorName: string, property: PropertyInfo<any>, result: unknown): asserts result is {} {
     if (result == null) {
@@ -561,6 +562,8 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                 throw new Error(`Schema must have a key.  Use .key() to mark a property as a key.  Collection Name: ${this.collectionName}`)
             }
 
+            const etagProperty = findEtagProperty(properties, this.collectionName);
+
             /**
              * The two things `.searchable()` cannot express in its own type.
              *
@@ -767,6 +770,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                 getProperty,
                 properties,
                 idProperties,
+                etagProperty,
                 hasIdentities,
                 hashType,
                 getHashType: getHashTypeFunction,
