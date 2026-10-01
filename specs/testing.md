@@ -129,6 +129,14 @@ E2E proves the system against real storage engines and real runtimes.
 | PouchDB | memory adapter every run; leveldown nightly | mixed |
 | React bindings | @testing-library/react + jsdom | every CI run |
 
+Locally, the server-backed suites run against the home Kubernetes cluster, not local containers.
+`npm run test:e2e:k8s` (or `npm run test:stress:k8s`) applies `deploy/k8s/e2e` to the
+`routier-e2e` namespace, waits for PostgreSQL, pgvector, MySQL, MongoDB, CouchDB and an S3 server,
+port-forwards them, and sets the `ROUTIER_*` variables. The helpers in `e2e/servers` then give each
+suite its own fresh database on those servers. Without the variables the helpers start
+testcontainers instead, which is what GitHub CI does. Pass `--keep` to leave the namespace up
+between runs; otherwise the script deletes it.
+
 Each E2E target runs: the plugin contract kit, a persistence-across-restart scenario (write, close, reopen, verify), and a small soak scenario (10k entities, mixed operations, verify final state against the oracle).
 
 Prerequisite: fix the install story. `leveldown` breaks `npm install` for every contributor. Move native-dependency plugins behind `optionalDependencies` or a separate install step so the default workspace installs and tests cleanly.

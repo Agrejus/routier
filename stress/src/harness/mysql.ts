@@ -1,4 +1,4 @@
-import { MySqlContainer, StartedMySqlContainer } from '@testcontainers/mysql';
+import { MysqlServer, startMysql } from '../../../e2e/servers';
 import { IDbPlugin } from '@routier/core';
 import { MysqlDbPlugin } from '@routier/mysql-plugin';
 
@@ -18,15 +18,13 @@ import { MysqlDbPlugin } from '@routier/mysql-plugin';
  * of that is observable against Postgres, and a green Postgres run says nothing about it.
  */
 
-const IMAGE = 'mysql:8.0';
-
 export class MysqlHarness {
-    private container: StartedMySqlContainer | null = null;
+    private container: MysqlServer | null = null;
     private readonly plugins: IDbPlugin[] = [];
 
     /** Starts the server. Call from `beforeAll` — allow a generous timeout, MySQL is slow to boot. */
     async start(): Promise<void> {
-        this.container = await new MySqlContainer(IMAGE).start();
+        this.container = await startMysql();
     }
 
     /**

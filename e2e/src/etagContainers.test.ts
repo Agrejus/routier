@@ -1,111 +1,93 @@
 import { afterAll, beforeAll, describe } from '@jest/globals';
-import { MongoDBContainer, StartedMongoDBContainer } from '@testcontainers/mongodb';
-import { MySqlContainer, StartedMySqlContainer } from '@testcontainers/mysql';
 import { MongoClient } from 'mongodb';
 import { MongoClientDriver, MongoDbPlugin } from '@routier/mongodb-plugin';
-import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { MysqlDbPlugin } from '@routier/mysql-plugin';
 import { PostgresDbPlugin } from '@routier/postgresql-plugin';
 import { describeEtagContract } from '@routier/test-utils';
+import { MongoServer, MysqlServer, PostgresServer, startMongo, startMysql, startPostgres } from '../servers';
 
 const suite = process.env.E2E_CONTAINERS === '1' ? describe : describe.skip;
 
 const DATABASE_COUNT = 16;
-const databaseNames = Array.from({ length: DATABASE_COUNT }, (_, index) => `etag_${index}`);
 
-const takeDatabase = (taken: { next: number }): string => {
-    const database = databaseNames[taken.next++];
+const databasesFrom = async (create: () => Promise<string>): Promise<string[]> => {
+    const names: string[] = [];
 
-    if (database == null) {
+    for (let index = 0; index < DATABASE_COUNT; index++) {
+        names.push(await create());
+    }
+
+    return names;
+};
+
+const take = (names: string[]): string => {
+    const name = names.shift();
+
+    if (name == null) {
         throw new Error(`The etag contract used more than ${DATABASE_COUNT} databases`);
     }
 
-    return database;
+    return name;
 };
 
 suite('etag contract: postgresql', () => {
-    let container: StartedPostgreSqlContainer;
-    const taken = { next: 0 };
+    let server: PostgresServer;
+    let databases: string[] = [];
 
     beforeAll(async () => {
-        container = await new PostgreSqlContainer('postgres:16-alpine').start();
-        const { Client } = await import('pg');
-        const admin = new Client({ connectionString: container.getConnectionUri() });
-        await admin.connect();
-
-        try {
-            for (const name of databaseNames) {
-                await admin.query(`CREATE DATABASE ${name}`);
-            }
-        } finally {
-            await admin.end();
-        }
+        server = await startPostgres();
+        databases = await databasesFrom(server.createDatabase);
     }, 300_000);
 
     afterAll(async () => {
-        await container?.stop();
+        await server?.stop();
     });
 
     describeEtagContract('postgresql', () => new PostgresDbPlugin({
-        host: container.getHost(),
-        port: container.getPort(),
-        database: takeDatabase(taken),
-        user: container.getUsername(),
-        password: container.getPassword(),
+        host: server.getHost(),
+        port: server.getPort(),
+        database: take(databases),
+        user: server.getUsername(),
+        password: server.getPassword(),
     }));
 });
 
 suite('etag contract: mysql', () => {
-    let container: StartedMySqlContainer;
-    const taken = { next: 0 };
+    let server: MysqlServer;
+    let databases: string[] = [];
 
     beforeAll(async () => {
-        container = await new MySqlContainer('mysql:8.0').start();
-        const { createConnection } = await import('mysql2/promise');
-        const admin = await createConnection({
-            host: container.getHost(),
-            port: container.getPort(),
-            user: 'root',
-            password: container.getRootPassword(),
-        });
-
-        try {
-            for (const name of databaseNames) {
-                await admin.query(`CREATE DATABASE IF NOT EXISTS \`${name}\``);
-            }
-        } finally {
-            await admin.end();
-        }
+        server = await startMysql();
+        databases = await databasesFrom(server.createDatabase);
     }, 300_000);
 
     afterAll(async () => {
-        await container?.stop();
+        await server?.stop();
     });
 
     describeEtagContract('mysql', () => new MysqlDbPlugin({
-        host: container.getHost(),
-        port: container.getPort(),
-        database: takeDatabase(taken),
+        host: server.getHost(),
+        port: server.getPort(),
+        database: take(databases),
         user: 'root',
-        password: container.getRootPassword(),
+        password: server.getRootPassword(),
     }));
 });
 
 suite('etag contract: mongodb', () => {
-    let container: StartedMongoDBContainer;
-    let client: MongoClient;
-    const taken = { next: 0 };
+    let server: MongoServer;
 
     beforeAll(async () => {
-        container = await new MongoDBContainer('mongo:7').start();
-        client = new MongoClient(container.getConnectionString(), { directConnection: true });
-        await client.connect();
+        server = await startMongo();
     }, 300_000);
 
     afterAll(async () => {
-        await client?.close();
-        await container?.stop();
+        await server?.stop();
     });
 
-    describeEtagContract('mongodb', () => new MongoDbPlugin(new MongoClientDriver(client, takeDatabase(taken), { transactions: 'required' })));
+    describeEtagContract('mongodb', () => new MongoDbPlugin(new MongoClientDriver(
+        new MongoClient(server.getConnectionString(), { directConnection: true }),
+        server.databaseName('etag'),
+        { transactions: 'required' },
+    )));
 });

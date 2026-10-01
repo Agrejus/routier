@@ -1,5 +1,5 @@
+import { MysqlServer, startMysql } from '../servers';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
-import { MySqlContainer, StartedMySqlContainer } from '@testcontainers/mysql';
 import { s } from '@routier/core/schema';
 import { uuidv4 } from '@routier/core';
 import { ConcurrencyDbPlugin, OptimisticConcurrencyError } from '@routier/core';
@@ -43,7 +43,7 @@ class ProductStore extends DataStore {
 }
 
 suite('MySQL via testcontainers', () => {
-    let container: StartedMySqlContainer;
+    let container: MysqlServer;
     let store: ProductStore;
 
     /** Opened inside a test, disposed after it — each plugin builds its own mysql2 pool. */
@@ -70,7 +70,7 @@ suite('MySQL via testcontainers', () => {
     });
 
     beforeAll(async () => {
-        container = await new MySqlContainer('mysql:8.0').start();
+        container = await startMysql();
         // Not tracked: shared by every test, disposed in afterAll. `destroy()` ends the
         // pool and does not drop tables, so per-test disposal leaves these rows alone.
         store = new ProductStore(new MysqlDbPlugin(pluginConfig()));
@@ -603,7 +603,7 @@ suite('MySQL via testcontainers', () => {
  */
 if (shouldRun) {
     describe('MySQL plugin contract', () => {
-        let container: StartedMySqlContainer;
+        let container: MysqlServer;
 
         /** Enough for every `store()` call the kit makes, with headroom. */
         const DATABASE_COUNT = 260;
@@ -611,26 +611,10 @@ if (shouldRun) {
         let nextDatabase = 0;
 
         beforeAll(async () => {
-            container = await new MySqlContainer('mysql:8.0').start();
+            container = await startMysql();
 
-            // mysql2 is only a devDependency of the plugin, but it is installed — the kit
-            // needs raw access to create the databases the plugin will then connect to.
-            const { createConnection } = await import('mysql2/promise');
-            const admin = await createConnection({
-                host: container.getHost(),
-                port: container.getPort(),
-                user: 'root',
-                password: container.getRootPassword(),
-            });
-
-            try {
-                for (let i = 0; i < DATABASE_COUNT; i++) {
-                    const name = `contract_${i}`;
-                    await admin.query(`CREATE DATABASE IF NOT EXISTS \`${name}\``);
-                    databaseNames.push(name);
-                }
-            } finally {
-                await admin.end();
+            for (let i = 0; i < DATABASE_COUNT; i++) {
+                databaseNames.push(await container.createDatabase());
             }
         }, 300_000);
 

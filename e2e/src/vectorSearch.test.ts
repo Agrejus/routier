@@ -1,7 +1,5 @@
+import { MongoServer, MysqlServer, PostgresServer, startMongo, startMysql, startPgvector, startPostgres } from '../servers';
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
-import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import { MySqlContainer, StartedMySqlContainer } from '@testcontainers/mysql';
-import { MongoDBContainer, StartedMongoDBContainer } from '@testcontainers/mongodb';
 import { MongoClient } from 'mongodb';
 import { describeFullTextSearch, describeVectorSearch, vectorContractSchema } from '@routier/test-utils';
 import { PostgresDbPlugin } from '@routier/postgresql-plugin';
@@ -27,14 +25,16 @@ const suite = shouldRun ? describe : describe.skip;
 suite('vector search on server-backed stores', () => {
 
     /** Stock PostgreSQL: no pgvector, so JSONB storage and in-memory scoring. */
-    let plainPostgres: StartedPostgreSqlContainer;
+    let plainPostgres: PostgresServer;
     /** The same server with the extension available, so a native column and `<=>`. */
-    let vectorPostgres: StartedPostgreSqlContainer;
-    let mysql: StartedMySqlContainer;
-    let mongo: StartedMongoDBContainer;
+    let vectorPostgres: PostgresServer;
+    let mysql: MysqlServer;
+    let mongo: MongoServer;
     let mongoClient: MongoClient;
+    let searchDatabase: string;
+    let vectorDatabase: string;
 
-    const postgresConfig = (container: StartedPostgreSqlContainer) => ({
+    const postgresConfig = (container: PostgresServer) => ({
         host: container.getHost(),
         port: container.getPort(),
         database: container.getDatabase(),
@@ -53,14 +53,16 @@ suite('vector search on server-backed stores', () => {
 
     beforeAll(async () => {
         [plainPostgres, vectorPostgres, mysql, mongo] = await Promise.all([
-            new PostgreSqlContainer('postgres:16-alpine').start(),
-            new PostgreSqlContainer('pgvector/pgvector:pg16').start(),
-            new MySqlContainer('mysql:8').start(),
-            new MongoDBContainer('mongo:7').start(),
+            startPostgres(),
+            startPgvector(),
+            startMysql(),
+            startMongo(),
         ]);
 
         // `directConnection` is required against a single-node replica set: without it the
         // driver tries to discover other members and never finds a primary.
+        searchDatabase = mongo.databaseName('routier_search_e2e');
+        vectorDatabase = mongo.databaseName('routier_vector_e2e');
         mongoClient = new MongoClient(mongo.getConnectionString(), { directConnection: true });
         await mongoClient.connect();
     }, 300_000);
@@ -95,7 +97,7 @@ suite('vector search on server-backed stores', () => {
 
     describeFullTextSearch(
         'MongoDB',
-        () => new MongoDbPlugin(new MongoClientDriver(mongoClient as never, 'routier_search_e2e', { transactions: 'required' })),
+        () => new MongoDbPlugin(new MongoClientDriver(mongoClient as never, searchDatabase, { transactions: 'required' })),
         { borrowsConnection: true },
     );
 
@@ -112,7 +114,7 @@ suite('vector search on server-backed stores', () => {
 
     describeVectorSearch(
         'MongoDB (BSON array, scored in memory)',
-        () => new MongoDbPlugin(new MongoClientDriver(mongoClient as never, 'routier_vector_e2e', { transactions: 'required' })),
+        () => new MongoDbPlugin(new MongoClientDriver(mongoClient as never, vectorDatabase, { transactions: 'required' })),
         // The client is opened here and shared by every plugin, and `MongoDbPlugin.destroy`
         // closes the client it is given. Letting the suite tear stores down would close this
         // one after the first test.
@@ -124,7 +126,7 @@ suite('vector search on server-backed stores', () => {
         // also why they cannot tell the two PostgreSQL paths apart. This reads the column type
         // directly, so a regression that quietly stopped pushing anything down — leaving both
         // servers on the JSONB path — fails here rather than passing silently everywhere.
-        const columnType = async (container: StartedPostgreSqlContainer) => {
+        const columnType = async (container: PostgresServer) => {
             const { Client } = await import('pg');
             const client = new Client(postgresConfig(container));
 

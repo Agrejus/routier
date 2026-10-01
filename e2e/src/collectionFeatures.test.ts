@@ -1,8 +1,8 @@
+import { PostgresServer, startPostgres } from '../servers';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { CacheDbPlugin, RetryDbPlugin } from '@routier/core/plugins';
 import { IDbPlugin, uuidv4 } from '@routier/core';
 import { s } from '@routier/core/schema';
@@ -78,7 +78,7 @@ type Subject = {
 
 const subjects: Subject[] = [];
 const files: string[] = [];
-let container: StartedPostgreSqlContainer | undefined;
+let container: PostgresServer | undefined;
 
 const shouldRunContainers = process.env.E2E_CONTAINERS === '1';
 
@@ -94,7 +94,7 @@ beforeAll(async () => {
     });
 
     if (shouldRunContainers) {
-        container = await new PostgreSqlContainer('postgres:16-alpine').start();
+        container = await startPostgres();
 
         const config = {
             host: container.getHost(),

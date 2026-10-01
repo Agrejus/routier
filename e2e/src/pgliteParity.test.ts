@@ -1,5 +1,5 @@
+import { PostgresServer, startPostgres } from '../servers';
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
-import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { PGlite } from '@electric-sql/pglite';
 import { s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
@@ -51,13 +51,13 @@ const seed = {
 } as const;
 
 suite('PGlite and node-postgres decode a row the same way', () => {
-    let container: StartedPostgreSqlContainer;
+    let container: PostgresServer;
     let database: PGlite;
     let server: Store;
     let wasm: Store;
 
     beforeAll(async () => {
-        container = await new PostgreSqlContainer('postgres:16-alpine').start();
+        container = await startPostgres();
         database = await PGlite.create('memory://parity');
 
         server = new Store(new PostgresDbPlugin({

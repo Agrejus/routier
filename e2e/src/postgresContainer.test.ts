@@ -1,5 +1,5 @@
+import { PostgresServer, startPostgres } from '../servers';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
-import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { uuidv4 } from '@routier/core';
 import { s } from '@routier/core/schema';
 import { ConcurrencyDbPlugin, OptimisticConcurrencyError } from '@routier/core';
@@ -47,7 +47,7 @@ class ProductStore extends DataStore {
 }
 
 suite('PostgreSQL via testcontainers', () => {
-    let container: StartedPostgreSqlContainer;
+    let container: PostgresServer;
     let store: ProductStore;
 
     /**
@@ -83,7 +83,7 @@ suite('PostgreSQL via testcontainers', () => {
     });
 
     beforeAll(async () => {
-        container = await new PostgreSqlContainer('postgres:16-alpine').start();
+        container = await startPostgres();
         // NOT tracked in `opened`: this one is shared by every test and lives until
         // afterAll. `destroy()` here only ends the pool — it does not drop tables — so
         // disposing the per-test stores leaves the seeded rows on the server.
@@ -493,11 +493,11 @@ disconnectSuite('PostgreSQL disconnect during use', () => {
         rows = this.collection(schema).proxy().create();
     }
 
-    let container: StartedPostgreSqlContainer;
+    let container: PostgresServer;
     let store: Store;
 
     beforeAll(async () => {
-        container = await new PostgreSqlContainer('postgres:16-alpine').start();
+        container = await startPostgres();
         store = new Store(new PostgresDbPlugin({
             host: container.getHost(),
             port: container.getPort(),
@@ -538,10 +538,10 @@ disconnectSuite('PostgreSQL disconnect during use', () => {
 const dateSuite = shouldRun ? describe : describe.skip;
 
 dateSuite('identity key with a date property', () => {
-    let container: StartedPostgreSqlContainer;
+    let container: PostgresServer;
 
     beforeAll(async () => {
-        container = await new PostgreSqlContainer('postgres:16-alpine').start();
+        container = await startPostgres();
     }, 180_000);
 
     afterAll(async () => {

@@ -1,5 +1,5 @@
+import { PostgresServer, startPostgres } from '../servers';
 import { afterAll, beforeAll, describe, it } from '@jest/globals';
-import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { Client } from 'pg';
 import { PostgresDbPlugin } from '@routier/postgresql-plugin';
 import { describeJoinContract } from '@routier/test-utils';
@@ -20,7 +20,7 @@ import { describeJoinContract } from '@routier/test-utils';
 
 const shouldRun = process.env.E2E_CONTAINERS === '1';
 
-let container: StartedPostgreSqlContainer;
+let container: PostgresServer;
 
 /**
  * A fresh DATABASE per store, because the contract seeds its fixture once per test.
@@ -69,7 +69,7 @@ const createDatabases = async (count: number) => {
 
 if (shouldRun) {
     beforeAll(async () => {
-        container = await new PostgreSqlContainer('postgres:16-alpine').start();
+        container = await startPostgres();
 
         // Comfortably more than the suite has tests. An unused database costs nothing and
         // running out mid-suite would fail in a way that looks like a join defect.

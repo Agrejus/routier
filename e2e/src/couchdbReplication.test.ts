@@ -1,5 +1,5 @@
+import { CouchDbServer, startCouchDb } from '../servers';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
-import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
 import { uuidv4 } from '@routier/core';
 import { s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
@@ -22,8 +22,6 @@ import { PouchDbPlugin } from '@routier/pouchdb-plugin';
 const shouldRun = process.env.E2E_CONTAINERS === '1';
 const suite = shouldRun ? describe : describe.skip;
 
-const COUCH_USER = 'admin';
-const COUCH_PASSWORD = 'routier-test';
 
 const schema = s.define('couch_rows', {
     _id: s.string().key().identity(),
@@ -43,7 +41,7 @@ class Store extends DataStore {
 }
 
 suite('PouchDB replication against CouchDB', () => {
-    let container: StartedTestContainer;
+    let couch: CouchDbServer;
     let remoteBase: string;
 
     const stores: Store[] = [];
@@ -64,13 +62,13 @@ suite('PouchDB replication against CouchDB', () => {
 
     /** Credentials inline, which is how PouchDB addresses a protected CouchDB database. */
     const remoteFor = (database: string) =>
-        `${remoteBase.replace('http://', `http://${COUCH_USER}:${COUCH_PASSWORD}@`)}/${database}`;
+        `${remoteBase.replace('http://', `http://${couch.user}:${couch.password}@`)}/${database}`;
 
     const createRemoteDatabase = async (database: string) => {
         const response = await fetch(`${remoteBase}/${database}`, {
             method: 'PUT',
             headers: {
-                Authorization: `Basic ${Buffer.from(`${COUCH_USER}:${COUCH_PASSWORD}`).toString('base64')}`,
+                Authorization: `Basic ${Buffer.from(`${couch.user}:${couch.password}`).toString('base64')}`,
             },
         });
 
@@ -83,7 +81,7 @@ suite('PouchDB replication against CouchDB', () => {
     const remoteDocumentCount = async (database: string) => {
         const response = await fetch(`${remoteBase}/${database}/_all_docs`, {
             headers: {
-                Authorization: `Basic ${Buffer.from(`${COUCH_USER}:${COUCH_PASSWORD}`).toString('base64')}`,
+                Authorization: `Basic ${Buffer.from(`${couch.user}:${couch.password}`).toString('base64')}`,
             },
         });
         const body = await response.json() as { rows?: unknown[] };
@@ -108,19 +106,8 @@ suite('PouchDB replication against CouchDB', () => {
     };
 
     beforeAll(async () => {
-        container = await new GenericContainer('couchdb:3')
-            .withEnvironment({
-                COUCHDB_USER: COUCH_USER,
-                COUCHDB_PASSWORD: COUCH_PASSWORD,
-            })
-            .withExposedPorts(5984)
-            // The port accepts connections before CouchDB finishes setting up its system
-            // databases, and a replication started in that window fails with a 404 that
-            // looks like a plugin bug.
-            .withWaitStrategy(Wait.forHttp('/_up', 5984).forStatusCode(200))
-            .start();
-
-        remoteBase = `http://${container.getHost()}:${container.getMappedPort(5984)}`;
+        couch = await startCouchDb();
+        remoteBase = couch.url;
     }, 180_000);
 
     afterEach(async () => {
@@ -130,7 +117,7 @@ suite('PouchDB replication against CouchDB', () => {
     });
 
     afterAll(async () => {
-        await container?.stop();
+        await couch?.stop();
     });
 
     it('replicates a saved document to the remote', async () => {
@@ -158,7 +145,7 @@ suite('PouchDB replication against CouchDB', () => {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Basic ${Buffer.from(`${COUCH_USER}:${COUCH_PASSWORD}`).toString('base64')}`,
+                Authorization: `Basic ${Buffer.from(`${couch.user}:${couch.password}`).toString('base64')}`,
             },
             body: JSON.stringify({ label: 'from-server', documentType: 'couch_rows' }),
         });
@@ -228,7 +215,7 @@ suite('PouchDB replication against CouchDB', () => {
 
         const errors: unknown[] = [];
         const { store, plugin } = open(`local-auth-${uuidv4()}`, {
-            remoteDb: `${remoteBase.replace('http://', `http://${COUCH_USER}:wrong-password@`)}/${database}`,
+            remoteDb: `${remoteBase.replace('http://', `http://${couch.user}:wrong-password@`)}/${database}`,
             live: true,
             retry: false,
             onError: (_schemas, error) => { errors.push(error); },

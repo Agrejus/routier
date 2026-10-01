@@ -1,8 +1,8 @@
+import { PostgresServer, startPostgres } from '../servers';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { IDbPlugin, uuidv4 } from '@routier/core';
 import { s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
@@ -104,7 +104,7 @@ type Subject = { readonly name: string, readonly plugin: () => IDbPlugin };
 
 const subjects: Subject[] = [];
 const directories: string[] = [];
-let container: StartedPostgreSqlContainer | undefined;
+let container: PostgresServer | undefined;
 
 const shouldRunContainers = process.env.E2E_CONTAINERS === '1';
 
@@ -116,7 +116,7 @@ beforeAll(async () => {
     subjects.push({ name: 'SQLite', plugin: () => new SqliteDbPlugin(file) });
 
     if (shouldRunContainers) {
-        container = await new PostgreSqlContainer('postgres:16-alpine').start();
+        container = await startPostgres();
 
         const config = {
             host: container.getHost(),
