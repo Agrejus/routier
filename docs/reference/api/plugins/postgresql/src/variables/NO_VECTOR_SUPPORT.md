@@ -8,6 +8,6 @@
 
 > `const` **NO\_VECTOR\_SUPPORT**: [`PostgresVectorSupport`](../type-aliases/PostgresVectorSupport.md)
 
-Defined in: plugins/postgres-core/dist/utils.d.ts:19
+Defined in: plugins/postgres-core/dist/utils.d.ts:20
 
 What to assume before a probe has run: nothing. Storing JSON always works.

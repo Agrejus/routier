@@ -9,3 +9,7 @@
 ## Classes
 
 - [PouchDbPlugin](classes/PouchDbPlugin.md)
+
+## Variables
+
+- [pouchRevision](variables/pouchRevision.md)

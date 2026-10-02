@@ -8,7 +8,7 @@
 
 > `const` **isUuidColumn**: \<`T`\>(`schema`, `property`) => `boolean`
 
-Defined in: plugins/postgres-core/dist/utils.d.ts:63
+Defined in: plugins/postgres-core/dist/utils.d.ts:64
 
 Whether this property's column is declared `UUID` — a single STRING identity key, and only that.
 

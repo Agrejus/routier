@@ -33,3 +33,11 @@ plugin turns it into an OptimisticConcurrencyError.
 Defined in: [plugins/mongodb/src/driver.ts:29](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/driver.ts#L29)
 
 The `$set` payload: what changed, in document terms.
+
+***
+
+### replace
+
+> `readonly` **replace**: `boolean`
+
+Defined in: [plugins/mongodb/src/driver.ts:30](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/driver.ts#L30)

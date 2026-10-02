@@ -6,7 +6,7 @@
 
 # Interface: Props\<Input, Output\>
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:17](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L17)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:18](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L18)
 
 ## Extended by
 
@@ -28,7 +28,7 @@ Defined in: [core/src/schema/utils/standardJsonSchema.ts:17](https://github.com/
 
 > `readonly` **version**: `1`
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:18](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L18)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:19](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L19)
 
 ***
 
@@ -36,7 +36,7 @@ Defined in: [core/src/schema/utils/standardJsonSchema.ts:18](https://github.com/
 
 > `readonly` **vendor**: `string`
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:19](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L19)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:20](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L20)
 
 ***
 
@@ -44,4 +44,4 @@ Defined in: [core/src/schema/utils/standardJsonSchema.ts:19](https://github.com/
 
 > `readonly` `optional` **types**: [`Types`](Types.md)\<`Input`, `Output`\>
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:20](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L20)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:21](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L21)

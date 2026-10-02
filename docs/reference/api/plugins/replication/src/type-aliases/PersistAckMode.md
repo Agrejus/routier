@@ -8,4 +8,4 @@
 
 > **PersistAckMode** = `"after-source"` \| `"after-all"`
 
-Defined in: [plugins/replication/src/PluginSyncEngine.ts:22](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L22)
+Defined in: [plugins/replication/src/PluginSyncEngine.ts:23](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L23)

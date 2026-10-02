@@ -8,4 +8,4 @@
 
 > **Target** = `"draft-2020-12"` \| `"draft-07"` \| `"openapi-3.0"` \| `object` & `string`
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:48](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L48)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:49](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L49)

@@ -8,7 +8,7 @@
 
 > **subscribeLiveQuery**\<`T`\>(`query`, `onState`): () => `void`
 
-Defined in: core/src/results/liveQuery.ts:48
+Defined in: [core/src/results/liveQuery.ts:48](https://github.com/Agrejus/routier/blob/main/core/src/results/liveQuery.ts#L48)
 
 ## Type Parameters
 

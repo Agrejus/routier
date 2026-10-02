@@ -8,7 +8,7 @@
 
 > **SerializedResponse** = \{ `ok`: `true`; `kind`: `"query"`; `value`: `unknown`; `executedQueries?`: [`ExecutedQuery`](ExecutedQuery.md)[]; \} \| \{ `ok`: `true`; `kind`: `"persist"`; `changes`: `object`[]; \} \| \{ `ok`: `true`; `kind`: `"destroy"`; \} \| \{ `ok`: `false`; `error`: `string`; \}
 
-Defined in: [core/src/plugins/wire/types.ts:95](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/types.ts#L95)
+Defined in: [core/src/plugins/wire/types.ts:96](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/types.ts#L96)
 
 What a receiver sends back. Errors are a value, not a transport status.
 

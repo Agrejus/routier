@@ -8,7 +8,7 @@
 
 > **buildSelectFromExpression**\<`TEntity`, `TShape`\>(`options`): `object`
 
-Defined in: plugins/postgres-core/dist/utils.d.ts:41
+Defined in: plugins/postgres-core/dist/utils.d.ts:42
 
 Builds a SELECT statement from a table, an Expression, and optional columns.
 

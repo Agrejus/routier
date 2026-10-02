@@ -8,7 +8,7 @@
 
 > **PropertyDeserializer**\<`T`\> = (`value`) => `T`
 
-Defined in: [core/src/schema/types.ts:274](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L274)
+Defined in: [core/src/schema/types.ts:275](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L275)
 
 ## Type Parameters
 

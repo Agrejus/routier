@@ -6,8 +6,14 @@
 
 # Type Alias: DbPluginBulkPersistEvent
 
-> **DbPluginBulkPersistEvent** = [`DbPluginOperationEvent`](DbPluginOperationEvent.md)\<[`BulkPersistChanges`](../classes/BulkPersistChanges.md)\>
+> **DbPluginBulkPersistEvent** = [`DbPluginOperationEvent`](DbPluginOperationEvent.md)\<[`BulkPersistChanges`](../classes/BulkPersistChanges.md)\> & `object`
 
 Defined in: [core/src/plugins/types.ts:102](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L102)
 
 Event for bulk operations, including schema, parent, and the entity changes.
+
+## Type Declaration
+
+### etags?
+
+> `optional` **etags**: [`EtagMode`](EtagMode.md)

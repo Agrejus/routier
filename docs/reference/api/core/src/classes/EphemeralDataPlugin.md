@@ -6,7 +6,7 @@
 
 # Abstract Class: EphemeralDataPlugin
 
-Defined in: [core/src/plugins/EphemeralDataPlugin.ts:45](https://github.com/Agrejus/routier/blob/main/core/src/plugins/EphemeralDataPlugin.ts#L45)
+Defined in: [core/src/plugins/EphemeralDataPlugin.ts:46](https://github.com/Agrejus/routier/blob/main/core/src/plugins/EphemeralDataPlugin.ts#L46)
 
 Interface for a database plugin, which provides query, destroy, and bulk operations.
 
@@ -20,7 +20,7 @@ Interface for a database plugin, which provides query, destroy, and bulk operati
 
 > **new EphemeralDataPlugin**(`databaseName`): `EphemeralDataPlugin`
 
-Defined in: [core/src/plugins/EphemeralDataPlugin.ts:49](https://github.com/Agrejus/routier/blob/main/core/src/plugins/EphemeralDataPlugin.ts#L49)
+Defined in: [core/src/plugins/EphemeralDataPlugin.ts:50](https://github.com/Agrejus/routier/blob/main/core/src/plugins/EphemeralDataPlugin.ts#L50)
 
 #### Parameters
 
@@ -40,7 +40,7 @@ Defined in: [core/src/plugins/EphemeralDataPlugin.ts:49](https://github.com/Agre
 
 > **get** **databaseName**(): `string`
 
-Defined in: [core/src/plugins/EphemeralDataPlugin.ts:58](https://github.com/Agrejus/routier/blob/main/core/src/plugins/EphemeralDataPlugin.ts#L58)
+Defined in: [core/src/plugins/EphemeralDataPlugin.ts:59](https://github.com/Agrejus/routier/blob/main/core/src/plugins/EphemeralDataPlugin.ts#L59)
 
 See `IDbPlugin.databaseName`. A getter rather than the field itself so a subclass whose
 database is identified by more than a name can widen it — `FileSystemPlugin` returns the
@@ -80,7 +80,7 @@ host/port/database rather than returning a connection string.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [core/src/plugins/EphemeralDataPlugin.ts:89](https://github.com/Agrejus/routier/blob/main/core/src/plugins/EphemeralDataPlugin.ts#L89)
+Defined in: [core/src/plugins/EphemeralDataPlugin.ts:90](https://github.com/Agrejus/routier/blob/main/core/src/plugins/EphemeralDataPlugin.ts#L90)
 
 All-or-nothing across every collection in the save.
 
@@ -119,7 +119,7 @@ a memory-first plugin does not pretend to have.
 
 > **query**\<`TEntity`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: [core/src/plugins/EphemeralDataPlugin.ts:384](https://github.com/Agrejus/routier/blob/main/core/src/plugins/EphemeralDataPlugin.ts#L384)
+Defined in: [core/src/plugins/EphemeralDataPlugin.ts:388](https://github.com/Agrejus/routier/blob/main/core/src/plugins/EphemeralDataPlugin.ts#L388)
 
 Executes a query operation on the database.
 
@@ -161,7 +161,7 @@ Callback with the result or error.
 
 > `abstract` **destroy**(`event`, `done`): `void`
 
-Defined in: [core/src/plugins/EphemeralDataPlugin.ts:536](https://github.com/Agrejus/routier/blob/main/core/src/plugins/EphemeralDataPlugin.ts#L536)
+Defined in: [core/src/plugins/EphemeralDataPlugin.ts:540](https://github.com/Agrejus/routier/blob/main/core/src/plugins/EphemeralDataPlugin.ts#L540)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 

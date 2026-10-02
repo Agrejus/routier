@@ -8,7 +8,7 @@
 
 > **expressionToWhereClause**(`expr`): `object`
 
-Defined in: plugins/postgres-core/dist/utils.d.ts:34
+Defined in: plugins/postgres-core/dist/utils.d.ts:35
 
 Translates an Expression tree to a SQL WHERE clause and parameters.
 

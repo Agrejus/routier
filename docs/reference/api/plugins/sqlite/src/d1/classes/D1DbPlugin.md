@@ -54,7 +54,7 @@ See `IDbPlugin.databaseName` and `D1DbPluginOptions.databaseName`.
 
 > **query**\<`TRoot`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: [plugins/sqlite/src/d1.ts:194](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L194)
+Defined in: [plugins/sqlite/src/d1.ts:198](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L198)
 
 Executes a query operation on the database.
 
@@ -96,7 +96,7 @@ Callback with the result or error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [plugins/sqlite/src/d1.ts:343](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L343)
+Defined in: [plugins/sqlite/src/d1.ts:347](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L347)
 
 Executes bulk operations (add, update, remove) on the database.
 
@@ -128,7 +128,7 @@ Callback with the result or error.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: [plugins/sqlite/src/d1.ts:453](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L453)
+Defined in: [plugins/sqlite/src/d1.ts:458](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/d1.ts#L458)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 

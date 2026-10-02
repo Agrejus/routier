@@ -8,7 +8,7 @@
 
 > **compiledSchemaToPostgresTable**(`schema`, `tableName?`, `vectors?`): `string`
 
-Defined in: plugins/postgres-core/dist/utils.d.ts:29
+Defined in: plugins/postgres-core/dist/utils.d.ts:30
 
 Converts a CompiledSchema to a PostgreSQL CREATE TABLE statement and index statements.
 

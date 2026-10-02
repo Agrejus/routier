@@ -8,7 +8,7 @@
 
 > **buildConditionalUpdateOperations**\<`T`\>(`schema`, `updates`, `dialect`, `options?`): [`ConditionalUpdateOperation`](../type-aliases/ConditionalUpdateOperation.md)[]
 
-Defined in: [plugins/sql-core/src/updates.ts:94](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/updates.ts#L94)
+Defined in: [plugins/sql-core/src/updates.ts:95](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/updates.ts#L95)
 
 ## Type Parameters
 
@@ -35,6 +35,10 @@ readonly [`EntityUpdate`](../type-aliases/EntityUpdate.md)[]
 #### suffix?
 
 `string`
+
+#### etag?
+
+[`SqlEtag`](../type-aliases/SqlEtag.md)
 
 ## Returns
 

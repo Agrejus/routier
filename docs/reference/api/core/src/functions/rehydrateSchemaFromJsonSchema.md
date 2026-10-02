@@ -8,7 +8,7 @@
 
 > **rehydrateSchemaFromJsonSchema**(`jsonSchema`, `collectionName?`): [`SchemaDefinition`](../classes/SchemaDefinition.md)\<`any`\>
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:576](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L576)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:580](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L580)
 
 Rehydrates a JSON Schema back into a Routier SchemaDefinition.
 This parses the JSON Schema structure and reconstructs the schema using Routier's builder API.

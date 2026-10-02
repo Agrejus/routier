@@ -20,7 +20,7 @@ SWR-specific options for HttpSwrDbPlugin.
 
 > **getUrl**: (`collectionName`) => `string`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:48](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L48)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:47](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L47)
 
 #### Parameters
 
@@ -42,7 +42,7 @@ Defined in: [plugins/replication/src/HttpDbPlugin.ts:48](https://github.com/Agre
 
 > `optional` **databaseName**: `string`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:58](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L58)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:57](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L57)
 
 See `IDbPlugin.databaseName`. `getUrl` is a caller-supplied function of collection name,
 so there is no origin this plugin can read without inventing a collection to ask about —
@@ -62,7 +62,7 @@ concerned, and each would be notified of the other's writes.
 
 > `optional` **getHeaders**: () => `Record`\<`string`, `string`\> \| `Promise`\<`Record`\<`string`, `string`\>\>
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:60](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L60)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:59](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L59)
 
 Headers for every request (e.g. Authorization). Can be async. Re-evaluated per retry attempt.
 
@@ -80,7 +80,7 @@ Headers for every request (e.g. Authorization). Can be async. Re-evaluated per r
 
 > `optional` **ignoreQueryForCollections**: `string`[]
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:65](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L65)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:64](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L64)
 
 Collection names for which to ignore the query and select everything.
 No filter, sort, skip, or take is sent; server returns full allowed set.
@@ -95,7 +95,7 @@ No filter, sort, skip, or take is sent; server returns full allowed set.
 
 > `optional` **queryRetryMaxAttempts**: `number`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:75](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L75)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:74](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L74)
 
 Max number of query attempts (including initial). Default 10. 401/403 stop immediately.
 
@@ -109,7 +109,7 @@ Max number of query attempts (including initial). Default 10. 401/403 stop immed
 
 > `optional` **requestTimeoutMs**: `number`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:77](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L77)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:76](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L76)
 
 Per-request timeout (ms); a hung connection fails instead of stalling forever. Default 30_000; 0 disables.
 
@@ -123,7 +123,7 @@ Per-request timeout (ms); a hung connection fails instead of stalling forever. D
 
 > `optional` **minRequestIntervalMs**: `number`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:86](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L86)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:85](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L85)
 
 Minimum gap between requests to the same URL (reads) or collection (writes). Default 100.
 
@@ -142,7 +142,7 @@ calls for one key still never overlap.
 
 > `optional` **writeBatchDelayMs**: `number`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:94](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L94)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:93](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L93)
 
 Quiet window (ms) used to batch writes to the same URL. Default 25.
 
@@ -160,7 +160,7 @@ one POST rather than ten serialized POSTs. Set to 0 to disable batching.
 
 > `optional` **onAuthError**: [`AuthErrorHandler`](../type-aliases/AuthErrorHandler.md)
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:100](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L100)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:99](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L99)
 
 Called when the remote returns 401 or 403 (query and bulkPersist; use event.context to
 distinguish). Return/resolve `true` to signal re-auth succeeded — the failed operation
@@ -176,7 +176,7 @@ then retries once with fresh headers.
 
 > `optional` **translateRemoteResponse**: (`schema`, `data`) => `unknown`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:102](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L102)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:101](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L101)
 
 #### Parameters
 
@@ -356,11 +356,43 @@ Revalidate failures are not reported back via done(); the UI keeps showing cache
 
 ***
 
+### conditionalRevalidation?
+
+> `optional` **conditionalRevalidation**: `boolean`
+
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:140](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L140)
+
+***
+
+### onRevalidateNotModified()?
+
+> `optional` **onRevalidateNotModified**: (`context`) => `void`
+
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:141](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L141)
+
+#### Parameters
+
+##### context
+
+###### collectionName
+
+`string`
+
+###### cacheKey
+
+`string`
+
+#### Returns
+
+`void`
+
+***
+
 ### onSyncDeadLetter()?
 
 > `optional` **onSyncDeadLetter**: (`changes`, `error`) => `void`
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:145](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L145)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:147](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L147)
 
 Called when the queue permanently gives up on changes: the server rejected them with a
 non-retryable status (4xx other than 401/403/408/429). Dead-lettered changes stop
@@ -386,7 +418,7 @@ flushing and stop shielding their entities from revalidate — surface them to t
 
 > `optional` **onConflict**: (`context`) => `void`
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:150](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L150)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:152](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L152)
 
 Called when the server answers 409 Conflict for a change. Informational — the change
 dead-letters (409 is non-retryable) and the server copy wins on the next revalidate.
@@ -417,7 +449,7 @@ dead-letters (409 is non-retryable) and the server copy wins on the next revalid
 
 > `optional` **translatePersistResponse**: (`schema`, `responseBody`) => `unknown`[]
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:156](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L156)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:158](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L158)
 
 Reconciles the POST response into the SWR store: given the response body, return the
 canonical entities the server echoed (or null to skip). Fixes server-assigned ids and
@@ -443,7 +475,7 @@ timestamps drifting from the optimistic local copy.
 
 > **unsyncedQueueStore**: `IDbPlugin`
 
-Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:164](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L164)
+Defined in: [plugins/replication/src/HttpSwrDbPlugin.ts:166](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpSwrDbPlugin.ts#L166)
 
 IDbPlugin to use for persisting the unsynced queue (e.g. same as swrStore). No datastore required.
 The queue is stored via query/bulkPersist in a reserved collection (_routier_unsynced).

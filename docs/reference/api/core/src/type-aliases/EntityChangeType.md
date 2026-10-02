@@ -8,4 +8,4 @@
 
 > **EntityChangeType** = `"propertiesChanged"` \| `"markedDirty"` \| `"notModified"`
 
-Defined in: [core/src/plugins/types.ts:237](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L237)
+Defined in: [core/src/plugins/types.ts:239](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L239)

@@ -14,6 +14,7 @@
 ## Type Aliases
 
 - [ColumnAssignment](type-aliases/ColumnAssignment.md)
+- [SqlEtag](type-aliases/SqlEtag.md)
 - [SqlJoinStatement](type-aliases/SqlJoinStatement.md)
 - [SqlDialectName](type-aliases/SqlDialectName.md)
 - [PlaceholderCursor](type-aliases/PlaceholderCursor.md)
@@ -48,6 +49,9 @@
 - [selectExpression](functions/selectExpression.md)
 - [selectList](functions/selectList.md)
 - [columnList](functions/columnList.md)
+- [sqlEtagOf](functions/sqlEtagOf.md)
+- [withEtagValue](functions/withEtagValue.md)
+- [etagIncrementClauses](functions/etagIncrementClauses.md)
 - [buildJoinStatement](functions/buildJoinStatement.md)
 - [canPushDownJoin](functions/canPushDownJoin.md)
 - [splitJoinRows](functions/splitJoinRows.md)

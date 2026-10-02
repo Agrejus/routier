@@ -6,7 +6,7 @@
 
 # Class: ConcurrencyDbPlugin
 
-Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:57](https://github.com/Agrejus/routier/blob/main/core/src/plugins/ConcurrencyDbPlugin.ts#L57)
+Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:58](https://github.com/Agrejus/routier/blob/main/core/src/plugins/ConcurrencyDbPlugin.ts#L58)
 
 Optimistic concurrency as a wrapper plugin — the whole opt-in is one wrap:
 
@@ -18,7 +18,8 @@ class Bank extends DataStore {
 }
 ```
 
-Nothing is declared on the schema and nothing on the collection builder: the plugin
+Nothing is declared on the collection builder. A schema that declares `.etag()` is guarded
+by that etag and gets no hidden column. Otherwise the plugin
 maintains a hidden `__version` column in the SAME tables/records as the data, entirely
 below the entity surface. Rows start at version 1; every update is applied ONLY IF the
 stored version still matches what this store last read (and bumps it); a stale write
@@ -66,7 +67,7 @@ augmented DDL automatically.
 
 > **new ConcurrencyDbPlugin**(`plugin`): `ConcurrencyDbPlugin`
 
-Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:67](https://github.com/Agrejus/routier/blob/main/core/src/plugins/ConcurrencyDbPlugin.ts#L67)
+Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:68](https://github.com/Agrejus/routier/blob/main/core/src/plugins/ConcurrencyDbPlugin.ts#L68)
 
 #### Parameters
 
@@ -84,7 +85,7 @@ Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:67](https://github.com/Agre
 
 > `readonly` `static` **VERSION\_COLUMN**: `"__version"` = `"__version"`
 
-Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:59](https://github.com/Agrejus/routier/blob/main/core/src/plugins/ConcurrencyDbPlugin.ts#L59)
+Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:60](https://github.com/Agrejus/routier/blob/main/core/src/plugins/ConcurrencyDbPlugin.ts#L60)
 
 ## Accessors
 
@@ -94,7 +95,7 @@ Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:59](https://github.com/Agre
 
 > **get** **databaseName**(): `string`
 
-Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:71](https://github.com/Agrejus/routier/blob/main/core/src/plugins/ConcurrencyDbPlugin.ts#L71)
+Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:72](https://github.com/Agrejus/routier/blob/main/core/src/plugins/ConcurrencyDbPlugin.ts#L72)
 
 Uniquely identifies the database this plugin talks to, INCLUDING host or path where a
 bare name would collide — `orders.db` in two directories is two databases, and `mydb`
@@ -150,7 +151,7 @@ host/port/database rather than returning a connection string.
 
 > **query**\<`TRoot`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:75](https://github.com/Agrejus/routier/blob/main/core/src/plugins/ConcurrencyDbPlugin.ts#L75)
+Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:76](https://github.com/Agrejus/routier/blob/main/core/src/plugins/ConcurrencyDbPlugin.ts#L76)
 
 Executes a query operation on the database.
 
@@ -192,7 +193,7 @@ Callback with the result or error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:100](https://github.com/Agrejus/routier/blob/main/core/src/plugins/ConcurrencyDbPlugin.ts#L100)
+Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:101](https://github.com/Agrejus/routier/blob/main/core/src/plugins/ConcurrencyDbPlugin.ts#L101)
 
 Executes bulk operations (add, update, remove) on the database.
 
@@ -224,7 +225,7 @@ Callback with the result or error.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:180](https://github.com/Agrejus/routier/blob/main/core/src/plugins/ConcurrencyDbPlugin.ts#L180)
+Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:187](https://github.com/Agrejus/routier/blob/main/core/src/plugins/ConcurrencyDbPlugin.ts#L187)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 

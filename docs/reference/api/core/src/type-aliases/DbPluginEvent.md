@@ -8,7 +8,7 @@
 
 > **DbPluginEvent** = `object`
 
-Defined in: [core/src/plugins/types.ts:107](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L107)
+Defined in: [core/src/plugins/types.ts:109](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L109)
 
 Base event for all plugin operations, containing the schema and parent.
 
@@ -18,7 +18,7 @@ Base event for all plugin operations, containing the schema and parent.
 
 > **schemas**: [`SchemaCollection`](../classes/SchemaCollection.md)
 
-Defined in: [core/src/plugins/types.ts:109](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L109)
+Defined in: [core/src/plugins/types.ts:111](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L111)
 
 The compiled schema for the entity.
 
@@ -28,7 +28,7 @@ The compiled schema for the entity.
 
 > **id**: `string`
 
-Defined in: [core/src/plugins/types.ts:112](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L112)
+Defined in: [core/src/plugins/types.ts:114](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L114)
 
 Unique id of the event.
 
@@ -38,7 +38,7 @@ Unique id of the event.
 
 > **source**: `string`
 
-Defined in: [core/src/plugins/types.ts:115](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L115)
+Defined in: [core/src/plugins/types.ts:117](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L117)
 
 The class/component that triggered this event
 
@@ -48,7 +48,7 @@ The class/component that triggered this event
 
 > **action**: `"query"` \| `"persist"` \| `"destroy"`
 
-Defined in: [core/src/plugins/types.ts:118](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L118)
+Defined in: [core/src/plugins/types.ts:120](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L120)
 
 The action/operation type being performed
 
@@ -58,6 +58,6 @@ The action/operation type being performed
 
 > `optional` **reason**: `string`
 
-Defined in: [core/src/plugins/types.ts:121](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L121)
+Defined in: [core/src/plugins/types.ts:123](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L123)
 
 Optional context about why this operation is happening

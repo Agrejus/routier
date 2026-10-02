@@ -214,7 +214,7 @@ Create `plugins/otel/` modeled on `plugins/dexie/` (copy its `package.json`, `ts
 - `name`: `@routier/otel-plugin`. `version`: match the current version of the other plugin packages (see `plugins/dexie/package.json`).
 - `description`: "OpenTelemetry plugin for routier".
 - `peerDependencies`: `@routier/core` (same range as dexie uses) AND `@opentelemetry/api` (use `^1.9.0` or the latest 1.x).
-- `devDependencies`: `@routier/core` (workspace version), `@routier/test-utils` (`file:../../test-utils`), `@opentelemetry/api`, `@opentelemetry/sdk-trace-base` (for the in-memory exporter in tests), plus the rspack build deps the dexie package lists.
+- `devDependencies`: `@routier/core` (workspace version), `@routier/test-utils` (`file:../../tooling/test-utils`), `@opentelemetry/api`, `@opentelemetry/sdk-trace-base` (for the in-memory exporter in tests), plus the rspack build deps the dexie package lists.
 - NO runtime `dependencies`. The OTel API comes from the host application.
 - Remove dexie-specific things: the `dexie` dependency, `fake-indexeddb`, `jsdom`, indexeddb keywords.
 - Register the workspace: check the root `package.json` `workspaces` field. If it lists globs (e.g. `plugins/*`), nothing to do; if it lists paths explicitly, add `plugins/otel`.

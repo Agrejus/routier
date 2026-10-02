@@ -35,8 +35,8 @@
     "@faker-js/faker": "^9.7.0"
   },
   "devDependencies": {
-    "@routier/core": "file://../../core",
-    "@routier/datastore": "file://../../datastore",
+    "@routier/core": "file:../../core",
+    "@routier/datastore": "file:../../datastore",
     "@rspack/cli": "^1.1.8",
     "@rspack/core": "^1.1.8",
     "vitest": "^3.2.4"

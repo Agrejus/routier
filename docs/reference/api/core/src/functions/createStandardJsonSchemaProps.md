@@ -8,7 +8,7 @@
 
 > **createStandardJsonSchemaProps**\<`T`\>(`compiledSchema`): [`Props`](../namespaces/StandardJSONSchemaV1/interfaces/Props.md)\<[`InferCreateType`](../type-aliases/InferCreateType.md)\<`T`\>, [`InferType`](../type-aliases/InferType.md)\<`T`\>\>
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:523](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L523)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:527](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L527)
 
 Creates Standard JSON Schema V1 props for a compiled schema.
 

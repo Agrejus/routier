@@ -8,7 +8,7 @@
 
 > `const` **singleIdentityKeyProperty**: \<`T`\>(`schema`) => `PropertyInfo`\<`T`\> \| `null`
 
-Defined in: plugins/postgres-core/dist/utils.d.ts:61
+Defined in: plugins/postgres-core/dist/utils.d.ts:62
 
 The one identity key that gets special column treatment, or `null`.
 

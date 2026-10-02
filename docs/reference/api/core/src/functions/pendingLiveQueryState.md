@@ -8,7 +8,7 @@
 
 > **pendingLiveQueryState**\<`T`\>(): [`LiveQueryState`](../type-aliases/LiveQueryState.md)\<`T`\>
 
-Defined in: core/src/results/liveQuery.ts:30
+Defined in: [core/src/results/liveQuery.ts:30](https://github.com/Agrejus/routier/blob/main/core/src/results/liveQuery.ts#L30)
 
 ## Type Parameters
 
