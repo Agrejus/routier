@@ -86,7 +86,7 @@ jobs:
       # SQL engines. A green SQLite run says nothing about the others — see
       # specs/known-defects.md, "things that will mislead you" #3.
       # Most suites here resolve @routier/* to `src/` through Jest's moduleNameMapper and
-      # need no build. Two things do not: `e2e/src/processExit.test.ts` spawns a real child
+      # need no build. Two things do not: `tooling/e2e/src/processExit.test.ts` spawns a real child
       # process, and the browser check bundles the package entry points — both resolve through
       # node_modules exactly as a user would, and find nothing without a build.
       - name: Build

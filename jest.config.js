@@ -8,8 +8,8 @@ const moduleNameMapper = {
     '^@routier/core/(.*)$': '<rootDir>/core/src/$1',
     '^@routier/datastore$': '<rootDir>/datastore/src/index.ts',
     '^@routier/datastore/(.*)$': '<rootDir>/datastore/src/$1',
-    '^@routier/test-utils$': '<rootDir>/test-utils/src/index.ts',
-    '^@routier/test-utils/(.*)$': '<rootDir>/test-utils/src/$1',
+    '^@routier/test-utils$': '<rootDir>/tooling/test-utils/src/index.ts',
+    '^@routier/test-utils/(.*)$': '<rootDir>/tooling/test-utils/src/$1',
     '^@routier/memory-plugin$': '<rootDir>/plugins/memory/src/index.ts',
     '^@routier/memory-plugin/(.*)$': '<rootDir>/plugins/memory/src/$1',
     '^@routier/dexie-plugin$': '<rootDir>/plugins/dexie/src/index.ts',
@@ -30,16 +30,16 @@ const moduleNameMapper = {
     '^@routier/mongodb-plugin$': '<rootDir>/plugins/mongodb/src/index.ts',
     '^@routier/otel-plugin$': '<rootDir>/plugins/otel/src/index.ts',
     '^@routier/replication-plugin$': '<rootDir>/plugins/replication/src/index.ts',
-    '^@routier/react$': '<rootDir>/react/src/index.ts',
-    '^@routier/vue$': '<rootDir>/vue/src/index.ts',
-    '^@routier/svelte$': '<rootDir>/svelte/src/index.ts',
-    '^@routier/solid$': '<rootDir>/solid/src/index.ts',
-    '^@routier/angular$': '<rootDir>/angular/src/index.ts',
-    '^@routier/tanstack-query$': '<rootDir>/tanstack-query/src/index.ts',
-    '^@routier/lit$': '<rootDir>/lit/src/index.ts',
-    '^@routier/devtools/production$': '<rootDir>/devtools/src/production.ts',
-    '^@routier/devtools$': '<rootDir>/devtools/src/index.ts',
-    '^@routier/sync-server$': '<rootDir>/sync-server/src/index.ts',
+    '^@routier/react$': '<rootDir>/plugins/react/src/index.ts',
+    '^@routier/vue$': '<rootDir>/plugins/vue/src/index.ts',
+    '^@routier/svelte$': '<rootDir>/plugins/svelte/src/index.ts',
+    '^@routier/solid$': '<rootDir>/plugins/solid/src/index.ts',
+    '^@routier/angular$': '<rootDir>/plugins/angular/src/index.ts',
+    '^@routier/tanstack-query$': '<rootDir>/plugins/tanstack-query/src/index.ts',
+    '^@routier/lit$': '<rootDir>/plugins/lit/src/index.ts',
+    '^@routier/devtools/production$': '<rootDir>/plugins/devtools/src/production.ts',
+    '^@routier/devtools$': '<rootDir>/plugins/devtools/src/index.ts',
+    '^@routier/sync-server$': '<rootDir>/tooling/sync-server/src/index.ts',
 };
 
 const tsTransform = {
@@ -47,7 +47,7 @@ const tsTransform = {
 };
 
 const devtoolsTransform = {
-    '^.+\\.tsx?$': ['ts-jest', { tsconfig: '<rootDir>/devtools/tsconfig.test.json' }],
+    '^.+\\.tsx?$': ['ts-jest', { tsconfig: '<rootDir>/plugins/devtools/tsconfig.test.json' }],
 };
 
 // Some workspace packages and @faker-js ship ESM-only .js that Jest cannot parse
@@ -99,7 +99,7 @@ module.exports = {
         {
             ...base,
             displayName: 'react',
-            testMatch: ['<rootDir>/react/**/*.test.ts?(x)'],
+            testMatch: ['<rootDir>/plugins/react/**/*.test.ts?(x)'],
             // Hooks need a DOM. React Testing Library renders into document.body, so this
             // project is the one place the suite departs from the node environment.
             testEnvironment: 'jsdom',
@@ -108,48 +108,48 @@ module.exports = {
         {
             ...base,
             displayName: 'vue',
-            testMatch: ['<rootDir>/vue/**/*.test.ts'],
+            testMatch: ['<rootDir>/plugins/vue/**/*.test.ts'],
         },
         {
             ...base,
             displayName: 'svelte',
-            testMatch: ['<rootDir>/svelte/**/*.test.ts'],
+            testMatch: ['<rootDir>/plugins/svelte/**/*.test.ts'],
             transform: { ...tsTransform, ...babelTransform },
             transformIgnorePatterns: ['node_modules/(?!(@routier|svelte|esm-env)/)'],
         },
         {
             ...base,
             displayName: 'solid',
-            testMatch: ['<rootDir>/solid/**/*.test.ts'],
+            testMatch: ['<rootDir>/plugins/solid/**/*.test.ts'],
             testEnvironmentOptions: { customExportConditions: ['browser', 'require', 'default'] },
         },
         {
             ...base,
             displayName: 'tanstack-query',
-            testMatch: ['<rootDir>/tanstack-query/**/*.test.ts'],
+            testMatch: ['<rootDir>/plugins/tanstack-query/**/*.test.ts'],
         },
         {
             ...base,
             displayName: 'lit',
-            testMatch: ['<rootDir>/lit/**/*.test.ts'],
+            testMatch: ['<rootDir>/plugins/lit/**/*.test.ts'],
         },
         {
             ...base,
             displayName: 'angular',
-            testMatch: ['<rootDir>/angular/**/*.test.ts'],
+            testMatch: ['<rootDir>/plugins/angular/**/*.test.ts'],
             testEnvironment: 'jsdom',
             moduleFileExtensions: ['ts', 'js', 'mjs', 'json'],
             transform: {
-                '^.+\\.tsx?$': ['ts-jest', { tsconfig: '<rootDir>/angular/tsconfig.test.json' }],
+                '^.+\\.tsx?$': ['ts-jest', { tsconfig: '<rootDir>/plugins/angular/tsconfig.test.json' }],
                 '^.+\\.m?js$': babelTransform['^.+\\.js$'],
             },
             transformIgnorePatterns: ['node_modules/(?!(@routier|@angular)/)'],
-            setupFilesAfterEnv: ['<rootDir>/jest.jsdom.setup.js', '<rootDir>/angular/jest.setup.ts'],
+            setupFilesAfterEnv: ['<rootDir>/jest.jsdom.setup.js', '<rootDir>/plugins/angular/jest.setup.ts'],
         },
         {
             ...base,
             displayName: 'devtools',
-            testMatch: ['<rootDir>/devtools/**/*.test.ts?(x)'],
+            testMatch: ['<rootDir>/plugins/devtools/**/*.test.ts?(x)'],
             testPathIgnorePatterns: ['/node_modules/', '\\.node\\.test\\.ts$'],
             testEnvironment: 'jsdom',
             testEnvironmentOptions: { customExportConditions: ['node', 'require', 'default'] },
@@ -159,7 +159,7 @@ module.exports = {
         {
             ...base,
             displayName: 'devtools-node',
-            testMatch: ['<rootDir>/devtools/**/*.node.test.ts'],
+            testMatch: ['<rootDir>/plugins/devtools/**/*.node.test.ts'],
             testEnvironmentOptions: { customExportConditions: ['node', 'require', 'default'] },
             transform: devtoolsTransform,
         },
@@ -167,6 +167,10 @@ module.exports = {
             ...base,
             displayName: 'plugins',
             testMatch: ['<rootDir>/plugins/*/**/*.test.ts'],
+            testPathIgnorePatterns: [
+                ...(base.testPathIgnorePatterns ?? ['/node_modules/']),
+                '<rootDir>/plugins/(react|vue|svelte|solid|angular|tanstack-query|lit|devtools)/',
+            ],
             transform: { ...tsTransform, ...babelTransform },
             // Avoid duplicate @routier/memory-plugin in the Haste map: replication (and
             // others) depend on it, so nested or hoisted node_modules can provide a second
@@ -183,58 +187,58 @@ module.exports = {
                 // The `pouchdb` meta-package loads leveldown at require time, which has
                 // no prebuilt binary for current Node. Swap in a core+memory-adapter
                 // build so these suites run without a native toolchain.
-                '^pouchdb$': '<rootDir>/test-utils/src/pouchdbMemory.ts',
+                '^pouchdb$': '<rootDir>/tooling/test-utils/src/pouchdbMemory.ts',
             },
         },
         {
             ...base,
             displayName: 'e2e',
-            testMatch: ['<rootDir>/e2e/**/*.test.ts'],
+            testMatch: ['<rootDir>/tooling/e2e/**/*.test.ts'],
             moduleNameMapper: {
                 ...moduleNameMapper,
                 // Same reason as the `plugins` project: the `pouchdb` meta-package loads
                 // leveldown at require time and it has no prebuilt binary for current Node.
                 // This build adds the http adapter, which the CouchDB replication suite
                 // needs to address a remote by URL.
-                '^pouchdb$': '<rootDir>/test-utils/src/pouchdbHttp.ts',
+                '^pouchdb$': '<rootDir>/tooling/test-utils/src/pouchdbHttp.ts',
             },
             // Real storage engines and containers are slower than in-process plugins.
             // The timeout lives in the setup file because Jest ignores `testTimeout` in a
             // per-project config.
-            setupFilesAfterEnv: ['<rootDir>/e2e/jest.setup.js'],
+            setupFilesAfterEnv: ['<rootDir>/tooling/e2e/jest.setup.js'],
         },
         {
             ...base,
             displayName: 'stress',
-            testMatch: ['<rootDir>/stress/**/*.test.ts'],
+            testMatch: ['<rootDir>/tooling/stress/**/*.test.ts'],
             // Volume and churn scenarios run for minutes, not milliseconds. Same reason as
             // e2e: `testTimeout` is a root-level option Jest ignores per project.
             //
-            // The suites themselves are gated on STRESS=1 (see stress/src/harness/scenario.ts),
+            // The suites themselves are gated on STRESS=1 (see tooling/stress/src/harness/scenario.ts),
             // so the default `npx jest` run lists them as skipped rather than executing them.
-            setupFilesAfterEnv: ['<rootDir>/stress/jest.setup.js'],
+            setupFilesAfterEnv: ['<rootDir>/tooling/stress/jest.setup.js'],
         },
         {
             ...base,
             displayName: 'benchmark',
             // Only the harness logic is unit tested here. The benchmarks themselves are run
             // by `npm run benchmark`, not by Jest — a timing measurement is not a test.
-            testMatch: ['<rootDir>/benchmark/**/*.test.ts'],
+            testMatch: ['<rootDir>/tooling/benchmark/**/*.test.ts'],
         },
         {
             ...base,
             displayName: 'architecture',
-            testMatch: ['<rootDir>/architecture/**/*.test.ts'],
+            testMatch: ['<rootDir>/tooling/architecture/**/*.test.ts'],
         },
         {
             ...base,
             displayName: 'test-utils',
-            testMatch: ['<rootDir>/test-utils/**/*.test.ts'],
+            testMatch: ['<rootDir>/tooling/test-utils/**/*.test.ts'],
         },
         {
             ...base,
             displayName: 'sync-server',
-            testMatch: ['<rootDir>/sync-server/**/*.test.ts'],
+            testMatch: ['<rootDir>/tooling/sync-server/**/*.test.ts'],
         },
     ],
 };

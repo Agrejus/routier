@@ -18,6 +18,6 @@ module.exports = {
         '^@routier/datastore/(.*)$': '<rootDir>/../../datastore/src/$1',
         '^@routier/sql-plugin-core$': '<rootDir>/../sql-core/src/index.ts',
         '^@routier/postgres-plugin-core$': '<rootDir>/../postgres-core/src/index.ts',
-        '^@routier/test-utils$': '<rootDir>/../../test-utils/src/index.ts'
+        '^@routier/test-utils$': '<rootDir>/../../tooling/test-utils/src/index.ts'
     }
 };

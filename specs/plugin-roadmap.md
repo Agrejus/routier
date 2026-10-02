@@ -127,12 +127,12 @@ scores in memory. Same rows, same order.
 `describeVectorSearch` in `@routier/test-utils` holds that line. One set of expectations, run
 against **every backend**: memory, Dexie, browser-storage, file-system, SQLite across all three
 drivers, PouchDB, MySQL, MongoDB, and PostgreSQL both with and without pgvector — plus the
-example plugin in `e2e/src/examplePlugin.test.ts`, which was written before vectors existed and
+example plugin in `tooling/e2e/src/examplePlugin.test.ts`, which was written before vectors existed and
 passes without a line added to it, because the scoring happens in the translator every plugin
 inherits.
 
 PostgreSQL is the only backend where a `<=>` ordering reaches the engine, and a column-type
-assertion in `e2e/src/vectorSearch.test.ts` holds the two paths apart — otherwise a regression
+assertion in `tooling/e2e/src/vectorSearch.test.ts` holds the two paths apart — otherwise a regression
 that quietly stopped pushing down would pass by looking identical to the fallback.
 
 It is a separate suite rather than a section of `describePluginContract` for a reason worth
@@ -213,7 +213,7 @@ Decided while building:
   check finds nothing and the refusal never fires. It was written that way first.
 
 **Proven against a real binding**, unlike the Turso driver's HTTP transport.
-`e2e/src/d1Miniflare.test.ts` runs the full plugin contract and the vector suite against D1
+`tooling/e2e/src/d1Miniflare.test.ts` runs the full plugin contract and the vector suite against D1
 served by workerd through Miniflare — no Docker needed — and pins the three assumptions a
 double could only have confirmed to their author:
 

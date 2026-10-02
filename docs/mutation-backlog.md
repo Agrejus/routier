@@ -219,8 +219,8 @@ were killable, that is one test per mutant with no leverage left.
 
 # Area: `plugins/replication` — 2026-08-04
 
-New area. Config: `stryker/replication.mjs` (+ `stryker/jest.replication.js`,
-`stryker/replication.setup.js`), script `npm run mutate:replication`, gate 80.
+New area. Config: `tooling/stryker/replication.mjs` (+ `tooling/stryker/jest.replication.js`,
+`tooling/stryker/replication.setup.js`), script `npm run mutate:replication`, gate 80.
 
 Runtime is the binding constraint here, so the setup file caps the chaos suite at 3 seeds
 (`CHAOS_SEEDS=3`) and silences the plugin logger for mutant runs. Budget ~3 minutes per 100

@@ -14,7 +14,7 @@
       "@routier/core": ["../../core/src/index.ts"],
       "@routier/core/*": ["../../core/src/*"],
       "@routier/datastore": ["../../datastore/src/index.ts"],
-      "@routier/react": ["../../react/src/index.ts"],
+      "@routier/react": ["../../plugins/react/src/index.ts"],
       "@routier/memory-plugin": ["../../plugins/memory/src/index.ts"],
       "@routier/browser-storage-plugin": ["../../plugins/browser-storage/src/index.ts"],
       "@routier/dexie-plugin": ["../../plugins/dexie/src/index.ts"],

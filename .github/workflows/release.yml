@@ -53,7 +53,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           RELEASE_VERSION: ${{ inputs.version }}
           RELEASE_TAG: ${{ github.ref_name }}
-        run: node scripts/validate-release.mjs
+        run: node tooling/scripts/validate-release.mjs
 
       - name: Install
         run: npm ci
@@ -124,4 +124,4 @@ jobs:
           # Once every package has an npm trusted publisher, delete this repository secret.
           BOOTSTRAP_NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           GH_TOKEN: ${{ github.token }}
-        run: node scripts/publish-release.mjs
+        run: node tooling/scripts/publish-release.mjs

@@ -1,0 +1,51 @@
+{
+    "name": "@routier/lit",
+    "version": "0.1.0",
+    "description": "Lit reactive controller for Routier live queries",
+    "private": false,
+    "type": "module",
+    "publishConfig": {
+        "access": "public"
+    },
+    "files": [
+        "dist/**/*",
+        "!dist/**/*.test.*",
+        "!dist/**/*.spec.*",
+        "README.md",
+        "LICENSE"
+    ],
+    "scripts": {
+        "build:types": "tsc -p tsconfig.types.json",
+        "build": "vite build && npm run build:types",
+        "tsc": "tsc --noEmit -p tsconfig.json",
+        "lint": "oxlint . --ignore-pattern \"**/*.test.*\""
+    },
+    "peerDependencies": {
+        "@routier/core": ">=0.8.2",
+        "lit": ">=2.0.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.2.2",
+        "vite": "^5.0.8",
+        "lit": "^3.3.3"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    },
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs",
+            "types": "./dist/index.d.ts"
+        }
+    },
+    "sideEffects": false,
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Agrejus/routier.git",
+        "directory": "plugins/lit"
+    }
+}

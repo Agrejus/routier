@@ -1,4 +1,5 @@
 import { type Request, type Response, Router } from 'express';
+import { handleAsync } from './errors';
 import type { LabServices } from './restRoutes';
 
 const editNote = (services: LabServices) => async (request: Request, response: Response) => {
@@ -33,11 +34,13 @@ const reset = (services: LabServices) => async (_request: Request, response: Res
 export const createAdminRouter = (services: LabServices): Router => {
   const router = Router();
   router.get('/log', (_request, response) => response.json(services.log.list()));
-  router.get('/rows', async (_request, response) => response.json(await services.repository.all()));
+  router.get('/rows', handleAsync(async (_request, response) => {
+    response.json(await services.repository.all());
+  }));
   router.get('/state', (_request, response) => response.json({ lagging: services.replica.lagging }));
-  router.post('/notes/:id/edit', editNote(services));
-  router.post('/replica/freeze', freezeReplica(services));
+  router.post('/notes/:id/edit', handleAsync(editNote(services)));
+  router.post('/replica/freeze', handleAsync(freezeReplica(services)));
   router.post('/replica/release', releaseReplica(services));
-  router.post('/reset', reset(services));
+  router.post('/reset', handleAsync(reset(services)));
   return router;
 };

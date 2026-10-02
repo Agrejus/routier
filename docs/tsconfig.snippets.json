@@ -50,25 +50,25 @@
                 "plugins/otel/src/index.ts"
             ],
             "@routier/react": [
-                "react/src/index.ts"
+                "plugins/react/src/index.ts"
             ],
             "@routier/vue": [
-                "vue/src/index.ts"
+                "plugins/vue/src/index.ts"
             ],
             "@routier/svelte": [
-                "svelte/src/index.ts"
+                "plugins/svelte/src/index.ts"
             ],
             "@routier/solid": [
-                "solid/src/index.ts"
+                "plugins/solid/src/index.ts"
             ],
             "@routier/angular": [
-                "angular/src/index.ts"
+                "plugins/angular/src/index.ts"
             ],
             "@routier/tanstack-query": [
-                "tanstack-query/src/index.ts"
+                "plugins/tanstack-query/src/index.ts"
             ],
             "@routier/lit": [
-                "lit/src/index.ts"
+                "plugins/lit/src/index.ts"
             ],
             "vue": [
                 "node_modules/vue"

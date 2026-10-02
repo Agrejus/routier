@@ -8,7 +8,7 @@
 //    that may be absent there. The compiler options are inlined rather than pointing at
 //    tsconfig.test.json.
 //
-// Each mutation area supplies its own `testMatch` via stryker/jest.<area>.js.
+// Each mutation area supplies its own `testMatch` via tooling/stryker/jest.<area>.js.
 //
 // Scoping is a real trade-off, not free. It cuts runtime sharply — the unscoped expressions
 // run took ~19 minutes because every one of ~1400 mutants re-ran all 469 core + datastore

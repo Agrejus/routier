@@ -26,13 +26,13 @@
     "include": [
         "core/src/**/*",
         "datastore/src/**/*",
-        "react/src/**/*",
-        "vue/src/**/*",
-        "svelte/src/**/*",
-        "solid/src/**/*",
-        "angular/src/**/*",
-        "tanstack-query/src/**/*",
-        "lit/src/**/*",
+        "plugins/react/src/**/*",
+        "plugins/vue/src/**/*",
+        "plugins/svelte/src/**/*",
+        "plugins/solid/src/**/*",
+        "plugins/angular/src/**/*",
+        "plugins/tanstack-query/src/**/*",
+        "plugins/lit/src/**/*",
         "plugins/*/src/**/*"
     ],
     "exclude": [

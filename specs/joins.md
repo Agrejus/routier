@@ -77,7 +77,7 @@ changes per backend; the answer never does.
 
 1. **Same answer everywhere.** The same data and the same join return the same pairs on every
    plugin, wherever the join executed (native SQL, in-plugin hash join, in-datastore residue).
-   The dialect conformance suite (`e2e/src/dialectConformance.ts`) gets a join scenario (with
+   The dialect conformance suite (`tooling/e2e/src/dialectConformance.ts`) gets a join scenario (with
    an explicit `.sort()`, since pair order is undefined without one) asserting this.
 2. **Each side is read under its own scopes.** Soft-delete scopes and `.scope()` filters for
    BOTH collections are part of the join option's per-side filter sets, so every interpreter —
@@ -362,7 +362,7 @@ step 5.
    `loadInner(query: IQuery, done: CallbackResult<Record<string, unknown>[]>): void`, where
    the query carries the inner schema and `innerOptions`; the tuple-aware memory-half pass
    for post-join options. Unit tests against the algorithm directly.
-> Built, plus a cross-backend suite: `test-utils/src/joinContract.ts`
+> Built, plus a cross-backend suite: `tooling/test-utils/src/joinContract.ts`
 > (`describeJoinContract`) runs on memory, file-system, browser-storage, Dexie, PouchDB and
 > MongoDB. That suite is where guarantee 1 is asserted; the dialect conformance scenario still
 > wants adding once step 7 lands.
@@ -390,7 +390,7 @@ step 5.
 > Built for all four: SQLite, Cloudflare D1, PostgreSQL and MySQL. The emission is shared in
 > `plugins/sql-core/src/joins.ts` (`buildJoinStatement`, `splitJoinRows`, `canPushDownJoin`), so each
 > plugin is a query-path branch rather than a reimplementation. PostgreSQL and MySQL are verified
-> against real servers (`e2e/src/postgresJoins.test.ts`, `e2e/src/mysqlJoins.test.ts`, both behind
+> against real servers (`tooling/e2e/src/postgresJoins.test.ts`, `tooling/e2e/src/mysqlJoins.test.ts`, both behind
 > `E2E_CONTAINERS=1`), each store getting its own database because one server keeps its tables
 > between tests. Four things the spec did not anticipate:
 >

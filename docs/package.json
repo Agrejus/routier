@@ -16,12 +16,12 @@
     "@11ty/eleventy": "^2.0.0",
     "@routier/core": "file://../core",
     "@routier/datastore": "file://../datastore",
-    "@routier/devtools": "file://../devtools",
+    "@routier/devtools": "file://../plugins/devtools",
     "@routier/dexie-plugin": "file://../plugins/dexie",
     "@routier/memory-plugin": "file://../plugins/memory",
     "@routier/pouchdb-plugin": "file://../plugins/pouchdb",
-    "@routier/react": "file://../react",
-    "@routier/vue": "file://../vue",
+    "@routier/react": "file://../plugins/react",
+    "@routier/vue": "file://../plugins/vue",
     "vitepress": "^1.6.4"
   },
   "keywords": [

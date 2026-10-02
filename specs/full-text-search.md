@@ -478,7 +478,7 @@ search code).
 | file system / blob | same as any collection | filter | none |
 | replication (`HttpDbPlugin` etc.) | n/a | n/a | index excluded from sync — decision 7 |
 
-The dialect conformance suite (`e2e/src/dialectConformance.ts`) gets a search scenario so this
+The dialect conformance suite (`tooling/e2e/src/dialectConformance.ts`) gets a search scenario so this
 table is enforced, not asserted.
 
 ## Implementation order
@@ -681,7 +681,7 @@ amendment. Then each step compiles and its tests pass before the next begins.
      flag threaded through both builder stages as a type parameter. Deferred deliberately — the
      throw names the fix, and the type-level gate can be added without changing any behaviour.
 8. ~~**Cross-backend proof.**~~ **BUILT 2026-08-11.** `describeFullTextSearch` in
-   `test-utils/src/fullTextSearchContract.ts` — 13 cases, one set of expectations, run against
+   `tooling/test-utils/src/fullTextSearchContract.ts` — 13 cases, one set of expectations, run against
    **nine backends**: memory, Dexie, file-system, browser-storage, SQLite, PouchDB, Cloudflare
    D1 (Miniflare), PostgreSQL and MySQL. Not `dialectConformance.ts`, which is SQL-only; the
    `describeVectorSearch` model is the right one, for the reason that file already records.

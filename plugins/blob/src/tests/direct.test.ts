@@ -7,7 +7,7 @@ import type { BlobStore } from '../stores/types';
  *
  * The browser hashes, the server signs, the browser PUTs. `fetch` is injected so the whole
  * flow can be driven in-process; the same flow against a real service is in
- * `e2e/src/s3BlobStore.test.ts`.
+ * `tooling/e2e/src/s3BlobStore.test.ts`.
  */
 
 const bytesOf = (text: string) => new TextEncoder().encode(text);

@@ -22,7 +22,7 @@
             "@routier/datastore": ["../../datastore/src/index.ts"],
             "@routier/datastore/*": ["../../datastore/src/*"],
             "@routier/sql-plugin-core": ["../sql-core/src/index.ts"],
-            "@routier/test-utils": ["../../test-utils/src/index.ts"]
+            "@routier/test-utils": ["../../tooling/test-utils/src/index.ts"]
         }
     },
     "include": [

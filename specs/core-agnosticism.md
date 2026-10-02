@@ -80,7 +80,7 @@ both the DDL and `toColumnAssignments` read it from there so they cannot drift.
 ## How to check
 
 **Superseded by a test as of 2026-08-07.** This rule is now one entry in
-`architecture/src/domains.ts`, enforced by `architecture/src/domains.test.ts`:
+`tooling/architecture/src/domains.ts`, enforced by `tooling/architecture/src/domains.test.ts`:
 
 ```bash
 npx jest -c jest.config.js --selectProjects architecture

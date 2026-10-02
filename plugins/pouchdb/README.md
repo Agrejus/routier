@@ -124,4 +124,4 @@ Node 18 or later, and any browser. PouchDB 9. CouchDB 3 for replication.
 ## See also
 
 - [PouchDB plugin guide](https://routier.dev/integrations/plugins/built-in-plugins/pouchdb/README)
-- `e2e/src/couchdbReplication.test.ts` — replication against a real CouchDB
+- `tooling/e2e/src/couchdbReplication.test.ts` — replication against a real CouchDB

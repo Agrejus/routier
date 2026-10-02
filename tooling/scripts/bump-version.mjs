@@ -1,0 +1,262 @@
+#!/usr/bin/env node
+
+import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const rootDir = join(__dirname, '..', '..');
+
+/** Directories that never hold a package this repository publishes. */
+const IGNORED_DIRECTORIES = new Set([
+    'node_modules',
+    '.git',
+    'dist',
+    '.stryker-tmp',
+    'reports',
+    'coverage',
+]);
+
+/**
+ * Recursively find all package.json files in the monorepo
+ */
+function findPackageJsonFiles(dir, files = []) {
+    const items = readdirSync(dir);
+
+    for (const item of items) {
+        const fullPath = join(dir, item);
+        const stat = statSync(fullPath);
+
+        if (stat.isDirectory()) {
+            // Anything not under version control is a copy, not a package. `.stryker-tmp` holds
+            // a full sandbox per mutation-run worker, so bumping through it rewrites the same
+            // manifest a dozen times and buries the real ones in the output.
+            if (IGNORED_DIRECTORIES.has(item)) {
+                continue;
+            }
+            findPackageJsonFiles(fullPath, files);
+        } else if (item === 'package.json') {
+            files.push(fullPath);
+        }
+    }
+
+    return files;
+}
+
+/**
+ * Extract version prefix from a version string
+ */
+function extractVersionPrefix(versionString) {
+    // Match common version prefixes: ^, ~, >=, <=, >, <, =, or any other non-digit character at start
+    const prefixMatch = versionString.match(/^([^\d]+)/);
+    return prefixMatch ? prefixMatch[1] : '';
+}
+
+/**
+ * Update package.json file with new version while preserving prefixes
+ */
+function updatePackageJson(filePath, packageName, newVersion) {
+    const content = readFileSync(filePath, 'utf8');
+    const packageJson = JSON.parse(content);
+    let updated = false;
+
+    // Helper function to update a dependency with prefix preservation
+    function updateDependency(deps, packageName, newVersion) {
+        if (deps && deps[packageName]) {
+            const currentVersion = deps[packageName];
+
+            // Skip file: protocol dependencies (local development)
+            if (currentVersion.startsWith('file:')) {
+                console.log(`  ⏭️  Skipping ${packageName}: ${currentVersion} (file: protocol)`);
+                return false;
+            }
+
+            const prefix = extractVersionPrefix(currentVersion);
+            const versionWithPrefix = prefix + newVersion;
+            deps[packageName] = versionWithPrefix;
+            return true;
+        }
+        return false;
+    }
+
+    // Update dependencies
+    if (updateDependency(packageJson.dependencies, packageName, newVersion)) {
+        updated = true;
+    }
+
+    // Update devDependencies
+    if (updateDependency(packageJson.devDependencies, packageName, newVersion)) {
+        updated = true;
+    }
+
+    // Update peerDependencies
+    if (updateDependency(packageJson.peerDependencies, packageName, newVersion)) {
+        updated = true;
+    }
+
+    // Update optionalDependencies
+    if (updateDependency(packageJson.optionalDependencies, packageName, newVersion)) {
+        updated = true;
+    }
+
+    // Update the package's own version if it matches the package name
+    // (No prefix for the package's own version)
+    if (packageJson.name === packageName) {
+        packageJson.version = newVersion;
+        updated = true;
+    }
+
+    if (updated) {
+        // Preserve the file's own indentation. Some manifests here use four spaces and some
+        // two; rewriting every one at a fixed width buries a one-line version change in a
+        // hundred lines of reformatting, which is how a bump becomes unreviewable.
+        const indentMatch = content.match(/\n(\s+)"/);
+        const indent = indentMatch ? indentMatch[1].length : 2;
+
+        writeFileSync(filePath, JSON.stringify(packageJson, null, indent) + '\n');
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * Update any other files that might reference the package version
+ */
+function updateOtherFiles(packageName, newVersion) {
+    const filesToCheck = [
+        'README.md',
+        'docs/**/*.md',
+        'examples/**/package.json',
+        'tooling/scripts/**/*.js',
+        'tooling/scripts/**/*.mjs'
+    ];
+
+    // This is a simplified version - you might want to add more sophisticated file searching
+    // For now, we'll focus on package.json files which are the most important
+    return 0;
+}
+
+/**
+ * Get the current version of a package
+ */
+function getCurrentVersion(packageName) {
+    const packageJsonFiles = findPackageJsonFiles(rootDir);
+
+    for (const filePath of packageJsonFiles) {
+        const content = readFileSync(filePath, 'utf8');
+        const packageJson = JSON.parse(content);
+
+        if (packageJson.name === packageName) {
+            return packageJson.version;
+        }
+    }
+
+    throw new Error(`Package ${packageName} not found`);
+}
+
+/**
+ * Bump version to next patch
+ */
+function bumpPatchVersion(version) {
+    const parts = version.split('.');
+    const major = parseInt(parts[0]) || 0;
+    const minor = parseInt(parts[1]) || 0;
+    const patch = parseInt(parts[2]) || 0;
+
+    return `${major}.${minor}.${patch + 1}`;
+}
+
+/**
+ * Decrement version to previous patch
+ */
+function decrementPatchVersion(version) {
+    const parts = version.split('.');
+    const major = parseInt(parts[0]) || 0;
+    const minor = parseInt(parts[1]) || 0;
+    const patch = parseInt(parts[2]) || 0;
+
+    if (patch <= 0) {
+        throw new Error(`Cannot decrement version ${version}: patch version is already 0`);
+    }
+
+    return `${major}.${minor}.${patch - 1}`;
+}
+
+/**
+ * Main function
+ */
+function main() {
+    const args = process.argv.slice(2);
+
+    if (args.length < 1 || args.length > 2) {
+        console.log('Usage: node bump-version.mjs <package-name> [<new-version>|--next|--previous]');
+        console.log('');
+        console.log('Examples:');
+        console.log('  node bump-version.mjs @routier/core 0.0.1-alpha.10');
+        console.log('  node bump-version.mjs @routier/datastore 0.0.1-alpha.5');
+        console.log('  node bump-version.mjs @routier/memory-plugin 0.0.1-alpha.3');
+        console.log('  node bump-version.mjs @routier/react --next');
+        console.log('  node bump-version.mjs @routier/core --previous');
+        process.exit(1);
+    }
+
+    const packageName = args[0];
+    let newVersion = args[1];
+
+    // Handle --next flag
+    if (newVersion === '--next') {
+        try {
+            const currentVersion = getCurrentVersion(packageName);
+            newVersion = bumpPatchVersion(currentVersion);
+            console.log(`📈 Auto-bumping ${packageName} from ${currentVersion} to ${newVersion}`);
+        } catch (error) {
+            console.error(`❌ Error: ${error.message}`);
+            process.exit(1);
+        }
+    } else if (newVersion === '--previous') {
+        try {
+            const currentVersion = getCurrentVersion(packageName);
+            newVersion = decrementPatchVersion(currentVersion);
+            console.log(`📉 Auto-decrementing ${packageName} from ${currentVersion} to ${newVersion}`);
+        } catch (error) {
+            console.error(`❌ Error: ${error.message}`);
+            process.exit(1);
+        }
+    } else if (!newVersion) {
+        console.log('❌ Error: Version, --next, or --previous flag is required');
+        process.exit(1);
+    }
+
+    console.log(`🔄 Bumping ${packageName} to version ${newVersion}...`);
+
+    // Find all package.json files
+    const packageJsonFiles = findPackageJsonFiles(rootDir);
+    console.log(`📁 Found ${packageJsonFiles.length} package.json files`);
+
+    let updatedFiles = 0;
+
+    // Update each package.json file
+    for (const filePath of packageJsonFiles) {
+        const relativePath = filePath.replace(rootDir + '/', '');
+        const wasUpdated = updatePackageJson(filePath, packageName, newVersion);
+
+        if (wasUpdated) {
+            console.log(`✅ Updated ${relativePath}`);
+            updatedFiles++;
+        }
+    }
+
+    console.log('');
+    console.log(`🎉 Successfully updated ${updatedFiles} files`);
+    console.log('');
+    console.log('📋 Next steps:');
+    console.log('  1. Review the changes: git diff');
+    console.log('  2. Commit the changes: git add . && git commit -m "chore: bump ' + packageName + ' to ' + newVersion + '"');
+    console.log(`  3. Publish: npm publish --workspace ${packageName} --access public`);
+    console.log('     (dependencies first — see RELEASING.md)');
+}
+
+// Run the script
+main();

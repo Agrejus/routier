@@ -87,7 +87,7 @@ that would make Routier's own rows behave differently from every other backend.
 against trees the real parser produced from filters a caller would write.
 
 Shape assertions prove what the translator emits, not what an engine does with it — the
-lesson `e2e/src/dialectConformance.ts` records about the SQL builder. So the output was also
+lesson `tooling/e2e/src/dialectConformance.ts` records about the SQL builder. So the output was also
 executed against MongoDB 7 over a seeded collection, asserting the matched `_id`s for 27
 filters covering every row in the table above. `$not` over a `RegExp`, `$size`, `$toLower`
 and `$regexMatch` were each confirmed against the server rather than assumed.

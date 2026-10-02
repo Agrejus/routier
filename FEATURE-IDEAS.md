@@ -90,7 +90,7 @@ packaged. Not done: Qwik, Ember and Alpine, and a React Native storage driver.
 
 - **Current state:** only React and Vue.
 - **Proposal:** Svelte (a store or runes), Solid (a signal) and Angular (a signal or
-  Observable) are each about the size of `vue/src`. Each one opens a new community.
+  Observable) are each about the size of `plugins/vue/src`. Each one opens a new community.
 - **TanStack Query bridge:** also add a `queryOptions` helper so teams can adopt Routier
   without dropping their existing cache layer.
 

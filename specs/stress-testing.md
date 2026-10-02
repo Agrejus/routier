@@ -20,7 +20,7 @@ without it that assertion is skipped rather than guessed at (see "Measuring memo
 | S6 subscriptions and views | Done | 5k products, ~58s. Nothing broken; measured the derive cost, below |
 | S7 replication under lag | Done | 2k saves against a source lagging 10–50ms. Nothing broken |
 | S8 real databases | Done | **Found defects #19, #20, #21, #22.** The volume load passes; everything else is pinned |
-| S9 throughput floor | Done | ratio against an in-process reference workload; baseline in `stress/src/throughput-baseline.json`. Was flaky in a full run, fixed by normalising |
+| S9 throughput floor | Done | ratio against an in-process reference workload; baseline in `tooling/stress/src/throughput-baseline.json`. Was flaky in a full run, fixed by normalising |
 | S10 immutable stale refs | Done | 10k generations through first-generation references |
 | S11 immutable volume + churn | Done | S1 and S3 workloads through `.immutable()` |
 | S12 application session | Done | 12 related collections, 6 screens, a 400-step journey. The first scenario with more than one collection or more than one query shape |
@@ -38,7 +38,7 @@ S12 is twelve collections with real references, six screens with distinct query 
 seeded journey that moves between them the way a person does. It is deliberately smaller and
 slower than S1 — the subject is the ORDER of operations across collections, not the rate.
 
-**What it asserts** (`stress/src/harness/application/invariants.ts`). Each claim needs either
+**What it asserts** (`tooling/stress/src/harness/application/invariants.ts`). Each claim needs either
 two collections or two query shapes, which is why none could be made before:
 
 | Invariant | The failure it catches |
@@ -53,7 +53,7 @@ The last one compares content FINGERPRINTS rather than counts. An update never c
 so a count comparison there would look like a check while checking nothing.
 
 **The invariants have their own tests**, ungated, in
-`stress/src/harness/application/invariants.test.ts`. Each breaks the store in one specific way
+`tooling/stress/src/harness/application/invariants.test.ts`. Each breaks the store in one specific way
 and asserts the matching invariant fires and the others stay quiet. A green check that cannot
 go red is not a check, and S12 passed on its first run — which was worth nothing until each
 claim had been shown to fail on the corruption it exists to catch.
@@ -88,7 +88,7 @@ Two consequences for anyone reading a result:
   is now reported as such, rather than as "no early growth to compare".
 
 **Where the loads live.** S1's volume load and S3's churn load are in
-`stress/src/harness/workloads.ts`, and their entity shapes in `stress/src/harness/shapes.ts`,
+`tooling/stress/src/harness/workloads.ts`, and their entity shapes in `tooling/stress/src/harness/shapes.ts`,
 because S8 re-runs both against PostgreSQL at a smaller scale. A second hand-written copy of a
 load drifts, and once it drifts the two scenarios stop hunting the same defect. The shapes sit in
 the harness rather than in S1/S3 for a mechanical reason: importing them from a `.test.ts` file
@@ -187,7 +187,7 @@ needs a real profile, not a comparison read.
 - *Per-backend volume budgets in S1.* FileSystemPlugin rewrites a whole JSON file per
   save, making a run quadratic in the entity count, and SQLite pays fsync per batch.
   100k on those backends does not fit the 5-minute budget. Budgets live in
-  `stress/src/harness/backends.ts` and are printed in every failure banner.
+  `tooling/stress/src/harness/backends.ts` and are printed in every failure banner.
 - *S3 samples `previewChangesAsync` every 25 cycles* rather than after every save; the
   cheap equivalent (`hasChangesAsync`) runs after every save. Rationale in the file.
 - *`--forceExit` is no longer required* (2026-08-03). Both `npx jest` and
@@ -254,16 +254,16 @@ Read these before you write code:
 | Path | What it gives you |
 | --- | --- |
 | `specs/known-defects.md` | The defect workflow, past failure modes, and the pinning convention |
-| `test-utils/src/shapeCatalog.ts` | 55 compiled schema shapes — reuse them, do not invent schemas |
-| `test-utils/src/generatorInvariants.ts` | Invariant assertions you can borrow (roundtrip, clone isolation) |
-| `test-utils/src/pluginContract.ts` | The per-plugin behavioral contract and its datastore fixtures |
-| `test-utils/src/dataGenerator.ts` | `generateData(schema, n)` — the standard entity factory |
+| `tooling/test-utils/src/shapeCatalog.ts` | 55 compiled schema shapes — reuse them, do not invent schemas |
+| `tooling/test-utils/src/generatorInvariants.ts` | Invariant assertions you can borrow (roundtrip, clone isolation) |
+| `tooling/test-utils/src/pluginContract.ts` | The per-plugin behavioral contract and its datastore fixtures |
+| `tooling/test-utils/src/dataGenerator.ts` | `generateData(schema, n)` — the standard entity factory |
 | `plugins/memory/src/tests/datastore/MemoryDatastore.ts` | A full datastore with collections AND views — the view wiring matters for stress |
-| `e2e/src/postgresContainer.test.ts` | The testcontainers pattern for real-database tests |
+| `tooling/e2e/src/postgresContainer.test.ts` | The testcontainers pattern for real-database tests |
 
 ## Where the code goes
 
-Create a new workspace project `stress/` beside `e2e/`. Follow the `e2e/` layout: its own
+Create a new workspace project `tooling/stress/` beside `tooling/e2e/`. Follow the `tooling/e2e/` layout: its own
 `package.json`, its own jest project entry, gated behind an environment variable.
 
 Rules:
@@ -365,7 +365,7 @@ Invariants:
 Hunts: view derive feedback loops, notification amplification, the empty-send guard
 regressing, history id churn (compute-once identity is new — stress it).
 
-*As built:* `stress/src/s6-views-under-write-pressure.test.ts`, at the specified scale. Two
+*As built:* `tooling/stress/src/s6-views-under-write-pressure.test.ts`, at the specified scale. Two
 additions the spec could not have anticipated — an assertion that view reads are frozen (views
 are `"immutable"` since defect #17), and one that each subscriber's last notification reflects the
 settled data, without which the notification bound is vacuous. A no-op save is also asserted to
@@ -385,8 +385,8 @@ Invariants:
 Hunts: re-hydration resurrection (fixed once — guard the fix), mirror-order bugs,
 `writtenCollections` gaps for collections first touched by a query.
 
-*As built:* `stress/src/s7-replication-under-lag.test.ts`, over `LaggingPlugin`
-(`stress/src/harness/lagging-plugin.ts`), which is self-tested in `harness.test.ts`. It delays the
+*As built:* `tooling/stress/src/s7-replication-under-lag.test.ts`, over `LaggingPlugin`
+(`tooling/stress/src/harness/lagging-plugin.ts`), which is self-tested in `harness.test.ts`. It delays the
 *callback*, not the operation — delaying the call would serialise work the real system runs
 concurrently. The resurrection invariant is asserted in the only shape that can reach the
 hydration branch: remove **every** row, then read. Anything smaller leaves the read plugin
@@ -403,8 +403,8 @@ oracle equality at the end.
 Hunts: savepoint/transaction bugs under concurrency, pool exhaustion, the flattened
 persist loop under real I/O.
 
-*As built:* `stress/src/s8-real-databases.test.ts`, with the container lifecycle in
-`stress/src/harness/postgres.ts` (deliberately **not** re-exported from `harness/index.ts`, so
+*As built:* `tooling/stress/src/s8-real-databases.test.ts`, with the container lifecycle in
+`tooling/stress/src/harness/postgres.ts` (deliberately **not** re-exported from `harness/index.ts`, so
 testcontainers stays out of every other scenario's module graph). One container per file, reused
 across scenarios, with isolation by collection name — a Postgres start is several seconds and
 paying it per scenario would spend the budget on setup.
@@ -416,8 +416,8 @@ above — no SQLite churn run, and an unverified budget for the Postgres churn s
 ### S9. Throughput regression floor
 
 The benchmark runner is broken (`npm run benchmark` fails at launch with
-`ERR_REQUIRE_CYCLE_MODULE` — pre-existing, tsx/esm cycle in `benchmark/src/run.ts`).
-Either fix that launcher or add a minimal floor check to `stress/`: measure inserts/sec
+`ERR_REQUIRE_CYCLE_MODULE` — pre-existing, tsx/esm cycle in `tooling/benchmark/src/run.ts`).
+Either fix that launcher or add a minimal floor check to `tooling/stress/`: measure inserts/sec
 and reads/sec on the memory plugin at 10k entities, and fail if throughput drops below
 half of the recorded baseline. Record the baseline in a JSON file next to the test on
 first run.
@@ -428,7 +428,7 @@ Follow the workflow in `specs/known-defects.md`:
 
 1. Reduce the failure to the smallest deterministic reproduction (seed + scale).
 2. Add an entry to `specs/known-defects.md` with symptom, location, and reproduction.
-3. Pin it with `it.failing` in the closest functional suite — not only in `stress/`.
+3. Pin it with `it.failing` in the closest functional suite — not only in `tooling/stress/`.
 4. Fix it only if the fix is contained. Otherwise leave the pin and the entry.
 
 ## Gotchas that will mislead you

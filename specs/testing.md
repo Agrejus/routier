@@ -69,7 +69,7 @@ Estimated volume: ~60 shapes × 12 invariants × 4 orders ≈ **2,900 executed c
 Add `fast-check` and use it where inputs are unbounded:
 
 - **Expression parser**: generate arbitrary filter ASTs (property/value/comparator/operator trees), render them to arrow-function source, parse, and assert the tree round-trips. Generate adversarial strings (quotes, operators, unicode, comments inside filters) and assert the parser either produces a correct tree or `NOT_PARSABLE` — never a wrong tree. Oracle: evaluate the parsed tree and the original closure against generated entities; results must match.
-- **Data round-trips**: generate random entities per schema shape (extend `test-utils/dataGenerator`) instead of fixed fixtures.
+- **Data round-trips**: generate random entities per schema shape (extend `tooling/test-utils/dataGenerator`) instead of fixed fixtures.
 - **Query oracle** (see 2.2) fed with generated data sets.
 
 Each property runs 100–1,000 generated cases per CI run. Failures shrink to minimal reproductions and get pinned as regular regression tests.
@@ -92,7 +92,7 @@ Integration tests exercise datastore + plugin together, in-process.
 The plugin architecture needs a **shared behavioral contract**: one suite, written once in `test-utils`, that every `IDbPlugin` implementation must pass. Structure:
 
 ```ts
-// test-utils/src/pluginContract.ts
+// tooling/test-utils/src/pluginContract.ts
 export function describePluginContract(name: string, factory: () => IDbPlugin) {
     // ~150 behavioral tests, parameterized over the factory
 }
@@ -130,9 +130,9 @@ E2E proves the system against real storage engines and real runtimes.
 | React bindings | @testing-library/react + jsdom | every CI run |
 
 Locally, the server-backed suites run against the home Kubernetes cluster, not local containers.
-`npm run test:e2e:k8s` (or `npm run test:stress:k8s`) applies `deploy/k8s/e2e` to the
+`npm run test:e2e:k8s` (or `npm run test:stress:k8s`) applies `tooling/deploy/k8s/e2e` to the
 `routier-e2e` namespace, waits for PostgreSQL, pgvector, MySQL, MongoDB, CouchDB and an S3 server,
-port-forwards them, and sets the `ROUTIER_*` variables. The helpers in `e2e/servers` then give each
+port-forwards them, and sets the `ROUTIER_*` variables. The helpers in `tooling/e2e/servers` then give each
 suite its own fresh database on those servers. Without the variables the helpers start
 testcontainers instead, which is what GitHub CI does. Pass `--keep` to leave the namespace up
 between runs; otherwise the script deletes it.
@@ -159,15 +159,15 @@ Mutation runs are expensive: run per-package, nightly, and on PRs that touch the
 
 ## Performance regression tests
 
-Recreate the missing `benchmark/` workspace from the harness built during the perf work (isolated processes, warmup, 30 samples, medians): insert, update, full scan, filtered query, point lookup by key. Store baseline medians in the repo. CI (nightly) fails when a scenario regresses > 15% against baseline; releases update the baseline deliberately. This locks in the 30% write and 3× point-read gains.
+Recreate the missing `tooling/benchmark/` workspace from the harness built during the perf work (isolated processes, warmup, 30 samples, medians): insert, update, full scan, filtered query, point lookup by key. Store baseline medians in the repo. CI (nightly) fails when a scenario regresses > 15% against baseline; releases update the baseline deliberately. This locks in the 30% write and 3× point-read gains.
 
 ## Changes to current testing
 
 1. **Phase 0 — green baseline**: fix or rewrite the 8 failing tests; fix jest open handles (BroadcastChannel must close on `destroy`; add global teardown) so `--forceExit` is not needed.
 2. **Replace mock schemas with compiled schemas** where possible. `parser.test.ts` uses a hand-built `mockSchema` that let a wrong-precedence assertion survive; tests against `s.define(...).compile()` bind tests to real behavior.
 3. **Delete or fix tests that assert bugs.** The audit found two (precedence, boolean-false coercion) — mutation testing will find the rest.
-4. **Test placement convention**: unit tests stay beside source (`*.test.ts`); integration tests move to `__integration__/`; E2E lives in a new `e2e/` workspace; the contract kit lives in `test-utils`.
-5. **One data generator.** Extend `test-utils/dataGenerator` to cover the full shape catalog; all layers consume it.
+4. **Test placement convention**: unit tests stay beside source (`*.test.ts`); integration tests move to `__integration__/`; E2E lives in a new `tooling/e2e/` workspace; the contract kit lives in `test-utils`.
+5. **One data generator.** Extend `tooling/test-utils/dataGenerator` to cover the full shape catalog; all layers consume it.
 6. **CI tiers**: PR = unit + integration + sqlite E2E (~5 min); nightly = full E2E + mutation + property-based long runs + benchmarks; release = everything + testcontainers matrix.
 
 ## Volume estimate
@@ -198,4 +198,4 @@ Recreate the missing `benchmark/` workspace from the harness built during the pe
 
 1. Does the `Definition` type and array-of-objects recursion get fixed before Phase 1, or does the catalog mark those shapes as known-failing? Recommendation: mark known-failing with explicit `it.failing` tests so the suite documents the gap and flips loudly when fixed.
 2. Testcontainers requires Docker in CI — confirm the CI environment allows it, otherwise fall back to service containers.
-3. Mutation score gates on `react/` and `sync-server/` are out of scope here; revisit after Phase 3.
+3. Mutation score gates on `react/` and `tooling/sync-server/` are out of scope here; revisit after Phase 3.

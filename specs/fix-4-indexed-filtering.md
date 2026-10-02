@@ -103,12 +103,12 @@ Rules:
 
 Follow the per-fix procedure in `specs/perf-fixes.md` section 2.2. Additions:
 
-1. Add an indexed non-key property to the benchmark schema in `benchmark/src/run.ts` and a
+1. Add an indexed non-key property to the benchmark schema in `tooling/benchmark/src/run.ts` and a
    scenario `indexed-filtered-query-10000` that filters on it with equality. Mirror how Fix 3
    added the `renamed-*` scenarios.
 2. Measure `insert-1000` and `update-1000` on BOTH schemas: the unindexed one (must not move) and
    the indexed one (prices the maintenance).
-3. Do not update `benchmark/baselines/baselines.json` unless you are on the machine that owns it.
+3. Do not update `tooling/benchmark/baselines/baselines.json` unless you are on the machine that owns it.
 
 ## Acceptance
 

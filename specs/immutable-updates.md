@@ -140,7 +140,7 @@ Nested objects were never storable in a SQL column anyway, so nothing regresses 
 suite. The first two blocks are the same scenarios that are pinned `it.failing` against the
 proxy path as defects #12 and #13. **They pass here with no other change.**
 
-`stress/src/s10-immutable-stale-references.test.ts` — 10,000 generations over 1,000 rows,
+`tooling/stress/src/s10-immutable-stale-references.test.ts` — 10,000 generations over 1,000 rows,
 every write issued through a first-generation reference that is never refreshed. All
 500,000 increments land: none lost to a stale base, none double-counted by a replayed
 patch. ~6s.

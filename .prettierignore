@@ -1,4 +1,4 @@
 docs/**
 examples/**
-scripts/**
+tooling/scripts/**
 **/*.mjs

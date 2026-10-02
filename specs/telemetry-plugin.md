@@ -201,7 +201,7 @@ Run from the repo root:
 1. `npx tsc --noEmit -p core` (or `npm run tsc --workspace=core` — use whichever script exists in `core/package.json`).
 2. `npm test --workspace=core` — all pass.
 3. `npm test --workspace=plugins/memory` — all pass (workspace name may be `@routier/memory-plugin`; check `plugins/memory/package.json`).
-4. Mutation testing: `npx stryker run stryker/plugins.mjs` from the repo root. The `core/src/plugins/**` glob already includes the new file. The run must meet the configured break threshold (85). If surviving mutants are inside `TelemetryDbPlugin.ts`, add tests that kill them. Do not lower the threshold. This run is slow; run it once after the unit tests pass, not repeatedly.
+4. Mutation testing: `npx stryker run tooling/stryker/plugins.mjs` from the repo root. The `core/src/plugins/**` glob already includes the new file. The run must meet the configured break threshold (85). If surviving mutants are inside `TelemetryDbPlugin.ts`, add tests that kill them. Do not lower the threshold. This run is slow; run it once after the unit tests pass, not repeatedly.
 
 ---
 
@@ -292,7 +292,7 @@ Wrap the real memory plugin end-to-end:
 
 ### B5. Mutation testing for Part B
 
-Create `stryker/otel.mjs` modeled on `stryker/plugins.mjs`:
+Create `tooling/stryker/otel.mjs` modeled on `tooling/stryker/plugins.mjs`:
 
 ```ts
 import { area } from '../stryker.base.mjs';
@@ -302,7 +302,7 @@ export default area([
 ], 85, { /* copy the jest override pattern from plugins.mjs, pointing at a jest config that runs the otel tests */ });
 ```
 
-Look at how `stryker/jest.plugins.js` scopes its jest run and create `stryker/jest.otel.js` the same way. Run `npx stryker run stryker/otel.mjs` and meet the 85 threshold. If the harness genuinely cannot run stryker against a workspace package (e.g. module resolution failures you cannot fix within this task), document exactly what failed at the bottom of this spec file under a "## Implementation notes" heading and make sure the jest tests alone are airtight.
+Look at how `tooling/stryker/jest.plugins.js` scopes its jest run and create `tooling/stryker/jest.otel.js` the same way. Run `npx stryker run tooling/stryker/otel.mjs` and meet the 85 threshold. If the harness genuinely cannot run stryker against a workspace package (e.g. module resolution failures you cannot fix within this task), document exactly what failed at the bottom of this spec file under a "## Implementation notes" heading and make sure the jest tests alone are airtight.
 
 ### B6. Verification for Part B
 
@@ -356,7 +356,7 @@ Work is done only when ALL of these are true:
 
 ### The `core/src/plugins/**` stryker area was already below its threshold
 
-`npx stryker run stryker/plugins.mjs` scores **43.17** against a break threshold of 85. That is
+`npx stryker run tooling/stryker/plugins.mjs` scores **43.17** against a break threshold of 85. That is
 pre-existing, not a regression: `ConcurrencyDbPlugin.ts`, `DataTranslator.ts`, `TupleTranslator.ts`
 and all three `wire/` files score 0.00, `EphemeralDataPlugin.ts` scores 12.18, and
 `RetryDbPlugin.ts` scores 70.00. 1,104 of 2,583 mutants have no coverage at all, which is the
@@ -368,7 +368,7 @@ No mutant in it survives that a test could reasonably kill. The two `result.ok =
 mutants are equivalent for every real result shape (a success envelope carries no `error`
 property), and are killed by a test that hands the wrapper a success result carrying one anyway.
 
-`stryker/otel.mjs` scores **100.00** on `plugins/otel/src/**`.
+`tooling/stryker/otel.mjs` scores **100.00** on `plugins/otel/src/**`.
 
 ### `@opentelemetry/context-async-hooks` is a test-only dependency
 

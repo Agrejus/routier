@@ -8,7 +8,7 @@ does not exist.
 
 `0.3.0` and `0.4.0` are deliberate exceptions: every package moved together, on the grounds
 that a breaking core change forces every plugin along with it. **That reasoning no longer
-holds.** `scripts/rspack.library.mjs` externalises peer dependencies, so a plugin dist now
+holds.** `tooling/scripts/rspack.library.mjs` externalises peer dependencies, so a plugin dist now
 `require`s core rather than inlining a copy of it, and every plugin declares core at
 `>=0.4.0` — a range a higher core satisfies. `0.5.0` shipped core alone for exactly that
 reason. Verify before assuming lockstep: if a plugin bundle no longer contains core symbols,
@@ -50,7 +50,7 @@ publishers, delete that secret. With no token, the workflow automatically uses O
 ## Before you start
 
 Everything here assumes CI is green on the branch you are releasing. It runs the same gates
-and it is the only place bundle builds are verified — see `benchmark/README.md` and
+and it is the only place bundle builds are verified — see `tooling/benchmark/README.md` and
 `specs/known-defects.md` for what the numbers mean.
 
 ```
@@ -124,7 +124,7 @@ package tells you which.
 npm run bump -- <package-name> <version>
 ```
 
-`scripts/bump-version.mjs` sets the package's own version and rewrites every cross-reference
+`tooling/scripts/bump-version.mjs` sets the package's own version and rewrites every cross-reference
 to it across the repository, preserving range prefixes (`^`, `>=`) and skipping `file:`
 dependencies. Bump dependencies before dependents so the references land correctly:
 `@routier/core` first, then `@routier/sql-plugin-core` and `@routier/memory-plugin`, then
@@ -231,7 +231,7 @@ satisfies them.
 ### Manual emergency fallback
 
 If GitHub or npm OIDC is unavailable, run the checks above, then publish in the order recorded in
-`scripts/release-packages.mjs`:
+`tooling/scripts/release-packages.mjs`:
 
 ```
 npm publish --workspace @routier/core --access public --provenance

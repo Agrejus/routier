@@ -276,7 +276,7 @@ boolean call carries returned no rows there. Both run in memory until each engin
 real server. The renderers stay, so claiming them later is a declaration change rather than new code.
 
 A claim is proven by EXECUTING the rendered output against the engine over the value domain the
-schema admits, not by rendering it. `test-utils/src/pluginContract.ts`'s "filter parity with
+schema admits, not by rendering it. `tooling/test-utils/src/pluginContract.ts`'s "filter parity with
 JavaScript" section is that proof: it asserts the pushed-down rows equal `rows.filter(predicate)`,
 seeded with the values engines disagree on — a fractional operand, a non-ASCII name, an integral
 REAL, a shift count over 32. A plugin that pushes down must agree; one that hands the filter back
@@ -386,7 +386,7 @@ LOWER('Bravo') = 'Bravo'             -> true
 
 This predates calls entirely; a casing call only makes it visible. A schema that needs JavaScript's
 answer has to declare a `_bin` or `_as_cs` collation on the column. Pinned in
-`e2e/src/mysqlCasing.test.ts` rather than asserted away.
+`tooling/e2e/src/mysqlCasing.test.ts` rather than asserted away.
 
 **`%` is not universal, so every dialect spells remainder differently.** PostgreSQL has no `%`
 operator for `double precision` — a filter on a numeric column failed with *"operator does not exist:
@@ -459,7 +459,7 @@ correctly.
 Verified; unfixed.
 
 Everything else on the predicate list agrees across SQLite, PostgreSQL and every in-process plugin,
-arithmetic included — and `test-utils/src/pluginContract.ts`'s "filter parity with JavaScript"
+arithmetic included — and `tooling/test-utils/src/pluginContract.ts`'s "filter parity with JavaScript"
 section is the executable form of this paragraph. MySQL, MSSQL and MongoDB are unverified: they need
 a server, and the parity section is written to run against them the moment one is available.
 
