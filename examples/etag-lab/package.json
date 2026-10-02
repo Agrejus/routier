@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "tsx --tsconfig tsconfig.json server/index.ts",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test tests/rest.test.ts tests/comparison.test.ts",
-    "test:ui": "node --import tsx --test --test-concurrency=1 tests/ui.test.ts"
+    "test": "node --import tsx --test tests/rest.test.ts tests/comparison.test.ts tests/errors.test.ts",
+    "test:ui": "node --import tsx --test --test-concurrency=1 --test-timeout=60000 tests/ui.test.ts"
   }
 }

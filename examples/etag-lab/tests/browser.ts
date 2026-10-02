@@ -45,6 +45,7 @@ export const startLabProcess = async (): Promise<LabProcess> => {
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   await waitForStart(child);
+  child.stderr?.pipe(process.stderr);
 
   return {
     origin: `http://127.0.0.1:${port}`,

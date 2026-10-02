@@ -2,6 +2,7 @@ import { type Request, type Response, Router } from 'express';
 import { z } from 'zod';
 import { type Note, noteParser } from '../src/notes';
 import { clientHeader, type RowVersion } from '../src/wire';
+import { handleAsync } from './errors';
 import type { NotePatch, NotesRepository } from './notesRepository';
 import { queryEtag } from './queryEtag';
 import type { Replica } from './replica';
@@ -79,7 +80,7 @@ const writeNotes = (services: LabServices) => async (request: Request, response:
 
 export const createRestRouter = (services: LabServices): Router => {
   const router = Router();
-  router.get('/notes', readNotes(services));
-  router.post('/notes', writeNotes(services));
+  router.get('/notes', handleAsync(readNotes(services)));
+  router.post('/notes', handleAsync(writeNotes(services)));
   return router;
 };

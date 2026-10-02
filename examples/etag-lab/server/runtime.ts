@@ -1,6 +1,7 @@
 import { SqliteDbPlugin } from '@routier/sqlite-plugin';
 import express, { type Express } from 'express';
 import { createAdminRouter } from './adminRoutes';
+import { answerErrors } from './errors';
 import { NotesRepository } from './notesRepository';
 import { Replica } from './replica';
 import { createRestRouter, type LabServices } from './restRoutes';
@@ -19,6 +20,7 @@ export const createRuntime = async (databaseFile: string): Promise<LabRuntime> =
   app.use('/routier', createTransportRouter(plugin, services.log));
   app.use('/rest', createRestRouter(services));
   app.use('/admin', createAdminRouter(services));
+  app.use(answerErrors);
 
   return { app, services };
 };

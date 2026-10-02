@@ -3,6 +3,7 @@ import { type Request, type Response, Router } from 'express';
 import { z } from 'zod';
 import { noteSchema } from '../src/notes';
 import { clientHeader } from '../src/wire';
+import { handleAsync } from './errors';
 import type { WireLog } from './wireLog';
 import { SchemaCollection } from '@routier/core/collections';
 
@@ -12,7 +13,7 @@ export const createTransportRouter = (plugin: IDbPlugin, log: WireLog): Router =
   const handle = createRequestHandler({ plugin, schemas: new SchemaCollection().set(noteSchema.id, noteSchema) });
   const router = Router();
 
-  router.post('/', async (request: Request, response: Response) => {
+  router.post('/', handleAsync(async (request: Request, response: Response) => {
     const client = request.header(clientHeader) ?? 'unknown';
     const parsed = requestParser.safeParse(request.body);
 
@@ -26,7 +27,7 @@ export const createTransportRouter = (plugin: IDbPlugin, log: WireLog): Router =
     const status = answer.ok ? 200 : 409;
     log.record({ client, method: 'POST', path: '/routier', ifNoneMatch: null, status, etag: null, versions: [], detail: answer.ok ? parsed.data.kind : `${parsed.data.kind} refused: ${answer.error}` });
     response.status(status).json(answer);
-  });
+  }));
 
   return router;
 };

@@ -1,14 +1,19 @@
 import { after, before, beforeEach, describe, it } from 'node:test';
-import type { Browser, Page } from 'playwright-core';
+import type { Browser, BrowserContext, Page } from 'playwright-core';
 import { containsText, hasText, hasValue } from './eventually';
 import { launchChrome, type LabProcess, startLabProcess } from './browser';
 
 let lab: LabProcess;
 let browser: Browser;
+let context: BrowserContext | undefined;
 let page: Page;
 
+const ACTION_TIMEOUT_MS = 15_000;
+
 const open = async (scenario: string) => {
-  page = await browser.newPage();
+  context = await browser.newContext();
+  context.setDefaultTimeout(ACTION_TIMEOUT_MS);
+  page = await context.newPage();
   await page.goto(`${lab.origin}/#${scenario}`);
   await page.getByTestId('reset').click();
   await page.waitForTimeout(200);
@@ -17,7 +22,7 @@ const open = async (scenario: string) => {
 const click = async (testId: string) => {
   const button = page.getByTestId(testId);
   await button.click();
-  await button.and(page.locator(':enabled')).waitFor({ timeout: 10_000 });
+  await button.and(page.locator(':enabled')).waitFor();
 };
 
 const editTitle = (client: string, id: string, title: string) => page.getByTestId(`${client}-title-${id}`).fill(title);
@@ -36,7 +41,8 @@ describe('etag lab in a browser', () => {
   });
 
   beforeEach(async () => {
-    await page?.close();
+    await context?.close();
+    context = undefined;
   });
 
   it('refuses the save of a client that read an old version', async () => {
