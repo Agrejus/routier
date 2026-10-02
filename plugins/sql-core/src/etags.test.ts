@@ -29,7 +29,7 @@ const plain = s.define('p', {
 }).compile();
 
 const sqlite = getDialect('sqlite');
-const TOKEN = /^[0-9a-z]{15}$/;
+const TOKEN = /^[0-9a-z]{15}[0-9a-f]{8}$/;
 
 describe('sqlEtagOf', () => {
     it('is null for a schema without an etag', () => {
@@ -50,6 +50,12 @@ describe('sqlEtagOf', () => {
         const etag = sqlEtagOf(numbered, 'keep');
 
         expect(etag?.kind === 'value' ? [etag.column, etag.valueOf({ version: 7 })] : null).toEqual(['version', 7]);
+    });
+
+    it.each([undefined, null, true, {}])('keeps no etag when a row carries %p', (carried) => {
+        const etag = sqlEtagOf(numbered, 'keep');
+
+        expect(etag?.kind === 'value' ? etag.valueOf({ version: carried }) : 'not kept').toBeNull();
     });
 
     it('keeps the string etag a row carries', () => {

@@ -16,7 +16,8 @@ import { CompiledSchema, IdType, InferType, PropertyInfo, SchemaId, SchemaTypes 
  * }
  * ```
  *
- * Nothing is declared on the schema and nothing on the collection builder: the plugin
+ * Nothing is declared on the collection builder. A schema that declares `.etag()` is guarded
+ * by that etag and gets no hidden column. Otherwise the plugin
  * maintains a hidden `__version` column in the SAME tables/records as the data, entirely
  * below the entity surface. Rows start at version 1; every update is applied ONLY IF the
  * stored version still matches what this store last read (and bumps it); a stale write

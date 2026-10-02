@@ -182,11 +182,15 @@ export class D1DbPlugin implements IDbPlugin {
             ) === true;
 
             if (hasVersionColumn) {
-                throw new Error(
-                    `Cloudflare D1 cannot support optimistic concurrency, so ConcurrencyDbPlugin must not wrap D1DbPlugin.  ` +
-                    `A token check requires reading a statement's affected-row count mid-transaction, and D1's batch() applies every statement without stopping to look.  ` +
-                    `Collection: ${schema!.collectionName}`
-                );
+                refuseConcurrency(schema!.collectionName);
+            }
+        }
+    }
+
+    private assertNoConcurrencyChecks(event: DbPluginBulkPersistEvent): void {
+        for (const [schemaId, changes] of event.operation) {
+            if (changes.updates.some(update => update.concurrency != null)) {
+                refuseConcurrency(event.schemas.get(schemaId)?.collectionName ?? String(schemaId));
             }
         }
     }
@@ -351,6 +355,7 @@ export class D1DbPlugin implements IDbPlugin {
 
     private async persist(event: DbPluginBulkPersistEvent): Promise<BulkPersistResult> {
         this.assertNoConcurrency(event.schemas);
+        this.assertNoConcurrencyChecks(event);
 
         const result = event.operation.toResult();
 
@@ -467,4 +472,12 @@ export class D1DbPlugin implements IDbPlugin {
             .then(() => done(PluginEventResult.success(event.id)))
             .catch(error => done(PluginEventResult.error(event.id, error)));
     }
+}
+
+function refuseConcurrency(collectionName: string): never {
+    throw new Error(
+        `Cloudflare D1 cannot support optimistic concurrency, so ConcurrencyDbPlugin must not wrap D1DbPlugin.  ` +
+        `A token check requires reading a statement's affected-row count mid-transaction, and D1's batch() applies every statement without stopping to look.  ` +
+        `Collection: ${collectionName}`
+    );
 }

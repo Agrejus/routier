@@ -6,7 +6,7 @@ import { EtagValue, SchemaModifiers } from '../types';
 import { compiledSchemaToJsonSchema, rehydrateSchemaFromJsonSchema } from './standardJsonSchema';
 import { compileArrowFunction, rehydrateEtagComparator } from './functionSource';
 
-type RoutierMeta = { isEtag?: boolean; etagSource?: string };
+type RoutierMeta = { etagSource?: string };
 
 const readMeta = (jsonSchema: Record<string, unknown>, property: string): RoutierMeta => {
     const properties = jsonSchema.properties as Record<string, Record<string, RoutierMeta>>;
@@ -78,19 +78,16 @@ describe('rehydrateEtagComparator', () => {
 });
 
 describe('etag JSON Schema round trip', () => {
-    it('exports the etag flag and comparator source', () => {
+    it('exports the comparator source', () => {
         const { exported } = roundTrip(s.number().etag(etags.numeric));
 
-        expect(readMeta(exported, 'version')).toEqual(expect.objectContaining({
-            isEtag: true,
-            etagSource: etags.numeric.toString(),
-        }));
+        expect(readMeta(exported, 'version').etagSource).toBe(etags.numeric.toString());
     });
 
     it('does not mark other properties as etags', () => {
         const { exported } = roundTrip(s.number().etag(etags.numeric));
 
-        expect(readMeta(exported, 'id').isEtag).toBeUndefined();
+        expect(readMeta(exported, 'id').etagSource).toBeUndefined();
     });
 
     it('rehydrates numeric so it compares the same pairs the same way', () => {

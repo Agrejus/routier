@@ -146,6 +146,19 @@ describe("BatchingDbPlugin", () => {
             expect(inner.writes.map(event => event.etags ?? "generate")).toEqual(["generate", "keep", "generate"]);
         });
 
+        it("treats an unset etag mode as generate when merging", async () => {
+            const inner = new SlowPlugin();
+            const plugin = new BatchingDbPlugin(inner, { isAtomic: true });
+
+            await Promise.all([
+                write(plugin, persistEvent(products)),
+                write(plugin, persistEvent(orders)),
+                write(plugin, { ...persistEvent(third), etags: "generate" }),
+            ]);
+
+            expect(inner.writes.length).toBe(2);
+        });
+
         it("merges writes that keep etags and keeps the mode on the merged write", async () => {
             const inner = new SlowPlugin();
             const plugin = new BatchingDbPlugin(inner, { isAtomic: true });

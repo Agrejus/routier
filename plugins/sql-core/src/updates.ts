@@ -1,4 +1,4 @@
-import { CompiledSchema } from '@routier/core/schema';
+import { CompiledSchema, EtagValue } from '@routier/core/schema';
 import type { SqlDialect } from './sql';
 import { toColumnValueMap } from './columns';
 import { etagIncrementClauses, withEtagValue, type SqlEtag } from './etags';
@@ -28,7 +28,7 @@ export type EntityUpdate = {
     entity: Record<string, unknown>;
     delta: Record<string, unknown>;
     /** Present when the row carries an optimistic-concurrency token — see EntityUpdateInfo. */
-    concurrency?: { column: string; expected: number | string };
+    concurrency?: { column: string; expected: EtagValue };
 };
 
 /**

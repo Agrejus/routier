@@ -51,6 +51,7 @@ describe("Optimistic Update Tests", () => {
         });
     });
 });
+
 describe("Optimistic writes reach PouchDB", () => {
     const opened: TestDataStore[] = [];
     const open = (plugin: IDbPlugin) => {
@@ -76,6 +77,19 @@ describe("Optimistic writes reach PouchDB", () => {
         const durable = await durablePlayers(name);
 
         expect(durable.map(player => player._rev.startsWith("1-"))).toEqual([true, true]);
+    });
+
+    it("takes the revision PouchDB generated into its memory copy", async () => {
+        const name = uuidv4();
+        const store = open(new OptimisticUpdatesDbPlugin(new PouchDbPlugin(name)));
+        await store.players.addAsync(...generateData(store.players.schema, 1));
+        await store.saveChangesAsync();
+        await settle();
+
+        const [cached] = await store.players.toArrayAsync();
+        const [durable] = await durablePlayers(name);
+
+        expect(cached?._rev).toBe(durable?._rev);
     });
 
     it("stores every update to a row it loaded from PouchDB", async () => {

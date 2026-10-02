@@ -1,10 +1,12 @@
-import { nextEtagToken } from '@routier/core/collections';
-import { CompiledSchema, EtagMode, SchemaTypes } from '@routier/core/schema';
+import { nextEtagToken } from '@routier/core/plugins';
+import { CompiledSchema, EtagMode, EtagValue, SchemaTypes } from '@routier/core/schema';
 import type { SqlDialect } from './sql';
 
 export type SqlEtag =
     | { kind: 'increment'; column: string }
-    | { kind: 'value'; column: string; valueOf: (entity: Record<string, unknown>) => unknown };
+    | { kind: 'value'; column: string; valueOf: (entity: Record<string, unknown>) => EtagValue | null };
+
+const etagValueOf = (value: unknown): EtagValue | null => (typeof value === 'number' || typeof value === 'string' ? value : null);
 
 export function sqlEtagOf<T extends {}>(schema: CompiledSchema<T>, mode: EtagMode | undefined): SqlEtag | null {
     const property = schema.etagProperty;
@@ -16,7 +18,7 @@ export function sqlEtagOf<T extends {}>(schema: CompiledSchema<T>, mode: EtagMod
     const column = property.getResolvedName();
 
     if (mode === 'keep') {
-        return { kind: 'value', column, valueOf: entity => entity[column] };
+        return { kind: 'value', column, valueOf: entity => etagValueOf(entity[column]) };
     }
 
     return property.type === SchemaTypes.Number

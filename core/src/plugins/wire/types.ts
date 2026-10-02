@@ -1,3 +1,4 @@
+import type { EtagValue } from '../../schema';
 import { SerializedExpression } from "../../expressions";
 import { JoinKind } from "../query/join";
 import { ExecutedQuery } from "../query/explain";
@@ -70,7 +71,7 @@ export type SerializedUpdate = {
     entity: unknown;
     changeType: "propertiesChanged" | "markedDirty" | "notModified";
     delta: unknown;
-    concurrency?: { column: string; expected: number | string };
+    concurrency?: { column: string; expected: EtagValue };
 };
 
 export type SerializedSchemaChanges = {

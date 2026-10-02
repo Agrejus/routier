@@ -3,7 +3,7 @@ import { Expression } from '@routier/core/expressions';
 import { IQuery, JoinQueryOptionValue, Query } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
 import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, entityResultColumns, getDialect, sqlColumnProperties, toColumnValueMap, toSql, reportUnrenderableFilters, reportUnrenderableSelectors, executedMapFields, selectList, referencedColumn, SqlDialect, sqlEtagOf } from '@routier/sql-plugin-core';
-import { etagToGenerate, stampEtag } from '@routier/core/collections';
+import { etagToGenerate, stampEtag } from '@routier/core/plugins';
 import type { EtagMode } from '@routier/core/schema';
 import { mappedResultColumns, ResultColumn } from '@routier/core/plugins';
 import { SqlOperation } from './types';

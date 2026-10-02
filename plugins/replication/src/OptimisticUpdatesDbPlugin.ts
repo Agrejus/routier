@@ -5,6 +5,7 @@ import { CompiledSchema } from "@routier/core/schema";
 import { logger, uuid, uuidv4 } from "@routier/core/utilities";
 import { MemoryPlugin } from "@routier/memory-plugin";
 import { PluginSyncEngine } from "./PluginSyncEngine";
+import { adoptEtags } from "./adoptEtags";
 
 const getMemoryPluginCollectionSize = <T extends {}>(plugin: IDbPlugin, schema: CompiledSchema<T>): number => {
 
@@ -72,6 +73,9 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
             mirrorFailureMode: "swallow",
             mirrorPersistPayloadMode: "resolve-from-source-result",
             etagOwner: "mirrors",
+            onMirrorPersisted: (mirrorEvent, result) => {
+                void adoptEtags(this.plugins.read, mirrorEvent, result);
+            },
             onMirrorError: options?.onMirrorError,
         });
     }
@@ -190,6 +194,16 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
 
     bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackPartialResult<BulkPersistResult>): void {
         const touchedSchemas: CompiledSchema<any>[] = [];
+        const guarded = [...event.operation].find(([, changes]) => changes.updates.some(update => update.concurrency != null));
+
+        if (guarded != null) {
+            done(PluginEventResult.error(event.id, new Error(
+                `OptimisticUpdatesDbPlugin cannot support optimistic concurrency, so ConcurrencyDbPlugin must not wrap it.  ` +
+                `It acknowledges a save before the source has checked it, so a conflict could only be found after the caller was told the save succeeded.  ` +
+                `Collection: ${event.schemas.get(guarded[0])?.collectionName}`
+            )));
+            return;
+        }
 
         for (const [schemaId, changes] of event.operation) {
             if (changes.hasItems === false) {

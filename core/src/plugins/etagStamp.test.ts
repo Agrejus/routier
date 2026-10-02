@@ -46,6 +46,7 @@ describe('stampEtag', () => {
     });
 
     describe('string tokens', () => {
+
         beforeEach(() => {
             jest.useFakeTimers();
         });
@@ -57,7 +58,7 @@ describe('stampEtag', () => {
         it('encodes the time then a sequence, fixed width', () => {
             jest.setSystemTime(36 ** 5);
 
-            expect(stampToken()).toBe('000100000000000');
+            expect(stampToken()).toMatch(/^000100000000000[0-9a-f]{8}$/);
         });
 
         it('counts up within the same millisecond', () => {
@@ -65,8 +66,7 @@ describe('stampEtag', () => {
             const first = stampToken();
             const second = stampToken();
 
-            expect(second.slice(0, 9)).toBe(first.slice(0, 9));
-            expect(etags.lexical(first, second)).toBe(-1);
+            expect([first, second].map(token => token.slice(0, 15))).toEqual([`${first.slice(0, 9)}000000`, `${first.slice(0, 9)}000001`]);
         });
 
         it('restarts the sequence in a later millisecond', () => {
@@ -74,7 +74,7 @@ describe('stampEtag', () => {
             stampToken();
             jest.setSystemTime(2 * 10 ** 12 + 1);
 
-            expect(stampToken().slice(9)).toBe('000000');
+            expect(stampToken().slice(9, 15)).toBe('000000');
         });
 
         it('keeps increasing when the clock goes backwards', () => {
@@ -84,6 +84,12 @@ describe('stampEtag', () => {
             const after = stampToken();
 
             expect(etags.lexical(before, after)).toBe(-1);
+        });
+
+        it('gives tokens made in the same instant different endings', () => {
+            jest.setSystemTime(6 * 10 ** 12);
+
+            expect(new Set([stampToken(), stampToken(), stampToken()].map(token => token.slice(15))).size).toBe(3);
         });
 
         it('ignores the prior token', () => {

@@ -2,14 +2,16 @@ import {
     DbPluginBulkPersistEvent,
     DbPluginEvent,
     DbPluginQueryEvent,
+    etagToGenerate,
     IDbPlugin,
     ITranslatedValue,
     joinInPlugin,
     QueryOrdering,
     reportRenamedProperties,
+    stampEtag,
 } from "@routier/core/plugins";
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from "@routier/core/results";
-import { BulkPersistResult, etagToGenerate, SchemaPersistChanges, stampEtag } from "@routier/core/collections";
+import { BulkPersistResult, SchemaPersistChanges } from "@routier/core/collections";
 import { CompiledSchema, EtagMode } from "@routier/core/schema";
 import { OptimisticConcurrencyError } from "@routier/core";
 import { UnknownRecord, uuidv4 } from "@routier/core/utilities";
@@ -274,7 +276,7 @@ export class MongoDbPlugin implements IDbPlugin {
             return;
         }
 
-        const etagName = schema.etagProperty?.name;
+        const etagName = schema.etagProperty?.getResolvedName();
         await stampUpdatedEtags(collection, etagToGenerate(schema, etagMode), changes.updates.map(update => update.entity));
 
         const updates: MongoUpdate[] = changes.updates.map(update => {
@@ -284,7 +286,7 @@ export class MongoDbPlugin implements IDbPlugin {
                 filter[update.concurrency.column] = update.concurrency.expected;
             }
 
-            return { filter, set: withEtag(flattenDelta(changedFields(update.delta, update.entity)), etagName, update.entity) };
+            return { filter, ...changeOf(update.delta, update.entity, etagName) };
         });
 
         const matched = await collection.updateMany(updates);
@@ -373,15 +375,6 @@ function mergeFilters(left: MqlFilter, right: MqlFilter): MqlFilter {
  * Mongo can express it exactly instead: `$set` takes dotted paths, so
  * `{ 'payload.inner.value': 'x' }` writes one leaf and leaves its siblings alone.
  */
-function changedFields(delta: Record<string, unknown>, entity: Record<string, unknown>): Record<string, unknown> {
-    if (Object.keys(delta).length > 0) {
-        return delta;
-    }
-
-    const { _id, ...fields } = entity;
-    return fields;
-}
-
 function flattenDelta(delta: Record<string, unknown>, prefix = ""): Record<string, unknown> {
     const flattened: Record<string, unknown> = {};
 
@@ -405,4 +398,13 @@ function flattenDelta(delta: Record<string, unknown>, prefix = ""): Record<strin
     }
 
     return flattened;
+}
+
+function changeOf(delta: Record<string, unknown>, entity: Record<string, unknown>, etagName: string | undefined): { set: Record<string, unknown>; replace: boolean } {
+    if (Object.keys(delta).length > 0) {
+        return { set: withEtag(flattenDelta(delta), etagName, entity), replace: false };
+    }
+
+    const { _id, ...fields } = entity;
+    return { set: withEtag(fields, etagName, entity), replace: true };
 }

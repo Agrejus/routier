@@ -1,16 +1,10 @@
-import { stampEtag } from '@routier/core/collections';
-import { CompiledSchema, IdType, InferType, PropertyInfo } from '@routier/core/schema';
+import { stampEtag } from '@routier/core/plugins';
+import { PropertyInfo } from '@routier/core/schema';
 import { UnknownRecord } from '@routier/core/utilities';
-
-type DexieKey = IdType | IdType[];
+import type { DexieKey } from './utils';
 
 type StoredRowReader = {
     bulkGet(keys: DexieKey[]): PromiseLike<(UnknownRecord | undefined)[]>;
-};
-
-export const dexieKey = (schema: CompiledSchema<UnknownRecord>, entity: InferType<UnknownRecord>): DexieKey => {
-    const ids = schema.getIds(entity);
-    return schema.idProperties.length === 1 ? ids[0] : ids;
 };
 
 export const stampAddedEtags = (etag: PropertyInfo<{}> | null, adds: UnknownRecord[]): void => {

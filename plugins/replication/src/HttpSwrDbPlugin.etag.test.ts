@@ -113,6 +113,19 @@ describe('HttpSwrDbPlugin etags', () => {
         ]);
     });
 
+    it('lets the server copy replace a local edit the server rejected, even with the same etag', async () => {
+        swrStore.seed(versionedSchema, [{ id: 'a', name: 'server', version: 5 }]);
+        http.respondToPost(() => ({ status: 422, body: {} }));
+        const writer = createPlugin();
+        await persistPlugin(writer, { updates: [{ id: 'a', name: 'edited', version: 5 }] }, versionedSchema);
+        const outcome = await writer.syncNow();
+        expect(outcome.deadLettered).toBe(1);
+
+        await revalidateWith([{ id: 'a', name: 'server', version: 5 }]);
+
+        expect(await stored()).toEqual([{ id: 'a', name: 'server', version: 5 }]);
+    });
+
     it('stores the server etag on a first fetch', async () => {
         http.respondToGet(() => ({ status: 200, body: [{ id: 'a', name: 'server', version: 9 }] }));
 

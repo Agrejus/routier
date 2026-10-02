@@ -29,7 +29,7 @@ type RawResponse = {
     ok: boolean;
     status: number;
     statusText: string;
-    headers?: { get: (name: string) => string | null };
+    headers?: { get?: (name: string) => string | null };
     json: () => Promise<unknown>;
     text?: () => Promise<string>;
 };
@@ -142,7 +142,7 @@ export class HttpQueryRunner {
 
             const text = typeof res.text === 'function' ? await res.text() : JSON.stringify(await res.json());
 
-            return { etag: res.headers?.get('ETag') ?? null, text };
+            return { etag: res.headers?.get?.('ETag') ?? null, text };
         });
     }
 }

@@ -240,7 +240,7 @@ export class BatchingDbPlugin implements IDbPlugin {
         for (const item of batch) {
             const schemas = [...item.event.operation.keys()];
             const overlaps = schemas.some(schemaId => claimed.has(schemaId));
-            const modeChanges = item.event.etags !== groups[groups.length - 1]?.[0].event.etags;
+            const modeChanges = (item.event.etags ?? 'generate') !== (groups[groups.length - 1]?.[0].event.etags ?? 'generate');
 
             if (groups.length === 0 || overlaps || modeChanges || this.canMerge === false) {
                 groups.push([item]);

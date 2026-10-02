@@ -27,6 +27,7 @@ export type MongoUpdate = {
     readonly filter: MqlFilter;
     /** The `$set` payload: what changed, in document terms. */
     readonly set: Record<string, unknown>;
+    readonly replace: boolean;
 };
 
 export interface MongoCollection {

@@ -1,10 +1,11 @@
 import Dexie from 'dexie';
-import { convertToDexieSchema } from "./utils";
-import { dexieKey, stampAddedEtags, stampUpdatedEtags } from "./etags";
+import { convertToDexieSchema, dexieKey } from "./utils";
+import { stampAddedEtags, stampUpdatedEtags } from "./etags";
 import { applySeed, applySort, describeSeed, describeSort, findIndexSeed, findSortSeed, seedableIndexes, seekReplacesPredicate, type IndexSeed } from "./indexSeed";
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, describeFilters, IDbPlugin, ITranslatedValue, joinInPlugin, QueryOption, QueryOptionName, reportRenamedProperties, TranslatedSingleValue } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
-import { BulkPersistResult, etagToGenerate, SchemaPersistChanges } from '@routier/core/collections';
+import { BulkPersistResult, SchemaPersistChanges } from '@routier/core/collections';
+import { etagToGenerate } from '@routier/core/plugins';
 import { CompiledSchema, getStorageDateReviver, InferCreateType, PropertyInfo, SchemaId, SchemaTypes } from '@routier/core/schema';
 import { UnknownRecord, uuidv4 } from '@routier/core/utilities';
 import { ParamsFilter } from '@routier/core/expressions';

@@ -394,7 +394,6 @@ function applyRoutierMetadata(
         routierMeta.isSearchable = true;
     }
     if (property.etagComparator != null) {
-        routierMeta.isEtag = true;
         routierMeta.etagSource = property.etagComparator.toString();
     }
     if (property.indexes && property.indexes.length > 0 && !routierMeta.indexes) {

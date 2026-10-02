@@ -52,6 +52,7 @@ describe('HttpSwrDbPlugin conditional revalidation', () => {
     });
 
     afterEach(async () => {
+        jest.restoreAllMocks();
         await Promise.all(created.splice(0).map(plugin => new Promise<void>(resolve => plugin.destroy(destroyEvent(), () => resolve()))));
     });
 
@@ -123,6 +124,91 @@ describe('HttpSwrDbPlugin conditional revalidation', () => {
         await read(plugin, 3);
 
         expect(ifNoneMatch(http)).toEqual([null, '"v1"', null]);
+    });
+
+    it('forgets the etag when the server rejects a local edit', async () => {
+        http.respondToGet(() => withEtag('"v1"'));
+        http.respondToPost(() => ({ status: 422, body: {} }));
+        const plugin = createPlugin({ maxAgeMs: 60_000 });
+        await read(plugin, 1);
+
+        await persistPlugin(plugin, { updates: [{ id: 'a', name: 'edited' }] }, itemSchema);
+        expect((await plugin.syncNow()).deadLettered).toBe(1);
+        await read(plugin, 2);
+
+        expect(ifNoneMatch(http)).toEqual([null, null]);
+    });
+
+    it.each([
+        ['keeps sending the etag of another collection', 0, [null, '"v1"']],
+        ['keeps another collection fresh', 60_000, [null]],
+    ])('%s when the server rejects a local edit', async (_, maxAgeMs, expected) => {
+        const otherSchema = s.define('swrConditionalUntouched', { id: s.string().key(), name: s.string() }).compile();
+        http.respondToGet(() => withEtag('"v1"'));
+        http.respondToPost(() => ({ status: 422, body: {} }));
+        const plugin = createPlugin({ maxAgeMs });
+        await read(plugin, 1);
+        await queryPlugin(plugin, otherSchema);
+        await waitFor(() => http.gets.length === 2, 'the other collection');
+        await sleep(20);
+
+        await persistPlugin(plugin, { updates: [{ id: 'a', name: 'edited' }] }, itemSchema);
+        expect((await plugin.syncNow()).deadLettered).toBe(1);
+        await queryPlugin(plugin, otherSchema);
+        await sleep(50);
+
+        expect(http.gets.filter(call => call.url.endsWith('swrConditionalUntouched')).map(call => call.headers['If-None-Match'] ?? null)).toEqual(expected);
+    });
+
+    it('forgets the etags of every collection whose edits the server rejects', async () => {
+        const otherSchema = s.define('swrConditionalRejected', { id: s.string().key(), name: s.string() }).compile();
+        http.respondToGet(() => withEtag('"v1"'));
+        http.respondToPost(() => ({ status: 422, body: {} }));
+        const plugin = createPlugin({ maxAgeMs: 60_000 });
+        await read(plugin, 1);
+        await queryPlugin(plugin, otherSchema);
+        await waitFor(() => http.gets.length === 2, 'the other collection');
+        await sleep(20);
+
+        await persistPlugin(plugin, { updates: [{ id: 'a', name: 'edited' }] }, itemSchema);
+        await persistPlugin(plugin, { updates: [{ id: 'a', name: 'edited' }] }, otherSchema);
+        expect((await plugin.syncNow()).deadLettered).toBe(2);
+        await read(plugin, 3);
+        await queryPlugin(plugin, otherSchema);
+        await waitFor(() => http.gets.length === 4, 'both refetches');
+
+        expect(ifNoneMatch(http)).toEqual([null, null, null, null]);
+    });
+
+    it('handles a rejected edit queued before a reload', async () => {
+        http.respondToPost(() => ({ status: 422, body: {} }));
+        await persistPlugin(createPlugin(), { updates: [{ id: 'a', name: 'edited' }] }, itemSchema);
+
+        expect((await createPlugin().syncNow()).deadLettered).toBe(1);
+    });
+
+    it('handles a rejected local edit when conditional revalidation is off', async () => {
+        http.respondToGet(() => withEtag('"v1"'));
+        http.respondToPost(() => ({ status: 422, body: {} }));
+        const plugin = createPlugin({ conditionalRevalidation: false, maxAgeMs: 60_000 });
+        await read(plugin, 1);
+
+        await persistPlugin(plugin, { updates: [{ id: 'a', name: 'edited' }] }, itemSchema);
+        expect((await plugin.syncNow()).deadLettered).toBe(1);
+        await read(plugin, 2);
+
+        expect(ifNoneMatch(http)).toEqual([null, null]);
+    });
+
+    it('logs nothing when conditional revalidation is off', async () => {
+        const warn = jest.spyOn(logger, 'warn');
+        http.respondToGet(() => withEtag('"v1"'));
+        const plugin = createPlugin({ conditionalRevalidation: false });
+
+        await read(plugin, 1);
+        await read(plugin, 2);
+
+        expect(warn).not.toHaveBeenCalled();
     });
 
     it('never sends an etag when conditional revalidation is off', async () => {

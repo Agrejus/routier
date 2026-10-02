@@ -4,7 +4,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { ConcurrencyDbPlugin, IDbPlugin, OptimisticConcurrencyError, uuidv4 } from '@routier/core';
-import { etags, s } from '@routier/core/schema';
+import { BulkPersistChanges, SchemaCollection } from '@routier/core/collections';
+import { Result } from '@routier/core/results';
+import { etags, InferRoot, s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
 import { describeEtagContract } from '@routier/test-utils';
 import { D1DbPlugin } from '../d1';
@@ -79,5 +81,39 @@ describe('ConcurrencyDbPlugin over SQLite with a declared etag', () => {
         database.close();
 
         expect(columns.sort()).toEqual(['_id', 'balance', 'version']);
+    });
+});
+
+describe('ConcurrencyDbPlugin over D1 with a declared etag', () => {
+    it('refuses the guarded save', async () => {
+        const store = new AccountStore(new ConcurrencyDbPlugin(new D1DbPlugin(openD1(), { deleteDatabase: async () => undefined })));
+        await store.accounts.addAsync({ balance: 1000 });
+        await store.saveChangesAsync();
+        const [row] = await store.accounts.toArrayAsync();
+
+        if (row == null) {
+            throw new Error('nothing stored');
+        }
+
+        row.balance = 900;
+
+        await expect(store.saveChangesAsync()).rejects.toThrow(
+            'Cloudflare D1 cannot support optimistic concurrency, so ConcurrencyDbPlugin must not wrap D1DbPlugin.  ' +
+            "A token check requires reading a statement's affected-row count mid-transaction, and D1's batch() applies every statement without stopping to look.  " +
+            'Collection: occ_etag_accounts'
+        );
+    });
+
+    it('names the schema id when the event does not carry the schema', async () => {
+        const plugin = new D1DbPlugin(openD1(), { deleteDatabase: async () => undefined });
+        const operation = new BulkPersistChanges();
+        operation.resolve<InferRoot<typeof accounts>>(accounts.id).updates.push({ entity: { _id: 'a', balance: 1, version: 1 }, changeType: 'markedDirty', delta: {}, concurrency: { column: 'version', expected: 1 } });
+
+        const outcome = await new Promise<string>(resolve => plugin.bulkPersist(
+            { id: 'guarded', schemas: new SchemaCollection(), operation, source: 'test', action: 'persist' },
+            result => resolve(result.ok === Result.ERROR ? String(result.error) : 'saved'),
+        ));
+
+        expect(outcome).toContain(`Collection: ${accounts.id}`);
     });
 });

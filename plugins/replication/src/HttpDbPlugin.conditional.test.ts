@@ -208,6 +208,14 @@ describe('HttpDbPlugin query attempts', () => {
         expect(result.kind === 'modified' ? result.etag : 'failed').toBeNull();
     });
 
+    it('accepts response headers without a get method', async () => {
+        global.fetch = (async () => ({ ok: true, status: 200, statusText: 'OK', headers: {}, json: async () => [] })) as unknown as typeof fetch;
+
+        const result = await createPlugin().queryConditional(createQueryEvent(), null);
+
+        expect(result.kind === 'modified' ? result.etag : 'failed').toBeNull();
+    });
+
     it('does not share requests for two different urls', async () => {
         http.respondToGet(() => ({ status: 200, body: [], delayMs: 10 }));
         const plugin = createPlugin();

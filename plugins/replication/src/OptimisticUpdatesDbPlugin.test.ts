@@ -7,6 +7,7 @@ import { BulkPersistChanges, SchemaCollection } from '@routier/core/collections'
 import { etags, s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
 import { uuid } from '@routier/core/utilities';
+import { ConcurrencyDbPlugin } from '@routier/core';
 import { MemoryPlugin } from '@routier/memory-plugin';
 
 /**
@@ -115,6 +116,16 @@ describe('OptimisticUpdatesDbPlugin integration', () => {
 
         expect(rows).toHaveLength(2);
         expect(sourceQuerySpy).toHaveBeenCalledTimes(1); // hydration query
+    });
+
+    it('stores the hydrated rows as a hydration that keeps their etags', async () => {
+        await persist(source, { adds: [{ name: 'Seeded A' }] });
+        const writes = jest.spyOn(MemoryPlugin.prototype, 'bulkPersist');
+
+        await queryRows(plugin);
+
+        expect(writes.mock.calls.map(([event]) => [event.source, event.action, event.reason, event.etags])).toEqual([['OptimisticReplicationDbPlugin', 'persist', 'hydration', 'keep']]);
+        writes.mockRestore();
     });
 
     it('serves subsequent queries from the read plugin without re-querying the source', async () => {
@@ -286,13 +297,45 @@ describe('OptimisticUpdatesDbPlugin etags', () => {
         expect([durable?.name, durable?.revision === 'seeded']).toEqual(['second', false]);
     });
 
-    it('does not generate an etag in its memory copy', async () => {
-        const { store, hydrated } = await seededStore();
+    it('takes the etag the source generated into its memory copy', async () => {
+        const { source, store, hydrated } = await seededStore();
         hydrated.name = 'second';
         await store.saveChangesAsync();
+        const durableRevision = async () => (await new VersionedStore(source).items.toArrayAsync())[0]?.revision;
+
+        await waitFor(async () => (await store.items.toArrayAsync())[0]?.revision === await durableRevision());
+
+        expect((await store.items.toArrayAsync())[0]?.revision).not.toBe('seeded');
+    });
+
+    it('gives a row it added the etag the source generated', async () => {
+        const source = new MemoryPlugin(`optimistic-etag-${uuid(8)}`);
+        const store = new VersionedStore(new OptimisticUpdatesDbPlugin(source));
+        await store.items.addAsync({ name: 'new' });
+        await store.saveChangesAsync();
+
+        await waitFor(async () => (await store.items.toArrayAsync())[0]?.revision != null);
 
         const [cached] = await store.items.toArrayAsync();
+        const [durable] = await new VersionedStore(source).items.toArrayAsync();
+        expect(cached?.revision).toBe(durable?.revision);
+    });
 
-        expect(cached?.revision).toBe('seeded');
+    it('refuses a save that ConcurrencyDbPlugin guards', async () => {
+        const { source } = await seededStore();
+        const store = new VersionedStore(new ConcurrencyDbPlugin(new OptimisticUpdatesDbPlugin(source)));
+        const [row] = await store.items.toArrayAsync();
+
+        if (row == null) {
+            throw new Error('nothing stored');
+        }
+
+        row.name = 'guarded';
+
+        await expect(store.saveChangesAsync()).rejects.toThrow(
+            'OptimisticUpdatesDbPlugin cannot support optimistic concurrency, so ConcurrencyDbPlugin must not wrap it.  ' +
+            'It acknowledges a save before the source has checked it, so a conflict could only be found after the caller was told the save succeeded.  ' +
+            'Collection: optimisticVersioned'
+        );
     });
 });

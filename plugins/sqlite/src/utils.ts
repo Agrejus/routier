@@ -1,7 +1,7 @@
 import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema';
 import { Expression } from '@routier/core/expressions';
 import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, entityResultColumns, getDialect, sqlColumnProperties, toColumnValueMap, toSql, reportUnrenderableFilters, reportUnrenderableSelectors, executedMapFields, selectList, columnList, referencedColumn, sqlEtagOf } from '@routier/sql-plugin-core';
-import { etagToGenerate, stampEtag } from '@routier/core/collections';
+import { etagToGenerate, stampEtag } from '@routier/core/plugins';
 import type { EtagMode } from '@routier/core/schema';
 import { IQuery, JoinQueryOptionValue, mappedResultColumns, Query, ResultColumn } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';

@@ -8,7 +8,7 @@ import { CompiledSchema, IdType, InferCreateType } from '../schema';
 import { isComparatorExpression, isPropertyExpression, isValueExpression } from '../assertions';
 import { DeepPartial } from '../types';
 import { MemoryDataCollection } from '../collections/MemoryDataCollection';
-import { etagToGenerate, stampEtag } from '../collections/etagStamp';
+import { etagToGenerate, stampEtag } from './etagStamp';
 import { UnknownRecord } from '../utilities';
 
 /**

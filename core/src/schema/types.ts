@@ -324,11 +324,7 @@ export type SchemaModifiers = "default" | "deserialize" |
     "unmapped" | "computed" |
     "distinct" | "searchable" | "etag";
 
-export type EtagValue = number | string;
-
-export type EtagMode = "generate" | "keep";
-
-export type EtagComparator<T> = (prev: T, next: T) => number;
+export type { EtagComparator, EtagMode, EtagValue } from './etagTypes';
 
 /**
  * What a tagged property infers to.

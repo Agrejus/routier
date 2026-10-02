@@ -58,8 +58,9 @@ update**. Application code never writes it.
 
 - `.etag(comparator)` exists on `SchemaNumber` and `SchemaString` only.
 - It returns a new `SchemaEtag` modifier, following `SchemaIdentity`: it sets `isEtag = true`,
-  stores the comparator, and adds `"etag" | "readonly"` to the modifiers so the inferred
-  entity type makes the property readonly.
+  stores the comparator, and adds `"etag"` to the modifiers. The inferred entity type makes the
+  property readonly; `isReadonly` stays false at runtime, because the store writes the value
+  back into the entity after every save.
 - Unlike `SchemaIdentity`, which exposes no further methods, `SchemaEtag` exposes
   `.optional()` and `.nullable()`, and nothing else.
 - `.key()`, `.identity()`, `.default()` and `.from()` are not reachable after `.etag()`, and
@@ -147,12 +148,19 @@ honors it. It is set wherever another store owns the etags:
 
 - `HttpSwrDbPlugin`, on every write to its local cache: the server owns the etags.
 - `PluginSyncEngine`, on every mirror write, when the source owns them (`etagOwner: 'source'`,
-  the default).
+  the default). For a schema with an etag the mirror payload is rebuilt from the source's
+  result and each update carries the etag the source generated, whatever
+  `mirrorPersistPayloadMode` says: a SQL source generates the value in the database and never
+  writes it back onto the event.
 - `PluginSyncEngine` with `etagOwner: 'mirrors'`: the source write keeps, and each mirror gets
   every row with its etag removed and generates a new one. `OptimisticUpdatesDbPlugin` uses
   this: its memory copy is the engine's source, but the durable store owns the etags. A PouchDB
   mirror then resolves the current `_rev` itself; a `_rev` from the memory copy would be stale
-  or foreign, and PouchDB would reject the write.
+  or foreign, and PouchDB would reject the write. After each successful mirror write the engine
+  calls `onMirrorPersisted`, and `OptimisticUpdatesDbPlugin` copies the durable store's etags
+  into its memory copy, writing only the etag field so a newer local edit is not overwritten.
+  The tracked entity keeps the etag it had, because the save was acknowledged before the
+  durable write; that is why `OptimisticUpdatesDbPlugin` refuses `ConcurrencyDbPlugin`.
 - `OptimisticUpdatesDbPlugin`, when it hydrates its memory copy from the source.
 
 `BatchingDbPlugin` never merges writes with different modes. The shared contract suite
@@ -202,4 +210,30 @@ which is core's convention; it used to write nothing.
 `concurrency: { column: <etag>, expected: <the etag the entity holds> }`, the store generates the
 next etag as usual, and a stale write matches no row and fails with
 `OptimisticConcurrencyError`. No hidden `__version` column is added and no versions are tracked.
-Schemas without an etag keep the hidden column. Dexie and D1 do not detect conflicts, as before.
+Schemas without an etag keep the hidden column.
+
+Three plugins cannot check a conflict before acknowledging a save. D1 and
+`OptimisticUpdatesDbPlugin` refuse any update that carries a concurrency check, so wrapping
+them in `ConcurrencyDbPlugin` fails loudly instead of silently overwriting. Dexie does not
+detect conflicts, as before; the contract skips that case for D1 and Dexie.
+
+### Generating values
+
+The shared generator lives in `core/src/plugins/etagStamp.ts`, because the in-memory stores'
+base class, `EphemeralDataPlugin`, uses it; Dexie, MongoDB and `sql-core` import it from
+`@routier/core/plugins`. A number etag is the stored value plus one. A string etag is the time in
+base 36, a per-process sequence, and a random suffix, so two processes writing in the same
+millisecond still produce different values.
+
+### Conditional revalidation
+
+The last response's `ETag` for each query is stored in `unsyncedQueueStore`, in the
+`_routier_swr_validators` collection, keyed by `_id` (the query's cache key) and marked with a
+`kind` field so a store that returns every document, such as PouchDB, can tell them apart. It is
+sent as `If-None-Match` only while the local store holds as many rows for the query as it did when
+the `ETag` was stored; the rows are counted only when an `ETag` is stored.
+
+When the server permanently rejects a local change, its collection's stored `ETag`s are forgotten
+and its queries are marked stale, so the next read fetches in full. Rows with a dead-lettered
+change are compared field by field rather than by etag, so the server copy replaces the rejected
+local edit even when the etag did not change.

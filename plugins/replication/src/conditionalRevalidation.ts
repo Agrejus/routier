@@ -4,16 +4,30 @@ import { Result } from '@routier/core/results';
 import { InferRoot, InferType, s } from '@routier/core/schema';
 import { logger, uuid } from '@routier/core/utilities';
 
+const KIND = 'routier-swr-validator';
+
 const validatorSchema = s.define('_routier_swr_validators', {
-    cacheKey: s.string().key(),
+    _id: s.string().key(),
+    kind: s.string(KIND),
     etag: s.string(),
     rowCount: s.number(),
 }).compile();
 
 type Validator = InferType<typeof validatorSchema>;
 type ValidatorRoot = InferRoot<typeof validatorSchema>;
+type RowCounter = () => Promise<number | null>;
 
-const hasEtag = (row: unknown): row is Validator => typeof Reflect.get(Object(row), 'etag') === 'string';
+const parseValidator = (row: unknown): Validator | null => {
+    const candidate: object = Object(row);
+    const id = String(Reflect.get(candidate, '_id'));
+    const kind = Reflect.get(candidate, 'kind');
+    const etag = Reflect.get(candidate, 'etag');
+    const rowCount = Reflect.get(candidate, 'rowCount');
+
+    return kind === KIND && typeof etag === 'string' && typeof rowCount === 'number'
+        ? { _id: id, kind, etag, rowCount }
+        : null;
+};
 
 export class ConditionalRevalidation {
     private readonly store: IDbPlugin;
@@ -23,36 +37,51 @@ export class ConditionalRevalidation {
         this.store = store;
     }
 
-    async ifNoneMatch(cacheKey: string, localRowCount: number | null): Promise<string | null> {
+    async ifNoneMatch(cacheKey: string, countRows: RowCounter): Promise<string | null> {
         const validator = (await this.load()).get(cacheKey);
-        return validator != null && validator.rowCount === localRowCount ? validator.etag : null;
-    }
 
-    async remember(cacheKey: string, etag: string | null, localRowCount: number): Promise<void> {
-        const validators = await this.load();
-        const previous = validators.get(cacheKey);
-        const changes = new BulkPersistChanges();
-        const schemaChanges = changes.resolve<ValidatorRoot>(validatorSchema.id);
-
-        if (etag == null) {
-            if (previous == null) {
-                return;
-            }
-
-            validators.delete(cacheKey);
-            schemaChanges.removes.push(previous);
-        } else {
-            const validator = { cacheKey, etag, rowCount: localRowCount };
-            validators.set(cacheKey, validator);
-
-            if (previous == null) {
-                schemaChanges.adds.push(validator);
-            } else {
-                schemaChanges.updates.push({ entity: validator, changeType: 'markedDirty', delta: {} });
-            }
+        if (validator == null) {
+            return null;
         }
 
-        await this.persist(changes);
+        return validator.rowCount === await countRows() ? validator.etag : null;
+    }
+
+    async remember(cacheKey: string, etag: string | null, countRows: RowCounter): Promise<void> {
+        const validators = await this.load();
+        const previous = validators.get(cacheKey);
+
+        if (etag == null) {
+            if (previous != null) {
+                validators.delete(cacheKey);
+                await this.persist({ removes: [previous] });
+            }
+
+            return;
+        }
+
+        const rowCount = await countRows();
+
+        if (rowCount == null) {
+            return;
+        }
+
+        const validator: Validator = { _id: cacheKey, kind: KIND, etag, rowCount };
+        validators.set(cacheKey, validator);
+        await this.persist(previous == null ? { adds: [validator] } : { updates: [validator] });
+    }
+
+    async forget(prefix: string): Promise<void> {
+        const validators = await this.load();
+        const forgotten = Array.from(validators.values()).filter(validator => validator._id.startsWith(prefix));
+
+        for (const validator of forgotten) {
+            validators.delete(validator._id);
+        }
+
+        if (forgotten.length > 0) {
+            await this.persist({ removes: forgotten });
+        }
     }
 
     private load(): Promise<Map<string, Validator>> {
@@ -83,8 +112,10 @@ export class ConditionalRevalidation {
 
                 const validators = new Map<string, Validator>();
                 result.data.forEach((row) => {
-                    if (hasEtag(row)) {
-                        validators.set(row.cacheKey, row);
+                    const validator = parseValidator(row);
+
+                    if (validator != null) {
+                        validators.set(validator._id, validator);
                     }
                 });
                 resolve(validators);
@@ -92,7 +123,13 @@ export class ConditionalRevalidation {
         });
     }
 
-    private persist(operation: BulkPersistChanges): Promise<void> {
+    private persist(changes: { adds?: Validator[], updates?: Validator[], removes?: Validator[] }): Promise<void> {
+        const operation = new BulkPersistChanges();
+        const schemaChanges = operation.resolve<ValidatorRoot>(validatorSchema.id);
+        schemaChanges.adds.push(...(changes.adds ?? []));
+        schemaChanges.updates.push(...(changes.updates ?? []).map(entity => ({ entity, changeType: 'markedDirty' as const, delta: {} })));
+        schemaChanges.removes.push(...(changes.removes ?? []));
+
         return new Promise((resolve) => {
             this.store.bulkPersist({
                 id: uuid(8),

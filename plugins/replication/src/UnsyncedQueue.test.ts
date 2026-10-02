@@ -94,6 +94,16 @@ describe('UnsyncedQueue against a real store', () => {
         queue = new UnsyncedQueue(queueStore);
     });
 
+    it('reports the keys of dead rows in one collection only', async () => {
+        await writeQueueRows(queueStore, [
+            { id: '1', collectionName: 'swrHardening', recordIds: '["a"]', changeKind: 'update', entityJson: '{}', status: 'dead' },
+            { id: '2', collectionName: 'swrHardening', recordIds: '["b"]', changeKind: 'update', entityJson: '{}', status: 'pending' },
+            { id: '3', collectionName: 'other', recordIds: '["c"]', changeKind: 'update', entityJson: '{}', status: 'dead' },
+        ]);
+
+        expect([...await queue.getDeadIdKeys('swrHardening')]).toEqual(['["a"]']);
+    });
+
     it('stamps a revision, an opId and a seq on every enqueued change', async () => {
         const first: QueuedChange = { kind: 'add', entity: { id: 'a', name: 'A' } };
         const second: QueuedChange = { kind: 'add', entity: { id: 'b', name: 'B' } };

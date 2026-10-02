@@ -1,9 +1,11 @@
 import { CompiledSchema, EtagMode, PropertyInfo, SchemaTypes } from '../schema';
+import { uuidv4 } from '../utilities';
 
 type StoredRecord = Record<string, unknown>;
 
 const TIME_WIDTH = 9;
 const SEQUENCE_WIDTH = 6;
+const NONCE_WIDTH = 8;
 
 let lastTokenTime = 0;
 let tokenSequence = 0;
@@ -17,8 +19,10 @@ export function stampEtag(property: PropertyInfo<{}> | null, item: StoredRecord,
         return;
     }
 
-    item[property.name] = property.type === SchemaTypes.Number
-        ? nextNumber(prior, property.name)
+    const name = property.getResolvedName();
+
+    item[name] = property.type === SchemaTypes.Number
+        ? nextNumber(prior, name)
         : nextEtagToken();
 }
 
@@ -37,5 +41,5 @@ export function nextEtagToken(): string {
         tokenSequence += 1;
     }
 
-    return lastTokenTime.toString(36).padStart(TIME_WIDTH, '0') + tokenSequence.toString(36).padStart(SEQUENCE_WIDTH, '0');
+    return lastTokenTime.toString(36).padStart(TIME_WIDTH, '0') + tokenSequence.toString(36).padStart(SEQUENCE_WIDTH, '0') + uuidv4().slice(0, NONCE_WIDTH);
 }

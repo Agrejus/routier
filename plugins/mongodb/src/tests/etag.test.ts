@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 import { IDbPlugin } from '@routier/core';
-import { s } from '@routier/core/schema';
+import { BulkPersistChanges, SchemaCollection } from '@routier/core/collections';
+import { InferRoot, s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
 import { describeEtagContract } from '@routier/test-utils';
 import { MongoDbPlugin } from '../MongoDbPlugin';
@@ -44,5 +45,34 @@ describe('MongoDB partial updates', () => {
 
         const [stored] = await new PeopleStore(plugin).people.toArrayAsync();
         expect([stored?.name, stored?.city]).toEqual(['Anna', 'Bergen']);
+    });
+});
+
+const notes = s.define('mongo_notes', {
+    _id: s.string().key(),
+    body: s.string(),
+    tag: s.string().optional(),
+}).compile();
+
+describe('MongoDB whole-entity updates', () => {
+    it('replaces the document, so a field the entity no longer has is removed', async () => {
+        const driver = new FakeMongoDriver();
+        const plugin = new MongoDbPlugin(driver);
+        const persist = (operation: BulkPersistChanges) => new Promise(resolve => plugin.bulkPersist({
+            id: 'whole-entity',
+            schemas: new SchemaCollection().set(notes.id, notes),
+            operation,
+            source: 'test',
+            action: 'persist',
+        }, resolve));
+        const adds = new BulkPersistChanges();
+        adds.resolve<InferRoot<typeof notes>>(notes.id).adds.push({ _id: 'a', body: 'first', tag: 'old' });
+        await persist(adds);
+        const updates = new BulkPersistChanges();
+        updates.resolve<InferRoot<typeof notes>>(notes.id).updates.push({ entity: { _id: 'a', body: 'second' }, changeType: 'markedDirty', delta: {} });
+
+        await persist(updates);
+
+        expect(await (await driver.collection('mongo_notes')).find({})).toEqual([{ _id: 'a', body: 'second' }]);
     });
 });

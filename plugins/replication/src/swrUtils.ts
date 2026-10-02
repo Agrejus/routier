@@ -77,8 +77,8 @@ export function etagOrder<T extends {}>(schema: CompiledSchema<T>, stored: unkno
         return null;
     }
 
-    const storedEtag = readEtag(property.name, stored);
-    const incomingEtag = readEtag(property.name, incoming);
+    const storedEtag = readEtag(property.getResolvedName(), stored);
+    const incomingEtag = readEtag(property.getResolvedName(), incoming);
 
     return storedEtag == null || incomingEtag == null ? null : property.etagComparator(storedEtag, incomingEtag);
 }

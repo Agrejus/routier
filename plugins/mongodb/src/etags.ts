@@ -1,4 +1,4 @@
-import { stampEtag } from '@routier/core/collections';
+import { stampEtag } from '@routier/core/plugins';
 import { PropertyInfo } from '@routier/core/schema';
 import { MongoCollection } from './driver';
 
