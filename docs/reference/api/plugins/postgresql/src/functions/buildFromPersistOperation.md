@@ -6,9 +6,9 @@
 
 # Function: buildFromPersistOperation()
 
-> **buildFromPersistOperation**\<`TEntity`\>(`schema`, `changes`): `object`
+> **buildFromPersistOperation**\<`TEntity`\>(`schema`, `changes`, `etagMode?`): `object`
 
-Defined in: plugins/postgres-core/dist/utils.d.ts:48
+Defined in: plugins/postgres-core/dist/utils.d.ts:49
 
 ## Type Parameters
 
@@ -25,6 +25,10 @@ Defined in: plugins/postgres-core/dist/utils.d.ts:48
 ### changes
 
 `SchemaPersistChanges`\<`Record`\<`string`, `unknown`\>\>
+
+### etagMode?
+
+`EtagMode`
 
 ## Returns
 

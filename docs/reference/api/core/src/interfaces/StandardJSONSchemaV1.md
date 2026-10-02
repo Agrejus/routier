@@ -6,7 +6,7 @@
 
 # Interface: StandardJSONSchemaV1\<Input, Output\>
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:29](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L29)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:30](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L30)
 
 ## Type Parameters
 
@@ -24,4 +24,4 @@ Defined in: [core/src/schema/utils/standardJsonSchema.ts:29](https://github.com/
 
 > `readonly` **~standard**: [`Props`](../namespaces/StandardJSONSchemaV1/interfaces/Props.md)\<`Input`, `Output`\>
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:30](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L30)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:31](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L31)

@@ -8,7 +8,7 @@
 
 > **SerializedQueryOption** = \{ `name`: `"skip"`; `value`: `number`; \} \| \{ `name`: `"take"`; `value`: `number`; \} \| \{ `name`: `"sort"`; `value`: \{ `propertyName`: `string`; `direction`: [`QueryOrdering`](../enumerations/QueryOrdering.md); \}; \} \| \{ `name`: `"filter"`; `value`: \{ `expression`: [`SerializedExpression`](SerializedExpression.md); \}; \} \| \{ `name`: `"nearest"`; `value`: \{ `propertyName`: `string`; `vector`: `number`[]; `count`: `number`; \}; \} \| \{ `name`: `"join"`; `value`: \{ `kind`: [`JoinKind`](JoinKind.md); `innerCollectionName`: `string`; `outerKeyPath`: `string`; `innerKeyPath`: `string`; `innerOptions`: `SerializedQueryOption`[]; `semiJoinKeyThreshold`: `number`; \}; \} \| \{ `name`: `"count"` \| `"min"` \| `"max"` \| `"sum"` \| `"distinct"`; `value`: `true`; \}
 
-Defined in: [core/src/plugins/wire/types.ts:28](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/types.ts#L28)
+Defined in: [core/src/plugins/wire/types.ts:29](https://github.com/Agrejus/routier/blob/main/core/src/plugins/wire/types.ts#L29)
 
 A query option, in the form that survives a wire.
 

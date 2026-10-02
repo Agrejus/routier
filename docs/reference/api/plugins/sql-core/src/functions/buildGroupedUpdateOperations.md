@@ -8,7 +8,7 @@
 
 > **buildGroupedUpdateOperations**\<`T`\>(`schema`, `updates`, `dialect`, `options?`): [`GroupedUpdateOperation`](../type-aliases/GroupedUpdateOperation.md)[]
 
-Defined in: [plugins/sql-core/src/updates.ts:165](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/updates.ts#L165)
+Defined in: [plugins/sql-core/src/updates.ts:171](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/updates.ts#L171)
 
 ## Type Parameters
 
@@ -36,8 +36,9 @@ readonly [`EntityUpdate`](../type-aliases/EntityUpdate.md)[]
 
 `string`
 
-Appended verbatim to each statement, e.g. ` RETURNING "a", "b"`. Omit for
-engines without RETURNING.
+#### etag?
+
+[`SqlEtag`](../type-aliases/SqlEtag.md)
 
 ## Returns
 

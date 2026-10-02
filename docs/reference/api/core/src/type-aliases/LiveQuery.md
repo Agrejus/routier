@@ -8,7 +8,7 @@
 
 > **LiveQuery**\<`T`\> = (`callback`) => `void` \| () => `void`
 
-Defined in: core/src/results/liveQuery.ts:4
+Defined in: [core/src/results/liveQuery.ts:4](https://github.com/Agrejus/routier/blob/main/core/src/results/liveQuery.ts#L4)
 
 ## Type Parameters
 

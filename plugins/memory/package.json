@@ -49,7 +49,7 @@
         "@faker-js/faker": "^10.0.0",
         "@routier/core": "^0.8.2",
         "@routier/datastore": "^0.4.4",
-        "@routier/test-utils": "file:../../test-utils",
+        "@routier/test-utils": "file:../../tooling/test-utils",
         "@rspack/cli": "^1.1.8",
         "@rspack/core": "^1.1.8",
         "tinybench": "^5.1.0"

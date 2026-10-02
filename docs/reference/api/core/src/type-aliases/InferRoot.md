@@ -8,7 +8,7 @@
 
 > **InferRoot**\<`T`\> = `T` *extends* [`CompiledSchema`](CompiledSchema.md)\<infer R\> ? `R` : `never`
 
-Defined in: [core/src/schema/types.ts:390](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L390)
+Defined in: [core/src/schema/types.ts:393](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L393)
 
 ## Type Parameters
 

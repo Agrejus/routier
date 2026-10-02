@@ -227,11 +227,19 @@ List of properties that are identity keys.
 
 ***
 
+### etagProperty
+
+> **etagProperty**: [`PropertyInfo`](../classes/PropertyInfo.md)\<`TEntity`\> \| `null`
+
+Defined in: [core/src/schema/types.ts:230](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L230)
+
+***
+
 ### properties
 
 > **properties**: [`PropertyInfo`](../classes/PropertyInfo.md)\<`TEntity`\>[]
 
-Defined in: [core/src/schema/types.ts:231](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L231)
+Defined in: [core/src/schema/types.ts:232](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L232)
 
 All property metadata for the schema.
 
@@ -241,7 +249,7 @@ All property metadata for the schema.
 
 > **hashType**: [`HashType`](../enumerations/HashType.md)
 
-Defined in: [core/src/schema/types.ts:233](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L233)
+Defined in: [core/src/schema/types.ts:234](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L234)
 
 The hash type used for this schema.
 
@@ -251,7 +259,7 @@ The hash type used for this schema.
 
 > **hash**: [`HashFunction`](HashFunction.md)\<`TEntity`\>
 
-Defined in: [core/src/schema/types.ts:235](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L235)
+Defined in: [core/src/schema/types.ts:236](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L236)
 
 Computes a hash for the given entity.
 
@@ -261,7 +269,7 @@ Computes a hash for the given entity.
 
 > **getHashType**: [`GetHashTypeFunction`](GetHashTypeFunction.md)\<`TEntity`\>
 
-Defined in: [core/src/schema/types.ts:237](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L237)
+Defined in: [core/src/schema/types.ts:238](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L238)
 
 Returns the hash type for the given entity.
 
@@ -271,7 +279,7 @@ Returns the hash type for the given entity.
 
 > **compare**: (`a`, `fromDb`) => `boolean`
 
-Defined in: [core/src/schema/types.ts:239](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L239)
+Defined in: [core/src/schema/types.ts:240](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L240)
 
 Compares two entities for equality.
 
@@ -295,7 +303,7 @@ Compares two entities for equality.
 
 > **deserialize**: (`entity`) => [`InferType`](InferType.md)\<`TEntity`\>
 
-Defined in: [core/src/schema/types.ts:241](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L241)
+Defined in: [core/src/schema/types.ts:242](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L242)
 
 Deserializes an entity from storage format.
 
@@ -315,7 +323,7 @@ Deserializes an entity from storage format.
 
 > **set**: [`SetProperties`](SetProperties.md)\<`TEntity`\>
 
-Defined in: [core/src/schema/types.ts:243](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L243)
+Defined in: [core/src/schema/types.ts:244](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L244)
 
 Sets 1 or many properties from the source object onto the destination object with change tracking.
 
@@ -325,7 +333,7 @@ Sets 1 or many properties from the source object onto the destination object wit
 
 > **preprocess**: [`Preprocess`](Preprocess.md)\<`TEntity`\>
 
-Defined in: [core/src/schema/types.ts:245](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L245)
+Defined in: [core/src/schema/types.ts:246](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L246)
 
 Combines serializing and preparing an entity for saving.
 
@@ -335,7 +343,7 @@ Combines serializing and preparing an entity for saving.
 
 > **postprocess**: [`Enrich`](Enrich.md)\<`TEntity`\>
 
-Defined in: [core/src/schema/types.ts:247](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L247)
+Defined in: [core/src/schema/types.ts:248](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L248)
 
 Combines deserializing and enriching an entity for selection.
 
@@ -345,7 +353,7 @@ Combines deserializing and enriching an entity for selection.
 
 > **serialize**: (`entity`) => [`InferType`](InferType.md)\<`TEntity`\>
 
-Defined in: [core/src/schema/types.ts:250](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L250)
+Defined in: [core/src/schema/types.ts:251](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L251)
 
 Serializes an entity to storage format.
 
@@ -365,7 +373,7 @@ Serializes an entity to storage format.
 
 > **id**: [`SchemaId`](SchemaId.md)
 
-Defined in: [core/src/schema/types.ts:252](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L252)
+Defined in: [core/src/schema/types.ts:253](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L253)
 
 Unique id for the schema.
 
@@ -375,7 +383,7 @@ Unique id for the schema.
 
 > **collectionName**: [`CollectionName`](CollectionName.md)
 
-Defined in: [core/src/schema/types.ts:254](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L254)
+Defined in: [core/src/schema/types.ts:255](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L255)
 
 The name of the collection for this schema.
 
@@ -385,7 +393,7 @@ The name of the collection for this schema.
 
 > **getIds**: (`entity`) => \[[`IdType`](IdType.md)\]
 
-Defined in: [core/src/schema/types.ts:256](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L256)
+Defined in: [core/src/schema/types.ts:257](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L257)
 
 Returns all IDs for the given entity (usually a single-element tuple).
 
@@ -405,7 +413,7 @@ Returns all IDs for the given entity (usually a single-element tuple).
 
 > **enrich**: [`Enrich`](Enrich.md)\<`TEntity`\>
 
-Defined in: [core/src/schema/types.ts:258](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L258)
+Defined in: [core/src/schema/types.ts:259](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L259)
 
 Enriches the entity with change tracking or other metadata.
 
@@ -415,7 +423,7 @@ Enriches the entity with change tracking or other metadata.
 
 > **hasIdentityKeys**: `boolean`
 
-Defined in: [core/src/schema/types.ts:260](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L260)
+Defined in: [core/src/schema/types.ts:261](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L261)
 
 Indicates if the schema has identity keys.
 
@@ -425,7 +433,7 @@ Indicates if the schema has identity keys.
 
 > **freeze**: (`entity`) => [`InferType`](InferType.md)\<`TEntity`\>
 
-Defined in: [core/src/schema/types.ts:262](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L262)
+Defined in: [core/src/schema/types.ts:263](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L263)
 
 Returns a deeply frozen (immutable) version of the entity.
 
@@ -445,7 +453,7 @@ Returns a deeply frozen (immutable) version of the entity.
 
 > **enableChangeTracking**: (`entity`) => [`InferType`](InferType.md)\<`TEntity`\>
 
-Defined in: [core/src/schema/types.ts:264](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L264)
+Defined in: [core/src/schema/types.ts:265](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L265)
 
 Enables change tracking on the entity.
 
@@ -465,7 +473,7 @@ Enables change tracking on the entity.
 
 > **definition**: [`SchemaDefinition`](../classes/SchemaDefinition.md)\<`TEntity`\>
 
-Defined in: [core/src/schema/types.ts:266](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L266)
+Defined in: [core/src/schema/types.ts:267](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L267)
 
 The schema definition object.
 
@@ -475,7 +483,7 @@ The schema definition object.
 
 > **getIndexes**: () => [`Index`](Index.md)[]
 
-Defined in: [core/src/schema/types.ts:268](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L268)
+Defined in: [core/src/schema/types.ts:269](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L269)
 
 Returns all indexes defined for this schema.
 
@@ -489,7 +497,7 @@ Returns all indexes defined for this schema.
 
 > **compareIds**: (`a`, `b`) => `boolean`
 
-Defined in: [core/src/schema/types.ts:270](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L270)
+Defined in: [core/src/schema/types.ts:271](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L271)
 
 Compares two entities for Id equality.
 

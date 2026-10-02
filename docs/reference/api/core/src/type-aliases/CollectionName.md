@@ -8,4 +8,4 @@
 
 > **CollectionName** = [`Branded`](Branded.md)\<`string`, `"CollectionName"`\>
 
-Defined in: [core/src/schema/types.ts:317](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L317)
+Defined in: [core/src/schema/types.ts:318](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L318)

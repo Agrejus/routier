@@ -8,7 +8,7 @@
 
 > **OptimisticUpdatesDbPluginOptions** = `object`
 
-Defined in: [plugins/replication/src/OptimisticUpdatesDbPlugin.ts:18](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/OptimisticUpdatesDbPlugin.ts#L18)
+Defined in: [plugins/replication/src/OptimisticUpdatesDbPlugin.ts:19](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/OptimisticUpdatesDbPlugin.ts#L19)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: [plugins/replication/src/OptimisticUpdatesDbPlugin.ts:18](https://gi
 
 > `optional` **onMirrorError**: (`error`, `context`) => `void`
 
-Defined in: [plugins/replication/src/OptimisticUpdatesDbPlugin.ts:19](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/OptimisticUpdatesDbPlugin.ts#L19)
+Defined in: [plugins/replication/src/OptimisticUpdatesDbPlugin.ts:20](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/OptimisticUpdatesDbPlugin.ts#L20)
 
 #### Parameters
 

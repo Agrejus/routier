@@ -8,7 +8,7 @@
 
 > **PropertySerializer**\<`T`\> = (`value`) => `string` \| `number`
 
-Defined in: [core/src/schema/types.ts:273](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L273)
+Defined in: [core/src/schema/types.ts:274](https://github.com/Agrejus/routier/blob/main/core/src/schema/types.ts#L274)
 
 ## Type Parameters
 

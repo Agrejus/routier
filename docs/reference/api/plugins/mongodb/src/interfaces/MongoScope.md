@@ -6,7 +6,7 @@
 
 # Interface: MongoScope
 
-Defined in: [plugins/mongodb/src/driver.ts:47](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/driver.ts#L47)
+Defined in: [plugins/mongodb/src/driver.ts:48](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/driver.ts#L48)
 
 Collections bound to one atomic unit of work.
 
@@ -20,7 +20,7 @@ easiest bug to write here, which is why the scope is a separate object rather th
 
 > **collection**(`name`): `Promise`\<[`MongoCollection`](MongoCollection.md)\>
 
-Defined in: [plugins/mongodb/src/driver.ts:48](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/driver.ts#L48)
+Defined in: [plugins/mongodb/src/driver.ts:49](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/driver.ts#L49)
 
 #### Parameters
 

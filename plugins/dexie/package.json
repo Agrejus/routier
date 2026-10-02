@@ -46,7 +46,7 @@
     },
     "devDependencies": {
         "@routier/core": "^0.8.2",
-        "@routier/test-utils": "file:../../test-utils",
+        "@routier/test-utils": "file:../../tooling/test-utils",
         "@rspack/cli": "^1.1.8",
         "@rspack/core": "^1.1.8",
         "fake-indexeddb": "^6.1.0",

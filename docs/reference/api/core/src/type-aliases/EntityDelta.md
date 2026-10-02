@@ -8,7 +8,7 @@
 
 > **EntityDelta**\<`T`\> = `DeltaProperties`\<[`InferType`](InferType.md)\<`T`\>\>
 
-Defined in: [core/src/plugins/types.ts:180](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L180)
+Defined in: [core/src/plugins/types.ts:182](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L182)
 
 What changed about an entity, expressed as a **partial entity**.
 

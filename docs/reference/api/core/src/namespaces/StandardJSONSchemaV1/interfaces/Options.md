@@ -6,7 +6,7 @@
 
 # Interface: Options
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:54](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L54)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:55](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L55)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [core/src/schema/utils/standardJsonSchema.ts:54](https://github.com/
 
 > `readonly` **target**: [`Target`](../type-aliases/Target.md)
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:55](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L55)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:56](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L56)
 
 ***
 
@@ -22,4 +22,4 @@ Defined in: [core/src/schema/utils/standardJsonSchema.ts:55](https://github.com/
 
 > `readonly` `optional` **libraryOptions**: `Record`\<`string`, `unknown`\>
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:56](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L56)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:57](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L57)

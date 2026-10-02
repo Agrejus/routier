@@ -8,7 +8,7 @@
 
 > **KeyTuple** = `Record`\<`string`, `unknown`\>
 
-Defined in: [plugins/sql-core/src/updates.ts:41](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/updates.ts#L41)
+Defined in: [plugins/sql-core/src/updates.ts:42](https://github.com/Agrejus/routier/blob/main/plugins/sql-core/src/updates.ts#L42)
 
 The full identity of one row: every identity column mapped to its value.
 

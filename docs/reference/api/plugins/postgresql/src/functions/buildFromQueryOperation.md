@@ -8,7 +8,7 @@
 
 > **buildFromQueryOperation**\<`TEntity`, `TShape`\>(`query`, `vectors?`): [`SqlOperation`](../type-aliases/SqlOperation.md) & `object`
 
-Defined in: plugins/postgres-core/dist/utils.d.ts:79
+Defined in: plugins/postgres-core/dist/utils.d.ts:80
 
 ## Type Parameters
 

@@ -6,7 +6,7 @@
 
 # Class: DexiePlugin
 
-Defined in: [plugins/dexie/src/DexiePlugin.ts:49](https://github.com/Agrejus/routier/blob/main/plugins/dexie/src/DexiePlugin.ts#L49)
+Defined in: [plugins/dexie/src/DexiePlugin.ts:51](https://github.com/Agrejus/routier/blob/main/plugins/dexie/src/DexiePlugin.ts#L51)
 
 ## Implements
 
@@ -19,7 +19,7 @@ Defined in: [plugins/dexie/src/DexiePlugin.ts:49](https://github.com/Agrejus/rou
 
 > **new DexiePlugin**(`dbName`, `options?`): `DexiePlugin`
 
-Defined in: [plugins/dexie/src/DexiePlugin.ts:63](https://github.com/Agrejus/routier/blob/main/plugins/dexie/src/DexiePlugin.ts#L63)
+Defined in: [plugins/dexie/src/DexiePlugin.ts:65](https://github.com/Agrejus/routier/blob/main/plugins/dexie/src/DexiePlugin.ts#L65)
 
 #### Parameters
 
@@ -43,7 +43,7 @@ Defined in: [plugins/dexie/src/DexiePlugin.ts:63](https://github.com/Agrejus/rou
 
 > **get** **databaseName**(): `string`
 
-Defined in: [plugins/dexie/src/DexiePlugin.ts:59](https://github.com/Agrejus/routier/blob/main/plugins/dexie/src/DexiePlugin.ts#L59)
+Defined in: [plugins/dexie/src/DexiePlugin.ts:61](https://github.com/Agrejus/routier/blob/main/plugins/dexie/src/DexiePlugin.ts#L61)
 
 See `IDbPlugin.databaseName`. IndexedDB names are already scoped to an origin, so the
 name alone identifies the database — and two tabs on that origin opening it must share
@@ -63,7 +63,7 @@ subscription channels, which is exactly what returning the name gives them.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: [plugins/dexie/src/DexiePlugin.ts:122](https://github.com/Agrejus/routier/blob/main/plugins/dexie/src/DexiePlugin.ts#L122)
+Defined in: [plugins/dexie/src/DexiePlugin.ts:124](https://github.com/Agrejus/routier/blob/main/plugins/dexie/src/DexiePlugin.ts#L124)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 
@@ -93,7 +93,7 @@ Callback with an optional error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [plugins/dexie/src/DexiePlugin.ts:136](https://github.com/Agrejus/routier/blob/main/plugins/dexie/src/DexiePlugin.ts#L136)
+Defined in: [plugins/dexie/src/DexiePlugin.ts:138](https://github.com/Agrejus/routier/blob/main/plugins/dexie/src/DexiePlugin.ts#L138)
 
 Executes bulk operations (add, update, remove) on the database.
 
@@ -125,7 +125,7 @@ Callback with the result or error.
 
 > **query**\<`TEntity`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: [plugins/dexie/src/DexiePlugin.ts:313](https://github.com/Agrejus/routier/blob/main/plugins/dexie/src/DexiePlugin.ts#L313)
+Defined in: [plugins/dexie/src/DexiePlugin.ts:307](https://github.com/Agrejus/routier/blob/main/plugins/dexie/src/DexiePlugin.ts#L307)
 
 Executes a query operation on the database.
 
@@ -167,7 +167,7 @@ Callback with the result or error.
 
 > **\[dispose\]**(): `void`
 
-Defined in: [plugins/dexie/src/DexiePlugin.ts:505](https://github.com/Agrejus/routier/blob/main/plugins/dexie/src/DexiePlugin.ts#L505)
+Defined in: [plugins/dexie/src/DexiePlugin.ts:499](https://github.com/Agrejus/routier/blob/main/plugins/dexie/src/DexiePlugin.ts#L499)
 
 #### Returns
 

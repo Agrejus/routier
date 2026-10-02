@@ -6,7 +6,7 @@
 
 # Class: MongoClientDriver
 
-Defined in: [plugins/mongodb/src/MongoClientDriver.ts:73](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoClientDriver.ts#L73)
+Defined in: [plugins/mongodb/src/MongoClientDriver.ts:74](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoClientDriver.ts#L74)
 
 ## Implements
 
@@ -18,7 +18,7 @@ Defined in: [plugins/mongodb/src/MongoClientDriver.ts:73](https://github.com/Agr
 
 > **new MongoClientDriver**(`client`, `databaseName?`, `options?`): `MongoClientDriver`
 
-Defined in: [plugins/mongodb/src/MongoClientDriver.ts:81](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoClientDriver.ts#L81)
+Defined in: [plugins/mongodb/src/MongoClientDriver.ts:82](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoClientDriver.ts#L82)
 
 #### Parameters
 
@@ -44,7 +44,7 @@ Defined in: [plugins/mongodb/src/MongoClientDriver.ts:81](https://github.com/Agr
 
 > `readonly` **name**: `"mongodb"` = `"mongodb"`
 
-Defined in: [plugins/mongodb/src/MongoClientDriver.ts:75](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoClientDriver.ts#L75)
+Defined in: [plugins/mongodb/src/MongoClientDriver.ts:76](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoClientDriver.ts#L76)
 
 Names the engine, for errors that would otherwise not say which one failed.
 
@@ -58,7 +58,7 @@ Names the engine, for errors that would otherwise not say which one failed.
 
 > **collection**(`name`): `Promise`\<[`MongoCollection`](../interfaces/MongoCollection.md)\>
 
-Defined in: [plugins/mongodb/src/MongoClientDriver.ts:91](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoClientDriver.ts#L91)
+Defined in: [plugins/mongodb/src/MongoClientDriver.ts:92](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoClientDriver.ts#L92)
 
 #### Parameters
 
@@ -80,7 +80,7 @@ Defined in: [plugins/mongodb/src/MongoClientDriver.ts:91](https://github.com/Agr
 
 > **transaction**\<`T`\>(`work`): `Promise`\<`T`\>
 
-Defined in: [plugins/mongodb/src/MongoClientDriver.ts:95](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoClientDriver.ts#L95)
+Defined in: [plugins/mongodb/src/MongoClientDriver.ts:96](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoClientDriver.ts#L96)
 
 Runs `work` exactly once, atomically, and returns what it returned.
 
@@ -120,7 +120,7 @@ it is constructed rather than at the first save.
 
 > **dropDatabase**(): `Promise`\<`void`\>
 
-Defined in: [plugins/mongodb/src/MongoClientDriver.ts:135](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoClientDriver.ts#L135)
+Defined in: [plugins/mongodb/src/MongoClientDriver.ts:136](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoClientDriver.ts#L136)
 
 Removes the database. Succeeds when it does not exist.
 
@@ -138,7 +138,7 @@ Removes the database. Succeeds when it does not exist.
 
 > **close**(): `Promise`\<`void`\>
 
-Defined in: [plugins/mongodb/src/MongoClientDriver.ts:139](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoClientDriver.ts#L139)
+Defined in: [plugins/mongodb/src/MongoClientDriver.ts:140](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoClientDriver.ts#L140)
 
 #### Returns
 

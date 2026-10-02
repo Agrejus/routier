@@ -8,7 +8,7 @@
 
 > **TaggedEntity**\<`T`\> = `object`
 
-Defined in: [core/src/plugins/types.ts:216](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L216)
+Defined in: [core/src/plugins/types.ts:218](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L218)
 
 ## Type Parameters
 
@@ -22,7 +22,7 @@ Defined in: [core/src/plugins/types.ts:216](https://github.com/Agrejus/routier/b
 
 > **entity**: `T`
 
-Defined in: [core/src/plugins/types.ts:217](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L217)
+Defined in: [core/src/plugins/types.ts:219](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L219)
 
 ***
 
@@ -30,4 +30,4 @@ Defined in: [core/src/plugins/types.ts:217](https://github.com/Agrejus/routier/b
 
 > `optional` **tag**: `unknown`
 
-Defined in: [core/src/plugins/types.ts:218](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L218)
+Defined in: [core/src/plugins/types.ts:220](https://github.com/Agrejus/routier/blob/main/core/src/plugins/types.ts#L220)

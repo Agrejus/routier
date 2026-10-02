@@ -6,7 +6,7 @@
 
 # Interface: StandardTypedV1\<Input, Output\>
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:12](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L12)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:13](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L13)
 
 Standard JSON Schema V1 interface types
 Based on https://standardschema.dev/json-schema
@@ -27,4 +27,4 @@ Based on https://standardschema.dev/json-schema
 
 > `readonly` **~standard**: [`Props`](../namespaces/StandardTypedV1/interfaces/Props.md)\<`Input`, `Output`\>
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:13](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L13)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:14](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L14)

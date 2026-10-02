@@ -6,7 +6,7 @@
 
 # Class: MongoDbPlugin
 
-Defined in: [plugins/mongodb/src/MongoDbPlugin.ts:51](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoDbPlugin.ts#L51)
+Defined in: [plugins/mongodb/src/MongoDbPlugin.ts:54](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoDbPlugin.ts#L54)
 
 Routier over MongoDB.
 
@@ -47,7 +47,7 @@ it does on every other backend.
 
 > **new MongoDbPlugin**(`driver`, `databaseName?`): `MongoDbPlugin`
 
-Defined in: [plugins/mongodb/src/MongoDbPlugin.ts:58](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoDbPlugin.ts#L58)
+Defined in: [plugins/mongodb/src/MongoDbPlugin.ts:61](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoDbPlugin.ts#L61)
 
 #### Parameters
 
@@ -69,7 +69,7 @@ Defined in: [plugins/mongodb/src/MongoDbPlugin.ts:58](https://github.com/Agrejus
 
 > `readonly` **databaseName**: `string`
 
-Defined in: [plugins/mongodb/src/MongoDbPlugin.ts:56](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoDbPlugin.ts#L56)
+Defined in: [plugins/mongodb/src/MongoDbPlugin.ts:59](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoDbPlugin.ts#L59)
 
 See `IDbPlugin.databaseName`. Defaults to the driver's database name.
 
@@ -83,7 +83,7 @@ See `IDbPlugin.databaseName`. Defaults to the driver's database name.
 
 > **query**\<`TRoot`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: [plugins/mongodb/src/MongoDbPlugin.ts:65](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoDbPlugin.ts#L65)
+Defined in: [plugins/mongodb/src/MongoDbPlugin.ts:68](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoDbPlugin.ts#L68)
 
 Executes a query operation on the database.
 
@@ -125,7 +125,7 @@ Callback with the result or error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [plugins/mongodb/src/MongoDbPlugin.ts:208](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoDbPlugin.ts#L208)
+Defined in: [plugins/mongodb/src/MongoDbPlugin.ts:211](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoDbPlugin.ts#L211)
 
 Executes bulk operations (add, update, remove) on the database.
 
@@ -157,7 +157,7 @@ Callback with the result or error.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: [plugins/mongodb/src/MongoDbPlugin.ts:328](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoDbPlugin.ts#L328)
+Defined in: [plugins/mongodb/src/MongoDbPlugin.ts:339](https://github.com/Agrejus/routier/blob/main/plugins/mongodb/src/MongoDbPlugin.ts#L339)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 

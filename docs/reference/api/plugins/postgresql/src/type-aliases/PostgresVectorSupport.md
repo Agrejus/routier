@@ -8,7 +8,7 @@
 
 > **PostgresVectorSupport** = `object`
 
-Defined in: plugins/postgres-core/dist/utils.d.ts:14
+Defined in: plugins/postgres-core/dist/utils.d.ts:15
 
 What this connection can do with a vector, decided once by probing for pgvector.
 
@@ -23,6 +23,6 @@ the reverse silently reads a native vector column as JSON.
 
 > `readonly` **available**: `boolean`
 
-Defined in: plugins/postgres-core/dist/utils.d.ts:16
+Defined in: plugins/postgres-core/dist/utils.d.ts:17
 
 True when the `vector` extension is installed and a `vector(n)` column is usable.

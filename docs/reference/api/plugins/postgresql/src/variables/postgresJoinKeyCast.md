@@ -8,7 +8,7 @@
 
 > `const` **postgresJoinKeyCast**: \<`TOuter`, `TInner`\>(`outerSchema`, `innerSchema`, `join`) => `object`
 
-Defined in: plugins/postgres-core/dist/utils.d.ts:75
+Defined in: plugins/postgres-core/dist/utils.d.ts:76
 
 Which side of a join has to be cast, and to what.
 

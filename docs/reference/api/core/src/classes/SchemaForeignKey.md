@@ -46,7 +46,7 @@ Defined in: [core/src/schema/property/modifiers/SchemaForeignKey.ts:12](https://
 
 ##### property
 
-keyof `IsEmptyObject`\<\{ \[K in string \| number \| symbol as IsPlainProperty\<K, K\> extends true ? K : never\]: InferPrimitive\<K\[K\]\> \}\> *extends* `true` ? `object` : \{ \[K in string \| number \| symbol as IsPlainProperty\<K, K\> extends true ? K : never\]: InferPrimitive\<K\[K\]\> \} | keyof `IsEmptyObject`\<\{ readonly \[K in string \| number \| symbol as HasModifier\<K, K, "readonly"\> extends true ? K : never\]: InferPrimitive\<K\[K\]\> \}\> *extends* `true` ? `object` : \{ readonly \[K in string \| number \| symbol as HasModifier\<K, K, "readonly"\> extends true ? K : never\]: InferPrimitive\<K\[K\]\> \} | keyof `IsEmptyObject`\<\{ \[K in string \| number \| symbol as HasModifier\<K, K, "optional"\> extends true ? K : never\]?: InferPrimitive\<K\[K\]\> \}\> *extends* `true` ? `object` : \{ \[K in string \| number \| symbol as HasModifier\<K, K, "optional"\> extends true ? K : never\]?: InferPrimitive\<K\[K\]\> \} | keyof `IsEmptyObject`\<\{ \[K in string \| number \| symbol as HasModifier\<K, K, "nullable"\> extends true ? K : never\]: InferPrimitive\<K\[K\]\> \}\> *extends* `true` ? `object` : \{ \[K in string \| number \| symbol as HasModifier\<K, K, "nullable"\> extends true ? K : never\]: InferPrimitive\<K\[K\]\> \}
+keyof `InferCompiledSchema`\<`K`\>
 
 #### Returns
 
@@ -154,11 +154,35 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:14](https://github.com/
 
 ***
 
+### isEtag
+
+> **isEtag**: `boolean` = `false`
+
+Defined in: [core/src/schema/property/base/SchemaBase.ts:15](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L15)
+
+#### Inherited from
+
+[`SchemaBase`](SchemaBase.md).[`isEtag`](SchemaBase.md#isetag)
+
+***
+
+### etagComparator
+
+> **etagComparator**: [`EtagComparator`](../type-aliases/EtagComparator.md)\<[`EtagValue`](../type-aliases/EtagValue.md)\> = `null`
+
+Defined in: [core/src/schema/property/base/SchemaBase.ts:16](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L16)
+
+#### Inherited from
+
+[`SchemaBase`](SchemaBase.md).[`etagComparator`](SchemaBase.md#etagcomparator)
+
+***
+
 ### transform
 
 > **transform**: [`PropertyTransform`](../type-aliases/PropertyTransform.md)\<`unknown`\> = `null`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:19](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L19)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:21](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L21)
 
 Set by `.modify(x => x.transform(...))`. A live reference, never stringified.
 `null` when the property is stored as it is.
@@ -173,7 +197,7 @@ Set by `.modify(x => x.transform(...))`. A live reference, never stringified.
 
 > **indexes**: `string`[] = `[]`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:20](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L20)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:22](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L22)
 
 #### Inherited from
 
@@ -185,7 +209,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:20](https://github.com/
 
 > **fromPropertyName**: `string` = `null`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:21](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L21)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:23](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L23)
 
 #### Inherited from
 
@@ -197,7 +221,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:21](https://github.com/
 
 > **dimensions**: `number` = `null`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:35](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L35)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:37](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L37)
 
 How many numbers a vector holds. `null` for every other type.
 
@@ -221,7 +245,7 @@ array arrives with no element type and clones through the slow path.
 
 > **maxLength**: `number` = `null`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:50](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L50)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:52](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L52)
 
 The longest string the property is declared to hold. `null` for every other type, and
 for a string that declares nothing.
@@ -246,7 +270,7 @@ knowing a bound.
 
 > **isSearchable**: `boolean` = `false`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:62](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L62)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:64](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L64)
 
 Whether this string may be tokenised into a full-text search index.
 
@@ -268,7 +292,7 @@ gains one more modifier.
 
 > **foreignKeyDefinition**: [`ForeignKey`](../type-aliases/ForeignKey.md)\<`unknown`\> = `null`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:64](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L64)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:66](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L66)
 
 #### Inherited from
 
@@ -280,7 +304,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:64](https://github.com/
 
 > **tags**: `string`[] = `[]`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:65](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L65)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:67](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L67)
 
 #### Inherited from
 
@@ -292,7 +316,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:65](https://github.com/
 
 > **injected**: `any` = `null`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:66](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L66)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:68](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L68)
 
 #### Inherited from
 
@@ -304,7 +328,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:66](https://github.com/
 
 > **defaultValue**: [`DefaultValue`](../type-aliases/DefaultValue.md)\<`T`\> = `null`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:67](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L67)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:69](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L69)
 
 #### Inherited from
 
@@ -316,7 +340,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:67](https://github.com/
 
 > **valueSerializer**: [`PropertySerializer`](../type-aliases/PropertySerializer.md)\<`T`\> = `null`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:68](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L68)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:70](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L70)
 
 #### Inherited from
 
@@ -328,7 +352,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:68](https://github.com/
 
 > **valueDeserializer**: [`PropertyDeserializer`](../type-aliases/PropertyDeserializer.md)\<`T`\> = `null`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:69](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L69)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:71](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L71)
 
 #### Inherited from
 
@@ -340,7 +364,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:69](https://github.com/
 
 > **type**: [`SchemaTypes`](../enumerations/SchemaTypes.md)
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:70](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L70)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:72](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L72)
 
 #### Inherited from
 
@@ -352,7 +376,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:70](https://github.com/
 
 > **functionBody**: [`FunctionBody`](../type-aliases/FunctionBody.md)\<`any`, `T`\>
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:71](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L71)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:73](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L73)
 
 #### Inherited from
 
@@ -364,7 +388,7 @@ Defined in: [core/src/schema/property/base/SchemaBase.ts:71](https://github.com/
 
 > `readonly` **literals**: `T`[] = `[]`
 
-Defined in: [core/src/schema/property/base/SchemaBase.ts:73](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L73)
+Defined in: [core/src/schema/property/base/SchemaBase.ts:75](https://github.com/Agrejus/routier/blob/main/core/src/schema/property/base/SchemaBase.ts#L75)
 
 #### Inherited from
 

@@ -8,7 +8,7 @@
 
 > **buildJoinQueryOperation**\<`TEntity`, `TShape`, `TInner`\>(`query`, `innerSchema`, `vectors?`): [`SqlOperation`](../type-aliases/SqlOperation.md) & `object`
 
-Defined in: plugins/postgres-core/dist/utils.d.ts:95
+Defined in: plugins/postgres-core/dist/utils.d.ts:96
 
 Builds the joined SELECT for a query carrying a `join` option.
 
