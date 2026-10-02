@@ -2,7 +2,7 @@
 
 **Branch:** `v0.2.2` · **Package:** `plugins/replication` (`@routier/replication-plugin`)
 **Status:** Tiers 1–4 implemented and green (**191/191 tests, 9 suites**), plus a public sync API
-and request pacing (§8), and 4 cross-package e2e tests in `e2e/src/replicationUpdateWire.test.ts`. Mutation testing is configured and run for three of seven source files; the rest is scoped
+and request pacing (§8), and 4 cross-package e2e tests in `tooling/e2e/src/replicationUpdateWire.test.ts`. Mutation testing is configured and run for three of seven source files; the rest is scoped
 follow-up (§7).
 **Last verified:** `npx tsc --noEmit` clean, `npm run lint` clean,
 `ROUTIER_LOG_LEVEL=silent npx jest` 191/191 in `plugins/replication`; chaos soak 3× 200 seeds
@@ -231,7 +231,7 @@ From the repo root:
 
 ```bash
 npm run mutate:replication                                       # whole package (hours — §7)
-npx stryker run stryker/replication.mjs --mutate 'plugins/replication/src/httpUtils.ts'
+npx stryker run tooling/stryker/replication.mjs --mutate 'plugins/replication/src/httpUtils.ts'
 npx tsx --tsconfig tsconfig.test.json examples/sync-engine-dexie/index.ts   # Node example
 node examples/sync-engine-dexie/browser/serve.mjs                          # browser demo
 ```
@@ -274,8 +274,8 @@ one the gate measures.
 
 The per-file history below is kept as a record of the earlier sessions.
 
-`stryker/replication.mjs` + `stryker/jest.replication.js` +
-`stryker/replication.setup.js` work (`npm run mutate:replication`, gate 45). The setup file caps
+`tooling/stryker/replication.mjs` + `tooling/stryker/jest.replication.js` +
+`tooling/stryker/replication.setup.js` work (`npm run mutate:replication`, gate 45). The setup file caps
 chaos at 3 seeds and silences the logger. Measured:
 
 | Scope | Mutants | Before → after | Notes |

@@ -4,7 +4,7 @@ Status: 72 of 72 fixed.
 Date: 2026-09-15
 
 Defects 1–10 came from the functional test program. #11–#13 came from the stress program
-(`stress/`, see `specs/stress-testing.md`) and are the reason it exists: all three are
+(`tooling/stress/`, see `specs/stress-testing.md`) and are the reason it exists: all three are
 change-tracker state bugs that a single-operation test cannot see, because each needs a
 *second* save to become observable. #18–#22 came from the same program later, once it grew
 scenarios for concurrency (#18, #21) and real databases (#19, #20, #22). #27 and #29 came from the
@@ -236,7 +236,7 @@ default proxy path too.
 Silent data loss. An in-place array mutation made after the entity's first save is
 discarded with no error and no failed assertion; the next read returns the old value.
 
-**Reproduction** (`stress/src/s2-volume-wide-schemas.test.ts`, and reduced):
+**Reproduction** (`tooling/stress/src/s2-volume-wide-schemas.test.ts`, and reduced):
 
 ```ts
 const [e] = await store.items.toArrayAsync();  // or: any entity, after one saveChanges
@@ -370,7 +370,7 @@ Two follow-on rules landed with it, both load-bearing:
   nested subtree is one column, so writing the delta's partial subtree drops the siblings
   that did not change.
 
-Pinned by `e2e/src/sqliteJsonColumns.test.ts` — a real SQLite file, a schema with no
+Pinned by `tooling/e2e/src/sqliteJsonColumns.test.ts` — a real SQLite file, a schema with no
 serializers anywhere.
 
 ### 16. A `{ isPaused: false }` residue survived on non-proxy reads — **FIXED**
@@ -454,7 +454,7 @@ its own mutation, so any later write is a superset of every earlier one. With it
 
 The same shape still applies to any future plugin that persists a whole collection per save
 rather than per row. Guarded by the `file-system` case of
-`stress/src/s5-many-stores-one-database.test.ts`, no longer `knownFailing`.
+`tooling/stress/src/s5-many-stores-one-database.test.ts`, no longer `knownFailing`.
 
 ### 19. An `s.array()` property cannot be written to PostgreSQL — **FIXED**
 
@@ -480,7 +480,7 @@ Invisible to SQLite, which stores JSON as text and receives an already-serialize
 through `toColumnValueMap`, whose `needsJsonEncoding` JSON-stringifies structures bound to
 JSON columns (encoding on runtime shape, so schemas with their own `.serialize()` are not
 double-encoded). Guarded by `'writes an array property'` in
-`e2e/src/postgresContainer.test.ts` and the re-enabled churn scenario in S8.
+`tooling/e2e/src/postgresContainer.test.ts` and the re-enabled churn scenario in S8.
 
 ### 20. A nested object still emits a column per descendant on the PostgreSQL path — **FIXED**
 
@@ -518,7 +518,7 @@ with it:
   (DDL, INSERT, SELECT); swept in the same pass.
 
 Guarded by `'keeps a nested descendant distinct from a top-level property of the same
-name'` in `e2e/src/postgresContainer.test.ts` and the matching S8 scenario.
+name'` in `tooling/e2e/src/postgresContainer.test.ts` and the matching S8 scenario.
 
 ### 21. The first concurrent write to a new collection loses all but one — **FIXED**
 
@@ -550,7 +550,7 @@ at the file level.
 
 Note this is the *deployment* shape, not an exotic one — several processes starting against a
 fresh database do exactly this. Guarded by the multi-instance scenario in
-`stress/src/s8-real-databases.test.ts`, no longer `knownFailing`.
+`tooling/stress/src/s8-real-databases.test.ts`, no longer `knownFailing`.
 
 ### 22. One save cannot update two entities whose changed columns differ — **FIXED**
 
@@ -587,7 +587,7 @@ SqlOperation[]` — one entry per changed-column group, each numbering its own p
 from `$1` — and the plugin pushes each group as its own operation into the already-flat,
 sequential, per-savepoint execution list inside the one transaction. No new transaction
 machinery was needed. Guarded by `'updates two entities whose changed columns differ in one
-save'` in `e2e/src/postgresContainer.test.ts` and the matching S8 scenario.
+save'` in `tooling/e2e/src/postgresContainer.test.ts` and the matching S8 scenario.
 
 ### 23. Two identical unsaved rows with identity keys collapse into one — **FIXED**
 
@@ -640,7 +640,7 @@ whole bucket. No plugin-contract change, no ordering assumption, and the
 
 One correction for the record: the "entire document must be returned for adds" rule lives
 in the runtime assertion in `ChangeTracker.mergeChanges`, not in
-`test-utils/src/pluginContract.ts` as this entry previously claimed.
+`tooling/test-utils/src/pluginContract.ts` as this entry previously claimed.
 
 **Found:** while adding unsaved-row support to the immutable `update()` path — a patch that
 makes one pending row identical to another reaches the same collapse. The route is new; the
@@ -933,7 +933,7 @@ durable, and the plugin still reported the save as failed.
 It is idempotent and independent of the batch's data, so it does not belong inside.
 
 **Found by** the plugin production-readiness audit; guarded by
-`e2e/src/mysqlContainer.test.ts` ("rolls the whole batch back when one row fails") and by the
+`tooling/e2e/src/mysqlContainer.test.ts` ("rolls the whole batch back when one row fails") and by the
 five-instance S8 scenario, where racing table creation corrupts a *concurrent* writer's
 rollback rather than only its own.
 
@@ -1014,7 +1014,7 @@ pulls in.
 **Fix:** one local handle per plugin, used by every operation and by `sync()`, closed and
 cleared by `destroy()`. It also removes a `new PouchDB` per operation.
 
-**Found by** `e2e/src/couchdbReplication.test.ts`, the first time this plugin's sync path had
+**Found by** `tooling/e2e/src/couchdbReplication.test.ts`, the first time this plugin's sync path had
 executed against anything.
 
 ### 41. PouchDB `destroy()` left replication running and the handle open — **FIXED**
@@ -1219,7 +1219,7 @@ All four `knownFailing` entries are removed; the contract suites run their full 
 | A save mixing add + update + remove does not apply all three | sqlite (+ same bug in postgres) | The persist loop grouped operations per schema and executed only one per group (`removes` else `updates` else `adds`). Flattened to one entry per operation, removes → updates → adds within a schema. |
 | Two entities differing only in the second key component collapse | dexie | Dexie's primary key is the first entry in the stores string; multi-key schemas now emit a compound primary key (`[a+b]`) first. |
 
-The contract kit itself is `test-utils/src/pluginContract.ts`. It supports three markers:
+The contract kit itself is `tooling/test-utils/src/pluginContract.ts`. It supports three markers:
 `knownFailing` (stable failure), `knownUnstable` (runs, failure warned not thrown — for
 non-deterministic defects), and `skipSections`.
 
@@ -1281,7 +1281,7 @@ behaviour: `SyntaxError: Unexpected token 'export'`.
 `import { MysqlDbPlugin } from '@routier/mysql-plugin'` written in their own READMEs bound
 `undefined`.
 
-**Fix for both:** `scripts/rspack.library.mjs` builds every package twice, ESM to
+**Fix for both:** `tooling/scripts/rspack.library.mjs` builds every package twice, ESM to
 `dist/index.js` and CommonJS to `dist/index.cjs`, declared through `exports`.
 
 ### #52 — `@routier/pouchdb-plugin` could not be loaded in Node at all
@@ -1306,7 +1306,7 @@ no `destroyAsync()` in it.
 
 Jest never saw it: it tears down its own environment, so a referenced handle reads as a slow
 exit rather than a failure. Fixed by `unref()`ing both channels, which is a no-op in browsers.
-Pinned by `e2e/src/processExit.test.ts`, which runs a real script in a real process — the only
+Pinned by `tooling/e2e/src/processExit.test.ts`, which runs a real script in a real process — the only
 place this is observable.
 
 ---
@@ -1327,7 +1327,7 @@ ESM loader rejects outright.
 therefore did not overwrite. Half the package stayed correct, which is why `require` worked
 and `import` did not.
 
-Fixed by `tsc --noEmit` in all thirteen. Pinned by `scripts/consumer-check.mjs`, which found
+Fixed by `tsc --noEmit` in all thirteen. Pinned by `tooling/scripts/consumer-check.mjs`, which found
 it — running immediately after a typecheck, from a real install.
 
 ---
@@ -1357,7 +1357,7 @@ function are bound as parameters of the generated factory (`FunctionFactoryBuild
 of an outer function the single-stage generators are compiled inside (`CodeBuilder.bind`), and
 generated code calls the parameter. The arrow-only restriction is gone with the parser.
 
-Minification is still off in `scripts/rspack.library.mjs`, now as a choice for readable dist
+Minification is still off in `tooling/scripts/rspack.library.mjs`, now as a choice for readable dist
 rather than a constraint, and the four example Vite configs no longer disable it. Pinned by
 `core/src/schema/minifiedCodegen.test.ts`, which bundles a schema from source with esbuild —
 unminified, `minify`, `minifyIdentifiers`, arrows lowered, and minified with arrows lowered —
@@ -1675,7 +1675,7 @@ side is a `SchemaTypes.Array` property; every other `includes` is untouched.
 implemented outside this repository no longer compiles. `@routier/sql-plugin-core` goes to
 `0.5.0` for that reason.
 
-Pinned by an `array membership` block in `e2e/src/dialectConformance.ts`, run against SQLite,
+Pinned by an `array membership` block in `tooling/e2e/src/dialectConformance.ts`, run against SQLite,
 PGlite, PostgreSQL and MySQL. It includes the prefix case specifically — without the fix,
 SQLite fails that one and only that one.
 
@@ -1716,8 +1716,8 @@ corruption in place.
 never alter one, so a table already created with `TIMESTAMP` or `DATETIME` keeps that type and
 keeps the old behaviour. Changing it on live data is a migration and has to be done as one.
 
-Pinned by a `dates` block in `e2e/src/dialectConformance.ts`, run against all four engines, and
-by `identity key with a date property` in `e2e/src/postgresContainer.test.ts`.
+Pinned by a `dates` block in `tooling/e2e/src/dialectConformance.ts`, run against all four engines, and
+by `identity key with a date property` in `tooling/e2e/src/postgresContainer.test.ts`.
 
 ## #71 — a PouchDB identity key not named `_id` corrupted every read — **FIXED** (2026-08-23)
 
@@ -1767,12 +1767,12 @@ tolerance.
 
 | Path | What it is |
 | --- | --- |
-| `test-utils/src/shapeCatalog.ts` | 55 schema shapes × 4 property orders = 220 compiled schemas |
-| `test-utils/src/generatorInvariants.ts` | 10 invariants × the catalog = ~2,100 cases |
-| `test-utils/src/pluginContract.ts` | 62 behavioural tests every plugin must pass |
-| `test-utils/src/queryOracle.ts` | 322 queries per plugin vs a plain-JS reference implementation |
-| `e2e/` | SQLite durability; Postgres via testcontainers |
-| `benchmark/` | Regression gates, 15% tolerance, `npm run benchmark` |
+| `tooling/test-utils/src/shapeCatalog.ts` | 55 schema shapes × 4 property orders = 220 compiled schemas |
+| `tooling/test-utils/src/generatorInvariants.ts` | 10 invariants × the catalog = ~2,100 cases |
+| `tooling/test-utils/src/pluginContract.ts` | 62 behavioural tests every plugin must pass |
+| `tooling/test-utils/src/queryOracle.ts` | 322 queries per plugin vs a plain-JS reference implementation |
+| `tooling/e2e/` | SQLite durability; Postgres via testcontainers |
+| `tooling/benchmark/` | Regression gates, 15% tolerance, `npm run benchmark` |
 | `docs/mutation-backlog.md` | Mutation-testing triage and yield analysis |
 
 **Two things that will mislead you**

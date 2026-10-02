@@ -98,5 +98,5 @@ Node 18 or later. PostgreSQL 12 or later; the suites run against `postgres:16-al
 
 ## See also
 
-- `e2e/src/postgresContainer.test.ts` — behaviour against a real server, including failure paths
-- `e2e/src/dialectConformance.test.ts` — the shared SQL matrix
+- `tooling/e2e/src/postgresContainer.test.ts` — behaviour against a real server, including failure paths
+- `tooling/e2e/src/dialectConformance.test.ts` — the shared SQL matrix

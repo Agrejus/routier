@@ -7,7 +7,7 @@ item at a time. Do not start the next item until the current one is measured and
 The rule that has paid off twice in this repo: **microbenchmark the candidate shapes side by
 side BEFORE you edit, then re-measure the real path after.** One plausible candidate
 (`values()` instead of destructured Map entries) measured at ~5% and was dropped before any
-code changed. See `benchmark/README.md` for a second lesson: a suspected cause
+code changed. See `tooling/benchmark/README.md` for a second lesson: a suspected cause
 (`Object.defineProperty` in the proxy set trap) was measured and cleared. Do not re-investigate it.
 
 All line numbers below were verified on branch `0.3.0` on 2026-08-12. Re-verify before editing.
@@ -120,12 +120,12 @@ npm run benchmark          # from repo root; compares against recorded baselines
 npm run benchmark:update   # re-records baselines from this run
 ```
 
-Scenarios (see `benchmark/src/run.ts`): `insert-1000`, `update-1000`, `full-scan-10000`,
+Scenarios (see `tooling/benchmark/src/run.ts`): `insert-1000`, `update-1000`, `full-scan-10000`,
 `filtered-query-10000`, `point-lookup-10000`, `count-10000`, `diff-update-1000`,
 `diff-clean-sweep-10000`, `parse-simple-filter`, `parse-complex-filter`, `compile-schema`.
 All run against `MemoryPlugin` with warmup and a median over repeated iterations.
 
-Rules, from `benchmark/README.md`:
+Rules, from `tooling/benchmark/README.md`:
 
 1. A single run is not evidence. Run 3–5 times and compare medians.
 2. Baselines are machine-specific. Record your own baseline on your machine before the first edit.
@@ -149,7 +149,7 @@ For each fix:
 
 If the real-path numbers do not improve, REVERT the fix. Keeping unmeasurable "optimizations"
 is how this codebase accumulated a diffuse 20% regression across twenty commits
-(`benchmark/README.md`, baseline history).
+(`tooling/benchmark/README.md`, baseline history).
 
 ### 2.3 Profiling tools for the investigation items
 
@@ -164,7 +164,7 @@ is how this codebase accumulated a diffuse 20% regression across twenty commits
 ### 2.4 A known open target
 
 `update-1000` regressed from 1.92ms to ~2.26ms cumulatively across ~20 commits, cause never
-isolated (see `benchmark/README.md`). Fixes 1 and 2 below both remove per-save and per-entity
+isolated (see `tooling/benchmark/README.md`). Fixes 1 and 2 below both remove per-save and per-entity
 work on the write path, so they are the most likely to claw this back. Track `update-1000`
 and `diff-update-1000` on every fix.
 
@@ -259,7 +259,7 @@ Tests: 210 suites passed, 0 failed — identical to the pre-change baseline, +6 
 "27 suites / 8 tests" failing baseline in section 1.3 did not reproduce; this checkout is clean, so
 the acceptance bar used here was zero failures.
 
-`benchmark/baselines/baselines.json` was deliberately left unchanged — the recorded numbers are
+`tooling/benchmark/baselines/baselines.json` was deliberately left unchanged — the recorded numbers are
 machine-specific and this machine is slower than the one that set them.
 
 ### Fix 2 — Remove `delete` from entity and change-bag hot paths
@@ -403,7 +403,7 @@ allow: Date, nested objects, arrays. Write a property-based test that round-trip
 with renames through both cloners and asserts deep equality.
 
 **Measure.** Add a benchmark scenario with a renamed-property schema (none of the current
-scenarios exercise the fallback — `productSchema` in `benchmark/src/run.ts` has no renames).
+scenarios exercise the fallback — `productSchema` in `tooling/benchmark/src/run.ts` has no renames).
 Then `full-scan-10000` and `filtered-query-10000` on that schema, before and after.
 
 **Result — 2026-08-12, shipped.**
@@ -452,7 +452,7 @@ including a function". A schema-keyed cloner has no shape to work from there.
 
 Tests: 211 suites passed, 0 failed (210 baseline plus the new `cloneStorage` suite).
 
-`benchmark/baselines/baselines.json` has no entries for the two new scenarios. Run
+`tooling/benchmark/baselines/baselines.json` has no entries for the two new scenarios. Run
 `npm run benchmark:update` on the machine that owns the baselines to record them.
 
 ### Fix 4 — Index-aware filtering in the ephemeral store
@@ -972,7 +972,7 @@ Traps that cost time this session — worth reading before touching these paths:
   a renamed property to force the structural-copy path so its hidden `__version` survives a read.
   Any change to how stored records are copied must keep undeclared columns, or optimistic
   concurrency stops detecting conflicts with no error anywhere.
-- **`benchmark/` runs against SOURCE**, via tsconfig `paths` (so does jest, via
+- **`tooling/benchmark/` runs against SOURCE**, via tsconfig `paths` (so does jest, via
   `moduleNameMapper`). The section 1.2 rebuild is needed for `tsc` typechecks of dependent
   packages, which read `core/dist`, not for measuring or testing.
 - **Do not run two jest invocations at once.** They share the file-system plugin's temp dirs and

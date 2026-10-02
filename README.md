@@ -38,9 +38,11 @@ This is a monorepo using npm workspaces. The following packages are included:
 
 ### Other Directories
 
+- **`plugins/`** - Storage plugins, framework bindings, and devtools
 - **`docs/`** - Documentation website (Jekyll/Just the Docs)
 - **`examples/`** - Example code extracted from documentation
-- **`scripts/`** - Build and maintenance scripts
+- **`specs/`** - Design notes and plans
+- **`tooling/`** - Everything that builds, tests, and checks the packages: end-to-end, stress and benchmark suites, shared test utilities, the architecture checks, mutation configs, Kubernetes test manifests, and build and release scripts
 
 ## Features
 

@@ -1,6 +1,6 @@
 # Svelte bindings
 
-<!-- Generated from architecture/src/domains.ts. Edit the manifest, then run
+<!-- Generated from tooling/architecture/src/domains.ts. Edit the manifest, then run
      `npm run domains:write`. A hand-edit here fails architecture's test suite. -->
 
 ## Responsible for

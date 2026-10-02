@@ -5,7 +5,7 @@ Status: **Enforced.** `npx jest -c jest.config.js --selectProjects architecture`
 
 ## Where it lives
 
-`architecture/src/domains.ts` is the single source of truth. This file is a pointer, not a
+`tooling/architecture/src/domains.ts` is the single source of truth. This file is a pointer, not a
 copy — a second copy would drift, and a stale charter is worse than none because it is
 believed.
 
@@ -13,8 +13,8 @@ Two things read the manifest:
 
 | | |
 | --- | --- |
-| `architecture/src/writeDomainDocs.ts` | Renders a `DOMAIN.md` into each domain directory, so a file's charter sits next to the file |
-| `architecture/src/domains.test.ts` | Fails when the repository stops matching it |
+| `tooling/architecture/src/writeDomainDocs.ts` | Renders a `DOMAIN.md` into each domain directory, so a file's charter sits next to the file |
+| `tooling/architecture/src/domains.test.ts` | Fails when the repository stops matching it |
 
 A `DOMAIN.md` is generated. Edit the manifest and run `npm run domains:write -w @routier/architecture`.
 

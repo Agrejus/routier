@@ -18,8 +18,8 @@
             "@routier/core/*": ["./core/src/*"],
             "@routier/datastore": ["./datastore/src/index.ts"],
             "@routier/datastore/*": ["./datastore/src/*"],
-            "@routier/test-utils": ["./test-utils/src/index.ts"],
-            "@routier/test-utils/*": ["./test-utils/src/*"],
+            "@routier/test-utils": ["./tooling/test-utils/src/index.ts"],
+            "@routier/test-utils/*": ["./tooling/test-utils/src/*"],
             "@routier/memory-plugin": ["./plugins/memory/src/index.ts"],
             "@routier/memory-plugin/*": ["./plugins/memory/src/*"],
             "@routier/dexie-plugin": ["./plugins/dexie/src/index.ts"],
@@ -48,7 +48,7 @@
             "@routier/lit": ["./plugins/lit/src/index.ts"],
             "@routier/devtools": ["./plugins/devtools/src/index.ts"],
             "@routier/devtools/production": ["./plugins/devtools/src/production.ts"],
-            "@routier/sync-server": ["./sync-server/src/index.ts"],
+            "@routier/sync-server": ["./tooling/sync-server/src/index.ts"],
 
             // `baseUrl` is the repo root, which contains a directory named `react`. TS tries
             // baseUrl-relative resolution before node_modules for a non-relative import, so

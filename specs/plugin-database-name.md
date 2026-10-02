@@ -144,7 +144,7 @@ value as its collection registry key.
    revalidation results that way, so giving the plugin a name would have silently stopped
    delivering them — the plugin sending into a channel nobody was on. Two tests failed on
    exactly that and are fixed by scoping their senders, which is how it was caught.
-6. `specs/domains.md:65` and `architecture/src/domains.test.ts:283` — the frozen set becomes
+6. `specs/domains.md:65` and `tooling/architecture/src/domains.test.ts:283` — the frozen set becomes
    `databaseName, query, destroy, bulkPersist`.
 7. `specs/write-batching.md` — stop citing `identity?` as precedent for putting `composition` on
    `IDbPlugin`. It is not one any more, and that question reopens on its own terms.

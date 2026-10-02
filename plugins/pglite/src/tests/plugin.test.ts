@@ -12,7 +12,7 @@ import { PGliteDbPlugin, pgliteDbPlugin } from '../index';
 
 /**
  * What this plugin adds on top of `@routier/postgres-plugin-core`, which the dialect
- * conformance matrix in `e2e/` already covers against this same engine.
+ * conformance matrix in `tooling/e2e/` already covers against this same engine.
  *
  * Four things: that the data directory really persists, that a single connection does not let
  * two transactions interleave, and that a `s.vector()` property works both with and without the

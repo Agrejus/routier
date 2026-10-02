@@ -17,6 +17,6 @@ module.exports = {
     '^@routier/datastore$': '<rootDir>/../../datastore/src/index.ts',
     '^@routier/datastore/(.*)$': '<rootDir>/../../datastore/src/$1',
     '^@routier/memory-plugin$': '<rootDir>/../memory/src/index.ts',
-    '^@routier/test-utils$': '<rootDir>/../../test-utils/src/index.ts'
+    '^@routier/test-utils$': '<rootDir>/../../tooling/test-utils/src/index.ts'
   }
 };

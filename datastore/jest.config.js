@@ -18,7 +18,7 @@ module.exports = {
         '^@routier/core$': path.resolve(__dirname, '../core/src/index.ts'),
         '^@routier/core/(.*)$': path.resolve(__dirname, '../core/src/$1'),
         '^@routier/memory-plugin$': path.resolve(__dirname, '../plugins/memory/src/index.ts'),
-        '^@routier/test-utils$': path.resolve(__dirname, '../test-utils/src/index.ts')
+        '^@routier/test-utils$': path.resolve(__dirname, '../tooling/test-utils/src/index.ts')
     },
     transformIgnorePatterns: [
         'node_modules/(?!(@routier)/)'

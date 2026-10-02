@@ -309,4 +309,4 @@ already preserved the re-run; leave it alone.
 - Jest failing set identical before and after each item.
 - Results recorded under each item's heading in `specs/perf-fixes.md`, in the same format as the
   Fix 1–3 result blocks.
-- `benchmark/baselines/baselines.json` NOT updated unless you are on the machine that owns it.
+- `tooling/benchmark/baselines/baselines.json` NOT updated unless you are on the machine that owns it.

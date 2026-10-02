@@ -79,7 +79,7 @@ counter across statements is what made them inseparable before.
 
 ## Testing a new dialect
 
-`e2e/src/dialectConformance.ts` is a matrix of behaviour every engine must agree on: both
+`tooling/e2e/src/dialectConformance.ts` is a matrix of behaviour every engine must agree on: both
 operand orders for every comparator, null tests on either side, composite keys, renamed
 columns, nested JSON, and mixed update batches. Wire a new backend into it and run it against
 a real server.

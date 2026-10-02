@@ -298,7 +298,7 @@ The invariant: **a report may name a culprit, never un-name one. Reports commute
 The missing invariant: **a claim must be proven by executing the rendered output against the engine,
 across the full value domain the schema admits — not by rendering it.**
 
-`test-utils/src/pluginContract.ts` now carries a "filter parity with JavaScript" section that
+`tooling/test-utils/src/pluginContract.ts` now carries a "filter parity with JavaScript" section that
 asserts the pushed-down rows equal `rows.filter(predicate)`, seeded with the values engines disagree
 on: a fractional operand, a non-ASCII name, an integral REAL, a shift count over 32. A plugin that
 pushes down must agree; one that hands the filter back passes trivially. So a wrong claim fails and
@@ -490,7 +490,7 @@ they lacked, and `x => false` is a gap in both places rather than a refusal in o
 
 ## Found by the books app
 
-`e2e/src/books/` keeps a double-entry book end to end — chart of accounts, customers, vendors,
+`tooling/e2e/src/books/` keeps a double-entry book end to end — chart of accounts, customers, vendors,
 items, invoices with lines, payments, bills, journal postings, void and reversal — and asserts P&L,
 balance sheet, AR aging and customer statements against hand-computed answers on every engine. The
 trial balance is the invariant: debits minus credits is zero, and a query that loses a row breaks it.
@@ -546,7 +546,7 @@ treating one as a property.
 Twenty-two defects behind a green suite is a fixture problem. Three structural guards, in order of
 value.
 
-1. **A parity harness in `test-utils/src/pluginContract.ts`** asserting the pushed-down result equals
+1. **A parity harness in `tooling/test-utils/src/pluginContract.ts`** asserting the pushed-down result equals
    `rows.filter(predicate)` in plain JavaScript. The right-hand side cannot be wrong about
    JavaScript. A plugin that pushes down must agree; one that falls back passes trivially. So a wrong
    claim fails and an unclaimed call cannot. Every future divergence is one more row.
@@ -557,7 +557,7 @@ value.
 Two operational traps:
 
 - The mongodb plugin's own suite runs against `FakeMongoDriver`, which agrees with whatever the plugin
-  believes. Mongo claims can only be proven in `e2e/src/mongoContainer.test.ts` behind
+  believes. Mongo claims can only be proven in `tooling/e2e/src/mongoContainer.test.ts` behind
   `E2E_CONTAINERS=1`, the way `mysqlContainer.test.ts` already does.
 - A known divergence belongs in `knownFailing`, visible as `it.failing`. Never `skipSections`.
 

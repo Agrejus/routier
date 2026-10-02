@@ -118,5 +118,5 @@ Node 18 or later. MySQL 8.0 or later, for the `JSON` column type; the suites run
 
 ## See also
 
-- `e2e/src/mysqlContainer.test.ts` — behaviour against a real server, plus the contract kit
-- `e2e/src/dialectConformance.test.ts` — the shared SQL matrix
+- `tooling/e2e/src/mysqlContainer.test.ts` — behaviour against a real server, plus the contract kit
+- `tooling/e2e/src/dialectConformance.test.ts` — the shared SQL matrix

@@ -9,7 +9,7 @@
     },
     "scripts": {
         "build:types": "tsc --emitDeclarationOnly",
-        "build:bundle": "node ../../scripts/clean-dist.mjs && rspack build",
+        "build:bundle": "node ../../tooling/scripts/clean-dist.mjs && rspack build",
         "build": "npm run build:bundle && npm run build:types",
         "tsc": "tsc --noEmit",
         "test": "node --experimental-vm-modules ../../node_modules/jest/bin/jest.js",

@@ -15,7 +15,7 @@ import { CompiledSchema } from "@routier/core/schema";
  *
  * It used to be. `DataBridge` imported `@routier/memory-plugin`, which made the CRUD
  * abstraction depend on one specific backend — the one thing this package is not allowed to
- * do, and the reason `architecture/src/domains.ts` restricts what it may import.
+ * do, and the reason `tooling/architecture/src/domains.ts` restricts what it may import.
  *
  * Nothing about the need was plugin-shaped. `EphemeralDataPlugin` and `MemoryDataCollection`
  * both live in core, so the datastore can build its own scratch store out of the model's own

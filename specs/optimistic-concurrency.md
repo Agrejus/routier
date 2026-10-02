@@ -79,7 +79,7 @@ The conditional check is performed by the INNER plugin via the
 | --- | --- | --- |
 | memory, file-system (EphemeralDataPlugin) | ✅ | all conditional updates verified against stored rows BEFORE anything is applied |
 | sqlite | ✅ | one conditional `UPDATE ... WHERE id = ? AND "__version" = ? RETURNING ...` per row (`buildConditionalUpdateOperations`, chosen when any update carries a concurrency payload); zero returned rows → ROLLBACK + error |
-| postgresql | ✅ | same, verified against a real server (`e2e/src/postgresContainer.test.ts`) |
+| postgresql | ✅ | same, verified against a real server (`tooling/e2e/src/postgresContainer.test.ts`) |
 | dexie, pouchdb, mysql, replication | ❌ **not yet** | the contract field is ignored — a wrapped store on these gets the token stored but not checked. PouchDB's `_rev` is the natural implementation |
 
 ## Limits, stated
@@ -116,4 +116,4 @@ naming the row.
   conflicts, retry, error payload, unwrapped-plugin opt-out.
 - `plugins/sqlite/src/tests/optimisticConcurrency.test.ts` — hidden column in real DDL,
   rollback, retry.
-- `e2e/src/postgresContainer.test.ts` `optimistic concurrency` — real server.
+- `tooling/e2e/src/postgresContainer.test.ts` `optimistic concurrency` — real server.

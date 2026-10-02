@@ -320,7 +320,7 @@ what happened to each one. Nineteen defects were fixed and recorded as `specs/kn
 | High: SQLite table cache is module-global | **Fixed** — #33 |
 | High: Dexie multi-schema saves are not one transaction | **Fixed** — #44 |
 | High: Dexie schema version is fixed at 1 | **Fixed** — #46. `version` constructor option, with a message naming it when Dexie refuses |
-| High: MySQL has no real-server validation | **Fixed** — `e2e/src/mysqlContainer.test.ts`, 24 cases plus the contract kit. It failed 81 of 86 on its first run |
+| High: MySQL has no real-server validation | **Fixed** — `tooling/e2e/src/mysqlContainer.test.ts`, 24 cases plus the contract kit. It failed 81 of 86 on its first run |
 | High: MySQL ignores `connectionString` and `pool.min` | **Fixed** — `connectionString` honoured and mutually exclusive with the discrete fields; `pool.min` removed from the type |
 | High: MySQL creates tables inside the transaction | **Fixed** — #35. DDL runs before `beginTransaction` |
 | High: MySQL has no optimistic-concurrency path | **Fixed** — wired to the shared conditional-update builder, detecting conflicts from `affectedRows` |

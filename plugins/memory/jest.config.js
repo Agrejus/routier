@@ -18,7 +18,7 @@ module.exports = {
     '^@routier/core/(.*)$': path.resolve(__dirname, '../../core/src/$1'),
     '^@routier/datastore$': path.resolve(__dirname, '../../datastore/src/index.ts'),
     '^@routier/datastore/(.*)$': path.resolve(__dirname, '../../datastore/src/$1'),
-    '^@routier/test-utils$': path.resolve(__dirname, '../../test-utils/src/index.ts')
+    '^@routier/test-utils$': path.resolve(__dirname, '../../tooling/test-utils/src/index.ts')
   },
   transformIgnorePatterns: [
     'node_modules/(?!(@faker-js/faker|tinybench|@routier)/)'

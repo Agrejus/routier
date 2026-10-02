@@ -12,7 +12,7 @@
         "tsc": "tsc --noEmit -p tsconfig.check.json",
         "test": "jest",
         "lint": "oxlint . --ignore-pattern \"**/__tests__/**\" --ignore-pattern \"**/*.test.*\" --ignore-pattern \"**/*.spec.*\" --ignore-pattern \"**/*.mjs\"",
-        "build:bundle": "node ../../scripts/clean-dist.mjs && rspack build",
+        "build:bundle": "node ../../tooling/scripts/clean-dist.mjs && rspack build",
         "build": "npm run build:bundle && npm run build:types"
     },
     "sideEffects": false,

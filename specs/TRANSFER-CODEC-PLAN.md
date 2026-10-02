@@ -83,7 +83,7 @@ WASM module — the same reason `wasmPool.ts` exists. The `get({})` overload was
 ### Measured on the real path (browser harness, headless Chromium, medians)
 
 §1's table measured the BOUNDARY IN ISOLATION. On a real read it is one term of a sum, and the
-numbers below are what a caller actually gets. `e2e/browser/transfer` reproduces all of it.
+numbers below are what a caller actually gets. `tooling/e2e/browser/transfer` reproduces all of it.
 
 **Where a 4,000-row read's time went, before any of this work:**
 
@@ -811,7 +811,7 @@ medians, warmups discarded, all variants fingerprint-verified to produce identic
   Small-N sweep: crossover ~100 rows, 1-row overhead 17µs, aggregates faster cloned
   (0.014 vs 0.019ms). Binary/OPFS matrix: section 10.
 
-Harness: `scratchpad/bigbench/` — `worker.js` + `bench.html` + `run.mjs`
+Harness: `tooling/scratchpad/bigbench/` — `worker.js` + `bench.html` + `run.mjs`
 (`node run.mjs runScale | runFaster | runCombinedScale | runSmall | runBinary`; needs
 `playwright-core`, symlinked `node_modules`). Real read-path context: the boundary is ~3.3ms of a
 ~24.6ms 4,000-row read after Step 1, so codec gains are real but Step 1 dominates at small sizes;
