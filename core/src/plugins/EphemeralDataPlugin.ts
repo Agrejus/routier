@@ -8,6 +8,7 @@ import { CompiledSchema, IdType, InferCreateType } from '../schema';
 import { isComparatorExpression, isPropertyExpression, isValueExpression } from '../assertions';
 import { DeepPartial } from '../types';
 import { MemoryDataCollection } from '../collections/MemoryDataCollection';
+import { etagToGenerate, stampEtag } from './etagStamp';
 import { UnknownRecord } from '../utilities';
 
 /**
@@ -200,6 +201,7 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                     try {
                         for (const { schema, collection, changes, result } of staged) {
                             const { adds, updates, removes } = changes;
+                            const etag = etagToGenerate(schema, event.etags);
 
                             result.adds = Array.from({ length: adds.length });
                             result.updates = Array.from({ length: updates.length });
@@ -207,6 +209,7 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
 
                             for (let j = 0; j < adds.length; j++) {
                                 const item = adds[j];
+                                stampEtag(etag, item, undefined);
                                 collection.add(item);
                                 undo.push(() => collection.remove(item));
                                 result.adds[j] = item as DeepPartial<InferCreateType<UnknownRecord>>;
@@ -215,6 +218,7 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                             for (let j = 0; j < updates.length; j++) {
                                 const item = updates[j].entity;
                                 const prior = collection.getByIds(schema.getIds(item as never)) as Record<string, unknown> | undefined;
+                                stampEtag(etag, item, prior);
                                 collection.update(item);
                                 undo.push(prior != null ? () => collection.update(prior) : () => collection.remove(item));
                                 result.updates[j] = item;

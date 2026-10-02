@@ -1,9 +1,8 @@
+import { MysqlServer, PostgresServer, startMysql, startPostgres } from '../servers';
 import { afterAll, beforeAll, describe } from '@jest/globals';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import { MySqlContainer, StartedMySqlContainer } from '@testcontainers/mysql';
 import { uuidv4 } from '@routier/core';
 import { SqliteDbPlugin } from '@routier/sqlite-plugin';
 import { PostgresDbPlugin } from '@routier/postgresql-plugin';
@@ -78,10 +77,10 @@ describe('SQLite', () => {
 // --- PostgreSQL ---
 
 (containersEnabled ? describe : describe.skip)('PostgreSQL', () => {
-    let container: StartedPostgreSqlContainer;
+    let container: PostgresServer;
 
     beforeAll(async () => {
-        container = await new PostgreSqlContainer('postgres:16-alpine').start();
+        container = await startPostgres();
     }, 180_000);
 
     afterAll(async () => {
@@ -103,10 +102,10 @@ describe('SQLite', () => {
 // --- MySQL ---
 
 (containersEnabled ? describe : describe.skip)('MySQL', () => {
-    let container: StartedMySqlContainer;
+    let container: MysqlServer;
 
     beforeAll(async () => {
-        container = await new MySqlContainer('mysql:8.0').start();
+        container = await startMysql();
     }, 300_000);
 
     afterAll(async () => {

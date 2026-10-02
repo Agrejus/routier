@@ -308,7 +308,7 @@ export class SqliteDbPluginBase implements IDbPlugin {
             }
 
             const schema = event.schemas.get(schemaId);
-            const persistOperations = buildFromPersistOperation(schema, changes);
+            const persistOperations = buildFromPersistOperation(schema, changes, event.etags);
             const createTableSql = compiledSchemaToSqliteTable(schema);
 
             if (persistOperations.removes != null) {

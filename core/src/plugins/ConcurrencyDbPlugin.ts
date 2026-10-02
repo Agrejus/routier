@@ -1,6 +1,6 @@
 import { BulkPersistResult, SchemaCollection } from "../collections";
 import { OptimisticConcurrencyError } from "../errors";
-import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue } from ".";
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, EntityUpdateInfo, IDbPlugin, ITranslatedValue } from ".";
 import { Query } from "./query/Query";
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult } from "../results";
 import { CompiledSchema, IdType, InferType, PropertyInfo, SchemaId, SchemaTypes } from "../schema";
@@ -16,7 +16,8 @@ import { CompiledSchema, IdType, InferType, PropertyInfo, SchemaId, SchemaTypes 
  * }
  * ```
  *
- * Nothing is declared on the schema and nothing on the collection builder: the plugin
+ * Nothing is declared on the collection builder. A schema that declares `.etag()` is guarded
+ * by that etag and gets no hidden column. Otherwise the plugin
  * maintains a hidden `__version` column in the SAME tables/records as the data, entirely
  * below the entity surface. Rows start at version 1; every update is applied ONLY IF the
  * stored version still matches what this store last read (and bumps it); a stale write
@@ -108,6 +109,12 @@ export class ConcurrencyDbPlugin implements IDbPlugin {
             }
 
             const schema = event.schemas.get(schemaId);
+
+            if (schema.etagProperty != null) {
+                guardByEtag(schema.etagProperty.getResolvedName(), changes.updates);
+                continue;
+            }
+
             const versions = this.versionsFor(schema.collectionName);
 
             for (const add of changes.adds) {
@@ -266,6 +273,10 @@ export class ConcurrencyDbPlugin implements IDbPlugin {
      * generated functions, ids, id properties — delegates to the real schema.
      */
     private augment<T extends {}>(schema: CompiledSchema<T>): CompiledSchema<T> {
+        if (schema.etagProperty != null) {
+            return schema;
+        }
+
         const cached = this.augmentedSchemas.get(schema.id);
 
         if (cached != null) {
@@ -308,5 +319,15 @@ export class ConcurrencyDbPlugin implements IDbPlugin {
         this.augmentedSchemas.set(schema.id, view);
 
         return view;
+    }
+}
+
+function guardByEtag(column: string, updates: EntityUpdateInfo<Record<string, unknown>>[]): void {
+    for (const update of updates) {
+        const expected = update.entity[column];
+
+        if (typeof expected === "number" || typeof expected === "string") {
+            update.concurrency = { column, expected };
+        }
     }
 }

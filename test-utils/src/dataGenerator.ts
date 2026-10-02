@@ -143,7 +143,7 @@ export const generateData = <T extends {}>(schema: CompiledSchema<T>, count: num
         // Root properties own their subtree via generateObject, so only they are walked here.
         for (const property of schema.properties) {
 
-            if (property.isIdentity === true) {
+            if (property.isEtag === true) {
                 continue;
             }
 

@@ -2,7 +2,7 @@
  * Shared utilities for SWR (stale-while-revalidate) logic.
  */
 
-import type { CompiledSchema } from '@routier/core/schema';
+import type { CompiledSchema, EtagValue } from '@routier/core/schema';
 
 /**
  * Serializes entity id(s) to a stable string key (e.g. for unsynced queue or deduplication).
@@ -12,8 +12,9 @@ export function entityIdKey(schema: CompiledSchema<Record<string, unknown>>, ent
 }
 
 /**
- * The body to send for an update: the key fields, so the server knows which row, plus the
- * fields that actually changed. Returns `null` when the whole entity has to go instead.
+ * The body to send for an update: the key fields, so the server knows which row, the etag the
+ * edit was based on, so the server can refuse a stale edit, plus the fields that actually
+ * changed. Returns `null` when the whole entity has to go instead.
  *
  * An empty delta is not "nothing changed" — it is core's documented convention for "no tracked
  * change list, write the whole entity", which is what a diff-tracked or explicitly-dirtied
@@ -39,7 +40,19 @@ export function buildUpdatePayload(
         payload[name] = source[name];
     }
 
-    return { ...payload, ...(delta as Record<string, unknown>) };
+    return { ...payload, ...etagField(schema, source), ...(delta as Record<string, unknown>) };
+}
+
+function etagField(schema: CompiledSchema<Record<string, unknown>>, row: Record<string, unknown>): Record<string, EtagValue> {
+    const property = schema.etagProperty;
+
+    if (property == null) {
+        return {};
+    }
+
+    const name = property.getResolvedName();
+    const value = readEtag(name, row);
+    return value == null ? {} : { [name]: value };
 }
 
 /**
@@ -61,38 +74,24 @@ export function mergeUpdatePayloads(
     return { ...older, ...newer };
 }
 
-/**
- * Compares two result arrays using the schema's compare and compareIds.
- * Order-independent: treats as sets (match by id, then compare).
- */
-export function resultSetsEqual(
-    schema: CompiledSchema<Record<string, unknown>>,
-    cached: unknown[],
-    source: unknown[]
-): boolean {
-    if (cached.length !== source.length) {
-        return false;
+function readEtag(name: string, row: unknown): EtagValue | null {
+    if (typeof row !== 'object' || row === null) {
+        return null;
     }
-    const used = new Set<number>();
-    for (const sourceItem of source) {
-        let found = false;
-        for (let i = 0; i < cached.length; i++) {
-            if (used.has(i)) {
-                continue;
-            }
-            const cachedItem = cached[i];
-            if (
-                schema.compareIds(sourceItem as never, cachedItem as never) &&
-                schema.compare(sourceItem as never, cachedItem as never)
-            ) {
-                used.add(i);
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            return false;
-        }
+
+    const value = Reflect.get(row, name);
+    return typeof value === 'number' || typeof value === 'string' ? value : null;
+}
+
+export function etagOrder<T extends {}>(schema: CompiledSchema<T>, stored: unknown, incoming: unknown): number | null {
+    const property = schema.etagProperty;
+
+    if (property?.etagComparator == null) {
+        return null;
     }
-    return true;
+
+    const storedEtag = readEtag(property.getResolvedName(), stored);
+    const incomingEtag = readEtag(property.getResolvedName(), incoming);
+
+    return storedEtag == null || incomingEtag == null ? null : property.etagComparator(storedEtag, incomingEtag);
 }

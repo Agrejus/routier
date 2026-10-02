@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: routier-e2e
+resources:
+  - namespace.yaml
+  - credentials.yaml
+  - postgres.yaml
+  - pgvector.yaml
+  - mysql.yaml
+  - mongo.yaml
+  - couchdb.yaml
+  - s3.yaml

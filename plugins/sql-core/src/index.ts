@@ -23,5 +23,6 @@ export * from './sql';
 export * from './capability';
 export * from './columns';
 export * from './updates';
+export * from './etags';
 export * from './joins';
 export * from './resultShape';

@@ -2,7 +2,9 @@ import { PropertyInfo, CompiledSchema, SchemaTypes } from '@routier/core/schema'
 import { Expression } from '@routier/core/expressions';
 import { IQuery, JoinQueryOptionValue, Query } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
-import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, entityResultColumns, getDialect, sqlColumnProperties, toColumnValueMap, toSql, reportUnrenderableFilters, reportUnrenderableSelectors, executedMapFields, selectList, referencedColumn, SqlDialect } from '@routier/sql-plugin-core';
+import { buildConditionalUpdateOperations, buildGroupedUpdateOperations, buildJoinStatement, entityResultColumns, getDialect, sqlColumnProperties, toColumnValueMap, toSql, reportUnrenderableFilters, reportUnrenderableSelectors, executedMapFields, selectList, referencedColumn, SqlDialect, sqlEtagOf } from '@routier/sql-plugin-core';
+import { etagToGenerate, stampEtag } from '@routier/core/plugins';
+import type { EtagMode } from '@routier/core/schema';
 import { mappedResultColumns, ResultColumn } from '@routier/core/plugins';
 import { SqlOperation } from './types';
 
@@ -235,7 +237,7 @@ export function buildSelectFromExpression<TEntity extends {}, TShape>(options: {
     return { sql, params };
 }
 
-export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSchema<TEntity>, changes: SchemaPersistChanges<Record<string, unknown>>): {
+export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSchema<TEntity>, changes: SchemaPersistChanges<Record<string, unknown>>, etagMode?: EtagMode): {
     adds: SqlOperation | null;
     updates: SqlOperation[];
     removes: SqlOperation | null;
@@ -250,6 +252,13 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
 
     if (!hasItems) {
         return { adds: null, updates: [], removes: null };
+    }
+
+    const etag = sqlEtagOf(schema, etagMode);
+    const generatedEtag = etagToGenerate(schema, etagMode);
+
+    for (const add of adds) {
+        stampEtag(generatedEtag, add, undefined);
     }
 
     // Column identifiers are storage-side names (PropertyInfo.from ?? name), one column per
@@ -303,13 +312,13 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
             schema,
             updates as { entity: Record<string, unknown>; delta: Record<string, unknown> }[],
             getDialect('postgresql'),
-            { suffix: ` RETURNING ${allColumnStr}` }
+            { suffix: ` RETURNING ${allColumnStr}`, etag }
         ).map(({ sql, params, id, checked }) => ({ sql, params, conflictCheck: checked ? { id } : undefined }))
         : buildGroupedUpdateOperations(
             schema,
             updates as { entity: Record<string, unknown>; delta: Record<string, unknown> }[],
             getDialect('postgresql'),
-            { suffix: ` RETURNING ${allColumnStr}` }
+            { suffix: ` RETURNING ${allColumnStr}`, etag }
         ).map(({ sql, params }) => ({ sql, params }));
 
     // Handle DELETE operations (removes)

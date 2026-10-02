@@ -354,6 +354,10 @@ export class UnsyncedQueue {
         });
     }
 
+    getDeadIdKeys(collectionName: string): Promise<Set<string>> {
+        return this.allRows().then((rows) => new Set(rows.filter((row) => row.collectionName === collectionName && isDead(row)).map((row) => row.recordIds)));
+    }
+
     /**
      * Returns collection names that have at least one pending unsynced row (for background flush).
      */

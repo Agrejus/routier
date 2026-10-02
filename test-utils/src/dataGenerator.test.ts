@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import { s } from "@routier/core/schema";
+import { etags, s } from "@routier/core/schema";
 import { generateData } from "./dataGenerator";
 
 describe("generateData", () => {
@@ -55,6 +55,17 @@ describe("generateData", () => {
 
         expect(entity.id).toBeUndefined();
         expect(typeof entity.text).toBe("string");
+    });
+
+    it("skips etag properties so the store can assign them", () => {
+        const schema = s.define("gen_etag", {
+            id: s.string().key(),
+            revision: s.string().etag(etags.lexical),
+        }).compile();
+
+        const [entity] = generateData(schema, 1);
+
+        expect(entity === undefined ? "missing" : "revision" in entity).toBe(false);
     });
 
     it("generates the requested count", () => {

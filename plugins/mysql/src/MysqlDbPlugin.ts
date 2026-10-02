@@ -307,7 +307,7 @@ export class MysqlDbPlugin implements IDbPlugin {
                 }
 
                 const schema = event.schemas.get(schemaId);
-                const { adds, updates, removes } = buildFromPersistOperation(schema, changes);
+                const { adds, updates, removes } = buildFromPersistOperation(schema, changes, event.etags);
                 const table = `\`${schema.collectionName}\``;
                 const idColumn = `\`${schema.idProperties[0].getResolvedName()}\``;
 

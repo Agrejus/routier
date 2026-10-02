@@ -58,6 +58,12 @@ export class FakeMongoCollection implements MongoCollection {
                 return 0;
             }
 
+            if (update.replace) {
+                for (const key of Object.keys(target).filter(key => key !== '_id')) {
+                    delete target[key];
+                }
+            }
+
             for (const [path, value] of Object.entries(update.set)) {
                 assignPath(target, path, value);
             }

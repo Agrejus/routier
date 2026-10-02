@@ -1,4 +1,4 @@
-import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import { PostgresServer, startPostgres } from '../../../e2e/servers';
 import { IDbPlugin } from '@routier/core';
 import { PostgresDbPlugin } from '@routier/postgresql-plugin';
 
@@ -17,15 +17,13 @@ import { PostgresDbPlugin } from '@routier/postgresql-plugin';
  * collection names, so they land in different tables of the same database.
  */
 
-const IMAGE = 'postgres:16-alpine';
-
 export class PostgresHarness {
-    private container: StartedPostgreSqlContainer | null = null;
+    private container: PostgresServer | null = null;
     private readonly plugins: IDbPlugin[] = [];
 
     /** Starts the server. Call from `beforeAll`. */
     async start(): Promise<void> {
-        this.container = await new PostgreSqlContainer(IMAGE).start();
+        this.container = await startPostgres();
     }
 
     /**

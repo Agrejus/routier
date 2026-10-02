@@ -6,7 +6,7 @@ export class HashIdentityHandler extends PropertyInfoHandler {
 
     override handle(property: PropertyInfo<any>, builder: CodeBuilder): CodeBuilder | null {
 
-        if (property.isIdentity === true) {
+        if (property.isIdentity === true || property.isEtag === true) {
             return builder;
         }
 

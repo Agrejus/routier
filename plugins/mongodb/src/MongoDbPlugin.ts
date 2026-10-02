@@ -2,21 +2,24 @@ import {
     DbPluginBulkPersistEvent,
     DbPluginEvent,
     DbPluginQueryEvent,
+    etagToGenerate,
     IDbPlugin,
     ITranslatedValue,
     joinInPlugin,
     QueryOrdering,
     reportRenamedProperties,
+    stampEtag,
 } from "@routier/core/plugins";
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from "@routier/core/results";
 import { BulkPersistResult, SchemaPersistChanges } from "@routier/core/collections";
-import { CompiledSchema } from "@routier/core/schema";
+import { CompiledSchema, EtagMode } from "@routier/core/schema";
 import { OptimisticConcurrencyError } from "@routier/core";
 import { UnknownRecord, uuidv4 } from "@routier/core/utilities";
 import { MongoCollection, MongoDriver, MongoFindOptions, MongoUpdate } from "./driver";
 import { MqlFilter, canRenderInMql, toMql, toStoragePath } from "./mql";
 import { MongoTranslator } from "./MongoTranslator";
 import { assertMongoSchema } from "./schemaRules";
+import { stampUpdatedEtags, withEtag } from "./etags";
 
 /**
  * Routier over MongoDB.
@@ -228,8 +231,8 @@ export class MongoDbPlugin implements IDbPlugin {
                 // Removes, then updates, then adds — the order the SQL plugins and Dexie use,
                 // so a remove-then-add of one key behaves the same on every backend.
                 await this.applyRemoves(collection, schema as CompiledSchema<any>, changes as SchemaPersistChanges<any>, result.get(schemaId) as any);
-                await this.applyUpdates(collection, schema as CompiledSchema<any>, changes as SchemaPersistChanges<any>, result.get(schemaId) as any);
-                await this.applyAdds(collection, schema as CompiledSchema<any>, changes as SchemaPersistChanges<any>, result.get(schemaId) as any);
+                await this.applyUpdates(collection, schema as CompiledSchema<any>, changes as SchemaPersistChanges<any>, result.get(schemaId) as any, event.etags);
+                await this.applyAdds(collection, schema as CompiledSchema<any>, changes as SchemaPersistChanges<any>, result.get(schemaId) as any, event.etags);
             }
 
             return result;
@@ -266,11 +269,15 @@ export class MongoDbPlugin implements IDbPlugin {
         collection: MongoCollection,
         schema: CompiledSchema<any>,
         changes: SchemaPersistChanges<any>,
-        into: { updates: unknown[] }
+        into: { updates: unknown[] },
+        etagMode: EtagMode | undefined
     ): Promise<void> {
         if (changes.updates.length === 0) {
             return;
         }
+
+        const etagName = schema.etagProperty?.getResolvedName();
+        await stampUpdatedEtags(collection, etagToGenerate(schema, etagMode), changes.updates.map(update => update.entity));
 
         const updates: MongoUpdate[] = changes.updates.map(update => {
             const filter: MqlFilter = { _id: schema.getIds(update.entity)[0] };
@@ -279,7 +286,7 @@ export class MongoDbPlugin implements IDbPlugin {
                 filter[update.concurrency.column] = update.concurrency.expected;
             }
 
-            return { filter, set: flattenDelta(update.delta as Record<string, unknown>) };
+            return { filter, ...changeOf(update.delta, update.entity, etagName) };
         });
 
         const matched = await collection.updateMany(updates);
@@ -299,13 +306,15 @@ export class MongoDbPlugin implements IDbPlugin {
         collection: MongoCollection,
         schema: CompiledSchema<any>,
         changes: SchemaPersistChanges<any>,
-        into: { adds: unknown[] }
+        into: { adds: unknown[] },
+        etagMode: EtagMode | undefined
     ): Promise<void> {
         if (changes.adds.length === 0) {
             return;
         }
 
         const [idProperty] = schema.idProperties;
+        const etag = etagToGenerate(schema, etagMode);
 
         for (const add of changes.adds) {
             // Assigned here rather than left to the server: the change tracker matches the
@@ -316,6 +325,8 @@ export class MongoDbPlugin implements IDbPlugin {
             if (idProperty.getValue(document) == null) {
                 idProperty.setValue(document, uuidv4());
             }
+
+            stampEtag(etag, document, undefined);
         }
 
         await collection.insertMany(changes.adds as Record<string, unknown>[]);
@@ -387,4 +398,13 @@ function flattenDelta(delta: Record<string, unknown>, prefix = ""): Record<strin
     }
 
     return flattened;
+}
+
+function changeOf(delta: Record<string, unknown>, entity: Record<string, unknown>, etagName: string | undefined): { set: Record<string, unknown>; replace: boolean } {
+    if (Object.keys(delta).length > 0) {
+        return { set: withEtag(flattenDelta(delta), etagName, entity), replace: false };
+    }
+
+    const { _id, ...fields } = entity;
+    return { set: withEtag(fields, etagName, entity), replace: true };
 }

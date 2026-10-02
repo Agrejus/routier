@@ -29,6 +29,7 @@ type NativeCollection = {
     find(filter: unknown, options?: unknown): NativeCursor;
     insertMany(documents: unknown[], options?: unknown): Promise<unknown>;
     updateOne(filter: unknown, update: unknown, options?: unknown): Promise<{ matchedCount: number }>;
+    replaceOne(filter: unknown, replacement: unknown, options?: unknown): Promise<{ matchedCount: number }>;
     deleteMany(filter: unknown, options?: unknown): Promise<unknown>;
 };
 
@@ -168,11 +169,9 @@ function wrap(collection: NativeCollection, session: NativeSession | undefined):
             // each update's matched count SEPARATELY to name which rows lost a concurrency
             // race. A bulk write reports a total, which cannot say which one it was.
             for (const update of updates) {
-                const result = await collection.updateOne(
-                    update.filter,
-                    { $set: update.set },
-                    withSession()
-                );
+                const result = update.replace
+                    ? await collection.replaceOne(update.filter, update.set, withSession())
+                    : await collection.updateOne(update.filter, { $set: update.set }, withSession());
 
                 matched.push(result.matchedCount);
             }

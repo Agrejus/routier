@@ -1,4 +1,4 @@
-import { CompiledSchema, DefaultValue, InferType, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes } from "../../types";
+import { EtagComparator, CompiledSchema, DefaultValue, InferType, PropertyDeserializer, PropertySerializer, SchemaModifiers, SchemaTypes } from "../../types";
 import { SchemaBase } from "../base/SchemaBase";
 import { SchemaDefault } from "../modifiers/SchemaDefault";
 import { SchemaDeserialize } from "../modifiers/SchemaDeserialize";
@@ -6,6 +6,7 @@ import { SchemaDistinct } from "../modifiers/SchemaDistinct";
 import { SchemaForeignKey } from "../modifiers/SchemaForeignKey";
 import { SchemaFrom } from "../modifiers/SchemaFrom";
 import { SchemaIdentity } from "../modifiers/SchemaIdentity";
+import { SchemaEtag } from "../modifiers/SchemaEtag";
 import { SchemaIndex } from "../modifiers/SchemaIndex";
 import { SchemaKey } from "../modifiers/SchemaKey";
 import { SchemaNullable } from "../modifiers/SchemaNullable";
@@ -63,6 +64,10 @@ export class SchemaNumber<T extends number, TModifiers extends SchemaModifiers> 
 
     identity() {
         return new SchemaIdentity<T, TModifiers | "identity" | "readonly">(this);
+    }
+
+    etag(comparator: EtagComparator<T>): SchemaEtag<T, TModifiers | "etag"> {
+        return new SchemaEtag<T, TModifiers | "etag">(comparator, this);
     }
 
     array() {

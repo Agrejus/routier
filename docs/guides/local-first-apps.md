@@ -101,8 +101,8 @@ For each serialized query, `HttpSwrDbPlugin` tracks cache freshness independentl
 1. **Read local first.** The wrapped plugin executes the Routier query. With the optimistic wrapper, the first query hydrates that collection from the durable cache into memory.
 2. **Handle a cache miss.** The HTTP request is blocking because there is no local result to display. A successful response is translated, persisted locally, and returned.
 3. **Return a fresh hit.** Before `maxAgeMs` expires, the local result is returned without revalidation.
-4. **Return a stale hit.** The stale result is returned immediately. Revalidation runs in the background.
-5. **Apply the remote diff.** Server rows are compared with the cache. Adds, updates, and removals are persisted locally; subscribed queries are notified.
+4. **Return a stale hit.** The stale result is returned immediately. Revalidation runs in the background, sending the last response's `ETag` as `If-None-Match`. A `304 Not Modified` keeps the local rows and marks the query fresh; observe it through `onRevalidateNotModified`, or turn it off with `conditionalRevalidation: false`. Serve these reads with `Cache-Control: no-store`: the plugin keeps its own cache, and a browser's HTTP cache would otherwise send its own `If-None-Match` and answer a `304` from its copy, even with `conditionalRevalidation: false`.
+5. **Apply the remote diff.** Server rows are compared with the cache. When the schema declares an `.etag()`, a newer server row replaces the local one, the same etag is skipped, and an older one is ignored. Adds, updates, and removals are persisted locally; subscribed queries are notified.
 6. **Keep stale data on failure.** A failed background revalidation does not replace a successful cached result. Observe it through `onRevalidateError`.
 
 Concurrent reads for the same URL are coalesced, and concurrent revalidations for the same cache key share work.
@@ -167,7 +167,7 @@ The default POST body is:
 }
 ```
 
-Updates contain key fields plus changed fields. Operation-ID arrays are parallel to the corresponding operation arrays. A server may ignore `meta`, but replay safety is stronger when it deduplicates these IDs.
+Updates contain key fields plus changed fields. When the schema declares an `.etag()`, an update also carries the etag the edit was based on, so the server can refuse a stale edit with `409`; it should apply the changed fields onto its stored row. Operation-ID arrays are parallel to the corresponding operation arrays. A server may ignore `meta`, but replay safety is stronger when it deduplicates these IDs.
 
 Return canonical saved entities when the server assigns IDs, versions, normalized values, or timestamps, then adapt them with `translatePersistResponse`.
 
@@ -190,7 +190,7 @@ Routier protects an entity with pending local work from being overwritten by rev
 Routier does not provide an automatic CRDT or business-level merge policy. Choose one explicitly:
 
 - **Server wins:** return `409`; notify the user, dead-letter the local operation, and revalidate.
-- **Version check:** store a revision/version property and reject an update based on an older version.
+- **Version check:** declare the version with `.etag()`. Each update carries the version it was based on; reject an older one with `409`.
 - **Field merge:** let the server merge non-overlapping fields and return the canonical entity.
 - **Manual resolution:** retain enough context to show local and remote values and let the user decide.
 

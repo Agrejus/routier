@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from '@jest/globals';
 import { uuidv4 } from '@routier/core';
-import { s } from '@routier/core/schema';
+import { etags, s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
-import { describeFullTextSearch, describePluginContract, describeVectorSearch } from '@routier/test-utils';
+import { describeEtagContract, describeFullTextSearch, describePluginContract, describeVectorSearch } from '@routier/test-utils';
 import { BrowserStoragePlugin } from '../BrowserStoragePlugin';
 
 /**
@@ -50,6 +50,11 @@ class FakeStorage implements Storage {
         return Array.from(this.entries.keys());
     }
 }
+
+describeEtagContract(
+    'browser-storage',
+    () => new BrowserStoragePlugin(`etag-${uuidv4()}`, new FakeStorage()),
+);
 
 describeVectorSearch(
     'browser-storage',
@@ -305,5 +310,37 @@ describe('browser-storage persistence', () => {
         for (const key of storage.keys()) {
             expect(typeof storage.getItem(key)).toBe('string');
         }
+    });
+});
+
+const versionedSchema = s.define('versioned', {
+    id: s.string().key().identity(),
+    name: s.string(),
+    version: s.number().etag(etags.numeric),
+}).compile();
+
+class VersionedStore extends DataStore {
+    versioned = this.collection(versionedSchema).proxy().create();
+}
+
+describe('BrowserStoragePlugin etag', () => {
+    it('keeps the etag it set across a reload', async () => {
+        const storage = new FakeStorage();
+        const databaseName = `etag-${uuidv4()}`;
+        const store = new VersionedStore(new BrowserStoragePlugin(databaseName, storage));
+        const [added] = await store.versioned.addAsync({ name: 'first' });
+        await store.saveChangesAsync();
+
+        if (added == null) {
+            throw new Error('nothing was added');
+        }
+
+        added.name = 'second';
+        await store.saveChangesAsync();
+
+        const reloaded = new VersionedStore(new BrowserStoragePlugin(databaseName, storage));
+        const [stored] = await reloaded.versioned.toArrayAsync();
+
+        expect(stored?.version).toBe(2);
     });
 });

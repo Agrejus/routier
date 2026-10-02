@@ -51,3 +51,64 @@ describe("Optimistic Update Tests", () => {
         });
     });
 });
+
+describe("Optimistic writes reach PouchDB", () => {
+    const opened: TestDataStore[] = [];
+    const open = (plugin: IDbPlugin) => {
+        const store = new TestDataStore(plugin);
+        opened.push(store);
+        return store;
+    };
+
+    afterAll(async () => {
+        await Promise.all(opened.map(x => x.destroyAsync()));
+    });
+
+    const durablePlayers = (name: string) => open(new PouchDbPlugin(name)).players.toArrayAsync();
+    const settle = () => new Promise(resolve => setTimeout(resolve, 200));
+
+    it("stores added rows in PouchDB", async () => {
+        const name = uuidv4();
+        const store = open(new OptimisticUpdatesDbPlugin(new PouchDbPlugin(name)));
+        await store.players.addAsync(...generateData(store.players.schema, 2));
+        await store.saveChangesAsync();
+        await settle();
+
+        const durable = await durablePlayers(name);
+
+        expect(durable.map(player => player._rev.startsWith("1-"))).toEqual([true, true]);
+    });
+
+    it("takes the revision PouchDB generated into its memory copy", async () => {
+        const name = uuidv4();
+        const store = open(new OptimisticUpdatesDbPlugin(new PouchDbPlugin(name)));
+        await store.players.addAsync(...generateData(store.players.schema, 1));
+        await store.saveChangesAsync();
+        await settle();
+
+        const [cached] = await store.players.toArrayAsync();
+        const [durable] = await durablePlayers(name);
+
+        expect(cached?._rev).toBe(durable?._rev);
+    });
+
+    it("stores every update to a row it loaded from PouchDB", async () => {
+        const name = uuidv4();
+        const seeder = open(new PouchDbPlugin(name));
+        await seeder.players.addAsync(...generateData(seeder.players.schema, 1));
+        await seeder.saveChangesAsync();
+
+        const store = open(new OptimisticUpdatesDbPlugin(new PouchDbPlugin(name)));
+        const [player] = await store.players.toArrayAsync();
+        player.name = "second";
+        await store.saveChangesAsync();
+        await settle();
+        player.name = "third";
+        await store.saveChangesAsync();
+        await settle();
+
+        const [durable] = await durablePlayers(name);
+
+        expect([durable?.name, durable?._rev.startsWith("3-")]).toEqual(["third", true]);
+    });
+});

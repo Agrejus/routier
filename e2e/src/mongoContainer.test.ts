@@ -1,5 +1,5 @@
+import { MongoServer, startMongo } from '../servers';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
-import { MongoDBContainer, StartedMongoDBContainer } from '@testcontainers/mongodb';
 import { MongoClient } from 'mongodb';
 import { s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
@@ -46,13 +46,15 @@ class ShopStore extends DataStore {
 }
 
 suite('MongoDB via testcontainers', () => {
-    let container: StartedMongoDBContainer;
+    let container: MongoServer;
     let client: MongoClient;
+    let database: string;
 
     beforeAll(async () => {
-        container = await new MongoDBContainer('mongo:7').start();
+        container = await startMongo();
         // `directConnection` is required against a single-node replica set: without it the
         // driver tries to discover other members and never finds a primary.
+        database = container.databaseName('routier_e2e');
         client = new MongoClient(container.getConnectionString(), { directConnection: true });
         await client.connect();
     }, 180_000);
@@ -63,11 +65,11 @@ suite('MongoDB via testcontainers', () => {
     });
 
     const open = () => new ShopStore(
-        new MongoDbPlugin(new MongoClientDriver(client as never, 'routier_e2e', { transactions: 'required' }))
+        new MongoDbPlugin(new MongoClientDriver(client as never, database, { transactions: 'required' }))
     );
 
     afterEach(async () => {
-        await client.db('routier_e2e').dropDatabase();
+        await client.db(database).dropDatabase();
     });
 
     describe('round trip', () => {
@@ -192,12 +194,12 @@ suite('MongoDB via testcontainers', () => {
             } as any);
             // The second collection's write is made to fail with a duplicate key.
             const duplicate = 'fixed-id';
-            await client.db('routier_e2e').collection('e2e_mongo_lines').insertOne({ _id: duplicate as never, sku: 'pre', quantity: 1 });
+            await client.db(database).collection('e2e_mongo_lines').insertOne({ _id: duplicate as never, sku: 'pre', quantity: 1 });
             await store.lines.addAsync({ _id: duplicate, sku: 'z', quantity: 5 } as any);
 
             await expect(store.saveChangesAsync()).rejects.toThrow();
 
-            const survivingOrders = await client.db('routier_e2e').collection('e2e_mongo_orders').countDocuments();
+            const survivingOrders = await client.db(database).collection('e2e_mongo_orders').countDocuments();
 
             expect(survivingOrders).toBe(0);
         });
@@ -213,7 +215,7 @@ suite('MongoDB via testcontainers', () => {
         it('leaves the first collection written when transactions are unavailable', async () => {
             const store = new ShopStore(
                 new MongoDbPlugin(
-                    new MongoClientDriver(client as never, 'routier_e2e', { transactions: 'unavailable' })
+                    new MongoClientDriver(client as never, database, { transactions: 'unavailable' })
                 )
             );
 
@@ -223,12 +225,12 @@ suite('MongoDB via testcontainers', () => {
             } as any);
 
             const duplicate = 'fixed-id-2';
-            await client.db('routier_e2e').collection('e2e_mongo_lines').insertOne({ _id: duplicate as never, sku: 'pre', quantity: 1 });
+            await client.db(database).collection('e2e_mongo_lines').insertOne({ _id: duplicate as never, sku: 'pre', quantity: 1 });
             await store.lines.addAsync({ _id: duplicate, sku: 'z', quantity: 5 } as any);
 
             await expect(store.saveChangesAsync()).rejects.toThrow();
 
-            const survivingOrders = await client.db('routier_e2e').collection('e2e_mongo_orders').countDocuments();
+            const survivingOrders = await client.db(database).collection('e2e_mongo_orders').countDocuments();
 
             // Not a bug — the documented consequence of running without a session, and the
             // reason `transactions` is stated at construction rather than detected.
@@ -245,7 +247,7 @@ suite('MongoDB via testcontainers', () => {
 
             await store.saveChangesAsync();
 
-            const db = client.db('routier_e2e');
+            const db = client.db(database);
             expect(await db.collection('e2e_mongo_orders').countDocuments()).toBe(1);
             expect(await db.collection('e2e_mongo_lines').countDocuments()).toBe(1);
         });

@@ -9,3 +9,5 @@ export * from './wasmEngines';
 export * from './joinContract';
 
 export * from './liveQueryFixture';
+
+export * from './etagContract';

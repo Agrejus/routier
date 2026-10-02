@@ -9,3 +9,4 @@ export * from './RetryDbPlugin';
 export * from './TelemetryDbPlugin';
 export * from './CacheDbPlugin';
 export * from './BatchingDbPlugin';
+export * from './etagStamp';

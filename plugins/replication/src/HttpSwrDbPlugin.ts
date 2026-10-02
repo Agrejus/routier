@@ -26,7 +26,6 @@ import {
     PluginEventCallbackResult,
     PluginEventCallbackPartialResult,
     PluginEventResult,
-    type PluginEventResultType,
     Result,
 } from '@routier/core/results';
 import { BulkPersistResult, BulkPersistChanges, SchemaCollection, SchemaPersistChanges } from '@routier/core/collections';
@@ -36,7 +35,8 @@ import { assertIsNotNull } from '@routier/core';
 
 import { buildAuthErrorEvent } from './auth';
 import { UnsyncedQueue, type DeadLetteredChange, type QueuedChange, type UnsyncedFlushUnit, type UnsyncedQueueRow } from './UnsyncedQueue';
-import { buildUpdatePayload, entityIdKey, resultSetsEqual } from './swrUtils';
+import { buildUpdatePayload, entityIdKey, etagOrder } from './swrUtils';
+import { ConditionalRevalidation } from './conditionalRevalidation';
 import { SWR_DEFAULTS } from './constants';
 import { buildQueryParams } from './queryParamHelpers';
 import { backoffDelayMs, HttpStatusError, isAuthStatus, isConflictStatus, isPermanentStatus, KeyedMutex, RequestPacer } from './httpUtils';
@@ -137,6 +137,8 @@ export interface HttpSwrDbPluginOptions extends HttpPluginOptions {
      * Revalidate failures are not reported back via done(); the UI keeps showing cached data.
      */
     onRevalidateError?: (error: Error, context: { collectionName: string; cacheKey?: string }) => void;
+    conditionalRevalidation?: boolean;
+    onRevalidateNotModified?: (context: { collectionName: string; cacheKey: string }) => void;
     /**
      * Called when the queue permanently gives up on changes: the server rejected them with a
      * non-retryable status (4xx other than 401/403/408/429). Dead-lettered changes stop
@@ -225,6 +227,8 @@ export class HttpSwrDbPlugin implements IDbPlugin {
     private readonly bulkPersistRetryMaxDelayMs: number;
     private readonly bulkPersistRetryMaxAttempts: number;
     private readonly onRevalidateError?: (error: Error, context: { collectionName: string; cacheKey?: string }) => void;
+    private readonly onRevalidateNotModified?: (context: { collectionName: string; cacheKey: string }) => void;
+    private readonly conditional: ConditionalRevalidation | null;
     private readonly onSyncDeadLetter?: (changes: DeadLetteredChange[], error: Error) => void;
     private readonly onConflict?: (context: { collectionName: string; entities: unknown[]; error: Error }) => void;
     private readonly translatePersistResponse?: (schema: CompiledSchema<UnknownRecord>, responseBody: unknown) => unknown[] | null;
@@ -295,6 +299,8 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         this.bulkPersistRetryMaxDelayMs = options?.bulkPersistRetryMaxDelayMs ?? SWR_DEFAULTS.bulkPersistRetryMaxDelayMs;
         this.bulkPersistRetryMaxAttempts = options?.bulkPersistRetryMaxAttempts ?? SWR_DEFAULTS.bulkPersistRetryMaxAttempts;
         this.onRevalidateError = options?.onRevalidateError;
+        this.onRevalidateNotModified = options.onRevalidateNotModified;
+        this.conditional = options.conditionalRevalidation === false ? null : new ConditionalRevalidation(options.unsyncedQueueStore);
         this.onSyncDeadLetter = options?.onSyncDeadLetter;
         this.onConflict = options?.onConflict;
         this.translatePersistResponse = options?.translatePersistResponse;
@@ -751,11 +757,30 @@ export class HttpSwrDbPlugin implements IDbPlugin {
 
     private notifyDeadLetter(changes: DeadLetteredChange[], error: Error): void {
         if (changes.length === 0) return;
+        new Set(changes.map((change) => change.collectionName)).forEach((collectionName) => this.forgetFreshness(collectionName));
         try {
             this.onSyncDeadLetter?.(changes, error);
         } catch (err) {
             logger.error('[HttpSwrDbPlugin] onSyncDeadLetter threw', { error: err });
         }
+    }
+
+    private forgetFreshness(collectionName: string): void {
+        const schema = this.schemasByCollection.get(collectionName);
+
+        if (schema == null) {
+            return;
+        }
+
+        const prefix = `${schema.id}|`;
+
+        for (const cacheKey of Array.from(this.cacheMetadata.keys())) {
+            if (cacheKey.startsWith(prefix)) {
+                this.cacheMetadata.delete(cacheKey);
+            }
+        }
+
+        void this.conditional?.forget(prefix);
     }
 
     private notifyConflict(collectionName: string, entities: unknown[], error: Error): void {
@@ -901,7 +926,8 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         schema: CompiledSchema<Record<string, unknown>>,
         incomingRows: unknown[],
         existingArr: unknown[],
-        unsyncedKeys: Set<string>
+        unsyncedKeys: Set<string>,
+        rejectedKeys: Set<string>
     ): RevalidateClassification {
         const existingById = new Map<string, unknown>();
         for (const e of existingArr) {
@@ -920,9 +946,14 @@ export class HttpSwrDbPlugin implements IDbPlugin {
                 if (isUnsynced(r)) {
                     return false;
                 }
-                const id = schema.hash(r as never, HashType.Ids);
-                const existing = existingById.get(id);
-                return existing != null && !schema.compare(r as never, existing as never);
+                const existing = existingById.get(schema.hash(r as never, HashType.Ids));
+
+                if (existing == null) {
+                    return false;
+                }
+
+                const order = rejectedKeys.has(entityIdKey(schema, r)) ? null : etagOrder(schema, existing, r);
+                return order == null ? !schema.compare(r as never, existing as never) : order < 0;
             })
             .map((entity) => ({ entity, changeType: 'markedDirty' as const, delta: {} as Record<string, unknown> }));
 
@@ -970,6 +1001,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
             source: HttpSwrDbPlugin.name,
             action: 'persist' as const,
             reason: 'revalidate',
+            etags: 'keep',
         };
 
         logger.debug('[HttpSwrDbPlugin] applyRevalidatePersist() -> before persist', {
@@ -1066,7 +1098,8 @@ export class HttpSwrDbPlugin implements IDbPlugin {
     ): Promise<void> {
         const currentRows = this.queryResultToArray(currentStoreTranslated);
         const unsyncedKeys = await this.unsyncedQueue.getUnsyncedIdKeys(schema.collectionName);
-        const classification = this.classifyRevalidateChanges(schema, incomingRows, currentRows, unsyncedKeys);
+        const rejectedKeys = await this.unsyncedQueue.getDeadIdKeys(schema.collectionName);
+        const classification = this.classifyRevalidateChanges(schema, incomingRows, currentRows, unsyncedKeys, rejectedKeys);
 
         logger.debug('[HttpSwrDbPlugin] mergeRevalidateAndPersist() -> classification', {
             classification,
@@ -1092,7 +1125,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         // Locked so the classification cannot interleave with a user write it did not see
         await this.storeMutex.run(collectionName, async () => {
             const unsyncedKeys = await this.unsyncedQueue.getUnsyncedIdKeys(collectionName);
-            const classification = this.classifyRevalidateChanges(schema, incomingRows, [], unsyncedKeys);
+            const classification = this.classifyRevalidateChanges(schema, incomingRows, [], unsyncedKeys, new Set());
             await this.applyRevalidatePersist(event, schema, classification);
         });
     }
@@ -1157,8 +1190,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
 
     private startRevalidate<TRoot extends {}, TShape>(
         cacheKey: string,
-        event: DbPluginQueryEvent<TRoot, TShape>,
-        cachedTranslated: ITranslatedValue<TShape>
+        event: DbPluginQueryEvent<TRoot, TShape>
     ): void {
         const collectionName = event.operation.schema.collectionName;
         logger.debug('[HttpSwrDbPlugin] revalidate requested', { collectionName, cacheKey });
@@ -1166,47 +1198,44 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         // A revalidate already running for this query is the answer for this one too. Deduped
         // here as well as in the transport because this covers the store write, not just the GET.
         void this.missPacer
-            .share(`revalidate:${cacheKey}`, () => this.runRevalidate(cacheKey, event, cachedTranslated))
+            .share(`revalidate:${cacheKey}`, () => this.runRevalidate(cacheKey, event))
             .catch((err: unknown) => logger.warn('[HttpSwrDbPlugin] revalidate failed', { collectionName, error: err }));
     }
 
-    private runRevalidate<TRoot extends {}, TShape>(
+    private async runRevalidate<TRoot extends {}, TShape>(
         cacheKey: string,
-        event: DbPluginQueryEvent<TRoot, TShape>,
-        cachedTranslated: ITranslatedValue<TShape>
+        event: DbPluginQueryEvent<TRoot, TShape>
     ): Promise<void> {
         const collectionName = event.operation.schema.collectionName;
-        // The candidate set, not the page: see windowlessOperation.
         const remoteEvent = this.candidateSetEvent(event, 'revalidate', 'background');
+        const ifNoneMatch = await this.conditional?.ifNoneMatch(cacheKey, () => this.countStoreRows(remoteEvent)) ?? null;
+        const result = await this.httpPlugin.queryConditional(remoteEvent, ifNoneMatch);
+
+        if (result.kind === 'failed') {
+            this.onRevalidateError?.(result.error, { collectionName, cacheKey });
+            return;
+        }
+
+        if (result.kind === 'not-modified') {
+            this.setRevalidated(cacheKey);
+            this.onRevalidateNotModified?.({ collectionName, cacheKey });
+            return;
+        }
+
+        try {
+            await this.persistToStore(event, result.data);
+        } catch {
+            return;
+        }
+
+        this.setRevalidated(cacheKey);
+        await this.conditional?.remember(cacheKey, result.etag, () => this.countStoreRows(remoteEvent));
+    }
+
+    private countStoreRows<TRoot extends {}, TShape>(remoteEvent: DbPluginQueryEvent<TRoot, TShape>): Promise<number | null> {
         return new Promise((resolve) => {
-            this.httpPlugin.query(remoteEvent, (result) => {
-                logger.debug('[HttpSwrDbPlugin] runRevalidate() -> httpPlugin query result', { collectionName, result });
-                if (result.ok === Result.SUCCESS) {
-                    const schema = event.operation.schema as CompiledSchema<Record<string, unknown>>;
-                    const cachedArr = this.queryResultToArray(cachedTranslated);
-                    const sourceArr = this.queryResultToArray(result.data);
-                    const same = resultSetsEqual(schema, cachedArr, sourceArr);
-                    logger.debug('[HttpSwrDbPlugin] runRevalidate() -> httpPlugin query success', {
-                        collectionName,
-                        result,
-                        same
-                    });
-                    if (same) {
-                        this.setRevalidated(cacheKey);
-                        resolve();
-                    } else {
-                        this.persistToStore(event, result.data).then(
-                            () => {
-                                this.setRevalidated(cacheKey);
-                                resolve();
-                            },
-                            () => resolve()
-                        );
-                    }
-                } else {
-                    this.onRevalidateError?.(result.error, { collectionName, cacheKey });
-                    resolve();
-                }
+            this.swrStore.query({ ...remoteEvent, id: uuid(8) }, (result) => {
+                resolve(result.ok === Result.SUCCESS ? this.queryResultToArray(result.data).length : null);
             });
         });
     }
@@ -1242,7 +1271,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
 
             if (this.isStale(cacheKey)) {
                 logger.info('[HttpSwrDbPlugin] Cache is stale, starting revalidation', { collectionName });
-                setTimeout(() => this.startRevalidate(cacheKey, event, swrResponse.data), 0);
+                setTimeout(() => this.startRevalidate(cacheKey, event), 0);
             } else {
                 logger.info('[HttpSwrDbPlugin] cache not stale');
             }
@@ -1296,17 +1325,16 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         const collectionName = event.operation.schema.collectionName;
         // The candidate set, not the page: see windowlessOperation.
         const remoteEvent = this.candidateSetEvent(event, 'cache-miss', 'blocking');
-        const result = await new Promise<PluginEventResultType<ITranslatedValue<TShape>>>((resolve) => {
-            this.httpPlugin.query(remoteEvent, resolve);
-        });
+        const result = await this.httpPlugin.queryConditional(remoteEvent, null);
 
-        if (result.ok !== Result.SUCCESS) {
+        if (result.kind !== 'modified') {
             return 'remote-failed';
         }
 
         try {
             await this.persistOnCacheMiss(event, result.data);
             this.setRevalidated(cacheKey);
+            await this.conditional?.remember(cacheKey, result.etag, () => this.countStoreRows(remoteEvent));
             return 'stored';
         } catch (err) {
             this.onRevalidateError?.(err instanceof Error ? err : new Error(String(err)), { collectionName });
@@ -1343,6 +1371,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
                 source: HttpSwrDbPlugin.name,
                 action: 'persist' as const,
                 reason: 'optimistic',
+                etags: 'keep',
             };
             logger.debug('[HttpSwrDbPlugin] persistToSwrStore', { swrEvent });
             this.swrStore.bulkPersist(swrEvent, (persistResult) => {
@@ -1719,6 +1748,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
                     source: HttpSwrDbPlugin.name,
                     action: 'persist',
                     reason: 'persist-echo',
+                    etags: 'keep',
                 }, (persistResult) => {
                     if (persistResult.ok === Result.ERROR) {
                         reject(persistResult.error);

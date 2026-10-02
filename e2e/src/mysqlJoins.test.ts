@@ -1,5 +1,5 @@
+import { MysqlServer, startMysql } from '../servers';
 import { afterAll, beforeAll, describe, it } from '@jest/globals';
-import { MySqlContainer, StartedMySqlContainer } from '@testcontainers/mysql';
 import { MysqlDbPlugin } from '@routier/mysql-plugin';
 import { describeJoinContract } from '@routier/test-utils';
 
@@ -18,7 +18,7 @@ import { describeJoinContract } from '@routier/test-utils';
 
 const shouldRun = process.env.E2E_CONTAINERS === '1';
 
-let container: StartedMySqlContainer;
+let container: MysqlServer;
 
 /**
  * A fresh DATABASE per store, following the contract kit in `mysqlContainer.test.ts`.
@@ -53,7 +53,7 @@ const pluginFactory = () => {
 
 if (shouldRun) {
     beforeAll(async () => {
-        container = await new MySqlContainer('mysql:8.0').start();
+        container = await startMysql();
 
         const { createConnection } = await import('mysql2/promise');
         const admin = await createConnection({

@@ -1,3 +1,4 @@
+import { MysqlServer, PostgresServer, startMysql, startPostgres } from '../servers';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from '@jest/globals';
 import { DataStore } from '@routier/datastore';
 import { s, SchemaTypes } from '@routier/core/schema';
@@ -7,8 +8,6 @@ import { MemoryPlugin } from '@routier/memory-plugin';
 import { DexiePlugin } from '@routier/dexie-plugin';
 import { SqliteDbPlugin } from '@routier/sqlite-plugin';
 import { createKeyring, encryption, isEnvelope } from '@routier/encryption';
-import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import { MySqlContainer, StartedMySqlContainer } from '@testcontainers/mysql';
 import { PostgresDbPlugin } from '@routier/postgresql-plugin';
 import { MysqlDbPlugin } from '@routier/mysql-plugin';
 
@@ -364,13 +363,13 @@ describe('transforms', () => {
 const containerSuite = process.env.E2E_CONTAINERS === '1' ? describe : describe.skip;
 
 containerSuite('transforms against real SQL servers', () => {
-    let postgres: StartedPostgreSqlContainer;
-    let mysql: StartedMySqlContainer;
+    let postgres: PostgresServer;
+    let mysql: MysqlServer;
 
     beforeAll(async () => {
         [postgres, mysql] = await Promise.all([
-            new PostgreSqlContainer('postgres:16-alpine').start(),
-            new MySqlContainer('mysql:8.0').start(),
+            startPostgres(),
+            startMysql(),
         ]);
     }, 240_000);
 

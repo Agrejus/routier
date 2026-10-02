@@ -1,5 +1,5 @@
+import { S3Server, startS3 } from '../servers';
 import { afterAll, beforeAll, describe, expect, it } from '@jest/globals';
-import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
 import { S3Client, CreateBucketCommand } from '@aws-sdk/client-s3';
 import { uuidv4 } from '@routier/core';
 import { s } from '@routier/core/schema';
@@ -11,7 +11,7 @@ import { s3BlobStore } from '@routier/blob-plugin/stores/s3';
 /**
  * The S3 store against a real S3 API.
  *
- * MinIO rather than AWS: it implements the S3 API, runs in a container, and needs no account,
+ * The Versity S3 gateway rather than AWS: it implements the S3 API, runs in a container, and needs no account,
  * so this can be part of an ordinary test run. The same driver is what Cloudflare R2 and
  * Google Cloud Storage use — both speak the S3 API and differ only in the endpoint given to
  * the client — so proving it here proves three services.
@@ -27,9 +27,7 @@ import { s3BlobStore } from '@routier/blob-plugin/stores/s3';
 const shouldRun = process.env.E2E_CONTAINERS === '1';
 const suite = shouldRun ? describe : describe.skip;
 
-const ACCESS_KEY = 'routieraccess';
-const SECRET_KEY = 'routiersecret';
-const BUCKET = 'routier-test';
+const BUCKET = `routier-test-${uuidv4()}`;
 
 const bytesOf = (text: string) => new TextEncoder().encode(text);
 
@@ -43,31 +41,19 @@ const sha256Hex = async (bytes: Uint8Array) => {
     return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
-suite('the S3 blob store against MinIO', () => {
-    let container: StartedTestContainer;
+suite('the S3 blob store against an S3 server', () => {
+    let server: S3Server;
     let client: S3Client;
     let files: ReturnType<typeof createFiles>;
 
     beforeAll(async () => {
-        // From quay.io: MinIO no longer publishes to Docker Hub, and the pinned tag there is gone.
-        container = await new GenericContainer('quay.io/minio/minio:RELEASE.2024-09-13T20-26-02Z')
-            .withEnvironment({
-                MINIO_ROOT_USER: ACCESS_KEY,
-                MINIO_ROOT_PASSWORD: SECRET_KEY,
-            })
-            .withCommand(['server', '/data'])
-            .withExposedPorts(9000)
-            .withWaitStrategy(Wait.forListeningPorts())
-            .start();
-
-        const endpoint = `http://${container.getHost()}:${container.getMappedPort(9000)}`;
+        server = await startS3();
 
         client = new S3Client({
             region: 'us-east-1',
-            endpoint,
-            // MinIO serves buckets as a path, not as a subdomain of the endpoint.
+            endpoint: server.endpoint,
             forcePathStyle: true,
-            credentials: { accessKeyId: ACCESS_KEY, secretAccessKey: SECRET_KEY },
+            credentials: { accessKeyId: server.accessKey, secretAccessKey: server.secretKey },
         });
 
         await client.send(new CreateBucketCommand({ Bucket: BUCKET }));
@@ -77,7 +63,7 @@ suite('the S3 blob store against MinIO', () => {
 
     afterAll(async () => {
         client?.destroy();
-        await container?.stop();
+        await server?.stop();
     });
 
     it('round-trips content through the service', async () => {

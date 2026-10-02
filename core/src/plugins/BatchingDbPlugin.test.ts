@@ -133,6 +133,45 @@ describe("BatchingDbPlugin", () => {
             expect(new Set(inner.writes[1].operation.keys())).toEqual(new Set([orders.id, third.id]));
         });
 
+        it("does not merge a write that keeps etags with one that generates them", async () => {
+            const inner = new SlowPlugin();
+            const plugin = new BatchingDbPlugin(inner, { isAtomic: true });
+
+            await Promise.all([
+                write(plugin, persistEvent(products)),
+                write(plugin, { ...persistEvent(orders), etags: "keep" }),
+                write(plugin, persistEvent(third)),
+            ]);
+
+            expect(inner.writes.map(event => event.etags ?? "generate")).toEqual(["generate", "keep", "generate"]);
+        });
+
+        it("treats an unset etag mode as generate when merging", async () => {
+            const inner = new SlowPlugin();
+            const plugin = new BatchingDbPlugin(inner, { isAtomic: true });
+
+            await Promise.all([
+                write(plugin, persistEvent(products)),
+                write(plugin, persistEvent(orders)),
+                write(plugin, { ...persistEvent(third), etags: "generate" }),
+            ]);
+
+            expect(inner.writes.length).toBe(2);
+        });
+
+        it("merges writes that keep etags and keeps the mode on the merged write", async () => {
+            const inner = new SlowPlugin();
+            const plugin = new BatchingDbPlugin(inner, { isAtomic: true });
+
+            await Promise.all([
+                write(plugin, persistEvent(products)),
+                write(plugin, { ...persistEvent(orders), etags: "keep" }),
+                write(plugin, { ...persistEvent(third), etags: "keep" }),
+            ]);
+
+            expect(inner.writes.map(event => event.etags ?? "generate")).toEqual(["generate", "keep"]);
+        });
+
         it("does NOT merge writes that share a schema", async () => {
             const inner = new SlowPlugin();
             const plugin = new BatchingDbPlugin(inner, { isAtomic: true });

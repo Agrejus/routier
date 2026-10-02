@@ -68,7 +68,7 @@ const base = {
     // StrykerJS copies the whole repo into .stryker-tmp sandboxes. Without this, a Jest run
     // started while a mutation run is in progress sees two package.json files claiming the
     // same module name and refuses to start.
-    modulePathIgnorePatterns: ['<rootDir>/.stryker-tmp'],
+    modulePathIgnorePatterns: ['<rootDir>/.stryker-tmp', '<rootDir>/.claude/worktrees'],
 };
 
 module.exports = {

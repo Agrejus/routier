@@ -334,7 +334,7 @@ export class PostgresDbPluginBase implements IDbPlugin {
             }
 
             const schema = event.schemas.get(schemaId);
-            const persistOperations = buildFromPersistOperation(schema, changes);
+            const persistOperations = buildFromPersistOperation(schema, changes, event.etags);
             const createTableSql = this.resolveTableCreateStatement(schema, vectors);
 
             if (persistOperations.removes != null) {

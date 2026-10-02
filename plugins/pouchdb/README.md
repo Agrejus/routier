@@ -49,12 +49,16 @@ not. One handle removes the question.
 ### Document shape
 
 PouchDB stores documents, not tables, so one database holds every collection. Declare
-`_id` and `_rev` on the schema and scope each collection to itself:
+`_id` and `_rev` on the schema and scope each collection to itself. `_rev` is the document's
+etag: PouchDB creates and updates it, and `pouchRevision` orders two revisions by generation,
+then by hash, the way PouchDB picks the winning revision:
 
 ```ts
+import { pouchRevision } from "@routier/pouchdb-plugin";
+
 const schema = s.define("products", {
   _id: s.string().key().identity(),
-  _rev: s.string().identity(),
+  _rev: s.string().etag(pouchRevision),
   name: s.string(),
 }).modify(x => ({
   documentType: x.computed((_, collectionName) => collectionName).tracked()

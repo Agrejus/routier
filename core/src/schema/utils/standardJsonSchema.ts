@@ -3,6 +3,7 @@ import { CompiledSchema, InferCreateType, InferType, SchemaTypes } from '../type
 import { SchemaBase } from '../property/base/SchemaBase';
 import { SchemaArray } from '../property/types/SchemaArray';
 import { SchemaDefinition } from '../SchemaDefinition';
+import { compileArrowFunction, rehydrateEtagComparator } from './functionSource';
 import { s } from '../builder';
 
 /**
@@ -392,6 +393,9 @@ function applyRoutierMetadata(
     if (property.isSearchable && !routierMeta.isSearchable) {
         routierMeta.isSearchable = true;
     }
+    if (property.etagComparator != null) {
+        routierMeta.etagSource = property.etagComparator.toString();
+    }
     if (property.indexes && property.indexes.length > 0 && !routierMeta.indexes) {
         routierMeta.indexes = property.indexes;
     }
@@ -614,6 +618,9 @@ export function rehydrateSchemaFromJsonSchema(
 
         // Convert JSON Schema property to Routier schema
         let schemaBuilder: any = convertJsonSchemaPropertyToRoutier(prop);
+        if (typeof routierPropMeta?.etagSource === 'string') {
+            schemaBuilder = schemaBuilder.etag(rehydrateEtagComparator(routierPropMeta.etagSource, routierPropName));
+        }
 
         // Apply Routier-specific modifiers (using type assertion for method chaining)
         // Note: Apply key() first as it's required for schema compilation
@@ -678,43 +685,13 @@ export function rehydrateSchemaFromJsonSchema(
 
             for (const computedProp of computedProperties) {
                 if (computedProp.functionSource) {
-                    // Recreate the function from source code
-                    // The function signature is: (entity, collectionName, injected) => result
-                    // We use new Function() to create the function, but wrap it so toString() returns the arrow function
                     let recreatedFn: any;
                     try {
                         const functionSource = computedProp.functionSource;
-
-                        // Parse the arrow function to extract parameters and body
-                        const arrowMatch = functionSource.match(/^\(([^)]*)\)\s*=>\s*(.+)$/s);
-
-                        if (!arrowMatch) {
-                            throw new Error('Function source is not an arrow function');
-                        }
-
-                        // Parse parameters
-                        const paramsStr = arrowMatch[1].trim();
-                        const params = paramsStr ? paramsStr.split(',').map(p => p.trim()).filter(p => p) : [];
-                        const body = arrowMatch[2].trim();
-
-                        // Create function body - if it's a block (starts with {), use as-is, otherwise wrap in return
-                        const functionBody = body.startsWith('{')
-                            ? body.slice(1, -1) // Remove outer braces
-                            : `return ${body}`;
-
-                        // Create the function using new Function()
-                        // If no parameters, call with just the body; otherwise spread the params
-                        const fn = params.length > 0
-                            ? new Function(...params, functionBody)
-                            : new Function(functionBody);
-
-                        // Wrap it so toString() returns the original arrow function string, so
-                        // serializing the rehydrated schema writes the same functionSource again
-                        recreatedFn = Object.assign(fn, {
+                        recreatedFn = Object.assign(compileArrowFunction(functionSource), {
                             toString: () => functionSource
                         });
                     } catch (e) {
-                        // If we can't recreate the function, create a placeholder arrow function that throws
                         recreatedFn = () => {
                             throw new Error(`Cannot recreate computed property ${computedProp.name}: ${e instanceof Error ? e.message : 'unknown error'}`);
                         };

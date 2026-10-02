@@ -1,6 +1,7 @@
-import { CompiledSchema } from '@routier/core/schema';
+import { CompiledSchema, EtagValue } from '@routier/core/schema';
 import type { SqlDialect } from './sql';
 import { toColumnValueMap } from './columns';
+import { etagIncrementClauses, withEtagValue, type SqlEtag } from './etags';
 
 /**
  * The grouped-UPDATE builder shared by the SQL plugins.
@@ -27,7 +28,7 @@ export type EntityUpdate = {
     entity: Record<string, unknown>;
     delta: Record<string, unknown>;
     /** Present when the row carries an optimistic-concurrency token — see EntityUpdateInfo. */
-    concurrency?: { column: string; expected: number };
+    concurrency?: { column: string; expected: EtagValue };
 };
 
 /**
@@ -95,7 +96,7 @@ export function buildConditionalUpdateOperations<T extends {}>(
     schema: CompiledSchema<T>,
     updates: readonly EntityUpdate[],
     dialect: SqlDialect,
-    options?: { suffix?: string }
+    options?: { suffix?: string; etag?: SqlEtag | null }
 ): ConditionalUpdateOperation[] {
     if (updates.length === 0) {
         return [];
@@ -104,6 +105,8 @@ export function buildConditionalUpdateOperations<T extends {}>(
     const table = dialect.quoteIdentifier(schema.collectionName);
     const identityNames = schema.idProperties.map(p => p.getResolvedName());
     const suffix = options?.suffix ?? '';
+    const etag = options?.etag ?? null;
+    const etagClauses = etagIncrementClauses(etag, dialect);
 
     const operations: ConditionalUpdateOperation[] = [];
 
@@ -119,6 +122,8 @@ export function buildConditionalUpdateOperations<T extends {}>(
             resolved = toColumnValueMap(wholeEntity, schema, dialect);
         }
 
+        resolved = withEtagValue(resolved, update.entity, etag);
+
         const params: unknown[] = [];
         let paramIndex = 0;
         const placeholder = () => dialect.getPlaceholder(paramIndex++);
@@ -128,6 +133,7 @@ export function buildConditionalUpdateOperations<T extends {}>(
             setClauses.push(`${dialect.quoteIdentifier(column)} = ${placeholder()}`);
             params.push(value);
         }
+        setClauses.push(...etagClauses);
 
         const tuple = keyTupleOf(schema, update.entity);
         let where = keyPredicate(tuple, dialect, params, placeholder);
@@ -167,9 +173,8 @@ export function buildGroupedUpdateOperations<T extends {}>(
     updates: readonly EntityUpdate[],
     dialect: SqlDialect,
     options?: {
-        /** Appended verbatim to each statement, e.g. ` RETURNING "a", "b"`. Omit for
-         * engines without RETURNING. */
         suffix?: string;
+        etag?: SqlEtag | null;
     }
 ): GroupedUpdateOperation[] {
     if (updates.length === 0) {
@@ -182,6 +187,8 @@ export function buildGroupedUpdateOperations<T extends {}>(
     const idProperty = schema.idProperties[0];
     const idColumn = dialect.quoteIdentifier(idProperty.getResolvedName());
     const suffix = options?.suffix ?? '';
+    const etag = options?.etag ?? null;
+    const etagClauses = etagIncrementClauses(etag, dialect);
 
     // The delta is a partial ENTITY (core's EntityDelta) and has to be resolved to columns
     // before it can be grouped or bound: renames become storage-side names, and nested
@@ -205,7 +212,7 @@ export function buildGroupedUpdateOperations<T extends {}>(
             resolved = toColumnValueMap(wholeEntity, schema, dialect);
         }
 
-        columnValues.set(update, resolved);
+        columnValues.set(update, withEtagValue(resolved, update.entity, etag));
     }
 
     // Group updates by which columns they're changing
@@ -242,6 +249,7 @@ export function buildGroupedUpdateOperations<T extends {}>(
                     setClauses.push(`${dialect.quoteIdentifier(key)} = ${placeholder()}`);
                     params.push(columnValues.get(update)!.get(key));
                 }
+                setClauses.push(...etagClauses);
 
                 const tuple = keyTupleOf(schema, update.entity);
                 const where = keyPredicate(tuple, dialect, params, placeholder);
@@ -275,6 +283,7 @@ export function buildGroupedUpdateOperations<T extends {}>(
             caseStatement += ` ELSE ${dialect.quoteIdentifier(key)} END`;
             setClauses.push(caseStatement);
         }
+        setClauses.push(...etagClauses);
 
         const idPlaceholders = groupUpdates.map(() => placeholder()).join(', ');
         params.push(...ids);

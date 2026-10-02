@@ -1,4 +1,5 @@
 export * from './builder';
+export * from './etags';
 export * from './table';
 export * from './property/base';
 export * from './property/modifiers';

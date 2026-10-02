@@ -1,4 +1,5 @@
-import { CompiledSchema, logger, PropertyInfo, SchemaTypes } from "@routier/core";
+import { CompiledSchema, IdType, InferType, logger, PropertyInfo, SchemaTypes } from "@routier/core";
+import type { UnknownRecord } from "@routier/core/utilities";
 
 const compoundIndexPartners = <T extends {}>(schema: CompiledSchema<T>, property: PropertyInfo<T>) =>
     schema.properties.filter(other =>
@@ -119,3 +120,11 @@ const deriveDexieSchema = <T extends {}>(schema: CompiledSchema<T>) => {
 
     return schemaProperties.join(",");
 }
+
+export type DexieKey = IdType | IdType[];
+
+export const dexieKey = (schema: CompiledSchema<UnknownRecord>, entity: InferType<UnknownRecord>): DexieKey => {
+    const ids = schema.getIds(entity);
+    return schema.idProperties.length === 1 ? ids[0] : ids;
+};
+
