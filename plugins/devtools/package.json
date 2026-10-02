@@ -53,6 +53,6 @@
     "repository": {
         "type": "git",
         "url": "git+https://github.com/Agrejus/routier.git",
-        "directory": "devtools"
+        "directory": "plugins/devtools"
     }
 }

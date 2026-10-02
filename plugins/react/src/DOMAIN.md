@@ -18,4 +18,4 @@ Exposes a datastore to React components as hooks.
 
 ## Covers
 
-- `plugins/react`
+- `plugins/react/src`

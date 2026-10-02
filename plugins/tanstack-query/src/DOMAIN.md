@@ -18,4 +18,4 @@ Exposes a datastore's live queries as TanStack Query options, so an app keeps it
 
 ## Covers
 
-- `plugins/tanstack-query`
+- `plugins/tanstack-query/src`

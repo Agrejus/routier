@@ -46,8 +46,8 @@
             "@routier/angular": ["./plugins/angular/src/index.ts"],
             "@routier/tanstack-query": ["./plugins/tanstack-query/src/index.ts"],
             "@routier/lit": ["./plugins/lit/src/index.ts"],
-            "@routier/devtools": ["./devtools/src/index.ts"],
-            "@routier/devtools/production": ["./devtools/src/production.ts"],
+            "@routier/devtools": ["./plugins/devtools/src/index.ts"],
+            "@routier/devtools/production": ["./plugins/devtools/src/production.ts"],
             "@routier/sync-server": ["./sync-server/src/index.ts"],
 
             // `baseUrl` is the repo root, which contains a directory named `react`. TS tries

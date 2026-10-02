@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import { act } from "preact/test-utils";
 import type { UnmountDevtools } from "@routier/devtools";
-import { createShopStore, disposeStores } from "../test/stores";
+import { createShopStore, disposeStores } from "../tests/stores";
 
 type MountModule = typeof import("@routier/devtools");
 

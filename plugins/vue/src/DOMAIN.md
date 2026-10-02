@@ -18,4 +18,4 @@ Exposes a datastore to Vue components as composables.
 
 ## Covers
 
-- `plugins/vue`
+- `plugins/vue/src`

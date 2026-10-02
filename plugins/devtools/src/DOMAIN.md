@@ -19,4 +19,4 @@ Shows a running datastore's collections and rows in an in-page drawer.
 
 ## Covers
 
-- `devtools/src`
+- `plugins/devtools/src`

@@ -29,7 +29,7 @@ export const releasePackageDirectories = [
   'plugins/angular',
   'plugins/tanstack-query',
   'plugins/lit',
-  'devtools',
+  'plugins/devtools',
 ];
 
 export const releasePackages = releasePackageDirectories.map(directory => {

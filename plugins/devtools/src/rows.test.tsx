@@ -3,11 +3,11 @@ import { fireEvent, waitFor } from "@testing-library/dom";
 import { logger } from "@routier/core/utilities";
 import { MemoryPlugin } from "@routier/memory-plugin";
 import type { InspectedCount, InspectedPage } from "@routier/datastore";
-import { fakeCollection, fakeStore } from "../test/fakeCollections";
-import { manualFrames } from "../test/frames";
-import { interact, mount, type MountedDevtools } from "../test/harness";
-import { spyOnInspection } from "../test/spyInspection";
-import { createEmptyStore, createShopStore, disposeStores, seedProducts, type ShopStore } from "../test/stores";
+import { fakeCollection, fakeStore } from "../tests/fakeCollections";
+import { manualFrames } from "../tests/frames";
+import { interact, mount, type MountedDevtools } from "../tests/harness";
+import { spyOnInspection } from "../tests/spyInspection";
+import { createEmptyStore, createShopStore, disposeStores, seedProducts, type ShopStore } from "../tests/stores";
 import type { InspectableStore } from "@routier/devtools";
 
 const mounted: MountedDevtools[] = [];

@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it } from "@jest/globals";
 import { fireEvent } from "@testing-library/dom";
-import { fakeCollection, fakeStore } from "../test/fakeCollections";
-import { createEmptyStore, createShopStore, disposeStores } from "../test/stores";
-import { interact, mount, type MountedDevtools } from "../test/harness";
+import { fakeCollection, fakeStore } from "../tests/fakeCollections";
+import { createEmptyStore, createShopStore, disposeStores } from "../tests/stores";
+import { interact, mount, type MountedDevtools } from "../tests/harness";
 
 const mounted: MountedDevtools[] = [];
 

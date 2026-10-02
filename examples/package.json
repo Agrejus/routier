@@ -14,7 +14,7 @@
         "@routier/datastore": "file://../datastore",
         "@routier/core": "file://../core",
         "@routier/react": "file://../plugins/react",
-        "@routier/devtools": "file://../devtools",
+        "@routier/devtools": "file://../plugins/devtools",
         "@routier/dexie-plugin": "file://../plugins/dexie",
         "@routier/memory-plugin": "file://../plugins/memory",
         "@routier/pouchdb-plugin": "file://../plugins/pouchdb",

@@ -18,4 +18,4 @@ Exposes a datastore to Lit and other web components as a reactive controller.
 
 ## Covers
 
-- `plugins/lit`
+- `plugins/lit/src`

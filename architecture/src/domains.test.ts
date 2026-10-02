@@ -126,7 +126,7 @@ describe("domain manifest", () => {
      * arrives while the person who knows the answer is still the one holding it.
      */
     it("assigns every workspace source directory to a domain", () => {
-        const workspaceRoots = ["core", "datastore", "devtools", "sync-server", "test-utils",
+        const workspaceRoots = ["core", "datastore", "sync-server", "test-utils",
             "e2e", "stress", "benchmark", "architecture"];
         const pluginRoots = fs
             .readdirSync(path.join(REPO_ROOT, "plugins"), { withFileTypes: true })
@@ -165,7 +165,7 @@ describe("packages under plugins/", () => {
         const notPlugins = fs
             .readdirSync(path.join(REPO_ROOT, "plugins"), { withFileTypes: true })
             .filter(entry => entry.isDirectory() && IGNORED_DIRECTORIES.has(entry.name) === false)
-            .filter(entry => domainFor(`plugins/${entry.name}`)?.id === "plugins")
+            .filter(entry => domainFor(`plugins/${entry.name}/src`)?.id === "plugins")
             .filter(entry =>
                 sourceFilesUnder(`plugins/${entry.name}/src`).some(file =>
                     IMPLEMENTS.test(fs.readFileSync(path.join(REPO_ROOT, file), "utf8"))

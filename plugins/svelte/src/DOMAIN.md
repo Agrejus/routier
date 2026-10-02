@@ -18,4 +18,4 @@ Exposes a datastore to Svelte components as readable stores.
 
 ## Covers
 
-- `plugins/svelte`
+- `plugins/svelte/src`

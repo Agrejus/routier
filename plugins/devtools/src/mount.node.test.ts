@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import { logger } from "@routier/core/utilities";
 import { mountRoutierDevtools } from "@routier/devtools";
-import { createShopStore, disposeStores } from "../test/stores";
+import { createShopStore, disposeStores } from "../tests/stores";
 
 afterEach(() => {
   Reflect.deleteProperty(globalThis, "document");

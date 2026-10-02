@@ -7,7 +7,6 @@
         "architecture",
         "core",
         "datastore",
-        "devtools",
         "plugins/*",
         "test-utils",
         "sync-server",

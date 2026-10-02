@@ -15,7 +15,7 @@ const alias = {
     ...Object.fromEntries(coreSubpaths.map(name => [`@routier/core/${name}`, resolve(repo, `core/src/${name}/index.ts`)])),
     '@routier/datastore': resolve(repo, 'datastore/src/index.ts'),
     '@routier/memory-plugin': resolve(repo, 'plugins/memory/src/index.ts'),
-    '@routier/devtools': resolve(repo, 'devtools/src/index.ts'),
+    '@routier/devtools': resolve(repo, 'plugins/devtools/src/index.ts'),
 };
 
 const page = `<!doctype html>

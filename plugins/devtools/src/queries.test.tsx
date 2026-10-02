@@ -4,8 +4,8 @@ import type { QueryExplanation } from "@routier/core/plugins";
 import { logger } from "@routier/core/utilities";
 import type { InspectedQuery, StoreInspection } from "@routier/datastore";
 import type { InspectableStore } from "@routier/devtools";
-import { interact, mount, type MountedDevtools } from "../test/harness";
-import { createShopStore, disposeStores, seedProducts } from "../test/stores";
+import { interact, mount, type MountedDevtools } from "../tests/harness";
+import { createShopStore, disposeStores, seedProducts } from "../tests/stores";
 
 const mounted: MountedDevtools[] = [];
 

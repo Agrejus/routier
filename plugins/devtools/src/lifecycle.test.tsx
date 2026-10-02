@@ -3,9 +3,9 @@ import { fireEvent, waitFor } from "@testing-library/dom";
 import { act } from "preact/test-utils";
 import { logger } from "@routier/core/utilities";
 import { mountRoutierDevtools, type InspectableStore, type UnmountDevtools } from "@routier/devtools";
-import { interact, mount, type MountedDevtools } from "../test/harness";
-import { spyOnInspection } from "../test/spyInspection";
-import { createEmptyStore, createShopStore, disposeStores, seedProducts } from "../test/stores";
+import { interact, mount, type MountedDevtools } from "../tests/harness";
+import { spyOnInspection } from "../tests/spyInspection";
+import { createEmptyStore, createShopStore, disposeStores, seedProducts } from "../tests/stores";
 
 const cleanups: UnmountDevtools[] = [];
 

@@ -37,8 +37,8 @@ const moduleNameMapper = {
     '^@routier/angular$': '<rootDir>/plugins/angular/src/index.ts',
     '^@routier/tanstack-query$': '<rootDir>/plugins/tanstack-query/src/index.ts',
     '^@routier/lit$': '<rootDir>/plugins/lit/src/index.ts',
-    '^@routier/devtools/production$': '<rootDir>/devtools/src/production.ts',
-    '^@routier/devtools$': '<rootDir>/devtools/src/index.ts',
+    '^@routier/devtools/production$': '<rootDir>/plugins/devtools/src/production.ts',
+    '^@routier/devtools$': '<rootDir>/plugins/devtools/src/index.ts',
     '^@routier/sync-server$': '<rootDir>/sync-server/src/index.ts',
 };
 
@@ -47,7 +47,7 @@ const tsTransform = {
 };
 
 const devtoolsTransform = {
-    '^.+\\.tsx?$': ['ts-jest', { tsconfig: '<rootDir>/devtools/tsconfig.test.json' }],
+    '^.+\\.tsx?$': ['ts-jest', { tsconfig: '<rootDir>/plugins/devtools/tsconfig.test.json' }],
 };
 
 // Some workspace packages and @faker-js ship ESM-only .js that Jest cannot parse
@@ -149,7 +149,7 @@ module.exports = {
         {
             ...base,
             displayName: 'devtools',
-            testMatch: ['<rootDir>/devtools/**/*.test.ts?(x)'],
+            testMatch: ['<rootDir>/plugins/devtools/**/*.test.ts?(x)'],
             testPathIgnorePatterns: ['/node_modules/', '\\.node\\.test\\.ts$'],
             testEnvironment: 'jsdom',
             testEnvironmentOptions: { customExportConditions: ['node', 'require', 'default'] },
@@ -159,7 +159,7 @@ module.exports = {
         {
             ...base,
             displayName: 'devtools-node',
-            testMatch: ['<rootDir>/devtools/**/*.node.test.ts'],
+            testMatch: ['<rootDir>/plugins/devtools/**/*.node.test.ts'],
             testEnvironmentOptions: { customExportConditions: ['node', 'require', 'default'] },
             transform: devtoolsTransform,
         },

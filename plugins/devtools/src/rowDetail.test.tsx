@@ -2,10 +2,10 @@ import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import { fireEvent, waitFor } from "@testing-library/dom";
 import { logger } from "@routier/core/utilities";
 import type { InspectedPage, InspectedRow } from "@routier/datastore";
-import { fakeCollection, fakeStore } from "../test/fakeCollections";
-import { interact, mount, type MountedDevtools } from "../test/harness";
-import { addProfile, createProfileStores, disposeProfileStores } from "../test/profileStores";
-import { createShopStore, disposeStores, seedProducts } from "../test/stores";
+import { fakeCollection, fakeStore } from "../tests/fakeCollections";
+import { interact, mount, type MountedDevtools } from "../tests/harness";
+import { addProfile, createProfileStores, disposeProfileStores } from "../tests/profileStores";
+import { createShopStore, disposeStores, seedProducts } from "../tests/stores";
 import type { InspectableStore } from "@routier/devtools";
 
 const mounted: MountedDevtools[] = [];

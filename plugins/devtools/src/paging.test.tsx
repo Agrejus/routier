@@ -3,9 +3,9 @@ import { fireEvent, waitFor } from "@testing-library/dom";
 import { logger } from "@routier/core/utilities";
 import type { InspectedCount, InspectedPage, InspectedPageRequest, InspectedRow } from "@routier/datastore";
 import type { InspectableStore } from "@routier/devtools";
-import { fakeCollection, fakeStore } from "../test/fakeCollections";
-import { interact, mount, type MountedDevtools } from "../test/harness";
-import { createShopStore, disposeStores, seedProducts } from "../test/stores";
+import { fakeCollection, fakeStore } from "../tests/fakeCollections";
+import { interact, mount, type MountedDevtools } from "../tests/harness";
+import { createShopStore, disposeStores, seedProducts } from "../tests/stores";
 
 const mounted: MountedDevtools[] = [];
 

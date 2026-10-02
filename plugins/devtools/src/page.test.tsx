@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "@jest/globals";
 import { fireEvent, within } from "@testing-library/dom";
 import { act } from "preact/test-utils";
 import { mountRoutierDevtools, type UnmountDevtools } from "@routier/devtools";
-import { createShopStore, disposeStores } from "../test/stores";
+import { createShopStore, disposeStores } from "../tests/stores";
 
 const cleanups: UnmountDevtools[] = [];
 
