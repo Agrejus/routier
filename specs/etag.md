@@ -233,6 +233,11 @@ The last response's `ETag` for each query is stored in `unsyncedQueueStore`, in 
 sent as `If-None-Match` only while the local store holds as many rows for the query as it did when
 the `ETag` was stored; the rows are counted only when an `ETag` is stored.
 
+An update `HttpSwrDbPlugin` sends carries the etag the edit was based on next to its key fields and
+changed fields, so the server can refuse a stale edit with `409`. The read responses should carry
+`Cache-Control: no-store`, or a browser's HTTP cache answers the conditional request itself.
+`examples/etag-lab` is a server and UI that exercise all of this against SQLite.
+
 When the server permanently rejects a local change, its collection's stored `ETag`s are forgotten
 and its queries are marked stale, so the next read fetches in full. Rows with a dead-lettered
 change are compared field by field rather than by etag, so the server copy replaces the rejected

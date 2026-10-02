@@ -5,6 +5,7 @@ dist
 *-db
 node_modules/
 examples/relayops/.data/
+examples/etag-lab/.data/
 .DS_Store
 .idea/
 *.iml

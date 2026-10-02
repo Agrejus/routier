@@ -113,5 +113,10 @@ jobs:
       - name: Browser check
         run: npm run test:browser
 
+      # The etag lab's server and UI: conflicts, conditional revalidation, newest-wins and the
+      # optimistic adopt, driven through a real page against SQLite.
+      - name: ETag lab
+        run: npx playwright-core install chromium && npm run test:etag-lab
+
 # Mutation testing (`npm run mutate:*`) stays manual. A full run takes hours, which is too
 # slow for a pull-request gate.

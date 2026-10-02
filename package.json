@@ -26,7 +26,7 @@
         "build": "npm run build -w @routier/core -w @routier/memory-plugin -w @routier/sql-plugin-core -w @routier/postgres-plugin-core && npm run build --workspaces --if-present",
         "typecheck": "npm run tsc --workspaces --if-present && npm run typecheck:snippets && npm run typecheck:examples",
         "typecheck:snippets": "tsc -p docs/tsconfig.snippets.json",
-        "typecheck:examples": "tsc --noEmit -p examples/finance-stress/tsconfig.json && tsc --noEmit -p examples/relayops/tsconfig.json && tsc --noEmit -p examples/devtools/tsconfig.json",
+        "typecheck:examples": "tsc --noEmit -p examples/finance-stress/tsconfig.json && tsc --noEmit -p examples/relayops/tsconfig.json && tsc --noEmit -p examples/devtools/tsconfig.json && tsc --noEmit -p examples/etag-lab/tsconfig.json",
         "build:core": "cd core && npm run tsc",
         "build:routier": "cd routier && npm run tsc",
         "sync:examples": "node scripts/sync-doc-examples.mjs",
@@ -68,7 +68,8 @@
         "release:pack-check": "node scripts/pack-check.mjs",
         "release:readme-check": "node scripts/validate-package-readmes.mjs",
         "release:consumer-check": "node scripts/consumer-check.mjs",
-        "test:browser": "node e2e/browser/run.mjs"
+        "test:browser": "node e2e/browser/run.mjs",
+        "test:etag-lab": "npm test --prefix examples/etag-lab && npm run test:ui --prefix examples/etag-lab"
     },
     "author": "",
     "license": "MIT",
