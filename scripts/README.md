@@ -149,7 +149,7 @@ $ npm run bump -- @routier/core 0.0.1-alpha.10
 ✅ Updated plugins/file-system/package.json
 ✅ Updated plugins/sqlite/package.json
 ✅ Updated plugins/browser-storage/package.json
-✅ Updated react/package.json
+✅ Updated plugins/react/package.json
 
 🎉 Successfully updated 8 files
 

@@ -263,7 +263,7 @@ export const DOMAINS: readonly Domain[] = [
     {
         id: "react",
         title: "React bindings",
-        paths: ["react/src"],
+        paths: ["plugins/react"],
         responsibility: "Exposes a datastore to React components as hooks.",
         rules: [
             "Binds to the datastore's public surface only. A hook that needs plugin internals is a sign the datastore is missing something.",
@@ -274,7 +274,7 @@ export const DOMAINS: readonly Domain[] = [
     {
         id: "vue",
         title: "Vue bindings",
-        paths: ["vue/src"],
+        paths: ["plugins/vue"],
         responsibility: "Exposes a datastore to Vue components as composables.",
         rules: [
             "Binds to the datastore's public surface only. A composable that needs plugin internals is a sign the datastore is missing something.",
@@ -285,7 +285,7 @@ export const DOMAINS: readonly Domain[] = [
     {
         id: "svelte",
         title: "Svelte bindings",
-        paths: ["svelte/src"],
+        paths: ["plugins/svelte"],
         responsibility: "Exposes a datastore to Svelte components as readable stores.",
         rules: [
             "Binds to the datastore's public surface only. A store that needs plugin internals is a sign the datastore is missing something.",
@@ -296,7 +296,7 @@ export const DOMAINS: readonly Domain[] = [
     {
         id: "solid",
         title: "Solid bindings",
-        paths: ["solid/src"],
+        paths: ["plugins/solid"],
         responsibility: "Exposes a datastore to Solid components as signals.",
         rules: [
             "Binds to the datastore's public surface only. A primitive that needs plugin internals is a sign the datastore is missing something.",
@@ -307,7 +307,7 @@ export const DOMAINS: readonly Domain[] = [
     {
         id: "angular",
         title: "Angular bindings",
-        paths: ["angular/src"],
+        paths: ["plugins/angular"],
         responsibility: "Exposes a datastore to Angular as signals and Observables.",
         rules: [
             "Binds to the datastore's public surface only. An injectable that needs plugin internals is a sign the datastore is missing something.",
@@ -318,7 +318,7 @@ export const DOMAINS: readonly Domain[] = [
     {
         id: "tanstack-query",
         title: "TanStack Query bridge",
-        paths: ["tanstack-query/src"],
+        paths: ["plugins/tanstack-query"],
         responsibility: "Exposes a datastore's live queries as TanStack Query options, so an app keeps its existing cache layer.",
         rules: [
             "Binds to the datastore's public surface only. An option that needs plugin internals is a sign the datastore is missing something.",
@@ -329,7 +329,7 @@ export const DOMAINS: readonly Domain[] = [
     {
         id: "lit",
         title: "Lit bindings",
-        paths: ["lit/src"],
+        paths: ["plugins/lit"],
         responsibility: "Exposes a datastore to Lit and other web components as a reactive controller.",
         rules: [
             "Binds to the datastore's public surface only. A controller that needs plugin internals is a sign the datastore is missing something.",

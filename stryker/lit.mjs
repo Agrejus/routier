@@ -1,7 +1,7 @@
 import { area } from '../stryker.base.mjs';
 
 export default area([
-    'lit/src/**/*.ts',
+    'plugins/lit/src/**/*.ts',
 ], 100, {
     jest: {
         projectType: 'custom',

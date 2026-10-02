@@ -13,7 +13,7 @@
     "dependencies": {
         "@routier/datastore": "file://../datastore",
         "@routier/core": "file://../core",
-        "@routier/react": "file://../react",
+        "@routier/react": "file://../plugins/react",
         "@routier/devtools": "file://../devtools",
         "@routier/dexie-plugin": "file://../plugins/dexie",
         "@routier/memory-plugin": "file://../plugins/memory",

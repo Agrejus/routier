@@ -14,7 +14,7 @@
             "@routier/core/*": ["../../core/src/*"],
             "@routier/datastore": ["../../datastore/src/index.ts"],
             "@routier/memory-plugin": ["../../plugins/memory/src/index.ts"],
-            "@routier/react": ["../../react/src/index.ts"],
+            "@routier/react": ["../../plugins/react/src/index.ts"],
             "@routier/sql-plugin-core": ["../../plugins/sql-core/src/index.ts"],
             "@routier/postgres-plugin-core": ["../../plugins/postgres-core/src/index.ts"],
             "@routier/sqlite-plugin": ["../../plugins/sqlite/src/index.browser.ts"],

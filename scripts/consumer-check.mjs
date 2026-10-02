@@ -75,7 +75,7 @@ const PACKAGE_DIRECTORIES = [
     'plugins/dexie', 'plugins/postgresql', 'plugins/mysql', 'plugins/pouchdb',
     'plugins/replication', 'plugins/sql-core', 'plugins/postgres-core', 'plugins/pglite',
     'plugins/sqlite', 'plugins/blob',
-    'plugins/encryption', 'plugins/otel', 'plugins/mongodb', 'react', 'vue', 'svelte', 'solid', 'angular', 'tanstack-query', 'lit', 'devtools',
+    'plugins/encryption', 'plugins/otel', 'plugins/mongodb', 'plugins/react', 'plugins/vue', 'plugins/svelte', 'plugins/solid', 'plugins/angular', 'plugins/tanstack-query', 'plugins/lit', 'devtools',
 ];
 
 const run = (command, args, cwd) =>

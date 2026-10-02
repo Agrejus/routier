@@ -39,20 +39,20 @@
             "@routier/mongodb-plugin": ["./plugins/mongodb/src/index.ts"],
             "@routier/otel-plugin": ["./plugins/otel/src/index.ts"],
             "@routier/replication-plugin": ["./plugins/replication/src/index.ts"],
-            "@routier/react": ["./react/src/index.ts"],
-            "@routier/vue": ["./vue/src/index.ts"],
-            "@routier/svelte": ["./svelte/src/index.ts"],
-            "@routier/solid": ["./solid/src/index.ts"],
-            "@routier/angular": ["./angular/src/index.ts"],
-            "@routier/tanstack-query": ["./tanstack-query/src/index.ts"],
-            "@routier/lit": ["./lit/src/index.ts"],
+            "@routier/react": ["./plugins/react/src/index.ts"],
+            "@routier/vue": ["./plugins/vue/src/index.ts"],
+            "@routier/svelte": ["./plugins/svelte/src/index.ts"],
+            "@routier/solid": ["./plugins/solid/src/index.ts"],
+            "@routier/angular": ["./plugins/angular/src/index.ts"],
+            "@routier/tanstack-query": ["./plugins/tanstack-query/src/index.ts"],
+            "@routier/lit": ["./plugins/lit/src/index.ts"],
             "@routier/devtools": ["./devtools/src/index.ts"],
             "@routier/devtools/production": ["./devtools/src/production.ts"],
             "@routier/sync-server": ["./sync-server/src/index.ts"],
 
             // `baseUrl` is the repo root, which contains a directory named `react`. TS tries
             // baseUrl-relative resolution before node_modules for a non-relative import, so
-            // once `react/dist/index.d.ts` exists — it does after `npm run build` — the bare
+            // once `plugins/react/dist/index.d.ts` exists — it does after `npm run build` — the bare
             // specifier `react` resolves to THIS WORKSPACE instead of the React package, and
             // every hook import fails with "has no exported member". It only looked fine on an
             // unbuilt checkout, where the workspace had no types to find. Pinned explicitly.

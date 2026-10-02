@@ -392,7 +392,7 @@ output, so three defects sat in it untouched. CI found all three, one per push:
    unbuilt dependency is missing. Stale `dist/` folders hid it locally.
 3. **`tsconfig.test.json` sets `baseUrl` to the repo root, which contains a directory named
    `react`.** TypeScript prefers baseUrl-relative resolution for a bare specifier, so once
-   `react/dist/index.d.ts` existed — after any build — `import { useEffect } from "react"`
+   `plugins/react/dist/index.d.ts` existed — after any build — `import { useEffect } from "react"`
    resolved to the workspace and every hook import failed. It only looked fine on an unbuilt
    checkout. CI builds before it tests, so it would have failed on every run.
 

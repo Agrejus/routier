@@ -1,7 +1,7 @@
 import { area } from '../stryker.base.mjs';
 
 export default area([
-    'svelte/src/**/*.ts',
+    'plugins/svelte/src/**/*.ts',
 ], 100, {
     jest: {
         projectType: 'custom',

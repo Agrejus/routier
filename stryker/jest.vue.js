@@ -1,5 +1,5 @@
 const config = require('../jest.stryker');
 
 module.exports = config([
-    '<rootDir>/vue/src/**/*.test.ts',
+    '<rootDir>/plugins/vue/src/**/*.test.ts',
 ]);

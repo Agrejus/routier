@@ -20,8 +20,8 @@
     "@routier/dexie-plugin": "file://../plugins/dexie",
     "@routier/memory-plugin": "file://../plugins/memory",
     "@routier/pouchdb-plugin": "file://../plugins/pouchdb",
-    "@routier/react": "file://../react",
-    "@routier/vue": "file://../vue",
+    "@routier/react": "file://../plugins/react",
+    "@routier/vue": "file://../plugins/vue",
     "vitepress": "^1.6.4"
   },
   "keywords": [

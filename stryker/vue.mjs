@@ -1,7 +1,7 @@
 import { area } from '../stryker.base.mjs';
 
 export default area([
-    'vue/src/**/*.ts',
+    'plugins/vue/src/**/*.ts',
 ], 100, {
     jest: {
         projectType: 'custom',

@@ -9,7 +9,7 @@ export default defineConfig({
       { find: /^@routier\/core\/(.*)$/, replacement: path.resolve(repo, 'core/src/$1') },
       { find: /^@routier\/core$/, replacement: path.resolve(repo, 'core/src/index.ts') },
       { find: /^@routier\/datastore$/, replacement: path.resolve(repo, 'datastore/src/index.ts') },
-      { find: /^@routier\/react$/, replacement: path.resolve(repo, 'react/src/index.ts') },
+      { find: /^@routier\/react$/, replacement: path.resolve(repo, 'plugins/react/src/index.ts') },
       { find: /^@routier\/memory-plugin$/, replacement: path.resolve(repo, 'plugins/memory/src/index.ts') },
       { find: /^@routier\/browser-storage-plugin$/, replacement: path.resolve(repo, 'plugins/browser-storage/src/index.ts') },
       { find: /^@routier\/dexie-plugin$/, replacement: path.resolve(repo, 'plugins/dexie/src/index.ts') },
