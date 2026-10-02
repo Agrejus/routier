@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
-import { etags, s } from '@routier/core/schema';
-import { etagOrder } from './swrUtils';
+import { SchemaCollection } from '@routier/core/collections';
+import { CompiledSchema, etags, s } from '@routier/core/schema';
+import { buildUpdatePayload, etagOrder } from './swrUtils';
 
 const numbered = s.define('swrUtilsNumbered', {
     id: s.string().key(),
@@ -43,5 +44,33 @@ describe('etagOrder', () => {
         ['the incoming etag is an object', { version: 1 }, { version: { value: 2 } }],
     ])('is null when %s', (_, stored, incoming) => {
         expect(etagOrder(numbered, stored, incoming)).toBeNull();
+    });
+});
+
+const asRecords = (schema: CompiledSchema<{}>) => {
+    const found = new SchemaCollection().set(schema.id, schema).get<Record<string, unknown>>(schema.id);
+
+    if (found == null) {
+        throw new Error('schema not registered');
+    }
+
+    return found;
+};
+
+describe('buildUpdatePayload', () => {
+    it('sends the keys, the etag the edit was based on, and the changed fields', () => {
+        expect(buildUpdatePayload(asRecords(numbered), { id: 'a', version: 3, name: 'old' }, { name: 'new' })).toStrictEqual({ id: 'a', version: 3, name: 'new' });
+    });
+
+    it('sends no etag when the row has none', () => {
+        expect(buildUpdatePayload(asRecords(numbered), { id: 'a' }, { name: 'new' })).toStrictEqual({ id: 'a', name: 'new' });
+    });
+
+    it('sends no etag field for a schema without one', () => {
+        expect(buildUpdatePayload(asRecords(plain), { id: 'a', version: 3 }, { name: 'new' })).toStrictEqual({ id: 'a', name: 'new' });
+    });
+
+    it.each([[{}], [null], ['name']])('sends the whole entity for the delta %p', (delta) => {
+        expect(buildUpdatePayload(asRecords(numbered), { id: 'a', version: 3 }, delta)).toBeNull();
     });
 });

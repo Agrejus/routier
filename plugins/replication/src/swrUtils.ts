@@ -12,8 +12,9 @@ export function entityIdKey(schema: CompiledSchema<Record<string, unknown>>, ent
 }
 
 /**
- * The body to send for an update: the key fields, so the server knows which row, plus the
- * fields that actually changed. Returns `null` when the whole entity has to go instead.
+ * The body to send for an update: the key fields, so the server knows which row, the etag the
+ * edit was based on, so the server can refuse a stale edit, plus the fields that actually
+ * changed. Returns `null` when the whole entity has to go instead.
  *
  * An empty delta is not "nothing changed" — it is core's documented convention for "no tracked
  * change list, write the whole entity", which is what a diff-tracked or explicitly-dirtied
@@ -39,7 +40,19 @@ export function buildUpdatePayload(
         payload[name] = source[name];
     }
 
-    return { ...payload, ...(delta as Record<string, unknown>) };
+    return { ...payload, ...etagField(schema, source), ...(delta as Record<string, unknown>) };
+}
+
+function etagField(schema: CompiledSchema<Record<string, unknown>>, row: Record<string, unknown>): Record<string, EtagValue> {
+    const property = schema.etagProperty;
+
+    if (property == null) {
+        return {};
+    }
+
+    const name = property.getResolvedName();
+    const value = readEtag(name, row);
+    return value == null ? {} : { [name]: value };
 }
 
 /**

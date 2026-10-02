@@ -142,6 +142,15 @@ describe('HttpSwrDbPlugin etags', () => {
         expect(await stored()).toEqual([{ id: 'a', name: 'edited', version: 5 }]);
     });
 
+    it('sends the etag a partial edit was based on, so the server can refuse a stale one', async () => {
+        swrStore.seed(versionedSchema, [{ id: 'a', name: 'local', version: 5 }]);
+
+        await persistPlugin(createPlugin(), { updatesWithDelta: [{ entity: { id: 'a', name: 'edited', version: 5 }, delta: { name: 'edited' } }] }, versionedSchema);
+
+        await waitFor(() => http.posts.length === 1, 'the POST');
+        expect(http.posts[0]?.body).toMatchObject({ updates: [{ id: 'a', name: 'edited', version: 5 }] });
+    });
+
     it('stores the etag the server echoes after a save', async () => {
         http.respondToPost(() => ({ status: 200, body: { saved: [{ id: 'a', name: 'saved', version: 9 }] } }));
 
