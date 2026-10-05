@@ -259,8 +259,7 @@ describe('the transport plugin over real HTTP', () => {
         }));
         opened.push(wrongRoute);
 
-        // A 404 is not a rejected query, and flattening the two would hide a misconfigured route
-        await expect(wrongRoute.teams.toArrayAsync()).rejects.toThrow(/returned 404/);
+        await expect(wrongRoute.teams.toArrayAsync()).rejects.toThrow('HTTP 404: Not Found');
     });
 
     it('reports a refused connection rather than hanging', async () => {

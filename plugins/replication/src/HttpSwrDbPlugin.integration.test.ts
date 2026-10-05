@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { HttpSwrDbPlugin } from './HttpSwrDbPlugin';
+import { createRetry } from './retry';
+import type { SwrRequestError } from './syncHooks';
+import { waitFor } from './__tests__/httpTestKit';
 import type { DbPluginQueryEvent, DbPluginBulkPersistEvent, IDbPlugin } from '@routier/core/plugins';
 import { Query } from '@routier/core/plugins';
 import { Result } from '@routier/core/results';
@@ -150,16 +153,16 @@ describe('HttpSwrDbPlugin integration', () => {
     let swrStore: MemoryPlugin;
     let queueStore: MemoryPlugin;
     let plugin: HttpSwrDbPlugin;
-    let authErrors: unknown[];
+    let failures: SwrRequestError[];
 
     function createPlugin(options?: Partial<ConstructorParameters<typeof HttpSwrDbPlugin>[1]>) {
         const created = new HttpSwrDbPlugin(swrStore, {
             getUrl: (collection) => `https://api.test/${collection}`,
             unsyncedQueueStore: queueStore,
-            onAuthError: (event) => { authErrors.push(event); },
-            // Keep the background flush far away unless a test opts in
-            bulkPersistRetryBaseDelayMs: 60_000,
-            bulkPersistRetryMaxAttempts: 1,
+            onError: (error) => {
+                failures.push(error);
+                return error.operation === 'write' ? error.defer() : error.done();
+            },
             writeBatchDelayMs: 0,
             ...options,
         });
@@ -170,7 +173,7 @@ describe('HttpSwrDbPlugin integration', () => {
         http = installFetchMock();
         swrStore = new MemoryPlugin(`swr-${uuid(8)}`);
         queueStore = new MemoryPlugin(`queue-${uuid(8)}`);
-        authErrors = [];
+        failures = [];
         plugin = createPlugin();
     });
 
@@ -222,22 +225,25 @@ describe('HttpSwrDbPlugin integration', () => {
             ]));
         });
 
-        it('cache miss with remote down: falls back to the (empty) store instead of failing', async () => {
+        it('cache miss with remote down: fails rather than answering with an empty store', async () => {
             http.respondToGet(() => ({ status: 500 }));
 
-            const rows = await queryPlugin(plugin);
-
-            expect(rows).toHaveLength(0);
-            expect(http.gets.length).toBeGreaterThanOrEqual(1);
+            await expect(queryPlugin(plugin)).rejects.toThrow('HTTP 500');
         });
 
-        it('cache miss with 401: notifies onAuthError and falls back to the store', async () => {
+        it('cache miss with remote down: answers from the store when onError uses the cache', async () => {
+            plugin = createPlugin({ onError: (error) => (error.operation === 'read' ? error.useCached() : error.defer()) });
+            http.respondToGet(() => ({ status: 500 }));
+
+            expect(await queryPlugin(plugin)).toEqual([]);
+        });
+
+        it('cache miss with 401: asks onError with the status', async () => {
             http.respondToGet(() => ({ status: 401 }));
 
-            await queryPlugin(plugin);
+            await expect(queryPlugin(plugin)).rejects.toThrow('HTTP 401');
 
-            expect(authErrors).toHaveLength(1);
-            expect(authErrors[0]).toEqual(expect.objectContaining({ status: 401, context: 'query' }));
+            expect(failures.map(error => [error.kind, error.kind === 'http' ? error.status : null, error.operation])).toEqual([['http', 401, 'read']]);
         });
     });
 
@@ -254,27 +260,23 @@ describe('HttpSwrDbPlugin integration', () => {
             expect(stored).toHaveLength(1);
         });
 
-        it('performs exactly one POST when bulkPersistRetryMaxAttempts is 1', async () => {
+        it('sends a failed write once when onError does not retry it', async () => {
             http.respondToPost(() => ({ status: 500 }));
 
             await persistPlugin(plugin, { adds: [{ name: 'One Shot' }] });
+            await waitFor(() => failures.length === 1, 'the failure');
 
             expect(http.posts).toHaveLength(1);
         });
 
-        it('retries a failed POST and succeeds on the second attempt', async () => {
-            plugin.destroy({ id: uuid(8), schemas: new SchemaCollection(), source: 'test', action: 'destroy' } as any, () => undefined);
-            plugin = createPlugin({ bulkPersistRetryMaxAttempts: 3, bulkPersistRetryBaseDelayMs: 1 });
-            (plugin as any).stopBackgroundSync(); // keep the background flush out of the fetch counts
-            (plugin as any).isDestroyed = false;
-
+        it('sends a failed write again when onError retries it', async () => {
+            plugin = createPlugin({ onError: (error) => void error.retry() });
             let postCount = 0;
             http.respondToPost(() => (++postCount === 1 ? { status: 500 } : { status: 200, body: {} }));
 
             await persistPlugin(plugin, { adds: [{ name: 'Retry Me' }] });
-            // postWithRetry sleeps 1ms between attempts; give it a moment
-            await new Promise((r) => setTimeout(r, 100));
 
+            await waitForRowCount(queueStore, 0, 2000, queueMirrorSchema);
             expect(http.posts).toHaveLength(2);
         });
 
@@ -317,7 +319,7 @@ describe('HttpSwrDbPlugin integration', () => {
             http.respondToPost(() => ({ status: 200, body: {} }));
             const outcome = await plugin.syncNow();
 
-            expect(outcome).toEqual({ flushed: 2, failed: 0, deadLettered: 0 });
+            expect(outcome).toEqual({ sent: 2, failed: 0, rejected: 0 });
             const flushPost = http.posts[http.posts.length - 1];
             expect(flushPost.body).toEqual({
                 adds: [expect.objectContaining({ id: 'add-1' })],
@@ -328,19 +330,18 @@ describe('HttpSwrDbPlugin integration', () => {
             await waitForRowCount(queueStore, 0, 2000, queueMirrorSchema);
         });
 
-        it('401 on POST stops retrying and notifies onAuthError', async () => {
-            plugin.destroy({ id: uuid(8), schemas: new SchemaCollection(), source: 'test', action: 'destroy' } as any, () => undefined);
-            plugin = createPlugin({ bulkPersistRetryMaxAttempts: 5, bulkPersistRetryBaseDelayMs: 1 });
-            (plugin as any).stopBackgroundSync();
-            (plugin as any).isDestroyed = false;
+        it('401 on POST is not retried by createRetry, and stays queued', async () => {
+            const backoff = createRetry({ baseDelayMs: 1, maxAttempts: 5 });
+            plugin = createPlugin({ onError: (error) => { failures.push(error); backoff(error); } });
             http.respondToPost(() => ({ status: 401 }));
 
             await persistPlugin(plugin, { adds: [{ name: 'Denied' }] });
-            await new Promise((r) => setTimeout(r, 100));
+            await waitFor(() => failures.length === 1, 'the failure');
+            await new Promise((r) => setTimeout(r, 50));
 
-            expect(http.posts).toHaveLength(1); // no retries on auth failure
-            expect(authErrors).toHaveLength(1);
-            expect(authErrors[0]).toEqual(expect.objectContaining({ status: 401, context: 'bulkPersist' }));
+            expect(http.posts).toHaveLength(1);
+            expect(failures.map(error => [error.kind === 'http' ? error.status : null, error.operation])).toEqual([[401, 'write']]);
+            expect(await plugin.pendingCount()).toBe(1);
         });
     });
 

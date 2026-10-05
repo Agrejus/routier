@@ -8,4 +8,4 @@
 
 > **QueryFailureMode** = `"surface-first"` \| `"surface-last"`
 
-Defined in: [plugins/replication/src/PluginSyncEngine.ts:21](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L21)
+Defined in: [plugins/replication/src/PluginSyncEngine.ts:26](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L26)

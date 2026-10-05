@@ -18,6 +18,11 @@ import { BulkPersistChanges } from "@routier/core/collections";
 import { logger, resolveBulkPersistChanges } from "@routier/core/utilities";
 import { carriesEtags, withoutEtags, withSourceEtags, type EtagOwner } from "./mirrorEtags";
 
+
+type MirrorTarget = { plugin: IDbPlugin; mirrorEvent: DbPluginBulkPersistEvent };
+
+export type MirrorErrorContext = { plugin: IDbPlugin; eventId: string; event: DbPluginBulkPersistEvent };
+
 export type QueryFailureMode = "surface-first" | "surface-last";
 export type MirrorFailureMode = "surface" | "swallow";
 export type PersistAckMode = "after-source" | "after-all";
@@ -67,7 +72,7 @@ export type PluginSyncEngineOptions = {
      * Optional hook for swallowed mirror failures (after-source or swallow mode).
      * @default undefined
      */
-    onMirrorError?: (error: Error, context: { plugin: IDbPlugin; eventId: string }) => void;
+    onMirrorError?: (error: Error, context: MirrorErrorContext) => void;
     /**
      * Strategy for payload sent to mirror plugins during bulkPersist.
      * - original-event: mirrors receive the same operation payload.
@@ -95,7 +100,7 @@ export class PluginSyncEngine implements IDbPlugin {
     private readonly mirrorFailureMode: MirrorFailureMode;
     private readonly queryFailureMode: QueryFailureMode;
     private readonly destroyFailureMode: DestroyFailureMode;
-    private readonly onMirrorError?: (error: Error, context: { plugin: IDbPlugin; eventId: string }) => void;
+    private readonly onMirrorError?: (error: Error, context: MirrorErrorContext) => void;
     private readonly mirrorPersistPayloadMode: MirrorPersistPayloadMode;
     private readonly etagOwner: EtagOwner | undefined;
     private readonly onMirrorPersisted?: (event: DbPluginBulkPersistEvent, result: BulkPersistResult) => void;
@@ -196,9 +201,8 @@ export class PluginSyncEngine implements IDbPlugin {
             return;
         }
 
-        const mirrorTasks = this.mirrorPlugins.map((plugin) => {
-            const mirrorEvent = this.buildMirrorEvent(event, sourceResult);
-
+        const mirrors = this.mirrorPlugins.map((plugin) => ({ plugin, mirrorEvent: this.buildMirrorEvent(event, sourceResult) }));
+        const mirrorTasks = mirrors.map(({ plugin, mirrorEvent }) => {
             return this.persistPlugin(plugin, mirrorEvent).then((result) => {
                 if (result.ok === Result.SUCCESS) {
                     this.onMirrorPersisted?.(mirrorEvent, result.data);
@@ -214,10 +218,10 @@ export class PluginSyncEngine implements IDbPlugin {
             void Promise.allSettled(mirrorTasks).then((outcomes) => {
                 outcomes.forEach((outcome, taskIndex) => {
                     if (outcome.status === "fulfilled" && outcome.value.result.ok !== Result.SUCCESS) {
-                        this.reportMirrorError(outcome.value.result.error, outcome.value.plugin, event.id);
+                        this.reportMirrorError(outcome.value.result.error, mirrors[taskIndex], event.id);
                     }
                     if (outcome.status === "rejected") {
-                        this.reportMirrorError(outcome.reason, this.mirrorPlugins[taskIndex], event.id);
+                        this.reportMirrorError(outcome.reason, mirrors[taskIndex], event.id);
                     }
                 });
             });
@@ -226,21 +230,21 @@ export class PluginSyncEngine implements IDbPlugin {
 
         // after-all mode
         const mirrorResults = await Promise.allSettled(mirrorTasks);
-        const errors: Array<{ error: Error; plugin: IDbPlugin }> = [];
+        const errors: Array<{ error: Error; mirror: MirrorTarget }> = [];
         mirrorResults.forEach((outcome, taskIndex) => {
             if (outcome.status === "rejected") {
-                errors.push({ error: this.toError(outcome.reason), plugin: this.mirrorPlugins[taskIndex] });
+                errors.push({ error: this.toError(outcome.reason), mirror: mirrors[taskIndex] });
                 return;
             }
 
             if (outcome.value.result.ok !== Result.SUCCESS) {
-                errors.push({ error: this.toError(outcome.value.result.error), plugin: outcome.value.plugin });
+                errors.push({ error: this.toError(outcome.value.result.error), mirror: mirrors[taskIndex] });
             }
         });
 
         if (errors.length > 0) {
             if (this.mirrorFailureMode === "swallow") {
-                errors.forEach(({ error, plugin }) => this.reportMirrorError(error, plugin, event.id));
+                errors.forEach(({ error, mirror }) => this.reportMirrorError(error, mirror, event.id));
                 done(sourceResult);
                 return;
             }
@@ -289,11 +293,11 @@ export class PluginSyncEngine implements IDbPlugin {
         return [...set];
     }
 
-    private reportMirrorError(error: unknown, plugin: IDbPlugin, eventId: string) {
+    private reportMirrorError(error: unknown, mirror: MirrorTarget, eventId: string) {
         const resolved = this.toError(error);
-        logger.warn("[PluginSyncEngine] mirror persist failed", { databaseName: plugin.databaseName, eventId, error: resolved });
+        logger.warn("[PluginSyncEngine] mirror persist failed", { databaseName: mirror.plugin.databaseName, eventId, error: resolved });
         try {
-            this.onMirrorError?.(resolved, { plugin, eventId });
+            this.onMirrorError?.(resolved, { plugin: mirror.plugin, eventId, event: mirror.mirrorEvent });
         } catch (hookError) {
             logger.error("[PluginSyncEngine] onMirrorError hook threw", { error: hookError });
         }

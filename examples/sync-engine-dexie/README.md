@@ -93,9 +93,11 @@ forever (`0 pending, 1 dead`). The demo's 422 body includes `rejectionScope: "ba
 writes again` → `Retry dead letters` → it goes through. The dead letter survives a page reload,
 because the queue is a Dexie store like any other.
 
-Automatic is the default and needs no configuration. The demo passes
-`autoSync: { delayMs: 3_000 }` only so the replay is quick enough to watch; omitting `autoSync`
-starts at 1s and backs off to 60s, and `autoSync: false` hands the whole thing to `syncNow()`.
+Background replay is off unless `autoSync` is set. The demo passes `autoSync: { delayMs: 3_000 }`
+so the replay is quick enough to watch; `autoSync: true` starts at 1s and backs off to 60s, and
+without it queued changes go out on the next save or when `syncNow()` is called. Its `onError`
+answers failed reads from IndexedDB and uses `createRetry({ maxAttempts: 1 })` for writes, so a
+refused write is rejected and an outage leaves it queued.
 
 ## Updates send keys plus what changed
 
@@ -131,7 +133,7 @@ The demo has two controls for this: **Burst: 10 saves**, and a **Writes:** toggl
 The default path debounces writes to the same endpoint for `writeBatchDelayMs` (25 ms by default),
 merges all `adds`/`updates`/`removes` and idempotency keys, and then sends one request. The deferred
 setting hands delivery to the paced flush instead: the write is still durable and acknowledged
-immediately, but may wait up to `autoSync.delayMs` and does not perform echo reconciliation.
+immediately, but may wait up to `autoSync.delayMs`.
 Set `writeBatchDelayMs: 0` if an API requires one request per logical save.
 
 Reads are paced too, and one case used to be a genuine bug: a cold cache read by five components

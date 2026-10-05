@@ -59,7 +59,8 @@ A revalidation sends the `ETag` of the last response for that query as `If-None-
 `304 Not Modified` the local rows stay as they are and the query counts as fresh. The etag is
 stored in the local store, so it survives a reload. It is only sent while the local store still
 holds as many rows for the query as it did when the etag was stored. Turn this off with
-`conditionalRevalidation: false`, and observe it with `onRevalidateNotModified`.
+`conditionalRevalidation: false`. A 304 is reported as a `read` event with `ok: true` and
+`status: 304`.
 
 When the schema declares an `.etag()`, a returned row that the local store already has is
 compared by etag: a newer server row replaces the local one, the same etag is skipped, and an
@@ -83,22 +84,63 @@ So a windowed read syncs the whole filtered set and pages it locally. Bound what
 and keeps no local copy, which is the right shape for a large collection you do not want on
 the client — at the cost of a round trip per page and no offline reads.
 
-### Offline and retry
+### Errors, retries and events
 
-Unsynced changes retry on a backing-off timer, from 1 second to 60 seconds, and immediately on
-the browser's `online` event. The interval resets after a productive flush.
+Nothing is on by default: no retries, no background sync. Two hooks, shared by `HttpDbPlugin`,
+`HttpSwrDbPlugin`, `HttpTransportDbPlugin` and `OptimisticUpdatesDbPlugin`, turn behavior on.
 
-Override with `autoSync`:
+`onError` decides what a failing request does. It receives the failure — `kind` is `"http"`
+(with `status`, `headers` and `body`), `"network"` or `"store"` — and the actions that plugin can
+carry out:
+
+| Plugin | Read | Write |
+| --- | --- | --- |
+| `HttpSwrDbPlugin` | `retry()` · `done()` · `useCached()` | `retry()` · `reject()` · `defer()` |
+| `OptimisticUpdatesDbPlugin` | `retry()` · `done()` · `useCached()` | `retry()` · `reject()` |
+| `HttpDbPlugin`, `HttpTransportDbPlugin` | `retry()` · `done()` | `retry()` · `done()` |
+
+The request waits until an action is called, so `onError` can refresh a token, wait for the
+network, or ask the user first. A read ended with `done()` throws; `useCached()` answers from
+the local copy. With no `onError`, a failed read throws and a failed queued write stays queued.
+
+`onEvent` reports what happened: `read` (`ok` and `status`), `changes-rejected` (`conflict` is
+`true` for a 409) and `synced` (`sent`, `failed`, `rejected`).
 
 ```ts
-autoSync?: false | { delayMs?: number; maxDelayMs?: number; onOnline?: boolean }
-onSync?: (outcome: SyncOutcome) => void
+import { createRetry, HttpSwrDbPlugin } from '@routier/replication-plugin';
+
+const backoff = createRetry({ maxAttempts: 5 });
+
+new HttpSwrDbPlugin(cache, {
+    getUrl,
+    unsyncedQueueStore,
+    autoSync: true,
+    onError: async (error) => {
+        if (error.kind === 'http' && error.status === 401 && error.attempt === 1) {
+            await refreshToken();
+            return error.retry();
+        }
+        if (error.kind === 'network' && error.operation === 'read') {
+            return error.useCached();
+        }
+        return backoff(error);
+    },
+    onEvent: (event) => { /* update sync status UI */ },
+});
 ```
 
-`autoSync: false` turns automatic replay off. Call the sync API yourself.
+`createRetry` retries network failures, 408, 429 and 5xx with backoff (honoring `Retry-After`),
+and otherwise ends the request: a refused write is rejected, and one that ran out of attempts
+stays queued. `defaultSync()` returns `{ onError: createRetry(), autoSync: true }`.
 
-A change that the server rejects permanently moves to a dead-letter state rather than
-retrying forever.
+`autoSync` turns on background replay: a backing-off timer from 1 second to 60 seconds, and an
+immediate flush on the browser's `online` event (`syncWhenOnline`, on by default). Without it,
+queued changes go out after each save (`postOnPersist`, on by default) or when you call
+`syncNow()`, which returns `{ sent, failed, rejected }`.
+
+When a batch is rejected, `reject()` narrows it: only the changes the server named in
+`rejectedOpIds` are rejected, or, if it named none, each change is sent on its own and
+`onError` is asked about each one that fails. A rejected change moves to a dead-letter state.
 
 ### Concurrency
 
@@ -120,8 +162,8 @@ A store that is never destroyed leaves a timer running.
 
 ### Failure semantics
 
-- A failed request leaves the change in the unsynced queue and schedules a retry.
-- A 4xx that will not succeed on retry dead-letters the change.
+- A failed write stays in the unsynced queue unless `onError` rejects it.
+- A failed first read throws unless `onError` answers it from the cache.
 - A local write never fails because the network is down. That is the point.
 
 ## Supported versions

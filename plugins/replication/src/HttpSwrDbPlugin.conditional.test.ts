@@ -3,6 +3,7 @@ import { s } from '@routier/core/schema';
 import { uuid } from '@routier/core/utilities';
 import { MemoryPlugin } from '@routier/memory-plugin';
 import { HttpSwrDbPlugin } from './HttpSwrDbPlugin';
+import type { SwrRequestError, SyncEvent } from './syncHooks';
 import { BulkPersistResult } from '@routier/core/collections';
 import { DbPluginBulkPersistEvent, DbPluginQueryEvent, ITranslatedValue } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
@@ -14,7 +15,9 @@ const itemSchema = s.define('swrConditional', {
     name: s.string(),
 }).compile();
 
-type Options = { conditionalRevalidation?: boolean, maxAgeMs?: number, onRevalidateNotModified?: (context: { collectionName: string, cacheKey: string }) => void };
+type Options = { conditionalRevalidation?: boolean, maxAgeMs?: number, onEvent?: (event: SyncEvent) => void, onError?: (error: SwrRequestError) => void };
+
+const rejectWrites = (error: SwrRequestError) => (error.operation === 'write' ? error.reject() : error.done());
 
 const rows = [{ id: 'a', name: 'one' }, { id: 'b', name: 'two' }];
 const withEtag = (etag: string): HttpResponseSpec => ({ status: 200, body: rows, headers: { ETag: etag } });
@@ -28,7 +31,6 @@ describe('HttpSwrDbPlugin conditional revalidation', () => {
 
     const createPlugin = (options: Options = {}) => {
         const plugin = new HttpSwrDbPlugin(swrStore, {
-            autoSync: false,
             getUrl: (collection) => `https://api.test/${collection}`,
             unsyncedQueueStore: queueStore,
             maxAgeMs: 0,
@@ -67,16 +69,16 @@ describe('HttpSwrDbPlugin conditional revalidation', () => {
     });
 
     it('keeps the local rows and reports not modified on a 304', async () => {
-        const onRevalidateNotModified = jest.fn();
+        const events: SyncEvent[] = [];
         http.respondToGet(() => withEtag('"v1"'));
-        const plugin = createPlugin({ onRevalidateNotModified });
+        const plugin = createPlugin({ onEvent: event => events.push(event) });
         await read(plugin, 1);
 
         http.respondToGet(() => ({ status: 304 }));
         await read(plugin, 2);
 
         expect(await queryPlugin(swrStore, itemSchema)).toEqual(rows);
-        expect(onRevalidateNotModified).toHaveBeenCalledWith({ collectionName: 'swrConditional', cacheKey: expect.any(String) });
+        expect(events).toContainEqual({ type: 'read', ok: true, collectionName: 'swrConditional', status: 304 });
     });
 
     it('treats a 304 as fresh data', async () => {
@@ -129,11 +131,12 @@ describe('HttpSwrDbPlugin conditional revalidation', () => {
     it('forgets the etag when the server rejects a local edit', async () => {
         http.respondToGet(() => withEtag('"v1"'));
         http.respondToPost(() => ({ status: 422, body: {} }));
-        const plugin = createPlugin({ maxAgeMs: 60_000 });
+        const plugin = createPlugin({ maxAgeMs: 60_000, onError: rejectWrites });
         await read(plugin, 1);
 
         await persistPlugin(plugin, { updates: [{ id: 'a', name: 'edited' }] }, itemSchema);
-        expect((await plugin.syncNow()).deadLettered).toBe(1);
+        await plugin.syncNow();
+        expect(await plugin.deadLetters()).toHaveLength(1);
         await read(plugin, 2);
 
         expect(ifNoneMatch(http)).toEqual([null, null]);
@@ -146,14 +149,15 @@ describe('HttpSwrDbPlugin conditional revalidation', () => {
         const otherSchema = s.define('swrConditionalUntouched', { id: s.string().key(), name: s.string() }).compile();
         http.respondToGet(() => withEtag('"v1"'));
         http.respondToPost(() => ({ status: 422, body: {} }));
-        const plugin = createPlugin({ maxAgeMs });
+        const plugin = createPlugin({ maxAgeMs, onError: rejectWrites });
         await read(plugin, 1);
         await queryPlugin(plugin, otherSchema);
         await waitFor(() => http.gets.length === 2, 'the other collection');
         await sleep(20);
 
         await persistPlugin(plugin, { updates: [{ id: 'a', name: 'edited' }] }, itemSchema);
-        expect((await plugin.syncNow()).deadLettered).toBe(1);
+        await plugin.syncNow();
+        expect(await plugin.deadLetters()).toHaveLength(1);
         await queryPlugin(plugin, otherSchema);
         await sleep(50);
 
@@ -164,7 +168,7 @@ describe('HttpSwrDbPlugin conditional revalidation', () => {
         const otherSchema = s.define('swrConditionalRejected', { id: s.string().key(), name: s.string() }).compile();
         http.respondToGet(() => withEtag('"v1"'));
         http.respondToPost(() => ({ status: 422, body: {} }));
-        const plugin = createPlugin({ maxAgeMs: 60_000 });
+        const plugin = createPlugin({ maxAgeMs: 60_000, onError: rejectWrites });
         await read(plugin, 1);
         await queryPlugin(plugin, otherSchema);
         await waitFor(() => http.gets.length === 2, 'the other collection');
@@ -172,7 +176,8 @@ describe('HttpSwrDbPlugin conditional revalidation', () => {
 
         await persistPlugin(plugin, { updates: [{ id: 'a', name: 'edited' }] }, itemSchema);
         await persistPlugin(plugin, { updates: [{ id: 'a', name: 'edited' }] }, otherSchema);
-        expect((await plugin.syncNow()).deadLettered).toBe(2);
+        await plugin.syncNow();
+        expect(await plugin.deadLetters()).toHaveLength(2);
         await read(plugin, 3);
         await queryPlugin(plugin, otherSchema);
         await waitFor(() => http.gets.length === 4, 'both refetches');
@@ -183,18 +188,21 @@ describe('HttpSwrDbPlugin conditional revalidation', () => {
     it('handles a rejected edit queued before a reload', async () => {
         http.respondToPost(() => ({ status: 422, body: {} }));
         await persistPlugin(createPlugin(), { updates: [{ id: 'a', name: 'edited' }] }, itemSchema);
+        const reloaded = createPlugin({ onError: rejectWrites });
+        await reloaded.syncNow();
 
-        expect((await createPlugin().syncNow()).deadLettered).toBe(1);
+        expect(await reloaded.deadLetters()).toHaveLength(1);
     });
 
     it('handles a rejected local edit when conditional revalidation is off', async () => {
         http.respondToGet(() => withEtag('"v1"'));
         http.respondToPost(() => ({ status: 422, body: {} }));
-        const plugin = createPlugin({ conditionalRevalidation: false, maxAgeMs: 60_000 });
+        const plugin = createPlugin({ conditionalRevalidation: false, maxAgeMs: 60_000, onError: rejectWrites });
         await read(plugin, 1);
 
         await persistPlugin(plugin, { updates: [{ id: 'a', name: 'edited' }] }, itemSchema);
-        expect((await plugin.syncNow()).deadLettered).toBe(1);
+        await plugin.syncNow();
+        expect(await plugin.deadLetters()).toHaveLength(1);
         await read(plugin, 2);
 
         expect(ifNoneMatch(http)).toEqual([null, null]);
@@ -262,13 +270,11 @@ describe('HttpSwrDbPlugin conditional revalidation failures', () => {
     let swrStore: FailingStore;
     const created: HttpSwrDbPlugin[] = [];
 
-    const createPlugin = (options: { onRevalidateError?: (error: Error, context: { collectionName: string, cacheKey?: string }) => void } = {}) => {
+    const createPlugin = (options: { onEvent?: (event: SyncEvent) => void } = {}) => {
         const plugin = new HttpSwrDbPlugin(swrStore, {
-            autoSync: false,
             getUrl: (collection) => `https://api.test/${collection}`,
             unsyncedQueueStore: new MemoryPlugin(`queue-${uuid(8)}`),
             maxAgeMs: 0,
-            queryRetryMaxAttempts: 1,
             ...options,
         });
         created.push(plugin);
@@ -294,15 +300,15 @@ describe('HttpSwrDbPlugin conditional revalidation failures', () => {
     });
 
     it('reports a failed revalidation', async () => {
-        const onRevalidateError = jest.fn();
+        const events: SyncEvent[] = [];
         http.respondToGet(() => withEtag('"v1"'));
-        const plugin = createPlugin({ onRevalidateError });
+        const plugin = createPlugin({ onEvent: event => events.push(event) });
         await read(plugin, 1);
 
         http.respondToGet(() => ({ status: 500 }));
         await read(plugin, 2);
 
-        expect(onRevalidateError).toHaveBeenCalledWith(expect.any(Error), { collectionName: 'swrConditional', cacheKey: expect.any(String) });
+        expect(events).toContainEqual({ type: 'read', ok: false, collectionName: 'swrConditional', status: 500, error: expect.any(Error) });
     });
 
     it('handles a failed revalidation without an error hook', async () => {
@@ -392,13 +398,13 @@ describe('HttpSwrDbPlugin conditional revalidation failures', () => {
         expect(http.gets.map(call => call.url).sort()).toEqual(['https://api.test/swrConditional', 'https://api.test/swrConditionalOther']);
     });
 
-    it('logs a cold fetch that failed', async () => {
-        const warn = jest.spyOn(logger, 'warn');
+    it('fails a cold fetch that failed, and reports it', async () => {
+        const events: SyncEvent[] = [];
         http.respondToGet(() => ({ status: 500 }));
 
-        await queryPlugin(createPlugin(), itemSchema);
+        await expect(queryPlugin(createPlugin({ onEvent: event => events.push(event) }), itemSchema)).rejects.toThrow('HTTP 500');
 
-        expect(warn).toHaveBeenCalledWith('[HttpSwrDbPlugin] query remote failed, falling back to SWR store', { collectionName: 'swrConditional' });
+        expect(events).toEqual([{ type: 'read', ok: false, collectionName: 'swrConditional', status: 500, error: expect.any(Error) }]);
     });
 
     it('keeps the background request out of the caller query log', async () => {

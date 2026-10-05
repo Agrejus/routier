@@ -8,7 +8,7 @@
 
 > **isPermanentStatus**(`status`): `boolean`
 
-Defined in: [plugins/replication/src/httpUtils.ts:37](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/httpUtils.ts#L37)
+Defined in: [plugins/replication/src/httpUtils.ts:57](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/httpUtils.ts#L57)
 
 A permanent failure: the same request will never succeed, so retrying is
 waste and the change should dead-letter. Auth (401/403) is special-cased by

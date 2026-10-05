@@ -18,7 +18,7 @@
 import { s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
 import { DexiePlugin } from '@routier/dexie-plugin';
-import { HttpSwrDbPlugin, OptimisticUpdatesDbPlugin, type SyncOutcome } from '@routier/replication-plugin';
+import { createRetry, HttpSwrDbPlugin, OptimisticUpdatesDbPlugin, type SyncOutcome } from '@routier/replication-plugin';
 
 const projectSchema = s
     .define('projects', {
@@ -52,6 +52,7 @@ const log: string[] = [];
 let store: WorkStore;
 let swr: HttpSwrDbPlugin;
 let lastSync: SyncOutcome | null = null;
+const retryOnce = createRetry({ maxAttempts: 1 });
 let findings: string[] = [];
 
 function note(message: string): void {
@@ -65,13 +66,17 @@ function buildStore(): WorkStore {
         unsyncedQueueStore: new DexiePlugin(QUEUE_DB_NAME),
         autoSync: { delayMs: 1_500 },
         maxAgeMs: 2_000,
-        onSync: (outcome) => {
-            lastSync = outcome;
-            if (outcome.flushed > 0) note(`auto-sync delivered ${outcome.flushed} change(s)`);
-            void render();
+        onError: (error) => (error.operation === 'read' ? error.useCached() : retryOnce(error)),
+        onEvent: (event) => {
+            if (event.type === 'synced') {
+                lastSync = { sent: event.sent, failed: event.failed, rejected: event.rejected };
+                if (event.sent > 0) note(`auto-sync delivered ${event.sent} change(s)`);
+                void render();
+            }
+            if (event.type === 'changes-rejected') {
+                note(`REJECTED ${event.changes.length}`);
+            }
         },
-        onSyncDeadLetter: (changes) => note(`DEAD-LETTERED ${changes.length}`),
-        bulkPersistRetryMaxAttempts: 1,
     });
     return new WorkStore(swr);
 }
@@ -190,7 +195,7 @@ async function toggleServer(): Promise<void> {
 async function syncNow(): Promise<void> {
     const outcome = await swr.syncNow();
     lastSync = outcome;
-    note(`syncNow → flushed ${outcome.flushed}, failed ${outcome.failed}, dead ${outcome.deadLettered}`);
+    note(`syncNow → sent ${outcome.sent}, failed ${outcome.failed}, rejected ${outcome.rejected}`);
     await render();
 }
 
@@ -308,7 +313,7 @@ async function render(): Promise<void> {
     badge.className = pending === 0 ? 'tag ok' : 'tag warn';
     document.getElementById('last-sync')!.textContent = lastSync == null
         ? '—'
-        : `flushed ${lastSync.flushed}, failed ${lastSync.failed}, dead ${lastSync.deadLettered}`;
+        : `sent ${lastSync.sent}, failed ${lastSync.failed}, rejected ${lastSync.rejected}`;
 
     document.getElementById('projects')!.innerHTML = table(projects as never, ['name', 'status', 'taskCount', '_id']);
     document.getElementById('tasks')!.innerHTML = table(tasks.slice(0, 8) as never, ['title', 'done', 'priority', '_id']);

@@ -9,6 +9,7 @@ import { s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
 import { DexiePlugin } from '@routier/dexie-plugin';
 import {
+    createRetry,
     HttpDbPlugin,
     HttpSwrDbPlugin,
     OptimisticUpdatesDbPlugin,
@@ -50,6 +51,7 @@ let swr: HttpSwrDbPlugin | null = null;
 let mirrorErrors = 0;
 let pending = 0;
 let lastSync: SyncOutcome | null = null;
+const retryOnce = createRetry({ maxAttempts: 1 });
 /** postOnPersist: false — defer delivery to the queue flush instead of the short HTTP batch window. */
 let coalesceWrites = false;
 
@@ -68,20 +70,22 @@ function buildStore(): ProductStore {
             getHeaders: () => ({ Authorization: 'Bearer demo-token' }),
             // The queue lives in IndexedDB too, so unsynced writes survive a reload
             unsyncedQueueStore: new DexiePlugin(QUEUE_DB_NAME),
-            // Automatic replay, tuned tight enough to watch. Omitting `autoSync` gives the same
-            // behaviour starting at 1s and backing off to 60s.
+            // Background replay is off unless `autoSync` is set; this tunes it tight enough to watch.
             autoSync: { delayMs: 3_000 },
             postOnPersist: !coalesceWrites,
-            onSync: (outcome) => {
-                lastSync = outcome;
-                if (outcome.flushed > 0) note(`auto-sync replayed ${outcome.flushed} change(s)`);
-                void refresh();
+            // Reads fall back to what IndexedDB holds; a refused write is rejected, an outage waits.
+            onError: (error) => (error.operation === 'read' ? error.useCached() : retryOnce(error)),
+            onEvent: (event) => {
+                if (event.type === 'synced') {
+                    lastSync = { sent: event.sent, failed: event.failed, rejected: event.rejected };
+                    if (event.sent > 0) note(`auto-sync replayed ${event.sent} change(s)`);
+                    void refresh();
+                }
+                if (event.type === 'changes-rejected') {
+                    note(`rejected ${event.changes.length} change(s) — the server refused them`);
+                    void refresh();
+                }
             },
-            onSyncDeadLetter: (changes) => {
-                note(`dead-lettered ${changes.length} change(s) — permanently rejected`);
-                void refresh();
-            },
-            bulkPersistRetryMaxAttempts: 1,
         });
         return new ProductStore(swr);
     }
@@ -125,7 +129,7 @@ async function syncNow(): Promise<void> {
 
     const outcome = await swr.syncNow();
     lastSync = outcome;
-    note(`syncNow → flushed ${outcome.flushed}, failed ${outcome.failed}, dead ${outcome.deadLettered}`);
+    note(`syncNow → sent ${outcome.sent}, failed ${outcome.failed}, rejected ${outcome.rejected}`);
     await refresh();
 }
 
@@ -135,7 +139,7 @@ async function retryDeadLetters(): Promise<void> {
     }
 
     const { revived, outcome } = await swr.retryDeadLetters();
-    note(revived === 0 ? 'no dead letters to retry' : `revived ${revived}, flushed ${outcome.flushed}`);
+    note(revived === 0 ? 'no dead letters to retry' : `revived ${revived}, sent ${outcome.sent}`);
     await refresh();
 }
 
@@ -299,11 +303,11 @@ async function refresh(): Promise<void> {
     const queueBadge = document.getElementById('queue-badge')!;
     queueBadge.textContent = swr == null ? 'no queue' : `${pending} pending, ${dead} dead`;
     queueBadge.className = swr == null ? 'tag' : pending === 0 && dead === 0 ? 'tag ok' : 'tag warn';
-    const moved = lastSync != null && (lastSync.flushed > 0 || lastSync.failed > 0 || lastSync.deadLettered > 0);
+    const moved = lastSync != null && (lastSync.sent > 0 || lastSync.failed > 0 || lastSync.rejected > 0);
     document.getElementById('last-sync')!.textContent = lastSync == null
         ? '—'
         : moved
-            ? `flushed ${lastSync.flushed}, failed ${lastSync.failed}, dead ${lastSync.deadLettered}`
+            ? `sent ${lastSync.sent}, failed ${lastSync.failed}, rejected ${lastSync.rejected}`
             : 'nothing to send';
     (document.getElementById('reject') as HTMLButtonElement).textContent =
         server.rejectWrites ? 'Accept writes again' : 'Reject writes (422)';

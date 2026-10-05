@@ -6,9 +6,9 @@
 
 # Type Alias: HttpTransportDbPluginOptions
 
-> **HttpTransportDbPluginOptions** = `object`
+> **HttpTransportDbPluginOptions** = [`SyncHooks`](../interfaces/SyncHooks.md)\<[`HttpRequestError`](HttpRequestError.md)\> & `object`
 
-Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:61](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpTransportDbPlugin.ts#L61)
+Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:64](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpTransportDbPlugin.ts#L64)
 
 A plugin that owns no database.
 
@@ -49,23 +49,17 @@ No caching, no offline queue, no retry. `HttpSwrDbPlugin` is the plugin for thos
 them is the intended path rather than growing this one — it stays a transport, so that what
 arrives at the server is exactly what the caller asked for.
 
-## Properties
+## Type Declaration
 
 ### url
 
 > **url**: `string`
 
-Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:63](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpTransportDbPlugin.ts#L63)
-
 The single endpoint every request is POSTed to.
-
-***
 
 ### databaseName?
 
 > `optional` **databaseName**: `string`
-
-Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:71](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpTransportDbPlugin.ts#L71)
 
 Identifies the database BEHIND the endpoint — see `IDbPlugin.databaseName`.
 
@@ -73,13 +67,9 @@ Defaults to the URL, which is the honest answer: from this side, the endpoint IS
 and two stores pointed at one URL should share subscription channels. Override it when several
 endpoints front the same database and should therefore be treated as one.
 
-***
-
 ### getHeaders()?
 
 > `optional` **getHeaders**: () => `Record`\<`string`, `string`\> \| `Promise`\<`Record`\<`string`, `string`\>\>
-
-Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:73](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpTransportDbPlugin.ts#L73)
 
 Headers per request, so a token refreshed between calls is picked up. Async is allowed.
 
@@ -87,13 +77,9 @@ Headers per request, so a token refreshed between calls is picked up. Async is a
 
 `Record`\<`string`, `string`\> \| `Promise`\<`Record`\<`string`, `string`\>\>
 
-***
-
 ### request()?
 
 > `optional` **request**: (`url`, `body`, `headers`) => `Promise`\<`SerializedResponse`\>
-
-Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:75](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpTransportDbPlugin.ts#L75)
 
 Replaces `fetch`, for tests or for a non-fetch transport.
 

@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { HttpDbPlugin } from './HttpDbPlugin';
+import { createRetry } from './retry';
+import type { HttpRequestError, SyncEvent } from './syncHooks';
 import type { DbPluginQueryEvent, DbPluginBulkPersistEvent } from '@routier/core/plugins';
 import { Query, QueryOptionsCollection } from '@routier/core/plugins';
 import { toExpression } from '@routier/core/expressions';
@@ -114,7 +116,7 @@ describe('HttpDbPlugin', () => {
         });
     });
 
-    it('does not retry queries when queryRetryBaseDelayMs is unset (single attempt)', (done) => {
+    it('sends a failed query once when there is no onError', (done) => {
         const calls = installFetchMock([{ status: 500 }]);
 
         plugin.query(createQueryEvent(), (result) => {
@@ -124,11 +126,10 @@ describe('HttpDbPlugin', () => {
         });
     });
 
-    it('retries queries with backoff and succeeds', (done) => {
+    it('sends a failed query again when onError retries', (done) => {
         plugin = new HttpDbPlugin({
             getUrl: (collection) => `https://api.test/${collection}`,
-            queryRetryBaseDelayMs: 1,
-            queryRetryMaxAttempts: 3,
+            onError: (error) => void error.retry(),
         });
         const calls = installFetchMock([{ status: 500 }, { status: 200, body: [] }]);
 
@@ -139,11 +140,10 @@ describe('HttpDbPlugin', () => {
         });
     });
 
-    it('never retries a 401 even when retries are configured', (done) => {
+    it('does not retry a 401 with createRetry', (done) => {
         plugin = new HttpDbPlugin({
             getUrl: (collection) => `https://api.test/${collection}`,
-            queryRetryBaseDelayMs: 1,
-            queryRetryMaxAttempts: 5,
+            onError: createRetry({ baseDelayMs: 1, maxAttempts: 5 }),
         });
         const calls = installFetchMock([{ status: 401 }]);
 
@@ -346,5 +346,136 @@ describe('HttpDbPlugin', () => {
             expect(result.ok).toBe(Result.ERROR);
             done();
         });
+    });
+});
+
+describe('HttpDbPlugin hooks', () => {
+    const open = (hooks: { onError?: (error: HttpRequestError) => void; onEvent?: (event: SyncEvent) => void }) =>
+        new HttpDbPlugin({ getUrl: (collection) => `https://api.test/${collection}`, writeBatchDelayMs: 0, minRequestIntervalMs: 0, ...hooks });
+
+    const read = (plugin: HttpDbPlugin) => new Promise<{ ok: string; error?: Error }>((resolve) => {
+        plugin.query(createQueryEvent(), (result) => resolve(result.ok === Result.ERROR ? { ok: result.ok, error: result.error } : { ok: result.ok }));
+    });
+
+    const write = (plugin: HttpDbPlugin, adds: unknown[]) => new Promise<{ ok: string; error?: Error }>((resolve) => {
+        plugin.bulkPersist(createPersistEvent(adds), (result) => resolve(result.ok === Result.ERROR ? { ok: result.ok, error: result.error } : { ok: result.ok }));
+    });
+
+    it('reports a successful read', async () => {
+        const events: SyncEvent[] = [];
+        installFetchMock([{ status: 200, body: [] }]);
+
+        await read(open({ onEvent: event => events.push(event) }));
+
+        expect(events).toEqual([{ type: 'read', ok: true, collectionName: 'httpPlugin', status: 200 }]);
+    });
+
+    it('reports a failed read with its status', async () => {
+        const events: SyncEvent[] = [];
+        installFetchMock([{ status: 503 }]);
+
+        await read(open({ onEvent: event => events.push(event) }));
+
+        expect(events).toEqual([{ type: 'read', ok: false, collectionName: 'httpPlugin', status: 503, error: expect.any(Error) }]);
+    });
+
+    it('describes a failed read to onError', async () => {
+        const seen: HttpRequestError[] = [];
+        installFetchMock([{ status: 503, body: { reason: 'maintenance' } }]);
+
+        await read(open({ onError: error => { seen.push(error); error.done(); } }));
+
+        const [error] = seen;
+        expect(error?.kind === 'http' ? [error.status, error.body, error.operation, error.method, error.url, error.attempt] : null)
+            .toEqual([503, { reason: 'maintenance' }, 'read', 'GET', 'https://api.test/httpPlugin', 1]);
+    });
+
+    it('fails the read with the error when onError calls done', async () => {
+        installFetchMock([{ status: 503 }]);
+
+        const result = await read(open({ onError: error => error.done() }));
+
+        expect([result.ok, result.error?.message]).toEqual([Result.ERROR, 'HTTP 503: status-503']);
+    });
+
+    it('waits for onError to decide before the read finishes', async () => {
+        let decide: (() => void) | undefined;
+        installFetchMock([{ status: 503 }, { status: 200, body: [] }]);
+
+        const pending = read(open({ onError: error => { decide = () => void error.retry(); } }));
+        await new Promise(resolve => setTimeout(resolve, 10));
+        decide?.();
+
+        expect((await pending).ok).toBe(Result.SUCCESS);
+    });
+
+    it('describes a request that got no response as network', async () => {
+        const kinds: string[] = [];
+        global.fetch = jest.fn(async () => { throw new TypeError('fetch failed'); }) as unknown as typeof fetch;
+
+        await read(open({ onError: error => { kinds.push(error.kind); error.done(); } }));
+
+        expect(kinds).toEqual(['network']);
+    });
+
+    it('fetches the headers again for a retried request', async () => {
+        let token = 'old';
+        const calls = installFetchMock([{ status: 401 }, { status: 200, body: [] }]);
+        const plugin = new HttpDbPlugin({
+            getUrl: (collection) => `https://api.test/${collection}`,
+            getHeaders: () => ({ Authorization: token }),
+            onError: (error) => {
+                token = 'new';
+                void error.retry();
+            },
+        });
+
+        await read(plugin);
+
+        expect(calls.map(call => call.headers.Authorization)).toEqual(['old', 'new']);
+    });
+
+    it('reports changes a failed write did not save, then fails the save', async () => {
+        const events: SyncEvent[] = [];
+        installFetchMock([{ status: 409 }]);
+
+        const result = await write(open({ onEvent: event => events.push(event) }), [{ name: 'a' }]);
+
+        expect(result.ok).toBe(Result.ERROR);
+        expect(events).toEqual([{
+            type: 'changes-rejected',
+            collectionName: 'httpPlugin',
+            changes: [{ kind: 'add', entity: { name: 'a' } }],
+            conflict: true,
+            status: 409,
+            error: expect.any(Error),
+        }]);
+    });
+
+    it('does not report a conflict for a refusal that is not 409', async () => {
+        const conflicts: boolean[] = [];
+        installFetchMock([{ status: 422 }]);
+
+        await write(open({ onEvent: event => { if (event.type === 'changes-rejected') conflicts.push(event.conflict); } }), [{ name: 'a' }]);
+
+        expect(conflicts).toEqual([false]);
+    });
+
+    it('saves a write that onError retried', async () => {
+        const events: SyncEvent[] = [];
+        const calls = installFetchMock([{ status: 503 }, { status: 200 }]);
+
+        const result = await write(open({ onError: error => void error.retry(), onEvent: event => events.push(event) }), [{ name: 'a' }]);
+
+        expect([result.ok, calls.length, events]).toEqual([Result.SUCCESS, 2, []]);
+    });
+
+    it('describes a failed write as a write', async () => {
+        const operations: string[] = [];
+        installFetchMock([{ status: 503 }]);
+
+        await write(open({ onError: error => { operations.push(`${error.operation} ${error.method}`); error.done(); } }), [{ name: 'a' }]);
+
+        expect(operations).toEqual(['write POST']);
     });
 });

@@ -17,10 +17,7 @@ export type SwrClient = {
 export const useSwrClient = (name: SwrClientName, conditionalRevalidation: boolean): SwrClient => {
   const [events, setEvents] = useState<string[]>([]);
   const push = useCallback((line: string) => setEvents(current => [...current, line]), []);
-  const [plugin] = useState(() => createSwrPlugin(name, conditionalRevalidation, {
-    onConflict: message => push(`Conflict: ${message}`),
-    onDeadLetter: count => push(`${count} change(s) dead-lettered. The next read takes the server copy.`),
-  }));
+  const [plugin] = useState(() => createSwrPlugin(name, conditionalRevalidation, push));
   const create = useCallback(() => new NoteStore(plugin), [plugin]);
   const client = useNotesClient(create);
 
@@ -38,7 +35,7 @@ export const useSwrClient = (name: SwrClientName, conditionalRevalidation: boole
     await client.save();
     const outcome = await plugin.syncNow();
     await client.load();
-    push(`Sync: ${outcome.flushed} sent, ${outcome.deadLettered} rejected.`);
+    push(`Sync: ${outcome.sent} sent, ${outcome.rejected} rejected.`);
   };
 
   return { client, events, read, saveAndSync };

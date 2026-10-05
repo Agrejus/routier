@@ -1,8 +1,19 @@
+import type { ResponseHeaders } from './syncHooks';
+
 /**
  * Shared HTTP machinery for the replication plugins: timeout-aware fetch with
  * abort tracking, jittered exponential backoff, and status classification that
  * separates transient failures (retry) from permanent ones (dead-letter).
  */
+
+type HeaderSource = { headers?: { get?: (name: string) => string | null } };
+
+const NO_HEADERS: ResponseHeaders = { get: () => null };
+
+export const responseHeadersOf = (response: HeaderSource): ResponseHeaders => {
+    const read = response.headers?.get;
+    return read == null ? NO_HEADERS : { get: (name: string) => read.call(response.headers, name) ?? null };
+};
 
 /** An HTTP failure that keeps its status so callers can classify it. */
 export class HttpStatusError extends Error {
@@ -11,12 +22,23 @@ export class HttpStatusError extends Error {
     readonly retryAfterMs: number | null;
     /** Parsed JSON error body when available. Used for structured batch rejection. */
     readonly responseBody: unknown;
+    readonly headers: ResponseHeaders;
 
-    constructor(status: number, statusText: string, retryAfterMs: number | null = null, responseBody: unknown = null) {
+    constructor(status: number, statusText: string, retryAfterMs: number | null, responseBody: unknown, headers: ResponseHeaders) {
         super(`HTTP ${status}: ${statusText}`);
         this.status = status;
         this.retryAfterMs = retryAfterMs;
         this.responseBody = responseBody;
+        this.headers = headers;
+    }
+}
+
+export const notModifiedError = (): HttpStatusError => new HttpStatusError(304, 'Not Modified', null, null, NO_HEADERS);
+
+export class NetworkError extends Error {
+    constructor(cause: unknown) {
+        super(cause instanceof Error ? cause.message : String(cause), { cause });
+        this.name = 'NetworkError';
     }
 }
 
@@ -111,7 +133,7 @@ export class RequestTracker {
             } catch {
                 // Status is still actionable when the body is empty or malformed.
             }
-            throw new HttpStatusError(r.status, r.statusText, readRetryAfterMs(r), responseBody);
+            throw new HttpStatusError(r.status, r.statusText, readRetryAfterMs(r), responseBody, responseHeadersOf(r));
         }
 
         return res;
@@ -136,6 +158,8 @@ export class RequestTracker {
 
         try {
             return await fetch(url, { ...init, signal: controller.signal });
+        } catch (error) {
+            throw new NetworkError(error);
         } finally {
             // Stryker disable next-line ConditionalExpression,EqualityOperator,BlockStatement: pure
             // hygiene. The timer is unref'd and its only effect is aborting a controller nothing

@@ -247,9 +247,12 @@ describe('chaos: an acked write always reaches the server once the network heals
                 // No pacing here: this harness drives requests as fast as it can on purpose, and
                 // an interval gate would only make each seed slower without testing anything
                 minRequestIntervalMs: 0,
-                bulkPersistRetryMaxAttempts: 1,
-                bulkPersistRetryBaseDelayMs: 60_000,
-                onSyncDeadLetter: (changes) => { deadLetters.push(...changes); },
+                onError: (error) => (error.operation === 'read' ? error.useCached() : error.defer()),
+                onEvent: (event) => {
+                    if (event.type === 'changes-rejected') {
+                        deadLetters.push(...event.changes);
+                    }
+                },
             });
             // The flush is driven by hand so the op sequence stays reproducible
             const flush = () => plugin.syncNow();

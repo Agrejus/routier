@@ -1,21 +1,3 @@
-/**
- * HTTP plugin for Routier sync. Talks to per-resource server endpoints.
- *
- * - GET {baseUrl}/{collectionName}?filter=&sort=&skip=&take= for reads
- * - POST {baseUrl}/{collectionName} with { adds, updates, removes } for writes
- *
- * Server exposes one controller per collection (e.g. api/data/bookings, api/data/users).
- * Use onGetUrl(collectionName) to override; default is ${baseUrl}/${collectionName}.
- *
- * - ignoreQueryForCollections: no query params sent; server returns full allowed set
- *
- * Hardening:
- * - Every request runs under an AbortController with a timeout; destroy() aborts in-flight requests.
- * - Headers are re-fetched per retry attempt so an expiring token cannot poison a retry loop.
- * - Backoff uses equal jitter and honors Retry-After.
- * - 401/403 notify onAuthError; a handler that resolves `true` earns exactly one retry with fresh headers.
- */
-
 import {
     IDbPlugin,
     DbPluginQueryEvent,
@@ -39,11 +21,12 @@ import {
     buildUrlWithQuery,
     type QuerySerializationContext,
 } from './queryParamHelpers';
-import { HttpStatusError, isAuthStatus, JsonWriteBatcher, RequestPacer, RequestTracker } from './httpUtils';
-import { buildAuthErrorEvent, type AuthErrorEvent, type AuthErrorHandler } from './auth';
+import { JsonWriteBatcher, notModifiedError, RequestPacer, RequestTracker } from './httpUtils';
 import { HttpQueryRunner, type ConditionalQueryResult } from './httpQueryRunner';
+import { conflictOf, runWithOnError, statusOf, type ActionKit } from './requestFailures';
+import { emitEvent, rejectedChangesOf, type HttpRequestError, type SyncEvent, type SyncHooks } from './syncHooks';
 
-export interface HttpPluginOptions {
+export interface HttpConnectionOptions {
     getUrl: (collectionName: string) => string;
     /**
      * See `IDbPlugin.databaseName`. `getUrl` is a caller-supplied function of collection name,
@@ -62,16 +45,6 @@ export interface HttpPluginOptions {
      * No filter, sort, skip, or take is sent; server returns full allowed set.
      */
     ignoreQueryForCollections?: string[];
-    /**
-     * Base delay (ms) for exponential backoff on query retry. When 0 or omitted, no retries (single attempt).
-     * 401/403 never retried (except once after a successful re-auth); other failures retry with
-     * jittered delay capped at queryRetryMaxDelayMs, honoring Retry-After.
-     */
-    queryRetryBaseDelayMs?: number;
-    /** Max delay (ms) between query retries. Ignored when queryRetryBaseDelayMs is 0. */
-    queryRetryMaxDelayMs?: number;
-    /** Max number of query attempts (including initial). Default 10. 401/403 stop immediately. */
-    queryRetryMaxAttempts?: number;
     /** Per-request timeout (ms); a hung connection fails instead of stalling forever. Default 30_000; 0 disables. */
     requestTimeoutMs?: number;
     /**
@@ -91,22 +64,18 @@ export interface HttpPluginOptions {
      * one POST rather than ten serialized POSTs. Set to 0 to disable batching.
      */
     writeBatchDelayMs?: number;
-    /**
-     * Called when the remote returns 401 or 403 (query and bulkPersist; use event.context to
-     * distinguish). Return/resolve `true` to signal re-auth succeeded — the failed operation
-     * then retries once with fresh headers.
-     */
-    onAuthError?: AuthErrorHandler;
 
     translateRemoteResponse?: (schema: CompiledSchema<UnknownRecord>, data: unknown) => unknown
 }
+
+export interface HttpPluginOptions extends HttpConnectionOptions, SyncHooks<HttpRequestError> { }
 
 /** Re-export for consumers that need to type query serialization context. */
 export type { QuerySerializationContext } from './queryParamHelpers';
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
 const DEFAULT_MIN_REQUEST_INTERVAL_MS = 100;
-const DEFAULT_WRITE_BATCH_DELAY_MS = 25;
+export const DEFAULT_WRITE_BATCH_DELAY_MS = 25;
 
 export class HttpDbPlugin implements IDbPlugin {
     protected readonly getUrl: (collectionName: string) => string;
@@ -122,8 +91,9 @@ export class HttpDbPlugin implements IDbPlugin {
     /** Coalesces logical writes before they enter the per-URL transport pacer. */
     private readonly writeBatcher: JsonWriteBatcher;
     protected readonly requestTimeoutMs: number;
-    private readonly onAuthError?: AuthErrorHandler;
     private readonly queryRunner: HttpQueryRunner;
+    private readonly onEvent?: (event: SyncEvent) => void;
+    private readonly onError?: (error: HttpRequestError) => void;
 
     /** See `IDbPlugin.databaseName` and `HttpPluginOptions.databaseName`. */
     readonly databaseName: string;
@@ -135,7 +105,8 @@ export class HttpDbPlugin implements IDbPlugin {
         this.requestTimeoutMs = options.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
         this.pacer = new RequestPacer(options.minRequestIntervalMs ?? DEFAULT_MIN_REQUEST_INTERVAL_MS);
         this.writeBatcher = new JsonWriteBatcher(options.writeBatchDelayMs ?? DEFAULT_WRITE_BATCH_DELAY_MS);
-        this.onAuthError = options.onAuthError;
+        this.onEvent = options.onEvent;
+        this.onError = options.onError;
         this.querySerializationContext = {
             ignoreQueryForCollections: options.ignoreQueryForCollections ?? [],
         };
@@ -143,12 +114,8 @@ export class HttpDbPlugin implements IDbPlugin {
             requests: this.requests,
             pacer: this.pacer,
             requestTimeoutMs: this.requestTimeoutMs,
-            retryBaseDelayMs: options.queryRetryBaseDelayMs ?? 0,
-            retryMaxDelayMs: options.queryRetryMaxDelayMs ?? 60_000,
-            retryMaxAttempts: options.queryRetryMaxAttempts ?? 10,
             translateRemoteResponse: options.translateRemoteResponse,
             requestHeaders: () => this.requestHeaders(),
-            notifyAuthError: (event) => this.notifyAuthError(event),
         });
     }
 
@@ -163,23 +130,6 @@ export class HttpDbPlugin implements IDbPlugin {
         return h instanceof Promise ? h : (h ?? {});
     }
 
-    /**
-     * Notifies onAuthError and reports whether the handler claims re-auth succeeded
-     * (a truthy return/resolution). Handler exceptions are logged, never propagated.
-     */
-    async notifyAuthError(event: AuthErrorEvent | null): Promise<boolean> {
-        if (event == null || this.onAuthError == null) {
-            return false;
-        }
-
-        try {
-            const outcome = await this.onAuthError(event);
-            return outcome === true;
-        } catch (err) {
-            logger.error('[HttpDbPlugin] onAuthError threw', { error: err });
-            return false;
-        }
-    }
 
     query<TRoot extends {}, TShape>(
         event: DbPluginQueryEvent<TRoot, TShape>,
@@ -215,14 +165,36 @@ export class HttpDbPlugin implements IDbPlugin {
         event: DbPluginQueryEvent<TRoot, TShape>,
         done: PluginEventCallbackResult<ITranslatedValue<TShape>>
     ): Promise<void> {
-        const result = await this.queryConditional(event, null);
+        const collectionName = event.operation.schema.collectionName;
+        const settled = await runWithOnError({
+            attempt: async () => {
+                const result = await this.queryConditional(event, null);
 
-        if (result.kind === 'modified') {
-            done(PluginEventResult.success(event.id, result.data));
+                if (result.kind === 'modified') {
+                    return result.data;
+                }
+
+                throw result.kind === 'failed' ? result.error : notModifiedError();
+            },
+            context: { operation: 'read', collectionName, method: 'GET', url: this.queryUrl(event), storeSource: false },
+            onError: this.onError,
+            actions: ({ retry, done }: ActionKit) => ({ retry, done }),
+            unhandled: (kit: ActionKit) => kit.done(),
+        });
+
+        if (settled.outcome === 'success') {
+            emitEvent(this.onEvent, { type: 'read', ok: true, collectionName, status: 200 });
+            done(PluginEventResult.success(event.id, settled.value));
             return;
         }
 
-        done(PluginEventResult.error(event.id, result.kind === 'failed' ? result.error : new HttpStatusError(304, 'Not Modified', null)));
+        emitEvent(this.onEvent, { type: 'read', ok: false, collectionName, status: statusOf(settled.error), error: settled.error });
+        done(PluginEventResult.error(event.id, settled.error));
+    }
+
+    queryUrl<TRoot extends {}, TShape>(event: DbPluginQueryEvent<TRoot, TShape>): string {
+        const { operation } = event;
+        return buildUrlWithQuery(this.collectionUrl(operation.schema.collectionName), buildQueryParams(operation, this.querySerializationContext));
     }
 
     queryConditional<TRoot extends {}, TShape>(event: DbPluginQueryEvent<TRoot, TShape>, ifNoneMatch: string | null): Promise<ConditionalQueryResult<TShape>> {
@@ -230,10 +202,7 @@ export class HttpDbPlugin implements IDbPlugin {
 
         reportRenamedProperties(operation.options);
 
-        const params = buildQueryParams(operation, this.querySerializationContext);
-        const url = buildUrlWithQuery(this.collectionUrl(operation.schema.collectionName), params);
-
-        return this.queryRunner.run(event, url, ifNoneMatch);
+        return this.queryRunner.run(event, this.queryUrl(event), ifNoneMatch);
     }
 
     bulkPersist(
@@ -275,8 +244,7 @@ export class HttpDbPlugin implements IDbPlugin {
                     removes: removes.length,
                 });
 
-                const url = this.collectionUrl(schema.collectionName);
-                await this.postOnce(url, JSON.stringify({ adds, updates, removes }), schema.collectionName);
+                await this.postChanges(schema.collectionName, JSON.stringify({ adds, updates, removes }), { adds, updates, removes });
 
                 const persistResult = result.get(schemaId);
                 persistResult.adds.push(...adds);
@@ -324,23 +292,30 @@ export class HttpDbPlugin implements IDbPlugin {
         return this.pacer.pendingCount() + this.writeBatcher.pendingCount();
     }
 
-    /** One POST with timeout; on 401/403, notifies onAuthError and retries once if re-auth succeeded. */
-    private async postOnce(url: string, body: string, collectionName: string): Promise<void> {
-        for (let attempt = 0; attempt < 2; attempt++) {
-            try {
-                await this.postJson(url, body, collectionName);
-                return;
-            } catch (err) {
-                if (err instanceof HttpStatusError && isAuthStatus(err.status) && attempt === 0) {
-                    const reauthSucceeded = await this.notifyAuthError(buildAuthErrorEvent(err, 'bulkPersist'));
-                    if (reauthSucceeded) {
-                        logger.info('[HttpDbPlugin] re-auth succeeded, retrying POST once', { collectionName });
-                        continue;
-                    }
-                }
-                throw err;
-            }
+    private async postChanges(collectionName: string, body: string, changes: { adds: unknown[]; updates: unknown[]; removes: unknown[] }): Promise<void> {
+        const url = this.collectionUrl(collectionName);
+        const settled = await runWithOnError({
+            attempt: () => this.postJson(url, body, collectionName),
+            context: { operation: 'write', collectionName, method: 'POST', url, storeSource: false },
+            onError: this.onError,
+            actions: ({ retry, done }: ActionKit) => ({ retry, done }),
+            unhandled: (kit: ActionKit) => kit.done(),
+        });
+
+        if (settled.outcome === 'success') {
+            return;
         }
+
+        const status = statusOf(settled.error);
+        emitEvent(this.onEvent, {
+            type: 'changes-rejected',
+            collectionName,
+            changes: rejectedChangesOf(changes),
+            conflict: conflictOf(settled.error),
+            status,
+            error: settled.error,
+        });
+        throw settled.error;
     }
 
     destroy(_event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {

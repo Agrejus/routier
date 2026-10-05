@@ -3,6 +3,7 @@ import { etags, s } from '@routier/core/schema';
 import { uuid } from '@routier/core/utilities';
 import { MemoryPlugin } from '@routier/memory-plugin';
 import { HttpSwrDbPlugin } from './HttpSwrDbPlugin';
+import type { SwrRequestError } from './syncHooks';
 import { destroyEvent, installFetchMock, persistPlugin, queryPlugin, RecordingMemoryPlugin, sleep, waitFor } from './__tests__/httpTestKit';
 
 const versionedSchema = s.define('swrVersioned', {
@@ -20,14 +21,12 @@ describe('HttpSwrDbPlugin etags', () => {
     let queueStore: MemoryPlugin;
     const created: HttpSwrDbPlugin[] = [];
 
-    const createPlugin = () => {
+    const createPlugin = (onError?: (error: SwrRequestError) => void) => {
         const plugin = new HttpSwrDbPlugin(swrStore, {
-            autoSync: false,
             getUrl: (collection) => `https://api.test/${collection}`,
             unsyncedQueueStore: queueStore,
             maxAgeMs: 0,
-            bulkPersistRetryBaseDelayMs: 60_000,
-            bulkPersistRetryMaxAttempts: 1,
+            onError,
             translatePersistResponse: (_schema, body) => (body as { saved?: unknown[] }).saved ?? null,
         });
         created.push(plugin);
@@ -116,10 +115,10 @@ describe('HttpSwrDbPlugin etags', () => {
     it('lets the server copy replace a local edit the server rejected, even with the same etag', async () => {
         swrStore.seed(versionedSchema, [{ id: 'a', name: 'server', version: 5 }]);
         http.respondToPost(() => ({ status: 422, body: {} }));
-        const writer = createPlugin();
+        const writer = createPlugin(error => (error.operation === 'write' ? error.reject() : error.done()));
         await persistPlugin(writer, { updates: [{ id: 'a', name: 'edited', version: 5 }] }, versionedSchema);
-        const outcome = await writer.syncNow();
-        expect(outcome.deadLettered).toBe(1);
+        await writer.syncNow();
+        expect(await writer.deadLetters()).toHaveLength(1);
 
         await revalidateWith([{ id: 'a', name: 'server', version: 5 }]);
 

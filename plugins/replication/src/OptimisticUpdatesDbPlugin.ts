@@ -1,24 +1,17 @@
-import { BulkPersistChanges, BulkPersistResult, SchemaCollection } from "@routier/core/collections";
+import { BulkPersistChanges, BulkPersistResult, SchemaCollection, SchemaPersistChanges } from "@routier/core/collections";
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, Query } from "@routier/core/plugins";
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult, Result } from "@routier/core/results";
 import { CompiledSchema } from "@routier/core/schema";
-import { logger, uuid, uuidv4 } from "@routier/core/utilities";
+import { uuid, uuidv4 } from "@routier/core/utilities";
 import { MemoryPlugin } from "@routier/memory-plugin";
 import { PluginSyncEngine } from "./PluginSyncEngine";
 import { adoptEtags } from "./adoptEtags";
+import { conflictOf, runWithOnError, statusOf, type ActionKit } from "./requestFailures";
+import { emitEvent, rejectedChangesOf, type OptimisticRequestError, type SyncEvent, type SyncHooks } from "./syncHooks";
 
-const getMemoryPluginCollectionSize = <T extends {}>(plugin: IDbPlugin, schema: CompiledSchema<T>): number => {
+type CachedReadError = Error | null;
 
-    if ("getCollectionSize" in plugin && typeof plugin.getCollectionSize === "function") {
-        return plugin.getCollectionSize(schema.collectionName) as number;
-    }
-
-    throw new Error("Cannot get size of collection for MemoryPlugin, not an instance of MemoryPlugin");
-}
-
-export type OptimisticUpdatesDbPluginOptions = {
-    onMirrorError?: (error: Error, context: { plugin: IDbPlugin; eventId: string }) => void;
-};
+export type OptimisticUpdatesDbPluginOptions = SyncHooks<OptimisticRequestError>;
 
 export class OptimisticUpdatesDbPlugin implements IDbPlugin {
 
@@ -35,14 +28,10 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
      * polling, and a FAILED hydration removes itself so the next query retries rather
      * than bricking the collection until process restart.
      */
-    private hydrationPromises: Map<string, Promise<void>> = new Map<string, Promise<void>>();
-
-    // Collections this instance has persisted to. The read plugin is authoritative for
-    // them: a size of 0 after a remove-all is real data, not a missed hydration, and
-    // re-hydrating from the source (whose mirrored writes may still be in flight)
-    // would resurrect removed entities.
-    private writtenCollections: Set<string> = new Set<string>();
+    private hydrationPromises: Map<string, Promise<CachedReadError>> = new Map<string, Promise<CachedReadError>>();
     private readonly syncEngine: PluginSyncEngine;
+    private readonly onEvent?: (event: SyncEvent) => void;
+    private readonly onError?: (error: OptimisticRequestError) => void;
 
     /**
      * Creates a new OptimisticDbPluginReplicator that coordinates operations between a source database and its in memory store.
@@ -76,52 +65,71 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
             onMirrorPersisted: (mirrorEvent, result) => {
                 void adoptEtags(this.plugins.read, mirrorEvent, result);
             },
-            onMirrorError: options?.onMirrorError,
+            onMirrorError: (error, context) => this.settleMirrorFailure(context.event, error),
         });
+        this.onEvent = options?.onEvent;
+        this.onError = options?.onError;
     }
 
-    /**
-     * Will query the read plugin if there is one, otherwise the source plugin will be queried
-    */
     query<TEntity extends {}, TShape extends any = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
-        const collectionName = event.operation.schema.collectionName;
-
         this.ensureHydrated(event.operation.schema, event.schemas)
             .then(() => {
                 this.plugins.read.query(event, done);
             })
             .catch((err) => {
-                logger.error('[OptimisticReplicationDbPlugin] query failed during hydration', { collectionName, error: err });
                 done(PluginEventResult.error(event.id, err instanceof Error ? err : new Error(String(err))));
             });
     }
 
-    /**
-     * Resolves once the read plugin holds the collection's data. Collections this
-     * instance has written to are authoritative already (a size of 0 after a
-     * remove-all is real data — re-hydrating from the source, whose mirrored writes
-     * may still be in flight, would resurrect removed entities).
-     */
-    private ensureHydrated<TEntity extends {}>(schema: CompiledSchema<TEntity>, schemas: SchemaCollection): Promise<void> {
+    private ensureHydrated<TEntity extends {}>(schema: CompiledSchema<TEntity>, schemas: SchemaCollection): Promise<CachedReadError> {
         const collectionName = schema.collectionName;
-
-        if (this.writtenCollections.has(collectionName)) {
-            return Promise.resolve();
-        }
-
         const existing = this.hydrationPromises.get(collectionName);
         if (existing != null) {
             return existing;
         }
 
-        const collectionSize = getMemoryPluginCollectionSize(this.plugins.read, schema);
-        if (collectionSize > 0) {
-            return Promise.resolve();
+        const hydration = this.hydrate(schema, schemas);
+        this.hydrationPromises.set(collectionName, hydration);
+
+        const forget = () => {
+            this.hydrationPromises.delete(collectionName);
+        };
+        hydration.then((cachedError) => {
+            if (cachedError != null) {
+                forget();
+            }
+        }, forget);
+
+        return hydration;
+    }
+
+    private async hydrate<TEntity extends {}>(schema: CompiledSchema<TEntity>, schemas: SchemaCollection): Promise<CachedReadError> {
+        const collectionName = schema.collectionName;
+        const settled = await runWithOnError({
+            attempt: () => this.loadFromSource(schema, schemas),
+            context: { operation: 'read', collectionName, method: null, url: null, storeSource: true },
+            onError: this.onError,
+            actions: ({ retry, done, useCached }: ActionKit) => ({ retry, done, useCached }),
+            unhandled: (kit: ActionKit) => kit.done(),
+        });
+
+        if (settled.outcome !== 'success') {
+            emitEvent(this.onEvent, { type: 'read', ok: false, collectionName, status: statusOf(settled.error), error: settled.error });
+
+            if (settled.outcome === 'cached') {
+                return settled.error;
+            }
+
+            throw settled.error;
         }
 
-        logger.info('[OptimisticReplicationDbPlugin] hydration starting', { collectionName });
+        await this.storeHydrated(schema, schemas, settled.value);
+        emitEvent(this.onEvent, { type: 'read', ok: true, collectionName, status: null });
+        return null;
+    }
 
-        const hydration = new Promise<void>((resolve, reject) => {
+    private loadFromSource<TEntity extends {}>(schema: CompiledSchema<TEntity>, schemas: SchemaCollection): Promise<object[]> {
+        return new Promise((resolve, reject) => {
             this.plugins.source.query<TEntity, unknown>({
                 id: uuid(8),
                 schemas,
@@ -130,62 +138,100 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
                 explain: false,
                 executedQueries: [],
                 reason: "hydration",
-                // Select All Data
                 operation: Query.EMPTY<TEntity, unknown>(schema)
             }, (sourceResult) => {
                 if (sourceResult.ok === Result.ERROR) {
-                    logger.error('[OptimisticReplicationDbPlugin] hydration failed', { collectionName, error: sourceResult.error });
                     reject(sourceResult.error instanceof Error ? sourceResult.error : new Error(String(sourceResult.error)));
                     return;
                 }
 
-                if (Array.isArray(sourceResult.data.value) === false) {
-                    logger.error('[OptimisticReplicationDbPlugin] hydration source result is not an array', { collectionName });
+                const rows: unknown = sourceResult.data.value;
+
+                if (!Array.isArray(rows)) {
                     reject(new Error("Hydration query result is not an array"));
                     return;
                 }
 
-                const itemCount = sourceResult.data.value.length;
-                logger.debug('[OptimisticReplicationDbPlugin] hydration success, persisting to read plugin', { collectionName, itemCount });
-
-                const changesCollection = new BulkPersistChanges();
-                const schemaChanges = changesCollection.resolve(schema.id);
-
-                // Add the existing items into the persist payload as adds
-                schemaChanges.adds = sourceResult.data.value;
-
-                this.plugins.read.bulkPersist({
-                    id: uuid(8),
-                    schemas,
-                    operation: changesCollection,
-                    source: "OptimisticReplicationDbPlugin",
-                    action: "persist",
-                    reason: "hydration",
-                    etags: "keep"
-                }, (readPersistResult) => {
-                    if (readPersistResult.ok === Result.ERROR) {
-                        logger.error('[OptimisticReplicationDbPlugin] hydration read-plugin bulkPersist failed', { collectionName, error: readPersistResult.error });
-                        reject(readPersistResult.error instanceof Error ? readPersistResult.error : new Error(String(readPersistResult.error)));
-                        return;
-                    }
-
-                    logger.info('[OptimisticReplicationDbPlugin] hydration complete', { collectionName, itemCount });
-                    resolve();
-                });
+                resolve(rows.filter((row): row is object => typeof row === 'object' && row != null));
             });
         });
+    }
 
-        this.hydrationPromises.set(collectionName, hydration);
+    private storeHydrated<TEntity extends {}>(schema: CompiledSchema<TEntity>, schemas: SchemaCollection, rows: object[]): Promise<void> {
+        const changesCollection = new BulkPersistChanges();
+        changesCollection.resolve<{}>(schema.id).adds.push(...rows);
 
-        // A failed hydration un-registers itself so the NEXT query retries it; the
-        // queries already awaiting this promise all see the failure.
-        hydration.catch(() => {
-            if (this.hydrationPromises.get(collectionName) === hydration) {
-                this.hydrationPromises.delete(collectionName);
-            }
+        return new Promise((resolve, reject) => {
+            this.plugins.read.bulkPersist({
+                id: uuid(8),
+                schemas,
+                operation: changesCollection,
+                source: "OptimisticReplicationDbPlugin",
+                action: "persist",
+                reason: "hydration",
+                etags: "keep"
+            }, (readPersistResult) => {
+                if (readPersistResult.ok === Result.ERROR) {
+                    reject(readPersistResult.error instanceof Error ? readPersistResult.error : new Error(String(readPersistResult.error)));
+                    return;
+                }
+
+                resolve();
+            });
         });
+    }
 
-        return hydration;
+    private settleMirrorFailure(mirrorEvent: DbPluginBulkPersistEvent, error: Error): void {
+        void runWithOnError({
+            attempt: () => this.resendToSource(mirrorEvent),
+            context: { operation: 'write', collectionName: this.changedCollectionsOf(mirrorEvent).map(({ collectionName }) => collectionName).join(', '), method: null, url: null, storeSource: true },
+            onError: this.onError,
+            actions: ({ retry, reject }: ActionKit) => ({ retry, reject }),
+            unhandled: (kit: ActionKit) => kit.reject(),
+            firstFailure: error,
+        }).then((settled) => {
+            if (settled.outcome === 'success') {
+                void adoptEtags(this.plugins.read, mirrorEvent, settled.value);
+                return;
+            }
+
+            this.reportRejected(mirrorEvent, settled.error);
+        });
+    }
+
+    private resendToSource(mirrorEvent: DbPluginBulkPersistEvent): Promise<BulkPersistResult> {
+        return new Promise((resolve, reject) => {
+            this.plugins.source.bulkPersist({ ...mirrorEvent, id: uuid(8) }, (result) => {
+                if (result.ok === Result.SUCCESS) {
+                    resolve(result.data);
+                    return;
+                }
+
+                reject(result.error instanceof Error ? result.error : new Error(String(result.error)));
+            });
+        });
+    }
+
+    private changedCollectionsOf(event: DbPluginBulkPersistEvent): { collectionName: string; changes: SchemaPersistChanges }[] {
+        return [...event.schemas.values()].flatMap((schema) => {
+            const changes = event.operation.get(schema.id);
+            return changes?.hasItems ? [{ collectionName: schema.collectionName, changes }] : [];
+        });
+    }
+
+    private reportRejected(event: DbPluginBulkPersistEvent, error: Error): void {
+        const status = statusOf(error);
+
+        for (const { collectionName, changes } of this.changedCollectionsOf(event)) {
+            emitEvent(this.onEvent, {
+                type: 'changes-rejected',
+                collectionName,
+                changes: rejectedChangesOf({ adds: changes.adds, updates: changes.updates.map((update) => update.entity), removes: changes.removes }),
+                conflict: conflictOf(error),
+                status,
+                error,
+            });
+        }
     }
 
     destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
@@ -218,9 +264,12 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
         }
 
         Promise.all(touchedSchemas.map((schema) => this.ensureHydrated(schema, event.schemas)))
-            .then(() => {
-                for (const schema of touchedSchemas) {
-                    this.writtenCollections.add(schema.collectionName);
+            .then((hydrations) => {
+                const cached = hydrations.find((cachedError) => cachedError != null);
+
+                if (cached != null) {
+                    done(PluginEventResult.error(event.id, cached));
+                    return;
                 }
 
                 this.syncEngine.bulkPersist({
@@ -231,7 +280,6 @@ export class OptimisticUpdatesDbPlugin implements IDbPlugin {
                 }, done);
             })
             .catch((err) => {
-                logger.error('[OptimisticReplicationDbPlugin] persist failed during hydration', { error: err });
                 done(PluginEventResult.error(event.id, err instanceof Error ? err : new Error(String(err))));
             });
     }

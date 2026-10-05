@@ -61,25 +61,43 @@ That gives you SWR semantics, optimistic local UX, and offline resilience withou
 - `getUrl(collectionName)`: maps each Routier collection to an API endpoint.
 - `getHeaders()`: injects auth or tenant headers per request.
 - `ignoreQueryForCollections`: skips query serialization for collections the server always scopes itself.
-- `queryRetryBaseDelayMs`, `queryRetryMaxDelayMs`, `queryRetryMaxAttempts`: control retry backoff for reads.
 - `translateRemoteResponse(schema, data)`: adapts your API payload to the array shape Routier expects.
 - `writeBatchDelayMs`: debounce window for combining rapid writes to one URL (default `25`; `0` disables batching).
+- `onError(error)` and `onEvent(event)`: the hooks shared by every replication plugin, described below.
 
 ### `HttpSwrDbPlugin`
 
 `HttpSwrDbPlugin` extends the HTTP options with local-first SWR behavior:
 
 - `maxAgeMs`: how long cached data is considered fresh before revalidation starts.
-- `bulkPersistRetryBaseDelayMs`, `bulkPersistRetryMaxDelayMs`, `bulkPersistRetryMaxAttempts`: retry controls for writes.
-- `onAuthError(event)`: lets you trigger token refresh or sign-out on `401` and `403`.
-- `onRevalidateError(error, context)`: log or surface background refresh failures without breaking the current UI.
 - `unsyncedQueueStore`: where pending writes are persisted until the server confirms them.
+- `autoSync`: turns on background replay (off by default); `true` uses the defaults.
+
+## Errors, Retries and Events
+
+Nothing is retried or synced in the background unless you ask. Every replication plugin takes the
+same two hooks.
+
+`onError(error)` decides what a failing request does. `error.kind` is `"http"` (with `status`,
+`headers` and `body`), `"network"` or `"store"`, and the error carries the actions the plugin can
+carry out: `retry()` and `done()` everywhere, `useCached()` for reads on `HttpSwrDbPlugin` and
+`OptimisticUpdatesDbPlugin`, and `reject()` and `defer()` for queued writes. The request waits until
+an action is called. A 401 is just `kind: "http"`: refresh the token and call `retry()`, and
+`getHeaders` runs again.
+
+`onEvent(event)` reports what happened: `read` (`ok`, `status`), `changes-rejected` (`conflict` for a
+409) and `synced` (`sent`, `failed`, `rejected`).
+
+`createRetry({ maxAttempts, baseDelayMs, maxDelayMs })` is an `onError` with exponential backoff for
+network failures, 408, 429 and 5xx. `defaultSync()` returns `{ onError: createRetry(), autoSync: true }`
+to spread into the constructor.
 
 ## Structured Permanent Rejections
 
-A legacy permanent `4xx` response does not say whether the whole request is invalid or one entity
-poisoned the batch. To preserve valid writes, `HttpSwrDbPlugin` falls back to sending each entity
-alone. That is safe but costs `N` requests.
+When `onError` calls `reject()` on a failed batch, a permanent `4xx` response that does not say
+which changes were refused could mean the whole request is invalid or one entity poisoned the batch.
+To preserve valid writes, `HttpSwrDbPlugin` then sends each entity alone and asks `onError` about each
+one that fails. That is safe but costs `N` requests.
 
 Servers can avoid that fan-out by returning one of these JSON bodies with the permanent status:
 

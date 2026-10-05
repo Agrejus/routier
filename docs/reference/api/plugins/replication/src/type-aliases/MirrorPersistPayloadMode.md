@@ -8,4 +8,4 @@
 
 > **MirrorPersistPayloadMode** = `"original-event"` \| `"resolve-from-source-result"`
 
-Defined in: [plugins/replication/src/PluginSyncEngine.ts:25](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L25)
+Defined in: [plugins/replication/src/PluginSyncEngine.ts:30](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L30)
