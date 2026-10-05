@@ -32,9 +32,40 @@ History tracking in Routier allows you to:
 
 ## Implementing History Tracking
 
-History tracking in Routier can be implemented in different ways. Both approaches create history tables that automatically record a new entry every time source data changes, preserving a complete audit trail.
+History tracking in Routier can be implemented in two ways, and they promise different things:
 
-### Using Computed Properties for Change Detection
+| Approach | Records | Written |
+| --- | --- | --- |
+| `.audit()` on the collection | Every change, from each save's own changes | In the same save as the change |
+| A view with a content-based key | Each state the view reads | After the save, when the view recomputes |
+
+Use `.audit()` when the history must be complete: audit trails, compliance, undo. A view re-reads its source after a change, so two saves that land before it reads are recorded as one version.
+
+### Recording Every Change with `.audit()`
+
+Declare the history collection, then audit the collection it records. `derive` receives each save's changes for that collection and emits the history rows:
+
+
+<<< @/_snippets/code/from-docs/guides/history-tracking/block-0.ts
+
+
+**How this approach works:**
+
+1. **Handed the changes**: `derive` is called once per save with every change to `products` in it. Each change carries `operation`, `id`, `entity`, `at`, and for updates `delta` and `previous`.
+
+2. **Same save**: The emitted rows are written in the same save as the change they describe. On a backend with atomic batches they commit together, and a rejected history row fails the save.
+
+3. **Nothing skipped**: Two saves in quick succession produce two sets of rows, because nothing has to be read back afterwards.
+
+4. **Your shape**: The history schema and its columns are yours. Emit nothing to skip a save, or several rows to record several things.
+
+Database-assigned IDs are not available to an audit row describing a new entity, so record an ID the application assigns, as `productId` does here.
+
+### Snapshots with Views
+
+A view whose key is computed from the row's content keeps every state it reads, instead of updating one row. The view recomputes after its source changes, so it records the source's state at the moment it reads. A state that only existed between two saves the view did not read in between is never recorded. Use a view when you want snapshots of what the data looked like; use `.audit()` when you need every change.
+
+#### Using Computed Properties for Change Detection
 
 When your history table is subscribed to a data source, you can use computed properties with the `tracked()` modifier to automatically insert a new record whenever the subscribed data changes. This approach computes the ID based on the entire entity state, ensuring any change results in a new record:
 
@@ -50,11 +81,11 @@ When your history table is subscribed to a data source, you can use computed pro
 
 3. **Key modifier**: The `key()` modifier marks this as the primary key. Since the ID changes when any property changes, Routier treats changed entities as new records rather than updates.
 
-4. **Automatic change detection**: When the subscribed data source changes, the computed ID recalculates. If the hash differs from the stored value, a new record with the new ID is inserted, preserving the previous state.
+4. **Automatic change detection**: When the view reads its source and the computed ID differs from those it holds, a new record with the new ID is inserted, preserving the previous state.
 
 This pattern is particularly useful when your history table is derived from a view that subscribes to another collection, as it automatically handles change detection at the schema level.
 
-### Using Views with Schema Hash Functions
+#### Using Views with Schema Hash Functions
 
 Another way to implement history tracking is using views with a unique hashing strategy to detect changes and insert new records instead of updating existing ones. This approach uses `fastHash` with the schema's hash function to generate a unique ID based on the entire object:
 
@@ -70,7 +101,7 @@ Another way to implement history tracking is using views with a unique hashing s
 
 3. **Change detection**: When any property changes, the hash changes, producing a completely new ID. This ensures Routier treats it as a new record rather than an update.
 
-4. **History preservation**: Old records remain in the history table untouched, and new records are inserted whenever data changes. This creates an immutable audit trail.
+4. **History preservation**: Old records remain in the history table untouched, and a new record is inserted for each state the view reads.
 
 ### Querying History
 
@@ -82,7 +113,7 @@ Once you have a history table, you can query it to see all historical states of 
 
 ### When to Use History Tables
 
-- **Audit trails**: Track all changes over time for compliance and accountability
+- **Audit trails**: Track all changes over time for compliance and accountability (use `.audit()`)
 - **Version history**: Maintain snapshots of entity states for comparison
 - **Change tracking**: Know exactly when and how data changed
 - **Undo/Redo**: Retrieve previous states to restore entities to earlier versions
@@ -90,12 +121,14 @@ Once you have a history table, you can query it to see all historical states of 
 
 ### Important Considerations
 
+- **Completeness**: Only `.audit()` records every change. A history view can merge saves that land before it reads.
 - **Storage growth**: History tables grow over time. Consider archiving old history or implementing retention policies.
 - **Performance**: Large history tables may require indexing. Consider adding indexes on frequently queried fields like `productId` or `createdDate`.
 - **Scoping**: If using a single-store backend (like PouchDB), use `.scope()` to filter history records by `documentType`.
 
 ## Related Guides
 
+- **[Configuring Collections](/how-to/collections/configuring-collections)** - The `.audit()` declaration
 - **[Views](/how-to/collections/views)** - Understanding how views work for history tracking
 - **[Change Tracking](/concepts/change-tracking)** - How Routier tracks changes
 - **[State Management](/guides/state-management)** - Managing application state

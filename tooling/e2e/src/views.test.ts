@@ -4,6 +4,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { IDbPlugin, uuidv4 } from '@routier/core';
+import { BulkPersistResult } from '@routier/core/collections';
+import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, ITranslatedValue } from '@routier/core/plugins';
+import { PluginEventCallbackPartialResult, PluginEventCallbackResult } from '@routier/core/results';
 import { s } from '@routier/core/schema';
 import { DataStore } from '@routier/datastore';
 import { SqliteDbPlugin } from '@routier/sqlite-plugin';
@@ -100,6 +103,64 @@ class RawStore extends DataStore {
     history = this.collection(historySchema).proxy().create();
 }
 
+const auditedProductSchema = s.define('e2e_audited_products', {
+    id: s.string().key(),
+    active: s.boolean(),
+}).compile();
+
+const auditLogSchema = s.define('e2e_audit_log', {
+    id: s.string().key(),
+    product: s.string(),
+    active: s.boolean(),
+}).compile();
+
+class AuditStore extends DataStore {
+    log = this.collection(auditLogSchema).proxy().create();
+    products = this.collection(auditedProductSchema)
+        .audit(auditLogSchema)
+        .derive((changes, emit) => emit(changes.map(change => ({ id: uuidv4(), product: change.entity.id, active: change.entity.active }))))
+        .proxy()
+        .create();
+}
+
+class HeldReads implements IDbPlugin {
+    private readonly inner: IDbPlugin;
+    private held: (() => void)[] | null = [];
+
+    constructor(inner: IDbPlugin) {
+        this.inner = inner;
+    }
+
+    get databaseName(): string {
+        return this.inner.databaseName;
+    }
+
+    query<TRoot extends {}, TShape = TRoot>(event: DbPluginQueryEvent<TRoot, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>): void {
+        const run = () => this.inner.query(event, done);
+
+        if (this.held == null) {
+            run();
+            return;
+        }
+
+        this.held.push(run);
+    }
+
+    release(): void {
+        const queued = this.held ?? [];
+        this.held = null;
+        queued.forEach(run => run());
+    }
+
+    bulkPersist(event: DbPluginBulkPersistEvent, done: PluginEventCallbackPartialResult<BulkPersistResult>): void {
+        this.inner.bulkPersist(event, done);
+    }
+
+    destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
+        this.inner.destroy(event, done);
+    }
+}
+
 type Subject = { readonly name: string, readonly plugin: () => IDbPlugin };
 
 const subjects: Subject[] = [];
@@ -187,7 +248,7 @@ describe('views against a real database', () => {
     };
 
     /** Empties all three tables, then opens a store whose views derive from nothing. */
-    const clean = async (subject: Subject) => {
+    const clean = async (subject: Subject, open: () => IDbPlugin = subject.plugin) => {
         const raw = new RawStore(subject.plugin());
         opened.push(raw);
 
@@ -201,7 +262,7 @@ describe('views against a real database', () => {
 
         await raw.saveChangesAsync();
 
-        const store = new ViewStore(subject.plugin());
+        const store = new ViewStore(open());
         opened.push(store);
 
         return { store, raw };
@@ -333,6 +394,10 @@ describe('views against a real database', () => {
             const [a] = await store.products.addAsync({ id: 1, name: 'a', active: true } as any);
             await store.saveChangesAsync();
 
+            await waitFor(async () => {
+                expect(await store.productHistory.countAsync()).toBe(1);
+            });
+
             a.active = false;
             await store.saveChangesAsync();
 
@@ -433,7 +498,44 @@ describe('views against a real database', () => {
         // change — which is the point of deriving the answer from each view's own key.
         await waitFor(async () => {
             expect(await store.activeProducts.countAsync()).toBe(1);
-            expect(await store.productHistory.countAsync()).toBe(3);
+            expect((await store.productHistory.toArrayAsync()).map(r => r.id)).toEqual(expect.arrayContaining(['a|false', 'b|true']));
+        });
+    });
+
+    describe('saves that land before a view reads', () => {
+
+        forEachSubject('collapse into one version in a history view', async subject => {
+            const reads = new HeldReads(subject.plugin());
+            const { store, raw } = await clean(subject, () => reads);
+
+            const [a] = await store.products.addAsync({ id: 1, name: 'a', active: true } as any);
+            await store.saveChangesAsync();
+            a.active = false;
+            await store.saveChangesAsync();
+            reads.release();
+
+            await waitFor(async () => {
+                expect(await raw.history.countAsync()).toBe(1);
+            });
+            await new Promise(resolve => setTimeout(resolve, 250));
+
+            expect((await raw.history.toArrayAsync()).map(r => r.id)).toEqual(['a|false']);
+        });
+
+        forEachSubject('are each recorded by an audit', async subject => {
+            const reads = new HeldReads(subject.plugin());
+            const store = new AuditStore(reads);
+            opened.push(store);
+            const product = uuidv4();
+
+            const [entity] = await store.products.addAsync({ id: product, active: true });
+            await store.saveChangesAsync();
+            entity.active = false;
+            await store.saveChangesAsync();
+            reads.release();
+
+            const recorded = (await store.log.toArrayAsync()).filter(row => row.product === product);
+            expect(recorded.map(row => row.active).sort()).toEqual([false, true]);
         });
     });
 });
