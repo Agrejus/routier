@@ -8,8 +8,9 @@ import { HttpSwrDbPlugin } from './HttpSwrDbPlugin';
 import { HttpDbPlugin } from './HttpDbPlugin';
 import { PluginSyncEngine } from './PluginSyncEngine';
 import { UnsyncedQueue } from './UnsyncedQueue';
-import type { DeadLetteredChange, QueuedChange } from './UnsyncedQueue';
-import type { SyncOutcome } from './HttpSwrDbPlugin';
+import type { QueuedChange } from './UnsyncedQueue';
+import { createRetry } from './retry';
+import type { ChangesRejectedEvent, HttpRequestError, SwrRequestError, SyncEvent } from './syncHooks';
 import { backoffDelayMs, isAuthStatus, isConflictStatus, isPermanentStatus, KeyedMutex, readRetryAfterMs, RequestPacer } from './httpUtils';
 import {
     createQueryEvent,
@@ -25,13 +26,6 @@ import {
     waitForRowCount,
     writeQueueRows,
 } from './__tests__/httpTestKit';
-
-/**
- * Tier 4a: dedicated coverage for the hardening behaviors — dead-lettering, poison
- * isolation, conflict reporting, compare-and-delete dequeue, the re-auth handshake,
- * request timeouts, the sync-engine guards, backoff/Retry-After, echo reconciliation,
- * the `online` trigger, and queue coalescing.
- */
 
 /** Minimal ITranslatedValue over a row array, for driving the private revalidate paths. */
 function translated(rows: unknown[]) {
@@ -56,31 +50,29 @@ describe('hardening: dead-letter and poison isolation', () => {
     let swrStore: MemoryPlugin;
     let queueStore: MemoryPlugin;
     let plugin: HttpSwrDbPlugin;
-    let deadLetters: DeadLetteredChange[][];
-    let conflicts: Array<{ collectionName: string; entities: unknown[] }>;
+    let rejections: ChangesRejectedEvent[];
 
     function createPlugin(options?: SwrOptions) {
-        const created = new HttpSwrDbPlugin(swrStore, {
-            // The background loop is off so each test drives syncNow() itself
-            autoSync: false,
+        return new HttpSwrDbPlugin(swrStore, {
             getUrl: (collection) => `https://api.test/${collection}`,
             unsyncedQueueStore: queueStore,
-            bulkPersistRetryBaseDelayMs: 60_000,
-            bulkPersistRetryMaxAttempts: 1,
+            postOnPersist: false,
             writeBatchDelayMs: 0,
-            onSyncDeadLetter: (changes) => { deadLetters.push(changes); },
-            onConflict: ({ collectionName, entities }) => { conflicts.push({ collectionName, entities }); },
+            onError: createRetry({ maxAttempts: 1 }),
+            onEvent: (event) => {
+                if (event.type === 'changes-rejected') {
+                    rejections.push(event);
+                }
+            },
             ...options,
         });
-        return created;
     }
 
     beforeEach(() => {
         http = installFetchMock();
         swrStore = new MemoryPlugin(`swr-${uuid(8)}`);
         queueStore = new MemoryPlugin(`queue-${uuid(8)}`);
-        deadLetters = [];
-        conflicts = [];
+        rejections = [];
         plugin = createPlugin();
     });
 
@@ -93,31 +85,42 @@ describe('hardening: dead-letter and poison isolation', () => {
 
         await persistPlugin(plugin, { adds: [{ id: 'bad-1', name: 'Malformed' }] });
 
-        // The direct POST path leaves it queued; only the flush gives up on it
         expect(await readQueueRows(queueStore)).toHaveLength(1);
-        expect(deadLetters).toHaveLength(0);
+        expect(rejections).toHaveLength(0);
 
         const outcome = await plugin.syncNow();
 
-        expect(outcome).toEqual({ flushed: 0, failed: 0, deadLettered: 1 });
+        expect(outcome).toEqual({ sent: 0, failed: 0, rejected: 1 });
         const rows = await readQueueRows(queueStore);
         expect(rows).toHaveLength(1);
         expect(rows[0].status).toBe('dead');
-        expect(deadLetters).toHaveLength(1);
-        expect(deadLetters[0]).toEqual([
-            expect.objectContaining({ collectionName: 'swrHardening', kind: 'add', entity: expect.objectContaining({ id: 'bad-1' }) }),
-        ]);
+        expect(rejections).toEqual([expect.objectContaining({
+            collectionName: 'swrHardening',
+            conflict: false,
+            status: 422,
+            changes: [{ kind: 'add', entity: expect.objectContaining({ id: 'bad-1' }) }],
+        })]);
 
-        // A dead row no longer shields its entity: the server's view (no such row) wins
         await (plugin as never as { persistToStore: (e: unknown, t: unknown) => Promise<void> })
             .persistToStore(createQueryEvent(), translated([]));
         expect(await queryPlugin(swrStore)).toHaveLength(0);
 
-        // ...and the queue stops spending requests on it
         const postsBefore = http.posts.length;
         const second = await plugin.syncNow();
-        expect(second).toEqual({ flushed: 0, failed: 0, deadLettered: 0 });
+        expect(second).toEqual({ sent: 0, failed: 0, rejected: 0 });
         expect(http.posts).toHaveLength(postsBefore);
+    });
+
+    it('keeps a refused change queued when no onError rejects it', async () => {
+        plugin.destroy(destroyEvent(), () => undefined);
+        plugin = createPlugin({ onError: undefined });
+        http.respondToPost(() => ({ status: 422 }));
+
+        await persistPlugin(plugin, { adds: [{ id: 'kept', name: 'Refused' }] });
+
+        expect(await plugin.syncNow()).toEqual({ sent: 0, failed: 1, rejected: 0 });
+        expect((await readQueueRows(queueStore)).map((row) => row.status)).toEqual(['pending']);
+        expect(rejections).toHaveLength(0);
     });
 
     it('dead-letters a structured whole-batch rejection without per-item fan-out', async () => {
@@ -126,18 +129,16 @@ describe('hardening: dead-letter and poison isolation', () => {
         await persistPlugin(plugin, {
             adds: Array.from({ length: 10 }, (_, i) => ({ id: `global-${i}`, name: `Item ${i}` })),
         });
-        const postsBeforeFlush = http.posts.length;
 
         const outcome = await plugin.syncNow();
 
-        expect(outcome).toEqual({ flushed: 0, failed: 0, deadLettered: 10 });
-        expect(http.posts.length - postsBeforeFlush).toBe(1);
+        expect(outcome).toEqual({ sent: 0, failed: 0, rejected: 10 });
+        expect(http.posts).toHaveLength(1);
         expect(await plugin.pendingCount()).toBe(0);
         expect(await plugin.deadLetters()).toHaveLength(10);
     });
 
     it('dead-letters named poison opIds and retries all remaining items as one batch', async () => {
-        http.respondToPost(() => ({ status: 400 }));
         await persistPlugin(plugin, {
             adds: [
                 { id: 'good-a', name: 'Good A' },
@@ -153,23 +154,20 @@ describe('hardening: dead-letter and poison isolation', () => {
         http.respondToPost(() => {
             if (!batchRejected) {
                 batchRejected = true;
-                return { status: 400, body: { rejectedOpIds: [poison!.opId] } };
+                return { status: 400, body: { rejectedOpIds: [poison?.opId] } };
             }
             return { status: 200, body: {} };
         });
-        const postsBeforeFlush = http.posts.length;
 
         const outcome = await plugin.syncNow();
 
-        expect(outcome).toEqual({ flushed: 2, failed: 0, deadLettered: 1 });
-        expect(http.posts.length - postsBeforeFlush).toBe(2);
+        expect(outcome).toEqual({ sent: 2, failed: 0, rejected: 1 });
+        expect(http.posts).toHaveLength(2);
         expect(await plugin.pendingCount()).toBe(0);
         expect((await plugin.deadLetters()).map((row) => JSON.parse(row.entityJson).id)).toEqual(['named-poison']);
     });
 
     it('isolates the poison item: a batch the server 400s flushes the units it accepts', async () => {
-        http.respondToPost(() => ({ status: 400 }));
-
         await persistPlugin(plugin, {
             adds: [
                 { id: 'ok-1', name: 'Fine' },
@@ -179,7 +177,6 @@ describe('hardening: dead-letter and poison isolation', () => {
         });
         expect(await readQueueRows(queueStore)).toHaveLength(3);
 
-        // Batch still rejected; individually the server takes everything but the poison row
         http.respondToPost((call) => {
             const body = call.body as { adds: Array<{ id: string }> };
             if (body.adds.length > 1) return { status: 400 };
@@ -188,30 +185,29 @@ describe('hardening: dead-letter and poison isolation', () => {
 
         const outcome = await plugin.syncNow();
 
-        expect(outcome).toEqual({ flushed: 2, failed: 0, deadLettered: 1 });
+        expect(outcome).toEqual({ sent: 2, failed: 0, rejected: 1 });
         const rows = await readQueueRows(queueStore);
         expect(rows).toHaveLength(1);
         expect(rows[0].status).toBe('dead');
         expect(JSON.parse(rows[0].entityJson)).toEqual(expect.objectContaining({ id: 'poison' }));
-        expect(deadLetters.flat()).toHaveLength(1);
+        expect(rejections.flatMap((event) => event.changes)).toHaveLength(1);
     });
 
-    it('reports 409 through onConflict on the direct path and again when the flush dead-letters it', async () => {
+    it('reports a 409 as a conflict once, when the flush rejects it', async () => {
         http.respondToPost(() => ({ status: 409 }));
 
         await persistPlugin(plugin, { adds: [{ id: 'dup', name: 'Duplicate' }] });
-
-        expect(conflicts).toHaveLength(1);
-        expect(conflicts[0]).toEqual({
-            collectionName: 'swrHardening',
-            entities: [expect.objectContaining({ id: 'dup' })],
-        });
+        expect(rejections).toHaveLength(0);
 
         const outcome = await plugin.syncNow();
 
-        expect(outcome).toEqual({ flushed: 0, failed: 0, deadLettered: 1 });
-        expect(conflicts).toHaveLength(2);
-        expect(deadLetters.flat()).toHaveLength(1);
+        expect(outcome).toEqual({ sent: 0, failed: 0, rejected: 1 });
+        expect(rejections).toEqual([expect.objectContaining({
+            collectionName: 'swrHardening',
+            conflict: true,
+            status: 409,
+            changes: [{ kind: 'add', entity: expect.objectContaining({ id: 'dup' }) }],
+        })]);
     });
 
     it('keeps transiently failing changes queued instead of dead-lettering them', async () => {
@@ -220,12 +216,12 @@ describe('hardening: dead-letter and poison isolation', () => {
         await persistPlugin(plugin, { adds: [{ id: 't-1', name: 'Later' }] });
         const outcome = await plugin.syncNow();
 
-        expect(outcome).toEqual({ flushed: 0, failed: 1, deadLettered: 0 });
+        expect(outcome).toEqual({ sent: 0, failed: 1, rejected: 0 });
         const rows = await readQueueRows(queueStore);
         expect(rows).toHaveLength(1);
         expect(rows[0].status).toBe('pending');
         expect(rows[0].attempts).toBeGreaterThan(0);
-        expect(deadLetters).toHaveLength(0);
+        expect(rejections).toHaveLength(0);
     });
 });
 
@@ -320,15 +316,10 @@ describe('hardening: compare-and-delete dequeue', () => {
         const http = installFetchMock();
         const swrStore = new MemoryPlugin(`swr-${uuid(8)}`);
         const plugin = new HttpSwrDbPlugin(swrStore, {
-            // The background loop is off so each test drives syncNow() itself
-            autoSync: false,
             getUrl: (collection) => `https://api.test/${collection}`,
             unsyncedQueueStore: queueStore,
-            bulkPersistRetryBaseDelayMs: 60_000,
-            bulkPersistRetryMaxAttempts: 1,
         });
 
-        // The first POST is slow and succeeds; the second fails, so only the first dequeues
         http.respondToPost((call) => {
             const body = call.body as { adds: Array<{ name: string }> };
             return body.adds[0]?.name === 'v1'
@@ -336,11 +327,11 @@ describe('hardening: compare-and-delete dequeue', () => {
                 : { status: 500 };
         });
 
-        const firstPersist = persistPlugin(plugin, { adds: [{ id: 'e1', name: 'v1' }] });
+        await persistPlugin(plugin, { adds: [{ id: 'e1', name: 'v1' }] });
         await waitFor(() => http.posts.length === 1, 'the first POST to be in flight');
 
         await persistPlugin(plugin, { adds: [{ id: 'e1', name: 'v2' }] });
-        await firstPersist;
+        await waitFor(() => http.posts.length === 2, 'the newer write to be sent');
         await sleep(50);
 
         const rows = await readQueueRows(queueStore);
@@ -351,25 +342,31 @@ describe('hardening: compare-and-delete dequeue', () => {
     });
 });
 
-describe('hardening: re-auth handshake', () => {
+describe('hardening: re-authenticating from onError', () => {
     let http: ReturnType<typeof installFetchMock>;
 
     beforeEach(() => {
         http = installFetchMock();
     });
 
-    it('query: a handler that resolves true earns exactly one retry with fresh headers', async () => {
+    it('query: refreshing credentials and calling retry() succeeds with fresh headers', async () => {
         let token = 'stale';
         const getHeaders = jest.fn(() => ({ Authorization: token }));
-        const onAuthError = jest.fn(async () => { token = 'fresh'; return true; });
+        const onError = jest.fn(async (error: HttpRequestError) => {
+            if (error.kind === 'http' && error.status === 401) {
+                token = 'fresh';
+                await error.retry();
+                return;
+            }
+            error.done();
+        });
 
         http.respondToGet(() => (token === 'fresh' ? { status: 200, body: [{ id: 'a', name: 'Alice' }] } : { status: 401 }));
 
         const plugin = new HttpDbPlugin({
             getUrl: (collection) => `https://api.test/${collection}`,
             getHeaders,
-            onAuthError,
-            queryRetryMaxAttempts: 1,
+            onError,
         });
 
         const rows = await queryPlugin(plugin);
@@ -379,67 +376,68 @@ describe('hardening: re-auth handshake', () => {
         expect(getHeaders).toHaveBeenCalledTimes(2);
         expect(http.gets[0].headers.Authorization).toBe('stale');
         expect(http.gets[1].headers.Authorization).toBe('fresh');
-        expect(onAuthError).toHaveBeenCalledTimes(1);
+        expect(onError).toHaveBeenCalledTimes(1);
     });
 
-    it('query: a handler that returns nothing does not earn a retry', async () => {
-        const onAuthError = jest.fn(() => undefined);
+    it('query: a hook that calls done() does not retry', async () => {
+        const onError = jest.fn((error: HttpRequestError) => error.done());
         http.respondToGet(() => ({ status: 401 }));
 
         const plugin = new HttpDbPlugin({
             getUrl: (collection) => `https://api.test/${collection}`,
-            onAuthError,
-            queryRetryMaxAttempts: 3,
+            onError,
         });
 
         await expect(queryPlugin(plugin)).rejects.toThrow('HTTP 401');
         expect(http.gets).toHaveLength(1);
-        expect(onAuthError).toHaveBeenCalledTimes(1);
+        expect(onError).toHaveBeenCalledTimes(1);
     });
 
-    it('query: re-auth is offered only once, however many 401s follow', async () => {
-        const onAuthError = jest.fn(async () => true);
+    it('query: the hook decides how many times to retry', async () => {
         http.respondToGet(() => ({ status: 401 }));
 
         const plugin = new HttpDbPlugin({
             getUrl: (collection) => `https://api.test/${collection}`,
-            onAuthError,
-            queryRetryMaxAttempts: 1,
+            onError: (error) => (error.attempt === 1 ? void error.retry() : error.done()),
         });
 
         await expect(queryPlugin(plugin)).rejects.toThrow('HTTP 401');
         expect(http.gets).toHaveLength(2);
     });
 
-    it('POST: a successful re-auth retries the persist once with fresh headers', async () => {
+    it('POST: refreshing credentials and calling retry() sends the change with fresh headers', async () => {
         let token = 'stale';
         const getHeaders = jest.fn(() => ({ Authorization: token }));
-        const onAuthError = jest.fn(async () => { token = 'fresh'; return true; });
         const swrStore = new MemoryPlugin(`swr-${uuid(8)}`);
         const queueStore = new MemoryPlugin(`queue-${uuid(8)}`);
+        const onError = async (error: SwrRequestError) => {
+            if (error.operation === 'read') {
+                error.done();
+                return;
+            }
+            if (error.kind === 'http' && error.status === 401) {
+                token = 'fresh';
+                await error.retry();
+                return;
+            }
+            error.defer();
+        };
 
         http.respondToPost(() => (token === 'fresh' ? { status: 200, body: {} } : { status: 401 }));
 
         const plugin = new HttpSwrDbPlugin(swrStore, {
-            // The background loop is off so each test drives syncNow() itself
-            autoSync: false,
             getUrl: (collection) => `https://api.test/${collection}`,
             unsyncedQueueStore: queueStore,
             getHeaders,
-            onAuthError,
-            bulkPersistRetryBaseDelayMs: 60_000,
-            bulkPersistRetryMaxAttempts: 1,
+            onError,
         });
 
         await persistPlugin(plugin, { adds: [{ id: 'p1', name: 'Needs auth' }] });
-        // Waiting on the event rather than a fixed delay: successive POSTs to one collection are
-        // paced now, so the retry lands later than it used to
         await waitFor(() => http.posts.length === 2, 'the re-auth retry to go out');
 
         expect(http.posts).toHaveLength(2);
         expect(http.posts[0].headers.Authorization).toBe('stale');
         expect(http.posts[1].headers.Authorization).toBe('fresh');
-        // The retry succeeded, so nothing is left queued
         await waitForRowCount(queueStore, 0, queueMirrorSchema);
 
         await new Promise<void>((resolve) => plugin.destroy(destroyEvent(), () => resolve()));
@@ -484,18 +482,30 @@ describe('hardening: request timeouts and destroy aborts', () => {
         expect(http.gets).toHaveLength(1);
     });
 
-    it('a timed-out cache-miss falls back to the SWR store instead of failing the read', async () => {
-        const swrStore = new MemoryPlugin(`swr-${uuid(8)}`);
-        const queueStore = new MemoryPlugin(`queue-${uuid(8)}`);
+    it.each([
+        ['fails the read when no onError is set', undefined],
+        ['fails the read when onError calls done()', (error: SwrRequestError) => (error.operation === 'read' ? error.done() : error.defer())],
+    ])('a timed-out first read %s', async (_, onError) => {
         http.respondToGet(() => ({ status: 200, hang: true }));
-
-        const plugin = new HttpSwrDbPlugin(swrStore, {
-            // The background loop is off so each test drives syncNow() itself
-            autoSync: false,
+        const plugin = new HttpSwrDbPlugin(new MemoryPlugin(`swr-${uuid(8)}`), {
             getUrl: (collection) => `https://api.test/${collection}`,
-            unsyncedQueueStore: queueStore,
+            unsyncedQueueStore: new MemoryPlugin(`queue-${uuid(8)}`),
             requestTimeoutMs: 50,
-            bulkPersistRetryBaseDelayMs: 60_000,
+            onError,
+        });
+
+        await expect(queryPlugin(plugin)).rejects.toThrow('Request timed out after 50ms');
+
+        await new Promise<void>((resolve) => plugin.destroy(destroyEvent(), () => resolve()));
+    });
+
+    it('a timed-out first read answers from the SWR store when onError calls useCached()', async () => {
+        http.respondToGet(() => ({ status: 200, hang: true }));
+        const plugin = new HttpSwrDbPlugin(new MemoryPlugin(`swr-${uuid(8)}`), {
+            getUrl: (collection) => `https://api.test/${collection}`,
+            unsyncedQueueStore: new MemoryPlugin(`queue-${uuid(8)}`),
+            requestTimeoutMs: 50,
+            onError: (error) => (error.operation === 'read' ? error.useCached() : error.defer()),
         });
 
         await expect(queryPlugin(plugin)).resolves.toHaveLength(0);
@@ -739,13 +749,9 @@ describe('hardening: KeyedMutex serializes per key', () => {
             : { status: 200, body: {} }));
 
         const plugin = new HttpSwrDbPlugin(swrStore, {
-            // The background loop is off so each test drives syncNow() itself
-            autoSync: false,
             getUrl: (collection) => `https://api.test/${collection}`,
             unsyncedQueueStore: queueStore,
-            // Without Retry-After this backoff would push the retry ~30s out
-            bulkPersistRetryBaseDelayMs: 60_000,
-            bulkPersistRetryMaxAttempts: 2,
+            onError: createRetry({ baseDelayMs: 60_000, maxAttempts: 2 }),
         });
 
         const started = Date.now();
@@ -766,12 +772,8 @@ describe('hardening: POST-echo reconciliation', () => {
         http.respondToPost(() => ({ status: 200, body: { saved: [{ id: 'local-1', name: 'Canonical from server' }] } }));
 
         const plugin = new HttpSwrDbPlugin(swrStore, {
-            // The background loop is off so each test drives syncNow() itself
-            autoSync: false,
             getUrl: (collection) => `https://api.test/${collection}`,
             unsyncedQueueStore: queueStore,
-            bulkPersistRetryBaseDelayMs: 60_000,
-            bulkPersistRetryMaxAttempts: 1,
             translatePersistResponse: (_schema, body) => (body as { saved?: unknown[] }).saved ?? null,
         });
 
@@ -805,12 +807,8 @@ describe('hardening: POST-echo reconciliation', () => {
         http.respondToPost(() => ({ status: 200, body: { saved: [{ id: 'x', name: 'Ignored' }] } }));
 
         const plugin = new HttpSwrDbPlugin(swrStore, {
-            // The background loop is off so each test drives syncNow() itself
-            autoSync: false,
             getUrl: (collection) => `https://api.test/${collection}`,
             unsyncedQueueStore: queueStore,
-            bulkPersistRetryBaseDelayMs: 60_000,
-            bulkPersistRetryMaxAttempts: 1,
             translatePersistResponse: () => null,
         });
 
@@ -860,12 +858,10 @@ describe('hardening: online event triggers an immediate flush', () => {
         http.respondToPost(() => ({ status: 500 }));
 
         const plugin = new HttpSwrDbPlugin(swrStore, {
-            // Auto-sync stays ON — the `online` listener is the subject here. The long delay
-            // keeps the *timer* out of the way so only the event can explain a flush.
-            autoSync: { delayMs: 60_000, onOnline: true },
+            autoSync: { delayMs: 60_000, syncWhenOnline: true },
+            postOnPersist: false,
             getUrl: (collection) => `https://api.test/${collection}`,
             unsyncedQueueStore: queueStore,
-            bulkPersistRetryMaxAttempts: 1,
         });
 
         await persistPlugin(plugin, { adds: [{ id: 'off-1', name: 'Written offline' }] });
@@ -936,9 +932,7 @@ describe('hardening: queue coalescing', () => {
         expect(doomed).toHaveLength(1);
         const reported = await queue.deadLetter(doomed as never);
 
-        expect(reported).toEqual([
-            expect.objectContaining({ collectionName: 'swrHardening', kind: 'add', entity: expect.objectContaining({ id: 'gone' }) }),
-        ]);
+        expect(reported.map((row) => [row.collectionName, JSON.parse(row.entityJson).id])).toEqual([['swrHardening', 'gone']]);
         expect(await queue.getPendingCount()).toBe(1);
         expect(await queue.getDeadLetters()).toHaveLength(1);
         expect(await queue.getUnsyncedCollections()).toEqual(['swrHardening']);
@@ -970,7 +964,7 @@ describe('hardening: queue coalescing', () => {
     });
 });
 
-describe('sync: automatic by default, overridable when it matters', () => {
+describe('sync: off by default, on when asked', () => {
     let http: ReturnType<typeof installFetchMock>;
     let swrStore: MemoryPlugin;
     let queueStore: MemoryPlugin;
@@ -980,7 +974,6 @@ describe('sync: automatic by default, overridable when it matters', () => {
         const plugin = new HttpSwrDbPlugin(swrStore, {
             getUrl: (collection) => `https://api.test/${collection}`,
             unsyncedQueueStore: queueStore,
-            bulkPersistRetryMaxAttempts: 1,
             writeBatchDelayMs: 0,
             ...options,
         });
@@ -1000,40 +993,48 @@ describe('sync: automatic by default, overridable when it matters', () => {
         })));
     });
 
-    it('replays a queued change on its own, with no help from the caller', async () => {
+    it('replays a queued change on its own once autoSync is on', async () => {
         http.respondToPost(() => ({ status: 500 }));
-        // A short cadence is the whole configuration needed to see the automatic behaviour
         const plugin = createPlugin({ autoSync: { delayMs: 20 } });
 
         await persistPlugin(plugin, { adds: [{ id: 'auto-1', name: 'Queued' }] });
         expect(await plugin.pendingCount()).toBe(1);
 
-        // Nothing below calls syncNow(): the background loop is the only thing that can drain this
         http.respondToPost(() => ({ status: 200, body: {} }));
         await waitFor(async () => (await plugin.pendingCount()) === 0, 'the background loop to drain the queue');
     });
 
+    it('does not sync in the background unless autoSync is set', async () => {
+        http.respondToPost(() => ({ status: 500 }));
+        const plugin = createPlugin();
+
+        await persistPlugin(plugin, { adds: [{ id: 'default-off', name: 'Queued' }] });
+        http.respondToPost(() => ({ status: 200, body: {} }));
+        const postsBefore = http.posts.length;
+        await sleep(120);
+
+        expect(http.posts).toHaveLength(postsBefore);
+        expect(await plugin.pendingCount()).toBe(1);
+    });
+
     it('autoSync: false queues durably but replays nothing until asked', async () => {
         http.respondToPost(() => ({ status: 500 }));
-        const plugin = createPlugin({ autoSync: false, bulkPersistRetryBaseDelayMs: 1 });
+        const plugin = createPlugin({ autoSync: false });
 
         await persistPlugin(plugin, { adds: [{ id: 'manual-1', name: 'Queued' }] });
         expect(await plugin.pendingCount()).toBe(1);
 
-        // Turning the loop off must not turn off the obligation: a tiny retry delay would have
-        // drained this within the wait if any timer were still running
         http.respondToPost(() => ({ status: 200, body: {} }));
         const postsBefore = http.posts.length;
         await sleep(120);
         expect(http.posts).toHaveLength(postsBefore);
         expect(await plugin.pendingCount()).toBe(1);
 
-        // ...and the caller can still drain it whenever it likes
-        expect(await plugin.syncNow()).toEqual({ flushed: 1, failed: 0, deadLettered: 0 });
+        expect(await plugin.syncNow()).toEqual({ sent: 1, failed: 0, rejected: 0 });
         expect(await plugin.pendingCount()).toBe(0);
     });
 
-    it('autoSync: false also silences the online trigger', async () => {
+    it('without autoSync the online trigger is silent', async () => {
         const target = new EventTarget();
         const globals = globalThis as unknown as Record<string, unknown>;
         const saved = { add: globals.addEventListener, remove: globals.removeEventListener };
@@ -1042,7 +1043,7 @@ describe('sync: automatic by default, overridable when it matters', () => {
 
         try {
             http.respondToPost(() => ({ status: 500 }));
-            const plugin = createPlugin({ autoSync: false });
+            const plugin = createPlugin();
             await persistPlugin(plugin, { adds: [{ id: 'off-1', name: 'Queued' }] });
 
             http.respondToPost(() => ({ status: 200, body: {} }));
@@ -1058,7 +1059,7 @@ describe('sync: automatic by default, overridable when it matters', () => {
         }
     });
 
-    it('onOnline: false keeps the timer but drops the connectivity listener', async () => {
+    it('syncWhenOnline: false keeps the timer but drops the connectivity listener', async () => {
         const target = new EventTarget();
         const globals = globalThis as unknown as Record<string, unknown>;
         const saved = { add: globals.addEventListener, remove: globals.removeEventListener };
@@ -1067,7 +1068,7 @@ describe('sync: automatic by default, overridable when it matters', () => {
 
         try {
             http.respondToPost(() => ({ status: 500 }));
-            const plugin = createPlugin({ autoSync: { delayMs: 60_000, onOnline: false } });
+            const plugin = createPlugin({ autoSync: { delayMs: 60_000, syncWhenOnline: false } });
             await persistPlugin(plugin, { adds: [{ id: 'no-online', name: 'Queued' }] });
 
             http.respondToPost(() => ({ status: 200, body: {} }));
@@ -1081,77 +1082,86 @@ describe('sync: automatic by default, overridable when it matters', () => {
         }
     });
 
-    it('reports every flush through onSync, manual or automatic', async () => {
-        const outcomes: SyncOutcome[] = [];
+    it('reports each sync that attempted something through the synced event', async () => {
+        const synced: SyncEvent[] = [];
         http.respondToPost(() => ({ status: 500 }));
-        const plugin = createPlugin({ autoSync: false, onSync: (outcome) => { outcomes.push(outcome); } });
+        const plugin = createPlugin({
+            postOnPersist: false,
+            onEvent: (event) => {
+                if (event.type === 'synced') {
+                    synced.push(event);
+                }
+            },
+        });
 
         await persistPlugin(plugin, { adds: [{ id: 's-1', name: 'Queued' }] });
         await plugin.syncNow();
-        expect(outcomes).toEqual([{ flushed: 0, failed: 1, deadLettered: 0 }]);
-
         http.respondToPost(() => ({ status: 200, body: {} }));
         await plugin.syncNow();
-        expect(outcomes[1]).toEqual({ flushed: 1, failed: 0, deadLettered: 0 });
-
-        // An empty flush still reports, so a "last synced" indicator keeps moving
         await plugin.syncNow();
-        expect(outcomes[2]).toEqual({ flushed: 0, failed: 0, deadLettered: 0 });
+
+        expect(synced).toEqual([
+            { type: 'synced', sent: 0, failed: 1, rejected: 0 },
+            { type: 'synced', sent: 1, failed: 0, rejected: 0 },
+        ]);
     });
 
-    it('a throwing onSync cannot break the flush', async () => {
-        // The write has to fail first, or the direct POST syncs it and the flush has no work
-        http.respondToPost(() => ({ status: 500 }));
-        const plugin = createPlugin({ autoSync: false, onSync: () => { throw new Error('bad listener'); } });
+    it('a throwing onEvent cannot break the flush', async () => {
+        http.respondToPost(() => ({ status: 200, body: {} }));
+        const plugin = createPlugin({ postOnPersist: false, onEvent: () => { throw new Error('bad listener'); } });
 
         await persistPlugin(plugin, { adds: [{ id: 'thrower', name: 'Queued' }] });
 
-        http.respondToPost(() => ({ status: 200, body: {} }));
-        await expect(plugin.syncNow()).resolves.toEqual({ flushed: 1, failed: 0, deadLettered: 0 });
+        await expect(plugin.syncNow()).resolves.toEqual({ sent: 1, failed: 0, rejected: 0 });
         expect(await plugin.pendingCount()).toBe(0);
     });
 
     it('exposes dead letters and can retry them once the cause is fixed', async () => {
-        // 422 is permanent: the flush isolates the change and gives up on it
         http.respondToPost(() => ({ status: 422 }));
-        const deadLettered: DeadLetteredChange[] = [];
-        const plugin = createPlugin({ autoSync: false, onSyncDeadLetter: (changes) => deadLettered.push(...changes) });
+        const rejected: ChangesRejectedEvent[] = [];
+        const plugin = createPlugin({
+            postOnPersist: false,
+            onError: createRetry({ maxAttempts: 1 }),
+            onEvent: (event) => {
+                if (event.type === 'changes-rejected') {
+                    rejected.push(event);
+                }
+            },
+        });
 
         await persistPlugin(plugin, { adds: [{ id: 'rejected', name: 'Bad record' }] });
-        expect(await plugin.syncNow()).toEqual({ flushed: 0, failed: 0, deadLettered: 1 });
+        expect(await plugin.syncNow()).toEqual({ sent: 0, failed: 0, rejected: 1 });
 
         expect(await plugin.pendingCount()).toBe(0);
         const dead = await plugin.deadLetters();
         expect(dead).toHaveLength(1);
         expect(JSON.parse(dead[0].entityJson)).toEqual(expect.objectContaining({ id: 'rejected' }));
-        expect(deadLettered).toHaveLength(1);
+        expect(rejected).toHaveLength(1);
 
-        // Nothing retries a dead letter on its own — the server said it cannot work
         const postsBefore = http.posts.length;
         await plugin.syncNow();
         expect(http.posts).toHaveLength(postsBefore);
 
-        // The cause is fixed (a deploy, a corrected record): now an explicit retry gets through
         http.respondToPost(() => ({ status: 200, body: {} }));
         const retried = await plugin.retryDeadLetters();
 
-        expect(retried).toEqual({ revived: 1, outcome: { flushed: 1, failed: 0, deadLettered: 0 } });
+        expect(retried).toEqual({ revived: 1, outcome: { sent: 1, failed: 0, rejected: 0 } });
         expect(await plugin.deadLetters()).toHaveLength(0);
         expect(await plugin.pendingCount()).toBe(0);
     });
 
     it('retryDeadLetters is a no-op when there is nothing to revive', async () => {
-        const plugin = createPlugin({ autoSync: false });
+        const plugin = createPlugin();
 
         expect(await plugin.retryDeadLetters()).toEqual({
             revived: 0,
-            outcome: { flushed: 0, failed: 0, deadLettered: 0 },
+            outcome: { sent: 0, failed: 0, rejected: 0 },
         });
     });
 
     it('a retried dead letter that fails again dead-letters again', async () => {
         http.respondToPost(() => ({ status: 422 }));
-        const plugin = createPlugin({ autoSync: false });
+        const plugin = createPlugin({ postOnPersist: false, onError: createRetry({ maxAttempts: 1 }) });
 
         await persistPlugin(plugin, { adds: [{ id: 'still-bad', name: 'Bad record' }] });
         await plugin.syncNow();
@@ -1160,14 +1170,14 @@ describe('sync: automatic by default, overridable when it matters', () => {
         const retried = await plugin.retryDeadLetters();
 
         expect(retried.revived).toBe(1);
-        expect(retried.outcome).toEqual({ flushed: 0, failed: 0, deadLettered: 1 });
+        expect(retried.outcome).toEqual({ sent: 0, failed: 0, rejected: 1 });
         expect(await plugin.deadLetters()).toHaveLength(1);
         expect(await plugin.pendingCount()).toBe(0);
     });
 
     it('pendingCount counts what is waiting, across collections', async () => {
         http.respondToPost(() => ({ status: 500 }));
-        const plugin = createPlugin({ autoSync: false });
+        const plugin = createPlugin();
 
         expect(await plugin.pendingCount()).toBe(0);
 
@@ -1177,21 +1187,6 @@ describe('sync: automatic by default, overridable when it matters', () => {
         http.respondToPost(() => ({ status: 200, body: {} }));
         await plugin.syncNow();
         expect(await plugin.pendingCount()).toBe(0);
-    });
-
-    it('keeps the old bulkPersistRetryBaseDelayMs cadence when no autoSync is given', async () => {
-        // Back-compat: that option used to double as the background flush delay, and existing
-        // configurations depend on it. Setting it far out must still hold the loop off.
-        http.respondToPost(() => ({ status: 500 }));
-        const plugin = createPlugin({ bulkPersistRetryBaseDelayMs: 60_000 });
-
-        await persistPlugin(plugin, { adds: [{ id: 'legacy-cadence', name: 'Queued' }] });
-        http.respondToPost(() => ({ status: 200, body: {} }));
-        const postsBefore = http.posts.length;
-        await sleep(120);
-
-        expect(http.posts).toHaveLength(postsBefore);
-        expect(await plugin.pendingCount()).toBe(1);
     });
 });
 
@@ -1205,7 +1200,7 @@ describe('sync: flushes are single-flight so the app cannot flood its own server
         const plugin = new HttpSwrDbPlugin(swrStore, {
             getUrl: (collection) => `https://api.test/${collection}`,
             unsyncedQueueStore: queueStore,
-            bulkPersistRetryMaxAttempts: 1,
+            postOnPersist: false,
             ...options,
         });
         created.push(plugin);
@@ -1224,53 +1219,40 @@ describe('sync: flushes are single-flight so the app cannot flood its own server
         })));
     });
 
-    /** Queues one change by failing its direct POST, then lets the server accept from now on. */
     async function queueOneChange(plugin: HttpSwrDbPlugin, id: string) {
-        http.respondToPost(() => ({ status: 500 }));
         await persistPlugin(plugin, { adds: [{ id, name: 'Queued' }] });
         http.respondToPost(() => ({ status: 200, body: {}, delayMs: 40 }));
     }
 
     it('two concurrent syncNow calls produce one round of requests', async () => {
-        const plugin = createPlugin({ autoSync: false });
+        const plugin = createPlugin();
         await queueOneChange(plugin, 'c-1');
-        const postsBefore = http.posts.length;
 
-        // The double-clicked button
         const [first, second] = await Promise.all([plugin.syncNow(), plugin.syncNow()]);
 
-        // One flush moved the change; the follow-up found an empty queue. Between them they
-        // sent exactly one POST — before the guard, both would have sent the same row.
-        expect(first.flushed + second.flushed).toBe(1);
-        expect(http.posts.length - postsBefore).toBe(1);
+        expect(first.sent + second.sent).toBe(1);
+        expect(http.posts).toHaveLength(1);
         expect(await plugin.pendingCount()).toBe(0);
     });
 
     it('a burst of triggers collapses into at most two flushes', async () => {
-        const plugin = createPlugin({ autoSync: false });
+        const plugin = createPlugin();
         await queueOneChange(plugin, 'c-2');
-        const postsBefore = http.posts.length;
 
         const outcomes = await Promise.all(Array.from({ length: 8 }, () => plugin.syncNow()));
 
-        expect(outcomes.reduce((sum, o) => sum + o.flushed, 0)).toBe(1);
-        // The running flush plus one shared follow-up — never eight
-        expect(http.posts.length - postsBefore).toBeLessThanOrEqual(1);
+        expect(outcomes.reduce((sum, o) => sum + o.sent, 0)).toBe(1);
+        expect(http.posts.length).toBeLessThanOrEqual(1);
     });
 
     it('a caller arriving mid-flush still gets its own change delivered', async () => {
-        // The reason mid-flush callers are not simply handed the running promise: this write
-        // lands after that flush has already read the queue, so joining it would report success
-        // for a change that never left.
-        const plugin = createPlugin({ autoSync: false });
+        const plugin = createPlugin();
         await queueOneChange(plugin, 'first');
 
         const running = plugin.syncNow();
         await sleep(10);
 
-        http.respondToPost(() => ({ status: 500 }));
         await persistPlugin(plugin, { adds: [{ id: 'second', name: 'Later' }] });
-        http.respondToPost(() => ({ status: 200, body: {} }));
 
         const followUp = plugin.syncNow();
         await Promise.all([running, followUp]);
@@ -1279,7 +1261,6 @@ describe('sync: flushes are single-flight so the app cannot flood its own server
     });
 
     it('the background timer and a manual flush never overlap', async () => {
-        // A tight cadence plus a manual flush is the collision that used to double the traffic
         const plugin = createPlugin({ autoSync: { delayMs: 5, minIntervalMs: 0 } });
         http.respondToPost(() => ({ status: 500 }));
         await persistPlugin(plugin, { adds: [{ id: 'overlap', name: 'Queued' }] });
@@ -1291,7 +1272,6 @@ describe('sync: flushes are single-flight so the app cannot flood its own server
             maxConcurrent = Math.max(maxConcurrent, concurrent);
             return { status: 200, body: {}, delayMs: 30 };
         });
-        // The mock resolves after delayMs, so decrement once the response has been produced
         const settle = setInterval(() => { concurrent = 0; }, 200);
 
         await Promise.all([plugin.syncNow(), plugin.syncNow(), sleep(80)]);
@@ -1306,14 +1286,13 @@ describe('sync: flushes are single-flight so the app cannot flood its own server
         await persistPlugin(plugin, { adds: [{ id: 'spaced', name: 'Queued' }] });
 
         const postsAfterPersist = http.posts.length;
-        // A 5ms cadence would fire ~20 times in 100ms; the interval holds it to about one
         await sleep(100);
 
         expect(http.posts.length - postsAfterPersist).toBeLessThanOrEqual(2);
     });
 
     it('does not apply the interval when the caller drives sync themselves', async () => {
-        const plugin = createPlugin({ autoSync: false });
+        const plugin = createPlugin();
         http.respondToPost(() => ({ status: 200, body: {} }));
 
         const started = Date.now();
@@ -1321,7 +1300,6 @@ describe('sync: flushes are single-flight so the app cannot flood its own server
         await plugin.syncNow();
         await plugin.syncNow();
 
-        // autoSync: false means no hidden delays — three sequential flushes are immediate
         expect(Date.now() - started).toBeLessThan(150);
     });
 });
@@ -1336,8 +1314,7 @@ describe('sync: an update sends keys plus what changed', () => {
         const plugin = new HttpSwrDbPlugin(swrStore, {
             getUrl: (collection) => `https://api.test/${collection}`,
             unsyncedQueueStore: queueStore,
-            autoSync: false,
-            bulkPersistRetryMaxAttempts: 1,
+            postOnPersist: false,
             writeBatchDelayMs: 0,
             ...options,
         });
@@ -1370,12 +1347,12 @@ describe('sync: an update sends keys plus what changed', () => {
         await persistPlugin(plugin, {
             updatesWithDelta: [{ entity: { id: 'e1', name: 'Renamed' }, delta: { name: 'Renamed' } }],
         });
+        await plugin.syncNow();
 
         expect(lastPostBody().updates).toEqual([{ id: 'e1', name: 'Renamed' }]);
     });
 
     it('omits fields that did not change', async () => {
-        // A wide row where one column moved: the body should not carry the rest
         const wideSchema = s.define('wideRows', {
             id: s.string().key().identity(),
             name: s.string(),
@@ -1390,16 +1367,16 @@ describe('sync: an update sends keys plus what changed', () => {
                 delta: { price: 42 },
             }],
         }, wideSchema);
+        await plugin.syncNow();
 
         expect(lastPostBody().updates).toEqual([{ id: 'w1', price: 42 }]);
     });
 
     it('falls back to the whole entity when nothing says which fields changed', async () => {
-        // An empty delta is core's "no tracked change list" convention, not "nothing changed".
-        // Sending keys alone would be a well-formed update that silently drops the edit.
         const plugin = createPlugin();
 
         await persistPlugin(plugin, { updates: [{ id: 'e2', name: 'Whole entity' }] });
+        await plugin.syncNow();
 
         expect(lastPostBody().updates).toEqual([{ id: 'e2', name: 'Whole entity' }]);
     });
@@ -1411,19 +1388,15 @@ describe('sync: an update sends keys plus what changed', () => {
         await persistPlugin(plugin, {
             updatesWithDelta: [{ entity: { id: 'e3', name: 'Renamed' }, delta: { name: 'Renamed' } }],
         });
-        expect(await plugin.pendingCount()).toBe(1);
+        expect(await plugin.syncNow()).toEqual({ sent: 0, failed: 1, rejected: 0 });
 
-        // The delta is long gone by flush time — the queue has to have kept the body
         http.respondToPost(() => ({ status: 200, body: {} }));
-        expect(await plugin.syncNow()).toEqual({ flushed: 1, failed: 0, deadLettered: 0 });
+        expect(await plugin.syncNow()).toEqual({ sent: 1, failed: 0, rejected: 0 });
 
         expect(lastPostBody().updates).toEqual([{ id: 'e3', name: 'Renamed' }]);
     });
 
     it('merges the fields of two queued updates to the same row', async () => {
-        // Rows are keyed by (collection, kind, ids), so the second update replaces the first.
-        // Without merging, the first field change would never reach the server.
-        http.respondToPost(() => ({ status: 500 }));
         const plugin = createPlugin();
 
         await persistPlugin(plugin, {
@@ -1432,40 +1405,30 @@ describe('sync: an update sends keys plus what changed', () => {
         await persistPlugin(plugin, {
             updatesWithDelta: [{ entity: { id: 'e4', name: 'Renamed', price: 99 }, delta: { price: 99 } }],
         });
-
-        http.respondToPost(() => ({ status: 200, body: {} }));
         await plugin.syncNow();
 
         expect(lastPostBody().updates).toEqual([{ id: 'e4', name: 'Renamed', price: 99 }]);
     });
 
     it('a whole-entity update absorbs a partial one', async () => {
-        http.respondToPost(() => ({ status: 500 }));
         const plugin = createPlugin();
 
         await persistPlugin(plugin, {
             updatesWithDelta: [{ entity: { id: 'e5', name: 'Partial' }, delta: { name: 'Partial' } }],
         });
-        // No delta: this one means "write everything", which subsumes the field above
         await persistPlugin(plugin, { updates: [{ id: 'e5', name: 'Everything' }] });
-
-        http.respondToPost(() => ({ status: 200, body: {} }));
         await plugin.syncNow();
 
         expect(lastPostBody().updates).toEqual([{ id: 'e5', name: 'Everything' }]);
     });
 
     it('sends the whole entity when an add for the same row is still queued', async () => {
-        // The server has never seen this row, so there is nothing for a partial body to patch
-        http.respondToPost(() => ({ status: 500 }));
         const plugin = createPlugin();
 
         await persistPlugin(plugin, { adds: [{ id: 'e6', name: 'Created' }] });
         await persistPlugin(plugin, {
             updatesWithDelta: [{ entity: { id: 'e6', name: 'Edited' }, delta: { name: 'Edited' } }],
         });
-
-        http.respondToPost(() => ({ status: 200, body: {} }));
         await plugin.syncNow();
 
         const body = lastPostBody();
@@ -1480,6 +1443,7 @@ describe('sync: an update sends keys plus what changed', () => {
             adds: [{ id: 'a1', name: 'Added' }],
             removes: [{ id: 'r1', name: 'Removed' }],
         });
+        await plugin.syncNow();
 
         const body = lastPostBody();
         expect(body.adds).toEqual([{ id: 'a1', name: 'Added' }]);
@@ -1575,7 +1539,6 @@ describe('pacing: reads', () => {
         const plugin = new HttpSwrDbPlugin(swrStore, {
             getUrl: (collection) => `https://api.test/${collection}`,
             unsyncedQueueStore: queueStore,
-            autoSync: false,
             ...options,
         });
         created.push(plugin);
@@ -1642,8 +1605,6 @@ describe('pacing: writes', () => {
         const plugin = new HttpSwrDbPlugin(swrStore, {
             getUrl: (collection) => `https://api.test/${collection}`,
             unsyncedQueueStore: queueStore,
-            autoSync: false,
-            bulkPersistRetryMaxAttempts: 1,
             writeBatchDelayMs: 0,
             ...options,
         });
@@ -1665,33 +1626,31 @@ describe('pacing: writes', () => {
     });
 
     it('never opens two POSTs for one collection at once', async () => {
-        // Each response takes 25ms, so overlapping requests would start less than 25ms apart.
-        // Comparing entry times beats a counter the mock cannot decrement honestly.
         const enteredAt: number[] = [];
         http.respondToPost(() => {
             enteredAt.push(Date.now());
             return { status: 200, body: {}, delayMs: 25 };
         });
 
-        const plugin = createPlugin({ minRequestIntervalMs: 0, writeBatchDelayMs: 0 });
+        const plugin = createPlugin({ minRequestIntervalMs: 0 });
         await Promise.all([
             persistPlugin(plugin, { adds: [{ id: 'p-1', name: 'One' }] }),
             persistPlugin(plugin, { adds: [{ id: 'p-2', name: 'Two' }] }),
             persistPlugin(plugin, { adds: [{ id: 'p-3', name: 'Three' }] }),
         ]);
-        await waitFor(() => enteredAt.length === 3, 'all three POSTs to be issued');
+        await waitFor(async () => (await plugin.pendingCount()) === 0, 'every save to be delivered');
 
         for (let i = 1; i < enteredAt.length; i++) {
             expect(enteredAt[i] - enteredAt[i - 1]).toBeGreaterThanOrEqual(20);
         }
+        expect(http.posts.flatMap((post) => (post.body as { adds: unknown[] }).adds)).toHaveLength(3);
     });
 
     it('postOnPersist: false sends nothing on the save itself', async () => {
-        const plugin = createPlugin({ postOnPersist: false, autoSync: false });
+        const plugin = createPlugin({ postOnPersist: false });
 
         await persistPlugin(plugin, { adds: [{ id: 'q-1', name: 'Queued' }] });
 
-        // The write is durable and acknowledged, it just has not been delivered yet
         expect(http.posts).toHaveLength(0);
         expect(await plugin.pendingCount()).toBe(1);
         expect(await queryPlugin(swrStore)).toHaveLength(1);
@@ -1714,8 +1673,7 @@ describe('pacing: writes', () => {
         expect((http.posts[0].body as { adds: unknown[] }).adds).toHaveLength(10);
     });
 
-    it('postOnPersist: false turns a burst of saves into a single request', async () => {
-        // The point of the option: ten rapid saves are ten POSTs by default
+    it('postOnPersist: false turns a burst of saves into a few paced requests', async () => {
         const plugin = createPlugin({ postOnPersist: false, autoSync: { delayMs: 20, minIntervalMs: 50 } });
 
         for (let i = 0; i < 10; i++) {
@@ -1724,21 +1682,25 @@ describe('pacing: writes', () => {
 
         await waitFor(async () => (await plugin.pendingCount()) === 0, 'the paced flush to drain the burst');
 
-        // One request per collection per flush, so ten writes cost a handful of POSTs at most
         expect(http.posts.length).toBeLessThanOrEqual(3);
         const delivered = http.posts.flatMap((p) => (p.body as { adds: unknown[] }).adds);
         expect(delivered).toHaveLength(10);
     });
 
     it('paces successive saves for one collection when an interval is set', async () => {
-        const plugin = createPlugin({ minRequestIntervalMs: 80, writeBatchDelayMs: 0 });
-        const started = Date.now();
+        const enteredAt: number[] = [];
+        http.respondToPost(() => {
+            enteredAt.push(Date.now());
+            return { status: 200, body: {} };
+        });
+        const plugin = createPlugin({ minRequestIntervalMs: 80 });
 
         await persistPlugin(plugin, { adds: [{ id: 'i-1', name: 'One' }] }, testSchema, 0);
+        await waitFor(async () => (await plugin.pendingCount()) === 0, 'the first save to be delivered');
         await persistPlugin(plugin, { adds: [{ id: 'i-2', name: 'Two' }] }, testSchema, 0);
-        await waitFor(() => http.posts.length === 2, 'both POSTs to go out');
+        await waitFor(() => enteredAt.length === 2, 'both POSTs to go out');
 
-        expect(Date.now() - started).toBeGreaterThanOrEqual(80);
+        expect(enteredAt[1] - enteredAt[0]).toBeGreaterThanOrEqual(75);
     });
 });
 
@@ -1869,7 +1831,6 @@ describe('reads: an empty result is not a cold cache', () => {
         const plugin = new HttpSwrDbPlugin(swrStore, {
             getUrl: (collection) => `https://api.test/${collection}`,
             unsyncedQueueStore: queueStore,
-            autoSync: false,
             minRequestIntervalMs: 0,
             ...options,
         });

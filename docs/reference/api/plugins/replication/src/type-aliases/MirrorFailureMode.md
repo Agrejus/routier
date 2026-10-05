@@ -8,4 +8,4 @@
 
 > **MirrorFailureMode** = `"surface"` \| `"swallow"`
 
-Defined in: [plugins/replication/src/PluginSyncEngine.ts:22](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L22)
+Defined in: [plugins/replication/src/PluginSyncEngine.ts:27](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L27)

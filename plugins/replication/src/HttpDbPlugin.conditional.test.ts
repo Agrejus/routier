@@ -1,12 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { s } from '@routier/core/schema';
-import { logger } from '@routier/core/utilities';
 import { Result } from '@routier/core/results';
 import { HttpDbPlugin } from './HttpDbPlugin';
 import { HttpStatusError } from './httpUtils';
 import { createQueryEvent, installFetchMock } from './__tests__/httpTestKit';
 
-const createPlugin = () => new HttpDbPlugin({ getUrl: (collection) => `https://api.test/${collection}`, queryRetryMaxAttempts: 1 });
+const createPlugin = () => new HttpDbPlugin({ getUrl: (collection) => `https://api.test/${collection}` });
 
 describe('HttpDbPlugin.queryConditional', () => {
     let http: ReturnType<typeof installFetchMock>;
@@ -106,73 +105,46 @@ describe('HttpDbPlugin query attempts', () => {
         jest.useRealTimers();
     });
 
-    it('retries a failed request after a backoff and logs each step', async () => {
-        const warn = jest.spyOn(logger, 'warn');
-        const error = jest.spyOn(logger, 'error');
+    it('makes a single attempt', async () => {
         http.respondToGet(() => ({ status: 500 }));
-        const plugin = new HttpDbPlugin({ getUrl: (collection) => `https://api.test/${collection}`, queryRetryMaxAttempts: 2, queryRetryBaseDelayMs: 1 });
-        const event = createQueryEvent();
-
-        const result = await plugin.queryConditional(event, null);
-
-        expect([result.kind, http.gets.length]).toEqual(['failed', 2]);
-        expect(warn).toHaveBeenCalledWith('[HttpDbPlugin] query failed, retrying', expect.objectContaining({ collectionName: 'swrHardening', attempt: 1, maxAttempts: 2 }));
-        expect(error).toHaveBeenCalledWith('[HttpDbPlugin] query failed', expect.objectContaining({ collectionName: 'swrHardening', eventId: event.id }));
-    });
-
-    it('waits for the backoff before retrying', async () => {
-        jest.useFakeTimers();
-        http.respondToGet(() => ({ status: 500 }));
-        const plugin = new HttpDbPlugin({ getUrl: (collection) => `https://api.test/${collection}`, queryRetryMaxAttempts: 2, queryRetryBaseDelayMs: 1_000 });
-
-        const pending = plugin.queryConditional(createQueryEvent(), null);
-        await jest.advanceTimersByTimeAsync(400);
-        const beforeBackoff = http.gets.length;
-        await jest.advanceTimersByTimeAsync(1_000);
-        await pending;
-
-        expect([beforeBackoff, http.gets.length]).toEqual([1, 2]);
-    });
-
-    it('retries a network error rather than treating it as an auth error', async () => {
-        http.respondToGet(() => { throw new Error('offline'); });
-        const plugin = new HttpDbPlugin({ getUrl: (collection) => `https://api.test/${collection}`, queryRetryMaxAttempts: 2, queryRetryBaseDelayMs: 1 });
-
-        const result = await plugin.queryConditional(createQueryEvent(), null);
-
-        expect([result.kind, http.gets.length]).toEqual(['failed', 2]);
-    });
-
-    it('does not spend a retry on a successful re-auth', async () => {
-        let calls = 0;
-        http.respondToGet(() => (++calls === 1 ? { status: 401 } : { status: 500 }));
-        const plugin = new HttpDbPlugin({ getUrl: (collection) => `https://api.test/${collection}`, queryRetryMaxAttempts: 2, queryRetryBaseDelayMs: 1, onAuthError: async () => true });
-
-        await plugin.queryConditional(createQueryEvent(), null);
-
-        expect(http.gets.length).toBe(3);
-    });
-
-    it('retries once after a successful re-auth and logs it', async () => {
-        const info = jest.spyOn(logger, 'info');
-        let calls = 0;
-        http.respondToGet(() => (++calls === 1 ? { status: 401 } : { status: 200, body: [] }));
-        const plugin = new HttpDbPlugin({ getUrl: (collection) => `https://api.test/${collection}`, queryRetryMaxAttempts: 1, onAuthError: async () => true });
-
-        const result = await plugin.queryConditional(createQueryEvent(), null);
-
-        expect(result.kind).toBe('modified');
-        expect(info).toHaveBeenCalledWith('[HttpDbPlugin] re-auth succeeded, retrying query once', { collectionName: 'swrHardening' });
-    });
-
-    it('stops on an auth error and logs it', async () => {
-        const warn = jest.spyOn(logger, 'warn');
-        http.respondToGet(() => ({ status: 403 }));
 
         const result = await createPlugin().queryConditional(createQueryEvent(), null);
 
-        expect(result.kind).toBe('failed');
-        expect(warn).toHaveBeenCalledWith('[HttpDbPlugin] query auth error, not retrying', expect.objectContaining({ collectionName: 'swrHardening', error: expect.any(HttpStatusError) }));
+        expect([result.kind, http.gets.length]).toEqual(['failed', 1]);
+    });
+
+    it('keeps the status, headers and body of a failed response', async () => {
+        http.respondToGet(() => ({ status: 429, body: { reason: 'slow down' }, headers: { 'Retry-After': '7' } }));
+
+        const result = await createPlugin().queryConditional(createQueryEvent(), null);
+
+        const error = result.kind === 'failed' ? result.error : null;
+        expect(error instanceof HttpStatusError ? [error.status, error.responseBody, error.headers.get('Retry-After'), error.retryAfterMs] : null)
+            .toEqual([429, { reason: 'slow down' }, '7', 7_000]);
+    });
+
+    it('keeps a failed response body that is not JSON as text', async () => {
+        http.respondToGet(() => ({ status: 502, text: 'Bad gateway' }));
+
+        const result = await createPlugin().queryConditional(createQueryEvent(), null);
+
+        expect(result.kind === 'failed' && result.error instanceof HttpStatusError ? result.error.responseBody : undefined).toBe('Bad gateway');
+    });
+
+    it('keeps no body for a failed response with an empty one', async () => {
+        http.respondToGet(() => ({ status: 503, text: '' }));
+
+        const result = await createPlugin().queryConditional(createQueryEvent(), null);
+
+        expect(result.kind === 'failed' && result.error instanceof HttpStatusError ? result.error.responseBody : undefined).toBeNull();
+    });
+
+    it('reports a request that got no response as a network error', async () => {
+        http.respondToGet(() => { throw new TypeError('offline'); });
+
+        const result = await createPlugin().queryConditional(createQueryEvent(), null);
+
+        expect(result.kind === 'failed' ? [result.error.name, result.error.message] : null).toEqual(['NetworkError', 'offline']);
     });
 
     it('reads the body as text when the response offers it', async () => {

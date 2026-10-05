@@ -6,7 +6,7 @@
 
 # Class: HttpTransportDbPlugin
 
-Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:104](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpTransportDbPlugin.ts#L104)
+Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:107](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpTransportDbPlugin.ts#L107)
 
 ## Implements
 
@@ -18,7 +18,7 @@ Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:104](https://githu
 
 > **new HttpTransportDbPlugin**(`options`): `HttpTransportDbPlugin`
 
-Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:111](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpTransportDbPlugin.ts#L111)
+Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:116](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpTransportDbPlugin.ts#L116)
 
 #### Parameters
 
@@ -36,7 +36,7 @@ Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:111](https://githu
 
 > `readonly` **databaseName**: `string`
 
-Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:106](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpTransportDbPlugin.ts#L106)
+Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:109](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpTransportDbPlugin.ts#L109)
 
 Uniquely identifies the database this plugin talks to, INCLUDING host or path where a
 bare name would collide — `orders.db` in two directories is two databases, and `mydb`
@@ -68,7 +68,7 @@ host/port/database rather than returning a connection string.
 
 > **query**\<`TRoot`, `TShape`\>(`event`, `done`): `void`
 
-Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:162](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpTransportDbPlugin.ts#L162)
+Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:172](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpTransportDbPlugin.ts#L172)
 
 Executes a query operation on the database.
 
@@ -110,7 +110,7 @@ Callback with the result or error.
 
 > **bulkPersist**(`event`, `done`): `void`
 
-Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:249](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpTransportDbPlugin.ts#L249)
+Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:272](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpTransportDbPlugin.ts#L272)
 
 Executes bulk operations (add, update, remove) on the database.
 
@@ -142,7 +142,7 @@ Callback with the result or error.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:295](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpTransportDbPlugin.ts#L295)
+Defined in: [plugins/replication/src/HttpTransportDbPlugin.ts:349](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpTransportDbPlugin.ts#L349)
 
 Does NOT destroy the remote database.
 

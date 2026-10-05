@@ -61,14 +61,6 @@ export type QueuedChange = {
     payload?: Record<string, unknown> | null;
 };
 
-/** A change the queue has given up on, reported via onSyncDeadLetter. */
-export type DeadLetteredChange = {
-    collectionName: string;
-    kind: QueuedChangeKind;
-    entity: unknown;
-    opId: string | null;
-};
-
 function rowIdOf(collectionName: string, kind: QueuedChangeKind, recordIdsJson: string): string {
     return `${collectionName}${ROW_ID_DELIMITER}${kind}${ROW_ID_DELIMITER}${recordIdsJson}`;
 }
@@ -469,38 +461,19 @@ export class UnsyncedQueue {
      * Dead-letters rows: they stop flushing, stop shielding their entities from
      * revalidate, and are returned so the plugin can report them to the app.
      */
-    async deadLetter(rows: UnsyncedQueueRow[]): Promise<DeadLetteredChange[]> {
-        if (rows.length === 0) return [];
+    async deadLetter(rows: UnsyncedQueueRow[]): Promise<UnsyncedQueueRow[]> {
+        const unchanged = await this.unchangedSince(rows);
 
         await this.persistToStore({
             collectionName: '',
             adds: [],
             removeRowIds: [],
-            replacements: rows.map((row) => ({ ...row, status: 'dead' })),
+            replacements: unchanged.map((row) => ({ ...row, status: 'dead' })),
         });
 
-        return rows.map((row) => {
-            let entity: unknown = null;
-            try { entity = JSON.parse(row.entityJson); } catch { /* reported as null */ }
-            return {
-                collectionName: row.collectionName,
-                kind: kindOfRow(row),
-                entity,
-                opId: row.opId ?? null,
-            };
-        });
+        return unchanged;
     }
 
-    /**
-     * Returns dead-lettered rows to the pending set so the next flush tries them again.
-     *
-     * Dead-lettering is the queue giving up, and it is deliberately one-way: the server said
-     * no in a way that retrying cannot fix. Something outside the queue has to have changed
-     * for a retry to make sense — the user fixed the record, a deploy fixed the validation, an
-     * operator is retrying by hand — so this is an explicit call, never automatic.
-     *
-     * Attempts reset to 0: the count describes this new run, not the failed one.
-     */
     async revive(rows: UnsyncedQueueRow[]): Promise<number> {
         const dead = rows.filter(isDead);
         if (dead.length === 0) return 0;
@@ -516,13 +489,26 @@ export class UnsyncedQueue {
     }
 
     /** Bumps the informational attempt counter on rows after a failed flush. */
-    recordFailedAttempt(rows: UnsyncedQueueRow[]): Promise<void> {
-        if (rows.length === 0) return Promise.resolve();
-        return this.persistToStore({
+    async recordFailedAttempt(rows: UnsyncedQueueRow[]): Promise<void> {
+        const unchanged = await this.unchangedSince(rows);
+
+        await this.persistToStore({
             collectionName: '',
             adds: [],
             removeRowIds: [],
-            replacements: rows.map((row) => ({ ...row, attempts: (row.attempts ?? 0) + 1 })),
+            replacements: unchanged.map((row) => ({ ...row, attempts: (row.attempts ?? 0) + 1 })),
+        });
+    }
+
+    private async unchangedSince(rows: UnsyncedQueueRow[]): Promise<UnsyncedQueueRow[]> {
+        if (rows.length === 0) return [];
+
+        const sent = new Map(rows.map((row) => [row.id, row.revision]));
+
+        return (await this.allRows()).filter((row) => {
+            if (!sent.has(row.id)) return false;
+            const sentRevision = sent.get(row.id);
+            return sentRevision == null || row.revision == null || sentRevision === row.revision;
         });
     }
 

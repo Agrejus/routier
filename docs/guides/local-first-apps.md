@@ -32,9 +32,9 @@ A warm local cache can answer without the server. A device that has never downlo
 | --- | --- |
 | Matching cached data is fresh | Return local data without a remote request |
 | Matching cached data is stale | Return local data, then revalidate in the background |
-| No matching cached data exists | Fetch remotely and populate the cache; this read can fail offline |
+| No matching cached data exists | Fetch remotely and populate the cache; offline, this read throws unless `onError` calls `useCached()` |
 | A local write has not reached the server | Keep it in the local store and unsynced queue |
-| Connectivity returns | Automatic sync requests an immediate queue flush by default |
+| Connectivity returns | With `autoSync` on, an immediate queue flush |
 
 The browser's `online` event is only a retry trigger; it is not proof that your API is reachable. Successful requests and queue state are the useful signals.
 
@@ -99,11 +99,11 @@ This lets remote revalidation update the optimistic layer and notify live querie
 For each serialized query, `HttpSwrDbPlugin` tracks cache freshness independently.
 
 1. **Read local first.** The wrapped plugin executes the Routier query. With the optimistic wrapper, the first query hydrates that collection from the durable cache into memory.
-2. **Handle a cache miss.** The HTTP request is blocking because there is no local result to display. A successful response is translated, persisted locally, and returned.
+2. **Handle a cache miss.** The HTTP request is blocking because there is no local result to display. A successful response is translated, persisted locally, and returned. A failed one goes to `onError`; the read throws unless it calls `retry()` and that succeeds, or calls `useCached()` to answer from the local store.
 3. **Return a fresh hit.** Before `maxAgeMs` expires, the local result is returned without revalidation.
-4. **Return a stale hit.** The stale result is returned immediately. Revalidation runs in the background, sending the last response's `ETag` as `If-None-Match`. A `304 Not Modified` keeps the local rows and marks the query fresh; observe it through `onRevalidateNotModified`, or turn it off with `conditionalRevalidation: false`. Serve these reads with `Cache-Control: no-store`: the plugin keeps its own cache, and a browser's HTTP cache would otherwise send its own `If-None-Match` and answer a `304` from its copy, even with `conditionalRevalidation: false`.
+4. **Return a stale hit.** The stale result is returned immediately. Revalidation runs in the background, sending the last response's `ETag` as `If-None-Match`. A `304 Not Modified` keeps the local rows and marks the query fresh, and is reported as a `read` event with `status: 304`; turn it off with `conditionalRevalidation: false`. Serve these reads with `Cache-Control: no-store`: the plugin keeps its own cache, and a browser's HTTP cache would otherwise send its own `If-None-Match` and answer a `304` from its copy, even with `conditionalRevalidation: false`.
 5. **Apply the remote diff.** Server rows are compared with the cache. When the schema declares an `.etag()`, a newer server row replaces the local one, the same etag is skipped, and an older one is ignored. Adds, updates, and removals are persisted locally; subscribed queries are notified.
-6. **Keep stale data on failure.** A failed background revalidation does not replace a successful cached result. Observe it through `onRevalidateError`.
+6. **Keep stale data on failure.** A failed background revalidation does not replace a successful cached result. It goes to `onError`, and is reported as a `read` event with `ok: false`.
 
 Concurrent reads for the same URL are coalesced, and concurrent revalidations for the same cache key share work.
 
@@ -118,11 +118,11 @@ Calling `saveChangesAsync()` with `HttpSwrDbPlugin` means **accepted locally and
 1. Routier sends tracked adds, updates, and removes to the SWR plugin.
 2. The change is applied to the local store, updating local/live reads.
 3. Every operation is written to `_routier_unsynced`. This queue write is awaited before success is reported.
-4. By default, `postOnPersist: true` also starts the HTTP POST path immediately. Rapid writes to one URL share a short batching window.
+4. By default, `postOnPersist: true` also sends the queue shortly after the save. Rapid saves share a short batching window and go out as one request.
 5. A successful response removes acknowledged queue entries. `translatePersistResponse` can replace optimistic entities with canonical server versions.
-6. A transient failure leaves entries queued. Automatic synchronization retries with backoff and flushes immediately when the platform emits `online`.
+6. A failed request goes to `onError`, which can `retry()`, `reject()` or `defer()` it. With no `onError` the entries stay queued. With `autoSync` on, the queue is flushed on a backing-off timer and immediately when the platform emits `online`.
 
-With `postOnPersist: false`, saves remain local until the paced background flush. With both `postOnPersist: false` and `autoSync: false`, nothing is sent until `syncNow()` is called.
+With `postOnPersist: false`, saves remain local until the next flush. Without `autoSync`, that is the next `syncNow()` call.
 
 ### Delivery is at least once
 
@@ -173,13 +173,15 @@ Return canonical saved entities when the server assigns IDs, versions, normalize
 
 ### Status behavior
 
-| Response | Routier behavior |
+Every failure goes to `onError`, which decides. Without one, failed writes stay queued. `createRetry()` is a ready-made policy:
+
+| Response | With `createRetry()` |
 | --- | --- |
 | Success | Remove confirmed operations from the queue |
-| `401` or `403` | Call `onAuthError`; retry once only if it returns `true` |
-| `408`, `429`, network error, or retryable server failure | Keep queued and retry with backoff |
-| `409` | Call `onConflict`, dead-letter the change, then allow the server copy to win on revalidation |
-| Other permanent `4xx` | Dead-letter rejected work rather than retry forever |
+| `401` or `403` | Not retried; the write stays queued. Refresh credentials in your own `onError` and call `retry()` |
+| `408`, `429`, network error, or `5xx` | Retry with backoff; once attempts run out, keep queued |
+| `409` | Reject: the change is dead-lettered, reported as `changes-rejected` with `conflict: true`, and the server copy wins on the next read |
+| Other permanent `4xx` | Reject rather than retry forever |
 
 For batched validation, the server can return `rejectedOpIds` so valid operations continue without one request per entity. See [Structured Permanent Rejections](/integrations/plugins/built-in-plugins/replication/README#structured-permanent-rejections).
 
@@ -194,7 +196,7 @@ Routier does not provide an automatic CRDT or business-level merge policy. Choos
 - **Field merge:** let the server merge non-overlapping fields and return the canonical entity.
 - **Manual resolution:** retain enough context to show local and remote values and let the user decide.
 
-Do not silently discard dead letters. Surface them through `onSyncDeadLetter` and provide a correction, dismissal, export, or retry workflow. `retryDeadLetters()` is appropriate only after the reason for rejection has been fixed.
+Do not silently discard dead letters. Surface the `changes-rejected` event and provide a correction, dismissal, export, or retry workflow. `retryDeadLetters()` is appropriate only after the reason for rejection has been fixed.
 
 ## Show sync state
 
@@ -211,7 +213,7 @@ console.log({ pending, outcome, failures });
 const retried = await store.sync.retryDeadLetters();
 ```
 
-Use `onSync(outcome)` to update a last-sync indicator after automatic or manual flushes. A useful UI distinguishes:
+Use the `synced` event (`sent`, `failed`, `rejected`) to update a last-sync indicator after automatic or manual flushes. A useful UI distinguishes:
 
 - saved locally
 - waiting to sync
@@ -229,7 +231,7 @@ A locally created row needs an identity before contacting the server. UUID/strin
 
 ### Carry server versions explicitly
 
-Add a version, revision, or server-updated timestamp if the API performs optimistic concurrency checks. Default update payloads contain keys plus changed fields; if an unchanged expected revision must accompany every update, override `formatRequestBody(...)` to include it. Treat client clocks as untrusted for conflict ordering unless the product deliberately accepts that limitation.
+Add a version, revision, or server-updated timestamp if the API performs optimistic concurrency checks. Default update payloads contain keys plus changed fields; declare the version with `.etag()` and every update also carries the version it was based on. For any other field that must accompany every update, override `formatRequestBody(...)`. Treat client clocks as untrusted for conflict ordering unless the product deliberately accepts that limitation.
 
 ### Scope cached data
 
@@ -246,7 +248,7 @@ Sensitive data in IndexedDB is accessible to the browser profile and any script 
 ## Security and account isolation
 
 - Fetch authorization headers for every request; Routier reevaluates `getHeaders` on retries.
-- Return `true` from `onAuthError` only after credentials were actually refreshed.
+- On a `401` in `onError`, call `retry()` only after credentials were actually refreshed.
 - Enforce authorization and tenant filters on the server. Client scopes are not security controls.
 - Namespace local cache and queue databases by environment and account.
 - Never expose one user's warm cache while another user is signing in.

@@ -1,6 +1,7 @@
 import { DataStore } from "@routier/datastore";
 import { DexiePlugin } from "@routier/dexie-plugin";
 import {
+  createRetry,
   HttpSwrDbPlugin,
   OptimisticUpdatesDbPlugin,
 } from "@routier/replication-plugin";
@@ -20,6 +21,8 @@ export class AppDataStore extends DataStore {
     // Optional: hydrate a memory read model from the durable IndexedDB cache.
     const memoryFirstCache = new OptimisticUpdatesDbPlugin(cache);
 
+    const backoff = createRetry({ maxAttempts: 5 });
+
     const sync = new HttpSwrDbPlugin(memoryFirstCache, {
       databaseName: `${storageNamespace}:production-api`,
       getUrl: collection => `https://api.example.com/data/${collection}`,
@@ -28,6 +31,7 @@ export class AppDataStore extends DataStore {
       }),
       maxAgeMs: 30_000,
       unsyncedQueueStore: queue,
+      autoSync: true,
 
       // Adapt GET responses such as { data: [...] }.
       translateRemoteResponse(_schema, body) {
@@ -39,19 +43,33 @@ export class AppDataStore extends DataStore {
         return (body as { data?: unknown[] }).data ?? null;
       },
 
-      // Returning true permits one retry with newly evaluated headers.
-      onAuthError: async () => {
-        await refreshToken();
-        return true;
+      // Decide what each failing request does. getHeaders runs again for every retry.
+      onError: async (error) => {
+        if (error.kind === "http" && error.status === 401 && error.attempt === 1) {
+          await refreshToken();
+          return error.retry();
+        }
+
+        if (error.kind === "network" && error.operation === "read") {
+          return error.useCached();
+        }
+
+        return backoff(error);
       },
-      onRevalidateError(error, context) {
-        console.warn("Showing cached data; refresh failed", context, error);
-      },
-      onConflict(context) {
-        console.warn("Server rejected a conflicting local change", context);
-      },
-      onSyncDeadLetter(changes, error) {
-        console.error("Changes need user or developer action", changes, error);
+
+      // Report what happened, for status UI and logging.
+      onEvent(event) {
+        if (event.type === "read" && !event.ok) {
+          console.warn("Showing cached data; refresh failed", event.collectionName, event.error);
+        }
+
+        if (event.type === "changes-rejected") {
+          console.error(
+            event.conflict ? "Server rejected a conflicting local change" : "Changes need user or developer action",
+            event.changes,
+            event.error,
+          );
+        }
       },
     });
 

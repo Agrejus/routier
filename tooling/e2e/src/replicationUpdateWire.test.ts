@@ -80,7 +80,6 @@ describe('replication update wire format', () => {
             getUrl: (collectionName) => `http://127.0.0.1:${port}/${collectionName}`,
             unsyncedQueueStore: new MemoryPlugin(`queue-${port}`),
             autoSync: false,
-            bulkPersistRetryMaxAttempts: 1,
         });
         store = new WidgetStore(plugin);
         return store;

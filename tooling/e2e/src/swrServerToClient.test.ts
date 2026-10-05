@@ -58,7 +58,6 @@ describe('SWR server-to-client', () => {
             unsyncedQueueStore: queueStore,
             maxAgeMs: options.maxAgeMs ?? 0,
             writeBatchDelayMs: 0,
-            bulkPersistRetryMaxAttempts: 1,
             // No background flush: these are read-path tests and a timer firing mid-assertion
             // only adds noise.
             autoSync: false,

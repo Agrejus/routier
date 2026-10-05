@@ -9,6 +9,7 @@ import { DataStore } from '@routier/datastore';
 import { uuid } from '@routier/core/utilities';
 import { ConcurrencyDbPlugin } from '@routier/core';
 import { MemoryPlugin } from '@routier/memory-plugin';
+import type { OptimisticRequestError, SyncEvent } from './syncHooks';
 
 /**
  * Integration tests with a real MemoryPlugin as the source. The optimistic plugin's own
@@ -223,25 +224,24 @@ describe('OptimisticUpdatesDbPlugin integration', () => {
         expect(sourceQuerySpy).toHaveBeenCalledTimes(2);
     });
 
-    it('reports mirror failures through onMirrorError while still acking the write', async () => {
-        const mirrorErrors: Error[] = [];
-        const readOnlySource: IDbPlugin = {
-            databaseName: 'read-only-source',
-            query: (event, done) => source.query(event, done),
-            bulkPersist: (event, done) => done({ ok: Result.ERROR, error: new Error('mirror down'), id: event.id } as any),
-            destroy: (event, done) => source.destroy(event, done),
-        };
-        const withHook = new OptimisticUpdatesDbPlugin(readOnlySource, {
-            onMirrorError: (error) => { mirrorErrors.push(error); },
-        });
+    it('reports a mirror write the source refused, while still acking it', async () => {
+        const events: SyncEvent[] = [];
+        const flaky = flakySource(source, { writes: 1 });
+        const withHook = new OptimisticUpdatesDbPlugin(flaky, { onEvent: event => events.push(event) });
 
         await persist(withHook, { adds: [{ name: 'Acked locally' }] });
         expect(await queryRows(withHook)).toHaveLength(1);
 
-        await waitFor(async () => mirrorErrors.length === 1);
-        expect(mirrorErrors[0].message).toContain('mirror down');
+        await waitFor(async () => events.some(event => event.type === 'changes-rejected'));
+        expect(events.find(event => event.type === 'changes-rejected')).toEqual({
+            type: 'changes-rejected',
+            collectionName: 'optimisticIntegration',
+            changes: [{ kind: 'add', entity: expect.objectContaining({ name: 'Acked locally' }) }],
+            conflict: false,
+            status: null,
+            error: expect.any(Error),
+        });
     });
-
     it('surfaces hydration failure instead of serving an empty result', async () => {
         const failingSource: IDbPlugin = {
             databaseName: 'failing-source',
@@ -337,5 +337,126 @@ describe('OptimisticUpdatesDbPlugin etags', () => {
             'It acknowledges a save before the source has checked it, so a conflict could only be found after the caller was told the save succeeded.  ' +
             'Collection: optimisticVersioned'
         );
+    });
+});
+
+function flakySource(inner: IDbPlugin, failures: { reads?: number; writes?: number }): IDbPlugin {
+    let reads = failures.reads ?? 0;
+    let writes = failures.writes ?? 0;
+
+    return {
+        databaseName: inner.databaseName,
+        query: (event, done) => {
+            if (reads > 0) {
+                reads--;
+                done({ ok: Result.ERROR, error: new Error('source down'), id: event.id } as any);
+                return;
+            }
+            inner.query(event, done);
+        },
+        bulkPersist: (event, done) => {
+            if (writes > 0) {
+                writes--;
+                done({ ok: Result.ERROR, error: new Error('source down'), id: event.id } as any);
+                return;
+            }
+            inner.bulkPersist(event, done);
+        },
+        destroy: (event, done) => inner.destroy(event, done),
+    };
+}
+
+describe('OptimisticUpdatesDbPlugin hooks', () => {
+    let source: MemoryPlugin;
+
+    beforeEach(() => {
+        source = new MemoryPlugin(`optimistic-hooks-${uuid(8)}`);
+    });
+
+    it('describes a failed mirror write as a store write with retry and reject', async () => {
+        const seen: OptimisticRequestError[] = [];
+        const plugin = new OptimisticUpdatesDbPlugin(flakySource(source, { writes: 1 }), {
+            onError: error => { seen.push(error); if (error.operation === 'write') error.reject(); },
+        });
+
+        await persist(plugin, { adds: [{ name: 'a' }] });
+        await waitFor(async () => seen.length === 1);
+
+        const [error] = seen;
+        expect([error?.kind, error?.operation, error?.collectionName, error?.attempt, error?.method, error?.url])
+            .toEqual(['store', 'write', 'optimisticIntegration', 1, null, null]);
+    });
+
+    it('saves a mirror write that onError retried, without reporting it', async () => {
+        const events: SyncEvent[] = [];
+        const plugin = new OptimisticUpdatesDbPlugin(flakySource(source, { writes: 1 }), {
+            onError: error => void error.retry(),
+            onEvent: event => events.push(event),
+        });
+
+        await persist(plugin, { adds: [{ name: 'a' }] });
+
+        await waitFor(async () => (await queryRows(source)).length === 1);
+        expect(events.filter(event => event.type === 'changes-rejected')).toEqual([]);
+    });
+
+    it('reports a mirror write onError rejected', async () => {
+        const events: SyncEvent[] = [];
+        const plugin = new OptimisticUpdatesDbPlugin(flakySource(source, { writes: 1 }), {
+            onError: error => { if (error.operation === 'write') error.reject(); },
+            onEvent: event => events.push(event),
+        });
+
+        await persist(plugin, { adds: [{ name: 'a' }] });
+
+        await waitFor(async () => events.some(event => event.type === 'changes-rejected'));
+        expect(await queryRows(source)).toEqual([]);
+    });
+
+    it('reports a successful hydration', async () => {
+        const events: SyncEvent[] = [];
+        await persist(source, { adds: [{ name: 'a' }] });
+
+        await queryRows(new OptimisticUpdatesDbPlugin(source, { onEvent: event => events.push(event) }));
+
+        expect(events).toEqual([{ type: 'read', ok: true, collectionName: 'optimisticIntegration', status: null }]);
+    });
+
+    it('hydrates once onError retries a failed load', async () => {
+        await persist(source, { adds: [{ name: 'a' }] });
+        const plugin = new OptimisticUpdatesDbPlugin(flakySource(source, { reads: 1 }), { onError: error => void error.retry() });
+
+        expect(await queryRows(plugin)).toHaveLength(1);
+    });
+
+    it('answers from the memory copy when onError chooses the cache', async () => {
+        const events: SyncEvent[] = [];
+        await persist(source, { adds: [{ name: 'a' }] });
+        const plugin = new OptimisticUpdatesDbPlugin(flakySource(source, { reads: 1 }), {
+            onError: error => { if (error.operation === 'read') error.useCached(); },
+            onEvent: event => events.push(event),
+        });
+
+        expect(await queryRows(plugin)).toEqual([]);
+        expect(events).toEqual([{ type: 'read', ok: false, collectionName: 'optimisticIntegration', status: null, error: expect.any(Error) }]);
+    });
+
+    it('loads from the source again after answering from the cache', async () => {
+        await persist(source, { adds: [{ name: 'a' }] });
+        const plugin = new OptimisticUpdatesDbPlugin(flakySource(source, { reads: 1 }), {
+            onError: error => { if (error.operation === 'read') error.useCached(); },
+        });
+
+        await queryRows(plugin);
+
+        expect(await queryRows(plugin)).toHaveLength(1);
+    });
+
+    it('refuses a write while the memory copy holds only what was cached', async () => {
+        const plugin = new OptimisticUpdatesDbPlugin(flakySource(source, { reads: 1 }), {
+            onError: error => { if (error.operation === 'read') error.useCached(); },
+        });
+
+        await expect(persist(plugin, { adds: [{ name: 'a' }] })).rejects.toThrow('source down');
     });
 });

@@ -170,13 +170,9 @@ describe('e2e over node:http', () => {
 
     function createPlugin(options?: Partial<ConstructorParameters<typeof HttpSwrDbPlugin>[1]>) {
         const plugin = new HttpSwrDbPlugin(swrStore, {
-            // The background loop is off so each test drives syncNow() itself
-            autoSync: false,
             getUrl: (collectionName) => server.url(collectionName),
             unsyncedQueueStore: queueStore,
             maxAgeMs: 0,
-            bulkPersistRetryMaxAttempts: 1,
-            bulkPersistRetryBaseDelayMs: 60_000,
             requestTimeoutMs: 2_000,
             ...options,
         });
@@ -221,11 +217,8 @@ describe('e2e over node:http', () => {
         const coldStore = new MemoryPlugin(`swr-cold-${uuid(8)}`);
         const coldQueue = new MemoryPlugin(`queue-cold-${uuid(8)}`);
         const cold = new HttpSwrDbPlugin(coldStore, {
-            // The background loop is off so each test drives syncNow() itself
-            autoSync: false,
             getUrl: (collectionName) => server.url(collectionName),
             unsyncedQueueStore: coldQueue,
-            bulkPersistRetryBaseDelayMs: 60_000,
         });
         plugins.push(cold);
 
@@ -277,7 +270,7 @@ describe('e2e over node:http', () => {
 
         const outcome = await plugin.syncNow();
 
-        expect(outcome).toEqual({ flushed: 1, failed: 0, deadLettered: 0 });
+        expect(outcome).toEqual({ sent: 1, failed: 0, rejected: 0 });
         expect(server.rows('e2eWidgets')).toEqual([{ id: 'w3', name: 'Offline [server]' }]);
         expect(await readQueueRows(queueStore)).toHaveLength(0);
     });
@@ -316,9 +309,10 @@ describe('e2e over node:http', () => {
         await expect(queryPlugin(direct, widgetSchema)).rejects.toThrow('Request timed out after 150ms');
         expect(Date.now() - started).toBeLessThan(3_000);
 
-        // Through the SWR plugin the same timeout degrades to a cache read instead of an error
-        const plugin = createPlugin({ requestTimeoutMs: 150 });
-        await expect(queryPlugin(plugin, widgetSchema)).resolves.toEqual([]);
+        await expect(queryPlugin(createPlugin({ requestTimeoutMs: 150 }), widgetSchema)).rejects.toThrow('Request timed out after 150ms');
+
+        const offline = createPlugin({ requestTimeoutMs: 150, onError: (error) => (error.operation === 'read' ? error.useCached() : error.defer()) });
+        await expect(queryPlugin(offline, widgetSchema)).resolves.toEqual([]);
     });
 
     it('a removed row does not come back when the remove is the confirmed change', async () => {

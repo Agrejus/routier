@@ -38,9 +38,14 @@ export const createPlugin = (getAccessToken: GetAccessToken) => {
     },
     ignoreQueryForCollections: ["users"],
     maxAgeMs: 30_000,
-    onAuthError: () => {
-      forceRefreshNext = true;
-      return true; // Retry once with headers from the refreshed-token path.
+    onError: (error) => {
+      if (error.kind === "http" && (error.status === 401 || error.status === 403) && error.attempt === 1) {
+        forceRefreshNext = true; // The retry asks getHeaders again, now with a refreshed token.
+        void error.retry();
+        return;
+      }
+
+      return error.operation === "read" ? error.done() : error.defer();
     },
     unsyncedQueueStore: unsyncedQueueDb,
     translateRemoteResponse(_schema, data) {

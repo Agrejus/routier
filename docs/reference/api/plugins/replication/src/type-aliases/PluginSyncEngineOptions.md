@@ -8,7 +8,7 @@
 
 > **PluginSyncEngineOptions** = `object`
 
-Defined in: [plugins/replication/src/PluginSyncEngine.ts:27](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L27)
+Defined in: [plugins/replication/src/PluginSyncEngine.ts:32](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L32)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: [plugins/replication/src/PluginSyncEngine.ts:27](https://github.com/
 
 > **source**: `IDbPlugin`
 
-Defined in: [plugins/replication/src/PluginSyncEngine.ts:29](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L29)
+Defined in: [plugins/replication/src/PluginSyncEngine.ts:34](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L34)
 
 Primary read/write plugin.
 
@@ -26,7 +26,7 @@ Primary read/write plugin.
 
 > `optional` **queryPlugins**: `IDbPlugin`[]
 
-Defined in: [plugins/replication/src/PluginSyncEngine.ts:35](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L35)
+Defined in: [plugins/replication/src/PluginSyncEngine.ts:40](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L40)
 
 Optional ordered list of plugins to try for reads.
 If omitted, reads use source.
@@ -43,7 +43,7 @@ If omitted, reads use source.
 
 > `optional` **mirrorPlugins**: `IDbPlugin`[]
 
-Defined in: [plugins/replication/src/PluginSyncEngine.ts:41](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L41)
+Defined in: [plugins/replication/src/PluginSyncEngine.ts:46](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L46)
 
 Plugins that should receive mirrored writes after source succeeds.
 Typical use: write-through from local store to remote sync plugin.
@@ -60,7 +60,7 @@ Typical use: write-through from local store to remote sync plugin.
 
 > `optional` **persistAckMode**: [`PersistAckMode`](PersistAckMode.md)
 
-Defined in: [plugins/replication/src/PluginSyncEngine.ts:48](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L48)
+Defined in: [plugins/replication/src/PluginSyncEngine.ts:53](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L53)
 
 Whether to report success to caller after source only, or after all mirrors settle.
 - after-source: low-latency optimistic ack.
@@ -78,7 +78,7 @@ Whether to report success to caller after source only, or after all mirrors sett
 
 > `optional` **mirrorFailureMode**: [`MirrorFailureMode`](MirrorFailureMode.md)
 
-Defined in: [plugins/replication/src/PluginSyncEngine.ts:55](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L55)
+Defined in: [plugins/replication/src/PluginSyncEngine.ts:60](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L60)
 
 How mirror failures are handled.
 - swallow: keep success from source and emit hook/log.
@@ -96,7 +96,7 @@ How mirror failures are handled.
 
 > `optional` **queryFailureMode**: [`QueryFailureMode`](QueryFailureMode.md)
 
-Defined in: [plugins/replication/src/PluginSyncEngine.ts:60](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L60)
+Defined in: [plugins/replication/src/PluginSyncEngine.ts:65](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L65)
 
 When all query routes fail, choose which error to surface.
 
@@ -112,7 +112,7 @@ When all query routes fail, choose which error to surface.
 
 > `optional` **destroyFailureMode**: [`DestroyFailureMode`](DestroyFailureMode.md)
 
-Defined in: [plugins/replication/src/PluginSyncEngine.ts:65](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L65)
+Defined in: [plugins/replication/src/PluginSyncEngine.ts:70](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L70)
 
 Destroy error policy across composed plugins.
 
@@ -128,7 +128,7 @@ Destroy error policy across composed plugins.
 
 > `optional` **onMirrorError**: (`error`, `context`) => `void`
 
-Defined in: [plugins/replication/src/PluginSyncEngine.ts:70](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L70)
+Defined in: [plugins/replication/src/PluginSyncEngine.ts:75](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L75)
 
 Optional hook for swallowed mirror failures (after-source or swallow mode).
 
@@ -140,13 +140,7 @@ Optional hook for swallowed mirror failures (after-source or swallow mode).
 
 ##### context
 
-###### plugin
-
-`IDbPlugin`
-
-###### eventId
-
-`string`
+[`MirrorErrorContext`](MirrorErrorContext.md)
 
 #### Returns
 
@@ -164,7 +158,7 @@ undefined
 
 > `optional` **mirrorPersistPayloadMode**: [`MirrorPersistPayloadMode`](MirrorPersistPayloadMode.md)
 
-Defined in: [plugins/replication/src/PluginSyncEngine.ts:78](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L78)
+Defined in: [plugins/replication/src/PluginSyncEngine.ts:83](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L83)
 
 Strategy for payload sent to mirror plugins during bulkPersist.
 - original-event: mirrors receive the same operation payload.
@@ -183,7 +177,7 @@ Strategy for payload sent to mirror plugins during bulkPersist.
 
 > `optional` **etagOwner**: `EtagOwner`
 
-Defined in: [plugins/replication/src/PluginSyncEngine.ts:79](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L79)
+Defined in: [plugins/replication/src/PluginSyncEngine.ts:84](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L84)
 
 ***
 
@@ -191,7 +185,7 @@ Defined in: [plugins/replication/src/PluginSyncEngine.ts:79](https://github.com/
 
 > `optional` **onMirrorPersisted**: (`event`, `result`) => `void`
 
-Defined in: [plugins/replication/src/PluginSyncEngine.ts:80](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L80)
+Defined in: [plugins/replication/src/PluginSyncEngine.ts:85](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L85)
 
 #### Parameters
 
@@ -213,7 +207,7 @@ Defined in: [plugins/replication/src/PluginSyncEngine.ts:80](https://github.com/
 
 > `optional` **pluginCallTimeoutMs**: `number`
 
-Defined in: [plugins/replication/src/PluginSyncEngine.ts:87](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L87)
+Defined in: [plugins/replication/src/PluginSyncEngine.ts:92](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/PluginSyncEngine.ts#L92)
 
 Max time (ms) to wait for a composed plugin to call done() before treating the call
 as failed. Guards the engine against a plugin that never completes — otherwise one

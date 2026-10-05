@@ -5,8 +5,6 @@ import { PluginEventResult, Result } from '@routier/core/results';
 import { uuid } from '@routier/core/utilities';
 import { UnsyncedQueue } from './UnsyncedQueue';
 import type { QueuedChange } from './UnsyncedQueue';
-import { buildAuthErrorEvent } from './auth';
-import { HttpStatusError } from './httpUtils';
 import { readQueueRows, testSchema, writeQueueRows } from './__tests__/httpTestKit';
 
 /**
@@ -258,29 +256,39 @@ describe('UnsyncedQueue against a real store', () => {
         }]);
         const rows = await readQueueRows(queueStore);
 
-        const reported = await queue.deadLetter(rows as never);
+        const dead = await queue.deadLetter(rows as never);
 
-        expect(reported).toEqual([{
-            collectionName: COLLECTION,
-            kind: 'update',
-            entity: null,
-            opId: 'op-broken',
-        }]);
+        expect(dead.map(row => [row.id, row.opId])).toEqual([[rows[0]?.id, 'op-broken']]);
         expect((await readQueueRows(queueStore))[0].status).toBe('dead');
     });
 
-    it('reports a null opId for a dead-lettered row that never had one', async () => {
-        await writeQueueRows(queueStore, [{
-            id: [COLLECTION, 'add', '["legacy"]'].join('\u0000'),
-            collectionName: COLLECTION,
-            recordIds: '["legacy"]',
-            entityJson: JSON.stringify({ id: 'legacy', name: 'Old' }),
-        }]);
-        const rows = await readQueueRows(queueStore);
+    it('does not dead-letter a row that was overwritten after it was sent', async () => {
+        await queue.add(testSchema as never, { id: 'edited', name: 'First' }, 'update');
+        const sent = await readQueueRows(queueStore);
+        await queue.add(testSchema as never, { id: 'edited', name: 'Second' }, 'update');
 
-        const reported = await queue.deadLetter(rows as never);
+        const dead = await queue.deadLetter(sent as never);
 
-        expect(reported).toEqual([expect.objectContaining({ kind: 'add', opId: null })]);
+        expect([dead, await queue.getPendingCount()]).toEqual([[], 1]);
+    });
+
+    it('does not count a failed attempt on a row that was overwritten after it was sent', async () => {
+        await queue.add(testSchema as never, { id: 'edited', name: 'First' }, 'update');
+        const sent = await readQueueRows(queueStore);
+        await queue.add(testSchema as never, { id: 'edited', name: 'Second' }, 'update');
+
+        await queue.recordFailedAttempt(sent as never);
+
+        const [row] = await readQueueRows(queueStore);
+        expect([row?.attempts ?? 0, JSON.parse(row?.entityJson ?? '{}').name]).toEqual([0, 'Second']);
+    });
+
+    it('ignores rows that are no longer queued', async () => {
+        await queue.add(testSchema as never, { id: 'gone', name: 'Gone' }, 'add');
+        const sent = await readQueueRows(queueStore);
+        await queue.removeRows(sent as never);
+
+        expect(await queue.deadLetter(sent as never)).toEqual([]);
     });
 
     it('treats an unrecognized changeKind as an add', async () => {
@@ -579,46 +587,5 @@ describe('UnsyncedQueue against an insert-only store', () => {
 
         expect(rows.size).toBe(1);
         expect([...rows.values()][0].status).toBe('pending');
-    });
-});
-
-describe('auth error classification', () => {
-    it('builds an event from the status an HttpStatusError carries', () => {
-        const error = new HttpStatusError(401, 'Unauthorized');
-
-        expect(buildAuthErrorEvent(error, 'query')).toEqual({
-            status: 401,
-            message: 'HTTP 401: Unauthorized',
-            originalError: error,
-            context: 'query',
-        });
-        expect(buildAuthErrorEvent(new HttpStatusError(403, 'Forbidden'), 'bulkPersist')).toEqual(
-            expect.objectContaining({ status: 403, context: 'bulkPersist' })
-        );
-    });
-
-    it('is not an auth event for any other status', () => {
-        for (const status of [400, 404, 409, 422, 429, 500, 503]) {
-            expect(buildAuthErrorEvent(new HttpStatusError(status, 'Nope'), 'query')).toBeNull();
-        }
-    });
-
-    it('falls back to the message for an error that lost its type', () => {
-        // A plugin that rebuilt the error from a string, or one that crossed a worker boundary
-        expect(buildAuthErrorEvent(new Error('HTTP 401: token expired'), 'query')).toEqual(
-            expect.objectContaining({ status: 401, message: 'HTTP 401: token expired' })
-        );
-        expect(buildAuthErrorEvent(new Error('HTTP 403: forbidden'), 'bulkPersist')).toEqual(
-            expect.objectContaining({ status: 403 })
-        );
-        expect(buildAuthErrorEvent('HTTP 401', 'query')).toEqual(
-            expect.objectContaining({ status: 401, message: 'HTTP 401' })
-        );
-    });
-
-    it('is null for a failure that says nothing about auth', () => {
-        expect(buildAuthErrorEvent(new Error('socket hang up'), 'query')).toBeNull();
-        expect(buildAuthErrorEvent(null, 'query')).toBeNull();
-        expect(buildAuthErrorEvent({ status: 401 }, 'query')).toBeNull();
     });
 });

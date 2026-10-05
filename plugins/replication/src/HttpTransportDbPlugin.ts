@@ -17,6 +17,9 @@ import {
 } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
 import { CompiledSchema, getStorageDateReviver } from '@routier/core/schema';
+import { HttpStatusError, NetworkError, readRetryAfterMs, responseHeadersOf } from './httpUtils';
+import { conflictOf, runWithOnError, statusOf, type ActionKit, type Settlement } from './requestFailures';
+import { emitEvent, rejectedChangesOf, type HttpRequestError, type SyncEvent, type SyncHooks } from './syncHooks';
 
 /**
  * A plugin that owns no database.
@@ -58,7 +61,7 @@ import { CompiledSchema, getStorageDateReviver } from '@routier/core/schema';
  * them is the intended path rather than growing this one — it stays a transport, so that what
  * arrives at the server is exactly what the caller asked for.
  */
-export type HttpTransportDbPluginOptions = {
+export type HttpTransportDbPluginOptions = SyncHooks<HttpRequestError> & {
     /** The single endpoint every request is POSTed to. */
     url: string;
     /**
@@ -107,44 +110,41 @@ export class HttpTransportDbPlugin implements IDbPlugin {
     private readonly url: string;
     private readonly getHeaders?: HttpTransportDbPluginOptions["getHeaders"];
     private readonly request: NonNullable<HttpTransportDbPluginOptions["request"]>;
+    private readonly onEvent?: (event: SyncEvent) => void;
+    private readonly onError?: (error: HttpRequestError) => void;
 
     constructor(options: HttpTransportDbPluginOptions) {
         this.url = options.url;
         this.databaseName = options.databaseName ?? options.url;
         this.getHeaders = options.getHeaders;
         this.request = options.request ?? this.fetchJson.bind(this);
+        this.onEvent = options.onEvent;
+        this.onError = options.onError;
     }
 
     private async fetchJson(url: string, body: SerializedRequest, headers: Record<string, string>): Promise<SerializedResponse> {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', ...headers },
-            body: JSON.stringify(body),
-        });
+        let response: Response;
+
+        try {
+            response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...headers },
+                body: JSON.stringify(body),
+            });
+        } catch (error) {
+            throw new NetworkError(error);
+        }
 
         const text = await response.text();
         const answer = parseRoutierResponse(text);
 
-        /**
-         * A NON-2XX CAN STILL CARRY A ROUTIER ANSWER, and it usually does.
-         *
-         * `createRequestHandler` returns a refusal as a value — `{ ok: false, error }` — and the route
-         * chooses what status to put on it, because only the route knows whether "not signed in" is a
-         * 401 or a 403. So a status alone does not say whether this was a transport problem or a
-         * decision, and the body is what distinguishes them.
-         *
-         * Reporting only the status loses the reason. A caller who broke a scope rule would be told
-         * "returned 403" instead of which rule they broke — the message the server went to the trouble
-         * of writing.
-         */
-        if (answer != null) {
-            return answer;
+        if (response.ok === false) {
+            const reason = answer != null && answer.ok === false ? answer.error : response.statusText;
+            throw new HttpStatusError(response.status, reason, readRetryAfterMs(response), answer ?? text, responseHeadersOf(response));
         }
 
-        if (response.ok === false) {
-            // No Routier answer in the body, so this really is the transport failing: a proxy, a wrong
-            // route, an outage. Flattening it into a query error would hide a misconfiguration.
-            throw new Error(`The Routier endpoint returned ${response.status} ${response.statusText}.`);
+        if (answer != null) {
+            return answer;
         }
 
         throw new Error(
@@ -157,6 +157,16 @@ export class HttpTransportDbPlugin implements IDbPlugin {
         const headers = this.getHeaders == null ? {} : await this.getHeaders();
 
         return await this.request(this.url, body, headers);
+    }
+
+    private sendWithHooks(body: SerializedRequest, operation: 'read' | 'write', collectionName: string): Promise<Settlement<SerializedResponse>> {
+        return runWithOnError({
+            attempt: () => this.send(body),
+            context: { operation, collectionName, method: 'POST', url: this.url, storeSource: false },
+            onError: this.onError,
+            actions: ({ retry, done }: ActionKit) => ({ retry, done }),
+            unhandled: (kit: ActionKit) => kit.done(),
+        });
     }
 
     query<TRoot extends {}, TShape extends any = TRoot>(
@@ -202,20 +212,32 @@ export class HttpTransportDbPlugin implements IDbPlugin {
             (joinOption.value as { innerCollectionName?: string }).innerCollectionName = innerSchema.collectionName;
         }
 
-        const response = await this.send({
+        const collectionName = operation.schema.collectionName;
+        const fail = (error: Error) => {
+            emitEvent(this.onEvent, { type: 'read', ok: false, collectionName, status: statusOf(error), error });
+            done(PluginEventResult.error(event.id, error));
+        };
+        const settled = await this.sendWithHooks({
             kind: 'query',
-            collectionName: operation.schema.collectionName,
+            collectionName,
             options: serializeQueryOptions(sendable),
             explain: event.explain,
-        });
+        }, 'read', collectionName);
+
+        if (settled.outcome !== 'success') {
+            fail(settled.error);
+            return;
+        }
+
+        const response = settled.value;
 
         if (response.ok === false) {
-            done(PluginEventResult.error(event.id, new Error(response.error)));
+            fail(new Error(response.error));
             return;
         }
 
         if (response.kind !== 'query') {
-            done(PluginEventResult.error(event.id, new Error(`Expected a query response and received '${response.kind}'.`)));
+            fail(new Error(`Expected a query response and received '${response.kind}'.`));
             return;
         }
 
@@ -243,6 +265,7 @@ export class HttpTransportDbPlugin implements IDbPlugin {
             }
         }
 
+        emitEvent(this.onEvent, { type: 'read', ok: true, collectionName, status: 200 });
         done(PluginEventResult.success(event.id, translator.translate(response.value) as ITranslatedValue<TShape>));
     }
 
@@ -259,15 +282,27 @@ export class HttpTransportDbPlugin implements IDbPlugin {
             return;
         }
 
-        const response = await this.send(request);
+        const fail = (error: Error) => {
+            this.reportRejected(event, error);
+            done(PluginEventResult.error(event.id, error));
+        };
+        const collectionNames = Array.from(new Set(request.changes.map(change => change.collectionName))).join(', ');
+        const settled = await this.sendWithHooks(request, 'write', collectionNames);
+
+        if (settled.outcome !== 'success') {
+            fail(settled.error);
+            return;
+        }
+
+        const response = settled.value;
 
         if (response.ok === false) {
-            done(PluginEventResult.error(event.id, new Error(response.error)));
+            fail(new Error(response.error));
             return;
         }
 
         if (response.kind !== 'persist') {
-            done(PluginEventResult.error(event.id, new Error(`Expected a persist response and received '${response.kind}'.`)));
+            fail(new Error(`Expected a persist response and received '${response.kind}'.`));
             return;
         }
 
@@ -283,6 +318,25 @@ export class HttpTransportDbPlugin implements IDbPlugin {
             event.id,
             deserializePersistResult(response, name => byName.get(name) ?? null)
         ));
+    }
+
+    private reportRejected(event: DbPluginBulkPersistEvent, error: Error): void {
+        for (const [schemaId, schema] of event.schemas) {
+            const changes = event.operation.get(schemaId);
+
+            if (changes?.hasItems !== true) {
+                continue;
+            }
+
+            emitEvent(this.onEvent, {
+                type: 'changes-rejected',
+                collectionName: schema.collectionName,
+                changes: rejectedChangesOf({ adds: changes.adds, updates: changes.updates.map(update => update.entity), removes: changes.removes }),
+                conflict: conflictOf(error),
+                status: statusOf(error),
+                error,
+            });
+        }
     }
 
     /**

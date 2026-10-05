@@ -5,6 +5,7 @@ export { HttpTransportDbPlugin } from './HttpTransportDbPlugin';
 export type { HttpTransportDbPluginOptions } from './HttpTransportDbPlugin';
 export { PluginSyncEngine } from './PluginSyncEngine';
 export type {
+    MirrorErrorContext,
     PluginSyncEngineOptions,
     QueryFailureMode,
     MirrorFailureMode,
@@ -14,18 +15,34 @@ export type {
 } from './PluginSyncEngine';
 
 /** Plugin configuration. */
-export type { HttpPluginOptions, QuerySerializationContext } from './HttpDbPlugin';
+export type { HttpConnectionOptions, HttpPluginOptions, QuerySerializationContext } from './HttpDbPlugin';
 export type { HttpSwrDbPluginOptions, AutoSyncOptions, SyncOutcome } from './HttpSwrDbPlugin';
 
-/**
- * Types an application needs to write the callbacks it passes in: the auth handshake
- * (`onAuthError`) and the changes the queue has permanently given up on (`onSyncDeadLetter`).
- */
-export type { AuthErrorEvent, AuthErrorHandler } from './auth';
-export type { DeadLetteredChange, QueuedChangeKind, UnsyncedQueueRow } from './UnsyncedQueue';
+export type {
+    AnyRequestError,
+    ChangesRejectedEvent,
+    DeferAction,
+    DoneAction,
+    FailureDetails,
+    FailureKind,
+    HttpRequestError,
+    OptimisticRequestError,
+    ReadEvent,
+    RejectAction,
+    RejectedChange,
+    ResponseHeaders,
+    RetryAction,
+    SwrRequestError,
+    SyncedEvent,
+    SyncEvent,
+    SyncHooks,
+    UseCachedAction,
+} from './syncHooks';
+export { createRetry, defaultSync, type RetryOptions } from './retry';
+export type { QueuedChangeKind, UnsyncedQueueRow } from './UnsyncedQueue';
 
 /**
  * Carries the HTTP status, so an application can classify a failure the same way the plugin
  * does rather than matching on message text.
  */
-export { HttpStatusError, isAuthStatus, isConflictStatus, isPermanentStatus } from './httpUtils';
+export { HttpStatusError, NetworkError, isAuthStatus, isConflictStatus, isPermanentStatus } from './httpUtils';

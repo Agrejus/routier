@@ -6,13 +6,13 @@
 
 # Interface: HttpPluginOptions
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:46](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L46)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:71](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L71)
 
 Plugin configuration.
 
-## Extended by
+## Extends
 
-- [`HttpSwrDbPluginOptions`](HttpSwrDbPluginOptions.md)
+- [`HttpConnectionOptions`](HttpConnectionOptions.md).[`SyncHooks`](SyncHooks.md)\<[`HttpRequestError`](../type-aliases/HttpRequestError.md)\>
 
 ## Properties
 
@@ -20,7 +20,7 @@ Plugin configuration.
 
 > **getUrl**: (`collectionName`) => `string`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:47](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L47)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:30](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L30)
 
 #### Parameters
 
@@ -32,13 +32,17 @@ Defined in: [plugins/replication/src/HttpDbPlugin.ts:47](https://github.com/Agre
 
 `string`
 
+#### Inherited from
+
+[`HttpConnectionOptions`](HttpConnectionOptions.md).[`getUrl`](HttpConnectionOptions.md#geturl)
+
 ***
 
 ### databaseName?
 
 > `optional` **databaseName**: `string`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:57](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L57)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:40](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L40)
 
 See `IDbPlugin.databaseName`. `getUrl` is a caller-supplied function of collection name,
 so there is no origin this plugin can read without inventing a collection to ask about —
@@ -48,13 +52,17 @@ Set it whenever an application talks to more than one HTTP backend over the same
 leaving both on the default makes them one database as far as subscriptions are
 concerned, and each would be notified of the other's writes.
 
+#### Inherited from
+
+[`HttpConnectionOptions`](HttpConnectionOptions.md).[`databaseName`](HttpConnectionOptions.md#databasename)
+
 ***
 
 ### getHeaders()?
 
 > `optional` **getHeaders**: () => `Record`\<`string`, `string`\> \| `Promise`\<`Record`\<`string`, `string`\>\>
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:59](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L59)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:42](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L42)
 
 Headers for every request (e.g. Authorization). Can be async. Re-evaluated per retry attempt.
 
@@ -62,48 +70,24 @@ Headers for every request (e.g. Authorization). Can be async. Re-evaluated per r
 
 `Record`\<`string`, `string`\> \| `Promise`\<`Record`\<`string`, `string`\>\>
 
+#### Inherited from
+
+[`HttpConnectionOptions`](HttpConnectionOptions.md).[`getHeaders`](HttpConnectionOptions.md#getheaders)
+
 ***
 
 ### ignoreQueryForCollections?
 
 > `optional` **ignoreQueryForCollections**: `string`[]
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:64](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L64)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:47](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L47)
 
 Collection names for which to ignore the query and select everything.
 No filter, sort, skip, or take is sent; server returns full allowed set.
 
-***
+#### Inherited from
 
-### queryRetryBaseDelayMs?
-
-> `optional` **queryRetryBaseDelayMs**: `number`
-
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:70](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L70)
-
-Base delay (ms) for exponential backoff on query retry. When 0 or omitted, no retries (single attempt).
-401/403 never retried (except once after a successful re-auth); other failures retry with
-jittered delay capped at queryRetryMaxDelayMs, honoring Retry-After.
-
-***
-
-### queryRetryMaxDelayMs?
-
-> `optional` **queryRetryMaxDelayMs**: `number`
-
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:72](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L72)
-
-Max delay (ms) between query retries. Ignored when queryRetryBaseDelayMs is 0.
-
-***
-
-### queryRetryMaxAttempts?
-
-> `optional` **queryRetryMaxAttempts**: `number`
-
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:74](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L74)
-
-Max number of query attempts (including initial). Default 10. 401/403 stop immediately.
+[`HttpConnectionOptions`](HttpConnectionOptions.md).[`ignoreQueryForCollections`](HttpConnectionOptions.md#ignorequeryforcollections)
 
 ***
 
@@ -111,9 +95,13 @@ Max number of query attempts (including initial). Default 10. 401/403 stop immed
 
 > `optional` **requestTimeoutMs**: `number`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:76](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L76)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:49](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L49)
 
 Per-request timeout (ms); a hung connection fails instead of stalling forever. Default 30_000; 0 disables.
+
+#### Inherited from
+
+[`HttpConnectionOptions`](HttpConnectionOptions.md).[`requestTimeoutMs`](HttpConnectionOptions.md#requesttimeoutms)
 
 ***
 
@@ -121,7 +109,7 @@ Per-request timeout (ms); a hung connection fails instead of stalling forever. D
 
 > `optional` **minRequestIntervalMs**: `number`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:85](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L85)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:58](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L58)
 
 Minimum gap between requests to the same URL (reads) or collection (writes). Default 100.
 
@@ -130,13 +118,17 @@ composing plugin cannot leak past it, and an app using this plugin directly gets
 protection. Concurrent GETs for one URL collapse into a single request. 0 removes the gap;
 calls for one key still never overlap.
 
+#### Inherited from
+
+[`HttpConnectionOptions`](HttpConnectionOptions.md).[`minRequestIntervalMs`](HttpConnectionOptions.md#minrequestintervalms)
+
 ***
 
 ### writeBatchDelayMs?
 
 > `optional` **writeBatchDelayMs**: `number`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:93](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L93)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:66](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L66)
 
 Quiet window (ms) used to batch writes to the same URL. Default 25.
 
@@ -144,17 +136,9 @@ Every POST accepted during the window contributes its adds/updates/removes (and 
 one request. The timer restarts when another write arrives, so a burst of ten saves becomes
 one POST rather than ten serialized POSTs. Set to 0 to disable batching.
 
-***
+#### Inherited from
 
-### onAuthError?
-
-> `optional` **onAuthError**: [`AuthErrorHandler`](../type-aliases/AuthErrorHandler.md)
-
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:99](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L99)
-
-Called when the remote returns 401 or 403 (query and bulkPersist; use event.context to
-distinguish). Return/resolve `true` to signal re-auth succeeded — the failed operation
-then retries once with fresh headers.
+[`HttpConnectionOptions`](HttpConnectionOptions.md).[`writeBatchDelayMs`](HttpConnectionOptions.md#writebatchdelayms)
 
 ***
 
@@ -162,7 +146,7 @@ then retries once with fresh headers.
 
 > `optional` **translateRemoteResponse**: (`schema`, `data`) => `unknown`
 
-Defined in: [plugins/replication/src/HttpDbPlugin.ts:101](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L101)
+Defined in: [plugins/replication/src/HttpDbPlugin.ts:68](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/HttpDbPlugin.ts#L68)
 
 #### Parameters
 
@@ -177,3 +161,51 @@ Defined in: [plugins/replication/src/HttpDbPlugin.ts:101](https://github.com/Agr
 #### Returns
 
 `unknown`
+
+#### Inherited from
+
+[`HttpConnectionOptions`](HttpConnectionOptions.md).[`translateRemoteResponse`](HttpConnectionOptions.md#translateremoteresponse)
+
+***
+
+### onEvent()?
+
+> `optional` **onEvent**: (`event`) => `void`
+
+Defined in: plugins/replication/src/syncHooks.ts:59
+
+#### Parameters
+
+##### event
+
+[`SyncEvent`](../type-aliases/SyncEvent.md)
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+[`SyncHooks`](SyncHooks.md).[`onEvent`](SyncHooks.md#onevent)
+
+***
+
+### onError()?
+
+> `optional` **onError**: (`error`) => `void`
+
+Defined in: plugins/replication/src/syncHooks.ts:60
+
+#### Parameters
+
+##### error
+
+[`HttpRequestError`](../type-aliases/HttpRequestError.md)
+
+#### Returns
+
+`void`
+
+#### Inherited from
+
+[`SyncHooks`](SyncHooks.md).[`onError`](SyncHooks.md#onerror)
