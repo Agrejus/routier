@@ -70,14 +70,15 @@ One-to-one views maintain a predictable mapping between source entities and view
 
 ## History Tables
 
-History tables are views that create a new record every time source data changes, preserving an immutable audit trail. They use `fastHash` with the schema's hash function to generate unique IDs based on the entire object state, ensuring each change creates a new record rather than updating an existing one.
+History tables are views that keep each state they read instead of updating one row. They use `fastHash` with the schema's hash function to generate unique IDs based on the entire object state, so a changed object gets a new record rather than replacing the existing one.
+
+A view recomputes after its source changes and reads the source's state at that moment. Two saves that land before it reads are recorded as one version. When every change must be recorded, use [`.audit()`](/guides/history-tracking#recording-every-change-with-audit) on the source collection instead: it receives each save's changes and writes in the same save.
 
 This pattern is ideal for:
 
-- **Audit trails**: Track all changes over time
 - **Version history**: Maintain snapshots of entity states
-- **Change tracking**: Know when and how data changed
-- **Undo/Redo**: Retrieve previous states
+- **Change tracking**: Know how data looked over time
+- **Undo/Redo**: Retrieve previous states the view recorded
 
 For complete implementation details, examples, and best practices, see the **[History Tracking guide](/guides/history-tracking)**.
 
