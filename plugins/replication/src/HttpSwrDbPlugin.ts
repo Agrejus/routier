@@ -120,7 +120,7 @@ function resolveAutoSync(options: HttpSwrDbPluginOptions): Required<AutoSyncOpti
         return null;
     }
 
-    const overrides = options.autoSync === true ? {} : options.autoSync;
+    const overrides: AutoSyncOptions = Object.assign<AutoSyncOptions, true | AutoSyncOptions>({}, options.autoSync);
 
     return {
         delayMs: overrides.delayMs ?? SWR_DEFAULTS.autoSyncDelayMs,
