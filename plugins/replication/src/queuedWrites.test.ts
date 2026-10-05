@@ -12,7 +12,7 @@ const URL = 'https://api.test/swrHardening';
 
 type Post = (url: string, body: string, collectionName: string) => Promise<unknown>;
 
-const refuse = (status: number, body: unknown = null) => new HttpStatusError(status, 'refused', null, body);
+const refuse = (status: number, body: unknown = null) => new HttpStatusError(status, 'refused', null, body, { get: () => null });
 
 const postsOf = (post: jest.Mock<Post>) => post.mock.calls.map(([, body]) => JSON.parse(body) as { adds: { id: string }[]; meta: { opIds: { adds: string[] } } });
 

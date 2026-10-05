@@ -24,7 +24,7 @@ export class HttpStatusError extends Error {
     readonly responseBody: unknown;
     readonly headers: ResponseHeaders;
 
-    constructor(status: number, statusText: string, retryAfterMs: number | null = null, responseBody: unknown = null, headers: ResponseHeaders = NO_HEADERS) {
+    constructor(status: number, statusText: string, retryAfterMs: number | null, responseBody: unknown, headers: ResponseHeaders) {
         super(`HTTP ${status}: ${statusText}`);
         this.status = status;
         this.retryAfterMs = retryAfterMs;
@@ -32,6 +32,8 @@ export class HttpStatusError extends Error {
         this.headers = headers;
     }
 }
+
+export const notModifiedError = (): HttpStatusError => new HttpStatusError(304, 'Not Modified', null, null, NO_HEADERS);
 
 export class NetworkError extends Error {
     constructor(cause: unknown) {

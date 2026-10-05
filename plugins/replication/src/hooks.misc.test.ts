@@ -7,7 +7,7 @@ import { s } from '@routier/core/schema';
 import { logger, uuid } from '@routier/core/utilities';
 import { MemoryPlugin } from '@routier/memory-plugin';
 import { HttpDbPlugin } from './HttpDbPlugin';
-import { HttpStatusError, NetworkError, responseHeadersOf } from './httpUtils';
+import { NetworkError, responseHeadersOf } from './httpUtils';
 import { OptimisticUpdatesDbPlugin } from './OptimisticUpdatesDbPlugin';
 import { PluginSyncEngine } from './PluginSyncEngine';
 import type { HttpRequestError, OptimisticRequestError, SyncEvent } from './syncHooks';
@@ -326,10 +326,6 @@ describe('UnsyncedQueue revisions', () => {
 describe('HTTP helpers', () => {
     it('answers null for every header of a response without headers', () => {
         expect(responseHeadersOf({}).get('ETag')).toBeNull();
-    });
-
-    it('gives a status error built without headers a header reader that answers null', () => {
-        expect(new HttpStatusError(500, 'x').headers.get('ETag')).toBeNull();
     });
 
     it('keeps what a network failure was caused by', () => {

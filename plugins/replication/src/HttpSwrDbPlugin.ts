@@ -28,7 +28,7 @@ import { buildUpdatePayload, entityIdKey, etagOrder } from './swrUtils';
 import { ConditionalRevalidation } from './conditionalRevalidation';
 import { SWR_DEFAULTS } from './constants';
 import { buildQueryParams } from './queryParamHelpers';
-import { HttpStatusError, KeyedMutex, RequestPacer } from './httpUtils';
+import { KeyedMutex, notModifiedError, RequestPacer } from './httpUtils';
 import { addOutcomes, bodyForUnits, NOTHING_DELIVERED, QueuedWriteSender, type DeliveryOutcome } from './queuedWrites';
 import { runWithOnError, statusOf, type ActionKit, type Settlement } from './requestFailures';
 import { emitEvent, type SwrRequestError, type SyncEvent, type SyncHooks } from './syncHooks';
@@ -1062,7 +1062,7 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         }
 
         if (settled.value.kind !== 'modified') {
-            const error = new HttpStatusError(304, 'Not Modified', null);
+            const error = notModifiedError();
             this.reportRead(collectionName, error);
             return error;
         }

@@ -21,7 +21,7 @@ import {
     buildUrlWithQuery,
     type QuerySerializationContext,
 } from './queryParamHelpers';
-import { HttpStatusError, JsonWriteBatcher, RequestPacer, RequestTracker } from './httpUtils';
+import { JsonWriteBatcher, notModifiedError, RequestPacer, RequestTracker } from './httpUtils';
 import { HttpQueryRunner, type ConditionalQueryResult } from './httpQueryRunner';
 import { conflictOf, runWithOnError, statusOf, type ActionKit } from './requestFailures';
 import { emitEvent, rejectedChangesOf, type HttpRequestError, type SyncEvent, type SyncHooks } from './syncHooks';
@@ -174,7 +174,7 @@ export class HttpDbPlugin implements IDbPlugin {
                     return result.data;
                 }
 
-                throw result.kind === 'failed' ? result.error : new HttpStatusError(304, 'Not Modified', null);
+                throw result.kind === 'failed' ? result.error : notModifiedError();
             },
             context: { operation: 'read', collectionName, method: 'GET', url: this.queryUrl(event), storeSource: false },
             onError: this.onError,
