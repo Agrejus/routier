@@ -5,8 +5,8 @@
  * or its worker.
  */
 
-const OPFS_PREFIX = 'opfs-ahp://';
-const IDB_PREFIX = 'idb://';
+export const OPFS_PREFIX = 'opfs-ahp://';
+export const IDB_PREFIX = 'idb://';
 const MEMORY_PREFIX = 'memory://';
 
 /** Only these name a storage. Anything else is a database name, `://` in it or not. */
@@ -47,20 +47,28 @@ const isMissing = (error: unknown): boolean => (error as { name?: unknown } | nu
 const delay = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
 const removeOpfsDirectory = async (path: string): Promise<void> => {
-    const segments = path.split('/').filter(segment => segment.length > 0);
+    const segments = opfsSegments(path);
     const name = segments.pop();
 
     if (name == null) {
         throw new Error(`'${OPFS_PREFIX}' needs a directory name`);
     }
 
+    const directory = await openOpfsDirectory(segments);
+
+    await directory.removeEntry(name, { recursive: true });
+};
+
+export const opfsSegments = (path: string): string[] => path.split('/').filter(segment => segment.length > 0);
+
+export const openOpfsDirectory = async (segments: string[]): Promise<FileSystemDirectoryHandle> => {
     let directory = await navigator.storage.getDirectory();
 
     for (const segment of segments) {
         directory = await directory.getDirectoryHandle(segment);
     }
 
-    await directory.removeEntry(name, { recursive: true });
+    return directory;
 };
 
 const deleteIndexedDbDatabase = (name: string): Promise<void> =>
