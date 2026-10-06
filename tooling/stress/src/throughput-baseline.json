@@ -1,9 +1,9 @@
 {
-    "insertRatio": 0.0344,
-    "readRatio": 0.0982,
-    "insertsPerSecond": 125000,
-    "readsPerSecond": 357143,
-    "referenceOperationsPerSecond": 4809007,
-    "recordedOn": "2026-08-03T14:59:40.574Z",
+    "insertRatio": 0.0162,
+    "readRatio": 0.0524,
+    "insertsPerSecond": 40816,
+    "readsPerSecond": 121951,
+    "referenceOperationsPerSecond": 3445165,
+    "recordedOn": "2026-10-06T12:39:03.000Z",
     "entities": 10000
 }

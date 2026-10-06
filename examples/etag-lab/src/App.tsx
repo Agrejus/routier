@@ -18,6 +18,7 @@ const panels: Record<ScenarioId, ComponentType> = {
 export function App() {
   const [scenario, setScenario] = useState(() => scenarioFromHash(window.location.hash));
   const [generation, setGeneration] = useState(0);
+  const [resetting, setResetting] = useState(false);
   const entries = useWireLog();
   const Panel = panels[scenario.id];
 
@@ -28,8 +29,14 @@ export function App() {
   }, []);
 
   const reset = async () => {
-    await labApi.reset();
-    setGeneration(current => current + 1);
+    setResetting(true);
+
+    try {
+      await labApi.reset();
+      setGeneration(current => current + 1);
+    } finally {
+      setResetting(false);
+    }
   };
 
   return (
@@ -37,7 +44,7 @@ export function App() {
       <header className="top">
         <h1>ETag lab</h1>
         <p>A note schema with <code>version: s.number().etag(etags.numeric)</code>, stored in SQLite. The server generates every version.</p>
-        <button type="button" data-testid="reset" onClick={() => void reset()}>Reset data</button>
+        <button type="button" data-testid="reset" disabled={resetting} onClick={() => void reset()}>Reset data</button>
       </header>
       <nav className="tabs">
         {scenarios.map(item => (
