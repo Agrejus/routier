@@ -2,16 +2,8 @@ import { PGliteWorker } from '@electric-sql/pglite/worker';
 import { PostgresDbPluginBase } from '@routier/postgres-plugin-core';
 import { pgliteDriver, PGliteLike } from './drivers/pglite';
 import type { PostgresDriver } from '@routier/postgres-plugin-core';
-import { deleteDataDir, resolveDataDir } from './browserStorage';
-import {
-    bootChosenStorage,
-    fallbackNameOf,
-    localStorageMemory,
-    OPFS_BOOT_TIMEOUT_MS,
-    opfsDirectoryExists,
-    rememberedDataDir,
-    type Boot,
-} from './storageChoice';
+import { deleteDataDir, localStorageMemory, resolveDataDir } from './browserStorage';
+import { bootChosenStorage, fallbackNameOf, OPFS_BOOT_TIMEOUT_MS, opfsDirectoryExists, type Boot } from './storageChoice';
 import { codedReadChannel, type CodedReadChannel } from './codedReadChannel';
 
 export type { PGliteLike, PGliteDriverOptions } from './drivers/pglite';
@@ -98,11 +90,9 @@ export class PGliteDbPlugin extends PostgresDbPluginBase {
 }
 
 const driverFor = (databaseName: string, options: PGliteDbPluginOptions): PostgresDriver => {
-    const resolved = resolveDataDir(databaseName, navigator.userAgent);
-    const fallbackName = fallbackNameOf(databaseName, resolved);
-    const dataDir = fallbackName == null ? resolved : rememberedDataDir(fallbackName, localStorageMemory);
+    const dataDir = resolveDataDir(databaseName, navigator.userAgent);
 
-    return resolveDriver(dataDir, fallbackName, options.workerUrl, options.codec ?? true);
+    return resolveDriver(dataDir, fallbackNameOf(databaseName, dataDir), options.workerUrl, options.codec ?? true);
 };
 
 /**

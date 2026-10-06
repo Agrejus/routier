@@ -1,13 +1,7 @@
 import { logger } from '@routier/core/utilities';
-import { IDB_PREFIX, OPFS_PREFIX, openOpfsDirectory, opfsSegments } from './browserStorage';
+import { IDB_PREFIX, OPFS_PREFIX, openOpfsDirectory, opfsSegments, storageKey, type ChoiceMemory } from './browserStorage';
 
 export type StorageKind = 'opfs' | 'idb';
-
-export interface ChoiceMemory {
-    get: (key: string) => string | null;
-    set: (key: string, value: string) => void;
-    remove: (key: string) => void;
-}
 
 export type Boot<T> = { ready: Promise<T>; stop: () => void };
 
@@ -25,8 +19,6 @@ type Finished<T> = { value: T } | null;
 
 export const OPFS_BOOT_TIMEOUT_MS = 10_000;
 
-const storageKey = (name: string): string => `routier-pglite-storage:${name}`;
-
 const bootingKey = (name: string): string => `routier-pglite-booting:${name}`;
 
 const PREFIXES: Record<StorageKind, string> = { opfs: OPFS_PREFIX, idb: IDB_PREFIX };
@@ -43,9 +35,6 @@ const parseStartedAt = (value: string | null): number | null => {
 
 export const fallbackNameOf = (databaseName: string, dataDir: string): string | null =>
     dataDir === dataDirOf('opfs', databaseName) ? databaseName : null;
-
-export const rememberedDataDir = (name: string, memory: ChoiceMemory): string =>
-    dataDirOf(parseKind(memory.get(storageKey(name))) ?? 'opfs', name);
 
 const withinTimeout = <T>(ready: Promise<T>, timeoutMs: number): Promise<Finished<T>> => {
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -113,20 +102,6 @@ export const bootChosenStorage = async <T>(name: string, options: StorageChoiceO
     attempt.stop();
     warnFallback(name, `opening it in OPFS did not finish within ${options.timeoutMs} ms`);
     return choose('idb');
-};
-
-const attemptOr = <T>(action: () => T, fallback: T): T => {
-    try {
-        return action();
-    } catch {
-        return fallback;
-    }
-};
-
-export const localStorageMemory: ChoiceMemory = {
-    get: key => attemptOr(() => globalThis.localStorage.getItem(key), null),
-    set: (key, value) => attemptOr(() => globalThis.localStorage.setItem(key, value), undefined),
-    remove: key => attemptOr(() => globalThis.localStorage.removeItem(key), undefined),
 };
 
 export const opfsDirectoryExists = (name: string): Promise<boolean> =>

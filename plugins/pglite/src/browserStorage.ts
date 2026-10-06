@@ -28,10 +28,34 @@ const capsSyncAccessHandles = (userAgent: string): boolean =>
  * PostgreSQL installation. A name that already carries a prefix is returned untouched, because
  * the prefix is the caller saying it outright.
  */
-export const resolveDataDir = (databaseName: string, userAgent: string): string =>
+export interface ChoiceMemory {
+    get: (key: string) => string | null;
+    set: (key: string, value: string) => void;
+    remove: (key: string) => void;
+}
+
+const attemptOr = <T>(action: () => T, fallback: T): T => {
+    try {
+        return action();
+    } catch {
+        return fallback;
+    }
+};
+
+export const localStorageMemory: ChoiceMemory = {
+    get: key => attemptOr(() => globalThis.localStorage.getItem(key), null),
+    set: (key, value) => attemptOr(() => globalThis.localStorage.setItem(key, value), undefined),
+    remove: key => attemptOr(() => globalThis.localStorage.removeItem(key), undefined),
+};
+
+export const storageKey = (name: string): string => `routier-pglite-storage:${name}`;
+
+const fellBackToIndexedDb = (name: string, memory: ChoiceMemory): boolean => memory.get(storageKey(name)) === 'idb';
+
+export const resolveDataDir = (databaseName: string, userAgent: string, memory: ChoiceMemory = localStorageMemory): string =>
     KNOWN_PREFIXES.some(prefix => databaseName.startsWith(prefix))
         ? databaseName
-        : `${capsSyncAccessHandles(userAgent) ? IDB_PREFIX : OPFS_PREFIX}${databaseName}`;
+        : `${capsSyncAccessHandles(userAgent) || fellBackToIndexedDb(databaseName, memory) ? IDB_PREFIX : OPFS_PREFIX}${databaseName}`;
 
 /** Waited between attempts while the browser releases a terminated worker's access handles. */
 const RELEASE_DELAYS_MS = [0, 50, 150, 400, 1000];

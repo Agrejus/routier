@@ -40,7 +40,8 @@ The name is PGlite's data directory, and its prefix chooses the storage:
 
 There is no separate `storage` option, because the prefix already says it. To show a user where
 the data actually went, `resolveDataDir(name, navigator.userAgent)` from
-`@routier/pglite-plugin/browser-storage` returns the same answer the constructor used. It is a
+`@routier/pglite-plugin/browser-storage` returns the same answer the constructor used, including
+a fallback to IndexedDB remembered from an earlier load. It is a
 subpath because TypeScript does not resolve the `browser` condition — on the root entry it would
 resolve the Node build's types and not be visible at all.
 
