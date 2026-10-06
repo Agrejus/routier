@@ -2,6 +2,7 @@ import { RECOVERABLE_SQLSTATE, type PostgresConnection, type PostgresDriver } fr
 import { ResultColumn } from '@routier/core/plugins';
 import { buildTransferPlan, parsedValueTransferTypes } from '@routier/core/transfer';
 import { isCodedReadUnavailable, type CodedReadChannel } from '../codedReadChannel';
+import { NO_TURN, type Turn } from '../crossTabTurn';
 
 /**
  * The part of PGlite this driver uses.
@@ -159,6 +160,8 @@ export type PGliteDriverOptions = {
      * refuses rather than quietly keeping data it promised to remove.
      */
     deleteStorage?: () => Promise<void>;
+
+    crossTabTurn?: () => Promise<Turn>;
 };
 
 /**
@@ -205,6 +208,7 @@ export const pgliteDriver = (
 
         return channel == null ? null : { channel, disable: () => { codedDisabled = true; } };
     };
+    const crossTabTurn = options.crossTabTurn ?? NO_TURN;
     const start = typeof source === 'function' ? source : null;
     let database: Promise<PGliteLike> | null = start == null ? (source as Promise<PGliteLike>) : null;
 
@@ -227,8 +231,13 @@ export const pgliteDriver = (
 
         async connect(): Promise<PostgresConnection> {
             const release = await takeTurn();
+            let endTurn = (): void => undefined;
 
             try {
+                const turn = await crossTabTurn();
+
+                endTurn = turn.end;
+
                 if (database == null) {
                     if (start == null) {
                         throw new Error(`${databaseName} was closed, and this driver does not own the engine to reopen it`);
@@ -237,7 +246,16 @@ export const pgliteDriver = (
                     database = start();
                 }
 
-                return new PGliteConnection(await database, release, codedReads());
+                const opened = await database;
+
+                if (turn.abandoned) {
+                    await opened.exec('ROLLBACK');
+                }
+
+                return new PGliteConnection(opened, () => {
+                    turn.end();
+                    release();
+                }, codedReads());
             } catch (error) {
                 // A failed start must not be remembered, or every later caller inherits the
                 // rejection for the life of the page.
@@ -245,8 +263,7 @@ export const pgliteDriver = (
                     database = null;
                 }
 
-                // The connection never existed, so nothing will ever release it. Without this
-                // the queue is blocked forever on a database that failed to start.
+                endTurn();
                 release();
                 throw error;
             }
@@ -265,8 +282,11 @@ export const pgliteDriver = (
          */
         async destroy(): Promise<void> {
             const release = await takeTurn();
+            let endTurn = (): void => undefined;
 
             try {
+                endTurn = (await crossTabTurn()).end;
+
                 const started = database;
 
                 database = null;
@@ -285,6 +305,7 @@ export const pgliteDriver = (
 
                 await options.deleteStorage();
             } finally {
+                endTurn();
                 release();
             }
         },

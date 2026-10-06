@@ -88,6 +88,11 @@ pressure unless the origin is persisted — `navigator.storage.persist()` asks.
 Multi-tab safe. One tab is elected leader and owns the database; the rest proxy their queries to
 it, and another election runs when the leader closes.
 
+Every tab shares the leader's one PostgreSQL session, so the plugin takes turns across tabs: each
+save or query holds a Web Lock named `routier-pglite-turn:<data directory>` from start to finish.
+One tab's transaction never runs inside another's. If a tab closes partway through a save, the next
+tab to take a turn rolls back what it left open.
+
 ### Safari, and every browser on iOS
 
 Handled, as long as you pass a bare name. WebKit caps synchronous access handles at 252 and a
