@@ -15,8 +15,7 @@ const open = async (scenario: string) => {
   context.setDefaultTimeout(ACTION_TIMEOUT_MS);
   page = await context.newPage();
   await page.goto(`${lab.origin}/#${scenario}`);
-  await page.getByTestId('reset').click();
-  await page.waitForTimeout(200);
+  await click('reset');
 };
 
 const click = async (testId: string) => {
