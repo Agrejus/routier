@@ -229,3 +229,90 @@ describe('pgliteDriver engine lifetime', () => {
         expect(log).toEqual(['deleted']);
     });
 });
+
+describe('pgliteDriver cross-tab turns', () => {
+    const turns = (log: string[], abandoned: boolean[] = []) => () => {
+        log.push('turn');
+        return Promise.resolve({ abandoned: abandoned.shift() ?? false, end: () => { log.push('end'); } });
+    };
+
+    it('holds the turn from connect until release', async () => {
+        const log: string[] = [];
+        const driver = pgliteDriver('memory://turns', Promise.resolve(stub(log)), { crossTabTurn: turns(log) });
+
+        const connection = await driver.connect();
+        await connection.run('SELECT 1');
+        expect(log).toEqual(['turn', 'SELECT 1']);
+
+        await connection.release();
+        expect(log).toEqual(['turn', 'SELECT 1', 'end']);
+    });
+
+    it('rolls back a transaction a vanished tab left open before anything else runs', async () => {
+        const log: string[] = [];
+        const driver = pgliteDriver('memory://abandoned', Promise.resolve(stub(log)), { crossTabTurn: turns(log, [true, false]) });
+
+        const first = await driver.connect();
+        await first.run('BEGIN');
+        await first.release();
+        await (await driver.connect()).release();
+
+        expect(log).toEqual(['turn', 'ROLLBACK', 'BEGIN', 'end', 'turn', 'end']);
+    });
+
+    it('ends the turn when the engine fails to start', async () => {
+        const log: string[] = [];
+        const driver = pgliteDriver('memory://failed', () => Promise.reject(new Error('worker 404')), { crossTabTurn: turns(log) });
+
+        await expect(driver.connect()).rejects.toThrow('worker 404');
+        expect(log).toEqual(['turn', 'end']);
+    });
+
+    it('releases the queue when the turn cannot be taken', async () => {
+        let refusals = 1;
+        const driver = pgliteDriver('memory://refused', Promise.resolve(stub()), {
+            crossTabTurn: () => (refusals-- > 0
+                ? Promise.reject(new Error('locks unavailable'))
+                : Promise.resolve({ abandoned: false, end: () => undefined })),
+        });
+
+        await expect(driver.connect()).rejects.toThrow('locks unavailable');
+        await expect(driver.connect()).resolves.toBeDefined();
+    });
+
+    it('holds a turn while destroying, and ends it once the storage is deleted', async () => {
+        const log: string[] = [];
+        const driver = pgliteDriver('memory://destroy-turn', () => Promise.resolve(stub(log)), {
+            crossTabTurn: turns(log),
+            deleteStorage: async () => { log.push('deleted'); },
+        });
+
+        await driver.destroy();
+
+        expect(log).toEqual(['turn', 'deleted', 'end']);
+    });
+
+    it('ends the destroy turn even when the delete fails', async () => {
+        const log: string[] = [];
+        const driver = pgliteDriver('memory://destroy-fails', () => Promise.resolve(stub(log)), {
+            crossTabTurn: turns(log),
+            deleteStorage: () => Promise.reject(new Error('still held')),
+        });
+
+        await expect(driver.destroy()).rejects.toThrow('still held');
+        expect(log).toEqual(['turn', 'end']);
+    });
+
+    it('releases the queue when the destroy turn cannot be taken', async () => {
+        let refusals = 1;
+        const driver = pgliteDriver('memory://destroy-refused', Promise.resolve(stub()), {
+            crossTabTurn: () => (refusals-- > 0
+                ? Promise.reject(new Error('locks unavailable'))
+                : Promise.resolve({ abandoned: false, end: () => undefined })),
+            deleteStorage: async () => undefined,
+        });
+
+        await expect(driver.destroy()).rejects.toThrow('locks unavailable');
+        await expect(driver.connect()).resolves.toBeDefined();
+    });
+});

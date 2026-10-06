@@ -3,6 +3,7 @@ import { PostgresDbPluginBase } from '@routier/postgres-plugin-core';
 import { pgliteDriver, PGliteLike } from './drivers/pglite';
 import type { PostgresDriver } from '@routier/postgres-plugin-core';
 import { deleteDataDir, localStorageMemory, resolveDataDir } from './browserStorage';
+import { crossTabTurns } from './crossTabTurn';
 import { bootChosenStorage, fallbackNameOf, OPFS_BOOT_TIMEOUT_MS, opfsDirectoryExists, type Boot } from './storageChoice';
 import { codedReadChannel, type CodedReadChannel } from './codedReadChannel';
 
@@ -178,6 +179,7 @@ const resolveDriver = (dataDir: string, fallbackName: string | null, workerUrl: 
         name: 'pglite (worker)',
         codedReads: codec ? () => channel ?? undefined : undefined,
         deleteStorage: () => deleteDataDir(active),
+        crossTabTurn: crossTabTurns(dataDir, navigator.locks, localStorageMemory),
     });
     const entry: Registered = { driver, workerUrl: requested, codec };
 

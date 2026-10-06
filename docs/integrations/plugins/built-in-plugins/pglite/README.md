@@ -76,6 +76,8 @@ PGlite prints every server error to the console before the client acts on it. Tw
 
 The plugin is safe across tabs. One tab is elected leader and owns the database. Other tabs send their queries to the leader. A new election runs when the leader closes.
 
+All tabs share the leader's one PostgreSQL session, so tabs take turns. Each save or query holds a Web Lock for the data directory until it finishes, so one tab's transaction never runs inside another's. If a tab closes partway through a save, the next tab rolls back what it left open.
+
 ### Safari
 
 `opfs-ahp` does not work in Safari. Safari limits an origin to 252 open sync access handles. A PostgreSQL installation needs more than 300 files. Use `idb://` in Safari.
