@@ -3,6 +3,101 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## Schema etags, sync events, and PGlite in the browser (2026-10-06)
+
+Schemas can now declare an etag: a version field that Routier generates on every write and that
+the replication plugins use to revalidate, send `If-None-Match`, and refuse stale edits. The
+replication plugins' seven callbacks are replaced by two hooks, `onEvent` and `onError`, with
+nothing switched on by default. In the browser, PGlite falls back to IndexedDB when OPFS never
+opens, and tabs take turns so their transactions no longer interleave.
+
+Three packages take a minor release because something published changed: `@routier/core` (a
+plugin-facing type), `@routier/replication-plugin` (its options and callbacks) and
+`@routier/sqlite-plugin` (D1 refuses saves it cannot check). The rest are patches. Every
+package's `@routier/core` floor moves to `>=0.9.0` in the repository; packages not released here
+keep their published ranges until their next release.
+
+### Breaking — @routier/replication-plugin 0.6.0
+
+`HttpDbPlugin`, `HttpSwrDbPlugin`, `HttpTransportDbPlugin` and `OptimisticUpdatesDbPlugin` share
+two hooks. See `specs/sync-events.md` for the design.
+
+| Before | After |
+| --- | --- |
+| `onRevalidateError` | `onEvent` `read` with `ok: false` |
+| `onRevalidateNotModified` | Removed |
+| `onSync` | `onEvent` `synced` |
+| `onSyncDeadLetter`, `onConflict` | `onEvent` `changes-rejected` |
+| `onMirrorError` on `OptimisticUpdatesDbPlugin` | `onEvent` `changes-rejected`, and `onError` |
+| `onAuthError` | `onError` with `kind: "http"` and a 401 or 403 |
+| `queryRetry*`, `bulkPersistRetry*` options | `createRetry(...)` in `onError` |
+| `autoSync` on by default | Off by default; `defaultSync()` turns it on |
+| `syncNow()` returns `{ flushed, failed, deadLettered }` | `{ sent, failed, rejected }` |
+| A failed first read resolves empty (#66) | It throws, unless `onError` calls `useCached()` |
+
+- `onError` receives `kind` (`http`, `network` or `store`), the request details, `attempt`, and
+  only the actions the plugin can carry out: `retry()`, `done()`, `useCached()`, `reject()` or
+  `defer()`. The operation waits until one is called, and `retry()` asks again on failure.
+- With no `onError`, a failed read throws, a failed direct write throws, and a failed queued write
+  stays queued.
+- A rejected batch narrows to the changes the server refused, and a change edited again while it
+  was being sent stays queued instead of being dead-lettered.
+- `createRetry()` and `defaultSync()` restore the old retry and background-sync behaviour as
+  opt-in helpers.
+
+### Added — @routier/replication-plugin 0.6.0
+
+- SWR revalidation by row etag: a newer server row replaces the local one, an equal one is
+  skipped, and an older one is ignored.
+- `If-None-Match` and `304` (#63): the last response's `ETag` is stored per query and sent on
+  revalidation; a `304` keeps local rows and marks the query fresh.
+- SWR updates carry the etag the edit was based on, so a server can refuse a stale edit with
+  `409`.
+
+### Breaking — @routier/core 0.9.0
+
+- `concurrency.expected` on persist events is `number | string` (`EtagValue`), not `number`. A
+  plugin that reads it must handle a string etag.
+
+### Added — @routier/core 0.9.0
+
+- `.etag(comparator)` on `s.number()` and `s.string()`. The property is readonly and left out of
+  the create type. Compiled schemas expose `etagProperty`; `etags.numeric` and `etags.lexical`
+  are the built-in comparators, and comparators survive the JSON Schema export.
+- Memory, browser-storage and file-system plugins generate etags through `EphemeralDataPlugin`.
+- `etags: 'keep'` on persist events keeps the etag a row carries instead of generating one.
+- `ConcurrencyDbPlugin` guards a schema with a declared etag by that etag, with no hidden
+  `__version` column.
+
+### Breaking — @routier/sqlite-plugin 0.6.0
+
+- D1 refuses a save that `ConcurrencyDbPlugin` guards, because it cannot check a conflict before
+  acknowledging it.
+
+### Added — @routier/sqlite-plugin 0.6.0, @routier/sql-plugin-core 0.7.2, @routier/postgres-plugin-core 0.3.3, @routier/mysql-plugin 0.5.3
+
+- Etag support: updates set a generated number etag with `COALESCE("version", 0) + 1`, a fresh
+  token for a string etag, or the row's own value in keep mode. Inserts get their etag in JS.
+
+### Added — @routier/dexie-plugin 0.4.4, @routier/mongodb-plugin 0.4.3, @routier/pouchdb-plugin 0.5.2
+
+- Dexie and MongoDB generate etags. MongoDB reads the stored etags inside the save's transaction.
+- `pouchRevision` from `@routier/pouchdb-plugin` is an etag comparator for `_rev`.
+
+### Fixed — @routier/mongodb-plugin 0.4.3
+
+- An update with an empty delta, meaning "write the whole entity", wrote nothing.
+
+### Fixed — @routier/pglite-plugin 0.3.1
+
+- A bare database name falls back to `idb://<name>` with a console warning when the OPFS boot
+  does not finish within 10 seconds, or on the next load if an earlier boot froze the tab (#58).
+  The choice is remembered per name, and a database that has opened in OPFS never moves.
+  `resolveDataDir` returns the remembered choice.
+- Tabs take turns on the shared PostgreSQL session through a Web Lock per data directory, so two
+  tabs saving at once no longer abort each other's transactions. A transaction left open by a tab
+  that closed is rolled back by the next tab (#60).
+
 ## Svelte, Solid, Angular, Lit and TanStack Query bindings, and group joins (2026-09-27)
 
 Five new packages connect Routier live queries to more frameworks: `@routier/svelte` (a readable
