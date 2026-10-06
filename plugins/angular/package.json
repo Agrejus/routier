@@ -21,7 +21,7 @@
         "lint": "oxlint . --ignore-pattern \"**/*.test.*\""
     },
     "peerDependencies": {
-        "@routier/core": ">=0.8.2",
+        "@routier/core": ">=0.9.0",
         "@angular/core": ">=19.0.0",
         "rxjs": ">=7.4.0"
     },
