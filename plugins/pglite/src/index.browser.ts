@@ -3,6 +3,15 @@ import { PostgresDbPluginBase } from '@routier/postgres-plugin-core';
 import { pgliteDriver, PGliteLike } from './drivers/pglite';
 import type { PostgresDriver } from '@routier/postgres-plugin-core';
 import { deleteDataDir, resolveDataDir } from './browserStorage';
+import {
+    bootChosenStorage,
+    fallbackNameOf,
+    localStorageMemory,
+    OPFS_BOOT_TIMEOUT_MS,
+    opfsDirectoryExists,
+    rememberedDataDir,
+    type Boot,
+} from './storageChoice';
 import { codedReadChannel, type CodedReadChannel } from './codedReadChannel';
 
 export type { PGliteLike, PGliteDriverOptions } from './drivers/pglite';
@@ -84,13 +93,17 @@ export type PGliteDbPluginOptions = {
  */
 export class PGliteDbPlugin extends PostgresDbPluginBase {
     constructor(databaseName: string, options: PGliteDbPluginOptions = {}) {
-        super(resolveDriver(
-            resolveDataDir(databaseName, navigator.userAgent),
-            options.workerUrl,
-            options.codec ?? true
-        ));
+        super(driverFor(databaseName, options));
     }
 }
+
+const driverFor = (databaseName: string, options: PGliteDbPluginOptions): PostgresDriver => {
+    const resolved = resolveDataDir(databaseName, navigator.userAgent);
+    const fallbackName = fallbackNameOf(databaseName, resolved);
+    const dataDir = fallbackName == null ? resolved : rememberedDataDir(fallbackName, localStorageMemory);
+
+    return resolveDriver(dataDir, fallbackName, options.workerUrl, options.codec ?? true);
+};
 
 /**
  * One driver per data directory, shared by every store over it.
@@ -116,7 +129,7 @@ type Registered = { driver: PostgresDriver; workerUrl: string; codec: boolean };
 
 const drivers = new Map<string, Registered>();
 
-const resolveDriver = (dataDir: string, workerUrl?: string | URL, codec = true): PostgresDriver => {
+const resolveDriver = (dataDir: string, fallbackName: string | null, workerUrl: string | URL | undefined, codec: boolean): PostgresDriver => {
     const requested = String(workerUrl ?? '');
     const registered = drivers.get(dataDir);
 
@@ -141,22 +154,44 @@ const resolveDriver = (dataDir: string, workerUrl?: string | URL, codec = true):
         return registered.driver;
     }
 
-    // Started per driver start, so a restarted engine gets a channel to its new worker.
     let channel: CodedReadChannel | null = null;
+    let active = dataDir;
 
-    const driver = pgliteDriver(dataDir, () => {
-        const started = startWorker(dataDir, workerUrl);
+    const boot = (dir: string): Boot<PGliteLike> => {
+        const started = startWorker(dir, workerUrl);
 
-        channel = started.codedReads;
+        return {
+            ready: started.database.then(async database => {
+                await database.query('SELECT 1');
+                channel = started.codedReads;
+                active = dir;
+                return database;
+            }),
+            stop: started.stop,
+        };
+    };
 
-        return started.database;
-    }, {
+    const start = (): Promise<PGliteLike> => fallbackName == null
+        ? boot(dataDir).ready
+        : bootChosenStorage(fallbackName, {
+            memory: localStorageMemory,
+            opfsDirectoryExists,
+            boot,
+            timeoutMs: OPFS_BOOT_TIMEOUT_MS,
+            now: Date.now,
+        }).then(booted => {
+            drivers.set(booted.dataDir, entry);
+            return booted.value;
+        });
+
+    const driver = pgliteDriver(dataDir, start, {
         name: 'pglite (worker)',
         codedReads: codec ? () => channel ?? undefined : undefined,
-        deleteStorage: () => deleteDataDir(dataDir),
+        deleteStorage: () => deleteDataDir(active),
     });
+    const entry: Registered = { driver, workerUrl: requested, codec };
 
-    drivers.set(dataDir, { driver, workerUrl: requested, codec });
+    drivers.set(dataDir, entry);
 
     return driver;
 };
@@ -168,7 +203,7 @@ const resolveDriver = (dataDir: string, workerUrl?: string | URL, codec = true):
  * PGlite leaves free once start-up is done, because its own RPC moves to a `BroadcastChannel`. See
  * `codedReads.ts`.
  */
-const startWorker = (dataDir: string, workerUrl?: string | URL): { database: Promise<PGliteLike>; codedReads: CodedReadChannel } => {
+const startWorker = (dataDir: string, workerUrl?: string | URL): { database: Promise<PGliteLike>; codedReads: CodedReadChannel; stop: () => void } => {
     // Both branches spelled out on purpose. A bundler detects a worker by matching
     // `new Worker(new URL('...', import.meta.url))` as one literal expression at the call site;
     // hand it a variable and it emits nothing, so the build succeeds and the worker 404s.
@@ -179,5 +214,6 @@ const startWorker = (dataDir: string, workerUrl?: string | URL): { database: Pro
     return {
         database: PGliteWorker.create(instance, { dataDir }) as unknown as Promise<PGliteLike>,
         codedReads: codedReadChannel(instance),
+        stop: () => instance.terminate(),
     };
 };

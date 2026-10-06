@@ -33,7 +33,7 @@ The name is PGlite's data directory, and its prefix chooses the storage:
 
 | Value | Storage |
 |---|---|
-| `"app"` | The fastest storage that persists here: `opfs-ahp://`, or `idb://` on WebKit |
+| `"app"` | The fastest storage that persists here: `opfs-ahp://`, or `idb://` on WebKit or when OPFS hangs |
 | `"opfs-ahp://app"` | OPFS, named outright |
 | `"idb://app"` | IndexedDB. Slower, and the only one WebKit can hold PostgreSQL in |
 | `"memory://app"` | Lost on navigation |
@@ -95,6 +95,20 @@ resolves to `idb://` instead. Every iOS browser is WebKit, not only Safari.
 
 Naming `opfs-ahp://` outright still fails on WebKit. It has to: you said which storage you
 wanted.
+
+### When OPFS never opens
+
+Some browsers hang instead of failing when PGlite opens OPFS. Flatpak-packaged Chrome is one.
+With a bare name, the plugin switches to IndexedDB and warns in the console:
+
+- **Same page load:** if the OPFS boot has not finished after 10 seconds, the worker is stopped
+  and the database opens at `idb://<name>`.
+- **Next page load:** if the earlier boot froze the whole tab, the boot it started is still
+  marked as unfinished, so this load goes straight to `idb://<name>`.
+
+The choice is remembered per name in `localStorage`. A database that has opened in OPFS once,
+or that already has OPFS data, stays in OPFS and is never moved. Naming `opfs-ahp://` outright
+turns the fallback off.
 
 ### Destroying a database
 

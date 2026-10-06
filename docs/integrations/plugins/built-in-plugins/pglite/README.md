@@ -80,6 +80,10 @@ The plugin is safe across tabs. One tab is elected leader and owns the database.
 
 `opfs-ahp` does not work in Safari. Safari limits an origin to 252 open sync access handles. A PostgreSQL installation needs more than 300 files. Use `idb://` in Safari.
 
+### When OPFS hangs
+
+Some browsers, such as Flatpak-packaged Chrome, hang instead of failing when PGlite opens OPFS. With a bare database name, the plugin falls back to `idb://<name>` and logs a console warning. It falls back when the OPFS boot takes longer than 10 seconds, or on the next page load if an earlier boot never finished. The choice is remembered per name in `localStorage`. A database that has opened in OPFS once stays in OPFS. Naming `opfs-ahp://` outright turns the fallback off.
+
 ### Download size
 
 PGlite is about 3 MB of WebAssembly, plus its data file. Use `@routier/dexie-plugin` or `@routier/sqlite-plugin` when size matters more than PostgreSQL parity.
