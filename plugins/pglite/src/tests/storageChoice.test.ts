@@ -1,14 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { logger } from '@routier/core/utilities';
-import {
-    bootChosenStorage,
-    fallbackNameOf,
-    localStorageMemory,
-    opfsDirectoryExists,
-    rememberedDataDir,
-    type Boot,
-    type ChoiceMemory,
-} from '../storageChoice';
+import { localStorageMemory, resolveDataDir, type ChoiceMemory } from '../browserStorage';
+import { bootChosenStorage, fallbackNameOf, opfsDirectoryExists, type Boot } from '../storageChoice';
 
 const TIMEOUT_MS = 30;
 const NOW = 1_000_000;
@@ -208,13 +201,38 @@ describe('fallbackNameOf', () => {
     });
 });
 
-describe('rememberedDataDir', () => {
+describe('resolveDataDir after a fallback', () => {
+    const CHROME = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36';
+
     it.each([
         [{}, 'opfs-ahp://app'],
         [{ [STORAGE_KEY]: 'opfs' }, 'opfs-ahp://app'],
         [{ [STORAGE_KEY]: 'idb' }, 'idb://app'],
     ])('with %j is %s', (entries, expected) => {
-        expect(rememberedDataDir('app', mapMemory(entries))).toBe(expected);
+        expect(resolveDataDir('app', CHROME, mapMemory(entries))).toBe(expected);
+    });
+
+    it('leaves a name with a prefix alone', () => {
+        expect(resolveDataDir('opfs-ahp://app', CHROME, mapMemory({ 'routier-pglite-storage:opfs-ahp://app': 'idb' }))).toBe('opfs-ahp://app');
+    });
+
+    it('reads localStorage when no memory is given', () => {
+        const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+
+        Object.defineProperty(globalThis, 'localStorage', {
+            configurable: true,
+            value: { getItem: (key: string) => (key === STORAGE_KEY ? 'idb' : null) },
+        });
+
+        try {
+            expect(resolveDataDir('app', CHROME)).toBe('idb://app');
+        } finally {
+            if (original == null) {
+                Reflect.deleteProperty(globalThis, 'localStorage');
+            } else {
+                Object.defineProperty(globalThis, 'localStorage', original);
+            }
+        }
     });
 });
 

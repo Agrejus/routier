@@ -87,6 +87,33 @@ export async function removeStalePGliteDatabases(keep: string): Promise<void> {
     record(stored);
 }
 
+const LEGACY_INSPECTOR_PGLITE = /^inspector-pglite-\d+$/;
+const PGLITE_IDB_PREFIX = '/pglite/';
+
+const opfsRootNames = async (): Promise<string[]> => {
+    const names: string[] = [];
+
+    for await (const name of (await navigator.storage.getDirectory()).keys()) {
+        names.push(name);
+    }
+
+    return names;
+};
+
+const pgliteIndexedDbNames = async (): Promise<string[]> =>
+    (await indexedDB.databases())
+        .map(database => database.name ?? '')
+        .filter(name => name.startsWith(PGLITE_IDB_PREFIX))
+        .map(name => name.slice(PGLITE_IDB_PREFIX.length));
+
+export async function removeLegacyInspectorDatabases(): Promise<void> {
+    const found = await Promise.all([opfsRootNames().catch(() => []), pgliteIndexedDbNames().catch(() => [])]);
+    const legacy = [...new Set(found.flat())].filter(name => LEGACY_INSPECTOR_PGLITE.test(name));
+
+    await Promise.all(legacy.map(name =>
+        Promise.all([deleteDataDir(`opfs-ahp://${name}`), deleteDataDir(`idb://${name}`)]).catch(() => undefined)));
+}
+
 /**
  * One store, six plugins. The `.scope()` on every collection is what keeps them apart in
  * PouchDB, which holds every collection in one database — see the plugin's README. The other
