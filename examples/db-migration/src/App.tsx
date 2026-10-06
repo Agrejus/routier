@@ -263,16 +263,11 @@ const INSPECTOR_ROWS = 2500;
 
 type InspectorStore = { store: ShopStore; context: OpContext };
 
-/**
- * A store the inspector owns, seeded with orders only.
- *
- * Its own database rather than the migration lab's: the inspector has to work on a first visit,
- * and a plan read off a store someone else is still writing to is not the plan for these rows.
- * Only `orders` is seeded, because every inspector query reads that collection.
- */
 async function seedInspectorStore(engine: DbChoice, rows: number): Promise<InspectorStore> {
-    const store = new ShopStore(createPlugin(engine, `inspector-${engine}-${Date.now()}`));
+    const store = new ShopStore(createPlugin(engine, `inspector-${engine}`));
     const orders = makeOrdersOnly(rows);
+
+    await store.orders.removeAllAsync();
 
     for (let i = 0; i < orders.length; i += 1000) {
         await store.orders.addAsync(...orders.slice(i, i + 1000));
