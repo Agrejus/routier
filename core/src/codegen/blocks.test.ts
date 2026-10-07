@@ -44,6 +44,34 @@ describe("binding values into generated code", () => {
         ]);
     });
 
+    it("CodeBuilder.bind records a value bound twice under one name only once", () => {
+        const root = new CodeBuilder();
+        const helper = () => 1;
+
+        expect(root.bind(helper, "helper")).toBe("helper");
+        expect(root.bind(helper, "helper")).toBe("helper");
+        expect(root.getBindings()).toEqual([{ name: "helper", value: helper }]);
+    });
+
+    it("CodeBuilder.bind keeps one value bound under two names", () => {
+        const root = new CodeBuilder();
+        const helper = () => 1;
+
+        root.bind(helper, "first");
+        root.bind(helper, "second");
+
+        expect(root.getBindings()).toEqual([{ name: "first", value: helper }, { name: "second", value: helper }]);
+    });
+
+    it("CodeBuilder.bind keeps a different value bound under a name already in use", () => {
+        const root = new CodeBuilder();
+
+        root.bind("first", "shared");
+        root.bind("second", "shared");
+
+        expect(root.getBindings()).toEqual([{ name: "shared", value: "first" }, { name: "shared", value: "second" }]);
+    });
+
     it("FunctionFactoryBuilder.bind adds a factory parameter carrying the value", () => {
         const root = new CodeBuilder();
         const factory = root.factory("factory", { name: "factory" }).parameters({ name: "collectionName", value: "c" });
