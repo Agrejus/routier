@@ -53,10 +53,11 @@ export const contractOptionalObjectsSchema = s.define("contract_optional_objects
     top: s.object({ title: s.string() }).optional().nullable(),
     facts: s.object({
         name: s.object({
-            value: s.object({ kind: s.string(), text: s.string() }).optional().nullable(),
+            value: s.object({ kind: s.string(), text: s.string(), scores: s.number().array() }).optional().nullable(),
             verified: s.boolean(),
         }).optional(),
     }),
+    tags: s.object({ list: s.array(s.string()).optional() }).optional(),
 }).compile();
 
 export const contractCompositeSchema = s.define("contract_composite", {
@@ -134,14 +135,16 @@ type RichRow = {
 type OptionalObjectsRow = {
     label: string;
     top?: { title: string } | null;
-    facts: { name?: { value?: { kind: string; text: string } | null; verified: boolean } };
+    facts: { name?: { value?: { kind: string; text: string; scores: number[] } | null; verified: boolean } };
+    tags?: { list?: string[] };
 };
 
 const OPTIONAL_OBJECTS: OptionalObjectsRow[] = [
     { label: "absent", facts: {} },
     { label: "null", top: null, facts: { name: { value: null, verified: false } } },
     { label: "nested-absent", facts: { name: { verified: true } } },
-    { label: "present", top: { title: "t" }, facts: { name: { value: { kind: "k", text: "v" }, verified: true } } },
+    { label: "present", top: { title: "t" }, facts: { name: { value: { kind: "k", text: "v", scores: [1, 2] }, verified: true } }, tags: { list: ["a"] } },
+    { label: "list-absent", facts: {}, tags: {} },
 ];
 
 const RICH: RichRow[] = [
@@ -453,10 +456,10 @@ export function describePluginContract(
                 await writer.saveChangesAsync();
 
                 const found = await reader(writer).optionalObjects.sort(r => r.label).toArrayAsync();
-                const shapes = found.map(({ label, top, facts }) => ({ label, top, facts }));
+                const shapes = found.map(({ label, top, facts, tags }) => ({ label, top, facts, tags }));
                 const expected = [...OPTIONAL_OBJECTS]
                     .sort((a, b) => a.label.localeCompare(b.label))
-                    .map(({ label, top, facts }) => ({ label, top, facts }));
+                    .map(({ label, top, facts, tags }) => ({ label, top, facts, tags }));
 
                 expect(shapes).toEqual(expected);
             });

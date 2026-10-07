@@ -17,7 +17,7 @@ export class EnrichmentDefaultFunctionHandler extends PropertyInfoHandler {
 
             const ifsSlot = builder.get<SlotBlock>("factory.function.ifs");
             const enrichedAssignmentPath = property.getAssignmentPath({ parent: "enriched" });
-            ifsSlot.if(`${enrichedAssignmentPath} == null`).appendBody(`${enrichedAssignmentPath} = ${call}`);
+            ifsSlot.if(this.whenParentPresent(property, `${enrichedAssignmentPath} == null`)).appendBody(`${enrichedAssignmentPath} = ${call}`);
 
             return builder;
         }
