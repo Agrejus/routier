@@ -34,10 +34,10 @@
     ],
     "description": "MongoDB query language generation for routier. Translates the core expression tree into an MQL filter document.",
     "peerDependencies": {
-        "@routier/core": ">=0.9.0"
+        "@routier/core": ">=0.9.1"
     },
     "devDependencies": {
-        "@routier/core": "^0.9.0",
+        "@routier/core": "^0.9.1",
         "@rspack/cli": "^1.1.8",
         "@rspack/core": "^1.1.8"
     },

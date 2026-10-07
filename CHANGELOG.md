@@ -3,6 +3,23 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## Nullable and optional objects (2026-10-08)
+
+A patch to `@routier/core`. Every package's `@routier/core` floor moves to `>=0.9.1` in the
+repository; packages not released here keep their published ranges.
+
+### Fixed — @routier/core 0.9.1
+
+- A nullable or optional object that is `null` or absent no longer breaks a save (#78).
+  `preprocess` and `strip` read straight through it and threw, so a fetched batch holding one
+  failed to store.
+- Reading such a row back keeps it as saved: `deserialize` and `enrich` turned a `null` or absent
+  object into `{}`.
+- `serialize` keeps a `null` object nested inside a required one, which it dropped.
+- `clone` keeps a `null` object and an empty required object (`{}`). It dropped both, which made
+  the save broadcast throw on the missing object.
+- A stored row that predates a required object reads it back as `{}` instead of throwing.
+
 ## Schema etags, sync events, and PGlite in the browser (2026-10-06)
 
 Schemas can now declare an etag: a version field that Routier generates on every write and that
