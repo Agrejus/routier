@@ -44,10 +44,10 @@ export class ReadonlySchemaCollection {
     }
 
     getByName<T>(collectionName: string): CompiledSchema<T> | undefined {
-        const found = [...this.data].find(x => x[1].collectionName === collectionName);
-
-        if (found != null) {
-            return found[1] as CompiledSchema<T>;
+        for (const schema of this.data.values()) {
+            if (schema.collectionName === collectionName) {
+                return schema as CompiledSchema<T>;
+            }
         }
 
         return undefined;

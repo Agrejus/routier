@@ -40,6 +40,22 @@ describe("tokenize", () => {
             expect(tokenize("---")).toEqual([]);
         });
 
+        it.each([
+            ["ab{cd", ["ab", "cd"]],
+            ["ab:cd", ["ab", "cd"]],
+            ["ab_cd", ["ab", "cd"]],
+            ["ab0cd", ["ab0cd"]],
+            ["ab9cd", ["ab9cd"]],
+            ["abAcd", ["abAcd"]],
+            ["abZcd", ["abZcd"]],
+        ])("treats only ASCII letters and digits as word characters in %j", (text, expected) => {
+            expect(tokenize(text, { lowercase: false })).toEqual(expected);
+        });
+
+        it("keeps the ASCII text before a non-ASCII character exactly once", () => {
+            expect(tokenize("ab cd éé")).toEqual(["ab", "cd", "éé"]);
+        });
+
         it("keeps duplicates, because their count is the term frequency", () => {
             expect(tokenize("pipe pipe pipe")).toEqual(["pipe", "pipe", "pipe"]);
         });
@@ -54,6 +70,24 @@ describe("tokenize", () => {
 
         it("honours a custom minTokenLength", () => {
             expect(tokenize("a bc def ghij", { minTokenLength: 4 })).toEqual(["ghij"]);
+        });
+
+        it.each([
+            ["ASCII", "-ab  cd-", ["ab", "cd"]],
+            ["Unicode", "-éé  ab-", ["éé", "ab"]],
+        ])("never emits an empty token from %s text, even with a minTokenLength of 0", (_, text, expected) => {
+            expect(tokenize(text, { minTokenLength: 0 })).toEqual(expected);
+        });
+
+        it("never emits an empty token, even with a negative minTokenLength", () => {
+            expect(tokenize("ab", { minTokenLength: -1 })).toEqual(["ab"]);
+        });
+
+        it.each([
+            ["ASCII", "ab x cd"],
+            ["Unicode", "éé x cd"],
+        ])("drops a short token from %s text and keeps one exactly minTokenLength long", (_, text) => {
+            expect(tokenize(text)).toEqual([text.slice(0, 2), "cd"]);
         });
 
         it("keeps everything when minTokenLength is 1", () => {

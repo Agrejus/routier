@@ -78,7 +78,7 @@ export class JsonTranslator<TRoot extends {}, TShape> extends DataTranslator<TRo
             throw new Error("Can only map an array of data");
         }
 
-        const response = Array.from({ length: data.length });
+        const response = new Array<unknown>(data.length);
 
         for (let i = 0, length = data.length; i < length; i++) {
 

@@ -159,8 +159,8 @@ export class ChunkEncoder {
 
         this.rows = 0;
 
-        for (const filler of this.fillers) {
-            filler.reset();
+        for (let i = 0; i < this.fillers.length; i++) {
+            this.fillers[i].reset();
         }
 
         return { payload, transferables };

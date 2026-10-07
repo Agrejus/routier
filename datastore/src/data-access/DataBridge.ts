@@ -90,7 +90,7 @@ export class DataBridge<T extends {}> {
             const membership = lastDeliveredIds?.();
             if (membership != null && membership.size > 0) {
                 const schema = event.operation.schema;
-                const changed = [...changes.adds, ...changes.updates, ...changes.removals, ...changes.unknown];
+                const changed: InferType<T>[] = changes.adds.concat(changes.updates, changes.removals, changes.unknown);
 
                 if (changed.some(entity => membership.has(schema.getId(entity as InferType<T>)))) {
                     dispatch();
@@ -107,7 +107,7 @@ export class DataBridge<T extends {}> {
                 const ephemeralPlugin = new ChangeMatchProbe(uuidv4());
 
                 // seed the db, we don't care about bulk operations here, we just want to query the raw data
-                ephemeralPlugin.seed(event.operation.schema, [...changes.adds, ...changes.updates, ...changes.removals]);
+                ephemeralPlugin.seed(event.operation.schema, changes.adds.concat(changes.updates, changes.removals));
 
                 // query the temp db to check and see if items match the query, on a copy of its own so
                 // nothing it reports can reach the real plugin's dispatch

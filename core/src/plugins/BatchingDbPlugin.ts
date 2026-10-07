@@ -156,7 +156,10 @@ export class BatchingDbPlugin implements IDbPlugin {
     destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
         this.isDestroyed = true;
 
-        for (const item of this.queue.splice(0)) {
+        const pending = this.queue.splice(0);
+
+        for (let i = 0; i < pending.length; i++) {
+            const item = pending[i];
             this.answer(item, PluginEventResult.error(
                 item.event.id,
                 new PluginDestroyedError("destroyed before the write was attempted")
@@ -237,7 +240,8 @@ export class BatchingDbPlugin implements IDbPlugin {
         const groups: QueuedWrite[][] = [];
         let claimed = new Set<SchemaId>();
 
-        for (const item of batch) {
+        for (let i = 0; i < batch.length; i++) {
+            const item = batch[i];
             const schemas = [...item.event.operation.keys()];
             const overlaps = schemas.some(schemaId => claimed.has(schemaId));
             const modeChanges = (item.event.etags ?? 'generate') !== (groups[groups.length - 1]?.[0].event.etags ?? 'generate');
@@ -250,8 +254,8 @@ export class BatchingDbPlugin implements IDbPlugin {
 
             groups[groups.length - 1].push(item);
 
-            for (const schemaId of schemas) {
-                claimed.add(schemaId);
+            for (let j = 0; j < schemas.length; j++) {
+                claimed.add(schemas[j]);
             }
         }
 
@@ -275,7 +279,9 @@ export class BatchingDbPlugin implements IDbPlugin {
         const operation = new BulkPersistChanges();
         const schemas = new SchemaCollection();
 
-        for (const item of items) {
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+
             for (const [schemaId, changes] of item.event.operation) {
                 operation.set(schemaId, changes);
             }
@@ -361,7 +367,10 @@ export class BatchingDbPlugin implements IDbPlugin {
         // already landed, and re-running it applies that twice.
         const isPartial = result.ok === PluginEventResult.PARTIAL;
 
-        for (const item of group.items) {
+        const groupItems = group.items;
+
+        for (let i = 0; i < groupItems.length; i++) {
+            const item = groupItems[i];
             const mine = new BulkPersistResult();
 
             for (const schemaId of item.event.operation.keys()) {

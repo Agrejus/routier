@@ -20,9 +20,11 @@ export function peelCalls(expression: Expression | undefined): PeeledOperand | n
     let current = expression;
 
     while (current != null && current.type === "call") {
-        calls.unshift(current as CallExpression);
+        calls.push(current as CallExpression);
         current = (current as CallExpression).expression;
     }
+
+    calls.reverse();
 
     return current == null ? null : { operand: current, calls };
 }
@@ -32,7 +34,23 @@ export function childrenOf(expression: Expression): Expression[] {
     if (expression.type === "call") {
         const call = expression as CallExpression;
 
-        return [call.expression, ...(call.arguments ?? [])].filter(child => child != null);
+        const callChildren: Expression[] = [];
+
+        if (call.expression != null) {
+            callChildren.push(call.expression);
+        }
+
+        const args = call.arguments ?? [];
+
+        for (let i = 0; i < args.length; i++) {
+            const argument = args[i];
+
+            if (argument != null) {
+                callChildren.push(argument);
+            }
+        }
+
+        return callChildren;
     }
 
     const children: Expression[] = [];
@@ -62,8 +80,10 @@ export function getProperties(expression: Expression): PropertyInfo<any>[] {
             properties.push((expr as PropertyExpression).property);
         }
 
-        for (const child of childrenOf(expr)) {
-            traverse(child);
+        const children = childrenOf(expr);
+
+        for (let i = 0; i < children.length; i++) {
+            traverse(children[i]);
         }
     }
 
@@ -79,8 +99,10 @@ export function forEach(expression: Expression, callback: (expression: Expressio
             return false;
         }
 
-        for (const child of childrenOf(expr)) {
-            if (!traverse(child)) {
+        const children = childrenOf(expr);
+
+        for (let i = 0; i < children.length; i++) {
+            if (!traverse(children[i])) {
                 return false;
             }
         }

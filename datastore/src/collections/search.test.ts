@@ -1,6 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
 import { s } from '@routier/core/schema';
 import { MemoryPlugin } from '@routier/memory-plugin';
+import type { DbPluginQueryEvent, ITranslatedValue } from '@routier/core/plugins';
+import type { PluginEventCallbackResult } from '@routier/core/results';
 import { DataStore } from '../DataStore';
 
 /**
@@ -107,6 +109,28 @@ describe('search', () => {
         expect(second.map(hit => hit.id)).toEqual(first.map(hit => hit.id));
     });
 
+    it('reads no documents when no document matches every term', async () => {
+        class CountingPlugin extends MemoryPlugin {
+            queries = 0;
+
+            override query<TEntity extends {}, TShape = TEntity>(event: DbPluginQueryEvent<TEntity, TShape>, done: PluginEventCallbackResult<ITranslatedValue<TShape>>) {
+                this.queries++;
+                super.query(event, done);
+            }
+        }
+
+        const plugin = new CountingPlugin(`search-${counter++}`);
+        const store = new Store(plugin);
+        await store.articles.addAsync({ id: '1', title: 'copper', body: 'x', published: true, deletedAt: null });
+        await store.saveChangesAsync();
+        plugin.queries = 0;
+
+        const hits = await store.articles.search('copper zinc').toArrayAsync();
+
+        expect(hits).toEqual([]);
+        expect(plugin.queries).toBe(1);
+    });
+
     it('returns nothing for a query with no terms', async () => {
         const store = await seed([{ id: '1', title: 'copper', body: 'x' }]);
 
@@ -140,6 +164,13 @@ describe('search', () => {
             expect(hits.map(hit => hit.id).sort()).toEqual(['1', '2']);
         });
 
+        it('names an empty field when the scope reads no property', async () => {
+            const store = await seed([{ id: '1', title: 'copper', body: 'x' }]);
+
+            expect(() => store.articles.search(x => x as never, 'copper'))
+                .toThrow(/^search\(\) was scoped to '', which is not searchable/);
+        });
+
         it('throws when scoped to a property that is not searchable', async () => {
             const store = await seed([{ id: '1', title: 'copper', body: 'x' }]);
 
@@ -160,6 +191,39 @@ describe('search', () => {
             const hits = await store.articles.search('copper').where(x => x.published === true).toArrayAsync();
 
             expect(hits.map(hit => hit.id)).toEqual(['1']);
+        });
+
+        it('keeps a where through a later operation', async () => {
+            const store = await seed([
+                { id: '1', title: 'copper', body: 'x', published: true },
+                { id: '2', title: 'copper', body: 'x', published: false },
+            ]);
+
+            const hits = await store.articles.search('copper').where(x => x.published === true).take(5).toArrayAsync();
+
+            expect(hits.map(hit => hit.id)).toEqual(['1']);
+        });
+
+        it('keeps a sort through a later operation', async () => {
+            const store = await seed([
+                { id: 'a', title: 'copper', body: 'copper copper' },
+                { id: 'b', title: 'copper', body: '' },
+            ]);
+
+            const hits = await store.articles.search('copper').sortDescending(x => x.id).take(5).toArrayAsync();
+
+            expect(hits.map(hit => hit.id)).toEqual(['b', 'a']);
+        });
+
+        it('returns every row when the rows tie on every sort', async () => {
+            const store = await seed([
+                { id: 'a', title: 'copper', body: 'copper copper' },
+                { id: 'b', title: 'copper', body: '' },
+            ]);
+
+            const hits = await store.articles.search('copper').sort(x => x.title).toArrayAsync();
+
+            expect(hits.map(hit => hit.id).sort()).toEqual(['a', 'b']);
         });
 
         it('takes after ordering, not before', async () => {

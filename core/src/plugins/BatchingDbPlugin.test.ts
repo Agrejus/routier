@@ -187,6 +187,24 @@ describe("BatchingDbPlugin", () => {
             expect(inner.writes.length).toBe(2);
         });
 
+        it("does NOT merge a write that shares a schema with a later member of the group", async () => {
+            const inner = new SlowPlugin();
+            const plugin = new BatchingDbPlugin(inner, { isAtomic: true });
+
+            await Promise.all([
+                write(plugin, persistEvent(products)),
+                write(plugin, persistEvent(orders)),
+                write(plugin, persistEvent(third)),
+                write(plugin, persistEvent(third)),
+            ]);
+
+            expect(inner.writes.map(event => new Set(event.operation.keys()))).toEqual([
+                new Set([products.id]),
+                new Set([orders.id, third.id]),
+                new Set([third.id]),
+            ]);
+        });
+
         it("keeps arrival order across groups rather than fitting later items into earlier ones", async () => {
             const inner = new SlowPlugin();
             const plugin = new BatchingDbPlugin(inner, { isAtomic: true });

@@ -301,7 +301,12 @@ export class QueryOptionsCollection<T> {
      * dispatch sends a `forDispatch` copy, so a restore brings back no reports.
      */
     snapshot(): () => void {
-        const options = new Map([...this.options.entries()].map(([key, items]): [QueryOptionName, QueryCollectionItem<any, any>[]] => [key, [...items]]));
+        const options = new Map<QueryOptionName, QueryCollectionItem<any, any>[]>();
+
+        for (const [key, items] of this.options) {
+            options.set(key, items.slice());
+        }
+
         const nextExecutionTarget = this.nextExecutionTarget;
         const nextExecutionReason = this.nextExecutionReason;
         const nextIndex = this.nextIndex;
@@ -364,7 +369,11 @@ export class QueryOptionsCollection<T> {
 
         this.resolveEnumeration();
 
-        for (const candidate of this.enumeratedItems) {
+        const enumeratedItems = this.enumeratedItems;
+
+        for (let i = 0; i < enumeratedItems.length; i++) {
+            const candidate = enumeratedItems[i];
+
             if (candidate.option.target !== "database" || candidate.index < item.index) {
                 continue;
             }
@@ -404,7 +413,10 @@ export class QueryOptionsCollection<T> {
 
         this.resolveEnumeration();
 
-        for (const item of this.enumeratedItems) {
+        const enumeratedItems = this.enumeratedItems;
+
+        for (let i = 0; i < enumeratedItems.length; i++) {
+            const item = enumeratedItems[i];
             // An item added to the half after it was split has no counterpart in the origin
             half.adopt(copies.get(item) ?? toDispatchItem(item));
         }
@@ -420,7 +432,10 @@ export class QueryOptionsCollection<T> {
 
         this.resolveEnumeration();
 
-        for (const item of this.enumeratedItems) {
+        const enumeratedItems = this.enumeratedItems;
+
+        for (let i = 0; i < enumeratedItems.length; i++) {
+            const item = enumeratedItems[i];
             const copied = toDispatchItem(item);
 
             copies.set(item, copied);
@@ -439,8 +454,7 @@ export class QueryOptionsCollection<T> {
         this.resolveEnumeration();
 
         return this.enumeratedItems
-            .filter(item => item.option.target === "database" && item.option.reason !== "executed")
-            .toSorted((a, b) => a.index - b.index);
+            .filter(item => item.option.target === "database" && item.option.reason !== "executed");
     }
 
     split(): { memory: QueryOptionsCollection<T>, database: QueryOptionsCollection<T> } {
@@ -511,7 +525,15 @@ export class QueryOptionsCollection<T> {
     }
 
     private getEnumeration() {
-        return [...this.options.values()].flat().toSorted((a, b) => a.index - b.index);
+        const items: QueryCollectionItem<any, any>[] = [];
+
+        for (const group of this.options.values()) {
+            for (let i = 0; i < group.length; i++) {
+                items.push(group[i]);
+            }
+        }
+
+        return items.sort((a, b) => a.index - b.index);
     }
 
     private resolveEnumeration() {

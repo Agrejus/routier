@@ -422,17 +422,14 @@ export class ObjectBuilder extends Block {
         }
 
         // For root objects, include the braces
-        const lines = [
-            "{",
-            ...this._lines.map(line =>
-                typeof line === 'string'
-                    ? this.indent("  " + line)
-                    : line.toString()
-            ),
-            this.indent("}")
-        ];
+        let result = "{";
 
-        return lines.join('\n');
+        for (let i = 0; i < this._lines.length; i++) {
+            const line = this._lines[i];
+            result += "\n" + (typeof line === 'string' ? this.indent("  " + line) : line.toString());
+        }
+
+        return result + "\n" + this.indent("}");
     }
 }
 
@@ -459,7 +456,9 @@ export class FunctionFactoryBuilder extends ContainerBlock {
     }
 
     parameters(...params: Param[]): this {
-        this._params.push(...params);
+        for (let i = 0; i < params.length; i++) {
+            this._params.push(params[i]);
+        }
         return this;
     }
 
@@ -505,17 +504,14 @@ export class FunctionFactoryBuilder extends ContainerBlock {
             ? `${r}function ${this._functionName}(${this._getParameterNames()})`
             : `${r}function(${this._getParameterNames()})`;
 
-        const lines = [
-            this.indent(signature + " {"),
-            ...this._lines.map(line =>
-                typeof line === 'string'
-                    ? this.indent("  " + line)
-                    : line.toString()
-            ),
-            this.indent("}")
-        ];
+        let result = this.indent(signature + " {");
 
-        return lines.join('\n');
+        for (let i = 0; i < this._lines.length; i++) {
+            const line = this._lines[i];
+            result += "\n" + (typeof line === 'string' ? this.indent("  " + line) : line.toString());
+        }
+
+        return result + "\n" + this.indent("}");
     }
 }
 
@@ -530,7 +526,9 @@ export class FunctionBuilder extends ContainerBlock {
     }
 
     parameters(...params: (string | GenericParam)[]): this {
-        this._params.push(...params);
+        for (let i = 0; i < params.length; i++) {
+            this._params.push(params[i]);
+        }
         return this;
     }
 
@@ -558,17 +556,14 @@ export class FunctionBuilder extends ContainerBlock {
             ? `${r}function ${this._functionName}(${this._getParameterKeys()})`
             : `${r}function(${this._getParameterKeys()})`;
 
-        const lines = [
-            this.indent(signature + " {"),
-            ...this._lines.map(line =>
-                typeof line === 'string'
-                    ? this.indent("  " + line)
-                    : line.toString()
-            ),
-            this.indent("}")
-        ];
+        let result = this.indent(signature + " {");
 
-        return lines.join('\n');
+        for (let i = 0; i < this._lines.length; i++) {
+            const line = this._lines[i];
+            result += "\n" + (typeof line === 'string' ? this.indent("  " + line) : line.toString());
+        }
+
+        return result + "\n" + this.indent("}");
     }
 }
 

@@ -25,7 +25,11 @@ export type TransformedProperty = { property: PropertyInfo<any>; transform: Prop
 export const transformedProperties = <T extends {}>(schema: CompiledSchema<T>): TransformedProperty[] => {
     const found: TransformedProperty[] = [];
 
-    for (const property of schema.properties) {
+    const properties = schema.properties;
+
+    for (let i = 0; i < properties.length; i++) {
+        const property = properties[i];
+
         if (property.parent == null && property.transform != null) {
             found.push({ property, transform: property.transform });
         }
@@ -75,7 +79,11 @@ export const schemaView = <T extends {}>(schema: CompiledSchema<T>): CompiledSch
 
     const restyled = new Map<string, SchemaTypes>();
 
-    for (const { property, transform } of transformedProperties(schema)) {
+    const transformed = transformedProperties(schema);
+
+    for (let i = 0; i < transformed.length; i++) {
+        const { property, transform } = transformed[i];
+
         if (transform.stores != null && transform.stores !== property.type) {
             restyled.set(property.name, transform.stores);
         }
@@ -171,12 +179,21 @@ export const applyToChanges = async (event: DbPluginBulkPersistEvent): Promise<v
             continue;
         }
 
-        for (const { property, transform } of properties) {
-            for (const entity of changes.adds as Record<string, unknown>[]) {
+        const adds = changes.adds as Record<string, unknown>[];
+        const updates = changes.updates as UpdateInfo[];
+
+        for (let p = 0; p < properties.length; p++) {
+            const { property, transform } = properties[p];
+
+            for (let i = 0; i < adds.length; i++) {
+                const entity = adds[i];
+
                 await applyTo(entity, property, transform, entity);
             }
 
-            for (const update of changes.updates as UpdateInfo[]) {
+            for (let i = 0; i < updates.length; i++) {
+                const update = updates[i];
+
                 await applyTo(update.entity, property, transform, update.entity);
 
                 /**
@@ -231,7 +248,9 @@ export const applyFromRow = async (
 
     let copy: Record<string, unknown> | null = null;
 
-    for (const { property, transform } of properties) {
+    for (let i = 0; i < properties.length; i++) {
+        const { property, transform } = properties[i];
+
         if (transform.from == null || property.name in row === false) {
             // No `from` means a one-way transform: the stored value is the value.
             continue;
@@ -263,8 +282,8 @@ export const applyFromResult = async (data: unknown, properties: TransformedProp
 
     const transformed: Record<string, unknown>[] = [];
 
-    for (const row of rows) {
-        transformed.push(await applyFromRow(row as Record<string, unknown>, properties));
+    for (let i = 0; i < rows.length; i++) {
+        transformed.push(await applyFromRow(rows[i] as Record<string, unknown>, properties));
     }
 
     let index = 0;
@@ -326,7 +345,7 @@ const propertyUnder = (side: ExpressionNode | undefined): { property: Expression
 };
 
 type FilterOption = {
-    option?: { value?: { expression?: unknown; params?: Record<string, unknown> } };
+    option: { value?: { expression?: unknown; params?: Record<string, unknown> } };
 };
 
 /**
@@ -348,8 +367,8 @@ export const prepareFilters = async (
     const byName = new Map(properties.map(p => [p.property.name, p]));
     const filters = (event.operation.options.get('filter') ?? []) as FilterOption[];
 
-    for (const filter of filters) {
-        const value = filter.option?.value;
+    for (let i = 0; i < filters.length; i++) {
+        const value = filters[i].option.value;
 
         if (value == null) {
             continue;
@@ -385,8 +404,10 @@ const walk = async (
         await compare(node, byName, transformedValues, plainValues);
     }
 
-    for (const child of childNodes(node)) {
-        await walk(child, byName, transformedValues, plainValues);
+    const children = childNodes(node);
+
+    for (let i = 0; i < children.length; i++) {
+        await walk(children[i], byName, transformedValues, plainValues);
     }
 };
 

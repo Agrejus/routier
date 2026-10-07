@@ -11,7 +11,9 @@ export class SlotPath {
     }
 
     push(...pathLike: string[]) {
-        this._path.push(...pathLike);
+        for (let i = 0; i < pathLike.length; i++) {
+            this._path.push(pathLike[i]);
+        }
     }
 
     get(up: number = 0) {

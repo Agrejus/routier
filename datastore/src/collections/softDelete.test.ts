@@ -203,6 +203,15 @@ describe('softDelete', () => {
 
 describe('softDelete declaration', () => {
 
+    it('names an empty property when the selector reads no property', () => {
+        expect(() => {
+            class Bad extends DataStore {
+                products = this.collection(productSchema).softDelete(x => x).proxy().create();
+            }
+            new Bad(new MemoryPlugin('bad'));
+        }).toThrow(new Error('.softDelete() names a property the schema does not declare.  Property: '));
+    });
+
     it('rejects a property the schema does not declare', () => {
         expect(() => {
             class Bad extends DataStore {

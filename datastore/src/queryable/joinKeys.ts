@@ -51,8 +51,7 @@ export const resolveJoinKey = <TEntity extends {}>(
         );
     }
 
-    const [, ...path] = body.split(".");
-    const propertyName = path.join(".");
+    const propertyName = body.slice(body.indexOf(".") + 1);
     const property = schema.getProperty(propertyName);
 
     if (property == null) {

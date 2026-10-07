@@ -1,7 +1,6 @@
 import { CompiledSchema, getStorageDateReviver, IdType, InferType, PropertyInfo, SchemaTypes } from "../schema";
 import { CallbackResult, Result } from "../results";
 import { uuidv4 } from "../utilities";
-import { IdSet } from "./IdSet";
 
 export class MemoryDataCollection {
 
@@ -94,41 +93,48 @@ export class MemoryDataCollection {
 
     seed(items: Record<string, unknown>[]) {
         for (let i = 0, length = items.length; i < length; i++) {
-            const id = this.resolveIdSet(items[i] as InferType<unknown>);
-            this.data.set(id.toString(), this.toStored(items[i]));
+            this.data.set(this.resolveKey(items[i] as InferType<unknown>), this.toStored(items[i]));
         }
     }
 
-    private resolveCurrentIdSet(item: Record<string, unknown>): IdSet {
+    private currentKey(item: Record<string, unknown>): string {
         const idProperties = this.schema.idProperties;
-        const ids: IdType[] = [];
-        // ensure keys
-        for (let j = 0, l = idProperties.length; j < l; j++) {
-            const property = idProperties[j];
-            const value = property.getValue(item);
 
-            if (value == null) {
-                throw new Error(`Key cannot be null.  Key: ${property.name}`);
-            }
-
-            ids.push(value);
+        if (idProperties.length === 1) {
+            return String(this.requireKey(item, idProperties[0]));
         }
 
-        return new IdSet(...ids);
+        const ids: IdType[] = new Array(idProperties.length);
+
+        for (let j = 0, l = idProperties.length; j < l; j++) {
+            ids[j] = this.requireKey(item, idProperties[j]);
+        }
+
+        return ids.toString();
     }
 
-    private resolveIdSet(item: Record<string, unknown>): IdSet {
+    private requireKey(item: Record<string, unknown>, property: PropertyInfo<any>): IdType {
+        const value = property.getValue(item);
+
+        if (value == null) {
+            throw new Error(`Key cannot be null.  Key: ${property.name}`);
+        }
+
+        return value;
+    }
+
+    private resolveKey(item: Record<string, unknown>): string {
 
         if (this.schema.hasIdentityKeys) {
             const idProperties = this.schema.idProperties;
-            const ids: IdType[] = Array.from({ length: idProperties.length });
+            const ids: IdType[] = new Array(idProperties.length);
 
             // Need to make sure we allow for seeding the collection when we call add vs seed
             // There will be an existing id, but the id type could still be identity
             if (idProperties.length === 1) {
                 const value = this.getAndSetId(item, idProperties[0]);
                 this.resolveId(idProperties[0], value);
-                ids[0] = value;
+                return String(value);
             } else {
                 for (let j = 0, l = idProperties.length; j < l; j++) {
                     const value = this.getAndSetId(item, idProperties[j]);
@@ -137,15 +143,14 @@ export class MemoryDataCollection {
                 }
             }
 
-            return new IdSet(...ids);
+            return ids.toString();
         }
 
-        return this.resolveCurrentIdSet(item);
+        return this.currentKey(item);
     }
 
     add(item: Record<string, unknown>) {
-        const id = this.resolveIdSet(item);
-        this.data.set(id.toString(), this.toStored(item));
+        this.data.set(this.resolveKey(item), this.toStored(item));
     }
 
     /**
@@ -154,8 +159,7 @@ export class MemoryDataCollection {
      * without clobbering them.
      */
     addIfAbsent(item: Record<string, unknown>) {
-        const id = this.resolveIdSet(item);
-        const key = id.toString();
+        const key = this.resolveKey(item);
 
         if (this.data.has(key) === false) {
             this.data.set(key, this.toStored(item));
@@ -168,17 +172,15 @@ export class MemoryDataCollection {
      * @returns The matching record or undefined when no record has the given key
      */
     getByIds(ids: IdType[]): Record<string, unknown> | undefined {
-        return this.data.get(new IdSet(...ids).toString());
+        return this.data.get(ids.length === 1 ? String(ids[0]) : ids.toString());
     }
 
     remove(item: Record<string, unknown>) {
-        const id = this.resolveCurrentIdSet(item);
-        this.data.delete(id.toString());
+        this.data.delete(this.currentKey(item));
     }
 
     update(item: Record<string, unknown>) {
-        const id = this.resolveCurrentIdSet(item);
-        this.data.set(id.toString(), this.toStored(item));
+        this.data.set(this.currentKey(item), this.toStored(item));
     }
 
     destroy(done: CallbackResult<never>) {

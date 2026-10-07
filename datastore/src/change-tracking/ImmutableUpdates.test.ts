@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from "@jest/globals";
 import { s } from '@routier/core/schema';
 import { MemoryPlugin } from '@routier/memory-plugin';
 import { DataStore } from '../DataStore';
+import { applyPatch, diff } from './ImmutableUpdates';
 
 /**
  * The immutable `update()` path — see specs/immutable-updates.md.
@@ -189,6 +190,22 @@ describe('stale references', () => {
 
         expect(() => store.items.update({ id: 'ghost' } as any, { strings: ['x'] }))
             .toThrow(/not attached/);
+    });
+
+    it('sends no update for a patched row that is then removed', async () => {
+        const store = open(ArrayStore);
+        await store.items.addAsync({ id: 'a', strings: ['p'], dates: [new Date(0)] } as any);
+        await store.saveChangesAsync();
+
+        const [row]: any[] = await store.items.toArrayAsync();
+
+        store.items.update(row, { strings: ['about-to-vanish'] });
+        await store.items.removeAsync(row);
+
+        const changes = (await store.previewChangesAsync()).get(arrays.id);
+
+        expect(changes?.updates).toEqual([]);
+        expect(changes?.removes).toHaveLength(1);
     });
 
     it('drops a pending patch when the row is removed, and does not resurrect it', async () => {
@@ -393,4 +410,20 @@ describe('unsaved rows', () => {
     // The matching case for a pending add that is DROPPED rather than saved lives in
     // ChangeTracker.test.ts — a store has no public way to discard changes, so the only
     // honest way to reach it is through the tracker.
+});
+
+describe('applyPatch', () => {
+    it('adds only the keys the patch names', () => {
+        expect(applyPatch({ kept: 1 }, { added: 2 })).toStrictEqual({ kept: 1, added: 2 });
+    });
+});
+
+describe('diff', () => {
+    it('reports only the keys whose values changed', () => {
+        expect(diff({ same: 1, moved: 2 }, { same: 1, moved: 3 })).toStrictEqual({ moved: 3 });
+    });
+
+    it.each(['gone', 'undefined'])("does not report the key '%s' that only the base has", key => {
+        expect(diff({ [key]: 1, same: 1 }, { same: 1 })).toStrictEqual({});
+    });
 });

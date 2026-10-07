@@ -220,7 +220,11 @@ export const describeFilters = (
             ? describeUnparsableFilter(entry.filter, (entry.expression as NotParsableExpression).reason)
             : describeFilterAsJs(entry.expression);
 
-        parameters.push(...described.parameters);
+        const describedParameters = described.parameters;
+
+        for (let i = 0; i < describedParameters.length; i++) {
+            parameters.push(describedParameters[i]);
+        }
 
         return described.text;
     });

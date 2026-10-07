@@ -123,7 +123,10 @@ export class AuditRegistry {
         // the loop took.
         const at = new Date();
 
-        for (const registration of this.registrations) {
+        const registrations = this.registrations;
+
+        for (let i = 0; i < registrations.length; i++) {
+            const registration = registrations[i];
             const source = changes.get(registration.sourceSchemaId);
 
             if (source == null || source.hasItems === false) {
@@ -154,7 +157,12 @@ export class AuditRegistry {
             }
 
             // Appended to the END, which is what lets them be identified again in `detach`.
-            changes.resolve(registration.auditSchema.id).adds.push(...emitted as never[]);
+            const adds = changes.resolve(registration.auditSchema.id).adds;
+
+            for (let j = 0; j < emitted.length; j++) {
+                adds.push(emitted[j] as never);
+            }
+
             this.appended.set(
                 registration.auditSchema.id,
                 (this.appended.get(registration.auditSchema.id) ?? 0) + emitted.length
@@ -175,11 +183,19 @@ export class AuditRegistry {
 
         const batch: AuditChange<any>[] = [];
 
-        for (const remove of source.removes) {
+        const removes = source.removes;
+
+        for (let i = 0; i < removes.length; i++) {
+            const remove = removes[i];
+
             batch.push({ collection: schema.collectionName, operation: "remove", id: idOf(remove), entity: remove as never, at });
         }
 
-        for (const update of source.updates) {
+        const updates = source.updates;
+
+        for (let i = 0; i < updates.length; i++) {
+            const update = updates[i];
+
             batch.push({
                 collection: schema.collectionName,
                 operation: "update",
@@ -191,7 +207,11 @@ export class AuditRegistry {
             });
         }
 
-        for (const add of source.adds) {
+        const adds = source.adds;
+
+        for (let i = 0; i < adds.length; i++) {
+            const add = adds[i];
+
             batch.push({ collection: schema.collectionName, operation: "add", id: idOf(add), entity: add as never, at });
         }
 

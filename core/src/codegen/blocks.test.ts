@@ -88,3 +88,55 @@ describe("binding values into generated code", () => {
         expect(compiled(...parameters.map(w => w.value))).toBe(42);
     });
 });
+
+describe("rendering builders to source", () => {
+    it("renders a root object with plain and nested properties, one per line", () => {
+        const root = new CodeBuilder();
+        const object = root.slot("result").assign("const result", { name: "variable" }).object({ name: "object" });
+        object.property("a: 1");
+        object.nested("inner", "inner").property("b: 2");
+        object.property("c: 3");
+
+        expect(root.toString()).toBe("    const result = {\n      a: 1,\n      inner: {\n        b: 2\n      },\n      c: 3\n    };");
+    });
+
+    it("renders an empty root object as an opened and closed brace", () => {
+        const root = new CodeBuilder();
+        root.slot("result").assign("const result", { name: "variable" }).object({ name: "object" });
+
+        expect(root.toString()).toBe("    const result = {\n    };");
+    });
+
+    it("renders a factory and its inner function with every parameter, line and nested block", () => {
+        const root = new CodeBuilder();
+        const factory = root.factory("factory", { name: "factory" }).parameters({ name: "x", value: 1 }, { name: "y", value: 2 });
+        factory.appendBody("const z = 1;");
+        const inner = factory.function("inner", { name: "inner" }).parameters("a", { name: "b", callName: "bb" }, "c").return();
+        inner.appendBody("let q = a;");
+        inner.if("a").appendBody("q = b;");
+        inner.appendBody("return q;");
+        factory.appendBody("return inner;");
+
+        expect(root.toString()).toBe(
+            "  function factory(x, y) {\n" +
+            "    const z = 1;\n" +
+            "    return function inner(a, b, c) {\n" +
+            "      let q = a;\n" +
+            "      if (a) {\n\n" +
+            "        q = b;\n\n" +
+            "      }\n" +
+            "      return q;\n" +
+            "    }\n" +
+            "    return inner;\n" +
+            "  }"
+        );
+        expect(inner.toCallable()).toBe("inner(a, bb, c)");
+    });
+
+    it("renders an anonymous function with no parameters", () => {
+        const root = new CodeBuilder();
+        root.factory(undefined, { name: "factory" }).function(undefined, { name: "inner" });
+
+        expect(root.toString()).toBe("  function() {\n    function() {\n    }\n  }");
+    });
+});

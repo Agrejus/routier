@@ -221,7 +221,8 @@ export class PropertyInfo<T extends {}> {
         const path: string[] = hasRoot ? [options!.root!] : [];
         let precedingProp: PropertyInfo<T> | null = null;
 
-        for (const prop of propertyChain) {
+        for (let i = 0; i < propertyChain.length; i++) {
+            const prop = propertyChain[i];
             const accessor = this._needsOptionalChaining(precedingProp, options?.assignmentType) ? '?.' : '.';
             // Storage-side paths use `from` per segment; segments that were never
             // renamed keep their property name
@@ -249,8 +250,8 @@ export class PropertyInfo<T extends {}> {
         const path: string[] = [];
         const propertyChain = this._getPropertyChain();
 
-        for (const prop of propertyChain) {
-            path.push(prop.name);
+        for (let i = 0; i < propertyChain.length; i++) {
+            path.push(propertyChain[i].name);
         }
 
         this._pathArrayCache = path;
@@ -354,7 +355,10 @@ export class PropertyInfo<T extends {}> {
                 return true;
             }
             if (child.children.length > 0) {
-                children.push(...child.children)
+                const grandChildren = child.children;
+                for (let j = 0; j < grandChildren.length; j++) {
+                    children.push(grandChildren[j]);
+                }
             }
         }
         return false;

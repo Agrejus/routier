@@ -86,7 +86,17 @@ export const splitTopLevelConjuncts = (source: string): string[] => {
 
     parts.push(source.slice(start));
 
-    return parts.map(part => part.trim()).filter(part => part.length > 0);
+    const trimmed: string[] = [];
+
+    for (let i = 0, length = parts.length; i < length; i++) {
+        const part = parts[i].trim();
+
+        if (part.length > 0) {
+            trimmed.push(part);
+        }
+    }
+
+    return trimmed;
 };
 
 /**
@@ -156,7 +166,8 @@ export const splitTupleFilter = <TOuter extends {}, TInner extends {}>(options: 
     // filter it duplicates is cheap next to the rows it stops reading.
     const split: SplitConjunct[] = [];
 
-    for (const conjunct of conjuncts) {
+    for (let i = 0, length = conjuncts.length; i < length; i++) {
+        const conjunct = conjuncts[i];
         const asOuter = parseFragment(outerSchema, conjunct, shape.outerRoot);
 
         if (Expression.isNotParsable(asOuter) === false && Expression.isEmpty(asOuter) === false) {

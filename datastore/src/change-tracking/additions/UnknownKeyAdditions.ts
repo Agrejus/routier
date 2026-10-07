@@ -45,7 +45,9 @@ export class UnknownKeyAdditions<T extends {}> implements IAdditions<T> {
         const result: InferCreateType<T>[] = [];
 
         for (const bucket of this.data.values()) {
-            result.push(...bucket);
+            for (let i = 0, length = bucket.length; i < length; i++) {
+                result.push(bucket[i]);
+            }
         }
 
         return result;
@@ -103,8 +105,8 @@ export class UnknownKeyAdditions<T extends {}> implements IAdditions<T> {
         this.data.clear();
         this.count = 0;
 
-        for (const entity of entities) {
-            this.set(entity);
+        for (let i = 0, length = entities.length; i < length; i++) {
+            this.set(entities[i]);
         }
     }
 

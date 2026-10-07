@@ -185,6 +185,15 @@ describe('QueryOptionsCollection', () => {
             expect(copy.get('take')[0]).toEqual({ index: 1, option: { name: 'take', value: 5, target: 'database', reason: 'executed' } });
         });
 
+        it('leaves the options already bound for memory out of what the database did not run', () => {
+            const collection = build();
+            collection.add('filter', { filter: () => true, params: null, expression: parsableExpression() } as never);
+
+            collection.reportMissingCapability(collection.get('filter')[0]);
+
+            expect(collection.notExecuted().map(item => item.index)).toEqual([0, 1]);
+        });
+
         it('keeps a report on the copy', () => {
             const collection = build();
             const copy = collection.forDispatch();

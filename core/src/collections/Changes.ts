@@ -29,7 +29,7 @@ export class BulkPersistResult extends Map<SchemaId, SchemaPersistResult> {
     private get aggregateSize() {
         let count = 0;
 
-        for (const [, result] of this) {
+        for (const result of this.values()) {
             count += result.total;
         }
 
@@ -39,7 +39,7 @@ export class BulkPersistResult extends Map<SchemaId, SchemaPersistResult> {
     private get aggregateAddsSize() {
         let count = 0;
 
-        for (const [, result] of this) {
+        for (const result of this.values()) {
             count += result.adds.length;
         }
 
@@ -49,7 +49,7 @@ export class BulkPersistResult extends Map<SchemaId, SchemaPersistResult> {
     private get aggregateUpdatesSize() {
         let count = 0;
 
-        for (const [, result] of this) {
+        for (const result of this.values()) {
             count += result.updates.length;
         }
 
@@ -59,7 +59,7 @@ export class BulkPersistResult extends Map<SchemaId, SchemaPersistResult> {
     private get aggregateRemovesSize() {
         let count = 0;
 
-        for (const [, result] of this) {
+        for (const result of this.values()) {
             count += result.removes.length;
         }
 
@@ -95,7 +95,7 @@ export class BulkPersistChanges extends Map<SchemaId, SchemaPersistChanges> {
     private get aggregateSize() {
         let count = 0;
 
-        for (const [, result] of this) {
+        for (const result of this.values()) {
             count += result.total;
         }
 
@@ -105,7 +105,7 @@ export class BulkPersistChanges extends Map<SchemaId, SchemaPersistChanges> {
     private get aggregateAddsSize() {
         let count = 0;
 
-        for (const [, result] of this) {
+        for (const result of this.values()) {
             count += result.adds.length;
         }
 
@@ -115,7 +115,7 @@ export class BulkPersistChanges extends Map<SchemaId, SchemaPersistChanges> {
     private get aggregateUpdatesSize() {
         let count = 0;
 
-        for (const [, result] of this) {
+        for (const result of this.values()) {
             count += result.updates.length;
         }
 
@@ -125,7 +125,7 @@ export class BulkPersistChanges extends Map<SchemaId, SchemaPersistChanges> {
     private get aggregateRemovesSize() {
         let count = 0;
 
-        for (const [, result] of this) {
+        for (const result of this.values()) {
             count += result.removes.length;
         }
 
@@ -139,7 +139,7 @@ export class BulkPersistChanges extends Map<SchemaId, SchemaPersistChanges> {
     toResult() {
         const result = new BulkPersistResult();
 
-        for (const [schemaId] of this) {
+        for (const schemaId of this.keys()) {
             result.set(schemaId, new SchemaPersistResult());
         }
 

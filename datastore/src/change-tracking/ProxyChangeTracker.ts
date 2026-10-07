@@ -13,7 +13,7 @@ export class ProxyChangeTracker<T extends {}> implements IChangeTracker<T> {
     hasChanges() {
         let hasChanges = false;
 
-        for (const [, attachment] of this.data) {
+        for (const attachment of this.data.values()) {
 
             const changeTrackedDoc = unsafeCast<ChangeTrackedEntity<{}>>(attachment.doc);
             const changeType = attachment.changeType;

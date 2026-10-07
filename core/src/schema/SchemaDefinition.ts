@@ -262,13 +262,13 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
         // Recursively trigger callbacks on properties and their children
         function recursiveCallback(prop: PropertyInfo<any>) {
             callback(prop);
-            for (const child of prop.children) {
-                recursiveCallback(child);
+            for (let i = 0; i < prop.children.length; i++) {
+                recursiveCallback(prop.children[i]);
             }
         }
 
-        for (const prop of properties) {
-            recursiveCallback(prop);
+        for (let i = 0; i < properties.length; i++) {
+            recursiveCallback(properties[i]);
         }
     }
 
@@ -309,6 +309,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const enableChangeTrackingHandler = enableChangeTrackingHandlerBuilder.build();
             const freezeHandler = freezeHandlerBuilder.build();
             const serializeHandler = serializeHandlerBuilder.build();
+            const preprocessSerializeHandler = serializeHandlerBuilder.build({ skipPreparedRoots: true });
             const compareIdsHandler = compareIdsHandlerBuilder.build();
             const setHandlerHanlder = setHandlerBuilder.build();
 
@@ -345,6 +346,11 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             freezeCodeBuilder.slot("assignment");
             freezeCodeBuilder.slot("return").raw('\treturn Object.freeze(entity);');
 
+            const declaredProperties: PropertyInfo<T>[] = [];
+            this._iterate(this, property => { declaredProperties.push(property); });
+            const plainPrimitiveTypes = new Set<SchemaTypes>([SchemaTypes.String, SchemaTypes.Number, SchemaTypes.Boolean]);
+            const isPlainPrimitiveSchema = declaredProperties.every(property => plainPrimitiveTypes.has(property.type));
+
             const enricherCodeBuilder = new CodeBuilder();
 
             const enricherFunctionRoot = enricherCodeBuilder.factory("factory", { name: "factory" }).parameters(
@@ -363,7 +369,9 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             // pause tracking during setup so those writes don't register as changes.
             // Non-enumerable: computed properties run after this and may JSON.stringify
             // the entity (e.g. content-hash ids) — the bootstrap must not change their input
-            enricherFunctionBody.slot("declarations").raw('\tif (changeTrackingType === "proxy") { Object.defineProperty(enriched, "__tracking__", { value: { changes: {}, isDirty: false, original: {}, isPaused: true }, configurable: true, writable: true, enumerable: false }); }');
+            enricherFunctionBody.raw(isPlainPrimitiveSchema
+                ? '\tif (changeTrackingType === "proxy") { Object.defineProperty(enriched, "__tracking__", { value: undefined, configurable: true, writable: true, enumerable: false }); }'
+                : '\tif (changeTrackingType === "proxy") { Object.defineProperty(enriched, "__tracking__", { value: { changes: {}, isDirty: false, original: {}, isPaused: true }, configurable: true, writable: true, enumerable: false }); }');
             enricherFunctionBody.slot("assignment");
             enricherFunctionBody.slot("ifs");
             enricherFunctionBody.slot("tracking").if('changeTrackingType === "immutable"', { name: "freeze" });
@@ -384,7 +392,9 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             // a no-op; under assignment it would CREATE an enumerable `__tracking__` on every
             // diff- and readonly-tracked entity and leak it into persistence. Defect #16's
             // stray `{ isPaused: false }` residue stays fixed — nothing is left behind here.
-            enricherFunctionBody.slot("return").raw('\tif (changeTrackingType === "proxy") { enriched.__tracking__ = undefined; }\n\treturn enableChangeTracking(enriched);');
+            enricherFunctionBody.raw(isPlainPrimitiveSchema
+                ? '\treturn enableChangeTracking(enriched);'
+                : '\tif (changeTrackingType === "proxy") { enriched.__tracking__ = undefined; }\n\treturn enableChangeTracking(enriched);');
 
             const preprocessCodeBuilder = new CodeBuilder();
             preprocessCodeBuilder.slot("main");
@@ -403,49 +413,22 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             const mergeFunctionRoot = mergeCodeBuilder.factory("factory", { name: "factory" }).parameters({ name: "collectionName", value: this.collectionName });
             const mergeFunctionBody = mergeFunctionRoot.function(undefined, { name: "function" }).parameters("destination", "source").return();
 
-            // The pause bootstrap exists so a PROXIED destination does not record the
-            // merge's own writes as changes. A destination with no tracking (diff and
-            // immutable modes) gets a temporary bootstrap so the same generated code runs —
-            // and unpause() DELETES it again, because leaving it behind is the
-            // `{ isPaused: false }` residue of defect #16, this time on the merge path.
-            const pauseFunctionBody = mergeFunctionBody.function("pause")
-                .appendBody("// initiate change tracking if needed");
-
-            pauseFunctionBody.if("destination.__tracking__ == null")
-                // Non-enumerable for the same reason the enricher's bootstrap is: computed
-                // properties can JSON.stringify the entity while this is installed, and the
-                // bootstrap must not change their input. It is removed again below either way.
-                .appendBody('Object.defineProperty(destination, "__tracking__", { value: {}, configurable: true, writable: true, enumerable: false });')
-                .appendBody("installedTrackingBootstrap = true;");
-
-            pauseFunctionBody.appendBody("destination.__tracking__.isPaused = true;");
-
-            const unpauseFunctionBody = mergeFunctionBody.function("unpause")
-                .appendBody("// unpause change tracking, removing a bootstrap this merge installed");
-
-            // Redefined to undefined rather than deleted, so the merged entity keeps its fast
-            // properties — `delete` would put it in dictionary mode for good.
-            //
-            // It must be defineProperty and NOT assignment. `destination` is an attached,
-            // proxied entity, and the change tracker's set trap answers writes to
-            // `__tracking__` with a bare `return true`, dropping them. Assigning here is
-            // therefore a silent no-op that leaves the `{}` bootstrap installed by pause() in
-            // place — and the next write through the proxy reads `changes.changes` off that
-            // bootstrap and throws. defineProperty is not intercepted, because the handler
-            // declares no defineProperty trap.
-            unpauseFunctionBody.if("installedTrackingBootstrap === true")
-                .appendBody("delete destination.__tracking__;")
-                .appendBody("return;");
-
-            unpauseFunctionBody.if("destination.__tracking__ != null")
-                .appendBody("destination.__tracking__.isPaused  = false;");
-
-            mergeFunctionBody.slot("header").raw(`let installedTrackingBootstrap = false;
-    pause()`);
+            mergeFunctionBody.raw(`let tracking = destination.__tracking__;
+    let installedTrackingBootstrap = false;
+    if (tracking == null) {
+        tracking = {};
+        Object.defineProperty(destination, "__tracking__", { value: tracking, configurable: true, writable: true, enumerable: false });
+        installedTrackingBootstrap = true;
+    }
+    tracking.isPaused = true;`);
             mergeFunctionBody.slot("assignments");
             mergeFunctionBody.slot("ifs");
             mergeFunctionBody.slot("return").raw(`
-    unpause();
+    if (installedTrackingBootstrap === true) {
+        delete destination.__tracking__;
+    } else {
+        tracking.isPaused = false;
+    }
 
     return destination;`);
 
@@ -484,6 +467,11 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             serializeCodeBuilder.slot("functions");
             serializeCodeBuilder.slot("if");
             serializeCodeBuilder.slot("return").raw(`     return result;`);
+
+            const preprocessSerializeCodeBuilder = new CodeBuilder();
+            preprocessSerializeCodeBuilder.slot("assignments");
+            preprocessSerializeCodeBuilder.slot("functions");
+            preprocessSerializeCodeBuilder.slot("if");
 
             const idSelectorCodeBuilder = new CodeBuilder();
             idSelectorCodeBuilder.slot("result");
@@ -567,6 +555,7 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                 assertPropertyHandled("compare", property, compare.handle(property, compareCodeBuilder));
                 assertPropertyHandled("deserialize", property, deserialize.handle(property, deserializeCodeBuilder));
                 assertPropertyHandled("serialize", property, serializeHandler.handle(property, serializeCodeBuilder))
+                assertPropertyHandled("preprocess", property, preprocessSerializeHandler.handle(property, preprocessSerializeCodeBuilder));
                 assertPropertyHandled("hashType", property, hashTypeHandler.handle(property, hashTypeCodeBuilder));
                 assertPropertyHandled("idSelector", property, idSelectorHandler.handle(property, idSelectorCodeBuilder));
                 assertPropertyHandled("hash", property, hashHandler.handle(property, hashCodeBuilder));
@@ -601,7 +590,8 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
              * the field name is the only unbounded part of it. See "The index collection" in
              * specs/full-text-search.md.
              */
-            for (const property of properties) {
+            for (let i = 0; i < properties.length; i++) {
+                const property = properties[i];
 
                 if (property.isSearchable === false) {
                     continue;
@@ -656,13 +646,15 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             preprocessCodeBuilder.get<SlotBlock>("main").insert(prepareCodeBuilder.get<SlotBlock>("result"));
             preprocessCodeBuilder.get<SlotBlock>("main").insert(prepareCodeBuilder.get<SlotBlock>("assignments"));
 
-            preprocessCodeBuilder.get<SlotBlock>("main").insert(serializeCodeBuilder.get<SlotBlock>("assignments"));
-            preprocessCodeBuilder.get<SlotBlock>("main").insert(serializeCodeBuilder.get<SlotBlock>("functions"));
-            preprocessCodeBuilder.get<SlotBlock>("main").insert(serializeCodeBuilder.get<SlotBlock>("if"));
+            preprocessCodeBuilder.get<SlotBlock>("main").insert(preprocessSerializeCodeBuilder.get<SlotBlock>("assignments"));
+            preprocessCodeBuilder.get<SlotBlock>("main").insert(preprocessSerializeCodeBuilder.get<SlotBlock>("functions"));
+            preprocessCodeBuilder.get<SlotBlock>("main").insert(preprocessSerializeCodeBuilder.get<SlotBlock>("if"));
 
             // Likewise the serialize slots call the serializers bound on the serialize builder
-            for (const binding of serializeCodeBuilder.getBindings()) {
-                preprocessCodeBuilder.bind(binding.value, binding.name);
+            const preprocessSerializeBindings = preprocessSerializeCodeBuilder.getBindings();
+
+            for (let i = 0; i < preprocessSerializeBindings.length; i++) {
+                preprocessCodeBuilder.bind(preprocessSerializeBindings[i].value, preprocessSerializeBindings[i].name);
             }
 
             const getIdsFunction = this.createFunction<(entity: InferType<T>) => [IdType]>(idSelectorCodeBuilder, "entity");
@@ -702,10 +694,13 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
                     // copying to get away from.
                     // Compared inline rather than against a Set: the set would be rebuilt on every
                     // call, and this runs once per record on every read.
-                    const isDeclared = properties
-                        .filter(property => property.parent == null)
-                        .map(property => `key === ${JSON.stringify(property.getResolvedName())}`)
-                        .join(" || ");
+                    let isDeclared = "";
+
+                    for (let i = 0; i < properties.length; i++) {
+                        if (properties[i].parent == null) {
+                            isDeclared += (isDeclared.length === 0 ? "" : " || ") + `key === ${JSON.stringify(properties[i].getResolvedName())}`;
+                        }
+                    }
 
                     const skipDeclared = isDeclared.length === 0 ? "" : `if (${isDeclared}) { continue; }\n            `;
 

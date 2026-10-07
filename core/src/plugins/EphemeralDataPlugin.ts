@@ -10,6 +10,23 @@ import { DeepPartial } from '../types';
 import { MemoryDataCollection } from '../collections/MemoryDataCollection';
 import { etagToGenerate, stampEtag } from './etagStamp';
 import { UnknownRecord } from '../utilities';
+import type { QueryOptionsCollection } from './query/QueryOptionsCollection';
+import type { QueryOption } from './query/types';
+
+const executedFilterValues = <T>(options: QueryOptionsCollection<T>): QueryOption<T, "filter">["value"][] => {
+    const items = options.get("filter");
+    const values: QueryOption<T, "filter">["value"][] = [];
+
+    for (let i = 0; i < items.length; i++) {
+        const option = items[i].option;
+
+        if (option.reason === "executed") {
+            values.push(option.value);
+        }
+    }
+
+    return values;
+};
 
 /**
  * Extracts the key value from a parsed filter expression when the whole filter
@@ -141,7 +158,9 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
             //
             // This has now been a data-loss defect twice — known-defects #18
             // (file-system) and #30 (browser-storage).
-            for (const { collection, changes } of staged) {
+            for (let i = 0; i < staged.length; i++) {
+                const { collection, changes } = staged[i];
+
                 if (changes.updates.length === 0 && changes.removes.length === 0) {
                     continue;
                 }
@@ -163,10 +182,14 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                     // Validate: optimistic-concurrency checks for EVERY collection run
                     // before ANY collection is touched, so a conflict rejects the whole
                     // save with nothing written anywhere.
-                    for (const { schema, collection, changes } of staged) {
+                    for (let i = 0; i < staged.length; i++) {
+                        const { schema, collection, changes } = staged[i];
                         const conflicts: IdType[] = [];
+                        const updates = changes.updates;
 
-                        for (const { entity, concurrency } of changes.updates) {
+                        for (let j = 0; j < updates.length; j++) {
+                            const { entity, concurrency } = updates[j];
+
                             if (concurrency == null) {
                                 continue;
                             }
@@ -199,13 +222,14 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                     };
 
                     try {
-                        for (const { schema, collection, changes, result } of staged) {
+                        for (let i = 0; i < staged.length; i++) {
+                            const { schema, collection, changes, result } = staged[i];
                             const { adds, updates, removes } = changes;
                             const etag = etagToGenerate(schema, event.etags);
 
-                            result.adds = Array.from({ length: adds.length });
-                            result.updates = Array.from({ length: updates.length });
-                            result.removes = Array.from({ length: removes.length });
+                            result.adds = new Array(adds.length);
+                            result.updates = new Array(updates.length);
+                            result.removes = new Array(removes.length);
 
                             for (let j = 0; j < adds.length; j++) {
                                 const item = adds[j];
@@ -502,9 +526,7 @@ export abstract class EphemeralDataPlugin implements IDbPlugin {
                  *
                  * Before the inner side, to match execution order.
                  */
-                const described = describeFilters(
-                    operation.options.get("filter").filter(entry => entry.option.reason === "executed").map(entry => entry.option.value)
-                );
+                const described = describeFilters(executedFilterValues(operation.options));
 
                 event.executedQueries.push({
                     text: `${operation.schema.collectionName}: scanned ${cloned.length} in-memory ` +
