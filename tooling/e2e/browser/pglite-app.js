@@ -87,3 +87,43 @@ window.routierReset = async () => {
 
 log('bundle loaded');
 document.getElementById('ready').textContent = 'ready';
+
+class NamedStore extends DataStore {
+    users = this.collection(userSchema).proxy().create();
+    constructor(name) { super(new PGliteDbPlugin(name)); }
+}
+
+window.routierSaveRounds = async (name, rounds) => {
+    const store = new NamedStore(name);
+
+    try {
+        for (let round = 0; round < rounds; round++) {
+            await store.users.addAsync({ name: `round-${round}`, age: round, detail: { note: 'turn' } });
+            await store.saveChangesAsync();
+            await store.users.toArrayAsync();
+        }
+
+        return { ok: true, rows: (await store.users.toArrayAsync()).length };
+    } catch (error) {
+        return { ok: false, error: String(error) };
+    }
+};
+
+window.routierWhereStored = async (name) => {
+    const store = new NamedStore(name);
+    await store.users.addAsync({ name: 'Ada', age: 36, detail: { note: 'fallback' } });
+    await store.saveChangesAsync();
+
+    const opfs = [];
+
+    for await (const entry of (await navigator.storage.getDirectory()).keys()) {
+        opfs.push(entry);
+    }
+
+    return {
+        rows: (await store.users.toArrayAsync()).length,
+        remembered: localStorage.getItem(`routier-pglite-storage:${name}`),
+        inIndexedDb: (await indexedDB.databases()).some(database => database.name === `/pglite/${name}`),
+        inOpfs: opfs.includes(name),
+    };
+};

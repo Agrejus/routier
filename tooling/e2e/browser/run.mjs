@@ -166,6 +166,89 @@ try {
     await pgPage.evaluate(() => window.routierReset());
 
     check('no uncaught page errors (pglite)', pgErrors.length === 0, pgErrors.join('; '));
+
+    const within = (promise, ms) => Promise.race([
+        promise,
+        new Promise(resolve => setTimeout(() => resolve({ timedOut: ms }), ms)),
+    ]);
+
+    const pgliteContext = async (options = {}) => {
+        const isolated = await browser.newContext();
+
+        if (options.hangOpfsBoot === true) {
+            await isolated.route(/pgliteWorker_js\.js$/, async route => {
+                const response = await route.fetch();
+                const body = (await response.text()).replace(
+                    'async init (options) {',
+                    'async init (options) { if (String(options.dataDir).startsWith("opfs-ahp://")) await new Promise(() => {});'
+                );
+                await route.fulfill({ response, body });
+            });
+        }
+
+        const opened = async () => {
+            const tab = await isolated.newPage();
+            await tab.goto(`${ORIGIN}/pglite.html`);
+            await tab.waitForFunction(() => document.getElementById('ready')?.textContent === 'ready');
+            return tab;
+        };
+
+        return { opened, close: () => isolated.close() };
+    };
+
+    // #60: every tab shares the leader's one PostgreSQL session. Two tabs saving at once used
+    // to put one tab's SAVEPOINT inside the other's transaction and fail both.
+    {
+        const tabs = await pgliteContext();
+        const [left, right] = [await tabs.opened(), await tabs.opened()];
+        await left.evaluate(() => window.routierSaveRounds('pglite-two-tabs', 1));
+
+        const results = await within(Promise.all([left, right].map(tab => tab.evaluate(() => window.routierSaveRounds('pglite-two-tabs', 8)))), 60_000);
+
+        check('pglite two tabs saving at once both succeed', Array.isArray(results) && results.every(result => result.ok),
+            JSON.stringify(results));
+        check('pglite two tabs see every row', Array.isArray(results) && results.every(result => result.rows === 17),
+            `expected 17 rows in both tabs, got ${JSON.stringify(results)}`);
+        await tabs.close();
+    }
+
+    // #58: a boot that froze the tab on an earlier load leaves its marker behind. The next load
+    // must go straight to IndexedDB rather than try OPFS again.
+    {
+        const fresh = await pgliteContext();
+        const tab = await fresh.opened();
+        await tab.evaluate(() => localStorage.setItem('routier-pglite-booting:pglite-stale-boot', String(Date.now() - 60_000)));
+
+        const stored = await tab.evaluate(() => window.routierWhereStored('pglite-stale-boot'));
+
+        check('pglite falls back to IndexedDB after a boot that never finished',
+            stored.rows === 1 && stored.remembered === 'idb' && stored.inIndexedDb && !stored.inOpfs,
+            JSON.stringify(stored));
+        await fresh.close();
+    }
+
+    // #58: an OPFS boot that hangs. PGliteWorker.create() resolves at leader election, before
+    // storage opens, so only a boot that waits for a query can see the hang and fall back.
+    {
+        const hung = await pgliteContext({ hangOpfsBoot: true });
+        const tab = await hung.opened();
+        const warnings = [];
+        tab.on('console', message => {
+            if (message.type() === 'warning') {
+                warnings.push(message.text());
+            }
+        });
+
+        const stored = await within(tab.evaluate(() => window.routierWhereStored('pglite-hung-boot')), 60_000);
+
+        check('pglite falls back to IndexedDB when the OPFS boot hangs',
+            stored.rows === 1 && stored.remembered === 'idb' && stored.inIndexedDb,
+            JSON.stringify(stored));
+        check('pglite warns when it falls back',
+            warnings.some(text => text.includes("PGlite 'pglite-hung-boot' is using IndexedDB")),
+            JSON.stringify(warnings));
+        await hung.close();
+    }
 } finally {
     await browser.close();
     server.kill();
@@ -176,4 +259,4 @@ if (failures.length > 0) {
     process.exit(1);
 }
 
-console.log('\nBrowser check passed: SQLite and PGlite run in the browser and persist across reloads.');
+console.log('\nBrowser check passed: SQLite and PGlite run in the browser, persist across reloads, take turns across tabs and fall back from a hung OPFS boot.');
