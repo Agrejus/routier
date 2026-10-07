@@ -28,7 +28,16 @@ export class SerializeObjectHandler extends PropertyInfoHandler {
                 return builder;
             }
 
-            slot.assign(`${childPath}`, { name: `[${childPath}]` }).value("{}");
+            const optionalAncestor = nearestOptionalAncestor(property);
+
+            if (optionalAncestor == null) {
+                slot.assign(childPath).value("{}");
+                return builder;
+            }
+
+            const ifSlot = slot.if(`${optionalAncestor.getSelectrorPath({ parent: "entity", assignmentType: "FORCE_NULLABLE_OR_OPTIONAL" })} != null`);
+            this.emitDestinationAncestorGuards(property, ifSlot, { root: "result", useFromPropertyName: true });
+            ifSlot.appendBody(`${childPath} = {}`);
 
             return builder;
         }
@@ -36,3 +45,13 @@ export class SerializeObjectHandler extends PropertyInfoHandler {
         return super.handle(property, builder);
     }
 }
+
+const nearestOptionalAncestor = (property: PropertyInfo<any>): PropertyInfo<any> | null => {
+    for (let ancestor = property.parent; ancestor != null; ancestor = ancestor.parent) {
+        if (ancestor.isNullable || ancestor.isOptional) {
+            return ancestor;
+        }
+    }
+
+    return null;
+};
