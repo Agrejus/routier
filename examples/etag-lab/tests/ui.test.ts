@@ -10,10 +10,20 @@ let page: Page;
 
 const ACTION_TIMEOUT_MS = 15_000;
 
-const open = async (scenario: string) => {
+const open = async (scenario: string, options: { slowResetMs?: number } = {}) => {
   context = await browser.newContext();
   context.setDefaultTimeout(ACTION_TIMEOUT_MS);
   page = await context.newPage();
+
+  if (options.slowResetMs != null) {
+    const delayMs = options.slowResetMs;
+    await page.route('**/admin/reset', async route => {
+      const response = await route.fetch();
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+      await route.fulfill({ response });
+    });
+  }
+
   await page.goto(`${lab.origin}/#${scenario}`);
   await click('reset');
 };
@@ -42,6 +52,17 @@ describe('etag lab in a browser', () => {
   beforeEach(async () => {
     await context?.close();
     context = undefined;
+  });
+
+  it('waits for a slow reset before loading, so the reset cannot clear the loaded rows', async () => {
+    await open('conflict', { slowResetMs: 1_000 });
+    await click('alice-load');
+    await page.waitForTimeout(1_500);
+
+    await editTitle('alice', 'launch', 'After a slow reset');
+    await click('alice-save');
+
+    await hasText(version('alice', 'launch'), 'v2');
   });
 
   it('refuses the save of a client that read an old version', async () => {
