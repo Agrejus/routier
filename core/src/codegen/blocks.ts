@@ -391,7 +391,7 @@ export class ObjectBuilder extends Block {
         return this;
     }
 
-    nested(propertyName: string, name?: string) {
+    nested(propertyName: string, name?: string, absentWhenNull?: string) {
         const builder = new ObjectBuilder(name, this._indent + "  ", this);
         // Add comma to previous line if it exists and isn't a brace
         if (this._lines.length > 0) {
@@ -400,8 +400,7 @@ export class ObjectBuilder extends Block {
                 this._lines[this._lines.length - 1] = lastLine + ",";
             }
         }
-        // Add the property name and opening brace
-        this.push(`${propertyName}: {`);
+        this.push(absentWhenNull == null ? `${propertyName}: {` : `${propertyName}: ${absentWhenNull} == null ? ${absentWhenNull} : {`);
         // Add the nested builder
         this.push(builder);
         // Add the closing brace

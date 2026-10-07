@@ -17,7 +17,7 @@ export class CloneHandlerBuilder {
      * the same handlers, in the same order, with the same null and Date semantics.
      */
     build(useFromPropertyName: boolean = false) {
-        const handler = new CloneObjectHandler();
+        const handler = new CloneObjectHandler(useFromPropertyName);
         handler
             .setNext(new CloneDateHandler(useFromPropertyName))
             .setNext(new CloneValueHandler(useFromPropertyName))

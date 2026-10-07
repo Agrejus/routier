@@ -8,20 +8,26 @@ export class SerializeObjectHandler extends PropertyInfoHandler {
 
         if (property.type === SchemaTypes.Object) {
             const slotPath = new SlotPath("assignments");
-            // The result is the storage shape — materialize the container under
-            // its `from` (storage) name
             const childPath = property.getAssignmentPath({
                 parent: "result",
                 useFromPropertyName: true
             });
 
+            const slot = builder.get<SlotBlock>(slotPath.get());
+
             if (property.isNullable || property.isOptional) {
-                // Do nothing if it's nullable or optional as property assignments will check
-                // and create if it does not exist.  This way we can handle null/optional
+                const entityPath = property.getAssignmentPath({ parent: "entity" });
+                const keepsNull = `${entityPath} == null ? ${entityPath} : {}`;
+
+                if (property.parent == null) {
+                    slot.if(`Object.hasOwn(entity, "${property.name}")`).appendBody(`${childPath} = ${keepsNull}`);
+                    return builder;
+                }
+
+                this.emitSerializeNestedAssignment(property, slot, keepsNull);
                 return builder;
             }
 
-            const slot = builder.get<SlotBlock>(slotPath.get());
             slot.assign(`${childPath}`, { name: `[${childPath}]` }).value("{}");
 
             return builder;

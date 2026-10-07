@@ -9,23 +9,14 @@ export class StripObjectHandler extends PropertyInfoHandler {
 
         if (property.type === SchemaTypes.Object) {
             const slotPath = new SlotPath("result.variable.object");
-            let objectBuilder = builder.getOrDefault<ObjectBuilder>(slotPath.get());
 
-            if (objectBuilder == null) {
-                objectBuilder = builder.get<SlotBlock>("result")
-                    .assign("const result", { name: "variable" })
-                    .object({ name: "object" });
-            }
-
-            if (property.parent == null) {
-                objectBuilder.nested(property.name, property.name)
-
-                return builder;
+            if (builder.getOrDefault<ObjectBuilder>(slotPath.get()) == null) {
+                builder.get<SlotBlock>("result").assign("const result", { name: "variable" }).object({ name: "object" });
             }
 
             slotPath.push(...property.getParentPathArray());
-            const nestedObjectBuilder = builder.get<ObjectBuilder>(slotPath.get());
-            nestedObjectBuilder.nested(property.name, property.name)
+            builder.get<ObjectBuilder>(slotPath.get())
+                .nested(property.name, property.name, property.getSelectrorPath({ parent: "entity" }));
 
             return builder;
         }

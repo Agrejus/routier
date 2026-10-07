@@ -47,6 +47,18 @@ export const contractRichSchema = s.define("contract_rich", {
     dimensions: s.object({ width: s.number(), height: s.number() }),
 }).compile();
 
+export const contractOptionalObjectsSchema = s.define("contract_optional_objects", {
+    _id: s.string().key().identity(),
+    label: s.string(),
+    top: s.object({ title: s.string() }).optional().nullable(),
+    facts: s.object({
+        name: s.object({
+            value: s.object({ kind: s.string(), text: s.string() }).optional().nullable(),
+            verified: s.boolean(),
+        }).optional(),
+    }),
+}).compile();
+
 export const contractCompositeSchema = s.define("contract_composite", {
     tenantId: s.string().key(),
     sku: s.string().key(),
@@ -86,6 +98,7 @@ class ContractDataStore extends DataStore {
 
     products = this.collection(contractProductSchema).proxy().create();
     rich = this.collection(contractRichSchema).proxy().create();
+    optionalObjects = this.collection(contractOptionalObjectsSchema).proxy().create();
     composites = this.collection(contractCompositeSchema).proxy().create();
     renamed = this.collection(contractRenamedSchema).proxy().create();
     dated = this.collection(contractDatedSchema).proxy().create();
@@ -117,6 +130,19 @@ type RichRow = {
     rating?: number;
     dimensions: { width: number; height: number };
 };
+
+type OptionalObjectsRow = {
+    label: string;
+    top?: { title: string } | null;
+    facts: { name?: { value?: { kind: string; text: string } | null; verified: boolean } };
+};
+
+const OPTIONAL_OBJECTS: OptionalObjectsRow[] = [
+    { label: "absent", facts: {} },
+    { label: "null", top: null, facts: { name: { value: null, verified: false } } },
+    { label: "nested-absent", facts: { name: { verified: true } } },
+    { label: "present", top: { title: "t" }, facts: { name: { value: { kind: "k", text: "v" }, verified: true } } },
+];
 
 const RICH: RichRow[] = [
     { name: "Alpha", inStock: true, createdDate: new Date("2024-01-01T00:00:00.000Z"), tags: ["a"], note: null, rating: 5, dimensions: { width: 1, height: 2 } },
@@ -420,6 +446,20 @@ export function describePluginContract(
                 await dataStore.saveChangesAsync();
                 return dataStore;
             };
+
+            test("keeps null, absent and empty objects through a save and a fresh read", async () => {
+                const writer = store();
+                await writer.optionalObjects.addAsync(...(OPTIONAL_OBJECTS as any));
+                await writer.saveChangesAsync();
+
+                const found = await reader(writer).optionalObjects.sort(r => r.label).toArrayAsync();
+                const shapes = found.map(({ label, top, facts }) => ({ label, top, facts }));
+                const expected = [...OPTIONAL_OBJECTS]
+                    .sort((a, b) => a.label.localeCompare(b.label))
+                    .map(({ label, top, facts }) => ({ label, top, facts }));
+
+                expect(shapes).toEqual(expected);
+            });
 
             test("round-trips booleans without coercing false", async () => {
                 const dataStore = await seededRich();

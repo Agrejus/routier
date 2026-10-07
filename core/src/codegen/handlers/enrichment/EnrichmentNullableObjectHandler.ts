@@ -36,7 +36,7 @@ export class EnrichmentNullableObjectHandler extends PropertyInfoHandler {
                     // hoists the subtree to the top level of the literal
                     const parentSlotPath = this.buildEnrichedObjectSlotPath(property.parent, slotPath);
                     const parentBuilder = builder.get<ObjectBuilder>(parentSlotPath.get());
-                    enriched = parentBuilder.nested(property.name, `[${enrichedPath}]`);
+                    enriched = parentBuilder.nested(property.name, `[${enrichedPath}]`, property.getSelectrorPath({ parent: "entity" }));
                 } else {
                     // Create the enriched result object when this is the first property
                     // iterated — handler output cannot depend on schema property order
@@ -47,7 +47,7 @@ export class EnrichmentNullableObjectHandler extends PropertyInfoHandler {
                         enrichedRoot = enrichedSlot.variable("enriched", { name: "object" }).object({ name: "enriched" });
                     }
 
-                    enriched = enrichedRoot.nested(property.name, `[${enrichedPath}]`);
+                    enriched = enrichedRoot.nested(property.name, `[${enrichedPath}]`, property.getSelectrorPath({ parent: "entity" }));
                 }
             }
             return builder;
