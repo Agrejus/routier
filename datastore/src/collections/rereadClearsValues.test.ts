@@ -152,3 +152,16 @@ describe('re-reading over an unsaved local edit', () => {
         expect(await reader.hasChangesAsync()).toBe(false);
     });
 });
+
+describe.each(['proxy', 'diff'] as const)('re-reading an unchanged row in %s mode', mode => {
+    it('keeps the key of an optional value the row never held', async () => {
+        const { writer } = stores(mode, `reread-keys-${uuid(8)}`);
+        const [added] = await writer.things.addAsync({ id: 'a', note: null, list: [] } as never);
+        await writer.saveChangesAsync();
+        const keysBefore = Object.keys(added).sort();
+
+        const [reread] = await writer.things.toArrayAsync();
+
+        expect(Object.keys(reread).sort()).toEqual(keysBefore);
+    });
+});

@@ -29,7 +29,10 @@ export const clearRemovedValues = (destination: Fields, source: Fields, properti
         const value = source[name];
 
         if (value === undefined) {
-            delete destination[name];
+            if (destination[name] !== undefined) {
+                delete destination[name];
+            }
+
             continue;
         }
 
