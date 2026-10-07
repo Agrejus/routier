@@ -45,14 +45,25 @@ describe('the log level shared by every copy of the logger', () => {
     });
 
     it('resets every copy together', () => {
-        const setter = freshCopy();
-        const other = freshCopy();
-        setter.setLogLevel('silent');
+        const configured = process.env.ROUTIER_LOG_LEVEL;
+        process.env.ROUTIER_LOG_LEVEL = 'info';
 
-        other.resetLogLevel();
+        try {
+            const setter = freshCopy();
+            const other = freshCopy();
+            setter.setLogLevel('silent');
 
-        expect(setter.getLogLevel()).toBe(other.getLogLevel());
-        expect(setter.getLogLevel()).not.toBe('silent');
+            other.resetLogLevel();
+
+            expect(setter.getLogLevel()).toBe('info');
+            expect(other.getLogLevel()).toBe('info');
+        } finally {
+            if (configured === undefined) {
+                delete process.env.ROUTIER_LOG_LEVEL;
+            } else {
+                process.env.ROUTIER_LOG_LEVEL = configured;
+            }
+        }
     });
 
     it('keeps the level under a key every version of the library agrees on', () => {
