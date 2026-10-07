@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { childrenOf, forEach, getProperties } from './utils';
+import { childrenOf, forEach, getProperties, peelCalls } from './utils';
 import { PropertyExpression, ComparatorExpression, OperatorExpression, ValueExpression, EmptyExpression, CallExpression } from './types';
 import { PropertyInfo } from '../schema/PropertyInfo';
 
@@ -475,6 +475,13 @@ describe('childrenOf', () => {
         expect(childrenOf(handBuilt)).toEqual([operand]);
     });
 
+    it('leaves out a missing operand and missing arguments of a hand-built call', () => {
+        const argument = new ValueExpression({ value: 1 });
+        const handBuilt = { type: 'call', call: 'index-of', expression: null, arguments: [null, argument] } as unknown as CallExpression;
+
+        expect(childrenOf(handBuilt)).toStrictEqual([argument]);
+    });
+
     it('returns nothing for a leaf', () => {
         expect(childrenOf(new ValueExpression({ value: 1 }))).toEqual([]);
         expect(childrenOf(new EmptyExpression())).toEqual([]);
@@ -525,5 +532,16 @@ describe('walking through a call', () => {
         });
 
         expect(visited).toEqual(['call']);
+    });
+});
+
+describe('peelCalls', () => {
+
+    it('lists the calls innermost first, the order they are applied in', () => {
+        const operand = new PropertyExpression({ property: createMockProperty('name') });
+        const trim = new CallExpression({ call: 'trim', expression: operand });
+        const lower = new CallExpression({ call: 'to-lower-case', expression: trim });
+
+        expect(peelCalls(lower)).toEqual({ operand, calls: [trim, lower] });
     });
 });

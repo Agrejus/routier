@@ -128,6 +128,64 @@ describe('conflict detection (proxy mode)', () => {
     });
 });
 
+describe('observing versions from writes', () => {
+    it('lets a writer save the same row twice without re-reading it', async () => {
+        const db = database();
+        const writer = track(new Store(guarded(db)));
+        const reader = track(new Store(guarded(db)));
+
+        const [seeded] = await writer.accounts.addAsync({ balance: 1000 });
+        await writer.saveChangesAsync();
+
+        const row = await writer.accounts.firstAsync(([x, p]) => x.id === p.id, { id: seeded.id });
+        row.balance = 900;
+        await writer.saveChangesAsync();
+        row.balance = 800;
+        await writer.saveChangesAsync();
+
+        const stored = await reader.accounts.firstAsync(([x, p]) => x.id === p.id, { id: seeded.id });
+        expect(stored.balance).toBe(800);
+    });
+
+    it('guards a row this writer added and another writer changed since', async () => {
+        const db = database();
+        const writerA = track(new Store(guarded(db)));
+        const writerB = track(new Store(guarded(db)));
+
+        const [added] = await writerA.accounts.addAsync({ balance: 1000 });
+        await writerA.saveChangesAsync();
+
+        const b = await writerB.accounts.firstAsync(([x, p]) => x.id === p.id, { id: added.id });
+        b.balance = 900;
+        await writerB.saveChangesAsync();
+
+        added.balance = 1100;
+        await expect(writerA.saveChangesAsync()).rejects.toThrow(OptimisticConcurrencyError);
+    });
+
+    it('drops the stale observation after a conflict, so a retry without a re-read is unchecked', async () => {
+        const db = database();
+        const writerA = track(new Store(guarded(db)));
+        const writerB = track(new Store(guarded(db)));
+
+        const [seeded] = await writerA.accounts.addAsync({ balance: 1000 });
+        await writerA.saveChangesAsync();
+
+        const a = await writerA.accounts.firstAsync(([x, p]) => x.id === p.id, { id: seeded.id });
+        const b = await writerB.accounts.firstAsync(([x, p]) => x.id === p.id, { id: seeded.id });
+
+        a.balance = 900;
+        await writerA.saveChangesAsync();
+        b.balance = 1100;
+        await expect(writerB.saveChangesAsync()).rejects.toThrow(OptimisticConcurrencyError);
+
+        await writerB.saveChangesAsync();
+
+        const stored = await writerA.accounts.firstAsync(([x, p]) => x.id === p.id, { id: seeded.id });
+        expect(stored.balance).toBe(1100);
+    });
+});
+
 describe('conflict detection (diff mode)', () => {
     it('a stale snapshot-tracked write is rejected too', async () => {
         const db = database();

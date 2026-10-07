@@ -647,6 +647,95 @@ describe('formatExplanation', () => {
         expect(output).toContain('name === "ada"');
     });
 
+    const joinedThenTaken = () => explainQuery(optionsWith(o => {
+        addFilter(o, (x: any) => x.rank > 10);
+        o.add("join", {
+            kind: "inner",
+            innerSchemaId: 1,
+            outerKey: { propertyName: "id", property: null },
+            innerKey: { propertyName: "playerId", property: null },
+            innerOptions: new QueryOptionsCollection<any>(),
+            crossPlugin: false,
+            semiJoinKeyThreshold: 500
+        } as never);
+        o.add("take", 20);
+    }), CONTEXT);
+
+    it('indents every wrapped description and prints each statement line once', () => {
+        const output = formatExplanation(withExecutedQueries(joinedThenTaken(), [{ text: "SELECT *\nFROM players" }]));
+
+        expect(output.split("\n")).toEqual([
+            "players · test.db · 2 steps",
+            "",
+            "  STEP 1 of 2 — database · test.db · TestPlugin",
+            "    These options are sent to the plugin.",
+            "",
+            "    filter   rank > 10",
+            "    join     inner → id = playerId",
+            "",
+            "    SELECT *",
+            "    FROM players",
+            "",
+            "  STEP 2 of 2 — memory  [after-join]",
+            "    Routier runs these over the rows the database returned, after",
+            "    deserializing them.",
+            "    A join produces [outer, inner] tuples rather than entities, and the",
+            "    plugin cannot report how it joined, so every option after it runs in",
+            "    memory.",
+            "",
+            "    take     20",
+            "",
+            "  2 options ran in the database, 1 ran in memory. A join produces",
+            "  [outer, inner] tuples rather than entities, and the plugin cannot",
+            "  report how it joined, so every option after it runs in memory."
+        ]);
+    });
+
+    it('indents the note for a plugin that reported nothing', () => {
+        const output = formatExplanation(withExecutedQueries(joinedThenTaken(), []));
+
+        expect(output.split("\n")).toEqual([
+            "players · test.db · 2 steps",
+            "",
+            "  STEP 1 of 2 — database · test.db · TestPlugin",
+            "    These options are sent to the plugin.",
+            "",
+            "    filter   rank > 10",
+            "    join     inner → id = playerId",
+            "",
+            "    This plugin did not report what it executed. It may not support",
+            "    explain.",
+            "",
+            "  STEP 2 of 2 — memory  [after-join]",
+            "    Routier runs these over the rows the database returned, after",
+            "    deserializing them.",
+            "    A join produces [outer, inner] tuples rather than entities, and the",
+            "    plugin cannot report how it joined, so every option after it runs in",
+            "    memory.",
+            "",
+            "    take     20",
+            "",
+            "  2 options ran in the database, 1 ran in memory. A join produces",
+            "  [outer, inner] tuples rather than entities, and the plugin cannot",
+            "  report how it joined, so every option after it runs in memory."
+        ]);
+    });
+
+    it('describes an unnarrowed read when the database step has no options', () => {
+        const output = formatExplanation(explainQuery(optionsWith(() => undefined), CONTEXT));
+
+        expect(output.split("\n")).toEqual([
+            "players · test.db · 1 step",
+            "",
+            "  STEP 1 of 1 — database · test.db · TestPlugin",
+            "    No option could be pushed down, so the plugin reads the whole",
+            "    collection.",
+            "",
+            "",
+            "  0 options ran in the database, 0 ran in memory."
+        ]);
+    });
+
     it('names the collection read when nothing pushed down', () => {
         const options = optionsWith(o => addFilter(o, (x: any) => x.fullName === "ada!"));
         const output = formatExplanation(explainQuery(options, CONTEXT));

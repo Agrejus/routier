@@ -25,6 +25,16 @@ const articleSchema = s.define('prev_articles', {
 }).compile();
 
 
+const eventSchema = s.define('prev_events', {
+    id: s.string().key().identity(),
+    at: s.date(),
+    label: s.string(),
+}).compile();
+
+class EventStore extends DataStore {
+    events = this.collection(eventSchema).proxy().create();
+}
+
 class ProxyStore extends DataStore {
     articles = this.collection(articleSchema).fullTextSearch().proxy().create();
 }
@@ -119,6 +129,20 @@ describe('previous values', () => {
         expect(updates).toHaveLength(1);
         expect(updates[0].delta).toEqual({ title: 'Copper Wire' });
         expect(updates[0].previous).toEqual({ title: 'Copper Pipe' });
+    });
+
+    it('reports a date it held in the stored form, like the delta', async () => {
+        const store = new EventStore(new MemoryPlugin('prev-date'));
+        const [event] = await store.events.addAsync({ at: new Date(Date.UTC(2020, 0, 1)), label: 'a' });
+        await store.saveChangesAsync();
+
+        const updates = capturePreparedUpdates(store);
+        event.at = new Date(Date.UTC(2021, 0, 1));
+        await store.saveChangesAsync();
+
+        expect(updates).toHaveLength(1);
+        expect(updates[0].delta).toStrictEqual({ at: '2021-01-01T00:00:00.000Z' });
+        expect(updates[0].previous).toStrictEqual({ at: '2020-01-01T00:00:00.000Z' });
     });
 
     it('re-baselines after a save', async () => {

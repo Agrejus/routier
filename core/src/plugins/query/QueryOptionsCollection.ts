@@ -454,8 +454,7 @@ export class QueryOptionsCollection<T> {
         this.resolveEnumeration();
 
         return this.enumeratedItems
-            .filter(item => item.option.target === "database" && item.option.reason !== "executed")
-            .sort((a, b) => a.index - b.index);
+            .filter(item => item.option.target === "database" && item.option.reason !== "executed");
     }
 
     split(): { memory: QueryOptionsCollection<T>, database: QueryOptionsCollection<T> } {

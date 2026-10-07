@@ -78,6 +78,32 @@ describe('unicode and hex string escapes', () => {
     });
 });
 
+describe('identifier characters', () => {
+    it.each([
+        ['an uppercase Z', 'Z'],
+        ['an underscore', '_r'],
+        ['a dollar sign', '$r'],
+    ])('parses a parameter that starts with %s', (_name, args) => {
+        const cmp = parsed(fromSource(`${args}.price === 1`, args));
+        expect((cmp.right as ValueExpression).value).toBe(1);
+    });
+});
+
+describe('hex string escapes', () => {
+    it.each([
+        ['lowercase', '\\x61', 'a'],
+        ['uppercase', '\\x4A', 'J'],
+        ['lowercase f', '\\u004f', 'O'],
+    ])('decodes %s hex digits (%s)', (_name, escape, value) => {
+        const cmp = parsed(withSource(`(r) => r.name === "${escape}"`));
+        expect((cmp.right as ValueExpression).value).toBe(value);
+    });
+
+    it.each(['\\x4g', '\\xG1', '\\x`1'])('rejects a hex escape with a digit that is not hex (%s)', (escape) => {
+        rejected(withSource(`(r) => r.name === "${escape}"`));
+    });
+});
+
 describe('numeric literal forms', () => {
     it.each([
         ['scientific', '1e6', 1e6],
@@ -92,6 +118,26 @@ describe('numeric literal forms', () => {
     ])('parses %s (%s)', (_name, literal, value) => {
         const cmp = parsed(fromSource(`r.price === ${literal}`));
         expect((cmp.right as ValueExpression).value).toBe(value);
+    });
+
+    it.each([
+        ['lowercase hex', '0xaf', 0xaf],
+        ['uppercase hex', '0xAF', 0xAF],
+        ['hex with separators', '0xF_F', 0xF_F],
+        ['binary with separators', '0b1_0', 0b1_0],
+        ['scientific', '1e3', 1e3],
+        ['scientific with sign', '2.5E-2', 2.5E-2],
+    ])('parses %s (%s) when it is not the last token', (_name, literal, value) => {
+        const cmp = parsed(fromSource(`${literal} === r.price`));
+        expect((cmp.right as ValueExpression).value).toBe(value);
+    });
+
+    it('rejects an exponent marker with no digits after it', () => {
+        rejected(withSource('(r) => r.price === 1e'));
+    });
+
+    it('rejects an exponent sign with no digits after it', () => {
+        rejected(withSource('(r) => r.price === 1e+'));
     });
 
     it('still rejects an identifier fused to a number', () => {
