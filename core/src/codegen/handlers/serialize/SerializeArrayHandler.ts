@@ -1,6 +1,7 @@
 import { CodeBuilder, SlotBlock } from '../../blocks';
 import { PropertyInfoHandler } from "../types";
 import { isArrayValued, PropertyInfo, SchemaTypes } from "../../../schema";
+import { copyValue } from "../../copyValue";
 
 /**
  * Serializes arrays per element instead of copying the reference:
@@ -16,7 +17,7 @@ import { isArrayValued, PropertyInfo, SchemaTypes } from "../../../schema";
  */
 export class SerializeArrayHandler extends PropertyInfoHandler {
 
-    private copyExpression(property: PropertyInfo<any>, selector: string): string {
+    private copyExpression(property: PropertyInfo<any>, selector: string, builder: CodeBuilder): string {
         const elementType = property.innerSchema?.type;
 
         if (elementType === SchemaTypes.Date) {
@@ -24,7 +25,7 @@ export class SerializeArrayHandler extends PropertyInfoHandler {
         }
 
         if (elementType === SchemaTypes.Object || elementType === SchemaTypes.Array || elementType === SchemaTypes.Definition) {
-            return `${selector}.map(function (v) { return v == null ? v : structuredClone(v); })`;
+            return `${selector}.map(${builder.bind(copyValue, "copyValue")})`;
         }
 
         return `[...${selector}]`;
@@ -40,7 +41,7 @@ export class SerializeArrayHandler extends PropertyInfoHandler {
             const resultSelectorPath = property.getAssignmentPath({ parent: "result", useFromPropertyName: true });
 
             // Null propagates as-is (nullable arrays); only real arrays are copied
-            const valueExpression = `${entitySelectorPath} == null ? ${entitySelectorPath} : ${this.copyExpression(property, entitySelectorPath)}`;
+            const valueExpression = `${entitySelectorPath} == null ? ${entitySelectorPath} : ${this.copyExpression(property, entitySelectorPath, builder)}`;
 
             if (property.parent == null) {
                 // Only assign if the incoming entity has the property, this allows partial

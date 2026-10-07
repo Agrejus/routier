@@ -1,6 +1,7 @@
 import { CodeBuilder, SlotBlock } from '../../blocks';
 import { PropertyInfoHandler } from "../types";
 import { hasPrimitiveElements, isArrayValued, PropertyInfo, SchemaTypes } from "../../../schema";
+import { copyValue } from "../../copyValue";
 
 export class CloneArrayHandler extends PropertyInfoHandler {
 
@@ -39,7 +40,7 @@ export class CloneArrayHandler extends PropertyInfoHandler {
             } else if (elementType === SchemaTypes.Date) {
                 copyExpression = `${entitySelectorPath}.map(function (v) { return v == null ? v : new Date(v); })`;
             } else {
-                copyExpression = `${entitySelectorPath}.map(function (v) { return v == null ? v : structuredClone(v); })`;
+                copyExpression = `${entitySelectorPath}.map(${builder.bind(copyValue, "copyValue")})`;
             }
 
             // A null array is still a null, not an empty one, and neither spread nor map survives it

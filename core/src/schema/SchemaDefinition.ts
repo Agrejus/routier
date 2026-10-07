@@ -27,6 +27,7 @@ import { StandardJSONSchemaV1, createStandardJsonSchemaProps, rehydrateSchemaFro
 import { SetHandlerBuilder } from '../codegen/handlers';
 import { createChangeTracker } from './changeTracker';
 import { findEtagProperty } from './utils/etagProperty';
+import { hasNestedElements, isArrayValued } from './utils/propertyKind';
 
 function assertPropertyHandled(generatorName: string, property: PropertyInfo<any>, result: unknown): asserts result is {} {
     if (result == null) {
@@ -313,7 +314,10 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
 
             // Handed to the generated functions as a value, never embedded as source and called
             // by name — a minifier renames the declaration and breaks every schema (#40).
-            const changeTracker = createChangeTracker();
+            const trackedObjects = new Set<string>();
+            const trackedArrays = new Set<string>();
+            const trackedArraysOfNested = new Set<string>();
+            const changeTracker = createChangeTracker({ objects: trackedObjects, arrays: trackedArrays, arraysOfNested: trackedArraysOfNested });
 
             const changeTrackingCodeBuilder = new CodeBuilder();
             changeTrackingCodeBuilder.bind(changeTracker, "enableChangeTracking");
@@ -523,6 +527,20 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
             this._iterate(this, (property) => {
 
                 properties.push(property);
+
+                const declaredPath = [...property.getParentPathArray(), property.name].join(".");
+
+                if (property.type === SchemaTypes.Object) {
+                    trackedObjects.add(declaredPath);
+                }
+
+                if (isArrayValued(property.type)) {
+                    trackedArrays.add(declaredPath);
+                }
+
+                if (isArrayValued(property.type) && hasNestedElements(property.innerSchema?.type)) {
+                    trackedArraysOfNested.add(declaredPath);
+                }
                 propertyMap.set(property.id, property);
                 allPropertyNamesAndPaths.push(property.getSelectrorPath({ parent: "entity" }));
 

@@ -643,7 +643,10 @@ export class CodeBuilder extends ContainerBlock {
      * in as a real value when the function is compiled, so it survives any bundler.
      */
     bind(value: unknown, name: string = `binding${this._bindings.length}`): string {
-        this._bindings.push({ name, value });
+        if (this._bindings.some(binding => binding.name === name && binding.value === value) === false) {
+            this._bindings.push({ name, value });
+        }
+
         return name;
     }
 
