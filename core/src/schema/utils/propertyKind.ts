@@ -35,3 +35,11 @@ const PRIMITIVE_ELEMENT_TYPES = new Set<SchemaTypes | undefined>([
 
 export const hasPrimitiveElements = (type: SchemaTypes, elementType: SchemaTypes | undefined) =>
     type === SchemaTypes.Vector || PRIMITIVE_ELEMENT_TYPES.has(elementType);
+
+const NESTED_ELEMENT_TYPES = new Set<SchemaTypes | undefined>([
+    SchemaTypes.Object,
+    SchemaTypes.Array,
+    SchemaTypes.Definition,
+]);
+
+export const hasNestedElements = (elementType: SchemaTypes | undefined) => NESTED_ELEMENT_TYPES.has(elementType);
