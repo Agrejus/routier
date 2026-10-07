@@ -21,7 +21,7 @@
         "lint": "oxlint . --ignore-pattern \"**/*.test.*\""
     },
     "peerDependencies": {
-        "@routier/core": ">=0.9.0",
+        "@routier/core": ">=0.9.1",
         "@tanstack/query-core": ">=5.66.0"
     },
     "devDependencies": {
