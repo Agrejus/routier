@@ -66,6 +66,14 @@ export abstract class PropertyInfoHandler implements IHandler {
         return result
     }
 
+    protected whenParentPresent(property: PropertyInfo<any>, condition: string): string {
+        if (property.parent == null) {
+            return condition;
+        }
+
+        return `${property.parent.getSelectrorPath({ parent: "enriched" })} != null && ${condition}`;
+    }
+
     /**
      * Dotted property path from the root entity (e.g. `nested.inner`), used as the
      * change-tracking path prefix so nested writes record against the root's

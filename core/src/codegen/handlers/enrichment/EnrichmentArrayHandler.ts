@@ -19,7 +19,7 @@ export class EnrichmentArrayHandler extends PropertyInfoHandler {
             const enrichedPath = property.getAssignmentPath({ parent: "enriched" });
             const ifsSlot = builder.get<SlotBlock>("factory.function.ifs");
 
-            ifsSlot.if(`${enrichedPath} != null`).appendBody(`${enrichedPath} = enableChangeTracking(${enrichedPath}, "${this.getTrackingPath(property)}", enriched);`);
+            ifsSlot.if(`${property.getSelectrorPath({ parent: "enriched" })} != null`).appendBody(`${enrichedPath} = enableChangeTracking(${enrichedPath}, "${this.getTrackingPath(property)}", enriched);`);
 
             return builder;
         }

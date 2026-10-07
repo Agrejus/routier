@@ -19,7 +19,8 @@ export class EnrichmentObjectHandler extends PropertyInfoHandler {
 
             // Pass the root as parent so nested writes mark the root entity dirty,
             // and the full dotted path so the change is recorded under it
-            slot.assign(enrichedPath).value(`enableChangeTracking(${enrichedPath} || {}, "${this.getTrackingPath(property)}", enriched)`)
+            slot.if(this.whenParentPresent(property, "true"))
+                .appendBody(`${enrichedPath} = enableChangeTracking(${enrichedPath} || {}, "${this.getTrackingPath(property)}", enriched);`);
 
             let enriched = builder.getOrDefault<ObjectBuilder>(nestedSlotPath.get());
 
