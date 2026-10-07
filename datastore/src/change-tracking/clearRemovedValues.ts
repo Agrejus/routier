@@ -6,8 +6,24 @@ const isFields = (value: unknown): value is Fields => typeof value === "object" 
 
 const holdsStoredValue = (property: PropertyInfo<{}>) => property.type !== SchemaTypes.Computed && property.type !== SchemaTypes.Function;
 
+const storedPropertiesCache = new WeakMap<PropertyInfo<{}>[], PropertyInfo<{}>[]>();
+
+const storedPropertiesOf = (properties: PropertyInfo<{}>[]) => {
+    let stored = storedPropertiesCache.get(properties);
+
+    if (stored === undefined) {
+        stored = properties.filter(holdsStoredValue);
+        storedPropertiesCache.set(properties, stored);
+    }
+
+    return stored;
+};
+
 export const clearRemovedValues = (destination: Fields, source: Fields, properties: PropertyInfo<{}>[]): void => {
-    for (const property of properties.filter(holdsStoredValue)) {
+    const stored = storedPropertiesOf(properties);
+
+    for (let i = 0, length = stored.length; i < length; i++) {
+        const property = stored[i];
         const name = property.name;
 
         const value = source[name];
