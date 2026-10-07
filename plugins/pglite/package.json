@@ -41,7 +41,7 @@
     "peerDependencies": {
         "@electric-sql/pglite": ">=0.5.0",
         "@electric-sql/pglite-pgvector": ">=0.0.8",
-        "@routier/core": ">=0.9.1",
+        "@routier/core": ">=0.9.2",
         "@routier/postgres-plugin-core": ">=0.3.3",
         "@routier/sql-plugin-core": ">=0.7.2"
     },
@@ -53,8 +53,8 @@
     "devDependencies": {
         "@electric-sql/pglite": "^0.5.7",
         "@electric-sql/pglite-pgvector": "^0.0.8",
-        "@routier/core": "^0.9.1",
-        "@routier/datastore": "^0.4.4",
+        "@routier/core": "^0.9.2",
+        "@routier/datastore": "^0.4.5",
         "@routier/postgres-plugin-core": "^0.3.3",
         "@routier/sql-plugin-core": "^0.7.2",
         "@routier/test-utils": "^0.3.0",
