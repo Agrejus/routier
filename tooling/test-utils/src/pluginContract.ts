@@ -58,6 +58,7 @@ export const contractOptionalObjectsSchema = s.define("contract_optional_objects
         }).optional(),
     }),
     tags: s.object({ list: s.array(s.string()).optional() }).optional(),
+    group: s.object({ inner: s.object({ n: s.number() }) }).optional().nullable(),
 }).compile();
 
 export const contractCompositeSchema = s.define("contract_composite", {
@@ -137,11 +138,13 @@ type OptionalObjectsRow = {
     top?: { title: string } | null;
     facts: { name?: { value?: { kind: string; text: string; scores: number[] } | null; verified: boolean } };
     tags?: { list?: string[] };
+    group?: { inner: { n: number } } | null;
 };
 
 const OPTIONAL_OBJECTS: OptionalObjectsRow[] = [
     { label: "absent", facts: {} },
-    { label: "null", top: null, facts: { name: { value: null, verified: false } } },
+    { label: "null", top: null, facts: { name: { value: null, verified: false } }, group: null },
+    { label: "group-present", facts: {}, group: { inner: { n: 1 } } },
     { label: "nested-absent", facts: { name: { verified: true } } },
     { label: "present", top: { title: "t" }, facts: { name: { value: { kind: "k", text: "v", scores: [1, 2] }, verified: true } }, tags: { list: ["a"] } },
     { label: "list-absent", facts: {}, tags: {} },
@@ -456,10 +459,10 @@ export function describePluginContract(
                 await writer.saveChangesAsync();
 
                 const found = await reader(writer).optionalObjects.sort(r => r.label).toArrayAsync();
-                const shapes = found.map(({ label, top, facts, tags }) => ({ label, top, facts, tags }));
+                const shapes = found.map(({ label, top, facts, tags, group }) => ({ label, top, facts, tags, group }));
                 const expected = [...OPTIONAL_OBJECTS]
                     .sort((a, b) => a.label.localeCompare(b.label))
-                    .map(({ label, top, facts, tags }) => ({ label, top, facts, tags }));
+                    .map(({ label, top, facts, tags, group }) => ({ label, top, facts, tags, group }));
 
                 expect(shapes).toEqual(expected);
             });
