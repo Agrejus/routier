@@ -79,8 +79,7 @@ export abstract class QueryBuilderBase<TRoot extends {}, TShape, TDeps extends C
         }
 
         if (body.includes("{")) {
-            const propertyPaths = body.replace(/{|}|\(|\)/g, "").split(",").map(w => w.trim());
-            return propertyPaths.map(propertyPath => {
+            return body.replace(/{|}|\(|\)/g, "").split(",").map(propertyPath => {
                 const [destinationName, sourcePathAndName] = propertyPath.split(":").map(w => w.trim());
                 const sourceName = this._extractPropertyName(sourcePathAndName);
                 const property = this.dependencies.schema.getProperty(sourceName);

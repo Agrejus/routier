@@ -64,6 +64,7 @@ type Token = {
 
 // Longest first so multi-character punctuation wins over its prefixes
 const MULTI_CHARACTER_PUNCTUATION = [">>>", "===", "!==", "**", "<<", ">>", "??", "?.", "&&", "||", "==", "!=", ">=", "<=", "=>"] as const;
+const MULTI_CHARACTER_PUNCTUATION_STARTS = new Set<string>(MULTI_CHARACTER_PUNCTUATION.map(w => w[0]));
 // Stryker disable next-line all: documented equivalent cluster (see
 // docs/mutation-backlog.md) — dropping an entry only affects source the parser rejects
 // either way, and the rejection message names the character from the source rather than
@@ -114,10 +115,20 @@ const regexCanStartHere = (tokens: Token[]): boolean => {
     return previous.value !== ")" && previous.value !== "]";
 };
 
-const isIdentifierStart = (char: string) => /[a-zA-Z_$]/.test(char);
-const isIdentifierPart = (char: string) => /[a-zA-Z0-9_$]/.test(char);
-const isDigit = (char: string) => char >= "0" && char <= "9";
-const isHexDigit = (char: string) => isDigit(char) || (char >= "a" && char <= "f") || (char >= "A" && char <= "F");
+const isIdentifierStart = (code: number) => (code >= 97 && code <= 122) || (code >= 65 && code <= 90) || code === 95 || code === 36;
+const isDigit = (code: number) => code >= 48 && code <= 57;
+const isIdentifierPart = (code: number) => isIdentifierStart(code) || isDigit(code);
+const isHexDigit = (code: number) => isDigit(code) || (code >= 97 && code <= 102) || (code >= 65 && code <= 70);
+
+const hasNonHexDigit = (digits: string) => {
+    for (let i = 0; i < digits.length; i++) {
+        if (!isHexDigit(digits.charCodeAt(i))) {
+            return true;
+        }
+    }
+
+    return false;
+};
 
 /**
  * Decodes a `\uXXXX`, `\u{...}` or `\xXX` escape starting at the backslash.
@@ -142,12 +153,51 @@ const decodeCodeEscape = (source: string, backslashIndex: number): { value: stri
     const length = kind === "u" ? 4 : 2;
     const digits = source.slice(start, start + length);
 
-    if (digits.length < length || [...digits].some(d => !isHexDigit(d))) {
+    if (digits.length < length || hasNonHexDigit(digits)) {
         throw new Error(ERROR_MESSAGES.UNSUPPORTED(`'\\${kind}' escape`));
     }
 
     return { value: String.fromCharCode(parseInt(digits, 16)), nextIndex: start + length };
 }
+
+const scanRadixDigits = (source: string, from: number): number => {
+    let i = from;
+
+    while (i < source.length && (isHexDigit(source.charCodeAt(i)) || source.charCodeAt(i) === 95)) {
+        i++;
+    }
+
+    return i;
+};
+
+const scanDecimal = (source: string, from: number): number => {
+    let i = from;
+
+    while (i < source.length && (isDigit(source.charCodeAt(i)) || source.charCodeAt(i) === 46 || source.charCodeAt(i) === 95)) {
+        i++;
+    }
+
+    const exponent = source.charCodeAt(i);
+
+    if (exponent !== 101 && exponent !== 69) {
+        return i;
+    }
+
+    const sign = source.charCodeAt(i + 1);
+    const signLength = sign === 43 || sign === 45 ? 1 : 0;
+
+    if (!isDigit(source.charCodeAt(i + 1 + signLength))) {
+        return i;
+    }
+
+    i += 1 + signLength;
+
+    while (i < source.length && isDigit(source.charCodeAt(i))) {
+        i++;
+    }
+
+    return i;
+};
 
 /**
  * Converts filter source text into a flat token stream.  Strings and comments are
@@ -163,7 +213,9 @@ const tokenize = (source: string): Token[] => {
         const char = source[i];
 
         // Whitespace
-        if (char === " " || char === "\t" || char === "\r" || char === "\n") {
+        const code = source.charCodeAt(i);
+
+        if (code === 32 || code === 9 || code === 13 || code === 10) {
             i++;
             continue;
         }
@@ -176,7 +228,6 @@ const tokenize = (source: string): Token[] => {
          * and `/^a/.test(x.a)` can share a character.
          */
         if (char === "/" && source[i + 1] !== "/" && source[i + 1] !== "*" && regexCanStartHere(tokens)) {
-            let value = "";
             let inClass = false;
             let j = i + 1;
 
@@ -184,7 +235,6 @@ const tokenize = (source: string): Token[] => {
                 const current = source[j];
 
                 if (current === "\\") {
-                    value += current + (source[j + 1] ?? "");
                     j += 2;
                     continue;
                 }
@@ -199,7 +249,6 @@ const tokenize = (source: string): Token[] => {
                     throw new Error(ERROR_MESSAGES.UNSUPPORTED("unterminated regular expression"));
                 }
 
-                value += current;
                 j++;
             }
 
@@ -207,14 +256,15 @@ const tokenize = (source: string): Token[] => {
                 throw new Error(ERROR_MESSAGES.UNSUPPORTED("unterminated regular expression"));
             }
 
+            const value = source.slice(i + 1, j);
             j++;
-            let flags = "";
+            const flagsStart = j;
 
-            while (j < source.length && isIdentifierPart(source[j])) {
-                flags += source[j];
+            while (j < source.length && isIdentifierPart(source.charCodeAt(j))) {
                 j++;
             }
 
+            const flags = source.slice(flagsStart, j);
             i = j;
             tokens.push({ kind: "regex", value: `${value}\u0000${flags}` });
             continue;
@@ -331,49 +381,16 @@ const tokenize = (source: string): Token[] => {
         // Numbers — covers decimals, exponents (1e6), hex/octal/binary (0xFF),
         // and numeric separators (1_000_000).  Values are normalized here (the
         // separator stripped) so the parser can hand them straight to Number()
-        if (isDigit(char)) {
-            let value = "";
-
+        if (isDigit(code)) {
+            const start = i;
             const nextChar = source[i + 1];
             const radixPrefix = char === "0" && nextChar != null && "xXoObB".includes(nextChar);
 
-            if (radixPrefix) {
-                value = source[i] + source[i + 1];
-                i += 2;
+            i = radixPrefix ? scanRadixDigits(source, i + 2) : scanDecimal(source, i);
 
-                while (i < source.length && (isHexDigit(source[i]) || source[i] === "_")) {
-                    value += source[i];
-                    i++;
-                }
-            } else {
-                while (i < source.length && (isDigit(source[i]) || source[i] === "." || source[i] === "_")) {
-                    value += source[i];
-                    i++;
-                }
+            const value = source.slice(start, i);
 
-                // Exponent part: e/E, optional sign, then digits.  Only consumed when
-                // digits follow, so a stray identifier after a number still errors
-                if ((source[i] === "e" || source[i] === "E")) {
-                    const signLength = source[i + 1] === "+" || source[i + 1] === "-" ? 1 : 0;
-
-                    if (isDigit(source[i + 1 + signLength])) {
-                        value += source[i];
-                        i++;
-
-                        if (signLength === 1) {
-                            value += source[i];
-                            i++;
-                        }
-
-                        while (i < source.length && isDigit(source[i])) {
-                            value += source[i];
-                            i++;
-                        }
-                    }
-                }
-            }
-
-            if (source[i] === "n") {
+            if (source.charCodeAt(i) === 110) {
                 i++;
                 tokens.push({ kind: "bigint", value: value.replace(/_/g, "") });
                 continue;
@@ -384,20 +401,19 @@ const tokenize = (source: string): Token[] => {
         }
 
         // Identifiers / keywords
-        if (isIdentifierStart(char)) {
-            let value = "";
+        if (isIdentifierStart(code)) {
+            const start = i;
 
-            while (i < source.length && isIdentifierPart(source[i])) {
-                value += source[i];
+            while (i < source.length && isIdentifierPart(source.charCodeAt(i))) {
                 i++;
             }
 
-            tokens.push({ kind: "identifier", value });
+            tokens.push({ kind: "identifier", value: source.slice(start, i) });
             continue;
         }
 
         // Multi-character punctuation (longest match first)
-        const multi = MULTI_CHARACTER_PUNCTUATION.find(w => source.startsWith(w, i));
+        const multi = MULTI_CHARACTER_PUNCTUATION_STARTS.has(char) ? MULTI_CHARACTER_PUNCTUATION.find(w => source.startsWith(w, i)) : undefined;
 
         if (multi != null) {
             tokens.push({ kind: "punctuation", value: multi });
@@ -438,7 +454,7 @@ class TokenStream {
             { kind: "punctuation", value: ")" }
         ];
 
-        this.tokens = [...this.tokens.slice(0, this.index), ...bracketed, ...this.tokens.slice(this.index)];
+        this.tokens = this.tokens.slice(0, this.index).concat(bracketed, this.tokens.slice(this.index));
     }
 
     get isAtEnd() {
@@ -2684,17 +2700,20 @@ const collectReads = (operand: Operand, into: Set<PropertyInfo<any>>): void => {
                 collectReads(operand.extra, into);
             }
             return;
-        case "conditional":
-            for (const property of getProperties(operand.condition)) {
-                into.add(property);
+        case "conditional": {
+            const properties = getProperties(operand.condition);
+
+            for (let i = 0; i < properties.length; i++) {
+                into.add(properties[i]);
             }
 
             collectReads(operand.whenTrue, into);
             collectReads(operand.whenFalse, into);
             return;
+        }
         case "opaque":
-            for (const read of operand.reads) {
-                collectReads(read, into);
+            for (let i = 0; i < operand.reads.length; i++) {
+                collectReads(operand.reads[i], into);
             }
             return;
     }

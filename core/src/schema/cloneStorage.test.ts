@@ -134,4 +134,42 @@ describe("cloneStorage", () => {
 
         expect((schema as any).cloneStorage(source)).toEqual(structuredClone(source));
     });
+
+    it("leaves out every declared column the record holds as undefined", () => {
+        const undefinedSchema = s.define("clone_storage_undefined", {
+            id: s.string().key(),
+            name: s.string().from("product_name"),
+            maybe: s.string().from("maybe_col").optional(),
+        }).compile();
+        const source: Record<string, string | undefined> = { id: "a" };
+        source.product_name = undefined;
+        source.maybe_col = undefined;
+
+        const cloned = (undefinedSchema as any).cloneStorage(source);
+
+        expect(Object.hasOwn(cloned, "product_name")).toBe(false);
+        expect(Object.hasOwn(cloned, "maybe_col")).toBe(false);
+    });
+
+    it("writes declared columns in schema order, after any undeclared ones", () => {
+        const source = { plain: "p", __version: 7, id: "a" };
+        const plainSchema = s.define("clone_storage_order", {
+            id: s.string().key(),
+            plain: s.string(),
+        }).compile();
+
+        expect(Object.keys((plainSchema as any).cloneStorage(source))).toEqual(["__version", "id", "plain"]);
+    });
+
+    it("carries an undeclared root column that shares a nested property's storage name", () => {
+        const renamedSchema = s.define("clone_storage_shared_name", {
+            id: s.string().key(),
+            nested: s.object({ inner: s.string().from("inner_col") }).from("nested_col"),
+        }).compile();
+        const source = { id: "a", nested_col: { inner_col: "deep" }, inner_col: "root level" };
+
+        const cloned = (renamedSchema as any).cloneStorage(source);
+
+        expect(cloned).toEqual(source);
+    });
 });

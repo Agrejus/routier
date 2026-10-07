@@ -6,11 +6,13 @@ const OPTION_LABEL_WIDTH = 8;
 const WRAP_WIDTH = 68;
 
 /** Wraps `text` to `WRAP_WIDTH`, prefixing every line with `indent`. */
-const wrap = (text: string, indent: string): string[] => {
-    const lines: string[] = [];
+const wrap = (lines: string[], text: string, indent: string): void => {
+    const words = text.split(" ");
     let line = "";
 
-    for (const word of text.split(" ")) {
+    for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+
         if (line.length > 0 && line.length + word.length + 1 > WRAP_WIDTH) {
             lines.push(indent + line);
             line = word;
@@ -23,8 +25,6 @@ const wrap = (text: string, indent: string): string[] => {
     if (line.length > 0) {
         lines.push(indent + line);
     }
-
-    return lines;
 };
 
 const COMPARATOR_SYMBOLS: Record<string, string> = {
@@ -184,18 +184,21 @@ const formatStep = (step: ExecutionStep, lines: string[]) => {
     lines.push(`  STEP ${step.step} of ${step.of} — ${whereItRan(step)}${reason}`);
 
     if (isDatabaseStep(step)) {
-        lines.push(...wrap(step.options.length === 0 ? UNNARROWED_READ_DESCRIPTION : DATABASE_STEP_DESCRIPTION, "    "));
+        wrap(lines, step.options.length === 0 ? UNNARROWED_READ_DESCRIPTION : DATABASE_STEP_DESCRIPTION, "    ");
     } else {
-        lines.push(...wrap(MEMORY_STEP_DESCRIPTION, "    "));
+        wrap(lines, MEMORY_STEP_DESCRIPTION, "    ");
 
         if (step.explanation != null) {
-            lines.push(...wrap(step.explanation, "    "));
+            wrap(lines, step.explanation, "    ");
         }
     }
 
     lines.push("");
 
-    for (const option of step.options) {
+    const options = step.options;
+
+    for (let i = 0; i < options.length; i++) {
+        const option = options[i];
         lines.push(`    ${option.name.padEnd(OPTION_LABEL_WIDTH)} ${describeOption(option)}`.trimEnd());
     }
 
@@ -204,9 +207,17 @@ const formatStep = (step: ExecutionStep, lines: string[]) => {
         return;
     }
 
-    for (const executed of step.executedQueries) {
+    const executedQueries = step.executedQueries;
+
+    for (let i = 0; i < executedQueries.length; i++) {
+        const executed = executedQueries[i];
+        const textLines = executed.text.split("\n");
+
         lines.push("");
-        lines.push(...executed.text.split("\n").map(line => `    ${line}`));
+
+        for (let j = 0; j < textLines.length; j++) {
+            lines.push(`    ${textLines[j]}`);
+        }
 
         if (executed.parameters != null && executed.parameters.length > 0) {
             lines.push(`    parameters: ${JSON.stringify(executed.parameters)}`);
@@ -215,7 +226,7 @@ const formatStep = (step: ExecutionStep, lines: string[]) => {
 
     if (step.executedQueriesUnsupported != null) {
         lines.push("");
-        lines.push(...wrap(step.executedQueriesUnsupported, "    "));
+        wrap(lines, step.executedQueriesUnsupported, "    ");
     }
 
     lines.push("");
@@ -233,11 +244,11 @@ export const formatExplanation = (explanation: QueryExplanation): string => {
     const stepCount = `${executionSteps.length} ${executionSteps.length === 1 ? "step" : "steps"}`;
     const lines: string[] = [`${collection} · ${database} · ${stepCount}`, ""];
 
-    for (const step of executionSteps) {
-        formatStep(step, lines);
+    for (let i = 0; i < executionSteps.length; i++) {
+        formatStep(executionSteps[i], lines);
     }
 
-    lines.push(...wrap(summary.explanation, "  "));
+    wrap(lines, summary.explanation, "  ");
 
     return lines.join("\n");
 };

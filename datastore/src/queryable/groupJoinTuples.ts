@@ -7,11 +7,17 @@ export type JoinGroup = [UnknownRecord, UnknownRecord[]];
 export const groupJoinTuples = (tuples: JoinTuple[], keyOf: (outer: UnknownRecord) => IdType): JoinGroup[] => {
     const groups = new Map<IdType, JoinGroup>();
 
-    for (const [outer, inner] of tuples) {
+    for (let i = 0, length = tuples.length; i < length; i++) {
+        const tuple = tuples[i];
+        const outer = tuple[0];
+        const inner = tuple[1];
         const key = keyOf(outer);
-        const group: JoinGroup = groups.get(key) ?? [outer, []];
+        let group = groups.get(key);
 
-        groups.set(key, group);
+        if (group === undefined) {
+            group = [outer, []];
+            groups.set(key, group);
+        }
 
         if (inner != null) {
             group[1].push(inner);

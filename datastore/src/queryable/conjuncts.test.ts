@@ -30,6 +30,14 @@ describe("splitTopLevelConjuncts", () => {
         expect(splitTopLevelConjuncts("a === 1 && b === 2 && c === 3")).toEqual(["a === 1", "b === 2", "c === 3"]);
     });
 
+    it.each([
+        ["", []],
+        ["   ", []],
+        ["a === 1 && ", ["a === 1"]],
+    ])("drops the blank conjuncts of %j", (source, expected) => {
+        expect(splitTopLevelConjuncts(source)).toEqual(expected);
+    });
+
     it("returns the whole source when there is nothing to split", () => {
         expect(splitTopLevelConjuncts("a === 1")).toEqual(["a === 1"]);
     });

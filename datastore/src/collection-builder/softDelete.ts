@@ -53,9 +53,9 @@ const propertyNameFrom = <TEntity extends {}>(selector: GenericFunction<TEntity,
         throw new Error("Only arrow functions are allowed in .softDelete()");
     }
 
-    const [, ...path] = stringified.substring(arrowIndex + 2).trim().split(".");
+    const dotIndex = stringified.indexOf(".", arrowIndex);
 
-    return path.join(".");
+    return dotIndex === -1 ? "" : stringified.slice(dotIndex + 1);
 };
 
 /**

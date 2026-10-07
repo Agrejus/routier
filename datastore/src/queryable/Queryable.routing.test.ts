@@ -308,4 +308,16 @@ describe("Queryable routing contracts", () => {
         unsub();
         sender[Symbol.dispose]();
     });
+    it("names the fields of a map the grammar cannot read from its source text", async () => {
+        const plugin = new QueryRoutingProbePlugin();
+        const store = trackStore(new QueryableStore(plugin));
+        const label = (value: string) => `#${value}`;
+
+        await store.products.map(x => ({ title: label(x.name), cost: x.price })).toArrayAsync();
+
+        const [map] = lastQueryEvent(plugin).operation.options.get("map");
+        const fields = map.option.value.fields.map((field: { destinationName: string; sourceName: string }) => [field.destinationName, field.sourceName]);
+
+        expect(fields).toEqual([["title", "name"], ["cost", "price"]]);
+    });
 });

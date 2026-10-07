@@ -160,7 +160,7 @@ export const createRequestHandler = <TContext = void>(options: RequestHandlerOpt
 
     const byName = new Map<string, CompiledSchema<any>>();
 
-    for (const [, schema] of schemas) {
+    for (const schema of schemas.values()) {
         byName.set(schema.collectionName, schema as CompiledSchema<any>);
     }
 

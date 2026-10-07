@@ -187,7 +187,9 @@ export class View<TEntity extends {}, TStore = unknown> extends CollectionBase<T
                     // than a scan, and duplicates emitted by `derive` collapse to one row —
                     // which is what a keyed table can hold anyway.
                     const derived = new Map<string, InferType<TEntity>>();
-                    for (const item of enriched) {
+                    for (let i = 0; i < enriched.length; i++) {
+                        const item = enriched[i];
+
                         derived.set(this.dependencies.schema.hash(item, HashType.Ids), item);
                     }
 

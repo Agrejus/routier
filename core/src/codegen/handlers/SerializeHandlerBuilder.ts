@@ -9,14 +9,14 @@ import { SerializeArrayHandler } from "./serialize/SerializeArrayHandler";
 /// Purpose:
 export class SerializeHandlerBuilder {
 
-    build() {
+    build(options: { skipPreparedRoots?: boolean } = {}) {
         const handler = new SerializeSerializerHandler();
         handler
             .setNext(new SerializeComputedHandler())
             .setNext(new SerializeFunctionHandler())
             .setNext(new SerializeDateHandler())
             .setNext(new SerializeArrayHandler())
-            .setNext(new SerializeValueHandler())
+            .setNext(new SerializeValueHandler(options.skipPreparedRoots === true))
             .setNext(new SerializeObjectHandler());
 
         return handler;

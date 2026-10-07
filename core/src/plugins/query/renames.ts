@@ -96,8 +96,13 @@ export const reportRenamedProperties = (
     options: QueryOptionsCollection<any>,
     names: readonly PropertyReadingOption[] = PROPERTY_READING_OPTIONS
 ): void => {
-    for (const name of names) {
-        for (const item of options.get(name)) {
+    for (let i = 0; i < names.length; i++) {
+        const name = names[i];
+        const items = options.get(name);
+
+        for (let j = 0; j < items.length; j++) {
+            const item = items[j];
+
             if (readsRenamedProperty(name, item.option.value as PropertyReadingValue)) {
                 options.reportMissingCapability(item);
             }

@@ -6,7 +6,7 @@ import { CollectionPipelines, DataStoreOptions, ResolvedDataStoreOptions, resolv
 import { IDbPlugin, QueryOptionsCollection } from '@routier/core/plugins';
 import { CompiledSchema, SchemaId } from '@routier/core/schema';
 import { TrampolinePipeline } from '@routier/core/pipeline';
-import type { DbPluginBulkPersistEvent } from '@routier/core/plugins';
+import type { DbPluginBulkPersistEvent, EntityUpdateInfo } from '@routier/core/plugins';
 import { applyFromPersistResult, applyToChanges, hasTransforms, schemaCollectionView } from './transforms';
 import { CallbackPartialResult, CallbackResult, PartialResultType, PluginEventResult, Result } from '@routier/core/results';
 import { BulkPersistChanges, BulkPersistResult, SchemaCollection, ReadonlySchemaCollection } from '@routier/core/collections';
@@ -29,14 +29,27 @@ import type { StoreInspection } from './inspection/types';
  * so a plugin that serializes the update — the HTTP family does — emits nothing at all for it.
  */
 function stripPreviousValues(changes: BulkPersistChanges) {
-    for (const [, schemaChanges] of changes) {
-        for (const update of schemaChanges.updates) {
+    for (const schemaChanges of changes.values()) {
+        const updates = schemaChanges.updates;
 
-            if (update.previous != null) {
-                delete update.previous;
+        for (let i = 0, length = updates.length; i < length; i++) {
+            if (updates[i].previous != null) {
+                updates[i] = withoutPrevious(updates[i]);
             }
         }
     }
+}
+
+function withoutPrevious<T extends EntityUpdateInfo<any>>(update: T): T {
+    const copy: Record<string, unknown> = {};
+
+    for (const key in update) {
+        if (key !== "previous") {
+            copy[key] = update[key];
+        }
+    }
+
+    return copy as T;
 }
 
 /**
@@ -422,7 +435,7 @@ export class DataStore implements Disposable {
      */
     hasChanges(done: CallbackResult<boolean>) {
         try {
-            for (const [, collection] of this.collections) {
+            for (const collection of this.collections.values()) {
                 if (collection.hasChanges()) {
                     done({
                         ok: Result.SUCCESS,
@@ -511,7 +524,7 @@ export class DataStore implements Disposable {
         // should clear and detach everything in the change tracker?
         this.abortController.abort("Data Store disposed");
 
-        for (const [, collection] of this.collections) {
+        for (const collection of this.collections.values()) {
             collection.dispose();
         }
     }

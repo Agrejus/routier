@@ -41,7 +41,10 @@ const isOpaqueValue = (value: unknown) =>
 export function applyPatch<T extends Record<string, any>>(base: T, patch: Record<string, any>): T {
     const next: Record<string, any> = { ...base };
 
-    for (const key of Object.keys(patch)) {
+    const keys = Object.keys(patch);
+
+    for (let i = 0, length = keys.length; i < length; i++) {
+        const key = keys[i];
         const incoming = patch[key];
         const existing = next[key];
 
@@ -177,7 +180,10 @@ export class ImmutableUpdates<TEntity extends {}> {
 export function diff(base: Record<string, any>, next: Record<string, any>): Record<string, any> {
     const changed: Record<string, any> = {};
 
-    for (const key of Object.keys(next)) {
+    const keys = Object.keys(next);
+
+    for (let i = 0, length = keys.length; i < length; i++) {
+        const key = keys[i];
         const before = base[key];
         const after = next[key];
 

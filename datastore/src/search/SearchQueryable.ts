@@ -34,9 +34,9 @@ const propertyNameFrom = (selector: GenericFunction<any, unknown>): string => {
         throw new Error("Only arrow functions are allowed in .search()");
     }
 
-    const [, ...path] = stringified.substring(arrowIndex + 2).trim().split(".");
+    const dotIndex = stringified.indexOf(".", arrowIndex);
 
-    return path.join(".");
+    return dotIndex === -1 ? "" : stringified.slice(dotIndex + 1);
 };
 
 /**
@@ -71,8 +71,14 @@ export class SearchQueryable<TEntity extends {}, TShape = Scored<InferType<TEnti
             source.dependencies, source.registration, source.changeTrackingType, source.terms, source.fields
         );
 
-        next.filters.push(...source.filters);
-        next.sorts.push(...source.sorts);
+        for (let i = 0; i < source.filters.length; i++) {
+            next.filters.push(source.filters[i]);
+        }
+
+        for (let i = 0; i < source.sorts.length; i++) {
+            next.sorts.push(source.sorts[i]);
+        }
+
         next.mapper = source.mapper;
         next.skipCount = source.skipCount;
         next.takeCount = source.takeCount;
@@ -191,8 +197,11 @@ export class SearchQueryable<TEntity extends {}, TShape = Scored<InferType<TEnti
                 - (position.get(String(right[this.registration.sourceKeyColumn])) ?? 0));
         }
 
+        const sorts = this.sorts;
+
         return rows.sort((left, right) => {
-            for (const { selector, descending } of this.sorts) {
+            for (let i = 0; i < sorts.length; i++) {
+                const { selector, descending } = sorts[i];
                 const a = selector(left);
                 const b = selector(right);
 
@@ -229,10 +238,16 @@ export class SearchQueryable<TEntity extends {}, TShape = Scored<InferType<TEnti
         }
 
         const required = this.terms.length;
+        const hits: { sourceId: string | number; score: number; matched: Set<string> }[] = [];
 
-        return [...documents.values()]
-            // `"all"`: every term of the query is present in at least one searched field.
-            .filter(hit => this.match === "any" || hit.matched.size === required)
+        for (const hit of documents.values()) {
+
+            if (this.match === "any" || hit.matched.size === required) {
+                hits.push(hit);
+            }
+        }
+
+        return hits
             // Score descending, then source key ascending. A total order, so two runs over the
             // same corpus never disagree — numeric for number keys, code-unit for strings.
             .sort((left, right) => {
@@ -312,7 +327,11 @@ export class SearchQueryable<TEntity extends {}, TShape = Scored<InferType<TEnti
 
         let queryable = new QueryableAsync<TEntity, InferType<TEntity>>(this.dependencies, request);
 
-        for (const filter of this.filters) {
+        const filters = this.filters;
+
+        for (let i = 0; i < filters.length; i++) {
+            const filter = filters[i];
+
             queryable = filter.params == null
                 ? queryable.where(filter.selector)
                 : queryable.where(filter.selector, filter.params);

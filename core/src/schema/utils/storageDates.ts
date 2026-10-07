@@ -28,7 +28,8 @@ type DatePath = {
 };
 
 const collectDatePaths = (properties: readonly PropertyInfo<any>[], paths: DatePath[]) => {
-    for (const property of properties) {
+    for (let i = 0; i < properties.length; i++) {
+        const property = properties[i];
 
         // The stored value belongs to whoever wrote it: a custom serializer, deserializer or
         // transform reads it back, and would be handed a Date it did not expect. Unmapped

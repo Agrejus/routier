@@ -34,8 +34,47 @@ export function createChangeTracker(shape: TrackedShape) {
         return Array.isArray(value) || prototype === null || Object.getPrototypeOf(prototype) === null;
     };
 
-    const track = <TEntity extends {}>(entity: TEntity, path?: string, parent?: TEntity): TEntity => {
-        const root: { [key: string]: any } = parent ?? entity;
+    const isPaused = (root: { [key: string]: any }) => root[TRACKING_KEY] != null && root[TRACKING_KEY][PAUSED_ENTITY_KEY] === true;
+
+    const trackingOf = (root: { [key: string]: any }) => {
+        if (root[TRACKING_KEY] == null) {
+            Object.defineProperty(root, TRACKING_KEY, {
+                value: Object.defineProperty({
+                    [CHANGES_ENTITY_KEY]: {},
+                    [DIRTY_ENTITY_MARKER]: false,
+                    [ORIGINAL_ENTITY_KEY]: {},
+                    [PAUSED_ENTITY_KEY]: false
+                }, "raw", { value: root, enumerable: false }),
+                configurable: true,
+                writable: true,
+                enumerable: false
+            });
+        }
+
+        return root[TRACKING_KEY];
+    };
+
+    const record = (root: { [key: string]: any }, resolvedPath: string, originalValue: unknown, value: unknown) => {
+        const tracking = trackingOf(root);
+
+        if (Object.hasOwn(tracking[CHANGES_ENTITY_KEY], resolvedPath) === false) {
+            tracking[CHANGES_ENTITY_KEY][resolvedPath] = value;
+            tracking[ORIGINAL_ENTITY_KEY][resolvedPath] = originalValue;
+            tracking[DIRTY_ENTITY_MARKER] = true;
+            return;
+        }
+
+        if (tracking[ORIGINAL_ENTITY_KEY][resolvedPath] === value) {
+            delete tracking[ORIGINAL_ENTITY_KEY][resolvedPath];
+            delete tracking[CHANGES_ENTITY_KEY][resolvedPath];
+            tracking[DIRTY_ENTITY_MARKER] = Object.keys(tracking[ORIGINAL_ENTITY_KEY]).length > 0;
+            return;
+        }
+
+        tracking[CHANGES_ENTITY_KEY][resolvedPath] = value;
+    };
+
+    const createHandler = <TEntity extends {}>(path?: string, parent?: TEntity): ProxyHandler<TEntity> => {
         const pathOf = (key: string) => (path == null ? key : `${path}.${key}`);
 
         const holdsSchemaData = (target: object, key: string) => {
@@ -47,44 +86,8 @@ export function createChangeTracker(shape: TrackedShape) {
 
             return shape.objects.has(declared) || shape.arrays.has(declared) || [...shape.arraysOfNested].some(array => declared.startsWith(`${array}.`));
         };
-        const isPaused = () => root[TRACKING_KEY] != null && root[TRACKING_KEY][PAUSED_ENTITY_KEY] === true;
 
-        const trackingOf = () => {
-            if (root[TRACKING_KEY] == null) {
-                Object.defineProperty(root, TRACKING_KEY, {
-                    value: {
-                        [CHANGES_ENTITY_KEY]: {},
-                        [DIRTY_ENTITY_MARKER]: false,
-                        [ORIGINAL_ENTITY_KEY]: {},
-                        [PAUSED_ENTITY_KEY]: false
-                    },
-                    configurable: true,
-                    writable: true,
-                    enumerable: false
-                });
-            }
-
-            return root[TRACKING_KEY];
-        };
-
-        const record = (key: string, originalValue: unknown, value: unknown) => {
-            const tracking = trackingOf();
-            const resolvedPath = pathOf(key);
-
-            if (Object.hasOwn(tracking[CHANGES_ENTITY_KEY], resolvedPath) === false) {
-                tracking[CHANGES_ENTITY_KEY][resolvedPath] = value;
-                tracking[ORIGINAL_ENTITY_KEY][resolvedPath] = originalValue;
-            } else if (tracking[ORIGINAL_ENTITY_KEY][resolvedPath] === value) {
-                delete tracking[ORIGINAL_ENTITY_KEY][resolvedPath];
-                delete tracking[CHANGES_ENTITY_KEY][resolvedPath];
-            } else {
-                tracking[CHANGES_ENTITY_KEY][resolvedPath] = value;
-            }
-
-            tracking[DIRTY_ENTITY_MARKER] = Object.keys(tracking[ORIGINAL_ENTITY_KEY]).length > 0;
-        };
-
-        const proxyHandler: ProxyHandler<TEntity> = {
+        return {
             set(target, property, value) {
                 const indexable: { [key: string]: any } = target;
                 const originalValue = indexable[property as string];
@@ -93,33 +96,36 @@ export function createChangeTracker(shape: TrackedShape) {
                     return true;
                 }
 
+                const root: { [key: string]: any } = parent ?? target;
                 const key = String(property);
 
-                trackingOf();
+                trackingOf(root);
 
                 if (key === TRACKING_KEY) {
                     return true;
                 }
 
-                if (isPaused() === false) {
-                    record(key, originalValue, value);
+                if (isPaused(root) === false) {
+                    record(root, pathOf(key), originalValue, value);
                 }
 
                 return Reflect.set(target, property, value);
             },
             deleteProperty(target, property) {
-                if (typeof property === "string" && Object.hasOwn(target, property) && isPaused() === false) {
-                    record(property, (target as { [key: string]: unknown })[property], undefined);
+                const root: { [key: string]: any } = parent ?? target;
+
+                if (typeof property === "string" && Object.hasOwn(target, property) && isPaused(root) === false) {
+                    record(root, pathOf(property), (target as { [key: string]: unknown })[property], undefined);
                 }
 
                 return Reflect.deleteProperty(target, property);
             },
-            get(target, property, receiver) {
+            get(target, property) {
                 if (property === PROXY_MARKER) {
                     return true;
                 }
 
-                const value = Reflect.get(target, property, receiver);
+                const value = target[property as keyof TEntity];
 
                 if (typeof property !== "string" || isTrackable(value) === false || value[PROXY_MARKER] === true || holdsSchemaData(target, property) === false) {
                     return value;
@@ -131,14 +137,23 @@ export function createChangeTracker(shape: TrackedShape) {
                     return known;
                 }
 
+                const root: { [key: string]: any } = parent ?? target;
                 const tracked = track(value, pathOf(property), root);
                 proxies.set(value, tracked);
 
                 return tracked;
             }
         };
+    };
 
-        return new Proxy(entity, proxyHandler) as TEntity;
+    const rootHandler = createHandler();
+
+    const track = <TEntity extends {}>(entity: TEntity, path?: string, parent?: TEntity): TEntity => {
+        const handler = parent == null
+            ? rootHandler as ProxyHandler<TEntity>
+            : createHandler(path, parent);
+
+        return new Proxy(entity, handler);
     };
 
     return track;

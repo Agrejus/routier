@@ -117,11 +117,16 @@ export class ConcurrencyDbPlugin implements IDbPlugin {
 
             const versions = this.versionsFor(schema.collectionName);
 
-            for (const add of changes.adds) {
-                (add as Record<string, unknown>)[ConcurrencyDbPlugin.VERSION_COLUMN] = 1;
+            const adds = changes.adds;
+
+            for (let i = 0; i < adds.length; i++) {
+                (adds[i] as Record<string, unknown>)[ConcurrencyDbPlugin.VERSION_COLUMN] = 1;
             }
 
-            for (const update of changes.updates) {
+            const updates = changes.updates;
+
+            for (let i = 0; i < updates.length; i++) {
+                const update = updates[i];
                 const entity = update.entity as Record<string, unknown>;
                 const id = schema.getId(update.entity as InferType<{}>);
                 const expected = versions.get(id);
@@ -152,7 +157,8 @@ export class ConcurrencyDbPlugin implements IDbPlugin {
 
         this.plugin.bulkPersist(augmentedEvent, result => {
             if (result.ok === "success") {
-                for (const schemaId of schemaIds) {
+                for (let i = 0; i < schemaIds.length; i++) {
+                    const schemaId = schemaIds[i];
                     const schema = event.schemas.get(schemaId);
                     const buckets = result.data.get(schemaId);
 
@@ -163,8 +169,10 @@ export class ConcurrencyDbPlugin implements IDbPlugin {
                     this.captureAndStrip(schema, buckets.adds as unknown[], { strip: false });
                     this.captureAndStrip(schema, buckets.updates as unknown[], { strip: false });
 
-                    for (const removed of buckets.removes as unknown[]) {
-                        this.forget(schema, removed);
+                    const removes = buckets.removes as unknown[];
+
+                    for (let j = 0; j < removes.length; j++) {
+                        this.forget(schema, removes[j]);
                     }
                 }
             } else if (OptimisticConcurrencyError.is(result.error)) {
@@ -174,8 +182,10 @@ export class ConcurrencyDbPlugin implements IDbPlugin {
                 const versions = this.observedVersions.get(conflicted.collectionName);
 
                 if (versions != null) {
-                    for (const id of conflicted.conflicts) {
-                        versions.delete(id);
+                    const conflicts = conflicted.conflicts;
+
+                    for (let i = 0; i < conflicts.length; i++) {
+                        versions.delete(conflicts[i]);
                     }
                 }
             }
@@ -218,7 +228,9 @@ export class ConcurrencyDbPlugin implements IDbPlugin {
     private captureAndStrip(schema: CompiledSchema<any>, rows: unknown[], options: { strip: boolean }) {
         const versions = this.versionsFor(schema.collectionName);
 
-        for (const row of rows) {
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+
             if (row == null || typeof row !== "object") {
                 continue;
             }
@@ -323,7 +335,8 @@ export class ConcurrencyDbPlugin implements IDbPlugin {
 }
 
 function guardByEtag(column: string, updates: EntityUpdateInfo<Record<string, unknown>>[]): void {
-    for (const update of updates) {
+    for (let i = 0; i < updates.length; i++) {
+        const update = updates[i];
         const expected = update.entity[column];
 
         if (typeof expected === "number" || typeof expected === "string") {

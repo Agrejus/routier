@@ -140,6 +140,18 @@ describe("PropertyInfo", () => {
             expect(baseProperty.hasIdentityChildren).toBe(false);
             expect(parentProperty.hasIdentityChildren).toBe(true);
         });
+
+        it.each([
+            ["two levels down", s.object({ middle: s.object({ id: s.string().identity() }) }), true],
+            ["three levels down", s.object({ a: s.object({ b: s.object({ id: s.number().identity() }) }) }), true],
+            ["after a sibling with children of its own", s.object({ first: s.object({ x: s.string() }), second: s.object({ id: s.string().identity() }) }), true],
+            ["nowhere in a nested tree", s.object({ middle: s.object({ inner: s.object({ value: s.string() }) }) }), false],
+        ])("hasIdentityChildren finds an identity %s", (_label, holder, expected) => {
+            const compiled = s.define("identity_children", { id: s.string().key(), holder }).compile();
+            const property = compiled.properties.find(p => p.id === "holder");
+
+            expect(property?.hasIdentityChildren).toBe(expected);
+        });
     });
 
     describe("getValue and setValue", () => {

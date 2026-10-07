@@ -55,7 +55,13 @@ const applyCall = (call: Call, value: unknown, args: unknown[]): unknown | typeo
     }
 
     if (call === "concat") {
-        return [value, ...args].map(String).join("");
+        let text = String(value);
+
+        for (let i = 0; i < args.length; i++) {
+            text += String(args[i]);
+        }
+
+        return text;
     }
 
     // A call applied to an absent value has no answer, and inventing one ("" for a missing string)
@@ -164,8 +170,10 @@ export const operandValue = (expression: Expression | undefined, row: UnknownRec
 
         const args: unknown[] = [];
 
-        for (const argument of expression.arguments) {
-            const resolved = operandValue(argument, row);
+        const callArguments = expression.arguments;
+
+        for (let i = 0; i < callArguments.length; i++) {
+            const resolved = operandValue(callArguments[i], row);
 
             if (resolved === UNRESOLVED) {
                 return UNRESOLVED;

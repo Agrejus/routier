@@ -212,7 +212,9 @@ const summarize = (steps: ExecutionStep[]): QueryExplanationSummary => {
     let database = 0;
     let memory = 0;
 
-    for (const step of steps) {
+    for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+
         if (isDatabaseStep(step)) {
             database += step.options.length;
             continue;

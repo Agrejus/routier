@@ -1,4 +1,4 @@
-import { ChangeTrackingType, CompiledSchema, HashType, IdType, InferCreateType, InferType, PropertyInfo } from "@routier/core/schema";
+import { ChangeTrackingType, CompiledSchema, HashType, IdType, InferCreateType, InferType, PropertyInfo, SchemaTypes } from "@routier/core/schema";
 import { SoftDeleteConfiguration } from "../collection-builder/softDelete";
 import { ChangeTrackedEntity } from "../types";
 import { KnownKeyAdditions } from "./additions/KnownKeyAdditions";
@@ -91,6 +91,12 @@ type UnsavedRow<TEntity extends {}> = {
     state: "pending" | "saved" | "discarded";
 };
 
+const PLAIN_PRIMITIVE_TYPES = new Set<SchemaTypes>([SchemaTypes.String, SchemaTypes.Number, SchemaTypes.Boolean]);
+
+function isPlainPrimitive(property: PropertyInfo<any>) {
+    return PLAIN_PRIMITIVE_TYPES.has(property.type) && property.defaultValue == null && property.valueSerializer == null;
+}
+
 export class ChangeTracker<TEntity extends {}> {
 
     /**
@@ -164,6 +170,7 @@ export class ChangeTracker<TEntity extends {}> {
     private readonly rootProperties: PropertyInfo<TEntity>[];
     private readonly rootsByName: Map<string, PropertyInfo<TEntity>>;
     private readonly rootsByResolvedName: Map<string, PropertyInfo<TEntity>>;
+    private readonly mergeIsCompareGuarded: boolean;
 
     constructor(
         schema: CompiledSchema<TEntity>,
@@ -173,6 +180,7 @@ export class ChangeTracker<TEntity extends {}> {
         this.rootProperties = schema.properties.filter(p => p.parent == null);
         this.rootsByName = new Map(this.rootProperties.map(p => [p.name, p]));
         this.rootsByResolvedName = new Map(this.rootProperties.map(p => [p.getResolvedName(), p]));
+        this.mergeIsCompareGuarded = schema.properties.every(isPlainPrimitive);
 
         if (schema.hasIdentityKeys === true) {
             this.additions = new UnknownKeyAdditions<TEntity>(this.schema);
@@ -242,8 +250,17 @@ export class ChangeTracker<TEntity extends {}> {
      * existed, so the slow path is never wrong, only slow.
      */
     private static trackingOf<T extends {}>(attachment: Attachment<T>) {
-        return attachment.tracking
-            ?? (attachment.doc as unknown as ChangeTrackedEntity<{}>).__tracking__;
+        if (attachment.tracking != null) {
+            return attachment.tracking;
+        }
+
+        const tracking = (attachment.doc as unknown as ChangeTrackedEntity<{}>).__tracking__;
+
+        if (tracking != null) {
+            attachment.tracking = tracking;
+        }
+
+        return tracking;
     }
 
     protected hasAttachmentsChanges() {
@@ -277,15 +294,15 @@ export class ChangeTracker<TEntity extends {}> {
     }
 
     mergeChanges(changes: SchemaPersistResult<TEntity>) {
-        const { updates, adds, removes } = changes;
+        const { updates, adds } = changes;
         const result: {
             updates: InferType<TEntity>[],
             adds: InferType<TEntity>[],
             removals: InferType<TEntity>[],
         } = {
-            updates: Array.from({ length: updates.length }),
-            adds: Array.from({ length: adds.length }),
-            removals: Array.from({ length: removes.length }),
+            updates: new Array(updates.length),
+            adds: new Array(adds.length),
+            removals: this.removals,
         }
 
         for (let i = 0, length = updates.length; i < length; i++) {
@@ -311,8 +328,11 @@ export class ChangeTracker<TEntity extends {}> {
             }
 
             // Let's only map Ids and identities
-            this.schema.merge(foundDoc, deserializedUpdate); // merge needs to map children appropriately
-            result.updates[i] = this.schema.clone(foundDoc);
+            const tracking = ChangeTracker.trackingOf(found);
+            const target = (tracking?.raw ?? foundDoc) as InferType<TEntity>;
+
+            this.schema.merge(target, deserializedUpdate); // merge needs to map children appropriately
+            result.updates[i] = this.schema.clone(target);
 
             // The persisted state is the new baseline for diff tracking.
             this.refreshSnapshot(found);
@@ -324,7 +344,7 @@ export class ChangeTracker<TEntity extends {}> {
             // `previewChanges` never reaches zero pending, and — worst — an entity that
             // was updated and then removed gets its stale update replayed after the
             // removal, reinserting the row.
-            markPersisted(foundDoc);
+            markPersisted(target);
             found.changeType = "notModified";
         }
 
@@ -371,14 +391,11 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
                 slot.state = "saved";
             }
         }
-        // nothing to merge here, use the attached removals
-        result.removals = this.removals;
-
         return result;
     }
 
     prepareRemovals(): InferType<TEntity>[] {
-        const entities = Array.from<InferType<TEntity>>({ length: this.removals.length });
+        const entities: InferType<TEntity>[] = new Array(this.removals.length);
         for (let i = 0, length = this.removals.length; i < length; i++) {
             entities[i] = this.schema.prepare(this.removals[i]);
         }
@@ -427,7 +444,8 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
                 continue;
             }
 
-            const serializedEntity = this.schema.preprocess(canonicalAttachment.doc as InferCreateType<TEntity>);
+            const rawDoc = (tracking?.raw ?? canonicalAttachment.doc) as InferType<TEntity>;
+            const serializedEntity = this.schema.preprocess(rawDoc as InferCreateType<TEntity>);
             // A hash comparison says THAT the entity changed, not WHICH properties did, so
             // a diff-tracked change ships an empty delta — the convention every plugin
             // already implements as "no tracked change list: write the whole entity"
@@ -436,11 +454,20 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
                 ? ({} as InferType<TEntity>)
                 : this.serializeDelta(serializedEntity, tracking.changes);
 
+            const direct = snapshotDirty || tracking == null
+                ? undefined
+                : this.previousFromOriginals(tracking.original);
+
+            if (direct !== undefined) {
+                changes.push({ entity: serializedEntity, delta, changeType, previous: direct });
+                continue;
+            }
+
             const restored = snapshotDirty
                 ? undefined
                 // Proxy mode: originals are keyed by the same dotted paths as the changes, so
                 // restoring them over a clone rebuilds the entity as it was.
-                : this.restoreOriginals(canonicalAttachment.doc, tracking?.original);
+                : this.restoreOriginals(rawDoc, tracking?.original);
 
             changes.push({
                 entity: serializedEntity,
@@ -513,6 +540,27 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
      * Returns undefined when there is nothing to restore, so the caller reports no previous
      * values rather than the current ones dressed up as old.
      */
+    private previousFromOriginals(originals: Record<string, any>) {
+        if (this.mergeIsCompareGuarded === false) {
+            return undefined;
+        }
+
+        let previous: Record<string, unknown> | undefined;
+
+        for (const key in originals) {
+            const property = this.rootsByName.get(key);
+
+            if (property == null || property.isKey === true || property.isIdentity === true) {
+                return undefined;
+            }
+
+            previous ??= {};
+            previous[property.getResolvedName()] = originals[key];
+        }
+
+        return previous as InferType<TEntity> | undefined;
+    }
+
     private restoreOriginals(doc: InferType<TEntity>, originals: Record<string, any> | undefined) {
 
         if (originals == null) {
@@ -527,8 +575,8 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
 
         const restored = this.schema.clone(doc) as Record<string, any>;
 
-        for (const path of paths) {
-            // Dotted, and an array index is just a segment: "nested.inner.value", "values.2".
+        for (let p = 0, pathCount = paths.length; p < pathCount; p++) {
+            const path = paths[p];
             const segments = path.split(".");
             let cursor: Record<string, any> | undefined = restored;
 
@@ -569,9 +617,10 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
 
         const previous: Record<string, unknown> = {};
 
-        for (const property of this.rootProperties) {
+        const rootProperties = this.rootProperties;
 
-            const column = property.getResolvedName();
+        for (let i = 0, length = rootProperties.length; i < length; i++) {
+            const column = rootProperties[i].getResolvedName();
             previous[column] = (serialized as Record<string, unknown>)[column];
         }
 
@@ -581,10 +630,12 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     private serializeDelta(serializedEntity: Record<string, unknown>, patch: Record<string, any>) {
         const delta: Record<string, unknown> = {};
 
-        for (const key of Object.keys(patch)) {
-            // Proxy-path change keys are dotted paths ("nested.inner.value", "values.2");
-            // only the root segment names a storage column
-            const rootKey = key.split(".")[0];
+        const keys = Object.keys(patch);
+
+        for (let i = 0, length = keys.length; i < length; i++) {
+            const key = keys[i];
+            const dot = key.indexOf(".");
+            const rootKey = dot === -1 ? key : key.slice(0, dot);
             const property = this.rootsByName.get(rootKey) ?? this.rootsByResolvedName.get(rootKey);
 
             if (property == null) {
@@ -686,6 +737,10 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
         }
     }
 
+    isAttachedId(id: IdType) {
+        return this.canonicalAttachments.has(id);
+    }
+
     isAttached(entity: InferType<TEntity>) {
         const key = this.schema.getId(entity);
         return this.canonicalAttachments.has(key);
@@ -715,7 +770,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     }
 
     findAttached(selector: GenericFunction<InferType<TEntity>, boolean>) {
-        for (const [, canonicalAttachment] of this.canonicalAttachments) {
+        for (const canonicalAttachment of this.canonicalAttachments.values()) {
             const document = canonicalAttachment.doc;
             if (selector(document)) {
                 return document;
@@ -727,7 +782,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
 
     filterAttached(selector: GenericFunction<InferType<TEntity>, boolean>) {
         const result: InferType<TEntity>[] = [];
-        for (const [, canonicalAttachment] of this.canonicalAttachments) {
+        for (const canonicalAttachment of this.canonicalAttachments.values()) {
             const document = canonicalAttachment.doc;
             if (selector(document) === false) {
                 continue;
@@ -785,7 +840,12 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
                     return existing.doc;
                 }
 
-                this.schema.merge(existing.doc, entity);
+                const unchanged = this.mergeIsCompareGuarded
+                    && this.schema.compare((existing.tracking?.raw ?? existing.doc) as InferType<TEntity>, entity);
+
+                if (unchanged === false) {
+                    this.schema.merge(existing.doc, entity);
+                }
 
                 const wasClean = ChangeTracker.trackingOf(existing)?.isDirty !== true;
 
@@ -821,7 +881,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     }
 
     resolveMany(entities: InferType<TEntity>[], tag: unknown | null, options?: { merge?: boolean, adopt?: boolean }) {
-        const result = Array.from<InferType<TEntity>>({ length: entities.length });
+        const result: InferType<TEntity>[] = new Array(entities.length);
 
         for (let i = 0, length = entities.length; i < length; i++) {
             result[i] = this.resolve(entities[i], tag, options);
@@ -853,7 +913,9 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     private stampAsDeleted(entities: InferType<TEntity>[]) {
         const { propertyName, stamp } = this.softDelete!;
 
-        for (const entity of entities) {
+        for (let i = 0, length = entities.length; i < length; i++) {
+            const entity = entities[i];
+
             if (this.changeTrackingType === "immutable") {
                 // A patch object rather than an updater function: an updater has to return a
                 // whole entity and its delta is then derived by diffing, which is work and
@@ -879,12 +941,15 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
                 return;
             }
 
-            this.removals.push(...entities);
+            const removals = this.removals;
+            const length = entities.length;
 
-            // A pending patch for a row being removed is moot, and replaying it after the
-            // delete would reinsert the row — the resurrection half of defect #11.
-            for (const entity of entities) {
-                this.immutable.forget(this.schema.getId(entity));
+            for (let i = 0; i < length; i++) {
+                removals.push(entities[i]);
+            }
+
+            for (let i = 0; i < length; i++) {
+                this.immutable.forget(this.schema.getId(entities[i]));
             }
 
             if (tag != null) {
@@ -926,7 +991,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     ) {
         try {
             const length = entities.length;
-            const result: InferType<TEntity>[] = Array.from({ length });
+            const result: InferType<TEntity>[] = new Array(length);
             const tagCollection = tag != null ? this.resolveTagCollection() : null;
 
             for (let i = 0; i < length; i++) {
@@ -954,7 +1019,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     }
 
     postprocess(entities: InferType<TEntity>[], changeTrackingType: ChangeTrackingType) {
-        const result = Array.from({ length: entities.length });
+        const result = new Array(entities.length);
 
         for (let i = 0, length = entities.length; i < length; i++) {
             result[i] = this.schema.postprocess(entities[i], changeTrackingType);
@@ -964,7 +1029,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
     }
 
     enrich(entities: InferType<TEntity>[], changeTrackingType: ChangeTrackingType) {
-        const result = Array.from({ length: entities.length });
+        const result = new Array(entities.length);
 
         for (let i = 0, length = entities.length; i < length; i++) {
             result[i] = this.schema.enrich(entities[i], changeTrackingType);
@@ -980,13 +1045,11 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
             const entity = entities[i];
             const id = this.schema.getId(entity);
 
-            if (this.canonicalAttachments.has(id) == false) {
-                continue;
-            }
-
             const found = this.canonicalAttachments.get(id);
 
-            assertIsNotNull(found, `Could not find entity to detach for Id. Id: ${id}`);
+            if (found === undefined) {
+                continue;
+            }
 
             this.canonicalAttachments.delete(id);
             result.push(found.doc);
@@ -1008,7 +1071,7 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
         // than on every write, means one pass per save and no hook into the proxy.
         this.additions.reindex();
 
-        const result: InferCreateType<TEntity>[] = Array.from({ length: size });
+        const result: InferCreateType<TEntity>[] = new Array(size);
         let index = 0;
 
         // prepare the items for saving,
@@ -1031,7 +1094,10 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
         // failed or the changes were dropped. Its slot has to stop accepting patches, or the
         // next `update()` through a reference to it would re-enter it into `additions`.
         // Slots the merge already flipped to "saved" are left alone: those rows exist.
-        for (const slot of this.unsavedSlots) {
+        const unsavedSlots = this.unsavedSlots;
+
+        for (let i = 0, length = unsavedSlots.length; i < length; i++) {
+            const slot = unsavedSlots[i];
             if (slot.state === "pending") {
                 slot.state = "discarded";
             }

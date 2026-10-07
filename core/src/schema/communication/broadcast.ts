@@ -233,26 +233,26 @@ export class SchemaSubscription<T extends {}> implements ISchemaSubscription<T> 
 
         // cannot send raw data, needs to be preprocessed
         const preprocessedChanges: SubscriptionChanges<T> = {
-            adds: Array.from({ length: changes.adds.length }),
-            removals: Array.from({ length: changes.removals.length }),
-            unknown: Array.from({ length: changes.unknown.length }),
-            updates: Array.from({ length: changes.updates.length }),
+            adds: [],
+            removals: [],
+            unknown: [],
+            updates: [],
         };
 
         for (let i = 0, length = changes.adds.length; i < length; i++) {
-            preprocessedChanges.adds[i] = this.schema.preprocess(changes.adds[i]);
+            preprocessedChanges.adds.push(this.schema.preprocess(changes.adds[i]));
         }
 
         for (let i = 0, length = changes.removals.length; i < length; i++) {
-            preprocessedChanges.removals[i] = this.schema.preprocess(changes.removals[i]);
+            preprocessedChanges.removals.push(this.schema.preprocess(changes.removals[i]));
         }
 
         for (let i = 0, length = changes.unknown.length; i < length; i++) {
-            preprocessedChanges.unknown[i] = this.schema.preprocess(changes.unknown[i]);
+            preprocessedChanges.unknown.push(this.schema.preprocess(changes.unknown[i]));
         }
 
         for (let i = 0, length = changes.updates.length; i < length; i++) {
-            preprocessedChanges.updates[i] = this.schema.preprocess(changes.updates[i]);
+            preprocessedChanges.updates.push(this.schema.preprocess(changes.updates[i]));
         }
 
         // Send message to all listeners.
@@ -283,26 +283,26 @@ export class SchemaSubscription<T extends {}> implements ISchemaSubscription<T> 
             // subscribers only read them (or reseed them to re-run a query), never persist
             // mutations through them.
             const postProcessedChanges: SubscriptionChanges<T> = {
-                adds: Array.from({ length: data.adds.length }),
-                removals: Array.from({ length: data.removals.length }),
-                unknown: Array.from({ length: data.unknown.length }),
-                updates: Array.from({ length: data.updates.length }),
+                adds: [],
+                removals: [],
+                unknown: [],
+                updates: [],
             };
 
             for (let i = 0, length = data.adds.length; i < length; i++) {
-                postProcessedChanges.adds[i] = this.schema.postprocess(data.adds[i], "diff");
+                postProcessedChanges.adds.push(this.schema.postprocess(data.adds[i], "diff"));
             }
 
             for (let i = 0, length = data.removals.length; i < length; i++) {
-                postProcessedChanges.removals[i] = this.schema.postprocess(data.removals[i], "diff");
+                postProcessedChanges.removals.push(this.schema.postprocess(data.removals[i], "diff"));
             }
 
             for (let i = 0, length = data.unknown.length; i < length; i++) {
-                postProcessedChanges.unknown[i] = this.schema.postprocess(data.unknown[i], "diff");
+                postProcessedChanges.unknown.push(this.schema.postprocess(data.unknown[i], "diff"));
             }
 
             for (let i = 0, length = data.updates.length; i < length; i++) {
-                postProcessedChanges.updates[i] = this.schema.postprocess(data.updates[i], "diff");
+                postProcessedChanges.updates.push(this.schema.postprocess(data.updates[i], "diff"));
             }
 
             callback(postProcessedChanges);

@@ -202,7 +202,11 @@ export const readSourceId = (registration: FullTextSearchRegistration, entity: U
 export const buildRows = (registration: FullTextSearchRegistration, entity: UnknownRecord, sourceId: string | number) => {
     const rows = new Map<string, IndexRow>();
 
-    for (const field of registration.fields) {
+    const fields = registration.fields;
+
+    for (let i = 0; i < fields.length; i++) {
+        const field = fields[i];
+
         for (const [term, frequency] of countTerms(entity[field.column], registration.options)) {
             const key = `${term}|${field.name}|${sourceId}`;
 
@@ -265,6 +269,12 @@ const diffRows = (
         if (after.has(key) === false) {
             emitted.removes.push(registration.indexSchema.preprocess(row as never));
         }
+    }
+};
+
+const appendAll = <T>(target: T[], items: readonly T[]) => {
+    for (let i = 0; i < items.length; i++) {
+        target.push(items[i]);
     }
 };
 
@@ -346,7 +356,10 @@ export class FullTextSearchRegistry {
 
             const indexedAdds = new Set<string>();
 
-            for (const add of source.adds) {
+            const adds = source.adds;
+
+            for (let i = 0; i < adds.length; i++) {
+                const add = adds[i];
                 const sourceId = readSourceId(registration, add as UnknownRecord);
 
                 if (sourceId == null) {
@@ -363,7 +376,10 @@ export class FullTextSearchRegistry {
 
             this.indexedAdds.set(registration.sourceSchemaId, indexedAdds);
 
-            for (const update of source.updates) {
+            const updates = source.updates;
+
+            for (let i = 0; i < updates.length; i++) {
+                const update = updates[i];
                 const entity = update.entity as UnknownRecord;
                 const sourceId = readSourceId(registration, entity);
 
@@ -374,7 +390,10 @@ export class FullTextSearchRegistry {
                 diffRows(registration, update.previous as UnknownRecord, entity, sourceId, emitted);
             }
 
-            for (const remove of source.removes) {
+            const removes = source.removes;
+
+            for (let i = 0; i < removes.length; i++) {
+                const remove = removes[i];
                 const sourceId = readSourceId(registration, remove as UnknownRecord);
 
                 if (sourceId == null) {
@@ -396,9 +415,9 @@ export class FullTextSearchRegistry {
             const target = changes.resolve(registration.indexSchema.id);
 
             // Appended to the END, which is what lets them be identified again in `detach`.
-            target.adds.push(...emitted.adds as never[]);
-            target.updates.push(...emitted.updates as never[]);
-            target.removes.push(...emitted.removes as never[]);
+            appendAll(target.adds, emitted.adds);
+            appendAll(target.updates, emitted.updates);
+            appendAll(target.removes, emitted.removes);
 
             this.appended.set(registration.indexSchema.id, {
                 adds: emitted.adds.length,
@@ -429,7 +448,10 @@ export class FullTextSearchRegistry {
             const target = deferred.resolve(registration.indexSchema.id);
             const already = this.indexedAdds.get(registration.sourceSchemaId);
 
-            for (const add of persisted.adds) {
+            const adds = persisted.adds;
+
+            for (let i = 0; i < adds.length; i++) {
+                const add = adds[i];
                 const sourceId = readSourceId(registration, add as UnknownRecord);
 
                 if (sourceId == null || already?.has(String(sourceId)) === true) {

@@ -24,6 +24,9 @@ const readsAProperty = (expression: Expression): boolean => {
     return childrenOf(expression).some(readsAProperty);
 };
 
+const isObjectLiteral = (operand: Expression): boolean =>
+    isValueExpression(operand) && !isFrozenPrimitive(operand.value);
+
 /** A `conditional` holds a condition where every other call holds a value. */
 const isConstant = (call: CallExpression): boolean => {
     if (!FOLDABLE.has(call.call) || !call.arguments.every(isValueExpression)) {
@@ -31,8 +34,7 @@ const isConstant = (call: CallExpression): boolean => {
     }
 
     if (COERCES_TO_TEXT.has(call.call)
-        && [call.expression, ...call.arguments].some(operand =>
-            isValueExpression(operand) && !isFrozenPrimitive(operand.value))) {
+        && (isObjectLiteral(call.expression) || call.arguments.some(isObjectLiteral))) {
         return false;
     }
 

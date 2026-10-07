@@ -18,7 +18,8 @@ export class RecordIdsBuilder {
         const recordIds: UnknownRecord = {};
         const idProperties = schema.idProperties;
 
-        for (const idProperty of idProperties) {
+        for (let i = 0; i < idProperties.length; i++) {
+            const idProperty = idProperties[i];
             const keyValue = entity[idProperty.name];
             if (keyValue !== undefined && keyValue !== null) {
                 recordIds[idProperty.name] = keyValue;

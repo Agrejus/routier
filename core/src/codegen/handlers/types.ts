@@ -172,8 +172,8 @@ export abstract class PropertyInfoHandler implements IHandler {
             p = p.parent;
         }
 
-        for (const item of chain) {
-            result.push(`[${item.getAssignmentPath({ parent: "enriched" })}]`);
+        for (let i = 0; i < chain.length; i++) {
+            result.push(`[${chain[i].getAssignmentPath({ parent: "enriched" })}]`);
         }
 
         return result;

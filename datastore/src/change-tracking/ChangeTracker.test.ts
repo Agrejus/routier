@@ -381,6 +381,13 @@ describe("ChangeTracker detach", () => {
         expect(changeTracker.resolve(second, null)).toBe(second);
     });
 
+    it("returns nothing for an entity that is not attached", () => {
+        const changeTracker = tracker();
+        changeTracker.resolve(entity("a"), null);
+
+        expect(changeTracker.detach([entity("missing")])).toEqual([]);
+    });
+
     it("leaves other entities attached", () => {
         const changeTracker = tracker();
         const a = changeTracker.resolve(entity("a"), null);
@@ -744,5 +751,46 @@ describe('defect #26: __tracking__ must not be enumerable', () => {
         const copy = { ...(await store.items.firstAsync((x) => x.name === 'a')) };
 
         expect(Object.keys(copy).sort()).toEqual(['_id', 'n', 'name']);
+    });
+});
+
+const serializedCount = () => s.number().serialize((value: number) => value * 100);
+
+const serializedCountCases: [string, any, Record<string, unknown>][] = [
+    ["plain primitive", s.define("tracker_previous_plain", { id: s.string().key(), label: s.string(), count: serializedCount() }).compile(), { id: "a", label: "x", count: 1 }],
+    ["date", s.define("tracker_previous_date", { id: s.string().key(), when: s.date(), count: serializedCount() }).compile(), { id: "a", when: new Date(0), count: 1 }],
+    ["default", s.define("tracker_previous_default", { id: s.string().key(), status: s.string().default("new"), count: serializedCount() }).compile(), { id: "a", status: "open", count: 1 }],
+    ["object", s.define("tracker_previous_object", { id: s.string().key(), nested: s.object({ value: s.string() }), count: serializedCount() }).compile(), { id: "a", nested: { value: "v" }, count: 1 }],
+];
+
+describe("ChangeTracker previous values", () => {
+    it.each(serializedCountCases)("reports a previous value in its serialized form beside a %s property", (_, schemaUnderTest, row) => {
+        const changeTracker = new ChangeTracker(schemaUnderTest);
+        const tracked: any = schemaUnderTest.enrich(structuredClone(row), "proxy");
+        changeTracker.resolve(tracked, null);
+
+        tracked.count = 2;
+
+        expect(changeTracker.getAttachmentsChanges()[0].previous).toEqual({ count: 100 });
+    });
+
+    it("leaves a property the schema does not declare out of the previous values", () => {
+        const changeTracker = tracker();
+        const tracked: any = schema.enrich(entity("a", "before"), "proxy");
+        changeTracker.resolve(tracked, null);
+
+        tracked.undeclared = 5;
+        tracked.text = "after";
+
+        expect(changeTracker.getAttachmentsChanges()[0].previous).toEqual({ text: "before" });
+    });
+
+    it("reports every root as previous for an untracked entity marked dirty", () => {
+        const changeTracker = tracker();
+        const attached = changeTracker.resolve(entity("a", "hello", 3), null);
+
+        changeTracker.markDirty([attached]);
+
+        expect(changeTracker.getAttachmentsChanges()[0].previous).toEqual({ id: "a", text: "hello", count: 3 });
     });
 });

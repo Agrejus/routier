@@ -164,6 +164,50 @@ describe("SchemaSubscription broadcast contract", () => {
         expect(message.adds[0]._stage).toBe("post");
     });
 
+    it("delivers exactly the sent changes of every kind, each preprocessed and then postprocessed", () => {
+        const preprocess = (x: { id: number }) => ({ wire: x.id });
+        const modes: string[] = [];
+        const postprocess = (x: { wire: number }, mode: string) => {
+            modes.push(mode);
+            return { id: x.wire, received: true };
+        };
+        const schema = mockSchema("schema-every-kind", { preprocess, postprocess });
+
+        const sender = new SchemaSubscription(schema);
+        const receiver = new SchemaSubscription(schema);
+        const callback = jest.fn();
+        receiver.onMessage(callback);
+
+        sender.send({
+            adds: [{ id: 1 }, { id: 2 }],
+            removals: [{ id: 3 }],
+            unknown: [{ id: 4 }],
+            updates: [{ id: 5 }],
+        } as any);
+
+        expect(callback).toHaveBeenCalledTimes(1);
+        expect(callback.mock.calls[0][0]).toEqual({
+            adds: [{ id: 1, received: true }, { id: 2, received: true }],
+            removals: [{ id: 3, received: true }],
+            unknown: [{ id: 4, received: true }],
+            updates: [{ id: 5, received: true }],
+        });
+        expect(modes).toEqual(["diff", "diff", "diff", "diff", "diff"]);
+    });
+
+    it("delivers empty kinds as empty arrays", () => {
+        const schema = mockSchema("schema-empty-kinds");
+
+        const sender = new SchemaSubscription(schema);
+        const receiver = new SchemaSubscription(schema);
+        const callback = jest.fn();
+        receiver.onMessage(callback);
+
+        sender.send({ adds: [], removals: [], unknown: [], updates: [] } as any);
+
+        expect(callback.mock.calls[0][0]).toEqual({ adds: [], removals: [], unknown: [], updates: [] });
+    });
+
     describe("crossTabSync", () => {
 
         it("preprocesses and sends with no listeners by default, because another tab may be listening", () => {

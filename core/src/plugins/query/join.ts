@@ -70,7 +70,7 @@ export type JoinTuple = [UnknownRecord, UnknownRecord | undefined];
  * the change tracker, so there is nothing for a tracking proxy to record.
  */
 export const toEntityShape = (schema: CompiledSchemaCore<any>, rows: readonly unknown[]): UnknownRecord[] => {
-    const result: UnknownRecord[] = Array.from({ length: rows.length });
+    const result: UnknownRecord[] = new Array<UnknownRecord>(rows.length);
 
     for (let i = 0, length = rows.length; i < length; i++) {
         result[i] = schema.postprocess(rows[i] as InferType<any>, "diff") as UnknownRecord;
@@ -141,7 +141,10 @@ const isMatchableKey = (value: unknown): boolean => {
 export const applyInnerOptions = (rows: UnknownRecord[], innerOptions: QueryOptionsCollection<any>): UnknownRecord[] => {
     let filtered = rows;
 
-    for (const { option } of innerOptions.get("filter")) {
+    const filterItems = innerOptions.get("filter");
+
+    for (let i = 0; i < filterItems.length; i++) {
+        const { option } = filterItems[i];
         const { filter, params } = option.value;
 
         if (filter == null) {
@@ -259,8 +262,8 @@ export const distinctJoinKeys = (
         ? (row: UnknownRecord) => row[reference.property?.getResolvedName() ?? reference.propertyName]
         : (row: UnknownRecord) => readJoinKey(row, reference);
 
-    for (const row of rows) {
-        const key = read(row);
+    for (let i = 0; i < rows.length; i++) {
+        const key = read(rows[i]);
 
         // A null key matches nothing, so it never belongs in the prefilter — and including it
         // would widen the inner read to rows that cannot pair.

@@ -21,22 +21,19 @@ export const toEventArray = (event: DbPluginBulkPersistEvent): [SchemaId, DbEven
             continue;
         }
 
-        if (changes.adds.length > 0) {
-            result.push(...changes.adds.map(add => {
-                return [schemaId as SchemaId, { data: { ...add }, type: "add" }] as [SchemaId, DbEvent];
-            }));
+        const adds = changes.adds;
+        for (let i = 0; i < adds.length; i++) {
+            result.push([schemaId as SchemaId, { data: { ...adds[i] }, type: "add" }] as [SchemaId, DbEvent]);
         }
 
-        if (changes.updates.length > 0) {
-            result.push(...changes.updates.map(update => {
-                return [schemaId as SchemaId, { data: { ...update }, type: "update" }] as [SchemaId, DbEvent];
-            }));
+        const updates = changes.updates;
+        for (let i = 0; i < updates.length; i++) {
+            result.push([schemaId as SchemaId, { data: { ...updates[i] }, type: "update" }] as [SchemaId, DbEvent]);
         }
 
-        if (changes.removes.length > 0) {
-            result.push(...changes.removes.map(remove => {
-                return [schemaId as SchemaId, { data: { ...remove }, type: "remove" }] as [SchemaId, DbEvent];
-            }));
+        const removes = changes.removes;
+        for (let i = 0; i < removes.length; i++) {
+            result.push([schemaId as SchemaId, { data: { ...removes[i] }, type: "remove" }] as [SchemaId, DbEvent]);
         }
     }
 

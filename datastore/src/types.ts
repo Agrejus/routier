@@ -57,7 +57,8 @@ export type ChangeTrackedEntity<T extends {}> = T & {
         isDirty: boolean;
         changes: { [K in keyof T]: T[K] },
         original: { [K in keyof T]: T[K] },
-        isPaused: boolean
+        isPaused: boolean,
+        raw?: T
     },
     __isProxy__: true
 }

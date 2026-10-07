@@ -190,7 +190,7 @@ export abstract class CollectionBase<TEntity extends {}, TStore = unknown> imple
             return items;
         }
 
-        const result: InferType<TEntity>[] = Array.from({ length: items.length });
+        const result: InferType<TEntity>[] = new Array(items.length);
         for (let i = 0, length = items.length; i < length; i++) {
             result[i] = this.dependencies.schema.clone(items[i]);
         }
@@ -249,7 +249,10 @@ export abstract class CollectionBase<TEntity extends {}, TStore = unknown> imple
     private normalizeDetachedUpdates(changes: BulkPersistChanges, tags: unknown) {
         const schemaChanges = changes.resolve(this.dependencies.schema.id);
 
-        for (const update of schemaChanges.updates) {
+        const updates = schemaChanges.updates;
+
+        for (let i = 0; i < updates.length; i++) {
+            const update = updates[i];
             const trackedEntity = update.entity as InferType<TEntity> & { __tracking__?: unknown };
 
             // Guard for callers/plugins that might pass detached tracked references into updates.

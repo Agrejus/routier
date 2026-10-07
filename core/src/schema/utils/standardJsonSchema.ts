@@ -111,7 +111,8 @@ const objectConverter: PropertyConverter = (property, context) => {
         const properties: Record<string, unknown> = {};
         const required: string[] = [];
 
-        for (const child of property.children) {
+        for (let i = 0; i < property.children.length; i++) {
+            const child = property.children[i];
             // Skip computed and function properties for input schemas
             // Include them in output schemas as they represent derived values
             if (!context.useOutputType && (child.type === SchemaTypes.Computed || child.type === SchemaTypes.Function)) {
@@ -477,7 +478,8 @@ export function compiledSchemaToJsonSchema<T extends {}>(
     const required: string[] = [];
 
     // Iterate through all properties
-    for (const property of compiledSchema.properties) {
+    for (let i = 0; i < compiledSchema.properties.length; i++) {
+        const property = compiledSchema.properties[i];
         // Skip computed and function properties for input schema
         // For output schema, we include computed properties
         if (!useOutputType && (property.type === SchemaTypes.Computed || property.type === SchemaTypes.Function)) {

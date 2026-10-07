@@ -58,17 +58,112 @@ const DEFAULT_LOWERCASE = true;
 const DEFAULT_MIN_TOKEN_LENGTH = 2;
 const DEFAULT_MAX_TOKEN_LENGTH = 64;
 
-const resolveStopWords = (stopWords: StopWords | undefined, lowercase: boolean): Set<string> => {
+const NO_STOP_WORDS: ReadonlySet<string> = new Set<string>();
+const ENGLISH_LOWERCASE: ReadonlySet<string> = new Set(ENGLISH_STOP_WORDS.map(word => word.toLowerCase()));
+const ENGLISH_AS_WRITTEN: ReadonlySet<string> = new Set(ENGLISH_STOP_WORDS);
+
+const resolveStopWords = (stopWords: StopWords | undefined, lowercase: boolean): ReadonlySet<string> => {
 
     if (stopWords == null || stopWords === "none") {
-        return new Set();
+        return NO_STOP_WORDS;
     }
 
-    const words = stopWords === "english" ? ENGLISH_STOP_WORDS : stopWords;
+    if (stopWords === "english") {
+        return lowercase ? ENGLISH_LOWERCASE : ENGLISH_AS_WRITTEN;
+    }
+
+    const words = stopWords;
 
     // Cased the same way the tokens are, or a custom list written in title case would silently
     // match nothing.
     return new Set(lowercase ? words.map(word => word.toLowerCase()) : words);
+};
+
+const pushToken = (
+    candidate: string,
+    maxTokenLength: number,
+    stopWords: ReadonlySet<string>,
+    tokens: string[]
+) => {
+    const token = candidate.length > maxTokenLength ? candidate.slice(0, maxTokenLength) : candidate;
+
+    if (stopWords.has(token)) {
+        return;
+    }
+
+    tokens.push(token);
+};
+
+const isAsciiWordCode = (code: number) =>
+    (code >= 97 && code <= 122) || (code >= 48 && code <= 57) || (code >= 65 && code <= 90);
+
+const pushSlice = (
+    source: string,
+    start: number,
+    end: number,
+    minTokenLength: number,
+    maxTokenLength: number,
+    stopWords: ReadonlySet<string>,
+    tokens: string[]
+) => {
+    const length = end - start;
+
+    if (length === 0 || length < minTokenLength) {
+        return;
+    }
+
+    pushToken(source.slice(start, end), maxTokenLength, stopWords, tokens);
+};
+
+const pushSplitTokens = (
+    text: string,
+    minTokenLength: number,
+    maxTokenLength: number,
+    stopWords: ReadonlySet<string>,
+    tokens: string[]
+) => {
+    const candidates = text.split(SEPARATOR);
+
+    for (let i = 0; i < candidates.length; i++) {
+        const candidate = candidates[i];
+
+        if (candidate.length === 0 || candidate.length < minTokenLength) {
+            continue;
+        }
+
+        pushToken(candidate, maxTokenLength, stopWords, tokens);
+    }
+};
+
+const scanTokens = (
+    source: string,
+    minTokenLength: number,
+    maxTokenLength: number,
+    stopWords: ReadonlySet<string>
+): string[] => {
+    const tokens: string[] = [];
+    const length = source.length;
+    let start = 0;
+
+    for (let i = 0; i < length; i++) {
+        const code = source.charCodeAt(i);
+
+        if (code >= 128) {
+            pushSplitTokens(start === 0 ? source : source.slice(start), minTokenLength, maxTokenLength, stopWords, tokens);
+            return tokens;
+        }
+
+        if (isAsciiWordCode(code)) {
+            continue;
+        }
+
+        pushSlice(source, start, i, minTokenLength, maxTokenLength, stopWords, tokens);
+        start = i + 1;
+    }
+
+    pushSlice(source, start, length, minTokenLength, maxTokenLength, stopWords, tokens);
+
+    return tokens;
 };
 
 /**
@@ -100,7 +195,9 @@ export const tokenize = (value: unknown, options: TokenizeOptions = {}): string[
 
         const capped: string[] = [];
 
-        for (const token of emitted) {
+        for (let i = 0; i < emitted.length; i++) {
+            const token = emitted[i];
+
             // An empty token would build the key `|field|id`, which collides with every other
             // empty token for that document. Dropped rather than stored.
             if (typeof token !== "string" || token.length === 0) {
@@ -119,25 +216,8 @@ export const tokenize = (value: unknown, options: TokenizeOptions = {}): string[
     const stopWords = resolveStopWords(options.stopWords, lowercase);
 
     const source = lowercase ? value.toLowerCase() : value;
-    const tokens: string[] = [];
 
-    for (const candidate of source.split(SEPARATOR)) {
-
-        // The split emits empty strings when the text starts or ends with a separator.
-        if (candidate.length === 0 || candidate.length < minTokenLength) {
-            continue;
-        }
-
-        const token = candidate.length > maxTokenLength ? candidate.slice(0, maxTokenLength) : candidate;
-
-        if (stopWords.has(token)) {
-            continue;
-        }
-
-        tokens.push(token);
-    }
-
-    return tokens;
+    return scanTokens(source, minTokenLength, maxTokenLength, stopWords);
 };
 
 /**
@@ -149,7 +229,11 @@ export const tokenize = (value: unknown, options: TokenizeOptions = {}): string[
 export const countTerms = (value: unknown, options: TokenizeOptions = {}): Map<string, number> => {
     const frequencies = new Map<string, number>();
 
-    for (const token of tokenize(value, options)) {
+    const tokens = tokenize(value, options);
+
+    for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+
         frequencies.set(token, (frequencies.get(token) ?? 0) + 1);
     }
 

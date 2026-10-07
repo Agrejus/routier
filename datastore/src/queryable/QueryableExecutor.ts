@@ -1,6 +1,6 @@
 import { createQueryRecorder } from "../inspection/recordQuery";
 import { DbPluginQueryEvent, distinctJoinKeys, executeJoin, ExecutedQuery, explainQuery, ITranslatedValue, JoinKind, JoinTuple, JsonTranslator, loadJoinInnerSide, Query, QueryExplanation, QueryOptionName, QueryOptionsCollection, toEntityShape, TupleTranslator, withExecutedQueries, withInnerSide } from "@routier/core/plugins";
-import { CompiledSchema, InferType } from "@routier/core/schema";
+import { CompiledSchema, InferType, SchemaTypes } from "@routier/core/schema";
 import { CallbackResult, PluginEventCallbackResult, PluginEventResult, PluginEventSuccessType, Result } from "@routier/core/results";
 import { UnknownRecord, uuid } from "@routier/core/utilities";
 import { GenericFunction } from "@routier/core/types";
@@ -11,7 +11,7 @@ import { groupJoinTuples, JoinGroup } from "./groupJoinTuples";
 import { resolveJoinKey } from "./joinKeys";
 
 /** Options whose result is no longer rows of the root schema. */
-const TRANSFORMING_OPTIONS: readonly QueryOptionName[] = ["map", "group", "count", "sum", "min", "max", "distinct"];
+const TRANSFORMING_OPTIONS: ReadonlySet<QueryOptionName> = new Set<QueryOptionName>(["map", "group", "count", "sum", "min", "max", "distinct"]);
 
 export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryBuilderBase<TRoot, TShape, CollectionDependencies<TRoot>> {
 
@@ -152,7 +152,8 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
 
         before.forEach(item => rebuilt.add(item.name, item.value));
 
-        for (const conjunct of split) {
+        for (let i = 0, length = split.length; i < length; i++) {
+            const conjunct = split[i];
             if (conjunct.side === "outer") {
                 rebuilt.add("filter", conjunct.filter as never);
             }
@@ -163,7 +164,8 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
         const innerOptions = new QueryOptionsCollection<unknown>();
         at.value.innerOptions.forEach(item => innerOptions.add(item.name, item.value));
 
-        for (const conjunct of split) {
+        for (let i = 0, length = split.length; i < length; i++) {
+            const conjunct = split[i];
             if (conjunct.side === "inner" && joinSide.grouped === false) {
                 innerOptions.add("filter", conjunct.filter as never);
             }
@@ -397,6 +399,36 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
      * Without freezing, a plain `entity.price = 5` on an immutable collection was silently
      * lost — untracked because there is no proxy, unrejected because nothing was frozen.
      */
+    private postprocessRows(rows: { forEach(callback: (item: unknown) => unknown): void }) {
+        const { schema, changeTracker } = this.dependencies;
+        const changeTrackingType = this.request.changeTrackingType;
+
+        if (changeTrackingType !== "proxy") {
+            rows.forEach(item => schema.postprocess(item as InferType<TRoot>, changeTrackingType));
+            return;
+        }
+
+        const keyReadableFromStorage = schema.idProperties.every(property =>
+            property.from == null && (property.type === SchemaTypes.String || property.type === SchemaTypes.Number));
+
+        if (keyReadableFromStorage) {
+            rows.forEach(item => changeTracker.isAttachedId(schema.getId(item as InferType<TRoot>))
+                ? schema.postprocess(item as InferType<TRoot>, "diff")
+                : schema.postprocess(item as InferType<TRoot>, "proxy"));
+            return;
+        }
+
+        rows.forEach(item => {
+            const plain = schema.postprocess(item as InferType<TRoot>, "diff");
+
+            if (changeTracker.isAttachedId(schema.getId(plain))) {
+                return plain;
+            }
+
+            return schema.postprocess(item as InferType<TRoot>, "proxy");
+        });
+    }
+
     private attachResults(items: { forEach(callback: (item: unknown) => unknown): void }, tags: unknown) {
         const immutable = this.request.changeTrackingType === "immutable";
         const options = immutable ? { adopt: true } : { merge: true };
@@ -428,7 +460,8 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
             if (Array.isArray(value)) {
                 const ids = new Set<unknown>();
 
-                for (const item of value) {
+                for (let i = 0, length = value.length; i < length; i++) {
+                    const item = value[i];
                     if (item == null || typeof item !== "object") {
                         this.lastDeliveredIds = null;
                         return;
@@ -584,7 +617,8 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
 
         const combined = new QueryOptionsCollection<TRoot>();
 
-        for (const item of notExecuted) {
+        for (let i = 0, length = notExecuted.length; i < length; i++) {
+            const item = notExecuted[i];
             combined.add(item.option.name, item.option.value);
         }
 
@@ -611,7 +645,7 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
         let transformed = false;
 
         options.forEach(option => {
-            if (option.reason === "executed" && TRANSFORMING_OPTIONS.includes(option.name)) {
+            if (option.reason === "executed" && TRANSFORMING_OPTIONS.has(option.name)) {
                 transformed = true;
             }
         });
@@ -649,7 +683,7 @@ export abstract class QueryableExecutor<TRoot extends {}, TShape> extends QueryB
 
             if (databaseEvent.operation.changeTracking === true) {
                 // Post process the db query results
-                result.data.forEach(item => this.dependencies.schema.postprocess(item as InferType<TRoot>, this.request.changeTrackingType));
+                this.postprocessRows(result.data);
             } else if (this.returnedUntransformedRows(databaseEvent)) {
                 // The plugin stopped before the aggregate or projection that switched tracking off, so
                 // the rows are still in storage shape — and the options left for memory are the
