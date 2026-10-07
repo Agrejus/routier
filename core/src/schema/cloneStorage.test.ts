@@ -20,6 +20,7 @@ const schema = s.define("clone_storage", {
     plain: s.string(),
     note: s.string().from("note_col").nullable(),
     maybe: s.string().from("maybe_col").optional(),
+    holder: s.object({ label: s.string().from("label_col") }).from("holder_col").optional().nullable(),
 }).compile();
 
 const record = (): Record<string, any> => ({
@@ -122,5 +123,15 @@ describe("cloneStorage", () => {
         const source = { id: "a", name: "n", when: new Date("2021-05-06T00:00:00.000Z") };
 
         expect((plainSchema as any).cloneStorage(source)).toEqual(structuredClone(source));
+    });
+
+    it.each([
+        ["a null renamed object", { holder_col: null }],
+        ["an empty renamed object", { holder_col: {} }],
+        ["a present renamed object", { holder_col: { label_col: "x" } }],
+    ])("keeps %s under its storage name", (_label, extra) => {
+        const source = { ...record(), ...extra };
+
+        expect((schema as any).cloneStorage(source)).toEqual(structuredClone(source));
     });
 });

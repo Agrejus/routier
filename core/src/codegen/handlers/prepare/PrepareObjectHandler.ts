@@ -9,29 +9,14 @@ export class PrepareObjectHandler extends PropertyInfoHandler {
 
         if (property.type === SchemaTypes.Object) {
             const slotPath = new SlotPath("result", "variable", "object");
-            let objectBuilder = builder.getOrDefault<ObjectBuilder>(slotPath.get());
 
-            // There is a chance this is the first property we handle,
-            // if that is the case, the main result variable will not be
-            // constructed yet
-            if (objectBuilder == null) {
-                objectBuilder = builder.get<SlotBlock>("result")
-                    .assign("const result", { name: "variable" })
-                    .object({ name: "object" });
-            }
-
-            // Prepare emits the storage shape — renamed object containers keep
-            // their `from` (storage) key; the block name stays the property name
-            // so child lookups by name still resolve
-            if (property.parent == null) {
-                objectBuilder.nested(property.getResolvedName(), property.name)
-
-                return builder;
+            if (builder.getOrDefault<ObjectBuilder>(slotPath.get()) == null) {
+                builder.get<SlotBlock>("result").assign("const result", { name: "variable" }).object({ name: "object" });
             }
 
             slotPath.push(...property.getParentPathArray());
-            const nestedObjectBuilder = builder.get<ObjectBuilder>(slotPath.get());
-            nestedObjectBuilder.nested(property.getResolvedName(), property.name)
+            builder.get<ObjectBuilder>(slotPath.get())
+                .nested(property.getResolvedName(), property.name, property.getSelectrorPath({ parent: "entity" }));
 
             return builder;
         }

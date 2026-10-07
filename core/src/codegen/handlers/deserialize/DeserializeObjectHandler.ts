@@ -10,27 +10,16 @@ export class DeserializeObjectHandler extends PropertyInfoHandler {
         if (property.type === SchemaTypes.Object) {
             const slotPath = new SlotPath("result.variable.object");
 
-            // Create the result object when this is the first property iterated —
-            // handler output cannot depend on schema property order
-            let objectBuilder = builder.getOrDefault<ObjectBuilder>(slotPath.get());
-
-            if (objectBuilder == null) {
-                objectBuilder = builder.get<SlotBlock>("result")
-                    .assign("const entity", { name: "variable" })
-                    .object({ name: "object" });
+            if (builder.getOrDefault<ObjectBuilder>(slotPath.get()) == null) {
+                builder.get<SlotBlock>("result").assign("const entity", { name: "variable" }).object({ name: "object" });
             }
 
-            // The output entity is the in-memory shape — its keys are property
-            // names; `from` names only appear on the unserialized (read) side
-            if (property.parent == null) {
-                objectBuilder.nested(property.name, property.name)
-
-                return builder;
-            }
+            const absentWhenNull = property.isNullable || property.isOptional
+                ? property.getSelectrorPath({ parent: "unserialized", assignmentType: "FORCE_NULLABLE_OR_OPTIONAL", useFromPropertyName: true })
+                : undefined;
 
             slotPath.push(...property.getParentPathArray());
-            const nestedObjectBuilder = builder.get<ObjectBuilder>(slotPath.get());
-            nestedObjectBuilder.nested(property.name, property.name)
+            builder.get<ObjectBuilder>(slotPath.get()).nested(property.name, property.name, absentWhenNull);
 
             return builder;
         }
