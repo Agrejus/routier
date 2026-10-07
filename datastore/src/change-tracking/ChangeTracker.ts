@@ -10,6 +10,7 @@ import { GenericFunction } from "@routier/core/types";
 import { CallbackResult, Result } from "@routier/core/results";
 import { assertIsNotNull } from "@routier/core";
 import { applyPatch, ImmutableUpdates, UpdateRecipe } from "./ImmutableUpdates";
+import { clearRemovedValues } from "./clearRemovedValues";
 
 
 /**
@@ -784,7 +785,15 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
                     return existing.doc;
                 }
 
-                this.schema.merge(existing.doc, entity); // merge needs to map children appropriately
+                this.schema.merge(existing.doc, entity);
+
+                const wasClean = ChangeTracker.trackingOf(existing)?.isDirty !== true;
+
+                clearRemovedValues(existing.doc as Record<string, unknown>, entity as Record<string, unknown>, this.schema.properties as PropertyInfo<{}>[]);
+
+                if (wasClean) {
+                    markPersisted(existing.doc);
+                }
 
                 // The merged read is database truth over a clean entity — re-baseline, or
                 // the merged-in values would read as local edits on the next save.
