@@ -90,8 +90,22 @@ const resolveLevel = (): LogLevel => {
     return 'warn';
 };
 
-let level: LogLevel = resolveLevel();
-let rank = RANK[level];
+type SharedLevel = { level: LogLevel; rank: number };
+
+const SHARED_LEVEL = Symbol.for('routier.logLevel');
+
+const resolved = (): SharedLevel => {
+    const level = resolveLevel();
+
+    return { level, rank: RANK[level] };
+};
+
+const sharedLevel = (): SharedLevel => {
+    const holder = globalThis as { [SHARED_LEVEL]?: SharedLevel };
+    holder[SHARED_LEVEL] ??= resolved();
+
+    return holder[SHARED_LEVEL];
+};
 
 /**
  * Overrides the level for the rest of the process.
@@ -105,16 +119,15 @@ export const setLogLevel = (next: LogLevel): void => {
         throw new Error(`Unknown log level "${next}". Expected one of: ${LOG_LEVELS.join(', ')}`);
     }
 
-    level = next;
-    rank = RANK[next];
+    sharedLevel().level = next;
+    sharedLevel().rank = RANK[next];
 };
 
-export const getLogLevel = (): LogLevel => level;
+export const getLogLevel = (): LogLevel => sharedLevel().level;
 
 /** Re-reads the environment. For tests that change it after this module was imported. */
 export const resetLogLevel = (): void => {
-    level = resolveLevel();
-    rank = RANK[level];
+    Object.assign(sharedLevel(), resolved());
 };
 
 /**
@@ -124,12 +137,12 @@ export const resetLogLevel = (): void => {
  * clone, a join over a large collection. An ordinary payload object is not worth guarding; see
  * the measurement in the header.
  */
-export const isLogLevelEnabled = (at: LogLevel): boolean => rank >= RANK[at];
+export const isLogLevelEnabled = (at: LogLevel): boolean => sharedLevel().rank >= RANK[at];
 
 type ConsoleMethod = 'log' | 'info' | 'warn' | 'error' | 'debug' | 'table';
 
 const emit = (at: LogLevel, method: ConsoleMethod, args: unknown[]) => {
-    if (rank < RANK[at]) {
+    if (sharedLevel().rank < RANK[at]) {
         return;
     }
 
