@@ -834,24 +834,13 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         await this.applyRevalidatePersist(event, schema, classification);
     }
 
-    /**
-     * Persist incoming server data when the cache was empty (cache miss). Does not query the store;
-     * we already know current state is empty from the initial swrStore.query. Resolves when the store has been updated.
-     */
     private async persistOnCacheMiss<TRoot extends {}, TShape>(
         event: DbPluginQueryEvent<TRoot, TShape>,
         translated: ITranslatedValue<TShape>
     ): Promise<void> {
         const schema = event.operation.schema as CompiledSchema<Record<string, unknown>>;
-        const collectionName = schema.collectionName;
-        const incomingRows = this.queryResultToArray(translated);
 
-        // Locked so the classification cannot interleave with a user write it did not see
-        await this.storeMutex.run(collectionName, async () => {
-            const unsyncedKeys = await this.unsyncedQueue.getUnsyncedIdKeys(collectionName);
-            const classification = this.classifyRevalidateChanges(schema, incomingRows, [], unsyncedKeys, new Set());
-            await this.applyRevalidatePersist(event, schema, classification);
-        });
+        await this.persistRowsToStore(event, schema, this.queryResultToArray(translated));
     }
 
     /**
@@ -864,43 +853,37 @@ export class HttpSwrDbPlugin implements IDbPlugin {
         translated: ITranslatedValue<TShape>
     ): Promise<void> {
         const schema = event.operation.schema as CompiledSchema<Record<string, unknown>>;
-        const collectionName = schema.collectionName;
-        const incomingRows = this.queryResultToArray(translated);
-        const storeQueryEvent = this.buildRevalidateStoreQueryEvent(event);
 
-        logger.debug('[HttpSwrDbPlugin] persistToStore() -> started', {
-            collectionName,
-            translated
+        return this.persistRowsToStore(event, schema, this.queryResultToArray(translated));
+    }
+
+    private persistRowsToStore<TRoot extends {}, TShape>(
+        event: DbPluginQueryEvent<TRoot, TShape>,
+        schema: CompiledSchema<Record<string, unknown>>,
+        incomingRows: unknown[]
+    ): Promise<void> {
+        return this.storeMutex.run(schema.collectionName, async () => {
+            const current = await this.readStoreRows(event);
+
+            try {
+                await this.mergeRevalidateAndPersist(event, schema, incomingRows, current);
+            } catch {
+                await this.mergeRevalidateAndPersist(event, schema, incomingRows, await this.readStoreRows(event));
+            }
         });
+    }
 
-        // Locked around the whole read-classify-persist so a user write can never land
-        // between the store read and the diff that claims to describe it
-        return this.storeMutex.run(collectionName, () => new Promise((resolve, reject) => {
-            this.swrStore.query(storeQueryEvent, async (queryResult) => {
-
-                logger.debug('[HttpSwrDbPlugin] persistToStore() -> query swrStore', {
-                    collectionName,
-                    storeQueryEvent,
-                    queryResult
-                });
-
+    private readStoreRows<TRoot extends {}, TShape>(event: DbPluginQueryEvent<TRoot, TShape>): Promise<ITranslatedValue<TShape>> {
+        return new Promise((resolve, reject) => {
+            this.swrStore.query(this.buildRevalidateStoreQueryEvent(event), queryResult => {
                 if (queryResult.ok === Result.ERROR) {
                     reject(queryResult.error);
                     return;
                 }
-                try {
-                    await this.mergeRevalidateAndPersist(
-                        event,
-                        schema,
-                        incomingRows,
-                        queryResult.data
-                    );
-                    resolve();
-                } catch (err) {
-                    reject(err);
-                }
+
+                resolve(queryResult.data);
             });
-        }));
+        });
     }
 
     private queryResultToArray<T>(translatedValue: ITranslatedValue<T>) {
