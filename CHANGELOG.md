@@ -3,6 +3,47 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## Faster reads and saves, deep proxy tracking, and fixes (2026-10-07)
+
+Patches to `@routier/core`, `@routier/datastore`, `@routier/replication-plugin` and
+`@routier/dexie-plugin`. Every package's `@routier/core` floor moves to `>=0.9.2` and
+`@routier/datastore` references move to `0.4.5` in the repository; packages not released here keep
+their published ranges.
+
+### Changed — @routier/core 0.9.2, @routier/datastore 0.4.5
+
+- Reads and saves are faster with no change in behaviour (#98): scans and filtered queries
+  3.5–4.9×, updates 2.7×, inserts 1.8× on the benchmark suite. Re-reads stop building a throwaway
+  proxy per already-attached row and skip merging rows that have not changed. Saves read dirty
+  entities without going through the proxy. The generated `preprocess` and `merge` no longer
+  repeat work, and the filter parser and full-text tokenizer scan by character code.
+
+### Fixed — @routier/core 0.9.2
+
+- In `.proxy()` collections, `delete row.label`, writes inside objects held in arrays, writes
+  inside nested arrays and writes to objects assigned after load are now detected and saved
+  (#86, #95).
+- Reading back a row no longer throws when an object or array sits under an optional or nullable
+  object that is missing or `null` (#81, #83).
+- A required object under an optional or nullable parent that is missing or `null` is no longer
+  written as `{}`. Before, writing it threw, so the record couldn't be stored (#84, #92).
+- `setLogLevel` and `resetLogLevel` now apply to every entry point's copy of the logger (#88, #96).
+
+### Fixed — @routier/datastore 0.4.5
+
+- A row read again clears values that became `null` or were removed in storage, at every depth
+  (#85, #94).
+
+### Fixed — @routier/replication-plugin 0.6.1
+
+- Two `HttpSwrDbPlugin` instances over one database no longer fail with `ConstraintError` when
+  both write the same fetched rows; a failed write retries against a fresh store read (#87, #93).
+
+### Fixed — @routier/dexie-plugin 0.4.5
+
+- Opening a store logs one warning per schema listing every nested path Dexie cannot index,
+  instead of one warning per nested property (#90, #97).
+
 ## Nullable and optional objects (2026-10-08)
 
 A patch to `@routier/core`. Every package's `@routier/core` floor moves to `>=0.9.1` in the

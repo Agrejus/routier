@@ -36,13 +36,13 @@
     ],
     "description": "MySQL plugin for Routier",
     "peerDependencies": {
-        "@routier/core": ">=0.9.1",
+        "@routier/core": ">=0.9.2",
         "@routier/sql-plugin-core": ">=0.7.2"
     },
     "devDependencies": {
         "@faker-js/faker": "^10.0.0",
-        "@routier/core": "^0.9.1",
-        "@routier/datastore": "^0.4.4",
+        "@routier/core": "^0.9.2",
+        "@routier/datastore": "^0.4.5",
         "@rspack/cli": "^1.1.8",
         "@rspack/core": "^1.1.8",
         "@routier/sql-plugin-core": "^0.7.2"
