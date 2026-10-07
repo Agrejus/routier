@@ -32,7 +32,8 @@ their published ranges.
 ### Fixed — @routier/datastore 0.4.5
 
 - A row read again clears values that became `null` or were removed in storage, at every depth
-  (#85, #94).
+  (#85, #94). A key the row never held a value for is kept, so every row keeps the same shape
+  (#100).
 
 ### Fixed — @routier/replication-plugin 0.6.1
 
