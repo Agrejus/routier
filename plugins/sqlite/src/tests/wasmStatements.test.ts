@@ -1,5 +1,6 @@
 import { describe, it, expect, jest } from '@jest/globals';
-import { acquireStatement, releaseStatement, STATEMENT_CACHE_MAX, type PreparingDatabase, type ReusableStatement } from '../drivers/wasmStatements';
+import { acquireStatement, releaseStatement, type PreparingDatabase, type ReusableStatement } from '../drivers/wasmStatements';
+import { STATEMENT_CACHE_MAX } from '../drivers/statementCache';
 
 const createStatement = (): ReusableStatement => ({
     bind: jest.fn(),

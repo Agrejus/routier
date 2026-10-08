@@ -3,6 +3,7 @@ import { SqliteDbPluginBase, type SqliteDbPluginOptions } from './plugin';
 
 export type { SqliteConnection, SqliteDriver } from './drivers/types';
 export type { SqliteDbPluginOptions } from './plugin';
+export type { SqlCacheMode } from './queryCache';
 export { SqliteDbPluginBase } from './plugin';
 export { nodeSqliteDriver } from './drivers/nodeSqlite';
 
@@ -20,6 +21,6 @@ export { nodeSqliteDriver } from './drivers/nodeSqlite';
  */
 export class SqliteDbPlugin extends SqliteDbPluginBase {
     constructor(databaseName: string, options: SqliteDbPluginOptions = {}) {
-        super(databaseName, options.driver ?? nodeSqliteDriver());
+        super(databaseName, options.driver ?? nodeSqliteDriver(), options.sqlCache);
     }
 }

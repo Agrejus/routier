@@ -154,7 +154,10 @@ file still contend through SQLite's own file locks, exactly as before.
 
 Keeping them open is what makes repeated work fast: no open, close or re-prepare per query, which
 measured about 45% faster for small queries and about 20% faster for saves. A connection idle for
-a second is closed and reopened on next use. The `sqlite3` driver behaves the same way; a driver
+a second is closed and reopened on next use. With `node:sqlite`, each connection also keeps its 64
+most recently used prepared statements, so a repeated query or save skips the prepare step: about
+8% faster for small queries and 13% for saves on top of the above. The `sqlite3` driver keeps its
+connections the same way but prepares each statement fresh; a driver
 that does not set `keepsConnections`, such as Turso, still opens one connection per operation.
 
 In the browser there is no second process to lock against, so the worker holds one database
@@ -174,6 +177,25 @@ mid-transaction rather than at open. `destroyAsync()` unlinks a database and ret
 
 Optimistic concurrency is supported. Wrap the plugin in `ConcurrencyDbPlugin` and a stale
 write fails with `OptimisticConcurrencyError` naming the row.
+
+### SQL cache
+
+A query's SQL is mostly the same every time it runs: the select list, ordering and paging do not
+change when only its parameter values do. The plugin can remember that frame per query shape and
+render only the WHERE clause fresh, with this run's values.
+
+| `sqlCache` | What happens | Cost |
+| --- | --- | --- |
+| `'shadow'` (default) | Builds the SQL both ways, uses the fresh one, logs a warning if they differ | About 7% slower reads |
+| `'on'` | Uses the cached frame | About 6% faster reads |
+| `'off'` | Builds every statement fresh | Baseline |
+
+```ts
+new SqliteDbPlugin('app.db', { sqlCache: 'on' });
+```
+
+A warning reads `SQL frame cache mismatch for fingerprint ...`. Please report it; the frame is
+dropped and the fresh statement is used, so results stay correct.
 
 ### Process boundary
 
