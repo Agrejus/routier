@@ -8,7 +8,7 @@ import { CompiledSchema } from '@routier/core/schema';
 import { ResultColumn } from '@routier/core/plugins';
 import { SqlPersistOperation } from './types';
 import type { SqliteConnection, SqliteDriver } from './drivers/types';
-import { createConnections, type SqliteConnections } from './connections';
+import { createConnections, strategyFor, type SqliteConnections } from './connections';
 import { SqlFrameCache, type SqlCacheMode } from './queryCache';
 import type { Call } from '@routier/core/expressions';
 
@@ -101,7 +101,7 @@ export class SqliteDbPluginBase implements IDbPlugin {
         this.databaseName = databaseName;
         this.driver = driver;
         this.sqlFrames = new SqlFrameCache(sqlCache);
-        this.connections = createConnections(driver.keepsConnections === true, () => this.openConnection());
+        this.connections = createConnections(strategyFor(driver.keepsConnections === true, databaseName), () => this.openConnection());
     }
 
     private resolveTableCreateStatement(schema: CompiledSchema<unknown>): string {

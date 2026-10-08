@@ -160,6 +160,10 @@ most recently used prepared statements, so a repeated query or save skips the pr
 connections the same way but prepares each statement fresh; a driver
 that does not set `keepsConnections`, such as Turso, still opens one connection per operation.
 
+An in-memory database (`':memory:'`) lives inside one connection, so it gets exactly one: saves and
+queries take turns on it, a query never sees a save in progress, and it is never closed for being
+idle. Its data lasts until `destroy`. Each plugin over `':memory:'` has its own empty database.
+
 In the browser there is no second process to lock against, so the worker holds one database
 open for the life of the page and `close()` is a no-op. The SAH pool takes **exclusive** OPFS
 access handles: two tabs on one origin cannot hold the same database, and the second fails to

@@ -74,5 +74,45 @@ const writerReader = (open: () => Promise<SqliteConnection>): SqliteConnections 
     };
 };
 
-export const createConnections = (keepsConnections: boolean, open: () => Promise<SqliteConnection>): SqliteConnections =>
-    keepsConnections ? writerReader(open) : perOperation(open);
+const single = (open: () => Promise<SqliteConnection>): SqliteConnections => {
+    let opening: Promise<SqliteConnection> | null = null;
+    let turn: Promise<void> = Promise.resolve();
+
+    const use = <T>(work: Work<T>): Promise<T> => {
+        const result = turn.then(async () => {
+            opening ??= open().catch(error => {
+                opening = null;
+                throw error;
+            });
+
+            return work(await opening);
+        });
+
+        turn = result.then((): void => undefined, (): void => undefined);
+        return result;
+    };
+
+    return {
+        read: use,
+        write: use,
+        close: async () => {
+            const closing = opening;
+            opening = null;
+            await closing?.then(connection => connection.close()).catch((): void => undefined);
+        },
+    };
+};
+
+export type ConnectionStrategy = 'per-operation' | 'writer-reader' | 'single';
+
+const STRATEGIES: Record<ConnectionStrategy, (open: () => Promise<SqliteConnection>) => SqliteConnections> = {
+    'per-operation': perOperation,
+    'writer-reader': writerReader,
+    'single': single,
+};
+
+export const strategyFor = (keepsConnections: boolean, databaseName: string): ConnectionStrategy =>
+    !keepsConnections ? 'per-operation' : databaseName === ':memory:' ? 'single' : 'writer-reader';
+
+export const createConnections = (strategy: ConnectionStrategy, open: () => Promise<SqliteConnection>): SqliteConnections =>
+    STRATEGIES[strategy](open);
