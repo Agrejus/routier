@@ -8,6 +8,7 @@ import { CompiledSchema } from '@routier/core/schema';
 import { ResultColumn } from '@routier/core/plugins';
 import { SqlPersistOperation } from './types';
 import type { SqliteConnection, SqliteDriver } from './drivers/types';
+import { createConnections, type SqliteConnections } from './connections';
 import type { Call } from '@routier/core/expressions';
 
 export type SqliteDbPluginOptions = {
@@ -90,9 +91,12 @@ export class SqliteDbPluginBase implements IDbPlugin {
      */
     private writes: Promise<unknown> = Promise.resolve();
 
+    private readonly connections: SqliteConnections;
+
     constructor(databaseName: string, driver: SqliteDriver) {
         this.databaseName = databaseName;
         this.driver = driver;
+        this.connections = createConnections(driver.keepsConnections === true, () => this.openConnection());
     }
 
     private resolveTableCreateStatement(schema: CompiledSchema<unknown>): string {
@@ -110,39 +114,20 @@ export class SqliteDbPluginBase implements IDbPlugin {
         return createTableSQL;
     }
 
-    /**
-     * Runs `work` against one connection and closes it on every path.
-     *
-     * One connection per operation, closed whether the work succeeds, fails, or throws.
-     * Queries used to leak one handle each for the life of the process (#31), and closing in
-     * a `finally` is what makes a path added later unable to forget.
-     *
-     * Deliberately NOT a long-lived shared connection: per-operation connections are what let
-     * SQLite's own file locking serialize concurrent writers, and a shared handle would make
-     * disposal a lifecycle problem for every caller.
-     */
     /** Calls this driver would answer differently from JavaScript, so they must not be pushed down. */
     protected divergentCalls(): readonly Call[] {
         return this.driver.foldsUnicodeCasing ? [] : CASING_CALLS;
     }
 
-    private async withConnection<T>(work: (connection: SqliteConnection) => Promise<T>): Promise<T> {
-        // An open failure must not be reported as anything else, and must not leave a handle
-        // behind: there is nothing to close if the open never succeeded (#34).
+    private async openConnection(): Promise<SqliteConnection> {
         const connection = await this.driver.open(this.databaseName);
 
-        try {
-            // SQLite's own `lower()` folds ASCII only. Replacing it is what makes a pushed-down
-            // `.toLowerCase()` return the rows the predicate means.
-            if (this.driver.foldsUnicodeCasing && connection.defineFunction != null) {
-                connection.defineFunction("lower", value => typeof value === "string" ? value.toLowerCase() : value);
-                connection.defineFunction("upper", value => typeof value === "string" ? value.toUpperCase() : value);
-            }
-
-            return await work(connection);
-        } finally {
-            await connection.close().catch((): void => undefined);
+        if (this.driver.foldsUnicodeCasing && connection.defineFunction != null) {
+            connection.defineFunction("lower", value => typeof value === "string" ? value.toLowerCase() : value);
+            connection.defineFunction("upper", value => typeof value === "string" ? value.toUpperCase() : value);
         }
+
+        return connection;
     }
 
     /**
@@ -192,7 +177,7 @@ export class SqliteDbPluginBase implements IDbPlugin {
         const operation = buildFromQueryOperation(event.operation);
         const { params, sql } = operation;
 
-        this.withConnection(connection => this.runWithTable(connection, operation, createTableSQL))
+        this.connections.read(connection => this.runWithTable(connection, operation, createTableSQL))
             .then(rows => {
                 // After the statement ran, not before: RetryDbPlugin re-invokes with the same
                 // event, so pushing first would report one entry per failed attempt.
@@ -261,7 +246,7 @@ export class SqliteDbPluginBase implements IDbPlugin {
                 this.resolveTableCreateStatement(innerSchema)
             ].join("\n");
 
-            this.withConnection(connection => this.runWithTable(connection, joinOperation, createTables))
+            this.connections.read(connection => this.runWithTable(connection, joinOperation, createTables))
                 .then(rows => {
                     event.executedQueries.push({ text: sql, parameters: params });
 
@@ -325,7 +310,7 @@ export class SqliteDbPluginBase implements IDbPlugin {
             }
         }
 
-        return this.withConnection(async connection => {
+        return this.connections.write(async connection => {
             /**
              * Files RETURNING rows into the result for their schema.
              *
@@ -385,7 +370,8 @@ export class SqliteDbPluginBase implements IDbPlugin {
     }
 
     destroy(event: DbPluginEvent, done: PluginEventCallbackResult<never>): void {
-        this.driver.deleteDatabase(this.databaseName)
+        this.connections.close()
+            .then(() => this.driver.deleteDatabase(this.databaseName))
             .then(() => done(PluginEventResult.success(event.id)))
             .catch(error => done(PluginEventResult.error(event.id, error)));
     }

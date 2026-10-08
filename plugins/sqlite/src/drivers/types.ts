@@ -50,6 +50,8 @@ export interface SqliteDriver {
     /** Whether this engine accepts a replacement `lower()`. SQLite's own folds ASCII only. */
     readonly foldsUnicodeCasing: boolean;
 
+    readonly keepsConnections?: boolean;
+
     /**
      * Opens `databaseName`.
      *
