@@ -21,8 +21,8 @@
         "lint": "oxlint . --ignore-pattern \"**/*.test.*\""
     },
     "peerDependencies": {
-        "@routier/core": ">=0.9.2",
-        "@routier/datastore": ">=0.4.5"
+        "@routier/core": ">=0.9.3",
+        "@routier/datastore": ">=0.4.6"
     },
     "dependencies": {
         "preact": "^10.27.2"
