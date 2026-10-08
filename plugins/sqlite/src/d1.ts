@@ -378,16 +378,16 @@ export class D1DbPlugin implements IDbPlugin {
 
             creates.set(schema.collectionName, createTableSql);
 
-            if (persistOperations.removes != null) {
-                operations.push({ op: { ...persistOperations.removes, createTableSql, schemaId }, type: 'removes' });
+            for (const removeOperation of persistOperations.removes) {
+                operations.push({ op: { ...removeOperation, createTableSql, schemaId }, type: 'removes' });
             }
 
             for (const updateOperation of persistOperations.updates) {
                 operations.push({ op: { ...updateOperation, createTableSql, schemaId }, type: 'updates' });
             }
 
-            if (persistOperations.adds != null) {
-                operations.push({ op: { ...persistOperations.adds, createTableSql, schemaId }, type: 'adds' });
+            for (const addOperation of persistOperations.adds) {
+                operations.push({ op: { ...addOperation, createTableSql, schemaId }, type: 'adds' });
             }
         }
 
@@ -441,15 +441,7 @@ export class D1DbPlugin implements IDbPlugin {
                 writeResults[i].results ?? [],
                 event.schemas.get(op.schemaId)
             ) as { [x: string]: never }[];
-            const bucket = result.get(op.schemaId);
-
-            if (type === 'adds') {
-                bucket.adds.push(...decoded);
-            } else if (type === 'updates') {
-                bucket.updates.push(...decoded);
-            } else {
-                bucket.removes.push(...decoded);
-            }
+            result.get(op.schemaId)[type].push(...decoded);
         }
 
         return result;

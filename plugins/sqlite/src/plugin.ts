@@ -296,8 +296,8 @@ export class SqliteDbPluginBase implements IDbPlugin {
             const persistOperations = buildFromPersistOperation(schema, changes, event.etags);
             const createTableSql = compiledSchemaToSqliteTable(schema);
 
-            if (persistOperations.removes != null) {
-                operations.push({ op: { ...persistOperations.removes, createTableSql, schemaId }, type: 'removes' });
+            for (const removeOperation of persistOperations.removes) {
+                operations.push({ op: { ...removeOperation, createTableSql, schemaId }, type: 'removes' });
             }
 
             // One operation per changed-column group (see buildGroupedUpdateOperations)
@@ -305,8 +305,8 @@ export class SqliteDbPluginBase implements IDbPlugin {
                 operations.push({ op: { ...updateOperation, createTableSql, schemaId }, type: 'updates' });
             }
 
-            if (persistOperations.adds != null) {
-                operations.push({ op: { ...persistOperations.adds, createTableSql, schemaId }, type: 'adds' });
+            for (const addOperation of persistOperations.adds) {
+                operations.push({ op: { ...addOperation, createTableSql, schemaId }, type: 'adds' });
             }
         }
 
@@ -321,15 +321,7 @@ export class SqliteDbPluginBase implements IDbPlugin {
              */
             const collect = (op: SqlPersistOperation, type: 'adds' | 'updates' | 'removes', rows: unknown[]) => {
                 const decoded = decodeJsonColumns(rows, event.schemas.get(op.schemaId)) as { [x: string]: never; }[];
-                const bucket = result.get(op.schemaId);
-
-                if (type === "adds") {
-                    bucket.adds.push(...decoded);
-                } else if (type === "updates") {
-                    bucket.updates.push(...decoded);
-                } else {
-                    bucket.removes.push(...decoded);
-                }
+                result.get(op.schemaId)[type].push(...decoded);
             };
 
             // BEGIN IMMEDIATE takes the RESERVED lock up front, so it is the statement that

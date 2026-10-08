@@ -64,6 +64,7 @@ new SqliteDbPlugin("app", { driver: tursoDriver(client) });
 ## Guarantees and limits
 
 - A normal SQLite save uses one `BEGIN IMMEDIATE` transaction and rolls back whole on failure.
+- A save of any size is split into statements that fit SQLite's limits (32,766 parameters, 500 removed rows) inside that one transaction (0.6.2 and later).
 - Objects, arrays, and vectors use JSON unless a driver/backend adds native support.
 - Missing tables and indexes are created lazily; existing schema migration is your responsibility.
 - `ConcurrencyDbPlugin` is supported by the ordinary SQLite drivers, but Cloudflare D1 explicitly rejects it because D1 cannot provide the required conditional-update contract.
