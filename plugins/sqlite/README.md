@@ -182,25 +182,6 @@ mid-transaction rather than at open. `destroyAsync()` unlinks a database and ret
 Optimistic concurrency is supported. Wrap the plugin in `ConcurrencyDbPlugin` and a stale
 write fails with `OptimisticConcurrencyError` naming the row.
 
-### SQL cache
-
-A query's SQL is mostly the same every time it runs: the select list, ordering and paging do not
-change when only its parameter values do. The plugin can remember that frame per query shape and
-render only the WHERE clause fresh, with this run's values.
-
-| `sqlCache` | What happens | Cost |
-| --- | --- | --- |
-| `'shadow'` (default) | Builds the SQL both ways, uses the fresh one, logs a warning if they differ | About 7% slower reads |
-| `'on'` | Uses the cached frame | About 6% faster reads |
-| `'off'` | Builds every statement fresh | Baseline |
-
-```ts
-new SqliteDbPlugin('app.db', { sqlCache: 'on' });
-```
-
-A warning reads `SQL frame cache mismatch for fingerprint ...`. Please report it; the frame is
-dropped and the fresh statement is used, so results stay correct.
-
 ### Process boundary
 
 In Node, several processes may use one file. SQLite's locking makes that safe. Throughput is
