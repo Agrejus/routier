@@ -18,7 +18,7 @@ const fakes = () => {
             id: opened.length,
             closed: false,
             all: async () => [],
-            run: async () => undefined,
+            run: async (): Promise<void> => undefined,
             close: async () => { connection.closed = true; },
         };
         opened.push(connection);
@@ -58,7 +58,7 @@ describe('kept connections', () => {
     it('closes a connection once it has been idle for the whole period', async () => {
         const { open, opened } = fakes();
         const connections = createConnections(true, open);
-        await connections.read(async () => undefined);
+        await connections.read(async (): Promise<void> => undefined);
 
         jest.advanceTimersByTime(IDLE_CLOSE_MS - 1);
         await settle();
@@ -72,11 +72,11 @@ describe('kept connections', () => {
     it('opens a fresh connection after an idle close', async () => {
         const { open, opened } = fakes();
         const connections = createConnections(true, open);
-        await connections.read(async () => undefined);
+        await connections.read(async (): Promise<void> => undefined);
         jest.advanceTimersByTime(IDLE_CLOSE_MS);
         await settle();
 
-        await connections.read(async () => undefined);
+        await connections.read(async (): Promise<void> => undefined);
 
         expect(opened).toHaveLength(2);
         expect(opened[1].closed).toBe(false);
@@ -87,7 +87,7 @@ describe('kept connections', () => {
         const connections = createConnections(true, open);
         let finish = (): void => undefined;
         const slow = connections.read(() => new Promise<void>(resolve => { finish = resolve; }));
-        await connections.read(async () => undefined);
+        await connections.read(async (): Promise<void> => undefined);
 
         jest.advanceTimersByTime(IDLE_CLOSE_MS * 2);
         await settle();
@@ -100,10 +100,10 @@ describe('kept connections', () => {
     it('restarts the idle period when the connection is used again before it ends', async () => {
         const { open, opened } = fakes();
         const connections = createConnections(true, open);
-        await connections.read(async () => undefined);
+        await connections.read(async (): Promise<void> => undefined);
         jest.advanceTimersByTime(IDLE_CLOSE_MS - 1);
 
-        await connections.read(async () => undefined);
+        await connections.read(async (): Promise<void> => undefined);
         jest.advanceTimersByTime(IDLE_CLOSE_MS - 1);
         await settle();
         expect(opened[0].closed).toBe(false);
@@ -118,8 +118,8 @@ describe('kept connections', () => {
         const connections = createConnections(true, open);
         failNext(1);
 
-        await expect(connections.read(async () => undefined)).rejects.toThrow('cannot open');
-        await connections.read(async () => undefined);
+        await expect(connections.read(async (): Promise<void> => undefined)).rejects.toThrow('cannot open');
+        await connections.read(async (): Promise<void> => undefined);
 
         expect(opened).toHaveLength(1);
     });
@@ -127,8 +127,8 @@ describe('kept connections', () => {
     it('closes both connections on close', async () => {
         const { open, opened } = fakes();
         const connections = createConnections(true, open);
-        await connections.read(async () => undefined);
-        await connections.write(async () => undefined);
+        await connections.read(async (): Promise<void> => undefined);
+        await connections.write(async (): Promise<void> => undefined);
 
         await connections.close();
 
@@ -140,7 +140,7 @@ describe('kept connections', () => {
         const connections = createConnections(true, () => new Promise<SqliteConnection>((_resolve, reject) => {
             fail = () => reject(new Error('cannot open'));
         }));
-        const read = connections.read(async () => undefined);
+        const read = connections.read(async (): Promise<void> => undefined);
 
         const closing = connections.close();
         fail();
@@ -160,7 +160,7 @@ describe('kept connections', () => {
     it('ignores a connection that fails to close', async () => {
         const { open } = fakes();
         const connections = createConnections(true, async () => ({ ...(await open()), close: () => Promise.reject(new Error('busy')) }));
-        await connections.read(async () => undefined);
+        await connections.read(async (): Promise<void> => undefined);
 
         await expect(connections.close()).resolves.toBeUndefined();
     });
@@ -171,8 +171,8 @@ describe('a connection per operation', () => {
         const { open, opened } = fakes();
         const connections = createConnections(false, open);
 
-        await connections.read(async () => undefined);
-        await connections.write(async () => undefined);
+        await connections.read(async (): Promise<void> => undefined);
+        await connections.write(async (): Promise<void> => undefined);
 
         expect(opened.map(connection => connection.closed)).toEqual([true, true]);
     });
