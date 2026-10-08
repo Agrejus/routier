@@ -1,6 +1,6 @@
 import { canPushDownJoin, CASING_CALLS, casingWarning, decodeJsonColumns, joinToPushDown, reportDivergentCalls, splitJoinRows } from '@routier/sql-plugin-core';
 import { assertIsNotNull, OptimisticConcurrencyError, UnknownRecord } from '@routier/core';
-import { buildFromPersistOperation, buildFromQueryOperation, buildJoinQueryOperation, compiledSchemaToSqliteTable } from './utils';
+import { buildFromPersistOperation, buildJoinQueryOperation, compiledSchemaToSqliteTable } from './utils';
 import { DbPluginBulkPersistEvent, DbPluginEvent, DbPluginQueryEvent, IDbPlugin, ITranslatedValue, SqlTranslator } from '@routier/core/plugins';
 import { PluginEventCallbackPartialResult, PluginEventCallbackResult, PluginEventResult } from '@routier/core/results';
 import { BulkPersistResult } from '@routier/core/collections';
@@ -9,6 +9,7 @@ import { ResultColumn } from '@routier/core/plugins';
 import { SqlPersistOperation } from './types';
 import type { SqliteConnection, SqliteDriver } from './drivers/types';
 import { createConnections, type SqliteConnections } from './connections';
+import { SqlFrameCache, type SqlCacheMode } from './queryCache';
 import type { Call } from '@routier/core/expressions';
 
 export type SqliteDbPluginOptions = {
@@ -21,6 +22,7 @@ export type SqliteDbPluginOptions = {
      * browser database that should not persist.
      */
     driver?: SqliteDriver;
+    sqlCache?: SqlCacheMode;
 };
 
 /**
@@ -93,9 +95,12 @@ export class SqliteDbPluginBase implements IDbPlugin {
 
     private readonly connections: SqliteConnections;
 
-    constructor(databaseName: string, driver: SqliteDriver) {
+    private readonly sqlFrames: SqlFrameCache;
+
+    constructor(databaseName: string, driver: SqliteDriver, sqlCache: SqlCacheMode = 'shadow') {
         this.databaseName = databaseName;
         this.driver = driver;
+        this.sqlFrames = new SqlFrameCache(sqlCache);
         this.connections = createConnections(driver.keepsConnections === true, () => this.openConnection());
     }
 
@@ -174,7 +179,7 @@ export class SqliteDbPluginBase implements IDbPlugin {
 
         const createTableSQL = this.resolveTableCreateStatement(event.operation.schema);
         const translator = new SqlTranslator(event.operation);
-        const operation = buildFromQueryOperation(event.operation);
+        const operation = this.sqlFrames.operationFor(event.operation);
         const { params, sql } = operation;
 
         this.connections.read(connection => this.runWithTable(connection, operation, createTableSQL))
