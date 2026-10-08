@@ -6,7 +6,7 @@
 
 # Class: FunctionBuilder
 
-Defined in: [core/src/codegen/blocks.ts:523](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L523)
+Defined in: [core/src/codegen/blocks.ts:518](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L518)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [core/src/codegen/blocks.ts:523](https://github.com/Agrejus/routier/
 
 > **new FunctionBuilder**(`functionName?`, `sectionName?`, `parentIndent?`, `parent?`): `FunctionBuilder`
 
-Defined in: [core/src/codegen/blocks.ts:528](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L528)
+Defined in: [core/src/codegen/blocks.ts:523](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L523)
 
 #### Parameters
 
@@ -552,7 +552,7 @@ Defined in: [core/src/codegen/blocks.ts:193](https://github.com/Agrejus/routier/
 
 > **parameters**(...`params`): `this`
 
-Defined in: [core/src/codegen/blocks.ts:533](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L533)
+Defined in: [core/src/codegen/blocks.ts:528](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L528)
 
 #### Parameters
 
@@ -570,7 +570,7 @@ Defined in: [core/src/codegen/blocks.ts:533](https://github.com/Agrejus/routier/
 
 > **return**(): `FunctionBuilder`
 
-Defined in: [core/src/codegen/blocks.ts:538](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L538)
+Defined in: [core/src/codegen/blocks.ts:535](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L535)
 
 #### Returns
 
@@ -582,7 +582,7 @@ Defined in: [core/src/codegen/blocks.ts:538](https://github.com/Agrejus/routier/
 
 > **appendBody**(`line`): `this`
 
-Defined in: [core/src/codegen/blocks.ts:543](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L543)
+Defined in: [core/src/codegen/blocks.ts:540](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L540)
 
 #### Parameters
 
@@ -600,7 +600,7 @@ Defined in: [core/src/codegen/blocks.ts:543](https://github.com/Agrejus/routier/
 
 > **toCallable**(): `string`
 
-Defined in: [core/src/codegen/blocks.ts:552](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L552)
+Defined in: [core/src/codegen/blocks.ts:549](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L549)
 
 #### Returns
 
@@ -612,7 +612,7 @@ Defined in: [core/src/codegen/blocks.ts:552](https://github.com/Agrejus/routier/
 
 > **toString**(): `string`
 
-Defined in: [core/src/codegen/blocks.ts:556](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L556)
+Defined in: [core/src/codegen/blocks.ts:553](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L553)
 
 #### Returns
 

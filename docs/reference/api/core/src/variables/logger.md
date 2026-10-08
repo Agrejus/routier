@@ -8,7 +8,7 @@
 
 > `const` **logger**: `object`
 
-Defined in: [core/src/utilities/logger.ts:142](https://github.com/Agrejus/routier/blob/main/core/src/utilities/logger.ts#L142)
+Defined in: [core/src/utilities/logger.ts:155](https://github.com/Agrejus/routier/blob/main/core/src/utilities/logger.ts#L155)
 
 ## Type Declaration
 

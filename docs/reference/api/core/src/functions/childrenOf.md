@@ -8,7 +8,7 @@
 
 > **childrenOf**(`expression`): [`Expression`](../classes/Expression.md)[]
 
-Defined in: [core/src/expressions/utils.ts:30](https://github.com/Agrejus/routier/blob/main/core/src/expressions/utils.ts#L30)
+Defined in: [core/src/expressions/utils.ts:32](https://github.com/Agrejus/routier/blob/main/core/src/expressions/utils.ts#L32)
 
 ## Parameters
 

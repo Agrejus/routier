@@ -120,7 +120,7 @@ Defined in: core/dist/collections/MemoryDataCollection.d.ts:24
 
 > **add**(`item`): `void`
 
-Defined in: core/dist/collections/MemoryDataCollection.d.ts:27
+Defined in: core/dist/collections/MemoryDataCollection.d.ts:28
 
 #### Parameters
 
@@ -142,7 +142,7 @@ Defined in: core/dist/collections/MemoryDataCollection.d.ts:27
 
 > **addIfAbsent**(`item`): `void`
 
-Defined in: core/dist/collections/MemoryDataCollection.d.ts:33
+Defined in: core/dist/collections/MemoryDataCollection.d.ts:34
 
 Adds a record only when no record with the same key is present. Durable
 collections use this to hydrate stored records around in-memory mutations
@@ -168,7 +168,7 @@ without clobbering them.
 
 > **getByIds**(`ids`): `Record`\<`string`, `unknown`\>
 
-Defined in: core/dist/collections/MemoryDataCollection.d.ts:39
+Defined in: core/dist/collections/MemoryDataCollection.d.ts:40
 
 Looks up a single record by its key values without scanning the collection.
 
@@ -196,7 +196,7 @@ The matching record or undefined when no record has the given key
 
 > **remove**(`item`): `void`
 
-Defined in: core/dist/collections/MemoryDataCollection.d.ts:40
+Defined in: core/dist/collections/MemoryDataCollection.d.ts:41
 
 #### Parameters
 
@@ -218,7 +218,7 @@ Defined in: core/dist/collections/MemoryDataCollection.d.ts:40
 
 > **update**(`item`): `void`
 
-Defined in: core/dist/collections/MemoryDataCollection.d.ts:41
+Defined in: core/dist/collections/MemoryDataCollection.d.ts:42
 
 #### Parameters
 

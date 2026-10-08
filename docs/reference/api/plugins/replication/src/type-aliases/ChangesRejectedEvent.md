@@ -8,7 +8,7 @@
 
 > **ChangesRejectedEvent** = `object`
 
-Defined in: plugins/replication/src/syncHooks.ts:9
+Defined in: [plugins/replication/src/syncHooks.ts:9](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L9)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: plugins/replication/src/syncHooks.ts:9
 
 > **type**: `"changes-rejected"`
 
-Defined in: plugins/replication/src/syncHooks.ts:10
+Defined in: [plugins/replication/src/syncHooks.ts:10](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L10)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: plugins/replication/src/syncHooks.ts:10
 
 > **collectionName**: `string`
 
-Defined in: plugins/replication/src/syncHooks.ts:11
+Defined in: [plugins/replication/src/syncHooks.ts:11](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L11)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: plugins/replication/src/syncHooks.ts:11
 
 > **changes**: [`RejectedChange`](RejectedChange.md)[]
 
-Defined in: plugins/replication/src/syncHooks.ts:12
+Defined in: [plugins/replication/src/syncHooks.ts:12](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L12)
 
 ***
 
@@ -40,7 +40,7 @@ Defined in: plugins/replication/src/syncHooks.ts:12
 
 > **conflict**: `boolean`
 
-Defined in: plugins/replication/src/syncHooks.ts:13
+Defined in: [plugins/replication/src/syncHooks.ts:13](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L13)
 
 ***
 
@@ -48,7 +48,7 @@ Defined in: plugins/replication/src/syncHooks.ts:13
 
 > **status**: `number` \| `null`
 
-Defined in: plugins/replication/src/syncHooks.ts:14
+Defined in: [plugins/replication/src/syncHooks.ts:14](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L14)
 
 ***
 
@@ -56,4 +56,4 @@ Defined in: plugins/replication/src/syncHooks.ts:14
 
 > **error**: `Error`
 
-Defined in: plugins/replication/src/syncHooks.ts:15
+Defined in: [plugins/replication/src/syncHooks.ts:15](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L15)

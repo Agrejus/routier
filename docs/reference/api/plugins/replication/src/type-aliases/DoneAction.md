@@ -8,7 +8,7 @@
 
 > **DoneAction** = `object`
 
-Defined in: plugins/replication/src/syncHooks.ts:39
+Defined in: [plugins/replication/src/syncHooks.ts:39](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L39)
 
 ## Methods
 
@@ -16,7 +16,7 @@ Defined in: plugins/replication/src/syncHooks.ts:39
 
 > **done**(): `void`
 
-Defined in: plugins/replication/src/syncHooks.ts:39
+Defined in: [plugins/replication/src/syncHooks.ts:39](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L39)
 
 #### Returns
 

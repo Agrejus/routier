@@ -8,7 +8,7 @@
 
 > **SelectedValue** = `object`
 
-Defined in: [core/src/expressions/parser.ts:2653](https://github.com/Agrejus/routier/blob/main/core/src/expressions/parser.ts#L2653)
+Defined in: [core/src/expressions/parser.ts:2669](https://github.com/Agrejus/routier/blob/main/core/src/expressions/parser.ts#L2669)
 
 What one value a sort, map, group or `nearest` selector returns is read from.
 
@@ -18,7 +18,7 @@ What one value a sort, map, group or `nearest` selector returns is read from.
 
 > **property**: [`PropertyInfo`](../classes/PropertyInfo.md)\<`any`\> \| `null`
 
-Defined in: [core/src/expressions/parser.ts:2655](https://github.com/Agrejus/routier/blob/main/core/src/expressions/parser.ts#L2655)
+Defined in: [core/src/expressions/parser.ts:2671](https://github.com/Agrejus/routier/blob/main/core/src/expressions/parser.ts#L2671)
 
 The schema property the value is read from, when it reads exactly one.
 
@@ -28,7 +28,7 @@ The schema property the value is read from, when it reads exactly one.
 
 > **reads**: [`PropertyInfo`](../classes/PropertyInfo.md)\<`any`\>[]
 
-Defined in: [core/src/expressions/parser.ts:2657](https://github.com/Agrejus/routier/blob/main/core/src/expressions/parser.ts#L2657)
+Defined in: [core/src/expressions/parser.ts:2673](https://github.com/Agrejus/routier/blob/main/core/src/expressions/parser.ts#L2673)
 
 Every schema property the value is read from, at any depth of the schema.
 
@@ -38,7 +38,7 @@ Every schema property the value is read from, at any depth of the schema.
 
 > **isDirectProperty**: `boolean`
 
-Defined in: [core/src/expressions/parser.ts:2662](https://github.com/Agrejus/routier/blob/main/core/src/expressions/parser.ts#L2662)
+Defined in: [core/src/expressions/parser.ts:2678](https://github.com/Agrejus/routier/blob/main/core/src/expressions/parser.ts#L2678)
 
 Whether the value is `property` itself. `false` for anything computed from it: a call, arithmetic,
 `.length`, or a member of a value that is not a property.

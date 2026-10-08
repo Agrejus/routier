@@ -8,7 +8,7 @@
 
 > **evaluate**(`expression`, `row`): [`EvaluationResult`](../type-aliases/EvaluationResult.md)
 
-Defined in: [core/src/expressions/evaluate.ts:263](https://github.com/Agrejus/routier/blob/main/core/src/expressions/evaluate.ts#L263)
+Defined in: [core/src/expressions/evaluate.ts:271](https://github.com/Agrejus/routier/blob/main/core/src/expressions/evaluate.ts#L271)
 
 Evaluates `expression` against `row`, or returns `undefined` when it cannot.
 

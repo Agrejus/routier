@@ -8,7 +8,7 @@
 
 > **ResponseHeaders** = `object`
 
-Defined in: plugins/replication/src/syncHooks.ts:22
+Defined in: [plugins/replication/src/syncHooks.ts:22](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L22)
 
 ## Methods
 
@@ -16,7 +16,7 @@ Defined in: plugins/replication/src/syncHooks.ts:22
 
 > **get**(`name`): `string`
 
-Defined in: plugins/replication/src/syncHooks.ts:22
+Defined in: [plugins/replication/src/syncHooks.ts:22](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L22)
 
 #### Parameters
 

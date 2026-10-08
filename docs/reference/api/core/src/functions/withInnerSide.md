@@ -8,7 +8,7 @@
 
 > **withInnerSide**(`explanation`, `innerSide`): [`QueryExplanation`](../type-aliases/QueryExplanation.md)
 
-Defined in: [core/src/plugins/query/explain.ts:412](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L412)
+Defined in: [core/src/plugins/query/explain.ts:414](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/explain.ts#L414)
 
 ## Parameters
 

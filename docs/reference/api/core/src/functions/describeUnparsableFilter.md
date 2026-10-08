@@ -8,7 +8,7 @@
 
 > **describeUnparsableFilter**(`filter`, `reason?`): [`ParameterisedQuery`](../type-aliases/ParameterisedQuery.md)
 
-Defined in: [core/src/plugins/query/describeFilter.ts:242](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/describeFilter.ts#L242)
+Defined in: [core/src/plugins/query/describeFilter.ts:246](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/describeFilter.ts#L246)
 
 A predicate core could not parse, shown as the caller wrote it.
 

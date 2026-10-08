@@ -8,4 +8,4 @@
 
 > **SwrRequestError** = [`FailureDetails`](FailureDetails.md)\<`"read"`\> & [`RetryAction`](RetryAction.md) & [`DoneAction`](DoneAction.md) & [`UseCachedAction`](UseCachedAction.md) \| [`FailureDetails`](FailureDetails.md)\<`"write"`\> & [`RetryAction`](RetryAction.md) & [`RejectAction`](RejectAction.md) & [`DeferAction`](DeferAction.md)
 
-Defined in: plugins/replication/src/syncHooks.ts:48
+Defined in: [plugins/replication/src/syncHooks.ts:48](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L48)

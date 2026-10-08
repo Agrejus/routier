@@ -8,7 +8,7 @@
 
 > **getProperties**(`expression`): [`PropertyInfo`](../classes/PropertyInfo.md)\<`any`\>[]
 
-Defined in: [core/src/expressions/utils.ts:56](https://github.com/Agrejus/routier/blob/main/core/src/expressions/utils.ts#L56)
+Defined in: [core/src/expressions/utils.ts:74](https://github.com/Agrejus/routier/blob/main/core/src/expressions/utils.ts#L74)
 
 Extracts all properties referenced in an expression
 

@@ -8,7 +8,7 @@
 
 > **compiledSchemaToJsonSchema**\<`T`\>(`compiledSchema`, `target`, `useOutputType`): `Record`\<`string`, `unknown`\>
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:460](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L460)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:461](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L461)
 
 Converts a CompiledSchema to a JSON Schema object schema.
 

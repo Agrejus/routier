@@ -8,7 +8,7 @@
 
 > **semiJoinFilter**(`reference`, `keys`): `object`
 
-Defined in: [core/src/plugins/query/join.ts:292](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/join.ts#L292)
+Defined in: [core/src/plugins/query/join.ts:295](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/join.ts#L295)
 
 A filter restricting the inner side to rows whose key is one the outer side actually has.
 

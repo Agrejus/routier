@@ -28,13 +28,21 @@ Defined in: [plugins/sqlite/src/drivers/types.ts:51](https://github.com/Agrejus/
 
 Whether this engine accepts a replacement `lower()`. SQLite's own folds ASCII only.
 
+***
+
+### keepsConnections?
+
+> `readonly` `optional` **keepsConnections**: `boolean`
+
+Defined in: [plugins/sqlite/src/drivers/types.ts:53](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/drivers/types.ts#L53)
+
 ## Methods
 
 ### open()
 
 > **open**(`databaseName`): `Promise`\<[`SqliteConnection`](SqliteConnection.md)\>
 
-Defined in: [plugins/sqlite/src/drivers/types.ts:61](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/drivers/types.ts#L61)
+Defined in: [plugins/sqlite/src/drivers/types.ts:63](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/drivers/types.ts#L63)
 
 Opens `databaseName`.
 
@@ -59,7 +67,7 @@ defect #34. Every driver here has to convert that into a rejected promise.
 
 > **deleteDatabase**(`databaseName`): `Promise`\<`void`\>
 
-Defined in: [plugins/sqlite/src/drivers/types.ts:69](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/drivers/types.ts#L69)
+Defined in: [plugins/sqlite/src/drivers/types.ts:71](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/drivers/types.ts#L71)
 
 Removes the database. Succeeds when it does not exist.
 

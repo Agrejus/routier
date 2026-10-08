@@ -8,4 +8,4 @@
 
 > **ParsedSelector** = \{ `kind`: `"value"`; `value`: [`SelectedValue`](SelectedValue.md); \} \| \{ `kind`: `"object"`; `fields`: [`SelectedValue`](SelectedValue.md) & `object`[]; \} \| \{ `kind`: `"not-parsable"`; `reason`: `string`; \}
 
-Defined in: [core/src/expressions/parser.ts:2665](https://github.com/Agrejus/routier/blob/main/core/src/expressions/parser.ts#L2665)
+Defined in: [core/src/expressions/parser.ts:2681](https://github.com/Agrejus/routier/blob/main/core/src/expressions/parser.ts#L2681)
