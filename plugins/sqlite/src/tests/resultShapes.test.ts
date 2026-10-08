@@ -261,9 +261,9 @@ describe('writes that RETURN rows', () => {
     it('describes the row an INSERT returns', () => {
         const operations = buildFromPersistOperation(userSchema as any, changes({ adds: [entity] }));
 
-        expect(operations.adds?.sql).toContain('RETURNING');
-        expectPlanMatchesSelectList(`SELECT ${operations.adds!.sql.split('RETURNING ')[1]} FROM x`, operations.adds?.result);
-        expect(encodingsOf(operations.adds?.result)).toEqual(fullRowEncodings);
+        expect(operations.adds[0]?.sql).toContain('RETURNING');
+        expectPlanMatchesSelectList(`SELECT ${operations.adds[0]!.sql.split('RETURNING ')[1]} FROM x`, operations.adds[0]?.result);
+        expect(encodingsOf(operations.adds[0]?.result)).toEqual(fullRowEncodings);
     });
 
     it('describes the row an UPDATE returns', () => {
@@ -278,7 +278,7 @@ describe('writes that RETURN rows', () => {
     it('describes the row a DELETE returns', () => {
         const operations = buildFromPersistOperation(userSchema as any, changes({ removes: [entity] }));
 
-        expect(encodingsOf(operations.removes?.result)).toEqual(fullRowEncodings);
+        expect(encodingsOf(operations.removes[0]?.result)).toEqual(fullRowEncodings);
     });
 
     /** A token check switches to one conditional statement per row, and must not lose the plan. */

@@ -5,6 +5,7 @@ import { etagToGenerate, stampEtag } from '@routier/core/plugins';
 import type { EtagMode } from '@routier/core/schema';
 import { IQuery, JoinQueryOptionValue, mappedResultColumns, Query, ResultColumn } from '@routier/core/plugins';
 import { SchemaPersistChanges } from '@routier/core/collections';
+import { chunksOf, rowsPerStatement, SQLITE_MAX_OR_TERMS } from './statementLimits';
 import { SqlOperation } from './types';
 
 /**
@@ -192,21 +193,12 @@ export function buildSelectFromExpression<TEntity extends {}, TShape>(options: {
 }
 
 export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSchema<TEntity>, changes: SchemaPersistChanges<Record<string, unknown>>, etagMode?: EtagMode): {
-    adds: SqlOperation | null;
+    adds: SqlOperation[];
     updates: SqlOperation[];
-    removes: SqlOperation | null;
+    removes: SqlOperation[];
 } {
     const collectionName = schema.collectionName;
-    const {
-        adds,
-        hasItems,
-        removes,
-        updates
-    } = changes;
-
-    if (!hasItems) {
-        return { adds: null, updates: [], removes: null };
-    }
+    const { adds, removes, updates } = changes;
 
     const etag = sqlEtagOf(schema, etagMode);
     const generatedEtag = etagToGenerate(schema, etagMode);
@@ -229,29 +221,26 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
     const insertColumns = insertProperties.map(p => `"${p.getResolvedName()}"`);
     const insertColumnStr = insertColumns.join(', ');
 
-    // Handle INSERT operations (adds)
-    let addsOperation: SqlOperation | null = null;
-    if (adds.length > 0) {
-        const placeholders = adds.map(() =>
-            `(${insertColumns.map(() => '?').join(', ')})`
-        ).join(', ');
+    const insertStatement = (rows: readonly Record<string, unknown>[]): SqlOperation => {
+        const rowPlaceholders = `(${insertColumns.map(() => '?').join(', ')})`;
+        const params: SqlOperation['params'] = [];
 
-        const insertSql = `INSERT INTO "${collectionName}" (${insertColumnStr}) VALUES ${placeholders} RETURNING ${allColumnStr}`;
+        for (const row of rows) {
+            const values = toColumnValueMap(row, schema, getDialect('sqlite'));
 
-        // Flatten all add parameters (excluding identity columns)
-        const addParams: any[] = [];
-        for (const add of adds) {
-            // Routed through the same column resolution the UPDATE path uses, so a nested
-            // object is JSON-encoded here too rather than handed to the driver as an object.
-            const values = toColumnValueMap(add as Record<string, unknown>, schema, getDialect('sqlite'));
-
-            for (const col of insertProperties) {
-                addParams.push(values.get(col.getResolvedName()));
+            for (const column of insertProperties) {
+                params.push(values.get(column.getResolvedName()));
             }
         }
 
-        addsOperation = { sql: insertSql, params: addParams, result: returned };
-    }
+        return {
+            sql: `INSERT INTO "${collectionName}" (${insertColumnStr}) VALUES ${rows.map(() => rowPlaceholders).join(', ')} RETURNING ${allColumnStr}`,
+            params,
+            result: returned,
+        };
+    };
+
+    const addsOperations = chunksOf(adds, rowsPerStatement(insertColumns.length)).map(insertStatement);
 
     // Handle UPDATE operations (updates). One SqlOperation per changed-column group — the
     // shared builder resolves deltas to columns (renames, JSON encoding, empty-delta
@@ -259,6 +248,16 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
     // Schemas with a `.concurrency()` token take one CONDITIONAL statement per row
     // instead of the grouped CASE form, so a stale write affects zero rows and is
     // reported as a conflict on that exact row.
+    const groupedUpdateOperations = (): SqlOperation[] => chunksOf(
+        updates as { entity: Record<string, unknown>; delta: Record<string, unknown> }[],
+        rowsPerStatement(2 * (columnProperties.length + 1) + 1)
+    ).flatMap(chunk => buildGroupedUpdateOperations(
+        schema,
+        chunk,
+        getDialect('sqlite'),
+        { suffix: ` RETURNING ${allColumnStr}`, etag }
+    )).map(({ sql, params }) => ({ sql, params, result: returned }));
+
     const hasConcurrencyChecks = updates.some(u => (u as { concurrency?: unknown }).concurrency != null);
     const updatesOperations: SqlOperation[] = hasConcurrencyChecks
         ? buildConditionalUpdateOperations(
@@ -267,44 +266,34 @@ export function buildFromPersistOperation<TEntity extends {}>(schema: CompiledSc
             getDialect('sqlite'),
             { suffix: ` RETURNING ${allColumnStr}`, etag }
         ).map(({ sql, params, id, checked }) => ({ sql, params, conflictCheck: checked ? { id } : undefined, result: returned }))
-        : buildGroupedUpdateOperations(
-            schema,
-            updates as { entity: Record<string, unknown>; delta: Record<string, unknown> }[],
-            getDialect('sqlite'),
-            { suffix: ` RETURNING ${allColumnStr}`, etag }
-        ).map(({ sql, params }) => ({ sql, params, result: returned }));
+        : groupedUpdateOperations();
 
-    // Handle DELETE operations (removes)
-    let removesOperation: SqlOperation | null = null;
-    if (removes.length > 0) {
-        const idProperties = schema.idProperties;
+    const idProperties = schema.idProperties;
 
-        // Build WHERE clause for each remove operation
-        const whereClauses: string[] = [];
-        const allParams: any[] = [];
+    const deleteStatement = (rows: readonly Record<string, unknown>[]): SqlOperation => {
+        const params: SqlOperation['params'] = [];
+        const matches = rows.map(row => {
+            const keyMatches = idProperties.map(idProperty => {
+                params.push(idProperty.getValue(row));
+                return `"${idProperty.getResolvedName()}" = ?`;
+            });
 
-        for (const remove of removes) {
-            const entityWhereClauses: string[] = [];
+            return `(${keyMatches.join(' AND ')})`;
+        });
 
-            for (const idProperty of idProperties) {
-                const idValue = idProperty.getValue(remove);
-                entityWhereClauses.push(`"${idProperty.getResolvedName()}" = ?`);
-                allParams.push(idValue);
+        return {
+            sql: `DELETE FROM "${collectionName}" WHERE ${matches.join(' OR ')} RETURNING ${allColumnStr}`,
+            params,
+            result: returned,
+        };
+    };
 
-            }
-
-            whereClauses.push(`(${entityWhereClauses.join(' AND ')})`);
-        }
-
-        const whereClause = whereClauses.join(' OR ');
-        const deleteSql = `DELETE FROM "${collectionName}" WHERE ${whereClause} RETURNING ${allColumnStr}`;
-        removesOperation = { sql: deleteSql, params: allParams, result: returned };
-    }
+    const removesOperations = chunksOf(removes, rowsPerStatement(idProperties.length, SQLITE_MAX_OR_TERMS)).map(deleteStatement);
 
     return {
-        adds: addsOperation,
+        adds: addsOperations,
         updates: updatesOperations,
-        removes: removesOperation
+        removes: removesOperations
     };
 }
 

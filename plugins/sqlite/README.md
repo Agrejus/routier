@@ -127,6 +127,10 @@ SQLite's own. A committed transaction is on disk when `COMMIT` returns.
 Every save runs inside one `BEGIN IMMEDIATE` transaction. If any statement fails, the whole
 save rolls back and the plugin reports the error.
 
+A save of any size works. Adds, updates and removes are split into as many statements as SQLite's
+limits need (32,766 parameters and 500 removed rows per statement), all inside that one
+transaction, so a large save is still all or nothing.
+
 ### Column types
 
 SQLite has no boolean, date, array, or object column type. The plugin maps them as follows.
