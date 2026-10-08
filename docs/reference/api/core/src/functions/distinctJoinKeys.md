@@ -8,7 +8,7 @@
 
 > **distinctJoinKeys**(`rows`, `reference`, `threshold`, `options?`): `Set`\<`unknown`\>
 
-Defined in: [core/src/plugins/query/join.ts:250](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/join.ts#L250)
+Defined in: [core/src/plugins/query/join.ts:253](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/join.ts#L253)
 
 The distinct join keys of the outer rows, or `null` when there are too many to be worth sending.
 

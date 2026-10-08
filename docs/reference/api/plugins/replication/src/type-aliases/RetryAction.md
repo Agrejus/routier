@@ -8,7 +8,7 @@
 
 > **RetryAction** = `object`
 
-Defined in: plugins/replication/src/syncHooks.ts:38
+Defined in: [plugins/replication/src/syncHooks.ts:38](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L38)
 
 ## Methods
 
@@ -16,7 +16,7 @@ Defined in: plugins/replication/src/syncHooks.ts:38
 
 > **retry**(): `Promise`\<`void`\>
 
-Defined in: plugins/replication/src/syncHooks.ts:38
+Defined in: [plugins/replication/src/syncHooks.ts:38](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L38)
 
 #### Returns
 

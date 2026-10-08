@@ -196,7 +196,7 @@ dispatch sends a `forDispatch` copy, so a restore brings back no reports.
 
 > **reportMissingCapability**(`item`): `void`
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:344](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L344)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:349](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L349)
 
 A plugin reporting that its engine cannot express one option.
 
@@ -226,7 +226,7 @@ a redirect distinguishable from something core sent to memory in the first place
 
 > **reportEngineDivergence**(`item`): `void`
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:354](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L354)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:359](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L359)
 
 A plugin reporting that its engine would answer one option differently from JavaScript.
 
@@ -249,7 +249,7 @@ one and not the other. See `DatabaseExecutionReason`.
 
 > **forDispatch**(): `QueryOptionsCollection`\<`T`\>
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:397](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L397)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:406](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L406)
 
 A copy of the collection for one dispatch to a plugin, with nothing reported on it.
 
@@ -274,7 +274,7 @@ cascades over the whole dispatch without reaching the collection it was copied f
 
 > **notExecuted**(): [`QueryCollectionItem`](../type-aliases/QueryCollectionItem.md)\<`any`, `any`\>[]
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:438](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L438)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:453](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L453)
 
 The options the database did not run, in the order they were written.
 
@@ -288,7 +288,7 @@ The options the database did not run, in the order they were written.
 
 > **split**(): `object`
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:446](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L446)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:460](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L460)
 
 #### Returns
 
@@ -308,7 +308,7 @@ Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:446](https://githu
 
 > **hasTransformations**(): `boolean`
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:475](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L475)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:489](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L489)
 
 #### Returns
 
@@ -320,7 +320,7 @@ Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:475](https://githu
 
 > **has**\<`K`\>(`name`): `boolean`
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:480](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L480)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:494](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L494)
 
 #### Type Parameters
 
@@ -344,7 +344,7 @@ Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:480](https://githu
 
 > **get**\<`K`\>(`name`): [`QueryCollectionItem`](../type-aliases/QueryCollectionItem.md)\<`T`, `K`\>[]
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:484](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L484)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:498](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L498)
 
 #### Type Parameters
 
@@ -368,7 +368,7 @@ Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:484](https://githu
 
 > **getLast**\<`K`\>(`name`): [`QueryOption`](../type-aliases/QueryOption.md)\<`T`, `K`\>
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:488](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L488)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:502](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L502)
 
 #### Type Parameters
 
@@ -392,7 +392,7 @@ Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:488](https://githu
 
 > **getValues**\<`K`\>(`name`): [`QueryOptionValueMap`](../type-aliases/QueryOptionValueMap.md)\<`T`\>\[`K`\][]
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:502](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L502)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:516](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L516)
 
 #### Type Parameters
 
@@ -416,7 +416,7 @@ Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:502](https://githu
 
 > **forEach**(`iterator`): `void`
 
-Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:526](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L526)
+Defined in: [core/src/plugins/query/QueryOptionsCollection.ts:548](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/QueryOptionsCollection.ts#L548)
 
 #### Parameters
 

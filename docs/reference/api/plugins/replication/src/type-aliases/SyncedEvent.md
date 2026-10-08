@@ -8,7 +8,7 @@
 
 > **SyncedEvent** = `object`
 
-Defined in: plugins/replication/src/syncHooks.ts:18
+Defined in: [plugins/replication/src/syncHooks.ts:18](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L18)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: plugins/replication/src/syncHooks.ts:18
 
 > **type**: `"synced"`
 
-Defined in: plugins/replication/src/syncHooks.ts:18
+Defined in: [plugins/replication/src/syncHooks.ts:18](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L18)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: plugins/replication/src/syncHooks.ts:18
 
 > **sent**: `number`
 
-Defined in: plugins/replication/src/syncHooks.ts:18
+Defined in: [plugins/replication/src/syncHooks.ts:18](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L18)
 
 ***
 
@@ -32,7 +32,7 @@ Defined in: plugins/replication/src/syncHooks.ts:18
 
 > **failed**: `number`
 
-Defined in: plugins/replication/src/syncHooks.ts:18
+Defined in: [plugins/replication/src/syncHooks.ts:18](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L18)
 
 ***
 
@@ -40,4 +40,4 @@ Defined in: plugins/replication/src/syncHooks.ts:18
 
 > **rejected**: `number`
 
-Defined in: plugins/replication/src/syncHooks.ts:18
+Defined in: [plugins/replication/src/syncHooks.ts:18](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L18)

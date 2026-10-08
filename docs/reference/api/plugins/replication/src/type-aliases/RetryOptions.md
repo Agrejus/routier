@@ -8,7 +8,7 @@
 
 > **RetryOptions** = `object`
 
-Defined in: plugins/replication/src/retry.ts:4
+Defined in: [plugins/replication/src/retry.ts:4](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/retry.ts#L4)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: plugins/replication/src/retry.ts:4
 
 > `optional` **maxAttempts**: `number`
 
-Defined in: plugins/replication/src/retry.ts:5
+Defined in: [plugins/replication/src/retry.ts:5](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/retry.ts#L5)
 
 ***
 
@@ -24,7 +24,7 @@ Defined in: plugins/replication/src/retry.ts:5
 
 > `optional` **baseDelayMs**: `number`
 
-Defined in: plugins/replication/src/retry.ts:6
+Defined in: [plugins/replication/src/retry.ts:6](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/retry.ts#L6)
 
 ***
 
@@ -32,4 +32,4 @@ Defined in: plugins/replication/src/retry.ts:6
 
 > `optional` **maxDelayMs**: `number`
 
-Defined in: plugins/replication/src/retry.ts:7
+Defined in: [plugins/replication/src/retry.ts:7](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/retry.ts#L7)

@@ -10,7 +10,7 @@ import { ResultColumn } from '@routier/core/plugins';
  * double.
  */
 
-/** One open connection. The plugin opens one per operation and closes it on every path. */
+/** One open connection. A driver that sets `keepsConnections` has it reused across operations; otherwise the plugin opens one per operation. */
 export interface SqliteConnection {
     /**
      * Runs a statement and returns its rows.
@@ -31,7 +31,7 @@ export interface SqliteConnection {
     /** Runs a statement that returns nothing: DDL, `BEGIN`, `COMMIT`, `ROLLBACK`. */
     run(sql: string, params?: readonly unknown[]): Promise<void>;
 
-    /** Releases the connection. Called on every completion path, including failures. */
+    /** Releases the connection, after its operation or, for a kept connection, when it goes idle or the plugin is destroyed. */
     close(): Promise<void>;
 
     /**

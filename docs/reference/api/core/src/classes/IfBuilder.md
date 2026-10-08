@@ -6,7 +6,7 @@
 
 # Class: IfBuilder
 
-Defined in: [core/src/codegen/blocks.ts:592](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L592)
+Defined in: [core/src/codegen/blocks.ts:586](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L586)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [core/src/codegen/blocks.ts:592](https://github.com/Agrejus/routier/
 
 > **new IfBuilder**(`condition`, `name?`, `parentIndent?`, `parent?`): `IfBuilder`
 
-Defined in: [core/src/codegen/blocks.ts:595](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L595)
+Defined in: [core/src/codegen/blocks.ts:589](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L589)
 
 #### Parameters
 
@@ -552,7 +552,7 @@ Defined in: [core/src/codegen/blocks.ts:193](https://github.com/Agrejus/routier/
 
 > **appendBody**(`line`): `this`
 
-Defined in: [core/src/codegen/blocks.ts:600](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L600)
+Defined in: [core/src/codegen/blocks.ts:594](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L594)
 
 #### Parameters
 
@@ -570,7 +570,7 @@ Defined in: [core/src/codegen/blocks.ts:600](https://github.com/Agrejus/routier/
 
 > **unshiftBody**(`line`): `this`
 
-Defined in: [core/src/codegen/blocks.ts:605](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L605)
+Defined in: [core/src/codegen/blocks.ts:599](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L599)
 
 #### Parameters
 
@@ -588,7 +588,7 @@ Defined in: [core/src/codegen/blocks.ts:605](https://github.com/Agrejus/routier/
 
 > **toString**(): `string`
 
-Defined in: [core/src/codegen/blocks.ts:622](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L622)
+Defined in: [core/src/codegen/blocks.ts:616](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L616)
 
 #### Returns
 

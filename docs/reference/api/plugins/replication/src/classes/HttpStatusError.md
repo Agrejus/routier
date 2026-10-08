@@ -34,15 +34,15 @@ Defined in: [plugins/replication/src/httpUtils.ts:27](https://github.com/Agrejus
 
 ##### retryAfterMs
 
-`number` = `null`
+`number`
 
 ##### responseBody
 
-`unknown` = `null`
+`unknown`
 
 ##### headers
 
-[`ResponseHeaders`](../type-aliases/ResponseHeaders.md) = `NO_HEADERS`
+[`ResponseHeaders`](../type-aliases/ResponseHeaders.md)
 
 #### Returns
 

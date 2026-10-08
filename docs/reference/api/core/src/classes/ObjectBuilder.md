@@ -338,7 +338,7 @@ Defined in: [core/src/codegen/blocks.ts:382](https://github.com/Agrejus/routier/
 
 ### nested()
 
-> **nested**(`propertyName`, `name?`): `ObjectBuilder`
+> **nested**(`propertyName`, `name?`, `absentWhenNull?`): `ObjectBuilder`
 
 Defined in: [core/src/codegen/blocks.ts:394](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L394)
 
@@ -352,6 +352,10 @@ Defined in: [core/src/codegen/blocks.ts:394](https://github.com/Agrejus/routier/
 
 `string`
 
+##### absentWhenNull?
+
+`string`
+
 #### Returns
 
 `ObjectBuilder`
@@ -362,7 +366,7 @@ Defined in: [core/src/codegen/blocks.ts:394](https://github.com/Agrejus/routier/
 
 > **toString**(): `string`
 
-Defined in: [core/src/codegen/blocks.ts:412](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L412)
+Defined in: [core/src/codegen/blocks.ts:411](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L411)
 
 #### Returns
 

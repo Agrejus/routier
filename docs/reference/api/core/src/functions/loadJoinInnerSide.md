@@ -8,7 +8,7 @@
 
 > **loadJoinInnerSide**\<`TRoot`, `TShape`\>(`event`, `query`, `done`, `outerKeys?`, `innerExecutedQueries?`): `void`
 
-Defined in: [core/src/plugins/query/join.ts:340](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/join.ts#L340)
+Defined in: [core/src/plugins/query/join.ts:343](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/join.ts#L343)
 
 Loads a join's inner side by asking the plugin to run an ORDINARY query for it.
 

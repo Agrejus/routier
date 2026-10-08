@@ -268,7 +268,7 @@ refresh with unsynced items intact, or a MemoryPlugin to accept losing them.
 
 > `optional` **onEvent**: (`event`) => `void`
 
-Defined in: plugins/replication/src/syncHooks.ts:59
+Defined in: [plugins/replication/src/syncHooks.ts:59](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L59)
 
 #### Parameters
 
@@ -290,7 +290,7 @@ Defined in: plugins/replication/src/syncHooks.ts:59
 
 > `optional` **onError**: (`error`) => `void`
 
-Defined in: plugins/replication/src/syncHooks.ts:60
+Defined in: [plugins/replication/src/syncHooks.ts:60](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L60)
 
 #### Parameters
 
