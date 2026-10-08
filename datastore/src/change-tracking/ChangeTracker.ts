@@ -50,6 +50,7 @@ function markPersisted<TEntity extends {}>(entity: InferType<TEntity>) {
  * created.
  */
 type Attachment<TEntity extends {}> = {
+    key: IdType;
     doc: InferType<TEntity>;
     changeType: EntityChangeType;
     /** `doc.__tracking__` at attach time. Absent for entities tracked without a proxy. */
@@ -203,6 +204,7 @@ export class ChangeTracker<TEntity extends {}> {
      */
     private attach(key: IdType, doc: InferType<TEntity>, changeType: EntityChangeType) {
         this.canonicalAttachments.set(key, {
+            key,
             doc,
             changeType,
             tracking: (doc as unknown as ChangeTrackedEntity<{}>).__tracking__,
@@ -445,6 +447,15 @@ Plugin Document: ${JSON.stringify(add, null, 2)}`
             }
 
             const rawDoc = (tracking?.raw ?? canonicalAttachment.doc) as InferType<TEntity>;
+            const currentKey = this.schema.getId(rawDoc);
+
+            if (currentKey !== canonicalAttachment.key) {
+                throw new Error(
+                    `Cannot change the key of a tracked entity in ${this.schema.collectionName}: ${JSON.stringify(canonicalAttachment.key)} became ${JSON.stringify(currentKey)}. ` +
+                    `A key identifies the row, so remove the entity and add a new one instead.`
+                );
+            }
+
             const serializedEntity = this.schema.preprocess(rawDoc as InferCreateType<TEntity>);
             // A hash comparison says THAT the entity changed, not WHICH properties did, so
             // a diff-tracked change ships an empty delta — the convention every plugin
