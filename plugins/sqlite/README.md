@@ -146,9 +146,16 @@ need the original JavaScript type. This is why the plugin runs the contract kit 
 
 ### Concurrency
 
-SQLite serializes writers at the file level. In Node the plugin opens one connection per
-operation and closes it on every completion path, which is what lets that file locking do its
-job.
+SQLite serializes writers at the file level. In Node each plugin keeps two connections open:
+one for saves, which take their turn one after another, and one for queries. A query never runs
+inside a save's transaction, so it never sees rows from a save that is still in progress or rolled
+back, and it does not wait for the save to finish. Other plugins and other processes on the same
+file still contend through SQLite's own file locks, exactly as before.
+
+Keeping them open is what makes repeated work fast: no open, close or re-prepare per query, which
+measured about 45% faster for small queries and about 20% faster for saves. A connection idle for
+a second is closed and reopened on next use. The `sqlite3` driver behaves the same way; a driver
+that does not set `keepsConnections`, such as Turso, still opens one connection per operation.
 
 In the browser there is no second process to lock against, so the worker holds one database
 open for the life of the page and `close()` is a no-op. The SAH pool takes **exclusive** OPFS
@@ -190,8 +197,10 @@ exists, and the next write fails on the missing column. Migrate the database you
 Call `store.destroyAsync()` to close and delete the database — the file in Node, the OPFS
 entry in a browser.
 
-In Node, connections are per-operation and always closed, so a store that is never destroyed
-holds no file handles. A test run needs no `--forceExit` on account of this plugin.
+In Node, a plugin's two connections close after a second without use and on `destroyAsync()`,
+so a store that is never destroyed releases its file handles soon after its last operation. The
+idle timer does not keep the process alive, so a test run needs no `--forceExit` on account of
+this plugin.
 
 ### Failure semantics
 

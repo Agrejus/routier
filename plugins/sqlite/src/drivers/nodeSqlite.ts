@@ -70,6 +70,7 @@ class NodeSqliteConnection implements SqliteConnection {
 export const nodeSqliteDriver = (): SqliteDriver => ({
     name: 'node:sqlite',
     foldsUnicodeCasing: true,
+    keepsConnections: true,
 
     async open(databaseName: string): Promise<SqliteConnection> {
         const { DatabaseSync } = await loadModule();
