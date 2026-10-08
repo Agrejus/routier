@@ -3,6 +3,26 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## Faster SQLite in Node and in-memory databases that keep their rows (2026-10-08)
+
+Patch to `@routier/sqlite-plugin`. Only `@routier/sqlite-plugin` references move to `0.6.1` in the
+repository.
+
+### Changed — @routier/sqlite-plugin 0.6.1
+
+- `node:sqlite` and `sqlite3` keep one writer and one reader connection open instead of opening
+  one per operation. Saves take their turn on the writer; queries use the reader, so they never see
+  a save in progress and never wait for one. A connection idle for a second is closed. Small
+  queries measured about 45% faster and saves about 20% faster (#108).
+- `node:sqlite` keeps each connection's 64 most recently used prepared statements: about 8% faster
+  queries and 13% faster saves on top of the above (#109).
+
+### Fixed — @routier/sqlite-plugin 0.6.1
+
+- A `':memory:'` database keeps its rows. Every save used to land in a separate, discarded
+  in-memory database, so queries always came back empty. It now lives on one connection that
+  saves and queries share in turn, closed only by `destroy` (#110, #111).
+
 ## Key-only schemas and changed keys (2026-10-08)
 
 Patches to `@routier/core` and `@routier/datastore`. Every package's `@routier/core` floor moves to
