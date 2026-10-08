@@ -44,14 +44,14 @@
     "description": "OpenTelemetry plugin for routier",
     "peerDependencies": {
         "@opentelemetry/api": "^1.9.0",
-        "@routier/core": ">=0.9.2"
+        "@routier/core": ">=0.9.3"
     },
     "devDependencies": {
         "@opentelemetry/api": "^1.9.0",
         "@opentelemetry/context-async-hooks": "^2.10.0",
         "@opentelemetry/sdk-trace-base": "^2.0.0",
-        "@routier/core": "^0.9.2",
-        "@routier/datastore": "^0.4.5",
+        "@routier/core": "^0.9.3",
+        "@routier/datastore": "^0.4.6",
         "@routier/memory-plugin": "^0.4.0",
         "@routier/test-utils": "file:../../tooling/test-utils",
         "@rspack/cli": "^1.1.8",

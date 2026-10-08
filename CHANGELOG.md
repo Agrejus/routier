@@ -3,6 +3,25 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## Key-only schemas and changed keys (2026-10-08)
+
+Patches to `@routier/core` and `@routier/datastore`. Every package's `@routier/core` floor moves to
+`>=0.9.3` and `@routier/datastore` references move to `0.4.6` in the repository; packages not
+released here keep their published ranges.
+
+### Fixed — @routier/core 0.9.3
+
+- A schema whose every root property is a key or identity can be saved. `preprocess` and `strip`
+  threw `ReferenceError: result is not defined`, so the save failed before it reached the plugin
+  (#101, #104).
+
+### Fixed — @routier/datastore 0.4.6
+
+- Changing the key or identity of a tracked entity rejects the save with an error that names the
+  collection and both keys, before anything is written. It used to fail with
+  `Cannot read properties of undefined (reading 'doc')` after the save had already been written.
+  Keys cannot change; remove the entity and add a new one (#102, #105).
+
 ## Faster reads and saves, deep proxy tracking, and fixes (2026-10-07)
 
 Patches to `@routier/core`, `@routier/datastore`, `@routier/replication-plugin` and
