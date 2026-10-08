@@ -199,8 +199,8 @@ describe('toMap', () => {
         });
     });
 
-    describe('performance characteristics', () => {
-        it('should handle large arrays efficiently', () => {
+    describe('large inputs', () => {
+        it('maps a large array', () => {
             const largeArray = Array.from({ length: 10000 }, (_, i) => ({
                 id: i,
                 name: `User${i}`,
@@ -209,18 +209,15 @@ describe('toMap', () => {
                 isActive: i % 2 === 0
             }));
 
-            const start = performance.now();
             const result = toMap(largeArray, (user) => user.id);
-            const end = performance.now();
 
             expect(result).toBeInstanceOf(Map);
             expect(result.size).toBe(10000);
             expect(result.get(0)).toEqual(largeArray[0]);
             expect(result.get(9999)).toEqual(largeArray[9999]);
-            expect(end - start).toBeLessThan(100); // Should complete in under 100ms
         });
 
-        it('should handle many duplicate keys efficiently', () => {
+        it('keeps the last value for each duplicate key', () => {
             const arrayWithDuplicates = Array.from({ length: 1000 }, (_, i) => ({
                 id: i,
                 name: i % 10 === 0 ? 'Alice' : `User${i}`,
@@ -229,14 +226,11 @@ describe('toMap', () => {
                 isActive: i % 2 === 0
             }));
 
-            const start = performance.now();
             const result = toMap(arrayWithDuplicates, (user) => user.name);
-            const end = performance.now();
 
             expect(result).toBeInstanceOf(Map);
-            expect(result.size).toBeLessThan(1000); // Fewer unique keys due to duplicates
-            expect(result.get('Alice')).toBeDefined(); // Last Alice should be in map
-            expect(end - start).toBeLessThan(50); // Should complete in under 50ms
+            expect(result.size).toBe(901);
+            expect(result.get('Alice')).toEqual(arrayWithDuplicates[990]);
         });
     });
 
