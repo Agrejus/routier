@@ -1,51 +1,28 @@
+import { StatementCache } from './statementCache';
 import type { WasmStatement } from './wasmRows';
 
 export type ReusableStatement = WasmStatement & { reset(): void; clearBindings(): void };
 
 export type PreparingDatabase = { prepare(sql: string): WasmStatement };
 
-export const STATEMENT_CACHE_MAX = 64;
+const statementCaches = new WeakMap<PreparingDatabase, StatementCache<ReusableStatement>>();
 
-const statementCaches = new WeakMap<PreparingDatabase, Map<string, ReusableStatement>>();
-
-const markMostRecentlyUsed = (cache: Map<string, ReusableStatement>, sql: string, statement: ReusableStatement): ReusableStatement => {
-    cache.delete(sql);
-    cache.set(sql, statement);
-    return statement;
-};
-
-const evictLeastRecentlyUsed = (cache: Map<string, ReusableStatement>): void => {
-    const [oldestSql, oldest] = cache.entries().next().value as [string, ReusableStatement];
-    cache.delete(oldestSql);
-    oldest.finalize();
-};
-
-export const acquireStatement = (database: PreparingDatabase, sql: string): ReusableStatement => {
+const cacheFor = (database: PreparingDatabase): StatementCache<ReusableStatement> => {
     let cache = statementCaches.get(database);
 
     if (cache == null) {
-        cache = new Map();
+        cache = new StatementCache(sql => database.prepare(sql) as ReusableStatement, statement => statement.finalize());
         statementCaches.set(database, cache);
     }
 
-    const cached = cache.get(sql);
-
-    if (cached != null) {
-        return markMostRecentlyUsed(cache, sql, cached);
-    }
-
-    const statement = database.prepare(sql) as ReusableStatement;
-    cache.set(sql, statement);
-
-    if (cache.size > STATEMENT_CACHE_MAX) {
-        evictLeastRecentlyUsed(cache);
-    }
-
-    return statement;
+    return cache;
 };
 
+export const acquireStatement = (database: PreparingDatabase, sql: string): ReusableStatement =>
+    cacheFor(database).acquire(sql);
+
 const discardBrokenStatement = (database: PreparingDatabase, sql: string, statement: ReusableStatement): void => {
-    statementCaches.get(database)?.delete(sql);
+    cacheFor(database).forget(sql);
     try {
         statement.finalize();
     } catch {

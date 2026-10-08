@@ -154,7 +154,10 @@ file still contend through SQLite's own file locks, exactly as before.
 
 Keeping them open is what makes repeated work fast: no open, close or re-prepare per query, which
 measured about 45% faster for small queries and about 20% faster for saves. A connection idle for
-a second is closed and reopened on next use. The `sqlite3` driver behaves the same way; a driver
+a second is closed and reopened on next use. With `node:sqlite`, each connection also keeps its 64
+most recently used prepared statements, so a repeated query or save skips the prepare step: about
+8% faster for small queries and 13% for saves on top of the above. The `sqlite3` driver keeps its
+connections the same way but prepares each statement fresh; a driver
 that does not set `keepsConnections`, such as Turso, still opens one connection per operation.
 
 In the browser there is no second process to lock against, so the worker holds one database

@@ -1,3 +1,4 @@
+import { StatementCache } from './statementCache';
 import { normalizeParams, type SqliteConnection, type SqliteDriver } from './types';
 
 /**
@@ -16,8 +17,10 @@ import { normalizeParams, type SqliteConnection, type SqliteDriver } from './typ
  */
 
 /** The parts of `node:sqlite` this uses, so the import can be typed without the module. */
+type StatementSyncLike = { all(...params: unknown[]): unknown[]; run(...params: unknown[]): unknown };
+
 type DatabaseSyncLike = {
-    prepare(sql: string): { all(...params: unknown[]): unknown[]; run(...params: unknown[]): unknown };
+    prepare(sql: string): StatementSyncLike;
     exec(sql: string): void;
     function(name: string, options: { deterministic: boolean }, implementation: (...args: unknown[]) => unknown): void;
     close(): void;
@@ -41,10 +44,14 @@ const loadModule = async (): Promise<NodeSqliteModule> => {
 
 class NodeSqliteConnection implements SqliteConnection {
 
-    constructor(private readonly database: DatabaseSyncLike) { }
+    private readonly statements: StatementCache<StatementSyncLike>;
+
+    constructor(private readonly database: DatabaseSyncLike) {
+        this.statements = new StatementCache(sql => database.prepare(sql), (): void => undefined);
+    }
 
     async all(sql: string, params?: readonly unknown[]): Promise<unknown[]> {
-        return this.database.prepare(sql).all(...normalizeParams(params));
+        return this.statements.acquire(sql).all(...normalizeParams(params));
     }
 
     defineFunction(name: string, implementation: (...args: unknown[]) => unknown): void {
@@ -59,7 +66,7 @@ class NodeSqliteConnection implements SqliteConnection {
             return;
         }
 
-        this.database.prepare(sql).run(...normalizeParams(params));
+        this.statements.acquire(sql).run(...normalizeParams(params));
     }
 
     async close(): Promise<void> {
