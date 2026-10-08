@@ -1,4 +1,4 @@
-import { CodeBuilder, ObjectBuilder, SlotBlock } from '../../blocks';
+import { CodeBuilder, ObjectBuilder } from '../../blocks';
 import { SlotPath } from '../../SlotPath';
 import { PropertyInfoHandler } from "../types";
 import { PropertyInfo, SchemaTypes } from "../../../schema";
@@ -10,9 +10,6 @@ export class PrepareObjectHandler extends PropertyInfoHandler {
         if (property.type === SchemaTypes.Object) {
             const slotPath = new SlotPath("result", "variable", "object");
 
-            if (builder.getOrDefault<ObjectBuilder>(slotPath.get()) == null) {
-                builder.get<SlotBlock>("result").assign("const result", { name: "variable" }).object({ name: "object" });
-            }
 
             slotPath.push(...property.getParentPathArray());
             builder.get<ObjectBuilder>(slotPath.get())

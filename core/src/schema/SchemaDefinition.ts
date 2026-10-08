@@ -433,12 +433,12 @@ export class SchemaDefinition<T extends {}> extends SchemaBase<T, any> {
     return destination;`);
 
             const prepareCodeBuilder = new CodeBuilder();
-            prepareCodeBuilder.slot("result");
+            prepareCodeBuilder.slot("result").assign("const result", { name: "variable" }).object({ name: "object" });
             prepareCodeBuilder.slot("assignments");
             prepareCodeBuilder.slot("return").raw(`     return result;`);
 
             const stripCodeBuilder = new CodeBuilder();
-            stripCodeBuilder.slot("result");
+            stripCodeBuilder.slot("result").assign("const result", { name: "variable" }).object({ name: "object" });
             stripCodeBuilder.slot("return").raw(`     return result;`);
 
             const cloneCodeBuilder = new CodeBuilder();
