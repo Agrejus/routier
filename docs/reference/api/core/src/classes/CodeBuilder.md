@@ -6,7 +6,7 @@
 
 # Class: CodeBuilder
 
-Defined in: [core/src/codegen/blocks.ts:634](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L634)
+Defined in: [core/src/codegen/blocks.ts:628](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L628)
 
 ## Extends
 
@@ -548,7 +548,7 @@ Defined in: [core/src/codegen/blocks.ts:193](https://github.com/Agrejus/routier/
 
 > **bind**(`value`, `name`): `string`
 
-Defined in: [core/src/codegen/blocks.ts:646](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L646)
+Defined in: [core/src/codegen/blocks.ts:640](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L640)
 
 Makes `value` available to the generated function under the returned name.
 
@@ -577,7 +577,7 @@ in as a real value when the function is compiled, so it survives any bundler.
 
 > **getBindings**(): [`Param`](../type-aliases/Param.md)[]
 
-Defined in: [core/src/codegen/blocks.ts:651](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L651)
+Defined in: [core/src/codegen/blocks.ts:648](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L648)
 
 #### Returns
 
@@ -589,7 +589,7 @@ Defined in: [core/src/codegen/blocks.ts:651](https://github.com/Agrejus/routier/
 
 > **toString**(): `string`
 
-Defined in: [core/src/codegen/blocks.ts:655](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L655)
+Defined in: [core/src/codegen/blocks.ts:652](https://github.com/Agrejus/routier/blob/main/core/src/codegen/blocks.ts#L652)
 
 #### Returns
 

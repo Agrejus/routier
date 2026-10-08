@@ -6,7 +6,7 @@
 
 # Class: NetworkError
 
-Defined in: [plugins/replication/src/httpUtils.ts:36](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/httpUtils.ts#L36)
+Defined in: [plugins/replication/src/httpUtils.ts:38](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/httpUtils.ts#L38)
 
 Carries the HTTP status, so an application can classify a failure the same way the plugin
 does rather than matching on message text.
@@ -21,7 +21,7 @@ does rather than matching on message text.
 
 > **new NetworkError**(`cause`): `NetworkError`
 
-Defined in: [plugins/replication/src/httpUtils.ts:37](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/httpUtils.ts#L37)
+Defined in: [plugins/replication/src/httpUtils.ts:39](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/httpUtils.ts#L39)
 
 #### Parameters
 

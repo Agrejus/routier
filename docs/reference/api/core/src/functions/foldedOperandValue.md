@@ -8,7 +8,7 @@
 
 > **foldedOperandValue**(`operand`, `calls`): `unknown`
 
-Defined in: [core/src/expressions/fold.ts:85](https://github.com/Agrejus/routier/blob/main/core/src/expressions/fold.ts#L85)
+Defined in: [core/src/expressions/fold.ts:87](https://github.com/Agrejus/routier/blob/main/core/src/expressions/fold.ts#L87)
 
 The value a literal operand binds as once the calls on it are computed. Throws if it cannot.
 

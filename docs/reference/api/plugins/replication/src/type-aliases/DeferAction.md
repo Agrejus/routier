@@ -8,7 +8,7 @@
 
 > **DeferAction** = `object`
 
-Defined in: plugins/replication/src/syncHooks.ts:42
+Defined in: [plugins/replication/src/syncHooks.ts:42](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L42)
 
 ## Methods
 
@@ -16,7 +16,7 @@ Defined in: plugins/replication/src/syncHooks.ts:42
 
 > **defer**(): `void`
 
-Defined in: plugins/replication/src/syncHooks.ts:42
+Defined in: [plugins/replication/src/syncHooks.ts:42](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L42)
 
 #### Returns
 

@@ -392,7 +392,7 @@ Defined in: [core/src/schema/PropertyInfo.ts:174](https://github.com/Agrejus/rou
 
 > **get** **hasNullableParents**(): `boolean`
 
-Defined in: [core/src/schema/PropertyInfo.ts:301](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L301)
+Defined in: [core/src/schema/PropertyInfo.ts:302](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L302)
 
 Returns true if any parent property is nullable or optional.
 
@@ -410,7 +410,7 @@ True if any parent is nullable or optional, false otherwise.
 
 > **get** **hasRenamedSegments**(): `boolean`
 
-Defined in: [core/src/schema/PropertyInfo.ts:325](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L325)
+Defined in: [core/src/schema/PropertyInfo.ts:326](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L326)
 
 Returns true if this property or any parent is renamed with from().
 Storage paths for such properties differ from their in-memory paths.
@@ -429,7 +429,7 @@ True if any segment of the path is renamed, false otherwise.
 
 > **get** **hasIdentityChildren**(): `boolean`
 
-Defined in: [core/src/schema/PropertyInfo.ts:349](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L349)
+Defined in: [core/src/schema/PropertyInfo.ts:350](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L350)
 
 Returns true if any child property (recursively) is an identity property.
 
@@ -445,7 +445,7 @@ True if any child is an identity property, false otherwise.
 
 > **getResolvedName**(): `string`
 
-Defined in: [core/src/schema/PropertyInfo.ts:235](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L235)
+Defined in: [core/src/schema/PropertyInfo.ts:236](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L236)
 
 #### Returns
 
@@ -457,7 +457,7 @@ Defined in: [core/src/schema/PropertyInfo.ts:235](https://github.com/Agrejus/rou
 
 > **getPathArray**(): `string`[]
 
-Defined in: [core/src/schema/PropertyInfo.ts:244](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L244)
+Defined in: [core/src/schema/PropertyInfo.ts:245](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L245)
 
 Returns an array of property names representing the path from the root to this property.
 
@@ -473,7 +473,7 @@ The property path as an array of names.
 
 > **getParentPathArray**(`options?`): `string`[]
 
-Defined in: [core/src/schema/PropertyInfo.ts:265](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L265)
+Defined in: [core/src/schema/PropertyInfo.ts:266](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L266)
 
 Returns an array of property names representing the path from the root to the parent of this property.
 
@@ -497,7 +497,7 @@ The property path as an array of names, excluding this property.
 
 > **getValue**(`instance`): `any`
 
-Defined in: [core/src/schema/PropertyInfo.ts:369](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L369)
+Defined in: [core/src/schema/PropertyInfo.ts:373](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L373)
 
 Gets the value of this property from the given instance, following the property path.
 
@@ -521,7 +521,7 @@ The value of the property, or null if not found.
 
 > **setValue**(`instance`, `value`): `void`
 
-Defined in: [core/src/schema/PropertyInfo.ts:395](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L395)
+Defined in: [core/src/schema/PropertyInfo.ts:399](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L399)
 
 Sets the value of this property on the given instance, creating intermediate objects as needed.
 
@@ -549,7 +549,7 @@ The value to set.
 
 > **getSelectrorPath**(`options`): `string`
 
-Defined in: [core/src/schema/PropertyInfo.ts:430](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L430)
+Defined in: [core/src/schema/PropertyInfo.ts:434](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L434)
 
 Returns a selector path string for this property, starting from the given parent variable name.
 
@@ -589,7 +589,7 @@ The selector path string (e.g., 'parent.prop1.prop2').
 
 > **getAssignmentPath**(`options?`): `string`
 
-Defined in: [core/src/schema/PropertyInfo.ts:445](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L445)
+Defined in: [core/src/schema/PropertyInfo.ts:449](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L449)
 
 Returns an assignment path string for this property, optionally starting from a parent variable name.
 
@@ -619,7 +619,7 @@ The assignment path string (e.g., 'prop1.prop2').
 
 > **deserialize**(`value`): `string` \| `number` \| `boolean` \| `Date` \| `T`
 
-Defined in: [core/src/schema/PropertyInfo.ts:459](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L459)
+Defined in: [core/src/schema/PropertyInfo.ts:463](https://github.com/Agrejus/routier/blob/main/core/src/schema/PropertyInfo.ts#L463)
 
 #### Parameters
 

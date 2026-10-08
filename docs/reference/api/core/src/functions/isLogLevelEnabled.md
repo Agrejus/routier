@@ -8,7 +8,7 @@
 
 > **isLogLevelEnabled**(`at`): `boolean`
 
-Defined in: [core/src/utilities/logger.ts:127](https://github.com/Agrejus/routier/blob/main/core/src/utilities/logger.ts#L127)
+Defined in: [core/src/utilities/logger.ts:140](https://github.com/Agrejus/routier/blob/main/core/src/utilities/logger.ts#L140)
 
 Whether a message at this level would be emitted.
 

@@ -8,4 +8,4 @@
 
 > **HttpRequestError** = [`FailureDetails`](FailureDetails.md)\<`"read"`\> & [`RetryAction`](RetryAction.md) & [`DoneAction`](DoneAction.md) \| [`FailureDetails`](FailureDetails.md)\<`"write"`\> & [`RetryAction`](RetryAction.md) & [`DoneAction`](DoneAction.md)
 
-Defined in: plugins/replication/src/syncHooks.ts:44
+Defined in: [plugins/replication/src/syncHooks.ts:44](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L44)

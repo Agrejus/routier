@@ -8,7 +8,7 @@
 
 > **resetLogLevel**(): `void`
 
-Defined in: [core/src/utilities/logger.ts:115](https://github.com/Agrejus/routier/blob/main/core/src/utilities/logger.ts#L115)
+Defined in: [core/src/utilities/logger.ts:129](https://github.com/Agrejus/routier/blob/main/core/src/utilities/logger.ts#L129)
 
 Re-reads the environment. For tests that change it after this module was imported.
 

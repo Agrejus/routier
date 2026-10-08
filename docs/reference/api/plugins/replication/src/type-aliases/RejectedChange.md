@@ -8,7 +8,7 @@
 
 > **RejectedChange** = `object`
 
-Defined in: plugins/replication/src/syncHooks.ts:3
+Defined in: [plugins/replication/src/syncHooks.ts:3](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L3)
 
 ## Properties
 
@@ -16,7 +16,7 @@ Defined in: plugins/replication/src/syncHooks.ts:3
 
 > **kind**: `"add"` \| `"update"` \| `"remove"`
 
-Defined in: plugins/replication/src/syncHooks.ts:3
+Defined in: [plugins/replication/src/syncHooks.ts:3](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L3)
 
 ***
 
@@ -24,4 +24,4 @@ Defined in: plugins/replication/src/syncHooks.ts:3
 
 > **entity**: `unknown`
 
-Defined in: plugins/replication/src/syncHooks.ts:3
+Defined in: [plugins/replication/src/syncHooks.ts:3](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L3)

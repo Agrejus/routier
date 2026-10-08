@@ -8,7 +8,7 @@
 
 > `const` **DEFAULT\_SEMI\_JOIN\_KEY\_THRESHOLD**: `500` = `500`
 
-Defined in: [core/src/plugins/query/join.ts:239](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/join.ts#L239)
+Defined in: [core/src/plugins/query/join.ts:242](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/join.ts#L242)
 
 How many distinct outer keys are still worth turning into an `IN (...)` prefilter.
 

@@ -8,7 +8,7 @@
 
 > **createRetry**(`options`): (`error`) => `void`
 
-Defined in: plugins/replication/src/retry.ts:38
+Defined in: [plugins/replication/src/retry.ts:38](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/retry.ts#L38)
 
 ## Parameters
 

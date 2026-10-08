@@ -8,7 +8,7 @@
 
 > **toPredicate**(`expression`): (`row`) => `boolean`
 
-Defined in: [core/src/expressions/evaluate.ts:320](https://github.com/Agrejus/routier/blob/main/core/src/expressions/evaluate.ts#L320)
+Defined in: [core/src/expressions/evaluate.ts:328](https://github.com/Agrejus/routier/blob/main/core/src/expressions/evaluate.ts#L328)
 
 `evaluate`, as a predicate that keeps whatever it cannot judge.
 

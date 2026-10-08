@@ -8,7 +8,7 @@
 
 > **forEach**(`expression`, `callback`): `void`
 
-Defined in: [core/src/expressions/utils.ts:74](https://github.com/Agrejus/routier/blob/main/core/src/expressions/utils.ts#L74)
+Defined in: [core/src/expressions/utils.ts:94](https://github.com/Agrejus/routier/blob/main/core/src/expressions/utils.ts#L94)
 
 ## Parameters
 

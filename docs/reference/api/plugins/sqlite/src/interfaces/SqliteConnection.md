@@ -8,7 +8,7 @@
 
 Defined in: [plugins/sqlite/src/drivers/types.ts:14](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/drivers/types.ts#L14)
 
-One open connection. The plugin opens one per operation and closes it on every path.
+One open connection. A driver that sets `keepsConnections` has it reused across operations; otherwise the plugin opens one per operation.
 
 ## Methods
 
@@ -81,7 +81,7 @@ readonly `unknown`[]
 
 Defined in: [plugins/sqlite/src/drivers/types.ts:35](https://github.com/Agrejus/routier/blob/main/plugins/sqlite/src/drivers/types.ts#L35)
 
-Releases the connection. Called on every completion path, including failures.
+Releases the connection, after its operation or, for a kept connection, when it goes idle or the plugin is destroyed.
 
 #### Returns
 

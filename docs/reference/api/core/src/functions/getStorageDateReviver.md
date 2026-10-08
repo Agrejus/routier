@@ -8,7 +8,7 @@
 
 > **getStorageDateReviver**(`schema`): [`StorageDateReviver`](../type-aliases/StorageDateReviver.md)
 
-Defined in: [core/src/schema/utils/storageDates.ts:100](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/storageDates.ts#L100)
+Defined in: [core/src/schema/utils/storageDates.ts:101](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/storageDates.ts#L101)
 
 The reviver for `schema`'s records, or `null` when it declares no dates.
 

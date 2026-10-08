@@ -8,7 +8,7 @@
 
 > **extractTypeInfo**\<`T`\>(`compiledSchema`): `object`
 
-Defined in: [core/src/schema/utils/standardJsonSchema.ts:806](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L806)
+Defined in: [core/src/schema/utils/standardJsonSchema.ts:808](https://github.com/Agrejus/routier/blob/main/core/src/schema/utils/standardJsonSchema.ts#L808)
 
 Attempts to extract type information from a compiled schema for better type inference.
 

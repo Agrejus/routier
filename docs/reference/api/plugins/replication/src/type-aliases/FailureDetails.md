@@ -8,7 +8,7 @@
 
 > **FailureDetails**\<`TOperation`\> = [`FailureKind`](FailureKind.md) & `object`
 
-Defined in: plugins/replication/src/syncHooks.ts:29
+Defined in: [plugins/replication/src/syncHooks.ts:29](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L29)
 
 ## Type Declaration
 

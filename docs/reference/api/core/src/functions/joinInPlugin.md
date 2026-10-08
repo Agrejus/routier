@@ -8,7 +8,7 @@
 
 > **joinInPlugin**\<`TRoot`, `TShape`\>(`event`, `query`, `done`): `void`
 
-Defined in: [core/src/plugins/query/join.ts:432](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/join.ts#L432)
+Defined in: [core/src/plugins/query/join.ts:435](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/join.ts#L435)
 
 Interprets a join by running TWO ordinary queries through the plugin's own read path.
 

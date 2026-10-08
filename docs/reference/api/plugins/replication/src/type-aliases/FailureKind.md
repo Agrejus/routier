@@ -8,4 +8,4 @@
 
 > **FailureKind** = \{ `kind`: `"http"`; `status`: `number`; `headers`: [`ResponseHeaders`](ResponseHeaders.md); `body`: `unknown`; \} \| \{ `kind`: `"network"`; \} \| \{ `kind`: `"store"`; \}
 
-Defined in: plugins/replication/src/syncHooks.ts:24
+Defined in: [plugins/replication/src/syncHooks.ts:24](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/syncHooks.ts#L24)

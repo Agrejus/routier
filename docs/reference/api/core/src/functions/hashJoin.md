@@ -8,7 +8,7 @@
 
 > **hashJoin**(`options`): [`JoinTuple`](../type-aliases/JoinTuple.md)[]
 
-Defined in: [core/src/plugins/query/join.ts:178](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/join.ts#L178)
+Defined in: [core/src/plugins/query/join.ts:181](https://github.com/Agrejus/routier/blob/main/core/src/plugins/query/join.ts#L181)
 
 The join itself: one hash join, written once, called from every interpreter.
 

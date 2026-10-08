@@ -61,6 +61,42 @@ const client = createClient({ url, authToken });
 new SqliteDbPlugin("app", { driver: tursoDriver(client) });
 ```
 
+## Connections and performance
+
+In Node (`nodeSqliteDriver()` and `sqlite3Driver()`), each plugin keeps two connections open instead of opening one per operation:
+
+| Connection | Used by | Behaviour |
+| --- | --- | --- |
+| Writer | Saves | One save at a time, each in a `BEGIN IMMEDIATE` transaction |
+| Reader | Queries | Never sees a save that is in progress or rolled back, and never waits for one |
+
+- A connection idle for one second is closed, and reopened on next use.
+- `nodeSqliteDriver()` also keeps each connection's 64 most recently used prepared statements.
+- Other plugins and processes on the same file still contend through SQLite's file locks.
+
+Measured on one core against 0.6.0:
+
+| Workload | Change |
+| --- | --- |
+| Small queries | about 50% faster |
+| Saves | about 30% faster |
+
+`wasmDriver()` is unchanged: the browser worker already holds one database open per page. `tursoDriver()` and D1 still use one connection per operation.
+
+### In-memory databases
+
+SQLite gives each connection its own `":memory:"` database, so an in-memory plugin gets exactly one connection. Saves and queries take turns on it, a query never sees a save in progress, and it is never closed for being idle. The data lasts until `destroyAsync()`, and each plugin starts with its own empty database.
+
+```ts
+new SqliteDbPlugin(":memory:");
+```
+
+Requires `@routier/sqlite-plugin` 0.6.1 or later; earlier versions lost every row.
+
+### Custom drivers
+
+A `SqliteDriver` that can keep a connection open across operations sets `keepsConnections: true` to get the writer and reader above. Without it, the plugin opens and closes a connection for every operation.
+
 ## Guarantees and limits
 
 - A normal SQLite save uses one `BEGIN IMMEDIATE` transaction and rolls back whole on failure.

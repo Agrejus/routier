@@ -225,7 +225,7 @@ Callback with the result or error.
 
 > **destroy**(`event`, `done`): `void`
 
-Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:187](https://github.com/Agrejus/routier/blob/main/core/src/plugins/ConcurrencyDbPlugin.ts#L187)
+Defined in: [core/src/plugins/ConcurrencyDbPlugin.ts:197](https://github.com/Agrejus/routier/blob/main/core/src/plugins/ConcurrencyDbPlugin.ts#L197)
 
 Destroys or cleans up the plugin, closing connections or freeing resources.
 

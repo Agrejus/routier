@@ -354,6 +354,7 @@
 - [toPromise](functions/toPromise.md)
 - [isArrayValued](functions/isArrayValued.md)
 - [hasPrimitiveElements](functions/hasPrimitiveElements.md)
+- [hasNestedElements](functions/hasNestedElements.md)
 - [propertyInfoToJsonSchema](functions/propertyInfoToJsonSchema.md)
 - [compiledSchemaToJsonSchema](functions/compiledSchemaToJsonSchema.md)
 - [createStandardJsonSchemaProps](functions/createStandardJsonSchemaProps.md)

@@ -8,7 +8,7 @@
 
 > **defaultSync**(): `object`
 
-Defined in: plugins/replication/src/retry.ts:55
+Defined in: [plugins/replication/src/retry.ts:55](https://github.com/Agrejus/routier/blob/main/plugins/replication/src/retry.ts#L55)
 
 ## Returns
 
