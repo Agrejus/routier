@@ -3,6 +3,19 @@
 Hand-written, one section per release, grouped by package with breaking changes first. See
 `specs/RELEASING.md` for the procedure.
 
+## Large saves on Cloudflare D1 (2026-10-09)
+
+Patch to `@routier/sqlite-plugin`. Only `@routier/sqlite-plugin` references move to `0.6.3` in the
+repository.
+
+### Fixed — @routier/sqlite-plugin 0.6.3
+
+- A D1 save no longer fails once a statement binds more than 100 parameters, which is D1's
+  limit. Saves were split at SQLite's 32,766, so adding as few as 34 rows of three columns failed
+  on D1. D1 saves are now split at 100 parameters, and every statement still goes out in one
+  batch, so a large save is all or nothing. D1 also caps statements per Worker invocation
+  (1,000 on Paid, 50 on Free), which a very large save can still exceed (#121, #122).
+
 ## PostgreSQL table creation under concurrency (2026-10-09)
 
 Patch to `@routier/postgres-plugin-core`. The `@routier/postgresql-plugin` and
